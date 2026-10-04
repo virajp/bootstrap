@@ -1,0 +1,16 @@
+{
+  "name": "bootstrap",
+  "version": "0.0.1",
+  "description": "Bootstrap project with mise and other tooling",
+  "keywords": [
+    "bootstrap",
+    "mise",
+    "tooling"
+  ],
+  "license": "MIT",
+  "author": "Viraj Patel",
+  "main": "dist/index.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
