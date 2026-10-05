@@ -1,0 +1,6 @@
+# Provenance for stylesheet/plain-css@0.2.1 — a shipped pack, copied verbatim (no generation).
+component: stylesheet/plain-css
+version: 0.2.1
+source: stackgen plugin, stacks/stylesheet/plain-css/
+kind: pack
+sources: [] # research citations apply to generated components only

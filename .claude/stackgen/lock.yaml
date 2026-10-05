@@ -23,6 +23,10 @@ bundles:
     template: .claude/stackgen/templates/claude-code.md
     components:
       - design-tool/claude-code@0.4.0
+  plain-css:
+    template: .claude/stackgen/templates/plain-css.md
+    components:
+      - stylesheet/plain-css@0.2.1
 files:
   - path: .claude/skills/typescript/SKILL.md
     component: language/typescript@0.3.1
@@ -254,6 +258,16 @@ files:
     source: design-tool/claude-code/skills/design-session/scripts/serve.mjs
     sha256: a7be6fe40fbd61406de8b0620987a1093b7a9807e958fd6707330a980692ebad
     mode: "755"
+  - path: .claude/skills/plain-css/SKILL.md
+    component: stylesheet/plain-css@0.2.1
+    source: stylesheet/plain-css/skills/plain-css/SKILL.md
+    sha256: c77db4db5391083febf4acad077f88c431236a53ae030bce3e1473d304693b23
+    mode: "644"
+  - path: .claude/skills/plain-css/references/tokens.md
+    component: stylesheet/plain-css@0.2.1
+    source: stylesheet/plain-css/skills/plain-css/references/tokens.md
+    sha256: d4f0de2c3c966f962858e1a1d94926b14a24168187332663c25ebeb0a7835b0f
+    mode: "644"
 skipped: []
 settings_keys: []
 mcp_servers: []
