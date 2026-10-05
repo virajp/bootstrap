@@ -1,6 +1,6 @@
 # stackgen lockfile — every path stackgen landed in this repo, per component.
 # Paths NOT listed here are the repo's own; sync and removal never touch them.
-materialized: "2026-10-05"
+materialized: "2026-10-06"
 bundles:
   typescript-effect-cli:
     template: .claude/stackgen/templates/typescript-effect-cli.md
@@ -31,6 +31,10 @@ bundles:
     template: .claude/stackgen/templates/pnpm-workspace.md
     components:
       - package-manager/pnpm@0.6.1
+  npm-package:
+    template: .claude/stackgen/templates/npm-package.md
+    components:
+      - deploy-target/npm-registry@generated
 files:
   - path: .claude/skills/typescript/SKILL.md
     component: language/typescript@0.3.1
@@ -271,6 +275,46 @@ files:
     component: stylesheet/plain-css@0.2.1
     source: stylesheet/plain-css/skills/plain-css/references/tokens.md
     sha256: d4f0de2c3c966f962858e1a1d94926b14a24168187332663c25ebeb0a7835b0f
+    mode: "644"
+  - path: .claude/skills/npm-package-manifest/SKILL.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: caf76496357a9ce8484773ae495de19ea5d522e0801933a7f6914e98922d6965
+    mode: "644"
+  - path: .claude/skills/npm-package-manifest/references/artifact.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: 8699b2e26fcd6dd6ac0c2d2a1ff470db00cc4db0c1bf423dc61e587bd53a8175
+    mode: "644"
+  - path: .claude/skills/npm-package-manifest/references/hygiene.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: 5cb0803000782105db7c7a720eccadcc15b86cb57d1fbdb7d241b504a5b02b39
+    mode: "644"
+  - path: .claude/skills/npm-registry/SKILL.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: 0749a0b4f1f6af32116798363d59ba55a393b34c54936544897fa303c6b25562
+    mode: "644"
+  - path: .claude/skills/npm-registry/references/config-and-secrets.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: 3fcac61f3f8f354fc288c54a6ca3a6302bd162f3d22f0bfc828245ae8b40294f
+    mode: "644"
+  - path: .claude/skills/npm-registry/references/pick-and-trade.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: 0dbdf43032c691312d2c8bc95c0a2ca8dce1ecffa501c1b8f779f2339c8bab81
+    mode: "644"
+  - path: .claude/skills/npm-registry/references/promotion.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: aa53efd69adf50febbdaf61ab17e89c48849ee3e62f8ef66440b0cec5bb85c23
+    mode: "644"
+  - path: .claude/stackgen/citations/npm-registry.yaml
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: cf5eeb04b87ee51778f9df52b8f1e71aec747dee19662c334489b901ac43f74f
     mode: "644"
 skipped: []
 settings_keys: []
