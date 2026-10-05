@@ -1,0 +1,6 @@
+# Provenance for cloud-service/workers-static-assets@0.1.3 — a shipped pack, copied verbatim (no generation).
+component: cloud-service/workers-static-assets
+version: 0.1.3
+source: stackgen plugin, stacks/cloud-service/workers-static-assets/
+kind: pack
+sources: [] # research citations apply to generated components only

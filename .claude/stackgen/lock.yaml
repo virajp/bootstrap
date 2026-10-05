@@ -14,6 +14,11 @@ bundles:
     template: .claude/stackgen/templates/github-actions.md
     components:
       - ci-system/github-actions@0.2.1
+  cloudflare-workers-static:
+    template: .claude/stackgen/templates/cloudflare-workers-static.md
+    components:
+      - cloud-provider/cloudflare@0.1.0
+      - cloud-service/workers-static-assets@0.1.3
 files:
   - path: .claude/skills/typescript/SKILL.md
     component: language/typescript@0.3.1
@@ -149,6 +154,76 @@ files:
     component: ci-system/github-actions@0.2.1
     source: ci-system/github-actions/skills/github-actions/references/toolchain.md
     sha256: 2edad186daf1b460eb6539f52bd74e1e0586c0b53736f0c18307548a692b869b
+    mode: "644"
+  - path: .claude/skills/cloudflare/SKILL.md
+    component: cloud-provider/cloudflare@0.1.0
+    source: cloud-provider/cloudflare/skills/cloudflare/SKILL.md
+    sha256: 8d6161e22fed021d576bb48ee88562f0e9c1e9e36be2cf99c1f21e8706858d89
+    mode: "644"
+  - path: .claude/skills/cloudflare/references/cost-doctrine.md
+    component: cloud-provider/cloudflare@0.1.0
+    source: cloud-provider/cloudflare/skills/cloudflare/references/cost-doctrine.md
+    sha256: f08b92e93b9357ea6bebafdeece45c47cb199eef0da3b2b867d37475a12b0609
+    mode: "644"
+  - path: .claude/skills/cloudflare/references/identity-and-iam.md
+    component: cloud-provider/cloudflare@0.1.0
+    source: cloud-provider/cloudflare/skills/cloudflare/references/identity-and-iam.md
+    sha256: b80ec5d4fcba122ffb5a048786c0b6fef1ab817b3a127f951be0ff29cddcb415
+    mode: "644"
+  - path: .claude/skills/cloudflare/references/local-development-map.md
+    component: cloud-provider/cloudflare@0.1.0
+    source: cloud-provider/cloudflare/skills/cloudflare/references/local-development-map.md
+    sha256: 6fb6104e0c8a10411eed80e02290d665acafc8933d04a9b50ecd7acce53c3604
+    mode: "644"
+  - path: .claude/skills/cloudflare/references/networking-and-private-plane.md
+    component: cloud-provider/cloudflare@0.1.0
+    source: cloud-provider/cloudflare/skills/cloudflare/references/networking-and-private-plane.md
+    sha256: 7d847ad86e6a86a1e2980dd5a8c873988b4b93e9bf70a6e912242f3c1a36beea
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/SKILL.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/SKILL.md
+    sha256: a601e12971a2da9daec7021673a4f78cf5927fc1cb7e9414d36d33b88d69f5a2
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/artifact.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/artifact.md
+    sha256: 68867e3c8749f8cb0029b337b41969dc79a723e2e2c56b25936c7d87da1bf7ce
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/cost-shape.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/cost-shape.md
+    sha256: 90a1150f86ff87921a96be5c22618e24c1d3a803b7985ab67e77549774270a4b
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/health.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/health.md
+    sha256: 0cf87cdb9040b3bc495930452ea944d2d233932e386e9a30e510b12a8d72b288
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/identity-shape.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/identity-shape.md
+    sha256: 9d8e3de129f181e94256912af6dcbd973f6aec7010a32666ea94b2d3052ba658
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/local-dev.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/local-dev.md
+    sha256: af1a8eefbeaa983f2d42b63d859ab3f2bd1ce7f4c368827a01b788ca8883701c
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/pick-and-trade.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/pick-and-trade.md
+    sha256: f6b1a78bbd2845309fd391f0e7007e5b2e2d5a316cb22ef79a71d8edb6756585
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/pipeline.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/pipeline.md
+    sha256: bc21c50829f0c099951a02219a1fe00154e2c0ae5f7781dbd6a04823d4ed07ed
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/service-doctrine.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/service-doctrine.md
+    sha256: dac7a9649c04c309fe9187df409e46c52a2e52aa62c95e18e4587899f953c8fd
     mode: "644"
 skipped: []
 settings_keys: []
