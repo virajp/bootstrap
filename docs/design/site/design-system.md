@@ -35,7 +35,8 @@ samples and callouts, where they mirror the CLI's own role colors.
 | `surface-code` | `#171513` | Code and terminal blocks, inline code | n/a |
 | `surface-raised` | `#1b1917` | Search panel, copy-button hover | n/a |
 | `border-default` | `#24211e` | Hairline rules between rows and sections, table rules | non-text |
-| `border-strong` | `#332f2a` | Emphasised dividers, code-block outline, tag underline | non-text |
+| `border-strong` | `#332f2a` | Emphasised dividers, code-block outline, tag underline (decorative only) | 1.47:1, decorative |
+| `border-control` | `#6f6a63` | The visible edge of a control: search input and secondary button outlines | 3.65:1 (3.46:1 on `surface-card`) |
 | `text-body` | `#efece7` | Body copy and headings | 16.6:1 |
 | `text-muted` | `#a8a39b` | Secondary text, sidebar items, captions, eyebrows, metadata | 7.8:1 |
 | `text-faint` | `#6f6a63` | **Large text (24px+) and non-text UI only**: a display headline's second line | 3.65:1 (fails 4.5:1 small) |
@@ -90,12 +91,12 @@ fetched from a third-party font CDN.
 ## 4. Component Stylings
 
 All components are flat: no shadows anywhere on the site. Radius scale: 2px
-(inline code, tags hit area), 4px (buttons, code blocks, callouts, inputs),
+(inline code), 4px (buttons, code blocks, callouts, inputs),
 12px (search panel only). No pills.
 
 - **Buttons.** `primary`: `accent` fill, `accent-ink` text, at most one per
   view (the landing hero's "Get started"). `secondary`: transparent with a 1px
-  `border-strong` outline, `text-body`. `ghost`: text-only in `text-muted`.
+  `border-control` outline, `text-body`. `ghost`: text-only in `text-muted`.
   Hover shifts color only; press scales to 98%; focus shows the ring. Labels
   never wrap at desktop.
 - **Text links.** `accent` in running copy, underlined on hover; external
@@ -130,10 +131,14 @@ All components are flat: no shadows anywhere on the site. Radius scale: 2px
 - **Tags.** Mono `xs`, `text-muted`, underlined by a 1px `border-strong`
   hairline, no background, no radius. Used for "since v1.0" style markers.
 - **Inputs (search).** The one input on the site: `surface-card`, 1px
-  `border-strong`, 4px radius, placeholder in `text-muted`, an accessible label
+  `border-control`, 4px radius, placeholder in `text-muted`, an accessible label
   (placeholder is never the label), a `/` shortcut hint as a tag. Results open in a
   `surface-raised` panel (12px radius, 1px `border-strong`); results are rows,
-  matched text in `text-body` weight 600.
+  matched text in `text-body` weight 600. Keyboard: `/` (or focusing the
+  input) opens the panel; Up and Down move through results while focus stays in
+  the input; Enter opens the highlighted result; Escape closes the panel and
+  returns focus to where it was; the result count is announced to assistive
+  tech.
 - **Loaders.** Search shows "Searching…" in `text-muted`; no spinners or
   skeletons anywhere else (the site is static).
 - **Empty state.** Search with no results: one line naming the query and a
@@ -185,6 +190,7 @@ size); keyboard reaches everything in reading order, with no traps.
 - No second accent hue; status colors never leave terminal samples and callout
   markers.
 - No `text-faint` below 24px.
+- No `border-strong` as the only edge of a control; controls use `border-control`.
 - No shadows, no glow outside the landing hero, no glassmorphism.
 - No card grids, bento, three-equal feature columns or pill shapes.
 - No div-built fake terminals or screenshots: terminal samples are real text in
