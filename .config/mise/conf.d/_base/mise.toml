@@ -21,4 +21,4 @@ _.path = { path = "node_modules/.bin", tools = true }
 # Repo level configuration for `vwf` plugin
 MEMBERS     = ""
 MERGE_MODEL = "direct"
-REPO_NAME   = "claude-plugins"
+REPO_NAME   = "bootstrap"

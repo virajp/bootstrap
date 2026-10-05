@@ -97,4 +97,4 @@ fi
 print_header "Watching site run ${RUN_ID} ..."
 gh run watch "${RUN_ID}" --exit-status
 
-print_header "Deploy pipeline succeeded — https://claude-plugins.virajp.dev is on site-v${VERSION}."
+print_header "Deploy pipeline succeeded — https://bootstrap.virajp.dev is on site-v${VERSION}."

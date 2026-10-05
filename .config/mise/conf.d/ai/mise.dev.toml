@@ -26,4 +26,4 @@ MEMPALACE_MCP_IDLE_HOURS        = 0
 MEMPALACE_QDRANT_URL            = "http://127.0.0.1:6333"
 
 # Palace path for storing local data
-MEMPALACE_PALACE_PATH = "~/.local/share/mempalace/claude-plugins"
+MEMPALACE_PALACE_PATH = "~/.local/share/mempalace/bootstrap"
