@@ -1,0 +1,6 @@
+# Provenance for framework/effect@0.1.0 — a shipped pack, copied verbatim (no generation).
+component: framework/effect
+version: 0.1.0
+source: stackgen plugin, stacks/framework/effect/
+kind: pack
+sources: [] # research citations apply to generated components only

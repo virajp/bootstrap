@@ -1,0 +1,122 @@
+# stackgen lockfile — every path stackgen landed in this repo, per component.
+# Paths NOT listed here are the repo's own; sync and removal never touch them.
+materialized: "2026-10-05"
+bundles:
+  typescript-effect-cli:
+    template: .claude/stackgen/templates/typescript-effect-cli.md
+    components:
+      - language/typescript@0.3.1
+      - package-manager/pnpm@0.6.1
+      - toolchain-gate/tsconfig@0.2.2
+      - toolchain-gate/eslint@0.3.4
+      - framework/effect@0.1.0
+files:
+  - path: .claude/skills/typescript/SKILL.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/SKILL.md
+    sha256: 992cead9b1c9b4225485f15a1da2a7dfa8efddd14729de1ae8e413f47ee75931
+    mode: "644"
+  - path: .claude/skills/typescript/references/async-model.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/async-model.md
+    sha256: 190a72ba06bb5158505e23389b5db8369097b9d5f912031801bdd0d9e9d48460
+    mode: "644"
+  - path: .claude/skills/typescript/references/build-and-run.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/build-and-run.md
+    sha256: 6ca0ff2e9388eef82193b65139bd283c38b87c6767d0492d9464e5f22faed9fb
+    mode: "644"
+  - path: .claude/skills/typescript/references/config-and-env.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/config-and-env.md
+    sha256: ed737fa1a20877b2234c7d2ef729c2237b02bed4c115faf4259ecbdb344a6462
+    mode: "644"
+  - path: .claude/skills/typescript/references/error-handling.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/error-handling.md
+    sha256: d3e89613689266769faa704ffc41e0f80ea0b578480ce06267411f5538947d76
+    mode: "644"
+  - path: .claude/skills/typescript/references/observability-wiring.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/observability-wiring.md
+    sha256: 5e57a1368bc1adb54a938426a2d7888e64e8520f2d055c8f890917365ce1a54c
+    mode: "644"
+  - path: .claude/skills/typescript/references/standards.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/standards.md
+    sha256: 9acee137906cb60a6e8ff228a8acfbbcc5f9e6fbde46adbef229d4c831240541
+    mode: "644"
+  - path: .claude/skills/typescript/references/testing.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/testing.md
+    sha256: 604444c456588032950bea3438e0500e6f5c920a0b69468c01911848dd37132c
+    mode: "644"
+  - path: .claude/skills/ux-gate/SKILL.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/ux-gate/SKILL.md
+    sha256: b37501a9e55c9e6e69ae23535e05bc088bf5b270417d22679ac316343b7e0692
+    mode: "644"
+  - path: .claude/skills/pnpm/SKILL.md
+    component: package-manager/pnpm@0.6.1
+    source: package-manager/pnpm/skills/pnpm/SKILL.md
+    sha256: 5ccd7ccc6820291a394bed1fadbe3bdbb20d8299d7ef778d7c8d9a4e6b30535e
+    mode: "644"
+  - path: .claude/skills/pnpm/references/manifest-discipline.md
+    component: package-manager/pnpm@0.6.1
+    source: package-manager/pnpm/skills/pnpm/references/manifest-discipline.md
+    sha256: 868a7015519f839ccd1a6ce64444ac9c41d147364e0a7b87db6f9a1c05a2da33
+    mode: "644"
+  - path: .claude/skills/pnpm/references/supply-chain.md
+    component: package-manager/pnpm@0.6.1
+    source: package-manager/pnpm/skills/pnpm/references/supply-chain.md
+    sha256: 3e19e8e9fa41a8db310a892937b0f184c290c1d5ef636c57e6b7221972d57ab5
+    mode: "644"
+  - path: .claude/skills/pnpm/references/workspace.md
+    component: package-manager/pnpm@0.6.1
+    source: package-manager/pnpm/skills/pnpm/references/workspace.md
+    sha256: 7309ba369dade362e86210d659163531e0a6d6592301d257b112b9fb40ab961f
+    mode: "644"
+  - path: .claude/hooks/npm-normalize.sh
+    component: package-manager/pnpm@0.6.1
+    source: package-manager/pnpm/hooks/npm-normalize.sh
+    sha256: 21f8f68b743c1ec1e56185d6d106d807e8f88806b52876922205ac37f737cfd1
+    mode: "755"
+  - path: .claude/skills/tsconfig/SKILL.md
+    component: toolchain-gate/tsconfig@0.2.2
+    source: toolchain-gate/tsconfig/skills/tsconfig/SKILL.md
+    sha256: be4d75a883d802876d3035d7f49ac1a05ade5acba27a536fcfafacda06703de4
+    mode: "644"
+  - path: .claude/skills/eslint/SKILL.md
+    component: toolchain-gate/eslint@0.3.4
+    source: toolchain-gate/eslint/skills/eslint/SKILL.md
+    sha256: 0eced990ea4afd54fc3843100ce68f9465442b392f0122ad7cee82c14d7d673b
+    mode: "644"
+  - path: .claude/skills/effect/SKILL.md
+    component: framework/effect@0.1.0
+    source: framework/effect/skills/effect/SKILL.md
+    sha256: 1b777c041d30e2fe5cf6c6bb2b97c96ac6b4581ae8e521c357371919fbc93608
+    mode: "644"
+  - path: .claude/skills/effect/references/effect-runtime.md
+    component: framework/effect@0.1.0
+    source: framework/effect/skills/effect/references/effect-runtime.md
+    sha256: 1ca5e846a961c26c485522b37f6fc27848d9de31edbefe190b6c6557472791bc
+    mode: "644"
+  - path: .claude/skills/effect/references/effect.md
+    component: framework/effect@0.1.0
+    source: framework/effect/skills/effect/references/effect.md
+    sha256: 7988146dfd5c97f5bee1820def766687570c60c24668b24c03a9265828225a94
+    mode: "644"
+  - path: .claude/skills/effect/references/testing.md
+    component: framework/effect@0.1.0
+    source: framework/effect/skills/effect/references/testing.md
+    sha256: c3156806f7594ea5b1d78d5c3a565cf230957e79de4c064d40373a63d81b02a6
+    mode: "644"
+skipped: []
+settings_keys: []
+mcp_servers: []
+local_plugin:
+  path: ~/.claude/plugins/local/stackgen-lsp
+  lsp_servers:
+    - typescript-lsp
+  mcp_servers: []
+  registered: true

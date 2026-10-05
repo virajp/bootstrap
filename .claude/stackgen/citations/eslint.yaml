@@ -1,0 +1,6 @@
+# Provenance for toolchain-gate/eslint@0.3.4 — a shipped pack, copied verbatim (no generation).
+component: toolchain-gate/eslint
+version: 0.3.4
+source: stackgen plugin, stacks/toolchain-gate/eslint/
+kind: pack
+sources: [] # research citations apply to generated components only
