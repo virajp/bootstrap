@@ -57,3 +57,13 @@ bin/
 # The build output and its generated type cache
 site/dist/
 site/.astro/
+
+# git worktrees (local, per-branch checkouts)
+.worktrees/
+
+# ==== vwf memory ====
+# Developer-specific memory rooms: session handoffs, doctor reports and
+# execute run journals are per-laptop state, not the product.
+docs/memory/handoff/
+docs/memory/doctor/
+docs/memory/runs/

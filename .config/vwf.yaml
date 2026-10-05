@@ -1,0 +1,62 @@
+config_format: 22 # this file's own schema version — written 2026-10-05 by /vwf:setup (onboard, code path)
+blueprint_format: 25 # the docs/blueprint format stamp — written by the same run
+
+# 2026-10-05 — /vwf:setup onboarded this repo: monorepo of `cli` (the
+# @virajp.dev/bootstrap npm package) and `site` (Starlight docs). Neither
+# directory exists yet, so every stack axis is `unresolved` — architecture
+# decides, setup pins. The repo shape (/vwf:init) was offered and DECLINED:
+# bootstrap is the tool meant to replace stackgen's tool-config, so the hand-
+# copied .config/ files stay as they are. Unlock: /vwf:setup reshape.
+
+product:
+  name: bootstrap
+
+topology: monorepo
+topology_reason: One npm CLI (cli/) and its documentation site (site/),
+  released together from one pnpm workspace.
+ui: true # `site` is a screen platform
+integrations: false
+
+stacks: [ stackgen ]
+
+repo:
+  stack:
+    template: unresolved
+    package_manager: pnpm # from pnpm-lock.yaml
+    tools: []
+
+projects:
+  cli:
+    stack:
+      template: unresolved
+      backing_template: unresolved
+      deploy_template: unresolved
+      languages: []
+      frameworks: []
+      dependencies: []
+  site:
+    stack:
+      template: unresolved
+      backing_template: unresolved
+      deploy_template: unresolved
+      languages: []
+      frameworks: []
+      dependencies: []
+    stylesheet: unresolved
+
+harness:
+  dev: false # no project exists yet; p:site:dev is a leftover from claude-plugins
+  e2e_local: false
+  local_stack: false
+  e2e_staging: false
+  health: n/a # no service platform
+  screenshots: false
+  goldens: n/a # no device platform
+  test:load: false
+
+enforcement:
+  rules: {}
+  kept_files: {}
+
+memory:
+  wing: bootstrap
