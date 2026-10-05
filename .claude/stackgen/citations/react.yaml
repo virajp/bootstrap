@@ -1,0 +1,192 @@
+component: framework/react
+ref: framework/react@generated
+pack_version: 0.1.0
+kind: language-bundle
+type: framework
+category: ui-library
+bundle: astro-ssg
+generated_at: 2026-10-06
+detected_stack:
+  project: site
+  platforms: [site]
+  template: astro-ssg (static output, no adapter; TypeScript; pnpm; React islands)
+  stylesheet: plain-css
+  deploy: static assets
+  product: documentation site for a CLI
+  code_present: false  # detection read the config only; no manifest, lockfile or graph exists yet
+catalog:
+  index: vwf/assets/principles/index.md
+  entries_instantiated:
+    - kiss                      # one component model for static markup; one island before a store; no memoization machinery without a measurement
+    - yagni                     # zero islands by default; no shared store in advance
+    - single-responsibility     # when to split a component inside an island; the parameter module
+    - information-hiding        # the shared query parameter as deliberately published knowledge
+    - interface-segregation     # narrowest typed props
+    - design-by-contract        # props as a typed interface at the boundary; the query parameter validated at a trust boundary
+    - explicit-error-semantics  # boundaries, handler-owned failures, reader-facing fallbacks, the console as the causal chain's destination
+  when_not_to_apply_honored:
+    - kiss: "familiar is not simple — static markup inside an island's tree is React because that is the island's idiom; a performance measure may justify memoization or the compiler, with the measurement beside it"
+    - yagni: "safety guardrails stay — the pre-hydration frame and accessible ids are not deferred"
+    - interface-segregation: "cohesive record props are not shattered into scalars"
+    - explicit-error-semantics: "outermost edge speaks the reader's vocabulary while the causal chain goes to the browser console, since no telemetry sink is declared (React's default root logging for render failures, the handler's own console.error for handler failures); the best-effort exception is NOT invoked"
+    - information-hiding: "some information is the contract — a shared query parameter is published, so it is declared explicitly in one src/lib module and versioned additively, not hidden behind a wrapper; the islands still hide everything else from each other"
+    - design-by-contract: "at trust boundaries caller's fault never means skip the check — the query parameter is validated on every read, with defined behaviour for absent, unknown and malformed values; island props are typed rather than re-validated, since the build is inside the trust domain"
+    - single-responsibility: "don't split below the concept — the parameter module keeps parse and serialize together as one decision (the parameter's shape); and a modest island component is acceptable scaffolding — start with one, split when a second concern starts changing, not the day it appears (framework-doctrine.md, Composition inside an island)"
+  entries_not_used:
+    - dry: its one use was the styling rule, removed in round 4 — styling is the stylesheet component's
+    - open-closed: no extension surface in an island component
+    - liskov-substitution: no substitutable hierarchies in island code
+    - dependency-inversion: no vendor dependency inside islands to invert; reporting is named by role
+    - idempotency: no writes or retries on a static site
+    - least-privilege: no credentials or grants reach an island
+
+topics:
+  "2-framework-doctrine":
+    owner: this component — framework-neutral React doctrine (one judgment reference per frameworks entry; decomposed into a router plus five references). Neighbours named only by role; the island boundary is stated as the host framework's definition, with no host specifics.
+    artifacts:
+      - conventions.md
+      - skills/react/SKILL.md
+      - skills/react/references/framework-doctrine.md
+      - skills/react/references/island-boundary.md
+      - skills/react/references/hydration.md
+      - skills/react/references/errors.md
+      - skills/react/references/testing.md
+    sources:
+      - id: context7:/reactjs/react.dev
+        fetched: 2026-10-05
+        pages:
+          - https://github.com/reactjs/react.dev/blob/main/src/content/reference/react-dom/client/hydrateRoot.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/reference/react-dom/client/createRoot.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/reference/react/useSyncExternalStore.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/reference/react/use.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/reference/react-dom/browser.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/reference/react/useId.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/reference/react/useContext.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/reference/react/Component.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/learn/you-might-not-need-an-effect.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/reference/react/useEffect.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/learn/thinking-in-react.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/learn/preserving-and-resetting-state.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/reference/eslint-plugin-react-hooks/index.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/blog/2025/10/07/react-compiler-1.md
+          - https://github.com/reactjs/react.dev/blob/main/src/content/reference/react-dom/server/renderToString.md
+        supports:
+          - hydration must match; listed mismatch causes; two-pass rendering and its cost; suppressHydrationWarning scope
+          - useSyncExternalStore getServerSnapshot runs at server render and hydration
+          - use(browser()) inside Suspense; fallback in server HTML; must be inside Suspense
+          - useId stable ids for labels/ARIA
+          - useContext reads the closest provider above in the tree (context does not cross separate roots)
+          - error boundaries as class components; no hook equivalent; not catching handlers, SSR, async (except startTransition); React removes UI on uncaught render error; granularity guidance
+          - root options onCaughtError / onUncaughtError / onRecoverableError are createRoot/hydrateRoot options
+          - "by default React logs all errors to the console (createRoot: Error logging in production)"
+          - Effects only for external systems; derive during render; ignore-flag cleanup for fetches
+          - eslint-plugin-react-hooks flat recommended config is React's documented Rules-of-Hooks enforcement; it surfaces compiler diagnostics without the compiler
+          - React Compiler automates memoization (react-compiler-1 post)
+          - renderToString produces the server HTML; suspends to fallback
+      - id: context7:/react/react
+        fetched: 2026-10-05
+        pages:
+          - https://github.com/react/react/blob/main/CHANGELOG.md
+        supports:
+          - "19.2.0: useId format uses underscores"
+          - "19.3: browser() react-dom API"
+      - id: context7:/testing-library/testing-library-docs
+        fetched: 2026-10-05
+        pages:
+          - https://github.com/testing-library/testing-library-docs/blob/main/docs/react-testing-library/setup.mdx
+          - https://github.com/testing-library/testing-library-docs/blob/main/docs/react-testing-library/api.mdx
+          - https://github.com/testing-library/testing-library-docs/blob/main/docs/queries/byrole.mdx
+          - https://github.com/testing-library/testing-library-docs/blob/main/docs/user-event/intro.mdx
+        supports:
+          - "setup.mdx: automatic cleanup needs Vitest globals, else afterEach(cleanup)"
+          - "api.mdx: render options container, hydrate, onRecoverableError, onCaughtError (behave as the createRoot options)"
+          - "byrole.mdx: getByRole with name, level and state filters"
+          - "user-event/intro.mdx: userEvent.setup() per test"
+      - id: context7:/vitest-dev/vitest
+        fetched: 2026-10-05
+        pages:
+          - https://github.com/vitest-dev/vitest/blob/main/docs/guide/environment.md
+          - https://github.com/vitest-dev/vitest/blob/main/docs/config/environment.md
+        supports:
+          - "// @vitest-environment jsdom per-file control comment"
+      - id: context7:/withastro/docs
+        fetched: 2026-10-05
+        pages:
+          - https://github.com/withastro/docs/blob/main/src/content/docs/en/guides/integrations-guide/react.mdx
+        supports:
+          - "the two .tsx compiler keys (jsx react-jsx, jsxImportSource react) — the page where these React/TypeScript keys were verified; no host-specific claim in the artifacts rests on it"
+    rulings_cited:
+      - id: shipped:toolchain-gate/eslint skills/eslint/SKILL.md
+        supports:
+          - "the house linter @askviraj/linter is zero-config and bundles ESLint plus TS, JSON/JSONC, CSS, HTML, Markdown, YAML, TOML and Astro plugins — no React plugin; .config/linter.yaml takes ignores, per-preset overrides and files-scoped configs entries; no second place the linter is configured"
+      - id: shipped:language/typescript skills/typescript/references/testing.md (Variations table, Web UI row)
+        supports:
+          - "the row this component overrides: environment jsdom + globals true project-wide"
+      - id: shipped:bundles/astro-ssg.md (## Testing)
+        supports:
+          - "the ruling that wins the override: node for src/lib and build-called code, jsdom only for islands the repo writes"
+    supplements:
+      - source: https://registry.npmjs.org/<name>/latest (plain GET)
+        fetched: 2026-10-05
+        disclosed_as: supplement
+        why: Context7's /react/react version list stopped at 19.2.8 while its react.dev and changelog pages already described 19.3; the registry was read to state the current line (react 19.3.0). Only the version line is used.
+    thinness:
+      - "Topic 1 UNCOVERED (see uncovered_topics): the cross-framework integration judgment — what crosses into a React island, how static content reaches it, how React is registered with the host build, whether React's root error options are reachable — is owned by language/typescript standards and carried by no shipped pack. This component states none of it; the artifacts say only that the host framework defines the boundary."
+      - "House linter extension (option b): .config/linter.yaml is documented for files-scoped overrides and configs entries; whether a configs entry can load a plugin the linter does not bundle is unverified."
+      - "Cleanup hook in node suites: Testing Library documents the hook, not its behaviour where no document exists. The artifact (testing.md) states this as reasoning and gives the fallback (move the hook into a setup file only island tests load)."
+      - "Root-level error handlers: React documents them as options of the call that creates the root, which is the host framework's. errors.md states only that this component sets none of them; whether the host sets or exposes them is part of the uncovered topic 1."
+      - "typeof-window limit of the hydration test: reasoning from jsdom defining window, not a documented statement. The artifact (testing.md) labels it as reasoning."
+      - "Pre-hydration-frame guidance derives from hydrateRoot's note that users see server HTML before JS loads; the disabled-or-static remedy is the catalog's accessibility guardrail applied, not a React prescription."
+    dropped:
+      - "round 2: React Compiler annotation mode — not sourced to React's own docs"
+      - "round 4: every host-specific mention and the four interim integration rules (props serialization list, children rule, registration, root error options) — and with them the Server-Component analogy and its use-client source; no analogy-sourced claim remains in the artifacts"
+      - "round 4: the styling decisions (className/tokens, CSS Modules, CSS-in-JS ban) — one line remains: styling is the stylesheet component's"
+      - "round 4: Nano Stores and the host ecosystem's store recommendation — the store decision is stated host-neutrally as 'a cross-island store'"
+
+  n/a_or_other_owner:
+    "1-standards": "owned by language/typescript; its cross-framework integration half is UNCOVERED — see uncovered_topics"
+    "3-error-handling": owned by language/typescript; React's additions are inside topic 2's errors reference
+    "4-async-concurrency": owned by language/typescript
+    "5-testing": runner owned by language/typescript, host-file testing by the host framework's pack; island testing is inside topic 2's testing reference
+    "6-build-and-run": owned by language/typescript and the host framework (the host owns the build)
+    "7-manifest-discipline": owned by package-manager/pnpm
+    "8-package-manager-workspace": owned by package-manager/pnpm
+    "9-compiler-config": "files owned by toolchain-gate/tsconfig, whose doctrine carries no JSX settings; the two .tsx keys (jsx react-jsx, jsxImportSource react) are owned by THIS component as doctrine — placed in the project's tsconfig.json, not the shared base; no config file is landed, so they are added in the change that adds React"
+    "10-lint-format-gate": "owned by toolchain-gate/eslint. React's documented check is eslint-plugin-react-hooks (flat recommended). Today it lands nowhere: the house linter bundles no React plugin and this component lands no lint config. Recorded as an OPEN DECISION in framework-doctrine.md with options (a) add the plugin to @askviraj/linter upstream, (b) project-local config — linter.yaml configs entry (plugin loading unverified) or a separate eslint.config.* run, (c) no gate, review only — each with its consequence"
+    "11-config-env": owned by language/typescript; islands read no environment — every value is a build input passed as a prop
+    "12-observability": "owned by language/typescript; for islands the emission point is named (React's default console logging, the handler's console.error, a boundary componentDidCatch once a sink is declared) — the detected stack declares no telemetry sink"
+
+uncovered_topics:
+  - topic: "1-standards — cross-framework integration judgment (React hosted as islands in the composition's host framework)"
+    owner: language/typescript (its standards reference — kinds.md places cross-framework integration judgment in topic 1, never in per-pair references)
+    carried_today: no — the language/typescript standards reference carries none of it, and no other shipped pack does
+    status: UNCOVERED — an upstream gap in the stackgen plugin, for the user to fix there; this component does not fill it
+    what_it_must_cover:
+      - what may cross into a hydrated island, and the failure mode of what cannot
+      - how static content reaches an island
+      - how React is registered with the host build
+      - whether React's root-level error options are reachable
+      - hydration directive choice and the host's client-only mode
+    in_this_component: nothing beyond "the host framework defines the boundary" (conventions.md, SKILL.md, island-boundary.md, errors.md)
+    disclosed_in: topics.2-framework-doctrine.thinness
+
+open_decisions:
+  - decision: Rules-of-Hooks lint gate
+    status: open — the check lands nowhere today
+    options:
+      - "(a) add eslint-plugin-react-hooks to @askviraj/linter upstream — keeps one lint configuration; waits on a release; inert in repos without React"
+      - "(b) project-local config — a linter.yaml configs entry (plugin loading unverified) or a separate eslint.config.* run — lands now; the second form is a second lint configuration"
+      - "(c) no lint gate, review only — nothing to maintain; violations caught only if seen"
+    recorded_in: skills/react/references/framework-doctrine.md, conventions.md
+  - decision: shared state between two separated islands
+    status: open — settled when the need exists (YAGNI)
+    options:
+      - "no store — URL or storage only; fits bookmarkable or persistent state"
+      - "a cross-island store — a small external store module both islands import, read through useSyncExternalStore or its React binding; fits transient live state across distant islands; a dependency, if one is chosen, is vetted at that time"
+      - "merge the islands — React context or common parent within one root; fits controls that can be one tree; the merged island hydrates as one unit"
+    recorded_in: skills/react/references/island-boundary.md, conventions.md
+  - decision: React Compiler / memoization
+    status: deferred — added only against a measured re-render cost
+
+mcp_lsp: n/a — no server wiring; the TypeScript component's LSP covers .tsx
+config_tier: n/a — the generator does not emit config/ files

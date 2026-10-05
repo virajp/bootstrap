@@ -1,0 +1,6 @@
+# Provenance for framework/astro@0.5.1 — a shipped pack, copied verbatim (no generation).
+component: framework/astro
+version: 0.5.1
+source: stackgen plugin, stacks/framework/astro/
+kind: pack
+sources: [] # research citations apply to generated components only

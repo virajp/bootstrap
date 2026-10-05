@@ -35,6 +35,15 @@ bundles:
     template: .claude/stackgen/templates/npm-package.md
     components:
       - deploy-target/npm-registry@generated
+  astro-ssg:
+    template: .claude/stackgen/templates/astro-ssg.md
+    components:
+      - language/typescript@0.3.1
+      - package-manager/pnpm@0.6.1
+      - toolchain-gate/tsconfig@0.2.2
+      - toolchain-gate/eslint@0.3.4
+      - framework/astro@0.5.1
+      - framework/react@generated
 files:
   - path: .claude/skills/typescript/SKILL.md
     component: language/typescript@0.3.1
@@ -315,6 +324,106 @@ files:
     component: deploy-target/npm-registry@generated
     source: generated
     sha256: cf5eeb04b87ee51778f9df52b8f1e71aec747dee19662c334489b901ac43f74f
+    mode: "644"
+  - path: .claude/skills/astro/SKILL.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/SKILL.md
+    sha256: c9a06ffdb696bf8306aea0a02b167528890fd837a1f4e3237ab3b9a251c13d22
+    mode: "644"
+  - path: .claude/skills/astro/references/build-output.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/build-output.md
+    sha256: edc8aaafbeb733d28a7ed06101441d5b0ac288847cb16e44362b8e3994eee3a0
+    mode: "644"
+  - path: .claude/skills/astro/references/content-and-routing.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/content-and-routing.md
+    sha256: da0a06dabcd724bd9e857527d309f5a56b967d617d812e968dde4babd1142744
+    mode: "644"
+  - path: .claude/skills/astro/references/csr.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/csr.md
+    sha256: 90314a45f731bfb2040b8747d8128ead06a6cd578866f08144b0242efab54644
+    mode: "644"
+  - path: .claude/skills/astro/references/framework-doctrine.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/framework-doctrine.md
+    sha256: c540a4f808f4bbe6a734a4bb702eacdbca42650fc6dbf2bdf1274e636bce3fb2
+    mode: "644"
+  - path: .claude/skills/astro/references/head.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/head.md
+    sha256: d643cd71785262f7b55968cf6c4b05217aede2b0c91798a48efd88d76c1bf126
+    mode: "644"
+  - path: .claude/skills/astro/references/hybrid.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/hybrid.md
+    sha256: 901f31f511d189575754830c45b363ee2e4817b7ae0c2cb415e32adbf8684ddc
+    mode: "644"
+  - path: .claude/skills/astro/references/images.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/images.md
+    sha256: ad9020e7fbb0aef3f2691d3e8539a3cff749c611ff74b25ffba1ab6d1aff69c8
+    mode: "644"
+  - path: .claude/skills/astro/references/layouts.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/layouts.md
+    sha256: 1b17aaae87971cb954ee28f473b25da0471e7b815dbb9592f5a0b601fd6bcc80
+    mode: "644"
+  - path: .claude/skills/astro/references/mdx.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/mdx.md
+    sha256: 9c41d37fde08a786496bc79987b54d6446e1bd36d7fb115ec39fde872c094b90
+    mode: "644"
+  - path: .claude/skills/astro/references/ssg.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/ssg.md
+    sha256: afcac87be4ac0b5383d58542014b4e0702d56b80649ab560fb2826442e9cd9c4
+    mode: "644"
+  - path: .claude/skills/astro/references/ssr.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/ssr.md
+    sha256: caedfc6f5ebc74f0b941e082725ac14f1271e9fdb404d66dab13c239f7b1371f
+    mode: "644"
+  - path: .claude/skills/astro/references/testing.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/testing.md
+    sha256: 99e62be37f7c5c3f2e16b4a9fbf0b373ea805eb3e5577a12d88c8b416e92a1e4
+    mode: "644"
+  - path: .claude/skills/react/SKILL.md
+    component: framework/react@generated
+    source: generated
+    sha256: 3211fdf18e93169908f2dd97c31120e6f048140464fc22c5ca544c9b5193535e
+    mode: "644"
+  - path: .claude/skills/react/references/errors.md
+    component: framework/react@generated
+    source: generated
+    sha256: 151c3296af0b99fb2dfd8abfa0aa701494254696f094a2577b5a6abd340ef48e
+    mode: "644"
+  - path: .claude/skills/react/references/framework-doctrine.md
+    component: framework/react@generated
+    source: generated
+    sha256: cf736eb6840998707c3b28681d3bbec42622451c1a574fe182d57d69ef82ddac
+    mode: "644"
+  - path: .claude/skills/react/references/hydration.md
+    component: framework/react@generated
+    source: generated
+    sha256: 881a8e266b95b8c78fb14f60e779bf30dbf785a2ee01d775c8a385e279391006
+    mode: "644"
+  - path: .claude/skills/react/references/island-boundary.md
+    component: framework/react@generated
+    source: generated
+    sha256: cb178450f58af64b262f94da015ae1a6735d025442b4054ee36fff45b91f55fa
+    mode: "644"
+  - path: .claude/skills/react/references/testing.md
+    component: framework/react@generated
+    source: generated
+    sha256: fef4ab91d0a7d586d7185fd5569db39dd44352175430d1ccd6c15189c9735ec8
+    mode: "644"
+  - path: .claude/stackgen/citations/react.yaml
+    component: framework/react@generated
+    source: generated
+    sha256: cb0355c005c064c4f14d4d718db1dc0a95c5ade98d43d512c1eff1ad6c641278
     mode: "644"
 skipped: []
 settings_keys: []
