@@ -65,3 +65,6 @@ enforcement:
 
 memory:
   wing: bootstrap
+
+design:
+  design_system_id: docs/design/site/design-system.md # the claude-code canvas; imported by /vwf:design-system 2026-10-06
