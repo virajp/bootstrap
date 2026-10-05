@@ -10,6 +10,10 @@ bundles:
       - toolchain-gate/tsconfig@0.2.2
       - toolchain-gate/eslint@0.3.4
       - framework/effect@0.1.0
+  github-actions:
+    template: .claude/stackgen/templates/github-actions.md
+    components:
+      - ci-system/github-actions@0.2.1
 files:
   - path: .claude/skills/typescript/SKILL.md
     component: language/typescript@0.3.1
@@ -110,6 +114,41 @@ files:
     component: framework/effect@0.1.0
     source: framework/effect/skills/effect/references/testing.md
     sha256: c3156806f7594ea5b1d78d5c3a565cf230957e79de4c064d40373a63d81b02a6
+    mode: "644"
+  - path: .claude/skills/github-actions/SKILL.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/SKILL.md
+    sha256: 7117cf44ad9f9984d91bb90048f024b0993514362ac95b2827ce337a59a07f48
+    mode: "644"
+  - path: .claude/skills/github-actions/references/credentials.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/references/credentials.md
+    sha256: 580970e89b318466f7c4db03b160b794453d714337d557093e5b76adf64ea108
+    mode: "644"
+  - path: .claude/skills/github-actions/references/gates.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/references/gates.md
+    sha256: e8ef3d52d59465c0da64f01c47ba548ba50d8497b3c7f86560c94e5de9d532db
+    mode: "644"
+  - path: .claude/skills/github-actions/references/layout.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/references/layout.md
+    sha256: c3b541f6800d5e09a9b2b07f36166ed3b424e050f6503bf92e95331e819fed76
+    mode: "644"
+  - path: .claude/skills/github-actions/references/pinning-caching.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/references/pinning-caching.md
+    sha256: 691fcc267fa20ac547d78b2b9db99b81bc30cc6fe3c780ed5dc951c64cad4e8a
+    mode: "644"
+  - path: .claude/skills/github-actions/references/release.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/references/release.md
+    sha256: c2ccfa9f3de50adc9c16c74f6e04b2d2ef5523c75dc357127d9d79f61f433942
+    mode: "644"
+  - path: .claude/skills/github-actions/references/toolchain.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/references/toolchain.md
+    sha256: 2edad186daf1b460eb6539f52bd74e1e0586c0b53736f0c18307548a692b869b
     mode: "644"
 skipped: []
 settings_keys: []
