@@ -1,0 +1,171 @@
+---
+slug: pnpm-workspace
+axis: repo
+kind: workspace
+components:
+  - package-manager/pnpm@0.6.1
+platforms: []
+languages: []
+language_facts: {}
+optional_languages: []
+frameworks: []
+dependencies: []
+capabilities: []
+artifact: n/a
+package_manager: pnpm
+harness: n/a
+materialized: "2026-10-05"
+---
+# Monorepo — pnpm · workspace
+
+Repo-level tooling for a pnpm workspace whose members are few enough that a
+build orchestrator earns nothing. The task runner is the only orchestration,
+and members are globbed by name rather than by a `projects/*` convention.
+
+Pick this over [pnpm · Turborepo](pnpm-turbo.md) when the repo has a handful of
+members with a shallow dependency graph, or when most of what it ships is not
+compiled at all. Turborepo's caching and `dependsOn` graph pay for themselves
+across many members that build in sequence; across two or three they are a
+config file and a daemon that buy nothing back.
+
+## Workspace & builds
+
+- **pnpm** workspace listing its members explicitly in `pnpm-workspace.yaml`,
+  with the supply-chain guards on (`minimumReleaseAge` cooldown, an explicit
+  native-build allowlist). No `projects/*` or `packages/*` convention is
+  assumed — a repo with three members names all three.
+- **No build orchestrator.** Members are built and checked by task-runner
+  tasks, one per member or one that walks them. Nothing computes a task graph,
+  so a member whose build depends on another's output states that ordering in
+  the task itself.
+- **TypeScript** from a shared `tsconfig.base.json`: strict, `ESNext`,
+  `moduleResolution: bundler`, `verbatimModuleSyntax`,
+  `noUncheckedIndexedAccess`. Per-project `tsconfig.json` with the `@/*` path
+  alias. Project references are optional here and often skipped — with no
+  orchestrator to exploit them, `tsc --noEmit` per project is the simpler gate.
+
+## Code quality
+
+- **dprint** formats (one root config); **ESLint** lints; **gitleaks** and
+  **grype** gate security — all wired through pre-commit, which calls the same
+  task-runner tasks CI does, so one command runs in both places.
+  The gates are `stackgen:tool-config`'s, whose dprint plugins and excludes
+  already cover every stack; this bundle's packs add their own subtasks.
+
+## Tooling & config
+
+- **mise** manages tools with the three-file `MISE_ENV` split under `.config/`:
+  base runtime (`node`, `pnpm`), `dev` (formatters, linters, security tools),
+  `ci` (CI-only tools and overrides). The file-based task library is the
+  orchestration layer this axis has instead of Turborepo — per-member prefixes
+  plus `code:*` and `setup:*`.
+- **Secrets** are injected by the manager the backing axis names — every
+  dev/test script runs under its wrapper rather than reading a committed file.
+
+## Local dev & build artifact
+
+- **Local stack** is whatever the **backing** axis defines. A repo with no
+  backing services needs none, and this axis mandates no Docker for its own
+  sake.
+- **The build artifact is the deploy axis's** — this axis bundles nothing on
+  its own. A repo whose members publish to a registry takes `npm-package`; one
+  that ships a container takes a container deploy template.
+
+# pnpm — conventions
+
+pnpm is the only package manager. A repo with two lockfiles has two dependency
+graphs and resolves differently depending on who ran what.
+
+**The lockfile is committed and authoritative.** CI installs frozen and fails on
+drift rather than resolving something new — an install that can resolve
+differently in CI than locally is not a gate.
+
+**A publish cooldown guards the supply chain**, so neither a routine install nor
+an automated update adopts a release published minutes ago.
+
+**In a workspace, internal dependencies are linked, not versioned**, and shared
+versions live in a catalog so one bump moves every package.
+
+**Two settings ship as `.npmrc` at the repo root**, which is the one path the
+manager reads them from: `ignore-scripts=true`, so an install never executes a
+dependency's install-time code, and `fund=false`, so it never prints a banner
+over what it did. A dependency that genuinely has to build is allowed by name
+in `pnpm-workspace.yaml` (`allowBuilds`, or `onlyBuiltDependencies` before
+pnpm 10.26) — the exception is a reviewable line, not a switch.
+Beside it, the pack's template
+`templates/.config/mise/conf.d/pnpm/mise.dev.toml`, rendered into the repo by
+`stackgen:tool-config`, aliases `npx` to `pnpm dlx` in dev, so a one-off
+package runs through this manager's store, resolver and registry settings
+rather than another tool's.
+
+**An agent's `npm`/`npx` command is rewritten before it runs.** This pack
+ships `hooks/npm-normalize.sh`, which lands at `.claude/hooks/npm-normalize.sh`
+and — once its `hooks.yaml` entry is accepted into `.claude/settings.json` —
+resolves the repo's manager from its lockfile and rewrites the command to it.
+Declining the settings entry leaves the script landed and inert, which is
+safe: the hook only rewrites a command that was going to run the wrong manager
+anyway. It allows exactly two managers, pnpm and bun (`npx` → `pnpm dlx` or
+`bunx`, `npm ci` → `<pm> install --frozen-lockfile`, any other `npm` → `<pm>`,
+flags after `npx` kept verbatim), and resolves which one by walking up from the
+working directory: a lockfile first — `bun.lock`/`bun.lockb` or
+`pnpm-lock.yaml`, the ground truth, since bun reuses npm's `workspaces` field
+and nothing else tells them apart — then `package_manager: bun` in
+`.config/vwf.yaml`, for a project scaffolded but not yet installed, then pnpm,
+because the hook fires in every repo, including ones that never heard of vwf.
+Its `sed` stays BSD-compatible: no `\s`, no `\b`.
+
+## The task library this pack owns
+
+This pack ships a `config/.config/mise/tasks/` tree — the `code/format/pnpm`
+subtask and the five `setup/deps/<verb>/pnpm` subtasks — landing at the
+repo's own `.config/mise/tasks/` behind the materializer's config consent
+line. Every file is named for the pack, so no other component writes the same
+path: the repo's `code:format:all` and `setup:deps:<verb>:all`, which
+tool-config renders, call each subtask by name.
+
+**`code:format:pnpm` sorts every `package.json`, and only that.** dprint runs
+beside it as the universal `code:format:dprint` subtask, so this file carries
+no formatter step of its own. The sorter, `npm:sort-package-json`, is a mise
+pin in the dev environment only, in the same `mise.dev.toml` template —
+resolved by its mise path, and the step is skipped where it is not installed,
+as in CI.
+
+**The subtask takes an optional file list, and the empty case is the whole
+tree.** That is the whole pre-commit story for this pack: it ships **no
+fragment**, because the gate config's `format` and `lint` hooks call
+`code:format:all` and `code:lint:all` with the staged files. The sorter
+narrows to the `package.json` files it is given. Linting is the house linter's,
+through the universal `code:lint:house`, which runs the whole tree either way —
+its rules are cross-file — and every exclusion it needs lives in
+`.config/linter.yaml`, which `stackgen:tool-config` lands.
+
+**The `setup/deps/*` verbs are `install`, `outdated`, `audit`, `upgrade` and
+`cleanup` — all five slots.** `install` is `pnpm install --recursive`, because a
+workspace install that stops at the root leaves the repo half resolved.
+`cleanup` deletes `dist`, `node_modules` and `*.tsbuildinfo`, then prunes the
+store — a store left behind makes the next install look clean when it is
+replaying — and deliberately leaves the lockfile alone: the lockfile is an input
+a human reviews, and moving it forward is `upgrade`'s job. The optional verbs
+are **probed by name**, so a missing file is itself the answer: a manager that
+ships no `upgrade` has no such verb, not a choice still pending.
+
+`install --frozen` is the contract's name for "the lockfile is the input, not
+the output" — what a fresh worktree and CI want, turning a stale lockfile into
+a failure rather than a silent rewrite. `audit` is advisory and never a gate:
+`pnpm audit` reads a registry feed that moves without any lockfile change, and
+the blocking supply-chain check is `code:sec`, which runs pinned tools.
+`outdated` swallows its exit status, since `pnpm outdated` fails whenever it
+finds anything — a healthy repo's normal state. `upgrade` updates pnpm itself
+first, because a resolver a major version behind writes a lockfile the current
+one then rewrites, and passes `--latest` on purpose: the ranges say what still
+works, and this task is where a person decides something newer should — the
+diff is the review surface. `cleanup` prunes the store's `.pnpm` link farm
+rather than deleting it, which would re-download every unchanged package. The
+verbs print no header of their own; `setup:deps:all` frames each.
+
+`code:format:pnpm`'s sorter pair is the inverse of dprint's — sorting is its
+default, `--check` its read-only mode — and the sorter, like the house linter,
+runs by its mise path so a package in `node_modules/.bin` cannot shadow the
+pin.
+
+Full judgment: the `pnpm` skill's references.

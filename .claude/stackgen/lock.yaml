@@ -27,6 +27,10 @@ bundles:
     template: .claude/stackgen/templates/plain-css.md
     components:
       - stylesheet/plain-css@0.2.1
+  pnpm-workspace:
+    template: .claude/stackgen/templates/pnpm-workspace.md
+    components:
+      - package-manager/pnpm@0.6.1
 files:
   - path: .claude/skills/typescript/SKILL.md
     component: language/typescript@0.3.1
