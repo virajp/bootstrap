@@ -1,0 +1,6 @@
+# Provenance for design-tool/claude-code@0.4.0 — a shipped pack, copied verbatim (no generation).
+component: design-tool/claude-code
+version: 0.4.0
+source: stackgen plugin, stacks/design-tool/claude-code/
+kind: pack
+sources: [] # research citations apply to generated components only

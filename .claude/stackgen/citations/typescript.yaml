@@ -1,0 +1,6 @@
+# Provenance for language/typescript@0.3.1 — a shipped pack, copied verbatim (no generation).
+component: language/typescript
+version: 0.3.1
+source: stackgen plugin, stacks/language/typescript/
+kind: pack
+sources: [] # research citations apply to generated components only

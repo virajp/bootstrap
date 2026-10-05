@@ -1,0 +1,380 @@
+component: deploy-target/npm-registry@generated
+kind: deploy-target
+fetched: 2026-10-05
+detected_stack:
+  project: cli
+  package: "@virajp.dev/bootstrap"
+  source: .config/vwf.yaml (projects.cli), docs/blueprint/registry.yaml,
+    docs/blueprint/architecture.md; no cli/ code exists yet
+  facts: TypeScript on Node, pnpm workspace (pnpm-lock.yaml), Effect CLI,
+    cicd github-actions, single public release via OIDC trusted publishing
+    with provenance, consumed with npx
+  task_group:
+    path: /Users/virajpatel/Projects/github.com/virajp/bootstrap/.config/mise/tasks/p/
+    note: >-
+      The repo groups project tasks under `p:` (existing `p/i/*` and
+      `p/site/*`; `p/cli/` exists, empty). The installer's `p:i:release`
+      (tags main, CI publishes) and `p:i:publish` (local npm-login fallback
+      with --dry-run) are renamed to `p:cli:*` by the user's decision. This
+      sources the names `p:cli:release` / `p:cli:publish` in promotion.md;
+      the artifact keeps the confirm-before-wiring caveat because the rename
+      has not landed.
+catalog: /Users/virajpatel/Projects/github.com/virajp/claude-plugins/.dev-marketplace/plugins/vwf/assets/principles/
+topics:
+  pick-and-trade:
+    artifact: skills/npm-registry/references/pick-and-trade.md
+    sources:
+      - context7: /websites/npmjs
+        urls:
+          - https://docs.npmjs.com/creating-an-organization
+          - https://docs.npmjs.com/creating-and-publishing-scoped-public-packages
+          - https://docs.npmjs.com/policies/unpublish
+      - context7: /npm/cli
+        urls:
+          - https://github.com/npm/cli/blob/latest/docs/lib/content/configuring-npm/package-json.md
+          - https://github.com/npm/cli/blob/latest/workspaces/config/lib/definitions/definitions.js
+      - context7: /websites/github_en
+        urls:
+          - https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry
+    catalog: [ least-privilege, yagni, information-hiding ]
+    judgments:
+      - claim: public npm registry is the target because `npx` resolves it
+          with no registry config, account or token
+        catalog: none applies
+        why: a distribution requirement fixed by the product (consumed with
+          npx), not a design trade any catalog entry adjudicates
+      - claim: immutability makes the dry run and pack listing matter more
+        catalog: none applies here
+        why: a registry fact (sourced to the unpublish policy); the judgment
+          built on it (idempotent publish) is cited under promotion-and-release
+          as idempotency
+      - claim: the access level is the whole control; scoped is private by
+          default and the first publish must say public
+        catalog: none applies
+        why: >-
+          This is read visibility, not authority to act, so least-privilege
+          does not fit. information-hiding was considered: it governs module
+          decomposition by design decisions behind interfaces, not who may
+          read a published artifact, so it does not fit either. The claim
+          stands on the sourced registry fact (scoped packages private by
+          default).
+      - claim: engines is advisory (warns unless engine-strict)
+        catalog: none applies
+        why: a sourced npm fact; the run-time Node check was removed as
+          product code (language/framework scope)
+      - claim: GitHub Packages rejected — consumers would need a PAT to install
+          a public package
+        catalog: least-privilege
+        note: smell "long-lived static secrets where none was needed" applied
+          to the consumer
+      - claim: stops being the answer when consumers lack Node
+        catalog: none applies
+        why: a product-audience condition, not an engineering principle
+      - claim: stops being the answer when the package must be private (scoped
+          restricted or private registry)
+        catalog: none applies
+        why: >-
+          Same as the access-level claim. It is visibility, not action, and
+          information-hiding's subject is module interfaces. The claim rests
+          on the sourced plan and access facts.
+      - claim: >-
+          Close the import surface with an `exports` map exposing only
+          ./package.json, so the bootstrap bin is the only contract and
+          nothing can be deep-imported. Closing later would be breaking;
+          opening later is additive.
+        decided_by: the user, 2026-10-06
+        catalog: [ yagni, information-hiding ]
+        note: >-
+          The yagni citation here is its when-not-to-apply ("irreversible or
+          contract-shaped decisions deserve forward thought"), not the
+          principle itself. information-hiding applies as a narrow published
+          interface, which hides the build layout as an internal decision.
+        sources:
+          - https://nodejs.org/docs/latest-v24.x/api/packages.json
+          - https://nodejs.org/docs/latest-v24.x/api/errors.json
+        artifacts:
+          - skills/npm-registry/references/pick-and-trade.md
+          - skills/npm-package-manifest/references/artifact.md
+    thinness: none
+  artifact:
+    artifact: skills/npm-package-manifest/references/artifact.md
+    sources:
+      - context7: /npm/cli
+        urls:
+          - https://github.com/npm/cli/blob/latest/docs/lib/content/configuring-npm/package-json.md
+          - https://github.com/npm/cli/blob/latest/docs/lib/content/commands/npx.md
+          - https://github.com/npm/cli/blob/latest/docs/lib/content/commands/npm-exec.md
+      - context7: /websites/pnpm_io
+        urls:
+          - https://pnpm.io/workspaces
+          - https://pnpm.io/catalogs
+          - https://pnpm.io/package_json
+          - https://pnpm.io/cli/pack
+      - context7: /npm/cli
+        note: >-
+          "private: true" refusing publish — publish.js EPRIVATE check
+          (https://github.com/npm/cli/blob/latest/lib/commands/publish.js)
+    catalog: [ yagni, information-hiding ]
+    pnpm_pack_selection:
+      sources:
+        - https://pnpm.io/cli/pack
+        - https://pnpm.io/blog/releases/10.26
+        - https://pnpm.io/blog/releases/12.8
+        - https://pnpm.io/cli/deploy
+      thinness: >-
+        pnpm documents pack's `--dry-run` listing (10.26 and later) and its
+        `.env` warning (12.8 and later). The files, .npmignore, .gitignore
+        order is documented for `pnpm deploy`, not `pack`, and no pnpm doc
+        fetched lists always-included or always-excluded files. The artifact
+        says so and relies on the pre-publish listing check, not on assumed
+        rules. The npm rules are cited as npm's.
+    judgments:
+      - claim: declare the supported Node range in engines; it is advisory
+        catalog: none applies
+        why: a sourced npm fact about a manifest field this target owns; the
+          start-up version check was removed as language/framework scope
+      - claim: >-
+          A workspace root must never be what gets published; the guard is
+          npm's EPRIVATE refusal, which the workspace bundle may apply.
+        catalog: none applies
+        why: a sourced npm mechanism; the root manifest is the workspace
+          kind's file
+      - claim: >-
+          Source maps are a decision, not a default. Ship them only if they map
+          to the public repository anyway.
+        catalog: none applies
+        why: >-
+          This is a trade between debuggability and exposing sources. For a
+          public repository there is nothing to hide, so it reduces to a
+          consistency check. information-hiding concerns module interfaces,
+          not artifact contents, and least-privilege concerns authority to
+          act, not what a reader can see. The judgment stands on the
+          files-allowlist facts and the public-repository condition.
+      - claim: the runtime-dependency list is the npx cold-start cost; the
+          target's test is a clean install from the registry
+        catalog: none applies
+        why: a registry/npx fact plus the bundle's own smoke-test requirement;
+          dependency placement itself was removed as language-bundle scope
+    scope_note: the earlier sentence about the `site` member staying private
+      was dropped — another member's manifest is outside this component
+    thinness: none
+  artifact-hygiene:
+    artifact: skills/npm-package-manifest/references/hygiene.md
+    sources:
+      - context7: /npm/cli
+        urls:
+          - https://github.com/npm/cli/blob/latest/docs/lib/content/configuring-npm/package-json.md
+          - https://github.com/npm/cli/wiki/Files-&-Ignores
+          - https://github.com/npm/cli/blob/latest/docs/lib/content/using-npm/developers.md
+      - context7: /websites/pnpm_io
+        urls:
+          - https://pnpm.io/workspaces
+          - https://pnpm.io/cli/pack
+          - https://pnpm.io/blog/releases/10.26
+          - https://pnpm.io/blog/releases/12.8
+    thinness_ref: see the artifact topic's pnpm_pack_selection
+    catalog: [ least-privilege ]
+    instantiation: >-
+      Credential half only: a secret or token in the tarball grants every
+      reader its authority until rotation; the blast-radius question applies
+      to any pack-listing path that could hold one, and the allowlist's
+      deny-by-default keeps it at zero.
+    judgments:
+      - claim: non-credential files (sources, tests, fixtures) stay out via the
+          allowlist
+        catalog: none applies
+        why: >-
+          Shipping a non-secret file grants no authority to act, so
+          least-privilege does not apply (consistent with the access-level and
+          source-map rulings). information-hiding concerns module interfaces,
+          not artifact contents. The ground is artifact size and npx
+          cold-start cost, a registry/npx fact.
+    thinness: none
+  promotion-and-release:
+    artifact: skills/npm-registry/references/promotion.md
+    sources:
+      - context7: /websites/npmjs
+        urls:
+          - https://docs.npmjs.com/trusted-publishers
+          - https://docs.npmjs.com/generating-provenance-statements
+          - https://docs.npmjs.com/staged-publishing
+          - https://docs.npmjs.com/cli/v11/commands/npm-stage
+          - https://docs.npmjs.com/cli/v11/commands/npm-trust
+          - https://docs.npmjs.com/policies/unpublish
+          - https://docs.npmjs.com/unpublishing-packages-from-the-registry
+          - https://docs.npmjs.com/deprecating-and-undeprecating-packages-or-package-versions
+          - https://docs.npmjs.com/requiring-2fa-for-package-publishing-and-settings-modification
+          - https://docs.npmjs.com/accessing-npm-using-2fa
+      - repo: /Users/virajpatel/Projects/github.com/virajp/bootstrap/.config/mise/tasks/p/i/publish
+        note: existing local fallback publish (npm whoami check, --dry-run,
+          --access public) — the break-glass path
+      - repo: /Users/virajpatel/Projects/github.com/virajp/bootstrap/.config/mise/tasks/p/i/release
+        note: existing tag-on-main release task
+      - context7: /npm/cli
+        urls:
+          - https://github.com/npm/cli/blob/latest/docs/lib/content/commands/npm-trust.md
+          - https://github.com/npm/cli/blob/latest/lib/commands/publish.js
+          - https://github.com/npm/cli/blob/latest/lib/commands/view.js
+          - https://github.com/npm/cli/blob/latest/docs/lib/content/commands/npm-dist-tag.md
+          - https://github.com/npm/cli/blob/latest/docs/lib/content/commands/npm-stage.md
+          - https://docs.npmjs.com/cli/v12/commands/npm-audit
+      - context7: /websites/pnpm_io
+        urls:
+          - https://pnpm.io/cli/publish
+          - https://pnpm.io/cli/stage
+          - https://pnpm.io/blog?type=releases
+      - context7: /pnpm/pnpm
+        note: queried for pnpm publish OIDC; returned only pnpr (pnpm's own
+          registry) keyless-publish docs, not npmjs.org trusted publishing
+    supplements:
+      - url: https://pnpm.io/cli/publish
+        fetched: 2026-10-05
+        via: WebFetch
+        why: confirm whether native pnpm publish documents npm OIDC trusted
+          publishing; it does not (provenance flag only)
+      - url: https://pycolors.io/blog/npm-trusted-publishing-github-actions-monorepo
+        fetched: 2026-10-05
+        via: WebSearch + WebFetch
+        why: field report of trusted publishing in a pnpm monorepo; used only
+          to corroborate the case-sensitive workflow-filename and Node/npm
+          version failure modes, not as an authority
+    catalog: [ idempotency, least-privilege, yagni ]
+    judgments:
+      - claim: >-
+          An already-published version skips publishing but still runs the
+          smoke test and passes or fails on it. The registry's refusal to
+          publish over an existing version (a race) takes the same path.
+        catalog: idempotency
+        note: a replay returns the original outcome rather than an
+          unconditional success
+        source: https://github.com/npm/cli/blob/latest/lib/commands/publish.js
+          (the previously-published-version error)
+      - claim: trusted publisher with no stored token; bind to a GitHub
+          environment
+        catalog: least-privilege
+      - claim: >-
+          The existing p:i:publish must be rewritten, not just renamed. Its
+          npm whoami gate breaks OIDC and the credential-free dry run, and it
+          publishes the directory with workspace/catalog specifiers
+          unresolved. Recorded as an open item for /vwf:plan.
+        catalog: none applies
+        why: a factual mismatch between the repo's task and the sourced
+          publish requirements, not a principle judgment
+        source: /Users/virajpatel/Projects/github.com/virajp/bootstrap/.config/mise/tasks/p/i/publish
+      - claim: CI mode is detected by ACTIONS_ID_TOKEN_REQUEST_URL; there is no
+          credential pre-check under OIDC
+        catalog: none applies
+        why: mechanism detail; the least-privilege judgment (no stored
+          credential) is the trusted-publisher claim above
+        source: >-
+          https://docs.github.com/en/actions/reference/openid-connect-reference
+          (context7 /websites/github_en — the runner sets
+          ACTIONS_ID_TOKEN_REQUEST_URL and ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+          id-token write is required)
+        supplementary: >-
+          https://github.com/pnpm/pnpm/blob/main/pnpr/crates/pnpr/OIDC.md
+          (context7 /pnpm/pnpm — same variables used in a keyless-publish
+          example)
+      - claim: no prerelease channel until a release needs one
+        catalog: yagni
+      - claim: staged publishing not adopted — accepted security risk (a
+          compromised CI step can publish with valid provenance), with stated
+          conditions and revisit triggers
+        catalog: least-privilege
+        note: argued as a security trade-off (split publish authority between
+          CI and the 2FA holder), not as YAGNI
+      - claim: break-glass interactive 2FA publish by the sole maintainer,
+          token publishing stays disallowed, log out and record afterwards,
+          no provenance on that version
+        catalog: least-privilege
+        note: instantiates the entry's when-not-to-apply "break-glass must
+          exist" with named holder, own controls and audit
+        source: https://docs.npmjs.com/requiring-2fa-for-package-publishing-and-settings-modification
+          ("require 2FA and disallow tokens" mandates interactive publish with
+          a 2FA prompt — so the break-glass path survives that setting)
+    contracts_cited:
+      - stackgen assets/contracts/release-trigger.md (tag shape, task naming,
+        idempotent publish, entry-point filename) — cited, not restated
+      - vwf delivery-pipeline contract — named, not restated
+    thinness: >-
+      Whether pnpm 11+ native `pnpm publish` performs the npm OIDC token
+      exchange is undocumented in Context7 and on pnpm.io. The artifact
+      therefore prescribes `pnpm pack` then `npm publish <tarball>` (npm's
+      documented trusted-publishing client; pnpm's own documented fallback)
+      and says why. Revisit if pnpm documents OIDC. Also unverified: which npm
+      version the repo's pinned Node bundles; the artifact makes the task
+      check it rather than asserting it.
+    attestation_check:
+      claim: >-
+        The smoke test fails unless the package's entry in the `verified`
+        array of `npm audit signatures --json --include-attestations` carries
+        an attestation bundle. The break-glass mode expects no provenance.
+      sources:
+        - https://github.com/npm/cli/blob/latest/docs/lib/content/commands/npm-audit.md
+        - https://docs.npmjs.com/cli/v12/commands/npm-audit
+        - https://docs.npmjs.com/viewing-package-provenance
+        - https://docs.npmjs.com/generating-provenance-statements
+      thinness: >-
+        The npm docs fetched do not say how a provenance attestation is
+        distinguished from the registry's publish attestation in that JSON,
+        and they do not document a `dist.attestations` field for `npm view`.
+        The claim is therefore weakened to "an attestation is present and
+        verifies", and the package page's provenance check mark is the human
+        confirmation.
+    open_items:
+      - /vwf:plan must rewrite p:cli:publish (renamed from p:i:publish) to
+        the required behaviour in promotion.md before CI is wired to it
+    open_decision: >-
+      First-publish bootstrap (placeholder hand-publish with 2FA vs
+      hand-publishing the real first release without provenance) is surfaced
+      as the maintainer's decision; the placeholder is recommended.
+    tag_shape_note: >-
+      The team lead's brief says tags `v*`; stackgen's release-trigger
+      contract shape is `<project>-<env>-v<semver>` (`cli-prod-v<semver>`).
+      The tag is ci-system scope; this component requires only that the tag's
+      semver equals the manifest version and defers to whatever the product
+      records.
+  config-and-secrets-at-runtime:
+    artifact: skills/npm-registry/references/config-and-secrets.md
+    sources:
+      - context7: /websites/nodejs_latest-v24_x_api
+        urls:
+          - https://nodejs.org/docs/latest-v24.x/api/process.json
+          - https://nodejs.org/docs/latest-v24.x/api/all.json
+          - https://nodejs.org/docs/latest-v24.x/api/os.json
+      - repo: docs/blueprint/registry.yaml cross_cutting (config, auth,
+          integrations)
+    catalog: [ least-privilege ]
+    judgments:
+      - claim: never auto-load the consumer's cwd `.env`
+        catalog: least-privilege
+      - claim: nothing environment-specific or secret baked at build time
+        catalog: none applies
+        why: a consequence of registry immutability (sourced), not a catalog
+          judgment
+    scope_note: product config validation / exit-code / error-report
+      doctrine removed (language/framework scope)
+    thinness: >-
+      Thin by nature rather than by research: a registry target has no host
+      configuration surface, so the topic answers about the consumer's
+      environment, as kinds.md directs. The CLI framework's own config/env
+      option API is the framework component's, not researched here.
+  reachability-and-health:
+    status: n/a
+    why: >-
+      Conditional topic 6. A registry runs nothing — no readiness endpoint, no
+      network placement. `harness: n/a`. The private-plane answer (scoped
+      restricted package or private registry; access setting is the whole
+      control) is covered in pick-and-trade; the post-release equivalent
+      (install smoke test) is in promotion-and-release.
+catalog_considered_not_applied:
+  - entry: information-hiding
+    why: >-
+      Not applied to the manifest's publish fields generally, which are
+      "information that is the contract" (its when-not-to-apply). It is
+      applied only to the closed exports map; see the exports judgment
+      (decided by the user, 2026-10-06).
+  - entry: kiss
+    why: implicit in choosing one pack-then-publish path and one bin; not
+      separately cited
+reputation: reputation.md

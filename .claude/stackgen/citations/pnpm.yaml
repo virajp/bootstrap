@@ -1,0 +1,6 @@
+# Provenance for package-manager/pnpm@0.6.1 — a shipped pack, copied verbatim (no generation).
+component: package-manager/pnpm
+version: 0.6.1
+source: stackgen plugin, stacks/package-manager/pnpm/
+kind: pack
+sources: [] # research citations apply to generated components only

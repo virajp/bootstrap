@@ -1,0 +1,6 @@
+# Provenance for ci-system/github-actions@0.2.1 — a shipped pack, copied verbatim (no generation).
+component: ci-system/github-actions
+version: 0.2.1
+source: stackgen plugin, stacks/ci-system/github-actions/
+kind: pack
+sources: [] # research citations apply to generated components only

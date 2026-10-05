@@ -1,0 +1,436 @@
+# stackgen lockfile — every path stackgen landed in this repo, per component.
+# Paths NOT listed here are the repo's own; sync and removal never touch them.
+materialized: "2026-10-06"
+bundles:
+  typescript-effect-cli:
+    template: .claude/stackgen/templates/typescript-effect-cli.md
+    components:
+      - language/typescript@0.3.1
+      - package-manager/pnpm@0.6.1
+      - toolchain-gate/tsconfig@0.2.2
+      - toolchain-gate/eslint@0.3.4
+      - framework/effect@0.1.0
+  github-actions:
+    template: .claude/stackgen/templates/github-actions.md
+    components:
+      - ci-system/github-actions@0.2.1
+  cloudflare-workers-static:
+    template: .claude/stackgen/templates/cloudflare-workers-static.md
+    components:
+      - cloud-provider/cloudflare@0.1.0
+      - cloud-service/workers-static-assets@0.1.3
+  claude-code:
+    template: .claude/stackgen/templates/claude-code.md
+    components:
+      - design-tool/claude-code@0.4.0
+  plain-css:
+    template: .claude/stackgen/templates/plain-css.md
+    components:
+      - stylesheet/plain-css@0.2.1
+  pnpm-workspace:
+    template: .claude/stackgen/templates/pnpm-workspace.md
+    components:
+      - package-manager/pnpm@0.6.1
+  npm-package:
+    template: .claude/stackgen/templates/npm-package.md
+    components:
+      - deploy-target/npm-registry@generated
+  astro-ssg:
+    template: .claude/stackgen/templates/astro-ssg.md
+    components:
+      - language/typescript@0.3.1
+      - package-manager/pnpm@0.6.1
+      - toolchain-gate/tsconfig@0.2.2
+      - toolchain-gate/eslint@0.3.4
+      - framework/astro@0.5.1
+      - framework/react@generated
+files:
+  - path: .claude/skills/typescript/SKILL.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/SKILL.md
+    sha256: 992cead9b1c9b4225485f15a1da2a7dfa8efddd14729de1ae8e413f47ee75931
+    mode: "644"
+  - path: .claude/skills/typescript/references/async-model.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/async-model.md
+    sha256: 190a72ba06bb5158505e23389b5db8369097b9d5f912031801bdd0d9e9d48460
+    mode: "644"
+  - path: .claude/skills/typescript/references/build-and-run.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/build-and-run.md
+    sha256: 6ca0ff2e9388eef82193b65139bd283c38b87c6767d0492d9464e5f22faed9fb
+    mode: "644"
+  - path: .claude/skills/typescript/references/config-and-env.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/config-and-env.md
+    sha256: ed737fa1a20877b2234c7d2ef729c2237b02bed4c115faf4259ecbdb344a6462
+    mode: "644"
+  - path: .claude/skills/typescript/references/error-handling.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/error-handling.md
+    sha256: d3e89613689266769faa704ffc41e0f80ea0b578480ce06267411f5538947d76
+    mode: "644"
+  - path: .claude/skills/typescript/references/observability-wiring.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/observability-wiring.md
+    sha256: 5e57a1368bc1adb54a938426a2d7888e64e8520f2d055c8f890917365ce1a54c
+    mode: "644"
+  - path: .claude/skills/typescript/references/standards.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/standards.md
+    sha256: 9acee137906cb60a6e8ff228a8acfbbcc5f9e6fbde46adbef229d4c831240541
+    mode: "644"
+  - path: .claude/skills/typescript/references/testing.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/typescript/references/testing.md
+    sha256: 604444c456588032950bea3438e0500e6f5c920a0b69468c01911848dd37132c
+    mode: "644"
+  - path: .claude/skills/ux-gate/SKILL.md
+    component: language/typescript@0.3.1
+    source: language/typescript/skills/ux-gate/SKILL.md
+    sha256: b37501a9e55c9e6e69ae23535e05bc088bf5b270417d22679ac316343b7e0692
+    mode: "644"
+  - path: .claude/skills/pnpm/SKILL.md
+    component: package-manager/pnpm@0.6.1
+    source: package-manager/pnpm/skills/pnpm/SKILL.md
+    sha256: 5ccd7ccc6820291a394bed1fadbe3bdbb20d8299d7ef778d7c8d9a4e6b30535e
+    mode: "644"
+  - path: .claude/skills/pnpm/references/manifest-discipline.md
+    component: package-manager/pnpm@0.6.1
+    source: package-manager/pnpm/skills/pnpm/references/manifest-discipline.md
+    sha256: 868a7015519f839ccd1a6ce64444ac9c41d147364e0a7b87db6f9a1c05a2da33
+    mode: "644"
+  - path: .claude/skills/pnpm/references/supply-chain.md
+    component: package-manager/pnpm@0.6.1
+    source: package-manager/pnpm/skills/pnpm/references/supply-chain.md
+    sha256: 3e19e8e9fa41a8db310a892937b0f184c290c1d5ef636c57e6b7221972d57ab5
+    mode: "644"
+  - path: .claude/skills/pnpm/references/workspace.md
+    component: package-manager/pnpm@0.6.1
+    source: package-manager/pnpm/skills/pnpm/references/workspace.md
+    sha256: 7309ba369dade362e86210d659163531e0a6d6592301d257b112b9fb40ab961f
+    mode: "644"
+  - path: .claude/hooks/npm-normalize.sh
+    component: package-manager/pnpm@0.6.1
+    source: package-manager/pnpm/hooks/npm-normalize.sh
+    sha256: 21f8f68b743c1ec1e56185d6d106d807e8f88806b52876922205ac37f737cfd1
+    mode: "755"
+  - path: .claude/skills/tsconfig/SKILL.md
+    component: toolchain-gate/tsconfig@0.2.2
+    source: toolchain-gate/tsconfig/skills/tsconfig/SKILL.md
+    sha256: be4d75a883d802876d3035d7f49ac1a05ade5acba27a536fcfafacda06703de4
+    mode: "644"
+  - path: .claude/skills/eslint/SKILL.md
+    component: toolchain-gate/eslint@0.3.4
+    source: toolchain-gate/eslint/skills/eslint/SKILL.md
+    sha256: 0eced990ea4afd54fc3843100ce68f9465442b392f0122ad7cee82c14d7d673b
+    mode: "644"
+  - path: .claude/skills/effect/SKILL.md
+    component: framework/effect@0.1.0
+    source: framework/effect/skills/effect/SKILL.md
+    sha256: 1b777c041d30e2fe5cf6c6bb2b97c96ac6b4581ae8e521c357371919fbc93608
+    mode: "644"
+  - path: .claude/skills/effect/references/effect-runtime.md
+    component: framework/effect@0.1.0
+    source: framework/effect/skills/effect/references/effect-runtime.md
+    sha256: 1ca5e846a961c26c485522b37f6fc27848d9de31edbefe190b6c6557472791bc
+    mode: "644"
+  - path: .claude/skills/effect/references/effect.md
+    component: framework/effect@0.1.0
+    source: framework/effect/skills/effect/references/effect.md
+    sha256: 7988146dfd5c97f5bee1820def766687570c60c24668b24c03a9265828225a94
+    mode: "644"
+  - path: .claude/skills/effect/references/testing.md
+    component: framework/effect@0.1.0
+    source: framework/effect/skills/effect/references/testing.md
+    sha256: c3156806f7594ea5b1d78d5c3a565cf230957e79de4c064d40373a63d81b02a6
+    mode: "644"
+  - path: .claude/skills/github-actions/SKILL.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/SKILL.md
+    sha256: 7117cf44ad9f9984d91bb90048f024b0993514362ac95b2827ce337a59a07f48
+    mode: "644"
+  - path: .claude/skills/github-actions/references/credentials.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/references/credentials.md
+    sha256: 580970e89b318466f7c4db03b160b794453d714337d557093e5b76adf64ea108
+    mode: "644"
+  - path: .claude/skills/github-actions/references/gates.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/references/gates.md
+    sha256: e8ef3d52d59465c0da64f01c47ba548ba50d8497b3c7f86560c94e5de9d532db
+    mode: "644"
+  - path: .claude/skills/github-actions/references/layout.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/references/layout.md
+    sha256: c3b541f6800d5e09a9b2b07f36166ed3b424e050f6503bf92e95331e819fed76
+    mode: "644"
+  - path: .claude/skills/github-actions/references/pinning-caching.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/references/pinning-caching.md
+    sha256: 691fcc267fa20ac547d78b2b9db99b81bc30cc6fe3c780ed5dc951c64cad4e8a
+    mode: "644"
+  - path: .claude/skills/github-actions/references/release.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/references/release.md
+    sha256: c2ccfa9f3de50adc9c16c74f6e04b2d2ef5523c75dc357127d9d79f61f433942
+    mode: "644"
+  - path: .claude/skills/github-actions/references/toolchain.md
+    component: ci-system/github-actions@0.2.1
+    source: ci-system/github-actions/skills/github-actions/references/toolchain.md
+    sha256: 2edad186daf1b460eb6539f52bd74e1e0586c0b53736f0c18307548a692b869b
+    mode: "644"
+  - path: .claude/skills/cloudflare/SKILL.md
+    component: cloud-provider/cloudflare@0.1.0
+    source: cloud-provider/cloudflare/skills/cloudflare/SKILL.md
+    sha256: 8d6161e22fed021d576bb48ee88562f0e9c1e9e36be2cf99c1f21e8706858d89
+    mode: "644"
+  - path: .claude/skills/cloudflare/references/cost-doctrine.md
+    component: cloud-provider/cloudflare@0.1.0
+    source: cloud-provider/cloudflare/skills/cloudflare/references/cost-doctrine.md
+    sha256: f08b92e93b9357ea6bebafdeece45c47cb199eef0da3b2b867d37475a12b0609
+    mode: "644"
+  - path: .claude/skills/cloudflare/references/identity-and-iam.md
+    component: cloud-provider/cloudflare@0.1.0
+    source: cloud-provider/cloudflare/skills/cloudflare/references/identity-and-iam.md
+    sha256: b80ec5d4fcba122ffb5a048786c0b6fef1ab817b3a127f951be0ff29cddcb415
+    mode: "644"
+  - path: .claude/skills/cloudflare/references/local-development-map.md
+    component: cloud-provider/cloudflare@0.1.0
+    source: cloud-provider/cloudflare/skills/cloudflare/references/local-development-map.md
+    sha256: 6fb6104e0c8a10411eed80e02290d665acafc8933d04a9b50ecd7acce53c3604
+    mode: "644"
+  - path: .claude/skills/cloudflare/references/networking-and-private-plane.md
+    component: cloud-provider/cloudflare@0.1.0
+    source: cloud-provider/cloudflare/skills/cloudflare/references/networking-and-private-plane.md
+    sha256: 7d847ad86e6a86a1e2980dd5a8c873988b4b93e9bf70a6e912242f3c1a36beea
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/SKILL.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/SKILL.md
+    sha256: a601e12971a2da9daec7021673a4f78cf5927fc1cb7e9414d36d33b88d69f5a2
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/artifact.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/artifact.md
+    sha256: 68867e3c8749f8cb0029b337b41969dc79a723e2e2c56b25936c7d87da1bf7ce
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/cost-shape.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/cost-shape.md
+    sha256: 90a1150f86ff87921a96be5c22618e24c1d3a803b7985ab67e77549774270a4b
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/health.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/health.md
+    sha256: 0cf87cdb9040b3bc495930452ea944d2d233932e386e9a30e510b12a8d72b288
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/identity-shape.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/identity-shape.md
+    sha256: 9d8e3de129f181e94256912af6dcbd973f6aec7010a32666ea94b2d3052ba658
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/local-dev.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/local-dev.md
+    sha256: af1a8eefbeaa983f2d42b63d859ab3f2bd1ce7f4c368827a01b788ca8883701c
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/pick-and-trade.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/pick-and-trade.md
+    sha256: f6b1a78bbd2845309fd391f0e7007e5b2e2d5a316cb22ef79a71d8edb6756585
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/pipeline.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/pipeline.md
+    sha256: bc21c50829f0c099951a02219a1fe00154e2c0ae5f7781dbd6a04823d4ed07ed
+    mode: "644"
+  - path: .claude/skills/workers-static-assets/references/service-doctrine.md
+    component: cloud-service/workers-static-assets@0.1.3
+    source: cloud-service/workers-static-assets/skills/workers-static-assets/references/service-doctrine.md
+    sha256: dac7a9649c04c309fe9187df409e46c52a2e52aa62c95e18e4587899f953c8fd
+    mode: "644"
+  - path: .claude/skills/design-import-conversations/SKILL.md
+    component: design-tool/claude-code@0.4.0
+    source: design-tool/claude-code/skills/design-import-conversations/SKILL.md
+    sha256: 9d01d423c3ee8184651b8ab982893777be96e73ade52418643c4e6139a5d637e
+    mode: "644"
+  - path: .claude/skills/design-import-design-system/SKILL.md
+    component: design-tool/claude-code@0.4.0
+    source: design-tool/claude-code/skills/design-import-design-system/SKILL.md
+    sha256: 4b63f28796ecc77f20a932cb53bb601eda8c499c5d4265b5a700086dceab487b
+    mode: "644"
+  - path: .claude/skills/design-import-screens/SKILL.md
+    component: design-tool/claude-code@0.4.0
+    source: design-tool/claude-code/skills/design-import-screens/SKILL.md
+    sha256: 0ccc9535c25f24173c7cb186a9156df520eda50746d4075cf056ae9e1ad672eb
+    mode: "644"
+  - path: .claude/skills/design-session/SKILL.md
+    component: design-tool/claude-code@0.4.0
+    source: design-tool/claude-code/skills/design-session/SKILL.md
+    sha256: 171e99ebb223c20527a31c1faeba2016b573c89befe6f30f802959824f225a07
+    mode: "644"
+  - path: .claude/skills/design-session/scripts/serve.mjs
+    component: design-tool/claude-code@0.4.0
+    source: design-tool/claude-code/skills/design-session/scripts/serve.mjs
+    sha256: a7be6fe40fbd61406de8b0620987a1093b7a9807e958fd6707330a980692ebad
+    mode: "755"
+  - path: .claude/skills/plain-css/SKILL.md
+    component: stylesheet/plain-css@0.2.1
+    source: stylesheet/plain-css/skills/plain-css/SKILL.md
+    sha256: c77db4db5391083febf4acad077f88c431236a53ae030bce3e1473d304693b23
+    mode: "644"
+  - path: .claude/skills/plain-css/references/tokens.md
+    component: stylesheet/plain-css@0.2.1
+    source: stylesheet/plain-css/skills/plain-css/references/tokens.md
+    sha256: d4f0de2c3c966f962858e1a1d94926b14a24168187332663c25ebeb0a7835b0f
+    mode: "644"
+  - path: .claude/skills/npm-package-manifest/SKILL.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: caf76496357a9ce8484773ae495de19ea5d522e0801933a7f6914e98922d6965
+    mode: "644"
+  - path: .claude/skills/npm-package-manifest/references/artifact.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: 8699b2e26fcd6dd6ac0c2d2a1ff470db00cc4db0c1bf423dc61e587bd53a8175
+    mode: "644"
+  - path: .claude/skills/npm-package-manifest/references/hygiene.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: 5cb0803000782105db7c7a720eccadcc15b86cb57d1fbdb7d241b504a5b02b39
+    mode: "644"
+  - path: .claude/skills/npm-registry/SKILL.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: 0749a0b4f1f6af32116798363d59ba55a393b34c54936544897fa303c6b25562
+    mode: "644"
+  - path: .claude/skills/npm-registry/references/config-and-secrets.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: 3fcac61f3f8f354fc288c54a6ca3a6302bd162f3d22f0bfc828245ae8b40294f
+    mode: "644"
+  - path: .claude/skills/npm-registry/references/pick-and-trade.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: 0dbdf43032c691312d2c8bc95c0a2ca8dce1ecffa501c1b8f779f2339c8bab81
+    mode: "644"
+  - path: .claude/skills/npm-registry/references/promotion.md
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: aa53efd69adf50febbdaf61ab17e89c48849ee3e62f8ef66440b0cec5bb85c23
+    mode: "644"
+  - path: .claude/stackgen/citations/npm-registry.yaml
+    component: deploy-target/npm-registry@generated
+    source: generated
+    sha256: cf5eeb04b87ee51778f9df52b8f1e71aec747dee19662c334489b901ac43f74f
+    mode: "644"
+  - path: .claude/skills/astro/SKILL.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/SKILL.md
+    sha256: c9a06ffdb696bf8306aea0a02b167528890fd837a1f4e3237ab3b9a251c13d22
+    mode: "644"
+  - path: .claude/skills/astro/references/build-output.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/build-output.md
+    sha256: edc8aaafbeb733d28a7ed06101441d5b0ac288847cb16e44362b8e3994eee3a0
+    mode: "644"
+  - path: .claude/skills/astro/references/content-and-routing.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/content-and-routing.md
+    sha256: da0a06dabcd724bd9e857527d309f5a56b967d617d812e968dde4babd1142744
+    mode: "644"
+  - path: .claude/skills/astro/references/csr.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/csr.md
+    sha256: 90314a45f731bfb2040b8747d8128ead06a6cd578866f08144b0242efab54644
+    mode: "644"
+  - path: .claude/skills/astro/references/framework-doctrine.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/framework-doctrine.md
+    sha256: c540a4f808f4bbe6a734a4bb702eacdbca42650fc6dbf2bdf1274e636bce3fb2
+    mode: "644"
+  - path: .claude/skills/astro/references/head.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/head.md
+    sha256: d643cd71785262f7b55968cf6c4b05217aede2b0c91798a48efd88d76c1bf126
+    mode: "644"
+  - path: .claude/skills/astro/references/hybrid.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/hybrid.md
+    sha256: 901f31f511d189575754830c45b363ee2e4817b7ae0c2cb415e32adbf8684ddc
+    mode: "644"
+  - path: .claude/skills/astro/references/images.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/images.md
+    sha256: ad9020e7fbb0aef3f2691d3e8539a3cff749c611ff74b25ffba1ab6d1aff69c8
+    mode: "644"
+  - path: .claude/skills/astro/references/layouts.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/layouts.md
+    sha256: 1b17aaae87971cb954ee28f473b25da0471e7b815dbb9592f5a0b601fd6bcc80
+    mode: "644"
+  - path: .claude/skills/astro/references/mdx.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/mdx.md
+    sha256: 9c41d37fde08a786496bc79987b54d6446e1bd36d7fb115ec39fde872c094b90
+    mode: "644"
+  - path: .claude/skills/astro/references/ssg.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/ssg.md
+    sha256: afcac87be4ac0b5383d58542014b4e0702d56b80649ab560fb2826442e9cd9c4
+    mode: "644"
+  - path: .claude/skills/astro/references/ssr.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/ssr.md
+    sha256: caedfc6f5ebc74f0b941e082725ac14f1271e9fdb404d66dab13c239f7b1371f
+    mode: "644"
+  - path: .claude/skills/astro/references/testing.md
+    component: framework/astro@0.5.1
+    source: framework/astro/skills/astro/references/testing.md
+    sha256: 99e62be37f7c5c3f2e16b4a9fbf0b373ea805eb3e5577a12d88c8b416e92a1e4
+    mode: "644"
+  - path: .claude/skills/react/SKILL.md
+    component: framework/react@generated
+    source: generated
+    sha256: 3211fdf18e93169908f2dd97c31120e6f048140464fc22c5ca544c9b5193535e
+    mode: "644"
+  - path: .claude/skills/react/references/errors.md
+    component: framework/react@generated
+    source: generated
+    sha256: 151c3296af0b99fb2dfd8abfa0aa701494254696f094a2577b5a6abd340ef48e
+    mode: "644"
+  - path: .claude/skills/react/references/framework-doctrine.md
+    component: framework/react@generated
+    source: generated
+    sha256: cf736eb6840998707c3b28681d3bbec42622451c1a574fe182d57d69ef82ddac
+    mode: "644"
+  - path: .claude/skills/react/references/hydration.md
+    component: framework/react@generated
+    source: generated
+    sha256: 881a8e266b95b8c78fb14f60e779bf30dbf785a2ee01d775c8a385e279391006
+    mode: "644"
+  - path: .claude/skills/react/references/island-boundary.md
+    component: framework/react@generated
+    source: generated
+    sha256: cb178450f58af64b262f94da015ae1a6735d025442b4054ee36fff45b91f55fa
+    mode: "644"
+  - path: .claude/skills/react/references/testing.md
+    component: framework/react@generated
+    source: generated
+    sha256: fef4ab91d0a7d586d7185fd5569db39dd44352175430d1ccd6c15189c9735ec8
+    mode: "644"
+  - path: .claude/stackgen/citations/react.yaml
+    component: framework/react@generated
+    source: generated
+    sha256: cb0355c005c064c4f14d4d718db1dc0a95c5ade98d43d512c1eff1ad6c641278
+    mode: "644"
+skipped: []
+settings_keys: []
+mcp_servers: []
+local_plugin:
+  path: ~/.claude/plugins/local/stackgen-lsp
+  lsp_servers:
+    - typescript-lsp
+  mcp_servers: []
+  registered: true

@@ -1,0 +1,6 @@
+# Provenance for toolchain-gate/tsconfig@0.2.2 — a shipped pack, copied verbatim (no generation).
+component: toolchain-gate/tsconfig
+version: 0.2.2
+source: stackgen plugin, stacks/toolchain-gate/tsconfig/
+kind: pack
+sources: [] # research citations apply to generated components only

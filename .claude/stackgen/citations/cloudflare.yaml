@@ -1,0 +1,6 @@
+# Provenance for cloud-provider/cloudflare@0.1.0 — a shipped pack, copied verbatim (no generation).
+component: cloud-provider/cloudflare
+version: 0.1.0
+source: stackgen plugin, stacks/cloud-provider/cloudflare/
+kind: pack
+sources: [] # research citations apply to generated components only
