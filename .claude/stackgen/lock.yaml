@@ -19,6 +19,10 @@ bundles:
     components:
       - cloud-provider/cloudflare@0.1.0
       - cloud-service/workers-static-assets@0.1.3
+  claude-code:
+    template: .claude/stackgen/templates/claude-code.md
+    components:
+      - design-tool/claude-code@0.4.0
 files:
   - path: .claude/skills/typescript/SKILL.md
     component: language/typescript@0.3.1
@@ -225,6 +229,31 @@ files:
     source: cloud-service/workers-static-assets/skills/workers-static-assets/references/service-doctrine.md
     sha256: dac7a9649c04c309fe9187df409e46c52a2e52aa62c95e18e4587899f953c8fd
     mode: "644"
+  - path: .claude/skills/design-import-conversations/SKILL.md
+    component: design-tool/claude-code@0.4.0
+    source: design-tool/claude-code/skills/design-import-conversations/SKILL.md
+    sha256: 9d01d423c3ee8184651b8ab982893777be96e73ade52418643c4e6139a5d637e
+    mode: "644"
+  - path: .claude/skills/design-import-design-system/SKILL.md
+    component: design-tool/claude-code@0.4.0
+    source: design-tool/claude-code/skills/design-import-design-system/SKILL.md
+    sha256: 4b63f28796ecc77f20a932cb53bb601eda8c499c5d4265b5a700086dceab487b
+    mode: "644"
+  - path: .claude/skills/design-import-screens/SKILL.md
+    component: design-tool/claude-code@0.4.0
+    source: design-tool/claude-code/skills/design-import-screens/SKILL.md
+    sha256: 0ccc9535c25f24173c7cb186a9156df520eda50746d4075cf056ae9e1ad672eb
+    mode: "644"
+  - path: .claude/skills/design-session/SKILL.md
+    component: design-tool/claude-code@0.4.0
+    source: design-tool/claude-code/skills/design-session/SKILL.md
+    sha256: 171e99ebb223c20527a31c1faeba2016b573c89befe6f30f802959824f225a07
+    mode: "644"
+  - path: .claude/skills/design-session/scripts/serve.mjs
+    component: design-tool/claude-code@0.4.0
+    source: design-tool/claude-code/skills/design-session/scripts/serve.mjs
+    sha256: a7be6fe40fbd61406de8b0620987a1093b7a9807e958fd6707330a980692ebad
+    mode: "755"
 skipped: []
 settings_keys: []
 mcp_servers: []
