@@ -21,28 +21,33 @@ stacks: [ stackgen ]
 
 repo:
   stack:
-    template: unresolved
+    template: repo/pnpm-workspace
     package_manager: pnpm # from pnpm-lock.yaml
     tools: []
 
 projects:
   cli:
     stack:
-      template: unresolved
-      backing_template: unresolved
-      deploy_template: unresolved
-      languages: []
-      frameworks: []
+      template: project/typescript-effect-cli
+      backing_template: []
+      deploy_template: [ npm-package ]
+      languages: [ typescript ]
+      frameworks: [ effect ]
       dependencies: []
+      note: Effect CLI chosen over the earlier citty + clack decision
+        (2026-10-05).
+    cicd: github-actions
   site:
     stack:
-      template: unresolved
-      backing_template: unresolved
-      deploy_template: unresolved
-      languages: []
-      frameworks: []
+      template: project/astro-ssg
+      backing_template: []
+      deploy_template: [ cloudflare-workers-static ]
+      languages: [ typescript ]
+      frameworks: [ astro ]
       dependencies: []
-    stylesheet: unresolved
+    design: claude-code
+    cicd: github-actions
+    stylesheet: plain-css
 
 harness:
   dev: false # no project exists yet; p:site:dev is a leftover from claude-plugins
