@@ -1,0 +1,33 @@
+# Project Registry — docs/blueprint/registry.yaml
+# Authoritative, machine-readable. architecture.md is the prose view.
+
+vwf_registry: 2
+
+projects:
+  - name: cli
+    role: system
+    platforms: [cli]
+    path: cli
+    capabilities: []
+    depends_on: []
+    doc_unit: module
+  - name: site
+    role: frontend
+    platforms: [site]
+    path: site
+    capabilities: [ssg]
+    depends_on: []
+    doc_unit: page
+
+cross_cutting:
+  auth: none
+  errors: exit-codes-and-structured-report
+  observability: local-logs-only
+  config: flags-and-repo-config-file
+  testing: unit-integration
+  integrations: []
+  users: single-class-no-accounts
+  reliability: static-site-best-effort
+  dr: git-is-source-of-truth
+  incident: issue-tracker-and-security-policy
+  changelog: keepachangelog
