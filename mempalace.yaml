@@ -1,0 +1,43 @@
+wing: bootstrap
+
+exclude_patterns:
+  - .env*
+  - "*.pem"
+  - "*.key"
+  - "*.p12"
+  - "*credentials*"
+  - "*secret*"
+  - .git/
+  - node_modules/
+  - dist/
+  - build/
+
+rooms:
+  - name: decisions
+    description: Architecture and product decisions from docs/memory/decisions/
+    keywords: [ decision, decisions, adr ]
+  - name: problems
+    description: Problems and postmortems from docs/memory/problems/
+    keywords: [ problem, problems, incident, postmortem ]
+  - name: planning
+    description: Cycle plans from docs/memory/planning/
+    keywords: [ plan, plans, planning ]
+  - name: gaps
+    description: Gaps the pipeline captured
+    keywords: [ gap, gaps ]
+  - name: runs
+    description: Execute run records
+    keywords: [ run, runs, execute ]
+  - name: doctor
+    description: Doctor reports
+    keywords: [ doctor, drift ]
+  - name: handoff
+    description: Session handoffs from docs/memory/handoff/
+    keywords: [ handoff, handoffs, session ]
+  - name: documentation
+    description: Product documentation — the blueprint, active plans and
+      design briefs
+    keywords: [ blueprint, plans, prompts, documentation ]
+  - name: configuration
+    description: Repo tooling and configuration under .config/
+    keywords: [ config, configuration, tooling ]

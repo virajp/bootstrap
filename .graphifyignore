@@ -1,11 +1,15 @@
 # Committed but machine-written or superseded — not code intelligence.
 # .gitignore already covers bin/, dist/, docs/scratchpad/, graphify-out/.
 
-# generated from the per-plugin manifests; the manifests themselves are indexed
-.claude-plugin/
-
 # the memory mirror (mempalace owns recall)
 docs/memory/
+
+# superseded by definition
+docs/plans/archived/
+archived/
+
+# design briefs regenerated from the flow docs
+docs/prompts/
 
 # the Astro build output (gitignored too)
 site/dist/
