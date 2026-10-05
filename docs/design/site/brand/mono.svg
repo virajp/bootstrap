@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="t">
+  <title id="t">bootstrap</title>
+  <defs>
+    <mask id="cut">
+      <rect width="64" height="64" fill="#fff"/>
+      <rect x="14" y="10" width="10" height="43" fill="#000"/>
+      <circle cx="34" cy="38" r="10" fill="none" stroke="#000" stroke-width="10"/>
+    </mask>
+  </defs>
+  <rect width="64" height="64" rx="8" fill="currentColor" mask="url(#cut)"/>
+</svg>
