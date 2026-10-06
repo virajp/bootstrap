@@ -76,7 +76,8 @@ Serves: [Fast new-repo setup](../../../product.md#goal-fast-setup)
    `git`, `pre-commit`, `vscode`, `dprint`, `taplo`, `gitleaks`, `grype`,
    `virajp-linter`, `claude`, `graphify`, `mempalace`, `fnox`); it is not itself
    a tool, is always included, takes no flag and cannot be deselected. An
-   unknown tool name exits 2.
+   unknown tool name, `core` or a core tool name given to `--tool` exits 2; a
+   name given more than once is used once.
    [Tool](../../../entities/tool/index.md)
 5. Where the mode table (step 3) says confirm, init shows the plan (files to
    create, to back up, unchanged) and asks once to proceed. Declining writes
@@ -87,12 +88,14 @@ Serves: [Fast new-repo setup](../../../product.md#goal-fast-setup)
    [Tool](../../../entities/tool/index.md)
 7. Init writes `.config/bootstrap.yaml` last, recording the format, the bootstrap
    version that wrote it, the values (`values.tools` lists the chosen non-core
-   tools only; an empty list when none) and `files` (every path init wrote:
-   created, replaced after backup, or left unchanged because identical);
+   tools only; an empty list when none) and `files` (every tool path init wrote:
+   created, replaced after backup, or left unchanged because identical; not
+   `.config/bootstrap.yaml` itself);
    setup-config goes absent → present.
    [Setup config](../../../entities/setup-config/index.md)
-8. Init prints the result: files created, backed up (each original → backup
-   path) and unchanged, and exactly one next command, `MISE_ENV=dev mise run setup:all`
+8. Init prints the result: files created (`.config/bootstrap.yaml` included),
+   backed up (each original → backup path) and unchanged, and exactly one next
+   command, `MISE_ENV=dev mise run setup:all`
    (the run command of the setup task installed by the core `mise` tool,
    [Tool](../../../entities/tool/index.md)) — the same text in the human output and
    as `--json` `next_command` — to install tools and enable hooks. Init never
@@ -178,6 +181,13 @@ N/A — runs synchronously in one command invocation.
 - Given a `.gitignore` exists and `.config/bootstrap.yaml` does not, when init
   runs, then the original is preserved byte-identical as `.gitignore.bak`, the
   new `.gitignore` is written, and the backup is listed in the output.
+- Given a successful run, when init finishes, then `created` lists
+  `.config/bootstrap.yaml` and every path list is sorted by path.
+- Given `--tool core` or `--tool mise`, when init runs, then nothing is written
+  and the exit code is 2; given `--tool github --tool github`, github is applied
+  once.
+- Given a tool target path that exists as a directory or a symlink, when init
+  runs, then nothing is written and the exit code is 3 naming that path.
 - Given `.gitignore.bak` already exists, when init backs up `.gitignore`, then
   the new backup is `.gitignore.1.bak` and the older backup is untouched.
 - Given a pre-existing file byte-identical to what init would write, when init

@@ -54,6 +54,7 @@ Not audit-recorded: the product has no audit foundation.
    | `missing` | created |
    | `kept` | untouched unless recreate or `--take <path>` (step 4) |
    | `deleted` | never recreated or asked about, except on `--take <path>` (step 4) |
+   | `not-a-file` | the whole update writes nothing and exits 3 naming every such path, per [backups](../../../conventions.md#backups) |
    | `obsolete` | moved to a backup per [backups](../../../conventions.md#backups), then removed; needs no decision |
    | `updated` | content equals the old-values render (not hand-edited) and differs from the new render only because a value changed; written with the new values without a question, replaced, no backup: its content was bootstrap's own previous render |
    | `modified` | needs a decision (step 4); includes a value-affected path whose content differs from the old-values render |
@@ -84,7 +85,11 @@ Not audit-recorded: the product has no audit foundation.
    covers paths already in `deleted`), and asks once to proceed. Answering no at
    the confirm writes nothing and exits 1; Ctrl-C at any prompt or during writes
    exits 130 per [errors](../../../conventions.md#errors). `-y` skips the
-   confirm; non-interactive runs never prompt.
+   confirm; non-interactive runs never prompt. A non-interactive run (`--json`
+   included) without `-y` that would remove one or more `obsolete` files writes
+   nothing and exits 2 "removing files needs -y", as
+   [Remove a tool](../150-remove-tool/index.md) step 3; `--dry-run` does not
+   need `-y`.
 6. Update writes the planned changes all-or-nothing, then writes
    `.config/bootstrap.yaml` last with the running cli's version, the current
    format, the values, `kept`, `deleted`, and `files` per
@@ -100,7 +105,7 @@ Not audit-recorded: the product has no audit foundation.
 
 Modes: `--dry-run` never prompts (like `--json`), applies the decision flags,
 shows any modified file without a decision as `skipped`, writes nothing and
-exits with exactly the code the real run would return. `--json` per
+exits with exactly the code the confirmed real run (with `-y`) would return. `--json` per
 [errors](../../../conventions.md#errors). Output rules follow
 [Terminal UX](../../../design-system.md#terminal-ux).
 
@@ -162,6 +167,12 @@ N/A — runs synchronously in one command invocation.
 
 ## Acceptance
 
+- Given an `obsolete` file and a non-interactive run without `-y`, when update
+  runs, then nothing is written and the exit code is 2 "removing files needs
+  -y"; with `-y` the file is backed up and removed.
+- Given a path update would write or remove that is a directory or a symlink,
+  when update runs, then nothing is written and the exit code is 3 naming that
+  path.
 - Given a `kept` path absent from the repo that the running cli still produces, when update runs non-interactively with no decision flag for it, then the path stays in `kept`, is reported `kept`, and the exit code is not affected by it.
 - Given a repository after a newer release with no local edits, when
   `bootstrap update --take-all -y` runs non-interactively, then every file

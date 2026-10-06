@@ -113,6 +113,9 @@ N/A — runs synchronously in one command invocation.
 
 ## Acceptance
 
+- Given a path add would write that is a directory or a symlink, when it runs, then
+  nothing is written and the exit code is 3 naming that path
+  ([backups](../../../conventions.md#backups)).
 - Given a repository at the running version, when `bootstrap add github -y` runs,
   then the github tool's files exist, `values.tools` contains github, `files` includes them
   and the exit code is 0; then `bootstrap check` exits 0.

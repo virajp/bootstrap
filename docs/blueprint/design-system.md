@@ -234,7 +234,9 @@ The `cli` project is a shipped command-line tool. Elicited in text on
 - Output formatting: human-readable text by default. Every command takes
   `--json`, which prints exactly one JSON document to stdout and nothing else.
   Results go to stdout; progress, warnings and errors go to stderr. `--quiet`
-  shows errors only; `--verbose` shows each per-file decision.
+  prints no result and no progress, errors only (the exit code carries the
+  outcome); `--json` ignores `--quiet` and always prints its document.
+  `--verbose` shows each per-file decision.
 - Color semantics: color carries meaning only. `success` (created, unchanged) maps
   to `status-success`; `warning` (drift found, kept files) to `status-warning`;
   `error` to `accent`; `emphasis` (paths, command names) to bold `text-body`.
