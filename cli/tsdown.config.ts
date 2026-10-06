@@ -13,7 +13,10 @@ export default defineConfig({
       name: "raw",
       load: {
         filter: { id: /\?raw$/ },
-        handler: (id) => `export default ${JSON.stringify(readFileSync(id.slice(0, -"?raw".length), "utf8"))};`,
+        handler: id =>
+          `export default ${
+            JSON.stringify(readFileSync(id.slice(0, -"?raw".length), "utf8"))
+          };`,
       },
     },
   ],
