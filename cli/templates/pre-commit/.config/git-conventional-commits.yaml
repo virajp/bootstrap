@@ -23,11 +23,6 @@ changelog:
     merge: Merges
     breakingChange: BREAKING CHANGES
 
-  # The forge's links: GitLab's when the gitlab tool is selected, GitHub's
-  # otherwise.
-  commitUrl: "<% if tools contains 'gitlab' %>https://gitlab.com/<%= repo %>/-/commit/%commit%<% else %>https://github.com/<%= repo %>/commit/%commit%<% endif %>"
-  commitRangeUrl: "<% if tools contains 'gitlab' %>https://gitlab.com/<%= repo %>/-/compare/%from%...%to%<% else %>https://github.com/<%= repo %>/compare/%from%...%to%?diff=split<% endif %>"
-
-  # The forge's issues
+  # Issue references. No commit, range or issue URLs: the forge is a non-core
+  # tool, so this core file names none, and the changelog renders plain ids.
   issueRegexPattern: "#[0-9]+"
-  issueUrl: "<% if tools contains 'gitlab' %>https://gitlab.com/<%= repo %>/-/issues/%issue%<% else %>https://github.com/<%= repo %>/issues/%issue%<% endif %>"

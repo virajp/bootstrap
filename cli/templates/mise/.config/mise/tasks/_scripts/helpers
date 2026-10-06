@@ -124,18 +124,20 @@ run_task_if_present() {
 #
 # Runs every `<prefix>:<tool>` task, forwarding the arguments — the dependency
 # dispatchers' one mechanism. No such task is the normal state of a repo whose
-# tools manage no dependencies, and runs nothing. The names are read before the
-# first run, so a task reading stdin cannot swallow the rest of the list.
+# tools manage no dependencies, and runs nothing; a task list that cannot be
+# read is a failure, never an empty list. The names are read before the first
+# run, so a task reading stdin cannot swallow the rest of the list.
 run_tool_tasks() {
   local prefix="$1"
   shift
-  local task tasks=()
+  local listing task tasks=()
+  listing="$(mise tasks ls --hidden --name-only)" || return
   while IFS= read -r task; do
     case "${task}" in
       "${prefix}":*:*) ;;
       "${prefix}":*) tasks+=("${task}") ;;
     esac
-  done < <(mise tasks ls --hidden --name-only 2>/dev/null || true)
+  done <<<"${listing}"
   for task in ${tasks[@]+"${tasks[@]}"}; do
     mise run "${task}" "$@"
   done

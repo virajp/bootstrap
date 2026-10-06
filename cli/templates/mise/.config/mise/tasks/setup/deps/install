@@ -14,12 +14,13 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 # tools manage none runs nothing, which is not an error.
 #
 # `--frozen` is the contract's name for "the lockfile is the input, not the
-# output" — the mode a fresh worktree and CI both want — and is passed on to
-# every tool's task.
+# output" — the mode a fresh worktree and CI both want. It reaches each tool's
+# task as `DEPS_FROZEN=1` in the environment rather than as a flag, so a task
+# that declares no `--frozen` still runs; the contract for a tool's install
+# task is to honour `DEPS_FROZEN=1` when it can.
 
-args=()
 if [[ "${usage_frozen:-false}" == "true" ]]; then
-  args+=(--frozen)
+  export DEPS_FROZEN=1
 fi
 
-run_tool_tasks setup:deps:install ${args[@]+"${args[@]}"}
+run_tool_tasks setup:deps:install
