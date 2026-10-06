@@ -147,8 +147,8 @@ All added by U1 to `cli/package.json`:
 | -- | ---- | -------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------- | ------ |
 | U1 | 1    | [01-scaffold.md](01-scaffold.md)             | code   | `pnpm-workspace.yaml`, `package.json`, `.npmrc`, `tsconfig.base.json`, `cli/package.json`, `cli/tsconfig.json`, `cli/vitest.config.ts`, `cli/tsdown.config.ts`, `cli/src/bin.ts`, `cli/src/cli.ts`, `cli/test/cli.test.ts`, `.config/mise/tasks/p/cli/build`, `.config/mise/tasks/p/cli/test`, `.config/mise/tasks/p/cli/check`, `pnpm-lock.yaml`, `.config/pre-commit-config.yaml` (widened at run time: user ruling, check-yaml `--allow-multiple-documents`) | —                      | green | ead9444 |
 | U2 | 2    | [02-tool-catalog.md](02-tool-catalog.md)     | code   | `cli/src/tool/catalog.ts`, `cli/test/tool/catalog.test.ts`                                                                                                                                                                                                                                                                                        | U1                     | green | 7e8eb93 |
-| U3 | 3    | [03-renderer.md](03-renderer.md)             | code   | `cli/src/tool/render.ts`, `cli/src/tool/templates.ts`, `cli/test/tool/render.test.ts`, `cli/test/fixtures/templates/**`, `cli/tsdown.config.ts` (widened at run time: user ruling, `?raw` loader plugin)                                                                                                                                                                                                                           | U2                     | running |  |
-| U4 | 3    | [04-setup-config.md](04-setup-config.md)     | code   | `cli/src/setup-config/**`, `cli/test/setup-config/**`                                                                                                                                                                                                                                                                                             | U2                     | pending |        |
+| U3 | 3    | [03-renderer.md](03-renderer.md)             | code   | `cli/src/tool/render.ts`, `cli/src/tool/templates.ts`, `cli/test/tool/render.test.ts`, `cli/test/fixtures/templates/**`, `cli/tsdown.config.ts` (widened at run time: user ruling, `?raw` loader plugin)                                                                                                                                                                                                                           | U2                     | green | a2c59dc |
+| U4 | 3    | [04-setup-config.md](04-setup-config.md)     | code   | `cli/src/setup-config/**`, `cli/test/setup-config/**`                                                                                                                                                                                                                                                                                             | U2                     | running |  |
 | U5 | 4    | [05-core-templates.md](05-core-templates.md) | code   | `cli/templates/{mise,git,pre-commit,vscode,dprint,taplo,gitleaks,grype,virajp-linter,claude,graphify,mempalace}/**`, `cli/test/tool/core-templates.test.ts`                                                                                                                                                                                       | U3                     | pending |        |
 | U6 | 4    | [06-new-templates.md](06-new-templates.md)   | code   | `cli/templates/{fnox,github,gitlab}/**`, `cli/test/tool/new-templates.test.ts`                                                                                                                                                                                                                                                                    | U3                     | pending |        |
 | U7 | 5    | [07-review.md](07-review.md)                 | review | —                                                                                                                                                                                                                                                                                                                                                 | U1, U2, U3, U4, U5, U6 | pending |        |
@@ -248,7 +248,8 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 2 | R2 | opus | 1 | pass | wave review; FINDINGS 0, CONTRACT clean, RULINGS clean | — |
 | 2 | wave gate | — | 1 | pass | `MISE_ENV=dev mise run code:all`; no UNRESOLVED | — |
 | 3 | U3 renderer | opus | 1 | fail(1) | code; tests 14 pass, check + code:all green; UNRESOLVED: tsdown cannot load `?raw` → asked user → ruling: inline raw-loader plugin, Owns widened to cli/tsdown.config.ts (G7); GAP LiquidJS `<%` shadows `<%=` → internal delimiter swap (G6); COVERAGE n/a (G1) | — |
-| 3 | U3 renderer | opus | 2 | pass | code; inline rolldown `raw` loader in tsdown.config.ts (G7) + build-embedding test; tests 15 pass; check, build, code:all green; COVERAGE n/a (G1) | (see Units) |
+| 3 | U3 renderer | opus | 2 | pass | code; inline rolldown `raw` loader in tsdown.config.ts (G7) + build-embedding test; tests 15 pass; check, build, code:all green; COVERAGE n/a (G1) | a2c59dc |
+| 3 | U4 setup config | opus | 1 | pass | code; schema + validity + io (yaml, Effect FileSystem); tests 64 pass; check + code:all green; GAP removed vs unknown tool (G8); GAP empty path not refused (G9); COVERAGE n/a (G1) | (see Units) |
 
 ## Acceptance criteria (from blueprint)
 
@@ -282,6 +283,13 @@ U2, U4, U5 and U6.
   load `?raw` imports, so ruling 4's embed fails once a template exists. The
   user ruled: an inline raw-loader plugin in `cli/tsdown.config.ts`; U3's Owns
   widened to that file.
+- G8 (U4, non-blocking, blueprint) — the catalog keeps no list of removed
+  tools, so a removed tool name and an unknown name (a typo) cannot be told
+  apart. Assumption: every name the catalog does not ship fails as
+  `ToolRemoved`.
+- G9 (U4, non-blocking, blueprint) — the Setup config validity rules do not say
+  whether an empty string is a valid path. Assumption: only the three listed
+  rules apply, so `""` is not refused.
 
 ## Launch
 
