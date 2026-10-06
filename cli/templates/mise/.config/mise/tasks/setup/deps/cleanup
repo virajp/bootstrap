@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+#MISE description="Delete build output, installed packages and caches"
+#MISE hide=true
+
+set -euo pipefail
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+# A dispatcher. A tool that manages dependencies supplies its own
+# `setup:deps:cleanup:<tool>` task, and this runs every one of them; a repo whose
+# tools manage none runs nothing, which is not an error.
+
+run_tool_tasks setup:deps:cleanup

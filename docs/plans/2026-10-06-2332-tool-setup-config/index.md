@@ -252,6 +252,7 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 3 | U4 setup config | opus | 1 | pass | code; schema + validity + io (yaml, Effect FileSystem); tests 64 pass; check + code:all green; GAP removed vs unknown tool (G8); GAP empty path not refused (G9); COVERAGE n/a (G1) | a627869 |
 | 3 | R3 | opus | 1 | pass | wave review; FINDINGS 0, CONTRACT clean, RULINGS clean | — |
 | 3 | wave gate | — | 1 | pass | `MISE_ENV=dev mise run code:all`; no UNRESOLVED | — |
+| 4 | U5 core templates | opus | 1 | pass | code; 12 core tools templated; tests 74 pass; build green; bash -n on 27 rendered tasks; code:all green; vscode as strict JSON; GAP dispatch path vs task name (G10); GAP dprint `--config` scope (G11); COVERAGE n/a (G1) | (see Units) |
 
 ## Acceptance criteria (from blueprint)
 
@@ -292,6 +293,13 @@ U2, U4, U5 and U6.
 - G9 (U4, non-blocking, blueprint) — the Setup config validity rules do not say
   whether an empty string is a valid path. Assumption: only the three listed
   rules apply, so `""` is not refused.
+- G10 (U5, non-blocking, blueprint) — the Tool Target paths name the dispatch
+  target `setup/deps/<verb>/<tool>`, a file path that cannot exist under the
+  file `tasks/setup/deps/<verb>`. Assumption: it means the task name
+  `setup:deps:<verb>:<tool>`.
+- G11 (U5, non-blocking, source) — `code:format` runs dprint with
+  `--config .config/dprint.json`, so dprint checks only files under `.config/`.
+  The dprint templates copy this unchanged (ruling 7).
 
 ## Launch
 

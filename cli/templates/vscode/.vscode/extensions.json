@@ -1,0 +1,28 @@
+{
+  "recommendations": [
+    "bmalehorn.vscode-fish",
+    "dprint.dprint",
+    "gruntfuggly.todo-tree",
+    "hverlin.mise-vscode",
+    "meganrogge.template-string-converter",
+    "oderwat.indent-rainbow",
+    "pkief.material-icon-theme",
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml",
+    "usernamehw.errorlens",
+    "bmalehorn.vscode-fish",
+    "christian-kohler.npm-intellisense",
+    "dbaeumer.vscode-eslint",
+    "dprint.dprint",
+    "effectful-tech.effect-vscode",
+    "foxundermoon.shell-format",
+    "gruntfuggly.todo-tree",
+    "hverlin.mise-vscode",
+    "meganrogge.template-string-converter",
+    "oderwat.indent-rainbow",
+    "pkief.material-icon-theme",
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml",
+    "usernamehw.errorlens"
+  ]
+}
