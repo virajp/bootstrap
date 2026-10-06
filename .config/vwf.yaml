@@ -72,5 +72,5 @@ design:
     - site/100-home/site
     - site/110-documentation/site
 blueprint:
-  coverage: complete # stamped 2026-10-06 by /vwf:blueprint after a clean coherence review
+  coverage: complete # stamped 2026-10-06 by /vwf:blueprint after a clean coherence review (re-stamped after the group→tool restructure and init gap closure)
   remaining: []
