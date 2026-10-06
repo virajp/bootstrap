@@ -44,22 +44,27 @@ not. Not audit-recorded: the product has no audit foundation.
 3. Check renders, in memory only, every file of the core groups plus the selected
    optional groups, using the recorded values.
    [Group](../../../entities/group/index.md)
-4. Check compares each rendered file with the repository and assigns exactly one
-   status: `unchanged` (byte-identical), `modified` (differs), `missing`
-   (absent), `kept` (path listed in setup-config `kept` — never drift, whatever its
-   content).
+4. Check compares each rendered file with the repository and assigns each
+   produced or listed path exactly one status, by precedence `kept` > `deleted` >
+   `obsolete`/`missing`/`modified`/`unchanged`: `kept` (path in setup-config
+   `kept`, whatever its state — present with any content, or absent; never
+   drift, never `obsolete`), `deleted` (path in setup-config `deleted`, the owner
+   chose to leave it deleted; never drift), `obsolete` (path in setup-config
+   `files` the running cli no longer produces, still in the repo), `missing`
+   (absent), `modified` (differs), `unchanged` (byte-identical). A path in
+   `files` no longer produced and absent from the repo gets no status.
    [Setup config](../../../entities/setup-config/index.md)
 5. Check reports. Human output lists files grouped by status; `--verbose` adds
    the diffs. `--json` prints exactly one document on every exit
    ([errors](../../../conventions.md#errors)); on exit 2 or 3 it carries the
    `error` instead of file statuses, otherwise: recorded version, running
-   version, and per file its path, group and status, plus for `modified` and
-   `missing` a unified diff from the current content to the expected content
-   (`missing`: from empty), and a warnings array. A `kept` path no selected group
-   writes is a warning (stale kept entry) — never drift, never changes the exit
-   code.
-6. Check exits 0 when no file is `modified` or `missing`, and 1 when at least one
-   is (drift), per [errors](../../../conventions.md#errors).
+   version, and per file its path, group and status, plus for `modified`,
+   `missing` and `obsolete` a unified diff from the current content to the
+   expected content (`missing`: from empty; `obsolete`: to empty), and a
+   warnings array. A `kept` path the running cli no longer produces is the
+   warning "kept file no longer produced" — never changes the exit code.
+6. Check exits 0 when no file is `modified`, `missing` or `obsolete`, and 1 when at
+   least one is (drift), per [errors](../../../conventions.md#errors).
 
 The human report states both versions. Output rules follow
 [Terminal UX](../../../design-system.md#terminal-ux).
@@ -87,7 +92,7 @@ sequenceDiagram
         K->>G: render files in memory
         K->>R: compare each file
         K-->>O: report by status
-        alt modified or missing
+        alt modified, missing or obsolete
             K-->>O: exit 1
         else none
             K-->>O: exit 0
@@ -107,10 +112,17 @@ N/A — runs synchronously in one command invocation.
   file is `modified` with a unified diff and the exit code is 1.
 - Given one managed file was deleted, when check runs, then it is `missing` with
   a diff from empty and the exit code is 1.
+- Given a file listed in `files` that the running cli no longer produces, when
+  check runs, then it is `obsolete` and the exit code is 1.
 - Given an edited file is listed in `kept`, when check runs, then its status is
   `kept` and the exit code is 0.
-- Given `kept` lists a path no selected group writes, when check runs, then the
-  report carries a warning and the exit code is unaffected.
+- Given a `kept` path is absent from the repository, when check runs, then its
+  status is `kept` and the exit code is 0.
+- Given a path is listed in `deleted`, when check runs, then its status is
+  `deleted` and the exit code is 0.
+- Given `kept` lists a path the running cli no longer produces, when check runs,
+  then the report carries the warning "kept file no longer produced" and the exit
+  code is unaffected.
 - Given no `.config/bootstrap.yaml`, when check runs, then the exit code is 3 and
   the message names `bootstrap init`.
 - Given the recorded version is newer than the running cli, when check runs, then

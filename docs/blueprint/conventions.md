@@ -36,6 +36,8 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
   the same outcome as the exit code; it is the machine contract an agent reads.
   This holds on every exit, `2` and `3` included: the document then carries an
   `error` (what happened, why, and the exact next command) in place of results.
+- `--json` always runs non-interactively, terminal or not: no prompt is ever
+  shown, so defaults and decisions come from `-y` and flags only.
 - Every error message states what happened, why, and the exact next command to
   run. No internal trace unless `--verbose`.
 - A command that cannot complete its writes leaves the repository as it found
@@ -59,9 +61,9 @@ external integration, so there is no environment catalog.
 
 ## Backups {#backups}
 
-Bootstrap never destroys a file it did not write. Before writing a path that
-already exists and that bootstrap does not already manage, it moves the existing
-file aside:
+Bootstrap never destroys a file's content. Before removing any existing file,
+or replacing one — managed or not — with different content, it moves the
+existing file aside:
 
 - an existing file already byte-identical to what would be written is left
   untouched — no backup, no rewrite — and reported as `unchanged`;

@@ -59,5 +59,19 @@ properties:
     items:
       type: string
       description: One exact repository-relative file path; no directories, no globs.
-required: [format, version, values]
+  deleted:
+    type: array
+    description: Repository-relative paths the owner deliberately left deleted. Never recreated or asked about; check reports them as deleted, not drift. Never also in kept. Optional; absent means empty.
+    uniqueItems: true
+    items:
+      type: string
+      description: One exact repository-relative file path; no directories, no globs.
+  files:
+    type: array
+    description: Every repository-relative file path the full selected set (core plus selected optional groups) produces under the running cli, excluding .config/bootstrap.yaml itself; the whole set, refreshed on every write of this file.
+    uniqueItems: true
+    items:
+      type: string
+      description: One exact repository-relative file path; no directories, no globs.
+required: [format, version, values, files]
 additionalProperties: false

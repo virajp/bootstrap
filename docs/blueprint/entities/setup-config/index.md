@@ -16,7 +16,8 @@ check, update and add can re-render the same setup later. It is a
 human-readable, hand-editable file kept in the target repository at
 `.config/bootstrap.yaml`; that path is product contract. Its presence means
 "this repository has been initialised", and `bootstrap init` refuses to run
-when it exists.
+when it exists. It also lists the files bootstrap manages (`files`); a
+listed path the running cli no longer produces is `obsolete`.
 
 Used by: [Set up a repository](../../flows/cli/110-setup-repository/index.md), [Check for drift](../../flows/cli/120-check-drift/index.md),
 [Update an existing repository](../../flows/cli/130-update-repository/index.md),
@@ -35,8 +36,8 @@ bootstrapped.
 
 | From   | To      | Trigger (actor/system)                                                                | Guard                         | Side effect                              |
 | ------ | ------- | ------------------------------------------------------------------------------------- | ----------------------------- | ---------------------------------------- |
-| absent | present | Init, flow step "write bootstrap.yaml" ([flow](../../flows/cli/110-setup-repository/index.md)) | no setup config exists already | `version` set to the running version |
-| present | present | [Update an existing repository](../../flows/cli/130-update-repository/index.md), [Add an optional group](../../flows/cli/140-add-group/index.md) | file is valid: conforms to schema.yaml; `format` supported by the running cli (not newer); `version` not newer than the running cli; every group name shipped by the running cli (invariant 3) | Rewrite writes the running cli's current `format` (upgrading an older file) and its `version` |
+| absent | present | Init, flow step "write bootstrap.yaml" ([flow](../../flows/cli/110-setup-repository/index.md)) | no setup config exists already | `version` set to the running version; `files` set to the full set the running cli produces |
+| present | present | [Update an existing repository](../../flows/cli/130-update-repository/index.md), [Add an optional group](../../flows/cli/140-add-group/index.md) | file is valid: conforms to schema.yaml; `format` supported by the running cli (not newer); `version` not newer than the running cli; every group name shipped by the running cli (invariant 3) | Rewrite writes the running cli's current `format` (upgrading an older file) and its `version`; `files` refreshed to the full set the running cli produces. List changes by update ([flow 130](../../flows/cli/130-update-repository/index.md)): a path enters `kept` on "keep mine" or `--keep <path>`; leaves `kept` on `--take <path>` or on "recreate" for a deleted kept file; moves `kept`→`deleted` on "leave deleted"; leaves `deleted` on `--take <path>` |
 
 ```mermaid
 stateDiagram-v2
@@ -52,7 +53,12 @@ stateDiagram-v2
 3. Every name in `values.groups` is an optional group of [Group](../group/index.md). A name the running cli no longer ships (removed in a major release) stops the command with exit 3 ([errors](../../conventions.md#errors)), naming the group, saying it was removed in this version and telling the user to remove it from the file; nothing is guessed.
 4. `values.groups` has no duplicates.
 5. A `kept` path should be one a selected group (core or optional) writes. One no selected group writes is not rejected: check reports it as a warning (stale kept entry), so a group change never breaks the file.
-6. Check reports a `kept` path with status `kept`, never as drift; update never overwrites it.
+6. Check reports a `kept` path with status `kept`, never as drift; update never overwrites it unless the owner chooses recreate or passes `--take <path>` (see the Lifecycle row).
+7. After every write, `files` lists every path the full selected set (core plus selected optional groups) produces under the running cli — the whole set, not only what that run wrote. `kept` and `deleted` paths still produced are included; a `kept` path the cli no longer produces is not in `files` (it stays in `kept`; check warns).
+8. A path is never in both `kept` and `deleted`.
+9. Bootstrap never recreates or asks about a `deleted` path; check reports it as `deleted`, not drift. `--take <path>` recreates it and removes it from `deleted`. A `deleted` path the running cli no longer produces stays in `deleted` and is not in `files`.
+10. A path moves from `kept` to `deleted` when update asks about a kept file deleted from the repository and the owner chooses "leave deleted".
+11. The owner may add or remove `kept` entries by editing the file by hand ([config](../../conventions.md#config)); the next command validates it.
 
 ## Data Model
 
@@ -75,8 +81,7 @@ Authoritative schema: [schema.yaml](./schema.yaml)
   [baseline](../../conventions.md#baseline) (single local writer)
 - Uniqueness guarantees under races: one file per repository, at a fixed path.
 - Idempotency of each mutating action: init is refused when the file exists;
-  update and add-group rewrite the whole file, so repeating one with the same
-  answers yields the same content apart from `version`.
+  a run with nothing to change does not rewrite the file at all.
 
 ## References
 

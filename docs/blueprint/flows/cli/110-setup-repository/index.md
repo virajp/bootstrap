@@ -59,8 +59,9 @@ Not audit-recorded: the product has no audit foundation.
    [backups](../../../conventions.md#backups).
    [Group](../../../entities/group/index.md)
 7. Init writes `.config/bootstrap.yaml` last, recording the format, the bootstrap
-   version that wrote it, the values and the selected groups; setup-config goes
-   absent → present.
+   version that wrote it, the values, the selected groups and `files` (every path
+   init wrote: created, replaced after backup, or left unchanged because
+   identical); setup-config goes absent → present.
    [Setup config](../../../entities/setup-config/index.md)
 8. Init prints the result: files created, backed up (each original → backup
    path) and unchanged, and exactly one next command — the repo's own setup task
@@ -69,7 +70,8 @@ Not audit-recorded: the product has no audit foundation.
 
 Modes: `--dry-run` runs steps 1–4, reports what would be created, backed up and
 unchanged, writes nothing and exits 0. `--json` makes stdout exactly one JSON
-report document (created, backed_up, unchanged, next_command, exit status). Output rules
+report document (created, backed_up, unchanged, next_command, exit status) and
+implies non-interactive ([errors](../../../conventions.md#errors)). Output rules
 follow [Terminal UX](../../../design-system.md) and
 [errors](../../../conventions.md#errors).
 
@@ -119,8 +121,8 @@ N/A — runs synchronously in one command invocation.
 
 - Given an empty git repository, when `bootstrap init` runs non-interactively
   with all flags, then every core file and the chosen optional groups' files
-  exist, `.config/bootstrap.yaml` records the version, values and groups, and the
-  exit code is 0.
+  exist, `.config/bootstrap.yaml` records the version, values, groups and files, and
+  the exit code is 0.
 - Given `.config/bootstrap.yaml` exists, when init runs, then no file changes,
   the exit code is 1 and the message names `bootstrap update`.
 - Given the directory is not inside a git repository, when init runs, then
@@ -146,6 +148,9 @@ N/A — runs synchronously in one command invocation.
   when init runs, then the exit code is 2.
 - Given `--json`, when init runs, then stdout parses as exactly one JSON
   document and contains nothing else.
+- Given an interactive terminal, `--json`, and no `-y` or flag for a required
+  value, when init runs, then it does not prompt, the exit code is 2, and stdout
+  is one JSON document carrying the error.
 - Given the remote is `git@<host>:o/r.git` or `https://<host>/o/r.git` on the
   code host, when init detects defaults, then the owner/name default is `o/r`.
 - Abuse case: n/a — runs locally with the caller's own permissions on the
