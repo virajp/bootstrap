@@ -21,13 +21,10 @@
 
 ## Ruling
 
-> | 4 | Template storage | "Embed at build": templates live as files under
-> `cli/templates/<tool>/<target path>`; the build bundles them into the JS as an
-> in-memory map; nothing reads template files at run time | ship templates as
-> package files read at run time | U3, U5, U6 | | 7 | Drift: repo sources vs
-> catalog | the templates conform to the Tool catalog and the setup values; the
-> repo's own tracked files stay unchanged (they are sources, not targets) | edit
-> this repo's files to match | U5, U6 |
+| # | Decision                       | Ruling                                                                                                                                                                                 | Rejected                                         | Unit       |
+| - | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ---------- |
+| 4 | Template storage               | "Embed at build": templates live as files under `cli/templates/<tool>/<target path>`; the build bundles them into the JS as an in-memory map; nothing reads template files at run time | ship templates as package files read at run time | U3, U5, U6 |
+| 7 | Drift: repo sources vs catalog | the templates conform to the Tool catalog and the setup values; the repo's own tracked files stay unchanged (they are sources, not targets)                                            | edit this repo's files to match                  | U5, U6     |
 
 From the blueprint (user decision): `github` holds
 `.github/pull_request_template.md` and

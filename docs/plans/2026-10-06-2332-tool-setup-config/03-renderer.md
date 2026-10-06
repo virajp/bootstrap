@@ -18,16 +18,11 @@
 
 ## Ruling
 
-> | 3 | Template engine | LiquidJS with tag delimiters `<%` `%>` and output
-> delimiters `<%=` `%>`, `strictVariables: true` (earlier product decision) |
-> default `{% %}` / `{{ }}` delimiters | U3 | | 4 | Template storage | "Embed at
-> build": templates live as files under `cli/templates/<tool>/<target path>`;
-> the build bundles them into the JS as an in-memory map; nothing reads template
-> files at run time | ship templates as package files read at run time | U3, U5,
-> U6 | | 11 | Template values | every template reads only the setup values:
-> `repo`, `commit_scopes`, `merge_model.develop`, `merge_model.main`, `tools`;
-> derived names (e.g. the repo name, the last path segment of `repo`) are
-> computed in the renderer, not stored | per-tool values | U3, U5 |
+| #  | Decision         | Ruling                                                                                                                                                                                                                                | Rejected                                         | Unit       |
+| -- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ---------- |
+| 3  | Template engine  | LiquidJS with tag delimiters `<%` `%>` and output delimiters `<%=` `%>`, `strictVariables: true` (earlier product decision)                                                                                                           | default `{% %}` / `{{ }}` delimiters             | U3         |
+| 4  | Template storage | "Embed at build": templates live as files under `cli/templates/<tool>/<target path>`; the build bundles them into the JS as an in-memory map; nothing reads template files at run time                                                | ship templates as package files read at run time | U3, U5, U6 |
+| 11 | Template values  | every template reads only the setup values: `repo`, `commit_scopes`, `merge_model.develop`, `merge_model.main`, `tools`; derived names (e.g. the repo name, the last path segment of `repo`) are computed in the renderer, not stored | per-tool values                                  | U3, U5     |
 
 ## Edits
 

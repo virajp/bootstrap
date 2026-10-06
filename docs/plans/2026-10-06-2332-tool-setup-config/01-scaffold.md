@@ -22,10 +22,10 @@
 
 ## Ruling
 
-> | 1 | Effect major | Effect v4: `effect` 4.0.1 and `@effect/platform-node`
-> 4.0.1; the CLI from `effect/cli` | `@effect/cli` 0.77 on Effect v3 | U1 | | 2
-> | Build tool | tsdown builds `cli/dist` (earlier product decision) | plain
-> `tsc` emit | U1 |
+| # | Decision     | Ruling                                                                                 | Rejected                        | Unit |
+| - | ------------ | -------------------------------------------------------------------------------------- | ------------------------------- | ---- |
+| 1 | Effect major | Effect v4: `effect` 4.0.1 and `@effect/platform-node` 4.0.1; the CLI from `effect/cli` | `@effect/cli` 0.77 on Effect v3 | U1   |
+| 2 | Build tool   | tsdown builds `cli/dist` (earlier product decision)                                    | plain `tsc` emit                | U1   |
 
 New dependencies this unit adds (and no others): `effect`,
 `@effect/platform-node`, `liquidjs`, `yaml`; dev `typescript`, `vitest`,

@@ -30,27 +30,14 @@
 
 ## Ruling
 
-> | 4 | Template storage | "Embed at build": templates live as files under
-> `cli/templates/<tool>/<target path>`; the build bundles them into the JS as an
-> in-memory map; nothing reads template files at run time | ship templates as
-> package files read at run time | U3, U5, U6 | | 7 | Drift: repo sources vs
-> catalog | the templates conform to the Tool catalog and the setup values; the
-> repo's own tracked files stay unchanged (they are sources, not targets) | edit
-> this repo's files to match | U5, U6 | | 8 | Merge model in templates |
-> templates set `MERGE_MODEL_DEVELOP` from `values.merge_model.develop` and
-> `MERGE_MODEL_MAIN` from `values.merge_model.main`; `MEMBERS` renders empty
-> (the setup config has no members value) | one `MERGE_MODEL` | U5 | | 9 |
-> `setup/deps` dispatchers | authored new: each of
-> `setup/deps/{all,install,outdated,audit,upgrade,cleanup}` runs the
-> `setup/deps/<verb>/<tool>` task of every tool that has one and does nothing
-> when there is none; no 1.0 tool has one | copy the pnpm tasks | U5 | | 10 |
-> `setup/all` | orchestrates by task name only; it runs a tool's setup task
-> (`setup:ai`, `setup:secrets`, `setup:precommit`) only when that task exists |
-> call tool tasks unconditionally | U5 | | 11 | Template values | every template
-> reads only the setup values: `repo`, `commit_scopes`, `merge_model.develop`,
-> `merge_model.main`, `tools`; derived names (e.g. the repo name, the last path
-> segment of `repo`) are computed in the renderer, not stored | per-tool values
-> | U3, U5 |
+| #  | Decision                       | Ruling                                                                                                                                                                                                                                | Rejected                                         | Unit       |
+| -- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ---------- |
+| 4  | Template storage               | "Embed at build": templates live as files under `cli/templates/<tool>/<target path>`; the build bundles them into the JS as an in-memory map; nothing reads template files at run time                                                | ship templates as package files read at run time | U3, U5, U6 |
+| 7  | Drift: repo sources vs catalog | the templates conform to the Tool catalog and the setup values; the repo's own tracked files stay unchanged (they are sources, not targets)                                                                                           | edit this repo's files to match                  | U5, U6     |
+| 8  | Merge model in templates       | templates set `MERGE_MODEL_DEVELOP` from `values.merge_model.develop` and `MERGE_MODEL_MAIN` from `values.merge_model.main`; `MEMBERS` renders empty (the setup config has no members value)                                          | one `MERGE_MODEL`                                | U5         |
+| 9  | `setup/deps` dispatchers       | authored new: each of `setup/deps/{all,install,outdated,audit,upgrade,cleanup}` runs the `setup/deps/<verb>/<tool>` task of every tool that has one and does nothing when there is none; no 1.0 tool has one                          | copy the pnpm tasks                              | U5         |
+| 10 | `setup/all`                    | orchestrates by task name only; it runs a tool's setup task (`setup:ai`, `setup:secrets`, `setup:precommit`) only when that task exists                                                                                               | call tool tasks unconditionally                  | U5         |
+| 11 | Template values                | every template reads only the setup values: `repo`, `commit_scopes`, `merge_model.develop`, `merge_model.main`, `tools`; derived names (e.g. the repo name, the last path segment of `repo`) are computed in the renderer, not stored | per-tool values                                  | U3, U5     |
 
 ## Edits
 

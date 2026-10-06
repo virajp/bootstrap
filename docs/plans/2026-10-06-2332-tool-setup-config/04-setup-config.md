@@ -20,9 +20,9 @@
 
 ## Ruling
 
-> | 5 | Setup config parsing | the `yaml` package reads and writes
-> `.config/bootstrap.yaml`; Effect Schema validates it against `schema.yaml` | a
-> hand-written parser | U4 |
+| # | Decision             | Ruling                                                                                                         | Rejected              | Unit |
+| - | -------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------- | ---- |
+| 5 | Setup config parsing | the `yaml` package reads and writes `.config/bootstrap.yaml`; Effect Schema validates it against `schema.yaml` | a hand-written parser | U4   |
 
 ## Edits
 
