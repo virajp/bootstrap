@@ -1,7 +1,17 @@
-import { describe, expect, it } from "@effect/vitest";
-import { NodeServices } from "@effect/platform-node";
-import { Cause, Console, Effect, Exit, Runtime } from "effect";
 import { run } from "@/cli";
+import { NodeServices } from "@effect/platform-node";
+import {
+  describe,
+  expect,
+  it,
+} from "@effect/vitest";
+import {
+  Cause,
+  Console,
+  Effect,
+  Exit,
+  Runtime,
+} from "effect";
 import pkg from "../package.json" with { type: "json" };
 
 const runCaptured = (args: ReadonlyArray<string>) => {
@@ -16,7 +26,7 @@ const runCaptured = (args: ReadonlyArray<string>) => {
     Effect.provideService(Console.Console, capture),
     Effect.provide(NodeServices.layer),
     Effect.exit,
-    Effect.map((exit) => ({ exit, stdout: stdout.join("\n") })),
+    Effect.map(exit => ({ exit, stdout: stdout.join("\n") })),
   );
 };
 

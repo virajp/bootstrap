@@ -264,6 +264,9 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 5 | U4 setup config | opus | 2 | pass | code; U7 r1 fix: `repo` segments `[A-Za-z0-9._-]`, no `.`/`..` (security); paths refuse "", control chars, trailing slash, empty/`.` segments, `.git` (security, G9); one `setupConfigPath`; tests 118 pass; check, code:all green | 4ba41cf |
 | 5 | U5 core templates | opus | 3 | pass | code; U7 r1 fix: settings.json out of jsonTrailingCommaFiles; extensions deduped; `[tools.fnox]` in mise.dev.toml; forge-aware commit/issue URLs; mempalace wing `| json` (TOML/JSON values stay quoted, repo restricted by U4); format task drops `--config` (G11); commitScopes spacing; tests 126 pass; build, bash -n, code:all green | 5631531 |
 | 5 | U6 new templates | opus | 2 | pass | code; U7 r1 fix: secrets hint `mise install` (not `mise use fnox`); tests 127 pass; build, code:all green | c1d9d56 |
+| 5 | U7 | opus | 2 | findings(7) | review; range 5e7f23c..2759e44; engine /code-review 10 kept, 0 dropped; 3 medium (U6 issue-form bracket spacing; U5 conventional-commits URLs depend on non-core tools vs add/remove; U3 render drops file mode) + 4 low (U4 `.git` case; U1/U3 cli sources not root-dprint formatted; U3 glob embeds `.DS_Store`; U5 run_tool_tasks hides failures, `--frozen` forwarded); 9 → 7, converging; tag U7/review/2 | — |
+| 5 | U7 | opus | 2 | findings(1) | security; engine 0; [low] U4 validity.ts:107 `.git` match case-sensitive (`.Git/`, `.git./`, `GIT~1`); 2 → 1; tag U7/security/2 | — |
+| 5 | U1 scaffold | opus | 4 | pass | code; U7 r2 fix: bin.ts, cli.ts, cli.test.ts, tsconfig.json formatted to the root dprint config (tsdown.config.ts formatted too; rides U3, its owner); tests 127 pass; check, build, code:all green | (see Units) |
 
 ## Acceptance criteria (from blueprint)
 
@@ -320,6 +323,14 @@ U2, U4, U5 and U6.
   `{{ }}`), and the path rule does not exclude `.git` segments, empty or `.`
   segments, or directories. The code is tightened to fix the security
   findings; the blueprint schema needs the same pattern via `/vwf:blueprint`.
+- G14 (U7 review, plan) — the orchestrator gate `pnpm --filter cli build`
+  matches no package (the package is `@virajp.dev/bootstrap`, with no `build`
+  script) and exits 0 without a build. Assumption: the final gates run
+  `mise run p:cli:build` in its place, and say so.
+- G15 (U7 review, blueprint) — the blueprint does not pin file modes (task files
+  must be written executable), and does not say whether a core file may vary
+  with the non-core tool selection, which conflicts with add and remove
+  rendering only the changed tool's files.
 
 ## Launch
 
