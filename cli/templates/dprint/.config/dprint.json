@@ -25,8 +25,7 @@
   "json": {
     "jsonTrailingCommaFiles": [
       "tsconfig.json",
-      "tsconfig.*.json",
-      ".vscode/settings.json"
+      "tsconfig.*.json"
     ],
     "lineWidth": 80
   },

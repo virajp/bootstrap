@@ -7,7 +7,7 @@ convention:
     - feat
     - fix
     - refactor
-  commitScopes: <%= commit_scopes | json %>
+  commitScopes: [<% for scope in commit_scopes %> <%= scope | json %><% unless forloop.last %>,<% endunless %><% endfor %><% unless commit_scopes == empty %> <% endunless %>]
 
 changelog:
   commitTypes:
@@ -23,10 +23,11 @@ changelog:
     merge: Merges
     breakingChange: BREAKING CHANGES
 
-  # GitHub
-  commitUrl: https://github.com/<%= repo %>/commit/%commit%
-  commitRangeUrl: https://github.com/<%= repo %>/compare/%from%...%to%?diff=split
+  # The forge's links: GitLab's when the gitlab tool is selected, GitHub's
+  # otherwise.
+  commitUrl: "<% if tools contains 'gitlab' %>https://gitlab.com/<%= repo %>/-/commit/%commit%<% else %>https://github.com/<%= repo %>/commit/%commit%<% endif %>"
+  commitRangeUrl: "<% if tools contains 'gitlab' %>https://gitlab.com/<%= repo %>/-/compare/%from%...%to%<% else %>https://github.com/<%= repo %>/compare/%from%...%to%?diff=split<% endif %>"
 
-  # GitHub Issues
+  # The forge's issues
   issueRegexPattern: "#[0-9]+"
-  issueUrl: https://github.com/<%= repo %>/issues/%issue%
+  issueUrl: "<% if tools contains 'gitlab' %>https://gitlab.com/<%= repo %>/-/issues/%issue%<% else %>https://github.com/<%= repo %>/issues/%issue%<% endif %>"

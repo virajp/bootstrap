@@ -27,6 +27,10 @@ version = "latest"
 [tools.gitleaks]
 version = "latest"
 
+# Fnox resolves the repo's secrets from the providers in .config/fnox.toml
+[tools.fnox]
+version = "latest"
+
 # Dprint is a code formatter for various programming languages
 [tools.dprint]
 version = "latest"

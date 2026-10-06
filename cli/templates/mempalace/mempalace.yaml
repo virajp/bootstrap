@@ -1,4 +1,4 @@
-wing: <%= repo_name %>
+wing: <%= repo_name | json %>
 
 exclude_patterns:
   - .env*

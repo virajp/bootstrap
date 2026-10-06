@@ -58,7 +58,6 @@ print_header "Formatting files ..."
 
 print_subheader "Formatting with dprint ..."
 dprint "${action}" \
-  --config .config/dprint.json \
   --allow-no-files \
   --log-level "${log_level}" \
   ${files[@]+"${files[@]}"}

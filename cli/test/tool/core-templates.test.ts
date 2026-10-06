@@ -62,6 +62,16 @@ describe("core templates", () => {
       expect(parse(files.get(".config/git-conventional-commits.yaml")!).convention.commitScopes).toEqual(["api"]);
     }));
 
+  it.effect("write the scope list in the shipped formatter's bracket spacing", () =>
+    Effect.gen(function*() {
+      const line = (scopes: ReadonlyArray<string>) =>
+        render(owned, { ...values, commit_scopes: scopes }).pipe(
+          Effect.map((files) => files.get(".config/git-conventional-commits.yaml")!.match(/^ {2}commitScopes:.*$/m)![0]),
+        );
+      expect(yield* line(["api", "web"])).toBe("  commitScopes: [ \"api\", \"web\" ]");
+      expect(yield* line([])).toBe("  commitScopes: []");
+    }));
+
   it.effect("render an empty scope list as an empty sequence", () =>
     Effect.gen(function*() {
       const files = yield* render(owned, { ...values, commit_scopes: [] });
@@ -99,6 +109,62 @@ describe("core templates", () => {
         expect(all).not.toMatch(new RegExp(`^mise run ${task}$`, "m"));
       }
       expect(all).not.toMatch(/@askviraj\/linter|\bpnpm\b/);
+    }));
+
+  it.effect("keep the editor settings in the JSON form the shipped formatter writes", () =>
+    Effect.gen(function*() {
+      const files = yield* rendered();
+      expect(() => JSON.parse(files.get(".vscode/settings.json")!)).not.toThrow();
+      const dprint = JSON.parse(files.get(".config/dprint.json")!);
+      expect(dprint.json.jsonTrailingCommaFiles).not.toContain(".vscode/settings.json");
+    }));
+
+  it.effect("recommend each editor extension once", () =>
+    Effect.gen(function*() {
+      const { recommendations } = JSON.parse((yield* rendered()).get(".vscode/extensions.json")!);
+      expect(recommendations).toEqual([...new Set(recommendations)]);
+    }));
+
+  it.effect("install fnox, the core secrets tool, through mise", () =>
+    Effect.gen(function*() {
+      const files = yield* rendered();
+      expect(files.get(".config/mise/conf.d/_base/mise.dev.toml")).toMatch(/^\[tools\.fnox\]$/m);
+    }));
+
+  it.effect("point the changelog links at GitHub by default", () =>
+    Effect.gen(function*() {
+      const { changelog } = parse((yield* rendered()).get(".config/git-conventional-commits.yaml")!);
+      expect(changelog.commitUrl).toBe("https://github.com/acme/widgets/commit/%commit%");
+      expect(changelog.commitRangeUrl).toBe("https://github.com/acme/widgets/compare/%from%...%to%?diff=split");
+      expect(changelog.issueUrl).toBe("https://github.com/acme/widgets/issues/%issue%");
+    }));
+
+  it.effect("point the changelog links at GitLab when gitlab is the selected forge", () =>
+    Effect.gen(function*() {
+      const files = yield* render(owned, { ...values, tools: ["gitlab"] });
+      const { changelog } = parse(files.get(".config/git-conventional-commits.yaml")!);
+      expect(changelog.commitUrl).toBe("https://gitlab.com/acme/widgets/-/commit/%commit%");
+      expect(changelog.commitRangeUrl).toBe("https://gitlab.com/acme/widgets/-/compare/%from%...%to%");
+      expect(changelog.issueUrl).toBe("https://gitlab.com/acme/widgets/-/issues/%issue%");
+    }));
+
+  it.effect("keep number- and null-like values strings in every structured file", () =>
+    Effect.gen(function*() {
+      const files = yield* render(owned, { ...values, repo: "null/2048", commit_scopes: ["404"] });
+      expect(parse(files.get("mempalace.yaml")!).wing).toBe("2048");
+      expect(JSON.parse(files.get(".config/claude-status.json")!).projectName).toBe("null/2048");
+      expect(parse(files.get(".config/git-conventional-commits.yaml")!).convention.commitScopes).toEqual(["404"]);
+      expect(files.get(".config/mise/conf.d/_base/mise.toml")).toMatch(/^REPO_NAME\s*=\s*"2048"$/m);
+      expect(files.get(".config/mise/conf.d/ai/mise.dev.toml")).toMatch(
+        /^MEMPALACE_PALACE_PATH\s*=\s*"~\/\.local\/share\/mempalace\/2048"$/m,
+      );
+    }));
+
+  it.effect("format the whole tree from the root dprint config", () =>
+    Effect.gen(function*() {
+      const files = yield* rendered();
+      expect(files.get("dprint.json")).toContain("\"extends\": \".config/dprint.json\"");
+      expect(files.get(".config/mise/tasks/code/format")).not.toMatch(/--config \.config\/dprint\.json/);
     }));
 
   it.effect("start every task file with a shebang", () =>
