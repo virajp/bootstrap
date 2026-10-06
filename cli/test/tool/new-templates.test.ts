@@ -92,6 +92,14 @@ describe("new templates", () => {
       expect(task).toMatch(/^\s*fnox check\b/m);
     }));
 
+  it.effect("skip with a hint to install the pinned tools, never to edit a managed mise config", () =>
+    Effect.gen(function*() {
+      const task = (yield* renderTool("fnox")).get(".config/mise/tasks/setup/secrets")!;
+      expect(task).toMatch(/^\s*exit 0$/m);
+      expect(task).toMatch(/mise install/);
+      expect(task).not.toMatch(/mise use/);
+    }));
+
   it.effect("place the GitLab merge-request template at Default.md", () =>
     Effect.gen(function*() {
       const files = yield* renderTool("gitlab");
