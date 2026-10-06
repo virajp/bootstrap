@@ -1,0 +1,56 @@
+# Authoritative data model for the setup config, the file persisted in a target
+# repository at .config/bootstrap.yaml. Governing status: index.md frontmatter.
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Setup Config
+description: Bootstrap answers recorded for a repository; its presence marks the repository as initialised.
+type: object
+properties:
+  format:
+    type: integer
+    minimum: 1
+    description: Schema version of this file; 1 for bootstrap 1.0. Independent of version; changes only when the file's shape changes.
+  version:
+    type: string
+    description: Semver of the bootstrap version that last wrote the file; rewritten on every write.
+    pattern: ^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$
+  values:
+    type: object
+    description: The answers the repository was set up with.
+    properties:
+      repo:
+        type: string
+        description: Repository as owner/name; detected from the git remote by default.
+        pattern: ^[^/\s]+/[^/\s]+$
+      commit_scopes:
+        type: array
+        description: Allowed commit scopes; may be empty.
+        uniqueItems: true
+        items:
+          type: string
+          description: One commit scope, a lowercase kebab-case word.
+          pattern: ^[a-z][a-z0-9-]*$
+      merge_model:
+        type: object
+        description: How changes reach each long-lived branch.
+        properties:
+          develop:
+            type: string
+            description: How changes reach the develop branch.
+            enum: [direct, pr]
+          main:
+            type: string
+            description: How changes reach the main branch.
+            enum: [direct, pr]
+        required: [develop, main]
+        additionalProperties: false
+      groups:
+        type: array
+        description: Selected optional groups only; core groups are implicit. Each names an optional entry of entity Group.
+        uniqueItems: true
+        items:
+          type: string
+          description: Name of an optional Group.
+    required: [repo, commit_scopes, merge_model, groups]
+    additionalProperties: false
+required: [format, version, values]
+additionalProperties: false
