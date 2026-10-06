@@ -20,6 +20,12 @@ status: draft
 | 140 | [Add a group](./cli/140-add-group/index.md)                    |           | [Fast new-repo setup](../product.md#goal-fast-setup) | [Group](../entities/group/index.md), [Setup config](../entities/setup-config/index.md)                          | reviewed |
 | 150 | [Remove a group](./cli/150-remove-group/index.md)              |           | [Zero setup drift](../product.md#goal-zero-drift)    | [Group](../entities/group/index.md), [Setup config](../entities/setup-config/index.md)                          | reviewed |
 
+### site
+
+| #   | Flow                                  | Platforms                           | Serves goal                                                  | Entities touched | Status |
+| --- | ------------------------------------- | ----------------------------------- | ------------------------------------------------------------ | ---------------- | ------ |
+| 100 | [Home](./site/100-home/index.md)      | [site](./site/100-home/site.md)     | [Outside adoption](../product.md#goal-outside-adoption)      | none             | reviewed |
+
 ## Inter-Service Contracts
 
 ### Events

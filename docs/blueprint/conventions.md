@@ -103,7 +103,10 @@ group, or a changed exit-code meaning is a major version.
 ## Reliability targets {#reliability}
 
 `reliability: static-site-best-effort`. The `site` is static files served from
-the host's edge with no stated availability target. The `cli` runs locally; its
+the host's edge with no stated availability target. Every page's content and
+links work with client scripting off; the only scripted controls (the copy
+button and the search input) are hidden when scripting is off, never shown
+inert. The `cli` runs locally; its
 reliability contract is correctness — the acceptance criteria of each flow —
 not uptime.
 
@@ -124,9 +127,18 @@ patch release with a `Security` changelog entry.
 
 ## Web metadata {#web-metadata}
 
-Product-wide `site` metadata defaults (site name, default description, locale,
-social handle, organisation facts) are elicited with the first `site` flow and
-recorded here.
+Defaults every `site` page inherits; each screen's Metadata block overrides only
+what it states. Visual assets (favicon mark, social preview, theme colour) are
+the design system's Brand assets.
+
+| Field               | Value                                                                                                                         |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Site name           | bootstrap                                                                                                                     |
+| Home address        | `https://bootstrap.virajp.dev/` — the canonical origin of every page                                                          |
+| Default description | One shared setup for every repository: formatters, commit gates, scanners and tasks, with drift reports an AI agent can act on. |
+| Content locale      | `en`                                                                                                                          |
+| Social handle       | none                                                                                                                          |
+| Organisation        | Viraj Patel — `https://virajp.dev`; logo: the brand mark                                                                      |
 
 ## Engineering baseline {#baseline}
 
