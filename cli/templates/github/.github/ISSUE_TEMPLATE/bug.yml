@@ -1,0 +1,32 @@
+name: Bug
+description: Report something that does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The version, commit or environment where it happens.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Any relevant output. Remove secrets first.
+      render: shell

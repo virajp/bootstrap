@@ -1,0 +1,7 @@
+# fnox: this repository's secrets. Values never live here — define a provider
+# (a password manager, a cloud secret store, or age encryption), then add each
+# secret with `fnox set <NAME>`. Load them with `fnox exec -- <command>`.
+
+[providers]
+
+[secrets]
