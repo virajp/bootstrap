@@ -1,7 +1,7 @@
 /** Reads and writes `<repository root>/.config/bootstrap.yaml`. */
 import { Effect, FileSystem, Option, Path, Schema } from "effect";
 import * as YAML from "yaml";
-import { SetupConfig } from "@/setup-config/schema";
+import { SetupConfig, setupConfigPath } from "@/setup-config/schema";
 import {
   checkFormat,
   type Running,
@@ -10,9 +10,6 @@ import {
   SetupConfigUnreadable,
   validate,
 } from "@/setup-config/validity";
-
-/** The setup config path, relative to the repository root. */
-export const setupConfigPath = ".config/bootstrap.yaml";
 
 const decode = Schema.decodeUnknownEffect(SetupConfig, { onExcessProperty: "error" });
 

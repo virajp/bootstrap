@@ -1,7 +1,7 @@
 /** The Validity rules of docs/blueprint/entities/setup-config/index.md beyond the schema. */
 import { Data, Effect } from "effect";
 import { toolsByName } from "@/tool/catalog";
-import type { SetupConfig } from "@/setup-config/schema";
+import { type SetupConfig, setupConfigPath as file } from "@/setup-config/schema";
 
 /** The running cli: its version and the newest setup-config format it reads. */
 export interface Running {
@@ -15,8 +15,6 @@ interface Problem {
   readonly why: string;
   readonly fix: string;
 }
-
-const file = ".config/bootstrap.yaml";
 
 /** The file could not be read or is not YAML. */
 export class SetupConfigUnreadable extends Data.TaggedError("SetupConfigUnreadable")<Problem> {}
@@ -86,16 +84,28 @@ export const compareVersions = (a: string, b: string): number => {
   return left.pre.length - right.pre.length;
 };
 
+// eslint-disable-next-line no-control-regex -- control characters are what this refuses
+const hasControl = (path: string) => /[\u0000-\u001f\u007f]/.test(path);
 const isAbsolute = (path: string) => /^([/\\]|[A-Za-z]:)/.test(path);
-const hasParentSegment = (path: string) => path.split(/[/\\]/).includes("..");
+const segments = (path: string) => path.split(/[/\\]/);
 const hasWildcard = (path: string) => /[*?[\]{}]/.test(path);
 
 /** Why a path is not a literal repository-relative file path, or undefined when it is. */
 const pathProblem = (path: string): string | undefined =>
-  isAbsolute(path)
+  path === ""
+    ? "it is empty"
+    : hasControl(path)
+    ? "it has a control character"
+    : isAbsolute(path)
     ? "it is absolute"
-    : hasParentSegment(path)
+    : /[/\\]$/.test(path)
+    ? "it ends in `/`, so it names a directory"
+    : segments(path).includes("..")
     ? "it has a `..` segment"
+    : segments(path).some((segment) => segment === "" || segment === ".")
+    ? "it has an empty or `.` segment"
+    : segments(path).includes(".git")
+    ? "it is inside a `.git` folder"
     : hasWildcard(path)
     ? "it has a wildcard"
     : undefined;
@@ -146,9 +156,9 @@ export const validate = (
         const why = pathProblem(path);
         if (why !== undefined) {
           return yield* new InvalidPath({
-            what: `"${path}" in ${list} of ${file}`,
+            what: `${JSON.stringify(path)} in ${list} of ${file}`,
             why: `a path must be a literal file path relative to the repository root; ${why}`,
-            fix: `correct or remove "${path}" in ${list}`,
+            fix: `correct or remove ${JSON.stringify(path)} in ${list}`,
           });
         }
       }

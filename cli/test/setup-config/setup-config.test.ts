@@ -67,6 +67,36 @@ describe("setup config schema", () => {
       expectProblem(error);
     }));
 
+  it.effect.each([
+    "o/{{exec(command='id')}}",
+    "o/{% raw %}",
+    "o/{n}",
+    "o/n\"x",
+    "o/n'x",
+    "o/%n",
+    "o/n#x",
+    "o\\n/x",
+    "o/n\u0007",
+    "o/n:x",
+    "./name",
+    "o/..",
+    "o/./n",
+    "o//n",
+  ])("refuses repo %j: segments are letters, digits, . _ - and never . or ..", (repo) =>
+    Effect.gen(function*() {
+      const error = yield* failure(text({ values: { ...valid.values, repo } }));
+      expect(error._tag).toBe("SchemaViolation");
+    }));
+
+  it.effect.each(["virajp/bootstrap", "group/sub.group/my_repo-1", "o/.dotfiles", "o/n..x"])(
+    "accepts repo %s",
+    (repo) =>
+      Effect.gen(function*() {
+        const config = yield* parse(text({ values: { ...valid.values, repo } }), running);
+        expect(config.values.repo).toBe(repo);
+      }),
+  );
+
   it.effect("refuses text that is not YAML as unreadable", () =>
     Effect.gen(function*() {
       const error = yield* failure("format: [1\n");
@@ -161,13 +191,31 @@ describe("setup config validity", () => {
     ["deleted", "*.md"],
     ["deleted", "src/?.ts"],
     ["files", ".config/[ab].toml"],
+    ["files", ""],
+    ["files", "a//b"],
+    ["kept", "./a"],
+    ["kept", "a/./b"],
+    ["kept", "a/."],
+    ["deleted", ".config/"],
+    ["files", ".git/config"],
+    ["kept", "sub/.git/hooks/pre-commit"],
+    ["files", "a\u0000b"],
+    ["deleted", "a\nb"],
+    ["files", "a\u007fb"],
   ] satisfies Array<[string, string]>)("refuses a %s path %s that is not literal and repository-relative", ([list, path]) =>
     Effect.gen(function*() {
       const error = yield* failure(text({ [list]: [path] }));
       expect(error._tag).toBe("InvalidPath");
-      expect(error.what).toContain(path);
+      expect(error.what).toContain(JSON.stringify(path));
       expect(error.what).toContain(list);
       expectProblem(error);
+    }));
+
+  it.effect("accepts dot-named files and folders that are not .git", () =>
+    Effect.gen(function*() {
+      const files = [".github/pull_request_template.md", ".gitignore", "a/b.c/.d"];
+      const config = yield* parse(text({ files }), running);
+      expect(config.files).toEqual(files);
     }));
 });
 
