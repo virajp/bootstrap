@@ -1,15 +1,11 @@
 import { Data, Effect } from "effect";
 import { Liquid } from "liquidjs";
+import type { Values } from "@/setup-config/schema";
 import type { Tool } from "@/tool/catalog";
 import { templates as embedded } from "@/tool/templates";
 
-/** The setup values every template reads (setup-config `values`). */
-export interface RenderValues {
-  readonly repo: string;
-  readonly commit_scopes: ReadonlyArray<string>;
-  readonly merge_model: { readonly develop: "direct" | "pr"; readonly main: "direct" | "pr" };
-  readonly tools: ReadonlyArray<string>;
-}
+/** The setup values every template reads: the setup-config `values` type itself. */
+export type RenderValues = typeof Values.Type;
 
 /** A catalog path of a selected tool has no embedded template. */
 export class TemplateMissing extends Data.TaggedError("TemplateMissing")<{ readonly path: string }> {}
@@ -32,19 +28,17 @@ const engine = new Liquid({
   strictVariables: true,
 });
 
-/** The setup values plus the names derived from `repo`: its last segment and the segments before it. */
-const scope = (values: RenderValues) => {
-  const segments = values.repo.split("/");
-  return { ...values, repo_name: segments.at(-1), repo_owner: segments.slice(0, -1).join("/") };
-};
+/** The setup values plus the name derived from `repo`: its last segment. */
+const scope = (values: RenderValues) => ({ ...values, repo_name: values.repo.split("/").at(-1) });
 
-/** Renders one target path from its template. */
+/** Renders one target path of a tool from the template in that tool's folder. */
 const renderPath = (
   templates: ReadonlyMap<string, string>,
   context: object,
+  tool: Tool,
   path: string,
 ): Effect.Effect<readonly [string, string], TemplateMissing | RenderError> => {
-  const text = templates.get(path);
+  const text = templates.get(`${tool.name}/${path}`);
   return text === undefined
     ? Effect.fail(new TemplateMissing({ path }))
     : Effect.try({
@@ -61,7 +55,7 @@ export const render = (
 ): Effect.Effect<ReadonlyMap<string, string>, TemplateMissing | RenderError> => {
   const context = scope(values);
   return Effect.forEach(
-    [...selected].flatMap((tool) => tool.files),
-    (path) => renderPath(templates, context, path),
+    [...selected].flatMap((tool) => tool.files.map((path) => [tool, path] as const)),
+    ([tool, path]) => renderPath(templates, context, tool, path),
   ).pipe(Effect.map((entries) => new Map(entries)));
 };

@@ -3,9 +3,10 @@ import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem, Path } from "effect";
 import { build } from "tsdown";
 import tsdownConfig from "../../tsdown.config";
-import { toolsByName, type Tool } from "@/tool/catalog";
-import { render, type RenderValues } from "@/tool/render";
-import { templatesFrom } from "@/tool/templates";
+import type { Values } from "@/setup-config/schema";
+import { tools, toolsByName, type Tool } from "@/tool/catalog";
+import { render } from "@/tool/render";
+import { templates, templatesFrom } from "@/tool/templates";
 
 const fixtures = templatesFrom(
   "../fixtures/templates/",
@@ -19,7 +20,7 @@ const fixtures = templatesFrom(
 
 const tool = (name: string): Tool => toolsByName.get(name)!;
 
-const values: RenderValues = {
+const values: typeof Values.Type = {
   repo: "virajp/bootstrap",
   commit_scopes: ["cli"],
   merge_model: { develop: "direct", main: "pr" },
@@ -31,11 +32,11 @@ describe("render", () => {
     Effect.gen(function*() {
       const rendered = yield* render([tool("github")], values, fixtures);
       expect(rendered.get(".github/pull_request_template.md")).toBe(
-        "# bootstrap\n\nOwner: virajp, repository: virajp/bootstrap.\n\nReaches main by pull request.\n\n",
+        "# bootstrap\n\nRepository: virajp/bootstrap.\n\nReaches main by pull request.\n\n",
       );
     }));
 
-  it.effect("derives the owner path from every segment before the name", () =>
+  it.effect("derives the repo name from the last segment of a nested repo path", () =>
     Effect.gen(function*() {
       const rendered = yield* render(
         [tool("github")],
@@ -43,7 +44,7 @@ describe("render", () => {
         fixtures,
       );
       expect(rendered.get(".github/pull_request_template.md")).toBe(
-        "# name\n\nOwner: group/sub, repository: group/sub/name.\n\n",
+        "# name\n\nRepository: group/sub/name.\n\n",
       );
     }));
 
@@ -57,7 +58,7 @@ describe("render", () => {
 
   it.effect("fails with a typed render error naming the path on an undefined variable", () =>
     Effect.gen(function*() {
-      const error = yield* render([tool("grype")], values, new Map([[".config/grype.yaml", "<%= nope %>"]])).pipe(
+      const error = yield* render([tool("grype")], values, new Map([["grype/.config/grype.yaml", "<%= nope %>"]])).pipe(
         Effect.flip,
       );
       expect(error._tag).toBe("RenderError");
@@ -70,13 +71,27 @@ describe("render", () => {
       expect(error._tag).toBe("TemplateMissing");
       expect(error.path).toBe(".config/grype.yaml");
     }));
+
+  it.effect("does not serve a path from a template under another tool's folder", () =>
+    Effect.gen(function*() {
+      const error = yield* render([tool("grype")], values, new Map([["github/.config/grype.yaml", "x"]])).pipe(
+        Effect.flip,
+      );
+      expect(error._tag).toBe("TemplateMissing");
+      expect(error.path).toBe(".config/grype.yaml");
+    }));
 });
 
 describe("templatesFrom", () => {
-  it("keys each template by its target path under the tool folder", () => {
+  it("keys each template by its tool folder and target path", () => {
     expect(templatesFrom("../t/", { "../t/mise/.config/mise.toml": "a", "../t/git/.gitignore": "b" })).toEqual(
-      new Map([[".config/mise.toml", "a"], [".gitignore", "b"]]),
+      new Map([["mise/.config/mise.toml", "a"], ["git/.gitignore", "b"]]),
     );
+  });
+
+  it("embeds every real template in the folder of the catalog tool that owns its path", () => {
+    const owned = new Set(tools.flatMap((t) => t.files.map((path) => `${t.name}/${path}`)));
+    expect([...templates.keys()].filter((key) => !owned.has(key))).toEqual([]);
   });
 });
 

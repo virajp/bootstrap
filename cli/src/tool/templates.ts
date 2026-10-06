@@ -1,5 +1,6 @@
 /**
- * The embedded templates: `cli/templates/<tool>/<target path>` → template text.
+ * The embedded templates: `<tool>/<target path>` (their path under `cli/templates/`) → template text.
+ * The tool folder stays in the key, so a template only serves its own tool's paths.
  *
  * `import.meta.glob` with `?raw` is expanded at build time — by Vite under Vitest and by
  * rolldown under tsdown — so the texts are bundled into the JS and nothing reads the file
@@ -15,13 +16,13 @@ declare global {
   }
 }
 
-/** Keys glob results (`<root><tool>/<target path>`) by target path. */
+/** Keys glob results (`<root><tool>/<target path>`) by `<tool>/<target path>`. */
 export const templatesFrom = (
   root: string,
   modules: Readonly<Record<string, string>>,
 ): ReadonlyMap<string, string> =>
   new Map(
-    Object.entries(modules).map(([key, text]) => [key.slice(root.length).replace(/^[^/]+\//, ""), text]),
+    Object.entries(modules).map(([key, text]) => [key.slice(root.length), text]),
   );
 
 export const templates: ReadonlyMap<string, string> = templatesFrom(

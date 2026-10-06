@@ -258,6 +258,9 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 4 | U5 core templates | opus | 2 | pass | code; R4 loop-back: restored `bin/`, `installer/dist/`, `scripts/dist/`, `brag-output` lines (user ruling); dropped the `site/public/` clause from the restored comment (Edit 1); tests 86 pass; build, code:all green | efcb10d |
 | 4 | R4 | opus | 2 | pass | wave review; FINDINGS 0 (round 1: 3 → 0, converging), CONTRACT clean, RULINGS clean | — |
 | 4 | wave gate | — | 1 | pass | `MISE_ENV=dev mise run code:all`; no UNRESOLVED; U5 fix lands before U7, which covers it (no late re-run) | — |
+| 5 | U7 | opus | 1 | findings(9) | review; range 5e7f23c..85dae84, 89 files (U1 15, U2 2, U3 9, U4 4, U5 49, U6 10); engine /code-review 10 kept, 0 dropped; 5 medium (U5: vscode settings trailing commas, extensions dupes, fnox not installed (+U6 hint), GitHub-only URLs, unescaped values) + 4 low (U3 template collisions, U4 empty/dir paths G9, U3/U4 duplicated types, U5 dprint `--config` G11); VERDICT changes-required; tag U7/review/1 | — |
+| 5 | U7 | opus | 1 | findings(2) | security; engine 0; [medium] U4 schema.ts:12 `repo` allows Tera/quote chars → rendered unescaped into mise TOML (command execution via `{{exec}}`); [low] U4 validity.ts:96 paths accept `.git/`, empty/`.` segments, dirs, control chars; spec gap U7/gap/1; tag U7/security/1 | — |
+| 5 | U3 renderer | opus | 3 | pass | code; U7 r1 fix: templates keyed `<tool>/<path>`, wrong-folder → TemplateMissing, placement test; RenderValues = typeof Values.Type; repo_owner removed; tests 88 pass; check, build, code:all green | (see Units) |
 
 ## Acceptance criteria (from blueprint)
 
@@ -309,6 +312,11 @@ U2, U4, U5 and U6.
   parses as TOML, but the plan lists no TOML parser. Assumption: the test runs
   `taplo get -o json` and is skipped when `taplo` is not on PATH (likely in CI);
   the `check-toml` hook still checks the template source.
+- G13 (U7 security, blueprint) — setup-config `schema.yaml` lets `values.repo`
+  carry characters that are unsafe in every rendered format (quotes, Tera
+  `{{ }}`), and the path rule does not exclude `.git` segments, empty or `.`
+  segments, or directories. The code is tightened to fix the security
+  findings; the blueprint schema needs the same pattern via `/vwf:blueprint`.
 
 ## Launch
 
