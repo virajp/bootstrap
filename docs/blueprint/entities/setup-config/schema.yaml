@@ -19,8 +19,8 @@ properties:
     properties:
       repo:
         type: string
-        description: Repository as owner/name; detected from the git remote by default.
-        pattern: ^[^/\s]+/[^/\s]+$
+        description: Repository path, one or more owner segments then the name (owner/name or group/subgroup/name); detected from the git remote by default.
+        pattern: ^[^/\s]+(/[^/\s]+)+$
       commit_scopes:
         type: array
         description: Allowed commit scopes; may be empty.
@@ -43,32 +43,32 @@ properties:
             enum: [direct, pr]
         required: [develop, main]
         additionalProperties: false
-      groups:
+      tools:
         type: array
-        description: Selected optional groups only; core groups are implicit. Each names an optional entry of entity Group.
+        description: Selected non-core tools only; core is implicit. Each names a non-core entry of entity Tool.
         uniqueItems: true
         items:
           type: string
-          description: Name of an optional Group; optional group names only, never a core group name.
-    required: [repo, commit_scopes, merge_model, groups]
+          description: Name of a non-core Tool; non-core tool names only, never a core tool name.
+    required: [repo, commit_scopes, merge_model, tools]
     additionalProperties: false
   kept:
     type: array
-    description: Repository-relative paths the repository owns, deliberately changed from bootstrap's version. Check reports them as kept, never drift; update never overwrites them unless the owner chooses recreate or passes `--take <path>`. Optional; absent means empty.
+    description: Paths the owner deliberately changed from bootstrap's version. Optional; absent means empty; bootstrap never writes it empty.
     uniqueItems: true
     items:
       type: string
       description: One exact repository-relative file path; no directories, no globs.
   deleted:
     type: array
-    description: Repository-relative paths the owner deliberately left deleted. Never recreated or asked about; check reports them as deleted, not drift. Never also in kept. Optional; absent means empty.
+    description: Paths the owner deliberately left deleted. Optional; absent means empty; bootstrap never writes it empty.
     uniqueItems: true
     items:
       type: string
       description: One exact repository-relative file path; no directories, no globs.
   files:
     type: array
-    description: Every repository-relative file path the full selected set (core plus selected optional groups) produces under the running cli, excluding .config/bootstrap.yaml itself; the whole set, refreshed on every write of this file.
+    description: Every path the selected tools produce, excluding .config/bootstrap.yaml itself.
     uniqueItems: true
     items:
       type: string

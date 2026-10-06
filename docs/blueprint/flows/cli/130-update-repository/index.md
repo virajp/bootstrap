@@ -30,17 +30,20 @@ Not audit-recorded: the product has no audit foundation.
 1. Outside a git repository update exits 3 per
    [errors](../../../conventions.md#errors). Update reads `.config/bootstrap.yaml`. Absent → writes nothing, exits 3 "not
    set up — run `bootstrap init`". A file failing
-   [Setup config validity](../../../entities/setup-config/index.md#validity) → exits 3.
+   [Setup config validity](../../../entities/setup-config/index.md#validity) → exits 3. This
+   includes a recorded `version` newer than the running cli: "set up with X,
+   running Y — upgrade bootstrap"; nothing is written.
 2. Actor may change recorded values with the init value flags (`--repo`,
    `--scope`, `--merge-develop`, `--merge-main`), per
    [Set up a repository](../110-setup-repository/index.md) step 3, plus the
    update-only flag `--no-scope`. Each value
    flag replaces that recorded value: `--scope` (repeatable) gives the complete
    new scope list (recorded `[web, cli]` + `--scope api` → `[api]`);
-   `--no-scope` clears it to empty. A value not flagged is reused silently — no
+   `--no-scope` clears it to empty; `--no-scope` with `--scope` exits 2 naming
+   both flags. A value not flagged is reused silently — no
    prompt, interactive or not. With no value flag nothing is asked.
-3. Update renders every file of the core plus selected optional
-   [groups](../../../entities/group/index.md) with the running cli and the new
+3. Update renders every file of the core plus selected non-core
+   [tools](../../../entities/tool/index.md) with the running cli and the new
    values, and also with the old recorded values, and gives
    each path exactly one status, precedence per
    [check](../120-check-drift/index.md) step 4:
@@ -50,7 +53,7 @@ Not audit-recorded: the product has no audit foundation.
    | `unchanged` | left alone |
    | `missing` | created |
    | `kept` | untouched unless recreate or `--take <path>` (step 4) |
-   | `deleted` | never recreated or asked about |
+   | `deleted` | never recreated or asked about, except on `--take <path>` (step 4) |
    | `obsolete` | moved to a backup per [backups](../../../conventions.md#backups), then removed; needs no decision |
    | `updated` | content equals the old-values render (not hand-edited) and differs from the new render only because a value changed; written with the new values without a question, replaced, no backup: its content was bootstrap's own previous render |
    | `modified` | needs a decision (step 4); includes a value-affected path whose content differs from the old-values render |
@@ -120,7 +123,7 @@ sequenceDiagram
     actor O as Actor
     participant U as Update
     participant C as Setup config
-    participant G as Group
+    participant G as Tool
     participant R as Repository
     O->>U: bootstrap update
     U->>C: read config
@@ -182,6 +185,8 @@ N/A — runs synchronously in one command invocation.
   runs, then the recorded scopes are `[api]`, the files affected only by scopes
   are `updated` with no backup, and the exit code is 0.
 - Given `--no-scope`, when update runs, then the recorded scopes are empty.
+- Given `--no-scope` and `--scope api`, when update runs, then nothing is
+  written and the exit code is 2 naming both flags.
 - Given a scope-affected file that was also hand-edited, when update runs, then
   it is `modified` and gets the per-file decision.
 - Given no `.config/bootstrap.yaml`, when update runs, then the exit code is 3

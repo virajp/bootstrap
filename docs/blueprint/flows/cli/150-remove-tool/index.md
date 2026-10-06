@@ -1,16 +1,16 @@
 ---
 type: vwf-flow
-title: Remove a group
-description: One command removes optional groups from a set-up repository, with every removed file backed up and nothing half-written.
+title: Remove a tool
+description: One command removes non-core tools from a set-up repository, with every removed file backed up and nothing half-written.
 status: reviewed
 implementation: none
 ---
 
-# Flow: Remove a group
+# Flow: Remove a tool
 
 ## Purpose
 
-`bootstrap remove <group>...` removes the files of one or more optional groups
+`bootstrap remove <tool>...` removes the files of one or more non-core tools
 from a repository that is already set up and drops them from the config.
 
 Serves: [Zero setup drift](../../../product.md#goal-zero-drift)
@@ -19,8 +19,8 @@ Serves: [Zero setup drift](../../../product.md#goal-zero-drift)
 
 | Actor | May trigger | Authorization | Audit-recorded |
 | ----- | ----------- | ------------- | -------------- |
-| Repo owner (interactive terminal) | the command `bootstrap remove <group> [<group>...]` | write access to the working directory | no — the product has no audit foundation; every removed file is kept as a backup ([backups](../../../conventions.md#backups)) |
-| AI agent or CI (non-interactive) | `bootstrap remove <group>...`; `-y` is necessary except with `--dry-run` | write access to the working directory | no — the product has no audit foundation; every removed file is kept as a backup ([backups](../../../conventions.md#backups)) |
+| Repo owner (interactive terminal) | the command `bootstrap remove <tool> [<tool>...]` | write access to the working directory | no — the product has no audit foundation; every removed file is kept as a backup ([backups](../../../conventions.md#backups)) |
+| AI agent or CI (non-interactive) | `bootstrap remove <tool>...`; `-y` is necessary except with `--dry-run` | write access to the working directory | no — the product has no audit foundation; every removed file is kept as a backup ([backups](../../../conventions.md#backups)) |
 
 ## Steps
 
@@ -31,28 +31,29 @@ Serves: [Zero setup drift](../../../product.md#goal-zero-drift)
    `version` older than the running cli → exits 3 "run `bootstrap update` first";
    a newer one fails Validity ("upgrade bootstrap").
 2. Remove validates each name. A name given more than once is used once, with no
-   error. An unknown name exits 2. A core group name exits 2.
-   A name not in setup-config `values.groups` is reported "not added" and changes
-   nothing. If no named group is in `values.groups`, remove writes nothing and exits 0.
-   [Group](../../../entities/group/index.md),
+   error. An unknown name exits 2. A core tool name exits 2 (core, the fixed set
+   of 13 tools always applied, cannot be removed).
+   A name not in setup-config `values.tools` is reported "not added" and changes
+   nothing. If no named tool is in `values.tools`, remove writes nothing and exits 0.
+   [Tool](../../../entities/tool/index.md),
    [Setup config](../../../entities/setup-config/index.md)
 3. A non-interactive run (`--json` included) without `-y` exits 2 "removing files
    needs -y". `--dry-run` does not need `-y`.
-4. Remove plans each path of the removed groups listed in setup-config `files`. A
+4. Remove plans each path of the removed tools listed in setup-config `files`. A
    path present in the repo will be backed up, then removed, per
    [backups](../../../conventions.md#backups). A path already absent will be
    dropped from `files` silently. A path in `kept` or `deleted` is left untouched
-   and stays in its list. No path is shared with a group that stays added ([Group](../../../entities/group/index.md) invariant 1). Precedence: `kept` > `deleted` > the rules above, per
+   and stays in its list. No path is shared with a tool that stays added ([Tool](../../../entities/tool/index.md) invariant 1). Precedence: `kept` > `deleted` > the rules above, per
    [check](../120-check-drift/index.md), so a kept or deleted path is never backed
    up or removed.
-   [Group](../../../entities/group/index.md),
+   [Tool](../../../entities/tool/index.md),
    [Setup config](../../../entities/setup-config/index.md)
 5. Interactive only: remove shows the plan and asks once to proceed, as in
    [Set up a repository](../110-setup-repository/index.md) step 5. Declining
    writes nothing and exits 1. Ctrl-C at any prompt writes nothing and exits 130
    per [errors](../../../conventions.md#errors).
 6. Remove applies the plan all-or-nothing, then rewrites `.config/bootstrap.yaml`
-   last: `values.groups` without the removed names and `files` refreshed to the full set
+   last: `values.tools` without the removed names and `files` refreshed to the full set
    now produced. [Setup config](../../../entities/setup-config/index.md)
 7. Remove reports files removed (each original → backup path), kept or left
    deleted (untouched) and not added. Exit 0 on success.
@@ -78,9 +79,9 @@ sequenceDiagram
     actor O as Actor
     participant M as Remove
     participant C as Setup config
-    participant G as Group
+    participant G as Tool
     participant R as Repository
-    O->>M: bootstrap remove groups
+    O->>M: bootstrap remove tools
     M->>C: read config
     M->>G: validate names
     alt config unusable
@@ -115,21 +116,21 @@ N/A — runs synchronously in one command invocation.
 
 ## Acceptance
 
-- Given a repository with ai added, when `bootstrap remove ai -y` runs, then ai's
-  files are moved to backups, `values.groups` no longer contains ai, `files` no longer
+- Given a repository with github added, when `bootstrap remove github -y` runs, then github's
+  files are moved to backups, `values.tools` no longer contains github, `files` no longer
   lists them and the exit code is 0; then `bootstrap check` exits 0.
-- Given a group not in `values.groups`, when remove runs with its name, then nothing is
+- Given a tool not in `values.tools`, when remove runs with its name, then nothing is
   written, it is reported "not added" and the exit code is 0.
-- Given a core group name, when remove runs, then the exit code is 2.
-- Given an unknown group name, when remove runs, then the exit code is 2.
+- Given a core tool name, when remove runs, then the exit code is 2.
+- Given an unknown tool name, when remove runs, then the exit code is 2.
 - Given a non-interactive run without `-y`, when remove runs, then the exit code
   is 2 and nothing is written.
 - Given a non-interactive `--dry-run` without `-y`, when remove runs, then the
   plan is shown, nothing is written and the exit code is 0.
-- Given a file of the group that is in `kept`, when remove runs, then the file is
+- Given a file of the tool that is in `kept`, when remove runs, then the file is
   untouched, its path stays in `kept` and a later check warns "kept file no
   longer produced".
-- Given a path of the group that is in `deleted`, when remove runs, then the path
+- Given a path of the tool that is in `deleted`, when remove runs, then the path
   stays in `deleted`, nothing is written for it and a later check shows no
   warning for it.
 - Given a recorded version older than the running cli, when remove runs, then the
@@ -138,14 +139,14 @@ N/A — runs synchronously in one command invocation.
   byte-identical to before and the exit code is 3.
 - Given an interactive run, when the actor declines at the confirm, then nothing
   is written and the exit code is 1.
-- Given a group name given twice, when `bootstrap remove ai ai -y` runs, then the
-  group is removed once and the exit code is 0.
+- Given a tool name given twice, when `bootstrap remove github github -y` runs, then the
+  tool is removed once and the exit code is 0.
 - Given no `.config/bootstrap.yaml`, when remove runs, then the exit code is 3 and
   the message names `bootstrap init`.
 - Given an interactive run, when the actor presses Ctrl-C at a prompt or during
   the write, then nothing is written (the repository is byte-identical to before)
   and the exit code is 130.
-- Given the name removed from `values.groups` by hand, when
+- Given the name removed from `values.tools` by hand, when
   `bootstrap update --take-all -y` runs, then the resulting files equal those of
   the first criterion.
 - Abuse case: n/a — runs locally with the caller's own permissions on the
@@ -161,6 +162,6 @@ N/A — runs synchronously in one command invocation.
   [Terminal UX](../../../design-system.md#terminal-ux)
 - [Set up a repository](../110-setup-repository/index.md),
   [Update a repository](../130-update-repository/index.md) (by-hand route),
-  [Add a group](../140-add-group/index.md) (inverse)
+  [Add a tool](../140-add-tool/index.md) (inverse)
 - API surface: N/A — no service project. Screens surface: N/A — cli has no
   screen platform.

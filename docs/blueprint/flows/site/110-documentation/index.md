@@ -12,7 +12,7 @@ owner: [site]
 ## Purpose
 
 A visitor who opens a page under `https://bootstrap.virajp.dev/docs/` finds
-every command, flag, exit code, group, setup-config field and JSON report field
+every command, flag, exit code, tool, setup-config field and JSON report field
 of bootstrap. The site also publishes the same pages as plain text for AI
 agents. The docs describe only the latest release; there is no version
 selector, and the changelog page records older versions.
@@ -31,26 +31,27 @@ Serves: [Outside adoption](../../../product.md#goal-outside-adoption),
 The addresses are permanent. The sidebar order is the order of this table, and
 previous and next links follow it. The Page column is the page title; the
 Description column is the page's one-sentence description, also used in
-`/llms.txt`. Each command page describes the linked cli flow.
+`/llms.txt`. Each command page describes the cli flow in its Flow column; the Flow column
+is not shown on the site.
 
-| Section | Page | Address | Description |
-| ------- | ---- | ------- | ----------- |
-| START | Introduction | `/docs/` (the docs index) | What bootstrap is, what it writes into a repository, and how it keeps that setup current. |
-| START | Quick start | `/docs/start/quick-start/` | Go from an empty git repository to passing gates in under five minutes. |
-| COMMANDS | bootstrap init — [Set up a repository](../../cli/110-setup-repository/index.md) | `/docs/commands/init/` | Set up a repository: choose groups, give values, write the files. |
-| COMMANDS | bootstrap check — [Check for drift](../../cli/120-check-drift/index.md) | `/docs/commands/check/` | Report drift between a repository and the shared source, for people and agents. |
-| COMMANDS | bootstrap update — [Update a repository](../../cli/130-update-repository/index.md) | `/docs/commands/update/` | Bring a repository back to the shared source and decide per changed file. |
-| COMMANDS | bootstrap add — [Add a group](../../cli/140-add-group/index.md) | `/docs/commands/add/` | Add one or more optional groups to a set-up repository. |
-| COMMANDS | bootstrap remove — [Remove a group](../../cli/150-remove-group/index.md) | `/docs/commands/remove/` | Remove optional groups and their files, with backups. |
-| GUIDES | Adopt an existing repository | `/docs/guides/adopt-existing-repository/` | Move a repository with hand-copied setup onto bootstrap. |
-| GUIDES | Run check in CI | `/docs/guides/run-check-in-ci/` | Fail a build when a repository drifts from the shared source. |
-| GUIDES | Fix drift with an AI agent | `/docs/guides/fix-drift-with-an-ai-agent/` | Let an agent read the JSON report and resolve drift alone. |
-| GUIDES | Keep your own edits | `/docs/guides/keep-your-own-edits/` | Mark files as kept or deleted so bootstrap leaves them alone. |
-| REFERENCE | Groups | `/docs/reference/groups/` | Every core and optional group, with the files that each one writes. |
-| REFERENCE | bootstrap.yaml | `/docs/reference/bootstrap-yaml/` | Every field of the setup file and the rules for each one. |
-| REFERENCE | JSON report | `/docs/reference/json-report/` | Every field of the --json report for each command. |
-| REFERENCE | Exit codes | `/docs/reference/exit-codes/` | What each exit code means and the next command to run. |
-| REFERENCE | Changelog | `/docs/reference/changelog/` | What changed in each release of bootstrap. |
+| Section | Page | Address | Description | Flow |
+| ------- | ---- | ------- | ----------- | ---- |
+| START | Introduction | `/docs/` (the docs index) | What bootstrap is, what it writes into a repository, and how it keeps that setup current. | n/a |
+| START | Quick start | `/docs/start/quick-start/` | Go from an empty git repository to passing gates in under five minutes. | n/a |
+| COMMANDS | bootstrap init | `/docs/commands/init/` | Set up a repository: choose tools, give values, write the files. | [Set up a repository](../../cli/110-setup-repository/index.md) |
+| COMMANDS | bootstrap check | `/docs/commands/check/` | Report drift between a repository and the shared source, for people and agents. | [Check for drift](../../cli/120-check-drift/index.md) |
+| COMMANDS | bootstrap update | `/docs/commands/update/` | Bring a repository back to the shared source and decide per changed file. | [Update a repository](../../cli/130-update-repository/index.md) |
+| COMMANDS | bootstrap add | `/docs/commands/add/` | Add one or more non-core tools to a set-up repository. | [Add a tool](../../cli/140-add-tool/index.md) |
+| COMMANDS | bootstrap remove | `/docs/commands/remove/` | Remove non-core tools and their files, with backups. | [Remove a tool](../../cli/150-remove-tool/index.md) |
+| GUIDES | Adopt an existing repository | `/docs/guides/adopt-existing-repository/` | Move a repository with hand-copied setup onto bootstrap. | n/a |
+| GUIDES | Run check in CI | `/docs/guides/run-check-in-ci/` | Fail a build when a repository drifts from the shared source. | n/a |
+| GUIDES | Fix drift with an AI agent | `/docs/guides/fix-drift-with-an-ai-agent/` | Let an agent read the JSON report and resolve drift alone. | n/a |
+| GUIDES | Keep your own edits | `/docs/guides/keep-your-own-edits/` | Mark files as kept or deleted so bootstrap leaves them alone. | n/a |
+| REFERENCE | Tools | `/docs/reference/tools/` | The core set and every non-core tool, with the files that each one writes. | n/a |
+| REFERENCE | bootstrap.yaml | `/docs/reference/bootstrap-yaml/` | Every field of the setup file and the rules for each one. | n/a |
+| REFERENCE | JSON report | `/docs/reference/json-report/` | Every field of the --json report for each command. | n/a |
+| REFERENCE | Exit codes | `/docs/reference/exit-codes/` | What each exit code means and the next command to run. | n/a |
+| REFERENCE | Changelog | `/docs/reference/changelog/` | What changed in each release of bootstrap. | n/a |
 
 ## Trigger & Actors
 
@@ -64,7 +65,7 @@ Description column is the page's one-sentence description, also used in
 
 1. Site serves the page — N/A: reads no product data; the pages describe
    [Setup config](../../../entities/setup-config/index.md) and
-   [Group](../../../entities/group/index.md) but store no data
+   [Tool](../../../entities/tool/index.md) but store no data
 2. Visitor navigates with the sidebar, "On this page", previous and next links,
    or the Search input ([Inputs (search)](../../../design-system.md#component-behaviors)
    searches every docs page)
@@ -109,7 +110,7 @@ N/A — static pages, no processing.
   `not-found` screen (`100b` of [Home](../100-home/index.md)) shows.
 - Given the docs, when a reader compares them with the cli flows, the entities
   and [errors](../../../conventions.md#errors), then every command, flag, exit
-  code (0, 1, 2, 3, 130), group, setup-config field, JSON report field, the
+  code (0, 1, 2, 3, 130), tool, setup-config field, JSON report field, the
   not-a-git-repository rule and the `--json` error document defined there
   appears on its docs page.
 - Given any docs page, when a visitor reads the sidebar, then it lists exactly

@@ -23,7 +23,7 @@ Flow contract: [Home](./index.md)
 
 | Component | Rules |
 | --------- | ----- |
-| Header | Brand mark with the live wordmark "bootstrap", then navigation: "Docs" link to `/docs/` (the introduction of the [documentation flow](../110-documentation/index.md)), Search input, "Source ↗" external link. Always visible. |
+| Header | Brand mark with the live wordmark "bootstrap", then navigation: "Docs" link to `/docs/` (the introduction of the [documentation flow](../110-documentation/index.md)), Search input, "Source ↗" external link. Always visible. No mobile-menu button: home has no sidebar. |
 | Search input | Behaves per the design-system Component Behaviors "Inputs (search)": results open in the search panel under the input, over the documentation pages. Hidden when scripting is off ([reliability](../../../conventions.md#reliability)). |
 | Eyebrow (mono uppercase text) | "REPOSITORY SETUP". Always visible; sits above the heading. |
 | Heading | "One setup for every repository." |
@@ -32,15 +32,15 @@ Flow contract: [Home](./index.md)
 | Copy button (ghost) | Activating it places exactly `pnpx @virajp.dev/bootstrap@latest init` on the clipboard and shows "Copied" for 1.5 seconds. If the clipboard is unavailable, no confirmation shows and the command stays visible and selectable. Hidden when scripting is off, never inert. |
 | "Read the docs" (primary button) | Activating it opens `/docs/`, the introduction of the documentation flow, [110](../110-documentation/index.md). |
 | "Source ↗" (ghost external link) | Opens the source repository; external. |
-| Terminal sample | Shows `bootstrap check` reporting drift, exactly these lines. Static; not interactive.<br>`$ pnpx @virajp.dev/bootstrap@latest check`<br>`⚠ modified   .gitignore             (git)` — warning role with its glyph<br>`✓ unchanged  23 files` — success role with its glyph<br>(blank line)<br>``drift found in 1 file — run `bootstrap update` `` — emphasis on the command<br>`(exit 1)` — muted |
-| Rows (three, rules not cards) | Each row links to its command's page in the [documentation flow](../110-documentation/index.md): Set up to `/docs/commands/init/`, Check to `/docs/commands/check/`, Update to `/docs/commands/update/`. Content: "Set up — `bootstrap init` writes the formatters, commit gates, scanners and tasks into a repository."; "Check — `bootstrap check` reports drift as a JSON report that an AI agent can act on."; "Update — `bootstrap update` brings a repository back to the shared source and keeps your own edits." |
+| Terminal sample | Shows `bootstrap check` reporting drift, exactly these lines. Static; not interactive.<br>`$ pnpx @virajp.dev/bootstrap@latest check`<br>`⚠ modified   .gitignore             (git)` — warning role with its glyph<br>`✓ unchanged  49 files` — success role with its glyph<br>(blank line)<br>``drift found in 1 file — run `bootstrap update` `` — emphasis on the command<br>`(exit 1)` — muted |
+| Rows (three, rules not cards) | Each row links to its command's page in the [documentation flow](../110-documentation/index.md): Set up to `/docs/commands/init/`, Check to `/docs/commands/check/`, Update to `/docs/commands/update/`. Content: "Set up: `bootstrap init` writes the formatters, commit gates, scanners and tasks into a repository."; "Check: `bootstrap check` reports drift as a JSON report that an AI agent can act on."; "Update: `bootstrap update` brings a repository back to the shared source and keeps your own edits." |
 | Footer | Shows "MIT License" and a "Source ↗" external link. |
 
 ### `100a` — `home` metadata
 
 | Field       | Value |
 | ----------- | ----- |
-| title       | bootstrap — one setup for every repository |
+| title       | bootstrap \| one setup for every repository |
 | description | The product default description, per [web metadata](../../../conventions.md#web-metadata) |
 | index       | yes |
 | image       | default — the social preview card in [Brand assets](../../../design-system.md#brand-assets) |
@@ -58,7 +58,7 @@ Flow contract: [Home](./index.md)
 
 | Field       | Value |
 | ----------- | ----- |
-| title       | Page not found — bootstrap |
+| title       | Page not found \| bootstrap |
 | description | The product default description, per [web metadata](../../../conventions.md#web-metadata) |
 | index       | no |
 | image       | default — the social preview card in [Brand assets](../../../design-system.md#brand-assets) |

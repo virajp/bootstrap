@@ -105,7 +105,7 @@ samples, commands, flags, file paths, eyebrows and tags.
   - below 1200px: the "On this page" column is hidden.
   - below 900px: the sidebar becomes a menu behind a "Menu" button in the header.
   - below 640px: tables scroll horizontally inside their own container.
-- Header: 56px, one line always: wordmark left, search, GitHub link right, with a
+- Header: 56px, one line always: brand mark and wordmark left; "Docs" link, search and "Source ↗" link right, with a
   `border-default` bottom hairline.
 - Rhythm: h2 sections open 48px below the previous block with a hairline above;
   paragraphs sit 16px apart; code blocks and callouts have 24px above and below;
@@ -244,12 +244,11 @@ The `cli` project is a shipped command-line tool. Elicited in text on
 - Progress conventions: an animated spinner per step in an interactive terminal;
   when piped, in CI or non-interactive, one stable line per finished step on
   stderr instead.
-- Errors & exit codes: `0` success with no drift; `1` drift found (`check`) or
-  changes declined; `2` usage error (prints short usage); `3` failure
-  (unreadable config, template error, write failed). Every error states what
-  happened, why, and the exact next command; no stack trace unless `--verbose`.
+- Errors & exit codes: per [errors](conventions.md#errors) (`0`, `1`, `2`,
+  `3`, `130`). Every error states what happened, why, and the exact next
+  command; no stack trace unless `--verbose`.
 - Help & naming conventions: commands are single verbs (`init`, `check`,
-  `update`, `add <group>`). Every flag has a long form; short forms only for the
+  `update`, `add <tool>`, `remove <tool>`). Every flag has a long form; short forms only for the
   most common (`-q`, `-v`, `-y`). Booleans negate with `--no-<flag>`. Help is a
   one-line purpose, usage, flags, then one or two real examples. The bare
   command prints help and exits `2`.

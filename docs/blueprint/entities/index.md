@@ -13,11 +13,11 @@ status: draft
 | Entity                                 | Purpose (one line)                                                                  |
 | -------------------------------------- | ----------------------------------------------------------------------------------- |
 | [Setup Config](./setup-config/index.md) | Records a repository's bootstrap answers and marks it as set up.                    |
-| [Group](./group/index.md)              | Named set of setup files shipped inside the tool; core groups always apply.         |
+| [Tool](./tool/index.md)                | Named set of setup files for one tool, shipped inside bootstrap; core always applies. |
 
 ## Relationship view
 
 ```mermaid
 erDiagram
-    SETUP_CONFIG }o--o{ GROUP : selects
+    SETUP_CONFIG }o--o{ TOOL : selects
 ```

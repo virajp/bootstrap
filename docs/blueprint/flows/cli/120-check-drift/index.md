@@ -35,10 +35,10 @@ Serves: [Zero setup drift](../../../product.md#goal-zero-drift),
 2. When the running cli is newer than the recorded `version`, the comparison uses
    the running cli's files and the report states both versions.
    [Setup config](../../../entities/setup-config/index.md)
-3. Check renders, in memory only, every file of the core groups plus the selected
-   optional groups, using the recorded values. A render failure exits 3 per
+3. Check renders, in memory only, every file of core plus the selected non-core
+   tools, using the recorded values. A render failure exits 3 per
    [errors](../../../conventions.md#errors).
-   [Group](../../../entities/group/index.md)
+   [Tool](../../../entities/tool/index.md)
 4. Check compares each rendered file with the repository and assigns each
    produced or listed path exactly one status, first matching row wins
    ([Setup config](../../../entities/setup-config/index.md) lists):
@@ -59,7 +59,7 @@ Serves: [Zero setup drift](../../../product.md#goal-zero-drift),
    one document on every exit ([errors](../../../conventions.md#errors)); on exit
    2, 3 or 130 it carries the `error` instead of file statuses ("interrupted —
    nothing written" on 130), otherwise: recorded version, running version, and
-   per file its path, group (null for a path no group of the running cli
+   per file its path, tool (null for a path no tool of the running cli
    produces) and status, plus for
    `modified`, `missing` and `obsolete` a unified diff from the current content
    to the expected content (`missing`: from empty; `obsolete`: to empty), and a
@@ -71,9 +71,9 @@ Serves: [Zero setup drift](../../../product.md#goal-zero-drift),
 
 ## Guarantees
 
-| Step / group | Consistency | On failure | Idempotency | Load & latency |
+| Step / tool | Consistency | On failure | Idempotency | Load & latency |
 | ------------ | ----------- | ---------- | ----------- | -------------- |
-| all | atomic — read-only: the repository is byte-identical after the run, whatever the outcome | none — nothing written; exits per steps 1, 3 and 6 | repeated runs on an unchanged repo give the same report | completes in under 5 seconds on a typical repository with every group selected, bootstrap already installed |
+| all | atomic — read-only: the repository is byte-identical after the run, whatever the outcome | none — nothing written; exits per steps 1, 3 and 6 | repeated runs on an unchanged repo give the same report | completes in under 5 seconds on a typical repository with every tool selected, bootstrap already installed |
 
 ## Diagram
 
@@ -82,24 +82,32 @@ sequenceDiagram
     actor O as Actor
     participant K as Check
     participant C as Setup config
-    participant G as Group
+    participant G as Tool
     participant R as Repository
     O->>K: bootstrap check
+    alt not a git repository
+        K-->>O: exit 3
+    else repository
     K->>C: read config
-    alt not a git repository, absent, invalid or newer version
+    alt absent, invalid or newer version
         K-->>O: exit 3, fix
     else usable
         K->>G: render files in memory
         alt render failure
             K-->>O: exit 3
+        else rendered
+            K->>R: compare each file
+            K-->>O: report by status
+            opt a kept path is no longer produced
+                K-->>O: warning "kept file no longer produced"
+            end
+            alt modified, missing or obsolete
+                K-->>O: exit 1
+            else none
+                K-->>O: exit 0
+            end
         end
-        K->>R: compare each file
-        K-->>O: report by status, warning "kept file no longer produced"
-        alt modified, missing or obsolete
-            K-->>O: exit 1
-        else none
-            K-->>O: exit 0
-        end
+    end
     end
 ```
 
@@ -131,7 +139,7 @@ N/A — runs synchronously in one command invocation.
 - Given no `.config/bootstrap.yaml`, when check runs, then the exit code is 3 and
   the message names `bootstrap init`.
 - Given a setup file failing Validity (schema violation, newer format, removed or
-  core group name, a path in both `kept` and `deleted`), when check runs, then the
+  core tool name, a path in both `kept` and `deleted`), when check runs, then the
   exit code is 3 and the message names the problem.
 - Given the recorded version is newer than the running cli (step 1), when check
   runs, then the exit code is 3 and no file status is reported.
@@ -151,7 +159,7 @@ N/A — runs synchronously in one command invocation.
   no file written, no prompt shown.
 - Given `--json`, when check runs on any exit including 3, then stdout is exactly
   one JSON document.
-- Given a typical repository with every group selected, when check runs, then it
+- Given a typical repository with every tool selected, when check runs, then it
   completes in under 5 seconds.
 - Given only the `--json` report of the edited-file case, when an agent reads it,
   then it can restore the expected file from the diff alone.

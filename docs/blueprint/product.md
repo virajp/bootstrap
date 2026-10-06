@@ -81,16 +81,16 @@ complex to maintain.
 | 1    | Set up a repository         | [Fast new-repo setup](#goal-fast-setup)                                        | —                                                 | The core path — rendering the shared source into a repository — that every other slice reuses |
 | 2    | Check for drift             | [Zero setup drift](#goal-zero-drift), [Agent-resolvable drift](#goal-agent-resolvable) | —                                                 | A read-only report is what makes drift visible in every repository and to an agent   |
 | 3    | Update an existing repository | [Zero setup drift](#goal-zero-drift)                                         | [Re-applying keeps a repository's own edits](#risks--assumptions) | Brings the repositories that already exist onto the shared source                  |
-| 4    | Add an optional group       | [Fast new-repo setup](#goal-fast-setup)                                        | —                                                 | Lets a repository take on a group of setup later, without starting over              |
-| 5    | Remove an optional group    | [Zero setup drift](#goal-zero-drift)                                           | —                                                 | Lets a repository drop a group it no longer wants, without leftover files            |
+| 4    | Add a tool                  | [Fast new-repo setup](#goal-fast-setup)                                        | —                                                 | Lets a repository take on a tool later, without starting over              |
+| 5    | Remove a tool               | [Zero setup drift](#goal-zero-drift)                                           | —                                                 | Lets a repository drop a tool it no longer wants, without leftover files            |
 | 6    | Documentation               | [Outside adoption](#goal-outside-adoption)                                     | —                                                 | What an outside developer reads before adopting; ships with 1.0                      |
 
 ```mermaid
 flowchart LR
     A[Set up a repository] --> B[Check for drift]
     B --> C[Update an existing repository]
-    C --> D[Add an optional group]
-    D --> F[Remove an optional group]
+    C --> D[Add a tool]
+    D --> F[Remove a tool]
     F --> E[Documentation]
 ```
 
@@ -115,7 +115,7 @@ repositories, and an agent prototype) before slice 1 is built.
 
 | Assumption                                                                                              | Risk if wrong                                                              | Validation method                                                  | Status   | Evidence |
 | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------ | -------- | -------- |
-| One shared source fits every repository, with differences confined to values and opt-in groups         | Repositories fork the source to fit, and drift returns                     | usage-data                                                         | untested | —        |
+| One shared source fits every repository, with differences confined to values and opt-in tools         | Repositories fork the source to fit, and drift returns                     | usage-data                                                         | untested | —        |
 | An agent can resolve drift from the report alone                                                        | Drift still needs a human in the loop, and the agent goal is unreachable   | prototype                                                          | untested | —        |
 | Re-applying the source to an existing repository keeps that repository's own edits                    | Owners stop re-applying, and existing repositories drift indefinitely      | slice:update-an-existing-repository                                | untested | —        |
 | Outside developers want an opinionated setup rather than designing their own                           | Adoption stays near zero                                                   | accepted-risk — a side benefit that does not block the owner's goals | untested | —        |

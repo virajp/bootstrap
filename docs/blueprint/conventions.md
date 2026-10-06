@@ -40,11 +40,18 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
   restored. Answering "no" to a confirm stays exit `1`.
 - Every command runs only inside a git repository; anywhere else it writes
   nothing and exits `3` with "not a git repository — run `git init` first".
+  From any subdirectory, every command works at the repository root: the setup
+  file and every tool path are relative to the root.
 - Results go to stdout; progress, warnings and errors go to stderr.
 - `--json` prints exactly one JSON document to stdout and nothing else, carrying
   the same outcome as the exit code; it is the machine contract an agent reads.
   This holds on every exit, `2` and `3` included: the document then carries an
   `error` (what happened, why, and the exact next command) in place of results.
+  Every document has a top-level `exit` (the exit code). The `error` object has
+  exactly the keys `what`, `why` and `next_command`; a failed rollback adds
+  `unrestored`, a list of `{path, backup}` for every path not restored.
+- A run is interactive only when stdin and stdout are both terminals and
+  `--json` is not given; every other run is non-interactive.
 - `--json` always runs non-interactively, terminal or not: no prompt is ever
   shown, so defaults and decisions come from `-y` and flags only.
 - Every error message states what happened, why, and the exact next command to
@@ -62,7 +69,7 @@ environment or a secrets store (`config: flags-and-repo-config-file`):
   ([setup-config](entities/setup-config/index.md)), committed with the
   repository. Its presence is the marker that a repository has been set up.
 
-Detected values (e.g. the repository's `owner/name` from its git remote) are
+Detected values (e.g. the repository path `owner/name` from its git remote) are
 offered as defaults, never applied unconfirmed in an interactive run. In a
 non-interactive run a default (detected or fixed) counts only with `-y`; a
 required value neither flagged, recorded, nor a default accepted by `-y` is a
@@ -84,7 +91,7 @@ existing file aside:
 - if that exists: `<name>.1.bak`, then `<name>.2.bak`, … — the lowest free
   number; an existing backup is never overwritten;
 - the `.bak` suffix is always last, so one ignore pattern (`*.bak`) covers every
-  backup — the core `git` group's ignore file carries it;
+  backup — the core `git` tool's ignore file carries it;
 - every backup made is listed in the command's output (original → backup path),
   human and `--json`, so a person or agent can merge hand edits back;
 - on a failed or interrupted run, backups are restored to their original paths
@@ -111,14 +118,15 @@ Each project keeps a human-written changelog in the keep-a-changelog shape
 released version, grouped Added / Changed / Deprecated / Removed / Fixed /
 Security. A release moves `Unreleased` under its version. Versions follow
 semantic versioning; for `cli`, a change to the setup-file format, a removed or renamed
-group, or a changed exit-code meaning is a major version.
+tool, a removed or renamed path in a tool, or a changed exit-code meaning is a
+major version. A tool or a path added to a tool is a minor version.
 
 ## Reliability targets {#reliability}
 
 `reliability: static-site-best-effort`. The `site` is static files served from
 the host's edge with no stated availability target. Every page's content and
 links work with client scripting off; the only scripted controls (the copy
-button, the search input and the mobile-menu button) are hidden when scripting
+button, the search input, the not-found page's search link and, on documentation pages, the mobile-menu button) are hidden when scripting
 is off, never shown inert — on narrow views the navigation then shows inline. The `cli` runs locally; its
 reliability contract is correctness — the acceptance criteria of each flow —
 not uptime.
@@ -175,7 +183,7 @@ deviating doc and as an `enforcement.rules` waiver.
   triggers the same rollback as a failure; acknowledged work is never half
   applied.
 - **`baseline/structured-logs-no-pii`** — `--verbose` diagnostics are
-  key-value, and never contain secrets or personal data; paths and group names
+  key-value, and never contain secrets or personal data; paths and tool names
   are the identifiers. No telemetry pipeline exists (see
   [#observability](#observability)).
 - **`baseline/expand-contract`** — the setup file is stored data with a `format`
