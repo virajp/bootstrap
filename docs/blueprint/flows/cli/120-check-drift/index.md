@@ -47,6 +47,7 @@ Serves: [Zero setup drift](../../../product.md#goal-zero-drift),
    | ------ | --------- | ----- |
    | `kept` | path in `kept`, present with any content or absent; never `obsolete` | no |
    | `deleted` | path in `deleted` | no |
+   | `not-a-file` | produced or in `files`, and the path or one of its parent directories is a symlink, the path is a directory, or a parent is a regular file ([backups](../../../conventions.md#backups)); never followed | yes |
    | `obsolete` | path in `files` the running cli no longer produces, still in the repo | yes |
    | `missing` | produced, absent | yes |
    | `modified` | produced, differs | yes |
@@ -101,7 +102,7 @@ sequenceDiagram
             opt a kept path is no longer produced
                 K-->>O: warning "kept file no longer produced"
             end
-            alt modified, missing or obsolete
+            alt modified, missing, obsolete or not-a-file
                 K-->>O: exit 1
             else none
                 K-->>O: exit 0
@@ -117,6 +118,9 @@ N/A — runs synchronously in one command invocation.
 
 ## Acceptance
 
+- Given a produced or listed path that is a directory or a symlink, or whose
+  parent directory is a symlink, when check runs, then it is reported as
+  `not-a-file` with no diff, nothing is followed, and the exit code is 1.
 - Given a freshly initialised repository, when check runs, then every file is
   `unchanged` and the exit code is 0.
 - Given one managed file was edited, when check runs with `--json`, then that

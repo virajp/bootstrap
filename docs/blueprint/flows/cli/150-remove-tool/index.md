@@ -116,6 +116,9 @@ N/A — runs synchronously in one command invocation.
 
 ## Acceptance
 
+- Given a path remove would remove that is a directory or a symlink, when it runs, then
+  nothing is written and the exit code is 3 naming that path
+  ([backups](../../../conventions.md#backups)).
 - Given a repository with github added, when `bootstrap remove github -y` runs, then github's
   files are moved to backups, `values.tools` no longer contains github, `files` no longer
   lists them and the exit code is 0; then `bootstrap check` exits 0.

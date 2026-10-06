@@ -29,7 +29,7 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
 | `0`  | success; for a read-only check, no drift                                          |
 | `1`  | drift found, or the command declined to act (e.g. the repository is already set up) |
 | `2`  | usage error — bad or missing flag/argument; prints short usage                    |
-| `3`  | failure — not a git repository, unreadable setup file, render error, write failed |
+| `3`  | failure — not a git repository, unreadable setup file, render error, a target path that is not a regular file, write failed |
 | `130` | interrupted (Ctrl-C) — nothing written, or the repository was restored            |
 
 - An interrupt (Ctrl-C) exits `130` in every command and at any moment — at a
@@ -95,7 +95,17 @@ existing file aside:
 - every backup made is listed in the command's output (original → backup path),
   human and `--json`, so a person or agent can merge hand edits back;
 - on a failed or interrupted run, backups are restored to their original paths
-  as part of the rollback.
+  as part of the rollback;
+- a path the command would write or remove that is a directory or a symlink,
+  or whose parent directory is a symlink or a regular file, is never backed
+  up, replaced or followed: before any
+  write the command exits `3` naming every such path, with the fix "move it
+  away and run again". A `kept` or `deleted` path is never written, so this
+  rule does not apply to it; `check` reports such a produced or listed path as
+  `not-a-file` drift.
+
+Every path list in a command's output (human and `--json`) is sorted by path in
+byte order.
 
 ## Observability {#observability}
 
