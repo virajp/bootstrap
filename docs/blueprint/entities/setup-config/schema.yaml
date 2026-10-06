@@ -52,5 +52,12 @@ properties:
           description: Name of an optional Group.
     required: [repo, commit_scopes, merge_model, groups]
     additionalProperties: false
+  kept:
+    type: array
+    description: Repository-relative paths the repository owns, deliberately changed from bootstrap's version. Check reports them as kept, never drift; update never overwrites them. Optional; absent means empty.
+    uniqueItems: true
+    items:
+      type: string
+      description: One exact repository-relative file path; no directories, no globs.
 required: [format, version, values]
 additionalProperties: false

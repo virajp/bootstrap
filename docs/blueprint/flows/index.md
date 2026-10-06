@@ -15,6 +15,7 @@ status: draft
 | #   | Flow                                                           | Platforms | Serves goal                                          | Entities touched                                                                                                | Status |
 | --- | -------------------------------------------------------------- | --------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------ |
 | 110 | [Set up a repository](./cli/110-setup-repository/index.md)     |           | [Fast new-repo setup](../product.md#goal-fast-setup) | [Group](../entities/group/index.md), [Setup config](../entities/setup-config/index.md)                          | reviewed |
+| 120 | [Check for drift](./cli/120-check-drift/index.md)              |           | [Zero setup drift](../product.md#goal-zero-drift), [Agent-resolvable drift](../product.md#goal-agent-resolvable) | [Group](../entities/group/index.md), [Setup config](../entities/setup-config/index.md) | reviewed |
 
 ## Inter-Service Contracts
 

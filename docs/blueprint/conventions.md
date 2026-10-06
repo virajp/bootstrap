@@ -34,6 +34,8 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
 - Results go to stdout; progress, warnings and errors go to stderr.
 - `--json` prints exactly one JSON document to stdout and nothing else, carrying
   the same outcome as the exit code; it is the machine contract an agent reads.
+  This holds on every exit, `2` and `3` included: the document then carries an
+  `error` (what happened, why, and the exact next command) in place of results.
 - Every error message states what happened, why, and the exact next command to
   run. No internal trace unless `--verbose`.
 - A command that cannot complete its writes leaves the repository as it found
