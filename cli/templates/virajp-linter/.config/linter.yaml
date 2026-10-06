@@ -9,6 +9,14 @@ ignores:
   # The gitignored render surface — mockups and design-tool exports reviewed in
   # a browser, never committed, and not ours to style.
   - "docs/scratchpad/**"
+  # tsup's bundle of installer/. Build output, gitignored, and not ours to style —
+  # esbuild emits empty catch blocks and keeps unused helpers from bundled deps.
+  # The source it is built from is linted.
+  - "bin/**"
+  # /brag launch-video output: rendered media and the throwaway scripts and
+  # HTML composition that drew it. Scratch, not source, and its HTML rewrite
+  # fights dprint's.
+  - "brag-output/**"
 
 overrides:
   markdown:

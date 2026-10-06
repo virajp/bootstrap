@@ -9,7 +9,8 @@
     "**/.turbo/",
     "**/*-lock.json",
     "**/*-lock.yaml",
-    "**/.config/mise/locks/"
+    "**/.config/mise/locks/",
+    "brag-output/"
   ],
   "exec": {
     "commands": [
