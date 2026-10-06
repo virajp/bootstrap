@@ -6,6 +6,7 @@ to pick the next runnable plan.
 
 ## Plans
 
-| Folder                                         | Kind  | Plan                          | Target repo | Priority | Status   | Requires | Backlog |
-| ---------------------------------------------- | ----- | ----------------------------- | ----------- | -------- | -------- | -------- | ------- |
-| `docs/plans/2026-10-06-2332-tool-setup-config` | cycle | Tool catalog and setup config | —           | 10       | APPROVED | —        | —       |
+| Folder                                         | Kind  | Plan                                 | Target repo | Priority | Status   | Requires                          | Backlog |
+| ---------------------------------------------- | ----- | ------------------------------------ | ----------- | -------- | -------- | --------------------------------- | ------- |
+| `docs/plans/2026-10-06-2332-tool-setup-config` | cycle | Tool catalog and setup config        | —           | 10       | APPROVED | —                                 | —       |
+| `docs/plans/2026-10-06-2333-setup-repository`  | cycle | Set up a repository (bootstrap init) | —           | 20       | APPROVED | 2026-10-06-2332-tool-setup-config | —       |
