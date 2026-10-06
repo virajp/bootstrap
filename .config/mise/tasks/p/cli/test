@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Run the cli package tests"
+#MISE dir="{{ config_root }}/cli"
+
+set -e
+
+pnpm exec vitest run "$@"

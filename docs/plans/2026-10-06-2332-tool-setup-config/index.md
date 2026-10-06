@@ -13,9 +13,9 @@ covers:
 
 ## Status
 
-**APPROVED**
+**RUNNING**
 
-APPROVED 2026-10-06 by the user
+RUNNING since 2026-10-06 23:44 in .worktrees/2026-10-06-2332-tool-setup-config
 
 ## Consent
 
@@ -145,7 +145,7 @@ All added by U1 to `cli/package.json`:
 
 | Id | Wave | Unit file                                    | Kind   | Owns                                                                                                                                                                                                                                                                                                                                              | Depends on             | Status  | Commit |
 | -- | ---- | -------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------- | ------ |
-| U1 | 1    | [01-scaffold.md](01-scaffold.md)             | code   | `pnpm-workspace.yaml`, `package.json`, `.npmrc`, `tsconfig.base.json`, `cli/package.json`, `cli/tsconfig.json`, `cli/vitest.config.ts`, `cli/tsdown.config.ts`, `cli/src/bin.ts`, `cli/src/cli.ts`, `cli/test/cli.test.ts`, `.config/mise/tasks/p/cli/build`, `.config/mise/tasks/p/cli/test`, `.config/mise/tasks/p/cli/check`, `pnpm-lock.yaml` | —                      | pending |        |
+| U1 | 1    | [01-scaffold.md](01-scaffold.md)             | code   | `pnpm-workspace.yaml`, `package.json`, `.npmrc`, `tsconfig.base.json`, `cli/package.json`, `cli/tsconfig.json`, `cli/vitest.config.ts`, `cli/tsdown.config.ts`, `cli/src/bin.ts`, `cli/src/cli.ts`, `cli/test/cli.test.ts`, `.config/mise/tasks/p/cli/build`, `.config/mise/tasks/p/cli/test`, `.config/mise/tasks/p/cli/check`, `pnpm-lock.yaml`, `.config/pre-commit-config.yaml` (widened at run time: user ruling, check-yaml `--allow-multiple-documents`) | —                      | green | (this commit) |
 | U2 | 2    | [02-tool-catalog.md](02-tool-catalog.md)     | code   | `cli/src/tool/catalog.ts`, `cli/test/tool/catalog.test.ts`                                                                                                                                                                                                                                                                                        | U1                     | pending |        |
 | U3 | 3    | [03-renderer.md](03-renderer.md)             | code   | `cli/src/tool/render.ts`, `cli/src/tool/templates.ts`, `cli/test/tool/render.test.ts`, `cli/test/fixtures/templates/**`                                                                                                                                                                                                                           | U2                     | pending |        |
 | U4 | 3    | [04-setup-config.md](04-setup-config.md)     | code   | `cli/src/setup-config/**`, `cli/test/setup-config/**`                                                                                                                                                                                                                                                                                             | U2                     | pending |        |
@@ -236,6 +236,12 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 
 | Wave | Unit | Model | Round | Outcome | Detail | Commit |
 | ---- | ---- | ----- | ----- | ------- | ------ | ------ |
+| 0 | preflight | — | 1 | pass | format check silent (25 = 25); /vwf:doctor cli: no blocking, LSP clean, mempalace down (journal skipped), cli/ absent; wave gate `code:all` green; conventions: .claude/stackgen/templates/{typescript-effect-cli,npm-package,pnpm-workspace}.md; pipeline knobs default (coverage 100, review cap 4) | — |
+| 0 | sequence | — | — | pass | W1 U1 → W2 U2 → W3 U3, U4 → W4 U5, U6 → W5 U7 review → acceptance/ux → reconcile → W6 U8 docs → W7 U9 gates | — |
+| 1 | U1 scaffold | opus | 1 | fail(1) | code; Verification `--version` prints `0.0.1` not met (prints `bootstrap v0.0.1`) → mechanical re-dispatch; COVERAGE n/a (@vitest/coverage-v8 not in plan) → gap, not a block; DECIDED typescript ^6.0.3 (TS 7 Go binary fails grype); GAP unknown flag exits 1 not 2; GAP -v taken by --version | — |
+| 1 | U1 scaffold | opus | 2 | pass | code; mechanical re-dispatch: `--version` prints exactly `0.0.1`; all Verification lines green; COVERAGE n/a (G1); UNRESOLVED none | — |
+| 1 | U1 scaffold | opus | 2 | fail(1) | code; commit hook check-yaml rejects two-document pnpm-lock.yaml (packageManager pin) → asked user → ruling: allow multiple documents; Owns widened to .config/pre-commit-config.yaml (G5) | — |
+| 1 | U1 scaffold | opus | 3 | pass | code; check-yaml `--allow-multiple-documents` (user ruling, G5); precommit pass 2 clean; code:all green | (see Units) |
 
 ## Acceptance criteria (from blueprint)
 
@@ -244,7 +250,23 @@ U2, U4, U5 and U6.
 
 ## Gaps surfaced during execution
 
-- …
+- G1 (U1, non-blocking, plan) — coverage tooling: the plan's dependency list
+  names no coverage provider (`@vitest/coverage-v8`), so `vitest run --coverage`
+  cannot run and every `code` unit reports `COVERAGE: n/a` against the target of
+  100. Assumption: proceed without measured coverage.
+- G2 (U1, non-blocking, blueprint) — `effect/cli` exits 1 on an unknown flag,
+  while `conventions.md` says a usage error exits 2. Assumption: U1 maps only the
+  bare command to exit 2; a later command plan maps parse errors.
+- G3 (U1, non-blocking, blueprint) — the built-in `--version` takes `-v`, which
+  the design system reserves for the most common flag. Assumption: keep the
+  framework default.
+- G4 (U1, docs) — `.claude/stackgen/templates/typescript-effect-cli.md` names
+  `effect/unstable/cli` and `NodeContext.layer`; effect 4.0.1 exports
+  `effect/cli` and `NodeServices.layer`. The file is outside every Owns list.
+- G5 (U1, resolved by user ruling 2026-10-07) — the `packageManager` pin makes
+  pnpm 12 write a two-document `pnpm-lock.yaml`, which the `check-yaml` hook
+  rejected. The user ruled: allow multiple documents in `check-yaml`; U1's Owns
+  widened to `.config/pre-commit-config.yaml` for that edit.
 
 ## Launch
 

@@ -155,7 +155,9 @@ repos:
       - id: check-yaml
         name: Check YAML syntax
         description: Same reason again, and it covers this file — a broken
-          hook config disables the gate rather than failing it.
+          hook config disables the gate rather than failing it. Multiple
+          documents are allowed because pnpm's lockfile is two.
+        args: [ --allow-multiple-documents ]
       - id: detect-private-key
         name: Check for committed private keys
         description: The secret scanner further down catches these too; this
