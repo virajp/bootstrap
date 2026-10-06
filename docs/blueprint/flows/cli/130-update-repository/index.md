@@ -27,83 +27,77 @@ Not audit-recorded: the product has no audit foundation.
 
 ## Steps
 
-1. Update reads `.config/bootstrap.yaml`. Absent → writes nothing, exits 3 "not
-   set up — run `bootstrap init`" (a repository without the file is adopted by
-   init, which backs up existing files). Invalid, a `format` newer than the
-   running cli understands, a recorded `version` newer than the running cli, or a
-   group the cli no longer ships → exits 3 per the setup-config invariants.
-   [Setup config](../../../entities/setup-config/index.md)
+1. Outside a git repository update exits 3 per
+   [errors](../../../conventions.md#errors). Update reads `.config/bootstrap.yaml`. Absent → writes nothing, exits 3 "not
+   set up — run `bootstrap init`". A file failing
+   [Setup config validity](../../../entities/setup-config/index.md#validity) → exits 3.
 2. Actor may change recorded values with the init value flags (`--repo`,
-   `--scope`, `--merge-develop`, `--merge-main`; rules as in
-   [Set up a repository](../110-setup-repository/index.md) step 3). With no value
-   flag the recorded values are reused and nothing is asked.
-   [Setup config](../../../entities/setup-config/index.md)
-3. Update renders every file of the core groups plus the selected optional groups
-   with the running cli, and gives each path exactly one status: `unchanged`
-   (left alone), `missing` (created), `kept` (listed in setup-config `kept` —
-   never touched unless the owner chooses recreate or passes `--take <path>`,
-   step 4), `deleted` (listed in setup-config `deleted` — never recreated
-   or asked about, whatever else is true of the path), `obsolete` (listed in `files`, no longer produced, present in
-   the repo — removed), `modified` (differs; needs a decision). Precedence: `kept`
-   wins over `obsolete` — the file is untouched, stays in `kept`, is dropped from
-   `files`, and check then warns "kept file no longer produced". A path in `files`
-   no longer produced and already absent from the repo is dropped from `files`
-   silently, with no status and no backup. A `deleted` path the running cli no
-   longer produces stays in `deleted`, leaves `files`, and any hand-made copy in
-   the repo is ignored.
-   [Group](../../../entities/group/index.md),
-   [Setup config](../../../entities/setup-config/index.md)
-4. Actor decides each `modified` file. Interactive: update shows the diff and
-   offers take source (the current file moves to a backup, the source version is
-   written), keep mine (path added to `kept`, file untouched) or skip for now
-   (left as drift). A `kept` path absent from the repo that the running cli still
-   produces is asked once: recreate (source version written, path leaves `kept`)
-   or leave deleted (path moves from `kept` to `deleted`); one the cli no longer
-   produces gets no question and stays in `kept` (step 3). Non-interactive: `--take <path>` and
-   `--keep <path>` (repeatable) or `--take-all`; a modified file with no decision
-   is skipped, a deleted `kept` file is left as is.
-   - `--take <path>` on a `kept` path writes the source version and removes it
-     from `kept`; on a `deleted` path it recreates the file and removes the path
-     from `deleted`.
-   - `--take-all` never touches `kept` or `deleted` paths; a per-path
-     `--take`/`--keep` overrides it.
-   - `--keep <path>` is valid on a `modified` path (adds it to `kept`) or a path
-     already in `kept` (no-op); `--take <path>` is valid on a `modified`, `kept`
-     or `deleted` path the running cli still produces. Any other use of either
-     flag, or the same path in both, exits 2 naming the path.
+   `--scope`, `--merge-develop`, `--merge-main`), per
+   [Set up a repository](../110-setup-repository/index.md) step 3, plus the
+   update-only flag `--no-scope`. Each value
+   flag replaces that recorded value: `--scope` (repeatable) gives the complete
+   new scope list (recorded `[web, cli]` + `--scope api` → `[api]`);
+   `--no-scope` clears it to empty. A value not flagged is reused silently — no
+   prompt, interactive or not. With no value flag nothing is asked.
+3. Update renders every file of the core plus selected optional
+   [groups](../../../entities/group/index.md) with the running cli and the new
+   values, and also with the old recorded values, and gives
+   each path exactly one status, precedence per
+   [check](../120-check-drift/index.md) step 4:
+
+   | Status | Update action |
+   | ------ | ------------- |
+   | `unchanged` | left alone |
+   | `missing` | created |
+   | `kept` | untouched unless recreate or `--take <path>` (step 4) |
+   | `deleted` | never recreated or asked about |
+   | `obsolete` | moved to a backup per [backups](../../../conventions.md#backups), then removed; needs no decision |
+   | `updated` | content equals the old-values render (not hand-edited) and differs from the new render only because a value changed; written with the new values without a question, replaced, no backup: its content was bootstrap's own previous render |
+   | `modified` | needs a decision (step 4); includes a value-affected path whose content differs from the old-values render |
+
+   Paths the running cli no longer produces: a `kept` one is untouched, stays in
+   `kept` and leaves `files`; a `deleted` one stays in `deleted`, leaves `files`,
+   and any copy in the repo is ignored; a `files` one already absent from the
+   repo is dropped from `files` silently, with no status and no backup.
+4. Actor decides per path:
+
+   | Path | Interactive | Flag | No decision |
+   | ---- | ----------- | ---- | ----------- |
+   | `modified` | diff shown; take source (current → backup, source written), keep mine (path added to `kept`, file untouched) or skip for now | `--take <path>`, `--keep <path>` (adds to `kept`), `--take-all` | skipped (drift) |
+   | `kept` | not asked | `--take <path>`: source written, path leaves `kept`; `--keep <path>`: no-op | untouched |
+   | `kept`, absent, still produced | asked once: recreate (source written, path leaves `kept`) or leave deleted (path moves `kept` → `deleted`) | `--take <path>`: as recreate; `--keep <path>`: as leave deleted (path moves `kept` → `deleted`) | left as is; reported `kept`, not drift, exit unaffected |
+   | `kept`, absent, no longer produced | not asked; stays in `kept` | `--keep <path>`: no-op | stays in `kept` |
+   | `deleted` | not asked | `--take <path>`: file recreated, path leaves `deleted` | untouched |
+
+   - `--take`, `--keep` repeatable; `--take-all` never touches `kept` or
+     `deleted` paths, and a per-path `--take`/`--keep` overrides it.
+   - `--keep` is valid only on a `modified` or `kept` path; `--take` only on a
+     `modified`, `kept` or `deleted` path the running cli still produces. Any
+     other use, or the same path in both, exits 2 naming the path.
    - Interactive: a flag pre-answers that path's question, so it is not prompted.
-     `--json` implies non-interactive ([errors](../../../conventions.md#errors)).
-   - An `obsolete` file needs no decision: it is always moved to a backup before
-     removal, per [backups](../../../conventions.md#backups).
-   [Setup config](../../../entities/setup-config/index.md)
-5. Interactive only: update shows the plan, listing paths under the outcomes
-   (created, taken, kept, recreated, left deleted, removed, unchanged, skipped;
-   `left deleted` also covers paths already in `deleted`), and asks once to
-   proceed. When nothing would change no plan confirm is shown: the run reports
-   and exits 0, or exits 1 when any file is skipped. Declining, or cancelling any prompt, writes nothing and exits 1.
-   `-y` skips the confirm; non-interactive runs never prompt.
+5. Interactive only, unless nothing would change (step 6): update shows the
+   plan, listing paths under the outcomes (created, updated, taken, kept,
+   recreated, left deleted, removed, unchanged, skipped; `left deleted` also
+   covers paths already in `deleted`), and asks once to proceed. Answering no at
+   the confirm writes nothing and exits 1; Ctrl-C at any prompt or during writes
+   exits 130 per [errors](../../../conventions.md#errors). `-y` skips the
+   confirm; non-interactive runs never prompt.
 6. Update writes the planned changes all-or-nothing, then writes
    `.config/bootstrap.yaml` last with the running cli's version, the current
-   format, the values, `kept`, `deleted`, and `files` (the full set the core and
-   selected optional groups produce under the running cli, including `kept` and
-   `deleted` paths still produced); setup-config stays present. The config follows the same unchanged
-   rule as every file ([backups](../../../conventions.md#backups)): it is
-   rewritten only when its new content differs (a version or format bump, a
-   changed `files`, `kept` or `deleted` list, or a changed value). A run where no
-   file and no config content would change writes nothing and exits 0, or 1 when
-   any file is skipped.
-   [Setup config](../../../entities/setup-config/index.md)
-7. Update reports files under the same outcomes as step 5: created, taken
-   (original → backup), kept, recreated, left deleted, removed (original →
-   backup), unchanged, skipped. Exit 0 when nothing was skipped;
-   exit 1 when any file was skipped, even if nothing was written, or the run was
-   declined; 2 and 3 per
-   [errors](../../../conventions.md#errors).
+   format, the values, `kept`, `deleted`, and `files` per
+   [setup-config](../../../entities/setup-config/index.md) invariant 7. The
+   config is rewritten only when its content differs, per the unchanged rule of
+   [backups](../../../conventions.md#backups). A run where no file and no config
+   content would change shows no plan confirm, writes nothing, reports, and
+   exits 0, or 1 when any file is skipped.
+7. Update reports files under the step 5 outcomes, with original → backup for
+   taken and removed. Exit 0 when nothing was skipped; 1 when any file was
+   skipped, even if nothing was written, or the run was declined; 2, 3 and 130
+   per [errors](../../../conventions.md#errors).
 
 Modes: `--dry-run` never prompts (like `--json`), applies the decision flags,
 shows any modified file without a decision as `skipped`, writes nothing and
-exits with exactly the code the real run would return. `--json`
-prints exactly one document on every exit, per
+exits with exactly the code the real run would return. `--json` per
 [errors](../../../conventions.md#errors). Output rules follow
 [Terminal UX](../../../design-system.md#terminal-ux).
 
@@ -111,12 +105,13 @@ prints exactly one document on every exit, per
 
 | Step / group | Consistency | On failure | Idempotency | Load & latency |
 | ------------ | ----------- | ---------- | ----------- | -------------- |
-| 1–5 | atomic — nothing is written | none — nothing written yet; exit 1, 2 or 3 per step | n/a — a re-run starts from the same repo state | n/a — one local command |
-| 6 | atomic — all-or-nothing | a write failure or an interrupt triggers full rollback per [baseline](../../../conventions.md#baseline) atomic-multi-write and graceful-shutdown: the repo is byte-identical to before; exit 3 naming the failing path | a second run with nothing to do reports every path as unchanged, kept, left deleted or skipped and writes nothing, `.config/bootstrap.yaml` included (step 6) | n/a — one local command |
+| 1–5 | atomic — nothing is written | none — nothing written yet; exit 1, 2, 3 or 130 per step | n/a — a re-run starts from the same repo state | n/a — one local command |
+| 6 | atomic — all-or-nothing | a write failure or an interrupt triggers full rollback per [baseline](../../../conventions.md#baseline) atomic-multi-write and graceful-shutdown: the repo is byte-identical to before; a write failure exits 3 naming the failing path, an interrupt exits 130 per [errors](../../../conventions.md#errors) | a second run with nothing to do reports every path as unchanged, kept, left deleted or skipped and writes nothing, `.config/bootstrap.yaml` included (step 6) | n/a — one local command |
 | 7 | atomic — output only | none — changes no repo state | n/a | n/a — one local command |
 
-A hand edit is never lost: every replaced or removed file goes to a backup, and
-a `kept` file is never touched except by recreate or `--take <path>`.
+A hand edit is never lost: every replaced or removed file goes to a backup,
+except an `updated` file (bootstrap's own previous render), and a `kept` file is
+never touched except by recreate or `--take <path>`.
 
 ## Diagram
 
@@ -149,7 +144,7 @@ sequenceDiagram
                 U->>C: rewrite config if its content changed
                 alt write fails or interrupted
                     U->>R: roll back
-                    U-->>O: exit 3, failing path
+                    U-->>O: exit 3 failing path, or exit 130 interrupted
                 else success
                     U-->>O: report, exit 0 or 1
                 end
@@ -164,6 +159,7 @@ N/A — runs synchronously in one command invocation.
 
 ## Acceptance
 
+- Given a `kept` path absent from the repo that the running cli still produces, when update runs non-interactively with no decision flag for it, then the path stays in `kept`, is reported `kept`, and the exit code is not affected by it.
 - Given a repository after a newer release with no local edits, when
   `bootstrap update --take-all -y` runs non-interactively, then every file
   matches the source, the recorded version is the running version and the exit
@@ -182,8 +178,12 @@ N/A — runs synchronously in one command invocation.
   update runs, then it is moved to a backup, removed from `files` and reported
   removed.
 - Given a missing managed file, when update runs, then it is recreated.
-- Given `--scope api`, when update runs, then the recorded scopes are updated and
-  the affected files are re-rendered.
+- Given a repository with no hand edits, when `bootstrap update --scope api -y`
+  runs, then the recorded scopes are `[api]`, the files affected only by scopes
+  are `updated` with no backup, and the exit code is 0.
+- Given `--no-scope`, when update runs, then the recorded scopes are empty.
+- Given a scope-affected file that was also hand-edited, when update runs, then
+  it is `modified` and gets the per-file decision.
 - Given no `.config/bootstrap.yaml`, when update runs, then the exit code is 3
   and the message names `bootstrap init`.
 - Given a recorded version newer than the running cli, when update runs, then the
@@ -214,6 +214,8 @@ N/A — runs synchronously in one command invocation.
 - Given a path in `deleted` that the running cli no longer produces, when update
   runs, then it is not reported `obsolete`, any copy in the repo is untouched,
   the path stays in `deleted` and leaves `files`.
+- Given a `kept` file deleted from the repo, when `--keep <path>` runs, then the
+  file is not recreated and the path moves from `kept` to `deleted`.
 - Given a `kept` path absent from the repo that the running cli no longer
   produces, when update runs interactively, then no question is asked and the
   path stays in `kept`.
@@ -231,11 +233,6 @@ N/A — runs synchronously in one command invocation.
   [backups](../../../conventions.md#backups),
   [errors](../../../conventions.md#errors),
   [config](../../../conventions.md#config)
-- [design-system](../../../design-system.md#terminal-ux) — Terminal UX
-- [Set up a repository](../110-setup-repository/index.md) — writes the config
-  and defines the value rules
-- [Check for drift](../120-check-drift/index.md) — reports what this flow
-  resolves
 - API surface: N/A — no service project; the flow is a local command
 - Screens surface: N/A — cli has no screen platform; terminal behaviour per
   [design-system.md#terminal-ux](../../../design-system.md#terminal-ux)

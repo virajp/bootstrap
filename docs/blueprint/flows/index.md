@@ -25,6 +25,7 @@ status: draft
 | #   | Flow                                  | Platforms                           | Serves goal                                                  | Entities touched | Status |
 | --- | ------------------------------------- | ----------------------------------- | ------------------------------------------------------------ | ---------------- | ------ |
 | 100 | [Home](./site/100-home/index.md)      | [site](./site/100-home/site.md)     | [Outside adoption](../product.md#goal-outside-adoption)      | none             | reviewed |
+| 110 | [Documentation](./site/110-documentation/index.md) | [site](./site/110-documentation/site.md) | [Outside adoption](../product.md#goal-outside-adoption), [Agent-resolvable drift](../product.md#goal-agent-resolvable) | none; describes [Group](../entities/group/index.md), [Setup config](../entities/setup-config/index.md) | reviewed |
 
 ## Inter-Service Contracts
 

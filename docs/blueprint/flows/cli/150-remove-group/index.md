@@ -11,8 +11,7 @@ implementation: none
 ## Purpose
 
 `bootstrap remove <group>...` removes the files of one or more optional groups
-from a repository that is already set up and drops them from the config, so a
-group no longer wanted costs one command and no file is lost.
+from a repository that is already set up and drops them from the config.
 
 Serves: [Zero setup drift](../../../product.md#goal-zero-drift)
 
@@ -20,66 +19,57 @@ Serves: [Zero setup drift](../../../product.md#goal-zero-drift)
 
 | Actor | May trigger | Authorization | Audit-recorded |
 | ----- | ----------- | ------------- | -------------- |
-| Repo owner (interactive terminal) | the command `bootstrap remove <group> [<group>...]` | write access to the working directory | no |
-| AI agent or CI (non-interactive) | `bootstrap remove <group>...`, `-y` is necessary | write access to the working directory | no |
-
-Not audit-recorded: the product has no audit foundation.
+| Repo owner (interactive terminal) | the command `bootstrap remove <group> [<group>...]` | write access to the working directory | no — the product has no audit foundation; every removed file is kept as a backup ([backups](../../../conventions.md#backups)) |
+| AI agent or CI (non-interactive) | `bootstrap remove <group>...`; `-y` is necessary except with `--dry-run` | write access to the working directory | no — the product has no audit foundation; every removed file is kept as a backup ([backups](../../../conventions.md#backups)) |
 
 ## Steps
 
-1. Remove reads `.config/bootstrap.yaml`. Absent → writes nothing, exits 3 "not
-   set up — run `bootstrap init`". An invalid setup file is refused per the
-   validity guard of [Setup config](../../../entities/setup-config/index.md):
-   writes nothing and exits 3. A recorded `version` newer than the running cli
-   fails that guard (exit 3 "upgrade bootstrap"). A recorded `version` older than
-   the running cli → exits 3 "run `bootstrap update` first".
-2. Remove validates each name. An unknown name exits 2. A core group name exits 2
-   (core groups are always included). A name not in setup-config `groups` is
-   reported "not added" and changes nothing. If no named group is in `groups`,
-   remove writes nothing and exits 0.
+1. Outside a git repository remove exits 3 per
+   [errors](../../../conventions.md#errors). Remove reads `.config/bootstrap.yaml`. Absent → writes nothing, exits 3 "not
+   set up — run `bootstrap init`". A file failing
+   [Setup config validity](../../../entities/setup-config/index.md#validity) writes nothing and exits 3. A recorded
+   `version` older than the running cli → exits 3 "run `bootstrap update` first";
+   a newer one fails Validity ("upgrade bootstrap").
+2. Remove validates each name. A name given more than once is used once, with no
+   error. An unknown name exits 2. A core group name exits 2.
+   A name not in setup-config `values.groups` is reported "not added" and changes
+   nothing. If no named group is in `values.groups`, remove writes nothing and exits 0.
    [Group](../../../entities/group/index.md),
    [Setup config](../../../entities/setup-config/index.md)
 3. A non-interactive run (`--json` included) without `-y` exits 2 "removing files
    needs -y". `--dry-run` does not need `-y`.
-4. Remove plans each path of the removed groups listed in setup-config `files`;
-   step 6 applies the plan. A path present in the repo will be backed up, then
-   removed, per [backups](../../../conventions.md#backups). A path already absent
-   will be dropped from `files` silently. A path in `kept` is left untouched and
-   stays in `kept`; [Check for drift](../120-check-drift/index.md) then warns
-   "kept file no longer produced". A path in `deleted` is left untouched and
-   stays in `deleted`; check shows no warning for it. Steps 1–5 write nothing.
+4. Remove plans each path of the removed groups listed in setup-config `files`. A
+   path present in the repo will be backed up, then removed, per
+   [backups](../../../conventions.md#backups). A path already absent will be
+   dropped from `files` silently. A path in `kept` or `deleted` is left untouched
+   and stays in its list. No path is shared with a group that stays added ([Group](../../../entities/group/index.md) invariant 1). Precedence: `kept` > `deleted` > the rules above, per
+   [check](../120-check-drift/index.md), so a kept or deleted path is never backed
+   up or removed.
    [Group](../../../entities/group/index.md),
    [Setup config](../../../entities/setup-config/index.md)
 5. Interactive only: remove shows the plan and asks once to proceed, as in
-   [Set up a repository](../110-setup-repository/index.md) step 5. Declining, or
-   cancelling the prompt, writes nothing and exits 1. `-y` skips the confirm.
-6. Remove writes the planned changes all-or-nothing, then rewrites
-   `.config/bootstrap.yaml` last: `groups` without the removed names and `files`
-   refreshed to the full set now produced; setup-config stays present.
-   [Setup config](../../../entities/setup-config/index.md)
+   [Set up a repository](../110-setup-repository/index.md) step 5. Declining
+   writes nothing and exits 1. Ctrl-C at any prompt writes nothing and exits 130
+   per [errors](../../../conventions.md#errors).
+6. Remove applies the plan all-or-nothing, then rewrites `.config/bootstrap.yaml`
+   last: `values.groups` without the removed names and `files` refreshed to the full set
+   now produced. [Setup config](../../../entities/setup-config/index.md)
 7. Remove reports files removed (each original → backup path), kept or left
    deleted (untouched) and not added. Exit 0 on success.
 
-Removing the name from `groups` by hand and running `bootstrap update` (see
-[Update a repository](../130-update-repository/index.md)) gives the same result,
-because update treats those files as obsolete.
-
 Modes: `--dry-run` shows the plan, writes nothing and exits with the code the
-confirmed real run (with `-y`) would return. `--json` prints exactly one document on every exit and
-implies non-interactive, per [errors](../../../conventions.md#errors). Confirm,
-`-y`, `--dry-run` and `--json` behave as in
-[Set up a repository](../110-setup-repository/index.md). Output rules follow
+confirmed real run (with `-y`) would return. The interactive confirm behaves as in
+[Set up a repository](../110-setup-repository/index.md); `-y` is required as in step 3; `--json` per
+[errors](../../../conventions.md#errors); output per
 [Terminal UX](../../../design-system.md#terminal-ux).
 
 ## Guarantees
 
 | Step / group | Consistency | On failure | Idempotency | Load & latency |
 | ------------ | ----------- | ---------- | ----------- | -------------- |
-| 1–5 | atomic — nothing is written | none — nothing written yet; exit 1, 2 or 3 per step | n/a — a re-run starts from the same repo state | n/a — one local command |
-| 6 | atomic — all-or-nothing | a write failure or an interrupt triggers full rollback per [baseline](../../../conventions.md#baseline) atomic-multi-write and graceful-shutdown: the repo is byte-identical to before; exit 3 naming the failing path | a re-run with the same names reports "not added", writes nothing and exits 0 | n/a — one local command |
+| 1–5 | atomic — nothing is written | none — nothing written yet; exit 1, 2, 3 or 130 (Ctrl-C at a prompt) per step | n/a — a re-run starts from the same repo state | n/a — one local command |
+| 6 | atomic — all-or-nothing | a write failure or an interrupt triggers full rollback per [baseline](../../../conventions.md#baseline) atomic-multi-write and graceful-shutdown: the repo is byte-identical to before; a write failure exits 3 naming the failing path, an interrupt exits 130 per [errors](../../../conventions.md#errors) | a re-run with the same names reports "not added", writes nothing and exits 0 | n/a — one local command |
 | 7 | atomic — output only | none — changes no repo state | n/a | n/a — one local command |
-
-No content is lost: every removed file is backed up first.
 
 ## Diagram
 
@@ -92,37 +82,29 @@ sequenceDiagram
     participant R as Repository
     O->>M: bootstrap remove groups
     M->>C: read config
-    alt absent, invalid, or version differs
-        M-->>O: exit 3, fix
-    else usable
-        M->>G: validate names
-        alt unknown or core name
-            M-->>O: exit 2
-        else none added
-            M-->>O: not added, exit 0
-        else groups to remove
-            alt non-interactive, no -y, not dry-run
-                M-->>O: exit 2, needs -y
-            else plan
-                opt interactive and no -y
-                    M-->>O: plan, proceed?
-                end
-                alt declined
-                    O-->>M: decline
-                    M-->>O: exit 1
-                else dry-run
-                    M-->>O: report, nothing written, exit as a confirmed real run
-                else proceed
-                    M->>R: back up, remove files
-                    M->>C: rewrite config
-                    alt write fails or interrupted
-                        M->>R: roll back
-                        M-->>O: exit 3, failing path
-                    else success
-                        M-->>O: report, exit 0
-                    end
-                end
-            end
+    M->>G: validate names
+    alt config unusable
+        M-->>O: exit 3
+    else unknown or core name
+        M-->>O: exit 2
+    else none added
+        M-->>O: not added, exit 0
+    else non-interactive, no -y, not dry-run
+        M-->>O: exit 2, needs -y
+    else declined at confirm
+        M-->>O: exit 1
+    else Ctrl-C at a prompt
+        M-->>O: exit 130
+    else dry-run
+        M-->>O: plan, exit as confirmed real run
+    else proceed
+        M->>R: back up, remove files
+        M->>C: rewrite config
+        alt write fails or interrupted
+            M->>R: roll back
+            M-->>O: exit 3 failing path, or exit 130 interrupted
+        else success
+            M-->>O: report, exit 0
         end
     end
 ```
@@ -134,9 +116,9 @@ N/A — runs synchronously in one command invocation.
 ## Acceptance
 
 - Given a repository with ai added, when `bootstrap remove ai -y` runs, then ai's
-  files are moved to backups, `groups` no longer contains ai, `files` no longer
+  files are moved to backups, `values.groups` no longer contains ai, `files` no longer
   lists them and the exit code is 0; then `bootstrap check` exits 0.
-- Given a group not in `groups`, when remove runs with its name, then nothing is
+- Given a group not in `values.groups`, when remove runs with its name, then nothing is
   written, it is reported "not added" and the exit code is 0.
 - Given a core group name, when remove runs, then the exit code is 2.
 - Given an unknown group name, when remove runs, then the exit code is 2.
@@ -156,7 +138,14 @@ N/A — runs synchronously in one command invocation.
   byte-identical to before and the exit code is 3.
 - Given an interactive run, when the actor declines at the confirm, then nothing
   is written and the exit code is 1.
-- Given the name removed from `groups` by hand, when
+- Given a group name given twice, when `bootstrap remove ai ai -y` runs, then the
+  group is removed once and the exit code is 0.
+- Given no `.config/bootstrap.yaml`, when remove runs, then the exit code is 3 and
+  the message names `bootstrap init`.
+- Given an interactive run, when the actor presses Ctrl-C at a prompt or during
+  the write, then nothing is written (the repository is byte-identical to before)
+  and the exit code is 130.
+- Given the name removed from `values.groups` by hand, when
   `bootstrap update --take-all -y` runs, then the resulting files equal those of
   the first criterion.
 - Abuse case: n/a — runs locally with the caller's own permissions on the
@@ -168,13 +157,10 @@ N/A — runs synchronously in one command invocation.
 - [baseline](../../../conventions.md#baseline),
   [backups](../../../conventions.md#backups),
   [errors](../../../conventions.md#errors),
-  [config](../../../conventions.md#config)
-- [design-system](../../../design-system.md#terminal-ux) — Terminal UX
-- [Set up a repository](../110-setup-repository/index.md) — defines confirm,
-  `-y`, `--dry-run` and `--json`
-- [Update a repository](../130-update-repository/index.md) — the equivalent
-  by-hand route
-- [Add a group](../140-add-group/index.md) — the inverse flow
-- API surface: N/A — no service project; the flow is a local command
-- Screens surface: N/A — cli has no screen platform; terminal behaviour per
-  [design-system.md#terminal-ux](../../../design-system.md#terminal-ux)
+  [config](../../../conventions.md#config),
+  [Terminal UX](../../../design-system.md#terminal-ux)
+- [Set up a repository](../110-setup-repository/index.md),
+  [Update a repository](../130-update-repository/index.md) (by-hand route),
+  [Add a group](../140-add-group/index.md) (inverse)
+- API surface: N/A — no service project. Screens surface: N/A — cli has no
+  screen platform.

@@ -37,7 +37,7 @@ Serves: [Outside adoption](../../../product.md#goal-outside-adoption)
 1. Site serves the home page — N/A: the page reads no product data
 2. Visitor copies the install command with the copy button; the button shows
    "Copied" for 1.5 seconds ([Code block](../../../design-system.md))
-3. Visitor follows "Read the docs" to the
+3. Visitor follows "Read the docs" to `/docs/` in the
    [documentation flow](../110-documentation/index.md), or "Source ↗" to the
    source repository (external)
 

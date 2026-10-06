@@ -30,7 +30,16 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
 | `1`  | drift found, or the command declined to act (e.g. the repository is already set up) |
 | `2`  | usage error — bad or missing flag/argument; prints short usage                    |
 | `3`  | failure — not a git repository, unreadable setup file, render error, write failed |
+| `130` | interrupted (Ctrl-C) — nothing written, or the repository was restored            |
 
+- An interrupt (Ctrl-C) exits `130` in every command and at any moment — at a
+  prompt, while reading, or while writing. During a write it first triggers the
+  full rollback ("interrupted — repository restored"); before any write it says
+  "interrupted — nothing written". A `--json` run prints the same as its
+  `error`. A rollback that itself fails exits `3` listing every path not
+  restored. Answering "no" to a confirm stays exit `1`.
+- Every command runs only inside a git repository; anywhere else it writes
+  nothing and exits `3` with "not a git repository — run `git init` first".
 - Results go to stdout; progress, warnings and errors go to stderr.
 - `--json` prints exactly one JSON document to stdout and nothing else, carrying
   the same outcome as the exit code; it is the machine contract an agent reads.
@@ -54,9 +63,10 @@ environment or a secrets store (`config: flags-and-repo-config-file`):
   repository. Its presence is the marker that a repository has been set up.
 
 Detected values (e.g. the repository's `owner/name` from its git remote) are
-offered as defaults, never applied unconfirmed in an interactive run. A
-non-interactive run with a required value neither flagged, recorded nor
-detectable is a usage error (exit `2`). The product has no secrets and no
+offered as defaults, never applied unconfirmed in an interactive run. In a
+non-interactive run a default (detected or fixed) counts only with `-y`; a
+required value neither flagged, recorded, nor a default accepted by `-y` is a
+usage error (exit `2`). The product has no secrets and no
 external integration, so there is no environment catalog.
 
 ## Backups {#backups}
@@ -67,6 +77,9 @@ existing file aside:
 
 - an existing file already byte-identical to what would be written is left
   untouched — no backup, no rewrite — and reported as `unchanged`;
+- an existing file byte-identical to bootstrap's own previous render (the same
+  path rendered with the recorded values) is replaced without a backup — its
+  content is bootstrap's, not the repository's;
 - first backup: `<name>.bak` (e.g. `.gitignore.bak`);
 - if that exists: `<name>.1.bak`, then `<name>.2.bak`, … — the lowest free
   number; an existing backup is never overwritten;
@@ -105,8 +118,8 @@ group, or a changed exit-code meaning is a major version.
 `reliability: static-site-best-effort`. The `site` is static files served from
 the host's edge with no stated availability target. Every page's content and
 links work with client scripting off; the only scripted controls (the copy
-button and the search input) are hidden when scripting is off, never shown
-inert. The `cli` runs locally; its
+button, the search input and the mobile-menu button) are hidden when scripting
+is off, never shown inert — on narrow views the navigation then shows inline. The `cli` runs locally; its
 reliability contract is correctness — the acceptance criteria of each flow —
 not uptime.
 

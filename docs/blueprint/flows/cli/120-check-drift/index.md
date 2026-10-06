@@ -24,56 +24,56 @@ Serves: [Zero setup drift](../../../product.md#goal-zero-drift),
 | AI agent | `bootstrap check --json` | read access to the working directory | no |
 | CI | `bootstrap check`; the exit code decides the build | read access to the working directory | no |
 
-Read-only: the command never writes a file and never prompts, interactive or
-not. Not audit-recorded: the product has no audit foundation.
-
 ## Steps
 
-1. Check reads `.config/bootstrap.yaml`. Absent → writes nothing, exits 3 "not
-   set up — run `bootstrap init`". Invalid against its schema, a `format` newer
-   than the running cli understands, or naming a group the running cli no longer
-   ships → exits 3 naming the problem and the fix, per the setup-config
-   invariants.
-   [Setup config](../../../entities/setup-config/index.md)
-2. Check applies the version gate. Recorded `version` newer than the running cli
-   → exits 3 "set up with X, running Y — upgrade bootstrap" and runs no
-   comparison. Running cli newer → the comparison runs against the running cli's
-   files, so changed templates of the newer release appear as drift until update
-   runs.
+1. Outside a git repository check exits 3 per
+   [errors](../../../conventions.md#errors). Check reads `.config/bootstrap.yaml`. Absent → writes nothing, exits 3 "not
+   set up — run `bootstrap init`". A file failing
+   [Setup config validity](../../../entities/setup-config/index.md#validity) → exits 3 naming the problem and the fix. This
+   includes a recorded `version` newer than the running cli: "set up with X,
+   running Y — upgrade bootstrap"; no comparison runs.
+2. When the running cli is newer than the recorded `version`, the comparison uses
+   the running cli's files and the report states both versions.
    [Setup config](../../../entities/setup-config/index.md)
 3. Check renders, in memory only, every file of the core groups plus the selected
-   optional groups, using the recorded values.
+   optional groups, using the recorded values. A render failure exits 3 per
+   [errors](../../../conventions.md#errors).
    [Group](../../../entities/group/index.md)
 4. Check compares each rendered file with the repository and assigns each
-   produced or listed path exactly one status, by precedence `kept` > `deleted` >
-   `obsolete`/`missing`/`modified`/`unchanged`: `kept` (path in setup-config
-   `kept`, whatever its state — present with any content, or absent; never
-   drift, never `obsolete`), `deleted` (path in setup-config `deleted`, the owner
-   chose to leave it deleted; never drift), `obsolete` (path in setup-config
-   `files` the running cli no longer produces, still in the repo), `missing`
-   (absent), `modified` (differs), `unchanged` (byte-identical). A path in
-   `files` no longer produced and absent from the repo gets no status.
-   [Setup config](../../../entities/setup-config/index.md)
-5. Check reports. Human output lists files grouped by status; `--verbose` adds
-   the diffs. `--json` prints exactly one document on every exit
-   ([errors](../../../conventions.md#errors)); on exit 2 or 3 it carries the
-   `error` instead of file statuses, otherwise: recorded version, running
-   version, and per file its path, group and status, plus for `modified`,
-   `missing` and `obsolete` a unified diff from the current content to the
-   expected content (`missing`: from empty; `obsolete`: to empty), and a
+   produced or listed path exactly one status, first matching row wins
+   ([Setup config](../../../entities/setup-config/index.md) lists):
+
+   | Status | Condition | Drift |
+   | ------ | --------- | ----- |
+   | `kept` | path in `kept`, present with any content or absent; never `obsolete` | no |
+   | `deleted` | path in `deleted` | no |
+   | `obsolete` | path in `files` the running cli no longer produces, still in the repo | yes |
+   | `missing` | produced, absent | yes |
+   | `modified` | produced, differs | yes |
+   | `unchanged` | produced, byte-identical | no |
+
+   A path in `files` no longer produced and absent from the repo gets no status.
+5. Check reports. Human output states both versions and lists files grouped by
+   status; `--verbose` adds the diffs; output rules per
+   [Terminal UX](../../../design-system.md#terminal-ux). `--json` prints exactly
+   one document on every exit ([errors](../../../conventions.md#errors)); on exit
+   2, 3 or 130 it carries the `error` instead of file statuses ("interrupted —
+   nothing written" on 130), otherwise: recorded version, running version, and
+   per file its path, group (null for a path no group of the running cli
+   produces) and status, plus for
+   `modified`, `missing` and `obsolete` a unified diff from the current content
+   to the expected content (`missing`: from empty; `obsolete`: to empty), and a
    warnings array. A `kept` path the running cli no longer produces is the
    warning "kept file no longer produced" — never changes the exit code.
-6. Check exits 0 when no file is `modified`, `missing` or `obsolete`, and 1 when at
-   least one is (drift), per [errors](../../../conventions.md#errors).
-
-The human report states both versions. Output rules follow
-[Terminal UX](../../../design-system.md#terminal-ux).
+6. Check exits 0 when no path has a drift status, and 1 when at least one does,
+   per [errors](../../../conventions.md#errors); every other exit (2, 3, 130) is
+   per that anchor and steps 1 and 3.
 
 ## Guarantees
 
 | Step / group | Consistency | On failure | Idempotency | Load & latency |
 | ------------ | ----------- | ---------- | ----------- | -------------- |
-| all | atomic — read-only: the repository is byte-identical after the run, whatever the outcome | none — nothing written; exit 1 means drift, exit 3 a setup or version problem | repeated runs on an unchanged repo give the same report | completes in under 5 seconds on a typical repository with every group selected, bootstrap already installed |
+| all | atomic — read-only: the repository is byte-identical after the run, whatever the outcome | none — nothing written; exits per steps 1, 3 and 6 | repeated runs on an unchanged repo give the same report | completes in under 5 seconds on a typical repository with every group selected, bootstrap already installed |
 
 ## Diagram
 
@@ -86,12 +86,15 @@ sequenceDiagram
     participant R as Repository
     O->>K: bootstrap check
     K->>C: read config
-    alt absent, invalid or newer version
+    alt not a git repository, absent, invalid or newer version
         K-->>O: exit 3, fix
     else usable
         K->>G: render files in memory
+        alt render failure
+            K-->>O: exit 3
+        end
         K->>R: compare each file
-        K-->>O: report by status
+        K-->>O: report by status, warning "kept file no longer produced"
         alt modified, missing or obsolete
             K-->>O: exit 1
         else none
@@ -123,10 +126,24 @@ N/A — runs synchronously in one command invocation.
 - Given `kept` lists a path the running cli no longer produces, when check runs,
   then the report carries the warning "kept file no longer produced" and the exit
   code is unaffected.
+- Given the directory is not inside a git repository, when check runs, then the
+  exit code is 3 and nothing is written.
 - Given no `.config/bootstrap.yaml`, when check runs, then the exit code is 3 and
   the message names `bootstrap init`.
-- Given the recorded version is newer than the running cli, when check runs, then
-  the exit code is 3 and no file status is reported.
+- Given a setup file failing Validity (schema violation, newer format, removed or
+  core group name, a path in both `kept` and `deleted`), when check runs, then the
+  exit code is 3 and the message names the problem.
+- Given the recorded version is newer than the running cli (step 1), when check
+  runs, then the exit code is 3 and no file status is reported.
+- Given an unknown flag, when check runs, then the exit code is 2 with short
+  usage; with `--json`, stdout is one document with `error`.
+- Given a `deleted` path the running cli no longer produces, when check runs, then
+  its status is `deleted` and the exit code is 0.
+- Given a `deleted` path the owner put back in the repository, when check runs,
+  then its status is `deleted`, not drift, and the exit code is 0.
+- Given Ctrl-C at any moment, when check runs, then the exit code is 130, the
+  message is "interrupted — nothing written", and with `--json` it is the
+  document's `error`.
 - Given the running cli is newer and its templates changed, when check runs, then
   the affected files are `modified`, the report shows both versions and the exit
   code is 1.
@@ -149,7 +166,5 @@ N/A — runs synchronously in one command invocation.
   [config](../../../conventions.md#config)
 - [design-system](../../../design-system.md#terminal-ux) — Terminal UX
 - [Set up a repository](../110-setup-repository/index.md) — writes the config
-  this flow reads
 - API surface: N/A — no service project; the flow is a local command
-- Screens surface: N/A — cli has no screen platform; terminal behaviour per
-  design-system.md Terminal UX
+- Screens surface: N/A — cli has no screen platform

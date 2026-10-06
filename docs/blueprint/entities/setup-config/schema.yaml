@@ -54,7 +54,7 @@ properties:
     additionalProperties: false
   kept:
     type: array
-    description: Repository-relative paths the repository owns, deliberately changed from bootstrap's version. Check reports them as kept, never drift; update never overwrites them. Optional; absent means empty.
+    description: Repository-relative paths the repository owns, deliberately changed from bootstrap's version. Check reports them as kept, never drift; update never overwrites them unless the owner chooses recreate or passes `--take <path>`. Optional; absent means empty.
     uniqueItems: true
     items:
       type: string
