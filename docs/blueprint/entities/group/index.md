@@ -13,7 +13,7 @@ owner: [cli]
 
 A group is a named set of setup files shipped inside the bootstrap tool itself. It is a read-only catalog, versioned with the tool, and is never stored in the target repository. Users select optional groups at init (`--group <name>`) and add them later by name; core groups are always applied.
 
-Used by: [Setup repository](../../flows/cli/110-setup-repository/index.md), [Add an optional group](../../flows/cli/140-add-group/index.md).
+Used by: [Setup repository](../../flows/cli/110-setup-repository/index.md), [Add an optional group](../../flows/cli/140-add-group/index.md), [Remove an optional group](../../flows/cli/150-remove-group/index.md).
 
 Scale: 12 groups at 1.0 (8 core, 4 optional); grows only with new tool releases.
 

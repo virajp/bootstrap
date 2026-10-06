@@ -82,14 +82,16 @@ complex to maintain.
 | 2    | Check for drift             | [Zero setup drift](#goal-zero-drift), [Agent-resolvable drift](#goal-agent-resolvable) | —                                                 | A read-only report is what makes drift visible in every repository and to an agent   |
 | 3    | Update an existing repository | [Zero setup drift](#goal-zero-drift)                                         | [Re-applying keeps a repository's own edits](#risks--assumptions) | Brings the repositories that already exist onto the shared source                  |
 | 4    | Add an optional group       | [Fast new-repo setup](#goal-fast-setup)                                        | —                                                 | Lets a repository take on a group of setup later, without starting over              |
-| 5    | Documentation               | [Outside adoption](#goal-outside-adoption)                                     | —                                                 | What an outside developer reads before adopting; ships with 1.0                      |
+| 5    | Remove an optional group    | [Zero setup drift](#goal-zero-drift)                                           | —                                                 | Lets a repository drop a group it no longer wants, without leftover files            |
+| 6    | Documentation               | [Outside adoption](#goal-outside-adoption)                                     | —                                                 | What an outside developer reads before adopting; ships with 1.0                      |
 
 ```mermaid
 flowchart LR
     A[Set up a repository] --> B[Check for drift]
     B --> C[Update an existing repository]
     C --> D[Add an optional group]
-    D --> E[Documentation]
+    D --> F[Remove an optional group]
+    F --> E[Documentation]
 ```
 
 Rank 1 validates no assumption on purpose: the two riskiest — one shared

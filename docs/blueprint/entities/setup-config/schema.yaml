@@ -49,7 +49,7 @@ properties:
         uniqueItems: true
         items:
           type: string
-          description: Name of an optional Group.
+          description: Name of an optional Group; optional group names only, never a core group name.
     required: [repo, commit_scopes, merge_model, groups]
     additionalProperties: false
   kept:
