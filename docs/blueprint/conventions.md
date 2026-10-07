@@ -22,34 +22,40 @@ person's or agent's own file-system and git permissions.
 ## Errors {#errors}
 
 Every `cli` command reports outcome by **exit code** and, under `--json`, one
-**structured report** (`errors: exit-codes-and-structured-report`).
+**JSON result** (`errors: exit-codes-and-structured-report`).
 
 | Exit | Meaning                                                                           |
 | ---- | --------------------------------------------------------------------------------- |
-| `0`  | success; for a read-only check, no drift                                          |
-| `1`  | drift found, or the command declined to act (e.g. the repository is already set up) |
-| `2`  | usage error — bad or missing flag/argument; prints short usage                    |
-| `3`  | failure — not a git repository, unreadable setup file, render error, a target path that is not a regular file, write failed |
+| `0`  | success                                                                           |
+| `1`  | declined to act — a target has uncommitted changes ([#safety](#safety)), the actor declined a confirm, the setup file changed while the `tui` view was open (next command `bootstrap tui`), or the repository is not set up or was set up by an older bootstrap (next command `bootstrap init`) |
+| `2`  | usage error — bad or missing flag/argument, an unremovable tool named for removal, a replacement with no consent or of a tool that is not replaceable; prints short usage |
+| `3`  | failure — not a git repository, `mise` not installed, unreadable setup file, render error, a target path that is not a regular file, write failed |
 | `130` | interrupted (Ctrl-C) — nothing written, or the repository was restored            |
 
 - An interrupt (Ctrl-C) exits `130` in every command and at any moment — at a
   prompt, while reading, or while writing. During a write it first triggers the
   full rollback ("interrupted — repository restored"); before any write it says
   "interrupted — nothing written". A `--json` run prints the same as its
-  `error`. A rollback that itself fails exits `3` listing every path not
+  `error`. A restore that itself fails exits `3` listing every path not
   restored. Answering "no" to a confirm stays exit `1`.
 - Every command runs only inside a git repository; anywhere else it writes
   nothing and exits `3` with "not a git repository — run `git init` first".
+- Every command needs `mise` on the `PATH`; without it, the command writes
+  nothing and exits `3` with "mise not installed" and the install command.
+  When the `mise` found is not `~/.local/bin/mise`, the command prints one
+  warning naming the path found and continues.
   From any subdirectory, every command works at the repository root: the setup
   file and every tool path are relative to the root.
 - Results go to stdout; progress, warnings and errors go to stderr.
-- `--json` prints exactly one JSON document to stdout and nothing else, carrying
+- `--json` prints exactly one JSON document, the JSON result, to stdout and
+  nothing else, carrying
   the same outcome as the exit code; it is the machine contract an agent reads.
   This holds on every exit, `2` and `3` included: the document then carries an
   `error` (what happened, why, and the exact next command) in place of results.
   Every document has a top-level `exit` (the exit code). The `error` object has
-  exactly the keys `what`, `why` and `next_command`; a failed rollback adds
-  `unrestored`, a list of `{path, backup}` for every path not restored.
+  exactly the keys `what`, `why` and `next_command`; a failed restore adds
+  `unrestored`, a list of every path not restored. Warnings go in a top-level
+  `warnings` list of strings, empty when there is none.
 - A run is interactive only when stdin and stdout are both terminals and
   `--json` is not given; every other run is non-interactive.
 - `--json` always runs non-interactively, terminal or not: no prompt is ever
@@ -57,7 +63,7 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
 - Every error message states what happened, why, and the exact next command to
   run. No internal trace unless `--verbose`.
 - A command that cannot complete its writes leaves the repository as it found
-  it — see [#backups](#backups) and `baseline/atomic-multi-write`.
+  it — see [#safety](#safety) and `baseline/atomic-multi-write`.
 
 ## Config {#config}
 
@@ -73,39 +79,56 @@ Detected values (e.g. the repository path `owner/name` from its git remote) are
 offered as defaults, never applied unconfirmed in an interactive run. In a
 non-interactive run a default (detected or fixed) counts only with `-y`; a
 required value neither flagged, recorded, nor a default accepted by `-y` is a
-usage error (exit `2`). The product has no secrets and no
+usage error (exit `2`). `-y` is never consent to replace a tool: a
+non-interactive replacement needs `--replace` ([Tool category](entities/tool-category/index.md)). The product has no secrets and no
 external integration, so there is no environment catalog.
 
-## Backups {#backups}
+## Safety {#safety}
 
-Bootstrap never destroys a file's content. Before removing any existing file,
-or replacing one — managed or not — with different content, it moves the
-existing file aside:
+The repository's git history is the only record of earlier states. Bootstrap
+makes no backup copies and never commits; the owner examines the changes and
+commits them.
 
-- an existing file already byte-identical to what would be written is left
-  untouched — no backup, no rewrite — and reported as `unchanged`;
-- an existing file byte-identical to bootstrap's own previous render (the same
-  path rendered with the recorded values) is replaced without a backup — its
-  content is bootstrap's, not the repository's;
-- first backup: `<name>.bak` (e.g. `.gitignore.bak`);
-- if that exists: `<name>.1.bak`, then `<name>.2.bak`, … — the lowest free
-  number; an existing backup is never overwritten;
-- the `.bak` suffix is always last, so one ignore pattern (`*.bak`) covers every
-  backup — the core `git` tool's ignore file carries it;
-- every backup made is listed in the command's output (original → backup path),
-  human and `--json`, so a person or agent can merge hand edits back;
-- on a failed or interrupted run, backups are restored to their original paths
-  as part of the rollback;
-- a path the command would write or remove that is a directory or a symlink,
-  or whose parent directory is a symlink or a regular file, is never backed
-  up, replaced or followed: before any
-  write the command exits `3` naming every such path, with the fix "move it
-  away and run again". A `kept` or `deleted` path is never written, so this
-  rule does not apply to it; `check` reports such a produced or listed path as
-  `not-a-file` drift.
+- **Targets.** The targets of a run are the paths it would create, change
+  (content or file mode) or delete. A path whose rendered content and mode
+  equal the working copy is not a target; it is reported as `unchanged`. The
+  setup file `.config/bootstrap.yaml` is a target like any other file, so a
+  hand edit to it must be committed before the next command.
+- **Clean targets only.** If any target is modified, staged, untracked,
+  ignored, or deleted in the working tree with the deletion not committed, the command writes nothing and exits `1`, listing every such
+  path with the fix "commit or stash these files, then run again".
+- **Write last.** A command computes every render, decision and check in memory
+  first; it writes only after every check passes and every confirm is given.
+- **Restore on failure.** If a write fails or the run is interrupted during the
+  writes, the command restores every changed or deleted target from `HEAD` and
+  deletes every file it created, so the working tree is as it was. A restore
+  that fails exits `3` listing every path not restored.
+- **Not a file.** A target that is a directory or a symlink, or whose parent
+  directory is a symlink or a regular file, is never written, deleted or
+  followed: the command exits `3` naming every such path, with the fix "move it
+  away and run again".
+- **Create-only files.** A file the [Tool](entities/tool/index.md) catalog marks
+  `create_only` is written only when it is absent; it is never changed and never
+  deleted, and an existing one is reported as `kept`.
+- **File mode.** Every task file is written executable (`0755`); every other
+  file is written `0644`.
+- **Files no longer rendered.** A path in the setup config's `files` that the
+  running bootstrap does not render is never deleted by any command; it stays
+  in `files` and every command reports it as `orphaned` until the owner deletes
+  it. A recorded path that is absent on disk leaves `files` on the next write.
+- **Precedence.** When one run finds both kinds of refusal, a not-a-file target
+  (exit `3`) wins over an uncommitted target (exit `1`); the message lists every
+  path of both kinds.
 
 Every path list in a command's output (human and `--json`) is sorted by path in
 byte order.
+
+## Tool versions {#tool-versions}
+
+Every tool a rendered task or hook runs is installed by `mise` from the
+rendered config; no task fetches and runs a package by itself. Every
+`mise.dev.toml` asks for the `latest` version. Every other `mise` config file
+pins an exact version, and a new bootstrap release moves those pins.
 
 ## Observability {#observability}
 
@@ -146,8 +169,8 @@ not uptime.
 `dr: git-is-source-of-truth`. Everything the product is — source, templates,
 docs, the site's content — lives in the git repository and its remote; a lost
 host or package release is recovered by rebuilding from a tag. In a target
-repository, bootstrap's own writes are recoverable the same way, and through
-[#backups](#backups) for files it replaced.
+repository, every file bootstrap changed is recoverable from that
+repository's own git history, per [#safety](#safety).
 
 ## Incident response {#incident}
 
@@ -166,10 +189,11 @@ the design system's Brand assets.
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Site name           | bootstrap                                                                                                                     |
 | Home address        | `https://bootstrap.virajp.dev/` — the canonical origin of every page                                                          |
-| Default description | One shared setup for every repository: formatters, commit gates, scanners and tasks, with drift reports an AI agent can act on. |
+| Default description | One shared setup for every repository: formatters, commit gates, scanners and tasks, chosen by category. |
 | Content locale      | `en`                                                                                                                          |
 | Social handle       | none                                                                                                                          |
 | Organisation        | Viraj Patel — `https://virajp.dev`; logo: the brand mark                                                                      |
+| Source repository   | `https://github.com/virajp/bootstrap` — the target of every "Source ↗" link                                                   |
 
 ## Engineering baseline {#baseline}
 
@@ -186,7 +210,7 @@ deviating doc and as an `enforcement.rules` waiver.
   ([setup-config schema](entities/setup-config/schema.yaml)), and every `--json`
   report before it is printed.
 - **`baseline/business-technical-separation`** — the setup decisions (what to
-  render, what counts as drift, what to back up) never live inside technical
+  render, which paths are targets, what needs consent) never live inside technical
   helpers (file system, git, terminal, templating), which sit in shared layers
   the decisions consume.
 - **`baseline/graceful-shutdown`** — an interrupt during a writing command

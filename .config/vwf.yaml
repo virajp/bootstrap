@@ -60,7 +60,27 @@ harness:
   test:load: false
 
 enforcement:
-  rules: {}
+  rules:
+    blueprint/no-vendor-name/tool: {
+      waived: true,
+      reason: "bootstrap's product is the setup of named tools, so the catalog's tool names and the tools they install are contract (user, 2026-10-08)",
+    }
+    blueprint/no-vendor-name/tool-category: {
+      waived: true,
+      reason: "the category catalog lists the named tools of each category (user, 2026-10-08)",
+    }
+    blueprint/no-vendor-name/setup-config: {
+      waived: true,
+      reason: "the setup file records named tools (user, 2026-10-08)",
+    }
+    blueprint/no-vendor-name/cli: {
+      waived: true,
+      reason: "the cli flows name the tools they set up and their prerequisites (user, 2026-10-08)",
+    }
+    blueprint/no-vendor-name/site: {
+      waived: true,
+      reason: "the docs site documents the named tools and the install channels of the cli (user, 2026-10-08)",
+    }
   kept_files: {}
 
 memory:
@@ -72,5 +92,5 @@ design:
     - site/100-home/site
     - site/110-documentation/site
 blueprint:
-  coverage: complete # stamped 2026-10-06 by /vwf:blueprint — re-stamped after the second init-gap pass (not-a-file, sorted output, --quiet, -y for removal)
+  coverage: complete # stamped 2026-10-08 by /vwf:blueprint — rescope sweep (mise-centric init/add/remove/tui, tool categories, git-backed safety); coherence round 9 NO GAPS
   remaining: []

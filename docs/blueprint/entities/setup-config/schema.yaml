@@ -2,7 +2,7 @@
 # repository at .config/bootstrap.yaml. Governing status: index.md frontmatter.
 $schema: https://json-schema.org/draft/2020-12/schema
 title: Setup Config
-description: Bootstrap answers recorded for a repository; its presence marks the repository as initialised.
+description: Bootstrap values and selected tools recorded for a repository; its presence marks the repository as set up.
 type: object
 properties:
   format:
@@ -15,7 +15,7 @@ properties:
     pattern: ^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$
   values:
     type: object
-    description: The answers the repository was set up with.
+    description: The values and tools the repository was set up with.
     properties:
       repo:
         type: string
@@ -28,7 +28,7 @@ properties:
         items:
           type: string
           description: One commit scope, a lowercase kebab-case word.
-          pattern: ^[a-z][a-z0-9-]*$
+          pattern: ^[a-z][a-z0-9]*(-[a-z0-9]+)*$
       merge_model:
         type: object
         description: How changes reach each long-lived branch.
@@ -45,33 +45,23 @@ properties:
         additionalProperties: false
       tools:
         type: array
-        description: Selected non-core tools only; core is implicit. Each names a non-core entry of entity Tool.
+        description: Every selected tool, base tools and unremovable tools included. Each names an entity Tool.
+        minItems: 1
         uniqueItems: true
         items:
           type: string
-          description: Name of a non-core Tool; non-core tool names only, never a core tool name.
+          description: Name of a Tool.
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
     required: [repo, commit_scopes, merge_model, tools]
     additionalProperties: false
-  kept:
-    type: array
-    description: Paths the owner deliberately changed from bootstrap's version. Optional; absent means empty; bootstrap never writes it empty.
-    uniqueItems: true
-    items:
-      type: string
-      description: One exact repository-relative file path; no directories, no globs.
-  deleted:
-    type: array
-    description: Paths the owner deliberately left deleted. Optional; absent means empty; bootstrap never writes it empty.
-    uniqueItems: true
-    items:
-      type: string
-      description: One exact repository-relative file path; no directories, no globs.
   files:
     type: array
-    description: Every path the selected tools produce, excluding .config/bootstrap.yaml itself.
+    description: Every path the selected tools rendered, excluding .config/bootstrap.yaml itself.
     uniqueItems: true
     items:
       type: string
-      description: One exact repository-relative file path; no directories, no globs.
+      description: One exact repository-relative file path; no directories, no globs; not absolute, no `..` segment.
+      minLength: 1
+      pattern: ^(?!/)(?!.*/$)(?!(.*/)?\.{1,2}(/|$))[^*?\[]+$
 required: [format, version, values, files]
 additionalProperties: false

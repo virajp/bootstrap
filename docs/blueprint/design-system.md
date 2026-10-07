@@ -173,6 +173,9 @@ samples, commands, flags, file paths, eyebrows and tags.
   mono, horizontal scroll and never wrapped; a filename or language label at the
   top left; a ghost copy button at the top right that confirms with "Copied" for
   1.5 seconds. No line numbers by default.
+- **Command display**: a code block variant for one command shown as an
+  example, not as text to copy: the same surface, outline, radius and type,
+  with no label and no copy button; the text stays selectable.
 - **Terminal sample**: a code block whose first line is a `$ ` prompt in
   `text-muted`; output lines may use `status-success`, `status-warning`,
   `accent` (error) and bold `text-body` (emphasis), mirroring the CLI's own
@@ -231,14 +234,15 @@ samples, commands, flags, file paths, eyebrows and tags.
 The `cli` project is a shipped command-line tool. Elicited in text on
 2026-10-06.
 
-- Output formatting: human-readable text by default. Every command takes
-  `--json`, which prints exactly one JSON document to stdout and nothing else.
+- Output formatting: human-readable text by default. Every command except
+  `tui` takes `--json` (and `--quiet`), which prints exactly one JSON document to stdout and nothing else.
   Results go to stdout; progress, warnings and errors go to stderr. `--quiet`
   prints no result and no progress, errors only (the exit code carries the
   outcome); `--json` ignores `--quiet` and always prints its document.
   `--verbose` shows each per-file decision.
 - Color semantics: color carries meaning only. `success` (created, unchanged) maps
-  to `status-success`; `warning` (drift found, kept files) to `status-warning`;
+  to `status-success`; `warning` (mise not at the expected path, kept or
+  orphaned files, a refused dirty target) to `status-warning`;
   `error` to `accent`; `emphasis` (paths, command names) to bold `text-body`.
   Roles map to the terminal theme's palette by role name, never fixed hex. Color
   is off when `NO_COLOR` is set, when the output is not a terminal, with
@@ -249,11 +253,25 @@ The `cli` project is a shipped command-line tool. Elicited in text on
 - Errors & exit codes: per [errors](conventions.md#errors) (`0`, `1`, `2`,
   `3`, `130`). Every error states what happened, why, and the exact next
   command; no stack trace unless `--verbose`.
-- Help & naming conventions: commands are single verbs (`init`, `check`,
-  `update`, `add <tool>`, `remove <tool>`). Every flag has a long form; short forms only for the
+- Help & naming conventions: commands are single words (`init`,
+  `add <tool>`, `remove <tool>`, `tui`). Every flag has a long form; short forms only for the
   most common (`-q`, `-v`, `-y`). Booleans negate with `--no-<flag>`. Help is a
   one-line purpose, usage, flags, then one or two real examples. The bare
   command prints help and exits `2`.
+- Full-screen selector (`bootstrap tui`, interactive terminal only): one
+  scrolling list, a heading per tool category in catalog order, then a values
+  section. A `max: one` category is a radio group (`(•)` / `( )`) with a
+  `none` choice; a `max: many` category is a checkbox group (`[x]` / `[ ]`).
+  A locked control (an unremovable tool; or, while a tool that is not
+  replaceable is selected, the other tools of its `max: one` category) shows its
+  mark dimmed with `locked`, and the cursor skips its control. Keys: up and
+  down (or `k` and `j`) move, space selects, enter edits a value, `a` applies,
+  `q` or Esc quits; a footer line always lists these keys. A consent prompt
+  ("replace `<old>` with `<new>`? y/N") opens in place and defaults to no. Apply
+  shows the plan in the same screen and asks once; the selector never writes
+  before that confirm. The selector needs a terminal at least 80 columns wide
+  and 24 rows high; a smaller one shows only "make the terminal larger". The
+  state of each control is carried by its mark, never by color alone.
 
 ## Anti-Patterns
 

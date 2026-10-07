@@ -12,13 +12,13 @@ owner: [site]
 ## Purpose
 
 A visitor who opens a page under `https://bootstrap.virajp.dev/docs/` finds
-every command, flag, exit code, tool, setup-config field and JSON report field
-of bootstrap. The site also publishes the same pages as plain text for AI
-agents. The docs describe only the latest release; there is no version
+every command, flag, exit code, tool category, tool, setup-config field and JSON
+result field of bootstrap. The site also publishes the same pages as plain text for AI
+agents. The `--json` output is called the "JSON result" everywhere. The docs describe only the latest release; there is no version
 selector, and the changelog page records older versions.
 
 Serves: [Outside adoption](../../../product.md#goal-outside-adoption),
-[Agent-resolvable drift](../../../product.md#goal-agent-resolvable)
+[Fast new-repo setup](../../../product.md#goal-fast-setup)
 
 ## Platforms
 
@@ -36,21 +36,20 @@ is not shown on the site.
 
 | Section | Page | Address | Description | Flow |
 | ------- | ---- | ------- | ----------- | ---- |
-| START | Introduction | `/docs/` (the docs index) | What bootstrap is, what it writes into a repository, and how it keeps that setup current. | n/a |
-| START | Quick start | `/docs/start/quick-start/` | Go from an empty git repository to passing gates in under five minutes. | n/a |
-| COMMANDS | bootstrap init | `/docs/commands/init/` | Set up a repository: choose tools, give values, write the files. | [Set up a repository](../../cli/110-setup-repository/index.md) |
-| COMMANDS | bootstrap check | `/docs/commands/check/` | Report drift between a repository and the shared source, for people and agents. | [Check for drift](../../cli/120-check-drift/index.md) |
-| COMMANDS | bootstrap update | `/docs/commands/update/` | Bring a repository back to the shared source and decide per changed file. | [Update a repository](../../cli/130-update-repository/index.md) |
-| COMMANDS | bootstrap add | `/docs/commands/add/` | Add one or more non-core tools to a set-up repository. | [Add a tool](../../cli/140-add-tool/index.md) |
-| COMMANDS | bootstrap remove | `/docs/commands/remove/` | Remove non-core tools and their files, with backups. | [Remove a tool](../../cli/150-remove-tool/index.md) |
+| START | Introduction | `/docs/` (the docs index) | What bootstrap is, what it writes into a repository, how it keeps that setup current, and that commands run from any subdirectory of the repository and act on the repository root. | n/a |
+| START | Quick start | `/docs/start/quick-start/` | Install bootstrap with mise or Homebrew (mise must be on PATH for every command), then go from an empty git repository to passing gates in under five minutes. | n/a |
+| COMMANDS | bootstrap init | `/docs/commands/init/` | Set up a repository or bring it up to date: choose tools, give values, write the files. | [Set up a repository](../../cli/110-setup-repository/index.md) |
+| COMMANDS | bootstrap add | `/docs/commands/add/` | Add tools to a set-up repository, or replace the tool of a single-tool category. | [Add a tool](../../cli/140-add-tool/index.md) |
+| COMMANDS | bootstrap remove | `/docs/commands/remove/` | Remove tools and their files; git keeps every deleted file. | [Remove a tool](../../cli/150-remove-tool/index.md) |
+| COMMANDS | bootstrap tui | `/docs/commands/tui/` | Select tools by category in a full-screen view, and edit the values. | [Select tools](../../cli/160-select-tools/index.md) |
 | GUIDES | Adopt an existing repository | `/docs/guides/adopt-existing-repository/` | Move a repository with hand-copied setup onto bootstrap. | n/a |
-| GUIDES | Run check in CI | `/docs/guides/run-check-in-ci/` | Fail a build when a repository drifts from the shared source. | n/a |
-| GUIDES | Fix drift with an AI agent | `/docs/guides/fix-drift-with-an-ai-agent/` | Let an agent read the JSON report and resolve drift alone. | n/a |
-| GUIDES | Keep your own edits | `/docs/guides/keep-your-own-edits/` | Mark files as kept or deleted so bootstrap leaves them alone. | n/a |
-| REFERENCE | Tools | `/docs/reference/tools/` | The core set and every non-core tool, with the files that each one writes. | n/a |
+| GUIDES | Roll back with git | `/docs/guides/roll-back-with-git/` | Go back to any earlier setup with git. | n/a |
+| GUIDES | Use bootstrap from an AI agent | `/docs/guides/use-from-an-ai-agent/` | Run init, add and remove with flags, when a run is interactive, and read the JSON result. | n/a |
+| REFERENCE | Tool categories | `/docs/reference/tool-categories/` | Each tool category, how many of its tools a repository can select, and its tools. | n/a |
+| REFERENCE | Tools | `/docs/reference/tools/` | Every tool, its category, and the files that each one writes. | n/a |
 | REFERENCE | bootstrap.yaml | `/docs/reference/bootstrap-yaml/` | Every field of the setup file and the rules for each one. | n/a |
-| REFERENCE | JSON report | `/docs/reference/json-report/` | Every field of the --json report for each command. | n/a |
-| REFERENCE | Exit codes | `/docs/reference/exit-codes/` | What each exit code means and the next command to run. | n/a |
+| REFERENCE | JSON result | `/docs/reference/json-result/` | Every field of the JSON result (the --json output) for each command, including exit, warnings and dry_run. | n/a |
+| REFERENCE | Exit codes | `/docs/reference/exit-codes/` | What each exit code means, including interrupts and restores, and the next command to run. | n/a |
 | REFERENCE | Changelog | `/docs/reference/changelog/` | What changed in each release of bootstrap. | n/a |
 
 ## Trigger & Actors
@@ -65,22 +64,22 @@ is not shown on the site.
 
 1. Site serves the page — N/A: reads no product data; the pages describe
    [Setup config](../../../entities/setup-config/index.md) and
-   [Tool](../../../entities/tool/index.md) but store no data
+   [Tool](../../../entities/tool/index.md) and
+   [Tool category](../../../entities/tool-category/index.md) but store no data
 2. Visitor navigates with the sidebar, "On this page", previous and next links,
-   or the Search input ([Inputs (search)](../../../design-system.md#component-behaviors)
-   searches every docs page)
-3. Visitor copies a command from a code block; the copy button shows "Copied"
-   for 1.5 seconds
-4. AI agent reads `/llms.txt` (every docs page with its one-sentence
-   description and address) or `/llms-full.txt` (every docs page as plain text,
-   in sidebar order); both come from the same pages as the site and never
-   differ from them
+   or the Search input ([`110a`](./site.md#110a--doc-page-components))
+3. Visitor copies a command from a code block
+   ([`110a`](./site.md#110a--doc-page-components))
+4. AI agent reads `/llms.txt` or `/llms-full.txt`; both come from the same
+   pages as the site and never differ from them
+5. Search robot reads each docs page's metadata (per the Metadata block of
+   `110a` in [site](./site.md)) and its content
 
 ## Guarantees
 
 | Step / group | Consistency | On failure | Idempotency | Load & latency |
 | ------------ | ----------- | ---------- | ----------- | -------------- |
-| all | atomic — the pages are static and hold no state | Unknown address under `/docs/`: the `not-found` screen of [Home](../100-home/index.md) (`100b`). Scripting off: the copy buttons, the Search input and the mobile-menu button are hidden; content and navigation still work, and on narrow views the navigation shows inline above the content. Clipboard unavailable: no confirmation; the command stays selectable. | n/a — every step is safe to repeat | default — per [reliability](../../../conventions.md#reliability) |
+| all | atomic — the pages are static and hold no state | Unknown address under `/docs/`: the `not-found` screen of [Home](../100-home/index.md) (`100b`). Search index fails to load: the search panel shows "Search is not available."; the rest of the page works. Scripting off and clipboard unavailable: per [`110a`](./site.md#110a--doc-page-components). | n/a — every step is safe to repeat | default — per [reliability](../../../conventions.md#reliability) |
 
 ## Diagram
 
@@ -88,6 +87,7 @@ is not shown on the site.
 sequenceDiagram
     actor V as Visitor
     actor A as AI agent
+    actor R as Search robot
     participant S as Site
     participant C as Clipboard
     V->>S: open, navigate or search
@@ -96,6 +96,8 @@ sequenceDiagram
     C-->>V: "Copied" or none
     A->>S: open llms files
     S-->>A: plain text
+    R->>S: open docs page
+    S-->>R: metadata and content
 ```
 
 ## Background Jobs
@@ -104,15 +106,31 @@ N/A — static pages, no processing.
 
 ## Acceptance
 
+- Given the search index cannot load, when the visitor searches on a docs page,
+  then the search panel shows "Search is not available." and the rest of the page
+  works.
 - Given every address in the Page set table, when a visitor opens it, then the
   site returns that page on screen `110a`.
 - Given an unknown address under `/docs/`, when a visitor opens it, then the
   `not-found` screen (`100b` of [Home](../100-home/index.md)) shows.
 - Given the docs, when a reader compares them with the cli flows, the entities
   and [errors](../../../conventions.md#errors), then every command, flag, exit
-  code (0, 1, 2, 3, 130), tool, setup-config field, JSON report field, the
-  not-a-git-repository rule and the `--json` error document defined there
+  code (0, 1, 2, 3, 130), tool category, tool, setup-config field, JSON result
+  field, the not-a-git-repository rule and the error JSON result defined there
   appears on its docs page.
+- Given the docs, when a reader looks for the mise prerequisite, then the Quick
+  start states that `mise` must be on PATH for every command, shows exit 3
+  "mise not installed" with its install command, and shows the one warning
+  printed when the `mise` found is not `~/.local/bin/mise`.
+- Given the docs, when a reader looks for the cross-command rules of
+  [errors](../../../conventions.md#errors), then: the Exit codes page covers
+  exit 130 with "interrupted — nothing written" and "interrupted — repository
+  restored", and a failed restore exiting 3 with `unrestored`; the JSON result
+  page covers the top-level `exit`, `warnings` and `dry_run`; "Use bootstrap
+  from an AI agent" states that a run is interactive only when stdin and stdout
+  are terminals and `--json` is absent, and that `--json` never prompts; the
+  Introduction states that commands run from any subdirectory of the
+  repository and act on the repository root.
 - Given any docs page, when a visitor reads the sidebar, then it lists exactly
   the pages of the Page set table, in that order, with the current page marked.
 - Given any docs page, when a visitor follows previous or next, then the link
@@ -123,8 +141,13 @@ N/A — static pages, no processing.
   "Copied" for 1.5 seconds.
 - Given the clipboard is unavailable, when the visitor activates the copy
   button, then no confirmation shows and the command stays selectable.
-- Given the Search input, when a visitor searches, then the results cover every
-  docs page.
+- Given the Search input, when a visitor searches for text that appears in the
+  body of any docs page, then that page is among the results, and each result
+  shows the page title, the matching section heading, and a short text snippet
+  containing the match.
+- Given a docs page with level-2 and level-3 headings, when a visitor reads
+  "On this page", then it lists those headings, with each level-3 entry
+  indented under its level-2 section.
 - Given `/llms.txt`, when an agent reads it, then it lists every docs page with
   its one-sentence description and address.
 - Given `/llms-full.txt`, when an agent reads it, then it contains the text of

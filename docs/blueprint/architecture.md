@@ -13,8 +13,9 @@ status: draft
 ## System Overview
 
 bootstrap is one tool that renders shared development-tooling setup into a
-repository, reports how a repository's setup differs from that shared source as
-a machine-readable drift report, and a documentation site that explains both.
+repository, adds, removes and replaces tools by category, and a documentation
+site that explains it. Each change is left uncommitted in the repository's
+version history, which is the only rollback mechanism.
 
 Everything runs on the user's machine or in continuous integration. The only
 cloud-hosted piece is the documentation site. There are two independent
@@ -30,26 +31,29 @@ flowchart LR
 
 ### cli (`cli`)
 
-The command-line tool. It renders the shared setup into a target repository and
-produces the drift report. It runs locally and in CI, needs no accounts, and
-signals outcomes through exit codes plus the structured report.
+The command-line tool. It renders the shared setup into a target repository, and
+adds or removes tools, from commands or an interactive terminal tool selector.
+It runs locally and in CI, needs no accounts, and signals outcomes through exit
+codes plus the structured result.
 
 ### site (`site`)
 
 The documentation site. It is statically generated content describing the
-CLI's commands and the drift-report format. It holds no application logic and
+CLI's commands, tools and machine-readable results. It holds no application logic and
 no user data.
 
 ## How Projects Interconnect
 
 The two projects do not call each other. The site documents the CLI's commands
-and its drift-report format, but there is no runtime link, no auth flow and no
+and its machine-readable results, but there is no runtime link, no auth flow and no
 data flow between them.
 
 ## Hosting & Deployment
 
 - **cli** runs on developer machines and in CI. An automated pipeline publishes
-  it to the public package registry with provenance.
+  it to the public package registry with provenance, and on the same release
+  updates the formula in the owner's own Homebrew tap. Users install the
+  executable with the toolchain manager or with Homebrew.
 - **site** is static output served from Cloudflare's edge as static assets, and
   an automated pipeline deploys it on release.
 

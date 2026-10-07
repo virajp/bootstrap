@@ -4,7 +4,7 @@ title: bootstrap — Product
 description: Problem, users, success metrics, and slice priority — the outcome
   contract the blueprint serves.
 status: draft # draft | reviewed | stable
-timestamp: 2026-10-05
+timestamp: 2026-10-08
 ---
 
 # bootstrap — Product
@@ -29,7 +29,8 @@ setup instead of building the product.
 
 Day-zero setup and ongoing drift are one problem: a repository's setup should
 come from one shared source, both when the repository is created and for the
-rest of its life.
+rest of its life. Each change to the setup is an entry in the repository's
+version history, so the owner can go back to any earlier state.
 
 **Why now:** the number of repositories keeps growing, and the current way of
 producing this setup — embedded inside another tool's workflow — has become too
@@ -40,7 +41,7 @@ complex to maintain.
 | Persona           | Who they are                                                                                       | Core need                                                                                            |
 | ----------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Repo owner        | A developer maintaining many personal and work repositories                                        | Every repository set up the same way from one source, with no hand-copying and no hand-fixing        |
-| AI coding agent   | An agent working in a repository on the owner's behalf                                             | A machine-readable report of how the repository's setup differs from the source, precise enough to act on without guessing |
+| AI coding agent   | An agent working in a repository on the owner's behalf                                             | Set up a repository, and add or remove a tool, without prompts, and read one machine-readable result |
 | Outside developer | A developer outside the owner's repositories who adopts the published tool for their own repositories | A sensible, opinionated setup without having to design one                                           |
 
 ## Goals & success metrics
@@ -48,9 +49,10 @@ complex to maintain.
 ### Zero setup drift {#goal-zero-drift}
 
 - Outcome: every active repository's setup matches the shared source.
-- Metric: share of the owner's active repositories whose drift check passes —
-  target 100% within 3 months of the 1.0 release
-- Measured via: external each repository's continuous-integration drift check
+- Metric: share of the owner's active repositories where a re-run of the
+  setup with the latest release leaves no uncommitted change — target 100%
+  within 3 months of the 1.0 release
+- Measured via: external the owner's re-run script over the active repositories
 - Re-evaluate if: share below 50% by 6 months after the 1.0 release → re-scope
 
 ### Fast new-repo setup {#goal-fast-setup}
@@ -59,13 +61,6 @@ complex to maintain.
 - Metric: time from an empty repository to all gates passing — target under 5
   minutes at the 1.0 release
 - Measured via: external timed runs in a scratch repository
-
-### Agent-resolvable drift {#goal-agent-resolvable}
-
-- Outcome: an AI agent resolves reported drift without asking a human.
-- Metric: share of drift reports an agent fully resolves unaided — target 90%
-  within 3 months of the 1.0 release
-- Measured via: external agent session logs
 
 ### Outside adoption {#goal-outside-adoption}
 
@@ -76,38 +71,38 @@ complex to maintain.
 
 ## Slice priority
 
-| Rank | Slice (flow / entity)       | Serves goal                                                                    | Validates                                         | Why now                                                                              |
-| ---- | --------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| 1    | Set up a repository         | [Fast new-repo setup](#goal-fast-setup)                                        | —                                                 | The core path — rendering the shared source into a repository — that every other slice reuses |
-| 2    | Check for drift             | [Zero setup drift](#goal-zero-drift), [Agent-resolvable drift](#goal-agent-resolvable) | —                                                 | A read-only report is what makes drift visible in every repository and to an agent   |
-| 3    | Update an existing repository | [Zero setup drift](#goal-zero-drift)                                         | [Re-applying keeps a repository's own edits](#risks--assumptions) | Brings the repositories that already exist onto the shared source                  |
-| 4    | Add a tool                  | [Fast new-repo setup](#goal-fast-setup)                                        | —                                                 | Lets a repository take on a tool later, without starting over              |
-| 5    | Remove a tool               | [Zero setup drift](#goal-zero-drift)                                           | —                                                 | Lets a repository drop a tool it no longer wants, without leftover files            |
-| 6    | Documentation               | [Outside adoption](#goal-outside-adoption)                                     | —                                                 | What an outside developer reads before adopting; ships with 1.0                      |
+| Rank | Slice (flow / entity)               | Serves goal                                                         | Validates                                                         | Why now                                                                                      |
+| ---- | ----------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 1    | Set up a repository                 | [Fast new-repo setup](#goal-fast-setup), [Zero setup drift](#goal-zero-drift) | [Re-running replaces committed edits](#risks--assumptions) | The core path — rendering the shared source into a repository, first time and every re-run — that every other slice reuses |
+| 2    | Add a tool                          | [Fast new-repo setup](#goal-fast-setup)                             | —                                                                 | Lets a repository take on a tool later, or replace one, without starting over                |
+| 3    | Remove a tool                       | [Zero setup drift](#goal-zero-drift)                                | —                                                                 | Lets a repository drop a tool it no longer wants, without leftover files                     |
+| 4    | Select tools                        | [Fast new-repo setup](#goal-fast-setup)                             | —                                                                 | Shows every tool by category in one view, so the owner adds and removes tools in one place   |
+| 5    | Documentation                       | [Outside adoption](#goal-outside-adoption)                          | —                                                                 | What an outside developer reads before adopting; ships with 1.0                              |
 
 ```mermaid
 flowchart LR
-    A[Set up a repository] --> B[Check for drift]
-    B --> C[Update an existing repository]
-    C --> D[Add a tool]
-    D --> F[Remove a tool]
-    F --> E[Documentation]
+    A[Set up a repository] --> B[Add a tool]
+    B --> C[Remove a tool]
+    C --> D[Select tools]
+    D --> E[Documentation]
 ```
 
-Rank 1 validates no assumption on purpose: the two riskiest — one shared
-source fits every repository, and an agent can resolve drift from the report
-alone — are validated by their cheaper methods (rendering against the existing
-repositories, and an agent prototype) before slice 1 is built.
+Rank 1 validates only the re-run assumption. The riskiest assumption — one
+shared source fits every repository — is validated by its cheaper method
+(rendering against the existing repositories) before slice 1 is built.
 
 ## Non-goals
 
 - **No application scaffolding.** It sets up tooling and hygiene only; it never
   generates application code, frameworks or project structure.
-- **No automatic drift resolution.** It reports drift and applies only what the
-  owner or the agent approves; it never silently overwrites a repository's own
-  changes.
+- **No automatic commits.** It writes files, and the owner commits them; the
+  version history holds only the owner's commits.
+- **Never overwrites uncommitted work.** A file it would change that has
+  uncommitted changes stops the whole run, and nothing is written.
 - **No language, cloud or deploy setup in 1.0.** Language toolchains and
   cloud or deploy configuration are left out, possibly to become add-ons later.
+  A runtime that a setup tool itself needs is installed only as that tool's
+  dependency.
 - **No hosted service.** It runs locally and in continuous integration only —
   no accounts, no server, no telemetry.
 
@@ -116,11 +111,10 @@ repositories, and an agent prototype) before slice 1 is built.
 | Assumption                                                                                              | Risk if wrong                                                              | Validation method                                                  | Status   | Evidence |
 | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------ | -------- | -------- |
 | One shared source fits every repository, with differences confined to values and opt-in tools         | Repositories fork the source to fit, and drift returns                     | usage-data                                                         | untested | —        |
-| An agent can resolve drift from the report alone                                                        | Drift still needs a human in the loop, and the agent goal is unreachable   | prototype                                                          | untested | —        |
-| Re-applying the source to an existing repository keeps that repository's own edits                    | Owners stop re-applying, and existing repositories drift indefinitely      | slice:update-an-existing-repository                                | untested | —        |
+| One tool category list fits every repository, with at most one tool in each single-tool category       | Repositories need two tools where the source allows one, and fork the source | usage-data                                                       | untested | —        |
+| Owners accept that a re-run replaces committed edits to the files it owns, because the version history keeps them | Owners stop re-running, and existing repositories drift indefinitely | slice:set-up-a-repository                                          | untested | —        |
 | Outside developers want an opinionated setup rather than designing their own                           | Adoption stays near zero                                                   | accepted-risk — a side benefit that does not block the owner's goals | untested | —        |
 
-The first row is validated by rendering the shared source against the seven
-repositories that already carry this setup and counting differences that are
-not values; the second by handing an agent a hand-written report for one
-repository.
+The first two rows are validated by rendering the shared source against the
+seven repositories that already carry this setup, and counting differences
+that are not values and tool categories that need more than one tool.

@@ -13,9 +13,9 @@ covers:
 
 ## Status
 
-**APPROVED**
+**ARCHIVED**
 
-APPROVED 2026-10-06 by the user
+ARCHIVED 2026-10-08 — not run; was APPROVED 2026-10-06 by the user (superseded by the mise rescope of the blueprint)
 
 ## Consent
 
