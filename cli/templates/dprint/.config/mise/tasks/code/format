@@ -32,7 +32,8 @@ else
 fi
 
 # The sorter takes paths, so a file list narrows it to the manifests in scope;
-# with no list it takes the whole tree by glob.
+# with no list it takes every package.json git tracks. A repo that tracks none
+# skips the sorter, which would otherwise fail on "No matching files".
 sort_targets=()
 if [ ${#files[@]} -gt 0 ]; then
   for f in "${files[@]}"; do
@@ -41,7 +42,11 @@ if [ ${#files[@]} -gt 0 ]; then
     esac
   done
 else
-  sort_targets=("**/package.json" --ignore "**/node_modules")
+  while IFS= read -r manifest; do
+    if [ -n "${manifest}" ]; then
+      sort_targets+=("${manifest}")
+    fi
+  done < <(git ls-files -- 'package.json' '*/package.json')
 fi
 
 # The sorter has no `--fix`: sorting is its default and `--check` is the

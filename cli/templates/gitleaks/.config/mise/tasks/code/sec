@@ -5,18 +5,18 @@
 
 #USAGE flag "--debug" help="emit debug logs"
 #USAGE flag "--staged" help="scan only what is staged, and skip the dependency scan"
-#USAGE arg "[files]" var=#true help="accepted for the gate's sake; both scanners read the tree"
+#USAGE arg "[files]" var=#true help="accepted for the gate's sake; neither scanner narrows to it"
 
 set -euo pipefail
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-# Two scans, and both read the repo as a DIRECTORY rather than as a resolved
-# dependency tree — which is what makes them a default the way `code:format` is
+# Two scans, and both read the repo itself rather than a resolved dependency
+# tree — which is what makes them a default the way `code:format` is
 # one, and not a slot the way `code:lint` is. Neither needs a package manager,
 # a language runtime or a lockfile to say something true.
 #
-#   secrets       every file in the tree, against the built-in rule set
+#   secrets       every commit git holds, against the built-in rule set
 #   vulnerable    every manifest and lockfile the scanner recognises
 #
 # The package manager's own advisory check is `setup:deps:audit`, a different
@@ -51,13 +51,13 @@ fi
 
 if command -v gitleaks >/dev/null 2>&1; then
   print_wait "Scanning for committed secrets ... "
-  # The scanner takes a directory, so a file list narrows it only as far as a
-  # shared parent — with one given, the whole tree is scanned rather than
-  # guessing at that parent. The narrowed scan is `--staged`.
+  # The repo's git history, not the directory: a file git ignores can never be
+  # committed, so a local `.env` or build output is not this scan's business. A
+  # file list is accepted but not used — the narrowed scan is `--staged`.
   if [ -f "${SECRETS_CONFIG}" ]; then
-    gitleaks dir . --config "${SECRETS_CONFIG}" --redact=50
+    gitleaks git . --config "${SECRETS_CONFIG}" --redact=50
   else
-    gitleaks dir . --redact=50
+    gitleaks git . --redact=50
   fi
   print_ok
 else

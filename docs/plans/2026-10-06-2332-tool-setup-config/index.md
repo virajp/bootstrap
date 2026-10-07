@@ -278,6 +278,9 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 5 | U4 setup config | opus | 4 | pass | code; U7 r3 security fix: segments normalised (Default_Ignorable removed, trailing dots/spaces stripped, lower-cased); refuses `:`, `.git`, `git~<n>`, empty/`.`/`..` results; tests 153 pass; check, code:all green | 9ada4d9 |
 | 5 | U5 core templates | opus | 5 | pass | code; U7 r3 security fix: gitleaks `[extend] useDefault = true`, repo vendor rules dropped, scan test finds AWS + ghp_; setup/ai empty-array guard (bash 3.2 test); tests 155 pass; build, bash -n, code:all green | 5bfff22 |
 | 5 | U6 new templates | opus | 4 | pass | code; U7 r3 security fix: `fnox --config .config/fnox.toml check` from the project root; hints pass `--config`; repo-secret test; tests 157 pass; build, check, code:all green | e807857 |
+| 5 | U7 | opus | 4 | findings(2) | review; range 5e7f23c..658b3ec; engine 10 kept, 0 dropped; [medium] U5 code/format sort-package-json exits 2 with no package.json; [medium] U5 code/sec `gitleaks dir .` scans gitignored files; 4 → 2 converging; cap reached → asked user → ruling: one more fix past the cap + one re-check (new review findings contested; new security findings pause); tag U7/review/4 | — |
+| 5 | U7 | opus | 4 | pass | security; engine 0; FINDINGS none; VERDICT approve; tag U7/security/4 | — |
+| 5 | U5 core templates | opus | 6 | pass | code; U7 r4 fix (past cap, user ruling): format sorts only tracked package.json files; code:sec full scan `gitleaks git .` (history, no gitignored files); 4 task tests; tests 161 pass; build, bash -n, code:all green | (see Units) |
 
 ## Acceptance criteria (from blueprint)
 

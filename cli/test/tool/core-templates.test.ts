@@ -438,3 +438,182 @@ describe("AI setup", () => {
       })
       .pipe(Effect.scoped, Effect.provide(NodeServices.layer)));
 });
+
+/** `git` in `root` with a throwaway identity, so a test can commit. */
+const git = (root: string, ...args: ReadonlyArray<string>) =>
+  spawnSync("git", [
+    "-c",
+    "user.name=t",
+    "-c",
+    "user.email=t@example.com",
+    "-c",
+    "commit.gpgsign=false",
+    ...args,
+  ], {
+    cwd: root,
+  });
+
+/**
+ * Writes the rendered `helpers` and `task` into a fresh git repository, puts `stubs` (name → shell body) first on
+ * PATH, lets `prepare` lay out the tree, then runs the task under bash from the repository root.
+ */
+const runTask = (
+  tools: ReadonlyArray<string>,
+  task: string,
+  stubs: Readonly<Record<string, string>>,
+  prepare: (
+    root: string,
+  ) => Effect.Effect<void, unknown, FileSystem.FileSystem | Path.Path>,
+  env: Readonly<Record<string, string>> = {},
+) =>
+  Effect
+    .gen(function*() {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const files = yield* render(
+        [...tools, "mise"].map(name => toolsByName.get(name)!),
+        values,
+      );
+      const root = yield* fs.makeTempDirectoryScoped();
+      git(root, "init", "-q");
+      for (const file of [".config/mise/tasks/_scripts/helpers", task]) {
+        yield* fs.makeDirectory(path.dirname(path.join(root, file)), {
+          recursive: true,
+        });
+        yield* fs.writeFileString(path.join(root, file), files.get(file)!);
+      }
+      const bin = yield* fs.makeTempDirectoryScoped();
+      const log = path.join(bin, "calls.log");
+      yield* fs.writeFileString(log, "");
+      for (const [name, body] of Object.entries(stubs)) {
+        yield* fs.writeFileString(
+          path.join(bin, name),
+          `#!/bin/sh\necho "${name} $*" >>"${log}"\n${body}\n`,
+        );
+        yield* fs.chmod(path.join(bin, name), 0o755);
+      }
+      yield* prepare(root);
+      const { status, stdout, stderr } = spawnSync("/bin/bash", [
+        path.join(root, task),
+      ], {
+        cwd: root,
+        env: {
+          ...process.env,
+          ...env,
+          PATH: `${bin}:${process.env.PATH}`,
+          MISE_PROJECT_ROOT: root,
+        },
+      });
+      return {
+        status,
+        output: `${stdout}${stderr}`,
+        calls: (yield* fs.readFileString(log)).split("\n").filter(Boolean),
+      };
+    })
+    .pipe(Effect.scoped, Effect.provide(NodeServices.layer));
+
+describe("code:format", () => {
+  const format = ".config/mise/tasks/code/format";
+  const stubs = { dprint: "exit 0", pnpm: "exit 0" };
+
+  it.effect("skips the package.json sorter in a repository that tracks none", () =>
+    Effect.gen(function*() {
+      const { status, calls } = yield* runTask(
+        ["dprint"],
+        format,
+        stubs,
+        () => Effect.void,
+      );
+      expect(status).toBe(0);
+      expect(calls.filter(call => call.startsWith("pnpm"))).toEqual([]);
+    }));
+
+  it.effect("sorts exactly the tracked package.json files", () =>
+    Effect.gen(function*() {
+      const { status, calls } = yield* runTask(
+        ["dprint"],
+        format,
+        stubs,
+        root =>
+          Effect.gen(function*() {
+            const fs = yield* FileSystem.FileSystem;
+            const path = yield* Path.Path;
+            yield* fs.makeDirectory(path.join(root, "app"));
+            for (
+              const file of [
+                "package.json",
+                "app/package.json",
+                "untracked.json",
+              ]
+            ) {
+              yield* fs.writeFileString(path.join(root, file), "{}\n");
+            }
+            yield* fs.makeDirectory(path.join(root, "loose"));
+            yield* fs.writeFileString(
+              path.join(root, "loose/package.json"),
+              "{}\n",
+            );
+            git(root, "add", "package.json", "app/package.json");
+          }),
+      );
+      expect(status).toBe(0);
+      expect(calls.filter(call => call.startsWith("pnpm"))).toEqual([
+        "pnpm dlx sort-package-json --check app/package.json package.json",
+      ]);
+    }));
+});
+
+describe("code:sec", () => {
+  const sec = ".config/mise/tasks/code/sec";
+  // Built at run time so this file holds no secret-shaped literal.
+  const token = ["ghp", "_", "k9Xb2LmQ7vR4tW8yZ1cN5pD3fG6hJ0sA2eUq"].join("");
+  /** Lays out a repository whose ignored `.env` holds a token; `commit` also commits one in `leak.txt`. */
+  const tree = (commit: boolean) => (root: string) =>
+    Effect.gen(function*() {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const files = yield* render([toolsByName.get("gitleaks")!], values);
+      yield* fs.writeFileString(
+        path.join(root, ".config/gitleaks.toml"),
+        files.get(".config/gitleaks.toml")!,
+      );
+      yield* fs.writeFileString(path.join(root, ".gitignore"), ".env\n");
+      yield* fs.writeFileString(
+        path.join(root, ".env"),
+        `GITHUB_TOKEN=${token}\n`,
+      );
+      if (commit) {
+        yield* fs.writeFileString(
+          path.join(root, "leak.txt"),
+          `GITHUB_TOKEN=${token}\n`,
+        );
+      }
+      git(root, "add", "-A");
+      git(root, "commit", "-q", "-m", "init");
+    });
+
+  it.effect.skipIf(!hasGitleaks)(
+    "ignores a secret in a file git ignores",
+    () =>
+      Effect.gen(function*() {
+        const { status, output } = yield* runTask(["gitleaks"], sec, {
+          grype: "exit 0",
+        }, tree(false));
+        expect(output).not.toMatch(/leaks found: [1-9]/);
+        expect(status).toBe(0);
+      }),
+  );
+
+  it.effect.skipIf(!hasGitleaks)(
+    "fails on a committed secret",
+    () =>
+      Effect.gen(function*() {
+        const { status } = yield* runTask(["gitleaks"], sec, {
+          grype: "exit 0",
+        }, tree(true));
+        expect(status)
+          .not
+          .toBe(0);
+      }),
+  );
+});
