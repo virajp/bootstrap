@@ -628,6 +628,13 @@ describe("code:sec", () => {
           /Fingerprint: [0-9a-f]{40}:leak\.txt:github-pat:1/,
         );
         expect(output).toMatch(/\.gitleaksignore/);
+        const runs = Array.from({ length: token.length - 7 }, (_, at) =>
+          token.slice(at, at + 8));
+        expect(runs
+          .filter(run =>
+            output.includes(run)
+          ))
+          .toEqual([]);
       }),
   );
 

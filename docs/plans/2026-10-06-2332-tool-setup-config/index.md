@@ -286,6 +286,9 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 5 | U7 | — | 5 | pass | user ruling: fix U1 (.npmrc → pnpm-workspace.yaml ignoreScripts) and the 2 U5 lows, then one more full re-check | — |
 | 5 | U1 scaffold | opus | 5 | pass | code; U7 r5 fix (user ruling, G17): `ignoreScripts: true` in pnpm-workspace.yaml (`pnpm config get ignoreScripts` → true; frozen install, lockfile unchanged); .npmrc kept; DOCS FALSIFIED stack prose (pnpm-workspace.md, typescript-effect-cli.md); tests 161 pass; check, build, code:all green | 46465c1 |
 | 5 | U5 core templates | opus | 7 | pass | code; U7 r5 fix (user ruling): code:sec `--verbose` + `.gitleaksignore` hint, fingerprint test; format `git ls-files -z` NUL loop (bash 3.2), skips deleted; tests 162 pass; build, bash -n, code:all green | 28648a2 |
+| 5 | U7 | opus | 6 | pass | review (re-check); range 5e7f23c..198310b; engine 10 kept; reviewer FINDINGS none (engine items judged inherited source behaviour / out of scope); VERDICT approve; tag U7/review/6 | — |
+| 5 | U7 | opus | 6 | findings(1) | security; engine 0; [low] U5 code/sec `--verbose --redact=50` prints half of each committed secret → asked user → ruling: fix (`--redact=100`) + full re-check (round 7); tag U7/security/6 | — |
+| 5 | U5 core templates | opus | 8 | pass | code; U7 r6 security fix: every gitleaks call `--redact=100`; test asserts no 8-char run of the token is printed; tests 162 pass; build, bash -n, code:all green | (see Units) |
 
 ## Acceptance criteria (from blueprint)
 

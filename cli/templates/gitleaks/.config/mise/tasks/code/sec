@@ -38,9 +38,9 @@ if [ "${usage_staged:-false}" = "true" ]; then
   if command -v gitleaks >/dev/null 2>&1; then
     print_wait "Scanning the staged changes for secrets ... "
     if [ -f "${SECRETS_CONFIG}" ]; then
-      gitleaks git --staged --config "${SECRETS_CONFIG}" --redact=50
+      gitleaks git --staged --config "${SECRETS_CONFIG}" --redact=100
     else
-      gitleaks git --staged --redact=50
+      gitleaks git --staged --redact=100
     fi
     print_ok
   else
@@ -58,7 +58,7 @@ if command -v gitleaks >/dev/null 2>&1; then
   # History never forgets, so a secret that was removed and rotated still fails
   # here. `--verbose` prints each finding's Fingerprint, and gitleaks skips every
   # fingerprint listed in `.gitleaksignore` at the repo root.
-  secrets_args=(git . --redact=50 --verbose)
+  secrets_args=(git . --redact=100 --verbose)
   if [ -f "${SECRETS_CONFIG}" ]; then
     secrets_args+=(--config "${SECRETS_CONFIG}")
   fi
