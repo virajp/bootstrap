@@ -18,7 +18,7 @@ agents. The docs describe only the latest release; there is no version
 selector, and the changelog page records older versions.
 
 Serves: [Outside adoption](../../../product.md#goal-outside-adoption),
-[Agent-resolvable drift](../../../product.md#goal-agent-resolvable)
+[Fast new-repo setup](../../../product.md#goal-fast-setup)
 
 ## Platforms
 

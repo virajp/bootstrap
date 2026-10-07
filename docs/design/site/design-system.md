@@ -46,7 +46,7 @@ samples and callouts, where they mirror the CLI's own role colors.
 | `accent-glow` | accent at 28% | The landing hero's ambient glow only | non-text |
 | `accent-ink` | `#0d0c0b` | Text on an accent fill | 5.6:1 on accent |
 | `status-success` | `#8fbf8a` | Terminal `success` role (created, unchanged); "tip" callout marker | 9.3:1 |
-| `status-warning` | `#d9a95c` | Terminal `warning` role (drift found, kept files); "caution" callout marker | 9.1:1 |
+| `status-warning` | `#d9a95c` | Terminal `warning` role (mise not at the expected path, file left in place); "caution" callout marker | 9.1:1 |
 
 Rules:
 
