@@ -62,6 +62,9 @@ const parseToml = (text: string): unknown => {
 /** dprint, with the shipped config, checks formatting; without it on PATH that assertion is skipped. */
 const dprint = spawnSync("dprint", ["--version"]).status === 0;
 
+/** fnox runs the rendered secrets task; without it on PATH that assertion is skipped. */
+const fnox = spawnSync("fnox", ["--version"]).status === 0;
+
 describe("new templates", () => {
   for (const name of ["fnox", "github", "gitlab"]) {
     it.effect(`render exactly the catalog paths of ${name}`, () =>
@@ -132,13 +135,26 @@ describe("new templates", () => {
       }),
   );
 
+  it.effect("name the repo's fnox config in every fnox command the config suggests", () =>
+    Effect.gen(function*() {
+      const config = (yield* renderTool("fnox")).get(".config/fnox.toml")!;
+      const commands = config.match(/`fnox [^`]*`/g) ?? [];
+      expect(commands.length).toBeGreaterThan(0);
+      expect(
+        commands.filter(command =>
+          !command.includes("--config .config/fnox.toml")
+        ),
+      )
+        .toEqual([]);
+    }));
+
   it.effect("set fnox up from the secrets task", () =>
     Effect.gen(function*() {
       const task = (yield* renderTool("fnox")).get(
         ".config/mise/tasks/setup/secrets",
       )!;
       expect(task.startsWith("#!")).toBe(true);
-      expect(task).toMatch(/^\s*fnox check\b/m);
+      expect(task).toMatch(/^fnox --config \.config\/fnox\.toml check$/m);
     }));
 
   it.effect("skip with a hint to install the pinned tools, never to edit a managed mise config", () =>
@@ -183,6 +199,56 @@ describe("new templates", () => {
           });
           expect(result.stdout + result.stderr).toBe("");
           expect(result.status).toBe(0);
+        }
+        finally {
+          rmSync(root, { recursive: true, force: true });
+        }
+      }),
+  );
+
+  it.effect.skipIf(!fnox)(
+    "check the secrets the repo's .config/fnox.toml declares, from any directory",
+    () =>
+      Effect.gen(function*() {
+        const files = yield* render(
+          ["mise", "fnox"].map(name => toolsByName.get(name)!),
+          values,
+        );
+        const root = mkdtempSync(join(tmpdir(), "fnox-task-"));
+        try {
+          // Only the helpers the task sources: a rendered mise config would be untrusted here.
+          const needed = [
+            ".config/mise/tasks/_scripts/helpers",
+            ...toolsByName.get("fnox")!.files,
+          ];
+          for (const path of needed) {
+            mkdirSync(dirname(join(root, path)), { recursive: true });
+            writeFileSync(join(root, path), files.get(path)!);
+          }
+          writeFileSync(
+            join(root, ".config/fnox.toml"),
+            "[providers]\nplain = { type = \"plain\" }\n\n[secrets]\n"
+              + "REPO_ONLY_SECRET = { provider = \"plain\", if_missing = \"error\" }\n",
+          );
+          mkdirSync(join(root, "global"));
+          const elsewhere = mkdtempSync(join(tmpdir(), "fnox-cwd-"));
+          const result = spawnSync(
+            "bash",
+            [join(root, ".config/mise/tasks/setup/secrets")],
+            {
+              cwd: elsewhere,
+              encoding: "utf8",
+              env: {
+                ...process.env,
+                MISE_PROJECT_ROOT: root,
+                FNOX_CONFIG_DIR: join(root, "global"),
+                FNOX_NON_INTERACTIVE: "1",
+              },
+            },
+          );
+          expect(result.stdout + result.stderr).toContain("REPO_ONLY_SECRET");
+          expect(result.status).not.toBe(0);
+          rmSync(elsewhere, { recursive: true, force: true });
         }
         finally {
           rmSync(root, { recursive: true, force: true });
