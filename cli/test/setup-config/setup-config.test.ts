@@ -271,6 +271,19 @@ describe("setup config validity", () => {
       ["files", "a\u0000b"],
       ["deleted", "a\nb"],
       ["files", "a\u007fb"],
+      ["files", ".git::$INDEX_ALLOCATION/config"],
+      ["kept", "a:b"],
+      ["files", "GIT~2/config"],
+      ["deleted", "a/git~10/x"],
+      ["files", ".g\u200cit/config"],
+      ["files", "\ufeff.git/config"],
+      ["kept", ".git\u200b/config"],
+      ["kept", ".GIT\u202e/x"],
+      ["files", ".git\u2060./x"],
+      ["files", ".. /x"],
+      ["files", ".../x"],
+      ["kept", "a/. /b"],
+      ["deleted", "a/ /b"],
     ] satisfies Array<[string, string]>,
   )(
     "refuses a %s path %s that is not literal and repository-relative",
@@ -292,7 +305,8 @@ describe("setup config validity", () => {
         ".GITHUB/x",
         "a/b.c/.d",
         "git/x",
-        "git~2/x",
+        "a.../b",
+        "git~x/y",
       ];
       const config = yield* parse(text({ files }), running);
       expect(config.files).toEqual(files);

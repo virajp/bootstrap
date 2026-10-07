@@ -117,9 +117,19 @@ export const compareVersions = (a: string, b: string): number => {
 // eslint-disable-next-line no-control-regex -- control characters are what this refuses
 const hasControl = (path: string) => /[\u0000-\u001f\u007f]/.test(path);
 const isAbsolute = (path: string) => /^([/\\]|[A-Za-z]:)/.test(path);
+/**
+ * A path segment as a case-insensitive, HFS+ or Windows file system resolves it: Unicode
+ * default-ignorable code points removed, trailing dots and spaces stripped, lower-cased.
+ */
+const normalise = (segment: string) =>
+  segment
+    .replace(/\p{Default_Ignorable_Code_Point}/gu, "")
+    .replace(/[. ]+$/, "")
+    .toLowerCase();
 const segments = (path: string) => path.split(/[/\\]/);
-/** A segment that resolves to `.git` on a case-insensitive or Windows file system, or its 8.3 short name. */
-const isGitSegment = (segment: string) => /^(\.git[. ]*|git~1)$/i.test(segment);
+/** A segment that resolves to `.git`, or to an 8.3 short name of the `git~<n>` form. */
+const isGitSegment = (segment: string) =>
+  /^(\.git|git~\d+)$/.test(normalise(segment));
 const hasWildcard = (path: string) => /[*?[\]{}]/.test(path);
 
 /** Why a path is not a literal repository-relative file path, or undefined when it is. */
@@ -132,9 +142,13 @@ const pathProblem = (path: string): string | undefined =>
     ? "it is absolute"
     : /[/\\]$/.test(path)
     ? "it ends in `/`, so it names a directory"
-    : segments(path).includes("..")
+    : path.includes(":")
+    ? "it has a `:`, which names a drive or a file stream"
+    : segments(path).some(segment =>
+        normalise(segment) === "" && segment.startsWith("..")
+      )
     ? "it has a `..` segment"
-    : segments(path).some(segment => segment === "" || segment === ".")
+    : segments(path).some(segment => normalise(segment) === "")
     ? "it has an empty or `.` segment"
     : segments(path).some(isGitSegment)
     ? "it is inside a `.git` folder"
