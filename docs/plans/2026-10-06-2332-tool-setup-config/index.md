@@ -281,6 +281,10 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 5 | U7 | opus | 4 | findings(2) | review; range 5e7f23c..658b3ec; engine 10 kept, 0 dropped; [medium] U5 code/format sort-package-json exits 2 with no package.json; [medium] U5 code/sec `gitleaks dir .` scans gitignored files; 4 → 2 converging; cap reached → asked user → ruling: one more fix past the cap + one re-check (new review findings contested; new security findings pause); tag U7/review/4 | — |
 | 5 | U7 | opus | 4 | pass | security; engine 0; FINDINGS none; VERDICT approve; tag U7/security/4 | — |
 | 5 | U5 core templates | opus | 6 | pass | code; U7 r4 fix (past cap, user ruling): format sorts only tracked package.json files; code:sec full scan `gitleaks git .` (history, no gitignored files); 4 task tests; tests 161 pass; build, bash -n, code:all green | 195bd07 |
+| 5 | U7 | opus | 5 | findings(3) | review (re-check past cap); range 5e7f23c..c620242; engine 10 kept; [medium] U1 .npmrc ignore-scripts not read by pnpm 12; [low] U5 code/sec history scan needs `.gitleaksignore` hint; [low] U5 format `git ls-files` without -z / deleted entries; tag U7/review/5 | — |
+| 5 | U7 | opus | 5 | findings(1) | security; engine 0; [low] U1 .npmrc `ignore-scripts` ignored by pnpm 12 (pnpm default build block still held); new security finding → pause per user ruling (asked user); tag U7/security/5 | — |
+| 5 | U7 | — | 5 | pass | user ruling: fix U1 (.npmrc → pnpm-workspace.yaml ignoreScripts) and the 2 U5 lows, then one more full re-check | — |
+| 5 | U1 scaffold | opus | 5 | pass | code; U7 r5 fix (user ruling, G17): `ignoreScripts: true` in pnpm-workspace.yaml (`pnpm config get ignoreScripts` → true; frozen install, lockfile unchanged); .npmrc kept; DOCS FALSIFIED stack prose (pnpm-workspace.md, typescript-effect-cli.md); tests 161 pass; check, build, code:all green | (see Units) |
 
 ## Acceptance criteria (from blueprint)
 
@@ -351,6 +355,12 @@ U2, U4, U5 and U6.
   rejects trailing commas there. The fix (exclude `cli/templates/` in this
   repo's `.config/dprint.json`) is barred by ruling 7. The template stays strict
   JSON; a root `dprint check` flags this one file.
+- G17 (U7 r5, stack prose + plan, resolved by user ruling 2026-10-07) — U1
+  Edit 2 and `.claude/stackgen/templates/pnpm-workspace.md` put `ignore-scripts`
+  in `.npmrc`, but pnpm 12 reads it only from `pnpm-workspace.yaml`
+  (`ignoreScripts`). The user ruled: U1 adds `ignoreScripts: true` to
+  `pnpm-workspace.yaml`; `.npmrc` stays as the plan says. The stack prose needs
+  the same correction upstream.
 
 ## Launch
 

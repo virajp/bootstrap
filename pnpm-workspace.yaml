@@ -4,3 +4,7 @@ packages:
 # Minimum age (minutes) before a release can be adopted — 1440 = 24h
 # https://pnpm.io/settings#minimumreleaseage
 minimumReleaseAge: 1440
+
+# pnpm 12 reads settings from this file, not .npmrc — never run dependency
+# install scripts. https://pnpm.io/settings#ignorescripts
+ignoreScripts: true
