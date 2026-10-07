@@ -13,9 +13,9 @@ covers:
 
 ## Status
 
-**RUNNING**
+**COMPLETE**
 
-RUNNING since 2026-10-06 23:44 in .worktrees/2026-10-06-2332-tool-setup-config
+COMPLETE 2026-10-07 — ead9444..ef14ce9 (U1–U6 code, U7 review green, U8–U9 no change); stamps partial; gaps open (folder stays live)
 
 ## Consent
 
