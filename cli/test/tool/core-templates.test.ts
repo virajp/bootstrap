@@ -1,4 +1,7 @@
-import { coreTools } from "@/tool/catalog";
+import {
+  coreTools,
+  toolsByName,
+} from "@/tool/catalog";
 import {
   type RenderValues,
   render,
@@ -332,4 +335,106 @@ describe("dependency dispatchers", () => {
       expect(status).not.toBe(0);
       expect(runs).toEqual([]);
     }));
+});
+
+/** Whether a `gitleaks` binary is on PATH; the scan test needs the real scanner. */
+const hasGitleaks = spawnSync("gitleaks", ["version"]).status === 0;
+
+describe("secret scanning", () => {
+  it.effect.skipIf(!hasGitleaks)(
+    "finds well-known secret shapes with the rendered config",
+    () =>
+      Effect
+        .gen(function*() {
+          const fs = yield* FileSystem.FileSystem;
+          const path = yield* Path.Path;
+          const files = yield* render([toolsByName.get("gitleaks")!], values);
+          const root = yield* fs.makeTempDirectoryScoped();
+          const config = path.join(root, "gitleaks.toml");
+          yield* fs.writeFileString(
+            config,
+            files.get(".config/gitleaks.toml")!,
+          );
+          const tree = path.join(root, "tree");
+          yield* fs.makeDirectory(tree);
+          // Built at run time so this file holds no secret-shaped literal.
+          const aws = ["AKIA", "QYLPMN5HJRFPZAM2"].join("");
+          const github = ["ghp", "_", "k9Xb2LmQ7vR4tW8yZ1cN5pD3fG6hJ0sA2eUq"]
+            .join("");
+          yield* fs.writeFileString(
+            path.join(tree, "settings.env"),
+            `AWS_KEY=${aws}\nGITHUB_TOKEN=${github}\n`,
+          );
+          const report = path.join(root, "report.json");
+          const { status } = spawnSync("gitleaks", [
+            "dir",
+            tree,
+            "--config",
+            config,
+            "--no-banner",
+            "--report-format",
+            "json",
+            "--report-path",
+            report,
+          ]);
+          expect(status).toBe(1);
+          const found = JSON.parse(yield* fs.readFileString(report)).map((
+            leak: { RuleID: string; },
+          ) => leak.RuleID);
+          expect(found).toEqual(
+            expect.arrayContaining(["aws-access-token", "github-pat"]),
+          );
+        })
+        .pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+  );
+});
+
+describe("AI setup", () => {
+  it.effect("runs with no plugins installed under the system bash", () =>
+    Effect
+      .gen(function*() {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const files = yield* render([
+          toolsByName.get("mise")!,
+          toolsByName.get("claude")!,
+        ], values);
+        const root = yield* fs.makeTempDirectoryScoped();
+        for (
+          const file of [
+            ".config/mise/tasks/_scripts/helpers",
+            ".config/mise/tasks/setup/ai",
+          ]
+        ) {
+          yield* fs.makeDirectory(path.dirname(path.join(root, file)), {
+            recursive: true,
+          });
+          yield* fs.writeFileString(path.join(root, file), files.get(file)!);
+        }
+        const bin = path.join(root, "bin");
+        yield* fs.makeDirectory(bin);
+        // `claude` lists no plugins and accepts every other call; `jq` turns that list into no lines.
+        yield* fs.writeFileString(
+          path.join(bin, "claude"),
+          "#!/bin/sh\nexit 0\n",
+        );
+        yield* fs.writeFileString(
+          path.join(bin, "jq"),
+          "#!/bin/sh\ncat >/dev/null\n",
+        );
+        yield* fs.chmod(path.join(bin, "claude"), 0o755);
+        yield* fs.chmod(path.join(bin, "jq"), 0o755);
+        const { status, stderr } = spawnSync("/bin/bash", [
+          path.join(root, ".config/mise/tasks/setup/ai"),
+        ], {
+          env: {
+            ...process.env,
+            PATH: `${bin}:${process.env.PATH}`,
+            MISE_PROJECT_ROOT: root,
+          },
+        });
+        expect(stderr.toString()).not.toMatch(/unbound variable/);
+        expect(status).toBe(0);
+      })
+      .pipe(Effect.scoped, Effect.provide(NodeServices.layer)));
 });

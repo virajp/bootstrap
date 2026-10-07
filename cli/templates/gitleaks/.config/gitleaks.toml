@@ -1,14 +1,10 @@
-[[rules]]
-description = "RevenueCat public API key"
-id          = "revenuecat-api-key"
-regex       = '''(apple_|google_)[A-Za-z0-9]{20,}'''
-tags        = [ "api-key", "revenuecat" ]
+# Gitleaks configuration. `code:sec` always passes this file, so it must keep
+# the built-in rule set: without `useDefault`, the rules below would REPLACE
+# gitleaks' own (cloud keys, forge tokens, private keys) rather than add to them.
+[extend]
+useDefault = true
 
-[[rules]]
-description = "Grafana Cloud API key"
-id          = "grafana-cloud-api-key"
-regex       = '''glc_[A-Za-z0-9+/]{40,}'''
-tags        = [ "api-key", "grafana" ]
+# Add this repo's own [[rules]] below; each one adds to the defaults.
 
 [allowlist]
-paths = [ '''node_modules/*''' ]
+paths = [ '''(^|/)node_modules/''' ]

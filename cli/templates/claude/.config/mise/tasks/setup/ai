@@ -21,7 +21,8 @@ print_success "done"
 line_sep "-"
 # Fetch all plugins currently installed on this machine, across all scopes.
 PLUGINS=($(claude plugin list --json | jq -r '.[] | "\(.id)|\(.scope)"'))
-for PLUGIN in "${PLUGINS[@]}"; do
+# `${ARR[@]+"${ARR[@]}"}`: an empty array is unbound under `set -u` on bash 3.2.
+for PLUGIN in ${PLUGINS[@]+"${PLUGINS[@]}"}; do
   plugin="${PLUGIN%%|*}"
   scope="${PLUGIN##*|}"
   print_wait "- ${plugin} (${scope}) ... "
