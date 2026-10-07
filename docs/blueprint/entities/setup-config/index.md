@@ -3,7 +3,7 @@ type: vwf-entity
 title: Setup Config
 description: The file in a repository that records its bootstrap answers and marks it as set up.
 status: reviewed
-implementation: none
+implementation: partial
 owner: [cli]
 ---
 
