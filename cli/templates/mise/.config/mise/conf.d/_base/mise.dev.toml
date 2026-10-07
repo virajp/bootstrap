@@ -40,6 +40,16 @@ version = "latest"
 depends = [ "dprint" ]
 version = "latest"
 
+# The house linter (`linter`), which `code:lint` runs
+[tools."npm:@askviraj/linter"]
+depends = [ "node" ]
+version = "latest"
+
+# The package.json key sorter (`sort-package-json`), which `code:format` runs
+[tools."npm:sort-package-json"]
+depends = [ "node" ]
+version = "latest"
+
 [tasks.init]
 description = "Initialize mise tasks"
 dir         = "{{exec(command='git rev-parse --show-toplevel')}}"

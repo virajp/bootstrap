@@ -289,6 +289,10 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 5 | U7 | opus | 6 | pass | review (re-check); range 5e7f23c..198310b; engine 10 kept; reviewer FINDINGS none (engine items judged inherited source behaviour / out of scope); VERDICT approve; tag U7/review/6 | — |
 | 5 | U7 | opus | 6 | findings(1) | security; engine 0; [low] U5 code/sec `--verbose --redact=50` prints half of each committed secret → asked user → ruling: fix (`--redact=100`) + full re-check (round 7); tag U7/security/6 | — |
 | 5 | U5 core templates | opus | 8 | pass | code; U7 r6 security fix: every gitleaks call `--redact=100`; test asserts no 8-char run of the token is printed; tests 162 pass; build, bash -n, code:all green | 51be541 |
+| 5 | U7 | opus | 7 | findings(1) | review (re-check); range 5e7f23c..640ac90; engine 9 kept; [low] U5 stackgen wording in setup/precommit hint and code/lint, code/format comments; VERDICT approve; tag U7/review/7 | — |
+| 5 | U7 | opus | 7 | findings(2) | security; engine 0; [medium] U5 code/lint `pnpm dlx @askviraj/linter` unpinned; [medium] U5 code/format `pnpm dlx sort-package-json` unpinned (inherited; run by commit hooks + CI); spec gap: blueprint does not require pinned hook executables; new security findings → pause (asked user); tag U7/security/7 | — |
+| 5 | U7 | — | 7 | pass | user ruling: declare @askviraj/linter and sort-package-json as mise tools on `latest` (not `pnpm dlx`); fix stackgen wording; floating `latest` accepted by the user (G18) | — |
+| 5 | U5 core templates | opus | 9 | pass | code; U7 r7 fix (user ruling, G18): `npm:@askviraj/linter` and `npm:sort-package-json` as mise tools on `latest`, called directly (no `pnpm dlx`); stackgen wording removed (setup:precommit hint names `bootstrap update`); tests 164 pass; build, bash -n, code:all green | (see Units) |
 
 ## Acceptance criteria (from blueprint)
 
@@ -365,6 +369,11 @@ U2, U4, U5 and U6.
   (`ignoreScripts`). The user ruled: U1 adds `ignoreScripts: true` to
   `pnpm-workspace.yaml`; `.npmrc` stays as the plan says. The stack prose needs
   the same correction upstream.
+- G18 (U7 r7 security, accepted risk by user ruling 2026-10-07) — the hooks ran
+  `@askviraj/linter` and `sort-package-json` through unpinned `pnpm dlx`. The
+  user ruled: declare both as mise tools on `latest`. `latest` still floats, so
+  a malicious publish still reaches target repos; the blueprint has no rule
+  that hook executables are pinned.
 
 ## Launch
 

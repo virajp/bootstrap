@@ -35,7 +35,8 @@ const rendered = () => render(owned, values);
 /** Text this repo carries that no target repository may inherit. */
 const forbidden: ReadonlyArray<RegExp> = [
   /virajp\/bootstrap/,
-  /\bbootstrap\b/i,
+  // The repository's name; the CLI's own `bootstrap update` command may be named.
+  /\bbootstrap\b(?! update\b)/i,
   /doppler/i,
   /vwf/i,
   /stackgen/i,
@@ -44,9 +45,35 @@ const forbidden: ReadonlyArray<RegExp> = [
   /flutter/i,
   /\bdart/i,
   /pubspec/i,
+  // The composition vocabulary of the generator this repo's own tooling came from.
+  /toolchain-(gate|manager)|\boverlays the\b|\bmaterialize\b|\bpacks?\b|hook-runner|\bcomponent (that|later)\b/i,
 ];
 
 describe("core templates", () => {
+  it.effect("run the linter and the package.json sorter as mise-installed tools, never through pnpm dlx", () =>
+    Effect.gen(function*() {
+      const files = yield* rendered();
+      expect(
+        [...files].filter(([, text]) => /pnpm dlx/.test(text)).map(([path]) =>
+          path
+        ),
+      )
+        .toEqual([]);
+      const dev = files.get(".config/mise/conf.d/_base/mise.dev.toml")!;
+      expect(dev).toMatch(/^\[tools\."npm:@askviraj\/linter"\]$/m);
+      expect(dev).toMatch(/^\[tools\."npm:sort-package-json"\]$/m);
+      expect(files.get(".config/mise/tasks/code/lint")).toMatch(/^linter\b/m);
+      expect(files.get(".config/mise/tasks/code/format")).toMatch(
+        /^\s*sort-package-json\b/m,
+      );
+    }));
+
+  it.effect("tell a repo missing its hook config to restore it with bootstrap update", () =>
+    Effect.gen(function*() {
+      expect((yield* rendered()).get(".config/mise/tasks/setup/precommit"))
+        .toMatch(/bootstrap update/);
+    }));
+
   it("covers the twelve core tools other than fnox", () => {
     expect(owned.map(tool => tool.name)).toHaveLength(12);
   });
@@ -514,7 +541,7 @@ const runTask = (
 
 describe("code:format", () => {
   const format = ".config/mise/tasks/code/format";
-  const stubs = { dprint: "exit 0", pnpm: "exit 0" };
+  const stubs = { dprint: "exit 0", "sort-package-json": "exit 0" };
 
   it.effect("skips the package.json sorter in a repository that tracks none", () =>
     Effect.gen(function*() {
@@ -525,7 +552,8 @@ describe("code:format", () => {
         () => Effect.void,
       );
       expect(status).toBe(0);
-      expect(calls.filter(call => call.startsWith("pnpm"))).toEqual([]);
+      expect(calls.filter(call => call.startsWith("sort-package-json")))
+        .toEqual([]);
     }));
 
   it.effect("sorts exactly the tracked package.json files", () =>
@@ -567,9 +595,10 @@ describe("code:format", () => {
           }),
       );
       expect(status).toBe(0);
-      expect(calls.filter(call => call.startsWith("pnpm"))).toEqual([
-        "pnpm dlx sort-package-json --check app/package.json package.json ünï/package.json",
-      ]);
+      expect(calls.filter(call => call.startsWith("sort-package-json")))
+        .toEqual([
+          "sort-package-json --check app/package.json package.json ünï/package.json",
+        ]);
     }));
 });
 

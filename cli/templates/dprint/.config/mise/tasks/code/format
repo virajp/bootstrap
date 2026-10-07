@@ -13,10 +13,10 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-# Overlays the toolchain manager's `code:format`. dprint keeps owning whitespace
-# for every language in the repo — that does not stop mattering once JavaScript
-# arrives — and this pack adds the one thing dprint cannot do: `package.json`
-# key order, which is a convention rather than a format.
+# The repo's `code:format`. dprint owns whitespace for every language in the
+# repo — that does not stop mattering once JavaScript arrives — and this task
+# adds the one thing dprint cannot do: `package.json` key order, which is a
+# convention rather than a format.
 #
 # This task is what the `format` pre-commit hook calls, which is why it takes an
 # optional file list: the hook passes the staged files, a person passes nothing
@@ -71,5 +71,5 @@ dprint "${action}" \
 
 if [ ${#sort_targets[@]} -gt 0 ]; then
   print_subheader "Sorting package.json files ..."
-  pnpm dlx sort-package-json ${sort_args[@]+"${sort_args[@]}"} "${sort_targets[@]}"
+  sort-package-json ${sort_args[@]+"${sort_args[@]}"} "${sort_targets[@]}"
 fi

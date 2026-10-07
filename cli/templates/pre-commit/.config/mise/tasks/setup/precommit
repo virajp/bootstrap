@@ -16,7 +16,7 @@ UPDATE="${usage_update:-false}"
 
 if [ ! -f "${MISE_PROJECT_ROOT}/${CONFIG}" ]; then
   print_warn "No ${CONFIG} — skipping hook installation."
-  print_yellow "The hook-runner component owns that file; materialize it first."
+  print_yellow "Run \`bootstrap update\` to restore it, then run this task again."
   exit 0
 fi
 

@@ -15,10 +15,8 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
 # Fills the `code:lint` slot with the house linter, which needs no repo config
 # and covers the JSON, YAML, TOML and Markdown a Node repo carries alongside its
-# sources. `toolchain-gate` composes BEFORE `package-manager`, so this file
-# lands last and wins over a gate pack's `code/lint` — a repo that wants a
-# different lint gate to run gets it by not pinning this package manager, or by
-# a component later in the order overlaying the slot again.
+# sources. A repo that wants a different lint gate replaces this file with its
+# own `code/lint`.
 #
 # This task is also the repo's linting HOOK: the pre-commit gate calls
 # `code:lint --fix <files>` rather than a linter binary, so every tool a commit
@@ -72,4 +70,4 @@ fi
 # rather than narrow it. It takes the whole tree even when a file list is
 # given.
 print_subheader "Linting with the house linter ..."
-pnpm dlx @askviraj/linter ${args[@]+"${args[@]}"}
+linter ${args[@]+"${args[@]}"}
