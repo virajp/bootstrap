@@ -298,6 +298,7 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 5 | wave gate | — | 1 | pass | `MISE_ENV=dev mise run code:all`; no UNRESOLVED | — |
 | — | acceptance | — | — | skipped | why: "Acceptance criteria (from blueprint)" reads `none — no flow touched` | — |
 | — | ux | — | — | skipped | why: no screen changes — `cli` is a terminal platform, not a screen platform | — |
+| — | reconcile | — | — | pass | stamps: entities/tool → partial (open gaps G8, G10, G15), entities/setup-config → partial (open gaps G8, G13); registry, environment, harness unchanged (no topology change, no new env var, no new harness capability); decisions persisted (mempalace + docs/memory/decisions/tool-setup-config-run.md) | aa34bd7 |
 
 ## Acceptance criteria (from blueprint)
 
