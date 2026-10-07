@@ -33,6 +33,7 @@ const engine = new Liquid({
   outputDelimiterLeft: outputLeft,
   outputDelimiterRight: "%>",
   strictVariables: true,
+  strictFilters: true,
 });
 
 /** The setup values plus the name derived from `repo`: its last segment. */

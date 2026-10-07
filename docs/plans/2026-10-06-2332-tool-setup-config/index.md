@@ -271,6 +271,10 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 5 | U4 setup config | opus | 3 | pass | code; U7 r2 security fix: `.git` segment refused in any case, with trailing dots/spaces, and as `GIT~1`; owned files root-dprint formatted; tests 136 pass; check, code:all green | 52dca0a |
 | 5 | U5 core templates | opus | 4 | pass | code; U7 r2 fix: changelog config drops forge URL keys (core file independent of `tools`); run_tool_tasks fails on a failed task listing; `--frozen` → `DEPS_FROZEN=1`; test file root-dprint formatted; residual: root dprint wants trailing commas in templates/vscode settings.json (repo `.config/` fix barred by ruling 7) → contested; tests 138 pass; build, bash -n, code:all green | da58522 |
 | 5 | U6 new templates | opus | 3 | pass | code; U7 r2 fix: issue-form labels `[ bug ]`/`[ enhancement ]`; shipped-dprint check test over rendered output; test file root-dprint formatted; tests 139 pass; build, check, code:all green | fb283c9 |
+| 5 | U7 | opus | 3 | findings(4) | review; range 5e7f23c..756b9b0; engine 8 kept, 2 already reported by U7 r2 dropped; [high] U5 gitleaks.toml replaces built-in rules; [low] U5 setup/ai empty array under set -u; [low] U4 `.. `/`...`/`:` segments; [low] U3 no strictFilters; 7 → 4 converging; tag U7/review/3 | — |
+| 5 | U7 | opus | 3 | findings(3) | security; engine 0; [high] U5 gitleaks.toml no `useDefault` (verified AWS + ghp_ missed); [low] U6 `fnox check` ignores .config/fnox.toml; [low] U4 NTFS streams / GIT~2+ / HFS+ ignorables; 1 → 3: convergence guard trips on cap-exempt findings → pause (asked user); tag U7/security/3 | — |
+| 5 | U7 | — | 3 | pass | user ruling: fix all 7 and run round 4 (security stays cap-exempt; pause again on new security findings) | — |
+| 5 | U3 renderer | opus | 5 | pass | code; U7 r3 fix: `strictFilters: true` + unknown-filter test; tests 140 pass; check, build, code:all green | (see Units) |
 
 ## Acceptance criteria (from blueprint)
 

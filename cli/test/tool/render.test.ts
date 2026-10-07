@@ -82,6 +82,18 @@ describe("render", () => {
       );
     }));
 
+  it.effect("fails with a typed render error naming the path on an unknown filter", () =>
+    Effect.gen(function*() {
+      const error = yield* render(
+        [tool("grype")],
+        values,
+        new Map([["grype/.config/grype.yaml", "<%= repo | jsn %>"]]),
+      )
+        .pipe(Effect.flip);
+      expect(error._tag).toBe("RenderError");
+      expect(error.path).toBe(".config/grype.yaml");
+    }));
+
   it.effect("fails with a typed render error naming the path on an undefined variable", () =>
     Effect.gen(function*() {
       const error = yield* render(
