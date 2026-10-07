@@ -11,11 +11,11 @@ owner: [cli]
 
 ## Purpose
 
-A tool is a named set of setup files for one tool, shipped inside bootstrap itself. It is a read-only catalog, versioned with bootstrap, and is never stored in the target repository. `core` is not a tool: it is the fixed set of tools always applied with no flag.
+A tool is a named set of setup files for one tool, shipped inside bootstrap itself. It is a read-only catalog, versioned with bootstrap, and is never stored in the target repository. Each tool belongs to a [Tool category](../tool-category/index.md).
 
-Used by: [Setup repository](../../flows/cli/110-setup-repository/index.md), [Check for drift](../../flows/cli/120-check-drift/index.md), [Update a repository](../../flows/cli/130-update-repository/index.md), [Add a tool](../../flows/cli/140-add-tool/index.md), [Remove a tool](../../flows/cli/150-remove-tool/index.md), [Documentation](../../flows/site/110-documentation/index.md).
+Used by: [Setup repository](../../flows/cli/110-setup-repository/index.md), [Add a tool](../../flows/cli/140-add-tool/index.md), [Remove a tool](../../flows/cli/150-remove-tool/index.md), [Select tools](../../flows/cli/160-select-tools/index.md), [Documentation](../../flows/site/110-documentation/index.md).
 
-Scale: 15 tools at 1.0 (13 core, 2 non-core); grows only with new bootstrap releases.
+Scale: 15 tools at 1.0; grows only with new bootstrap releases.
 
 ## Out of Scope
 
@@ -28,55 +28,78 @@ N/A — immutable catalog shipped with bootstrap. Contents change only with a ne
 
 ## Catalog (1.0)
 
-The enumerated set below is the contract. Core tools are always applied with no flag and cannot be deselected or removed. Non-core tools are chosen with `--tool <name>` (repeatable) at init and with `bootstrap add <tool>` / `bootstrap remove <tool>` later; `github` and `gitlab` may be selected together. Renaming or removing a tool is a major version; adding a tool is minor ([conventions](../../conventions.md#changelog)). Recorded exemption from the no-vendor-names rule, by user decision: every tool is named after the tool whose files it renders, and its target paths name that tool's config files.
+The enumerated set below is the contract. Tools are chosen with `--tool <name>` (repeatable) at init and with `bootstrap add <tool>` / `bootstrap remove <tool>` later; `github` and `gitlab` may be selected together. Renaming or removing a tool or a path is a major version; adding a tool or path is minor ([changelog](../../conventions.md#changelog)).
 
-| Name             | Kind     | Purpose                                              |
-| ---------------- | -------- | ---------------------------------------------------- |
-| `mise`           | core     | Task runner and tool versions                        |
-| `git`            | core     | Ignore rules and git config                          |
-| `pre-commit`     | core     | Commit hooks and conventional-commit rules           |
-| `vscode`         | core     | Editor defaults                                      |
-| `dprint`         | core     | Formatter                                            |
-| `taplo`          | core     | TOML formatter                                       |
-| `gitleaks`       | core     | Secret scanning                                      |
-| `grype`          | core     | Vulnerability scanning                               |
-| `virajp-linter`  | core     | Linting                                              |
-| `claude`         | core     | AI coding-assistant settings and status line         |
-| `graphify`       | core     | Code knowledge graph                                 |
-| `mempalace`      | core     | Memory store config                                  |
-| `fnox`           | core     | Secrets provider                                     |
-| `github`         | non-core | Pull-request and issue templates                     |
-| `gitlab`         | non-core | Merge-request and issue templates                    |
+| Name            | Category              | Purpose                                         | Base | Removable | Replaceable | Default                | Requires |
+| --------------- | --------------------- | ----------------------------------------------- | ---- | --------- | ----------- | ---------------------- | -------- |
+| `mise`          | tool-manager          | Installs the tools and runs the task library    | yes  | no        | no          | on                     | none     |
+| `git`           | version-control       | Ignore rules and git checks                     | yes  | no        | no          | on                     | none     |
+| `pre-commit`    | git-hooks             | Runs the gates before each commit               | yes  | no        | no          | on                     | none     |
+| `vscode`        | editor                | Editor settings and extensions                  | yes  | yes       | yes         | on                     | none     |
+| `dprint`        | formatter             | Formats code and documents                      | yes  | yes       | yes         | on                     | none     |
+| `taplo`         | formatter             | Formats TOML files, run by dprint               | yes  | yes       | yes         | on                     | `dprint` |
+| `virajp-linter` | linter                | Lints code with the house rules                 | yes  | yes       | yes         | on                     | none     |
+| `gitleaks`      | secret-scanner        | Finds secrets in code and commits               | no   | yes       | yes         | on                     | none     |
+| `grype`         | vulnerability-scanner | Finds known vulnerabilities                     | no   | yes       | yes         | on                     | none     |
+| `fnox`          | secrets-manager       | Gives secrets to the tasks                      | no   | yes       | yes         | off                    | none     |
+| `claude`        | ai-agent              | Status line and settings for Claude Code        | no   | yes       | yes         | on                     | none     |
+| `graphify`      | knowledge-graph       | Builds a knowledge graph of the code            | no   | yes       | yes         | on                     | none     |
+| `mempalace`     | agent-memory          | Memory store for AI agents                      | no   | yes       | yes         | on                     | none     |
+| `github`        | forge                 | Pull request and issue templates for GitHub     | no   | yes       | yes         | origin (`github.com`)  | none     |
+| `gitlab`        | forge                 | Merge request and issue templates for GitLab    | no   | yes       | yes         | origin (`gitlab.com`)  | none     |
+
+`init --tool` (or a non-interactive `init`) or `add` of a tool whose required tool is neither selected nor named in the same request exits 2 ([errors](../../conventions.md#errors)) naming the missing tool, and the interactive init picker is shown again with that rule; `remove` of a tool that a selected tool requires exits 2 naming the dependent tool. Display order (init picker, tui, docs) is the order of this table; changing it is a minor version.
 
 ### Target paths (1.0)
 
-Each tool's target paths are pinned: paths relative to the target repository root, where bootstrap writes them. File contents are not part of the contract, except invariant 3. Paths marked `tasks/` are under `.config/mise/tasks/`. The setup config `.config/bootstrap.yaml` belongs to no tool; init writes it. Adding a path is a minor version; removing or renaming a path is a major version ([changelog](../../conventions.md#changelog)).
-
-The `mise` dependency dispatchers (`tasks/setup/deps/<verb>`) run the matching `setup/deps/<verb>/<tool>` task of every selected tool that has one; no 1.0 tool has one, so in 1.0 they do nothing.
+Paths are relative to the target repository root, where bootstrap writes them. `tasks/` stands for `.config/mise/tasks/` and `conf.d/` for `.config/mise/conf.d/`. File contents are not part of the contract, except invariants 5 and 6, the dispatcher behaviour under Task dispatchers (what each `_default` runs, "no tool", exit 0), the mise entries listed for `conf.d/_base/mise.toml` and the selection-dependent files below. The setup config `.config/bootstrap.yaml` belongs to no tool; init writes it.
 
 | Tool            | Paths |
 | --------------- | ----- |
-| `mise`          | `.config/mise.toml`, `.config/miserc.toml`, `.config/mise/conf.d/_base/mise.toml`, `.config/mise/conf.d/_base/mise.dev.toml`, `.config/mise/conf.d/_base/mise.ci.toml`, `tasks/_scripts/helpers`, `tasks/_scripts/checks`, `tasks/_scripts/merge`, `tasks/_scripts/placeholder`, `tasks/code/all`, `tasks/code/count`, `tasks/code/worktrees`, `tasks/code/merge/develop`, `tasks/code/merge/main`, `tasks/setup/all`, `tasks/setup/mise`, `tasks/setup/worktree`, `tasks/setup/cleanup`, `tasks/setup/deps/all`, `tasks/setup/deps/install`, `tasks/setup/deps/outdated`, `tasks/setup/deps/audit`, `tasks/setup/deps/upgrade`, `tasks/setup/deps/cleanup` |
+| `mise`          | `.config/mise.toml`, `.config/miserc.toml`, `conf.d/_base/mise.toml`, `conf.d/_base/mise.dev.toml`, `conf.d/_base/mise.ci.toml`, `tasks/_scripts/helpers`, `tasks/_scripts/checks`, `tasks/_scripts/merge`, `tasks/_scripts/placeholder`, `tasks/code/all`, `tasks/code/count`, `tasks/code/worktrees`, `tasks/code/merge/develop`, `tasks/code/merge/main`, `tasks/code/format/_default`, `tasks/code/lint/_default`, `tasks/code/sec/_default`, `tasks/code/graph/_default`, `tasks/setup/all`, `tasks/setup/mise`, `tasks/setup/worktree`, `tasks/setup/cleanup`, `tasks/setup/deps/all`, `tasks/setup/deps/install/_default`, `tasks/setup/deps/outdated/_default`, `tasks/setup/deps/audit/_default`, `tasks/setup/deps/upgrade/_default`, `tasks/setup/deps/cleanup/_default`, `tasks/setup/secrets/_default`, `tasks/setup/ai/_default` |
 | `git`           | `.gitignore`, `tasks/code/git-config` |
 | `pre-commit`    | `.config/pre-commit-config.yaml`, `.config/git-conventional-commits.yaml`, `tasks/code/precommit`, `tasks/setup/precommit` |
 | `vscode`        | `.vscode/settings.json`, `.vscode/extensions.json` |
-| `dprint`        | `dprint.json`, `.config/dprint.json`, `tasks/code/format` |
+| `dprint`        | `dprint.json` (repository root; the full formatter config), `tasks/code/format/dprint` |
 | `taplo`         | `.config/taplo.toml` |
-| `gitleaks`      | `.config/gitleaks.toml`, `tasks/code/sec` |
-| `grype`         | `.config/grype.yaml` |
-| `virajp-linter` | `.config/linter.yaml`, `eslint.config.mjs`, `tasks/code/lint` |
-| `claude`        | `.config/mise/conf.d/ai/mise.dev.toml`, `.config/claude-status.json`, `tasks/setup/ai` |
-| `graphify`      | `tasks/code/graph`, `.graphifyignore` |
-| `mempalace`     | `mempalace.yaml` |
-| `fnox`          | `.config/fnox.toml`, `tasks/setup/secrets` |
+| `virajp-linter` | `.config/linter.yaml`, `eslint.config.mjs`, `tasks/code/lint/virajp-linter` |
+| `gitleaks`      | `.config/gitleaks.toml`, `conf.d/gitleaks/mise.dev.toml`, `tasks/code/sec/gitleaks` |
+| `grype`         | `.config/grype.yaml`, `conf.d/grype/mise.dev.toml`, `tasks/code/sec/grype` |
+| `fnox`          | `.config/fnox.toml`, `conf.d/fnox/mise.dev.toml`, `tasks/setup/secrets/fnox` |
+| `claude`        | `.config/claude-status.json`, `tasks/setup/ai/claude` |
+| `graphify`      | `.graphifyignore`, `conf.d/graphify/mise.dev.toml`, `tasks/code/graph/graphify` |
+| `mempalace`     | `mempalace.yaml` (`create_only`), `conf.d/mempalace/mise.dev.toml` |
 | `github`        | `.github/pull_request_template.md`, `.github/ISSUE_TEMPLATE/bug.yml`, `.github/ISSUE_TEMPLATE/feature.yml`, `.github/ISSUE_TEMPLATE/config.yml` |
 | `gitlab`        | `.gitlab/merge_request_templates/Default.md`, `.gitlab/issue_templates/Bug.md`, `.gitlab/issue_templates/Feature.md` |
+
+### Task dispatchers
+
+A `_default` file under a task folder defines the folder's task (`tasks/code/sec/_default` is `code:sec`) and runs every per-tool subtask present in that folder (`code:sec:gitleaks`, `code:sec:grype`); with none present it prints "no tool" and exits 0. `code:all` and `setup:all` call the dispatchers and never test which tools are present. The `setup/deps/<verb>` dispatchers are folders (`tasks/setup/deps/<verb>/_default`; `tasks/setup/deps/all` stays a file) and run each selected tool's `setup/deps/<verb>/<tool>` task; no 1.0 tool has one, so in 1.0 they do nothing. `setup:deps:all` runs the `cleanup`, `install`, `upgrade`, `outdated` and `audit` dispatchers in that order.
+
+### Selection-dependent files
+
+Files whose content depends on the selection are re-rendered by every command that changes the selection. The complete list:
+
+- `.config/mise/conf.d/_base/mise.dev.toml`: node, pnpm, python, uv, jq and yq, plus the entries of the selected base tools (pre-commit; dprint and sort-package-json; taplo; the house linter).
+- `.config/git-conventional-commits.yaml`: the forge links, from the selected forge whose host matches `origin`; if none matches, the first selected forge in catalog order; with no forge selected, the file has no forge links.
+
+`conf.d/_base/mise.toml` carries osv-scanner, pinned exactly. Versions follow [tool-versions](../../conventions.md#tool-versions).
 
 ## Invariants
 
 1. No file path appears in more than one tool.
-2. Core tools always render; none can be deselected or removed.
-3. The `git` tool's `.gitignore` ignores `*.bak` (backups per [backups](../../conventions.md#backups)).
+2. A tool with `removable` false is always selected and cannot be removed or replaced.
+3. Every tool of the catalog names an existing category.
+4. A category with `max: one` never holds two selected tools.
+5. Every task file is written executable ([safety](../../conventions.md#safety)).
+6. Every tool a rendered task runs is installed by mise ([tool-versions](../../conventions.md#tool-versions)), except the named exemptions: `git`, `mise` itself, and the AI agent's own CLI (`claude`).
+7. `removable: false` implies `replaceable: false` and `default: on`.
+8. `origin_hosts` is present only when `default` is `origin`.
+9. No two `origin` tools of one `max: one` category share a host.
+10. `base` matters only for a tool with mise entries.
+11. Every `requires` entry names a tool of the catalog.
+12. A `max: one` category holds at most one `default: on` tool and at most one unremovable tool; every category holds at least one tool.
+13. A recorded selection that names a tool the running catalog does not have, or a tool whose `requires` is not selected, is not applied: nothing is written and the run exits 3 ([errors](../../conventions.md#errors)) naming the fix (for example "remove `fnox` from values.tools"). A recorded selection that misses an unremovable tool gets the tool added again and a warning in `warnings` ([Setup config](../setup-config/index.md)).
 
 ## Data Model
 
@@ -84,9 +107,11 @@ Authoritative schema: [schema.yaml](./schema.yaml)
 
 ## Relationships
 
-| Related entity                           | Cardinality | Ownership | On delete | Required |
-| ---------------------------------------- | ----------- | --------- | --------- | -------- |
-| [Setup config](../setup-config/index.md) | N–M         | reference | N/A — tools are never deleted | No |
+| Related entity                                | Cardinality | Ownership | On delete | Required |
+| --------------------------------------------- | ----------- | --------- | --------- | -------- |
+| [Tool category](../tool-category/index.md)    | N–1         | reference | a release that drops a category drops its tools: a recorded selection that names one exits 3 naming the fix (invariant 13) | Yes |
+| [Setup config](../setup-config/index.md)      | N–M         | reference | a release that drops a tool: a recorded selection that names it exits 3 naming the fix (invariant 13) | No |
+| [Tool](./index.md) (`requires`, self)         | N–M         | reference | a release that drops a tool: a recorded selection that names it exits 3 naming the fix (invariant 13) | No |
 
 ## Concurrency & Consistency
 
@@ -96,6 +121,8 @@ Authoritative schema: [schema.yaml](./schema.yaml)
 
 ## References
 
+- [errors](../../conventions.md#errors)
 - [baseline](../../conventions.md#baseline)
-- [backups](../../conventions.md#backups)
+- [safety](../../conventions.md#safety)
 - [changelog](../../conventions.md#changelog)
+- [tool-versions](../../conventions.md#tool-versions)

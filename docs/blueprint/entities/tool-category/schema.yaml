@@ -1,0 +1,19 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Tool category
+description: A group of tools that do the same job, with a limit on how many a repository can select at once.
+type: object
+properties:
+  name:
+    type: string
+    description: Unique kebab-case slug identifying the category; tools reference it by this name (Tool entity).
+    pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+  max:
+    type: string
+    description: How many tools of the category a repository can select at once.
+    enum: [one, many]
+  purpose:
+    type: string
+    description: One-line description shown in the init picker, the tui and the docs.
+    minLength: 1
+required: [name, max, purpose]
+additionalProperties: false

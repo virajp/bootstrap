@@ -1,7 +1,7 @@
 ---
 type: vwf-flow
 title: Add a tool
-description: One command adds non-core tools to a set-up repository, with nothing lost and nothing half-written.
+description: One command adds tools to a set-up repository, replacing a held tool only with consent, with nothing half-written.
 status: reviewed
 implementation: none
 ---
@@ -10,8 +10,11 @@ implementation: none
 
 ## Purpose
 
-`bootstrap add <tool>...` writes the files of one or more non-core tools into
-a repository that is already set up and records them in the config.
+`bootstrap add <tool>...` adds one or more tools of the
+[Tool](../../../entities/tool/index.md) catalog to a repository that is already
+set up, replaces a tool of a `max: one`
+[Tool category](../../../entities/tool-category/index.md) only with consent, and
+records the new selection in the setup config.
 
 Serves: [Fast new-repo setup](../../../product.md#goal-fast-setup)
 
@@ -19,61 +22,99 @@ Serves: [Fast new-repo setup](../../../product.md#goal-fast-setup)
 
 | Actor | May trigger | Authorization | Audit-recorded |
 | ----- | ----------- | ------------- | -------------- |
-| Repo owner (interactive terminal) | the command `bootstrap add <tool> [<tool>...]` | write access to the working directory | no |
-| AI agent or CI (non-interactive) | `bootstrap add <tool>...`, `-y` skips the interactive confirm | write access to the working directory | no |
+| Repo owner (interactive terminal) | the command `bootstrap add <tool> [<tool>...]` | write access to the working directory | no — no audit foundation; git history keeps every replaced file |
+| AI agent or CI (non-interactive) | `bootstrap add <tool>...`; `-y` never prompts and is never consent to replace; `--replace` consents to every replacement | write access to the working directory | no — no audit foundation; git history keeps every replaced file |
 
 ## Steps
 
-1. Outside a git repository add exits 3 per
-   [errors](../../../conventions.md#errors). Add reads `.config/bootstrap.yaml` with the same checks as
-   [check](../120-check-drift/index.md) and
-   [update](../130-update-repository/index.md). Absent → writes nothing, exits 3
-   "not set up — run `bootstrap init`". A file failing
-   [Setup config validity](../../../entities/setup-config/index.md#validity) → exits 3.
-2. If the recorded `version` is older than the running cli, add
-   writes nothing and exits 3 "set up with X, running Y — run `bootstrap update`
-   first". A recorded `version` newer than the running cli exits 3 per
-   [Setup config validity](../../../entities/setup-config/index.md#validity).
-   [Setup config](../../../entities/setup-config/index.md)
-3. Add validates each name. A name given more than once is used once, with no
-   error. An unknown or core tool name exits 2. A name already in setup-config
-   `values.tools` is reported "already added" and changes nothing; if every name is,
-   add writes nothing and exits 0.
-   [Tool](../../../entities/tool/index.md),
-   [Setup config](../../../entities/setup-config/index.md)
-4. Add renders only the files of the new tools, with the recorded `values`; no
-   tool needs a value of its own, so add asks for no value. A path that exists with
-   identical content is `unchanged`; one with different content is backed up,
-   then written, per [backups](../../../conventions.md#backups), with no per-file
-   question. A path in setup-config `kept` or `deleted` is not touched and its
-   entry stays. Precedence: `kept` > `deleted` > the rules above, per
-   [check](../120-check-drift/index.md). [Tool](../../../entities/tool/index.md)
-5. Interactive only: add shows the plan and asks once to proceed, per
-   [Set up a repository](../110-setup-repository/index.md) step 5. `--dry-run`
-   never prompts.
-6. Add writes the planned changes all-or-nothing, then rewrites
-   `.config/bootstrap.yaml` last: the new tools are appended to `values.tools` and
-   `files` is refreshed to the full produced set ([Setup config invariants](../../../entities/setup-config/index.md#invariants)).
-   [Setup config](../../../entities/setup-config/index.md)
-7. Add reports files created, backed up (each original → backup path),
-   unchanged, kept and left deleted (both untouched) and already added, and
-   prints the same one next command as
-   [Set up a repository](../110-setup-repository/index.md) step 8,
-   `MISE_ENV=dev mise run setup:all`. Exit 0 on success.
+Usage errors come first: no tool name given, an unknown flag or a bad flag
+value, an unknown tool name, or two distinct names of one `max: one` category (repeated names are merged first) exits 2
+with short usage before the preflight and before `.config/bootstrap.yaml` is
+read. Nothing is written.
+
+1. Add runs, after the usage check, the preflight of
+   [Set up a repository](../110-setup-repository/index.md) step 1.
+2. Add reads `.config/bootstrap.yaml` under
+   [Setup config](../../../entities/setup-config/index.md): its
+   [validity and repair](../../../entities/setup-config/index.md#validity) and
+   [version guard](../../../entities/setup-config/index.md#version-guard). Absent
+   or an older recorded `version` → writes nothing, exits 1, next command
+   `bootstrap init`. A file failing validity, or a newer `version` → exits 3
+   naming the fix. A repair (an unremovable tool added back) lets the run
+   continue, with its warning in `warnings`, and is a change: it is written back
+   in step 7, the setup file is listed `changed` and the exit code is 0, even
+   when every named tool is already added. An older `format` is read, never
+   refused ([write format](../../../entities/setup-config/index.md#write-format)).
+3. Add merges a name given more than once into one. Add reads the
+   [Tool](../../../entities/tool/index.md) `requires` and the
+   [Setup config](../../../entities/setup-config/index.md) `values.tools`: a
+   named tool whose `requires`
+   tool is not in the selection after the request (the held tools minus the
+   replaced ones, plus the named ones) exits 2 naming the required tool (for
+   example `taplo` requires `dprint`); `add taplo dprint` is allowed. A name
+   already in `values.tools` is reported "already added" and changes nothing; if
+   every name is and step 2 made no repair, add skips to step 8.
+4. Add finds the replacements: a tool of the
+   [Tool category](../../../entities/tool-category/index.md) `max: one` that
+   holds another tool replaces it. A held tool whose `replaceable` is false →
+   exit 2. An add that replaces a tool that another selected tool requires exits
+   2 naming the dependent tool (checked on the selection after the request,
+   before any prompt). Consent rules, one each:
+   - `--replace` is consent in every mode (no prompt).
+   - An interactive run without `-y` and without `--replace` asks one prompt per
+     replacement, "replace <old> with <new>?"; declining writes nothing and
+     exits 1; Ctrl-C exits 130.
+   - A `-y` run without `--replace` that needs a replacement never prompts and
+     exits 2.
+   - A non-interactive run without `--replace` that needs a replacement exits 2
+     ([config](../../../conventions.md#config)).
+   - `--replace` with no replacement to make is ignored.
+5. Add renders the full file set of the new selection (the held
+   [Tool](../../../entities/tool/index.md)s, minus the replaced ones, plus the
+   added ones) with the recorded `values`; no tool needs
+   a value of its own, so add asks for none. Only paths that differ from the
+   working copy are targets, shared files included (for example
+   `.config/mise/conf.d/_base/mise.dev.toml` or
+   `.config/git-conventional-commits.yaml`); the files of a replaced tool are
+   removed as in [Remove a tool](../150-remove-tool/index.md); the replacement
+   consent covers that deletion, and no `-y` is needed. Planning, the
+   setup file `.config/bootstrap.yaml` as a target and `orphaned` paths follow
+   [safety](../../../conventions.md#safety).
+6. Interactive without `-y`, after the replacement prompts: add confirms the plan
+   as in [Set up a repository](../110-setup-repository/index.md) step 6; Ctrl-C
+   prints "interrupted — nothing written".
+7. Add writes the planned changes, then rewrites `.config/bootstrap.yaml` last:
+   `values.tools` gains the added tools and loses the replaced ones, and `files`
+   is refreshed per
+   [Setup config invariants](../../../entities/setup-config/index.md#invariants).
+   Add never commits.
+8. Add reports `added`, `already_added`, `replaced` (each `{from, to}`),
+   `created`, `changed`, `deleted`, `unchanged`, `kept`, `orphaned`, `warnings`
+   and `next_command`, every path list sorted, and prints the same one next
+   command as [Set up a repository](../110-setup-repository/index.md) step 9,
+   `MISE_ENV=dev mise run setup:all`. The next command is printed when a tool was added, a repair
+   included. When every named tool is already added and
+   nothing was repaired, nothing was added or written: the report still has every
+   key (`already_added` filled, the path lists empty, `warnings`) except
+   `next_command`, which is absent, and no next command is printed. Exit 0.
 
 Modes: `--dry-run` shows the plan, writes nothing and exits with the code the
-confirmed real run (with `-y`) would return. `--json` prints exactly one document on every exit, per
-[errors](../../../conventions.md#errors). Otherwise confirm, `-y`, `--dry-run`
-and `--json` behave as in [Set up a repository](../110-setup-repository/index.md).
-Output rules follow [Terminal UX](../../../design-system.md#terminal-ux).
+real run (with `-y`, and with `--replace` only if flagged) would return. `--json`
+prints exactly one document, the JSON result, on every exit, with the keys of
+step 8 on success and `error` per [errors](../../../conventions.md#errors)
+otherwise. `--dry-run --json` prints the document the real run would return
+plus `"dry_run": true`; on a non-zero exit it is the same error document plus
+`"dry_run": true`. Otherwise confirm, `-y`, `--dry-run` and `--json` behave as
+in [Set up a repository](../110-setup-repository/index.md). Output rules follow
+[Terminal UX](../../../design-system.md#terminal-ux).
 
 ## Guarantees
 
 | Step / group | Consistency | On failure | Idempotency | Load & latency |
 | ------------ | ----------- | ---------- | ----------- | -------------- |
-| 1–5 | atomic — nothing is written | none — nothing written yet; exits 0 (every name already added), 1 (declined), 2, 3 or 130 (Ctrl-C) per step | n/a — a re-run starts from the same repo state | n/a — one local command |
-| 6 | atomic — all-or-nothing | a write failure or an interrupt triggers full rollback per [baseline](../../../conventions.md#baseline) atomic-multi-write and graceful-shutdown: the repo is byte-identical to before; a write failure exits 3 naming the failing path, an interrupt exits 130 per [errors](../../../conventions.md#errors) | a re-run with the same names reports "already added", writes nothing and exits 0 | n/a — one local command |
-| 7 | atomic — output only | none — changes no repo state | n/a | n/a — one local command |
+| 1–6 | atomic — nothing is written | none — nothing written yet; exits 0 (every name already added, no repair), 1, 2, 3 or 130 per step | n/a — a re-run starts from the same repo state | n/a — one local command |
+| 7 | atomic — all-or-nothing | a write failure or an interrupt restores every changed or deleted target from `HEAD` and deletes every created file per [safety](../../../conventions.md#safety); a write failure exits 3 naming the failing path, an interrupt exits 130; a failed restore exits 3 listing the paths not restored | a re-run with the same names reports "already added", writes nothing and exits 0 | n/a — one local command |
+| 8 | atomic — output only | none — changes no repo state | n/a | n/a — one local command |
 
 ## Diagram
 
@@ -83,27 +124,28 @@ sequenceDiagram
     participant A as Add
     participant C as Setup config
     participant T as Tool
+    participant K as Tool category
     participant R as Repository
     O->>A: bootstrap add tools
+    A->>T: usage, requires
+    A->>R: preflight
     A->>C: read config
-    A->>T: validate names, render new files
-    alt not a git repository, config absent, invalid, or recorded version older
-        A-->>O: exit 3, fix
-    else unknown or core name
+    A->>K: find replacements
+    A->>R: plan targets
+    alt usage, requires or consent refused
         A-->>O: exit 2
-    else all already added
-        A-->>O: already added, exit 0
-    else interactive, no -y, declined
-        A-->>O: exit 1, nothing written
+    else not set up, older version, dirty target, declined
+        A-->>O: exit 1
+    else preflight, config invalid, not a file, write failure
+        A-->>O: exit 3
+    else interrupted
+        A-->>O: exit 130
+    else all already added, no repair
+        A-->>O: exit 0
     else proceed
-        A->>R: back up, write files
+        A->>R: write files
         A->>C: rewrite config
-        alt write fails or interrupted
-            A->>R: roll back
-            A-->>O: exit 3 failing path, or exit 130 interrupted
-        else success
-            A-->>O: report, next command, exit 0
-        end
+        A-->>O: report, exit 0
     end
 ```
 
@@ -113,48 +155,116 @@ N/A — runs synchronously in one command invocation.
 
 ## Acceptance
 
-- Given a path add would write that is a directory or a symlink, when it runs, then
-  nothing is written and the exit code is 3 naming that path
-  ([backups](../../../conventions.md#backups)).
-- Given a repository at the running version, when `bootstrap add github -y` runs,
-  then the github tool's files exist, `values.tools` contains github, `files` includes them
-  and the exit code is 0; then `bootstrap check` exits 0.
+- Given a repository at the running version, when `bootstrap add <tool> -y`
+  runs for a tool in no occupied `max: one` category, then its files exist,
+  `values.tools` contains it, `files` includes them and the exit code is 0;
+  then a re-run of `bootstrap init -y` reports every file `unchanged`.
 - Given two tool names, when add runs, then both tools are added.
-- Given a tool already in `values.tools`, when add runs with its name, then nothing is
-  written, it is reported "already added" and the exit code is 0.
-- Given an unknown tool name, when add runs, then the exit code is 2 and nothing
-  is written.
-- Given a core tool name, when add runs, then the exit code is 2 and nothing is
-  written.
-- Given a recorded version older than the running cli, when add runs, then the
-  exit code is 3, the message names `bootstrap update` and nothing is written.
-- Given no `.config/bootstrap.yaml`, when add runs, then the exit code is 3 and
-  the message names `bootstrap init`.
-- Given a path of a new tool listed in `kept` or `deleted`, when add runs, then
-  the path is not written or backed up and its entry stays in `kept` or
-  `deleted`.
 - Given a tool name given twice, when add runs, then the tool is added once and
   the exit code is 0.
-- Given an existing file with different content at a new tool's path, when add
-  runs, then the original is preserved as a backup, the new file is written and
-  the backup is listed.
-- Given a write failure injected mid-run, when add runs, then the repository is
-  byte-identical to before and the exit code is 3.
-- Given an interactive run, when the actor declines at the confirm, then nothing
-  is written and the exit code is 1.
+- Given a tool already in `values.tools` and no repair to make, when add runs
+  with its name, then nothing is written, the full step 8 report is printed with
+  the tool in `already_added`, empty path lists, `warnings` and no next command
+  (no `next_command` key under `--json`), and the exit code is 0.
+- Given `bootstrap add` with no tool name, when add runs, then nothing is
+  written, short usage is printed and the exit code is 2.
+- Given an unknown tool name, when add runs, then the exit code is 2 and nothing
+  is written.
+- Given a named tool whose `requires` tool is neither selected nor named (for
+  example `taplo` without `dprint`), when add runs, then the exit code is 2, the
+  message names the required tool and nothing is written.
+- Given `bootstrap add taplo dprint` with neither held, when add runs, then the
+  requires check passes on the selection after the request and both are added.
+- Given a held tool that another selected tool requires and an add that would
+  replace it, when add runs, then the exit code is 2, the message names the
+  dependent tool and nothing is written.
+- Given `bootstrap add` with no name in a directory that is not a git repository
+  or not set up, when add runs, then the exit code is 2, not 3 or 1.
+- Given two named tools of one `max: one` category, when add runs, then the exit
+  code is 2 and nothing is written.
+- Given a held replaceable tool and an interactive run, when the actor accepts
+  "replace <old> with <new>?", then the new tool's files are written, the old
+  tool's files are removed except `create_only` ones, `values.tools` swaps the
+  two and `replaced` lists `{from, to}`.
+- Given an interactive run, when the actor declines a replacement prompt, then
+  nothing is written and the exit code is 1.
+- Given a non-interactive run that would replace a tool, when add runs without
+  `--replace`, then the exit code is 2 and nothing is written.
+- Given a run, interactive or not, that would replace a tool, when add runs with
+  `-y` but without `--replace`, then no prompt is shown, the exit code is 2 and
+  nothing is written.
+- Given a non-interactive run that would replace a tool, when add runs with
+  `--replace`, then the replacement is applied and the exit code is 0.
+- Given `--replace` and no replacement to make, when add runs, then the flag is
+  ignored and the run proceeds as without it.
+- Given a held tool whose `replaceable` is false, when add names a tool of its
+  category, then the exit code is 2 and nothing is written, even with
+  `--replace`.
+- Given a shared file the render would change (for example
+  `.config/mise/conf.d/_base/mise.dev.toml`) that is modified, staged, untracked
+  or ignored, when add runs, then nothing is written, the exit code is 1 and the
+  path is listed.
+- Given a base tool with mise entries is added, when add runs, then the full-set render changes
+  `.config/mise/conf.d/_base/mise.dev.toml`, and it is listed in `changed`.
+- Given a setup file that is modified, staged, untracked or ignored, when add
+  runs, then nothing is written, the exit code is 1 and `.config/bootstrap.yaml`
+  is listed; on a clean run it is listed `changed` (or `unchanged`).
+- Given a recorded `values.tools` that misses an unremovable tool, when add
+  runs, even with every named tool already added, then the tool is added again,
+  the repair is written back, `.config/bootstrap.yaml` is listed `changed`,
+  `warnings` reports "added back unremovable tool `<name>`" and the exit code is
+  0.
+- Given a setup file recorded with an older `format`, when add runs, then the
+  older format is read and not refused, and the next write records the running
+  cli's format.
+- Given a recorded `values.tools` with two tools of one `max: one` category, a
+  tool name the running catalog does not have, or a tool whose `requires` tool is
+  not selected, when add runs, then nothing is written and the exit code is 3
+  naming the fix.
+- Given a path in `files` that the running cli does not render for a selected
+  tool, when add runs, then it is left in place, stays in `files` and is listed
+  `orphaned`.
+- Given a recorded version older than the running cli, when add runs, then the
+  exit code is 1, the next command is `bootstrap init` and nothing is written.
+- Given a recorded version newer than the running cli, or a setup file failing
+  Setup config validity, when add runs, then the exit code is 3 and nothing is
+  written.
+- Given no `.config/bootstrap.yaml`, when add runs, then the exit code is 1 and
+  the message names `bootstrap init`.
+- Given a directory outside a git repository, or no `mise` on the `PATH`, when
+  add runs, then nothing is written and the exit code is 3.
+- Given `mise` found elsewhere than `~/.local/bin/mise`, when add runs, then a
+  warning names the path and the run continues.
+- Given a target that is a directory or a symlink, when add runs, then nothing
+  is written and the exit code is 3 naming that path.
+- Given an existing `create_only` file of a new tool, when add runs, then it is
+  not changed and is listed in `kept`.
+- Given a path whose render equals the working copy, when add runs, then it is
+  listed `unchanged` and not rewritten.
+- Given a write failure injected mid-run, when add runs, then the tracked tree
+  matches `HEAD` for every target, created files are gone and the exit code is
+  3.
+- Given a write failure whose restore also fails, when add runs, then the exit
+  code is 3, the output lists every path not restored and, under `--json`,
+  `error.unrestored` lists the same paths.
+- Given an interrupt (Ctrl-C) during the write, when add runs, then the targets
+  are restored, created files are gone and the exit code is 130.
+- Given an interactive run, when the actor presses Ctrl-C at a replacement
+  prompt or at the plan confirm, then nothing is written, the message says
+  "interrupted — nothing written" and the exit code is 130.
+- Given an interactive run, when the actor declines the plan confirm, then
+  nothing is written and the exit code is 1.
 - Given `--dry-run`, when add runs, then nothing is written and the exit code is
-  the one the confirmed real run (with `-y`) would return.
-- Given a non-interactive run, when `bootstrap add github` runs without `-y`, then the
-  files are written and the exit code is 0.
-- Given an interrupt (Ctrl-C) during the write, when add runs, then the
-  repository is byte-identical to before and the exit code is 130.
-- Given a directory outside a git repository, when add runs, then nothing is
-  written and the exit code is 3.
-- Given a setup file failing Setup config validity, when add runs, then nothing is
-  written and the exit code is 3.
-- Given a new tool's path already holding identical content, when add runs, then
-  the path is reported `unchanged`, no backup is made and the file is not
-  rewritten.
+  the one the real run would return, including 2 for a replacement without
+  `--replace`.
+- Given `--json`, when add runs on any exit, then stdout is exactly one document
+  with `exit`; on success it has `added`, `already_added`, `replaced`,
+  `created`, `changed`, `deleted`, `unchanged`, `kept`, `orphaned`, `warnings`
+  and `next_command` equal to `MISE_ENV=dev mise run setup:all` (absent when
+  every named tool is already added and nothing was repaired), with sorted paths.
+- Given `--dry-run --json`, when add runs, then the document is the one the real
+  run would return plus `"dry_run": true`, and on a non-zero exit it is the same
+  error document plus `"dry_run": true`; no file changes.
 - Abuse case: n/a — runs locally with the caller's own permissions on the
   caller's own repository; every input is validated per
   [baseline](../../../conventions.md#baseline) boundary-validation.
@@ -162,9 +272,10 @@ N/A — runs synchronously in one command invocation.
 ## References
 
 - [baseline](../../../conventions.md#baseline),
-  [backups](../../../conventions.md#backups),
+  [safety](../../../conventions.md#safety),
   [errors](../../../conventions.md#errors),
   [config](../../../conventions.md#config)
+- [design-system](../../../design-system.md#terminal-ux) — Terminal UX
 - [Remove a tool](../150-remove-tool/index.md) — the inverse flow
 - API surface: N/A — no service project; the flow is a local command
 - Screens surface: N/A — cli has no screen platform

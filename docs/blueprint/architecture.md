@@ -51,7 +51,9 @@ data flow between them.
 ## Hosting & Deployment
 
 - **cli** runs on developer machines and in CI. An automated pipeline publishes
-  it to the public package registry with provenance.
+  it to the public package registry with provenance, and on the same release
+  updates the formula in the owner's own Homebrew tap. Users install the
+  executable with the toolchain manager or with Homebrew.
 - **site** is static output served from Cloudflare's edge as static assets, and
   an automated pipeline deploys it on release.
 
