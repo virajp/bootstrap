@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Type-check the cli package"
+#MISE dir="{{ config_root }}/cli"
+
+set -e
+
+pnpm exec tsc --noEmit -p .

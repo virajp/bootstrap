@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+#MISE description="Install and reconcile the AI tooling this repo expects"
+#MISE hide=true
+
+set -euo pipefail
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+if ! command -v claude >/dev/null 2>&1; then
+  print_warn "claude is not on PATH — skipping AI setup."
+  print_yellow "Install it from https://claude.com/code, then re-run this task."
+  exit 0
+fi
+
+line_sep "="
+print_wait "Updating Claude Marketplaces ... "
+claude plugins marketplace update 1>/dev/null
+print_success "done"
+
+line_sep "-"
+# Fetch all plugins currently installed on this machine, across all scopes.
+PLUGINS=($(claude plugin list --json | jq -r '.[] | "\(.id)|\(.scope)"'))
+# `${ARR[@]+"${ARR[@]}"}`: an empty array is unbound under `set -u` on bash 3.2.
+for PLUGIN in ${PLUGINS[@]+"${PLUGINS[@]}"}; do
+  plugin="${PLUGIN%%|*}"
+  scope="${PLUGIN##*|}"
+  print_wait "- ${plugin} (${scope}) ... "
+  claude plugin update --scope "${scope}" "${plugin}" 1>/dev/null
+  print_ok
+done
+
+line_sep "-"
+print_wait "Pruning plugins nothing references ... "
+claude plugin autoremove --scope "project" --yes 1>/dev/null
+print_ok
+
+line_sep "-"
+print_success "AI tooling upgraded"

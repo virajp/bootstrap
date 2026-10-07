@@ -1,0 +1,11 @@
+# /code-review high engine — U7 round 4 (range 5e7f23c..658b3ec); 10 findings, none already reported; all kept
+1. cli/templates/dprint/.config/mise/tasks/code/format:44 — whole-tree run always calls `pnpm dlx sort-package-json "**/package.json"`, which exits 2 "No matching files." in a repo with no package.json, failing code:all (reproduced).
+2. cli/src/cli.ts:42 — only a bare call maps to exit 2; unknown flag / extra positional exit 1, which conventions.md#errors reserves for drift (reproduced `--bogus` → 1). (= G2)
+3. cli/templates/mise/.config/mise/conf.d/_base/mise.toml:19 — `_.path = { path = "node_modules/.bin" }` resolves relative to the config dir (verified with `mise env`); use `{{config_root}}/node_modules/.bin`.
+4. cli/templates/gitleaks/.config/mise/tasks/code/sec:58 — `gitleaks dir .` ignores .gitignore; a gitignored .env fails code:sec (verified).
+5. cli/templates/mise/.config/mise/tasks/_scripts/merge:222 — code:merge:develop <branch> runs its safety checks on the current checkout, not the named branch.
+6. cli/templates/git/.config/mise/tasks/code/git-config:23 — `${line%=*}` strips from the last `=`; `--unset` fails on multi-valued keys; blocks commits.
+7. cli/templates/pre-commit/.config/pre-commit-config.yaml:82 — lint hook passes filenames without require_serial, but code:lint lints the whole tree with --fix → parallel concurrent writers.
+8. cli/templates/mise/.config/mise/tasks/setup/cleanup:15 — `docker system prune --volumes --force` deletes every unused Docker volume on the machine; docker is not a catalog tool.
+9. cli/templates/pre-commit/.config/mise/tasks/code/precommit:18 — `mapfile` needs bash 4+, while the templates target bash 3.2.
+10. cli/templates/mise/.config/mise/tasks/setup/all:4 — `depends=["init"]` but `init` is defined only in `_base/mise.dev.toml`; non-dev MISE_ENV fails to resolve it.

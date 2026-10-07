@@ -1,0 +1,11 @@
+# /code-review high engine — U7 round 5 re-check (range 5e7f23c..c620242); 10 findings, none already reported; all kept
+1. .npmrc:1 — pnpm 12 does not read `ignore-scripts`/`fund` from .npmrc (`pnpm config get ignore-scripts` → undefined; a preinstall script ran); belongs in pnpm-workspace.yaml `ignoreScripts: true` (reproduced).
+2. cli/templates/gitleaks/.config/mise/tasks/code/sec:58 — `gitleaks git .` scans all history, so a secret committed then removed and rotated fails code:sec forever; no `.gitleaksignore` guidance (reproduced).
+3. cli/templates/gitleaks/.config/mise/tasks/code/sec:70 — grype stays on `dir:${MISE_PROJECT_ROOT}`, walking git-ignored trees incl. `.worktrees/<branch>` (reproduced).
+4. cli/templates/mise/.config/mise/tasks/_scripts/merge:116 — pr model tries `gh` first whenever installed, regardless of the remote's forge; detect the forge from the git remote.
+5. cli/templates/dprint/.config/mise/tasks/code/format:49 — `git ls-files` without `-z`, and lists index entries missing on disk.
+6. cli/templates/mise/.config/mise/tasks/setup/worktree:18 — comment promises a tracked mise.lock that no template renders; tools pinned `latest`.
+7. cli/src/setup-config/validity.ts:26 — setup-config errors carry no exit code; entity Validity says exit 3.
+8. cli/templates/gitleaks/.config/mise/tasks/code/sec:60 — full history rescan on every run (efficiency).
+9. cli/src/setup-config/validity.ts:165 — `validate` re-runs `checkFormat` that `parse` already ran.
+10. cli/templates/pre-commit/.config/pre-commit-config.yaml:36 — comment points at a `check-useless-excludes` hook the template lacks.

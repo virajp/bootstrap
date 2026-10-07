@@ -1,0 +1,25 @@
+[settings]
+# NodeJS settings
+node.compile        = false
+npm.package_manager = "pnpm"
+
+# Tools every environment needs; mise.<env>.toml adds one environment's own.
+[tools.node]
+version = "latest"
+
+[tools.pnpm]
+depends = [ "node" ]
+version = "latest"
+
+# OSV Scanner is a tool for scanning open source vulnerabilities.
+[tools.osv-scanner]
+version = "latest"
+
+[env]
+_.path = { path = "node_modules/.bin", tools = true }
+
+# Repo-level configuration read by the task library
+MEMBERS             = ""
+MERGE_MODEL_DEVELOP = "<%= merge_model.develop %>"
+MERGE_MODEL_MAIN    = "<%= merge_model.main %>"
+REPO_NAME           = "<%= repo_name %>"

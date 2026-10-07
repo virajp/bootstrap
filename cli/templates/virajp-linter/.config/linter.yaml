@@ -1,0 +1,46 @@
+# @askviraj/linter configuration
+#
+# Add custom ignores, rule overrides, and additional config blocks below.
+
+version: 1
+
+ignores:
+  - "**/archived/**"
+  # The gitignored render surface — mockups and design-tool exports reviewed in
+  # a browser, never committed, and not ours to style.
+  - "docs/scratchpad/**"
+  # tsup's bundle of installer/. Build output, gitignored, and not ours to style —
+  # esbuild emits empty catch blocks and keeps unused helpers from bundled deps.
+  # The source it is built from is linted.
+  - "bin/**"
+  # /brag launch-video output: rendered media and the throwaway scripts and
+  # HTML composition that drew it. Scratch, not source, and its HTML rewrite
+  # fights dprint's.
+  - "brag-output/**"
+
+overrides:
+  markdown:
+    rules:
+      markdown/no-reversed-media-syntax: off
+
+# Every blueprint doc carries OKF frontmatter with a `title` AND a body H1.
+# Two separate things made that fail `no-multiple-h1`, and both need fixing —
+# which is why this is a `configs:` block rather than a `rules` override:
+#
+#   1. Frontmatter was parsed as markdown BODY, so a YAML comment inside it
+#      (`# optional, standardized: …`) became an H1 and the real title was the
+#      second one. `frontmatter: yaml` is a LANGUAGE option, not a rule option,
+#      and `overrides:` only reaches `rules`.
+#   2. Once parsed, the rule counts a frontmatter `title:` as the document's H1
+#      by default, so the body's own `# Title` becomes the second. Here the two
+#      coexist by convention — the frontmatter title is metadata for tooling,
+#      the H1 is for the reader — so `frontmatterTitle: ""` counts only real
+#      headings.
+#
+# A genuine duplicate H1 still errors.
+configs:
+  - files: [ "**/*.md" ]
+    languageOptions:
+      frontmatter: yaml
+    rules:
+      markdown/no-multiple-h1: [ "error", { frontmatterTitle: "" } ]

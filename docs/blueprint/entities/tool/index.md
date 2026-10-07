@@ -3,7 +3,7 @@ type: vwf-entity
 title: Tool
 description: A named set of setup files for one tool, shipped inside bootstrap and applied to a repository as a unit.
 status: reviewed
-implementation: none
+implementation: partial
 owner: [cli]
 ---
 

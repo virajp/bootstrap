@@ -1,0 +1,11 @@
+# /code-review high engine — U7 round 3 (range 5e7f23c..756b9b0); 10 findings; 2 dropped as already reported in U7-2 (#8, .gitignore:54 and linter.yaml bin/**, restored by user ruling R4); 8 kept
+1. cli/templates/gitleaks/.config/gitleaks.toml:1 — custom [[rules]] without `[extend] useDefault = true` replace gitleaks' built-in rules; only RevenueCat/Grafana keys detected (verified: AWS key + ghp_ token pass with the config, caught without it).
+2. cli/templates/fnox/.config/mise/tasks/setup/secrets:17 — fnox does not find `.config/fnox.toml` by default (reads fnox.toml/.fnox.toml + global); `fnox check` with no --config checks the wrong config (verified fnox 1.36.0).
+3. [dropped — already reported U7-2 #8] cli/templates/git/.gitignore:54 — bin/, installer/dist/, scripts/dist/ repo-specific lines.
+4. cli/templates/claude/.config/mise/tasks/setup/ai:24 — `set -u` + `"${PLUGINS[@]}"` on an empty array fails on bash 3.2; elsewhere guarded with `${ARR[@]+...}`.
+5. cli/templates/mise/.config/mise/tasks/setup/worktree:30 — calls `mise run setup:secrets` unconditionally; ruling 10 made setup/all use `run_task_if_present`.
+6. cli/templates/pre-commit/.config/pre-commit-config.yaml:159 — `--allow-multiple-documents` for every YAML file (here and in the repo's own config) weakens check-yaml; ships the pnpm comment to non-pnpm repos; excluding pnpm-lock.yaml would fix the cause.
+7. [dropped — already reported U7-2 #8] cli/templates/virajp-linter/.config/linter.yaml:15 — `bin/**`, `brag-output/**`; code/lint pack comments.
+8. cli/src/setup-config/schema.ts:17 — header says equal to schema.yaml but `repo` pattern is stricter than the authoritative schema; blueprint not updated (= G13).
+9. cli/src/setup-config/validity.ts:135 — `..` with trailing dots/spaces (`.. `, `...`) and NTFS stream names (`.git::$INDEX_ALLOCATION`) pass on Windows.
+10. cli/src/tool/render.ts:30 — `strictVariables` on but not `strictFilters`; a misspelt filter (`| jsn`) silently renders raw.

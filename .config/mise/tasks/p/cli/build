@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Build the cli package into cli/dist"
+#MISE dir="{{ config_root }}/cli"
+
+set -e
+
+pnpm exec tsdown

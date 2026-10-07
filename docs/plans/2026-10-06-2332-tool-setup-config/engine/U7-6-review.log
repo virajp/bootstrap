@@ -1,0 +1,11 @@
+# /code-review high engine — U7 round 6 re-check (range 5e7f23c..198310b); 10 findings, none already reported; all kept
+1. cli/templates/pre-commit/.config/pre-commit-config.yaml:71 — format/sec hooks run `mise x -- mise run …` without the dev env, but dprint and gitleaks live only in `_base/mise.dev.toml`; with MISE_ENV unset every commit fails (reproduced).
+2. cli/templates/mise/.config/mise/tasks/_scripts/merge:305 — conflict guidance says resolve and commit, but `no-commit-to-branch --branch main` rejects that commit on main (reproduced).
+3. cli/templates/gitleaks/.config/mise/tasks/code/sec:52 — `command -v <tool>` guards succeed on mise shims even when the tool is inactive, so the graceful skip becomes a hard failure (reproduced with #1).
+4. cli/templates/claude/.config/mise/conf.d/ai/mise.dev.toml:29 — palace path and mempalace wing keyed only by `repo_name`; `acme/api` and `other/api` share one palace.
+5. cli/templates/mise/.config/mise/tasks/code/count:8 — `find .` does not exclude `.worktrees/`.
+6. cli/templates/mise/.config/mise/tasks/code/worktrees:30 — `awk '{print $2}'` cuts worktree paths at the first space.
+7. cli/templates/git/.gitignore:33 — vwf memory block and `docs/scratchpad/` kept with the comment reworded (Edit 1 removes vwf lines); `.graphifyignore` keeps vwf-only paths.
+8. cli/templates/mise/.config/mise/tasks/_scripts/helpers:155 — `shell_files_in_scope` is dead code; its comment claims format/lint use it.
+9. cli/templates/mise/.config/mise/conf.d/_base/mise.toml:15 — `[tools.osv-scanner]` unused by any task; `REPO_NAME` env unread.
+10. cli/src/setup-config/validity.ts:136 — `pathProblem` deny-list keeps growing; an allowlist per segment fixes the class.

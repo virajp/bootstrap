@@ -1,0 +1,28 @@
+---
+convention:
+  commitTypes:
+    - ops
+    - docs
+    - merge
+    - feat
+    - fix
+    - refactor
+  commitScopes: [<% for scope in commit_scopes %> <%= scope | json %><% unless forloop.last %>,<% endunless %><% endfor %><% unless commit_scopes == empty %> <% endunless %>]
+
+changelog:
+  commitTypes:
+    - feat
+    - fix
+    - refactor
+  includeInvalidCommits: false
+  commitIgnoreRegexPattern: '^[wW][iI][pP]\b'
+  headlines:
+    feat: Features
+    fix: Bug Fixes
+    perf: Performance Improvements
+    merge: Merges
+    breakingChange: BREAKING CHANGES
+
+  # Issue references. No commit, range or issue URLs: the forge is a non-core
+  # tool, so this core file names none, and the changelog renders plain ids.
+  issueRegexPattern: "#[0-9]+"

@@ -1,0 +1,11 @@
+# /code-review high engine — U7 round 1 (range 5e7f23c..85dae84); all 10 findings on in-range files, all kept
+1. cli/templates/dprint/.config/mise/tasks/code/format:61 — `dprint check/fmt --config .config/dprint.json` resolves includes relative to `.config/`, so a whole-tree run covers only `.config/`; the format gate does almost nothing in bootstrapped repos (verified). (= G11)
+2. cli/templates/vscode/.vscode/settings.json:3 — template made strict JSON, but the shipped dprint config lists `.vscode/settings.json` under `jsonTrailingCommaFiles`, so bootstrap's output fails its own format check (verified exit 20) and `--fix` causes permanent drift.
+3. cli/templates/fnox/.config/mise/tasks/setup/secrets:10 — fnox is a core tool but no template installs it (no `[tools.fnox]`), so `setup:secrets` always skips; `mise use fnox` would edit a managed file (drift).
+4. cli/templates/pre-commit/.config/git-conventional-commits.yaml:27 — commitUrl/commitRangeUrl/issueUrl hardcode `https://github.com/<repo>` though gitlab is a catalog tool; GitLab paths are `/-/commit/…`.
+5. cli/src/tool/render.ts:36 — setup values go unescaped into TOML/JSON/YAML templates; the `repo` pattern allows quotes and YAML-typed scalars (`acme/we"b` → invalid TOML/JSON; `acme/2048` → integer wing).
+6. cli/src/setup-config/validity.ts:96 — `pathProblem` accepts empty strings and directory paths; schema says exact file paths, no directories. (= G9)
+7. cli/templates/mise/.config/mise/tasks/setup/deps/install:25 — dispatchers are files, so no tool can supply a `setup/deps/<verb>/<tool>` file task (ENOTDIR); suggest `setup/deps/install/_default`. (= G10)
+8. cli/src/tool/templates.ts:24 — `templatesFrom` keys only by target path; templates from different tool folders can collide silently; orphan templates are never reported.
+9. cli/templates/vscode/.vscode/extensions.json:13 — removing the vscode.d markers left two merged lists; 10 recommendations appear twice.
+10. cli/src/tool/render.ts:7 — `RenderValues` re-declares the `Values` schema shape; `validity.ts` re-declares `setupConfigPath`; `repo_owner` is computed but no shipped template reads it.

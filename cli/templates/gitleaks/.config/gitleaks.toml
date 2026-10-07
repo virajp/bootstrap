@@ -1,0 +1,10 @@
+# Gitleaks configuration. `code:sec` always passes this file, so it must keep
+# the built-in rule set: without `useDefault`, the rules below would REPLACE
+# gitleaks' own (cloud keys, forge tokens, private keys) rather than add to them.
+[extend]
+useDefault = true
+
+# Add this repo's own [[rules]] below; each one adds to the defaults.
+
+[allowlist]
+paths = [ '''(^|/)node_modules/''' ]

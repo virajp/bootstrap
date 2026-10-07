@@ -1,0 +1,10 @@
+# /code-review high engine — U7 round 7 re-check (range 5e7f23c..640ac90); 9 findings, none already reported; all kept
+1. cli/templates/gitleaks/.config/mise/tasks/code/sec:41 — the staged scan has no `--verbose`, so a blocked commit prints only "leaks found: N", no file/line/fingerprint (reproduced).
+2. cli/templates/virajp-linter/.config/mise/tasks/code/lint:75 — `pnpm dlx @askviraj/linter` (and code/format:74 `sort-package-json`) unpinned; every commit hook runs whatever the registry serves; no cooldown in target repos.
+3. cli/templates/mise/.config/mise/tasks/_scripts/helpers:134 — `mise tasks ls`/`mise tasks info` also see global tasks; `run_task_if_present` treats any info failure as "absent" (verified).
+4. cli/templates/pre-commit/.config/mise/tasks/code/precommit:18 — `git diff --name-only HEAD` misses untracked files and fails in a repo with no commits; failure hidden, task exits 0 (reproduced).
+5. cli/src/setup-config/validity.ts:193 — kept/deleted overlap and uniqueness compare raw strings while paths are case-insensitive elsewhere; `README.md` kept + `readme.md` deleted passes.
+6. cli/src/setup-config/validity.ts:206 — `.config/bootstrap.yaml` accepted in files/kept/deleted; `write` strips it only from files.
+7. .config/mise/tasks/p/cli/test:7 — p:cli:test/check/build are wired into no gate (code:all, pre-commit, CI).
+8. cli/templates/pre-commit/.config/mise/tasks/setup/precommit:19 — stackgen/vwf vocabulary still shipped ("hook-runner component", "materialize"; pack/gate comments in code/lint, code/format, code/sec).
+9. cli/templates/mise/.config/mise/tasks/_scripts/placeholder:48 — no shipped task uses `_scripts/placeholder`; dead library shipped.

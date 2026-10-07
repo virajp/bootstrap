@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+#MISE description="Install dependencies from the lockfile"
+#MISE hide=true
+
+#USAGE flag "--frozen" help="fail rather than write the lockfile"
+
+set -euo pipefail
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+# A dispatcher. A tool that manages dependencies supplies its own
+# `setup:deps:install:<tool>` task, and this runs every one of them; a repo whose
+# tools manage none runs nothing, which is not an error.
+#
+# `--frozen` is the contract's name for "the lockfile is the input, not the
+# output" — the mode a fresh worktree and CI both want. It reaches each tool's
+# task as `DEPS_FROZEN=1` in the environment rather than as a flag, so a task
+# that declares no `--frozen` still runs; the contract for a tool's install
+# task is to honour `DEPS_FROZEN=1` when it can.
+
+if [[ "${usage_frozen:-false}" == "true" ]]; then
+  export DEPS_FROZEN=1
+fi
+
+run_tool_tasks setup:deps:install
