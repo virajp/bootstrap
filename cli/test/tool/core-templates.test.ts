@@ -554,11 +554,21 @@ describe("code:format", () => {
               "{}\n",
             );
             git(root, "add", "package.json", "app/package.json");
+            // A tracked manifest since deleted from disk, and one under a non-ASCII path git would quote.
+            for (const dir of ["gone", "ünï"]) {
+              yield* fs.makeDirectory(path.join(root, dir));
+              yield* fs.writeFileString(
+                path.join(root, dir, "package.json"),
+                "{}\n",
+              );
+            }
+            git(root, "add", "gone/package.json", "ünï/package.json");
+            yield* fs.remove(path.join(root, "gone/package.json"));
           }),
       );
       expect(status).toBe(0);
       expect(calls.filter(call => call.startsWith("pnpm"))).toEqual([
-        "pnpm dlx sort-package-json --check app/package.json package.json",
+        "pnpm dlx sort-package-json --check app/package.json package.json ünï/package.json",
       ]);
     }));
 });
@@ -608,12 +618,40 @@ describe("code:sec", () => {
     "fails on a committed secret",
     () =>
       Effect.gen(function*() {
-        const { status } = yield* runTask(["gitleaks"], sec, {
+        const { status, output } = yield* runTask(["gitleaks"], sec, {
           grype: "exit 0",
         }, tree(true));
         expect(status)
           .not
           .toBe(0);
+        expect(output).toMatch(
+          /Fingerprint: [0-9a-f]{40}:leak\.txt:github-pat:1/,
+        );
+        expect(output).toMatch(/\.gitleaksignore/);
+      }),
+  );
+
+  it.effect.skipIf(!hasGitleaks)(
+    "passes once a rotated secret's fingerprint is in .gitleaksignore",
+    () =>
+      Effect.gen(function*() {
+        const { status } = yield* runTask(["gitleaks"], sec, {
+          grype: "exit 0",
+        }, root =>
+          Effect.gen(function*() {
+            const fs = yield* FileSystem.FileSystem;
+            const path = yield* Path.Path;
+            yield* tree(true)(root);
+            const commit = git(root, "rev-parse", "HEAD")
+              .stdout
+              .toString()
+              .trim();
+            yield* fs.writeFileString(
+              path.join(root, ".gitleaksignore"),
+              `${commit}:leak.txt:github-pat:1\n`,
+            );
+          }));
+        expect(status).toBe(0);
       }),
   );
 });

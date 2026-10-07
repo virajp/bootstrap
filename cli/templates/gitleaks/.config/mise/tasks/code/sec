@@ -54,10 +54,21 @@ if command -v gitleaks >/dev/null 2>&1; then
   # The repo's git history, not the directory: a file git ignores can never be
   # committed, so a local `.env` or build output is not this scan's business. A
   # file list is accepted but not used — the narrowed scan is `--staged`.
+  #
+  # History never forgets, so a secret that was removed and rotated still fails
+  # here. `--verbose` prints each finding's Fingerprint, and gitleaks skips every
+  # fingerprint listed in `.gitleaksignore` at the repo root.
+  secrets_args=(git . --redact=50 --verbose)
   if [ -f "${SECRETS_CONFIG}" ]; then
-    gitleaks git . --config "${SECRETS_CONFIG}" --redact=50
-  else
-    gitleaks git . --redact=50
+    secrets_args+=(--config "${SECRETS_CONFIG}")
+  fi
+  secrets_status=0
+  gitleaks "${secrets_args[@]}" || secrets_status=$?
+  if [ "${secrets_status}" -ne 0 ]; then
+    print_error "ERROR"
+    print_yellow "If a secret above was removed and rotated, add the Fingerprint gitleaks"
+    print_yellow "printed for it to .gitleaksignore at the repo root, then run this again."
+    exit "${secrets_status}"
   fi
   print_ok
 else

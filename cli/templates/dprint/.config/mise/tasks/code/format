@@ -32,8 +32,10 @@ else
 fi
 
 # The sorter takes paths, so a file list narrows it to the manifests in scope;
-# with no list it takes every package.json git tracks. A repo that tracks none
-# skips the sorter, which would otherwise fail on "No matching files".
+# with no list it takes every package.json git tracks that is still on disk.
+# A repo that tracks none skips the sorter, which would otherwise fail on "No
+# matching files". `-z` keeps paths unquoted whatever characters they hold, and
+# `read -d ''` splits on NUL without `mapfile`, which bash 3.2 lacks.
 sort_targets=()
 if [ ${#files[@]} -gt 0 ]; then
   for f in "${files[@]}"; do
@@ -42,11 +44,11 @@ if [ ${#files[@]} -gt 0 ]; then
     esac
   done
 else
-  while IFS= read -r manifest; do
-    if [ -n "${manifest}" ]; then
+  while IFS= read -r -d '' manifest; do
+    if [ -f "${manifest}" ]; then
       sort_targets+=("${manifest}")
     fi
-  done < <(git ls-files -- 'package.json' '*/package.json')
+  done < <(git ls-files -z -- 'package.json' '*/package.json')
 fi
 
 # The sorter has no `--fix`: sorting is its default and `--check` is the
