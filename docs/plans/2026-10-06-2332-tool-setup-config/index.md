@@ -153,7 +153,7 @@ All added by U1 to `cli/package.json`:
 | U6 | 4    | [06-new-templates.md](06-new-templates.md)   | code   | `cli/templates/{fnox,github,gitlab}/**`, `cli/test/tool/new-templates.test.ts`                                                                                                                                                                                                                                                                    | U3                     | green | 54bc90d, c1d9d56, fb283c9, e807857 |
 | U7 | 5    | [07-review.md](07-review.md)                 | review | —                                                                                                                                                                                                                                                                                                                                                 | U1, U2, U3, U4, U5, U6 | green |  |
 | U8 | 6    | [08-docs.md](08-docs.md)                     | edit   | the repo's docs (README, CLAUDE.md, `docs/**` outside `docs/blueprint/` and `docs/plans/`)                                                                                                                                                                                                                                                        | all                    | green | — (no change) |
-| U9 | 7    | [09-gates-and-bump.md](09-gates-and-bump.md) | edit   | — (no release: no version file, no generator)                                                                                                                                                                                                                                                                                                     | U8                     | pending |        |
+| U9 | 7    | [09-gates-and-bump.md](09-gates-and-bump.md) | edit   | — (no release: no version file, no generator)                                                                                                                                                                                                                                                                                                     | U8                     | green | — (no change) |
 
 ## Shared-file rule
 
@@ -302,6 +302,11 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 6 | U8 docs | opus | 1 | pass | edit; docs-sync over 5e7f23c..HEAD: no contradicted passage, no omitted capability (no command landed; CLAUDE.md covers vwf only); CHANGED none; GAP ×2: falsified stack prose under .claude/ outside Owns (= G4, G17) | — |
 | 6 | R6 | opus | 1 | pass | wave review; FINDINGS 0, CONTRACT clean, RULINGS clean | — |
 | 6 | wave gate | — | 1 | pass | `MISE_ENV=dev mise run code:all`; no UNRESOLVED | — |
+| 7 | U9 gates | opus | 1 | pass | edit; no edits; frozen install 0 (tree clean), p:cli:check 0, p:cli:test 0 (164), p:cli:build 0, code:all 0 | — |
+| — | orchestrator gate | — | 1 | pass | `pnpm --filter cli build` matches no project (G14) → ran `mise run p:cli:build`: exit 0; `node cli/dist/bin.mjs --version` → `0.0.1` = cli/package.json (exact match), exit 0 | — |
+| — | orchestrator gate | — | 1 | pass | `node cli/dist/bin.mjs` with no command → help, exit 2 | — |
+| 7 | R7 | opus | 1 | pass | wave review; FINDINGS 0, CONTRACT clean, RULINGS clean | — |
+| — | final wave gate | — | 1 | pass | `MISE_ENV=dev mise run code:all` over the finished tree | — |
 
 ## Acceptance criteria (from blueprint)
 
