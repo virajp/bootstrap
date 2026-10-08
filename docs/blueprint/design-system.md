@@ -11,10 +11,10 @@ timestamp: 2026-10-06
 
 **Stored import.** The design system is authored in the design tool's canvas
 (`docs/design/site/design-system.md` and `docs/design/site/brand/`) and imported
-here, so it is authoritative until someone changes the canvas. Hand-edits to this
-doc are drift: change the canvas and re-run `/vwf:design-system`. The Terminal UX
-section is the exception: it is elicited in text, because a terminal has no
-canvas.
+here, so it is authoritative until someone changes the canvas. Hand-edits to
+this doc are drift: change the canvas and re-run `/vwf:design-system`. The
+Terminal UX section is the exception: it is elicited in text, because a terminal
+has no canvas.
 
 ## Brand & Mood
 
@@ -30,40 +30,40 @@ marketing-speak, no emoji. Keywords: quiet, crafted, restrained, technical.
 
 Dark only. No light mode and no theme toggle are in scope.
 
-| Token (role) | Dark | Usage | Contrast pairing |
-| --- | --- | --- | --- |
-| `surface-page` | `#0d0c0b` | Page canvas | n/a |
-| `surface-card` | `#141311` | Raised rows, sidebar hover, table header row, callouts | n/a |
-| `surface-code` | `#171513` | Code and terminal blocks, inline code | n/a |
-| `surface-raised` | `#1b1917` | Search panel, copy-button hover | n/a |
-| `border-default` | `#24211e` | Hairline rules between rows and sections, table rules | non-text |
-| `border-strong` | `#332f2a` | Emphasised dividers, code-block outline, tag underline (decorative only) | 1.47:1 on `surface-page`, decorative only |
-| `border-control` | `#6f6a63` | The visible edge of a control: search input and secondary button outlines | 3.65:1 on `surface-page`, 3.46:1 on `surface-card` |
-| `text-body` | `#efece7` | Body copy and headings | 16.6:1 on `surface-page` |
-| `text-muted` | `#a8a39b` | Secondary text, sidebar items, captions, eyebrows, metadata | 7.8:1 on `surface-page` |
-| `text-faint` | `#6f6a63` | Large text (24px and up) and non-text UI only | 3.65:1 on `surface-page`: fails 4.5:1, passes 3:1 |
-| `accent` | `#d9665f` | Links in running copy, primary button fill, active sidebar marker, focus ring, terminal `error` role | 5.6:1 on `surface-page` |
-| `accent-hover` | `#e8827a` | Hover state of every accent use | 7.4:1 on `surface-page` |
-| `accent-dim` | accent at 14% opacity | Active sidebar item background, hover spotlight | non-text |
-| `accent-glow` | accent at 28% opacity | The landing hero's ambient glow only | non-text |
-| `accent-ink` | `#0d0c0b` | Text on an accent fill | 5.6:1 on `accent` |
-| `status-success` | `#8fbf8a` | Terminal `success` role; "tip" callout marker | 9.3:1 on `surface-page` |
-| `status-warning` | `#d9a95c` | Terminal `warning` role; "caution" callout marker | 9.1:1 on `surface-page` |
+| Token (role)     | Dark                  | Usage                                                                                                | Contrast pairing                                   |
+| ---------------- | --------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `surface-page`   | `#0d0c0b`             | Page canvas                                                                                          | n/a                                                |
+| `surface-card`   | `#141311`             | Raised rows, sidebar hover, table header row, callouts                                               | n/a                                                |
+| `surface-code`   | `#171513`             | Code and terminal blocks, inline code                                                                | n/a                                                |
+| `surface-raised` | `#1b1917`             | Search panel, copy-button hover                                                                      | n/a                                                |
+| `border-default` | `#24211e`             | Hairline rules between rows and sections, table rules                                                | non-text                                           |
+| `border-strong`  | `#332f2a`             | Emphasised dividers, code-block outline, tag underline (decorative only)                             | 1.47:1 on `surface-page`, decorative only          |
+| `border-control` | `#6f6a63`             | The visible edge of a control: search input and secondary button outlines                            | 3.65:1 on `surface-page`, 3.46:1 on `surface-card` |
+| `text-body`      | `#efece7`             | Body copy and headings                                                                               | 16.6:1 on `surface-page`                           |
+| `text-muted`     | `#a8a39b`             | Secondary text, sidebar items, captions, eyebrows, metadata; the terminal `muted` role               | 7.8:1 on `surface-page`                            |
+| `text-faint`     | `#6f6a63`             | Large text (24px and up) and non-text UI only                                                        | 3.65:1 on `surface-page`: fails 4.5:1, passes 3:1  |
+| `accent`         | `#d9665f`             | Links in running copy, primary button fill, active sidebar marker, focus ring, terminal `error` role | 5.6:1 on `surface-page`                            |
+| `accent-hover`   | `#e8827a`             | Hover state of every accent use                                                                      | 7.4:1 on `surface-page`                            |
+| `accent-dim`     | accent at 14% opacity | Active sidebar item background, hover spotlight                                                      | non-text                                           |
+| `accent-glow`    | accent at 28% opacity | The landing hero's ambient glow only                                                                 | non-text                                           |
+| `accent-ink`     | `#0d0c0b`             | Text on an accent fill                                                                               | 5.6:1 on `accent`                                  |
+| `status-success` | `#8fbf8a`             | Terminal `success` role; "tip" callout marker                                                        | 9.3:1 on `surface-page`                            |
+| `status-warning` | `#d9a95c`             | Terminal `warning` role; "caution" callout marker                                                    | 9.1:1 on `surface-page`                            |
 
 Contrast on the other surfaces (every text and status pairing in use):
 
-| Foreground | `surface-card` | `surface-code` | `surface-raised` | `accent-dim` over page |
-| --- | --- | --- | --- | --- |
-| `text-body` | 15.8:1 | 15.5:1 | 14.9:1 | 14.3:1 |
-| `text-muted` | 7.4:1 | 7.3:1 | 7.0:1 | 6.7:1 |
-| `accent` | 5.3:1 | 5.2:1 | 5.0:1 | 4.8:1 |
-| `status-success` | 8.8:1 | 8.7:1 | 8.3:1 | 8.0:1 |
-| `status-warning` | 8.7:1 | 8.5:1 | 8.2:1 | 7.8:1 |
+| Foreground       | `surface-card` | `surface-code` | `surface-raised` | `accent-dim` over page |
+| ---------------- | -------------- | -------------- | ---------------- | ---------------------- |
+| `text-body`      | 15.8:1         | 15.5:1         | 14.9:1           | 14.3:1                 |
+| `text-muted`     | 7.4:1          | 7.3:1          | 7.0:1            | 6.7:1                  |
+| `accent`         | 5.3:1          | 5.2:1          | 5.0:1            | 4.8:1                  |
+| `status-success` | 8.8:1          | 8.7:1          | 8.3:1            | 8.0:1                  |
+| `status-warning` | 8.7:1          | 8.5:1          | 8.2:1            | 7.8:1                  |
 
 - **One accent.** `accent` is the only brand hue; `status-success` and
   `status-warning` never appear outside terminal samples and callout markers.
-- **Error is the accent.** The terminal `error` role uses `accent`, always with a
-  glyph and the word `error:`, so meaning never rests on color alone.
+- **Error is the accent.** The terminal `error` role uses `accent`, always with
+  a glyph and the word `error:`, so meaning never rests on color alone.
 - **`text-faint` is large-only.** Never on body-sized text, sidebar items,
   eyebrows, captions or code; those use `text-muted`.
 - No gradients on text, no second accent hue, no pure `#000` or `#fff`.
@@ -73,16 +73,16 @@ Contrast on the other surfaces (every text and status pairing in use):
 Families: **Geist** for display and body, **Geist Mono** for code, terminal
 samples, commands, flags, file paths, eyebrows and tags.
 
-| Step | Size / Line height | Weight | Use |
-| --- | --- | --- | --- |
-| `xs` | 12px / 1.4 | 500 | Eyebrows (mono uppercase), tags |
-| `sm` | 13px / 1.5 | 400 | Sidebar items, captions, table cells, code blocks |
-| `md` | 16px / 1.65 | 400 | Body copy in docs (default) |
-| `lg` | 18px / 1.5 | 500 | Lead paragraph, h4 |
-| `xl` | 22px / 1.3 | 600 | h3 |
-| `2xl` | 28px / 1.2 | 600 | h2 (doc section) |
-| `3xl` | 40px / 1.1 | 600 | h1 (doc page title) |
-| `display` | fluid 40px to 64px / 1.0 | 600 | Landing hero headline only |
+| Step      | Size / Line height       | Weight | Use                                               |
+| --------- | ------------------------ | ------ | ------------------------------------------------- |
+| `xs`      | 12px / 1.4               | 500    | Eyebrows (mono uppercase), tags                   |
+| `sm`      | 13px / 1.5               | 400    | Sidebar items, captions, table cells, code blocks |
+| `md`      | 16px / 1.65              | 400    | Body copy in docs (default)                       |
+| `lg`      | 18px / 1.5               | 500    | Lead paragraph, h4                                |
+| `xl`      | 22px / 1.3               | 600    | h3                                                |
+| `2xl`     | 28px / 1.2               | 600    | h2 (doc section)                                  |
+| `3xl`     | 40px / 1.1               | 600    | h1 (doc page title)                               |
+| `display` | fluid 40px to 64px / 1.0 | 600    | Landing hero headline only                        |
 
 - Body measure is capped at 70ch.
 - Tracking: display `-0.04em`, headings `-0.02em`, body `0`, mono `0`; uppercase
@@ -103,21 +103,22 @@ samples, commands, flags, file paths, eyebrows and tags.
   single 1040px column with an asymmetric hero (1.25fr / 1fr).
 - Breakpoints (width to behavioral intent):
   - below 1200px: the "On this page" column is hidden.
-  - below 900px: the sidebar becomes a menu behind a "Menu" button in the header.
+  - below 900px: the sidebar becomes a menu behind a "Menu" button in the
+    header.
   - below 640px: tables scroll horizontally inside their own container.
-- Header: 56px, one line always: brand mark and wordmark left; "Docs" link, search and "Source ↗" link right, with a
-  `border-default` bottom hairline.
+- Header: 56px, one line always: brand mark and wordmark left; "Docs" link,
+  search and "Source ↗" link right, with a `border-default` bottom hairline.
 - Rhythm: h2 sections open 48px below the previous block with a hairline above;
   paragraphs sit 16px apart; code blocks and callouts have 24px above and below;
   landing sections are separated by full-width hairlines 64px apart.
-- Radius scale: 2px (inline code), 4px (buttons, code blocks,
-  callouts, inputs), 12px (search panel only). No pills.
+- Radius scale: 2px (inline code), 4px (buttons, code blocks, callouts, inputs),
+  12px (search panel only). No pills.
 - Elevation scale: flat. There are no shadows anywhere on the site.
 
 ## Motion
 
-- Duration tokens: `fast` 120ms (hover color), `base` 240ms (menu, search panel),
-  `reveal` 600ms (landing entry only).
+- Duration tokens: `fast` 120ms (hover color), `base` 240ms (menu, search
+  panel), `reveal` 600ms (landing entry only).
 - Easing tokens: one curve for everything, a strong decelerating ease-out with
   control points `0.16, 1, 0.3, 1`.
 - Principles:
@@ -132,9 +133,9 @@ samples, commands, flags, file paths, eyebrows and tags.
 
 ## Brand assets
 
-- Favicon source mark: the brand mark (`docs/design/site/brand/logo.svg`), one square vector
-  drawing on a rounded accent tile; the whole favicon set and app icons are
-  rasterized from it.
+- Favicon source mark: the brand mark (`docs/design/site/brand/logo.svg`), one
+  square vector drawing on a rounded accent tile; the whole favicon set and app
+  icons are rasterized from it.
 - Social preview: a flat 1280x640 card showing the mark centered on the page
   canvas with the product name in mono beside it, no photograph and no terminal
   screenshot. Alt text: the product name followed by its one-line description.
@@ -145,10 +146,11 @@ samples, commands, flags, file paths, eyebrows and tags.
 - Conformance target: **WCAG 2.2 AA** across the whole site.
 - Contrast: text at least 4.5:1; large text (24px, or 18.66px bold) and non-text
   UI at least 3:1; the `text-faint` rule under Color Tokens exists to hold this
-  line. Status color never carries meaning alone; it always has a glyph or label.
-- Keyboard: every interactive element is reachable and operable in reading
-  order with no traps. Visible focus is a 2px `surface-page` gap then a 2px
-  `accent` ring, drawn outside the element.
+  line. Status color never carries meaning alone; it always has a glyph or
+  label.
+- Keyboard: every interactive element is reachable and operable in reading order
+  with no traps. Visible focus is a 2px `surface-page` gap then a 2px `accent`
+  ring, drawn outside the element.
 - Focus management: the mobile menu moves focus into itself on open, closes on
   Escape and returns focus to its button; the search panel keeps focus in its
   input and returns focus on Escape (see Component Behaviors).
@@ -164,25 +166,36 @@ samples, commands, flags, file paths, eyebrows and tags.
 
 ## Component Behaviors
 
-- **Buttons**: `primary` (accent fill, at most one per view), `secondary`
-  (1px `border-control` outline) and `ghost` (text only, `text-muted`). Hover
-  shifts color only; press scales to 98%; labels never wrap at desktop.
+- **Buttons**: `primary` (accent fill, at most one per view), `secondary` (1px
+  `border-control` outline) and `ghost` (text only, `text-muted`). Hover shifts
+  color only; press scales to 98%; labels never wrap at desktop.
 - **Text links**: `accent` in running copy, underlined on hover; external links
   add the `↗` glyph.
 - **Code block**: `surface-code`, 1px `border-strong` outline, 4px radius, `sm`
   mono, horizontal scroll and never wrapped; a filename or language label at the
   top left; a ghost copy button at the top right that confirms with "Copied" for
   1.5 seconds. No line numbers by default.
-- **Command display**: a code block variant for one command shown as an
-  example, not as text to copy: the same surface, outline, radius and type,
-  with no label and no copy button; the text stays selectable.
-- **Terminal sample**: a code block whose first line is a `$ ` prompt in
-  `text-muted`; output lines may use `status-success`, `status-warning`,
-  `accent` (error) and bold `text-body` (emphasis), mirroring the CLI's own
-  roles. Every colored line also carries its glyph or label.
+- **Command display**: a code block variant for one command shown as an example,
+  not as text to copy: the same surface, outline, radius and type, with no label
+  and no copy button; the text stays selectable.
+- **Terminal sample**: a code block whose first line is a `$` prompt in
+  `text-muted`; output lines may use the five terminal roles: `status-success`,
+  `status-warning`, `accent` (error), bold `text-body` (emphasis) and
+  `text-muted` (muted), mirroring the CLI's own roles. Every colored line also
+  carries its glyph or label.
+- **Terminal view**: a Terminal sample variant that pictures a full-screen
+  terminal view (the `bootstrap tui` selector), not a command run. No filename
+  or language label, no copy button, no cursor highlight and no `›` cursor
+  marker (every control row, a tool or a value, starts with two spaces;
+  headings, `values` and the footer start at column 0). It scrolls vertically in
+  a box at most 24 lines of `sm` mono tall (one 80x24 terminal screen), and
+  horizontally like any code block; the box is focusable and scrolls with the
+  keyboard. It uses the five terminal roles; a locked control shows its mark
+  dimmed (`text-muted`) with the word `locked`; each control's state is carried
+  by its mark, never by color alone.
 - **Callout**: a 2px left rule plus a mono `xs` label on `surface-card`: `note`
-  (neutral), `tip` (`status-success`), `caution` (`status-warning`). No icons, no
-  filled status backgrounds.
+  (neutral), `tip` (`status-success`), `caution` (`status-warning`). No icons,
+  no filled status backgrounds.
 - **Table**: for flags, exit codes and report fields; header row on
   `surface-card` in `text-muted`; rows divided by `border-default` hairlines
   only, with no vertical rules or zebra stripes.
@@ -208,16 +221,17 @@ samples, commands, flags, file paths, eyebrows and tags.
 - **Overlays and feedback**: none in scope beyond the search panel and the copy
   confirmation.
 - Interaction states everywhere: hover (color shift), focus-visible (the ring),
-  active (press scale on buttons only); no disabled controls exist.
+  active (press scale on buttons only); no disabled controls exist (a `locked`
+  mark in a Terminal view is part of the picture, not a control).
 
 ## Brand
 
 - Logo source: `docs/design/site/brand/logo.svg`
 - Variants:
 
-| Variant | Path | Use |
-| --- | --- | --- |
-| Mark | `docs/design/site/brand/logo.svg` | Site header at 22px before the wordmark (live mono text in `text-body`); the favicon source |
+| Variant       | Path                              | Use                                                                                                                   |
+| ------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Mark          | `docs/design/site/brand/logo.svg` | Site header at 22px before the wordmark (live mono text in `text-body`); the favicon source                           |
 | Single colour | `docs/design/site/brand/mono.svg` | Where the accent cannot be used (one-colour print, monochrome badges); takes the surrounding text color; no stem fade |
 
 - Clear space: one quarter of the mark's height on every side.
@@ -225,7 +239,9 @@ samples, commands, flags, file paths, eyebrows and tags.
 - Rules (what never happens to the mark):
   - Never recolour the mark's square; `mono.svg` is the only single-colour form.
   - Never rotate, stretch, add a shadow or add a glow.
-  - Never place the mark on an `accent` surface.
+  - Never place the mark on an `accent` surface: the mark already carries its
+    own accent tile (part of `logo.svg`), and it would vanish into an accent
+    background.
   - The faded stem appears only in `logo.svg`.
   - The wordmark is always live text beside the mark, never merged into it.
 
@@ -234,44 +250,77 @@ samples, commands, flags, file paths, eyebrows and tags.
 The `cli` project is a shipped command-line tool. Elicited in text on
 2026-10-06.
 
-- Output formatting: human-readable text by default. Every command except
-  `tui` takes `--json` (and `--quiet`), which prints exactly one JSON document to stdout and nothing else.
-  Results go to stdout; progress, warnings and errors go to stderr. `--quiet`
-  prints no result and no progress, errors only (the exit code carries the
-  outcome); `--json` ignores `--quiet` and always prints its document.
-  `--verbose` shows each per-file decision.
-- Color semantics: color carries meaning only. `success` (created, unchanged) maps
-  to `status-success`; `warning` (mise not at the expected path, kept or
-  orphaned files, a refused dirty target) to `status-warning`;
-  `error` to `accent`; `emphasis` (paths, command names) to bold `text-body`.
-  Roles map to the terminal theme's palette by role name, never fixed hex. Color
-  is off when `NO_COLOR` is set, when the output is not a terminal, with
-  `--no-color`, and always under `--json`.
-- Progress conventions: an animated spinner per step in an interactive terminal;
-  when piped, in CI or non-interactive, one stable line per finished step on
-  stderr instead.
-- Errors & exit codes: per [errors](conventions.md#errors) (`0`, `1`, `2`,
-  `3`, `130`). Every error states what happened, why, and the exact next
-  command; no stack trace unless `--verbose`.
-- Help & naming conventions: commands are single words (`init`,
-  `add <tool>`, `remove <tool>`, `tui`). Every flag has a long form; short forms only for the
-  most common (`-q`, `-v`, `-y`). Booleans negate with `--no-<flag>`. Help is a
-  one-line purpose, usage, flags, then one or two real examples. The bare
-  command prints help and exits `2`.
-- Full-screen selector (`bootstrap tui`, interactive terminal only): one
-  scrolling list, a heading per tool category in catalog order, then a values
-  section. A `max: one` category is a radio group (`(•)` / `( )`) with a
-  `none` choice; a `max: many` category is a checkbox group (`[x]` / `[ ]`).
-  A locked control (an unremovable tool; or, while a tool that is not
-  replaceable is selected, the other tools of its `max: one` category) shows its
-  mark dimmed with `locked`, and the cursor skips its control. Keys: up and
-  down (or `k` and `j`) move, space selects, enter edits a value, `a` applies,
-  `q` or Esc quits; a footer line always lists these keys. A consent prompt
-  ("replace `<old>` with `<new>`? y/N") opens in place and defaults to no. Apply
-  shows the plan in the same screen and asks once; the selector never writes
-  before that confirm. The selector needs a terminal at least 80 columns wide
-  and 24 rows high; a smaller one shows only "make the terminal larger". The
-  state of each control is carried by its mark, never by color alone.
+- Output formatting: human-readable text by default. Every command except `tui`
+  takes `--json` (and `--quiet`), which prints exactly one JSON document to
+  stdout and nothing else. Results go to stdout; progress, warnings and errors
+  go to stderr. `--quiet` prints no result and no progress, errors only (the
+  exit code carries the outcome); `--json` ignores `--quiet` and always prints
+  its document. `--verbose` shows each per-file decision.
+- Result layout (human output): one group per non-empty result key, in the key
+  order of the command's JSON result, headed by the key's status word with its
+  glyph and color role and a count (`+ created  3 files`), then one path per
+  indented line. `replaced` shows `<old> → <new>`, `values_changed` shows
+  `<name>: <from> → <to>`, and each warning shows `! <text>`. An empty key is
+  left out. The status word is the key with `_` as a space. Glyph and role per
+  key: `+` created, added (success); `~` changed (emphasis); `✓` unchanged
+  (success); `-` deleted, removed (emphasis); `→` replaced, values changed
+  (emphasis); `!` kept, orphaned, warnings (warning); `·` already added, not
+  added (muted); `✗ error:` an error (accent). `show` prints the recorded setup
+  instead: one group per field in schema order, headed by the field name in
+  emphasis, then one value per indented line with no glyph; an empty list shows
+  `none` (muted).
+- Color semantics: color carries meaning only. `success` (created, added,
+  unchanged) maps to `status-success`; `warning` (mise not at the expected path,
+  kept or orphaned files, a refused dirty target, every warning line) to
+  `status-warning`; `error` to `accent`; `emphasis` (paths, command names, and
+  the changed, deleted, removed, replaced and values-changed group heads) to
+  bold `text-body`; `muted` (secondary text: category purposes, `none`, the key
+  footer, already added and not added) to `text-muted`. Roles map to the
+  terminal theme's palette by role name, never fixed hex. Color is off when
+  `NO_COLOR` is set, when the output is not a terminal, with `--no-color`, and
+  always under `--json`.
+- Progress conventions: an animated spinner per step when stderr is a terminal;
+  when piped, in CI or under `--json`, one stable line per finished step on
+  stderr instead. Progress is display only: `init`, `add`, `remove` and `show`
+  never prompt, and `bootstrap tui` is the only interactive command.
+- Errors & exit codes: per [errors](conventions.md#errors): `0` success, `1`
+  declined to act, `2` usage error, `3` failure, `130` interrupted. Every error
+  states what happened, why, and the exact next command; no stack trace unless
+  `--verbose`.
+- Help & naming conventions: commands are single words (`init`, `add <tool>`,
+  `remove <tool>`, `tui`, `show`). Every flag has a long form; short forms only
+  for the most common (`-q`, `-v`, `-y`); `-y` accepts the detected defaults and
+  is consent to delete files, per [config](conventions.md#config). Booleans
+  negate with `--no-<flag>`. Help is a one-line purpose, usage, flags, then one
+  or two real examples. The bare command prints help and exits `2`. On every
+  command, `--help` prints that command's help and `--version` the bare version,
+  both exit `0`, before any other check.
+- Full-screen selector (`bootstrap tui`, interactive terminal only — outside one
+  it exits 2, and `q` or Esc quits with exit 0, per
+  [Select tools](flows/cli/160-select-tools/index.md); on a repository that is
+  not set up it opens with the first-run defaults of
+  [Set up a repository](flows/cli/110-setup-repository/index.md) steps 3–4): one
+  scrolling list, a heading per tool category in catalog order with the
+  category's `purpose` after its name in the muted role, then a values section
+  headed `values` with the labels `repo`, `commit scopes`, `merge into develop`
+  and `merge into main` (a value with nothing recorded, such as zero commit
+  scopes, shows `none` in the muted role). A `max: one` category is a radio
+  group (`(•)` / `( )`) with a `none` choice when its tool is removable
+  ([Tool category](entities/tool-category/index.md) invariant 4); a `max: many`
+  category is a checkbox group (`[x]` / `[ ]`). A locked control (an unremovable
+  tool; or, while a tool that is not replaceable is selected, the other tools of
+  its `max: one` category) shows its mark dimmed with `locked`, and the cursor
+  skips its control. The cursor row starts with `›` (every other control row
+  with two spaces) and is shown in reverse video; with color off the `›` alone
+  marks it. Keys: up and down (or `k` and `j`) move, space selects, enter edits
+  a value, `a` applies, `q` or Esc quits; a footer line always lists these keys,
+  exactly `↑↓ k j move · space select · enter edit · a apply · q Esc quit` in
+  the muted role. A consent prompt ("replace `<old>` with `<new>`? y/N") opens
+  in place and defaults to no. Apply shows the plan in the same screen and asks
+  once; the selector never writes before that confirm. The selector needs a
+  terminal at least 80 columns wide and 24 rows high; a smaller one shows only
+  "make the terminal larger". The state of each control is carried by its mark,
+  never by color alone.
 
 ## Anti-Patterns
 
@@ -279,7 +328,8 @@ The `cli` project is a shipped command-line tool. Elicited in text on
 - No second accent hue; status colors never leave terminal samples and callout
   markers.
 - No `text-faint` below 24px.
-- No `border-strong` as the only edge of a control; controls use `border-control`.
+- No `border-strong` as the only edge of a control; controls use
+  `border-control`.
 - No shadows, no glow outside the landing hero, no glassmorphism.
 - No card grids, bento, three-equal feature columns or pill shapes.
 - No fake terminals or screenshots built from layout boxes: terminal samples are
@@ -291,8 +341,8 @@ The `cli` project is a shipped command-line tool. Elicited in text on
 
 ## Open Questions
 
-- [ ] 2026-10-06 - The social preview card (the mark on the page canvas) does not
-      exist as a file yet; produce it with the site's first build.
+- [ ] 2026-10-06 - The social preview card (the mark on the page canvas) does
+      not exist as a file yet; produce it with the site's first build.
 - [ ] 2026-10-06 - Syntax highlighting for code blocks is not specified beyond
-      "inside this palette"; decide the token-to-role mapping when the first code
-      samples are written.
+      "inside this palette"; decide the token-to-role mapping when the first
+      code samples are written.
