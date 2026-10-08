@@ -39,9 +39,10 @@ and before `.config/bootstrap.yaml` is read. Nothing is written.
    [Setup config](../../../entities/setup-config/index.md): its
    [validity and repair](../../../entities/setup-config/index.md#validity) and
    [version guard](../../../entities/setup-config/index.md#version-guard).
-   Absent or an older recorded `version` → writes nothing, exits 1, next command
-   `bootstrap init`. A file failing validity, or a newer `version` → exits 3
-   naming the fix. A repair (an unremovable tool added back) lets the run
+   Absent → writes nothing, exits 1, next command `bootstrap init`. A file
+   failing validity, or a newer `version` → exits 3 naming the fix. Else an
+   older recorded `version` → writes nothing, exits 1, next command
+   `bootstrap init`. A repair (an unremovable tool added back) lets the run
    continue, its warning goes in `warnings`, and it is written back in step 6.
    An older `format` is read, never refused
    ([write format](../../../entities/setup-config/index.md#write-format)).
@@ -52,7 +53,7 @@ and before `.config/bootstrap.yaml` is read. Nothing is written.
    (the held tools minus the replaced ones, plus the named ones) exits 2 naming
    the required tool. A name already in `values.tools` is reported "already
    added" and changes nothing; if every name is and step 2 made no repair, add
-   skips to step 7.
+   renders in memory only to find the `orphaned` paths and skips to step 7.
 4. Add finds the replacements: a tool of the
    [Tool category](../../../entities/tool-category/index.md) `max: one` that
    holds another tool replaces it. A held tool whose `replaceable` is false →
@@ -82,9 +83,9 @@ and before `.config/bootstrap.yaml` is read. Nothing is written.
    `created`, `changed`, `deleted`, `unchanged`, `kept`, `orphaned`, `warnings`
    and `next_command`, every path list sorted, and prints the same one next
    command as [Set up a repository](../110-setup-repository/index.md) step 9.
-   The next command is printed if and only if a tool was added or a repair
-   happened; otherwise `next_command` is absent. Every other report key is
-   always present.
+   The next command is printed per [errors](../../../conventions.md#errors) (a
+   tool added or a repair); otherwise `next_command` is absent. Every other
+   report key is always present.
 
 Modes: `--dry-run` shows the plan, writes nothing and exits with the code the
 real run (with `--replace` only if flagged) would return. `--json` prints
@@ -163,8 +164,9 @@ N/A — runs synchronously in one command invocation.
   the exit code is 0.
 - Given a tool already in `values.tools` and no repair to make, when add runs
   with its name, then nothing is written, the full step 7 report is printed with
-  the tool in `already_added`, empty path lists, `warnings` and no next command
-  (no `next_command` key under `--json`), and the exit code is 0.
+  the tool in `already_added`, empty path lists except `orphaned`, `warnings`
+  and no next command (no `next_command` key under `--json`), and the exit code
+  is 0.
 - Given `bootstrap add` with no tool name, when add runs, then nothing is
   written, short usage is printed and the exit code is 2.
 - Given an unknown tool name, when add runs, then the exit code is 2 and nothing
@@ -207,11 +209,11 @@ N/A — runs synchronously in one command invocation.
 - Given a setup file that is modified, staged, untracked or ignored, when add
   runs, then nothing is written, the exit code is 1 and `.config/bootstrap.yaml`
   is listed; on a clean run it is listed `changed` (or `unchanged`).
-- Given a recorded `values.tools` that misses an unremovable tool, when add
-  runs, even with every named tool already added, then the tool is added again,
-  the repair is written back, `.config/bootstrap.yaml` is listed `changed`,
-  `warnings` reports "added back unremovable tool `<name>`" and the exit code is
-  0.
+- Given a recorded `values.tools` that misses an unremovable tool and no other
+  tool of its `max: one` category is recorded, when add runs, even with every
+  named tool already added, then the tool is added again, the repair is written
+  back, `.config/bootstrap.yaml` is listed `changed`, `warnings` reports "added
+  back unremovable tool `<name>`" and the exit code is 0.
 - Given a setup file recorded with an older `format`, when add runs, then the
   older format is read and not refused, and the next write records the running
   cli's format.
@@ -259,6 +261,10 @@ N/A — runs synchronously in one command invocation.
 - Given `--dry-run --json`, when add runs, then the document is the one the real
   run would return plus `"dry_run": true`, and on a non-zero exit it is the same
   error document plus `"dry_run": true`; no file changes.
+- Given a recorded `values.tools` that misses an unremovable tool while another
+  tool of its `max: one` category is recorded, when add runs, then nothing is
+  written and the exit code is 3 naming the fix
+  ([Validity](../../../entities/setup-config/index.md#validity)).
 - Abuse case: n/a — runs locally with the caller's own permissions on the
   caller's own repository; every input is validated per
   [baseline](../../../conventions.md#baseline) boundary-validation.

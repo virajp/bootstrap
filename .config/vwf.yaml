@@ -92,5 +92,5 @@ design:
     - site/100-home/site
     - site/110-documentation/site
 blueprint:
-  coverage: complete # stamped 2026-10-08 by /vwf:blueprint — rescope sweep (mise-centric init/add/remove/tui, tool categories, git-backed safety); coherence round 9 NO GAPS
+  coverage: complete # stamped 2026-10-09 by /vwf:blueprint — targeted pass (tui-only interaction, scope flags, show, repo-path precedence, next-command rule, tui flags); coherence round 21 NO GAPS
   remaining: []

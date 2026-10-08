@@ -3,7 +3,7 @@ type: vwf-flow
 title: Show the setup
 description: One command prints the setup recorded in .config/bootstrap.yaml,
   whole or filtered to chosen fields; it never writes and never prompts.
-status: draft
+status: reviewed
 implementation: none
 ---
 
@@ -11,10 +11,7 @@ implementation: none
 
 ## Purpose
 
-`bootstrap show` reads `.config/bootstrap.yaml` and prints the recorded setup:
-the format, the version, the values and the files, and marks each recorded file
-the running cli no longer renders as `orphaned`. It never writes, never prompts
-and never repairs.
+`bootstrap show` reads `.config/bootstrap.yaml` and prints the recorded setup.
 
 Serves: [Zero setup drift](../../../product.md#goal-zero-drift)
 
@@ -39,16 +36,15 @@ means every field.
 | `--merge-model` | `values.merge_model` (develop and main) |
 
 Global flags per [Terminal UX](../../../design-system.md#terminal-ux): `--json`,
-`--quiet`, `--verbose`, `--no-color`, `--help`, `--version`. Any other flag is a
-usage error.
+`--quiet` (`-q`), `--verbose` (`-v`), `--no-color`, `--help`. Any other flag is
+a usage error.
 
 1. Show checks usage: an unknown flag or a bad flag value exits 2 with short
    usage, before the preflight and before `.config/bootstrap.yaml` is read.
 2. Show runs the preflight: inside a git repository only, else exit 3 "not a git
    repository — run `git init` first". It works at the repository root from a
    subdirectory. `show` is exempt from the `mise` on `PATH` requirement of
-   [Set up a repository](../110-setup-repository/index.md) step 1, because it
-   runs no tool.
+   [Set up a repository](../110-setup-repository/index.md) step 1.
 3. Show reads `.config/bootstrap.yaml`
    ([Setup config](../../../entities/setup-config/index.md)). Absent → exits 1
    "not set up — run `bootstrap init`". Present → it must satisfy
@@ -66,36 +62,36 @@ usage error.
    does not repair
    ([Repair on read](../../../entities/setup-config/index.md#repair) applies to
    writers only): it still prints, and step 7 ends with exit 1.
-6. When `files` is among the selected fields, show computes in memory the render
-   of the recorded selection and values and marks each recorded path in `files`
-   that the running cli no longer renders as orphaned (setup-config invariant 4;
+6. On every run, whatever the filters, show computes in memory the render of the
+   recorded selection plus every unremovable tool (a tool that step 5 finds
+   missing included) with the recorded values, and marks each recorded path in
+   `files` that the running cli no longer renders as orphaned
+   ([Setup config invariant 4](../../../entities/setup-config/index.md#invariants);
    [safety](../../../conventions.md#safety)). It writes nothing.
 7. Show prints the selected fields.
    - Human output per [Terminal UX](../../../design-system.md#terminal-ux): one
      group per field; lists one item per line, sorted; `merge_model` as
      `develop: <v>` and `main: <v>`; zero scopes shows `none`; an orphaned path
-     in `files` is tagged `orphaned` in the warning role.
+     is shown as Terminal UX gives it (in the `files` group, else in an
+     `orphaned` group after the other fields).
    - `--json`: one document with `exit`, `warnings` and the requested fields
      under their schema keys (`format`, `version`, `values` with only the
-     requested sub-keys, `files`); zero scopes is `[]`; whenever `files` is in
-     the output, a top-level `orphaned` list (sorted) of the orphaned paths.
+     requested sub-keys, `files`); zero scopes is `[]`; always a top-level
+     `orphaned` list (sorted, `[]` when none) of the orphaned paths. `warnings`
+     is always `[]`: an orphaned path is listed only in `orphaned`.
    - `--quiet` prints nothing on success; the exit code is the answer. On an
      error exit it prints the error only, per Terminal UX (with a missing
      unremovable tool: no recorded setup, the error, exit 1).
    - On success show prints no next command. Exit 0.
    - When step 5 found a missing unremovable tool, human output prints the
-     recorded setup, then the error "missing unremovable tool `<name>` — run
+     selected fields, then the error "missing unremovable tool `<name>` — run
      `bootstrap init`" and exits 1 with the next command `bootstrap init`;
-     `--json` carries the recorded fields and `error` (what, why, next_command)
+     `--json` carries the selected fields and `error` (what, why, next_command)
      with `exit` 1. This is the one exception to
      [errors](../../../conventions.md#errors) "error in place of results", for
      `show` only.
 8. Ctrl-C during the run exits 130 "interrupted — nothing written" per
    [errors](../../../conventions.md#errors).
-
-Reads [Setup config](../../../entities/setup-config/index.md) and
-[Tool](../../../entities/tool/index.md); configuration sources follow
-[config](../../../conventions.md#config).
 
 ## Guarantees
 
@@ -112,18 +108,26 @@ sequenceDiagram
     participant R as Repository
     participant C as Setup config
     participant G as Tool
+    participant K as Tool category
     O->>S: bootstrap show filters
     S->>S: usage check
-    S->>R: preflight
-    S->>C: read config
-    S->>G: check unremovable tools
-    alt unknown flag
+    alt unknown flag or bad value
         S-->>O: exit 2
-    else not a git repository, config invalid
+    end
+    S->>R: preflight
+    alt not a git repository
         S-->>O: exit 3
-    else not set up
+    end
+    S->>C: read config
+    alt not set up
         S-->>O: exit 1
-    else interrupt
+    else config invalid
+        S-->>O: exit 3
+    end
+    S->>G: check unremovable tools
+    S->>K: max-one category check
+    S->>S: render in memory, mark orphaned
+    alt interrupt
         S-->>O: exit 130
     else unremovable tool missing
         S-->>O: setup and error, exit 1
@@ -156,9 +160,9 @@ N/A — runs synchronously in one command invocation.
   and the exit code is 0.
 - Given a set-up repository, when `bootstrap show --json` runs, then exactly one
   JSON document is printed with `exit`, `warnings`, `format`, `version`,
-  `values` and `files`, and the exit code is 0.
+  `values`, `files` and `orphaned`, and the exit code is 0.
 - Given a set-up repository, when `bootstrap show --json --list-scope` runs,
-  then the document has `exit`, `warnings` and `values` holding only
+  then the document has `exit`, `warnings`, `orphaned` and `values` holding only
   `commit_scopes`, and no `format`, `version` or `files`.
 - Given a recorded setup with zero commit scopes, when `bootstrap show` or
   `bootstrap show --list-scope` runs, then the scopes show `none`; under
@@ -167,14 +171,17 @@ N/A — runs synchronously in one command invocation.
   `bootstrap show` or `bootstrap show --list-file` runs, then the path is shown
   tagged `orphaned` in the warning role, nothing is written and the exit code
   is 0.
-- Given the same recorded path, when `bootstrap show --json` runs, then the
-  top-level `orphaned` list (sorted) contains it, nothing is written and the
-  exit code is 0.
+- Given the same recorded path, when `bootstrap show --list-tool` runs, then the
+  tools are printed, then an `orphaned` group with `! <path> orphaned` in the
+  warning role, and the exit code is 0.
+- Given the same recorded path, when `bootstrap show --json` runs with or
+  without filters, then the top-level `orphaned` list (sorted) contains it,
+  nothing is written and the exit code is 0.
 - Given a set-up repository, when `bootstrap show --quiet` runs, then nothing is
   printed and the exit code is 0.
-- Given a recorded selection that misses an unremovable tool, when
-  `bootstrap show --quiet` runs, then only the error is printed (no recorded
-  setup) and the exit code is 1.
+- Given a recorded selection that misses an unremovable tool (no other tool of
+  its `max: one` category recorded), when `bootstrap show --quiet` runs, then
+  only the error is printed (no recorded setup) and the exit code is 1.
 - Given a run from a subdirectory of the repository, when `bootstrap show` runs,
   then the setup file at the repository root is read and the exit code is 0.
 - Given no `.config/bootstrap.yaml`, when show runs, then "not set up — run
@@ -187,11 +194,12 @@ N/A — runs synchronously in one command invocation.
   runs, then the recorded values are printed as recorded and the exit code is 0.
 - Given a newer recorded `version` or `format`, or a setup file that fails
   validity, when show runs, then nothing is written and the exit code is 3.
-- Given a recorded `values.tools` missing an unremovable tool, when show runs,
-  then the recorded setup is printed, then "missing unremovable tool `<name>` —
-  run `bootstrap init`", the file is not repaired and the exit code is 1.
+- Given a recorded `values.tools` missing an unremovable tool (no other tool of
+  its `max: one` category recorded), when show runs, then the selected fields
+  are printed, then "missing unremovable tool `<name>` — run `bootstrap init`",
+  the file is not repaired and the exit code is 1.
 - Given the same recorded `values.tools`, when `bootstrap show --json` runs,
-  then the document carries the recorded fields and `error` (what, why,
+  then the document carries the selected fields and `error` (what, why,
   next_command `bootstrap init`) with `exit` 1.
 - Given an unknown flag, when show runs, then nothing is written, a short usage
   is shown and the exit code is 2, even outside a git repository or without a
@@ -200,8 +208,12 @@ N/A — runs synchronously in one command invocation.
   `.config/bootstrap.yaml` are unchanged.
 - Given a run, when the actor presses Ctrl-C, then "interrupted — nothing
   written" is shown and the exit code is 130.
-- Given `--help` or `--version`, when show runs, then the help or the version is
-  printed and the exit code is 0.
+- Given `--help`, when show runs, then the help is printed and the exit code is
+  0; given `--version`, then it is an unknown flag and the exit code is 2.
+- Given a recorded `values.tools` that misses an unremovable tool while another
+  tool of its `max: one` category is recorded, when show runs, then nothing is
+  printed but the error and the exit code is 3 naming the fix
+  ([Validity](../../../entities/setup-config/index.md#validity)).
 - Abuse case: n/a — runs locally with the caller's own permissions on the
   caller's own repository, reads one file and writes nothing; every input is
   validated per [baseline](../../../conventions.md#baseline)

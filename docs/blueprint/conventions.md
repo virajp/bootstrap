@@ -23,15 +23,16 @@ or agent's own file-system and git permissions.
 ## Errors {#errors}
 
 Every `cli` command reports outcome by **exit code** and, under `--json`, one
-**JSON result** (`errors: exit-codes-and-structured-report`).
+**JSON result** (`tui` takes no `--json`; it is a usage error there)
+(`errors: exit-codes-and-structured-report`).
 
-| Exit  | Meaning                                                                                                                                                                                                                                                                                                                                                         |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `0`   | success                                                                                                                                                                                                                                                                                                                                                         |
-| `1`   | declined to act — a target has uncommitted changes ([#safety](#safety)), the setup file changed while the `tui` view was open (next command `bootstrap tui`), `add`, `remove` or `show` on a repository that is not set up, `show` on a selection that misses an unremovable tool, or a repository set up by an older bootstrap (next command `bootstrap init`) |
-| `2`   | usage error — bad or missing flag/argument, an unremovable tool named for removal, a replacement with no consent or of a tool that is not replaceable; prints short usage                                                                                                                                                                                       |
-| `3`   | failure — not a git repository, `mise` not installed, unreadable setup file, render error, a target path that is not a regular file, write failed                                                                                                                                                                                                               |
-| `130` | interrupted (Ctrl-C) — nothing written, or the repository was restored                                                                                                                                                                                                                                                                                          |
+| Exit  | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`   | success                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `1`   | declined to act — a target has uncommitted changes ([#safety](#safety)), the setup file changed while the `tui` view was open (next command `bootstrap tui`), `add`, `remove` or `show` on a repository that is not set up, `show` on a selection that misses an unremovable tool while no other tool holds its `max: one` category, or `add`, `remove` or `tui` on a repository set up by an older bootstrap (next command `bootstrap init`) |
+| `2`   | usage error — bare `bootstrap` with no command (prints the top-level help), bad or missing flag/argument (prints short usage), an unremovable tool named for removal, a required tool missing or a dependent tool still selected (names the tool), a file deletion without `-y` ("removing files needs -y"), a replacement with no consent or of a tool that is not replaceable, `tui` without terminals (checked after the preflight)        |
+| `3`   | failure — not a git repository, `mise` not installed, unreadable setup file, render error, a target path that is not a regular file, write failed                                                                                                                                                                                                                                                                                             |
+| `130` | interrupted (Ctrl-C) — nothing written, or the repository was restored                                                                                                                                                                                                                                                                                                                                                                        |
 
 - An interrupt (Ctrl-C) exits `130` in every command and at any moment — in the
   `tui` view, while reading, or while writing. During a write it first triggers
@@ -39,7 +40,8 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
   says "interrupted — nothing written". A `--json` run prints the same as its
   `error`. A restore that itself fails exits `3` listing every path not
   restored.
-- Every command runs only inside a git repository; anywhere else it writes
+- After `--help` (and `bootstrap --version`) and the flag and argument check,
+  every command runs only inside a git repository; anywhere else it writes
   nothing and exits `3` with "not a git repository — run `git init` first".
 - Every command except `show` needs `mise` on the `PATH` (`show` runs no tool);
   without it, the command writes nothing and exits `3` with "mise not installed"
@@ -48,21 +50,36 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
   subdirectory, every command works at the repository root: the setup file and
   every tool path are relative to the root.
 - Results go to stdout; progress, warnings and errors go to stderr.
-- `--json` prints exactly one JSON document, the JSON result, to stdout and
-  nothing else, carrying the same outcome as the exit code; it is the machine
-  contract an agent reads. This holds on every exit, `2` and `3` included: the
-  document then carries an `error` (what happened, why, and the exact next
-  command) in place of results. Every document has a top-level `exit` (the exit
-  code). The `error` object has exactly the keys `what`, `why` and
-  `next_command`; a failed restore adds `unrestored`, a list of every path not
-  restored. Warnings go in a top-level `warnings` list of strings, empty when
-  there is none. One exception: `bootstrap show` on a selection that misses an
-  unremovable tool exits `1` and its document carries the recorded fields and
-  the `error` together ([Show the setup](flows/cli/170-show-setup/index.md)).
+- On every command but `tui`, `--json` prints exactly one JSON document, the
+  JSON result, to stdout and nothing else, carrying the same outcome as the exit
+  code; it is the machine contract an agent reads. This holds on every exit, `2`
+  and `3` included: the document then carries an `error` (what happened, why,
+  and the exact next command) in place of results. Every document has a
+  top-level `exit` (the exit code). The `error` object has exactly the keys
+  `what`, `why` and `next_command`; a failed restore adds `unrestored`, a list
+  of every path not restored. Warnings go in a top-level `warnings` list of
+  strings, empty when there is none. One exception: `bootstrap show` on a
+  selection that misses an unremovable tool, with no other tool of its
+  `max: one` category, exits `1` and its document carries the selected fields
+  and the `error` together
+  ([Show the setup](flows/cli/170-show-setup/index.md)).
 - `bootstrap tui` is the only interactive command, and it needs stdin and stdout
   to be terminals. `init`, `add`, `remove` and `show` never prompt, in any
   terminal and with or without `--json`: their values and decisions come from
-  flags, the recorded setup file and `-y` only ([#config](#config)).
+  flags, the recorded setup file, `-y` and, for the repo path, the remote
+  `origin` ([#config](#config)).
+- After a successful write (or the `--dry-run` of one), the next command
+  `MISE_ENV=dev mise run setup:all` (`--json`: top-level `next_command`) is
+  printed if and only if the run added a tool (a first run, a new tool, a
+  replacement or a repair) or created, changed or deleted a `mise` config file
+  (`.config/mise.toml`, `.config/miserc.toml` or a file under
+  `.config/mise/conf.d/`); otherwise there is no next command and no
+  `next_command` key. In human output, a run of `init`, `add`, `remove` or the
+  `tui` that created, changed, deleted or replaced a file ends with exactly
+  "commit the changes, then run `MISE_ENV=dev mise run setup:all`" when the next
+  command is printed, else with exactly "commit the changes"; a run with nothing
+  to create, change, delete or replace has no closing line, and a `--dry-run`
+  shows the closing line of the real run.
 - Every error message states what happened, why, and the exact next command to
   run. No internal trace unless `--verbose`.
 - A command that cannot complete its writes leaves the repository as it found it
@@ -80,14 +97,16 @@ environment or a secrets store (`config: flags-and-repo-config-file`):
 
 Detected values (e.g. the repository path `owner/name` from its git remote) are
 defaults. In `init`, `add` and `remove` a default (detected or fixed) counts
-only with `-y`; a required value neither flagged, recorded, nor a default
-accepted by `-y` is a usage error (exit `2`) whose next command offers
-`bootstrap tui` or the missing flag, and `-y` only when `-y` would supply the
-value. The `tui` shows the defaults pre-filled, and the owner confirms them at
-apply. In `init`, `add` and `remove` consent comes from flags only: a
-replacement needs `--replace` (which also covers deleting the replaced tool's
-files), and any other file deletion needs `-y`; in the `tui` the in-place prompt
-and the apply confirm give it. `-y` is never consent to replace a tool
+only with `-y`, except: when no `--repo` is given and no `values.repo` is
+recorded, a repository path read from the remote `origin` is used without `-y`.
+A recorded value wins over a detected one. A required value neither flagged,
+recorded, nor a default accepted by `-y` is a usage error (exit `2`) whose next
+command offers `bootstrap tui` or the missing flag, and `-y` only when `-y`
+would supply the value. The `tui` shows the defaults pre-filled, and the owner
+confirms them at apply. In `init`, `add` and `remove` consent comes from flags
+only: a replacement needs `--replace` (which also covers deleting the replaced
+tool's files), and any other file deletion needs `-y`; in the `tui` the in-place
+prompt and the apply confirm give it. `-y` is never consent to replace a tool
 ([Tool category](entities/tool-category/index.md)). The product has no secrets
 and no external integration, so there is no environment catalog.
 
@@ -123,9 +142,10 @@ commits them.
   file is written `0644`.
 - **Files no longer rendered.** A path in the setup config's `files` that the
   running bootstrap does not render is never deleted by any command; it stays in
-  `files` and every command reports it as `orphaned` until the owner deletes it.
-  A recorded path that is no longer rendered and is absent on disk leaves
-  `files` on the next write.
+  `files` and every command reports it as `orphaned` until the owner deletes it,
+  also on a run that writes nothing (each command computes the render of the
+  recorded selection for this). A recorded path that is no longer rendered and
+  is absent on disk leaves `files` on the next write.
 - **Precedence.** When one run finds both kinds of refusal, a not-a-file target
   (exit `3`) wins over an uncommitted target (exit `1`); the message lists every
   path of both kinds.

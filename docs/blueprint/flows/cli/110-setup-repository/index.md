@@ -60,12 +60,12 @@ Usage errors come first and exit 2 before the preflight and before
    [Setup config](../../../entities/setup-config/index.md)
 3. Actor supplies the values:
 
-   | Value                | Flag                                                                         | Required          | Default                       |
-   | -------------------- | ---------------------------------------------------------------------------- | ----------------- | ----------------------------- |
-   | repo path            | `--repo`                                                                     | yes               | read from the remote `origin` |
-   | commit scopes        | `--add-scope` (repeatable) / `--remove-scope` (repeatable) / `--reset-scope` | no — zero allowed | the recorded list, else none  |
-   | merge model, develop | `--merge-develop` `direct`\|`pr`                                             | yes               | `direct`                      |
-   | merge model, main    | `--merge-main` `direct`\|`pr`                                                | yes               | `pr`                          |
+   | Value                | Flag                                                                         | Required          | Default                                                |
+   | -------------------- | ---------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------ |
+   | repo path            | `--repo`                                                                     | yes               | the recorded value, else read from the remote `origin` |
+   | commit scopes        | `--add-scope` (repeatable) / `--remove-scope` (repeatable) / `--reset-scope` | no — zero allowed | the recorded list, else none                           |
+   | merge model, develop | `--merge-develop` `direct`\|`pr`                                             | yes               | `direct`                                               |
+   | merge model, main    | `--merge-main` `direct`\|`pr`                                                | yes               | `pr`                                                   |
 
    The `--repo` default and the host (step 4) are read from the remote named
    `origin` only, on any host:
@@ -78,8 +78,8 @@ Usage errors come first and exit 2 before the preflight and before
    | `http://…`                            | no                                                    | yes  |
    | no `origin`, or an unreadable URL     | no                                                    | no   |
 
-   A `<path>` is `owner/name`, or nested `group/subgroup/name`. A form with no
-   repo default, or no host, gives no error: the `--repo` flag is then needed.
+   A `<path>` is `owner/name`, or nested `group/subgroup/name`. A `--repo` flag
+   always overrides the origin default.
 
    The scope flags change the recorded list (`values.commit_scopes`):
    - `--add-scope <scope>` adds a scope; a scope already in the list is used
@@ -89,12 +89,13 @@ Usage errors come first and exit 2 before the preflight and before
    - `--reset-scope` empties the list (zero scopes).
      ([config](../../../conventions.md#config))
 
-   A required value with no flag, recorded value or accepted default is missing:
-   init exits 2 naming the missing flag, and the error's next command offers
-   `bootstrap tui` (interactive setup) or the missing flag; it offers `-y` only
-   when `-y` would supply the value (a default exists and `-y` was not given).
-   With `--json` the same text is the error's `next_command`
-   ([errors](../../../conventions.md#errors)).
+   A repo path from `origin` is used without `-y`; with no repo path at all,
+   init exits 2 naming `--repo`. For other required values (merge models) with
+   no flag, recorded value or accepted default: init exits 2 naming the missing
+   flag, and the error's next command offers `bootstrap tui` (interactive setup)
+   or the missing flag; it offers `-y` only when `-y` would supply the value (a
+   default exists and `-y` was not given). With `--json` the same text is the
+   error's `next_command` ([errors](../../../conventions.md#errors)).
    [Setup config](../../../entities/setup-config/index.md) (recorded values)
 4. Actor selects the tools. Tools and their categories come from the
    [Tool](../../../entities/tool/index.md) and
@@ -143,17 +144,15 @@ Usage errors come first and exit 2 before the preflight and before
    upgrade re-run `version` and `format` move to the running bootstrap's.
    [Setup config](../../../entities/setup-config/index.md)
 9. Init prints the result (`.config/bootstrap.yaml` is in `created` on a first
-   run and in `changed` when rewritten) and, when the run created, changed,
-   deleted or replaced something, exactly one next command,
-   `MISE_ENV=dev mise run setup:all`. The human output then ends with exactly
-   "commit the changes, then run `MISE_ENV=dev mise run setup:all`". The
-   `--json` success document has top-level keys `exit`, `created`, `changed`,
-   `deleted`, `unchanged`, `kept`, `orphaned` (paths), `replaced` (objects
-   `{from, to}`), `warnings` and, in that case, `next_command`. When there is
-   nothing to create, change, delete or replace, init exits 0, lists every path
-   by its status, the human output has no closing line and the `--json` document
-   has no `next_command` key. Init never installs software or runs that task
-   itself.
+   run and in `changed` when rewritten) and the next command per
+   [errors](../../../conventions.md#errors), with the closing line per the same
+   rule. The `--json` success document has top-level keys `exit`, `created`,
+   `changed`, `deleted`, `unchanged`, `kept`, `orphaned` (paths), `replaced`
+   (objects `{from, to}`), `warnings` and, in that case, `next_command`. When
+   there is nothing to create, change, delete or replace, init exits 0, lists
+   every path by its status, the human output has no closing line and the
+   `--json` document has no `next_command` key. Init never installs software or
+   runs that task itself.
 
 `--dry-run` runs the usage check and steps 1–6 and writes nothing; it exits 0 on
 success and otherwise with the code of the step that fails; its output is as in
@@ -259,17 +258,18 @@ N/A — runs synchronously in one command invocation.
   one `max: one` category, or a tool whose `requires` tool is not selected, when
   init runs, then nothing is written and the exit code is 3 naming the fix (for
   example "remove `fnox` from values.tools").
-- Given a `values.tools` that misses an unremovable tool, when init runs, then
-  the tool is added again, the warning "added back unremovable tool `<name>`" is
-  reported (`warnings`) and the exit code is 0.
+- Given a `values.tools` that misses an unremovable tool and no other tool of
+  its `max: one` category is recorded, when init runs, then the tool is added
+  again, the warning "added back unremovable tool `<name>`" is reported
+  (`warnings`) and the exit code is 0.
 - Given `.config/bootstrap.yaml` has uncommitted changes and its content differs
   from the render, when init re-runs, then nothing is written and the exit code
   is 1 listing it; once committed, it is listed `changed` when rewritten and
   `unchanged` when not.
-- Given `--tool taplo` with `dprint` neither selected nor named, when init runs,
-  then nothing is written and the exit code is 2 naming `dprint`; given
-  `--tool taplo --tool dprint`, the requires check passes on the selection after
-  the request and both are selected.
+- Given `--tool taplo` without `--tool dprint` (even with `dprint` recorded),
+  when init runs, then nothing is written and the exit code is 2 naming
+  `dprint`; given `--tool taplo --tool dprint`, the requires check passes on the
+  selection after the request and both are selected.
 - Given `--tool github --tool github`, when init runs, then github is applied
   once.
 - Given a recorded list without `api`, when init runs with `--add-scope api`
@@ -366,21 +366,36 @@ N/A — runs synchronously in one command invocation.
   init runs, then it does not prompt, the exit code is 2 naming the flag, and
   the error's next command offers `bootstrap tui` or the missing flag, and `-y`
   only when `-y` would supply the value.
-- Given no `--repo` and no repo path readable from `origin`, when init runs with
-  or without `-y`, then there is no default, it does not prompt, the exit code
-  is 2 and the message names `--repo`.
-- Given a successful run or a `--dry-run` that creates, changes, deletes or
-  replaces something, when init finishes, then the human output ends with
-  exactly "commit the changes, then run `MISE_ENV=dev mise run setup:all`"; with
-  `--json` the success document has `exit` 0, `created`, `changed`, `deleted`,
-  `unchanged`, `kept`, `orphaned`, `replaced` (each `{from, to}`), `warnings`,
-  and `next_command` equal to `MISE_ENV=dev mise run setup:all`.
+- Given a first run, a repo path readable from `origin`, `--merge-develop` and
+  `--merge-main` given and no `-y`, when init runs with no `--repo`, then the
+  path from `origin` is used and the exit code is 0.
+- Given a re-run with a recorded `values.repo` that differs from the path read
+  from `origin`, when init runs with no `--repo`, then the recorded value is
+  kept; with `--repo` the flag value is rendered and recorded.
+- Given a first run, no `--repo` and no repo path readable from `origin`, when
+  init runs with or without `-y`, then there is no default, it does not prompt,
+  the exit code is 2 and the message names `--repo`.
+- Given a successful run or a `--dry-run` that adds a tool or creates, changes
+  or deletes a `mise` config file, when init finishes, then the human output
+  ends with exactly "commit the changes, then run
+  `MISE_ENV=dev mise run setup:all`"; with `--json` the success document has
+  `exit` 0, `created`, `changed`, `deleted`, `unchanged`, `kept`, `orphaned`,
+  `replaced` (each `{from, to}`), `warnings`, and `next_command` equal to
+  `MISE_ENV=dev mise run setup:all`.
+- Given a re-run that only changes a value (for example `--merge-main direct`)
+  and no `mise` config file, when init finishes, then the human output ends with
+  exactly "commit the changes", there is no `next_command` and the exit code
+  is 0.
 - Given `--dry-run --json`, when init runs, then the document has the same keys
   and values a real run would return plus `"dry_run": true`, and no file
   changes; on a non-zero exit it is the same error document plus
   `"dry_run": true`.
 - Given `--json`, when init runs, then stdout parses as exactly one JSON
   document and contains nothing else.
+- Given a recorded `values.tools` that misses an unremovable tool while another
+  tool of its `max: one` category is recorded, when init runs, then nothing is
+  written and the exit code is 3 naming the fix
+  ([Validity](../../../entities/setup-config/index.md#validity)).
 - Abuse case: n/a — runs locally with the caller's own permissions on the
   caller's own repository; no remote surface; every input is validated per
   [baseline](../../../conventions.md#baseline) boundary-validation.

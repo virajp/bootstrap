@@ -63,16 +63,18 @@ tool or a path is a major version; adding a tool or path is minor
 | `github`        | forge                 | Pull request and issue templates for GitHub  | no   | yes       | yes         | origin (`github.com`) | none     |
 | `gitlab`        | forge                 | Merge request and issue templates for GitLab | no   | yes       | yes         | origin (`gitlab.com`) | none     |
 
-`init --tool` or `add` of a tool whose required tool is neither selected nor
-named in the same request exits 2 ([errors](../../conventions.md#errors)) naming
-the missing tool; `remove` of a tool that a tool still selected after the
-request requires exits 2 naming the dependent tool, so removing both in one
-request passes. In the tui, selecting a tool whose required tool is not
-selected, or deselecting a tool that a selected tool requires, is refused in
-place, per [Select tools](../../flows/cli/160-select-tools/index.md) step 5.
-Init, add and remove never prompt; the tui is the only interactive interface.
-Display order (tui, docs) is the order of this table; changing it is a minor
-version.
+`init --tool` or `add` of a tool whose required tool is not in the selection
+after the request (for `init --tool`: the named tools plus the unremovable ones;
+for `add`: the held tools minus the replaced ones, plus the named ones) exits 2
+([errors](../../conventions.md#errors)) naming the missing tool; `remove` of a
+tool that a tool still selected after the request requires exits 2 naming the
+dependent tool, so removing both in one request passes; an `add` that replaces a
+tool another selected tool requires exits 2 naming the dependent tool. In the
+tui, selecting a tool whose required tool is not selected, or deselecting a tool
+that a selected tool requires, is refused in place, per
+[Select tools](../../flows/cli/160-select-tools/index.md) step 5. Init, add and
+remove never prompt; the tui is the only interactive interface. Display order
+(tui, docs) is the order of this table; changing it is a minor version.
 
 ### Target paths (1.0)
 

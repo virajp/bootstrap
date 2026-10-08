@@ -13,10 +13,9 @@ owner: [ cli ]
 ## Purpose
 
 The setup config records the values and the selected tools a repository was set
-up with, so that later commands re-render the same setup. It is a
-human-readable, hand-editable file kept in the target repository at
-`.config/bootstrap.yaml`; that path is product contract. Its presence means
-"this repository has been set up".
+up with. It is a human-readable, hand-editable file kept in the target
+repository at `.config/bootstrap.yaml`; that path is product contract. Its
+presence means "this repository has been set up".
 
 Used by: [Set up a repository](../../flows/cli/110-setup-repository/index.md),
 [Add a tool](../../flows/cli/140-add-tool/index.md),
@@ -36,15 +35,15 @@ scale to measure.
 
 ## Lifecycle / State Machine
 
-| From    | To      | Trigger (actor/system)                                                                                                   | Guard                                                                                                                                                                   | Side effect                                                                                                                       |
-| ------- | ------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| absent  | present | Repo owner or agent running init, first run ([flow 110](../../flows/cli/110-setup-repository/index.md))                  | none                                                                                                                                                                    | `format` and `version` set to the running cli's; `values` set to the init answers; `files` set to the set the running cli renders |
-| absent  | present | Repo owner running [Select tools](../../flows/cli/160-select-tools/index.md) on a repository not set up (first-run mode) | none                                                                                                                                                                    | `format` and `version` set to the running cli's; `values` set as applied; `files` set to the set the running cli renders          |
-| present | present | Repo owner or agent re-running init ([flow 110](../../flows/cli/110-setup-repository/index.md))                          | file is valid ([Validity](#validity))                                                                                                                                   | `values` from flags, else recorded; `values.tools` as selected; rewrite per invariant 2                                           |
-| present | present | Repo owner or agent running [Add a tool](../../flows/cli/140-add-tool/index.md)                                          | file is valid; recorded `version` equals the running cli ([version guard](#version-guard))                                                                              | Named tools added to `values.tools`; a replacement takes the replaced tool out; rewrite per invariant 2                           |
-| present | present | Repo owner or agent running [Remove a tool](../../flows/cli/150-remove-tool/index.md)                                    | file is valid; recorded `version` equals the running cli ([version guard](#version-guard))                                                                              | Named tools taken out of `values.tools`; rewrite per invariant 2                                                                  |
-| present | present | Repo owner running [Select tools](../../flows/cli/160-select-tools/index.md)                                             | file is valid; recorded `version` equals the running cli ([version guard](#version-guard))                                                                              | `values.tools` and the other `values` changed as selected; rewrite per invariant 2                                                |
-| present | present | Repo owner hand-edits any field ([config](../../conventions.md#config))                                                  | none at the edit; once the edit is committed (invariant 1), the next command applies [Validity](#validity) and [Repair on read](#repair) (`show` applies Validity only) | none by bootstrap; the edit takes effect on the next command                                                                      |
+| From    | To      | Trigger (actor/system)                                                                                                   | Guard                                                                                                                                                                   | Side effect                                                                                                                                                                   |
+| ------- | ------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| absent  | present | Repo owner, AI agent or CI running init, first run ([flow 110](../../flows/cli/110-setup-repository/index.md))           | none                                                                                                                                                                    | `format` and `version` set to the running cli's; `values` set to the values from flags, `-y` defaults and the remote `origin`; `files` set to the set the running cli renders |
+| absent  | present | Repo owner running [Select tools](../../flows/cli/160-select-tools/index.md) on a repository not set up (first-run mode) | none                                                                                                                                                                    | `format` and `version` set to the running cli's; `values` set as applied; `files` set to the set the running cli renders                                                      |
+| present | present | Repo owner, AI agent or CI re-running init ([flow 110](../../flows/cli/110-setup-repository/index.md))                   | file is valid ([Validity](#validity))                                                                                                                                   | `values` from flags, else recorded; `values.tools` as selected; rewrite per invariant 2                                                                                       |
+| present | present | Repo owner, AI agent or CI running [Add a tool](../../flows/cli/140-add-tool/index.md)                                   | file is valid; recorded `version` equals the running cli ([version guard](#version-guard))                                                                              | Named tools added to `values.tools`; a replacement takes the replaced tool out; rewrite per invariant 2                                                                       |
+| present | present | Repo owner, AI agent or CI running [Remove a tool](../../flows/cli/150-remove-tool/index.md)                             | file is valid; recorded `version` equals the running cli ([version guard](#version-guard))                                                                              | Named tools taken out of `values.tools`; rewrite per invariant 2                                                                                                              |
+| present | present | Repo owner running [Select tools](../../flows/cli/160-select-tools/index.md)                                             | file is valid; recorded `version` equals the running cli ([version guard](#version-guard))                                                                              | `values.tools` and the other `values` changed as selected; rewrite per invariant 2                                                                                            |
+| present | present | Repo owner hand-edits any field ([config](../../conventions.md#config))                                                  | none at the edit; once the edit is committed (invariant 1), the next command applies [Validity](#validity) and [Repair on read](#repair) (`show` applies Validity only) | none by bootstrap; the edit takes effect on the next command                                                                                                                  |
 
 ## Validity {#validity}
 
@@ -64,6 +63,8 @@ and the fix. Nothing is written.
   from values.tools"). Nothing is guessed.
 - No two tools in `values.tools` share a `max: one`
   [Tool category](../tool-category/index.md).
+- No `max: one` category whose unremovable tool is missing from `values.tools`
+  holds another tool in its place.
 - Every tool in `values.tools` has its `requires` tools in `values.tools`.
 - A `files` entry that breaks the schema pattern: the fix is to correct or
   remove the entry.
@@ -74,10 +75,10 @@ One hand-edit break is repaired rather than refused: a `values.tools` that
 misses an unremovable tool while no other tool of its `max: one` category is
 recorded. The tool is added again and the warning "added back unremovable tool
 `<name>`" is reported (`warnings`). When another tool of that category is
-recorded, it is a Validity failure (two tools of one `max: one` category). The
-repair is a change under invariant 7: the file is rewritten and listed
-`changed`. `show` never repairs: it reports the missing tool as an error with
-exit 1 ([Show the setup](../../flows/cli/170-show-setup/index.md)).
+recorded, it fails [Validity](#validity) with exit 3. The repair is a change
+under invariant 7: the file is rewritten and listed `changed`. `show` never
+repairs: it reports the missing tool as an error with exit 1
+([Show the setup](../../flows/cli/170-show-setup/index.md)).
 
 ### Write format {#write-format}
 
@@ -93,6 +94,8 @@ cli (compared as in [Validity](#validity)).
 
 - Older recorded `version`: writes nothing, exit 1 with next command
   `bootstrap init` (a re-run), per [errors](../../conventions.md#errors).
+  [Validity](#validity) is checked first: a file that fails Validity exits 3,
+  also when its `version` is older.
 - Absent file: add, remove and `show` exit 1 "not set up — run `bootstrap init`"
   (`show` takes no version guard otherwise). Select tools (the tui) instead
   opens in first-run mode
@@ -102,9 +105,10 @@ cli (compared as in [Validity](#validity)).
 
 1. Written last of all writes in a run, so a failed run leaves no new setup
    config behind. The file is itself a target under
-   [safety](../../conventions.md#safety), like any file: an uncommitted change
-   to it (a hand edit) makes the run exit 1, so commit hand edits first. In
-   results it is listed `created`, `changed` or `unchanged` like any other file.
+   [safety](../../conventions.md#safety), like any file: when its render differs
+   from an uncommitted working copy (a hand edit), the run exits 1, so commit
+   hand edits first. In results it is listed `created`, `changed` or `unchanged`
+   like any other file.
 2. Every write rewrites `format` and `version` to the running cli's. Init, add
    and an apply in select tools refresh `files` to the set the running cli
    renders for the selected tools; remove only takes out the paths of the

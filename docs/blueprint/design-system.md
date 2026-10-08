@@ -257,18 +257,20 @@ The `cli` project is a shipped command-line tool. Elicited in text on
   exit code carries the outcome); `--json` ignores `--quiet` and always prints
   its document. `--verbose` shows each per-file decision.
 - Result layout (human output): one group per non-empty result key, in the key
-  order of the command's JSON result, headed by the key's status word with its
-  glyph and color role and a count (`+ created  3 files`), then one path per
-  indented line. `replaced` shows `<old> → <new>`, `values_changed` shows
-  `<name>: <from> → <to>`, and each warning shows `! <text>`. An empty key is
-  left out. The status word is the key with `_` as a space. Glyph and role per
-  key: `+` created, added (success); `~` changed (emphasis); `✓` unchanged
-  (success); `-` deleted, removed (emphasis); `→` replaced, values changed
-  (emphasis); `!` kept, orphaned, warnings (warning); `·` already added, not
-  added (muted); `✗ error:` an error (accent). `show` prints the recorded setup
-  instead: one group per field in schema order, headed by the field name in
-  emphasis, then one value per indented line with no glyph; an empty list shows
-  `none` (muted).
+  order of the command's JSON result (for `tui`, which has none, the order of
+  its flow), headed by the key's status word with its glyph and color role and a
+  count (`+ created  3 files`), then one path per indented line. `replaced`
+  shows `<old> → <new>`, `values_changed` shows `<name>: <from> → <to>`, and
+  each warning shows `! <text>`. An empty key is left out. The status word is
+  the key with `_` as a space. Glyph and role per key: `+` created, added
+  (success); `~` changed (emphasis); `✓` unchanged (success); `-` deleted,
+  removed (emphasis); `→` replaced, values changed (emphasis); `!` kept,
+  orphaned, warnings (warning); `·` already added, not added (muted); `✗ error:`
+  an error (accent). `show` prints the recorded setup instead: one group per
+  field in schema order, headed by the field name in emphasis, then one value
+  per indented line with no glyph; an empty list shows `none` (muted). An
+  orphaned path is shown `! <path> orphaned` (warning): in the `files` group
+  when it is printed, else in an `orphaned` group after the other fields.
 - Color semantics: color carries meaning only. `success` (created, added,
   unchanged) maps to `status-success`; `warning` (mise not at the expected path,
   kept or orphaned files, a refused dirty target, every warning line) to
@@ -289,12 +291,15 @@ The `cli` project is a shipped command-line tool. Elicited in text on
   `--verbose`.
 - Help & naming conventions: commands are single words (`init`, `add <tool>`,
   `remove <tool>`, `tui`, `show`). Every flag has a long form; short forms only
-  for the most common (`-q`, `-v`, `-y`); `-y` accepts the detected defaults and
-  is consent to delete files, per [config](conventions.md#config). Booleans
-  negate with `--no-<flag>`. Help is a one-line purpose, usage, flags, then one
-  or two real examples. The bare command prints help and exits `2`. On every
-  command, `--help` prints that command's help and `--version` the bare version,
-  both exit `0`, before any other check.
+  for the most common (`-q`, `-v`, `-y`); `-y` accepts the detected defaults
+  (the repo path from `origin` needs no `-y`) and is consent to delete files,
+  per [config](conventions.md#config). Booleans negate with `--no-<flag>`. Help
+  is a one-line purpose, usage, flags, then one or two real examples. Bare
+  `bootstrap` (no command) prints the top-level help and exits `2`. On every
+  command, `--help` prints that command's help and exits `0` before any other
+  check. `--version` exists only as `bootstrap --version` (the bare version,
+  exit `0`); no command takes it. `bootstrap tui` takes no flag but `--help`,
+  whose help states that tui takes no flags or arguments besides `--help`.
 - Full-screen selector (`bootstrap tui`, interactive terminal only — outside one
   it exits 2, and `q` or Esc quits with exit 0, per
   [Select tools](flows/cli/160-select-tools/index.md); on a repository that is
