@@ -1,0 +1,11 @@
+/code-review high — branch all-2026-10-09-0954, range 7ffcf60..08de398
+1. cli/templates/dprint/dprint.json:18 — dprint-owned config hardcodes the taplo exec formatter for .toml; with dprint kept and taplo deselected, code:format:dprint and the pre-commit format hook fail on any .toml file.
+2. cli/templates/mise/.config/mise/conf.d/_base/mise.toml:6 — [tools.node] and [tools.pnpm] moved from all-environments _base/mise.toml to mise.dev.toml while node.*/npm.package_manager settings and node_modules/.bin path stay; runs without MISE_ENV=dev (default or ci) no longer install node or pnpm, so setup:deps:install etc. fail there.
+3. cli/templates/pre-commit/.config/pre-commit-config.yaml:94 — the unremovable pre-commit tool installs a graphify-refresh post-commit hook and setup/precommit hardcodes graphify cleanup although graphify is removable; should render only with graphify.
+4. cli/templates/pre-commit/.config/git-conventional-commits.yaml:29 — forge links hardcode github.com/gitlab.com while origin_tool falls back to the first selected forge when the origin host matches neither (GHE, self-hosted GitLab) -> links to the wrong repository.
+5. cli/src/tool/render.ts:143 — renderFiles filters tools by input.selection names, silently dropping names not in the catalog instead of failing.
+6. cli/src/tool/catalog.ts:291 — defaultSelection adds every tool whose originHosts holds the host without checking default === "origin".
+7. cli/src/setup-config/validity.ts:191 — UnremovableReplaced branch unreachable with the current catalog (each unremovable tool is alone in its max-one category).
+8. cli/src/setup-config/io.ts:90 — read always applies Repair; show must apply Validity only.
+9. cli/templates/mise/.config/mise/tasks/_scripts/helpers:150 — run_tool_tasks selects tasks by name prefix from `mise tasks ls --hidden --name-only`, which includes the user's global mise tasks; a global task named code:lint:foo would run as a selected tool.
+tsc clean, 258 tests pass.
