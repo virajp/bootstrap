@@ -29,10 +29,12 @@
 
 ## Ruling
 
-| #  | Decision         | Ruling                                                                                                          | Rejected                    | Unit   |
-| -- | ---------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------- | ------ |
-| 8  | Renderer inputs  | The selection and the `origin` host are inputs to the render; plan 2 reads git and supplies them                | Read git in the renderer    | U5     |
-| 10 | Template content | Templates conform to the catalog; this repo's own `.config/` files are sources, not targets, and stay untouched | Edit this repo's `.config/` | U3, U5 |
+| #  | Decision                                                | Ruling                                                                                                                                                                                                                                                         | Rejected                                      | Unit       |
+| -- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ---------- |
+| 8  | Renderer inputs                                         | The selection and the `origin` host are inputs to the render; plan 2 reads git and supplies them                                                                                                                                                               | Read git in the renderer                      | U5         |
+| 10 | Template content                                        | Templates conform to the catalog; this repo's own `.config/` files are sources, not targets, and stay untouched                                                                                                                                                | Edit this repo's `.config/`                   | U3, U5     |
+| 13 | Plan constraint: catalog-driven code (user, 2026-10-08) | No tool name or category name appears as a literal in `cli/src/{tool,tool-category,setup-config}` outside `cli/src/tool/catalog.ts` and `cli/src/tool-category/catalog.ts`. Every rule reads catalog fields. A test scans these folders and fails on a literal | Enforce it in the review only                 | U2, U4, U5 |
+| 21 | Forge links without a category literal                  | The renderer finds the selected tools that have `origin_hosts`, in catalog order, and takes the tool whose hosts hold the `origin` host, else the first. The template holds the link text of each tool                                                         | Find forge tools by the category name `forge` | U5         |
 
 ## Edits
 
@@ -44,9 +46,10 @@
    entries plus one conditional block per base tool with mise entries, all at
    `latest`.
 3. **`cli/templates/pre-commit/.config/git-conventional-commits.yaml`** — the
-   forge links from a context value that the renderer computes (the selected
-   forge whose `origin_hosts` holds the host; else the first selected forge in
-   catalog order; else none).
+   forge links from a context value that the renderer computes per row 21 (of
+   the selected tools that have `origin_hosts`, in catalog order, the tool whose
+   hosts hold the `origin` host; else the first; else none). The template, not
+   the renderer, holds the link text of each tool.
 4. **`cli/test/tool/render.test.ts`** — the test-first cases.
 
 ## Verification
@@ -60,6 +63,9 @@
 - Do not touch any other file under `cli/templates/**` (U3) or
   `cli/src/setup-config/**` (U4).
 - The renderer reads no git and no disk. Plan 2 supplies the host.
+- Row 13: no tool name or category name as a literal in `render.ts`.
+  `cli/test/catalog-driven.test.ts` (U2) must pass. Tool names in the templates
+  are data and are permitted.
 
 ## Commit
 
