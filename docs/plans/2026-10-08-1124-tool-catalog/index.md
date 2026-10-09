@@ -197,7 +197,7 @@ Plan 1 of 2 — requires nothing; required by the plan for
 | U4 | 3    | [04-setup-config.md](04-setup-config.md)     | code   | `cli/src/setup-config/**`, `cli/test/setup-config/**`                                                                                                                                                                                     | U2                 | green | 08de398 |
 | U5 | 4    | [05-renderer.md](05-renderer.md)             | code   | `cli/src/tool/render.ts`, `cli/test/tool/render.test.ts`, `cli/templates/mise/.config/mise/conf.d/_base/mise.dev.toml`, `cli/templates/pre-commit/.config/git-conventional-commits.yaml`                                                  | U3, U4             | green | 4331d5e |
 | U6 | 5    | [06-review.md](06-review.md)                 | review | —                                                                                                                                                                                                                                         | U1, U2, U3, U4, U5 | green |  |
-| U7 | 6    | [07-docs.md](07-docs.md)                     | edit   | the repo's docs (README, CLAUDE.md, `docs/**` outside `docs/blueprint/` and `docs/plans/`)                                                                                                                                                | all                | pending |        |
+| U7 | 6    | [07-docs.md](07-docs.md)                     | edit   | the repo's docs (README, CLAUDE.md, `docs/**` outside `docs/blueprint/` and `docs/plans/`)                                                                                                                                                | all                | running |  |
 | U8 | 7    | [08-gates-and-bump.md](08-gates-and-bump.md) | edit   | — (no version bump; no generated file)                                                                                                                                                                                                    | U7                 | pending |        |
 
 ## Shared-file rule
@@ -329,6 +329,8 @@ the unit could not proceed without; it blocks the unit and its dependents.
 | — | acceptance | — | — | skipped | why: Acceptance criteria section reads none — no flow touched | — |
 | — | ux | — | — | skipped | why: the plan changes no screens (cli project, entity slice) | — |
 | — | renders | — | — | skipped | why: no ux stage ran, no RENDER lines | — |
+| — | reconcile | — | — | pass | stamps: tool-category none -> complete (no open gap names it); tool stays partial (gaps: invariant 10 untestable from catalog data, U3/gap/1, U6/gap/1 dprint/taplo); setup-config stays partial (U4/gap/1: max-one rules only on a mocked catalog, error texts unwritten in the doc, next_command vs fix); registry, environment.md and harness block unchanged (no topology, env var or harness capability added); decisions persisted to mempalace | 88f9445 |
+| 6 | U7 docs | opus | 1 | pass | edit: docs-sync over 7ffcf60..HEAD found nothing contradicted; noted the reversal (forge links back, decision #21) in docs/memory/decisions/tool-setup-config-run.md and dprint-reflowed that file; GAP DOCS FALSIFIED line number was 10 not 16; GAP code:format rejects --check, verified with dprint check | PENDING |
 
 ## Acceptance criteria (from blueprint)
 
