@@ -15,6 +15,9 @@
   - `cli/test/remove/run.test.ts` (in-process, with the FileSystem seam of plan
     2 U5) — the write-failure, failed-restore and interrupt criteria through the
     remove pipeline.
+  - `cli/test/remove/run.test.ts` also covers, in-process with the fixture
+    catalog layer, every criterion that needs two tools of one `max: one`
+    category (row 6).
   - They fail because the handler is the placeholder of U4.
 - **Read first:** `docs/blueprint/flows/cli/150-remove-tool/index.md` (the whole
   flow), `cli/src/remove/{command,usage,validate}.ts`,
@@ -29,6 +32,7 @@
 | - | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | -------------- |
 | 3 | Order in step 2                                         | Validity (exit 3), then the version guard (exit 1), then the repair. An older `version` exits 1 with no repair warning                                                                                                                                        | Repair first              | U6             |
 | 5 | Plan constraint: catalog-driven code (user, 2026-10-08) | No tool or category name in logic; the literal scan of `cli/test/catalog-driven.test.ts` already covers every `.ts` file under `cli/src` except the two catalogs and `cli/src/git/`, so it covers `cli/src/change/`, `cli/src/command/` and `cli/src/remove/` | An allow-list of literals | U1, U4, U5, U6 |
+| 6 | Criteria that need two tools of one `max: one` category | They run in-process with the fixture catalog layer of plan 2 (its row 12); the 1.0 catalog has no such pair                                                                                                                                                   | Leave them uncovered      | U6             |
 
 ## Edits
 
@@ -48,7 +52,7 @@
 - `mise x -- mise run p:cli:check` exits 0.
 - `mise x -- mise run p:cli:build` exits 0.
 - `mise x -- mise run p:cli:e2e` exits 0 and runs a test for every acceptance
-  criterion except the three in-process criteria.
+  criterion except the in-process criteria.
 - `grep -rn "not implemented" cli/src` finds nothing.
 
 ## Guardrails

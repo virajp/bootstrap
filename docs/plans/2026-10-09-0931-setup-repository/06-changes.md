@@ -27,6 +27,7 @@
   - A first run reports no `orphaned` path. Every path list is sorted.
   - The setup config's next content comes from plan 1's refresh of `files` (full
     mode) and its rewrite rule (init mode).
+  - The replaced-tool cases use the fixture catalog layer (row 12).
   - It fails because `changes.ts` does not exist.
 - **Read first:** `docs/blueprint/flows/cli/110-setup-repository/index.md`
   (steps 6–8), `docs/blueprint/conventions.md` `#safety`,
@@ -36,9 +37,10 @@
 
 ## Ruling
 
-| # | Decision                                | Ruling                                                                                                                                                              | Rejected | Unit   |
-| - | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------ |
-| 9 | Plan 1 row 9 (setup-config invariant 1) | Lands here: a dirty target, `.config/bootstrap.yaml` included, refuses the run only when its render differs from the working copy; the setup config is written last | —        | U5, U6 |
+| #  | Decision                                                     | Ruling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Rejected                                             | Unit           |
+| -- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------------- |
+| 9  | Plan 1 row 9 (setup-config invariant 1)                      | Lands here: a dirty target, `.config/bootstrap.yaml` included, refuses the run only when its render differs from the working copy; the setup config is written last                                                                                                                                                                                                                                                                                                                                                                                        | —                                                    | U5, U6         |
+| 12 | Replacement criteria with the 1.0 catalog (user, 2026-10-09) | Every reader of catalog data (the catalog functions, the renderer, the setup-config rules, the command code) gets the catalog and the template sources from an Effect `Catalog` service; its default layer is the static data. A test fixture catalog holds a `max: one` category with two replaceable tools. A criterion that needs two tools of one `max: one` category (a replacement, two such tools named or recorded, or another tool held in place of a missing unremovable one) runs in-process with the fixture; the 1.0 catalog has no such pair | Catalog as a parameter; leave the criteria uncovered | U2, U4, U6, U8 |
 
 ## Edits
 

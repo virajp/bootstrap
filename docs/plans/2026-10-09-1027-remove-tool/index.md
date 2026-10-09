@@ -15,7 +15,7 @@ covers:
 
 **APPROVED**
 
-APPROVED 2026-10-09 by the user
+APPROVED 2026-10-09 by the user — revised for the fixture catalog (row 6)
 
 ## Consent
 
@@ -114,6 +114,7 @@ so this flow is planned first.
 | 3 | Order in step 2                                         | Validity (exit 3), then the version guard (exit 1), then the repair. An older `version` exits 1 with no repair warning                                                                                                                                        | Repair first                                    | U6             |
 | 4 | Remove-mode cases                                       | The change computation gets a remove mode for the step 5 table: a shared file is created again, a non-shared absent file is left alone, unrecorded paths are not reported, the files of a repaired tool are written                                           | A separate remove computation                   | U1             |
 | 5 | Plan constraint: catalog-driven code (user, 2026-10-08) | No tool or category name in logic; the literal scan of `cli/test/catalog-driven.test.ts` already covers every `.ts` file under `cli/src` except the two catalogs and `cli/src/git/`, so it covers `cli/src/change/`, `cli/src/command/` and `cli/src/remove/` | An allow-list of literals                       | U1, U4, U5, U6 |
+| 6 | Criteria that need two tools of one `max: one` category | They run in-process with the fixture catalog layer of plan 2 (its row 12); the 1.0 catalog has no such pair                                                                                                                                                   | Leave them uncovered                            | U6             |
 
 ## New dependencies
 
@@ -229,7 +230,9 @@ none.
 From [Remove a tool](../../blueprint/flows/cli/150-remove-tool/index.md) —
 copied verbatim. U6 covers every criterion with an E2E test on the built binary,
 except the write-failure and interrupt criteria, which U6 covers in-process with
-the FileSystem seam of plan 2.
+the FileSystem seam of plan 2, and the criteria that need two tools of one
+`max: one` category, which U6 covers in-process with the fixture catalog (row
+6).
 
 A criterion that says only "when remove runs" runs with `-y`; a criterion that
 names its flags (no `-y`, `--dry-run`) runs with those only.

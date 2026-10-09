@@ -10,11 +10,15 @@
   - `cli/test/e2e/init.e2e.test.ts` — one test per criterion of *Acceptance
     criteria (from blueprint)* in `index.md`, on the built binary in temporary
     git repositories (U1 helpers), except the write-failure and the interrupt
-    criteria. Each test names its criterion.
+    criteria and the criteria that need two tools of one `max: one` category
+    (row 12). Each test names its criterion.
   - `cli/test/init/run.test.ts` (in-process, with the FileSystem seam of U5):
     "Given a write failure injected mid-run…" and "Given an interrupt signal
     mid-write…" end to end through the pipeline — the tree is as before and the
     exit codes are 3 (naming the failing path) and 130.
+  - `cli/test/init/run.test.ts` also covers, in-process with the fixture catalog
+    layer, every criterion that needs two tools of one `max: one` category (row
+    12). Each test names its criterion.
   - They fail because the handler is the placeholder of U2.
 - **Read first:** `docs/blueprint/flows/cli/110-setup-repository/index.md` (the
   whole flow), `cli/src/init/command.ts`, `usage.ts`, `resolve.ts`,
@@ -24,11 +28,12 @@
 
 ## Ruling
 
-| #  | Decision                                         | Ruling                                                                                                                                  | Rejected                                   | Unit   |
-| -- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------ |
-| 2  | Fault tests (write failure, interrupt mid-write) | In-process FileSystem seam that fails or stops at the n-th write; no test code ships in the binary (user, 2026-10-09)                   | Environment variable in the binary; timing | U5, U8 |
-| 10 | Command surface before the pipeline              | U2 registers `init`, its flags and usage checks; its handler ends in a placeholder that U8 replaces with the pipeline before the review | One unit for both                          | U2, U8 |
-| 11 | Acceptance tests                                 | The built binary runs in temporary git repositories with a `mise` stub on `PATH`; the two fault criteria run in-process (row 2)         | Only in-process tests                      | U1, U8 |
+| #  | Decision                                                     | Ruling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Rejected                                             | Unit           |
+| -- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------------- |
+| 2  | Fault tests (write failure, interrupt mid-write)             | In-process FileSystem seam that fails or stops at the n-th write; no test code ships in the binary (user, 2026-10-09)                                                                                                                                                                                                                                                                                                                                                                                                                                      | Environment variable in the binary; timing           | U5, U8         |
+| 10 | Command surface before the pipeline                          | U2 registers `init`, its flags and usage checks; its handler ends in a placeholder that U8 replaces with the pipeline before the review                                                                                                                                                                                                                                                                                                                                                                                                                    | One unit for both                                    | U2, U8         |
+| 11 | Acceptance tests                                             | The built binary runs in temporary git repositories with a `mise` stub on `PATH`; the two fault criteria run in-process (row 2)                                                                                                                                                                                                                                                                                                                                                                                                                            | Only in-process tests                                | U1, U8         |
+| 12 | Replacement criteria with the 1.0 catalog (user, 2026-10-09) | Every reader of catalog data (the catalog functions, the renderer, the setup-config rules, the command code) gets the catalog and the template sources from an Effect `Catalog` service; its default layer is the static data. A test fixture catalog holds a `max: one` category with two replaceable tools. A criterion that needs two tools of one `max: one` category (a replacement, two such tools named or recorded, or another tool held in place of a missing unremovable one) runs in-process with the fixture; the 1.0 catalog has no such pair | Catalog as a parameter; leave the criteria uncovered | U2, U4, U6, U8 |
 
 ## Edits
 
@@ -47,7 +52,7 @@
 - `mise x -- mise run p:cli:check` exits 0.
 - `mise x -- mise run p:cli:build` exits 0.
 - `mise x -- mise run p:cli:e2e` exits 0 and runs a test for every acceptance
-  criterion except the two fault criteria.
+  criterion except the two fault criteria and the row 12 criteria.
 - `grep -rn "not implemented" cli/src` finds nothing.
 
 ## Guardrails
