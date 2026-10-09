@@ -191,8 +191,8 @@ Plan 1 of 2 — requires nothing; required by the plan for
 
 | Id | Wave | Unit file                                    | Kind   | Owns                                                                                                                                                                                                                                      | Depends on         | Status  | Commit |
 | -- | ---- | -------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------- | ------ |
-| U1 | 1    | [01-coverage.md](01-coverage.md)             | code   | `cli/package.json`, `pnpm-lock.yaml`, `cli/vitest.config.ts`                                                                                                                                                                              | —                  | running |  |
-| U2 | 2    | [02-catalogs.md](02-catalogs.md)             | code   | `cli/src/tool/catalog.ts`, `cli/src/tool-category/catalog.ts`, `cli/test/tool/catalog.test.ts`, `cli/test/tool-category/catalog.test.ts`, `cli/test/catalog-driven.test.ts`, `cli/src/tool/render.ts`, `cli/src/setup-config/validity.ts` | U1                 | pending |        |
+| U1 | 1    | [01-coverage.md](01-coverage.md)             | code   | `cli/package.json`, `pnpm-lock.yaml`, `cli/vitest.config.ts`                                                                                                                                                                              | —                  | green | 1014fb1 |
+| U2 | 2    | [02-catalogs.md](02-catalogs.md)             | code   | `cli/src/tool/catalog.ts`, `cli/src/tool-category/catalog.ts`, `cli/test/tool/catalog.test.ts`, `cli/test/tool-category/catalog.test.ts`, `cli/test/catalog-driven.test.ts`, `cli/src/tool/render.ts`, `cli/src/setup-config/validity.ts` | U1                 | running |  |
 | U3 | 3    | [03-templates.md](03-templates.md)           | code   | `cli/templates/**`, `cli/test/tool/core-templates.test.ts`, `cli/test/tool/new-templates.test.ts`, `cli/test/fixtures/**`                                                                                                                 | U2                 | pending |        |
 | U4 | 3    | [04-setup-config.md](04-setup-config.md)     | code   | `cli/src/setup-config/**`, `cli/test/setup-config/**`                                                                                                                                                                                     | U2                 | pending |        |
 | U5 | 4    | [05-renderer.md](05-renderer.md)             | code   | `cli/src/tool/render.ts`, `cli/test/tool/render.test.ts`, `cli/templates/mise/.config/mise/conf.d/_base/mise.dev.toml`, `cli/templates/pre-commit/.config/git-conventional-commits.yaml`                                                  | U3, U4             | pending |        |
@@ -308,7 +308,8 @@ the unit could not proceed without; it blocks the unit and its dependents.
 | ---- | ---- | ----- | ----- | ------- | ------ | ------ |
 | 0 | preflight | — | 1 | pass | format 25=25 silent; doctor cli: no blocking (LSP typescript present; drift: repo shape not stackgen-shaped (declined), graph 20 min stale, mempalace.yaml keyword overlap); conventions read from .claude/stackgen/templates/{typescript-effect-cli,pnpm-workspace,npm-package}.md; wave gate green on 7ffcf60 (install, check, test 164 pass, build); coverage_target 100 and review_round_cap 4 (defaults) | — |
 | 0 | override | — | — | — | override: shared worktree: all-2026-10-09-0954 | — |
-| 1 | U1 coverage | opus | 1 | pass | code: @vitest/coverage-v8 ^5.0.3 added, vitest.config.ts unchanged; 164 tests pass; coverage 97.79% lines (<100, gap recorded; pre-existing lines outside Owns); DECIDED caret range; GAP none (closes G1) | PENDING |
+| 1 | U1 coverage | opus | 1 | pass | code: @vitest/coverage-v8 ^5.0.3 added, vitest.config.ts unchanged; 164 tests pass; coverage 97.79% lines (<100, gap recorded; pre-existing lines outside Owns); DECIDED caret range; GAP none (closes G1) | 1014fb1 |
+| 1 | R1 | opus | 1 | pass | wave review: FINDINGS 0, CONTRACT clean, RULINGS clean; wave gate green (install, check, test 164, build) | — |
 
 ## Acceptance criteria (from blueprint)
 
@@ -317,6 +318,7 @@ none — no flow touched
 ## Gaps surfaced during execution
 
 - U1 coverage (code-unit coverage residual, non-blocking): 97.79% lines vs target 100 — uncovered cli/src/bin.ts:13-16, cli/src/cli.ts:42 (branch), cli/src/setup-config/validity.ts:82 (branch); pre-existing, bin.ts and cli.ts are owned by no unit of this plan (validity.ts is U2/U4's). Assumption: left as is; re-measured after U4.
+- Run artifact: `vitest --coverage` writes `cli/coverage/`, which no .gitignore entry covers; no unit owns .gitignore. Assumption: the orchestrator deletes the directory after each coverage run so the merge task sees a clean tree.
 
 ## Launch
 
