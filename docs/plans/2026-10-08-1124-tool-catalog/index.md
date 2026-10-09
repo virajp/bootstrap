@@ -14,9 +14,9 @@ covers:
 
 ## Status
 
-**RUNNING**
+**COMPLETE**
 
-RUNNING since 2026-10-09T10:00 in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.worktrees/all-2026-10-09-0954
+COMPLETE 2026-10-09 — 1014fb1 84016e8 917c7f8 5ed611b 82fcd61 4331d5e ccb174d 08de398 88f9445 2dfa2c4 a2b8ef3 (gaps open; folder stays live)
 
 ## Consent
 
@@ -198,7 +198,7 @@ Plan 1 of 2 — requires nothing; required by the plan for
 | U5 | 4    | [05-renderer.md](05-renderer.md)             | code   | `cli/src/tool/render.ts`, `cli/test/tool/render.test.ts`, `cli/templates/mise/.config/mise/conf.d/_base/mise.dev.toml`, `cli/templates/pre-commit/.config/git-conventional-commits.yaml`                                                  | U3, U4             | green | 4331d5e |
 | U6 | 5    | [06-review.md](06-review.md)                 | review | —                                                                                                                                                                                                                                         | U1, U2, U3, U4, U5 | green |  |
 | U7 | 6    | [07-docs.md](07-docs.md)                     | edit   | the repo's docs (README, CLAUDE.md, `docs/**` outside `docs/blueprint/` and `docs/plans/`)                                                                                                                                                | all                | green | a2b8ef3 |
-| U8 | 7    | [08-gates-and-bump.md](08-gates-and-bump.md) | edit   | — (no version bump; no generated file)                                                                                                                                                                                                    | U7                 | running |  |
+| U8 | 7    | [08-gates-and-bump.md](08-gates-and-bump.md) | edit   | — (no version bump; no generated file)                                                                                                                                                                                                    | U7                 | green |  |
 
 ## Shared-file rule
 
@@ -334,6 +334,9 @@ the unit could not proceed without; it blocks the unit and its dependents.
 | 6 | R6 | opus | 1 | findings(1) | wave review: docs/memory/decisions/tool-setup-config-run.md:1 [U7] rule 4 — the dprint reflow split the one-line DECISIONS|…|source header across lines 1-2; CONTRACT clean, RULINGS clean; wave gate green | — |
 | 6 | U7 docs | opus | 2 | pass | edit (R6 loop-back): DECISIONS header restored to one line; no dprint-ignore (no sibling uses one); GAP header fails dprint check like its siblings | a2b8ef3 |
 | 6 | R6 | opus | 2 | pass | wave review round 2: FINDINGS 0, CONTRACT clean, RULINGS clean | — |
+| 7 | U8 gates-and-bump | opus | 1 | pass | edit: no version bump (0.0.1); install 0, check 0, test 258/258, build 0; no file changed | — |
+| 7 | R7 | — | 1 | pass | wave review: wave 7 produced no diff (U8 owns nothing, changed nothing), so the review is vacuous; wave gate green | — |
+| — | reconcile | — | 1 | pass | final gates: wave gate once more green (install, check, test 258/258, build); orchestrator gate 1 node cli/dist/bin.mjs --version prints 0.0.1; orchestrator gate 2 all 15 tools rendered (origin github.com) into an empty temp dir write exactly the catalog Target paths, every .config/mise/tasks/ file 0755 — pass | — |
 
 ## Acceptance criteria (from blueprint)
 
