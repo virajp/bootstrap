@@ -22,32 +22,35 @@ version = "latest"
 [tools.jq]
 version = "latest"
 
+# The entries of the selected base tools. Each `if` opens inside the string of
+# the entry before it and closes inside the string of its own last line, so an
+# unselected tool's entry renders as nothing and this template stays valid TOML.
 [tools.yq]
-version = "latest"
+version = "latest<% if selection contains 'pre-commit' %>"
 
 [tools."pre-commit"]
 depends = [ "python", "uv" ]
 uvx     = true
-version = "latest"
+version = "latest<% endif %><% if selection contains 'dprint' %>"
 
 # Dprint is a code formatter for various programming languages
 [tools.dprint]
-version = "latest"
+version = "latest<% endif %><% if selection contains 'taplo' %>"
 
 # Taplo is a code formatter for TOML files
 [tools.taplo]
 depends = [ "dprint" ]
-version = "latest"
+version = "latest<% endif %><% if selection contains 'virajp-linter' %>"
 
 # The house linter (`linter`), which `code:lint` runs
 [tools."npm:@askviraj/linter"]
 depends = [ "node" ]
-version = "latest"
+version = "latest<% endif %><% if selection contains 'dprint' %>"
 
 # The package.json key sorter (`sort-package-json`), which `code:format` runs
 [tools."npm:sort-package-json"]
 depends = [ "node" ]
-version = "latest"
+version = "latest<% endif %>"
 
 [tasks.init]
 description = "Initialize mise tasks"

@@ -317,6 +317,7 @@ the unit could not proceed without; it blocks the unit and its dependents.
 | 3 | R3 | opus | 1 | findings(1) | wave review: cli/templates/mise/.config/mise/tasks/code/all:14 [U3] completeness — comment still says scanners pinned in_base/mise.dev.toml; CONTRACT clean, RULINGS clean; wave gate red-by-expectation (check 2 TS errors, test 3 failures, all in render.test.ts, U5) | — |
 | 3 | U3 templates | opus | 2 | pass | code (R3 loop-back): code/all comment now names dprint in _base and each scanner in conf.d/<tool>; owned tests 76/76 | 5ed611b |
 | 3 | R3 | opus | 2 | pass | wave review round 2: FINDINGS 0; wave gate red-by-expectation (render.test.ts only, U5) | — |
+| 4 | U5 renderer | opus | 1 | pass | code: renderFiles({values, selection, originHost}) renders the selection in catalog order with createOnly + executable; origin_tool per #21; _base/mise.dev.toml base-tool blocks selection-dependent; forge links via origin_tool; suite 254 pass / 0 fail, check + build green, --version 0.0.1; coverage 98.5% (render.ts 100%; residual bin.ts/cli.ts pre-existing); GAP U5/gap/1 | PENDING |
 
 ## Acceptance criteria (from blueprint)
 
@@ -330,6 +331,8 @@ none — no flow touched
 - U2 GAP (blueprint, non-blocking): tool invariant 10 cannot be checked from catalog data (a tool's mise entries live in its templates); the catalog test checks only that `base` is a boolean. Assumption: U3's template tests carry it, if anywhere.
 - U3 GAP (plan hole, non-blocking, U3/gap/1): the plan did not say how a `_default` dispatcher passes flags and files on (assumed: each dispatcher forwards them and each subtask declares the old single-tool task's flags); did not move node and pnpm out of `_base/mise.toml` (assumed: moved to `_base/mise.dev.toml` as the blueprint lists, exact pins only in mise.toml); did not say where jq and yq go once claude's conf.d/ai file is deleted (assumed: `_base/mise.dev.toml`, since setup:ai:claude runs jq).
 - U4 GAP (blueprint, non-blocking, U4/gap/1): the shipped catalog has no max-one category with two tools, so the max-one and row-16 rules are tested only against a mocked catalog; the setup-config entity doc gives no what/why/fix text for MaxOneExceeded, UnremovableReplaced, RequiredToolMissing or VersionTooOld (assumed: U4 wrote it); conventions name the error key `next_command` while the code keeps `fix` (assumed: plan 2 maps one to the other at the process boundary).
+- U5 GAP (plan hole, non-blocking, U5/gap/1): the plan did not require templates to stay formatter-valid (assumed: Liquid tags open and close inside TOML/YAML strings so `dprint check` passes); gave no render signature U3's tests could share (assumed: `render(tools, values, …)` kept beside `renderFiles(input)`); gave no GitLab link format (assumed: `/-/commit`, `/-/compare`, `/-/issues` on gitlab.com); the template's commitScopes line and `vscode/settings.json` already failed `dprint check` before this run and are left as they were.
+- Coverage residual (non-blocking): after U5 the suite is 98.5% lines vs target 100 — cli/src/bin.ts:13-16 and cli/src/cli.ts:42 (branch), pre-existing and owned by no unit of this plan; every file the plan touched is at 100%.
 
 ## Launch
 

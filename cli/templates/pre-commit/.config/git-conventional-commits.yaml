@@ -23,6 +23,11 @@ changelog:
     merge: Merges
     breakingChange: BREAKING CHANGES
 
-  # Issue references. No commit, range or issue URLs: the forge is a non-core
-  # tool, so this core file names none, and the changelog renders plain ids.
-  issueRegexPattern: "#[0-9]+"
+  # Issue references, plus the links of the forge the renderer picks from the
+  # selection and the origin host; with no forge selected, plain ids. The `if`
+  # opens and closes inside quoted values and each link picks its forge inside
+  # its own string, so this template stays YAML with unique keys.
+  issueRegexPattern: "#[0-9]+<% if origin_tool == 'github' or origin_tool == 'gitlab' %>"
+  commitUrl: "https://<% if origin_tool == 'gitlab' %>gitlab.com/<%= repo %>/-<% else %>github.com/<%= repo %><% endif %>/commit/%commit%"
+  commitRangeUrl: "https://<% if origin_tool == 'gitlab' %>gitlab.com/<%= repo %>/-/compare/%from%...%to%<% else %>github.com/<%= repo %>/compare/%from%...%to%?diff=split<% endif %>"
+  issueUrl: "https://<% if origin_tool == 'gitlab' %>gitlab.com/<%= repo %>/-<% else %>github.com/<%= repo %><% endif %>/issues/%issue%<% endif %>"
