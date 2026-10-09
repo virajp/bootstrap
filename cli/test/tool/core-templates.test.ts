@@ -792,11 +792,13 @@ const dispatchers = [
 /**
  * Writes the rendered task library of `mise` plus `subtasks` (task path → line it logs) into a temporary directory —
  * no mise config, so nothing is trusted or installed — then runs `mise run <args>` there, isolated from the caller's
- * own mise environment and global config. A subtask logs its line and its arguments.
+ * own mise environment and global config. A subtask logs its line and its arguments; one named in `failing` then
+ * exits 3.
  */
 const runMise = (
   subtasks: Readonly<Record<string, string>>,
   args: ReadonlyArray<string>,
+  failing: ReadonlyArray<string> = [],
 ) =>
   Effect
     .gen(function*() {
@@ -813,7 +815,9 @@ const runMise = (
         ...Object.entries(subtasks).map(([task, line]) =>
           [
             `.config/mise/tasks/${task}`,
-            `#!/usr/bin/env bash\necho "${line} $*" >>"${log}"\n`,
+            `#!/usr/bin/env bash\necho "${line} $*" >>"${log}"\n${
+              failing.includes(task) ? "exit 3\n" : ""
+            }`,
           ] as const
         ),
       ];
@@ -877,6 +881,16 @@ describe.skipIf(!hasMise)("task dispatchers", () => {
         "code/sec/grype": "grype",
       }, ["code:sec"]);
       expect(status).toBe(0);
+      expect(runs.map(run => run.trimEnd())).toEqual(["gitleaks", "grype"]);
+    }));
+
+  it.effect("code:sec runs every per-tool subtask even after one fails, then fails", () =>
+    Effect.gen(function*() {
+      const { status, runs } = yield* runMise({
+        "code/sec/gitleaks": "gitleaks",
+        "code/sec/grype": "grype",
+      }, ["code:sec"], ["code/sec/gitleaks"]);
+      expect(status).not.toBe(0);
       expect(runs.map(run => run.trimEnd())).toEqual(["gitleaks", "grype"]);
     }));
 

@@ -116,11 +116,12 @@ members() {
 # a repo that selected no tool for the step: it prints "no tool" and runs
 # nothing. A task list that cannot be read is a failure, never an empty list.
 # The names are read before the first run, so a task reading stdin cannot
-# swallow the rest of the list.
+# swallow the rest of the list. Every task runs even after one fails; the
+# first non-zero status is returned at the end.
 run_tool_tasks() {
   local prefix="$1"
   shift
-  local listing task tasks=()
+  local listing task tasks=() status=0 code
   listing="$(mise tasks ls --hidden --name-only)" || return
   while IFS= read -r task; do
     case "${task}" in
@@ -133,8 +134,13 @@ run_tool_tasks() {
     return 0
   fi
   for task in ${tasks[@]+"${tasks[@]}"}; do
-    mise run "${task}" "$@"
+    code=0
+    mise run "${task}" "$@" || code=$?
+    if [ "${status}" -eq 0 ]; then
+      status="${code}"
+    fi
   done
+  return "${status}"
 }
 
 # The shell files in scope, one path per line: the paths given as arguments
