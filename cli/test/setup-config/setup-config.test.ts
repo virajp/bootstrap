@@ -109,6 +109,15 @@ describe("setup config schema", () => {
       ["a commit scope with --", {
         values: { ...valid.values, commit_scopes: ["a--b"] },
       }],
+      ["a tool name not kebab-case", {
+        values: { ...valid.values, tools: ["Not_A_Tool"] },
+      }],
+      ["a tool name with --", {
+        values: { ...valid.values, tools: ["a--b"] },
+      }],
+      ["a tool name ending in -", {
+        values: { ...valid.values, tools: ["a-"] },
+      }],
       ["missing files", { files: undefined }],
       ["a kept key", { kept: [] }],
       ["a deleted key", { deleted: [] }],
