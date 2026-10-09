@@ -5,6 +5,13 @@ pipx.uvx            = true
 python.compile      = false
 python.uv_venv_auto = "create|source"
 
+[tools.node]
+version = "latest"
+
+[tools.pnpm]
+depends = [ "node" ]
+version = "latest"
+
 [tools.python]
 version = "latest"
 
@@ -12,23 +19,15 @@ version = "latest"
 depends = [ "python" ]
 version = "latest"
 
+[tools.jq]
+version = "latest"
+
+[tools.yq]
+version = "latest"
+
 [tools."pre-commit"]
 depends = [ "python", "uv" ]
 uvx     = true
-version = "latest"
-
-# Grype is a vulnerability scanner for container images
-# and filesystems
-[tools.grype]
-version = "latest"
-
-# Gitleaks is a SAST tool for detecting hardcoded secrets like
-# passwords, API keys, and tokens in git repositories
-[tools.gitleaks]
-version = "latest"
-
-# Fnox resolves the repo's secrets from the providers in .config/fnox.toml
-[tools.fnox]
 version = "latest"
 
 # Dprint is a code formatter for various programming languages

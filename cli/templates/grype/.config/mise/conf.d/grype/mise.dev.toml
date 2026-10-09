@@ -1,0 +1,4 @@
+# Grype is a vulnerability scanner for container images
+# and filesystems
+[tools.grype]
+version = "latest"

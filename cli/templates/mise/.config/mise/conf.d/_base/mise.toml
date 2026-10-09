@@ -3,17 +3,12 @@
 node.compile        = false
 npm.package_manager = "pnpm"
 
-# Tools every environment needs; mise.<env>.toml adds one environment's own.
-[tools.node]
-version = "latest"
-
-[tools.pnpm]
-depends = [ "node" ]
-version = "latest"
+# Tools every environment needs, each pinned exactly; mise.<env>.toml adds one
+# environment's own.
 
 # OSV Scanner is a tool for scanning open source vulnerabilities.
 [tools.osv-scanner]
-version = "latest"
+version = "2.6.0"
 
 [env]
 _.path = { path = "node_modules/.bin", tools = true }

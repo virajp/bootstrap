@@ -109,24 +109,14 @@ members() {
   fi
 }
 
-# run_task_if_present <task> [args...]
-#
-# Runs a task that a tool supplies, and skips it silently when no selected tool
-# does. The orchestrators name tasks, never tools, so a repo without the tool
-# that fills a step still runs end to end.
-run_task_if_present() {
-  if mise tasks info "$1" >/dev/null 2>&1; then
-    mise run "$@"
-  fi
-}
-
 # run_tool_tasks <prefix> [args...]
 #
-# Runs every `<prefix>:<tool>` task, forwarding the arguments — the dependency
-# dispatchers' one mechanism. No such task is the normal state of a repo whose
-# tools manage no dependencies, and runs nothing; a task list that cannot be
-# read is a failure, never an empty list. The names are read before the first
-# run, so a task reading stdin cannot swallow the rest of the list.
+# Runs every `<prefix>:<tool>` task, forwarding the arguments — the one
+# mechanism of every `_default` dispatcher. No such task is the normal state of
+# a repo that selected no tool for the step: it prints "no tool" and runs
+# nothing. A task list that cannot be read is a failure, never an empty list.
+# The names are read before the first run, so a task reading stdin cannot
+# swallow the rest of the list.
 run_tool_tasks() {
   local prefix="$1"
   shift
@@ -138,6 +128,10 @@ run_tool_tasks() {
       "${prefix}":*) tasks+=("${task}") ;;
     esac
   done <<<"${listing}"
+  if [ "${#tasks[@]}" -eq 0 ]; then
+    echo "no tool"
+    return 0
+  fi
   for task in ${tasks[@]+"${tasks[@]}"}; do
     mise run "${task}" "$@"
   done

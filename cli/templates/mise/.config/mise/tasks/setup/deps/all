@@ -21,6 +21,3 @@ mise run setup:deps:outdated
 
 print_subheader "Auditing for known vulnerabilities ..."
 mise run setup:deps:audit
-
-# The dispatcher for tools that supply one step covering every verb.
-run_tool_tasks setup:deps:all
