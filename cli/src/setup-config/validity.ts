@@ -36,10 +36,6 @@ export class FormatTooNew extends Data.TaggedError("FormatTooNew")<Problem> {}
 export class VersionTooNew extends Data.TaggedError("VersionTooNew")<Problem> {}
 /** A name in `values.tools` is not a tool the running cli ships. */
 export class ToolRemoved extends Data.TaggedError("ToolRemoved")<Problem> {}
-/** A core tool name is listed in `values.tools`. */
-export class CoreToolListed
-  extends Data.TaggedError("CoreToolListed")<Problem>
-{}
 /** A path is in both `kept` and `deleted`. */
 export class PathKeptAndDeleted
   extends Data.TaggedError("PathKeptAndDeleted")<Problem>
@@ -53,7 +49,6 @@ export type SetupConfigError =
   | FormatTooNew
   | VersionTooNew
   | ToolRemoved
-  | CoreToolListed
   | PathKeptAndDeleted
   | InvalidPath;
 
@@ -171,20 +166,11 @@ export const validate = (
       });
     }
     for (const name of config.values.tools) {
-      const tool = toolsByName.get(name);
-      if (tool === undefined) {
+      if (!toolsByName.has(name)) {
         return yield* new ToolRemoved({
           what: `tool "${name}" in values.tools of ${file}`,
           why:
             `bootstrap ${running.version} does not ship "${name}": it is removed in this version`,
-          fix: `remove "${name}" from values.tools in ${file}`,
-        });
-      }
-      if (tool.kind === "core") {
-        return yield* new CoreToolListed({
-          what: `tool "${name}" in values.tools of ${file}`,
-          why:
-            `"${name}" is a core tool; core tools are always applied and never listed`,
           fix: `remove "${name}" from values.tools in ${file}`,
         });
       }

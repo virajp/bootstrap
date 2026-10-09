@@ -310,6 +310,7 @@ the unit could not proceed without; it blocks the unit and its dependents.
 | 0 | override | — | — | — | override: shared worktree: all-2026-10-09-0954 | — |
 | 1 | U1 coverage | opus | 1 | pass | code: @vitest/coverage-v8 ^5.0.3 added, vitest.config.ts unchanged; 164 tests pass; coverage 97.79% lines (<100, gap recorded; pre-existing lines outside Owns); DECIDED caret range; GAP none (closes G1) | 1014fb1 |
 | 1 | R1 | opus | 1 | pass | wave review: FINDINGS 0, CONTRACT clean, RULINGS clean; wave gate green (install, check, test 164, build) | — |
+| 2 | U2 catalogs | opus | 1 | pass | code: 13 categories, 15 rescoped tools, unremovableTools/defaultSelection/checkRequires/pathIndex (throws on duplicate), catalog-driven literal test; render.ts and validity.ts type-follow only; own tests green, 16 failing tests + 11 type errors in U3/U4/U5-owned test files (UNRESOLVED ruled GAP by orchestrator, see gaps); coverage 96.68% (<100: render.ts:108-111 pending U5, pre-existing bin.ts/cli.ts/validity.ts:77); DECIDED checkRequires name pairs, pathIndex exported | PENDING |
 
 ## Acceptance criteria (from blueprint)
 
@@ -319,6 +320,8 @@ none — no flow touched
 
 - U1 coverage (code-unit coverage residual, non-blocking): 97.79% lines vs target 100 — uncovered cli/src/bin.ts:13-16, cli/src/cli.ts:42 (branch), cli/src/setup-config/validity.ts:82 (branch); pre-existing, bin.ts and cli.ts are owned by no unit of this plan (validity.ts is U2/U4's). Assumption: left as is; re-measured after U4.
 - Run artifact: `vitest --coverage` writes `cli/coverage/`, which no .gitignore entry covers; no unit owns .gitignore. Assumption: the orchestrator deletes the directory after each coverage run so the merge task sees a clean tree.
+- U2 GAP (plan hole, non-blocking): decision #12 promised every wave compiles, but the type change breaks four test files U2 does not own — cli/test/tool/core-templates.test.ts and new-templates.test.ts (U3), cli/test/setup-config/** (U4), cli/test/tool/render.test.ts (U5); 16 tests and 11 type errors red after wave 2. U2 returned it as UNRESOLVED; the orchestrator ruled it a gap, not a block: each file has an owner in a later wave, the fix is inside that owner's Owns, and nothing lands before the final gate. Assumption: U3, U4 and U5 each adapt the test files they own to the new catalog types; the wave gate is recorded red-by-expectation for those files after waves 2 and 3 and must be green from wave 4 on.
+- U2 GAP (blueprint, non-blocking): tool invariant 10 cannot be checked from catalog data (a tool's mise entries live in its templates); the catalog test checks only that `base` is a boolean. Assumption: U3's template tests carry it, if anywhere.
 
 ## Launch
 

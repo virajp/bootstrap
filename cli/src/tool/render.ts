@@ -78,7 +78,7 @@ export const render = (
   return Effect
     .forEach(
       [...selected].flatMap(tool =>
-        tool.files.map(path => [tool, path] as const)
+        tool.files.map(file => [tool, file.path] as const)
       ),
       ([tool, path]) => renderPath(templates, context, tool, path),
     )
