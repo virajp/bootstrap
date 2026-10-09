@@ -34,6 +34,8 @@
   - Drop (re-run): a dropped recorded removable tool, not a replacement, exits 2
     "removing files needs -y" without `-y`; proceeds with `-y`; under
     `--dry-run` it is reported and needs no `-y`.
+  - The replacement cases, and every case that needs two tools of one `max: one`
+    category, use the fixture catalog layer (row 12).
   - It fails because `resolve.ts` does not exist.
 - **Read first:** `docs/blueprint/flows/cli/110-setup-repository/index.md`
   (steps 3–6), `docs/blueprint/entities/tool/index.md` (requires paragraph),
@@ -44,6 +46,10 @@
   `cli/src/setup-config/schema.ts`.
 
 ## Ruling
+
+| #  | Decision                                                     | Ruling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Rejected                                             | Unit           |
+| -- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------------- |
+| 12 | Replacement criteria with the 1.0 catalog (user, 2026-10-09) | Every reader of catalog data (the catalog functions, the renderer, the setup-config rules, the command code) gets the catalog and the template sources from an Effect `Catalog` service; its default layer is the static data. A test fixture catalog holds a `max: one` category with two replaceable tools. A criterion that needs two tools of one `max: one` category (a replacement, two such tools named or recorded, or another tool held in place of a missing unremovable one) runs in-process with the fixture; the 1.0 catalog has no such pair | Catalog as a parameter; leave the criteria uncovered | U2, U4, U6, U8 |
 
 No assumed decision binds this unit beyond the plan constraint of row 7 in
 `index.md`: "The literal scan of plan 1 (`cli/test/catalog-driven.test.ts`)

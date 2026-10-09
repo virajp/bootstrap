@@ -1,24 +1,34 @@
-# U2 — Command surface of init, usage errors and the error model
+# U2 — Catalog service, command surface of init, usage errors and the error model
 
 - **Wave:** 2
 - **Depends on:** U1
-- **Owns:** `cli/src/cli.ts`, `cli/src/bin.ts`, `cli/src/init/command.ts` (new),
-  `cli/src/init/usage.ts` (new), `cli/src/report/errors.ts` (new),
+- **Owns:** `cli/src/catalog/**` (new), `cli/src/tool/**`,
+  `cli/src/tool-category/**`, `cli/src/setup-config/**` (catalog access only),
+  `cli/test/support/catalog-fixture.ts` (new), `cli/test/catalog/**` (new),
+  `cli/test/tool/**`, `cli/test/tool-category/**`, `cli/test/setup-config/**`
+  (layer only), `cli/src/cli.ts`, `cli/src/bin.ts`, `cli/src/init/command.ts`
+  (new), `cli/src/init/usage.ts` (new), `cli/src/report/errors.ts` (new),
   `cli/test/cli.test.ts`, `cli/test/init/usage.test.ts` (new),
   `cli/test/report/errors.test.ts` (new), `cli/test/catalog-driven.test.ts`
 - **Model:** opus
 - **Kind:** code
 - **Test first:**
+  - `cli/test/catalog/service.test.ts` (row 12): with the default layer, the
+    `Catalog` service gives the static catalog data and template sources; with
+    the fixture layer (a `max: one` category with two replaceable tools and
+    inline templates), Validity accepts a fixture config, the renderer renders a
+    fixture tool, and `checkRequires` and `defaultSelection` read the fixture.
+    Every existing test of `cli/test/tool/**`, `cli/test/tool-category/**` and
+    `cli/test/setup-config/**` stays green on the default layer.
   - `cli/test/init/usage.test.ts` (in-process, through `run(args)`): each usage
     error of flow 110 (the list before step 1) exits 2, writes nothing and
     prints a message that names the flag and the allowed form — an unknown flag;
     `--merge-develop squash`; `--merge-main x`; `--add-scope Api`;
     `--remove-scope a--b`; `--repo onlyone`; `--reset-scope --add-scope api`;
     `--reset-scope --remove-scope api`; `--add-scope api --remove-scope api`;
-    `--tool nosuch`; two `--tool` names of one `max: one` category (taken from
-    the catalog data, not a literal pair). All usage errors run before any git
-    or disk access: the test runs them in a directory that is not a git
-    repository.
+    `--tool nosuch`; two `--tool` names of one `max: one` category (with the
+    fixture layer, row 12). All usage errors run before any git or disk access:
+    the test runs them in a directory that is not a git repository.
   - `cli/test/cli.test.ts`: `init --help` exits 0 and prints the init help;
     `--help` wins over other input; `init --version` and `init -v --version`
     exit 2; `init -v` parses as `--verbose`; `bootstrap --version` exits 0 and
@@ -42,15 +52,21 @@
 
 ## Ruling
 
-| #  | Decision                                                | Ruling                                                                                                                                                                                                          | Rejected                   | Unit   |
-| -- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ------ |
-| 3  | G2: effect/cli exits 1 on an unknown flag               | Map the framework's parse errors to a usage error, exit 2 with the short usage, at the command boundary                                                                                                         | An own argument pre-parser | U2     |
-| 4  | G3: effect/cli gives `-v` to `--version`                | `-v` is `--verbose` on each command; `--version` only at the top level, with no short form                                                                                                                      | Keep the framework default | U2     |
-| 7  | Plan constraint: catalog-driven code (user, 2026-10-08) | The literal scan of plan 1 (`cli/test/catalog-driven.test.ts`) extends to every `.ts` file under `cli/src` except the two catalogs and `cli/src/git/`. `git` and `mise` there are process names, not tool logic | An allow-list of literals  | U2, U3 |
-| 10 | Command surface before the pipeline                     | U2 registers `init`, its flags and usage checks; its handler ends in a placeholder that U8 replaces with the pipeline before the review                                                                         | One unit for both          | U2, U8 |
+| #  | Decision                                                     | Ruling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Rejected                                             | Unit           |
+| -- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------------- |
+| 3  | G2: effect/cli exits 1 on an unknown flag                    | Map the framework's parse errors to a usage error, exit 2 with the short usage, at the command boundary                                                                                                                                                                                                                                                                                                                                                                                                                                                    | An own argument pre-parser                           | U2             |
+| 4  | G3: effect/cli gives `-v` to `--version`                     | `-v` is `--verbose` on each command; `--version` only at the top level, with no short form                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Keep the framework default                           | U2             |
+| 7  | Plan constraint: catalog-driven code (user, 2026-10-08)      | The literal scan of plan 1 (`cli/test/catalog-driven.test.ts`) extends to every `.ts` file under `cli/src` except the two catalogs and `cli/src/git/`. `git` and `mise` there are process names, not tool logic                                                                                                                                                                                                                                                                                                                                            | An allow-list of literals                            | U2, U3         |
+| 10 | Command surface before the pipeline                          | U2 registers `init`, its flags and usage checks; its handler ends in a placeholder that U8 replaces with the pipeline before the review                                                                                                                                                                                                                                                                                                                                                                                                                    | One unit for both                                    | U2, U8         |
+| 12 | Replacement criteria with the 1.0 catalog (user, 2026-10-09) | Every reader of catalog data (the catalog functions, the renderer, the setup-config rules, the command code) gets the catalog and the template sources from an Effect `Catalog` service; its default layer is the static data. A test fixture catalog holds a `max: one` category with two replaceable tools. A criterion that needs two tools of one `max: one` category (a replacement, two such tools named or recorded, or another tool held in place of a missing unremovable one) runs in-process with the fixture; the 1.0 catalog has no such pair | Catalog as a parameter; leave the criteria uncovered | U2, U4, U6, U8 |
 
 ## Edits
 
+0. **`cli/src/catalog/service.ts`** — the `Catalog` service (catalog data,
+   category data, template sources) and its default layer over the static data.
+   Every reader in `cli/src/tool/**`, `cli/src/tool-category/**` and
+   `cli/src/setup-config/**` reaches the catalog through it; behaviour does not
+   change. **`cli/test/support/catalog-fixture.ts`** — the fixture layer.
 1. **`cli/src/report/errors.ts`** — the error model: one tagged error type per
    kind with its exit code (`Runtime.errorExitCode`, as `NoCommand` does), the
    what, the why and an optional next command; one function that prints an error
@@ -78,8 +94,10 @@
 
 ## Guardrails
 
-- Do not touch `cli/src/tool/**`, `cli/src/tool-category/**`,
-  `cli/src/setup-config/**` or `cli/templates/**` (plan 1).
+- In `cli/src/tool/**`, `cli/src/tool-category/**` and `cli/src/setup-config/**`
+  change only how the catalog is reached; no behaviour change. Do not touch
+  `cli/templates/**`.
+- The fixture lives under `cli/test/` only; nothing of it ships.
 - No git and no disk access before the usage checks pass.
 - Copy message texts from the flow and the conventions byte for byte.
 
