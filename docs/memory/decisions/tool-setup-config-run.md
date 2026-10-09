@@ -1,5 +1,4 @@
-DECISIONS|tool-setup-config run 2026-10-07|source:
-docs/plans/2026-10-06-2332-tool-setup-config
+DECISIONS|tool-setup-config run 2026-10-07|source: docs/plans/2026-10-06-2332-tool-setup-config
 
 - cli scaffold: Effect v4 `effect/cli`, `NodeServices.layer`; `--version` prints
   the bare version through a `CliOutput.Formatter` override; a bare command
