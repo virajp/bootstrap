@@ -3,10 +3,17 @@ import {
   type SetupConfig,
   setupConfigPath as file,
 } from "@/setup-config/schema";
-import { toolsByName } from "@/tool/catalog";
 import {
+  checkRequires,
+  toolsByName,
+  unremovableTools,
+} from "@/tool/catalog";
+import { categoriesByName } from "@/tool-category/catalog";
+import {
+  type Brand,
   Data,
   Effect,
+  Runtime,
 } from "effect";
 
 /** The running cli: its version and the newest setup-config format it reads. */
@@ -16,32 +23,38 @@ export interface Running {
 }
 
 /** What went wrong, why, and the fix — the shape of the conventions' error report. */
-interface Problem {
+export interface Problem {
   readonly what: string;
   readonly why: string;
   readonly fix: string;
 }
 
+/** A tagged error that fails a Validity check: exit code 3. */
+const ValidityError = <Tag extends string>(tag: Tag) =>
+  class extends Data.TaggedError(tag)<Problem> {
+    readonly [Runtime.errorExitCode]: number = 3;
+  };
+
 /** The file could not be read or is not YAML. */
 export class SetupConfigUnreadable
-  extends Data.TaggedError("SetupConfigUnreadable")<Problem>
+  extends ValidityError("SetupConfigUnreadable")
 {}
 /** The file does not conform to schema.yaml. */
-export class SchemaViolation
-  extends Data.TaggedError("SchemaViolation")<Problem>
-{}
+export class SchemaViolation extends ValidityError("SchemaViolation") {}
 /** `format` is newer than the running cli understands. */
-export class FormatTooNew extends Data.TaggedError("FormatTooNew")<Problem> {}
+export class FormatTooNew extends ValidityError("FormatTooNew") {}
 /** `version` is newer than the running cli. */
-export class VersionTooNew extends Data.TaggedError("VersionTooNew")<Problem> {}
+export class VersionTooNew extends ValidityError("VersionTooNew") {}
 /** A name in `values.tools` is not a tool the running cli ships. */
-export class ToolRemoved extends Data.TaggedError("ToolRemoved")<Problem> {}
-/** A path is in both `kept` and `deleted`. */
-export class PathKeptAndDeleted
-  extends Data.TaggedError("PathKeptAndDeleted")<Problem>
-{}
-/** A path in `files`, `kept` or `deleted` is not a literal repository-relative file path. */
-export class InvalidPath extends Data.TaggedError("InvalidPath")<Problem> {}
+export class ToolRemoved extends ValidityError("ToolRemoved") {}
+/** Two tools in `values.tools` share a `max: one` category. */
+export class MaxOneExceeded extends ValidityError("MaxOneExceeded") {}
+/** A `max: one` category misses its unremovable tool and holds another tool in its place. */
+export class UnremovableReplaced extends ValidityError("UnremovableReplaced") {}
+/** A tool in `values.tools` misses a tool it requires. */
+export class RequiredToolMissing extends ValidityError("RequiredToolMissing") {}
+/** A path in `files` is not a literal repository-relative file path. */
+export class InvalidPath extends ValidityError("InvalidPath") {}
 
 export type SetupConfigError =
   | SetupConfigUnreadable
@@ -49,8 +62,13 @@ export type SetupConfigError =
   | FormatTooNew
   | VersionTooNew
   | ToolRemoved
-  | PathKeptAndDeleted
+  | MaxOneExceeded
+  | UnremovableReplaced
+  | RequiredToolMissing
   | InvalidPath;
+
+/** A setup config that passed Validity; only `validate` makes one. */
+export type ValidSetupConfig = SetupConfig & Brand.Brand<"ValidSetupConfig">;
 
 /** Fails when `format` is newer than the running cli reads; applied before the schema, whose shape may differ. */
 export const checkFormat = (
@@ -151,11 +169,49 @@ const pathProblem = (path: string): string | undefined =>
     ? "it has a wildcard"
     : undefined;
 
+/** The `max: one` rule and the missing-unremovable rule (row 16) over a selection of known tools. */
+const categoryProblem = (
+  names: ReadonlyArray<string>,
+): MaxOneExceeded | UnremovableReplaced | undefined => {
+  const selected = names.map(name => toolsByName.get(name)!);
+  const isMaxOne = (category: string) =>
+    categoriesByName.get(category)?.max === "one";
+  for (const [index, tool] of selected.entries()) {
+    const other = selected
+      .slice(index + 1)
+      .find(next => next.category === tool.category);
+    if (other !== undefined && isMaxOne(tool.category)) {
+      return new MaxOneExceeded({
+        what:
+          `tools \`${tool.name}\` and \`${other.name}\` in values.tools of ${file} share the category \`${tool.category}\``,
+        why: `the category \`${tool.category}\` holds one tool at most`,
+        fix: `remove \`${tool.name}\` or \`${other.name}\` from values.tools`,
+      });
+    }
+  }
+  for (const tool of unremovableTools) {
+    const other = selected.find(next => next.category === tool.category);
+    if (
+      !names.includes(tool.name) && other !== undefined
+      && isMaxOne(tool.category)
+    ) {
+      return new UnremovableReplaced({
+        what:
+          `values.tools of ${file} holds \`${other.name}\` in place of the unremovable tool \`${tool.name}\``,
+        why:
+          `\`${tool.name}\` cannot be removed and the category \`${tool.category}\` holds one tool at most`,
+        fix: `replace \`${other.name}\` with \`${tool.name}\` in values.tools`,
+      });
+    }
+  }
+  return undefined;
+};
+
 /** Applies the Validity rules beyond the schema to a decoded setup config; fails on the first violation. */
 export const validate = (
   config: SetupConfig,
   running: Running,
-): Effect.Effect<SetupConfig, SetupConfigError> =>
+): Effect.Effect<ValidSetupConfig, SetupConfigError> =>
   Effect.gen(function*() {
     yield* checkFormat(config.format, running);
     if (compareVersions(config.version, running.version) > 0) {
@@ -168,39 +224,37 @@ export const validate = (
     for (const name of config.values.tools) {
       if (!toolsByName.has(name)) {
         return yield* new ToolRemoved({
-          what: `tool "${name}" in values.tools of ${file}`,
+          what: `tool \`${name}\` in values.tools of ${file}`,
           why:
-            `bootstrap ${running.version} does not ship "${name}": it is removed in this version`,
-          fix: `remove "${name}" from values.tools in ${file}`,
+            `bootstrap ${running.version} does not ship \`${name}\`: it is removed in this version`,
+          fix: `remove \`${name}\` from values.tools`,
         });
       }
     }
-    const deleted = new Set(config.deleted);
-    const both = config.kept?.find(path => deleted.has(path));
-    if (both !== undefined) {
-      return yield* new PathKeptAndDeleted({
-        what: `"${both}" is in both kept and deleted of ${file}`,
-        why: "a path is either kept or deleted, never both",
-        fix: `remove "${both}" from one list`,
+    const category = categoryProblem(config.values.tools);
+    if (category !== undefined) {
+      return yield* category;
+    }
+    const [missing] = checkRequires(config.values.tools);
+    if (missing !== undefined) {
+      return yield* new RequiredToolMissing({
+        what: `tool \`${missing.tool}\` in values.tools of ${file}`,
+        why:
+          `\`${missing.tool}\` requires \`${missing.missing}\`, which is not in values.tools`,
+        fix:
+          `add \`${missing.missing}\` to values.tools, or remove \`${missing.tool}\``,
       });
     }
-    const lists = {
-      files: config.files,
-      kept: config.kept ?? [],
-      deleted: config.deleted ?? [],
-    };
-    for (const [list, paths] of Object.entries(lists)) {
-      for (const path of paths) {
-        const why = pathProblem(path);
-        if (why !== undefined) {
-          return yield* new InvalidPath({
-            what: `${JSON.stringify(path)} in ${list} of ${file}`,
-            why:
-              `a path must be a literal file path relative to the repository root; ${why}`,
-            fix: `correct or remove ${JSON.stringify(path)} in ${list}`,
-          });
-        }
+    for (const path of config.files) {
+      const why = pathProblem(path);
+      if (why !== undefined) {
+        return yield* new InvalidPath({
+          what: `${JSON.stringify(path)} in files of ${file}`,
+          why:
+            `a path must be a literal file path relative to the repository root; ${why}`,
+          fix: `correct or remove ${JSON.stringify(path)} in files`,
+        });
       }
     }
-    return config;
+    return config as ValidSetupConfig;
   });

@@ -1,11 +1,16 @@
 /** Reads and writes `<repository root>/.config/bootstrap.yaml`. */
 import {
+  type Repaired,
+  repair,
+} from "@/setup-config/repair";
+import {
   SetupConfig,
   setupConfigPath,
 } from "@/setup-config/schema";
 import {
   type Running,
   type SetupConfigError,
+  type ValidSetupConfig,
   checkFormat,
   SchemaViolation,
   SetupConfigUnreadable,
@@ -28,7 +33,7 @@ const decode = Schema.decodeUnknownEffect(SetupConfig, {
 export const parse = (
   text: string,
   running: Running,
-): Effect.Effect<SetupConfig, SetupConfigError> =>
+): Effect.Effect<ValidSetupConfig, SetupConfigError> =>
   Effect.gen(function*() {
     const raw: unknown = yield* Effect.try({
       try: () => YAML.parse(text),
@@ -52,12 +57,15 @@ export const parse = (
     return yield* validate(config, running);
   });
 
-/** Reads the setup config under the repository root; `None` when the file is absent. */
+/**
+ * Reads the setup config under the repository root, applies Validity and then Repair on read;
+ * `None` when the file is absent.
+ */
 export const read = (
   root: string,
   running: Running,
 ): Effect.Effect<
-  Option.Option<SetupConfig>,
+  Option.Option<Repaired>,
   SetupConfigError,
   FileSystem.FileSystem | Path.Path
 > =>
@@ -80,22 +88,27 @@ export const read = (
         ),
       );
     return Option.isSome(text)
-      ? Option.some(yield* parse(text.value, running))
+      ? Option.some(repair(yield* parse(text.value, running)))
       : Option.none();
   });
 
-const sorted = (paths: ReadonlyArray<string>) => paths.toSorted();
-
 /**
- * The setup config file text: path lists sorted, empty `kept` and `deleted` omitted, and the
- * setup config itself never in `files`. Writing it to disk is the caller's.
+ * The setup config file text per the Write format: keys in schema order, `values.tools`,
+ * `values.commit_scopes` and `files` sorted, the running cli's `format` and `version`, no
+ * comments, and the setup config itself never in `files`. Writing it to disk is the caller's.
  */
-export const write = (config: SetupConfig): string => {
-  const { kept, deleted, ...rest } = config;
-  return YAML.stringify({
-    ...rest,
-    files: sorted(config.files.filter(path => path !== setupConfigPath)),
-    ...(kept?.length ? { kept: sorted(kept) } : {}),
-    ...(deleted?.length ? { deleted: sorted(deleted) } : {}),
+export const write = (config: SetupConfig, running: Running): string =>
+  YAML.stringify({
+    format: running.format,
+    version: running.version,
+    values: {
+      repo: config.values.repo,
+      commit_scopes: config.values.commit_scopes.toSorted(),
+      merge_model: {
+        develop: config.values.merge_model.develop,
+        main: config.values.merge_model.main,
+      },
+      tools: config.values.tools.toSorted(),
+    },
+    files: config.files.filter(path => path !== setupConfigPath).toSorted(),
   });
-};
