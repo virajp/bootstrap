@@ -326,6 +326,9 @@ the unit could not proceed without; it blocks the unit and its dependents.
 | 5 | U6 review | opus | 2 | pass | review: range 7ffcf60..08de398 (to extended); engine 9 findings, reviewer FINDINGS none, both round-1 fixes verified; API COMPAT n/a; tag U6/review/2 | — |
 | 5 | U6 review | opus | 2 | pass | security: range 7ffcf60..08de398; engine none; FINDINGS none; tag U6/security/2 | — |
 | 5 | R5 | opus | 1 | pass | wave review over U6's fix commits (ccb174d U3, 08de398 U4): FINDINGS 0, CONTRACT clean, RULINGS clean; wave gate GREEN (install, check, test 258/258, build); engine findings the reviewers did not adopt stay in engine/U6-1-review.log and engine/U6-2-review.log | — |
+| — | acceptance | — | — | skipped | why: Acceptance criteria section reads none — no flow touched | — |
+| — | ux | — | — | skipped | why: the plan changes no screens (cli project, entity slice) | — |
+| — | renders | — | — | skipped | why: no ux stage ran, no RENDER lines | — |
 
 ## Acceptance criteria (from blueprint)
 
