@@ -119,8 +119,8 @@ samples, commands, flags, file paths, eyebrows and tags.
 
 - Duration tokens: `fast` 120ms (hover color), `base` 240ms (menu, search
   panel), `reveal` 600ms (landing entry only).
-- Easing tokens: one curve for everything, a strong decelerating ease-out with
-  control points `0.16, 1, 0.3, 1`.
+- Easing tokens: `ease-out`, one curve for everything, a strong decelerating
+  ease-out with control points `0.16, 1, 0.3, 1`.
 - Principles:
   - Landing only: the hero and first section rise 12px and fade in once on load,
     60ms stagger. Docs pages do not animate content.
@@ -190,9 +190,8 @@ samples, commands, flags, file paths, eyebrows and tags.
   headings, `values` and the footer start at column 0). It scrolls vertically in
   a box at most 24 lines of `sm` mono tall (one 80x24 terminal screen), and
   horizontally like any code block; the box is focusable and scrolls with the
-  keyboard. It uses the five terminal roles; a locked control shows its mark
-  dimmed (`text-muted`) with the word `locked`; each control's state is carried
-  by its mark, never by color alone.
+  keyboard. It uses the five terminal roles; each control's state is carried by
+  its mark, never by color alone.
 - **Callout**: a 2px left rule plus a mono `xs` label on `surface-card`: `note`
   (neutral), `tip` (`status-success`), `caution` (`status-warning`). No icons,
   no filled status backgrounds.
@@ -221,8 +220,7 @@ samples, commands, flags, file paths, eyebrows and tags.
 - **Overlays and feedback**: none in scope beyond the search panel and the copy
   confirmation.
 - Interaction states everywhere: hover (color shift), focus-visible (the ring),
-  active (press scale on buttons only); no disabled controls exist (a `locked`
-  mark in a Terminal view is part of the picture, not a control).
+  active (press scale on buttons only); no disabled controls exist.
 
 ## Brand
 
@@ -262,70 +260,79 @@ The `cli` project is a shipped command-line tool. Elicited in text on
   count (`+ created  3 files`), then one path per indented line. `replaced`
   shows `<old> → <new>`, `values_changed` shows `<name>: <from> → <to>`, and
   each warning shows `! <text>`. An empty key is left out. The status word is
-  the key with `_` as a space. Glyph and role per key: `+` created, added
-  (success); `~` changed (emphasis); `✓` unchanged (success); `-` deleted,
-  removed (emphasis); `→` replaced, values changed (emphasis); `!` kept,
-  orphaned, warnings (warning); `·` already added, not added (muted); `✗ error:`
-  an error (accent). `show` prints the recorded setup instead: one group per
-  field in schema order, headed by the field name in emphasis, then one value
-  per indented line with no glyph; an empty list shows `none` (muted). An
-  orphaned path is shown `! <path> orphaned` (warning): in the `files` group
-  when it is printed, else in an `orphaned` group after the other fields.
+  the key with `_` as a space. Glyph and role per key: `+` created, added,
+  dependencies added (success); `~` changed (emphasis); `✓` unchanged (success);
+  `-` deleted, removed, dependencies pruned (emphasis); `→` replaced, values
+  changed (emphasis); `!` kept, orphaned, warnings (warning); `·` already added,
+  not added (muted); `✗ error:` an error (accent). `show` prints the recorded
+  setup instead: one group per field in schema order, headed by the field name
+  in emphasis, then one value per indented line with no glyph; an empty list
+  shows `none` (muted). An orphaned path is shown `! <path> orphaned` (warning):
+  in the `files` group when it is printed, else in an `orphaned` group after the
+  other fields.
 - Color semantics: color carries meaning only. `success` (created, added,
-  unchanged) maps to `status-success`; `warning` (mise not at the expected path,
-  kept or orphaned files, a refused dirty target, every warning line) to
-  `status-warning`; `error` to `accent`; `emphasis` (paths, command names, and
-  the changed, deleted, removed, replaced and values-changed group heads) to
-  bold `text-body`; `muted` (secondary text: category purposes, `none`, the key
-  footer, already added and not added) to `text-muted`. Roles map to the
-  terminal theme's palette by role name, never fixed hex. Color is off when
-  `NO_COLOR` is set, when the output is not a terminal, with `--no-color`, and
-  always under `--json`.
+  dependencies added, unchanged) maps to `status-success`; `warning` (mise not
+  at the expected path, kept or orphaned files, a refused dirty target, every
+  warning line) to `status-warning`; `error` to `accent`; `emphasis` (paths,
+  command names, and the changed, deleted, removed, replaced and values-changed
+  group heads) to bold `text-body`; `muted` (secondary text: category and tool
+  purposes, dependency tree lines, `none`, the key footer, already added and not
+  added) to `text-muted`. Roles map to the terminal theme's palette by role
+  name, never fixed hex. Color is off when `NO_COLOR` is set, when the output is
+  not a terminal, with `--no-color`, and always under `--json`.
 - Progress conventions: an animated spinner per step when stderr is a terminal;
   when piped, in CI or under `--json`, one stable line per finished step on
-  stderr instead. Progress is display only: `init`, `add`, `remove` and `show`
-  never prompt, and `bootstrap tui` is the only interactive command.
+  stderr instead. Progress is display only. `show` never prompts; `init`, `add`
+  and `remove` prompt only for consent, "apply these changes? y/N" after the
+  list of changes, per [config](conventions.md#config); `bootstrap tui` is the
+  only full-screen interactive command.
 - Errors & exit codes: per [errors](conventions.md#errors): `0` success, `1`
   declined to act, `2` usage error, `3` failure, `130` interrupted. Every error
   states what happened, why, and the exact next command; no stack trace unless
   `--verbose`.
 - Help & naming conventions: commands are single words (`init`, `add <tool>`,
   `remove <tool>`, `tui`, `show`). Every flag has a long form; short forms only
-  for the most common (`-q`, `-v`, `-y`); `-y` accepts the detected defaults
-  (the repo path from `origin` needs no `-y`) and is consent to delete files,
-  per [config](conventions.md#config). Booleans negate with `--no-<flag>`. Help
-  is a one-line purpose, usage, flags, then one or two real examples. Bare
-  `bootstrap` (no command) prints the top-level help and exits `2`. On every
-  command, `--help` prints that command's help and exits `0` before any other
-  check. `--version` exists only as `bootstrap --version` (the bare version,
-  exit `0`); no command takes it. `bootstrap tui` takes no flag but `--help`,
-  whose help states that tui takes no flags or arguments besides `--help`.
+  for the most common (`-q`, `-v`, `-y`); `-y` is consent to apply the changes
+  without the prompt, per [config](conventions.md#config). Booleans negate with
+  `--no-<flag>`. Help is a one-line purpose, usage, flags, then one or two real
+  examples. Bare `bootstrap` (no command) prints the top-level help and exits
+  `2`. On every command, `--help` prints that command's help and exits `0`
+  before any other check. `--version` exists only as `bootstrap --version` (the
+  bare version, exit `0`); no command takes it. `bootstrap tui` takes no flag
+  but `--help`, whose help states that tui takes no flags or arguments besides
+  `--help`.
 - Full-screen selector (`bootstrap tui`, interactive terminal only — outside one
   it exits 2, and `q` or Esc quits with exit 0, per
   [Select tools](flows/cli/160-select-tools/index.md); on a repository that is
   not set up it opens with the first-run defaults of
   [Set up a repository](flows/cli/110-setup-repository/index.md) steps 3–4): one
-  scrolling list, a heading per tool category in catalog order with the
-  category's `purpose` after its name in the muted role, then a values section
+  scrolling list, a heading per shown tool category in catalog order with the
+  category's `purpose` after its name in the muted role (a hidden tool and a
+  category whose every tool is hidden are never shown,
+  [Tool category](entities/tool-category/index.md)), then a values section
   headed `values` with the labels `repo`, `commit scopes`, `merge into develop`
   and `merge into main` (a value with nothing recorded, such as zero commit
   scopes, shows `none` in the muted role). A `max: one` category is a radio
   group (`(•)` / `( )`) with a `none` choice when its tool is removable
   ([Tool category](entities/tool-category/index.md) invariant 4); a `max: many`
-  category is a checkbox group (`[x]` / `[ ]`). A locked control (an unremovable
-  tool; or, while a tool that is not replaceable is selected, the other tools of
-  its `max: one` category) shows its mark dimmed with `locked`, and the cursor
-  skips its control. The cursor row starts with `›` (every other control row
-  with two spaces) and is shown in reverse video; with color off the `›` alone
-  marks it. Keys: up and down (or `k` and `j`) move, space selects, enter edits
-  a value, `a` applies, `q` or Esc quits; a footer line always lists these keys,
-  exactly `↑↓ k j move · space select · enter edit · a apply · q Esc quit` in
-  the muted role. A consent prompt ("replace `<old>` with `<new>`? y/N") opens
-  in place and defaults to no. Apply shows the plan in the same screen and asks
-  once; the selector never writes before that confirm. The selector needs a
-  terminal at least 80 columns wide and 24 rows high; a smaller one shows only
-  "make the terminal larger". The state of each control is carried by its mark,
-  never by color alone.
+  category is a checkbox group (`[x]` / `[ ]`). Each tool row shows the tool's
+  `purpose` after its name in the muted role. Under each selected tool, its
+  dependency tree follows in `text-muted`: one line per required tool, nested
+  with `├─`, `└─` and `│`, a dependency marked `dependency` and expanded into
+  its own required tools, a direct tool unmarked and not expanded; tree lines
+  are not controls and the cursor skips them
+  ([Select tools](flows/cli/160-select-tools/index.md) step 4). The cursor row
+  starts with `›` (every other control row with two spaces) and is shown in
+  reverse video; with color off the `›` alone marks it. Keys: up and down (or
+  `k` and `j`) move, space selects, enter edits a value, `a` applies, `q` or Esc
+  quits; a footer line always lists these keys, exactly
+  `↑↓ k j move · space select · enter edit · a apply · q Esc quit` in the muted
+  role. A consent prompt ("replace `<old>` with `<new>`? y/N") opens in place
+  and defaults to no. Apply shows the plan in the same screen and asks once; the
+  selector never writes before that confirm. The selector needs a terminal at
+  least 80 columns wide and 24 rows high; a smaller one shows only "make the
+  terminal larger". The state of each control is carried by its mark, never by
+  color alone.
 
 ## Anti-Patterns
 

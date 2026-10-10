@@ -2,16 +2,19 @@
 # repository at .config/bootstrap.yaml. Governing status: index.md frontmatter.
 $schema: https://json-schema.org/draft/2020-12/schema
 title: Setup Config
-description: Bootstrap values and selected tools recorded for a repository; its presence marks the repository as set up.
+description: Bootstrap values and selected tools recorded for a repository; its
+  presence marks the repository as set up.
 type: object
 properties:
   format:
     type: integer
     minimum: 1
-    description: Schema version of this file; 1 for bootstrap 1.0. Independent of version; changes only when the file's shape changes.
+    description: Schema version of this file; 1 for bootstrap 1.0. Independent
+      of version; changes only when the file's shape changes.
   version:
     type: string
-    description: Semver of the bootstrap version that last wrote the file; rewritten on every write.
+    description: Semver of the bootstrap version that last wrote the file;
+      rewritten on every write.
     pattern: ^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$
   values:
     type: object
@@ -19,7 +22,9 @@ properties:
     properties:
       repo:
         type: string
-        description: Repository path, one or more owner segments then the name (owner/name or group/subgroup/name); detected from the git remote by default.
+        description: Repository path, one or more owner segments then the name
+          (owner/name or group/subgroup/name); detected from the git remote by
+          default.
         pattern: ^[^/\s]+(/[^/\s]+)+$
       commit_scopes:
         type: array
@@ -36,32 +41,62 @@ properties:
           develop:
             type: string
             description: How changes reach the develop branch.
-            enum: [direct, pr]
+            enum: [ direct, pr ]
           main:
             type: string
             description: How changes reach the main branch.
-            enum: [direct, pr]
-        required: [develop, main]
+            enum: [ direct, pr ]
+        required: [ develop, main ]
         additionalProperties: false
       tools:
         type: array
-        description: Every selected tool, base tools and unremovable tools included. Each names an entity Tool.
+        description: The direct tools, unremovable tools included. Each names an
+          entity Tool. A name never also appears in dependencies. Never holds
+          mise, a hidden tool that is always applied and never recorded.
         minItems: 1
         uniqueItems: true
         items:
           type: string
-          description: Name of a Tool.
+          description: Name of a Tool, never the hidden tool mise.
           pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
-    required: [repo, commit_scopes, merge_model, tools]
+      dependencies:
+        type: object
+        description: Derived. Every tool that a selected tool requires and that
+          is not selected directly, each mapped to the sorted names of its
+          parents; keys sorted; may be empty. Absent reads as {}; every write
+          records it. A name never also appears in tools.
+        examples:
+          - node: [ dprint, pnpm, virajp-linter ]
+            pnpm: [ dprint, virajp-linter ]
+            python: [ pre-commit, uv ]
+            uv: [ pre-commit ]
+        propertyNames:
+          description: Name of the dependency, a Tool.
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+        additionalProperties:
+          type: array
+          description: The parents of the dependency, sorted; each is a direct
+            tool or another dependency that requires it (a dependency of a
+            dependency names that dependency as parent).
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            description: Name of a parent Tool.
+            pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+    required: [ repo, commit_scopes, merge_model, tools ]
     additionalProperties: false
   files:
     type: array
-    description: Every path the selected tools rendered, excluding .config/bootstrap.yaml itself.
+    description: Every path rendered for the selected tools, their dependencies
+      and the hidden tool, plus every orphaned path, excluding
+      .config/bootstrap.yaml itself.
     uniqueItems: true
     items:
       type: string
-      description: One exact repository-relative file path; no directories, no globs; not absolute, no `..` segment.
+      description: One exact repository-relative file path; no directories, no
+        globs; not absolute, no `..` segment.
       minLength: 1
       pattern: ^(?!/)(?!.*/$)(?!(.*/)?\.{1,2}(/|$))[^*?\[]+$
-required: [format, version, values, files]
+required: [ format, version, values, files ]
 additionalProperties: false

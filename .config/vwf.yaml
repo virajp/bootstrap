@@ -89,8 +89,7 @@ memory:
 design:
   design_system_id: docs/design/site/design-system.md # the claude-code canvas; imported by /vwf:design-system 2026-10-06
   flows_rendered:
-    - site/100-home/site
     - site/110-documentation/site
 blueprint:
-  coverage: complete # stamped 2026-10-09 by /vwf:blueprint — targeted pass (tui-only interaction, scope flags, show, repo-path precedence, next-command rule, tui flags); coherence round 21 NO GAPS
+  coverage: complete # stamped 2026-10-10 by /vwf:blueprint — targeted pass (tool-catalog gaps: mise hidden, replaceable removed, tool purpose in tui, repair/bookkeeping rules); 1.0-unreachable cases marked out of scope; site/100-home render parked with the site (released after cli + tui)
   remaining: []
