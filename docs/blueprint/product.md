@@ -4,7 +4,7 @@ title: bootstrap — Product
 description: Problem, users, success metrics, and slice priority — the outcome
   contract the blueprint serves.
 status: draft # draft | reviewed | stable
-timestamp: 2026-10-08
+timestamp: 2026-10-10
 ---
 
 # bootstrap — Product
@@ -32,6 +32,11 @@ come from one shared source, both when the repository is created and for the
 rest of its life. Each change to the setup is an entry in the repository's
 version history, so the owner can go back to any earlier state.
 
+The setup covers the toolchains each kind of repository needs — web, mobile and
+scripts — and each tool has one owner: one place that holds its version, its
+configuration files, its tasks and the tools it needs. Guidance on how to write
+code for a stack is a separate concern and stays outside.
+
 **Why now:** the number of repositories keeps growing, and the current way of
 producing this setup — embedded inside another tool's workflow — has become too
 complex to maintain.
@@ -57,9 +62,12 @@ complex to maintain.
 
 ### Fast new-repo setup {#goal-fast-setup}
 
-- Outcome: a new repository is ready to build in minutes.
-- Metric: time from an empty repository to all gates passing — target under 5
-  minutes at the 1.0 release
+- Outcome: a new repository is ready to build after one setup run.
+- Metric: share of new repositories where all gates pass after one setup run,
+  with no manual fix — target 100% at the 1.0 release
+- Metric: time from an empty repository to all gates passing, without the time
+  to download tools — baseline recorded at the 1.0 release; no target yet, set
+  one later
 - Measured via: external timed runs in a scratch repository
 
 ### Outside adoption {#goal-outside-adoption}
@@ -71,14 +79,14 @@ complex to maintain.
 
 ## Slice priority
 
-| Rank | Slice (flow / entity) | Serves goal                                                                         | Validates                                                  | Why now                                                                                                                    |
-| ---- | --------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| 1    | Set up a repository   | [Fast new-repo setup](#goal-fast-setup), [Zero setup drift](#goal-zero-drift)       | [Re-running replaces committed edits](#risks--assumptions) | The core path — rendering the shared source into a repository, first time and every re-run — that every other slice reuses |
-| 2    | Add a tool            | [Fast new-repo setup](#goal-fast-setup)                                             | —                                                          | Lets a repository take on a tool later, or replace one, without starting over                                              |
-| 3    | Remove a tool         | [Zero setup drift](#goal-zero-drift)                                                | —                                                          | Lets a repository drop a tool it no longer wants, without leftover files                                                   |
-| 4    | Select tools          | [Fast new-repo setup](#goal-fast-setup)                                             | —                                                          | Shows every tool by category in one view, so the owner adds and removes tools in one place                                 |
-| 5    | Show the setup        | [Zero setup drift](#goal-zero-drift)                                                | —                                                          | Lets an owner or agent read the recorded setup, or the fields they choose, without opening the file                        |
-| 6    | Documentation         | [Outside adoption](#goal-outside-adoption), [Fast new-repo setup](#goal-fast-setup) | —                                                          | What an outside developer reads before adopting; ships with 1.0                                                            |
+| Rank | Slice (flow / entity) | Serves goal                                                                         | Validates                                              | Why now                                                                                                                    |
+| ---- | --------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| 1    | Set up a repository   | [Fast new-repo setup](#goal-fast-setup), [Zero setup drift](#goal-zero-drift)       | [Re-running keeps manual changes](#risks--assumptions) | The core path — rendering the shared source into a repository, first time and every re-run — that every other slice reuses |
+| 2    | Add a tool            | [Fast new-repo setup](#goal-fast-setup)                                             | —                                                      | Lets a repository take on a tool later, or replace one, without starting over                                              |
+| 3    | Remove a tool         | [Zero setup drift](#goal-zero-drift)                                                | —                                                      | Lets a repository drop a tool it no longer wants, without leftover files                                                   |
+| 4    | Select tools          | [Fast new-repo setup](#goal-fast-setup)                                             | —                                                      | Shows every tool by category in one view, so the owner adds and removes tools in one place                                 |
+| 5    | Show the setup        | [Zero setup drift](#goal-zero-drift)                                                | —                                                      | Lets an owner or agent read the recorded setup, or the fields they choose, without opening the file                        |
+| 6    | Documentation         | [Outside adoption](#goal-outside-adoption), [Fast new-repo setup](#goal-fast-setup) | —                                                      | What an outside developer reads before adopting; ships with 1.0                                                            |
 
 ```mermaid
 flowchart LR
@@ -96,28 +104,29 @@ shared source fits every repository — is validated by its cheaper method
 ## Non-goals
 
 - **No application scaffolding.** It sets up tooling and hygiene only; it never
-  generates application code, frameworks or project structure.
+  generates application code, frameworks or project structure. Configuration
+  files of tools and deploy targets are not scaffolding.
+- **No coding guidance.** Guidance on how to write code for a stack is out of
+  scope; bootstrap sets up the tools only.
+- **No cloud resources.** It writes deploy configuration, but it never creates
+  or changes cloud resources or accounts.
+- **Apple-platform toolchains only on Apple systems.** No such toolchain is set
+  up on another operating system.
 - **No automatic commits.** It writes files, and the owner commits them; the
   version history holds only the owner's commits.
 - **Never overwrites uncommitted work.** A file it would change that has
   uncommitted changes stops the whole run, and nothing is written.
-- **No language, cloud or deploy setup in 1.0.** Language toolchains and cloud
-  or deploy configuration are left out, possibly to become add-ons later. A
-  runtime is installed as a dependency of a tool that needs it, or when the user
-  selects it. bootstrap installs only the runtime itself and sets up no language
-  toolchain: no compiler or language settings, no package scripts and no project
-  files.
 - **No hosted service.** It runs locally and in continuous integration only — no
   accounts, no server, no telemetry.
 
 ## Risks & assumptions
 
-| Assumption                                                                                                        | Risk if wrong                                                                | Validation method                                                    | Status   | Evidence |
-| ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------- | -------- | -------- |
-| One shared source fits every repository, with differences confined to values and opt-in tools                     | Repositories fork the source to fit, and drift returns                       | usage-data                                                           | untested | —        |
-| One tool category list fits every repository, with at most one tool in each single-tool category                  | Repositories need two tools where the source allows one, and fork the source | usage-data                                                           | untested | —        |
-| Owners accept that a re-run replaces committed edits to the files it owns, because the version history keeps them | Owners stop re-running, and existing repositories drift indefinitely         | slice:set-up-a-repository                                            | untested | —        |
-| Outside developers want an opinionated setup rather than designing their own                                      | Adoption stays near zero                                                     | accepted-risk — a side benefit that does not block the owner's goals | untested | —        |
+| Assumption                                                                                                                                                                    | Risk if wrong                                                                | Validation method                                                    | Status   | Evidence |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------- | -------- | -------- |
+| One shared source fits every repository, with differences confined to values and opt-in tools                                                                                 | Repositories fork the source to fit, and drift returns                       | usage-data                                                           | untested | —        |
+| One tool category list fits every repository, with at most one tool in each single-tool category                                                                              | Repositories need two tools where the source allows one, and fork the source | usage-data                                                           | untested | —        |
+| A re-run keeps the owner's manual changes to the files it renders and still applies each new release's template changes, with a conflict only where both change the same part | Owners stop re-running, and existing repositories drift indefinitely         | slice:set-up-a-repository                                            | untested | —        |
+| Outside developers want an opinionated setup rather than designing their own                                                                                                  | Adoption stays near zero                                                     | accepted-risk — a side benefit that does not block the owner's goals | untested | —        |
 
 The first two rows are validated by rendering the shared source against the
 seven repositories that already carry this setup, and counting differences that
