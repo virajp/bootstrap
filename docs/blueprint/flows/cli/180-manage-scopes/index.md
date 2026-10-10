@@ -4,7 +4,7 @@ title: Manage scopes
 description: One command adds, replaces, removes and lists the commit scopes
   of a set-up repository, keeping the setup config and the commit-convention
   file in step, with nothing half-written.
-status: draft
+status: reviewed
 implementation: none
 ---
 
@@ -24,10 +24,10 @@ the commit convention is the one recorded, never a hand-kept copy.
 
 ## Trigger & Actors
 
-| Actor                            | May trigger                                                                                                                                         | Authorization                                               | Audit-recorded                                                                  |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Repo owner (any terminal)        | `bootstrap scope add <name> --description <text>`, `scope remove <name>...`, `scope list`; the tui values section edits scopes too                  | write access to the working directory (`list`: read access) | no — the product has no audit foundation; git history keeps every replaced file |
-| AI agent or CI (non-interactive) | the same commands; `-y` is necessary for an `add` or `remove` that changes anything, since no prompt is possible without terminals or with `--json` | write access to the working directory (`list`: read access) | no — the product has no audit foundation; git history keeps every replaced file |
+| Actor                            | May trigger                                                                                                                                                                       | Authorization                                               | Audit-recorded                                                                  |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Repo owner (any terminal)        | `bootstrap scope add <name> --description <text>`, `scope remove <name>...`, `scope list`; the tui values section edits scopes too ([Select tools](../160-select-tools/index.md)) | write access to the working directory (`list`: read access) | no — the product has no audit foundation; git history keeps every replaced file |
+| AI agent or CI (non-interactive) | the same commands; `-y` is necessary for an `add` or `remove` that changes anything, since no prompt is possible without terminals or with `--json`                               | write access to the working directory (`list`: read access) | no — the product has no audit foundation; git history keeps every replaced file |
 
 ## Steps
 
@@ -37,16 +37,18 @@ Flags: `add` and `remove` accept `-y`/`--yes`, `--dry-run`, `--json`, `--quiet`,
 `--no-color` and `--help`. Any other flag is a usage error.
 
 `scope add` takes exactly one name; `scope remove` takes one or more names in
-one run, with one consent; `scope list` takes no argument.
+one run, with one consent, and a name repeated in it counts once; `scope list`
+takes no argument.
 
 Usage errors come first: no subcommand or an unknown one, a missing name, more
 than one name on `scope add`, any argument on `scope list`, a `name` that is not
-kebab-case (lowercase letters, digits and `-`), a missing or empty
-`--description`, an unknown flag or a bad flag value exits 2 with short usage
-before the preflight and before `.config/bootstrap.yaml` is read. They are
-reported together in one error ([errors](../../../conventions.md#errors)).
-Nothing is written. `--help` prints the help and exits 0 anywhere, before the
-preflight.
+kebab-case (`^[a-z0-9]+(-[a-z0-9]+)*$`: no leading, trailing or double `-`), a
+missing or empty `--description` or one with a newline or another control
+character (it is one line, with no maximum length), an unknown flag or a bad
+flag value exits 2 with short usage before the preflight and before
+`.config/bootstrap.yaml` is read. They are reported together in one error
+([errors](../../../conventions.md#errors)). Nothing is written. `--help` prints
+the help and exits 0 anywhere, before the preflight.
 
 1. The command runs, after the usage check, the preflight of
    [Set up a repository](../110-setup-repository/index.md) step 1. `scope list`
@@ -79,8 +81,9 @@ preflight.
      changes nothing for it.
 4. The command renders the full file set of the recorded selection with the new
    `values.scopes` and prepares the list of changes: the files to change, create
-   or delete (in practice `.config/git-conventional-commits.yaml`) and
-   `.config/bootstrap.yaml`. Planning, shared and `create_only` files,
+   or delete (`.config/git-conventional-commits.yaml`, which the unremovable
+   `pre-commit` always renders in 1.0; a selection without it is out of scope)
+   and `.config/bootstrap.yaml`. Planning, shared and `create_only` files,
    `orphaned` paths and the clean-target check follow
    [safety](../../../conventions.md#safety); a refusal of step 2 comes first
    ([precedence](../../../conventions.md#safety)). If nothing changes (an
@@ -139,6 +142,8 @@ sequenceDiagram
         S-->>O: exit 3
     else list
         S-->>O: scopes, exit 0
+    else add or remove, valid
+        S->>S: record the change
     end
     S->>R: plan targets (list of changes)
     alt empty list
@@ -153,6 +158,8 @@ sequenceDiagram
         S-->>O: exit 2, changes need --yes
     else no -y, terminal, answer is not y
         S-->>O: nothing changed, exit 0
+    else no -y, terminal, Ctrl-C at the prompt
+        S-->>O: exit 130
     else proceed
         S->>R: write files
         S->>C: rewrite config
@@ -184,6 +191,10 @@ names its flags (no `-y`, `--dry-run`) runs with those only.
   runs, then its description is replaced, both files are `changed` and the exit
   code is 0; with the same description, nothing is written, no prompt is shown,
   `api` is in `already_recorded` and the exit code is 0.
+- Given a recorded scope `api`, when `bootstrap scope remove api -y` runs, then
+  `api` is gone from `values.scopes` and from
+  `.config/git-conventional-commits.yaml`, both files are `changed`, `api` is in
+  `removed` and the exit code is 0.
 - Given recorded scopes `api` and `cli`, when `bootstrap scope remove api cli`
   runs in a terminal without `-y`, then one list and one prompt cover both; "y"
   removes both and the exit code is 0.
@@ -191,6 +202,8 @@ names its flags (no `-y`, `--dry-run`) runs with those only.
   `scope remove api web -y` runs, then `api` is removed, `web` is in
   `not_recorded` with the warning "scope `web` not recorded" and the exit code
   is 0.
+- Given a recorded scope `api`, when `scope remove api api -y` runs, then `api`
+  is removed once, listed once in `removed`, and the exit code is 0.
 - Given `scope add api web --description "x"`, or `scope list api`, when it
   runs, then the exit code is 2, short usage is shown and nothing is written.
 - Given a name not recorded, when `scope remove web -y` runs, then nothing is
@@ -200,10 +213,11 @@ names its flags (no `-y`, `--dry-run`) runs with those only.
   with its description, sorted by name, nothing is written and the exit code is
   0; with no scope `none` (`--json`: `[]`); with `mise` absent the exit code is
   still 0.
-- Given a name that is not kebab-case (`Api`, `my_api`), or no `--description`,
-  or an empty one, when `scope add` runs, then the exit code is 2, one error
-  names every usage error, short usage is shown and nothing is written, even
-  outside a git repository or without a setup file.
+- Given a name that is not kebab-case (`Api`, `my_api`, `-api`, `api-`,
+  `my--api`), or no `--description`, or an empty one, or one with a newline,
+  when `scope add` runs, then the exit code is 2, one error names every usage
+  error, short usage is shown and nothing is written, even outside a git
+  repository or without a setup file.
 - Given an unknown subcommand or flag, or no name, when `scope` runs, then the
   exit code is 2 and nothing is written.
 - Given stdin and stdout are terminals and no `--json`, when `scope add` for a

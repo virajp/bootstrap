@@ -4,7 +4,7 @@ title: Select tools
 description: One interactive view shows every tool by category, so the owner
   sets up a repository, adds, removes and replaces tools and edits the recorded
   values in one place, with nothing half-written.
-status: draft
+status: reviewed
 implementation: none
 ---
 
@@ -240,8 +240,9 @@ decides the exit code.
    [Setup config](../../../entities/setup-config/index.md)
 
    After the write, when the apply created or changed `.vscode/extensions.json`,
-   tui runs the editor's command line once to sync the `REPO_NAME` profile to it
-   (every listed extension installed, every extension no selected tool lists
+   tui runs the editor's command line once to sync the `REPO_NAME` profile (the
+   editor profile named by the repository's `REPO_NAME` value) to it (every
+   listed extension installed, every extension no selected tool lists
    uninstalled), per [errors](../../../conventions.md#errors). The editor's
    command line absent from the `PATH`, or a failed install or uninstall, is a
    warning in `warnings`; the apply still exits 0.
@@ -273,11 +274,12 @@ decides the exit code.
 
 ## Guarantees
 
-| Step / group                                                 | Consistency                                                         | On failure                                                                                                                                                                                                                                                                                                 | Idempotency                                                             | Load & latency         |
-| ------------------------------------------------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------- |
-| 1–7 (the view, the re-read, the render and the target check) | atomic, nothing is written                                          | none, nothing written yet; exit 0, 1, 2, 3 or 130 per step                                                                                                                                                                                                                                                 | n/a, a re-run starts from the same repo state                           | n/a, one local command |
-| 8 (apply)                                                    | atomic, all-or-nothing per [safety](../../../conventions.md#safety) | a write failure or an interrupt restores every target from `HEAD` and deletes every created file per [baseline](../../../conventions.md#baseline) atomic-multi-write and graceful-shutdown; exit 3 naming the failing path, or 130; a failed restore exits 3 listing the paths not restored (`unrestored`) | a re-run with the same selection and values finds no change and exits 0 | n/a, one local command |
-| 9                                                            | atomic, output only                                                 | none, changes no repo state                                                                                                                                                                                                                                                                                | n/a                                                                     | n/a, one local command |
+| Step / group                                                 | Consistency                                                         | On failure                                                                                                                                                                                                                                                                                                 | Idempotency                                                             | Load & latency          |
+| ------------------------------------------------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------- |
+| 1–7 (the view, the re-read, the render and the target check) | atomic, nothing is written                                          | none, nothing written yet; exit 0, 1, 2, 3 or 130 per step                                                                                                                                                                                                                                                 | n/a, a re-run starts from the same repo state                           | n/a, one local command  |
+| 8 (apply)                                                    | atomic, all-or-nothing per [safety](../../../conventions.md#safety) | a write failure or an interrupt restores every target from `HEAD` and deletes every created file per [baseline](../../../conventions.md#baseline) atomic-multi-write and graceful-shutdown; exit 3 naming the failing path, or 130; a failed restore exits 3 listing the paths not restored (`unrestored`) | a re-run with the same selection and values finds no change and exits 0 | n/a, one local command  |
+| editor profile sync (after step 8)                           | best effort , outside the repository, not atomic                    | a failed editor command line, install or uninstall is a warning, the written files stay, exit 0; an interrupt stops the sync, the written files stay, exit 130 ([errors](../../../conventions.md#errors))                                                                                                  | n/a , runs only after a write that changed `.vscode/extensions.json`    | n/a , one local command |
+| 9                                                            | atomic, output only                                                 | none, changes no repo state                                                                                                                                                                                                                                                                                | n/a                                                                     | n/a, one local command  |
 
 ## Diagram
 
@@ -288,6 +290,7 @@ sequenceDiagram
     participant C as Setup config
     participant G as Tool and category
     participant R as Repository
+    participant E as Editor command line
     O->>U: bootstrap tui
     alt --help
         U-->>O: help, exit 0
@@ -350,6 +353,14 @@ sequenceDiagram
                                 U-->>O: exit 130
                             end
                         else
+                            opt extensions.json changed
+                                U->>E: sync editor profile
+                                alt command line absent, install or uninstall failed
+                                    E-->>U: warning, written files stay
+                                else Ctrl-C during the sync
+                                    U-->>O: written files stay, exit 130
+                                end
+                            end
                             U-->>O: result, exit 0
                         end
                     end
@@ -392,14 +403,12 @@ N/A, runs synchronously in one command invocation.
 - Given a recorded `values.tools` that misses an unremovable tool and no other
   tool of its `max: one` category is recorded, when tui runs, then the tool
   shows selected, and the result `warnings` reports "added back unremovable tool
-  `<name>`". Given a setup file recorded with an older `format`, then it is read
-  and not refused, and the next write records the running cli's format. Given
-  two tools of one `max: one` category or an unknown tool name, then nothing is
-  written and the exit code is 3 naming the fix. Given a selected tool whose
-  required tool is in neither `values.tools` nor `values.dependencies`, then it
-  is not a failure: the dependency is added back, "added back dependency
-  `<name>`" is reported in `warnings`, and the view shows it marked `dependency`
-  in the tool's tree.
+  `<name>`". Given two tools of one `max: one` category or an unknown tool name,
+  then nothing is written and the exit code is 3 naming the fix. Given a
+  selected tool whose required tool is in neither `values.tools` nor
+  `values.dependencies`, then it is not a failure: the dependency is added back,
+  "added back dependency `<name>`" is reported in `warnings`, and the view shows
+  it marked `dependency` in the tool's tree.
 - Given no `.config/bootstrap.yaml` in an interactive terminal, when tui runs,
   then the view opens with the default tools and the origin-derived repo
   pre-filled, the dependencies marked `dependency` in the trees under the

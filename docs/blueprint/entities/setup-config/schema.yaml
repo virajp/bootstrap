@@ -38,11 +38,13 @@ properties:
             name:
               type: string
               description: The scope, a lowercase kebab-case word.
-              pattern: ^[a-z][a-z0-9]*(-[a-z0-9]+)*$
+              pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
             description:
               type: string
-              description: What the scope covers; required, never empty.
+              description: What the scope covers; required, one line, never
+                empty, with no newline or other control character.
               minLength: 1
+              pattern: ^[^\x00-\x1F\x7F]+$
           required: [ name, description ]
           additionalProperties: false
       members:
@@ -60,13 +62,14 @@ properties:
                 one or more `../` segments; not absolute, no `.` or `..` segment
                 after the first other segment; existence is not checked.
               minLength: 1
-              pattern: ^(\.\./)*(?!\.{1,2}(/|$))[^/]+(/(?!\.{1,2}(/|$))[^/]+)*$
+              pattern: ^(?!.*\s)(\.\./)*(?!\.{1,2}(/|$))[^/]+(/(?!\.{1,2}(/|$))[^/]+)*$
             slug:
               type: string
-              description: The folder name lowercased, every other character
-                replaced by `-`.
+              description: The folder name lowercased, each run of other
+                characters replaced by one `-`, a leading or trailing `-`
+                removed; never empty and never `all`.
               minLength: 1
-              pattern: ^[a-z0-9-]+$
+              pattern: ^(?!all$)[a-z0-9]+(-[a-z0-9]+)*$
           required: [ path, slug ]
           additionalProperties: false
       merge_model:

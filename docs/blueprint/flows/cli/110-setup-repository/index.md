@@ -4,7 +4,7 @@ title: Set up a repository
 description: One command sets up a git repository from the shared source, and
   the same command on a set-up repository keeps it on that source, with nothing
   lost and nothing half-written.
-status: draft
+status: reviewed
 implementation: none
 ---
 
@@ -40,8 +40,9 @@ checked against [Tool](../../../entities/tool/index.md) and
 [Tool category](../../../entities/tool-category/index.md#invariants) invariants
 2 and 4. `mise` is a hidden tool: naming it is an unknown name.
 
-1. Init runs the preflight per [errors](../../../conventions.md#errors); nothing
-   is written on failure.
+1. Init runs the preflight on the target repository and `mise`
+   ([tool-versions](../../../conventions.md#tool-versions)) per
+   [errors](../../../conventions.md#errors); nothing is written on failure.
 2. Init looks for `.config/bootstrap.yaml`. Absent → a first run. Present → a
    re-run: init validates it per
    [Setup config validity](../../../entities/setup-config/index.md#validity),
@@ -80,8 +81,10 @@ checked against [Tool](../../../entities/tool/index.md) and
 
    A `<path>` is `owner/name`, or nested `group/subgroup/name`.
 
-   `--member` only adds to `values.members`; the slug is the folder name
-   lowercased with every other character `-`, and the path is not checked. A
+   `--member` only adds to `values.members`. The path rules (a leading `./` and
+   a trailing `/` dropped, no whitespace, a repeated path counted once) and the
+   slug rule (an empty slug or `all` refused) are those of
+   [Manage members](../190-manage-members/index.md); the path is not checked. A
    result with two members of one slug exits 2, nothing written. Init does not
    change `values.scopes`; removing a member is
    [Manage members](../190-manage-members/index.md). Precedence, defaults and a
@@ -194,30 +197,33 @@ checked against [Tool](../../../entities/tool/index.md) and
 9. After a write that created or changed `.vscode/extensions.json`, init runs
    the editor's command line once to create the `REPO_NAME` profile, install
    every listed extension and uninstall every extension no selected tool lists,
-   so the profile equals the file; an absent command line, or a present one that
-   fails (the profile, an extension install or uninstall), is a warning, the
-   written files stay and the exit code stays 0
-   ([errors](../../../conventions.md#errors)). Init then prints the result, the
-   next command and the closing line, then, on a run that changed a file, one
-   more line "review `git diff`; restore your own lines with
-   `git restore -p <file>`" per [errors](../../../conventions.md#errors); the
-   human output reports the same lists as the `--json` document (keys in
-   Acceptance). `dependencies_added` (added as dependencies this run) and
-   `dependencies_pruned` are tool names sorted by name, always present, never
-   holding a tool named in `--tool`. No tool-name list holds a hidden tool; its
-   file paths are listed as any path. Init never installs software other than
-   the editor extensions above, and never runs the next command
-   (`MISE_ENV=dev mise run setup:all`, [errors](../../../conventions.md#errors))
-   itself. `--dry-run` follows [config](../../../conventions.md#config) and
-   exits with the code of the failing step.
+   so the profile equals the file
+   ([Tool](../../../entities/tool/index.md#selection-dependent-files)); an
+   absent command line, or a present one that fails (the profile, an extension
+   install or uninstall), is a warning, the written files stay and the exit code
+   stays 0 ([errors](../../../conventions.md#errors)). Init then prints the
+   result; the next command only when the run changed a `mise` config file; and,
+   only on a run that changed a file, the closing line and then one more line
+   "review `git diff`; restore your own lines with `git restore -p <file>`" per
+   [errors](../../../conventions.md#errors); the human output reports the same
+   lists as the `--json` document (keys in Acceptance). `dependencies_added`
+   (added as dependencies this run) and `dependencies_pruned` are tool names
+   sorted by name, always present, never holding a tool named in `--tool`. No
+   tool-name list holds a hidden tool; its file paths are listed as any path.
+   Init never installs software other than the editor extensions above, and
+   never runs the next command (`MISE_ENV=dev mise run setup:all`,
+   [errors](../../../conventions.md#errors)) itself. `--dry-run` follows
+   [config](../../../conventions.md#config) and exits with the code of the
+   failing step.
 
 ## Guarantees
 
-| Step             | Consistency                 | On failure                                                                                                                                                                                                                                                                                                                                                                   | Idempotency                                                                               | Load & latency          |
-| ---------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------- |
-| usage check, 1–6 | atomic — nothing is written | none — nothing written yet; the usage check exits 2, steps 1–6 exit 1, 2, 3 or 130 per step (0 when the consent prompt is declined)                                                                                                                                                                                                                                          | n/a — a retry starts from the same repo state                                             | n/a — one local command |
-| 7–8              | atomic — all-or-nothing     | restore per [safety](../../../conventions.md#safety); a write failure exits 3 naming the failing path, an interrupt exits 130; a failed restore exits 3 per [errors](../../../conventions.md#errors). An uncatchable kill is out of the guarantee; the config is written last, so the repo is then not marked set up (first run) or still records the earlier state (re-run) | a re-run with nothing changed writes nothing and exits 0; after a restore it starts clean | n/a — one local command |
-| 9                | atomic — output only        | none — changes no repo state; a failed editor command line (profile, extension install or uninstall) is a warning, the written files stay, exit 0                                                                                                                                                                                                                            | n/a                                                                                       | n/a — one local command |
+| Step                    | Consistency                                      | On failure                                                                                                                                                                                                                                                                                                                                                                   | Idempotency                                                                               | Load & latency          |
+| ----------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------- |
+| usage check, 1–6        | atomic — nothing is written                      | none — nothing written yet; the usage check exits 2, steps 1–6 exit 1, 2, 3 or 130 per step (0 when the consent prompt is declined)                                                                                                                                                                                                                                          | n/a — a retry starts from the same repo state                                             | n/a — one local command |
+| 7–8                     | atomic — all-or-nothing                          | restore per [safety](../../../conventions.md#safety); a write failure exits 3 naming the failing path, an interrupt exits 130; a failed restore exits 3 per [errors](../../../conventions.md#errors). An uncatchable kill is out of the guarantee; the config is written last, so the repo is then not marked set up (first run) or still records the earlier state (re-run) | a re-run with nothing changed writes nothing and exits 0; after a restore it starts clean | n/a — one local command |
+| 9 (editor profile sync) | best effort — outside the repository, not atomic | a failed editor command line, install or uninstall is a warning, the written files stay, exit 0; an interrupt stops the sync, the written files stay, exit 130 ([errors](../../../conventions.md#errors))                                                                                                                                                                    | n/a — runs only after a write that changed `.vscode/extensions.json`                      | n/a — one local command |
+| 9 (output)              | atomic — output only                             | none — changes no repo state                                                                                                                                                                                                                                                                                                                                                 | n/a                                                                                       | n/a — one local command |
 
 ## Diagram
 
@@ -350,11 +356,6 @@ requires a tool of a `max: one` category); it holds for a later catalog.
   values are kept as supplied.
 - Given a re-run whose config records a newer version or format, when init runs,
   then nothing is written and the exit code is 3 "upgrade bootstrap".
-- Given a repository set up by an older bootstrap `version` or `format`, when a
-  newer bootstrap re-runs init with `-y`, then the older format is read and not
-  refused, the changed files are rewritten, `version` and `format` move to the
-  running bootstrap's, `files` is refreshed and orphaned paths are reported
-  `orphaned`.
 - Given a first run, when init finishes, then no path is reported `orphaned`.
 - Given a config that fails the schema, or a `files` entry that is empty,
   absolute, uses `..` or has a wildcard, when init runs, then nothing is
@@ -446,6 +447,9 @@ requires a tool of a `max: one` category); it holds for a later catalog.
   (repeatable), then each member is added to `values.members` with the slug
   `api-server` (folder name lowercased, other characters `-`), the path is not
   checked, the recorded members are kept and the exit code is 0.
+- Given a recorded member `../web`, when init runs with `-y --member ../web/`,
+  then the trailing `/` is dropped, the path is already recorded (in
+  `already_recorded` as `../web`), nothing is written and the exit code is 0.
 - Given `--member a/Web` and `--member b/web`, or `--member` whose slug a
   recorded member already has, when init runs, then nothing is written and the
   exit code is 2.

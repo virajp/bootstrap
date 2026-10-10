@@ -3,7 +3,7 @@ type: vwf-entity
 title: Setup Config
 description: The file in a repository that records its bootstrap values and
   selected tools, and marks it as set up.
-status: draft
+status: reviewed
 implementation: partial
 owner: [ cli ]
 ---
@@ -27,8 +27,10 @@ Used by: [Set up a repository](../../flows/cli/110-setup-repository/index.md),
 [Home](../../flows/site/100-home/index.md),
 [Documentation](../../flows/site/110-documentation/index.md)
 
-Scale: N/A — a local file on the user's machine, one per set-up repository; no
-scale to measure.
+Scale: one file per set-up repository. At 1.0 it holds at most the 51 catalog
+tools across `values.tools` and `values.dependencies`, a few hundred `files`
+paths (the paths of the full catalog) and tens of scopes and members. It grows
+only with the catalog.
 
 ## Out of Scope
 
@@ -106,7 +108,8 @@ reported.
 - A recorded name, in `values.tools` or `values.dependencies` (keys and parent
   lists), that the running catalog lists in a tool's `renamed_from` is read as
   the new name and rewritten under it. The warning "renamed tool `<old>` to
-  `<new>`" is reported (`warnings`).
+  `<new>`" is reported (`warnings`). No tool has a `renamed_from` in 1.0, so a
+  file that records both a tool's old and new name is out of scope.
 
 `show`, `scope list` and `member list` never repair. `show` reports a missing
 unremovable tool or a missing dependency as an error with exit 1
@@ -117,11 +120,10 @@ see invariant 7.
 
 ### Write format {#write-format}
 
-Bootstrap rewrites the whole file on a write. Comments are not kept. An older
-`format` is read, never refused, and the write records the running cli's
-`format`. Keys are in schema order; `values.tools`, `values.scopes` (by name),
-`values.members` (by slug) and `files` are sorted; so are the keys of
-`values.dependencies` and each parent list.
+Bootstrap rewrites the whole file on a write. Comments are not kept. The write
+records the running cli's `format`. Keys are in schema order; `values.tools`,
+`values.scopes` (by name), `values.members` (by slug) and `files` are sorted; so
+are the keys of `values.dependencies` and each parent list.
 
 ### Version guard {#version-guard}
 
@@ -220,9 +222,9 @@ Authoritative schema: [schema.yaml](./schema.yaml)
 
 ## Relationships
 
-| Related entity           | Cardinality | Ownership | On delete                                                            | Required                             |
-| ------------------------ | ----------- | --------- | -------------------------------------------------------------------- | ------------------------------------ |
-| [Tool](../tool/index.md) | N–M         | reference | N/A — tools ship with the cli, not across repositories; see Validity | yes — at least the unremovable tools |
+| Related entity           | Cardinality | Ownership | On delete                                                            | Required                                                                                            |
+| ------------------------ | ----------- | --------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [Tool](../tool/index.md) | N–M         | reference | N/A — tools ship with the cli, not across repositories; see Validity | yes — each unremovable tool, or another tool of its `max: one` category ([Repair on read](#repair)) |
 
 The relationship is carried by `values.tools` and `values.dependencies`.
 

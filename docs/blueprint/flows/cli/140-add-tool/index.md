@@ -110,6 +110,8 @@ old name is repaired (step 2).
      example `pnpm` or `yarn` requiring `node`), it stays as a dependency of
      that tool, keeps its files, only the engine links move, and `replaced` has
      no entry for it.
+   - A `max: many` engine that holds two or more other runtimes is out of scope:
+     each `max: many` engine has two runtimes in 1.0.
 
    The replaced ones are the held tools that leave the selection, and only they
    get a `replaced` `{from, to}` entry. A dependency that no parent needs after
@@ -142,7 +144,9 @@ old name is repaired (step 2).
    file `.config/bootstrap.yaml` as a target and `orphaned` paths follow
    [safety](../../../conventions.md#safety), with the refusals of step 4 first
    ([precedence](../../../conventions.md#safety)).
-6. Consent, as in [config](../../../conventions.md#config) steps 2 to 4 (and
+6. The actor gives consent to the list of changes to the repository and the
+   [Setup config](../../../entities/setup-config/index.md), as in
+   [config](../../../conventions.md#config) steps 2 to 4 (and
    [errors](../../../conventions.md#errors) for "changes need --yes").
 7. Add writes the planned changes, then rewrites `.config/bootstrap.yaml` last:
    `values.tools` gains the added tools (including a dependency made direct) and
@@ -179,11 +183,12 @@ return, an error document included. Both otherwise behave as in
 
 ## Guarantees
 
-| Step / group | Consistency                 | On failure                                                                                                                                                                                                                                                                                         | Idempotency                                                                      | Load & latency          |
-| ------------ | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------- |
-| 1–6          | atomic — nothing is written | none — nothing written yet; exits 0, 1, 2, 3 or 130 per step                                                                                                                                                                                                                                       | n/a — a re-run starts from the same repo state                                   | n/a — one local command |
-| 7            | atomic — all-or-nothing     | a write failure or an interrupt restores every changed or deleted target from `HEAD` and deletes every created file per [safety](../../../conventions.md#safety); a write failure exits 3 naming the failing path, an interrupt exits 130; a failed restore exits 3 listing the paths not restored | a re-run with the same names reports "already added", writes nothing and exits 0 | n/a — one local command |
-| 8            | atomic — output only        | none — changes no repo state                                                                                                                                                                                                                                                                       | n/a                                                                              | n/a — one local command |
+| Step / group                       | Consistency                                      | On failure                                                                                                                                                                                                                                                                                         | Idempotency                                                                      | Load & latency          |
+| ---------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------- |
+| 1–6                                | atomic — nothing is written                      | none — nothing written yet; exits 0, 1, 2, 3 or 130 per step                                                                                                                                                                                                                                       | n/a — a re-run starts from the same repo state                                   | n/a — one local command |
+| 7                                  | atomic — all-or-nothing                          | a write failure or an interrupt restores every changed or deleted target from `HEAD` and deletes every created file per [safety](../../../conventions.md#safety); a write failure exits 3 naming the failing path, an interrupt exits 130; a failed restore exits 3 listing the paths not restored | a re-run with the same names reports "already added", writes nothing and exits 0 | n/a — one local command |
+| editor profile sync (after step 7) | best effort — outside the repository, not atomic | a failed editor command line, install or uninstall is a warning, the written files stay, exit 0; an interrupt stops the sync, the written files stay, exit 130 ([errors](../../../conventions.md#errors))                                                                                          | n/a — runs only after a write that changed `.vscode/extensions.json`             | n/a — one local command |
+| 8                                  | atomic — output only                             | none — changes no repo state                                                                                                                                                                                                                                                                       | n/a                                                                              | n/a — one local command |
 
 ## Diagram
 
@@ -403,9 +408,6 @@ N/A — runs synchronously in one command invocation.
   and listed in `dependencies_pruned`), corrects the parent list and drops the
   path; when that is the only difference, nothing is written, no prompt is shown
   and the exit code is 0.
-- Given a setup file recorded with an older `format`, when add runs with `-y`,
-  then the older format is read and not refused, and the next write records the
-  running cli's format.
 - Given a recorded `values.tools` with two tools of one `max: one` category,
   when add runs, then nothing is written and the exit code is 3 naming the fix.
 - Given a recorded `values.tools` with a tool name the running catalog does not

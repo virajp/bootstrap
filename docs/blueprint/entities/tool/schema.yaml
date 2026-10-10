@@ -73,6 +73,47 @@ properties:
         - required: [ tool ]
         - required: [ engine ]
       additionalProperties: false
+  pin:
+    description: The tool's mise pin, or null when the tool has no pin (the
+      no-pin list in index.md Target paths). A pinned tool renders its exact
+      pin in `conf.d/<tool>/mise.toml` and `latest` in
+      `conf.d/<tool>/mise.dev.toml`; these two paths are implied by `pin` and
+      are not listed in `files`.
+    oneOf:
+      - type: "null"
+      - type: object
+        properties:
+          id:
+            type: string
+            description: The mise tool key, for example
+              `npm:@virajp.dev/linter`,
+              `gem:cocoapods`, `npm:cf` or `java`.
+            minLength: 1
+          variant:
+            type: string
+            description: The version prefix of a vendor line, for example
+              `temurin-`; absent when the tool has none.
+            minLength: 1
+          dev_file:
+            type: boolean
+            description: False when the tool has no `mise.dev.toml` and is
+              exact in every environment (only `osv-scanner`).
+            default: true
+        required: [ id ]
+        additionalProperties: false
+  takes_over:
+    type: array
+    description: The runtimes whose built-in manager task files
+      (`tasks/setup/deps/<verb>/<runtime>`, `tasks/upgrade/deps/<runtime>`) are
+      not rendered while this tool is selected. Set only on a
+      `package-manager` tool; `pnpm` and `yarn` take over `node`, `uv` takes
+      over `python`; empty for the others.
+    uniqueItems: true
+    default: []
+    items:
+      type: string
+      description: A runtime tool name.
+      pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
   host_only:
     type: boolean
     description: True when mise cannot install the tool (for example the Apple
@@ -149,6 +190,7 @@ required: [
   removable,
   default,
   requires,
+  pin,
   files,
 ]
 allOf:
@@ -180,6 +222,16 @@ allOf:
       not:
         required: [ engine ]
   - if:
+      not:
+        properties:
+          categories:
+            contains:
+              const: package-manager
+    then:
+      properties:
+        takes_over:
+          maxItems: 0
+  - if:
       properties:
         default:
           const: origin
@@ -195,3 +247,31 @@ allOf:
     then:
       required: [ origin_hosts ]
 additionalProperties: false
+$defs:
+  engine:
+    type: object
+    description: One row of the Engines table in index.md. An engine is not a
+      catalog tool; it exists as the `engine` field of its runtimes and as a
+      requirement of other tools.
+    properties:
+      name:
+        type: string
+        enum: [ javascript, java, dart, python, swift, ruby ]
+      runtimes:
+        type: array
+        description: The runtime tools whose `engine` is this engine.
+        minItems: 1
+        uniqueItems: true
+        items:
+          type: string
+          pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+      default:
+        type: string
+        description: The runtime added when a tool requires this engine and
+          none of its runtimes is selected; one of `runtimes`.
+      max:
+        type: string
+        description: How many of its runtimes a repository can select at once.
+        enum: [ one, many ]
+    required: [ name, runtimes, default, max ]
+    additionalProperties: false

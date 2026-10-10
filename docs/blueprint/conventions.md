@@ -94,7 +94,9 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
   profile always equals `.vscode/extensions.json`. This is the only tool
   bootstrap itself runs. When the editor's command line is not on the `PATH`,
   the run prints one warning naming the fix and still exits `0`; a failed
-  install or uninstall is a warning too.
+  install or uninstall is a warning too. An interrupt (Ctrl-C) during the sync
+  stops it: the written files and the setup config stay, and the exit code is
+  `130`.
 - Every error message states what happened, why, and the exact next command to
   run. No internal trace unless `--verbose`.
 - A run reports its exit `2` refusals together, in one error: `what` and `why`

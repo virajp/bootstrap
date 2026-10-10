@@ -4,7 +4,7 @@ title: Remove a tool
 description: One command removes removable tools from a set-up repository,
   deleting their files and nothing half-written; git history keeps every deleted
   file.
-status: draft
+status: reviewed
 implementation: none
 ---
 
@@ -162,13 +162,13 @@ old name is repaired (step 2).
    dependency step 2 repaired, without any unknown dependency name step 2 found,
    and `files` per
    [invariant 2](../../../entities/setup-config/index.md#invariants). It never
-   commits. When the write created or changed `.vscode/extensions.json`
-   (removing a tool with VS Code extensions changes it), remove then runs the
-   editor's command line once to sync the `REPO_NAME` profile to it: every
-   listed extension installed, and every extension no remaining selected tool
-   lists (the removed tool's, unless another tool lists it) uninstalled; absent,
-   or a failed install or uninstall, is a warning and the exit code stays 0
-   ([errors](../../../conventions.md#errors)), the written files stay.
+   commits. When the write created or changed `.vscode/extensions.json`, remove
+   then runs the editor's command line once to sync the `REPO_NAME` profile to
+   it: every listed extension installed, and every extension no remaining
+   selected tool lists (the removed tool's, unless another tool lists it)
+   uninstalled; absent, or a failed install or uninstall, is a warning and the
+   exit code stays 0 ([errors](../../../conventions.md#errors)), the written
+   files stay.
 9. Remove reports, in human output and under `--json`: `removed`, `not_added`,
    `dependencies_added`, `dependencies_pruned`, `deleted`, `created`, `changed`,
    `unchanged`, `kept`, `orphaned` and `warnings`. `removed` lists only the
@@ -193,11 +193,12 @@ document plus `"dry_run": true`.
 
 ## Guarantees
 
-| Step / group | Consistency                 | On failure                                                                                | Idempotency                                                                  | Load & latency          |
-| ------------ | --------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------- |
-| 1–7          | atomic — nothing is written | none — nothing written; exit codes per steps 1–7                                          | n/a — a re-run starts from the same repo state                               | n/a — one local command |
-| 8            | atomic — all-or-nothing     | per [safety](../../../conventions.md#safety) and [errors](../../../conventions.md#errors) | a re-run with the same names reports "not added", writes nothing and exits 0 | n/a — one local command |
-| 9            | atomic — output only        | none — changes no repo state                                                              | n/a                                                                          | n/a — one local command |
+| Step / group                       | Consistency                                      | On failure                                                                                                                                                                                                | Idempotency                                                                  | Load & latency          |
+| ---------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------- |
+| 1–7                                | atomic — nothing is written                      | none — nothing written; exit codes per steps 1–7                                                                                                                                                          | n/a — a re-run starts from the same repo state                               | n/a — one local command |
+| 8                                  | atomic — all-or-nothing                          | per [safety](../../../conventions.md#safety) and [errors](../../../conventions.md#errors)                                                                                                                 | a re-run with the same names reports "not added", writes nothing and exits 0 | n/a — one local command |
+| editor profile sync (after step 8) | best effort — outside the repository, not atomic | a failed editor command line, install or uninstall is a warning, the written files stay, exit 0; an interrupt stops the sync, the written files stay, exit 130 ([errors](../../../conventions.md#errors)) | n/a — runs only after a write that changed `.vscode/extensions.json`         | n/a — one local command |
+| 9                                  | atomic — output only                             | none — changes no repo state                                                                                                                                                                              | n/a                                                                          | n/a — one local command |
 
 ## Diagram
 
@@ -208,6 +209,7 @@ sequenceDiagram
     participant C as Setup config
     participant G as Tool
     participant R as Repository
+    participant E as Editor command line
     O->>M: bootstrap remove tools
     M->>M: usage check
     alt usage error
@@ -263,7 +265,12 @@ sequenceDiagram
             end
         else written
             opt extensions.json changed
-                M->>R: update editor profile, warning if absent
+                M->>E: sync editor profile
+                alt command line absent, install or uninstall failed
+                    E-->>M: warning, written files stay
+                else Ctrl-C during the sync
+                    M-->>O: written files stay, exit 130
+                end
             end
             M-->>O: report, exit 0
         end

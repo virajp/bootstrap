@@ -4,7 +4,7 @@ title: Manage members
 description: One command adds, removes and lists the member repositories of a
   set-up repository, keeping the setup config and every file that uses members
   in step, with nothing half-written.
-status: draft
+status: reviewed
 implementation: none
 ---
 
@@ -27,10 +27,10 @@ every task and alias acts on are the recorded ones, never a hand-kept copy.
 
 ## Trigger & Actors
 
-| Actor                            | May trigger                                                                                                                                         | Authorization                                               | Audit-recorded                                                                  |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Repo owner (any terminal)        | `bootstrap member add <path>...`, `member remove <slug>...`, `member list`; `init --member <path>`; the tui values section edits members too        | write access to the working directory (`list`: read access) | no — the product has no audit foundation; git history keeps every replaced file |
-| AI agent or CI (non-interactive) | the same commands; `-y` is necessary for an `add` or `remove` that changes anything, since no prompt is possible without terminals or with `--json` | write access to the working directory (`list`: read access) | no — the product has no audit foundation; git history keeps every replaced file |
+| Actor                            | May trigger                                                                                                                                                                                 | Authorization                                               | Audit-recorded                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Repo owner (any terminal)        | `bootstrap member add <path>...`, `member remove <slug>...`, `member list`; `init --member <path>`; the tui values section edits members too ([Select tools](../160-select-tools/index.md)) | write access to the working directory (`list`: read access) | no — the product has no audit foundation; git history keeps every replaced file |
+| AI agent or CI (non-interactive) | the same commands; `-y` is necessary for an `add` or `remove` that changes anything, since no prompt is possible without terminals or with `--json`                                         | write access to the working directory (`list`: read access) | no — the product has no audit foundation; git history keeps every replaced file |
 
 ## Steps
 
@@ -39,20 +39,24 @@ Flags: `add` and `remove` accept `-y`/`--yes`, `--dry-run`, `--json`, `--quiet`,
 `--verbose`, `--no-color` and `--help`. Any other flag is a usage error.
 
 The slug of a path is its folder name (the last segment, a trailing `/`
-ignored), lowercased, every character other than a lowercase letter or digit
-replaced by `-` (`../Api_Server` → `api-server`). A trailing `/` on a path is
-dropped before the path is compared and recorded (`../web/` is `../web`).
+ignored), lowercased, each run of characters other than a lowercase letter or
+digit replaced by one `-`, and a leading or trailing `-` removed
+(`../Api_Server` → `api-server`). A leading `./` and a trailing `/` on a path
+are dropped before the path is compared and recorded (`./web/` is `web`).
 
 `member add` takes one or more paths and `member remove` one or more slugs in
-one run, with one consent; `member list` takes no argument.
+one run, with one consent; a path or slug repeated in one command counts once;
+`member list` takes no argument.
 
 Usage errors come first: no subcommand or an unknown one, a missing `<path>` or
-`<slug>`, any argument on `member list`, a `<path>` that is empty or not
-relative, an unknown flag or a bad flag value exits 2 with short usage before
-the preflight and before `.config/bootstrap.yaml` is read, all reported together
-in one error ([errors](../../../conventions.md#errors)). Nothing is written. A
-path is never checked for existence. `--help` prints the help and exits 0
-anywhere, before the preflight.
+`<slug>`, any argument on `member list`, a `<path>` that is empty, not relative
+or contains whitespace (`MEMBERS` separates paths by spaces), a `<path>` whose
+slug is empty or `all` (the fix: rename its folder), an unknown flag or a bad
+flag value exits 2 with short usage before the preflight and before
+`.config/bootstrap.yaml` is read, all reported together in one error
+([errors](../../../conventions.md#errors)). Nothing is written. A path is never
+checked for existence. `--help` prints the help and exits 0 anywhere, before the
+preflight.
 
 1. The command runs, after the usage check, the preflight of
    [Set up a repository](../110-setup-repository/index.md) step 1. `member list`
@@ -71,9 +75,11 @@ anywhere, before the preflight.
    change on the list of `add` and `remove` (warning in `warnings`) and is
    written back in step 6; `list` never repairs.
 3. Per subcommand:
-   - `list` prints `values.members`, one `<slug> (<path>)` per line sorted by
-     slug (for example `api-server (../Api_Server)`); zero members shows `none`.
-     `--json` prints one object per [errors](../../../conventions.md#errors):
+   - `list` prints `values.members` like `bootstrap show --list-member`
+     ([Show the setup](../170-show-setup/index.md) step 7), one
+     `<path> (<slug>)` per line sorted by slug (for example
+     `../Api_Server (api-server)`); zero members shows `none`. `--json` prints
+     one object per [errors](../../../conventions.md#errors):
      `{exit, members: [{slug, path}], warnings}`, `members` sorted by slug and
      `[]` when none. It writes nothing, asks nothing, prints no next command and
      exits 0; the rest of this list does not apply to it.
@@ -89,9 +95,11 @@ anywhere, before the preflight.
      the member's folder.
 4. The command renders the full file set of the recorded selection with the new
    `values.members` and prepares the list of changes: the files to change,
-   create or delete (the `mise` env config, the `setup:all` task and the alias
-   file that use members) and `.config/bootstrap.yaml`. Planning, shared and
-   `create_only` files, `orphaned` paths and the clean-target check follow
+   create or delete (`conf.d/env.toml`, `tasks/setup/all` and
+   `conf.d/alias.dev.toml`, per
+   [Tool](../../../entities/tool/index.md#selection-dependent-files)) and
+   `.config/bootstrap.yaml`. Planning, shared and `create_only` files,
+   `orphaned` paths and the clean-target check follow
    [safety](../../../conventions.md#safety); the refusals of steps 2 and 3 come
    first ([precedence](../../../conventions.md#safety)). If nothing changes (an
    already-recorded path, a removal of an unrecorded slug, and no repair), the
@@ -154,6 +162,8 @@ sequenceDiagram
         M-->>O: exit 3
     else list
         M-->>O: members, exit 0
+    else add or remove, valid
+        M->>M: record the change
     end
     M->>M: compute slug, check duplicates
     opt same slug, different path
@@ -172,6 +182,8 @@ sequenceDiagram
         M-->>O: exit 2, changes need --yes
     else no -y, terminal, answer is not y
         M-->>O: nothing changed, exit 0
+    else no -y, terminal, Ctrl-C at the prompt
+        M-->>O: exit 130
     else proceed
         M->>R: write files
         M->>C: rewrite config
@@ -221,7 +233,7 @@ that names its flags (no `-y`, `--dry-run`) runs with those only.
   written, `web` is in `not_recorded`, the warning "member `web` not recorded"
   is reported and the exit code is 0.
 - Given recorded members `../Api_Server` and `web`, when `member list` runs,
-  then the lines `api-server (../Api_Server)` and `web (web)` are printed,
+  then the lines `../Api_Server (api-server)` and `web (web)` are printed,
   sorted by slug, nothing is written and the exit code is 0; with `--json` the
   document is
   `{"exit": 0, "members": [{"slug": "api-server", "path": "../Api_Server"}, {"slug": "web", "path": "web"}], "warnings": []}`;
@@ -233,6 +245,16 @@ that names its flags (no `-y`, `--dry-run`) runs with those only.
   removed with one consent and the exit code is 0.
 - Given `member add a/Web b/web`, when it runs, then nothing is written and the
   exit code is 2 naming both paths.
+- Given `member add ./web/ web -y` with no member recorded, when it runs, then
+  `web` is recorded once (slug `web`) and the exit code is 0; given
+  `member remove web web -y` with `web` recorded, then it is removed once.
+- Given a path whose slug is empty or `all` (`../___`, `../All`), or a path that
+  contains a space, when `member add` runs, then the exit code is 2, the error
+  names the path and the fix, and nothing is written.
+- Given recorded members `../api` and `web`, when `member add` writes, then
+  `MEMBERS` is `../api web`, `setup:all` has the flags `--all`, `--api` and
+  `--web`, and the aliases `setup-api` and `setup-web` run
+  `mise run setup:all --api` and `mise run setup:all --web`.
 - Given `member list web`, when it runs, then the exit code is 2, short usage is
   shown and nothing is written.
 - Given an empty or absolute path, no argument, an unknown subcommand or an
