@@ -26,13 +26,13 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
 **JSON result** (`tui` takes no `--json`; it is a usage error there)
 (`errors: exit-codes-and-structured-report`).
 
-| Exit  | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `0`   | success                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `1`   | declined to act — a target has uncommitted changes ([#safety](#safety)), the setup file changed while the `tui` view was open (next command `bootstrap tui`), `add`, `remove` or `show` on a repository that is not set up, `show` on a selection that misses an unremovable tool or a dependency that [Repair on read](entities/setup-config/index.md#repair) would add back, or `add`, `remove` or `tui` on a repository set up by an older bootstrap (next command `bootstrap init`) |
-| `2`   | usage error — bare `bootstrap` with no command (prints the top-level help), bad or missing flag/argument (prints short usage), an unremovable tool named for removal, a tool named for removal, or replaced outside a `requires` slot, that a selected tool still needs (names that tool), a change in init, add or remove without `--yes` where no prompt is possible ("changes need --yes"), a replacement with no consent, `tui` without terminals (checked after the preflight)     |
-| `3`   | failure — not a git repository, `mise` not installed, unreadable setup file, render error, a target path that is not a regular file, write failed                                                                                                                                                                                                                                                                                                                                       |
-| `130` | interrupted (Ctrl-C) — nothing written, or the repository was restored                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Exit  | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`   | success                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `1`   | declined to act — a target has uncommitted changes ([#safety](#safety)), the setup file changed while the `tui` view was open (next command `bootstrap tui`), `add`, `remove`, `scope`, `member` or `show` on a repository that is not set up, `show` on a selection that misses an unremovable tool or a dependency that [Repair on read](entities/setup-config/index.md#repair) would add back, or `add`, `remove`, `scope add`/`remove`, `member add`/`remove` or `tui` on a repository set up by an older bootstrap (next command `bootstrap init`)                                                                                                                                               |
+| `2`   | usage error — bare `bootstrap` with no command (prints the top-level help), bad or missing flag/argument (prints short usage), an unremovable tool named for removal, a tool named for removal or replaced that a selected tool would dangle without ([Dangling rule](entities/tool/index.md#requires-and-dependencies); names those tools, next command the same command plus them), a change in init, add or remove without `--yes` where no prompt is possible ("changes need --yes"), a tool that runs only on another operating system named for a new selection (for example an Apple-only tool on Linux), a replacement with no consent, `tui` without terminals (checked after the preflight) |
+| `3`   | failure — not a git repository, `mise` not installed, unreadable setup file, render error, a target path that is not a regular file, write failed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `130` | interrupted (Ctrl-C) — nothing written, or the repository was restored                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 - An interrupt (Ctrl-C) exits `130` in every command and at any moment — in the
   `tui` view, while reading, or while writing. During a write it first triggers
@@ -43,12 +43,14 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
 - After `--help` (and `bootstrap --version`) and the flag and argument check,
   every command runs only inside a git repository; anywhere else it writes
   nothing and exits `3` with "not a git repository — run `git init` first".
-- Every command except `show` needs `mise` on the `PATH` (`show` runs no tool);
-  without it, the command writes nothing and exits `3` with "mise not installed"
-  and the install command. When the `mise` found is not `~/.local/bin/mise`, the
-  command prints one warning naming the path found and continues. From any
-  subdirectory, every command works at the repository root: the setup file and
-  every tool path are relative to the root.
+- Every command except `show`, `scope list` and `member list` needs `mise` on
+  the `PATH` (they run no tool and take no
+  [version guard](entities/setup-config/index.md#version-guard)); without it,
+  the command writes nothing and exits `3` with "mise not installed" and the
+  install command. When the `mise` found is not `~/.local/bin/mise`, the command
+  prints one warning naming the path found and continues. From any subdirectory,
+  every command works at the repository root: the setup file and every tool path
+  are relative to the root.
 - Results go to stdout; progress, warnings and errors go to stderr.
 - On every command but `tui`, `--json` prints exactly one JSON document, the
   JSON result, to stdout and nothing else, carrying the same outcome as the exit
@@ -81,6 +83,18 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
   exactly "commit the changes"; a run with nothing to create, change, delete or
   replace has no closing line, and a `--dry-run` shows the closing line of the
   real run.
+- A run that changed a file ends its human output with one more line after the
+  closing line: "review `git diff`; restore your own lines with
+  `git restore -p <file>`".
+- After a successful write (not a `--dry-run`) that created or changed
+  `.vscode/extensions.json`, `init`, `add`, `remove` and the `tui` run the
+  editor's command line once to create an editor profile named after the
+  repository (the `REPO_NAME` value), install every listed extension into it,
+  and uninstall from it every extension that no selected tool lists, so the
+  profile always equals `.vscode/extensions.json`. This is the only tool
+  bootstrap itself runs. When the editor's command line is not on the `PATH`,
+  the run prints one warning naming the fix and still exits `0`; a failed
+  install or uninstall is a warning too.
 - Every error message states what happened, why, and the exact next command to
   run. No internal trace unless `--verbose`.
 - A run reports its exit `2` refusals together, in one error: `what` and `why`
@@ -111,7 +125,8 @@ value neither flagged, recorded nor defaulted is a usage error (exit `2`) whose
 next command offers `bootstrap tui` or the missing flag. The `tui` shows the
 defaults pre-filled, and the owner confirms them at apply.
 
-`init`, `add` and `remove` run in this order:
+`init`, `add`, `remove`, `scope add`, `scope remove`, `member add` and
+`member remove` run in this order:
 
 1. Read the flags and the recorded setup file, and prepare the full list of
    changes: each file to create, change, delete or replace, and a repair of the
@@ -159,9 +174,14 @@ commits them.
   directory is a symlink or a regular file, is never written, deleted or
   followed: the command exits `3` naming every such path, with the fix "move it
   away and run again".
-- **Create-only files.** A file the [Tool](entities/tool/index.md) catalog marks
-  `create_only` is written only when it is absent; it is never changed and never
-  deleted, and an existing one is reported as `kept`.
+- **Shared and create-only files.** Every file a tool renders is one of two
+  kinds. A shared file is the same in every repository; bootstrap owns it, and
+  every run renders it again, replacing a committed hand edit (the version
+  history keeps it). A file an owner is expected to edit is marked `create_only`
+  in the [Tool](entities/tool/index.md) catalog: it is written only when it is
+  absent, never changed and never deleted, and an existing one is reported as
+  `kept`. The exact pins in `mise` config files follow
+  [#tool-versions](#tool-versions).
 - **Empty directories.** After its deletions, a run removes each directory that
   a deletion left empty, then each parent that is left empty in turn, never the
   repository root. A directory that holds any other entry stays.
@@ -185,9 +205,28 @@ byte order.
 ## Tool versions {#tool-versions}
 
 Every tool a rendered task or hook runs is installed by `mise` from the rendered
-config; no task fetches and runs a package by itself. Every `mise.dev.toml` asks
-for the `latest` version. Every other `mise` config file pins an exact version,
-and a new bootstrap release moves those pins.
+config; no task fetches and runs a package by itself. A host-only tool (one that
+`mise` cannot install, for example the Apple developer tools or a container
+engine) is the one exception: it is not pinned, and its tasks check that it is
+present.
+
+- **Pin rule.** Every `mise.dev.toml` asks for `latest`: it runs on the
+  developer's machine, where the developer tests it. Every other `mise` config
+  file (`mise.toml`, `mise.ci.toml`) pins an exact version, so continuous
+  integration never drifts. A pin takes whatever form `mise` uses for that tool:
+  a version, a variant (for example a vendor line of a runtime) or both.
+- **The repository owns its pins.** bootstrap writes an exact pin only when it
+  first writes a tool's file, or when the pin is absent. A later run reads the
+  pin in the file and keeps it. A renamed package (the pinned name changes) is a
+  new pin: bootstrap writes its own exact version for it.
+- **Upgrade path.** The task group `upgrade:` moves versions on purpose, on a
+  developer machine or in continuous integration: `upgrade:mise` moves every
+  exact pin to the newest version, `upgrade:deps` upgrades each package
+  manager's dependencies and lockfile, and `upgrade:all` runs both. A run of
+  `setup:all` installs from the lockfiles and pins as they are, and never
+  upgrades a lockfile or moves a pin. Running the tests after an upgrade, and
+  any scheduled workflow that does it, is the repository's own and not
+  bootstrap's.
 
 ## Observability {#observability}
 

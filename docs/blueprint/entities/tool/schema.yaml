@@ -10,11 +10,15 @@ properties:
     description: Unique tool name, typed by users in `--tool <name>`, `bootstrap
       add <name>` and `bootstrap remove <name>`.
     pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
-  category:
-    type: string
-    description: Name of the Tool category this tool belongs to (target entity
-      Tool category). Must name an existing category.
-    pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+  categories:
+    type: array
+    description: "Names of the Tool categories this tool belongs to (target entity Tool category), at least one. Each must name an existing category; the limit of every `max: one` category applies to the tool."
+    minItems: 1
+    uniqueItems: true
+    items:
+      type: string
+      description: A Tool category name.
+      pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
   purpose:
     type: string
     description: One-line description, shown after the tool's name in the tui
@@ -38,23 +42,72 @@ properties:
       `off` does not, `origin` selects it when the host of the git remote
       `origin` equals one of `origin_hosts`, compared ignoring case.
     enum: [ "on", "off", "origin" ]
+  engine:
+    type: string
+    description: The engine this runtime is of; set only on a `runtime` tool,
+      absent on every other tool and on a runtime of no engine. Engines are not
+      catalog tools; the Engines table of index.md lists each engine's runtimes
+      and default runtime.
+    enum: [ javascript, java, dart, python, swift, ruby ]
   requires:
     type: array
-    description: Slots of tools this tool needs. Each slot lists alternative
-      tools, the first being the default; a slot with no selected tool gets its
-      first alternative as a dependency. May be empty. Every alternative names a
-      tool of the catalog. In 1.0 every slot has exactly one alternative.
+    description: The requirements of this tool; may be empty. Each names one
+      tool, met while that tool is selected, or one engine, met while at least
+      one runtime of that engine is selected (when none is, the engine's
+      default runtime is added as a dependency). Every named tool is a tool of
+      the catalog.
     uniqueItems: true
     items:
-      type: array
-      description: One slot, its alternative tool names; the first is the
-        default.
-      minItems: 1
-      uniqueItems: true
-      items:
-        type: string
-        description: A tool name.
-        pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+      type: object
+      description: One requirement, naming exactly one tool or one engine.
+      properties:
+        tool:
+          type: string
+          description: A tool name.
+          pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+        engine:
+          type: string
+          description: An engine name.
+          enum: [ javascript, java, dart, python, swift, ruby ]
+      oneOf:
+        - required: [ tool ]
+        - required: [ engine ]
+      additionalProperties: false
+  host_only:
+    type: boolean
+    description: True when mise cannot install the tool (for example the Apple
+      developer tools). It has no pin and no mise entry,
+      and every task that needs it first checks that it is present.
+    default: false
+  host_os:
+    type: string
+    description: The only operating system the tool runs on. Absent when the
+      tool runs anywhere. A new selection on another host is refused; a recorded
+      one stays selected and its tasks fail there (index.md Host-only tools).
+    enum: [ macos ]
+  vscode_extensions:
+    type: array
+    description: Editor extension ids this tool contributes to
+      `.vscode/extensions.json`; the file lists the union over the selected
+      tools. May be empty.
+    uniqueItems: true
+    default: []
+    items:
+      type: string
+      description: A marketplace extension id, `publisher.name`.
+      pattern: "^[A-Za-z0-9][A-Za-z0-9-]*\\.[A-Za-z0-9][A-Za-z0-9-]*$"
+  renamed_from:
+    type: array
+    description: Earlier catalog names of this tool. A recorded old name is read
+      as this tool and rewritten as a repair with the warning "renamed tool
+      `<old>` to `<new>`". An old name is never a current tool name and belongs
+      to one tool only.
+    uniqueItems: true
+    default: []
+    items:
+      type: string
+      description: An old tool name.
+      pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
   origin_hosts:
     type: array
     description: "Hosts of the git remote `origin` that select this tool by default. Required when `default` is `origin`, and present only then. No two `origin` tools of one `max: one` category share a host."
@@ -67,10 +120,10 @@ properties:
   files:
     type: array
     description: Target-repository files this tool renders. A path belongs to
-      exactly one tool. The Target paths table in index.md is the authority for
-      the 1.0 path set; contents are part of the contract only where index.md
+      exactly one tool. May be empty (a tool that contributes only an editor
+      extension). The Target paths table in index.md is the authority for the
+      1.0 path set; contents are part of the contract only where index.md
       Target paths says so.
-    minItems: 1
     uniqueItems: true
     items:
       type: object
@@ -84,13 +137,14 @@ properties:
           type: boolean
           description: True when the file is written only when absent, never
             changed or deleted, and reported `kept` (per conventions.md#safety).
-            Default false.
+            True for every file an owner may edit by hand. Default false, a
+            universal file that every run renders again.
           default: false
       required: [ path ]
       additionalProperties: false
 required: [
   name,
-  category,
+  categories,
   purpose,
   removable,
   default,
@@ -116,6 +170,15 @@ allOf:
       properties:
         default:
           const: "on"
+  - if:
+      not:
+        properties:
+          categories:
+            contains:
+              const: runtime
+    then:
+      not:
+        required: [ engine ]
   - if:
       properties:
         default:

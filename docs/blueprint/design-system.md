@@ -310,13 +310,16 @@ The `cli` project is a shipped command-line tool. Elicited in text on
   category's `purpose` after its name in the muted role (a hidden tool and a
   category whose every tool is hidden are never shown,
   [Tool category](entities/tool-category/index.md)), then a values section
-  headed `values` with the labels `repo`, `commit scopes`, `merge into develop`
-  and `merge into main` (a value with nothing recorded, such as zero commit
-  scopes, shows `none` in the muted role). A `max: one` category is a radio
+  headed `values` with the labels `repo`, `scopes` (each scope's name and
+  description), `members` (each member's path), `merge into develop` and
+  `merge into main` (a value with nothing recorded, such as zero scopes or zero
+  members, shows `none` in the muted role). A `max: one` category is a radio
   group (`(•)` / `( )`) with a `none` choice when its tool is removable
   ([Tool category](entities/tool-category/index.md) invariant 4); a `max: many`
   category is a checkbox group (`[x]` / `[ ]`). Each tool row shows the tool's
-  `purpose` after its name in the muted role. Under each selected tool, its
+  `purpose` after its name in the muted role; a tool detected from the
+  repository's manifests and not selected shows the word `suggested` after its
+  purpose in the muted role, never by color alone. Under each selected tool, its
   dependency tree follows in `text-muted`: one line per required tool, nested
   with `├─`, `└─` and `│`, a dependency marked `dependency` and expanded into
   its own required tools, a direct tool unmarked and not expanded; tree lines
@@ -327,12 +330,14 @@ The `cli` project is a shipped command-line tool. Elicited in text on
   `k` and `j`) move, space selects, enter edits a value, `a` applies, `q` or Esc
   quits; a footer line always lists these keys, exactly
   `↑↓ k j move · space select · enter edit · a apply · q Esc quit` in the muted
-  role. A consent prompt ("replace `<old>` with `<new>`? y/N") opens in place
-  and defaults to no. Apply shows the plan in the same screen and asks once; the
-  selector never writes before that confirm. The selector needs a terminal at
-  least 80 columns wide and 24 rows high; a smaller one shows only "make the
-  terminal larger". The state of each control is carried by its mark, never by
-  color alone.
+  role. A dependency's row is checked and shows the word `dependency` after its
+  purpose in the muted role. A consent prompt ("replace `<old>` with `<new>`?
+  y/N", or "remove `<parents>` too? y/N" when an unchecked tool would leave
+  others dangling) opens in place and defaults to no. Apply shows the plan in
+  the same screen and asks once; the selector never writes before that confirm.
+  The selector needs a terminal at least 80 columns wide and 24 rows high; a
+  smaller one shows only "make the terminal larger". The state of each control
+  is carried by its mark, never by color alone.
 
 ## Anti-Patterns
 

@@ -4,7 +4,7 @@ title: Remove a tool
 description: One command removes removable tools from a set-up repository,
   deleting their files and nothing half-written; git history keeps every deleted
   file.
-status: reviewed
+status: draft
 implementation: none
 ---
 
@@ -14,7 +14,8 @@ implementation: none
 
 `bootstrap remove <tool>...` removes one or more removable tools from a
 repository that is already set up: it deletes their files, and prunes each
-dependency that no remaining tool needs
+dependency that no remaining tool needs; a tool that would dangle without a
+named tool is never removed silently: it must be named too
 ([Tool](../../../entities/tool/index.md#requires-and-dependencies)). It never
 commits.
 
@@ -36,6 +37,11 @@ or an unknown flag or a bad flag value, exits 2 with short usage before the
 preflight and before `.config/bootstrap.yaml` is read, all reported together
 ([errors](../../../conventions.md#errors)). Nothing is written.
 
+An old tool name (one the catalog lists in a tool's `renamed_from`) typed on the
+command line is an unknown tool name: a usage error, exit 2, whose error names
+the new name as the fix, "unknown tool `<old>` — use `<new>`". Only a recorded
+old name is repaired (step 2).
+
 1. Remove runs, after the usage check, the preflight of
    [Set up a repository](../110-setup-repository/index.md) step 1.
 2. Remove reads `.config/bootstrap.yaml`
@@ -49,32 +55,43 @@ preflight and before `.config/bootstrap.yaml` is read, all reported together
    that a selected tool needs, is repaired with a warning per
    [Repair on read](../../../entities/setup-config/index.md#repair); a missing
    dependency that no tool of the selection after the request needs is not
-   repaired and not reported. A `values.dependencies` name the running catalog
-   does not have is dropped as a repair (a change on the list that needs
-   consent, so the list is not empty) at the step 8 rewrite, with the warning
-   "dropped unknown dependency `<name>`".
+   repaired and not reported. A recorded old name of a renamed tool (in
+   `values.tools` or `values.dependencies`) is read as the new name and
+   rewritten under it as a repair (a change that needs consent), with the
+   warning "renamed tool `<old>` to `<new>`". A `values.dependencies` name the
+   running catalog does not have is dropped as a repair (a change on the list
+   that needs consent, so the list is not empty) at the step 8 rewrite, with the
+   warning "dropped unknown dependency `<name>`".
 3. Remove validates each name. A name given more than once is used once, with no
-   error. A name is selected when it is in `values.tools` (direct) or in
-   `values.dependencies` (a dependency). The selection after the request is the
-   direct tools without the named ones, plus the dependencies they need (derived
-   per the requires check of
+   error. A recorded tool whose `host_os` is not the running host may be removed
+   like any other. A name is selected when it is in `values.tools` (direct) or
+   in `values.dependencies` (a dependency). The selection after the request is
+   the direct tools without the named ones, plus the dependencies they need
+   (derived per the requires check of
    [Tool](../../../entities/tool/index.md#requires-and-dependencies)). Each name
    falls in one case:
 
-   | Case                                                                                      | Result                                                                                                                                                             |
-   | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-   | Selected directly and required by no tool of the selection after the request              | `removed`                                                                                                                                                          |
-   | Selected (direct or dependency) and required by a tool of the selection after the request | exit 2 naming that parent tool (`pre-commit` for `python`), unless another alternative of the slot is in that selection or the parent is named in the same request |
-   | Selected only as a dependency and needed by no tool of the selection after the request    | `not_added`, like an unselected name; pruned per the rules below and listed in `dependencies_pruned` when pruned                                                   |
-   | Selected neither way                                                                      | `not_added`, changes nothing                                                                                                                                       |
+   | Case                                                                                                                                                                                   | Result                                                                                                                                                          |
+   | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | Selected directly, and no tool of the selection after the request would dangle without it                                                                                              | `removed`                                                                                                                                                       |
+   | Selected (direct or dependency), and a tool of the selection after the request would dangle without it (it requires the named tool, or an engine whose last selected runtime is named) | exit 2 naming every direct tool that would dangle (`pre-commit` for `python`; `effect` and `pnpm` for `node`), unless all of them are named in the same request |
+   | Selected only as a dependency, and no tool of the selection after the request would dangle without it                                                                                  | `not_added`, like an unselected name; pruned per the rules below and listed in `dependencies_pruned` when pruned                                                |
+   | Selected neither way                                                                                                                                                                   | `not_added`, changes nothing                                                                                                                                    |
 
-   When several named tools are each still required by a tool of the selection
-   after the request, every blocked name is reported with its parent in the one
-   exit 2 error, in step order, and its `next_command` is the one command that
-   fixes all of them; they are reported together after the usage check
-   ([errors](../../../conventions.md#errors)). When an unremovable tool (`git`
-   or `pre-commit`) is the blocking parent of any named tool, the error has no
-   next command, even if other names could be removed.
+   Which tools would dangle follows the
+   [Dangling rule](../../../entities/tool/index.md#requires-and-dependencies):
+   it is transitive, so a package manager whose runtime leaves (`pnpm` or `yarn`
+   when `node` leaves) dangles too, and a runtime leaves without blocking
+   anything while another runtime of the same engine stays selected for each of
+   its parents (their links move to it). When several named tools are blocked,
+   every blocked name is reported with its parents in the one exit 2 error, in
+   step order; they are reported together after the usage check
+   ([errors](../../../conventions.md#errors)). The `next_command` is the same
+   command plus every named parent, sorted by name (for example
+   `bootstrap remove node -y` → `bootstrap remove node effect pnpm -y`); naming
+   them removes them all. When an unremovable tool (`git` or `pre-commit`) is a
+   blocking parent of any named tool, the error has no next command, even if
+   other names could be removed.
 
    A dependency that the request leaves without a parent (a tool of the recorded
    selection needed it, no tool of the selection after the request does) is
@@ -91,16 +108,18 @@ preflight and before `.config/bootstrap.yaml` is read, all reported together
    [Add a tool](../140-add-tool/index.md) step 3 does), writes nothing, shows no
    prompt, reports them and exits 0.
 4. Remove renders in memory the full file set for the new selection with the
-   recorded values and compares each file with the working copy: the
-   new-selection render judges the files to keep, create or change. Remove also
-   renders the recorded selection: that render tells a removed tool's file
-   (`deleted` or `kept`) from a path the running cli no longer renders
-   (`orphaned`, per [Files no longer rendered](../../../conventions.md#safety)).
-   In this table a removed tool is a named tool or a dependency step 3 prunes:
-   the files of a pruned dependency follow the removed-tool rows, and the files
-   of a dependency that stays (its parents updated) follow the still-selected
-   rows. Each recorded or rendered path falls in one case. A shared file is one
-   of the files listed in
+   recorded values (exact mise pins already in the repository are kept,
+   [tool versions](../../../conventions.md#tool-versions)) and compares each
+   file with the working copy: the new-selection render judges the files to
+   keep, create or change. Remove also renders the recorded selection: that
+   render tells a removed tool's file (`deleted` or `kept`) from a path the
+   running cli no longer renders (`orphaned`, per
+   [Files no longer rendered](../../../conventions.md#safety)). In this table a
+   removed tool is a named tool or a dependency step 3 prunes: the files of a
+   pruned dependency follow the removed-tool rows, and the files of a dependency
+   that stays (its parents updated) follow the still-selected rows. Each
+   recorded or rendered path falls in one case. A shared file is one of the
+   files listed in
    [Selection-dependent files](../../../entities/tool/index.md#selection-dependent-files)
    of the [Tool](../../../entities/tool/index.md) entity. A shared file that the
    new selection still renders is a file of a still-selected tool, never of a
@@ -143,20 +162,28 @@ preflight and before `.config/bootstrap.yaml` is read, all reported together
    dependency step 2 repaired, without any unknown dependency name step 2 found,
    and `files` per
    [invariant 2](../../../entities/setup-config/index.md#invariants). It never
-   commits.
+   commits. When the write created or changed `.vscode/extensions.json`
+   (removing a tool with VS Code extensions changes it), remove then runs the
+   editor's command line once to sync the `REPO_NAME` profile to it: every
+   listed extension installed, and every extension no remaining selected tool
+   lists (the removed tool's, unless another tool lists it) uninstalled; absent,
+   or a failed install or uninstall, is a warning and the exit code stays 0
+   ([errors](../../../conventions.md#errors)), the written files stay.
 9. Remove reports, in human output and under `--json`: `removed`, `not_added`,
    `dependencies_added`, `dependencies_pruned`, `deleted`, `created`, `changed`,
    `unchanged`, `kept`, `orphaned` and `warnings`. `removed` lists only the
-   named tools that were selected; `dependencies_pruned` lists the dependencies
-   step 3 pruned, and `dependencies_added` the dependencies a step 2 repair
-   added back. `warnings` are listed in the order they were found; the path
-   lists are sorted by path; `removed`, `not_added`, `dependencies_added` and
-   `dependencies_pruned` are sorted by name. Each path appears under the key its
-   case gives in step 4. A hidden tool (`mise`) is never listed in a name list
-   of the report; the paths of its files are listed like any path. A directory
-   step 8 removed is not reported, in human output, `--json` or the `--dry-run`
-   list. The next command follows [errors](../../../conventions.md#errors). Exit
-   0 on success.
+   named tools that were selected directly; `dependencies_pruned` lists the
+   dependencies step 3 pruned, and `dependencies_added` the dependencies a step
+   2 repair added back. `warnings` are listed in the order they were found; the
+   path lists are sorted by path; `removed`, `not_added`, `dependencies_added`
+   and `dependencies_pruned` are sorted by name. Each path appears under the key
+   its case gives in step 4. A hidden tool (`mise`) is never listed in a name
+   list of the report; the paths of its files are listed like any path. A
+   directory step 8 removed is not reported, in human output, `--json` or the
+   `--dry-run` list. The next command follows
+   [errors](../../../conventions.md#errors). A run that changed a file ends its
+   human output with the closing hint "review `git diff`; restore your own lines
+   with `git restore -p <file>`". Exit 0 on success.
 
 Modes: `--dry-run` shows the list of changes, writes nothing, never prompts (in
 any terminal, with or without `-y`) and exits with the code the real run (with
@@ -235,6 +262,9 @@ sequenceDiagram
                 M-->>O: exit 130
             end
         else written
+            opt extensions.json changed
+                M->>R: update editor profile, warning if absent
+            end
             M-->>O: report, exit 0
         end
     end
@@ -250,10 +280,8 @@ A criterion that says only "when remove runs" runs with `-y`; a criterion that
 names its flags (no `-y`, `--dry-run`) runs with those only.
 
 A case that records a missing `git` while another tool of its `max: one`
-category is recorded, or that selects another alternative of a `requires` slot
-so the removal passes, cannot be reached with the 1.0 catalog (no 1.0 slot has
-more than one alternative; `version-control` holds only `git`); it holds for a
-later catalog.
+category is recorded cannot be reached with the 1.0 catalog (`version-control`
+holds only `git`); it holds for a later catalog.
 
 - Given a repository with github added, when `bootstrap remove github -y` runs,
   then github's files are deleted, `values.tools` no longer contains github,
@@ -261,14 +289,31 @@ later catalog.
 - Given `dprint` is selected and `taplo` is not, when
   `bootstrap remove dprint -y` runs, then
   `.config/mise/conf.d/dprint/mise.dev.toml` and the tool's other files,
-  `dprint.json` included, are deleted, the next command is
+  `dprint.jsonc` included, are deleted, the next command is
   `MISE_ENV=dev mise run setup:all` and the exit code is 0.
 - Given a removed tool whose deletions empty `.config/mise/conf.d/<tool>/`, when
   remove runs with `-y`, then that directory no longer exists and is not
   reported; a directory that still holds another entry stays.
-- Given `mempalace` is selected, when `bootstrap remove mempalace -y` runs, then
-  `mempalace.yaml` (`create_only`) stays on disk, is reported `kept` and is no
-  longer in `files`, the tool's other files are deleted and the exit code is 0.
+- Given `grype` is selected, when `bootstrap remove grype -y` runs, then
+  `.config/grype.yaml` (`create_only`) stays on disk, is reported `kept` and is
+  no longer in `files`, the tool's other files are deleted and the exit code is
+  0.
+- Given `effect`, `node` and `bun` are selected directly, when
+  `bootstrap remove node -y` runs, then `node` is removed, `effect`'s
+  `javascript` engine is met by `bun` and the exit code is 0.
+- Given `effect` with `node` recorded as its dependency and `bun` selected
+  directly, when `bootstrap remove node -y` runs, then `effect`'s link moves to
+  `bun`, `node` is pruned (listed in `dependencies_pruned`, its files deleted),
+  it is reported `not_added` and the exit code is 0.
+- Given `effect` and `pnpm` selected and `node` their only `javascript` runtime,
+  when `bootstrap remove node -y` runs, then nothing is written and the exit
+  code is 2 with one error naming `effect` and `pnpm`, and the next command is
+  `bootstrap remove node effect pnpm -y`; when that command runs, then all three
+  are removed and the exit code is 0.
+- Given `effect`, `pnpm` and `bun` selected and `node` selected directly, when
+  `bootstrap remove node -y` runs, then nothing is written and the exit code is
+  2 naming `pnpm` only (`bun` keeps `effect` met), with the next command
+  `bootstrap remove node pnpm -y`.
 - Given a recorded shared file missing from disk whose tool stays selected, when
   remove runs and its absence is committed, then the file is created again,
   reported `created` and the exit code is 0.
@@ -284,6 +329,9 @@ later catalog.
 - Given a tool whose `removable` is false (e.g. `git`), when remove runs, then
   nothing is written and the exit code is 2.
 - Given an unknown tool name, when remove runs, then the exit code is 2.
+- Given an old tool name that the catalog lists in a tool's `renamed_from`, when
+  `bootstrap remove <old>` runs, then nothing is written, the error is "unknown
+  tool `<old>` — use `<new>`" and the exit code is 2.
 - Given `bootstrap remove mise -y`, when it runs, then `mise` is an unknown
   name: nothing is written, the exit code is 2 and `mise` is never listed as a
   tool.
@@ -292,35 +340,31 @@ later catalog.
 - Given `bootstrap remove` with no names, when it runs, then nothing is written,
   a short usage is shown and the exit code is 2.
 - Given `taplo` is selected, when `bootstrap remove dprint -y` runs, then
-  nothing is written and the exit code is 2 naming `taplo`.
+  nothing is written and the exit code is 2 naming `taplo`, with the next
+  command `bootstrap remove dprint taplo -y`.
 - Given `taplo` and `dprint` are selected, when
   `bootstrap remove taplo dprint -y` runs, then the requires check passes on the
   selection after the request, both are removed and the exit code is 0.
-- Given `dprint` and `virajp-linter` are selected with `node` and `pnpm`
-  dependencies needed only by them, when
-  `bootstrap remove dprint virajp-linter -y` runs, then `node` and `pnpm` are
-  pruned: they are on the list of changes before consent, their files are
-  deleted (`create_only` files kept), they leave `values.dependencies`,
-  `dependencies_pruned` lists `node` and `pnpm`, `removed` lists `dprint` and
+- Given `effect` and `virajp-linter` are selected with `node` a dependency
+  needed only by them, when `bootstrap remove effect virajp-linter -y` runs,
+  then `node` is pruned: it is on the list of changes before consent, its files
+  are deleted (`create_only` files kept), it leaves `values.dependencies`,
+  `dependencies_pruned` lists `node`, `removed` lists `effect` and
   `virajp-linter` alone and the exit code is 0.
-- Given `dprint` and `virajp-linter` are selected with `node` and `pnpm`
-  dependencies of both, when `bootstrap remove dprint -y` runs, then `node` and
-  `pnpm` stay with their files, `values.dependencies` records `node` with
-  parents `[pnpm, virajp-linter]` and `pnpm` with parents `[virajp-linter]`, and
-  the exit code is 0.
+- Given `effect` and `virajp-linter` are selected with `node` a dependency of
+  both, when `bootstrap remove effect -y` runs, then `node` stays with its
+  files, `values.dependencies` records `node` with parents `[virajp-linter]`,
+  and the exit code is 0.
 - Given a pruned dependency whose deletions empty its `conf.d/` directory, when
   remove runs with `-y`, then the directory no longer exists and is not reported
   ([safety](../../../conventions.md#safety)).
-- Given a direct tool that a selected tool still needs (for example `node`
-  selected directly and needed by `dprint`), when `bootstrap remove node -y`
-  runs, then nothing is written and the exit code is 2 naming `dprint`; given
-  another alternative of that slot is selected, the removal passes.
 - Given `pre-commit` is selected (unremovable) with `python` and `uv` as its
   dependencies, when `bootstrap remove python uv -y` runs, then nothing is
   written and the exit code is 2 with one error that names both `python` and
   `uv` with their parent `pre-commit`, in step order, and no next command.
-- Given `pnpm` is only a dependency of `dprint`, when `bootstrap remove pnpm -y`
-  runs, then nothing is written and the exit code is 2 naming `dprint`.
+- Given `dprint` is only a dependency of `taplo`, when
+  `bootstrap remove dprint -y` runs, then nothing is written and the exit code
+  is 2 naming `taplo`.
 - Given `pre-commit` is selected (unremovable) with `python` and `uv` as its
   dependencies, when `bootstrap remove python -y` runs, then nothing is written
   and the exit code is 2 naming `pre-commit` with no next command.
@@ -359,9 +403,6 @@ later catalog.
   `values.tools`, its files are rendered and reported `created` or `changed`,
   `.config/bootstrap.yaml` is listed `changed`, the warning "added back
   unremovable tool `<name>`" is in `warnings` and the exit code is 0.
-- Given a setup file recorded with an older `format`, when remove runs, then the
-  older format is read and not refused, and the next write records the running
-  cli's format.
 - Given a recorded `values.tools` with a tool name the running catalog does not
   have, when remove runs, then nothing is written and the exit code is 3 naming
   the fix.
@@ -436,6 +477,23 @@ later catalog.
   from `values.dependencies`, when `bootstrap remove claude -y` runs, then `jq`
   is not added back, is in neither `dependencies_added` nor
   `dependencies_pruned`, and no "added back dependency" warning is reported.
+- Given a recorded `values.tools` or `values.dependencies` that names a tool by
+  an old name the running catalog lists in `renamed_from`, when remove runs with
+  `-y`, even with none of the named tools selected, then the new name replaces
+  it on the rewrite, `warnings` reports "renamed tool `<old>` to `<new>`",
+  `.config/bootstrap.yaml` is listed `changed` and the exit code is 0; without
+  `-y` and with no terminal, nothing is written and the exit code is 2 "changes
+  need --yes".
+- Given a recorded tool whose `host_os` is not the running host, when
+  `bootstrap remove <tool> -y` runs, then it is removed like any other tool and
+  the exit code is 0.
+- Given `taplo` selected, when `bootstrap remove taplo -y` runs, then
+  `.vscode/extensions.json` changes and the editor's command line runs once to
+  sync the `REPO_NAME` profile: `tamasfe.even-better-toml` is uninstalled from
+  it (no remaining tool lists it); given the command line is not on the `PATH`,
+  then one warning names the fix, the files stay written and the exit code is 0.
+- Given a run that changed a file, when remove ends, then the human output ends
+  with "review `git diff`; restore your own lines with `git restore -p <file>`".
 - Abuse case: n/a — runs locally with the caller's own permissions on the
   caller's own repository; every input is validated per
   [baseline](../../../conventions.md#baseline) boundary-validation.

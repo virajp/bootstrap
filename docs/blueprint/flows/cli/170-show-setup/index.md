@@ -29,7 +29,8 @@ means every field.
 
 | Filter              | Field shown                                             |
 | ------------------- | ------------------------------------------------------- |
-| `--list-scope`      | `values.commit_scopes`                                  |
+| `--list-scope`      | `values.scopes`, each scope with its description        |
+| `--list-member`     | `values.members`, each member with its path and slug    |
 | `--list-tool`       | `values.tools` (direct tools only, never dependencies)  |
 | `--list-dependency` | `values.dependencies`, each dependency with its parents |
 | `--list-file`       | `files`                                                 |
@@ -67,14 +68,21 @@ a usage error.
    ([Repair on read](../../../entities/setup-config/index.md#repair)) and the
    catalog
    ([Requires and dependencies](../../../entities/tool/index.md#requires-and-dependencies),
-   [invariant 8](../../../entities/setup-config/index.md#invariants)). Show
-   never repairs: an unremovable tool (`git` or `pre-commit`; never the hidden
-   `mise`) missing from `values.tools`, unless another tool of its `max: one`
-   category is recorded, or a needed tool missing from `values.dependencies`,
-   still prints, and step 7 ends with exit 1. A name in `values.dependencies`
-   the running catalog does not have, a dependency no parent needs, a wrong
-   parent list, or a name recorded in both `values.tools` and
-   `values.dependencies` is printed as recorded, exit 0, no warning.
+   [invariant 8](../../../entities/setup-config/index.md#invariants)): an engine
+   requirement is met by any recorded runtime of that engine, direct or
+   dependency, and when none is recorded the engine's default runtime is the
+   missing dependency. Show never repairs: an unremovable tool (`git` or
+   `pre-commit`; never the hidden `mise`) missing from `values.tools`, unless
+   another tool of its `max: one` category is recorded, or a needed tool missing
+   from `values.dependencies`, still prints, and step 7 ends with exit 1. A name
+   in `values.dependencies` the running catalog does not have, a dependency no
+   parent needs, a wrong parent list, or a name recorded in both `values.tools`
+   and `values.dependencies` is printed as recorded, exit 0, no warning. A
+   recorded name (in `values.tools` or `values.dependencies`) that the catalog
+   lists in a tool's `renamed_from` is information, not an error: it is shown
+   under its new name with "recorded as `<old>`", nothing is written and the
+   exit code is unchanged by it (0 when nothing else is missing); the next
+   writing command repairs it. Such a name is not a missing tool.
 6. On every run, whatever the filters, show computes in memory the render of the
    recorded `values.tools`, the dependencies derived in step 5 (not the recorded
    `values.dependencies`), every unremovable tool (a tool that step 5 finds
@@ -89,17 +97,23 @@ a usage error.
    - Human output per [Terminal UX](../../../design-system.md#terminal-ux): one
      group per field; lists one item per line, sorted; `values.dependencies`
      shown one dependency per line as `<name> (<parent>, <parent>)`, e.g.
-     `node (dprint, pnpm)`, parents in the recorded (sorted) order;
-     `merge_model` as `develop: <v>` and `main: <v>`; zero scopes shows `none`;
-     an orphaned path is shown as Terminal UX gives it (in the `files` group,
-     else in an `orphaned` group after the other fields).
+     `node (effect, pnpm)`, parents in the recorded (sorted) order;
+     `merge_model` as `develop: <v>` and `main: <v>`; a scope as
+     `<name>: <description>`; a member as `<path> (<slug>)`; zero scopes or zero
+     members shows `none`; a tool recorded under an old name as
+     ``<new> (recorded as `<old>`)``; an orphaned path is shown as Terminal UX
+     gives it (in the `files` group, else in an `orphaned` group after the other
+     fields).
    - `--json`: one document with `exit`, `warnings` and the requested fields
      under their schema keys (`format`, `version`, `values` with only the
      requested sub-keys, `files`; `--list-dependency` gives the
-     `values.dependencies` map of dependency to parents); zero scopes is `[]`;
-     always a top-level `orphaned` list (sorted, `[]` when none) of the orphaned
-     paths. `warnings` is always `[]`: an orphaned path is listed only in
-     `orphaned`.
+     `values.dependencies` map of dependency to parents); `scopes` is a list of
+     `{name, description}` and `members` a list of `{path, slug}`; zero scopes
+     or members is `[]`; values are listed under their new names; always a
+     top-level `orphaned` list (sorted, `[]` when none) of the orphaned paths,
+     and always a top-level `renamed` list of `{from, to}`, one per tool or
+     dependency recorded under an old name (`[]` when none). `warnings` is
+     always `[]`: an orphaned path is listed only in `orphaned`.
    - `--quiet` prints nothing on success; the exit code is the answer. On an
      error exit it prints the error only, per Terminal UX (with a missing
      unremovable tool or dependency: no recorded setup, the error, exit 1).
@@ -109,8 +123,8 @@ a usage error.
      unremovable tool `<name>`" then "missing dependency `<name>`", each naming
      its names comma-separated in catalog order, the clauses joined by "; ",
      then " — run `bootstrap init`" (for example "missing unremovable tool
-     `git`; missing dependency `node`, `pnpm` — run `bootstrap init`"). It exits
-     1 with the next command `bootstrap init`; `--json` carries the selected
+     `git`; missing dependency `node`, `uv` — run `bootstrap init`"). It exits 1
+     with the next command `bootstrap init`; `--json` carries the selected
      fields and `error` with `what` the same clauses, `why` "the setup file
      misses tools that bootstrap needs" and `next_command` `bootstrap init`,
      with `exit` 1.
@@ -147,6 +161,8 @@ sequenceDiagram
         S-->>O: exit 1
     else config invalid (max-one conflict included)
         S-->>O: error only, nothing printed, exit 3
+    else valid
+        S->>S: continue
     end
     S->>K: check max-one categories
     S->>G: check unremovable tools and dependencies
@@ -170,13 +186,17 @@ N/A — runs synchronously in one command invocation.
   `format`, `version`, `values` and `files` are printed, nothing is written and
   the exit code is 0.
 - Given a set-up repository, when `bootstrap show --list-scope` runs, then only
-  the commit scopes are printed, one per line, sorted, and the exit code is 0.
+  the scopes are printed, one per line as `<name>: <description>`, sorted, and
+  the exit code is 0.
+- Given a set-up repository, when `bootstrap show --list-member` runs, then only
+  the members are printed, one per line as `<path> (<slug>)`, sorted, and the
+  exit code is 0.
 - Given a set-up repository, when `bootstrap show --list-tool` runs, then only
   the recorded direct tools are printed, one per line, sorted, none of the
   dependencies, and the exit code is 0.
-- Given a recorded `values.dependencies` of `node` needed by `dprint` and
+- Given a recorded `values.dependencies` of `node` needed by `effect` and
   `pnpm`, when `bootstrap show --list-dependency` runs, then only the
-  dependencies are printed, one per line, sorted, as `node (dprint, pnpm)`
+  dependencies are printed, one per line, sorted, as `node (effect, pnpm)`
   (parents in the recorded order), and the exit code is 0; under `--json` the
   document has `values.dependencies` as the map of dependency to parents and no
   other `values` key.
@@ -191,13 +211,19 @@ N/A — runs synchronously in one command invocation.
   and the exit code is 0.
 - Given a set-up repository, when `bootstrap show --json` runs, then exactly one
   JSON document is printed with `exit`, `warnings`, `format`, `version`,
-  `values`, `files` and `orphaned`, and the exit code is 0.
+  `values`, `files`, `orphaned` and `renamed`, and the exit code is 0.
 - Given a set-up repository, when `bootstrap show --json --list-scope` runs,
-  then the document has `exit`, `warnings`, `orphaned` and `values` holding only
-  `commit_scopes`, and no `format`, `version` or `files`.
-- Given a recorded setup with zero commit scopes, when `bootstrap show` or
-  `bootstrap show --list-scope` runs, then the scopes show `none`; under
-  `--json` `commit_scopes` is `[]`; the exit code is 0.
+  then the document has `exit`, `warnings`, `orphaned`, `renamed` and `values`
+  holding only `scopes` (each `{name, description}`), and no `format`, `version`
+  or `files`; with `--list-member`, `values` holds only `members` (each
+  `{path, slug}`).
+- Given a recorded setup with zero scopes or zero members, when `bootstrap show`
+  or `bootstrap show --list-scope` / `--list-member` runs, then they show
+  `none`; under `--json` `scopes` and `members` are `[]`; the exit code is 0.
+- Given a recorded tool name that the catalog lists in `renamed_from`, when show
+  runs, then the tool is shown under its new name with "recorded as `<old>`"
+  (under `--json` the top-level `renamed` list holds
+  `{from: <old>, to: <new>}`), the file is not written and the exit code is 0.
 - Given a recorded path in `files` that the running cli no longer renders, when
   `bootstrap show` or `bootstrap show --list-file` runs, then the path is shown
   tagged `orphaned` in the warning role, nothing is written and the exit code
@@ -236,6 +262,11 @@ N/A — runs synchronously in one command invocation.
   needs, when show runs, then the selected fields are printed, then "missing
   dependency `<name>` — run `bootstrap init`", the file is not repaired and the
   exit code is 1.
+- Given `effect` and `bun` recorded in `values.tools` and no `node`, when show
+  runs, then no dependency is missing (`bun` meets the `javascript` engine) and
+  the exit code is 0; given `effect` recorded with no `javascript` runtime, then
+  the error is "missing dependency `node` — run `bootstrap init`" and the exit
+  code is 1.
 - Given the same recorded `values.dependencies`, when `bootstrap show --json`
   runs, then the document carries the selected fields and `error` (what, why,
   next_command `bootstrap init`) with `exit` 1.
@@ -247,9 +278,8 @@ N/A — runs synchronously in one command invocation.
   tagged `orphaned` and the exit code is 1.
 - Given a recorded setup missing several names (unremovable tools and/or
   dependencies), when show runs, then the selected fields are printed, then one
-  error such as "missing unremovable tool `git`; missing dependency `node`,
-  `pnpm` — run `bootstrap init`", the file is not repaired and the exit code is
-  1.
+  error such as "missing unremovable tool `git`; missing dependency `node`, `uv`
+  — run `bootstrap init`", the file is not repaired and the exit code is 1.
 - Given a recorded `values.dependencies` with a name the running catalog does
   not have, when show runs, then the name is printed as recorded, `warnings` is
   `[]`, nothing is written and the exit code is 0.
@@ -267,6 +297,11 @@ N/A — runs synchronously in one command invocation.
   nothing is printed but the error and the exit code is 3 naming the fix "remove
   `mise` from values.tools"
   ([Validity](../../../entities/setup-config/index.md#validity)).
+- Given a recorded stale dependency (no parent needs it), a wrong parent list in
+  `values.dependencies` and a name recorded in both `values.tools` and
+  `values.dependencies`, when `bootstrap show --list-dependency --json` runs,
+  then each is printed as recorded, `warnings` is `[]`, nothing is written and
+  the exit code is 0.
 - Given a valid set-up repository whose `files` lists `mise` config paths, when
   `bootstrap show` runs with or without `--list-tool` or `--json`, then `mise`
   and the `tool-manager` category appear in no list, those paths are listed in
