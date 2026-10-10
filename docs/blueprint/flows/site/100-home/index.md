@@ -69,6 +69,14 @@ sequenceDiagram
     actor B as Search or link-preview robot
     participant D as Documentation flow
     participant R as Source repository
+    participant TC as Tool category
+    participant T as Tool
+    participant SC as Setup config
+    Note over S,SC: when the site is built
+    S->>TC: read the category catalog
+    S->>T: read the tool catalog
+    S->>SC: read the setup values
+    Note over S: the Terminal view is the build-time copy
     V->>S: open home address
     S-->>V: home page
     alt install
@@ -115,6 +123,9 @@ N/A — static pages, no processing.
   opens.
 - Given the home page, when a visitor activates the header "Docs" link, then
   `/docs/` opens.
+- Given any page of the site, the home page included, when a visitor activates
+  the brand mark or the wordmark in the header, then `/` opens; the two are one
+  link.
 - Given the home page, when a visitor activates a "Source ↗" link (header, hero
   or footer), then the source repository
   ([web metadata](../../../conventions.md#web-metadata)) opens, external.
@@ -128,9 +139,9 @@ N/A — static pages, no processing.
   ([Tool category](../../../entities/tool-category/index.md) invariant 4,
   [Select tools](../../cli/160-select-tools/index.md) step 5).
 - Given the home page, when a visitor looks at the Terminal view, then it has no
-  label, no copy button and no cursor highlight, its secondary text is muted and
-  a tool that is neither removable nor replaceable shows a dimmed mark and
-  `locked` ([design-system](../../../design-system.md#component-behaviors)).
+  label, no copy button and no cursor highlight, its secondary text is muted,
+  including each tool's purpose after its name, and no tool shows a `locked`
+  mark ([design-system](../../../design-system.md#component-behaviors)).
 - Given the home page and the Terminal view taller than its box, when a visitor
   scrolls it, then it scrolls vertically, and the box is focusable and scrolls
   with the keyboard

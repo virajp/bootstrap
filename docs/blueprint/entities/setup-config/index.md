@@ -3,7 +3,7 @@ type: vwf-entity
 title: Setup Config
 description: The file in a repository that records its bootstrap values and
   selected tools, and marks it as set up.
-status: reviewed
+status: draft
 implementation: partial
 owner: [ cli ]
 ---
@@ -36,15 +36,15 @@ scale to measure.
 
 ## Lifecycle / State Machine
 
-| From    | To      | Trigger (actor/system)                                                                                                   | Guard                                                                                                                                                                   | Side effect                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ------- | ------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| absent  | present | Repo owner, AI agent or CI running init, first run ([flow 110](../../flows/cli/110-setup-repository/index.md))           | none                                                                                                                                                                    | `format` and `version` set to the running cli's; `values` set to the values from flags, defaults and the remote `origin`, with `values.dependencies` derived; `files` set to the set the running cli renders                                                                                                                                                                                                                                        |
-| absent  | present | Repo owner running [Select tools](../../flows/cli/160-select-tools/index.md) on a repository not set up (first-run mode) | none                                                                                                                                                                    | `format` and `version` set to the running cli's; `values` set as applied, with `values.dependencies` derived; `files` set to the set the running cli renders                                                                                                                                                                                                                                                                                        |
-| present | present | Repo owner, AI agent or CI re-running init ([flow 110](../../flows/cli/110-setup-repository/index.md))                   | file is valid ([Validity](#validity))                                                                                                                                   | `values` from flags, else recorded; `values.tools` as selected; `values.dependencies` derived and pruned of those no parent needs (invariant 8); rewrite per invariant 2                                                                                                                                                                                                                                                                            |
-| present | present | Repo owner, AI agent or CI running [Add a tool](../../flows/cli/140-add-tool/index.md)                                   | file is valid; recorded `version` equals the running cli ([version guard](#version-guard))                                                                              | Named tools added to `values.tools`, a named tool already in `values.dependencies` moving from it to `values.tools` (it becomes direct); the tools they require added to `values.dependencies`; a replacement (`--replace`) takes the replaced tool out and moves its parents to the replacement, pruning dependencies no parent needs; a tool [Repair on read](#repair) adds back is kept unless the same run replaces it; rewrite per invariant 2 |
-| present | present | Repo owner, AI agent or CI running [Remove a tool](../../flows/cli/150-remove-tool/index.md)                             | file is valid; recorded `version` equals the running cli ([version guard](#version-guard))                                                                              | Named tools taken out of `values.tools`; dependencies no remaining tool needs pruned from `values.dependencies`, parents recomputed; a tool [Repair on read](#repair) adds back is kept; rewrite per invariant 2                                                                                                                                                                                                                                    |
-| present | present | Repo owner running [Select tools](../../flows/cli/160-select-tools/index.md)                                             | file is valid; recorded `version` equals the running cli ([version guard](#version-guard))                                                                              | `values.tools` and the other `values` changed as selected; `values.dependencies` derived (invariant 8); rewrite per invariant 2                                                                                                                                                                                                                                                                                                                     |
-| present | present | Repo owner hand-edits any field ([config](../../conventions.md#config))                                                  | none at the edit; once the edit is committed (invariant 1), the next command applies [Validity](#validity) and [Repair on read](#repair) (`show` applies Validity only) | none by bootstrap; the edit takes effect on the next command                                                                                                                                                                                                                                                                                                                                                                                        |
+| From    | To      | Trigger (actor/system)                                                                                                   | Guard                                                                                                                                                                                                                                                                                | Side effect                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------- | ------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| absent  | present | Repo owner, AI agent or CI running init, first run ([flow 110](../../flows/cli/110-setup-repository/index.md))           | none                                                                                                                                                                                                                                                                                 | `format` and `version` set to the running cli's; `values` set to the values from flags, defaults and the remote `origin`, with `values.dependencies` derived; `files` set to the set the running cli renders                                                                                                                                                                                                                                        |
+| absent  | present | Repo owner running [Select tools](../../flows/cli/160-select-tools/index.md) on a repository not set up (first-run mode) | none                                                                                                                                                                                                                                                                                 | `format` and `version` set to the running cli's; `values` set as applied, with `values.dependencies` derived; `files` set to the set the running cli renders                                                                                                                                                                                                                                                                                        |
+| present | present | Repo owner, AI agent or CI re-running init ([flow 110](../../flows/cli/110-setup-repository/index.md))                   | file is valid ([Validity](#validity))                                                                                                                                                                                                                                                | `values` from flags, else recorded; `values.tools` as selected; `values.dependencies` derived; stale dependencies and wrong parent lists fixed only when the run writes for another change (invariants 7, 8); rewrite per invariant 2                                                                                                                                                                                                               |
+| present | present | Repo owner, AI agent or CI running [Add a tool](../../flows/cli/140-add-tool/index.md)                                   | file is valid; recorded `version` equals the running cli ([version guard](#version-guard)); an add that would put two tools of one `max: one` category into `values.tools` without `--replace` exits 2 and writes nothing ([flow 140](../../flows/cli/140-add-tool/index.md) step 4) | Named tools added to `values.tools`, a named tool already in `values.dependencies` moving from it to `values.tools` (it becomes direct); the tools they require added to `values.dependencies`; a replacement (`--replace`) takes the replaced tool out and moves its parents to the replacement, pruning dependencies no parent needs; a tool [Repair on read](#repair) adds back is kept unless the same run replaces it; rewrite per invariant 2 |
+| present | present | Repo owner, AI agent or CI running [Remove a tool](../../flows/cli/150-remove-tool/index.md)                             | file is valid; recorded `version` equals the running cli ([version guard](#version-guard)); a remove that names `git` or `pre-commit` (an unremovable tool) exits 2 and writes nothing ([flow 150](../../flows/cli/150-remove-tool/index.md) usage check)                            | Named tools taken out of `values.tools`; dependencies no remaining tool needs pruned from `values.dependencies`, parents recomputed (also fixing any bookkeeping, invariant 7); a tool [Repair on read](#repair) adds back is kept; rewrite per invariant 2                                                                                                                                                                                         |
+| present | present | Repo owner running [Select tools](../../flows/cli/160-select-tools/index.md)                                             | file is valid; recorded `version` equals the running cli ([version guard](#version-guard))                                                                                                                                                                                           | `values.tools` and the other `values` changed as selected; `values.dependencies` derived (invariant 8); rewrite per invariant 2                                                                                                                                                                                                                                                                                                                     |
+| present | present | Repo owner hand-edits any field ([config](../../conventions.md#config))                                                  | none at the edit; once the edit is committed (invariant 1), the next command applies [Validity](#validity) and [Repair on read](#repair) (`show` applies Validity only)                                                                                                              | none by bootstrap; the edit takes effect on the next command                                                                                                                                                                                                                                                                                                                                                                                        |
 
 ## Validity {#validity}
 
@@ -63,41 +63,42 @@ and the fix. Nothing is written.
   ships. A removed name, or any name the running catalog does not have, is
   reported with the fix to remove it from the file (for example "remove `fnox`
   from values.tools"). Nothing is guessed.
+- `values.tools` never holds `mise`, a hidden tool that is always applied and
+  never recorded; a recorded `mise` fails like a name the running catalog does
+  not have, with the fix "remove `mise` from values.tools".
 - No two tools in `values.tools` share a `max: one`
   [Tool category](../tool-category/index.md); the fix is "remove `<a>` or `<b>`
   from values.tools", naming the two tools.
-- No `max: one` category whose unremovable tool has `replaceable` false is
-  missing that tool from `values.tools` while it holds another tool in its
-  place; the fix is "replace `<other>` with `<tool>` in values.tools", where
-  `<tool>` is the unremovable tool and `<other>` the tool in its place. A
-  required tool a selected tool lacks is not a Validity failure: it is a
-  dependency, repaired on read (below).
 
 ### Repair on read {#repair}
 
-Two hand-edit breaks are repaired rather than refused. Both are changes under
+Three hand-edit breaks are repaired rather than refused. All are changes under
 invariant 7: the file is rewritten and listed `changed`, and each needs consent
-([config](../../conventions.md#config)).
+([config](../../conventions.md#config)), even when it is the only change.
 
-- A non-empty `values.tools` that misses an unremovable tool, unless its
-  category is `max: one` and another tool of that category is recorded. The tool
-  is added again and the warning "added back unremovable tool `<name>`" is
+- A non-empty `values.tools` that misses `git` or `pre-commit` (the unremovable
+  tools), unless another tool of its `max: one` category is recorded. Only these
+  two are added back; the warning "added back unremovable tool `<name>`" is
   reported (`warnings`).
 - A dependency that a selected tool needs and that `values.dependencies` lacks.
-  Dependencies are derived from `values.tools` and the Tool catalog on every
-  read; the missing one is added back (the default, first alternative of an
-  unmet `requires` slot) and the warning "added back dependency `<name>`" is
-  reported.
+  The missing one is added back (the default, first alternative of an unmet
+  `requires` slot) and the warning "added back dependency `<name>`" is reported.
+  Every writing command (init re-run, add, remove, select tools apply) repairs
+  only the dependencies that the selection after the request needs: a missing
+  dependency that the request leaves unneeded is never added back and never
+  reported (no warning, not in `dependencies_added` or `dependencies_pruned`)
+  ([Remove a tool](../../flows/cli/150-remove-tool/index.md) step 2).
+- A name in `values.dependencies` that the running catalog does not have is
+  dropped. Every writing command (init re-run, add, remove, select tools apply)
+  reports the warning "dropped unknown dependency `<name>`" (`warnings`); `show`
+  does not warn.
 
 `show` never repairs: it reports a missing unremovable tool or a missing
 dependency as an error with exit 1
 ([Show the setup](../../flows/cli/170-show-setup/index.md)).
 
-A wrong parent list, a recorded dependency no parent needs, a name in
-`values.dependencies` the running catalog does not have, or a name recorded in
-both `values.tools` and `values.dependencies` is not a read failure: it is
-corrected or pruned on the next write. An unknown dependency name is reported
-with the warning "dropped unknown dependency `<name>`".
+Bookkeeping differences are neither a read failure nor a change on their own;
+see invariant 7.
 
 ### Write format {#write-format}
 
@@ -141,17 +142,35 @@ cli (compared as in [Validity](#validity)).
    `files` and is reported `orphaned` by every command until the owner deletes
    it; remove never deletes an orphaned path.
 5. A recorded path that the running cli no longer renders and that is absent on
-   disk leaves `files` silently on every write.
+   disk is bookkeeping: see invariant 7.
 6. `files` never lists this file; an entry for it added by a hand edit is
    dropped on the next write, without a report.
 7. An `init` re-run, and an apply in select tools, rewrites the file, listed
-   `changed`, whenever it differs from its render: a running `version` or
-   `format` that differs from the recorded one, or a committed edit that changes
-   only comments, key order or list order. Add and remove rewrite it only on a
+   `changed`, for a change: a running `version` or `format` that differs from
+   the recorded one, a committed edit that changes only comments, key order or
+   list order, a repair or a tool change. Add and remove rewrite it only on a
    run that writes another change (a tool change or a repair); a run of theirs
-   with nothing to add or remove and no repair writes nothing.
+   with nothing to add or remove and no repair writes nothing. Bookkeeping alone
+   is not a reason to rewrite, in every writing command: a recorded path the
+   running cli no longer renders and that is absent on disk (invariant 5), a
+   stale recorded dependency (a name the running catalog has that no tool of the
+   selection needs and whose loss of parents the request did not cause), a wrong
+   parent list in `values.dependencies`, or a name recorded in both
+   `values.tools` and `values.dependencies`. A dependency name the running
+   catalog does not have is not bookkeeping: it stays a repair
+   ([Repair on read](#repair), third bullet), a change that needs consent even
+   alone. When the file is rewritten for another change, the run also fixes the
+   bookkeeping: it drops the stale path, prunes the stale dependency (its files
+   deleted and reported as usual, listed in `dependencies_pruned`), corrects the
+   parent lists and keeps a doubly recorded name in `values.tools` only. When
+   bookkeeping is the only difference, nothing is written, no consent is asked
+   and the exit is 0 (an init re-run reports the "nothing to change" result). A
+   dependency left without a parent by the request (a drop, a remove, a
+   replacement) is a real change and is pruned. `orphaned` paths (present on
+   disk) are unchanged: reported, never a change.
 8. `values.dependencies` is derived, never authoritative: every command that
-   reads the file computes it from `values.tools` and the Tool catalog. It holds
+   reads the file computes it from `values.tools` (plus any unremovable tool
+   that [Repair on read](#repair) would add back) and the Tool catalog. It holds
    exactly the tools that a selected tool, direct or dependency, requires and
    that are not direct, each with its sorted parents. A file without the key
    reads as an empty map, so Repair on read adds the missing dependencies; every
@@ -174,8 +193,9 @@ The relationship is carried by `values.tools` and `values.dependencies`.
 - Concurrent-write resolution: default — per
   [baseline](../../conventions.md#baseline) (single local writer)
 - Idempotency of each mutating action: an init re-run and select tools do not
-  rewrite the file when it does not differ from its render; add and remove do
-  not rewrite it on a run with no tool change and no repair (invariant 7).
+  rewrite the file when it does not differ from its render, bookkeeping aside;
+  add and remove do not rewrite it on a run with no tool change and no repair
+  (invariant 7).
 
 ## References
 

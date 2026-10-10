@@ -51,12 +51,13 @@ properties:
       tools:
         type: array
         description: The direct tools, unremovable tools included. Each names an
-          entity Tool. A name never also appears in dependencies.
+          entity Tool. A name never also appears in dependencies. Never holds
+          mise, a hidden tool that is always applied and never recorded.
         minItems: 1
         uniqueItems: true
         items:
           type: string
-          description: Name of a Tool.
+          description: Name of a Tool, never the hidden tool mise.
           pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
       dependencies:
         type: object
@@ -87,7 +88,8 @@ properties:
     additionalProperties: false
   files:
     type: array
-    description: Every path the selected tools rendered, excluding
+    description: Every path rendered for the selected tools, their dependencies
+      and the hidden tool, plus every orphaned path, excluding
       .config/bootstrap.yaml itself.
     uniqueItems: true
     items:

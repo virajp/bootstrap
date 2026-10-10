@@ -31,27 +31,13 @@ Interactive setup is `bootstrap tui`
 
 ## Steps
 
-Usage errors come first and exit 2 before the preflight and before
-`.config/bootstrap.yaml` is read. Nothing is written. They are:
-
-- an unknown flag;
-- a flag value that breaks its rule (`--merge-develop` or `--merge-main` not
-  `direct`\|`pr`; an `--add-scope` or `--remove-scope` value not lowercase
-  kebab-case; `--repo` not two or more `/`-separated segments), with a message
-  naming the flag and the allowed form;
-- `--reset-scope` together with `--add-scope` or `--remove-scope`;
-- the same scope value given to both `--add-scope` and `--remove-scope`;
-- an unknown `--tool` name ([Tool](../../../entities/tool/index.md)), or two
-  `--tool` names of one `max: one` category
-  ([Tool category](../../../entities/tool-category/index.md));
-- a `--tool` naming another tool of a `max: one` category whose unremovable tool
-  is not replaceable (`mise`; an attempt to replace a non-replaceable tool, per
-  [Tool category](../../../entities/tool-category/index.md) invariant 4). A
-  `--tool` naming another tool of the `version-control` or `git-hooks` category
-  is not a usage error: with `--replace` it replaces that tool (step 5).
-
-A `--tool` whose required tool is not in the request is not a usage error
-([Tool](../../../entities/tool/index.md#requires-and-dependencies)).
+Usage errors (exit 2, nothing written; cases in Acceptance) are checked first,
+before the preflight and before `.config/bootstrap.yaml` is read. Value rules:
+`--add-scope` / `--remove-scope` values are lowercase kebab-case; `--repo` is
+two or more `/`-separated segments. `--tool` names are checked against
+[Tool](../../../entities/tool/index.md) and
+[Tool category](../../../entities/tool-category/index.md#invariants) invariants
+2 and 4. `mise` is a hidden tool: naming it is an unknown name.
 
 1. Init runs the preflight per [errors](../../../conventions.md#errors); nothing
    is written on failure.
@@ -60,10 +46,13 @@ A `--tool` whose required tool is not in the request is not a usage error
    [Setup config validity](../../../entities/setup-config/index.md#validity),
    repairs it per
    [repair on read](../../../entities/setup-config/index.md#repair), and takes
-   every value and the tool selection from it. Init is exempt from the version
-   guard: an older `version` or `format` is never refused, it is an upgrade
-   re-run handled as any re-run (step 3 onward). A newer `version` or `format`
-   fails that validity check.
+   every value and the tool selection from it. The repair covers only the
+   dependencies the selection after the request needs: a missing dependency the
+   request leaves unneeded is never added back and never reported (no warning,
+   not in `dependencies_added` or `dependencies_pruned`). Init is exempt from
+   the version guard for an older `version` or `format` only: it is never
+   refused, it is an upgrade re-run handled as any re-run (step 3 onward). A
+   newer `version` or `format` fails validity: exit 3, nothing written.
 
    [Setup config](../../../entities/setup-config/index.md)
 3. Actor supplies the values:
@@ -88,23 +77,17 @@ A `--tool` whose required tool is not in the request is not a usage error
 
    A `<path>` is `owner/name`, or nested `group/subgroup/name`.
 
-   The scope flags change the recorded list (`values.commit_scopes`):
-   - `--add-scope <scope>` adds a scope; a scope already in the list is used
-     once.
-   - `--remove-scope <scope>` removes a scope; a scope not in the list is
-     ignored and reported in `warnings` ("scope `<s>` is not recorded").
-   - `--reset-scope` empties the list (zero scopes).
-     ([config](../../../conventions.md#config))
-
+   The scope flags add to, remove from or empty `values.commit_scopes`.
    Precedence, defaults and a missing value follow
    [config](../../../conventions.md#config) and
-   [errors](../../../conventions.md#errors). `--repo` is the only value that can
-   be missing (no flag, no recorded value, none readable from `origin`): init
-   exits 2 naming `--repo`.
-   [Setup config](../../../entities/setup-config/index.md) (recorded values)
+   [errors](../../../conventions.md#errors); `--repo` is the only value that can
+   be missing. [Setup config](../../../entities/setup-config/index.md) (recorded
+   values)
 4. Actor selects the tools. Tools and their categories come from the
    [Tool](../../../entities/tool/index.md) and
    [Tool category](../../../entities/tool-category/index.md) catalogs.
+   - A hidden tool (`mise`) is never selected by the actor, never recorded and
+     never listed; its files are always rendered like a selected tool's.
    - First-run defaults: every tool whose `default` is `on`, plus each `origin`
      tool whose `origin_hosts` contains the host of the `origin` remote (the
      host column of the step 3 table), compared ignoring case.
@@ -112,8 +95,10 @@ A `--tool` whose required tool is not in the request is not a usage error
      dependencies, with or without `-y`; consent to apply them comes in step 6.
      A re-run without `--tool` keeps the recorded selection.
    - `--tool <name>` (repeatable) gives the full list of selected removable
-     tools; unremovable tools are always added. A name given more than once is
-     used once.
+     tools; unremovable tools are always added, except one whose `max: one`
+     category holds a named tool: the named tool takes its place. On a first run
+     that needs no `--replace` (nothing is recorded); on a re-run it is a
+     replacement (step 5) and the unremovable tool is removed.
    - Each `requires` slot with no selected tool gets a dependency, recorded with
      its parents in `values.dependencies`
      ([Tool](../../../entities/tool/index.md#requires-and-dependencies)). A
@@ -121,23 +106,46 @@ A `--tool` whose required tool is not in the request is not a usage error
 5. Replacement, re-run only: a selection that puts a different tool in a
    `max: one` category than the recorded one is a replacement. It needs
    `--replace`; without it init exits 2 before consent
-   ([config](../../../conventions.md#config)). Replacing a recorded tool whose
-   `replaceable` is false needs the setup file, so it is checked here, after the
-   config is read, and exits 2 ([safety](../../../conventions.md#safety)
-   Precedence). `--replace` with no replacement to make is ignored.
+   ([config](../../../conventions.md#config)). A replacement whose replaced tool
+   fills a `requires` slot of a selected tool, while the incoming tool is not an
+   alternative of that slot and no other alternative of it is selected, exits 2
+   naming the dependent tool (checked on the selection after the request, before
+   consent; [errors](../../../conventions.md#errors)). `--replace` with no
+   replacement to make is ignored.
    [Tool category](../../../entities/tool-category/index.md)
 6. Init computes every render and decision in memory per
    [safety](../../../conventions.md#safety).
-   - A re-run that drops a recorded removable tool, or replaces one, takes it
-     out of `values.tools`. If a selected tool still requires it, it stays as a
-     dependency (for an init re-run the requires check never fails; see
-     [Requires and dependencies](../../../entities/tool/index.md#requires-and-dependencies)).
-     Otherwise its files are removed as [Remove a tool](../150-remove-tool/index.md)
-     does.
-   - A re-run prunes each dependency that no parent needs: it is on the list of
-     changes and its files are deleted and reported as usual. It also corrects
-     the parent lists. A dependency the config lacks is repaired per
-     [Repair on read](../../../entities/setup-config/index.md#repair).
+   - A re-run that drops a recorded removable tool takes it out of
+     `values.tools`. If a selected tool still requires it, it stays as a
+     dependency
+     ([Requires and dependencies](../../../entities/tool/index.md#requires-and-dependencies))
+     and is never in `dependencies_added` or `dependencies_pruned`. Otherwise
+     its files are removed as [Remove a tool](../150-remove-tool/index.md) does.
+     A replaced tool is taken out of `values.tools` and its files are removed
+     the same way.
+   - A re-run prunes each dependency that the request leaves without a parent (a
+     drop, a remove, a replacement): that is a change, on the list of changes,
+     and its files are deleted and reported as usual (`dependencies_pruned`).
+   - A re-run whose `--tool` names a tool recorded in `values.dependencies`
+     makes it direct: it moves to `values.tools` and its parents do not change.
+     That is a tool change (on the list of changes, needs consent, rewrites the
+     setup file), as `add` of a held dependency is in
+     [Add a tool](../140-add-tool/index.md). It is never in
+     `dependencies_pruned` or `dependencies_added`.
+   - Bookkeeping is never a change on its own: a recorded path in `files` that
+     the running bootstrap no longer renders and that is absent on disk; a stale
+     dependency (one no selected tool needs, whose loss of parents the request
+     did not cause); a wrong parent list in `values.dependencies`. When the
+     setup file is rewritten for another change (a tool change, a value change,
+     a repair, a file change), init also drops the stale path, prunes the stale
+     dependency (its files deleted and reported as usual, listed in
+     `dependencies_pruned`) and corrects the parent lists. When bookkeeping is
+     the only difference, nothing is written, no consent is asked and the exit
+     code is 0. An `orphaned` path (present on disk) is unchanged: reported,
+     never a change.
+   - A `values.dependencies` name the running catalog does not have is dropped
+     on the rewrite as a repair (a change on the list) and reported as the
+     warning "dropped unknown dependency `<name>`" (`warnings`).
 
    - The computed list is every file to create, change, delete or replace, plus
      a repair of the setup file; the repair counts as a change. Refusals,
@@ -150,28 +158,22 @@ A `--tool` whose required tool is not in the request is not a usage error
 8. Init writes `.config/bootstrap.yaml` last, recording the format, the
    bootstrap version running, the values (`values.tools` = every direct tool;
    `values.dependencies` = every dependency with its parents) and `files` (every
-   tool path init renders for the selected tools and dependencies, plus any
-   `orphaned` path; not `.config/bootstrap.yaml` itself). It rewrites the whole
-   file per
+   tool path init renders for the selected tools, dependencies and hidden tools,
+   plus any `orphaned` path; not `.config/bootstrap.yaml` itself). It rewrites
+   the whole file per
    [write format](../../../entities/setup-config/index.md#write-format); on an
    upgrade re-run `version` and `format` move to the running bootstrap's.
    [Setup config](../../../entities/setup-config/index.md)
 9. Init prints the result, the next command and the closing line per
-   [errors](../../../conventions.md#errors); `.config/bootstrap.yaml` is in
-   `created` on a first run and in `changed` when rewritten. The `--json`
-   success document adds `created`, `changed`, `deleted`, `unchanged`, `kept`,
-   `orphaned` (paths), `replaced` (objects `{from, to}`), `dependencies_added`
-   (the tools init added as dependencies in this run) and `dependencies_pruned`
-   (the dependencies it pruned) to the document keys of
    [errors](../../../conventions.md#errors); the human output reports the same
-   lists. `dependencies_added` and `dependencies_pruned` are tool names sorted
-   by name, always present; a tool the user named in `--tool` is never in them.
-   With nothing to create, change, delete or replace, init lists every path by
-   its status. Init never installs software or runs that task itself.
-
-`--dry-run` follows [config](../../../conventions.md#config); it exits 0 on
-success, otherwise with the code of the failing step, and `--json` adds
-`"dry_run": true` to the success or the error document.
+   lists as the `--json` document (keys in Acceptance). `dependencies_added`
+   (added as dependencies this run) and `dependencies_pruned` are tool names
+   sorted by name, always present, never holding a tool named in `--tool`. No
+   tool-name list holds a hidden tool; its file paths are listed as any path.
+   Init never installs software or runs the next command
+   (`MISE_ENV=dev mise run setup:all`, [errors](../../../conventions.md#errors))
+   itself. `--dry-run` follows [config](../../../conventions.md#config) and
+   exits with the code of the failing step.
 
 ## Guarantees
 
@@ -234,23 +236,28 @@ N/A — runs synchronously in one command invocation.
 
 ## Acceptance
 
+A case that names or records a second tool of the `version-control` or
+`git-hooks` category, or replaces a tool that fills a `requires` slot, cannot be
+reached with the 1.0 catalog (one tool in each such category, no such slot); it
+holds for a later catalog.
+
 - Given an empty git repository, when `bootstrap init` runs with all flags and
   `-y`, then the files of the selected tools exist, `.config/bootstrap.yaml`
   records the version, values (`values.tools` = every direct tool,
   `values.dependencies` = every dependency with its parents) and files, and the
   exit code is 0.
-- Given no prompt is possible (stdin or stdout not a terminal, or `--json`) and
-  no `-y`, when init would make a change, then it does not prompt, nothing is
-  written, the exit code is 2 "changes need --yes" and the next command is the
-  same command plus `--yes`. This covers: a first run (also one whose repo path
-  is read from `origin`); a re-run that would create, change, delete or replace
-  a file, or repair the setup file; a re-run that drops a recorded removable
-  tool (whether or not it deletes files); a re-run that replaces a tool with
-  `--replace`; and a repair.
-- Given a terminal on stdin and stdout, no `--json` and no `-y`, when init runs
-  a change, then the list of changes is shown and "apply these changes? y/N" is
-  asked; answering "n" (or Enter) writes nothing and exits 0 with "nothing
-  changed"; answering "y" applies the list and exits 0.
+- Given no prompt is possible (stdin or stdout not a terminal, or `--json`), no
+  `-y` and no `--dry-run`, when init would make a change, then it does not
+  prompt, nothing is written, the exit code is 2 "changes need --yes" and the
+  next command is the same command plus `--yes`. This covers: a first run (also
+  one whose repo path is read from `origin`); a re-run that would create,
+  change, delete or replace a file, or repair the setup file; a re-run that
+  drops a recorded removable tool (whether or not it deletes files); a re-run
+  that replaces a tool with `--replace`; and a repair.
+- Given a terminal on stdin and stdout, no `--json`, no `-y` and no `--dry-run`,
+  when init runs a change, then the list of changes is shown and "apply these
+  changes? y/N" is asked; answering "n" (or Enter) writes nothing and exits 0
+  with "nothing changed"; answering "y" applies the list and exits 0.
 - Given a dirty target and no `-y`, in a terminal or not, when init runs, then
   the exit code is 1 listing the path before any prompt and nothing is written.
 - Given `--dry-run` (in a terminal or not, with or without `-y`, also with
@@ -276,11 +283,12 @@ N/A — runs synchronously in one command invocation.
   the repo default is not readable; and whenever the `origin` host is
   `github.com`, `github` is selected by default.
 - Given a set-up repository and a re-run with nothing to create, change, delete
-  or replace, when init runs (in any terminal, with or without `-y`), then
-  nothing is written, an existing `create_only` file is listed `kept`, an
-  unrendered recorded path is listed `orphaned`, every other file is listed
-  `unchanged`, there is no closing line and no `next_command`, and the exit code
-  is 0 (a `--dry-run` follows the same rule).
+  or replace (bookkeeping alone is not a change), when init runs (in any
+  terminal, with or without `-y`), then nothing is written, an existing
+  `create_only` file is listed `kept`, an unrendered recorded path is listed
+  `orphaned`, every other file is listed `unchanged`, there is no closing line
+  and no `next_command`, and the exit code is 0 (a `--dry-run` follows the same
+  rule).
 - Given a re-run with `-y` and `--merge-main direct` over a recorded `pr`, when
   init runs, then the flag value is rendered and recorded and the other recorded
   values are kept as supplied.
@@ -297,16 +305,26 @@ N/A — runs synchronously in one command invocation.
   written, the exit code is 3 and the message names the failing field and says
   "fix the file, then run again".
 - Given an unknown flag, an invalid flag value (for example
-  `--merge-main squash`), an unknown `--tool` name, two `--tool` names of one
-  `max: one` category, or a `--tool` naming another tool of a `max: one`
-  category whose unremovable tool is not replaceable (`mise`), when init runs
-  (with or without `-y`, even in a directory that is not a git repository or
-  with a config that fails the schema), then these are usage errors: nothing is
-  written and the exit code is 2 before the preflight, not 3; for an invalid
-  flag value the message names the flag and the allowed form.
+  `--merge-main squash`, `--merge-develop squash`, `--remove-scope Api`, or
+  `--repo r` with fewer than two `/`-separated segments), an unknown `--tool`
+  name (also `--tool mise`), or two `--tool` names of one `max: one` category,
+  when init runs (with or without `-y`, even in a directory that is not a git
+  repository or with a config that fails the schema), then these are usage
+  errors: nothing is written and the exit code is 2 before the preflight, not 3;
+  for an invalid flag value the message names the flag and the allowed form.
 - Given `--tool` naming another tool of the `version-control` or `git-hooks`
-  category over the recorded one, when init re-runs with `--replace` and `-y`, then it is a
-  replacement, not a usage error; without `--replace` the exit code is 2.
+  category over the recorded one, when init re-runs with `--replace` and `-y`,
+  then it is a replacement, not a usage error, and the unremovable tool is
+  removed; without `--replace` the exit code is 2.
+- Given a first run, when init runs `--tool` naming another tool of the
+  `version-control` or `git-hooks` category with `-y` and no `--replace`, then
+  the named tool takes the place of that category's unremovable tool, which is
+  not selected, and the exit code is 0.
+- Given a re-run that replaces a recorded tool that fills a `requires` slot of a
+  selected tool, with an incoming tool that is not an alternative of that slot
+  and no other alternative of it selected, when init runs with `--replace` and
+  `-y`, then nothing is written and the exit code is 2 naming the dependent
+  tool.
 - Given a `values.tools` name the running catalog does not have, or two tools of
   one `max: one` category, when init runs, then nothing is written and the exit
   code is 3 naming the fix (for example "remove `fnox` from values.tools").
@@ -315,15 +333,36 @@ N/A — runs synchronously in one command invocation.
   repair ([Repair on read](../../../entities/setup-config/index.md#repair)), the
   warning "added back dependency `<name>`" is reported (`warnings`), the
   dependency is listed in `dependencies_added` and the exit code is 0.
-- Given a re-run after which a recorded dependency has no parent left (or whose
-  parent list is wrong), when init runs with `-y`, then the dependency is pruned
-  (its non-`create_only` files are deleted and reported `deleted`, its
-  `create_only` files kept), it is listed in `dependencies_pruned` and the
-  parent lists are corrected.
+- Given a re-run whose request (a drop, a remove or a replacement) leaves a
+  recorded dependency without a parent, when init runs with `-y`, then the
+  dependency is pruned (its non-`create_only` files are deleted and reported
+  `deleted`, its `create_only` files kept) and it is listed in
+  `dependencies_pruned`.
+- Given a recorded dependency whose parent list is wrong, when the setup file is
+  rewritten for another change, then the parent list is corrected and the
+  dependency is kept; only a dependency no parent needs is pruned.
+- Given a recorded dependency no tool of the selection needs, whose loss of
+  parents the request did not cause, when the setup file is rewritten for
+  another change, then it is pruned (files deleted and reported, listed in
+  `dependencies_pruned`) and the parent lists are corrected.
+- Given a set-up repository whose only difference is bookkeeping (a recorded
+  path the running bootstrap no longer renders and that is absent on disk, a
+  stale dependency, or a wrong parent list), when init runs (with or without
+  `-y`, in any terminal), then nothing is written, no consent is asked, the
+  stale entries stay as recorded and the exit code is 0 with the "nothing to
+  change" result.
+- Given a recorded selection with a missing dependency that the request leaves
+  unneeded (for example `--tool` drops the only parent), when init runs with
+  `-y`, then the dependency is not added back, no warning is reported and it is
+  in neither `dependencies_added` nor `dependencies_pruned`.
 - Given a `values.tools` that misses an unremovable tool and no other tool of
   its `max: one` category is recorded, when init runs with `-y`, then the tool
   is added again, the warning "added back unremovable tool `<name>`" is reported
   (`warnings`) and the exit code is 0.
+- Given a recorded `values.dependencies` name the running catalog does not have,
+  when init re-runs with `-y`, then the name is dropped from the config, the
+  warning "dropped unknown dependency `<name>`" is reported (`warnings`) and the
+  exit code is 0.
 - Given `.config/bootstrap.yaml` has uncommitted changes and its content differs
   from the render, when init re-runs, then nothing is written and the exit code
   is 1 listing it; once committed, it is listed `changed` when rewritten and
@@ -333,6 +372,12 @@ N/A — runs synchronously in one command invocation.
   dependencies), `dependencies_added` lists `dprint`, `node` and `pnpm`, and the
   exit code is 0; given `--tool taplo --tool dprint`, `dprint` is selected
   directly and is recorded in `values.tools`, not in `values.dependencies`.
+- Given a recorded dependency (for example `dprint`, a dependency of `taplo`),
+  when init re-runs with `--tool` naming it (and the other recorded direct
+  tools) and `-y`, then it moves to `values.tools` with no parent change, the
+  setup file is rewritten, it is in neither `dependencies_added` nor
+  `dependencies_pruned`, and the exit code is 0; without `-y` and no prompt
+  possible, the exit code is 2 "changes need --yes".
 - Given `--tool github --tool github`, when init runs with `-y`, then github is
   applied once.
 - Given a recorded list without `api`, when init runs with `-y --add-scope api`
@@ -388,8 +433,9 @@ N/A — runs synchronously in one command invocation.
   listed `kept`.
 - Given a path in `files` that the running bootstrap no longer renders for a
   selected tool, when init runs, then it is left in place and listed `orphaned`;
-  a recorded path that is no longer rendered and is absent on disk leaves
-  `files` silently.
+  a recorded path that is no longer rendered and is absent on disk is
+  bookkeeping: it leaves `files` silently, only when the setup file is rewritten
+  for another change, and is never a change on its own.
 - Given a re-run that needs a replacement (a different tool in a `max: one`
   category than recorded) without `--replace`, when init runs in any terminal
   (also with `-y`, `--dry-run` or `--json`), then it does not prompt, nothing is
@@ -400,9 +446,6 @@ N/A — runs synchronously in one command invocation.
 - Given `--replace` and no replacement to make, when init runs, then the flag is
   ignored and the run proceeds as without it.
 - Given `-y` or `--yes`, when init runs, then both behave identically.
-- Given a replacement of a recorded tool whose `replaceable` is false, when init
-  runs, then the config is read, nothing is written and the exit code is 2, also
-  when a target is dirty.
 - Given a re-run whose selection drops a recorded removable tool (whether or not
   it deletes files), when init runs in a terminal without `-y`, then the list is
   shown and the prompt asked; with `-y` (or "y") that tool's non-`create_only`
@@ -433,7 +476,9 @@ N/A — runs synchronously in one command invocation.
   init runs with or without `-y`, then there is no default, it does not prompt,
   the exit code is 2, the message names `--repo` and the next command offers
   `bootstrap tui` or `--repo`.
-- Given a successful run or a `--dry-run` that adds a tool or creates, changes
+- Given a successful run or a `--dry-run` that newly applies a tool (a direct
+  tool, a dependency, a repair that adds one back included, or the incoming tool
+  of a replacement; each creates its own `mise` config file) or creates, changes
   or deletes a `mise` config file, when init finishes, then the human output
   ends with exactly "commit the changes, then run
   `MISE_ENV=dev mise run setup:all`"; with `--json` the success document has
@@ -449,15 +494,13 @@ N/A — runs synchronously in one command invocation.
   it is the same error document plus `"dry_run": true`.
 - Given `--json`, when init runs, then stdout parses as exactly one JSON
   document and contains nothing else.
-- Given a recorded `values.tools` that misses an unremovable tool whose
-  `replaceable` is false (`mise`) while another tool of its `max: one` category
-  is recorded, when init runs, then nothing is written and the exit code is 3
-  naming the fix
-  ([Validity](../../../entities/setup-config/index.md#validity)).
-- Given a recorded `values.tools` that misses a replaceable unremovable tool
-  (`git`, `pre-commit`) while another tool of its `max: one` category is
-  recorded, when init runs, then the other tool is a valid replacement: the exit
-  code is not 3 and there is no repair.
+- Given a recorded `values.tools` that names `mise`, when init runs, then
+  nothing is written and the exit code is 3 naming the fix "remove `mise` from
+  values.tools" ([Validity](../../../entities/setup-config/index.md#validity)).
+- Given a recorded `values.tools` that misses an unremovable tool (`git`,
+  `pre-commit`) while another tool of its `max: one` category is recorded, when
+  init runs, then the other tool is a valid replacement: the exit code is not 3
+  and there is no repair.
 - Abuse case: n/a — runs locally with the caller's own permissions on the
   caller's own repository; no remote surface; every input is validated per
   [baseline](../../../conventions.md#baseline) boundary-validation.

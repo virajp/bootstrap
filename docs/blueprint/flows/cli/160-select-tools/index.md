@@ -4,7 +4,7 @@ title: Select tools
 description: One interactive view shows every tool by category, so the owner
   sets up a repository, adds, removes and replaces tools and edits the recorded
   values in one place, with nothing half-written.
-status: reviewed
+status: draft
 implementation: none
 ---
 
@@ -29,18 +29,18 @@ recorded values of a repository. Serves:
 Every refusal below writes nothing. Checked in this order; the first that fails
 decides the exit code.
 
-| Condition                                                                                                                                                                                                   | Exit | Message / next command                                                                                                                                                             |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--help`, also with other flags or arguments (help wins)                                                                                                                                                    | 0    | the tui help, which states that tui takes no flags or arguments besides `--help`                                                                                                   |
-| A usage error: any argument, or any flag other than `--help` (for example `-h`, `--json`, `--quiet`, `--version`, `--no-color`, `-y`, `--tool`); all usage errors are found together                        | 2    | the short usage naming every usage error found; no JSON result is printed                                                                                                          |
-| No git repository, or `mise` not on the `PATH` (preflight, as [Set up a repository](../110-setup-repository/index.md) step 1)                                                                               | 3    | the preflight message of [errors](../../../conventions.md#errors)                                                                                                                  |
-| Not interactive (stdin or stdout not a terminal)                                                                                                                                                            | 2    | "tui needs an interactive terminal — use `bootstrap init`/`add`/`remove`"                                                                                                          |
-| Setup file fails [Setup config validity](../../../entities/setup-config/index.md#validity)                                                                                                                  | 3    | newer: "upgrade bootstrap"; schema failure: the failing field and "fix the file, then run again"; selection failure: names the fix (for example "remove `fnox` from values.tools") |
-| Recorded `version` older than the running cli                                                                                                                                                               | 1    | next command `bootstrap init`                                                                                                                                                      |
-| Setup file changed since the view opened (checked at apply): the content differs from the bytes read when the view opened, or the file appeared or vanished; a touch with identical content is not a change | 1    | the view closes; "setup file changed — run `bootstrap tui` again" (result per step 9)                                                                                              |
-| A target is a directory or symlink (checked before dirty targets, also when both are found)                                                                                                                 | 3    | names every such path, per [safety](../../../conventions.md#safety) precedence                                                                                                     |
-| A target is not clean per [safety](../../../conventions.md#safety)                                                                                                                                          | 1    | the view closes; lists the paths                                                                                                                                                   |
-| The actor quits without applying, or no target (selection and values unchanged and the render matches the working copy)                                                                                     | 0    | "no change", then the `orphaned` paths of the recorded render ([safety](../../../conventions.md#safety))                                                                           |
+| Condition                                                                                                                                                                                                   | Exit | Message / next command                                                                                                                                                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--help`, also with other flags or arguments (help wins)                                                                                                                                                    | 0    | the tui help, which states that tui takes no flags or arguments besides `--help`                                                                                                      |
+| A usage error: any argument, or any flag other than `--help` (for example `-h`, `--json`, `--quiet`, `--version`, `--no-color`, `-y`, `--tool`); all usage errors are found together                        | 2    | the short usage naming every usage error found; no JSON result is printed                                                                                                             |
+| No git repository, or `mise` not on the `PATH` (preflight, as [Set up a repository](../110-setup-repository/index.md) step 1)                                                                               | 3    | the preflight message of [errors](../../../conventions.md#errors)                                                                                                                     |
+| Not interactive (stdin or stdout not a terminal)                                                                                                                                                            | 2    | "tui needs an interactive terminal — use `bootstrap init`/`add`/`remove`"                                                                                                             |
+| Setup file fails [Setup config validity](../../../entities/setup-config/index.md#validity)                                                                                                                  | 3    | newer: "upgrade bootstrap"; schema failure: the failing field and "fix the file, then run again"; selection failure: names the fix (for example "remove `oldtool` from values.tools") |
+| Recorded `version` older than the running cli                                                                                                                                                               | 1    | next command `bootstrap init`                                                                                                                                                         |
+| Setup file changed since the view opened (checked at apply): the content differs from the bytes read when the view opened, or the file appeared or vanished; a touch with identical content is not a change | 1    | the view closes; "setup file changed — run `bootstrap tui` again" (result per step 9)                                                                                                 |
+| A target is a directory or symlink (checked before dirty targets, also when both are found)                                                                                                                 | 3    | names every such path, per [safety](../../../conventions.md#safety) precedence                                                                                                        |
+| A target is not clean per [safety](../../../conventions.md#safety)                                                                                                                                          | 1    | the view closes; lists the paths                                                                                                                                                      |
+| The actor quits without applying, or no target (selection and values unchanged, the render matches the working copy, and no repair; bookkeeping alone is not a change)                                      | 0    | "no change", then the `orphaned` paths of the recorded render ([safety](../../../conventions.md#safety))                                                                              |
 
 1. Tui takes no argument and no flag except `--help` ([exits](#exits)). Color
    follows [Terminal UX](../../../design-system.md#terminal-ux).
@@ -54,45 +54,45 @@ decides the exit code.
    `values.tools` that misses an unremovable tool, or a dependency that a
    selected tool needs and `values.dependencies` lacks, is handled per
    [repair on read](../../../entities/setup-config/index.md#repair); the warning
-   goes in `warnings`. [Setup config](../../../entities/setup-config/index.md)
+   goes in `warnings`. The warning for a missing dependency is reported only
+   when the selection after the request needs it (the condition of step 7).
+   [Setup config](../../../entities/setup-config/index.md)
 4. Tui opens the view: every
    [Tool category](../../../entities/tool-category/index.md) as a group with its
    tools from the [Tool](../../../entities/tool/index.md) catalog, the tools in
-   `values.tools` checked (on a first run, the default tools of step 3; the
-   runtimes are `default: off`, so they start unchecked and appear only in the
-   trees of the default tools that need them). A tool that is neither removable
-   nor replaceable (`mise`) is selected and locked; `git` and `pre-commit` are
-   unremovable but replaceable, so they are selected with no `none` choice and
-   are replaced in place (step 5). A dependency (a tool a selected tool needs
-   that the actor did not select) is shown unchecked, with no row-level mark of
-   its own; it appears, marked `dependency`, in the tree of each selected tool
-   that needs it. Groups, locked controls, keys, marks and the terminal-size
-   rule follow [Terminal UX](../../../design-system.md#terminal-ux). Ctrl-C at
-   any moment in the view writes nothing, exits 130 and prints no result, per
+   `values.tools` checked (on a first run, the default tools of step 3). Hidden
+   tools and categories whose every tool is hidden are not shown, and a hidden
+   tool is never listed in the view, the plan or the result tool lists;
+   unremovable tools are selected with no `none` choice and are replaced in
+   place (step 5), per [Tool](../../../entities/tool/index.md). Each tool row
+   shows the tool's `purpose` after its name, in the muted role, for example
+   `[x] dprint  Formats code and documents`; a category row keeps its purpose. A
+   dependency (a tool a selected tool needs that the actor did not select) is
+   shown unchecked, with no row-level mark of its own; it appears, marked
+   `dependency`, in the tree of each selected tool that needs it. In a
+   `max: one` category, a dependency held there (not reachable with the 1.0
+   catalog) leaves the radio group of that category with no marked row, and
+   `none` is not marked either. Groups, keys, marks and the terminal-size rule
+   follow [Terminal UX](../../../design-system.md#terminal-ux). Ctrl-C at any
+   moment in the view writes nothing, exits 130 and prints no result, per
    [errors](../../../conventions.md#errors).
 
    Dependency tree. Under each selected (checked) tool the view shows the full
-   tree of its required tools, nested by `requires`: every required tool on its
-   own line, indented under the tool's name. A tool that is a dependency is
-   marked `dependency`, two spaces after its name, in the muted role, never
-   carrying meaning by color alone; a direct tool is not marked. Nesting uses
-   `├─` for a child with later siblings, `└─` for the last child, and `│` as the
-   continuation of an open branch. A dependency expands into its own required
-   tools (each marked `dependency`); a direct tool appears unmarked and does
-   not expand there, because it has its own tree on its own row. Repeats of
-   dependencies are shown (the tree is not deduplicated). Children are in `requires` order, one per slot (the selected
-   alternative of the slot, else its first alternative). Unselected rows show no
-   tree. A direct runtime such as `[x] node` shows its own tree if it requires
-   anything, and appears unmarked inside its parents' trees. The exact form
-   (pinned):
+   tree of its required tools, nested by `requires`, one child per slot (the
+   selected alternative of the slot, else its first alternative; "selected"
+   includes a dependency, checked or not, so a slot met by a non-first
+   alternative shows that alternative). The mark `dependency` never carries
+   meaning by color alone. A direct tool appears unmarked and does not expand.
+   Repeats of dependencies are shown (the tree is not deduplicated). Unselected
+   rows show no tree. The exact form (pinned):
 
    ```text
    formatter  Formats the repository's files
-     [x] dprint
+     [x] dprint  Formats code and documents
          ├─ node  dependency
          └─ pnpm  dependency
             └─ node  dependency
-     [x] taplo
+     [x] taplo  Formats TOML files, run by dprint
          └─ dprint
    ```
 
@@ -103,13 +103,11 @@ decides the exit code.
    choice. A "none" choice is listed in the apply plan and its single confirm
    covers it.
 
-   | Case                                       | Replace another tool?                                                                                                                                                   | Choose "none"?           | Consent prompt?                              |
-   | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------- |
-   | `max: one`, held tool `replaceable: true`  | yes                                                                                                                                                                     | per `removable`          | yes, on a replacement                        |
-   | `max: one`, held tool `replaceable: false` | no, the other tools of the category are locked                                                                                                                          | per `removable`          | none                                         |
-   | `max: one`, held tool `removable: true`    | per `replaceable`                                                                                                                                                       | yes, a removal           | no, on "none"                                |
-   | `max: one`, held tool `removable: false`   | per `replaceable`: `git` and `pre-commit` yes (never "none"); `mise`, which is not replaceable, no: locked ([Tool](../../../entities/tool/index.md) invariants 2 and 7) | not offered              | yes, on a replacement; none on a locked tool |
-   | `max: many`                                | n/a, `replaceable` has no effect                                                                                                                                        | n/a, a tool is unchecked | none                                         |
+   | Case                                     | Replace another tool?                                             | Choose "none"?           | Consent prompt?                       |
+   | ---------------------------------------- | ----------------------------------------------------------------- | ------------------------ | ------------------------------------- |
+   | `max: one`, held tool `removable: true`  | yes                                                               | yes, a removal           | yes, on a replacement; none on "none" |
+   | `max: one`, held tool `removable: false` | yes, in place: `git` and `pre-commit` are replaced, never removed | not offered              | yes, on a replacement                 |
+   | `max: many`                              | n/a, a tool is unchecked                                          | n/a, a tool is unchecked | none                                  |
 
    [Tool category](../../../entities/tool-category/index.md)
 
@@ -131,8 +129,18 @@ decides the exit code.
      parent; it is pruned at apply and listed in the plan (step 7), not in the
      view.
    - Replacing within the alternatives of a slot needs the in-place consent
-     prompt like any replacement; in 1.0 every slot has one alternative, so none
-     arises.
+     prompt like any replacement.
+   - A dependency in a `max: one` category is that category's held tool:
+     choosing another tool of the category is a replacement of it (not reachable
+     with the 1.0 catalog). Its radio group shows no marked row, and `none` is
+     not marked either. The tool that replaces it, after the consent prompt,
+     takes the dependency role: it is recorded in `values.dependencies`, not in
+     `values.tools`, and not listed in `added`.
+   - A replacement in a `max: one` category whose held tool a selected tool
+     still needs, while the new tool is not an alternative of that slot and no
+     other alternative of it is selected, is refused in place like a deselect,
+     with the message "cannot replace `<tool>`: needed by `<parents>`"; no
+     consent prompt is shown and the selection is unchanged.
 6. Actor shows and edits the recorded values (repo, commit scopes, merge model
    for develop and main) in the values section, with the validation rules of
    [Set up a repository](../110-setup-repository/index.md) step 3; an invalid
@@ -146,8 +154,24 @@ decides the exit code.
    ([Setup config](../../../entities/setup-config/index.md)). If none of the
    [exits](#exits) applies, it shows the plan (create, change, delete,
    unchanged, kept, orphaned, replacements, value changes, and the dependencies
-   added or pruned) and asks once to confirm. Declining returns to the view
-   (step 4). [Tool](../../../entities/tool/index.md)
+   added or pruned) and asks once to confirm. Bookkeeping alone is never a
+   change: a recorded path the running cli no longer renders and that is absent
+   on disk, a stale recorded dependency (a name the running catalog has) that no
+   tool of the selection needs (its parents not lost by this request), and a
+   wrong parent list in `values.dependencies` make no target and no plan on
+   their own, so with nothing else different tui writes nothing, asks no consent
+   and exits 0 "no change". When apply writes for another change (a tool, a
+   value, a repair or a file change), it also drops the stale path, prunes the
+   stale dependency (its files deleted and reported as usual, listed in
+   `dependencies_pruned`) and corrects the parent lists. A dependency left
+   without a parent by the request itself is a real change, pruned and planned
+   as before. Repairs apply only to the dependencies the selection after the
+   request needs: a missing dependency the request leaves unneeded is never
+   added back and never reported. A `values.dependencies` name the running
+   catalog does not have is not bookkeeping: dropping it is a repair, a change
+   in the plan that needs consent even alone, with the warning "dropped unknown
+   dependency `<name>`". Declining returns to the view (step 4).
+   [Tool](../../../entities/tool/index.md)
 8. On confirm, tui writes per [safety](../../../conventions.md#safety). It
    rewrites `.config/bootstrap.yaml` last (values, `values.tools`,
    `values.dependencies` with each dependency's parents, and `files`) and never
@@ -156,7 +180,13 @@ decides the exit code.
    as for a removed tool). On a first run it renders and writes exactly as a
    first run of [Set up a repository](../110-setup-repository/index.md) does
    (the same targets, safety rules and file modes), and `.config/bootstrap.yaml`
-   is created last and listed `created`.
+   is created last and listed `created`. A `values.dependencies` name the
+   running catalog does not have is dropped on this rewrite as a repair (a
+   change in the plan, so apply is not a no-change run) and reported in
+   `warnings` as "dropped unknown dependency `<name>`". The drop alone creates
+   or changes no `mise` config file, so it does not trigger the next command
+   `MISE_ENV=dev mise run setup:all` (per
+   [errors](../../../conventions.md#errors)).
    [Setup config](../../../entities/setup-config/index.md)
 9. On every exit after the view closes except an interrupt (quit, no change, a
    refused apply, a failure, success), tui prints its human result, warnings
@@ -173,9 +203,10 @@ decides the exit code.
    entered or left `values.dependencies`. The next command
    `MISE_ENV=dev mise run setup:all` is printed per
    [errors](../../../conventions.md#errors) (a tool added, direct or dependency,
-   a replacement, a repair or a first run included, or a created, changed or
-   deleted `mise` config file), so an apply that only adds dependencies prints
-   it; otherwise no next command is printed and the human result has none. On a
+   a replacement, a repair that adds a tool or a first run included, or a
+   created, changed or deleted `mise` config file), so an apply that only adds
+   dependencies prints it; the drop of an unknown dependency alone does not;
+   otherwise no next command is printed and the human result has none. On a
    first run `added` lists the direct tools only, `dependencies_added` lists the
    dependencies and `values_changed` lists every value (repo, commit_scopes,
    merge_model.develop, merge_model.main) as `{name, from: null, to}` sorted by
@@ -276,8 +307,9 @@ N/A, runs synchronously in one command invocation.
 
 ## Acceptance
 
-- Given stdin or stdout is not a terminal, when `bootstrap tui` runs, then
-  nothing is written and the exit code is 2.
+- Given a git repository with `mise` on the `PATH` and stdin or stdout not a
+  terminal, when `bootstrap tui` runs, then nothing is written and the exit code
+  is 2.
 - Given any argument (for example `bootstrap tui foo`) or any flag other than
   `--help` (for example `-h`, `--json`, `--quiet`, `--version`, `--no-color`,
   `--verbose`, `-y`, `--dry-run`, `--tool` or `--repo`), when `bootstrap tui`
@@ -314,7 +346,7 @@ N/A, runs synchronously in one command invocation.
   then the view opens with the default tools and the origin-derived repo
   pre-filled, the runtimes unchecked and shown only, marked `dependency`, in the
   trees under the default tools that need them (for example under
-  `[x] pre-commit` the lines `├─ python  dependency`, `└─ uv  dependency` and,
+  `(•) pre-commit` the lines `├─ python  dependency`, `└─ uv  dependency` and,
   nested under `uv`, `└─ python  dependency`), with no `needs` or
   `also needed by` note; when the actor applies and confirms, then the files of
   the selected tools and `.config/bootstrap.yaml` are written, the exit code is
@@ -331,25 +363,28 @@ N/A, runs synchronously in one command invocation.
   exit code is 1 and the next command is `bootstrap init`.
 - Given a setup file failing Setup config validity, or a newer recorded version,
   when tui runs, then nothing is written and the exit code is 3.
-- Given `mise` (`removable: false`, `replaceable: false`), when the view opens,
-  then it shows selected and locked, its category offers no "none", and the
-  actor cannot deselect it or replace it.
-- Given `git` or `pre-commit` (`removable: false`, `replaceable: true`), when
-  the view opens, then it shows selected and not locked, its category offers no
-  "none", and choosing another tool of the category asks "replace <old> with
-  <new>?"; declining keeps the old tool.
-- Given a `max: one` category holding a tool with `replaceable: true`, when the
-  actor chooses another, then tui asks "replace <old> with <new>?"; declining
-  keeps the old tool.
+- Given the catalog holds the hidden tool `mise` and the `tool-manager`
+  category, when the view opens, then neither is shown, and no tool list of the
+  plan or the result names `mise`; the paths of its files are listed like any
+  path.
+- Given tool rows in the view, when it opens, then each tool row shows the
+  tool's `purpose` after its name in the muted role (for example
+  `[x] dprint  Formats code and documents`), and a category row keeps its
+  purpose.
+- Given `git` or `pre-commit` (`removable: false`), when the view opens, then it
+  shows selected, its category offers no "none", and choosing another tool of
+  the category asks "replace <old> with <new>?"; declining keeps the old tool.
+- Given a `max: one` category holding a tool, when the actor chooses another,
+  then tui asks "replace <old> with <new>?"; declining keeps the old tool.
 - Given a `max: one` category holding a removable tool, when the actor chooses
   "none", then no consent prompt is asked, the apply plan lists the removal, the
   single confirm covers it, and on success the tool is in `removed`, not in
   `replaced`.
-- Given a held tool with `replaceable: false` and `removable: true` in a
-  `max: one` category, when the actor tries to choose another tool of that
-  category, then the other tools are locked and nothing changes; when the actor
-  chooses "none", then it is allowed as a removal. Given a `max: many` category,
-  then `replaceable` has no effect.
+- Given a `values.dependencies` name the running catalog does not have, when the
+  actor applies, then the drop is a repair listed in the plan that needs the
+  confirm even alone; on confirm the name is dropped from `values.dependencies`
+  on the rewrite, `warnings` reports "dropped unknown dependency `<name>`", and
+  with no other change the result prints no next command.
 - Given a selection change, when the actor quits without applying, then nothing
   is written and the exit code is 0 with "no change".
 - Given a selection change, when the actor applies and declines the plan, then
@@ -400,9 +435,23 @@ N/A, runs synchronously in one command invocation.
   `values.tools` drops it.
 - Given a replacement consented in a `max: one` category, when apply succeeds,
   then the files are swapped and `replaced` lists `{from, to}`.
-- Given a recorded path the running cli does not render, when apply succeeds,
-  then it is not deleted, it stays in `files` and the result lists it
-  `orphaned`.
+- Given a recorded path the running cli does not render and that is present on
+  disk, when apply succeeds, then it is not deleted, it stays in `files` and the
+  result lists it `orphaned`.
+- Given only bookkeeping (a recorded path not rendered and absent on disk, a
+  stale dependency the catalog has that no selected tool needs, or a wrong
+  parent list), when the actor applies, then nothing is written, no prompt is
+  asked, "no change" is printed and the exit code is 0. Given the same
+  bookkeeping and another change, when apply succeeds, then the stale path is
+  dropped, the stale dependency is pruned (listed in `dependencies_pruned`) and
+  the parent lists are corrected.
+- Given a missing dependency that the selection after the request leaves
+  unneeded, when apply succeeds, then it is not added back and not reported.
+- Given a `max: one` category holding a dependency (not reachable in 1.0), when
+  the view opens, then its radio group shows no marked row and `none` is not
+  marked; when the actor chooses another tool and consents, then that tool is
+  recorded in `values.dependencies`, not in `values.tools`, and `added` does not
+  list it.
 - Given only a repo or merge-model value changed, when apply succeeds, then the
   exit code is 0 and `values_changed` lists `{name, from, to}` sorted by name.
 - Given a set-up repository and an apply with no tool added, no repair and no
@@ -434,11 +483,11 @@ N/A, runs synchronously in one command invocation.
   is 130.
 - Given `mise` not on the `PATH`, or no git repository, when tui runs, then
   nothing is written and the exit code is 3.
-- Given a recorded `values.tools` that misses an unremovable tool whose
-  `replaceable` is false (`mise`) while another tool of its `max: one` category
-  is recorded, when tui runs, then nothing is
-  written and the exit code is 3 naming the fix
-  ([Validity](../../../entities/setup-config/index.md#validity)).
+- Given a `max: one` category whose held tool (direct or a dependency) a
+  selected tool still needs, when the actor chooses another tool of the category
+  that is not an alternative of that slot, then no consent prompt is shown,
+  "cannot replace `<tool>`: needed by `<parents>`" is shown, and the selection
+  is unchanged (no 1.0 catalog tool reaches this case).
 - Abuse case: n/a, runs locally with the caller's own permissions on the
   caller's own repository; every value is validated per
   [baseline](../../../conventions.md#baseline) boundary-validation.

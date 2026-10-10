@@ -3,7 +3,7 @@ type: vwf-flow
 title: Add a tool
 description: One command adds tools to a set-up repository, replacing a held
   tool only with consent, with nothing half-written.
-status: reviewed
+status: draft
 implementation: none
 ---
 
@@ -34,11 +34,11 @@ Add accepts `-y`/`--yes`, `--replace`, `--dry-run`, `--json`, `--quiet`,
 (step 5 renders with the recorded `values`); any other flag is a usage error.
 
 Usage errors come first: no tool name given, an unknown flag or a bad flag
-value, an unknown tool name, or two distinct names of one `max: one` category
-(repeated names are merged first) exits 2 with short usage before the preflight
-and before `.config/bootstrap.yaml` is read. Nothing is written. The usage
-errors are reported together in one error
-([errors](../../../conventions.md#errors)).
+value, an unknown tool name (`mise` is one: it is never shown as a tool), or two
+distinct names of one `max: one` category (repeated names are merged first)
+exits 2 with short usage before the preflight and before
+`.config/bootstrap.yaml` is read. Nothing is written. The usage errors are
+reported together in one error ([errors](../../../conventions.md#errors)).
 
 1. Add runs, after the usage check, the preflight of
    [Set up a repository](../110-setup-repository/index.md) step 1.
@@ -47,8 +47,23 @@ errors are reported together in one error
    [validity and repair](../../../entities/setup-config/index.md#validity) and
    [version guard](../../../entities/setup-config/index.md#version-guard). A
    repair (an unremovable tool or a dependency added back) lets the run
-   continue, its warning goes in `warnings`, and it is written back in step 7 (a
-   repair is a change: it is on the list and needs consent, step 6).
+   continue, its warning goes in `warnings`, and it is written back in step 7.
+   Every repair is a change: it is on the list of changes, needs consent (step
+   6) and defeats the "already added" shortcut of step 3. A missing dependency
+   is repaired only when the selection after the request needs it (the
+   replacements of step 4 count): one the request leaves unneeded is never added
+   back and never reported (no warning, not in `dependencies_added` or
+   `dependencies_pruned`). A `values.dependencies` name the running catalog does
+   not have is dropped as such a repair on the step 7 rewrite and reported in
+   `warnings` as "dropped unknown dependency `<name>`". Bookkeeping is never a
+   change on its own: a recorded path in `files` that the running cli no longer
+   renders and that is absent on disk, a stale dependency (one no tool of the
+   selection needs, whose loss of parents the request did not cause) and a wrong
+   parent list in `values.dependencies`. When the run rewrites the setup file
+   for another change, it also drops the stale path, prunes the stale dependency
+   (its files deleted and reported as usual, listed in `dependencies_pruned`)
+   and corrects the parent lists; when bookkeeping is the only difference,
+   nothing is written, no prompt is shown and the exit code is 0.
 3. Add reads the [Tool](../../../entities/tool/index.md) `requires` and the
    [Setup config](../../../entities/setup-config/index.md) `values.tools` and
    `values.dependencies`, and derives the dependencies of the selection after
@@ -62,34 +77,44 @@ errors are reported together in one error
    becomes direct (moves from `values.dependencies` to `values.tools`, no parent
    changes). If every name is already in `values.tools` and step 2 made no
    repair, add renders in memory only to find the `orphaned` paths and skips to
-   step 8; that run has nothing to change, shows no prompt and exits 0.
+   step 8; that run has nothing to change (bookkeeping alone is not a change),
+   shows no prompt and exits 0.
 4. Add finds the replacements: a tool of the
    [Tool category](../../../entities/tool-category/index.md) `max: one` that
    holds another tool replaces it; so does an alternative of a `requires` slot
    named with `--replace` while another alternative of the slot is selected (the
-   parents of the replaced alternative move to the named one, and the replaced
-   one is pruned unless it is selected directly or another parent needs it). A
-   held tool whose `replaceable` is false → exit 2. A repair from step 2 holds
-   an unremovable tool again, so a named tool of its `max: one` category is a
-   replacement of it: it exits 2 for `mise` (not replaceable), and for `git` or
-   `pre-commit` (replaceable) it needs `--replace` like any replacement
-   ([Tool category](../../../entities/tool-category/index.md)). An add that
-   replaces a tool outside a slot that another selected tool requires, with no
-   other alternative of that slot selected, exits 2 naming the dependent tool
-   (checked on the selection after the request, before any write). `--replace`
-   with nothing to replace is ignored. The refusals of step 4 are reported
-   together ([errors](../../../conventions.md#errors)).
+   parents of the replaced alternative for that slot move to the named one). A
+   held alternative selected directly stays in `values.tools`, and one still
+   needed by another parent through a different requirement stays as a
+   dependency like it: it keeps its files and makes no `replaced` entry, and
+   only its parents for that slot move. The replaced ones are the held tools
+   that leave the selection, and only they get a `replaced` `{from, to}` entry.
+   A dependency that no parent needs after the request is pruned, a replaced
+   alternative of a `requires` slot included, unless it is selected directly. A
+   repair from step 2 holds an unremovable tool (`git` or `pre-commit`) again,
+   so a named tool of its `max: one` category is a replacement of it and needs
+   `--replace` like any replacement
+   ([Tool category](../../../entities/tool-category/index.md)). A replacement
+   without `--replace` exits 2 with nothing written, before consent: no prompt
+   is shown in any terminal, with or without `-y`. The next command is the same
+   command plus `--replace`. A replacement whose replaced tool fills a
+   `requires` slot of a selected tool, while the incoming tool is not an
+   alternative of that slot and no other alternative of it is selected, exits 2
+   naming the dependent tool (checked on the selection after the request, before
+   any write). `--replace` with nothing to replace is ignored. All the refusals
+   of step 4 are reported together in one error
+   ([errors](../../../conventions.md#errors)).
 5. Add renders the full file set of the new selection (the held
    [Tool](../../../entities/tool/index.md)s, minus the replaced ones, plus the
    added ones and the dependencies added, minus the dependencies pruned) with
    the recorded `values`, and so prepares the full list of changes: each file to
    create, change, delete or replace (a dependency's files are created like any
-   added tool's, a pruned dependency's are removed), and a repair from step 2.
-   Shared files are targets too; the files of a replaced tool or a pruned
-   dependency are removed as in [Remove a tool](../150-remove-tool/index.md).
-   Planning, the setup file `.config/bootstrap.yaml` as a target and `orphaned`
-   paths follow [safety](../../../conventions.md#safety), with the refusals of
-   step 4 first ([precedence](../../../conventions.md#safety)).
+   added tool's, a pruned dependency's are removed). Shared files are targets
+   too; the files of a replaced tool or a pruned dependency are removed as in
+   [Remove a tool](../150-remove-tool/index.md). Planning, the setup file
+   `.config/bootstrap.yaml` as a target and `orphaned` paths follow
+   [safety](../../../conventions.md#safety), with the refusals of step 4 first
+   ([precedence](../../../conventions.md#safety)).
 6. Consent, as in [config](../../../conventions.md#config) steps 2 to 4 (and
    [errors](../../../conventions.md#errors) for "changes need --yes").
 7. Add writes the planned changes, then rewrites `.config/bootstrap.yaml` last:
@@ -104,11 +129,10 @@ errors are reported together in one error
    `unchanged`, `kept`, `orphaned`, `warnings` and `next_command`, in human
    output and under `--json`. `added`, `already_added` and `replaced` hold only
    the tools the actor named; `dependencies_added` lists the tools add added as
-   dependencies in this run and `dependencies_pruned` the dependencies it pruned
-   (a replaced alternative of a `requires` slot, step 4); both are tool names
-   sorted by name, like the other name lists. The next command is printed per
-   [errors](../../../conventions.md#errors); otherwise `next_command` is absent.
-   Every other report key is always present.
+   dependencies in this run and `dependencies_pruned` every dependency it pruned
+   (step 4); both are tool names sorted by name, like the other name lists. The
+   next command is printed per [errors](../../../conventions.md#errors);
+   otherwise `next_command` is absent. Every other report key is always present.
 
 Modes: `--json` follows [errors](../../../conventions.md#errors), with the keys
 of step 8 on success. `--dry-run` exits with the code the real run (with
@@ -206,12 +230,12 @@ N/A — runs synchronously in one command invocation.
   or `--json`, when `bootstrap add <tool>` for a new tool runs without `-y`,
   then nothing is written, no prompt is shown, the exit code is 2, the message
   is "changes need --yes" and the next command is the same command plus `--yes`.
-- Given a held replaceable tool and a terminal, when add runs with `--replace`
-  but without `-y`, then the list is shown and the prompt is asked; "y" replaces
-  the tool and any other answer writes nothing and exits 0.
-- Given a held replaceable tool and no terminal, when add runs with `--replace`
-  but without `-y`, then nothing is written and the exit code is 2 with the
-  message "changes need --yes".
+- Given a held tool and a terminal, when add runs with `--replace` but without
+  `-y`, then the list is shown and the prompt is asked; "y" replaces the tool
+  and any other answer writes nothing and exits 0.
+- Given a held tool and no terminal, when add runs with `--replace` but without
+  `-y`, then nothing is written and the exit code is 2 with the message "changes
+  need --yes".
 - Given two tool names, when add runs with `-y`, then both tools are added.
 - Given a tool name given twice, when add runs with `-y`, then the tool is added
   once and the exit code is 0.
@@ -222,8 +246,8 @@ N/A — runs synchronously in one command invocation.
   under `--json`), and the exit code is 0.
 - Given `bootstrap add` with no tool name, when add runs, then nothing is
   written, short usage is printed and the exit code is 2.
-- Given an unknown tool name, when add runs, then the exit code is 2 and nothing
-  is written.
+- Given an unknown tool name, or `mise`, when add runs, then the exit code is 2
+  and nothing is written.
 - Given `bootstrap add dprint -y` with `node` and `pnpm` absent, when add runs,
   then dprint is added to `values.tools`, `node` and `pnpm` are added to
   `values.dependencies` (`node` with parents `[dprint, pnpm]`, `pnpm` with
@@ -243,45 +267,36 @@ N/A — runs synchronously in one command invocation.
   `--replace` and `-y`, then the parents of the held alternative move to the new
   one, the held one is pruned unless it is selected directly or another parent
   needs it (its files are removed and it is listed in `dependencies_pruned`),
-  and `replaced` lists `{from, to}`.
-- Given a held tool that another selected tool requires, outside a `requires`
-  slot with another alternative selected, and an add that would replace it, when
-  add runs, then the exit code is 2, the message names the dependent tool and
-  nothing is written.
-- Given an add whose named tools would replace held tools in two `max: one`
-  categories, when add runs with `-y` but without `--replace`, then the exit
-  code is 2, nothing is written and the one error names both refusals, with one
-  next command: the same command plus `--replace`.
+  and `replaced` lists `{from, to}` only when the held alternative leaves the
+  selection; when it is selected directly, or another parent still needs it
+  through a different requirement, it stays (in `values.tools` or as a
+  dependency), keeps its files, only its parents for that slot move and
+  `replaced` has no entry for it.
+- Given a replacement whose replaced tool fills a `requires` slot of a selected
+  tool, with an incoming tool that is not an alternative of that slot and no
+  other alternative of it selected, when add runs, then the exit code is 2, the
+  message names the dependent tool and nothing is written.
+- Given an add whose named tools would replace held tools (in two `max: one`
+  categories, or in one), when add runs without `--replace` in any terminal,
+  interactive or not, with or without `-y`, then the exit code is 2, nothing is
+  written, the refusal comes before consent so no prompt is shown, the one error
+  names every refusal, and the next command is the same command plus
+  `--replace`.
 - Given an unknown tool name and two names of one `max: one` category, when add
   runs, then the exit code is 2 before the preflight, nothing is written and the
-  one error names both usage errors.
+  one error names both usage errors; with only the two names of one category,
+  the exit code is 2 and nothing is written.
 - Given `bootstrap add` with no name in a directory that is not a git repository
   or not set up, when add runs, then the exit code is 2, not 3 or 1.
-- Given two named tools of one `max: one` category, when add runs, then the exit
-  code is 2 and nothing is written.
-- Given a held replaceable tool, when add runs with `--replace` and `-y` in any
-  terminal, then the new tool's files are written, the old tool's files are
-  removed except `create_only` ones, `values.tools` swaps the two and `replaced`
-  lists `{from, to}`, and the exit code is 0.
-- Given a run in any terminal that would replace a tool, when add runs without
-  `--replace`, then the exit code is 2 and nothing is written.
-- Given a run that would replace a tool, when add runs with `-y` but without
-  `--replace`, then the exit code is 2 and nothing is written.
-- Given an interactive terminal, when add needs a replacement and runs without
-  `--replace`, then the exit code is 2, nothing is written and no prompt is
-  shown (the refusal comes before consent).
+- Given a held tool, when add runs with `--replace` and `-y` in any terminal,
+  then the new tool's files are written, the old tool's files are removed except
+  `create_only` ones, `values.tools` swaps the two and `replaced` lists
+  `{from, to}`, and the exit code is 0.
 - Given an interactive terminal and a dirty target, when add runs without `-y`,
   then the exit code is 1, the path is listed, nothing is written and no prompt
   is shown.
 - Given `--replace` and no replacement to make, when add runs with `-y`, then
   the flag is ignored and the run proceeds as without it.
-- Given a held tool whose `replaceable` is false (only `mise`), when add names a
-  tool of its category, then the exit code is 2 and nothing is written, even
-  with `--replace`.
-- Given a recorded `values.tools` that misses `mise` and no other tool of its
-  `max: one` category is recorded, when add names a tool of that category, then
-  the repair would add `mise` back, the exit code is 2 and nothing is written,
-  even with `--replace` and `-y`.
 - Given a recorded `values.tools` that misses `git` (or `pre-commit`) and no
   other tool of its `max: one` category is recorded, when add names a tool of
   that category with `--replace` and `-y`, then the repair adds it back and the
@@ -313,6 +328,18 @@ N/A — runs synchronously in one command invocation.
   dependency `<name>`", `dependencies_added` lists it and the exit code is 0;
   without `-y` and with no terminal, nothing is written and the exit code is 2
   "changes need --yes" (the repair is a change and needs consent).
+- Given a recorded selection that misses a dependency which only the selection
+  before the request needed (the request replaces or leaves unneeded the tool
+  that required it), when add runs with `-y`, then the dependency is not added
+  back, there is no warning and it is in neither `dependencies_added` nor
+  `dependencies_pruned`.
+- Given a recorded stale dependency, a wrong parent list in
+  `values.dependencies` or a recorded path in `files` that the running cli no
+  longer renders and that is absent on disk, when add runs with `-y` for another
+  change, then the setup file rewrite prunes the dependency (its files deleted
+  and listed in `dependencies_pruned`), corrects the parent list and drops the
+  path; when that is the only difference, nothing is written, no prompt is shown
+  and the exit code is 0.
 - Given a setup file recorded with an older `format`, when add runs with `-y`,
   then the older format is read and not refused, and the next write records the
   running cli's format.
@@ -322,8 +349,8 @@ N/A — runs synchronously in one command invocation.
   have, when add runs, then nothing is written and the exit code is 3 naming the
   fix.
 - Given a path in `files` that the running cli does not render for a selected
-  tool, when add runs, then it is left in place, stays in `files` and is listed
-  `orphaned`.
+  tool and that is present on disk, when add runs, then it is left in place,
+  stays in `files` and is listed `orphaned`, and it is never a change.
 - Given a recorded version older than the running cli, when add runs, then the
   exit code is 1, the next command is `bootstrap init` and nothing is written.
 - Given a recorded version newer than the running cli, or a setup file failing
@@ -365,10 +392,13 @@ N/A — runs synchronously in one command invocation.
 - Given `--dry-run --json`, when add runs, then the document is the one the real
   run would return plus `"dry_run": true`, and on a non-zero exit it is the same
   error document plus `"dry_run": true`; no file changes.
-- Given a recorded `values.tools` that misses `mise` (the unremovable tool whose
-  `replaceable` is false) while another tool of its `max: one` category is
-  recorded, when add runs, then nothing is written and the exit code is 3 naming
-  the fix ([Validity](../../../entities/setup-config/index.md#validity)).
+- Given a recorded `values.tools` that names `mise`, when add runs, then nothing
+  is written and the exit code is 3 naming the fix "remove `mise` from
+  values.tools" ([Validity](../../../entities/setup-config/index.md#validity)).
+- Given a recorded `values.dependencies` that names a tool the running catalog
+  does not have, when add runs with `-y`, then the name is dropped on the
+  `.config/bootstrap.yaml` rewrite, `warnings` reports "dropped unknown
+  dependency `<name>`" and the exit code is 0.
 - Abuse case: n/a — runs locally with the caller's own permissions on the
   caller's own repository; every input is validated per
   [baseline](../../../conventions.md#baseline) boundary-validation.

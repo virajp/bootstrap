@@ -13,8 +13,7 @@ owner: [ cli ]
 ## Purpose
 
 The tools form a read-only catalog that is versioned with bootstrap and never
-stored in the target repository. Each tool belongs to a
-[Tool category](../tool-category/index.md).
+stored in the target repository.
 
 Used by: [Setup repository](../../flows/cli/110-setup-repository/index.md),
 [Add a tool](../../flows/cli/140-add-tool/index.md),
@@ -44,61 +43,61 @@ later; `github` and `gitlab` may be selected together. Renaming or removing a
 tool or a path is a major version; adding a tool or path is minor
 ([changelog](../../conventions.md#changelog)).
 
-| Name            | Category              | Purpose                                      | Removable | Replaceable | Default               | Requires       |
-| --------------- | --------------------- | -------------------------------------------- | --------- | ----------- | --------------------- | -------------- |
-| `mise`          | tool-manager          | Installs the tools and runs the task library | no        | no          | on                    | none           |
-| `git`           | version-control       | Ignore rules and git checks                  | no        | yes         | on                    | none           |
-| `pre-commit`    | git-hooks             | Runs the gates before each commit            | no        | yes         | on                    | `python`, `uv` |
-| `vscode`        | editor                | Editor settings and extensions               | yes       | yes         | on                    | none           |
-| `dprint`        | formatter             | Formats code and documents                   | yes       | yes         | on                    | `node`, `pnpm` |
-| `taplo`         | formatter             | Formats TOML files, run by dprint            | yes       | yes         | on                    | `dprint`       |
-| `virajp-linter` | linter                | Lints code with the house rules              | yes       | yes         | on                    | `node`, `pnpm` |
-| `node`          | runtime               | JavaScript runtime                           | yes       | yes         | off                   | none           |
-| `pnpm`          | runtime               | JavaScript package manager                   | yes       | yes         | off                   | `node`         |
-| `python`        | runtime               | Python runtime                               | yes       | yes         | off                   | none           |
-| `uv`            | runtime               | Python package and tool manager              | yes       | yes         | off                   | `python`       |
-| `jq`            | runtime               | Processes JSON on the command line           | yes       | yes         | off                   | none           |
-| `yq`            | runtime               | Processes YAML on the command line           | yes       | yes         | off                   | none           |
-| `gitleaks`      | secret-scanner        | Finds secrets in code and commits            | yes       | yes         | on                    | none           |
-| `grype`         | vulnerability-scanner | Finds known vulnerabilities                  | yes       | yes         | on                    | none           |
-| `osv-scanner`   | vulnerability-scanner | Scans lockfiles for known vulnerabilities    | yes       | yes         | on                    | none           |
-| `fnox`          | secrets-manager       | Gives secrets to the tasks                   | yes       | yes         | off                   | none           |
-| `claude`        | ai-agent              | Status line and settings for Claude Code     | yes       | yes         | on                    | `jq`, `yq`     |
-| `graphify`      | knowledge-graph       | Builds a knowledge graph of the code         | yes       | yes         | on                    | `python`, `uv` |
-| `mempalace`     | agent-memory          | Memory store for AI agents                   | yes       | yes         | on                    | `python`, `uv` |
-| `github`        | forge                 | Pull request and issue templates for GitHub  | yes       | yes         | origin (`github.com`) | none           |
-| `gitlab`        | forge                 | Merge request and issue templates for GitLab | yes       | yes         | origin (`gitlab.com`) | none           |
+| Name            | Category              | Purpose                                      | Removable | Hidden | Default               | Requires       |
+| --------------- | --------------------- | -------------------------------------------- | --------- | ------ | --------------------- | -------------- |
+| `mise`          | tool-manager          | Installs the tools and runs the task library | no        | yes    | on                    | none           |
+| `git`           | version-control       | Ignore rules and git checks                  | no        | no     | on                    | none           |
+| `pre-commit`    | git-hooks             | Runs the gates before each commit            | no        | no     | on                    | `python`, `uv` |
+| `vscode`        | editor                | Editor settings and extensions               | yes       | no     | on                    | none           |
+| `dprint`        | formatter             | Formats code and documents                   | yes       | no     | on                    | `node`, `pnpm` |
+| `taplo`         | formatter             | Formats TOML files, run by dprint            | yes       | no     | on                    | `dprint`       |
+| `virajp-linter` | linter                | Lints code with the house rules              | yes       | no     | on                    | `node`, `pnpm` |
+| `node`          | runtime               | JavaScript runtime                           | yes       | no     | off                   | none           |
+| `pnpm`          | runtime               | JavaScript package manager                   | yes       | no     | off                   | `node`         |
+| `python`        | runtime               | Python runtime                               | yes       | no     | off                   | none           |
+| `uv`            | runtime               | Python package and tool manager              | yes       | no     | off                   | `python`       |
+| `jq`            | runtime               | Processes JSON on the command line           | yes       | no     | off                   | none           |
+| `yq`            | runtime               | Processes YAML on the command line           | yes       | no     | off                   | none           |
+| `gitleaks`      | secret-scanner        | Finds secrets in code and commits            | yes       | no     | on                    | none           |
+| `grype`         | vulnerability-scanner | Finds known vulnerabilities                  | yes       | no     | on                    | none           |
+| `osv-scanner`   | vulnerability-scanner | Scans lockfiles for known vulnerabilities    | yes       | no     | on                    | none           |
+| `fnox`          | secrets-manager       | Gives secrets to the tasks                   | yes       | no     | off                   | none           |
+| `claude`        | ai-agent              | Status line and settings for Claude Code     | yes       | no     | on                    | `jq`, `yq`     |
+| `graphify`      | knowledge-graph       | Builds a knowledge graph of the code         | yes       | no     | on                    | `python`, `uv` |
+| `mempalace`     | agent-memory          | Memory store for AI agents                   | yes       | no     | on                    | `python`, `uv` |
+| `github`        | forge                 | Pull request and issue templates for GitHub  | yes       | no     | origin (`github.com`) | none           |
+| `gitlab`        | forge                 | Merge request and issue templates for GitLab | yes       | no     | origin (`gitlab.com`) | none           |
+
+The file paths of a hidden tool (`mise` only, invariant 7) are still listed like
+any path. A category whose every tool is hidden (`tool-manager`) is not shown.
+Each shown tool's `purpose` appears after its name in the tui and the docs;
+hidden tools are left out of the site Tools and Tool categories pages.
 
 ### Requires and dependencies {#requires-and-dependencies}
 
 `requires` is a list of slots. Each slot lists one or more alternative tools;
 the first alternative is the default. In the Requires column, slots are
 separated by commas and the alternatives of a slot by `|` (for example `python`,
-`uv` is two slots of one alternative each). In 1.0 every slot has exactly one
-alternative.
+`uv` is two slots of one alternative each). No 1.0 slot has more than one.
 
 A tool that a selected tool requires and that the user did not select directly
-is a dependency. When a slot has no selected tool, its first alternative is
-added as a dependency. A dependency is installed and rendered like any selected
-tool, and is recorded in the [Setup config](../setup-config/index.md) with its
-parents (`values.dependencies`).
-
-Where a replacement applies: invariant 14.
+is a dependency. A dependency is installed and rendered like any selected tool
+and is recorded in the [Setup config](../setup-config/index.md).
 
 The `requires` check, per request ([errors](../../conventions.md#errors)):
 
-| Request                                   | Checked against                                        | Fails when                                                                                     | Outcome                                                                                                                                      |
-| ----------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `init --tool`                             | the named tools plus the unremovable ones              | never for a missing required tool                                                              | each slot with no selected tool gets its first alternative as a dependency                                                                   |
-| `add`                                     | the held tools minus the replaced ones, plus the named | never for a missing required tool                                                              | the same; `add` of a held dependency makes it direct (no parents change)                                                                     |
-| `add <alternative> --replace` on a slot   | the same                                               | never                                                                                          | the parents of the replaced alternative move to the new one; the old one is pruned unless it is selected directly or another parent needs it |
-| `add` that replaces a tool outside a slot | the same                                               | a selected tool requires the replaced tool and no other alternative of its slot is selected    | exit 2 naming the parent tool                                                                                                                |
-| `remove`                                  | the selection after the request                        | a still-selected tool requires a removed tool and no other alternative of its slot is selected | exit 2 naming the parent tool; removing the parent in the same request passes                                                                |
-| `remove` and an init re-run               | the selection after the request                        | never                                                                                          | each dependency that no parent needs is pruned                                                                                               |
-| tui select or deselect                    | the selection after the change                         | per [Select tools](../../flows/cli/160-select-tools/index.md)                                  | per flow 160                                                                                                                                 |
+| Request                                                                     | Checked against                                                 | Fails when                                                                                     | Outcome                                                                                                                                      |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init` first run (default or `--tool` selection), or a re-run with `--tool` | the selected tools (default or named) plus the unremovable ones | never for a missing required tool                                                              | each slot with no selected tool gets its first alternative as a dependency                                                                   |
+| `add`                                                                       | the held tools minus the replaced ones, plus the named          | never for a missing required tool                                                              | the same; `add` of a held dependency makes it direct (no parents change); each dependency that no parent needs after the request is pruned   |
+| `add <alternative> --replace` on a slot                                     | the same                                                        | never                                                                                          | the parents of the replaced alternative move to the new one; the old one is pruned unless it is selected directly or another parent needs it |
+| `add` or an init re-run that replaces a tool outside a slot                 | the selection after the request                                 | a selected tool requires the replaced tool and no other alternative of its slot is selected    | exit 2 naming the parent tool                                                                                                                |
+| `remove`                                                                    | the selection after the request                                 | a still-selected tool requires a removed tool and no other alternative of its slot is selected | exit 2 naming the parent tool; removing the parent in the same request passes                                                                |
+| `remove` and an init re-run (drops)                                         | the selection after the request                                 | never                                                                                          | each dependency that no parent needs is pruned                                                                                               |
+| tui select or deselect                                                      | the selection after the change                                  | per [Select tools](../../flows/cli/160-select-tools/index.md)                                  | per flow 160                                                                                                                                 |
 
-Display order (tui, docs) is the order of the Catalog table; changing it is a
-minor version.
+Display order (tui, docs, shown tools only) is the order of the Catalog table;
+changing it is a minor version.
 
 ### Target paths (1.0)
 
@@ -137,9 +136,8 @@ it.
 | `gitlab`        | `.gitlab/merge_request_templates/Default.md`, `.gitlab/issue_templates/Bug.md`, `.gitlab/issue_templates/Feature.md`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 Mise entries go in the env file they belong to (`mise.toml`, `mise.dev.toml`,
-`mise.ci.toml`) under the tool's folder (invariant 10); a setting lives with the
-tool it applies to. Besides the tool folders, `conf.d/` holds files owned by the
-`mise` tool:
+`mise.ci.toml`); a setting lives with the tool it applies to. Besides the tool
+folders, `conf.d/` holds files owned by the `mise` tool:
 
 - `conf.d/env.toml`: the product env values `MEMBERS`, `MERGE_MODEL_DEVELOP`,
   `MERGE_MODEL_MAIN` and `REPO_NAME`; `conf.d/env.<env>.toml` holds values
@@ -196,8 +194,8 @@ Versions follow [tool-versions](../../conventions.md#tool-versions).
 ## Invariants
 
 1. No file path appears in more than one tool.
-2. A tool with `removable` false is always selected and cannot be removed; it
-   can be replaced unless its `replaceable` is false (invariant 7).
+2. A tool with `removable` false is always selected and cannot be removed; if
+   shown, it can be replaced in place within its `max: one` category.
 3. Every tool of the catalog names an existing category.
 4. A category with `max: one` never holds two selected tools.
 5. Every task file is written executable
@@ -205,8 +203,12 @@ Versions follow [tool-versions](../../conventions.md#tool-versions).
 6. Every tool a rendered task runs is installed by mise
    ([tool-versions](../../conventions.md#tool-versions)), except the named
    exemptions: `git`, `mise` itself and the AI agent's own CLI (`claude`).
-7. `mise` is the only tool with `replaceable` false; `removable: false` implies
-   `default: on`.
+7. `mise` is the only hidden tool: it is always applied (init, add, remove and
+   the tui render its files as for any selected tool), never recorded in
+   `values.tools` or `values.dependencies`, and never shown or named in any
+   tool-name list (tui, human and `--json` output, `show`), so no request can
+   name it (naming it in `init --tool`, `add` or `remove` is an unknown tool
+   name), replace it or remove it; `removable: false` implies `default: on`.
 8. `origin_hosts` is present only when `default` is `origin`.
 9. No two `origin` tools of one `max: one` category share a host.
 10. Every tool but `mise` renders its mise entries only into
@@ -214,7 +216,8 @@ Versions follow [tool-versions](../../conventions.md#tool-versions).
     Target paths row), and each mise entry declares mise `depends` on the
     selected alternative of each `requires` slot it runs on, so mise installs
     them first.
-11. Every alternative of every `requires` slot names a tool of the catalog.
+11. Every alternative of every `requires` slot names a tool of the catalog; no
+    tool requires itself, and the `requires` graph has no cycle.
 12. A `max: one` category holds at most one `default: on` tool and at most one
     unremovable tool; every category holds at least one tool.
 13. A recorded selection is checked per

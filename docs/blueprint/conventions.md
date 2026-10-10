@@ -26,13 +26,13 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
 **JSON result** (`tui` takes no `--json`; it is a usage error there)
 (`errors: exit-codes-and-structured-report`).
 
-| Exit  | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `0`   | success                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `1`   | declined to act — a target has uncommitted changes ([#safety](#safety)), the setup file changed while the `tui` view was open (next command `bootstrap tui`), `add`, `remove` or `show` on a repository that is not set up, `show` on a selection that misses an unremovable tool or a dependency that [Repair on read](entities/setup-config/index.md#repair) would add back, or `add`, `remove` or `tui` on a repository set up by an older bootstrap (next command `bootstrap init`)                                  |
-| `2`   | usage error — bare `bootstrap` with no command (prints the top-level help), bad or missing flag/argument (prints short usage), an unremovable tool named for removal, a tool named for removal, or replaced outside a `requires` slot, that a selected tool still needs (names that tool), a change in init, add or remove without `--yes` where no prompt is possible ("changes need --yes"), a replacement with no consent or of a tool that is not replaceable, `tui` without terminals (checked after the preflight) |
-| `3`   | failure — not a git repository, `mise` not installed, unreadable setup file, render error, a target path that is not a regular file, write failed                                                                                                                                                                                                                                                                                                                                                                        |
-| `130` | interrupted (Ctrl-C) — nothing written, or the repository was restored                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Exit  | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`   | success                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `1`   | declined to act — a target has uncommitted changes ([#safety](#safety)), the setup file changed while the `tui` view was open (next command `bootstrap tui`), `add`, `remove` or `show` on a repository that is not set up, `show` on a selection that misses an unremovable tool or a dependency that [Repair on read](entities/setup-config/index.md#repair) would add back, or `add`, `remove` or `tui` on a repository set up by an older bootstrap (next command `bootstrap init`) |
+| `2`   | usage error — bare `bootstrap` with no command (prints the top-level help), bad or missing flag/argument (prints short usage), an unremovable tool named for removal, a tool named for removal, or replaced outside a `requires` slot, that a selected tool still needs (names that tool), a change in init, add or remove without `--yes` where no prompt is possible ("changes need --yes"), a replacement with no consent, `tui` without terminals (checked after the preflight)     |
+| `3`   | failure — not a git repository, `mise` not installed, unreadable setup file, render error, a target path that is not a regular file, write failed                                                                                                                                                                                                                                                                                                                                       |
+| `130` | interrupted (Ctrl-C) — nothing written, or the repository was restored                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 - An interrupt (Ctrl-C) exits `130` in every command and at any moment — in the
   `tui` view, while reading, or while writing. During a write it first triggers
@@ -71,15 +71,16 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
 - After a successful write (or the `--dry-run` of one), the next command
   `MISE_ENV=dev mise run setup:all` (`--json`: top-level `next_command`) is
   printed if and only if the run added a tool, direct or dependency (a first
-  run, a new tool, a replacement or a repair) or created, changed or deleted a
-  `mise` config file (`.config/mise.toml`, `.config/miserc.toml` or a file under
-  `.config/mise/conf.d/`); otherwise there is no next command and no
-  `next_command` key. In human output, a run of `init`, `add`, `remove` or the
-  `tui` that created, changed, deleted or replaced a file ends with exactly
-  "commit the changes, then run `MISE_ENV=dev mise run setup:all`" when the next
-  command is printed, else with exactly "commit the changes"; a run with nothing
-  to create, change, delete or replace has no closing line, and a `--dry-run`
-  shows the closing line of the real run.
+  run, a new tool, a replacement or a repair that adds one back) or created,
+  changed or deleted a `mise` config file (`.config/mise.toml`,
+  `.config/miserc.toml` or a file under `.config/mise/conf.d/`); otherwise there
+  is no next command and no `next_command` key. In human output, a run of
+  `init`, `add`, `remove` or the `tui` that created, changed, deleted or
+  replaced a file ends with exactly "commit the changes, then run
+  `MISE_ENV=dev mise run setup:all`" when the next command is printed, else with
+  exactly "commit the changes"; a run with nothing to create, change, delete or
+  replace has no closing line, and a `--dry-run` shows the closing line of the
+  real run.
 - Every error message states what happened, why, and the exact next command to
   run. No internal trace unless `--verbose`.
 - A run reports its exit `2` refusals together, in one error: `what` and `why`
@@ -114,8 +115,7 @@ defaults pre-filled, and the owner confirms them at apply.
    changes: each file to create, change, delete or replace, and a repair of the
    setup file ([Repair on read](entities/setup-config/index.md#repair)). Every
    refusal is found here, before consent: a usage error, a replacement without
-   `--replace` or of a tool that is not replaceable, a dirty target
-   ([#safety](#safety)).
+   `--replace`, a dirty target ([#safety](#safety)).
 2. An empty list: write nothing, exit `0`.
 3. `--dry-run`: show the list, write nothing.
 4. Consent. `--yes` (`-y`) gives it. Without `--yes`, when stdin and stdout are

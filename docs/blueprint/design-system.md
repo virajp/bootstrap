@@ -190,9 +190,8 @@ samples, commands, flags, file paths, eyebrows and tags.
   headings, `values` and the footer start at column 0). It scrolls vertically in
   a box at most 24 lines of `sm` mono tall (one 80x24 terminal screen), and
   horizontally like any code block; the box is focusable and scrolls with the
-  keyboard. It uses the five terminal roles; a locked control shows its mark
-  dimmed (`text-muted`) with the word `locked`; each control's state is carried
-  by its mark, never by color alone.
+  keyboard. It uses the five terminal roles; each control's state is carried by
+  its mark, never by color alone.
 - **Callout**: a 2px left rule plus a mono `xs` label on `surface-card`: `note`
   (neutral), `tip` (`status-success`), `caution` (`status-warning`). No icons,
   no filled status backgrounds.
@@ -221,8 +220,7 @@ samples, commands, flags, file paths, eyebrows and tags.
 - **Overlays and feedback**: none in scope beyond the search panel and the copy
   confirmation.
 - Interaction states everywhere: hover (color shift), focus-visible (the ring),
-  active (press scale on buttons only); no disabled controls exist (a `locked`
-  mark in a Terminal view is part of the picture, not a control).
+  active (press scale on buttons only); no disabled controls exist.
 
 ## Brand
 
@@ -277,11 +275,11 @@ The `cli` project is a shipped command-line tool. Elicited in text on
   at the expected path, kept or orphaned files, a refused dirty target, every
   warning line) to `status-warning`; `error` to `accent`; `emphasis` (paths,
   command names, and the changed, deleted, removed, replaced and values-changed
-  group heads) to bold `text-body`; `muted` (secondary text: category purposes,
-  `none`, the key footer, already added and not added) to `text-muted`. Roles
-  map to the terminal theme's palette by role name, never fixed hex. Color is
-  off when `NO_COLOR` is set, when the output is not a terminal, with
-  `--no-color`, and always under `--json`.
+  group heads) to bold `text-body`; `muted` (secondary text: category and tool
+  purposes, dependency tree lines, `none`, the key footer, already added and not
+  added) to `text-muted`. Roles map to the terminal theme's palette by role
+  name, never fixed hex. Color is off when `NO_COLOR` is set, when the output is
+  not a terminal, with `--no-color`, and always under `--json`.
 - Progress conventions: an animated spinner per step when stderr is a terminal;
   when piped, in CI or under `--json`, one stable line per finished step on
   stderr instead. Progress is display only. `show` never prompts; `init`, `add`
@@ -308,21 +306,21 @@ The `cli` project is a shipped command-line tool. Elicited in text on
   [Select tools](flows/cli/160-select-tools/index.md); on a repository that is
   not set up it opens with the first-run defaults of
   [Set up a repository](flows/cli/110-setup-repository/index.md) steps 3–4): one
-  scrolling list, a heading per tool category in catalog order with the
-  category's `purpose` after its name in the muted role, then a values section
+  scrolling list, a heading per shown tool category in catalog order with the
+  category's `purpose` after its name in the muted role (a hidden tool and a
+  category whose every tool is hidden are never shown,
+  [Tool category](entities/tool-category/index.md)), then a values section
   headed `values` with the labels `repo`, `commit scopes`, `merge into develop`
   and `merge into main` (a value with nothing recorded, such as zero commit
   scopes, shows `none` in the muted role). A `max: one` category is a radio
   group (`(•)` / `( )`) with a `none` choice when its tool is removable
   ([Tool category](entities/tool-category/index.md) invariant 4); a `max: many`
-  category is a checkbox group (`[x]` / `[ ]`). A locked control (a tool that is
-  neither removable nor replaceable; or, while such a tool is selected, the
-  other tools of its `max: one` category) shows its mark dimmed with `locked`,
-  and the cursor skips its control. Under each selected tool, its dependency
-  tree follows in `text-muted`: one line per required tool, nested with `├─`,
-  `└─` and `│`, a dependency marked `dependency` and expanded into its own
-  required tools, a direct tool unmarked and not expanded; tree lines are not
-  controls and the cursor skips them
+  category is a checkbox group (`[x]` / `[ ]`). Each tool row shows the tool's
+  `purpose` after its name in the muted role. Under each selected tool, its
+  dependency tree follows in `text-muted`: one line per required tool, nested
+  with `├─`, `└─` and `│`, a dependency marked `dependency` and expanded into
+  its own required tools, a direct tool unmarked and not expanded; tree lines
+  are not controls and the cursor skips them
   ([Select tools](flows/cli/160-select-tools/index.md) step 4). The cursor row
   starts with `›` (every other control row with two spaces) and is shown in
   reverse video; with color off the `›` alone marks it. Keys: up and down (or

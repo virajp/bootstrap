@@ -89,8 +89,13 @@ memory:
 design:
   design_system_id: docs/design/site/design-system.md # the claude-code canvas; imported by /vwf:design-system 2026-10-06
   flows_rendered:
-    - site/100-home/site
     - site/110-documentation/site
 blueprint:
-  coverage: complete # stamped 2026-10-09 by /vwf:blueprint — targeted pass (tui-only interaction, scope flags, show, repo-path precedence, next-command rule, tui flags); coherence round 21 NO GAPS
-  remaining: []
+  coverage: partial # stamped 2026-10-10 by /vwf:blueprint — targeted pass (tool-catalog gaps: mise hidden, replaceable removed, tool purpose in tui, repair/bookkeeping rules); per-doc round 8 left open gaps, coherence round 8 not run
+  remaining:
+    - entities/setup-config
+    - flows/cli/140-add-tool
+    - flows/cli/150-remove-tool
+    - flows/cli/160-select-tools
+    - coherence
+    - screens/site/100-home/site

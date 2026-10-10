@@ -59,9 +59,10 @@ the [Tool](../tool/index.md) entity.
 | `forge`                 | `many` | Pull request and issue templates of the code host                  |
 
 The table order is the display order: the tui and the docs list categories in
-this order, and the `purpose` shows in both. Changing the order is a minor
-version. Adding a category is a minor version; renaming or removing one, or
-changing `max`, is a major version
+this order, and the `purpose` shows in both. A category whose every tool is
+hidden (`tool-manager`, whose only tool is `mise`) is not shown: not in the tui,
+the docs or `show`. Changing the order is a minor version. Adding a category is
+a minor version; renaming or removing one, or changing `max`, is a major version
 ([changelog](../../conventions.md#changelog)).
 
 ## Invariants
@@ -79,21 +80,18 @@ changing `max`, is a major version
    only in a `max: one` category (and in an alternative slot of a Tool's
    `requires`, owned by the [Tool](../tool/index.md) entity); in a `max: many`
    category a user adds one tool and removes the other.
-4. A tool whose `replaceable` is false (see [Tool](../tool/index.md)) is never
-   replaced; at 1.0 only `mise` is such a tool. `removable: false` alone does
-   not block replacement: `git` and `pre-commit` are unremovable but replaceable
-   by another tool of their `max: one` category. In the command-line commands
-   (init, add) an attempt to replace a non-replaceable tool exits 2
-   ([errors](../../conventions.md#errors)); in the tui the other tools of its
-   category are shown locked, and "none" stays allowed when the tool is
-   removable.
+4. Every shown tool can be replaced within its `max: one` category.
+   `removable: false` (see [Tool](../tool/index.md)) does not block replacement:
+   `git` and `pre-commit` are unremovable but replaceable by another tool of
+   their `max: one` category. In the tui "none" stays allowed unless the
+   category's tool is unremovable.
 5. A `max: one` category holds at most one tool with `default: "on"`, and at
    most one tool with `removable: false`. Catalog releases must not ship
    defaults that break the limit.
 6. Every category holds at least one tool.
 7. A `max: one` category whose tool is unremovable is never empty: that tool
-   stays selected unless it is replaced by another tool of the category (it must
-   be `replaceable`). A missing unremovable tool is added back per
+   stays selected unless it is replaced by another tool of the category. A
+   missing unremovable tool is added back per
    [Repair on read](../setup-config/index.md#repair) unless its `max: one`
    category holds another tool.
 

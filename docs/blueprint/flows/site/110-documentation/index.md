@@ -124,7 +124,11 @@ N/A — static pages, no processing.
   and [errors](../../../conventions.md#errors), then every command, flag, exit
   code (0, 1, 2, 3, 130), tool category, tool, setup-config field, JSON result
   field, the not-a-git-repository rule and the error JSON result defined there
-  appears on its docs page.
+  appears on its docs page (hidden tools and categories excepted, next case).
+- Given the docs, when a reader opens the Tools and Tool categories reference
+  pages, then they list every tool and every category except the hidden ones
+  (`mise`, `tool-manager`), and no page documents a `replaceable` field or a
+  locked control.
 - Given the docs, when a reader looks for the mise prerequisite, then the Quick
   start states that `mise` must be on PATH for every command except
   `bootstrap show`, shows exit 3 "mise not installed" with its install command,

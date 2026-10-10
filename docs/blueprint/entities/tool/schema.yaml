@@ -17,17 +17,20 @@ properties:
     pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
   purpose:
     type: string
-    description: One-line description, shown in the tui and the docs. The 1.0
-      values are in the Catalog table of index.md.
+    description: One-line description, shown after the tool's name in the tui
+      and
+      in the docs (for a shown tool). The 1.0 values are in the Catalog table of
+      index.md.
     minLength: 1
   removable:
     type: boolean
     description: True when the tool may be removed from a repository; false
       means it is always selected.
-  replaceable:
+  hidden:
     type: boolean
-    description: True when another tool may replace this one, with consent
-      (index.md invariants 7 and 14).
+    description: True when the tool is always applied and never shown, recorded
+      or accepted by name (index.md invariant 7). True only for `mise`.
+    default: false
   default:
     type: string
     description: Whether the tool is in the first-run default selection (init
@@ -90,12 +93,20 @@ required: [
   category,
   purpose,
   removable,
-  replaceable,
   default,
   requires,
   files,
 ]
 allOf:
+  - if:
+      properties:
+        hidden:
+          const: true
+      required: [ hidden ]
+    then:
+      properties:
+        name:
+          const: mise
   - if:
       properties:
         removable:
