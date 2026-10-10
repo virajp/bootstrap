@@ -51,36 +51,88 @@ decides the exit code.
    defaults, per [Terminal UX](../../../design-system.md#terminal-ux). A
    recorded `format` older than the running cli's is read per
    [write format](../../../entities/setup-config/index.md#write-format). A
-   `values.tools` that misses an unremovable tool is handled per
+   `values.tools` that misses an unremovable tool, or a dependency that a
+   selected tool needs and `values.dependencies` lacks, is handled per
    [repair on read](../../../entities/setup-config/index.md#repair); the warning
    goes in `warnings`. [Setup config](../../../entities/setup-config/index.md)
 4. Tui opens the view: every
    [Tool category](../../../entities/tool-category/index.md) as a group with its
    tools from the [Tool](../../../entities/tool/index.md) catalog, the tools in
-   `values.tools` checked (on a first run, the default tools of step 3). A tool
-   with `removable: false` is selected and locked. Groups, locked controls,
-   keys, marks and the terminal-size rule follow
-   [Terminal UX](../../../design-system.md#terminal-ux). Ctrl-C at any moment in
-   the view writes nothing, exits 130 and prints no result, per
+   `values.tools` checked (on a first run, the default tools of step 3; the
+   runtimes are `default: off`, so they start unchecked and appear only in the
+   trees of the default tools that need them). A tool that is neither removable
+   nor replaceable (`mise`) is selected and locked; `git` and `pre-commit` are
+   unremovable but replaceable, so they are selected with no `none` choice and
+   are replaced in place (step 5). A dependency (a tool a selected tool needs
+   that the actor did not select) is shown unchecked, with no row-level mark of
+   its own; it appears, marked `dependency`, in the tree of each selected tool
+   that needs it. Groups, locked controls, keys, marks and the terminal-size
+   rule follow [Terminal UX](../../../design-system.md#terminal-ux). Ctrl-C at
+   any moment in the view writes nothing, exits 130 and prints no result, per
    [errors](../../../conventions.md#errors).
+
+   Dependency tree. Under each selected (checked) tool the view shows the full
+   tree of its required tools, nested by `requires`: every required tool on its
+   own line, indented under the tool's name. A tool that is a dependency is
+   marked `dependency`, two spaces after its name, in the muted role, never
+   carrying meaning by color alone; a direct tool is not marked. Nesting uses
+   `├─` for a child with later siblings, `└─` for the last child, and `│` as the
+   continuation of an open branch. A dependency expands into its own required
+   tools (each marked `dependency`); a direct tool appears unmarked and does
+   not expand there, because it has its own tree on its own row. Repeats of
+   dependencies are shown (the tree is not deduplicated). Children are in `requires` order, one per slot (the selected
+   alternative of the slot, else its first alternative). Unselected rows show no
+   tree. A direct runtime such as `[x] node` shows its own tree if it requires
+   anything, and appears unmarked inside its parents' trees. The exact form
+   (pinned):
+
+   ```text
+   formatter  Formats the repository's files
+     [x] dprint
+         ├─ node  dependency
+         └─ pnpm  dependency
+            └─ node  dependency
+     [x] taplo
+         └─ dprint
+   ```
+
+   Tree lines are not selectable: focus moves over tool rows only, under the
+   existing focus rules of [Terminal UX](../../../design-system.md#terminal-ux).
 5. Actor changes the selection per this table. The consent prompt is the one of
    [Terminal UX](../../../design-system.md#terminal-ux); declining keeps the old
    choice. A "none" choice is listed in the apply plan and its single confirm
    covers it.
 
-   | Case                                       | Replace another tool?                                            | Choose "none"?           | Consent prompt?       |
-   | ------------------------------------------ | ---------------------------------------------------------------- | ------------------------ | --------------------- |
-   | `max: one`, held tool `replaceable: true`  | yes                                                              | per `removable`          | yes, on a replacement |
-   | `max: one`, held tool `replaceable: false` | no, the other tools of the category are locked                   | per `removable`          | none                  |
-   | `max: one`, held tool `removable: true`    | per `replaceable`                                                | yes, a removal           | no, on "none"         |
-   | `max: one`, held tool `removable: false`   | no, locked ([Tool](../../../entities/tool/index.md) invariant 7) | not offered              | none                  |
-   | `max: many`                                | n/a, `replaceable` has no effect                                 | n/a, a tool is unchecked | none                  |
+   | Case                                       | Replace another tool?                                                                                                                                                   | Choose "none"?           | Consent prompt?                              |
+   | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------- |
+   | `max: one`, held tool `replaceable: true`  | yes                                                                                                                                                                     | per `removable`          | yes, on a replacement                        |
+   | `max: one`, held tool `replaceable: false` | no, the other tools of the category are locked                                                                                                                          | per `removable`          | none                                         |
+   | `max: one`, held tool `removable: true`    | per `replaceable`                                                                                                                                                       | yes, a removal           | no, on "none"                                |
+   | `max: one`, held tool `removable: false`   | per `replaceable`: `git` and `pre-commit` yes (never "none"); `mise`, which is not replaceable, no: locked ([Tool](../../../entities/tool/index.md) invariants 2 and 7) | not offered              | yes, on a replacement; none on a locked tool |
+   | `max: many`                                | n/a, `replaceable` has no effect                                                                                                                                        | n/a, a tool is unchecked | none                                         |
 
-   The requires check uses the selection as it stands after the change:
-   selecting a tool whose `requires` tool is not selected, or deselecting a tool
-   that another selected tool still requires, is refused in place with a message
-   naming the dependency.
    [Tool category](../../../entities/tool-category/index.md)
+
+   Dependencies. The requires check uses the selection as it stands after the
+   change ([Tool](../../../entities/tool/index.md#requires-and-dependencies)):
+   - Selecting a tool whose required tools are not selected is not refused: each
+     required tool that is not selected becomes a dependency of it (the first
+     alternative of an unmet slot), shown marked `dependency` in the tool's
+     tree.
+   - Selecting a tool that is already a dependency makes it direct: it is
+     checked, no parent changes, it shows its own tree, and it appears unmarked
+     in its parents' trees.
+   - Deselecting a tool that a selected tool, direct or dependency, still needs
+     is refused in place, unless another alternative of that slot is selected,
+     with the message "cannot deselect `<tool>`: needed by `<parents>`"
+     (`<parents>` in Catalog order, joined by `,`); the view stays open and the
+     selection is unchanged.
+   - Deselecting the last parent of a dependency leaves the dependency without a
+     parent; it is pruned at apply and listed in the plan (step 7), not in the
+     view.
+   - Replacing within the alternatives of a slot needs the in-place consent
+     prompt like any replacement; in 1.0 every slot has one alternative, so none
+     arises.
 6. Actor shows and edits the recorded values (repo, commit scopes, merge model
    for develop and main) in the values section, with the validation rules of
    [Set up a repository](../110-setup-repository/index.md) step 3; an invalid
@@ -93,33 +145,42 @@ decides the exit code.
    per [safety](../../../conventions.md#safety); the setup file is a target
    ([Setup config](../../../entities/setup-config/index.md)). If none of the
    [exits](#exits) applies, it shows the plan (create, change, delete,
-   unchanged, kept, orphaned, replacements, value changes) and asks once to
-   confirm. Declining returns to the view (step 4).
-   [Tool](../../../entities/tool/index.md)
+   unchanged, kept, orphaned, replacements, value changes, and the dependencies
+   added or pruned) and asks once to confirm. Declining returns to the view
+   (step 4). [Tool](../../../entities/tool/index.md)
 8. On confirm, tui writes per [safety](../../../conventions.md#safety). It
-   rewrites `.config/bootstrap.yaml` last (values, `values.tools` and `files`)
-   and never commits. On a first run it renders and writes exactly as a first
-   run of [Set up a repository](../110-setup-repository/index.md) does (the same
-   targets, safety rules and file modes), and `.config/bootstrap.yaml` is
-   created last and listed `created`.
+   rewrites `.config/bootstrap.yaml` last (values, `values.tools`,
+   `values.dependencies` with each dependency's parents, and `files`) and never
+   commits. The dependencies are derived from the selection, each with its
+   sorted parents, and a dependency no parent needs is pruned (its files deleted
+   as for a removed tool). On a first run it renders and writes exactly as a
+   first run of [Set up a repository](../110-setup-repository/index.md) does
+   (the same targets, safety rules and file modes), and `.config/bootstrap.yaml`
+   is created last and listed `created`.
    [Setup config](../../../entities/setup-config/index.md)
 9. On every exit after the view closes except an interrupt (quit, no change, a
    refused apply, a failure, success), tui prints its human result, warnings
    included, in the result layout of
    [Terminal UX](../../../design-system.md#terminal-ux). A successful apply
-   prints the result groups in this order: `added`, `removed`, `replaced` (a
-   list of `{from, to}`), `values_changed` (`{name, from, to}` sorted by name),
+   prints the result groups in this order: `added`, `removed`,
+   `dependencies_added`, `dependencies_pruned`, `replaced` (a list of
+   `{from, to}`), `values_changed` (`{name, from, to}` sorted by name),
    `created`, `changed`, `deleted`, `unchanged`, `kept`, `orphaned` and
    `warnings`, with the meanings of [Add a tool](../140-add-tool/index.md) and
-   [Remove a tool](../150-remove-tool/index.md). The next command
+   [Remove a tool](../150-remove-tool/index.md); `added` and `removed` list only
+   the tools the actor selected or deselected directly, while
+   `dependencies_added` and `dependencies_pruned` list the dependencies that
+   entered or left `values.dependencies`. The next command
    `MISE_ENV=dev mise run setup:all` is printed per
-   [errors](../../../conventions.md#errors) (a tool added, a replacement, a
-   repair or a first run included, or a created, changed or deleted `mise`
-   config file); otherwise no next command is printed and the human result has
-   none. On a first run `added` lists every selected tool and `values_changed`
-   lists every value (repo, commit_scopes, merge_model.develop,
-   merge_model.main) as `{name, from: null, to}` sorted by name. A successful
-   apply exits 0. The result is human text only; tui never prints a JSON result.
+   [errors](../../../conventions.md#errors) (a tool added, direct or dependency,
+   a replacement, a repair or a first run included, or a created, changed or
+   deleted `mise` config file), so an apply that only adds dependencies prints
+   it; otherwise no next command is printed and the human result has none. On a
+   first run `added` lists the direct tools only, `dependencies_added` lists the
+   dependencies and `values_changed` lists every value (repo, commit_scopes,
+   merge_model.develop, merge_model.main) as `{name, from: null, to}` sorted by
+   name. A successful apply exits 0. The result is human text only; tui never
+   prints a JSON result.
 
 ## Guarantees
 
@@ -243,16 +304,24 @@ N/A, runs synchronously in one command invocation.
   shows selected, and the result `warnings` reports "added back unremovable tool
   `<name>`". Given a setup file recorded with an older `format`, then it is read
   and not refused, and the next write records the running cli's format. Given
-  two tools of one `max: one` category, an unknown tool name, or a tool whose
-  `requires` is not selected, then nothing is written and the exit code is 3
-  naming the fix.
+  two tools of one `max: one` category or an unknown tool name, then nothing is
+  written and the exit code is 3 naming the fix. Given a selected tool whose
+  required tool is in neither `values.tools` nor `values.dependencies`, then it
+  is not a failure: the dependency is added back, "added back dependency
+  `<name>`" is reported in `warnings`, and the view shows it marked `dependency`
+  in the tool's tree.
 - Given no `.config/bootstrap.yaml` in an interactive terminal, when tui runs,
   then the view opens with the default tools and the origin-derived repo
-  pre-filled; when the actor applies and confirms, then the files of the
-  selected tools and `.config/bootstrap.yaml` are written, the exit code is 0,
-  the next command is `MISE_ENV=dev mise run setup:all`, and `values_changed`
-  lists repo, commit_scopes, merge_model.develop and merge_model.main as
-  `{name, from: null, to}` sorted by name.
+  pre-filled, the runtimes unchecked and shown only, marked `dependency`, in the
+  trees under the default tools that need them (for example under
+  `[x] pre-commit` the lines `├─ python  dependency`, `└─ uv  dependency` and,
+  nested under `uv`, `└─ python  dependency`), with no `needs` or
+  `also needed by` note; when the actor applies and confirms, then the files of
+  the selected tools and `.config/bootstrap.yaml` are written, the exit code is
+  0, the next command is `MISE_ENV=dev mise run setup:all`, `added` lists the
+  direct tools only, `dependencies_added` lists the dependencies, and
+  `values_changed` lists repo, commit_scopes, merge_model.develop and
+  merge_model.main as `{name, from: null, to}` sorted by name.
 - Given no `.config/bootstrap.yaml` and no readable origin, when the actor
   applies, then apply is refused in place until a valid repo value is entered.
 - Given no `.config/bootstrap.yaml`, when the actor quits without applying, then
@@ -262,9 +331,13 @@ N/A, runs synchronously in one command invocation.
   exit code is 1 and the next command is `bootstrap init`.
 - Given a setup file failing Setup config validity, or a newer recorded version,
   when tui runs, then nothing is written and the exit code is 3.
-- Given a tool with `removable: false`, when the view opens, then it shows
-  selected and locked, its category offers no "none", and the actor cannot
-  deselect it.
+- Given `mise` (`removable: false`, `replaceable: false`), when the view opens,
+  then it shows selected and locked, its category offers no "none", and the
+  actor cannot deselect it or replace it.
+- Given `git` or `pre-commit` (`removable: false`, `replaceable: true`), when
+  the view opens, then it shows selected and not locked, its category offers no
+  "none", and choosing another tool of the category asks "replace <old> with
+  <new>?"; declining keeps the old tool.
 - Given a `max: one` category holding a tool with `replaceable: true`, when the
   actor chooses another, then tui asks "replace <old> with <new>?"; declining
   keeps the old tool.
@@ -281,13 +354,32 @@ N/A, runs synchronously in one command invocation.
   is written and the exit code is 0 with "no change".
 - Given a selection change, when the actor applies and declines the plan, then
   the view returns with the selection intact and nothing is written.
-- Given a tool whose `requires` tool is not selected, or a selected tool that
-  another selected tool requires, when the actor selects or deselects it, then
-  the change is refused in place with a message naming the dependency and the
-  view stays open.
-- Given `taplo` and `dprint` selected, when the actor deselects `taplo` and then
+- Given `dprint` unchecked and `node` and `pnpm` unselected, when the actor
+  selects `dprint`, then it is not refused, the row shows the tree
+  `├─ node  dependency` and `└─ pnpm  dependency` (with `└─ node  dependency`
+  nested under `pnpm`), `node` and `pnpm` stay unchecked, and after apply
+  `values.tools` lists `dprint`, `values.dependencies` records `node` and `pnpm`
+  with their parents, `added` lists `dprint` and `dependencies_added` lists
+  `node` and `pnpm`.
+- Given `dprint` selected with `node` a dependency, when the actor selects
+  `node`, then it is checked as a direct tool, it shows its own tree if it
+  requires anything, it appears unmarked in the trees of `dprint` and `pnpm`,
+  and after apply `node` is in `values.tools` and not in `values.dependencies`,
+  and `added` lists `node`.
+- Given the pinned example view, when the actor moves focus, then it moves over
+  the tool rows only and never lands on a tree line.
+- Given a selected tool that another selected tool still needs and no other
+  alternative of its slot selected, when the actor deselects it, then the change
+  is refused in place with "cannot deselect `<tool>`: needed by `<parents>`" and
+  the view stays open.
+- Given `taplo` and `dprint` selected, when the actor deselects `dprint` first,
+  then it is refused naming `taplo`; when the actor deselects `taplo` and then
   `dprint`, then both changes are accepted, because the check uses the selection
   after each change.
+- Given a dependency whose last parent is deselected, when the actor applies,
+  then the plan lists the dependency as pruned, its files are deleted,
+  `values.dependencies` no longer records it, and the result lists it in
+  `dependencies_pruned`, not in `removed`.
 - Given a target that is modified, staged, untracked or ignored (the setup file
   included), when the actor applies, then the view closes, nothing is written
   and the exit code is 1 listing the paths.
@@ -316,6 +408,11 @@ N/A, runs synchronously in one command invocation.
 - Given a set-up repository and an apply with no tool added, no repair and no
   `mise` config file created, changed or deleted, when the apply succeeds, then
   the result prints no next command and the exit code is 0.
+- Given a set-up repository, when the actor applies a change whose only addition
+  is one or more dependencies (no direct tool added, no replacement, no repair),
+  then `dependencies_added` lists them, the result prints the next command
+  `MISE_ENV=dev mise run setup:all` per [errors](../../../conventions.md#errors)
+  and the exit code is 0.
 - Given a failed restore after a write failure, when tui runs, then the exit
   code is 3 listing the paths not restored.
 - Given an edited repo or merge-model value, when the actor applies and
@@ -337,8 +434,9 @@ N/A, runs synchronously in one command invocation.
   is 130.
 - Given `mise` not on the `PATH`, or no git repository, when tui runs, then
   nothing is written and the exit code is 3.
-- Given a recorded `values.tools` that misses an unremovable tool while another
-  tool of its `max: one` category is recorded, when tui runs, then nothing is
+- Given a recorded `values.tools` that misses an unremovable tool whose
+  `replaceable` is false (`mise`) while another tool of its `max: one` category
+  is recorded, when tui runs, then nothing is
   written and the exit code is 3 naming the fix
   ([Validity](../../../entities/setup-config/index.md#validity)).
 - Abuse case: n/a, runs locally with the caller's own permissions on the

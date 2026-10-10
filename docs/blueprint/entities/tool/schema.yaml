@@ -20,35 +20,38 @@ properties:
     description: One-line description, shown in the tui and the docs. The 1.0
       values are in the Catalog table of index.md.
     minLength: 1
-  base:
-    type: boolean
-    description: True when the tool's mise entries render into
-      `.config/mise/conf.d/_base/`; false when they live in
-      `.config/mise/conf.d/<tool>/`. Matters only for a tool that has mise
-      entries.
   removable:
     type: boolean
     description: True when the tool may be removed from a repository; false
       means it is always selected.
   replaceable:
     type: boolean
-    description: "True when another tool of a `max: one` category may replace this one, with consent: the `--replace` flag in init and add, or the in-place prompt in the tui (tool-category invariant 3). It has no effect outside a `max: one` category."
+    description: True when another tool may replace this one, with consent
+      (index.md invariants 7 and 14).
   default:
     type: string
     description: Whether the tool is in the first-run default selection (init
-      with `-y` and no `--tool`, and the tui first-run view). `on` selects it,
+      with no `--tool`, and the tui first-run view). `on` selects it,
       `off` does not, `origin` selects it when the host of the git remote
-      `origin` matches one of `origin_hosts`.
+      `origin` equals one of `origin_hosts`, compared ignoring case.
     enum: [ "on", "off", "origin" ]
   requires:
     type: array
-    description: Names of tools that must also be selected with this tool. May
-      be empty. Every entry names a tool of the catalog.
+    description: Slots of tools this tool needs. Each slot lists alternative
+      tools, the first being the default; a slot with no selected tool gets its
+      first alternative as a dependency. May be empty. Every alternative names a
+      tool of the catalog. In 1.0 every slot has exactly one alternative.
     uniqueItems: true
     items:
-      type: string
-      description: A tool name.
-      pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+      type: array
+      description: One slot, its alternative tool names; the first is the
+        default.
+      minItems: 1
+      uniqueItems: true
+      items:
+        type: string
+        description: A tool name.
+        pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
   origin_hosts:
     type: array
     description: "Hosts of the git remote `origin` that select this tool by default. Required when `default` is `origin`, and present only then. No two `origin` tools of one `max: one` category share a host."
@@ -62,7 +65,8 @@ properties:
     type: array
     description: Target-repository files this tool renders. A path belongs to
       exactly one tool. The Target paths table in index.md is the authority for
-      the 1.0 path set; contents are not part of the contract.
+      the 1.0 path set; contents are part of the contract only where index.md
+      Target paths says so.
     minItems: 1
     uniqueItems: true
     items:
@@ -85,7 +89,6 @@ required: [
   name,
   category,
   purpose,
-  base,
   removable,
   replaceable,
   default,
@@ -100,8 +103,6 @@ allOf:
       required: [ removable ]
     then:
       properties:
-        replaceable:
-          const: false
         default:
           const: "on"
   - if:

@@ -103,8 +103,10 @@ shared source fits every repository — is validated by its cheaper method
   uncommitted changes stops the whole run, and nothing is written.
 - **No language, cloud or deploy setup in 1.0.** Language toolchains and cloud
   or deploy configuration are left out, possibly to become add-ons later. A
-  runtime that a setup tool itself needs is installed only as that tool's
-  dependency.
+  runtime is installed as a dependency of a tool that needs it, or when the user
+  selects it. bootstrap installs only the runtime itself and sets up no language
+  toolchain: no compiler or language settings, no package scripts and no project
+  files.
 - **No hosted service.** It runs locally and in continuous integration only — no
   accounts, no server, no telemetry.
 

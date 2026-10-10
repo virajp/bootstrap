@@ -27,13 +27,14 @@ Serves: [Zero setup drift](../../../product.md#goal-zero-drift)
 Flags: one filter per recorded field, several may be given together, none given
 means every field.
 
-| Filter          | Field shown                             |
-| --------------- | --------------------------------------- |
-| `--list-scope`  | `values.commit_scopes`                  |
-| `--list-tool`   | `values.tools`                          |
-| `--list-file`   | `files`                                 |
-| `--repo`        | `values.repo`                           |
-| `--merge-model` | `values.merge_model` (develop and main) |
+| Filter              | Field shown                                             |
+| ------------------- | ------------------------------------------------------- |
+| `--list-scope`      | `values.commit_scopes`                                  |
+| `--list-tool`       | `values.tools` (direct tools only, never dependencies)  |
+| `--list-dependency` | `values.dependencies`, each dependency with its parents |
+| `--list-file`       | `files`                                                 |
+| `--repo`            | `values.repo`                                           |
+| `--merge-model`     | `values.merge_model` (develop and main)                 |
 
 Global flags per [Terminal UX](../../../design-system.md#terminal-ux): `--json`,
 `--quiet` (`-q`), `--verbose` (`-v`), `--no-color`, `--help`. Any other flag is
@@ -48,20 +49,29 @@ a usage error.
 3. Show reads `.config/bootstrap.yaml`
    ([Setup config](../../../entities/setup-config/index.md)). Absent → exits 1
    "not set up — run `bootstrap init`". Present → it must satisfy
-   [Validity](../../../entities/setup-config/index.md#validity); a failure exits
-   3 as for every reader. The
+   [Validity](../../../entities/setup-config/index.md#validity), a `max: one`
+   [Tool category](../../../entities/tool-category/index.md) conflict included;
+   a failure exits 3 with the error only and nothing printed, as for every
+   reader. The
    [Version guard](../../../entities/setup-config/index.md#version-guard) does
    not apply: an older recorded `version` or `format` is shown as recorded, exit
    0; a newer one fails Validity, exit 3.
 4. Show selects the fields: with no filter, `format`, `version`, `values` and
    `files`; with one or more filters, those fields only, in schema order.
 5. Show checks the recorded `values.tools` against the
-   [Tool](../../../entities/tool/index.md) catalog. When it misses an
-   unremovable tool and no other tool of its `max: one`
-   [Tool category](../../../entities/tool-category/index.md) is recorded, show
-   does not repair
-   ([Repair on read](../../../entities/setup-config/index.md#repair) applies to
-   writers only): it still prints, and step 7 ends with exit 1.
+   [Tool](../../../entities/tool/index.md) catalog and derives the needed
+   dependencies from the recorded `values.tools` and the catalog only
+   ([Requires and dependencies](../../../entities/tool/index.md#requires-and-dependencies),
+   [invariant 8](../../../entities/setup-config/index.md#invariants)). Show
+   never repairs
+   ([Repair on read](../../../entities/setup-config/index.md#repair)): an
+   unremovable tool missing from `values.tools` (except one that Repair on read
+   leaves alone because its `max: one` category holds another tool), or a needed
+   tool missing from `values.dependencies`, still prints, and step 7 ends with
+   exit 1. A name in `values.dependencies` the running catalog does not have, a
+   dependency no parent needs, a wrong parent list, or a name recorded in both
+   `values.tools` and `values.dependencies` is printed as recorded, exit 0, no
+   warning.
 6. On every run, whatever the filters, show computes in memory the render of the
    recorded selection plus every unremovable tool (a tool that step 5 finds
    missing included) with the recorded values, and marks each recorded path in
@@ -70,26 +80,34 @@ a usage error.
    [safety](../../../conventions.md#safety)). It writes nothing.
 7. Show prints the selected fields.
    - Human output per [Terminal UX](../../../design-system.md#terminal-ux): one
-     group per field; lists one item per line, sorted; `merge_model` as
-     `develop: <v>` and `main: <v>`; zero scopes shows `none`; an orphaned path
-     is shown as Terminal UX gives it (in the `files` group, else in an
-     `orphaned` group after the other fields).
+     group per field; lists one item per line, sorted; `values.dependencies`
+     shown one dependency per line as `<name> (<parent>, <parent>)`, e.g.
+     `node (dprint, pnpm)`, parents in the recorded (sorted) order;
+     `merge_model` as `develop: <v>` and `main: <v>`; zero scopes shows `none`;
+     an orphaned path is shown as Terminal UX gives it (in the `files` group,
+     else in an `orphaned` group after the other fields).
    - `--json`: one document with `exit`, `warnings` and the requested fields
      under their schema keys (`format`, `version`, `values` with only the
-     requested sub-keys, `files`); zero scopes is `[]`; always a top-level
-     `orphaned` list (sorted, `[]` when none) of the orphaned paths. `warnings`
-     is always `[]`: an orphaned path is listed only in `orphaned`.
+     requested sub-keys, `files`; `--list-dependency` gives the
+     `values.dependencies` map of dependency to parents); zero scopes is `[]`;
+     always a top-level `orphaned` list (sorted, `[]` when none) of the orphaned
+     paths. `warnings` is always `[]`: an orphaned path is listed only in
+     `orphaned`.
    - `--quiet` prints nothing on success; the exit code is the answer. On an
      error exit it prints the error only, per Terminal UX (with a missing
-     unremovable tool: no recorded setup, the error, exit 1).
+     unremovable tool or dependency: no recorded setup, the error, exit 1).
    - On success show prints no next command. Exit 0.
-   - When step 5 found a missing unremovable tool, human output prints the
-     selected fields, then the error "missing unremovable tool `<name>` — run
-     `bootstrap init`" and exits 1 with the next command `bootstrap init`;
-     `--json` carries the selected fields and `error` (what, why, next_command)
-     with `exit` 1. This is the one exception to
-     [errors](../../../conventions.md#errors) "error in place of results", for
-     `show` only.
+   - When step 5 found a miss, show prints the selected fields, then one error
+     per [errors](../../../conventions.md#errors): one clause per kind, "missing
+     unremovable tool `<name>`" then "missing dependency `<name>`", each naming
+     its names comma-separated in catalog order, the clauses joined by "; ",
+     then " — run `bootstrap init`" (for example "missing unremovable tool
+     `git`; missing dependency `node`, `pnpm` — run `bootstrap init`"). It exits
+     1 with the next command `bootstrap init`; `--json` carries the selected
+     fields and `error` with `what` the same clauses, `why` "the setup file
+     misses tools that bootstrap needs" and `next_command` `bootstrap init`,
+     with `exit` 1. This is the one exception to "error in place of results",
+     for `show` only.
 8. Ctrl-C during the run exits 130 "interrupted — nothing written" per
    [errors](../../../conventions.md#errors).
 
@@ -108,7 +126,6 @@ sequenceDiagram
     participant R as Repository
     participant C as Setup config
     participant G as Tool
-    participant K as Tool category
     O->>S: bootstrap show filters
     S->>S: usage check
     alt unknown flag or bad value
@@ -121,15 +138,16 @@ sequenceDiagram
     S->>C: read config
     alt not set up
         S-->>O: exit 1
-    else config invalid
-        S-->>O: exit 3
+    else config invalid (max-one conflict included)
+        S-->>O: error only, nothing printed, exit 3
     end
-    S->>G: check unremovable tools
-    S->>K: max-one category check
+    S->>G: check unremovable tools and dependencies
     S->>S: render in memory, mark orphaned
     alt interrupt
         S-->>O: exit 130
     else unremovable tool missing
+        S-->>O: setup and error, exit 1
+    else dependency missing
         S-->>O: setup and error, exit 1
     else shown
         S-->>O: selected fields, exit 0
@@ -148,7 +166,14 @@ N/A — runs synchronously in one command invocation.
 - Given a set-up repository, when `bootstrap show --list-scope` runs, then only
   the commit scopes are printed, one per line, sorted, and the exit code is 0.
 - Given a set-up repository, when `bootstrap show --list-tool` runs, then only
-  the recorded tools are printed, one per line, sorted, and the exit code is 0.
+  the recorded direct tools are printed, one per line, sorted, none of the
+  dependencies, and the exit code is 0.
+- Given a recorded `values.dependencies` of `node` needed by `dprint` and
+  `pnpm`, when `bootstrap show --list-dependency` runs, then only the
+  dependencies are printed, one per line, sorted, as `node (dprint, pnpm)`
+  (parents in the recorded order), and the exit code is 0; under `--json` the
+  document has `values.dependencies` as the map of dependency to parents and no
+  other `values` key.
 - Given a set-up repository, when `bootstrap show --list-file` runs, then only
   the recorded files are printed, one per line, sorted, and the exit code is 0.
 - Given a set-up repository, when `bootstrap show --repo` runs, then only
@@ -201,6 +226,21 @@ N/A — runs synchronously in one command invocation.
 - Given the same recorded `values.tools`, when `bootstrap show --json` runs,
   then the document carries the selected fields and `error` (what, why,
   next_command `bootstrap init`) with `exit` 1.
+- Given a recorded `values.dependencies` that lacks a dependency a recorded tool
+  needs, when show runs, then the selected fields are printed, then "missing
+  dependency `<name>` — run `bootstrap init`", the file is not repaired and the
+  exit code is 1.
+- Given the same recorded `values.dependencies`, when `bootstrap show --json`
+  runs, then the document carries the selected fields and `error` (what, why,
+  next_command `bootstrap init`) with `exit` 1.
+- Given a recorded setup missing several names (unremovable tools and/or
+  dependencies), when show runs, then the selected fields are printed, then one
+  error such as "missing unremovable tool `git`; missing dependency `node`,
+  `pnpm` — run `bootstrap init`", the file is not repaired and the exit code is
+  1.
+- Given a recorded `values.dependencies` with a name the running catalog does
+  not have, when show runs, then the name is printed as recorded, `warnings` is
+  `[]`, nothing is written and the exit code is 0.
 - Given an unknown flag, when show runs, then nothing is written, a short usage
   is shown and the exit code is 2, even outside a git repository or without a
   setup file.
@@ -210,10 +250,12 @@ N/A — runs synchronously in one command invocation.
   written" is shown and the exit code is 130.
 - Given `--help`, when show runs, then the help is printed and the exit code is
   0; given `--version`, then it is an unknown flag and the exit code is 2.
-- Given a recorded `values.tools` that misses an unremovable tool while another
-  tool of its `max: one` category is recorded, when show runs, then nothing is
-  printed but the error and the exit code is 3 naming the fix
-  ([Validity](../../../entities/setup-config/index.md#validity)).
+- Given a recorded `values.tools` that misses `mise` while another tool of its
+  `max: one` category is recorded, when show runs, then nothing is printed but
+  the error and the exit code is 3 naming the fix
+  ([Validity](../../../entities/setup-config/index.md#validity)); for `git` or
+  `pre-commit` the other tool is a valid replacement, so there is no exit 3 and
+  no error.
 - Abuse case: n/a — runs locally with the caller's own permissions on the
   caller's own repository, reads one file and writes nothing; every input is
   validated per [baseline](../../../conventions.md#baseline)

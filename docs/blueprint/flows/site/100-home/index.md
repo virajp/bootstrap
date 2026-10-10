@@ -37,7 +37,8 @@ Serves: [Outside adoption](../../../product.md#goal-outside-adoption)
 2. Outside developer or Repository owner reads the command `bootstrap tui` in
    the Command display and the Terminal view of the tui beneath it, which copies
    the catalogs of [Tool category](../../../entities/tool-category/index.md) and
-   [Tool](../../../entities/tool/index.md)
+   [Tool](../../../entities/tool/index.md) and the values of
+   [Setup config](../../../entities/setup-config/index.md)
 3. Outside developer or Repository owner follows "Install", "Read the docs" or a
    command row to its destination in the
    [documentation flow](../110-documentation/index.md), or "Source ↗" to the
@@ -71,7 +72,7 @@ sequenceDiagram
     V->>S: open home address
     S-->>V: home page
     alt install
-        V->>D: Install (/docs/start/quick-start/)
+        V->>D: Install
     else read the docs or a command row
         V->>D: Read the docs / command row
     else view the source
@@ -85,7 +86,7 @@ sequenceDiagram
     alt search index loads
         S-->>V: results in the search panel
     else search index fails to load
-        S-->>V: "Search is not available." (rest of the page works)
+        S-->>V: search unavailable
     end
     B->>S: open home address or unknown path
     S-->>B: page metadata (100a / 100b)
@@ -128,8 +129,8 @@ N/A — static pages, no processing.
   [Select tools](../../cli/160-select-tools/index.md) step 5).
 - Given the home page, when a visitor looks at the Terminal view, then it has no
   label, no copy button and no cursor highlight, its secondary text is muted and
-  an unremovable tool shows a dimmed mark and `locked`
-  ([design-system](../../../design-system.md#component-behaviors)).
+  a tool that is neither removable nor replaceable shows a dimmed mark and
+  `locked` ([design-system](../../../design-system.md#component-behaviors)).
 - Given the home page and the Terminal view taller than its box, when a visitor
   scrolls it, then it scrolls vertically, and the box is focusable and scrolls
   with the keyboard
@@ -169,5 +170,5 @@ N/A — static pages, no processing.
   [observability](../../../conventions.md#observability) (no analytics)
 - API surface: N/A — static site, no service project
 - Entities: [Tool category](../../../entities/tool-category/index.md),
-  [Tool](../../../entities/tool/index.md) — the Terminal view describes the
-  catalogs; the sample changes when either catalog changes
+  [Tool](../../../entities/tool/index.md),
+  [Setup config](../../../entities/setup-config/index.md)

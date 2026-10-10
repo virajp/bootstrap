@@ -4,7 +4,7 @@ title: Tool category
 description: A group of tools that do the same job, with a limit on how many a
   repository can select at once.
 status: reviewed
-implementation: complete
+implementation: partial
 owner: [ cli ]
 ---
 
@@ -16,7 +16,7 @@ A tool category groups tools that do the same job. It is a read-only catalog
 shipped inside bootstrap, versioned with it, and never stored in the target
 repository.
 
-Scale: 13 categories at 1.0; grows only when a release adds one.
+Scale: 14 categories at 1.0; grows only when a release adds one.
 
 Used by: [Set up a repository](../../flows/cli/110-setup-repository/index.md),
 [Add a tool](../../flows/cli/140-add-tool/index.md),
@@ -41,21 +41,22 @@ bootstrap release.
 The enumerated set below is the contract; each tool's category is recorded on
 the [Tool](../tool/index.md) entity.
 
-| Name                    | Max    | Purpose                                           |
-| ----------------------- | ------ | ------------------------------------------------- |
-| `tool-manager`          | `one`  | Installs the tools and runs the task library      |
-| `version-control`       | `one`  | Ignore rules and git settings                     |
-| `git-hooks`             | `one`  | Runs the gates before each commit                 |
-| `editor`                | `many` | Editor defaults for the repository                |
-| `formatter`             | `many` | Formats the repository's files                    |
-| `linter`                | `many` | Finds errors in code                              |
-| `secret-scanner`        | `one`  | Finds secrets in code and commits                 |
-| `vulnerability-scanner` | `many` | Finds known vulnerabilities in dependencies       |
-| `secrets-manager`       | `one`  | Gives the repository's secrets to its tasks       |
-| `ai-agent`              | `many` | Settings for an AI coding agent                   |
-| `knowledge-graph`       | `one`  | Builds a knowledge graph of the code              |
-| `agent-memory`          | `one`  | Memory store for AI agents                        |
-| `forge`                 | `many` | Pull request and issue templates of the code host |
+| Name                    | Max    | Purpose                                                            |
+| ----------------------- | ------ | ------------------------------------------------------------------ |
+| `tool-manager`          | `one`  | Installs the tools and runs the task library                       |
+| `version-control`       | `one`  | Ignore rules and git settings                                      |
+| `git-hooks`             | `one`  | Runs the gates before each commit                                  |
+| `editor`                | `many` | Editor defaults for the repository                                 |
+| `formatter`             | `many` | Formats the repository's files                                     |
+| `linter`                | `many` | Finds errors in code                                               |
+| `runtime`               | `many` | Language runtimes and command-line helpers that other tools run on |
+| `secret-scanner`        | `one`  | Finds secrets in code and commits                                  |
+| `vulnerability-scanner` | `many` | Finds known vulnerabilities in dependencies                        |
+| `secrets-manager`       | `one`  | Gives the repository's secrets to its tasks                        |
+| `ai-agent`              | `many` | Settings for an AI coding agent                                    |
+| `knowledge-graph`       | `one`  | Builds a knowledge graph of the code                               |
+| `agent-memory`          | `one`  | Memory store for AI agents                                         |
+| `forge`                 | `many` | Pull request and issue templates of the code host                  |
 
 The table order is the display order: the tui and the docs list categories in
 this order, and the `purpose` shows in both. Changing the order is a minor
@@ -66,17 +67,23 @@ changing `max`, is a major version
 ## Invariants
 
 1. In a `max: many` category, any number of its tools may be selected together.
-2. In a `max: one` category, a new tool chosen against the tool the repository
-   already holds is a replacement of the held one. Two tools of one `max: one`
-   category named in a single request (init `--tool`, add) are an error and exit
-   2 ([errors](../../conventions.md#errors)).
-3. A replacement needs the user's consent: in the tui, the in-place prompt
-   "replace <old> with <new>?"; in init and add, the `--replace` flag
-   (`--replace` is consent without a prompt; init and add never prompt). `-y` is
-   never consent, and a run of init or add that needs a replacement without
-   `--replace` exits 2 ([config](../../conventions.md#config)).
+2. Two tools of one `max: one` category named in a single request (init
+   `--tool`, add) are an error and exit 2
+   ([errors](../../conventions.md#errors)).
+3. Selecting a tool in a `max: one` category that holds another tool is a
+   replacement, and a replacement needs its own consent: in the tui, the
+   in-place prompt "replace <old> with <new>?"; in init and add, the `--replace`
+   flag, without which the run exits 2. The general consent to apply the changes
+   follows per [config](../../conventions.md#config); `-y` and the consent
+   prompt of init and add are never consent to replace. A replacement exists
+   only in a `max: one` category (and in an alternative slot of a Tool's
+   `requires`, owned by the [Tool](../tool/index.md) entity); in a `max: many`
+   category a user adds one tool and removes the other.
 4. A tool whose `replaceable` is false (see [Tool](../tool/index.md)) is never
-   replaced. In the command-line commands (init, add) an attempt exits 2
+   replaced; at 1.0 only `mise` is such a tool. `removable: false` alone does
+   not block replacement: `git` and `pre-commit` are unremovable but replaceable
+   by another tool of their `max: one` category. In the command-line commands
+   (init, add) an attempt to replace a non-replaceable tool exits 2
    ([errors](../../conventions.md#errors)); in the tui the other tools of its
    category are shown locked, and "none" stays allowed when the tool is
    removable.
@@ -84,8 +91,11 @@ changing `max`, is a major version
    most one tool with `removable: false`. Catalog releases must not ship
    defaults that break the limit.
 6. Every category holds at least one tool.
-7. A `max: one` category whose tool is unremovable always has that tool
-   selected.
+7. A `max: one` category whose tool is unremovable is never empty: that tool
+   stays selected unless it is replaced by another tool of the category (it must
+   be `replaceable`). A missing unremovable tool is added back per
+   [Repair on read](../setup-config/index.md#repair) unless its `max: one`
+   category holds another tool.
 
 ## Data Model
 

@@ -26,13 +26,13 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
 **JSON result** (`tui` takes no `--json`; it is a usage error there)
 (`errors: exit-codes-and-structured-report`).
 
-| Exit  | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `0`   | success                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `1`   | declined to act — a target has uncommitted changes ([#safety](#safety)), the setup file changed while the `tui` view was open (next command `bootstrap tui`), `add`, `remove` or `show` on a repository that is not set up, `show` on a selection that misses an unremovable tool while no other tool holds its `max: one` category, or `add`, `remove` or `tui` on a repository set up by an older bootstrap (next command `bootstrap init`) |
-| `2`   | usage error — bare `bootstrap` with no command (prints the top-level help), bad or missing flag/argument (prints short usage), an unremovable tool named for removal, a required tool missing or a dependent tool still selected (names the tool), a file deletion without `-y` ("removing files needs -y"), a replacement with no consent or of a tool that is not replaceable, `tui` without terminals (checked after the preflight)        |
-| `3`   | failure — not a git repository, `mise` not installed, unreadable setup file, render error, a target path that is not a regular file, write failed                                                                                                                                                                                                                                                                                             |
-| `130` | interrupted (Ctrl-C) — nothing written, or the repository was restored                                                                                                                                                                                                                                                                                                                                                                        |
+| Exit  | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `0`   | success                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `1`   | declined to act — a target has uncommitted changes ([#safety](#safety)), the setup file changed while the `tui` view was open (next command `bootstrap tui`), `add`, `remove` or `show` on a repository that is not set up, `show` on a selection that misses an unremovable tool or a dependency that [Repair on read](entities/setup-config/index.md#repair) would add back, or `add`, `remove` or `tui` on a repository set up by an older bootstrap (next command `bootstrap init`)                                  |
+| `2`   | usage error — bare `bootstrap` with no command (prints the top-level help), bad or missing flag/argument (prints short usage), an unremovable tool named for removal, a tool named for removal, or replaced outside a `requires` slot, that a selected tool still needs (names that tool), a change in init, add or remove without `--yes` where no prompt is possible ("changes need --yes"), a replacement with no consent or of a tool that is not replaceable, `tui` without terminals (checked after the preflight) |
+| `3`   | failure — not a git repository, `mise` not installed, unreadable setup file, render error, a target path that is not a regular file, write failed                                                                                                                                                                                                                                                                                                                                                                        |
+| `130` | interrupted (Ctrl-C) — nothing written, or the repository was restored                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 - An interrupt (Ctrl-C) exits `130` in every command and at any moment — in the
   `tui` view, while reading, or while writing. During a write it first triggers
@@ -59,20 +59,20 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
   `what`, `why` and `next_command`; a failed restore adds `unrestored`, a list
   of every path not restored. Warnings go in a top-level `warnings` list of
   strings, empty when there is none. One exception: `bootstrap show` on a
-  selection that misses an unremovable tool, with no other tool of its
-  `max: one` category, exits `1` and its document carries the selected fields
-  and the `error` together
+  selection that misses an unremovable tool or a dependency that
+  [Repair on read](entities/setup-config/index.md#repair) would add back, exits
+  `1` and its document carries the selected fields and the `error` together
   ([Show the setup](flows/cli/170-show-setup/index.md)).
-- `bootstrap tui` is the only interactive command, and it needs stdin and stdout
-  to be terminals. `init`, `add`, `remove` and `show` never prompt, in any
-  terminal and with or without `--json`: their values and decisions come from
-  flags, the recorded setup file, `-y` and, for the repo path, the remote
-  `origin` ([#config](#config)).
+- `bootstrap tui` is the only full-screen interactive command, and it needs
+  stdin and stdout to be terminals. `show` never prompts. `init`, `add` and
+  `remove` take their values and decisions from flags, the recorded setup file,
+  the defaults and, for the repo path, the remote `origin`; their one prompt is
+  the consent to apply the changes ([#config](#config)).
 - After a successful write (or the `--dry-run` of one), the next command
   `MISE_ENV=dev mise run setup:all` (`--json`: top-level `next_command`) is
-  printed if and only if the run added a tool (a first run, a new tool, a
-  replacement or a repair) or created, changed or deleted a `mise` config file
-  (`.config/mise.toml`, `.config/miserc.toml` or a file under
+  printed if and only if the run added a tool, direct or dependency (a first
+  run, a new tool, a replacement or a repair) or created, changed or deleted a
+  `mise` config file (`.config/mise.toml`, `.config/miserc.toml` or a file under
   `.config/mise/conf.d/`); otherwise there is no next command and no
   `next_command` key. In human output, a run of `init`, `add`, `remove` or the
   `tui` that created, changed, deleted or replaced a file ends with exactly
@@ -82,6 +82,12 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
   shows the closing line of the real run.
 - Every error message states what happened, why, and the exact next command to
   run. No internal trace unless `--verbose`.
+- A run reports its exit `2` refusals together, in one error: `what` and `why`
+  name each refusal in step order, and `next_command` is the one command that
+  fixes all of them. The usage check, which needs only the flags and the catalog
+  and runs before the preflight, reports all its refusals and stops; the
+  refusals that need the setup file are found after it and reported together in
+  the same way.
 - A command that cannot complete its writes leaves the repository as it found it
   — see [#safety](#safety) and `baseline/atomic-multi-write`.
 
@@ -95,18 +101,34 @@ environment or a secrets store (`config: flags-and-repo-config-file`):
   ([setup-config](entities/setup-config/index.md)), committed with the
   repository. Its presence is the marker that a repository has been set up.
 
-Detected values (e.g. the repository path `owner/name` from its git remote) are
-defaults. In `init`, `add` and `remove` a default (detected or fixed) counts
-only with `-y`, except: when no `--repo` is given and no `values.repo` is
-recorded, a repository path read from the remote `origin` is used without `-y`.
-A recorded value wins over a detected one. A required value neither flagged,
-recorded, nor a default accepted by `-y` is a usage error (exit `2`) whose next
-command offers `bootstrap tui` or the missing flag, and `-y` only when `-y`
-would supply the value. The `tui` shows the defaults pre-filled, and the owner
-confirms them at apply. In `init`, `add` and `remove` consent comes from flags
-only: a replacement needs `--replace` (which also covers deleting the replaced
-tool's files), and any other file deletion needs `-y`; in the `tui` the in-place
-prompt and the apply confirm give it. `-y` is never consent to replace a tool
+Detected values (e.g. the repository path `owner/name` from its git remote) and
+fixed values are defaults, and a default applies without consent. A flag wins
+over a recorded value, and a recorded value wins over a detected one. A required
+value neither flagged, recorded nor defaulted is a usage error (exit `2`) whose
+next command offers `bootstrap tui` or the missing flag. The `tui` shows the
+defaults pre-filled, and the owner confirms them at apply.
+
+`init`, `add` and `remove` run in this order:
+
+1. Read the flags and the recorded setup file, and prepare the full list of
+   changes: each file to create, change, delete or replace, and a repair of the
+   setup file ([Repair on read](entities/setup-config/index.md#repair)). Every
+   refusal is found here, before consent: a usage error, a replacement without
+   `--replace` or of a tool that is not replaceable, a dirty target
+   ([#safety](#safety)).
+2. An empty list: write nothing, exit `0`.
+3. `--dry-run`: show the list, write nothing.
+4. Consent. `--yes` (`-y`) gives it. Without `--yes`, when stdin and stdout are
+   terminals and `--json` is not given, show the list and ask "apply these
+   changes? y/N": "y" or "yes" applies; Enter, "n" or "no" writes nothing and
+   exits `0` with "nothing changed". Without `--yes` and with no prompt
+   possible, write nothing and exit `2` "changes need --yes", the next command
+   being the same command plus `--yes`.
+5. Apply the list.
+
+A replacement needs `--replace` at step 1 and consent at step 4. In the `tui`
+the in-place prompt and the apply confirm give consent. `--yes` and the consent
+prompt are never consent to replace a tool
 ([Tool category](entities/tool-category/index.md)). The product has no secrets
 and no external integration, so there is no environment catalog.
 
@@ -138,6 +160,9 @@ commits them.
 - **Create-only files.** A file the [Tool](entities/tool/index.md) catalog marks
   `create_only` is written only when it is absent; it is never changed and never
   deleted, and an existing one is reported as `kept`.
+- **Empty directories.** After its deletions, a run removes each directory that
+  a deletion left empty, then each parent that is left empty in turn, never the
+  repository root. A directory that holds any other entry stays.
 - **File mode.** Every task file is written executable (`0755`); every other
   file is written `0644`.
 - **Files no longer rendered.** A path in the setup config's `files` that the
@@ -148,7 +173,9 @@ commits them.
   is absent on disk leaves `files` on the next write.
 - **Precedence.** When one run finds both kinds of refusal, a not-a-file target
   (exit `3`) wins over an uncommitted target (exit `1`); the message lists every
-  path of both kinds.
+  path of both kinds. A refusal decided from the flags, the catalog and the
+  setup file (exit `2`, e.g. a tool still needed by another or a replacement
+  without `--replace`) comes before the target checks, so it wins over both.
 
 Every path list in a command's output (human and `--json`) is sorted by path in
 byte order.
