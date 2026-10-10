@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+#MISE description="Security scan the repo"
+#MISE dir="{{ config_root }}"
+
+#USAGE flag "--debug" help="emit debug logs"
+#USAGE flag "--staged" help="scan only what is staged, and skip the dependency scan"
+#USAGE arg "[files]" var=#true help="accepted for the gate's sake; no scanner narrows to it"
+
+set -euo pipefail
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+# A dispatcher. Each selected scanner supplies its own `code:sec:<tool>` task —
+# the secret scanner, the vulnerability scanner — and this runs every one of
+# them with the same flags and files; with no scanner selected it prints
+# "no tool" and exits 0.
+#
+# **This is also the repo's secret-scanning HOOK, which is what `--staged` is
+# for.** The pre-commit gate calls `code:sec --staged`; each scanner decides
+# what that mode means for it.
+
+args=()
+[[ "${usage_debug:-false}" == "true" ]] && args+=(--debug)
+[[ "${usage_staged:-false}" == "true" ]] && args+=(--staged)
+eval "args+=(${usage_files:-})"
+
+run_tool_tasks code:sec ${args[@]+"${args[@]}"}

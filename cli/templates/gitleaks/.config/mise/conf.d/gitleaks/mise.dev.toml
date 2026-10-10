@@ -1,0 +1,4 @@
+# Gitleaks is a SAST tool for detecting hardcoded secrets like
+# passwords, API keys, and tokens in git repositories
+[tools.gitleaks]
+version = "latest"

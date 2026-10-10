@@ -1,10 +1,24 @@
 import {
+  requireSetUp,
+  versionGuard,
+} from "@/setup-config/guard";
+import {
   parse,
   read,
   write,
 } from "@/setup-config/io";
+import {
+  refreshFiles,
+  type RewriteMode,
+  rewrites,
+} from "@/setup-config/refresh";
+import { repair } from "@/setup-config/repair";
 import type { SetupConfig } from "@/setup-config/schema";
 import type { Running } from "@/setup-config/validity";
+import {
+  toolsByName,
+  unremovableTools,
+} from "@/tool/catalog";
 import type { RenderValues } from "@/tool/render";
 import {
   describe,
@@ -16,10 +30,14 @@ import {
   FileSystem,
   Option,
   Path,
+  Runtime,
 } from "effect";
 import { stringify } from "yaml";
 
 const running: Running = { version: "1.2.0", format: 1 };
+
+/** Names of the unremovable tools, read from the catalog. */
+const unremovable = unremovableTools.map(tool => tool.name);
 
 const valid: SetupConfig = {
   format: 1,
@@ -28,7 +46,7 @@ const valid: SetupConfig = {
     repo: "virajp/bootstrap",
     commit_scopes: ["cli", "site-docs"],
     merge_model: { develop: "direct", main: "pr" },
-    tools: ["github"],
+    tools: [...unremovable, "github"],
   },
   files: [".gitignore", ".config/mise.toml"],
 };
@@ -84,8 +102,25 @@ describe("setup config schema", () => {
       ["a duplicate tool", {
         values: { ...valid.values, tools: ["github", "github"] },
       }],
+      ["an empty tools list", { values: { ...valid.values, tools: [] } }],
+      ["a commit scope ending in -", {
+        values: { ...valid.values, commit_scopes: ["a-"] },
+      }],
+      ["a commit scope with --", {
+        values: { ...valid.values, commit_scopes: ["a--b"] },
+      }],
+      ["a tool name not kebab-case", {
+        values: { ...valid.values, tools: ["Not_A_Tool"] },
+      }],
+      ["a tool name with --", {
+        values: { ...valid.values, tools: ["a--b"] },
+      }],
+      ["a tool name ending in -", {
+        values: { ...valid.values, tools: ["a-"] },
+      }],
       ["missing files", { files: undefined }],
-      ["a duplicate kept path", { kept: ["a", "a"] }],
+      ["a kept key", { kept: [] }],
+      ["a deleted key", { deleted: [] }],
     ] satisfies Array<[string, Record<string, unknown>]>,
   )(
     "refuses %s as a schema violation",
@@ -191,6 +226,7 @@ describe("setup config validity", () => {
     [
       ["1.2.0-rc.1.1", "VersionTooNew"],
       ["1.2.0-rd", "VersionTooNew"],
+      ["1.2.0-rc.a", "VersionTooNew"],
       ["1.2.0-rc.1", "ok"],
       ["1.2.0-rc", "ok"],
       ["1.2.0-1", "ok"],
@@ -223,67 +259,89 @@ describe("setup config validity", () => {
       expectProblem(error);
     }));
 
-  it.effect("refuses a core tool name as invalid", () =>
+  it.effect("accepts the unremovable tools in values.tools", () =>
     Effect.gen(function*() {
-      const error = yield* failure(
-        text({ values: { ...valid.values, tools: ["mise"] } }),
-      );
-      expect(error._tag).toBe("CoreToolListed");
-      expect(error.what).toContain("mise");
-      expectProblem(error);
+      const config = yield* parse(text(), running);
+      expect(config.values.tools).toEqual(expect.arrayContaining(unremovable));
     }));
 
-  it.effect("refuses a path in both kept and deleted", () =>
+  /** Parses `valid` with the given tools and returns the typed failure. */
+  const toolsFailure = (tools: ReadonlyArray<string>) =>
+    failure(text({ values: { ...valid.values, tools } }));
+
+  /** A Validity failure: the tag, what, why and fix, and exit code 3. */
+  const expectValidity = (
+    error: { _tag: string; what: string; why: string; fix: string; },
+    tag: string,
+  ) => {
+    expect(error._tag).toBe(tag);
+    expectProblem(error);
+    expect((error as unknown as Record<string, unknown>)[Runtime.errorExitCode]).toBe(3);
+  };
+
+  it.effect("refuses a tool whose required tool is not selected", () =>
+    Effect.gen(function*() {
+      const error = yield* toolsFailure([...unremovable, "taplo"]);
+      expectValidity(error, "RequiredToolMissing");
+      expect(error.what).toContain("taplo");
+      expect(error.why).toContain("dprint");
+    }));
+
+  it.effect("checks Validity before the version guard: an older version with a Validity failure exits 3", () =>
     Effect.gen(function*() {
       const error = yield* failure(
-        text({ kept: [".gitignore"], deleted: [".gitignore"] }),
+        text({ version: "1.0.0", values: { ...valid.values, tools: [...unremovable, "taplo"] } }),
       );
-      expect(error._tag).toBe("PathKeptAndDeleted");
-      expect(error.what).toContain(".gitignore");
-      expect(error.fix).toContain("one");
-      expectProblem(error);
+      expectValidity(error, "RequiredToolMissing");
+    }));
+
+  it.effect("refuses a removed tool with exit code 3 and the fix of the entity doc", () =>
+    Effect.gen(function*() {
+      const error = yield* toolsFailure([...unremovable, "bitbucket"]);
+      expectValidity(error, "ToolRemoved");
+      expect(error.fix).toBe("remove `bitbucket` from values.tools");
     }));
 
   it.effect.each(
     [
       ["files", "/etc/passwd"],
       ["files", "C:\\repo\\a"],
-      ["kept", "../outside"],
-      ["kept", "a/../../b"],
-      ["deleted", "*.md"],
-      ["deleted", "src/?.ts"],
+      ["files", "../outside"],
+      ["files", "a/../../b"],
+      ["files", "*.md"],
+      ["files", "src/?.ts"],
       ["files", ".config/[ab].toml"],
       ["files", ""],
       ["files", "a//b"],
-      ["kept", "./a"],
-      ["kept", "a/./b"],
-      ["kept", "a/."],
-      ["deleted", ".config/"],
+      ["files", "./a"],
+      ["files", "a/./b"],
+      ["files", "a/."],
+      ["files", ".config/"],
       ["files", ".git/config"],
-      ["kept", "sub/.git/hooks/pre-commit"],
+      ["files", "sub/.git/hooks/pre-commit"],
       ["files", ".GIT/config"],
-      ["kept", "a/.Git/hooks/x"],
+      ["files", "a/.Git/hooks/x"],
       ["files", ".git./config"],
       ["files", ".git /config"],
-      ["deleted", ".git. . /config"],
+      ["files", ".git. . /config"],
       ["files", "GIT~1/config"],
-      ["kept", "a/git~1/hooks/x"],
+      ["files", "a/git~1/hooks/x"],
       ["files", "a\u0000b"],
-      ["deleted", "a\nb"],
+      ["files", "a\nb"],
       ["files", "a\u007fb"],
       ["files", ".git::$INDEX_ALLOCATION/config"],
-      ["kept", "a:b"],
+      ["files", "a:b"],
       ["files", "GIT~2/config"],
-      ["deleted", "a/git~10/x"],
+      ["files", "a/git~10/x"],
       ["files", ".g\u200cit/config"],
       ["files", "\ufeff.git/config"],
-      ["kept", ".git\u200b/config"],
-      ["kept", ".GIT\u202e/x"],
+      ["files", ".git\u200b/config"],
+      ["files", ".GIT\u202e/x"],
       ["files", ".git\u2060./x"],
       ["files", ".. /x"],
       ["files", ".../x"],
-      ["kept", "a/. /b"],
-      ["deleted", "a/ /b"],
+      ["files", "a/. /b"],
+      ["files", "a/ /b"],
     ] satisfies Array<[string, string]>,
   )(
     "refuses a %s path %s that is not literal and repository-relative",
@@ -313,38 +371,192 @@ describe("setup config validity", () => {
     }));
 });
 
-describe("setup config write", () => {
-  it("omits empty kept and deleted", () => {
-    const out = write({ ...valid, kept: [], deleted: [] });
-    expect(out).not.toContain("kept");
-    expect(out).not.toContain("deleted");
-  });
+/** A running cli newer than the recorded file, so write must restamp format and version. */
+const newer: Running = { version: "1.3.0", format: 2 };
 
+describe("setup config write", () => {
   it("never lists .config/bootstrap.yaml in files", () => {
     const out = write({
       ...valid,
       files: [...valid.files, ".config/bootstrap.yaml"],
-    });
+    }, running);
     expect(out).not.toContain("bootstrap.yaml");
   });
 
-  it("sorts every path list by path", () => {
-    const out = write({ ...valid, kept: ["b", "a"], deleted: ["d", "c"] });
-    const config = Effect.runSync(parse(out, running));
-    expect(config.files).toEqual([".config/mise.toml", ".gitignore"]);
-    expect(config.kept).toEqual(["a", "b"]);
-    expect(config.deleted).toEqual(["c", "d"]);
+  it("writes keys in schema order, the three lists sorted, and the running format and version", () => {
+    const out = write({
+      files: ["b", "a"],
+      values: {
+        tools: ["mise", "git", "github"],
+        merge_model: { main: "pr", develop: "direct" },
+        commit_scopes: ["site", "cli"],
+        repo: "virajp/bootstrap",
+      },
+      version: "1.2.0",
+      format: 1,
+    }, newer);
+    expect(out).toBe(
+      [
+        "format: 2",
+        "version: 1.3.0",
+        "values:",
+        "  repo: virajp/bootstrap",
+        "  commit_scopes:",
+        "    - cli",
+        "    - site",
+        "  merge_model:",
+        "    develop: direct",
+        "    main: pr",
+        "  tools:",
+        "    - git",
+        "    - github",
+        "    - mise",
+        "files:",
+        "  - a",
+        "  - b",
+        "",
+      ].join("\n"),
+    );
+    expect(out).not.toContain("#");
   });
 
   it.effect("round-trips through a read", () =>
     Effect.gen(function*() {
-      const config = { ...valid, kept: [".gitignore"] };
-      const reread = yield* parse(write(config), running);
+      const reread = yield* parse(write(valid, running), running);
       expect(reread).toEqual({
-        ...config,
+        ...valid,
+        values: { ...valid.values, tools: valid.values.tools.toSorted() },
         files: [".config/mise.toml", ".gitignore"],
       });
     }));
+});
+
+describe("setup config repair on read", () => {
+  it.effect("adds back a missing unremovable tool whose category holds no other tool", () =>
+    Effect.gen(function*() {
+      const [missing, ...rest] = unremovable;
+      const config = yield* parse(
+        text({ values: { ...valid.values, tools: [...rest, "github"] } }),
+        running,
+      );
+      const repaired = repair(config);
+      expect(repaired.config.values.tools).toEqual(expect.arrayContaining([...unremovable, "github"]));
+      expect(repaired.added).toEqual([missing]);
+      expect(repaired.warnings).toEqual([`added back unremovable tool \`${missing}\``]);
+    }));
+
+  it.effect("leaves a complete selection as is, with no warning", () =>
+    Effect.gen(function*() {
+      const config = yield* parse(text(), running);
+      expect(repair(config)).toEqual({ config, added: [], warnings: [] });
+    }));
+});
+
+describe("setup config guards", () => {
+  it.effect("requireSetUp fails an absent file with exit 1 and 'not set up — run `bootstrap init`'", () =>
+    Effect.gen(function*() {
+      const error = yield* Effect.flip(requireSetUp(Option.none()));
+      expect(error._tag).toBe("NotSetUp");
+      expect(error.what).toBe("not set up — run `bootstrap init`");
+      expect(error.fix).toBe("bootstrap init");
+      expect(error[Runtime.errorExitCode]).toBe(1);
+    }));
+
+  it.effect("requireSetUp passes a present file", () =>
+    Effect.gen(function*() {
+      expect(yield* requireSetUp(Option.some("present"))).toBe("present");
+    }));
+
+  it.effect("versionGuard fails an older recorded version with exit 1 and next command `bootstrap init`", () =>
+    Effect.gen(function*() {
+      const config = yield* parse(text({ version: "1.1.9" }), running);
+      const error = yield* Effect.flip(versionGuard(config, running));
+      expect(error._tag).toBe("VersionTooOld");
+      expect(error.what).toContain("1.1.9");
+      expect(error.why).not.toBe("");
+      expect(error.fix).toBe("bootstrap init");
+      expect(error[Runtime.errorExitCode]).toBe(1);
+    }));
+
+  it.effect("versionGuard passes an equal version, build metadata ignored", () =>
+    Effect.gen(function*() {
+      const config = yield* parse(text({ version: "1.2.0+build" }), running);
+      expect(yield* versionGuard(config, running)).toBe(config);
+    }));
+
+  it("versionGuard accepts only a config that passed Validity", () => {
+    // @ts-expect-error -- a decoded but unvalidated config is not a ValidSetupConfig
+    const guarded = () => versionGuard(valid, running);
+    expect(guarded).toBeTypeOf("function");
+  });
+});
+
+describe("setup config refresh of files", () => {
+  const recorded = (files: ReadonlyArray<string>): SetupConfig => ({ ...valid, files: [...files] });
+  const removedTool = toolsByName.get("taplo")!;
+  const removedPath = removedTool.files[0]!.path;
+
+  it("full mode lists every rendered path, also one absent on disk", () => {
+    const next = refreshFiles(recorded(["a"]), { mode: "full" }, new Set(["a", "b"]), new Set(["a"]));
+    expect(next.config.files).toEqual(["a", "b"]);
+    expect(next.orphaned).toEqual([]);
+  });
+
+  it("remove mode drops the removed tools' paths and adds no rendered path", () => {
+    const next = refreshFiles(
+      recorded(["a", removedPath]),
+      { mode: "remove", removed: [removedTool.name], added: [] },
+      new Set(["a", "b"]),
+      new Set(["a", removedPath]),
+    );
+    expect(next.config.files).toEqual(["a"]);
+    expect(next.orphaned).toEqual([]);
+  });
+
+  it("remove mode adds the paths of a tool that Repair on read added back", () => {
+    const [missing] = unremovableTools;
+    const paths = missing!.files.map(file => file.path);
+    const next = refreshFiles(
+      recorded(["a"]),
+      { mode: "remove", removed: [], added: [missing!.name] },
+      new Set(["a", "b", ...paths]),
+      new Set(["a"]),
+    );
+    expect(next.config.files.toSorted()).toEqual(["a", ...paths].toSorted());
+  });
+
+  it.each([
+    ["full", { mode: "full" } as const],
+    ["remove", { mode: "remove", removed: [], added: [] } as const],
+  ])("%s mode keeps a recorded path not rendered and on disk as orphaned, and drops one absent", (_, mode) => {
+    const next = refreshFiles(
+      recorded(["a", "kept", "gone", ".config/bootstrap.yaml"]),
+      mode,
+      new Set(["a", ".config/bootstrap.yaml"]),
+      new Set(["a", "kept", ".config/bootstrap.yaml"]),
+    );
+    expect(next.config.files).toEqual(["a", "kept"]);
+    expect(next.orphaned).toEqual(["kept"]);
+  });
+});
+
+describe("setup config rewrite rule", () => {
+  it.each([
+    ["init", "a: 1\n", "a: 1\n", false, false],
+    ["init", "# note\na: 1\n", "a: 1\n", false, true],
+    ["init", "version: 1.1.0\n", "version: 1.2.0\n", false, true],
+    ["tui-apply", "b: 2\na: 1\n", "a: 1\nb: 2\n", false, true],
+    ["tui-apply", "a: 1\n", "a: 1\n", false, false],
+    ["add", "a: 1\n", "a: 1\n", true, true],
+    ["add", "# note\na: 1\n", "a: 1\n", false, false],
+    ["remove", "version: 1.1.0\n", "version: 1.2.0\n", false, false],
+    ["remove", "a: 1\n", "a: 2\n", true, true],
+  ] satisfies Array<[RewriteMode, string, string, boolean, boolean]>)(
+    "%s with recorded %j and render %j, tool change or repair %s: rewrite %s",
+    (mode, recordedText, nextText, changed, expected) => {
+      expect(rewrites(mode, recordedText, nextText, changed)).toBe(expected);
+    },
+  );
 });
 
 describe("setup config read", () => {
@@ -358,7 +570,7 @@ describe("setup config read", () => {
     Effect
       .gen(function*() {
         const config = yield* read("/repo", running);
-        expect(config).toEqual(Option.some(valid));
+        expect(config).toEqual(Option.some({ config: valid, added: [], warnings: [] }));
       })
       .pipe(
         Effect.provide(fileSystem({ "/repo/.config/bootstrap.yaml": text() })),
@@ -377,12 +589,31 @@ describe("setup config read", () => {
     Effect
       .gen(function*() {
         const error = yield* Effect.flip(read("/repo", running));
-        expect(error._tag).toBe("CoreToolListed");
+        expect(error._tag).toBe("RequiredToolMissing");
       })
       .pipe(
         Effect.provide(fileSystem({
           "/repo/.config/bootstrap.yaml": text({
-            values: { ...valid.values, tools: ["git"] },
+            version: "1.0.0",
+            values: { ...valid.values, tools: [...unremovable, "taplo"] },
+          }),
+        })),
+        Effect.provide(Path.layer),
+      ));
+
+  it.effect("repairs a read file and returns the warnings beside it", () =>
+    Effect
+      .gen(function*() {
+        const [missing] = unremovable;
+        const { config, added, warnings } = Option.getOrThrow(yield* read("/repo", running));
+        expect(config.values.tools).toContain(missing);
+        expect(added).toEqual([missing]);
+        expect(warnings).toEqual([`added back unremovable tool \`${missing}\``]);
+      })
+      .pipe(
+        Effect.provide(fileSystem({
+          "/repo/.config/bootstrap.yaml": text({
+            values: { ...valid.values, tools: [...unremovable.slice(1), "github"] },
           }),
         })),
         Effect.provide(Path.layer),

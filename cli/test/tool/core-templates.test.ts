@@ -1,11 +1,12 @@
 import {
-  coreTools,
+  tools,
   toolsByName,
 } from "@/tool/catalog";
 import {
   type RenderValues,
   render,
 } from "@/tool/render";
+import { templates } from "@/tool/templates";
 import { NodeServices } from "@effect/platform-node";
 import {
   describe,
@@ -20,8 +21,10 @@ import {
 import { spawnSync } from "node:child_process";
 import { parse } from "yaml";
 
-/** The core tools whose templates this suite covers; `fnox` ships with the new templates. */
-const owned = coreTools.filter(tool => tool.name !== "fnox");
+/** The tools whose templates this suite covers; `fnox`, `github` and `gitlab` have their own suite. */
+const owned = tools.filter(tool =>
+  !["fnox", "github", "gitlab"].includes(tool.name)
+);
 
 const values: RenderValues = {
   repo: "acme/widgets",
@@ -49,6 +52,19 @@ const forbidden: ReadonlyArray<RegExp> = [
   /toolchain-(gate|manager)|\boverlays the\b|\bmaterialize\b|\bpacks?\b|hook-runner|\bcomponent (that|later)\b/i,
 ];
 
+/** The verbs of the `setup/deps/<verb>` dispatchers, in the order `setup:deps:all` runs them. */
+const verbs = ["cleanup", "install", "upgrade", "outdated", "audit"];
+
+describe("templates", () => {
+  it("hold exactly one template per catalog path of each tool, and none the catalog does not name", () => {
+    expect([...templates.keys()].sort()).toEqual(
+      tools
+        .flatMap(tool => tool.files.map(file => `${tool.name}/${file.path}`))
+        .sort(),
+    );
+  });
+});
+
 describe("core templates", () => {
   it.effect("run the linter and the package.json sorter as mise-installed tools, never through pnpm dlx", () =>
     Effect.gen(function*() {
@@ -62,8 +78,10 @@ describe("core templates", () => {
       const dev = files.get(".config/mise/conf.d/_base/mise.dev.toml")!;
       expect(dev).toMatch(/^\[tools\."npm:@askviraj\/linter"\]$/m);
       expect(dev).toMatch(/^\[tools\."npm:sort-package-json"\]$/m);
-      expect(files.get(".config/mise/tasks/code/lint")).toMatch(/^linter\b/m);
-      expect(files.get(".config/mise/tasks/code/format")).toMatch(
+      expect(files.get(".config/mise/tasks/code/lint/virajp-linter")).toMatch(
+        /^linter\b/m,
+      );
+      expect(files.get(".config/mise/tasks/code/format/dprint")).toMatch(
         /^\s*sort-package-json\b/m,
       );
     }));
@@ -72,18 +90,6 @@ describe("core templates", () => {
     Effect.gen(function*() {
       expect((yield* rendered()).get(".config/mise/tasks/setup/precommit"))
         .toMatch(/bootstrap update/);
-    }));
-
-  it("covers the twelve core tools other than fnox", () => {
-    expect(owned.map(tool => tool.name)).toHaveLength(12);
-  });
-
-  it.effect("render exactly the catalog paths of the core tools", () =>
-    Effect.gen(function*() {
-      const files = yield* rendered();
-      expect([...files.keys()].sort()).toEqual(
-        owned.flatMap(tool => tool.files).sort(),
-      );
     }));
 
   it.effect("carry nothing specific to this repository", () =>
@@ -159,7 +165,9 @@ describe("core templates", () => {
       for (
         const verb of ["install", "outdated", "audit", "upgrade", "cleanup"]
       ) {
-        const task = files.get(`.config/mise/tasks/setup/deps/${verb}`)!;
+        const task = files.get(
+          `.config/mise/tasks/setup/deps/${verb}/_default`,
+        )!;
         expect(task).toMatch(
           new RegExp(`^run_tool_tasks setup:deps:${verb}\\b`, "m"),
         );
@@ -167,16 +175,16 @@ describe("core templates", () => {
       }
       const all = files.get(".config/mise/tasks/setup/deps/all")!;
       expect(all).not.toMatch(/\bpnpm\b/);
-      expect(all).toMatch(/^run_tool_tasks setup:deps:all\b/m);
+      expect(all).not.toMatch(/run_tool_tasks/);
     }));
 
-  it.effect("run each tool's setup task from setup:all only when it exists", () =>
+  it.effect("run the setup dispatchers from setup:all and never test which tools are present", () =>
     Effect.gen(function*() {
       const all = (yield* rendered()).get(".config/mise/tasks/setup/all")!;
       for (const task of ["setup:ai", "setup:secrets", "setup:precommit"]) {
-        expect(all).toMatch(new RegExp(`^run_task_if_present ${task}$`, "m"));
-        expect(all).not.toMatch(new RegExp(`^mise run ${task}$`, "m"));
+        expect(all).toMatch(new RegExp(`^mise run ${task}$`, "m"));
       }
+      expect(all).not.toMatch(/run_task_if_present/);
       expect(all).not.toMatch(/@askviraj\/linter|\bpnpm\b/);
     }));
 
@@ -186,7 +194,7 @@ describe("core templates", () => {
       expect(() => JSON.parse(files.get(".vscode/settings.json")!))
         .not
         .toThrow();
-      const dprint = JSON.parse(files.get(".config/dprint.json")!);
+      const dprint = JSON.parse(files.get("dprint.json")!);
       expect(dprint.json.jsonTrailingCommaFiles).not.toContain(
         ".vscode/settings.json",
       );
@@ -200,12 +208,50 @@ describe("core templates", () => {
       expect(recommendations).toEqual([...new Set(recommendations)]);
     }));
 
-  it.effect("install fnox, the core secrets tool, through mise", () =>
+  it.effect("install each non-base tool from its own mise.dev.toml, never from the base one", () =>
     Effect.gen(function*() {
-      const files = yield* rendered();
-      expect(files.get(".config/mise/conf.d/_base/mise.dev.toml")).toMatch(
-        /^\[tools\.fnox\]$/m,
+      const files = yield* render(tools, values);
+      const entries = {
+        gitleaks: "gitleaks",
+        grype: "grype",
+        fnox: "fnox",
+        graphify: "\"pipx:graphifyy\"",
+        mempalace: "\"pipx:mempalace\"",
+      };
+      const base = files.get(".config/mise/conf.d/_base/mise.dev.toml")!;
+      for (const [tool, entry] of Object.entries(entries)) {
+        expect(files.get(`.config/mise/conf.d/${tool}/mise.dev.toml`))
+          .toContain(
+            `[tools.${entry}]`,
+          );
+        expect(base).not.toContain(`[tools.${entry}]`);
+      }
+    }));
+
+  it.effect("ask for latest in every mise.dev.toml", () =>
+    Effect.gen(function*() {
+      const dev = [...(yield* render(tools, values))].filter(([path]) =>
+        path.endsWith("/mise.dev.toml")
       );
+      expect(dev.length).toBe(6);
+      for (const [, text] of dev) {
+        const versions = [...text.matchAll(/^version\s*=\s*"([^"]*)"$/gm)];
+        expect(versions.length).toBeGreaterThan(0);
+        expect(versions.map(([, version]) => version)).toEqual(
+          versions.map(() => "latest"),
+        );
+      }
+    }));
+
+  it.effect("pin osv-scanner, and every other tool of the base mise.toml, to an exact version", () =>
+    Effect.gen(function*() {
+      const base = (yield* rendered()).get(
+        ".config/mise/conf.d/_base/mise.toml",
+      )!;
+      expect(base).toMatch(
+        /^\[tools\.osv-scanner\]\nversion\s*=\s*"\d+\.\d+\.\d+"$/m,
+      );
+      expect(base).not.toMatch(/^version\s*=\s*"latest"$/m);
     }));
 
   it.effect("render every core file the same whatever non-core tools are selected", () =>
@@ -251,18 +297,18 @@ describe("core templates", () => {
       expect(files.get(".config/mise/conf.d/_base/mise.toml")).toMatch(
         /^REPO_NAME\s*=\s*"2048"$/m,
       );
-      expect(files.get(".config/mise/conf.d/ai/mise.dev.toml")).toMatch(
+      expect(files.get(".config/mise/conf.d/mempalace/mise.dev.toml")).toMatch(
         /^MEMPALACE_PALACE_PATH\s*=\s*"~\/\.local\/share\/mempalace\/2048"$/m,
       );
     }));
 
-  it.effect("format the whole tree from the root dprint config", () =>
+  it.effect("format the whole tree from the full dprint config at the root", () =>
     Effect.gen(function*() {
       const files = yield* rendered();
-      expect(files.get("dprint.json")).toContain(
-        "\"extends\": \".config/dprint.json\"",
-      );
-      expect(files.get(".config/mise/tasks/code/format")).not.toMatch(
+      const dprint = JSON.parse(files.get("dprint.json")!);
+      expect(dprint).not.toHaveProperty("extends");
+      expect(dprint.plugins.length).toBeGreaterThan(0);
+      expect(files.get(".config/mise/tasks/code/format/dprint")).not.toMatch(
         /--config \.config\/dprint\.json/,
       );
     }));
@@ -307,7 +353,7 @@ const dispatch = (
       for (
         const file of [
           ".config/mise/tasks/_scripts/helpers",
-          `.config/mise/tasks/setup/deps/${verb}`,
+          `.config/mise/tasks/setup/deps/${verb}/_default`,
         ]
       ) {
         yield* fs.makeDirectory(path.dirname(path.join(root, file)), {
@@ -321,7 +367,7 @@ const dispatch = (
       const log = path.join(root, "runs.log");
       yield* fs.writeFileString(log, "");
       const { status } = spawnSync("bash", [
-        path.join(root, `.config/mise/tasks/setup/deps/${verb}`),
+        path.join(root, `.config/mise/tasks/setup/deps/${verb}/_default`),
       ], {
         env: {
           ...process.env,
@@ -430,7 +476,7 @@ describe("AI setup", () => {
         for (
           const file of [
             ".config/mise/tasks/_scripts/helpers",
-            ".config/mise/tasks/setup/ai",
+            ".config/mise/tasks/setup/ai/claude",
           ]
         ) {
           yield* fs.makeDirectory(path.dirname(path.join(root, file)), {
@@ -452,7 +498,7 @@ describe("AI setup", () => {
         yield* fs.chmod(path.join(bin, "claude"), 0o755);
         yield* fs.chmod(path.join(bin, "jq"), 0o755);
         const { status, stderr } = spawnSync("/bin/bash", [
-          path.join(root, ".config/mise/tasks/setup/ai"),
+          path.join(root, ".config/mise/tasks/setup/ai/claude"),
         ], {
           env: {
             ...process.env,
@@ -540,7 +586,7 @@ const runTask = (
     .pipe(Effect.scoped, Effect.provide(NodeServices.layer));
 
 describe("code:format", () => {
-  const format = ".config/mise/tasks/code/format";
+  const format = ".config/mise/tasks/code/format/dprint";
   const stubs = { dprint: "exit 0", "sort-package-json": "exit 0" };
 
   it.effect("skips the package.json sorter in a repository that tracks none", () =>
@@ -603,7 +649,7 @@ describe("code:format", () => {
 });
 
 describe("code:sec", () => {
-  const sec = ".config/mise/tasks/code/sec";
+  const sec = ".config/mise/tasks/code/sec/gitleaks";
   // Built at run time so this file holds no secret-shaped literal.
   const token = ["ghp", "_", "k9Xb2LmQ7vR4tW8yZ1cN5pD3fG6hJ0sA2eUq"].join("");
   /** Lays out a repository whose ignored `.env` holds a token; `commit` also commits one in `leak.txt`. */
@@ -690,4 +736,191 @@ describe("code:sec", () => {
         expect(status).toBe(0);
       }),
   );
+});
+
+describe("code:sec:grype", () => {
+  const grype = ".config/mise/tasks/code/sec/grype";
+
+  /** Lays out the repository's grype config. */
+  const config = (root: string) =>
+    Effect.gen(function*() {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      yield* fs.makeDirectory(path.join(root, ".config"), { recursive: true });
+      yield* fs.writeFileString(path.join(root, ".config/grype.yaml"), "");
+    });
+
+  it.effect("scans the repository's dependencies with its config", () =>
+    Effect.gen(function*() {
+      const { status, calls } = yield* runTask(["grype"], grype, {
+        grype: "exit 0",
+      }, config);
+      expect(status).toBe(0);
+      expect(calls).toEqual([
+        expect.stringMatching(/^grype dir:\S+ --config \S+ --fail-on medium$/),
+      ]);
+    }));
+
+  it.effect("skips the dependency scan on --staged", () =>
+    Effect.gen(function*() {
+      const { status, calls } = yield* runTask(
+        ["grype"],
+        grype,
+        { grype: "exit 0" },
+        config,
+        { usage_staged: "true" },
+      );
+      expect(status).toBe(0);
+      expect(calls).toEqual([]);
+    }));
+});
+
+/** Whether a `mise` binary is on PATH; the dispatcher tests run the real task runner. */
+const hasMise = spawnSync("mise", ["--version"]).status === 0;
+
+/** The `_default` dispatchers, by task folder under `.config/mise/tasks/`. */
+const dispatchers = [
+  "code/format",
+  "code/lint",
+  "code/sec",
+  "code/graph",
+  "setup/secrets",
+  "setup/ai",
+  ...verbs.map(verb => `setup/deps/${verb}`),
+];
+
+/**
+ * Writes the rendered task library of `mise` plus `subtasks` (task path → line it logs) into a temporary directory —
+ * no mise config, so nothing is trusted or installed — then runs `mise run <args>` there, isolated from the caller's
+ * own mise environment and global config. A subtask logs its line and its arguments; one named in `failing` then
+ * exits 3.
+ */
+const runMise = (
+  subtasks: Readonly<Record<string, string>>,
+  args: ReadonlyArray<string>,
+  failing: ReadonlyArray<string> = [],
+) =>
+  Effect
+    .gen(function*() {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const files = yield* render([toolsByName.get("mise")!], values);
+      const root = yield* fs.makeTempDirectoryScoped();
+      const log = path.join(root, "runs.log");
+      yield* fs.writeFileString(log, "");
+      const tasks = [
+        ...[...files].filter(([file]) =>
+          file.startsWith(".config/mise/tasks/")
+        ),
+        ...Object.entries(subtasks).map(([task, line]) =>
+          [
+            `.config/mise/tasks/${task}`,
+            `#!/usr/bin/env bash\necho "${line} $*" >>"${log}"\n${
+              failing.includes(task) ? "exit 3\n" : ""
+            }`,
+          ] as const
+        ),
+      ];
+      for (const [file, text] of tasks) {
+        yield* fs.makeDirectory(path.dirname(path.join(root, file)), {
+          recursive: true,
+        });
+        yield* fs.writeFileString(path.join(root, file), text);
+        yield* fs.chmod(path.join(root, file), 0o755);
+      }
+      const env = Object.fromEntries(
+        Object.entries(process.env).filter(([key]) =>
+          !/^(__)?MISE_|^usage_/.test(key)
+        ),
+      );
+      const { status, stdout } = spawnSync("mise", ["run", ...args], {
+        cwd: root,
+        encoding: "utf8",
+        env: {
+          ...env,
+          HOME: root,
+          MISE_CONFIG_DIR: path.join(root, "global"),
+          MISE_GLOBAL_CONFIG_FILE: path.join(root, "global/config.toml"),
+        },
+      });
+      return {
+        status,
+        stdout,
+        runs: (yield* fs.readFileString(log)).split("\n").filter(Boolean),
+      };
+    })
+    .pipe(Effect.scoped, Effect.provide(NodeServices.layer));
+
+describe.skipIf(!hasMise)("task dispatchers", () => {
+  for (const folder of dispatchers) {
+    const task = folder.replaceAll("/", ":");
+
+    it.effect(`${task} prints no tool and exits 0 with no per-tool subtask`, () =>
+      Effect.gen(function*() {
+        const { status, stdout, runs } = yield* runMise({}, [task]);
+        expect(stdout).toContain("no tool");
+        expect(status).toBe(0);
+        expect(runs).toEqual([]);
+      }));
+
+    it.effect(`${task} runs the one per-tool subtask present`, () =>
+      Effect.gen(function*() {
+        const { status, stdout, runs } = yield* runMise({
+          [`${folder}/demo`]: "demo",
+        }, [task]);
+        expect(status).toBe(0);
+        expect(stdout).not.toContain("no tool");
+        expect(runs.map(run => run.trimEnd())).toEqual(["demo"]);
+      }));
+  }
+
+  it.effect("code:sec runs every per-tool subtask present", () =>
+    Effect.gen(function*() {
+      const { status, runs } = yield* runMise({
+        "code/sec/gitleaks": "gitleaks",
+        "code/sec/grype": "grype",
+      }, ["code:sec"]);
+      expect(status).toBe(0);
+      expect(runs.map(run => run.trimEnd())).toEqual(["gitleaks", "grype"]);
+    }));
+
+  it.effect("code:sec runs every per-tool subtask even after one fails, then fails", () =>
+    Effect.gen(function*() {
+      const { status, runs } = yield* runMise({
+        "code/sec/gitleaks": "gitleaks",
+        "code/sec/grype": "grype",
+      }, ["code:sec"], ["code/sec/gitleaks"]);
+      expect(status).not.toBe(0);
+      expect(runs.map(run => run.trimEnd())).toEqual(["gitleaks", "grype"]);
+    }));
+
+  for (
+    const [task, args, forwarded] of [
+      ["code:format", ["--fix", "--debug", "a.md"], "--debug --fix a.md"],
+      ["code:lint", ["--fix", "a.md", "b.md"], "--fix a.md b.md"],
+      ["code:sec", ["--staged", "--debug"], "--debug --staged"],
+      ["code:graph", ["--force"], "--force"],
+    ] as const
+  ) {
+    it.effect(`${task} forwards its flags and files to each subtask`, () =>
+      Effect.gen(function*() {
+        const { status, runs } = yield* runMise({
+          [`${task.replaceAll(":", "/")}/demo`]: "demo",
+        }, [task, ...args]);
+        expect(status).toBe(0);
+        expect(runs).toEqual([`demo ${forwarded}`]);
+      }));
+  }
+
+  it.effect("setup:deps:all runs the cleanup, install, upgrade, outdated and audit dispatchers in that order", () =>
+    Effect.gen(function*() {
+      const { status, runs } = yield* runMise(
+        Object.fromEntries(
+          verbs.map(verb => [`setup/deps/${verb}/demo`, verb]),
+        ),
+        ["setup:deps:all"],
+      );
+      expect(status).toBe(0);
+      expect(runs.map(run => run.trimEnd())).toEqual(verbs);
+    }));
 });

@@ -18,9 +18,10 @@ fi
 # Aliased as `setup` in `[shell_alias]`.
 #
 # This file is the ORCHESTRATOR and names no tool. Every step is a task by
-# name; a step a tool supplies runs only when that task exists, so a repo
-# without the tool still sets up end to end. Keep it that way — a tool named
-# here is a tool every repo inherits whether or not it chose it.
+# name; a step tools supply is a dispatcher that runs each selected tool's
+# subtask and prints "no tool" when there is none, so a repo without the tool
+# still sets up end to end. Keep it that way — a tool named here is a tool
+# every repo inherits whether or not it chose it.
 #
 # **Keep it idempotent: re-running must converge, never error.** It is the
 # re-sync command as much as the first-run one, so a step that only works on a
@@ -30,16 +31,16 @@ print_header "Setting up the toolchain ..."
 mise run setup:mise
 
 print_header "Setting up secrets ..."
-run_task_if_present setup:secrets
+mise run setup:secrets
 
 print_header "Setting up dependencies ..."
 mise run setup:deps:all
 
 print_header "Setting up commit hooks ..."
-run_task_if_present setup:precommit
+mise run setup:precommit
 
 print_header "Setting up AI tooling ..."
-run_task_if_present setup:ai
+mise run setup:ai
 
 # Members are set up only on request: the common case is working in one project,
 # and recursing by default turns every setup into the slowest one. Each member

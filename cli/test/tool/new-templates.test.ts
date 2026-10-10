@@ -71,7 +71,7 @@ describe("new templates", () => {
       Effect.gen(function*() {
         const files = yield* renderTool(name);
         expect([...files.keys()].sort()).toEqual(
-          [...toolsByName.get(name)!.files].sort(),
+          toolsByName.get(name)!.files.map(file => file.path).sort(),
         );
       }));
 
@@ -151,7 +151,7 @@ describe("new templates", () => {
   it.effect("set fnox up from the secrets task", () =>
     Effect.gen(function*() {
       const task = (yield* renderTool("fnox")).get(
-        ".config/mise/tasks/setup/secrets",
+        ".config/mise/tasks/setup/secrets/fnox",
       )!;
       expect(task.startsWith("#!")).toBe(true);
       expect(task).toMatch(/^fnox --config \.config\/fnox\.toml check$/m);
@@ -160,7 +160,7 @@ describe("new templates", () => {
   it.effect("skip with a hint to install the pinned tools, never to edit a managed mise config", () =>
     Effect.gen(function*() {
       const task = (yield* renderTool("fnox")).get(
-        ".config/mise/tasks/setup/secrets",
+        ".config/mise/tasks/setup/secrets/fnox",
       )!;
       expect(task).toMatch(/^\s*exit 0$/m);
       expect(task).toMatch(/mise install/);
@@ -190,9 +190,9 @@ describe("new templates", () => {
             mkdirSync(dirname(join(root, path)), { recursive: true });
             writeFileSync(join(root, path), text);
           }
-          const paths = own.flatMap(tool => tool.files).filter(path =>
-            /\.(md|yml|toml)$/.test(path)
-          );
+          const paths = own
+            .flatMap(tool => tool.files.map(file => file.path))
+            .filter(path => /\.(md|yml|toml)$/.test(path));
           const result = spawnSync("dprint", ["check", ...paths], {
             cwd: root,
             encoding: "utf8",
@@ -216,10 +216,12 @@ describe("new templates", () => {
         );
         const root = mkdtempSync(join(tmpdir(), "fnox-task-"));
         try {
-          // Only the helpers the task sources: a rendered mise config would be untrusted here.
+          // Only the helpers the task sources and no mise config: a rendered one would be untrusted here.
           const needed = [
             ".config/mise/tasks/_scripts/helpers",
-            ...toolsByName.get("fnox")!.files,
+            ...toolsByName.get("fnox")!.files.map(file => file.path).filter(
+              path => !path.startsWith(".config/mise/conf.d/"),
+            ),
           ];
           for (const path of needed) {
             mkdirSync(dirname(join(root, path)), { recursive: true });
@@ -234,7 +236,7 @@ describe("new templates", () => {
           const elsewhere = mkdtempSync(join(tmpdir(), "fnox-cwd-"));
           const result = spawnSync(
             "bash",
-            [join(root, ".config/mise/tasks/setup/secrets")],
+            [join(root, ".config/mise/tasks/setup/secrets/fnox")],
             {
               cwd: elsewhere,
               encoding: "utf8",

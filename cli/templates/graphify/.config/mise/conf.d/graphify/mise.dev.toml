@@ -1,0 +1,5 @@
+# Graphify builds the knowledge graph that `code:graph` refreshes
+[tools."pipx:graphifyy"]
+depends = [ "python", "uv" ]
+uvx     = true
+version = "latest"

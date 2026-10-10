@@ -13,16 +13,14 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-# Fills the `code:lint` slot with the house linter, which needs no repo config
-# and covers the JSON, YAML, TOML and Markdown a Node repo carries alongside its
-# sources. A repo that wants a different lint gate replaces this file with its
-# own `code/lint`.
+# The house linter's part of `code:lint`, run by that dispatcher with its flags
+# and files. The linter needs no repo config and covers the JSON, YAML, TOML and
+# Markdown a Node repo carries alongside its sources.
 #
-# This task is also the repo's linting HOOK: the pre-commit gate calls
-# `code:lint --fix <files>` rather than a linter binary, so every tool a commit
-# lints with is configured once, here. That is why it takes an optional file
-# list — the hook passes the staged files, a person passes nothing and gets the
-# whole tree.
+# The pre-commit gate calls `code:lint --fix <files>` rather than a linter
+# binary, so every tool a commit lints with is configured once, here. That is
+# why it takes an optional file list — the hook passes the staged files, a
+# person passes nothing and gets the whole tree.
 
 files=()
 eval "files+=(${usage_files:-})"

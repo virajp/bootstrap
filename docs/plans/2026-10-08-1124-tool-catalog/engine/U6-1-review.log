@@ -1,0 +1,10 @@
+/code-review high — branch all-2026-10-09-0954, range 7ffcf60..3678d0b
+1. cli/templates/dprint/dprint.json:18 — dprint.json always registers the taplo exec command for toml files; a repo selecting dprint without taplo has no taplo binary, so code:format, --fix and the pre-commit format hook fail on any .toml file. Needs a selection guard or taplo formatting moved out of dprint.json.
+2. cli/src/tool/catalog.ts:59 — task paths changed from file to directory (code/format, code/lint, code/sec, code/graph, setup/ai, setup/secrets, setup/deps/<verb>) with no migration; a repo set up by the previous cli keeps the old file, which is reported orphaned and never removed, so writing <dir>/_default fails with ENOTDIR/EEXIST.
+3. cli/src/setup-config/io.ts:91 — read always applies repair; the contract says show never repairs and reports a missing unremovable tool as exit 1; show cannot use read.
+4. cli/src/tool/render.ts:47 — originTool falls back to the first selected forge (hosted[0]) when no originHosts matches, so changelog URLs can point at the wrong forge (e.g. self-hosted gitlab with github selected; unknown host with both forges -> github links).
+5. cli/templates/mise/.config/mise/tasks/_scripts/helpers:150 — run_tool_tasks runs tool tasks in sequence under set -e, so the first failing tool task aborts the rest (gitleaks failure skips grype).
+6. cli/templates/pre-commit/.config/pre-commit-config.yaml:60 — graphify-refresh post-commit hook hardcoded in the pre-commit template though graphify is removable; hook, post-commit hook type and ^graphify-out/ exclude should be gated on selection contains 'graphify'.
+7. cli/templates/mise/.config/mise/conf.d/_base/mise.toml:6 — comment says tools are each pinned exactly, but only osv-scanner is pinned; others stay latest.
+8. cli/src/setup-config/refresh.ts:23 — pathsOf dereferences toolsByName.get(name)! for names only assumed validated; an unknown remove name throws TypeError instead of a reported error.
+Suite 254 passed, tsc clean.

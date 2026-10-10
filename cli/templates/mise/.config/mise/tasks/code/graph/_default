@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+#MISE description="Refresh the knowledge graph, run by the post-commit hook"
+#MISE dir="{{ config_root }}"
+
+#USAGE flag "--force" help="Rebuild even when the last commit only touched the graph's own output"
+
+set -euo pipefail
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+# A dispatcher. The selected knowledge-graph tool supplies its own
+# `code:graph:<tool>` task, and this runs it; with none selected it prints
+# "no tool" and exits 0.
+
+args=()
+[[ "${usage_force:-false}" == "true" ]] && args+=(--force)
+
+run_tool_tasks code:graph ${args[@]+"${args[@]}"}

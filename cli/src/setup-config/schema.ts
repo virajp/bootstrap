@@ -23,10 +23,12 @@ export const Values = Schema.Struct({
     Schema.isPattern(new RegExp(`^${repoSegment}(?:/${repoSegment})+$`)),
   ),
   commit_scopes: UniqueStrings(
-    Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]*$/)),
+    Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/)),
   ),
   merge_model: Schema.Struct({ develop: BranchModel, main: BranchModel }),
-  tools: UniqueStrings(Schema.String),
+  tools: UniqueStrings(
+    Schema.String.check(Schema.isPattern(/^[a-z0-9]+(-[a-z0-9]+)*$/)),
+  ).check(Schema.isMinLength(1)),
 });
 
 export const SetupConfig = Schema.Struct({
@@ -36,8 +38,6 @@ export const SetupConfig = Schema.Struct({
   ),
   values: Values,
   files: Paths,
-  kept: Schema.optionalKey(Paths),
-  deleted: Schema.optionalKey(Paths),
 });
 
 export type SetupConfig = typeof SetupConfig.Type;

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+#MISE description="Check or format the repo's files"
+#MISE dir="{{ config_root }}"
+
+#USAGE flag "--debug" help="emit debug logs"
+#USAGE flag "--fix" help="apply fixes"
+#USAGE arg "[files]" var=#true help="files to format (default: the whole repo)"
+
+set -euo pipefail
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+# A dispatcher. Each selected formatter supplies its own `code:format:<tool>`
+# task, and this runs every one of them with the same flags and files; with no
+# formatter selected it prints "no tool" and exits 0.
+#
+# This task is what the `format` pre-commit hook calls, which is why it takes an
+# optional file list: the hook passes the staged files, a person passes nothing
+# and gets the whole tree.
+
+args=()
+[[ "${usage_debug:-false}" == "true" ]] && args+=(--debug)
+[[ "${usage_fix:-false}" == "true" ]] && args+=(--fix)
+eval "args+=(${usage_files:-})"
+
+run_tool_tasks code:format ${args[@]+"${args[@]}"}

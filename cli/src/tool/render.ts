@@ -1,5 +1,9 @@
 import type { Values } from "@/setup-config/schema";
-import type { Tool } from "@/tool/catalog";
+import {
+  type Tool,
+  type ToolFile,
+  tools,
+} from "@/tool/catalog";
 import { templates as embedded } from "@/tool/templates";
 import {
   Data,
@@ -36,10 +40,34 @@ const engine = new Liquid({
   strictFilters: true,
 });
 
-/** The setup values plus the name derived from `repo`: its last segment. */
-const scope = (values: RenderValues) => ({
+/**
+ * Of the selected tools that have origin hosts, in catalog order: the one whose hosts hold
+ * `originHost`, else the first; its name, or "" with none (tool row 21, read by the templates).
+ */
+const originTool = (selected: ReadonlyArray<Tool>, originHost?: string) => {
+  const hosted = selected.filter(tool => tool.originHosts !== undefined);
+  return (
+    hosted.find(tool =>
+      originHost !== undefined && tool.originHosts!.includes(originHost)
+    )
+      ?? hosted[0]
+  )
+    ?.name ?? "";
+};
+
+/**
+ * The setup values, the name derived from `repo` (its last segment), the selected tool names
+ * and the origin tool: the variables every template reads.
+ */
+const scope = (
+  values: RenderValues,
+  selected: ReadonlyArray<Tool>,
+  originHost?: string,
+) => ({
   ...values,
   repo_name: values.repo.split("/").at(-1),
+  selection: selected.map(tool => tool.name),
+  origin_tool: originTool(selected, originHost),
 });
 
 /** Renders one target path of a tool from the template in that tool's folder. */
@@ -65,28 +93,40 @@ const renderPath = (
     });
 };
 
-/** Renders every target path of the selected tools; returns target path → content. */
+/**
+ * Renders every target path of the selected tools, in the order given; returns target path →
+ * content. `originHost` is the host of the git remote `origin`, if any.
+ */
 export const render = (
   selected: Iterable<Tool>,
   values: RenderValues,
   templates: ReadonlyMap<string, string> = embedded,
+  originHost?: string,
 ): Effect.Effect<
   ReadonlyMap<string, string>,
   TemplateMissing | RenderError
 > => {
-  const context = scope(values);
+  const chosen = [...selected];
+  const context = scope(values, chosen, originHost);
   return Effect
     .forEach(
-      [...selected].flatMap(tool =>
-        tool.files.map(path => [tool, path] as const)
+      chosen.flatMap(tool =>
+        tool.files.map(file => [tool, file.path] as const)
       ),
       ([tool, path]) => renderPath(templates, context, tool, path),
     )
     .pipe(Effect.map(entries => new Map(entries)));
 };
 
-/** A rendered file: its content and whether the writer must make it executable. */
-export interface RenderedFile {
+/** The render input: the setup values, the selected tool names and the `origin` host, if any. */
+export interface RenderInput {
+  readonly values: RenderValues;
+  readonly selection: Iterable<string>;
+  readonly originHost?: string | undefined;
+}
+
+/** A rendered file: its path, its content, and how the writer must write it. */
+export interface RenderedFile extends ToolFile {
   readonly content: string;
   readonly executable: boolean;
 }
@@ -94,21 +134,30 @@ export interface RenderedFile {
 /** The embed keeps text only, so the mode is a rule: every mise task file is executable, nothing else. */
 const isExecutable = (path: string) => path.startsWith(".config/mise/tasks/");
 
-/** Like `render`, but each target path carries whether the file is executable. */
+/** Renders the files of the selected tools, in catalog order; target path → rendered file. */
 export const renderFiles = (
-  selected: Iterable<Tool>,
-  values: RenderValues,
+  input: RenderInput,
   templates: ReadonlyMap<string, string> = embedded,
 ): Effect.Effect<
   ReadonlyMap<string, RenderedFile>,
   TemplateMissing | RenderError
-> =>
-  render(selected, values, templates).pipe(
+> => {
+  const names = new Set(input.selection);
+  const selected = tools.filter(tool => names.has(tool.name));
+  const files = new Map(
+    selected.flatMap(tool =>
+      tool.files.map(file => [file.path, file] as const)
+    ),
+  );
+  return render(selected, input.values, templates, input.originHost).pipe(
     Effect.map(rendered =>
       new Map(
-        [...rendered].map((
-          [path, content],
-        ) => [path, { content, executable: isExecutable(path) }]),
+        [...rendered].map(([path, content]) => [path, {
+          ...files.get(path)!,
+          content,
+          executable: isExecutable(path),
+        }]),
       )
     ),
   );
+};

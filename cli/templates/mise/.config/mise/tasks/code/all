@@ -11,8 +11,9 @@ set -euo pipefail
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
 # The one-command gate, and the same command the pipeline runs. It needs the dev
-# toolchain loaded, because the formatter and the scanners are pinned in
-# mise/conf.d/_base/mise.dev.toml — `MISE_ENV=dev mise run code:all`.
+# toolchain loaded, because the formatter is pinned in
+# mise/conf.d/_base/mise.dev.toml and each scanner in its own
+# mise/conf.d/<tool>/mise.dev.toml — `MISE_ENV=dev mise run code:all`.
 
 # `${ARR[@]+"${ARR[@]}"}` rather than a bare `"${ARR[@]}"`: under `set -u` an
 # empty array is an unbound reference on older bash, and the runner's bash is

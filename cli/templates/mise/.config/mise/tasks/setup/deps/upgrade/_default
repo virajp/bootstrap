@@ -9,6 +9,6 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
 # A dispatcher. A tool that manages dependencies supplies its own
 # `setup:deps:upgrade:<tool>` task, and this runs every one of them; a repo whose
-# tools manage none runs nothing, which is not an error.
+# tools manage none prints "no tool" and runs nothing, which is not an error.
 
 run_tool_tasks setup:deps:upgrade

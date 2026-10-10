@@ -1,16 +1,5 @@
-# AI Tools
-[tools.jq]
-version = "latest"
-
-[tools.yq]
-version = "latest"
-
+# Mempalace is the memory store for AI agents
 [tools."pipx:mempalace"]
-depends = [ "python", "uv" ]
-uvx     = true
-version = "latest"
-
-[tools."pipx:graphifyy"]
 depends = [ "python", "uv" ]
 uvx     = true
 version = "latest"

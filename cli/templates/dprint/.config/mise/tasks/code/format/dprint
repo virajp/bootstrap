@@ -13,14 +13,15 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-# The repo's `code:format`. dprint owns whitespace for every language in the
-# repo — that does not stop mattering once JavaScript arrives — and this task
-# adds the one thing dprint cannot do: `package.json` key order, which is a
-# convention rather than a format.
+# dprint's part of `code:format`, run by that dispatcher with its flags and
+# files. dprint owns whitespace for every language in the repo — that does not
+# stop mattering once JavaScript arrives — and this task adds the one thing
+# dprint cannot do: `package.json` key order, which is a convention rather than
+# a format.
 #
-# This task is what the `format` pre-commit hook calls, which is why it takes an
-# optional file list: the hook passes the staged files, a person passes nothing
-# and gets the whole tree.
+# It takes an optional file list because the `format` pre-commit hook passes
+# the staged files through `code:format`; a person passes nothing and gets the
+# whole tree.
 
 files=()
 eval "files+=(${usage_files:-})"
