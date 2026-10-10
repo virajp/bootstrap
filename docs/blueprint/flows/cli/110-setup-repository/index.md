@@ -485,10 +485,12 @@ holds for a later catalog.
   `exit` 0, `created`, `changed`, `deleted`, `unchanged`, `kept`, `orphaned`,
   `replaced` (each `{from, to}`), `dependencies_added`, `dependencies_pruned`,
   `warnings`, and `next_command` equal to `MISE_ENV=dev mise run setup:all`.
-- Given a re-run that only changes a value (for example `--merge-main direct`)
-  and no `mise` config file, when init finishes with `-y`, then the human output
+- Given a re-run whose only change creates, changes or deletes no `mise` config
+  file and adds no tool, when init finishes with `-y`, then the human output
   ends with exactly "commit the changes", there is no `next_command` and the
-  exit code is 0.
+  exit code is 0. A merge-model change (for example `--merge-main direct`)
+  changes `.config/mise/conf.d/env.toml`, a `mise` config file, so it prints the
+  next command.
 - Given `--dry-run --json`, when init runs, then the document has the same keys
   and values a real run would return plus `"dry_run": true`; on a non-zero exit
   it is the same error document plus `"dry_run": true`.

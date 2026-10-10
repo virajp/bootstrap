@@ -4,7 +4,7 @@ title: Select tools
 description: One interactive view shows every tool by category, so the owner
   sets up a repository, adds, removes and replaces tools and edits the recorded
   values in one place, with nothing half-written.
-status: draft
+status: reviewed
 implementation: none
 ---
 
@@ -130,12 +130,9 @@ decides the exit code.
      view.
    - Replacing within the alternatives of a slot needs the in-place consent
      prompt like any replacement.
-   - A dependency in a `max: one` category is that category's held tool:
-     choosing another tool of the category is a replacement of it (not reachable
-     with the 1.0 catalog). Its radio group shows no marked row, and `none` is
-     not marked either. The tool that replaces it, after the consent prompt,
-     takes the dependency role: it is recorded in `values.dependencies`, not in
-     `values.tools`, and not listed in `added`.
+   - A change to a dependency held in a `max: one` category (its replacement, or
+     `none` in its radio group) is out of scope: the 1.0 catalog cannot reach
+     it.
    - A replacement in a `max: one` category whose held tool a selected tool
      still needs, while the new tool is not an alternative of that slot and no
      other alternative of it is selected, is refused in place like a deselect,

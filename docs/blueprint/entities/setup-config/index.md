@@ -3,7 +3,7 @@ type: vwf-entity
 title: Setup Config
 description: The file in a repository that records its bootstrap values and
   selected tools, and marks it as set up.
-status: draft
+status: reviewed
 implementation: partial
 owner: [ cli ]
 ---
@@ -74,7 +74,10 @@ and the fix. Nothing is written.
 
 Three hand-edit breaks are repaired rather than refused. All are changes under
 invariant 7: the file is rewritten and listed `changed`, and each needs consent
-([config](../../conventions.md#config)), even when it is the only change.
+([config](../../conventions.md#config)), even when it is the only change. Every
+writing command (init re-run, add, remove, select tools apply) repairs only what
+the request needs; a missing piece left unneeded is never added back and never
+reported.
 
 - A non-empty `values.tools` that misses `git` or `pre-commit` (the unremovable
   tools), unless another tool of its `max: one` category is recorded. Only these
@@ -83,15 +86,9 @@ invariant 7: the file is rewritten and listed `changed`, and each needs consent
 - A dependency that a selected tool needs and that `values.dependencies` lacks.
   The missing one is added back (the default, first alternative of an unmet
   `requires` slot) and the warning "added back dependency `<name>`" is reported.
-  Every writing command (init re-run, add, remove, select tools apply) repairs
-  only the dependencies that the selection after the request needs: a missing
-  dependency that the request leaves unneeded is never added back and never
-  reported (no warning, not in `dependencies_added` or `dependencies_pruned`)
-  ([Remove a tool](../../flows/cli/150-remove-tool/index.md) step 2).
 - A name in `values.dependencies` that the running catalog does not have is
-  dropped. Every writing command (init re-run, add, remove, select tools apply)
-  reports the warning "dropped unknown dependency `<name>`" (`warnings`); `show`
-  does not warn.
+  dropped. The warning "dropped unknown dependency `<name>`" is reported
+  (`warnings`); `show` does not warn.
 
 `show` never repairs: it reports a missing unremovable tool or a missing
 dependency as an error with exit 1
@@ -137,12 +134,14 @@ cli (compared as in [Validity](#validity)).
    paths of a tool or dependency that [Repair on read](#repair) adds back. All
    subject to invariants 4–6.
 3. `values.tools` lists every direct tool, unremovable tools included, with no
-   duplicates; a name in `values.tools` is never in `values.dependencies`.
+   duplicates. Every write records a name in `values.tools` or in
+   `values.dependencies`, never in both; a hand-edited file can hold both
+   (invariant 7).
 4. Regardless of tool, a recorded path the running cli does not render stays in
    `files` and is reported `orphaned` by every command until the owner deletes
    it; remove never deletes an orphaned path.
-5. A recorded path that the running cli no longer renders and that is absent on
-   disk is bookkeeping: see invariant 7.
+5. A recorded path the running cli no longer renders and that is absent on disk
+   is bookkeeping (invariant 7).
 6. `files` never lists this file; an entry for it added by a hand edit is
    dropped on the next write, without a report.
 7. An `init` re-run, and an apply in select tools, rewrites the file, listed

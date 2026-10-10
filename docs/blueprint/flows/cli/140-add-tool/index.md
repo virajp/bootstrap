@@ -3,7 +3,7 @@ type: vwf-flow
 title: Add a tool
 description: One command adds tools to a set-up repository, replacing a held
   tool only with consent, with nothing half-written.
-status: draft
+status: reviewed
 implementation: none
 ---
 
@@ -101,7 +101,9 @@ reported together in one error ([errors](../../../conventions.md#errors)).
    `requires` slot of a selected tool, while the incoming tool is not an
    alternative of that slot and no other alternative of it is selected, exits 2
    naming the dependent tool (checked on the selection after the request, before
-   any write). `--replace` with nothing to replace is ignored. All the refusals
+   any write). `--replace` with nothing to replace is ignored. A named slot
+   alternative while another alternative of the slot is held only as a
+   dependency is out of scope: the 1.0 catalog cannot reach it. All the refusals
    of step 4 are reported together in one error
    ([errors](../../../conventions.md#errors)).
 5. Add renders the full file set of the new selection (the held

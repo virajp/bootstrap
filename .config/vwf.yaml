@@ -91,11 +91,5 @@ design:
   flows_rendered:
     - site/110-documentation/site
 blueprint:
-  coverage: partial # stamped 2026-10-10 by /vwf:blueprint — targeted pass (tool-catalog gaps: mise hidden, replaceable removed, tool purpose in tui, repair/bookkeeping rules); per-doc round 8 left open gaps, coherence round 8 not run
-  remaining:
-    - entities/setup-config
-    - flows/cli/140-add-tool
-    - flows/cli/150-remove-tool
-    - flows/cli/160-select-tools
-    - coherence
-    - screens/site/100-home/site
+  coverage: complete # stamped 2026-10-10 by /vwf:blueprint — targeted pass (tool-catalog gaps: mise hidden, replaceable removed, tool purpose in tui, repair/bookkeeping rules); 1.0-unreachable cases marked out of scope; site/100-home render parked with the site (released after cli + tui)
+  remaining: []

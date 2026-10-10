@@ -4,7 +4,7 @@ title: Remove a tool
 description: One command removes removable tools from a set-up repository,
   deleting their files and nothing half-written; git history keeps every deleted
   file.
-status: draft
+status: reviewed
 implementation: none
 ---
 
@@ -65,7 +65,7 @@ preflight and before `.config/bootstrap.yaml` is read, all reported together
    | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
    | Selected directly and required by no tool of the selection after the request              | `removed`                                                                                                                                                          |
    | Selected (direct or dependency) and required by a tool of the selection after the request | exit 2 naming that parent tool (`pre-commit` for `python`), unless another alternative of the slot is in that selection or the parent is named in the same request |
-   | Selected only as a dependency and needed by no tool of the selection after the request    | `not_added`, like an unselected name; pruned at the write, if the run writes (bookkeeping below)                                                                   |
+   | Selected only as a dependency and needed by no tool of the selection after the request    | `not_added`, like an unselected name; pruned per the rules below and listed in `dependencies_pruned` when pruned                                                   |
    | Selected neither way                                                                      | `not_added`, changes nothing                                                                                                                                       |
 
    When several named tools are each still required by a tool of the selection
@@ -305,8 +305,9 @@ later catalog.
   `virajp-linter` alone and the exit code is 0.
 - Given `dprint` and `virajp-linter` are selected with `node` and `pnpm`
   dependencies of both, when `bootstrap remove dprint -y` runs, then `node` and
-  `pnpm` stay with their files, their parents in `values.dependencies` become
-  `virajp-linter` alone and the exit code is 0.
+  `pnpm` stay with their files, `values.dependencies` records `node` with
+  parents `[pnpm, virajp-linter]` and `pnpm` with parents `[virajp-linter]`, and
+  the exit code is 0.
 - Given a pruned dependency whose deletions empty its `conf.d/` directory, when
   remove runs with `-y`, then the directory no longer exists and is not reported
   ([safety](../../../conventions.md#safety)).

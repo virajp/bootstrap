@@ -85,8 +85,10 @@ Every `cli` command reports outcome by **exit code** and, under `--json`, one
   run. No internal trace unless `--verbose`.
 - A run reports its exit `2` refusals together, in one error: `what` and `why`
   name each refusal in step order, and `next_command` is the one command that
-  fixes all of them. The usage check, which needs only the flags and the catalog
-  and runs before the preflight, reports all its refusals and stops; the
+  fixes all of them. When no command can fix a refusal (a tool that an
+  unremovable tool needs, named for removal), the error has no next command:
+  `next_command` is `null`. The usage check, which needs only the flags and the
+  catalog and runs before the preflight, reports all its refusals and stops; the
   refusals that need the setup file are found after it and reported together in
   the same way.
 - A command that cannot complete its writes leaves the repository as it found it
