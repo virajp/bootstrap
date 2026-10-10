@@ -19,6 +19,8 @@ status: draft
 | 150 | [Remove a tool](./cli/150-remove-tool/index.md)            |           | [Zero setup drift](../product.md#goal-zero-drift)                                                       | [Tool](../entities/tool/index.md), [Setup config](../entities/setup-config/index.md)                                                      | reviewed |
 | 160 | [Select tools](./cli/160-select-tools/index.md)            |           | [Fast new-repo setup](../product.md#goal-fast-setup)                                                    | [Tool category](../entities/tool-category/index.md), [Tool](../entities/tool/index.md), [Setup config](../entities/setup-config/index.md) | reviewed |
 | 170 | [Show the setup](./cli/170-show-setup/index.md)            |           | [Zero setup drift](../product.md#goal-zero-drift)                                                       | [Setup config](../entities/setup-config/index.md), [Tool](../entities/tool/index.md), [Tool category](../entities/tool-category/index.md) | reviewed |
+| 180 | [Manage scopes](./cli/180-manage-scopes/index.md)          |           | [Zero setup drift](../product.md#goal-zero-drift)                                                       | [Setup config](../entities/setup-config/index.md), [Tool](../entities/tool/index.md)                                                      | reviewed |
+| 190 | [Manage members](./cli/190-manage-members/index.md)        |           | [Zero setup drift](../product.md#goal-zero-drift)                                                       | [Setup config](../entities/setup-config/index.md), [Tool](../entities/tool/index.md)                                                      | reviewed |
 
 ### site
 

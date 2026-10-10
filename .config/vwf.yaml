@@ -91,5 +91,5 @@ design:
   flows_rendered:
     - site/110-documentation/site
 blueprint:
-  coverage: complete # stamped 2026-10-10 by /vwf:blueprint — targeted pass (tool-catalog gaps: mise hidden, replaceable removed, tool purpose in tui, repair/bookkeeping rules); 1.0-unreachable cases marked out of scope; site/100-home render parked with the site (released after cli + tui)
+  coverage: complete # stamped 2026-10-11 by /vwf:blueprint — targeted pass tool-offload (B02–B05, B01): engines, package managers, new tools, scope and member commands, editor profile sync; density gaps deferred by the owner (docs over budget, non-density gaps closed); 1.0-unreachable cases marked out of scope; site parked
   remaining: []

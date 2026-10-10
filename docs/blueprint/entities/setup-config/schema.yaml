@@ -10,7 +10,8 @@ properties:
     type: integer
     minimum: 1
     description: Schema version of this file; 1 for bootstrap 1.0. Independent
-      of version; changes only when the file's shape changes.
+      of version; changes only when the
+      file's shape changes.
   version:
     type: string
     description: Semver of the bootstrap version that last wrote the file;
@@ -26,14 +27,51 @@ properties:
           (owner/name or group/subgroup/name); detected from the git remote by
           default.
         pattern: ^[^/\s]+(/[^/\s]+)+$
-      commit_scopes:
+      scopes:
         type: array
-        description: Allowed commit scopes; may be empty.
-        uniqueItems: true
+        description: Allowed commit scopes, sorted by name; may be empty. Names
+          are unique.
         items:
-          type: string
-          description: One commit scope, a lowercase kebab-case word.
-          pattern: ^[a-z][a-z0-9]*(-[a-z0-9]+)*$
+          type: object
+          description: One commit scope.
+          properties:
+            name:
+              type: string
+              description: The scope, a lowercase kebab-case word.
+              pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+            description:
+              type: string
+              description: What the scope covers; required, one line, never
+                empty, with no newline or other control character.
+              minLength: 1
+              pattern: ^[^\x00-\x1F\x7F]+$
+          required: [ name, description ]
+          additionalProperties: false
+      members:
+        type: array
+        description: The repository's member folders, sorted by slug; may be
+          empty. Slugs are unique. A path is not checked for existence.
+        items:
+          type: object
+          description: One member of the repository.
+          properties:
+            path:
+              type: string
+              description: Path of the member folder relative to the repository
+                root; a submodule path, or a sibling checkout that starts with
+                one or more `../` segments; not absolute, no `.` or `..` segment
+                after the first other segment; existence is not checked.
+              minLength: 1
+              pattern: ^(?!.*\s)(\.\./)*(?!\.{1,2}(/|$))[^/]+(/(?!\.{1,2}(/|$))[^/]+)*$
+            slug:
+              type: string
+              description: The folder name lowercased, each run of other
+                characters replaced by one `-`, a leading or trailing `-`
+                removed; never empty and never `all`.
+              minLength: 1
+              pattern: ^(?!all$)[a-z0-9]+(-[a-z0-9]+)*$
+          required: [ path, slug ]
+          additionalProperties: false
       merge_model:
         type: object
         description: How changes reach each long-lived branch.
@@ -52,7 +90,8 @@ properties:
         type: array
         description: The direct tools, unremovable tools included. Each names an
           entity Tool. A name never also appears in dependencies. Never holds
-          mise, a hidden tool that is always applied and never recorded.
+          mise, a hidden tool that is always applied and never recorded. Holds
+          no exact version pins; the repository owns them in its mise files.
         minItems: 1
         uniqueItems: true
         items:
@@ -66,17 +105,19 @@ properties:
           parents; keys sorted; may be empty. Absent reads as {}; every write
           records it. A name never also appears in tools.
         examples:
-          - node: [ dprint, pnpm, virajp-linter ]
-            pnpm: [ dprint, virajp-linter ]
-            python: [ pre-commit, uv ]
-            uv: [ pre-commit ]
+          - jq: [ claude ]
+            node: [ virajp-linter ]
+            python: [ graphify, mempalace, pre-commit, uv ]
+            uv: [ graphify, mempalace, pre-commit ]
+            yq: [ claude ]
         propertyNames:
           description: Name of the dependency, a Tool.
           pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
         additionalProperties:
           type: array
           description: The parents of the dependency, sorted; each is a direct
-            tool or another dependency that requires it (a dependency of a
+            tool or another dependency that requires it or, for a runtime added
+            for an engine requirement, is linked to it (a dependency of a
             dependency names that dependency as parent).
           minItems: 1
           uniqueItems: true
@@ -84,13 +125,14 @@ properties:
             type: string
             description: Name of a parent Tool.
             pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
-    required: [ repo, commit_scopes, merge_model, tools ]
+    required: [ repo, scopes, members, merge_model, tools ]
     additionalProperties: false
   files:
     type: array
     description: Every path rendered for the selected tools, their dependencies
       and the hidden tool, plus every orphaned path, excluding
-      .config/bootstrap.yaml itself.
+      .config/bootstrap.yaml itself. A create_only path the selection still
+      includes stays listed and is never orphaned.
     uniqueItems: true
     items:
       type: string

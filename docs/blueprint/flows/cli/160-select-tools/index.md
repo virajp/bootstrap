@@ -54,8 +54,12 @@ decides the exit code.
    `values.tools` that misses an unremovable tool, or a dependency that a
    selected tool needs and `values.dependencies` lacks, is handled per
    [repair on read](../../../entities/setup-config/index.md#repair); the warning
-   goes in `warnings`. The warning for a missing dependency is reported only
-   when the selection after the request needs it (the condition of step 7).
+   goes in `warnings`. A recorded tool name that the catalog lists in a tool's
+   `renamed_from` is read as the new name and rewritten under it, with the
+   warning "renamed tool `<old>` to `<new>`" in `warnings`; the rename is a
+   repair, listed in the plan, and needs consent even when it is the only
+   change. The warning for a missing dependency is reported only when the
+   selection after the request needs it (the condition of step 7).
    [Setup config](../../../entities/setup-config/index.md)
 4. Tui opens the view: every
    [Tool category](../../../entities/tool-category/index.md) as a group with its
@@ -67,33 +71,45 @@ decides the exit code.
    place (step 5), per [Tool](../../../entities/tool/index.md). Each tool row
    shows the tool's `purpose` after its name, in the muted role, for example
    `[x] dprint  Formats code and documents`; a category row keeps its purpose. A
-   dependency (a tool a selected tool needs that the actor did not select) is
-   shown unchecked, with no row-level mark of its own; it appears, marked
-   `dependency`, in the tree of each selected tool that needs it. In a
-   `max: one` category, a dependency held there (not reachable with the 1.0
-   catalog) leaves the radio group of that category with no marked row, and
-   `none` is not marked either. Groups, keys, marks and the terminal-size rule
-   follow [Terminal UX](../../../design-system.md#terminal-ux). Ctrl-C at any
-   moment in the view writes nothing, exits 130 and prints no result, per
+   tool with several `categories` appears in each of its category groups, with
+   the same state in all of them. Suggestions: a tool detected from a manifest
+   in the repository (for example `pubspec.yaml` → `flutter`,
+   `settings.gradle.kts` → `kotlin`, `Package.swift` → `swift`, `pyproject.toml`
+   → `ruff`) that is not selected is shown with the word `suggested` after its
+   purpose, in the muted role, like the `dependency` mark and never by color
+   alone. A suggestion is never selected automatically and writes nothing until
+   the actor checks it. A dependency (a tool a selected tool needs that the
+   actor did not select) appears, marked `dependency`, in the tree of each
+   selected tool that needs it. Every dependency (a runtime, a package manager,
+   or a plain requirement such as `dprint` for `taplo` or `jq` and `yq` for
+   `claude`) is also shown as its own row, checked, with the word `dependency`
+   after its purpose in the muted role, so the actor can uncheck it (step 5). A
+   dependency held in a `max: one` category is out of scope: the 1.0 catalog
+   cannot reach it. Groups, keys, marks and the terminal-size rule follow
+   [Terminal UX](../../../design-system.md#terminal-ux). Ctrl-C at any moment in
+   the view writes nothing, exits 130 and prints no result, per
    [errors](../../../conventions.md#errors).
 
    Dependency tree. Under each selected (checked) tool the view shows the full
-   tree of its required tools, nested by `requires`, one child per slot (the
-   selected alternative of the slot, else its first alternative; "selected"
-   includes a dependency, checked or not, so a slot met by a non-first
-   alternative shows that alternative). The mark `dependency` never carries
-   meaning by color alone. A direct tool appears unmarked and does not expand.
-   Repeats of dependencies are shown (the tree is not deduplicated). Unselected
-   rows show no tree. The exact form (pinned):
+   tree of its required tools, nested by `requires`, one child per requirement:
+   the required tool, or for an engine requirement the runtime linked to it (the
+   engine's default runtime when none is selected yet)
+   ([Requires and dependencies](../../../entities/tool/index.md#requires-and-dependencies)).
+   The mark `dependency` never carries meaning by color alone. A direct tool
+   appears unmarked and does not expand. Repeats of dependencies are shown (the
+   tree is not deduplicated). Unselected rows and dependency rows show no tree
+   of their own. The exact form (pinned):
 
    ```text
    formatter  Formats the repository's files
      [x] dprint  Formats code and documents
-         ├─ node  dependency
-         └─ pnpm  dependency
-            └─ node  dependency
      [x] taplo  Formats TOML files, run by dprint
          └─ dprint
+   linter  Finds errors in code
+     [x] virajp-linter  Lints code with the house rules
+         └─ node  dependency
+   runtime  Language runtimes and command-line helpers that other tools run on
+     [x] node  JavaScript runtime  dependency
    ```
 
    Tree lines are not selectable: focus moves over tool rows only, under the
@@ -111,64 +127,101 @@ decides the exit code.
 
    [Tool category](../../../entities/tool-category/index.md)
 
+   Checking or unchecking a tool of several categories does it in all its
+   category groups. Selecting a tool whose `host_os` is not the running host's
+   is refused in place with "`<tool>` needs macOS" (the OS named by `host_os`);
+   the view stays open and the selection is unchanged. A recorded tool of such a
+   `host_os` stays checked, and may be unchecked.
+
    Dependencies. The requires check uses the selection as it stands after the
    change ([Tool](../../../entities/tool/index.md#requires-and-dependencies)):
-   - Selecting a tool whose required tools are not selected is not refused: each
-     required tool that is not selected becomes a dependency of it (the first
-     alternative of an unmet slot), shown marked `dependency` in the tool's
-     tree.
-   - Selecting a tool that is already a dependency makes it direct: it is
-     checked, no parent changes, it shows its own tree, and it appears unmarked
-     in its parents' trees.
-   - Deselecting a tool that a selected tool, direct or dependency, still needs
-     is refused in place, unless another alternative of that slot is selected,
-     with the message "cannot deselect `<tool>`: needed by `<parents>`"
-     (`<parents>` in Catalog order, joined by `,`); the view stays open and the
-     selection is unchanged.
+   - Selecting a tool whose requirements are not met is not refused: each unmet
+     tool requirement adds that tool, and each unmet engine requirement the
+     engine's default runtime, as a dependency of it, shown marked `dependency`
+     in the tool's tree.
+   - Making a checked dependency direct is out of scope in the tui (`add` does
+     it, [Add a tool](../140-add-tool/index.md) step 3).
+   - Unchecking a tool (direct or dependency) that other selected tools would
+     dangle without follows the
+     [Dangling rule](../../../entities/tool/index.md#requires-and-dependencies):
+     the tui asks in place "remove `<parents>` too? y/N" (`<parents>` every
+     direct tool that would dangle, transitively, in Catalog order, joined by
+     `,`; for `node`, also `pnpm` and `yarn` when selected). Yes unchecks them
+     all, and every dependency that would dangle leaves with them; no (the
+     default) restores the selection as it was, the tool checked again. When one
+     of the parents is unremovable (`pre-commit` for `python`), no prompt is
+     asked: the change is refused in place with "cannot deselect `<tool>`:
+     needed by `<parents>`" and the selection is unchanged.
+   - Unchecking a runtime while another runtime of the same engine stays
+     selected for each of its parents is allowed with no prompt; at apply their
+     links move to that runtime.
    - Deselecting the last parent of a dependency leaves the dependency without a
      parent; it is pruned at apply and listed in the plan (step 7), not in the
      view.
-   - Replacing within the alternatives of a slot needs the in-place consent
-     prompt like any replacement.
+   - Checking another runtime of a `max: one` engine
+     ([Engines](../../../entities/tool/index.md#engines)) while one is held (for
+     example `temurin` while `openjdk` is held) is a replacement: the tui asks
+     "replace `<old>` with `<new>`?" in place, as in a `max: one` category; yes
+     moves the engine links to the new runtime and the held one leaves as with
+     `add --replace` below, no keeps the old one.
+   - Checking another runtime of a `max: many` engine that a held runtime meets
+     (for example `bun` while `node` meets `effect`'s `javascript` engine) keeps
+     both: the held one keeps its links and the checked one is direct; nothing
+     is pruned and there is no replacement.
+   - A `max: many` engine runtime replacement has no prompt of its own: the
+     actor checks the new runtime (both kept), then unchecks the held one, which
+     is allowed because another runtime of the engine is selected. At apply the
+     engine links move to the new runtime and the held one leaves the selection
+     as with `add --replace` ([Add a tool](../140-add-tool/index.md) step 4):
+     pruned if only a dependency, out of `values.tools` if direct, its files
+     removed (`create_only` kept), and `replaced` lists `{from, to}`. When
+     another selected tool requires the held runtime itself (for example `pnpm`
+     requiring `node`), unchecking it asks the dangling prompt above instead.
    - A change to a dependency held in a `max: one` category (its replacement, or
      `none` in its radio group) is out of scope: the 1.0 catalog cannot reach
      it.
-   - A replacement in a `max: one` category whose held tool a selected tool
-     still needs, while the new tool is not an alternative of that slot and no
-     other alternative of it is selected, is refused in place like a deselect,
-     with the message "cannot replace `<tool>`: needed by `<parents>`"; no
-     consent prompt is shown and the selection is unchanged.
-6. Actor shows and edits the recorded values (repo, commit scopes, merge model
-   for develop and main) in the values section, with the validation rules of
+   - A replacement in a `max: one` category that would leave a selected tool
+     dangling is refused in place with the message "cannot replace `<tool>`:
+     needed by `<parents>`"; no consent prompt is shown and the selection is
+     unchanged.
+6. Actor shows and edits the recorded values (repo, `values.scopes`,
+   `values.members`, merge model for develop and main) in the values section,
+   with the validation rules of
    [Set up a repository](../110-setup-repository/index.md) step 3; an invalid
-   value is refused in place with the rule. When `origin` is not readable on a
-   first run the repo value is empty, and apply is refused in place until a
-   valid repo value is entered.
+   value is refused in place with the rule. A scope has a kebab-case `name` and
+   a required `description`; the actor adds a scope, edits a scope's
+   description, or removes a scope. A member is a `path`; its slug is derived
+   (the folder name lowercased, other characters → `-`); the actor adds or
+   removes a member, and a path whose slug another member already has is refused
+   in place. When `origin` is not readable on a first run the repo value is
+   empty, and apply is refused in place until a valid repo value is entered.
    [Setup config](../../../entities/setup-config/index.md)
 7. Actor applies. Tui first re-reads `.config/bootstrap.yaml`, then computes the
    full render for the new selection and values in memory and finds the targets
    per [safety](../../../conventions.md#safety); the setup file is a target
-   ([Setup config](../../../entities/setup-config/index.md)). If none of the
-   [exits](#exits) applies, it shows the plan (create, change, delete,
-   unchanged, kept, orphaned, replacements, value changes, and the dependencies
-   added or pruned) and asks once to confirm. Bookkeeping alone is never a
-   change: a recorded path the running cli no longer renders and that is absent
-   on disk, a stale recorded dependency (a name the running catalog has) that no
-   tool of the selection needs (its parents not lost by this request), and a
-   wrong parent list in `values.dependencies` make no target and no plan on
-   their own, so with nothing else different tui writes nothing, asks no consent
-   and exits 0 "no change". When apply writes for another change (a tool, a
-   value, a repair or a file change), it also drops the stale path, prunes the
-   stale dependency (its files deleted and reported as usual, listed in
-   `dependencies_pruned`) and corrects the parent lists. A dependency left
-   without a parent by the request itself is a real change, pruned and planned
-   as before. Repairs apply only to the dependencies the selection after the
-   request needs: a missing dependency the request leaves unneeded is never
-   added back and never reported. A `values.dependencies` name the running
-   catalog does not have is not bookkeeping: dropping it is a repair, a change
-   in the plan that needs consent even alone, with the warning "dropped unknown
-   dependency `<name>`". Declining returns to the view (step 4).
-   [Tool](../../../entities/tool/index.md)
+   ([Setup config](../../../entities/setup-config/index.md)). The re-read
+   applies the [exits](#exits) in table order from the Validity row (exit 3) and
+   the version guard (exit 1) on, and the view closes on any of them, as the
+   diagram shows. If none of the [exits](#exits) applies, it shows the plan
+   (create, change, delete, unchanged, kept, orphaned, replacements, value
+   changes, and the dependencies added or pruned) and asks once to confirm.
+   Bookkeeping alone is never a change: a recorded path the running cli no
+   longer renders and that is absent on disk, a stale recorded dependency (a
+   name the running catalog has) that no tool of the selection needs (its
+   parents not lost by this request), and a wrong parent list in
+   `values.dependencies` make no target and no plan on their own, so with
+   nothing else different tui writes nothing, asks no consent and exits 0 "no
+   change". When apply writes for another change (a tool, a value, a repair or a
+   file change), it also drops the stale path, prunes the stale dependency (its
+   files deleted and reported as usual, listed in `dependencies_pruned`) and
+   corrects the parent lists. A dependency left without a parent by the request
+   itself is a real change, pruned and planned as before. Repairs apply only to
+   the dependencies the selection after the request needs: a missing dependency
+   the request leaves unneeded is never added back and never reported. A
+   `values.dependencies` name the running catalog does not have is not
+   bookkeeping: dropping it is a repair, a change in the plan that needs consent
+   even alone, with the warning "dropped unknown dependency `<name>`". Declining
+   returns to the view (step 4). [Tool](../../../entities/tool/index.md)
 8. On confirm, tui writes per [safety](../../../conventions.md#safety). It
    rewrites `.config/bootstrap.yaml` last (values, `values.tools`,
    `values.dependencies` with each dependency's parents, and `files`) and never
@@ -185,6 +238,14 @@ decides the exit code.
    `MISE_ENV=dev mise run setup:all` (per
    [errors](../../../conventions.md#errors)).
    [Setup config](../../../entities/setup-config/index.md)
+
+   After the write, when the apply created or changed `.vscode/extensions.json`,
+   tui runs the editor's command line once to sync the `REPO_NAME` profile (the
+   editor profile named by the repository's `REPO_NAME` value) to it (every
+   listed extension installed, every extension no selected tool lists
+   uninstalled), per [errors](../../../conventions.md#errors). The editor's
+   command line absent from the `PATH`, or a failed install or uninstall, is a
+   warning in `warnings`; the apply still exits 0.
 9. On every exit after the view closes except an interrupt (quit, no change, a
    refused apply, a failure, success), tui prints its human result, warnings
    included, in the result layout of
@@ -205,18 +266,20 @@ decides the exit code.
    dependencies prints it; the drop of an unknown dependency alone does not;
    otherwise no next command is printed and the human result has none. On a
    first run `added` lists the direct tools only, `dependencies_added` lists the
-   dependencies and `values_changed` lists every value (repo, commit_scopes,
+   dependencies and `values_changed` lists every value (repo, scopes, members,
    merge_model.develop, merge_model.main) as `{name, from: null, to}` sorted by
-   name. A successful apply exits 0. The result is human text only; tui never
-   prints a JSON result.
+   name. A successful apply exits 0. The result ends with its closing hint per
+   [errors](../../../conventions.md#errors). The result is human text only; tui
+   never prints a JSON result.
 
 ## Guarantees
 
-| Step / group                                                 | Consistency                                                         | On failure                                                                                                                                                                                                                                                                                                 | Idempotency                                                             | Load & latency         |
-| ------------------------------------------------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------- |
-| 1–7 (the view, the re-read, the render and the target check) | atomic, nothing is written                                          | none, nothing written yet; exit 0, 1, 2, 3 or 130 per step                                                                                                                                                                                                                                                 | n/a, a re-run starts from the same repo state                           | n/a, one local command |
-| 8 (apply)                                                    | atomic, all-or-nothing per [safety](../../../conventions.md#safety) | a write failure or an interrupt restores every target from `HEAD` and deletes every created file per [baseline](../../../conventions.md#baseline) atomic-multi-write and graceful-shutdown; exit 3 naming the failing path, or 130; a failed restore exits 3 listing the paths not restored (`unrestored`) | a re-run with the same selection and values finds no change and exits 0 | n/a, one local command |
-| 9                                                            | atomic, output only                                                 | none, changes no repo state                                                                                                                                                                                                                                                                                | n/a                                                                     | n/a, one local command |
+| Step / group                                                 | Consistency                                                         | On failure                                                                                                                                                                                                                                                                                                 | Idempotency                                                             | Load & latency          |
+| ------------------------------------------------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------- |
+| 1–7 (the view, the re-read, the render and the target check) | atomic, nothing is written                                          | none, nothing written yet; exit 0, 1, 2, 3 or 130 per step                                                                                                                                                                                                                                                 | n/a, a re-run starts from the same repo state                           | n/a, one local command  |
+| 8 (apply)                                                    | atomic, all-or-nothing per [safety](../../../conventions.md#safety) | a write failure or an interrupt restores every target from `HEAD` and deletes every created file per [baseline](../../../conventions.md#baseline) atomic-multi-write and graceful-shutdown; exit 3 naming the failing path, or 130; a failed restore exits 3 listing the paths not restored (`unrestored`) | a re-run with the same selection and values finds no change and exits 0 | n/a, one local command  |
+| editor profile sync (after step 8)                           | best effort , outside the repository, not atomic                    | a failed editor command line, install or uninstall is a warning, the written files stay, exit 0; an interrupt stops the sync, the written files stay, exit 130 ([errors](../../../conventions.md#errors))                                                                                                  | n/a , runs only after a write that changed `.vscode/extensions.json`    | n/a , one local command |
+| 9                                                            | atomic, output only                                                 | none, changes no repo state                                                                                                                                                                                                                                                                                | n/a                                                                     | n/a, one local command  |
 
 ## Diagram
 
@@ -227,6 +290,7 @@ sequenceDiagram
     participant C as Setup config
     participant G as Tool and category
     participant R as Repository
+    participant E as Editor command line
     O->>U: bootstrap tui
     alt --help
         U-->>O: help, exit 0
@@ -289,6 +353,14 @@ sequenceDiagram
                                 U-->>O: exit 130
                             end
                         else
+                            opt extensions.json changed
+                                U->>E: sync editor profile
+                                alt command line absent, install or uninstall failed
+                                    E-->>U: warning, written files stay
+                                else Ctrl-C during the sync
+                                    U-->>O: written files stay, exit 130
+                                end
+                            end
                             U-->>O: result, exit 0
                         end
                     end
@@ -331,25 +403,24 @@ N/A, runs synchronously in one command invocation.
 - Given a recorded `values.tools` that misses an unremovable tool and no other
   tool of its `max: one` category is recorded, when tui runs, then the tool
   shows selected, and the result `warnings` reports "added back unremovable tool
-  `<name>`". Given a setup file recorded with an older `format`, then it is read
-  and not refused, and the next write records the running cli's format. Given
-  two tools of one `max: one` category or an unknown tool name, then nothing is
-  written and the exit code is 3 naming the fix. Given a selected tool whose
-  required tool is in neither `values.tools` nor `values.dependencies`, then it
-  is not a failure: the dependency is added back, "added back dependency
-  `<name>`" is reported in `warnings`, and the view shows it marked `dependency`
-  in the tool's tree.
+  `<name>`". Given two tools of one `max: one` category or an unknown tool name,
+  then nothing is written and the exit code is 3 naming the fix. Given a
+  selected tool whose required tool is in neither `values.tools` nor
+  `values.dependencies`, then it is not a failure: the dependency is added back,
+  "added back dependency `<name>`" is reported in `warnings`, and the view shows
+  it marked `dependency` in the tool's tree.
 - Given no `.config/bootstrap.yaml` in an interactive terminal, when tui runs,
   then the view opens with the default tools and the origin-derived repo
-  pre-filled, the runtimes unchecked and shown only, marked `dependency`, in the
-  trees under the default tools that need them (for example under
-  `(•) pre-commit` the lines `├─ python  dependency`, `└─ uv  dependency` and,
-  nested under `uv`, `└─ python  dependency`), with no `needs` or
-  `also needed by` note; when the actor applies and confirms, then the files of
+  pre-filled, the dependencies marked `dependency` in the trees under the
+  default tools that need them (for example under `(•) pre-commit` the lines
+  `├─ python  dependency`, `└─ uv  dependency` and, nested under `uv`,
+  `└─ python  dependency`), with no `needs` or `also needed by` note; every
+  dependency (`python`, `uv`, `node`, `jq`, `yq`) also shows as a checked row
+  marked `dependency`; when the actor applies and confirms, then the files of
   the selected tools and `.config/bootstrap.yaml` are written, the exit code is
   0, the next command is `MISE_ENV=dev mise run setup:all`, `added` lists the
   direct tools only, `dependencies_added` lists the dependencies, and
-  `values_changed` lists repo, commit_scopes, merge_model.develop and
+  `values_changed` lists repo, scopes, members, merge_model.develop and
   merge_model.main as `{name, from: null, to}` sorted by name.
 - Given no `.config/bootstrap.yaml` and no readable origin, when the actor
   applies, then apply is refused in place until a valid repo value is entered.
@@ -386,28 +457,45 @@ N/A, runs synchronously in one command invocation.
   is written and the exit code is 0 with "no change".
 - Given a selection change, when the actor applies and declines the plan, then
   the view returns with the selection intact and nothing is written.
-- Given `dprint` unchecked and `node` and `pnpm` unselected, when the actor
-  selects `dprint`, then it is not refused, the row shows the tree
-  `├─ node  dependency` and `└─ pnpm  dependency` (with `└─ node  dependency`
-  nested under `pnpm`), `node` and `pnpm` stay unchecked, and after apply
-  `values.tools` lists `dprint`, `values.dependencies` records `node` and `pnpm`
-  with their parents, `added` lists `dprint` and `dependencies_added` lists
-  `node` and `pnpm`.
-- Given `dprint` selected with `node` a dependency, when the actor selects
-  `node`, then it is checked as a direct tool, it shows its own tree if it
-  requires anything, it appears unmarked in the trees of `dprint` and `pnpm`,
-  and after apply `node` is in `values.tools` and not in `values.dependencies`,
-  and `added` lists `node`.
+- Given `effect` unchecked and no `javascript` runtime selected, when the actor
+  selects `effect`, then it is not refused, the row shows the tree
+  `└─ node  dependency`, the `node` row shows checked and marked `dependency`,
+  and after apply `values.tools` lists `effect`, `values.dependencies` records
+  `node` with parents `[effect]`, `added` lists `effect` and
+  `dependencies_added` lists `node`.
+- Given `taplo` selected with `dprint` a dependency, when the view opens, then
+  the `dprint` row is checked and marked `dependency`; when the actor unchecks
+  it, then "remove `taplo` too? y/N" is asked; y unchecks both and after apply
+  `removed` lists `taplo` and `dependencies_pruned` lists `dprint`.
+- Given `kotlin` selected with `openjdk` its dependency, when the actor checks
+  `temurin`, then "replace `openjdk` with `temurin`?" is asked; y moves
+  `kotlin`'s link to `temurin` and after apply `replaced` lists
+  `{from: openjdk, to: temurin}`; n keeps `openjdk` and leaves `temurin`
+  unchecked.
 - Given the pinned example view, when the actor moves focus, then it moves over
   the tool rows only and never lands on a tree line.
-- Given a selected tool that another selected tool still needs and no other
-  alternative of its slot selected, when the actor deselects it, then the change
-  is refused in place with "cannot deselect `<tool>`: needed by `<parents>`" and
-  the view stays open.
-- Given `taplo` and `dprint` selected, when the actor deselects `dprint` first,
-  then it is refused naming `taplo`; when the actor deselects `taplo` and then
-  `dprint`, then both changes are accepted, because the check uses the selection
-  after each change.
+- Given `effect` selected and `node` meeting its `javascript` engine, when the
+  actor checks `bun` and applies, then both are kept: `bun` is in
+  `values.tools`, `node` keeps its parents and files, nothing is pruned and
+  `replaced` is empty. Given the actor then unchecks `node`, then no prompt is
+  asked and the change is allowed; on apply `effect`'s link moves to `bun`,
+  `node` leaves the selection and `replaced` lists `{from: node, to: bun}`.
+- Given `effect` and `pnpm` selected and `node` their only `javascript` runtime,
+  when the actor unchecks `node`, then "remove `pnpm`, `effect` too? y/N" is
+  asked in place (Catalog order); answering y unchecks all three and after apply
+  `removed` (or `dependencies_pruned` for `node` when it was a dependency) lists
+  them; answering n (or Enter) leaves `node`, `effect` and `pnpm` checked as
+  before.
+- Given `effect`, `pnpm` and `bun` selected and `node` selected directly, when
+  the actor unchecks `node`, then the prompt names `pnpm` only.
+- Given `pre-commit` selected with `python` its dependency, when the actor
+  unchecks `python`, then no prompt is asked, the change is refused in place
+  with "cannot deselect `python`: needed by `pre-commit`" (an unremovable
+  parent) and the view stays open.
+- Given `taplo` and `dprint` selected, when the actor unchecks `dprint`, then
+  "remove `taplo` too? y/N" is asked; when the actor instead unchecks `taplo`
+  and then `dprint`, then no prompt is asked for either, because the check uses
+  the selection after each change.
 - Given a dependency whose last parent is deselected, when the actor applies,
   then the plan lists the dependency as pruned, its files are deleted,
   `values.dependencies` no longer records it, and the result lists it in
@@ -444,11 +532,6 @@ N/A, runs synchronously in one command invocation.
   the parent lists are corrected.
 - Given a missing dependency that the selection after the request leaves
   unneeded, when apply succeeds, then it is not added back and not reported.
-- Given a `max: one` category holding a dependency (not reachable in 1.0), when
-  the view opens, then its radio group shows no marked row and `none` is not
-  marked; when the actor chooses another tool and consents, then that tool is
-  recorded in `values.dependencies`, not in `values.tools`, and `added` does not
-  list it.
 - Given only a repo or merge-model value changed, when apply succeeds, then the
   exit code is 0 and `values_changed` lists `{name, from, to}` sorted by name.
 - Given a set-up repository and an apply with no tool added, no repair and no
@@ -480,11 +563,46 @@ N/A, runs synchronously in one command invocation.
   is 130.
 - Given `mise` not on the `PATH`, or no git repository, when tui runs, then
   nothing is written and the exit code is 3.
-- Given a `max: one` category whose held tool (direct or a dependency) a
-  selected tool still needs, when the actor chooses another tool of the category
-  that is not an alternative of that slot, then no consent prompt is shown,
-  "cannot replace `<tool>`: needed by `<parents>`" is shown, and the selection
-  is unchanged (no 1.0 catalog tool reaches this case).
+- Given a `max: one` category whose direct held tool a selected tool still
+  needs, with no other way to meet that requirement, when the actor chooses
+  another tool of the category, then no consent prompt is shown, "cannot replace
+  `<tool>`: needed by `<parents>`" is shown, and the selection is unchanged (no
+  1.0 catalog tool reaches this case).
+- Given a `pubspec.yaml` in the repository and `flutter` unselected, when the
+  view opens, then `flutter` shows the muted word `suggested` and is unchecked;
+  when the actor applies without checking it, then `flutter` is not recorded.
+- Given a tool with several categories, when the actor checks it in one group,
+  then it is checked in every group it appears in; unchecking it in one group
+  unchecks it in all.
+- Given a tool whose `host_os` is `macos` on a host that is not macOS, when the
+  actor selects it, then "`<tool>` needs macOS" is shown in place, the selection
+  is unchanged and the view stays open; given the tool already recorded, then it
+  shows checked.
+- Given a scope with a name that is not kebab-case or an empty description, when
+  the actor enters it in the values section, then it is refused in place with
+  the rule; given a valid scope, then it is added, its description can be edited
+  and it can be removed.
+- Given a member path whose slug another member already has, when the actor adds
+  it, then it is refused in place and the view stays open.
+- Given a recorded tool name that the catalog lists in `renamed_from`, when tui
+  runs and the actor applies, then the view shows the new name checked, the file
+  is rewritten under the new name and `warnings` reports "renamed tool `<old>`
+  to `<new>`".
+- Given a recorded old tool name and no other change, when the actor applies,
+  then the rename is a repair listed in the plan that needs the confirm; on
+  confirm the setup file is rewritten under the new name and the exit code is 0;
+  declining returns to the view and nothing is written.
+- Given a successful apply that overwrote files, when tui finishes, then the
+  result ends with the closing line, then the hint "review `git diff`; restore
+  your own lines with `git restore -p <file>`".
+- Given an apply that created or changed `.vscode/extensions.json`, when it
+  succeeds, then tui runs the editor's command line once to sync the `REPO_NAME`
+  profile; given that command line is absent, then `warnings` reports it and the
+  exit code is 0.
+- Given an apply that created or changed `.vscode/extensions.json` and an editor
+  command line whose extension install fails, when the apply succeeds, then
+  `warnings` has one entry for it, the written files stay and the exit code is
+  0.
 - Abuse case: n/a, runs locally with the caller's own permissions on the
   caller's own repository; every value is validated per
   [baseline](../../../conventions.md#baseline) boundary-validation.

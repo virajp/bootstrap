@@ -33,36 +33,40 @@ Interactive setup is `bootstrap tui`
 
 Usage errors (exit 2, nothing written; cases in Acceptance) are checked first,
 before the preflight and before `.config/bootstrap.yaml` is read. Value rules:
-`--add-scope` / `--remove-scope` values are lowercase kebab-case; `--repo` is
-two or more `/`-separated segments. `--tool` names are checked against
-[Tool](../../../entities/tool/index.md) and
+`--repo` is two or more `/`-separated segments; two `--member` paths with one
+slug are refused. Scopes are not an init flag: they come from
+[Manage scopes](../180-manage-scopes/index.md) and the tui. `--tool` names are
+checked against [Tool](../../../entities/tool/index.md) and
 [Tool category](../../../entities/tool-category/index.md#invariants) invariants
 2 and 4. `mise` is a hidden tool: naming it is an unknown name.
 
-1. Init runs the preflight per [errors](../../../conventions.md#errors); nothing
-   is written on failure.
+1. Init runs the preflight on the target repository and `mise`
+   ([tool-versions](../../../conventions.md#tool-versions)) per
+   [errors](../../../conventions.md#errors); nothing is written on failure.
 2. Init looks for `.config/bootstrap.yaml`. Absent → a first run. Present → a
    re-run: init validates it per
    [Setup config validity](../../../entities/setup-config/index.md#validity),
    repairs it per
    [repair on read](../../../entities/setup-config/index.md#repair), and takes
-   every value and the tool selection from it. The repair covers only the
-   dependencies the selection after the request needs: a missing dependency the
-   request leaves unneeded is never added back and never reported (no warning,
-   not in `dependencies_added` or `dependencies_pruned`). Init is exempt from
-   the version guard for an older `version` or `format` only: it is never
-   refused, it is an upgrade re-run handled as any re-run (step 3 onward). A
-   newer `version` or `format` fails validity: exit 3, nothing written.
+   every value and the tool selection from it. The repair includes a tool rename
+   (a recorded old name read as the new name, with the warning "renamed tool
+   `<old>` to `<new>`"). The repair covers only the dependencies the selection
+   after the request needs: a missing dependency the request leaves unneeded is
+   never added back and never reported (no warning, not in `dependencies_added`
+   or `dependencies_pruned`). Init is exempt from the version guard for an older
+   `version` or `format` only: it is never refused, it is an upgrade re-run
+   handled as any re-run (step 3 onward). A newer `version` or `format` fails
+   validity: exit 3, nothing written.
 
    [Setup config](../../../entities/setup-config/index.md)
 3. Actor supplies the values:
 
-   | Value                | Flag                                                                         | Required          | Default                                                |
-   | -------------------- | ---------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------ |
-   | repo path            | `--repo`                                                                     | yes               | the recorded value, else read from the remote `origin` |
-   | commit scopes        | `--add-scope` (repeatable) / `--remove-scope` (repeatable) / `--reset-scope` | no — zero allowed | the recorded list, else none                           |
-   | merge model, develop | `--merge-develop` `direct`\|`pr`                                             | yes               | `direct`                                               |
-   | merge model, main    | `--merge-main` `direct`\|`pr`                                                | yes               | `pr`                                                   |
+   | Value                | Flag                             | Required          | Default                                                |
+   | -------------------- | -------------------------------- | ----------------- | ------------------------------------------------------ |
+   | repo path            | `--repo`                         | yes               | the recorded value, else read from the remote `origin` |
+   | members              | `--member <path>` (repeatable)   | no — zero allowed | the recorded list, else none                           |
+   | merge model, develop | `--merge-develop` `direct`\|`pr` | yes               | `direct`                                               |
+   | merge model, main    | `--merge-main` `direct`\|`pr`    | yes               | `pr`                                                   |
 
    The `--repo` default and the host (step 4) are read from the remote named
    `origin` only, on any host:
@@ -77,9 +81,14 @@ two or more `/`-separated segments. `--tool` names are checked against
 
    A `<path>` is `owner/name`, or nested `group/subgroup/name`.
 
-   The scope flags add to, remove from or empty `values.commit_scopes`.
-   Precedence, defaults and a missing value follow
-   [config](../../../conventions.md#config) and
+   `--member` only adds to `values.members`. The path rules (a leading `./` and
+   a trailing `/` dropped, no whitespace, a repeated path counted once) and the
+   slug rule (an empty slug or `all` refused) are those of
+   [Manage members](../190-manage-members/index.md); the path is not checked. A
+   result with two members of one slug exits 2, nothing written. Init does not
+   change `values.scopes`; removing a member is
+   [Manage members](../190-manage-members/index.md). Precedence, defaults and a
+   missing value follow [config](../../../conventions.md#config) and
    [errors](../../../conventions.md#errors); `--repo` is the only value that can
    be missing. [Setup config](../../../entities/setup-config/index.md) (recorded
    values)
@@ -99,20 +108,35 @@ two or more `/`-separated segments. `--tool` names are checked against
      category holds a named tool: the named tool takes its place. On a first run
      that needs no `--replace` (nothing is recorded); on a re-run it is a
      replacement (step 5) and the unremovable tool is removed.
-   - Each `requires` slot with no selected tool gets a dependency, recorded with
-     its parents in `values.dependencies`
+   - `--tool` naming a tool whose `host_os` is not the running host, for a new
+     selection, exits 2 with the other refusals of the usage and setup-file
+     phase ([errors](../../../conventions.md#errors)). A recorded tool of
+     another host stays and is rendered on any host.
+   - Each unmet requirement gets a dependency, recorded with its parents in
+     `values.dependencies`: a required tool that is not selected, and for an
+     engine with no selected runtime the engine's default runtime
      ([Tool](../../../entities/tool/index.md#requires-and-dependencies)). A
      dependency is installed and rendered like a selected tool.
 5. Replacement, re-run only: a selection that puts a different tool in a
-   `max: one` category than the recorded one is a replacement. It needs
-   `--replace`; without it init exits 2 before consent
-   ([config](../../../conventions.md#config)). A replacement whose replaced tool
-   fills a `requires` slot of a selected tool, while the incoming tool is not an
-   alternative of that slot and no other alternative of it is selected, exits 2
-   naming the dependent tool (checked on the selection after the request, before
+   `max: one` category, or a different runtime in a `max: one` engine
+   ([Engines](../../../entities/tool/index.md#engines)), than the recorded one
+   is a replacement. It needs `--replace`; without it init exits 2 before
+   consent ([config](../../../conventions.md#config)). A replacement that would
+   leave a selected tool dangling (the
+   [Dangling rule](../../../entities/tool/index.md#requires-and-dependencies))
+   exits 2 naming that tool (checked on the selection after the request, before
    consent; [errors](../../../conventions.md#errors)). `--replace` with no
-   replacement to make is ignored.
-   [Tool category](../../../entities/tool-category/index.md)
+   replacement to make is ignored. A re-run that adds another runtime of a
+   `max: many` engine whose held runtime meets it (for example
+   `--tool effect --tool bun` with `node` held for `effect`) is not a
+   replacement without `--replace`: as `add bun` in
+   [Add a tool](../140-add-tool/index.md), the held runtime stays with its
+   parents, the named one becomes direct and nothing is pruned. With `--replace`
+   it swaps as `add bun --replace` does: the engine links move to the named
+   runtime and the held one leaves the selection (and gets a `replaced` entry),
+   unless another selected tool requires it specifically (for example `pnpm`
+   requiring `node`), when it stays as that tool's dependency and only the links
+   move. [Tool category](../../../entities/tool-category/index.md)
 6. Init computes every render and decision in memory per
    [safety](../../../conventions.md#safety).
    - A re-run that drops a recorded removable tool takes it out of
@@ -122,7 +146,8 @@ two or more `/`-separated segments. `--tool` names are checked against
      and is never in `dependencies_added` or `dependencies_pruned`. Otherwise
      its files are removed as [Remove a tool](../150-remove-tool/index.md) does.
      A replaced tool is taken out of `values.tools` and its files are removed
-     the same way.
+     the same way. A held runtime kept beside another runtime of its `max: many`
+     engine (step 5, no `--replace`) is neither dropped nor pruned.
    - A re-run prunes each dependency that the request leaves without a parent (a
      drop, a remove, a replacement): that is a change, on the list of changes,
      and its files are deleted and reported as usual (`dependencies_pruned`).
@@ -153,7 +178,12 @@ two or more `/`-separated segments. `--tool` names are checked against
      [config](../../../conventions.md#config) steps 1–5.
 
    [Tool](../../../entities/tool/index.md)
-7. Init writes only the changes: creates, changes and deletes the targets.
+7. Init writes only the changes: creates, changes and deletes the targets. A
+   shared file is rendered again; a `create_only` file is written only when
+   absent ([safety](../../../conventions.md#safety)). In a `mise` config file an
+   existing pin is kept. A new tool line, or a renamed package, gets bootstrap's
+   own exact pin in `mise.toml` and `*.ci.toml`, and `latest` in `*.dev.toml`
+   ([tool versions](../../../conventions.md#tool-versions)).
    [Tool](../../../entities/tool/index.md) (target files)
 8. Init writes `.config/bootstrap.yaml` last, recording the format, the
    bootstrap version running, the values (`values.tools` = every direct tool;
@@ -164,24 +194,36 @@ two or more `/`-separated segments. `--tool` names are checked against
    [write format](../../../entities/setup-config/index.md#write-format); on an
    upgrade re-run `version` and `format` move to the running bootstrap's.
    [Setup config](../../../entities/setup-config/index.md)
-9. Init prints the result, the next command and the closing line per
+9. After a write that created or changed `.vscode/extensions.json`, init runs
+   the editor's command line once to create the `REPO_NAME` profile, install
+   every listed extension and uninstall every extension no selected tool lists,
+   so the profile equals the file
+   ([Tool](../../../entities/tool/index.md#selection-dependent-files)); an
+   absent command line, or a present one that fails (the profile, an extension
+   install or uninstall), is a warning, the written files stay and the exit code
+   stays 0 ([errors](../../../conventions.md#errors)). Init then prints the
+   result; the next command only when the run changed a `mise` config file; and,
+   only on a run that changed a file, the closing line and then one more line
+   "review `git diff`; restore your own lines with `git restore -p <file>`" per
    [errors](../../../conventions.md#errors); the human output reports the same
    lists as the `--json` document (keys in Acceptance). `dependencies_added`
    (added as dependencies this run) and `dependencies_pruned` are tool names
    sorted by name, always present, never holding a tool named in `--tool`. No
    tool-name list holds a hidden tool; its file paths are listed as any path.
-   Init never installs software or runs the next command
-   (`MISE_ENV=dev mise run setup:all`, [errors](../../../conventions.md#errors))
-   itself. `--dry-run` follows [config](../../../conventions.md#config) and
-   exits with the code of the failing step.
+   Init never installs software other than the editor extensions above, and
+   never runs the next command (`MISE_ENV=dev mise run setup:all`,
+   [errors](../../../conventions.md#errors)) itself. `--dry-run` follows
+   [config](../../../conventions.md#config) and exits with the code of the
+   failing step.
 
 ## Guarantees
 
-| Step             | Consistency                 | On failure                                                                                                                                                                                                                                                                                                                                                                   | Idempotency                                                                               | Load & latency          |
-| ---------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------- |
-| usage check, 1–6 | atomic — nothing is written | none — nothing written yet; the usage check exits 2, steps 1–6 exit 1, 2, 3 or 130 per step (0 when the consent prompt is declined)                                                                                                                                                                                                                                          | n/a — a retry starts from the same repo state                                             | n/a — one local command |
-| 7–8              | atomic — all-or-nothing     | restore per [safety](../../../conventions.md#safety); a write failure exits 3 naming the failing path, an interrupt exits 130; a failed restore exits 3 per [errors](../../../conventions.md#errors). An uncatchable kill is out of the guarantee; the config is written last, so the repo is then not marked set up (first run) or still records the earlier state (re-run) | a re-run with nothing changed writes nothing and exits 0; after a restore it starts clean | n/a — one local command |
-| 9                | atomic — output only        | none — changes no repo state                                                                                                                                                                                                                                                                                                                                                 | n/a                                                                                       | n/a — one local command |
+| Step                    | Consistency                                      | On failure                                                                                                                                                                                                                                                                                                                                                                   | Idempotency                                                                               | Load & latency          |
+| ----------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------- |
+| usage check, 1–6        | atomic — nothing is written                      | none — nothing written yet; the usage check exits 2, steps 1–6 exit 1, 2, 3 or 130 per step (0 when the consent prompt is declined)                                                                                                                                                                                                                                          | n/a — a retry starts from the same repo state                                             | n/a — one local command |
+| 7–8                     | atomic — all-or-nothing                          | restore per [safety](../../../conventions.md#safety); a write failure exits 3 naming the failing path, an interrupt exits 130; a failed restore exits 3 per [errors](../../../conventions.md#errors). An uncatchable kill is out of the guarantee; the config is written last, so the repo is then not marked set up (first run) or still records the earlier state (re-run) | a re-run with nothing changed writes nothing and exits 0; after a restore it starts clean | n/a — one local command |
+| 9 (editor profile sync) | best effort — outside the repository, not atomic | a failed editor command line, install or uninstall is a warning, the written files stay, exit 0; an interrupt stops the sync, the written files stay, exit 130 ([errors](../../../conventions.md#errors))                                                                                                                                                                    | n/a — runs only after a write that changed `.vscode/extensions.json`                      | n/a — one local command |
+| 9 (output)              | atomic — output only                             | none — changes no repo state                                                                                                                                                                                                                                                                                                                                                 | n/a                                                                                       | n/a — one local command |
 
 ## Diagram
 
@@ -225,7 +267,8 @@ sequenceDiagram
                 I-->>O: exit 3 (unrestored paths listed when restore failed)
             end
         else written
-            I-->>O: result, next command
+            Note over I: editor profile once, if extensions.json changed
+            I-->>O: result, next command, review hint
         end
     end
 ```
@@ -237,9 +280,9 @@ N/A — runs synchronously in one command invocation.
 ## Acceptance
 
 A case that names or records a second tool of the `version-control` or
-`git-hooks` category, or replaces a tool that fills a `requires` slot, cannot be
-reached with the 1.0 catalog (one tool in each such category, no such slot); it
-holds for a later catalog.
+`git-hooks` category, or replaces a tool another selected tool requires, cannot
+be reached with the 1.0 catalog (one tool in each such category, and no tool
+requires a tool of a `max: one` category); it holds for a later catalog.
 
 - Given an empty git repository, when `bootstrap init` runs with all flags and
   `-y`, then the files of the selected tools exist, `.config/bootstrap.yaml`
@@ -266,17 +309,36 @@ holds for a later catalog.
   changed, deleted, kept, orphaned and replaced paths (the list the real run
   would apply), writes nothing and the exit code is 0.
 - Given `bootstrap init` with no `--tool` on a first run (with or without
-  `--yes`), when init runs, then the default tools are selected and the runtimes
-  they require arrive as dependencies (for example `python` and `uv` for
-  `pre-commit`, `node` and `pnpm` for `dprint`, `jq` and `yq` for `claude`);
-  with `--yes` they are applied and the exit code is 0, without it consent
-  follows the prompt rule above.
-- Given a first run, when init runs `--tool dprint -y`, then `dprint` is
-  selected and `node` and `pnpm` are recorded in `values.dependencies`, next to
-  the dependencies of the unremovable tools: `node` with parents
-  `[dprint, pnpm]` (`pnpm` requires `node`), `pnpm` with parents `[dprint]`;
-  `dependencies_added` lists `node` and `pnpm` (and the other dependencies this
-  run added), not `dprint`; the exit code is 0.
+  `--yes`), when init runs, then the default tools are selected and the tools
+  they require arrive as dependencies (`python`, the `python` engine's default
+  runtime, and `uv` for `pre-commit`, `graphify` and `mempalace`; `node`, the
+  `javascript` engine's default runtime, for `virajp-linter`; `jq` and `yq` for
+  `claude`; `dprint` needs nothing); with `--yes` they are applied and the exit
+  code is 0, without it consent follows the prompt rule above.
+- Given a first run, when init runs `--tool effect -y`, then `effect` is
+  selected and `node` is recorded in `values.dependencies` with parents
+  `[effect]`, next to the dependencies of the unremovable tools: `python` with
+  parents `[pre-commit, uv]` and `uv` with parents `[pre-commit]`;
+  `dependencies_added` lists `node`, `python` and `uv`, not `effect`; the exit
+  code is 0.
+- Given a first run, when init runs `--tool effect --tool bun -y`, then `bun`
+  meets `effect`'s `javascript` engine, `node` is not added,
+  `values.dependencies` has no `node` or `bun` entry and the exit code is 0.
+- Given `effect` recorded and `node` recorded as its dependency, when init
+  re-runs with `--tool effect --tool bun -y` without `--replace`, then `bun` is
+  added to `values.tools`, `node` stays in `values.dependencies` with parents
+  `[effect]` and keeps its files, nothing is pruned, `replaced` is empty and the
+  exit code is 0.
+- Given `effect` recorded and `node` recorded as its dependency, when init
+  re-runs with `--tool effect --tool bun --replace -y`, then `effect`'s link
+  moves from `node` to `bun`, `node` is pruned (listed in `dependencies_pruned`,
+  its files removed except `create_only` ones), `replaced` lists
+  `{from: node, to: bun}` and the exit code is 0; with `pnpm` also selected,
+  `node` stays in `values.dependencies` with parents `[pnpm]`, only `effect`'s
+  link moves and `replaced` has no entry for `node`.
+- Given a first run, when init runs `--tool pnpm -y`, then `node` is recorded in
+  `values.dependencies` with parents `[pnpm]` (`pnpm` requires `node` itself)
+  and the exit code is 0.
 - Given the remote `origin` is `git@<host>:o/r.git` or `https://<host>/o/r.git`,
   when init reads defaults, then the repo default is `o/r`; for
   `https://<host>/a/b/c.git` it is `a/b/c`; for `ssh://git@github.com/o/r.git`
@@ -294,24 +356,20 @@ holds for a later catalog.
   values are kept as supplied.
 - Given a re-run whose config records a newer version or format, when init runs,
   then nothing is written and the exit code is 3 "upgrade bootstrap".
-- Given a repository set up by an older bootstrap `version` or `format`, when a
-  newer bootstrap re-runs init with `-y`, then the older format is read and not
-  refused, the changed files are rewritten, `version` and `format` move to the
-  running bootstrap's, `files` is refreshed and orphaned paths are reported
-  `orphaned`.
 - Given a first run, when init finishes, then no path is reported `orphaned`.
 - Given a config that fails the schema, or a `files` entry that is empty,
   absolute, uses `..` or has a wildcard, when init runs, then nothing is
   written, the exit code is 3 and the message names the failing field and says
   "fix the file, then run again".
 - Given an unknown flag, an invalid flag value (for example
-  `--merge-main squash`, `--merge-develop squash`, `--remove-scope Api`, or
-  `--repo r` with fewer than two `/`-separated segments), an unknown `--tool`
-  name (also `--tool mise`), or two `--tool` names of one `max: one` category,
-  when init runs (with or without `-y`, even in a directory that is not a git
-  repository or with a config that fails the schema), then these are usage
-  errors: nothing is written and the exit code is 2 before the preflight, not 3;
-  for an invalid flag value the message names the flag and the allowed form.
+  `--merge-main squash`, `--merge-develop squash`, or `--repo r` with fewer than
+  two `/`-separated segments), an unknown `--tool` name (also `--tool mise`), or
+  two `--tool` names of one `max: one` category or of one `max: one` engine (for
+  example `--tool openjdk --tool temurin`), when init runs (with or without
+  `-y`, even in a directory that is not a git repository or with a config that
+  fails the schema), then these are usage errors: nothing is written and the
+  exit code is 2 before the preflight, not 3; for an invalid flag value the
+  message names the flag and the allowed form.
 - Given `--tool` naming another tool of the `version-control` or `git-hooks`
   category over the recorded one, when init re-runs with `--replace` and `-y`,
   then it is a replacement, not a usage error, and the unremovable tool is
@@ -320,10 +378,14 @@ holds for a later catalog.
   `version-control` or `git-hooks` category with `-y` and no `--replace`, then
   the named tool takes the place of that category's unremovable tool, which is
   not selected, and the exit code is 0.
-- Given a re-run that replaces a recorded tool that fills a `requires` slot of a
-  selected tool, with an incoming tool that is not an alternative of that slot
-  and no other alternative of it selected, when init runs with `--replace` and
-  `-y`, then nothing is written and the exit code is 2 naming the dependent
+- Given `temurin` recorded, when init re-runs with `--tool openjdk` (and the
+  other recorded tools) and `-y` but without `--replace`, then nothing is
+  written and the exit code is 2 with the next command the same command plus
+  `--replace`; with `--replace`, `openjdk` takes `temurin`'s engine links,
+  `temurin` leaves and `replaced` lists `{from: temurin, to: openjdk}`.
+- Given a re-run that replaces a recorded tool that a selected tool requires
+  (with no other way to meet that requirement), when init runs with `--replace`
+  and `-y`, then nothing is written and the exit code is 2 naming the dependent
   tool.
 - Given a `values.tools` name the running catalog does not have, or two tools of
   one `max: one` category, when init runs, then nothing is written and the exit
@@ -368,10 +430,11 @@ holds for a later catalog.
   is 1 listing it; once committed, it is listed `changed` when rewritten and
   `unchanged` when not.
 - Given `--tool taplo` without `--tool dprint`, when init runs with `-y`, then
-  `dprint` is added as a dependency of `taplo` (with `node` and `pnpm` as its
-  dependencies), `dependencies_added` lists `dprint`, `node` and `pnpm`, and the
-  exit code is 0; given `--tool taplo --tool dprint`, `dprint` is selected
-  directly and is recorded in `values.tools`, not in `values.dependencies`.
+  `dprint` is added as a dependency of `taplo` (it needs nothing itself),
+  `dependencies_added` lists `dprint` (next to `python` and `uv` of the
+  unremovable `pre-commit`), and the exit code is 0; given
+  `--tool taplo --tool dprint`, `dprint` is selected directly and is recorded in
+  `values.tools`, not in `values.dependencies`.
 - Given a recorded dependency (for example `dprint`, a dependency of `taplo`),
   when init re-runs with `--tool` naming it (and the other recorded direct
   tools) and `-y`, then it moves to `values.tools` with no parent change, the
@@ -380,28 +443,43 @@ holds for a later catalog.
   possible, the exit code is 2 "changes need --yes".
 - Given `--tool github --tool github`, when init runs with `-y`, then github is
   applied once.
-- Given a recorded list without `api`, when init runs with `-y --add-scope api`
-  (also repeated as `--add-scope api --add-scope api`), then `api` is recorded
-  once, the files are rendered again and every changed file is a target; given
-  `api` already in the list, the list is unchanged.
-- Given a recorded list with `api`, when init runs with `-y --remove-scope api`,
-  then `api` is no longer recorded and the changed files are rewritten; given
-  `--remove-scope web` with `web` not in the list, then the list is unchanged
-  and `warnings` has "scope `web` is not recorded".
-- Given a recorded list with scopes, when init runs with `-y --reset-scope`,
-  then `values.commit_scopes` is empty and the changed files are rewritten; it
-  also works together with every non-scope flag.
-- Given `--reset-scope` with `--add-scope` or `--remove-scope`, when init runs,
-  then nothing is written and the exit code is 2.
-- Given `--add-scope api --remove-scope api`, when init runs, then nothing is
-  written and the exit code is 2.
-- Given `--add-scope api --remove-scope web` with `web` recorded, when init runs
-  with `-y`, then both are applied: `api` is added and `web` is removed.
-- Given a first run with `--add-scope api`, when init runs with `-y`, then the
-  list is `api` alone.
-- Given `--add-scope Api` (not lowercase kebab-case), when init runs, then
-  nothing is written and the exit code is 2 naming the flag and the allowed
-  form.
+- Given a first run or a re-run, when init runs with `-y --member ../Api_Server`
+  (repeatable), then each member is added to `values.members` with the slug
+  `api-server` (folder name lowercased, other characters `-`), the path is not
+  checked, the recorded members are kept and the exit code is 0.
+- Given a recorded member `../web`, when init runs with `-y --member ../web/`,
+  then the trailing `/` is dropped, the path is already recorded (in
+  `already_recorded` as `../web`), nothing is written and the exit code is 0.
+- Given `--member a/Web` and `--member b/web`, or `--member` whose slug a
+  recorded member already has, when init runs, then nothing is written and the
+  exit code is 2.
+- Given `--tool` naming a tool whose `host_os` is not the running host (for
+  example `swiftlint` on Linux) that is not recorded, when init runs, then
+  nothing is written and the exit code is 2 with the other refusals; given the
+  same tool already recorded, it stays and is rendered on any host.
+- Given a recorded old tool name that the running catalog lists in a tool's
+  `renamed_from`, when init re-runs with `-y`, then it is read as the new name,
+  rewritten under it, the warning "renamed tool `<old>` to `<new>`" is reported
+  (`warnings`) and the exit code is 0.
+- Given a `mise` config file whose tool line has an exact pin, when init
+  re-runs, then the pin is kept; a new tool line, or a renamed package, gets
+  bootstrap's own exact pin in `mise.toml` and `*.ci.toml`, and `latest` in
+  `*.dev.toml`.
+- Given a shared file edited by hand and committed, when init re-runs with `-y`,
+  then it is rendered again and listed `changed`; a `create_only` file is
+  written only when absent.
+- Given a run that created or changed `.vscode/extensions.json`, when init
+  finishes with `-y`, then the editor's command line has run once to create the
+  `REPO_NAME` profile, install every listed extension and uninstall every
+  extension no selected tool lists; with the command line absent there is one
+  warning and the exit code is 0.
+- Given a run that created or changed `.vscode/extensions.json` and an editor
+  command line that fails (creating the profile, or installing or uninstalling
+  an extension), when init finishes with `-y`, then there is one warning, the
+  written files stay and the exit code is 0.
+- Given a run that changed a file, when init finishes, then the human output
+  ends with the closing line, then one more line "review `git diff`; restore
+  your own lines with `git restore -p <file>`".
 - Given the directory is not inside a git repository, when init runs, then
   nothing is written and the exit code is 3.
 - Given `mise` is not on `PATH`, when init runs, then nothing is written, the
@@ -480,17 +558,19 @@ holds for a later catalog.
   tool, a dependency, a repair that adds one back included, or the incoming tool
   of a replacement; each creates its own `mise` config file) or creates, changes
   or deletes a `mise` config file, when init finishes, then the human output
-  ends with exactly "commit the changes, then run
-  `MISE_ENV=dev mise run setup:all`"; with `--json` the success document has
-  `exit` 0, `created`, `changed`, `deleted`, `unchanged`, `kept`, `orphaned`,
-  `replaced` (each `{from, to}`), `dependencies_added`, `dependencies_pruned`,
-  `warnings`, and `next_command` equal to `MISE_ENV=dev mise run setup:all`.
+  ends with exactly the closing line "commit the changes, then run
+  `MISE_ENV=dev mise run setup:all`", then the review hint line ("review
+  `git diff`; restore your own lines with `git restore -p <file>`"); with
+  `--json` the success document has `exit` 0, `created`, `changed`, `deleted`,
+  `unchanged`, `kept`, `orphaned`, `replaced` (each `{from, to}`),
+  `dependencies_added`, `dependencies_pruned`, `warnings`, and `next_command`
+  equal to `MISE_ENV=dev mise run setup:all`.
 - Given a re-run whose only change creates, changes or deletes no `mise` config
   file and adds no tool, when init finishes with `-y`, then the human output
-  ends with exactly "commit the changes", there is no `next_command` and the
-  exit code is 0. A merge-model change (for example `--merge-main direct`)
-  changes `.config/mise/conf.d/env.toml`, a `mise` config file, so it prints the
-  next command.
+  ends with exactly the closing line "commit the changes", then the review hint
+  line, there is no `next_command` and the exit code is 0. A merge-model change
+  (for example `--merge-main direct`) changes `.config/mise/conf.d/env.toml`, a
+  `mise` config file, so it prints the next command.
 - Given `--dry-run --json`, when init runs, then the document has the same keys
   and values a real run would return plus `"dry_run": true`; on a non-zero exit
   it is the same error document plus `"dry_run": true`.

@@ -14,9 +14,10 @@ owner: [ cli ]
 
 A tool category groups tools that do the same job. It is a read-only catalog
 shipped inside bootstrap, versioned with it, and never stored in the target
-repository.
+repository. A tool can belong to several categories (ktlint and ruff are both
+formatter and linter).
 
-Scale: 14 categories at 1.0; grows only when a release adds one.
+Scale: 17 categories at 1.0; grows only when a release adds one.
 
 Used by: [Set up a repository](../../flows/cli/110-setup-repository/index.md),
 [Add a tool](../../flows/cli/140-add-tool/index.md),
@@ -38,31 +39,36 @@ bootstrap release.
 
 ## Catalog (1.0)
 
-The enumerated set below is the contract; each tool's category is recorded on
+The enumerated set below is the contract; each tool's categories are recorded on
 the [Tool](../tool/index.md) entity.
 
-| Name                    | Max    | Purpose                                                            |
-| ----------------------- | ------ | ------------------------------------------------------------------ |
-| `tool-manager`          | `one`  | Installs the tools and runs the task library                       |
-| `version-control`       | `one`  | Ignore rules and git settings                                      |
-| `git-hooks`             | `one`  | Runs the gates before each commit                                  |
-| `editor`                | `many` | Editor defaults for the repository                                 |
-| `formatter`             | `many` | Formats the repository's files                                     |
-| `linter`                | `many` | Finds errors in code                                               |
-| `runtime`               | `many` | Language runtimes and command-line helpers that other tools run on |
-| `secret-scanner`        | `one`  | Finds secrets in code and commits                                  |
-| `vulnerability-scanner` | `many` | Finds known vulnerabilities in dependencies                        |
-| `secrets-manager`       | `one`  | Gives the repository's secrets to its tasks                        |
-| `ai-agent`              | `many` | Settings for an AI coding agent                                    |
-| `knowledge-graph`       | `one`  | Builds a knowledge graph of the code                               |
-| `agent-memory`          | `one`  | Memory store for AI agents                                         |
-| `forge`                 | `many` | Pull request and issue templates of the code host                  |
+| Name                    | Max    | Purpose                                                                    |
+| ----------------------- | ------ | -------------------------------------------------------------------------- |
+| `tool-manager`          | `one`  | Installs the tools and runs the task library                               |
+| `version-control`       | `one`  | Ignore rules and git settings                                              |
+| `git-hooks`             | `one`  | Runs the gates before each commit                                          |
+| `editor`                | `many` | Editor defaults for the repository                                         |
+| `runtime`               | `many` | Language runtimes and command-line helpers that other tools run on         |
+| `package-manager`       | `many` | Package managers that install a runtime's dependencies                     |
+| `framework`             | `many` | Frameworks whose editor support and command-line tools the repository uses |
+| `formatter`             | `many` | Formats the repository's files                                             |
+| `linter`                | `many` | Finds errors in code                                                       |
+| `secret-scanner`        | `one`  | Finds secrets in code and commits                                          |
+| `vulnerability-scanner` | `many` | Finds known vulnerabilities in dependencies                                |
+| `secrets-manager`       | `many` | Gives the repository's secrets to its tasks                                |
+| `ai-agent`              | `many` | Settings for an AI coding agent                                            |
+| `knowledge-graph`       | `one`  | Builds a knowledge graph of the code                                       |
+| `agent-memory`          | `one`  | Memory store for AI agents                                                 |
+| `local-services`        | `many` | Local services the project runs against, such as emulators                 |
+| `forge`                 | `many` | Pull request and issue templates of the code host                          |
 
 The table order is the display order: the tui and the docs list categories in
-this order, and the `purpose` shows in both. A category whose every tool is
-hidden (`tool-manager`, whose only tool is `mise`) is not shown: not in the tui,
-the docs or `show`. Changing the order is a minor version. Adding a category is
-a minor version; renaming or removing one, or changing `max`, is a major version
+this order, and the `purpose` shows in both. A tool in several categories
+appears in each of its category groups; selecting it in one group selects it in
+all of them. A category whose every tool is hidden (`tool-manager`, whose only
+tool is `mise`) is not shown: not in the tui, the docs or `show`. Changing the
+order is a minor version. Adding a category is a minor version; renaming or
+removing one, or changing `max`, is a major version
 ([changelog](../../conventions.md#changelog)).
 
 ## Invariants
@@ -77,9 +83,12 @@ a minor version; renaming or removing one, or changing `max`, is a major version
    flag, without which the run exits 2. The general consent to apply the changes
    follows per [config](../../conventions.md#config); `-y` and the consent
    prompt of init and add are never consent to replace. A replacement exists
-   only in a `max: one` category (and in an alternative slot of a Tool's
-   `requires`, owned by the [Tool](../tool/index.md) entity); in a `max: many`
-   category a user adds one tool and removes the other.
+   only in a `max: one` category (and among the runtimes of one engine, owned by
+   the [Tool](../tool/index.md#requires-and-dependencies) entity); in a
+   `max: many` category a user adds one tool and removes the other. A tool in
+   several categories is replaced in a `max: one` category only with respect to
+   that category: the replacement concerns that category alone, and the tool
+   stays selected for its other categories.
 4. Every shown tool can be replaced within its `max: one` category.
    `removable: false` (see [Tool](../tool/index.md)) does not block replacement:
    `git` and `pre-commit` are unremovable but replaceable by another tool of
@@ -101,9 +110,9 @@ Authoritative schema: [schema.yaml](./schema.yaml)
 
 ## Relationships
 
-| Related entity           | Cardinality | Ownership | On delete                                                                                                   | Required |
-| ------------------------ | ----------- | --------- | ----------------------------------------------------------------------------------------------------------- | -------- |
-| [Tool](../tool/index.md) | 1–N         | reference | a release that drops a category drops its tools: a recorded selection that names one exits 3 naming the fix | Yes      |
+| Related entity           | Cardinality | Ownership | On delete                                                                                                                                                                                                          | Required |
+| ------------------------ | ----------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| [Tool](../tool/index.md) | N–M         | reference | a release that drops a category drops only the tools with no other category (a recorded selection that names one exits 3 naming the fix); a tool in another category stays selected and loses the dropped category | Yes      |
 
 ## Concurrency & Consistency
 
