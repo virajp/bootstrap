@@ -1,0 +1,9 @@
+[tools."pre-commit"]
+depends = [ "python", "uv" ]
+version = "latest"
+
+[env]
+PRE_COMMIT_HOME = "$HOME/.cache/pre-commit"
+
+[shell_alias]
+precommit = "mise run code:precommit"

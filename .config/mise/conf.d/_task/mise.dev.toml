@@ -1,0 +1,5 @@
+[tasks.init]
+description = "Initialize mise tasks"
+dir = "{{exec(command='git rev-parse --show-toplevel')}}"
+hide = true
+run = "find .config/mise/tasks/ -name '*' -type f -exec chmod 755 {} \\;"

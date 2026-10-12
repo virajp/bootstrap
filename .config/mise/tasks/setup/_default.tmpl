@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+#MISE description="Setup the project: install precommit hooks, upgrade dependencies, clean up cache, etc."
+#MISE hide=true
+
+<% $last := math.Sub (len .members) 1 -%>
+#USAGE flag "--all" help="Setup all: workspace<% range $i, $m := .members %><% if eq $i $last %> and <% else %>, <% end %><% $m %><% end %>"
+<% range .members -%>
+#USAGE flag "--<% . %>" help="Setup workspace & <% . %>"
+<% end %>
+<% range .members -%>
+SETUP_<% . | strings.ReplaceAll "-" "_" | strings.ToUpper %>=$([[ "${usage_all:-false}" == "true" || "${usage_<% . | strings.ReplaceAll "-" "_" %>:-false}" == "true" ]] && echo true || echo false)
+<% end %>
+set -e
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+mise run setup:mise
+
+mise run setup:external:update
+
+print_header "Linter setup ..."
+pnpm dlx @askviraj/linter@latest --init
+
+print_header "Upgrading dprint plugins..."
+dprint config update
+
+mise run setup:precommit
+
+mise run setup:ai
+
+<% range .members -%>
+<% $x := dict %><% if and (has $ "member") (has $.member .) %><% $x = index $.member . %><% end -%>
+if [[ "${SETUP_<% . | strings.ReplaceAll "-" "_" | strings.ToUpper %>}" == "true" ]]; then
+  print_header "Setting up <% index $x "label" | default . %> project ..."
+  mise run --cd <% . %> setup:all
+fi
+<% end %>
+print_header "Setup complete!"

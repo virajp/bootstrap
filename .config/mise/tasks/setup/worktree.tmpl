@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+#MISE description="Initialise a fresh git worktree: checkout submodules and install deps (lighter than setup:all)"
+#MISE hide=false
+
+set -e
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+print_header "Checking out submodules ..."
+git -C "${MISE_PROJECT_ROOT}" submodule update --init --recursive
+
+print_header "Reshimming mise ..."
+mise reshim
+mise install
+
+<% range .members -%>
+<% $x := dict %><% if and (has $ "member") (has $.member .) %><% $x = index $.member . %><% end -%>
+<% if has $x "worktree_install" -%>
+print_header "Installing <% . %> dependencies ..."
+mise x --cd "${MISE_PROJECT_ROOT}/<% . %>" -- <% $x.worktree_install %>
+
+<% end -%>
+<% end -%>
+print_header "Worktree ready!"

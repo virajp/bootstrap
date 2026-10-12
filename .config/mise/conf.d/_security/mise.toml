@@ -1,0 +1,6 @@
+# Security
+[tools.gitleaks]
+version = "latest"
+
+[tools.grype]
+version = "latest"

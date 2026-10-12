@@ -1,0 +1,11 @@
+# # AI Tools
+[tools.jq]
+version = "latest"
+
+[tools."pipx:graphifyy"]
+depends = [ "python", "uv" ]
+version = "latest"
+
+[tools."pipx:mempalace"]
+depends = [ "python", "uv" ]
+version = "latest"

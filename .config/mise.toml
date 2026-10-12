@@ -1,0 +1,12 @@
+[settings]
+activate_aggressive = true
+all_compile = false
+env_shell_expand = true
+gpg_verify = true
+lockfile = false
+minimum_release_age = "10h"
+os = "macos"
+raw = true
+status.missing_tools = "always"
+task.disable_spec_from_run_scripts = true
+task.output = "interleave"
