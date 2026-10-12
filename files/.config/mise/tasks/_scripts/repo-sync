@@ -9,9 +9,10 @@
 #   source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/repo-sync"
 #   repo_sync [--dry-run] -- <path> ...
 #
-# Each <path> is relative to both repo roots: `repo-config` holds every file at
-# the path it gets here. One call clones the default branch once (shallow, over
-# SSH) and syncs every path from that one clone.
+# Each <path> is relative to this repo's root and to `files/` in `repo-config`:
+# `repo-config` holds every file under `files/` at the path it gets here. One
+# call clones the default branch once (shallow, over SSH) and syncs every path
+# from that one clone.
 #
 # Templates: a path that ends in `.tmpl` is rendered with gomplate and written
 # without the suffix. The context is the values file (`<% .repo_name %>`,
@@ -116,7 +117,7 @@ _rs_render() {
 # when the content is identical or on any failure.
 _rs_file() {
   local dir=$1 path=$2 dry_run=$3
-  local src="${dir}/${path}" dest="${MISE_PROJECT_ROOT}/${path%.tmpl}"
+  local src="${dir}/files/${path}" dest="${MISE_PROJECT_ROOT}/${path%.tmpl}"
   local destdir tmp show rc=0
   show=$(_rs_path "$dest")
 

@@ -6,20 +6,26 @@ repositories. Each repository copies the files it needs with its own
 
 ## Layout
 
-Each file is at the path that it gets in a repository. For example,
-`.config/mise/tasks/code/merge/develop` here is
+The shared files are in `files/`. This repository does not use them itself.
+Each file in `files/` is at the path that it gets in a repository. For
+example, `files/.config/mise/tasks/code/merge/develop` here is
 `.config/mise/tasks/code/merge/develop` in every repository that uses it.
 
 ## How a repository syncs
 
 1. `setup:configs` sources `.config/mise/tasks/_scripts/repo-sync`.
 2. It calls `repo_sync -- <path> ...` with the paths that the repository
-   wants.
+   wants. A path does not start with `files/`.
 3. `repo_sync` clones the default branch of this repository once (shallow,
-   over SSH), then copies each path.
+   over SSH), then copies each path from `files/`.
 
 A file is only replaced when its content changes. Use `--dry-run` to see the
 changes without writing them.
+
+A copy of `repo-sync` from before the `files/` layout reads the paths from the
+root of this repository, and it cannot find them. Copy
+`files/.config/mise/tasks/_scripts/repo-sync` into the repository by hand one
+time. Then `setup:configs` operates again.
 
 ## Templates
 
@@ -52,5 +58,5 @@ wins, so a repository can negate a shared pattern with `!`.
 
 ## Change a shared file
 
-1. Change the file here, and push to `main`.
+1. Change the file in `files/`, and push to `main`.
 2. In each repository, run `mise run setup:configs`, then commit the result.
