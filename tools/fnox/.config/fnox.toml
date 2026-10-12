@@ -1,0 +1,10 @@
+# fnox: this repository's secrets. Values never live here — define a provider
+# (a password manager, a cloud secret store, or age encryption), then, from the
+# repository root, add each secret with
+# `fnox --config .config/fnox.toml set <NAME>` and load them with
+# `fnox --config .config/fnox.toml exec -- <command>`. Name this file every
+# time: fnox's default search may not look under .config/.
+
+[providers]
+
+[secrets]

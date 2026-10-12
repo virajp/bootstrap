@@ -1,0 +1,7 @@
+# `default` profile, not `minimal`: `minimal` has no clippy and no rustfmt.
+[tools."core:rust"]
+profile = "default"
+version = "latest"
+
+[tools.zola]
+version = "latest"

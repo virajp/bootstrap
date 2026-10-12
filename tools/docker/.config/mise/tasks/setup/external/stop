@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#MISE description="Stop the local services and remove their volumes"
+#MISE depends=["setup:external:check"]
+
+set -e
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+# Local services are for development only.
+if [[ "${MISE_ENV:-}" != "dev" ]]; then
+  exit 0
+fi
+
+print_header "Stopping the local services ..."
+mise x -- docker compose --file "${MISE_PROJECT_ROOT}/.tools/docker-compose.yaml" down --remove-orphans --volumes

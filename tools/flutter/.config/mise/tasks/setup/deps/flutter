@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+#MISE description="Install the Dart and Flutter dependencies; --upgrade also upgrades them"
+#MISE hide=true
+
+#USAGE flag "--upgrade" help="also upgrade the dependencies, major versions included"
+
+set -e
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+# Shipped with the flutter tool. A repository without a pubspec yet has
+# nothing to install, and that is not a failure.
+if [[ ! -f "${MISE_PROJECT_ROOT}/pubspec.yaml" ]]; then
+  print_info "No pubspec.yaml — no Flutter dependencies to install."
+  exit 0
+fi
+
+cd "${MISE_PROJECT_ROOT}"
+if [[ "${usage_upgrade:-false}" == "true" ]]; then
+  print_header "Upgrading Flutter dependencies ..."
+  mise x -- flutter pub upgrade --major-versions
+else
+  print_header "Installing Flutter dependencies ..."
+  mise x -- flutter pub get
+fi

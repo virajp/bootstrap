@@ -1,0 +1,5 @@
+# Pulumi and the Google Cloud CLI.
+depends    = ["python"]
+root_only  = false
+extensions = []
+seed       = []

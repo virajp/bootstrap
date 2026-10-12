@@ -1,0 +1,8 @@
+[tools.android-sdk]
+version = "23"
+
+[tools.flutter]
+version = "3"
+
+[tools.java]
+version = "21"

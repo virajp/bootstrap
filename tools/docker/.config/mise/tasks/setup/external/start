@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#MISE description="Start the local services"
+#MISE depends=["setup:external:check"]
+
+set -e
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+# Local services are for development only.
+if [[ "${MISE_ENV:-}" != "dev" ]]; then
+  exit 0
+fi
+
+print_header "Starting the local services ..."
+mise x -- docker compose --file "${MISE_PROJECT_ROOT}/.tools/docker-compose.yaml" up --detach

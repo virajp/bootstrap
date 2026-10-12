@@ -1,0 +1,5 @@
+# Bun, with a bunfig.toml that the repository owns.
+depends    = []
+root_only  = false
+extensions = []
+seed       = ["bunfig.toml"]

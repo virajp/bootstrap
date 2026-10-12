@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+#MISE description="Build the local images and pull the other images"
+#MISE hide=true
+#MISE depends=["setup:external:check"]
+
+set -e
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+# Local services are for development only.
+if [[ "${MISE_ENV:-}" != "dev" ]]; then
+  exit 0
+fi
+
+print_header "Building the local images ..."
+mise x -- docker compose --file "${MISE_PROJECT_ROOT}/.tools/docker-compose.yaml" build
+
+print_header "Pulling the images ..."
+mise x -- docker compose --file "${MISE_PROJECT_ROOT}/.tools/docker-compose.yaml" pull --ignore-buildable

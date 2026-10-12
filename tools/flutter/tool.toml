@@ -1,0 +1,5 @@
+# Flutter and Dart, with the Android toolchain.
+depends    = []
+root_only  = false
+extensions = ["dart-code.dart-code", "dart-code.flutter"]
+seed       = []

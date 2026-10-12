@@ -1,0 +1,6 @@
+# The local services of this repository, for development only. The sync
+# writes this file only when it is missing; the repository owns it.
+# Run them with `mise run setup:external:start`.
+name: local-services
+
+services: {}

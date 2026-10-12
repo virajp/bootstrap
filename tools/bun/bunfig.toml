@@ -1,0 +1,5 @@
+# Bun configuration: https://bun.com/docs/runtime/bunfig
+# The sync writes this file only when it is missing. Edit it for this
+# repository; the next sync keeps your version.
+
+[install]

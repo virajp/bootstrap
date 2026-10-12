@@ -1,0 +1,5 @@
+# The Cloudflare CLI (npm:cf).
+depends    = ["node"]
+root_only  = false
+extensions = []
+seed       = []
