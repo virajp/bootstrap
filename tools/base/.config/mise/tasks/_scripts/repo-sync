@@ -3,26 +3,43 @@
 #MISE description="Helper functions to sync shared files from the repo-config repo"
 #MISE hide=true
 
-# repo-sync — copy shared files from the private `repo-config` repo into this
-# repo. Meant to be *sourced* by a mise task, not executed:
+# repo-sync — copy the shared files of the selected tools from the private
+# `repo-config` repo into this repo. Meant to be *sourced* by a mise task, not
+# executed:
 #
 #   source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/repo-sync"
-#   repo_sync [--dry-run] -- <path> ...
+#   repo_sync [--dry-run]
 #
-# Each <path> is relative to this repo's root and to `files/` in `repo-config`:
-# `repo-config` holds every file under `files/` at the path it gets here. One
-# call clones the default branch once (shallow, over SSH) and syncs every path
-# from that one clone.
+# The values file lists the tools: `tools = ["base", "node"]`. Each tool is a
+# folder `tools/<tool>/` in `repo-config`, which holds its files at the path
+# they get here, and a `tool.toml` manifest:
 #
-# Templates: a path that ends in `.tmpl` is rendered with gomplate and written
+#   depends    = ["python"]     tools added with this one
+#   root_only  = false          true: refused in a git submodule
+#   extensions = ["a.b"]        VS Code extensions, for `.vscode/extensions.json`
+#   seed       = ["bunfig.toml"] files written only when missing; the repo owns
+#                               them after that
+#
+# One call clones the default branch once (shallow, over SSH) and syncs every
+# file of every selected tool from that one clone.
+#
+# Core tools: a tool in `core_tools` of the values file ships its
+# `conf.d/<topic>/mise.dev.toml` here as `mise.toml`, so mise loads it in every
+# environment. Nothing is deleted: a repo that moves a tool in or out of
+# `core_tools` deletes the old file itself.
+#
+# Templates: a file that ends in `.tmpl` is rendered with gomplate and written
 # without the suffix. The context is the values file (`<% .repo_name %>`,
-# `<% .member.<name>.label %>`) plus `.members`, the repo's member names: the
-# git members from `members()` in `helpers` (submodules, else MEMBERS), then
-# each `[member.<name>]` of the values file that is not one of them — a folder
-# of a monorepo, which must exist. The delimiters are `<% %>`, because `{{ }}`
-# belongs to mise and `[[ ]]` to bash, and both must reach the output
-# unchanged. gomplate must be on PATH, for example through the calling task's
-# `#MISE tools.gomplate="latest"`.
+# `<% .member.<name>.label %>`) plus:
+#   .members     the git members from `members()` in `helpers` (submodules,
+#                else MEMBERS), then each `[member.<name>]` of the values file
+#                that is not one of them — a folder of a monorepo, which must
+#                exist
+#   .tools       the selected tools, dependencies included
+#   .extensions  the VS Code extensions of those tools, sorted, no duplicates
+# The delimiters are `<% %>`, because `{{ }}` belongs to mise and `[[ ]]` to
+# bash, and both must reach the output unchanged. gomplate reads the TOML too;
+# the calling task provides it with `#MISE tools.gomplate="latest"`.
 #
 # .gitignore: the shared ignore set is written first, then the lines of this
 # repo's `.config/repo-sync/gitignore`, if that file exists. A later line wins,
@@ -31,19 +48,20 @@
 # Failure handling
 #   * A destination is only replaced after a complete copy or render, so a
 #     failure always leaves the existing file as it was.
-#   * A bad path does not stop the others; a failed clone stops the whole run,
-#     because every path would fail the same way.
+#   * A bad file does not stop the others; a failed clone, an unknown tool or a
+#     root-only tool in a submodule stops the whole run.
 #
 # Return codes
 #   0  success (or nothing to change)
-#   2  usage error in the calling task, or a template that cannot render
-#   3  a path that is not in repo-config (fix the task)
+#   2  usage error, a values file without `tools`, a root-only tool in a
+#      submodule, or a template that cannot render
+#   3  a tool that is not in repo-config (fix the values file)
 #   5  the clone failed: network, SSH key or access to the repo
 #   1  anything else (local filesystem errors, ...)
 #
 # Environment:
 #   REPO_SYNC_URL     the repo to clone (default git@github.com:virajp/repo-config.git)
-#   REPO_SYNC_VALUES  values file for templates
+#   REPO_SYNC_VALUES  the values file
 #                     (default $MISE_PROJECT_ROOT/.config/repo-config.toml)
 
 _rs_log() { printf '%s\n' "repo-sync: $*" >&2; }
@@ -85,45 +103,111 @@ _rs_members() {
   done <<<"$keys"
 }
 
-# Render the template <src> into <out>. <name> is the path, for messages.
-_rs_render() {
-  local src=$1 out=$2 name=$3 ctx list
-  local values=${REPO_SYNC_VALUES:-${MISE_PROJECT_ROOT:-$PWD}/.config/repo-config.toml}
-  if ! mise x -- which gomplate >/dev/null 2>&1; then
-    _rs_log "$name: gomplate is not on PATH - cannot render the template"
-    return 2
-  fi
-  if [[ ! -f $values ]]; then
-    _rs_log "$name: values file $(_rs_path "$values") not found - cannot render the template"
-    return 2
-  fi
-  list=$(_rs_members "$values" "$name") || return 2
-  ctx=$(mktemp "${out}.XXXXXX") || { _rs_log "$name: cannot create a temp file to render into"; return 1; }
-  _RS_TMPS+=("$ctx")
-  # One context file: gomplate's `.` root replaces every other context, so the
-  # values and the member list are merged into it first. `members` comes first
-  # in the merge, so a `members` key in the values file cannot replace it.
-  if ! REPO_SYNC_MEMBERS=$list mise x -- gomplate --left-delim '<%' --right-delim '%>' -c "v=${values}" -o "$ctx" \
-    -i '<% $l := coll.Slice %><% range (env.Getenv "REPO_SYNC_MEMBERS" | strings.Split "\n") %><% if . %><% $l = coll.Append . $l %><% end %><% end %><% coll.Merge (dict "members" $l) .v | data.ToJSON %>' >&2 ||
-    ! mise x -- gomplate --left-delim '<%' --right-delim '%>' -c ".=${ctx}?type=application/json" -f "$src" -o "$out" >&2; then
-    rm -f -- "$ctx"
-    _rs_log "$name: gomplate failed to render the template"
-    return 2
-  fi
-  rm -f -- "$ctx"
+# gomplate with the template delimiters this repo uses.
+_rs_gomplate() { mise x -- gomplate --left-delim '<%' --right-delim '%>' "$@"; }
+
+# Print the items of the list <key> in the TOML file <file>, one per line;
+# nothing when the key is absent.
+_rs_list() {
+  local file=$1 key=$2
+  _rs_gomplate -c "v=${file}" -i "<% if has .v \"${key}\" %><% range (index .v \"${key}\") %><% . %>
+<% end %><% end %>"
 }
 
-# Sync one <path> from the clone in <dir>. Leaves the destination untouched
-# when the content is identical or on any failure.
+# Print the manifest of <tool> in the clone <dir> as `<field> <value>` lines:
+# `depends`, `extension`, `seed`, and one `root_only true|false`.
+_rs_manifest() {
+  local dir=$1 tool=$2
+  _rs_gomplate -c "t=${dir}/tools/${tool}/tool.toml" -i '<% range .t.depends %>depends <% . %>
+<% end %><% range .t.extensions %>extension <% . %>
+<% end %><% range .t.seed %>seed <% . %>
+<% end %>root_only <% .t.root_only %>
+'
+}
+
+# Resolve the tools of <values> against the clone <dir>, dependencies
+# included, into _RS_TOOLS (space separated, a dependency before the tool that
+# needs it), _RS_EXTENSIONS (one per line, sorted, unique) and _RS_SEEDS
+# (` <tool>/<path> ` words). Returns 2 or 3, after a message, on any problem.
+_rs_resolve() {
+  local dir=$1 values=$2 requested tool field value pending in_submodule
+  requested=$(_rs_list "$values" tools) || { _rs_log "cannot read $(_rs_path "$values")"; return 2; }
+  if [[ -z ${requested//[$'\n ']/} ]]; then
+    _rs_log "$(_rs_path "$values") lists no tools - add tools = [\"base\", ...]"
+    return 2
+  fi
+  in_submodule=$(git -C "$MISE_PROJECT_ROOT" rev-parse --show-superproject-working-tree 2>/dev/null) || in_submodule=''
+
+  _RS_TOOLS=' ' _RS_SEEDS=' ' _RS_EXTENSIONS=''
+  # Depth-first, so each dependency lands before the tool that named it. A
+  # stack of words rather than recursion: bash 3.2 has no local arrays worth
+  # passing around, and the manifests are tiny.
+  pending=$(printf '%s\n' "$requested" | tr '\n' ' ')
+  local visiting=' '
+  while [[ -n ${pending// /} ]]; do
+    tool=${pending%% *}
+    pending=${pending#* }
+    [[ -n $tool && $_RS_TOOLS != *" $tool "* ]] || continue
+    if [[ ! -f $dir/tools/$tool/tool.toml ]]; then
+      _rs_log "tool '$tool' is not in repo-config"
+      return 3
+    fi
+    local deps='' manifest
+    manifest=$(_rs_manifest "$dir" "$tool") || { _rs_log "cannot read tools/$tool/tool.toml"; return 2; }
+    while read -r field value; do
+      [[ $field == depends && $_RS_TOOLS != *" $value "* ]] && deps+="$value "
+    done <<<"$manifest"
+    if [[ -n $deps && $visiting != *" $tool "* ]]; then
+      # Come back to this tool after its dependencies.
+      visiting+="$tool "
+      pending="$deps$tool $pending"
+      continue
+    fi
+    while read -r field value; do
+      case $field in
+        extension) _RS_EXTENSIONS+="$value"$'\n' ;;
+        seed) _RS_SEEDS+="$tool/$value " ;;
+        root_only)
+          if [[ $value == true && -n $in_submodule ]]; then
+            _rs_log "tool '$tool' is for the root repository only - remove it from the tools of this submodule"
+            return 2
+          fi
+          ;;
+      esac
+    done <<<"$manifest"
+    _RS_TOOLS+="$tool "
+  done
+  _RS_EXTENSIONS=$(printf '%s' "$_RS_EXTENSIONS" | sort -u)
+}
+
+# Write the template context to <out>: the values of <values>, with
+# `members`, `tools` and `extensions` merged in first, so a key of the same
+# name in the values file cannot replace them.
+_rs_context() {
+  local values=$1 out=$2 members
+  members=$(_rs_members "$values" "template context") || return 2
+  REPO_SYNC_MEMBERS=$members REPO_SYNC_TOOLS=$(printf '%s\n' $_RS_TOOLS) REPO_SYNC_EXTENSIONS=$_RS_EXTENSIONS \
+    _rs_gomplate -c "v=${values}" -o "$out" \
+    -i '<% $ctx := dict %><% range (coll.Slice "members" "tools" "extensions") %><% $l := coll.Slice %><% range (env.Getenv (printf "REPO_SYNC_%s" (strings.ToUpper .)) | strings.Split "\n") %><% if . %><% $l = coll.Append . $l %><% end %><% end %><% $ctx = coll.Merge $ctx (dict . $l) %><% end %><% coll.Merge $ctx .v | data.ToJSON %>' >&2
+}
+
+# Sync the file <path> of <tool> from the clone in <dir>. Leaves the
+# destination untouched when the content is identical, when it is a seed that
+# exists, or on any failure.
 _rs_file() {
-  local dir=$1 path=$2 dry_run=$3
-  local src="${dir}/files/${path}" dest="${MISE_PROJECT_ROOT}/${path%.tmpl}"
-  local destdir tmp show rc=0
+  local dir=$1 tool=$2 path=$3 dry_run=$4 core=$5 ctx=$6
+  local src="${dir}/tools/${tool}/${path}" out=${path%.tmpl}
+  local dest destdir tmp show rc=0
+  # A core tool's dev-only mise config loads in every environment instead.
+  if [[ $core == *" $tool "* && $out == .config/mise/conf.d/*/mise.dev.toml ]]; then
+    out=${out%mise.dev.toml}mise.toml
+  fi
+  dest="${MISE_PROJECT_ROOT}/${out}"
   show=$(_rs_path "$dest")
 
-  if [[ ! -f $src ]]; then
-    _rs_log "$path: not found in repo-config"
-    return 3
+  if [[ $_RS_SEEDS == *" $tool/$path "* && -e $dest ]]; then
+    _rs_log "kept seed  $show"
+    return 0
   fi
 
   if ((dry_run)); then
@@ -137,7 +221,12 @@ _rs_file() {
   _RS_TMPS+=("$tmp")
 
   if [[ $path == *.tmpl ]]; then
-    _rs_render "$src" "$tmp" "$path" || rc=$?
+    if [[ -z $ctx ]]; then
+      rc=2
+    elif ! _rs_gomplate -c ".=${ctx}?type=application/json" -f "$src" -o "$tmp" >&2; then
+      _rs_log "$tool/$path: gomplate failed to render the template"
+      rc=2
+    fi
   else
     cp -- "$src" "$tmp" || rc=1
   fi
@@ -175,21 +264,28 @@ _rs_file() {
   _rs_log "updated    $show"
 }
 
-# repo_sync [--dry-run] -- <path> ...
+# repo_sync [--dry-run]
 #
-# Clone repo-config once, then sync every <path>. Returns the most severe
-# failure code, or 0.
+# Clone repo-config once, resolve the tools of the values file, then sync
+# every file of every tool. Returns the most severe failure code, or 0.
 repo_sync() {
   local dry_run=0
-  while (($#)) && [[ $1 != -- ]]; do
+  while (($#)); do
     case $1 in
       --dry-run) dry_run=1; shift ;;
-      *) _rs_log "unknown option: $1"; return 2 ;;
+      *) _rs_log "usage: repo_sync [--dry-run]"; return 2 ;;
     esac
   done
-  [[ ${1:-} == -- ]] || { _rs_log "usage: repo_sync [--dry-run] -- <path> ..."; return 2; }
-  shift
-  (($#)) || { _rs_log "repo_sync: no paths given"; return 2; }
+
+  local values=${REPO_SYNC_VALUES:-${MISE_PROJECT_ROOT:-$PWD}/.config/repo-config.toml}
+  if [[ ! -f $values ]]; then
+    _rs_log "values file $(_rs_path "$values") not found - it lists the tools to sync"
+    return 2
+  fi
+  if ! mise x -- which gomplate >/dev/null 2>&1; then
+    _rs_log "gomplate is not available - add #MISE tools.gomplate=\"latest\" to the calling task"
+    return 2
+  fi
 
   local url=${REPO_SYNC_URL:-git@github.com:virajp/repo-config.git}
   local dir rev
@@ -206,16 +302,37 @@ repo_sync() {
   rev=$(git -C "$dir" rev-parse --short HEAD)
   _rs_log "using repo-config at ${rev}"
 
-  local path rc worst=0 ok=0 failed=() total=$#
-  for path in "$@"; do
-    rc=0
-    _rs_file "$dir" "$path" "$dry_run" || rc=$?
-    if ((rc == 0)); then
-      ((ok += 1))
-    else
-      failed+=("$path")
-      ((rc > worst)) && worst=$rc
-    fi
+  local rc=0
+  _rs_resolve "$dir" "$values" || { rc=$?; rm -rf -- "$dir"; return "$rc"; }
+  _rs_log "tools:${_RS_TOOLS% }"
+
+  local core
+  core=" $(_rs_list "$values" core_tools | tr '\n' ' ')"
+
+  # The context is built once, and only when a template needs it. An empty
+  # path tells `_rs_file` that it could not be built, so each template fails
+  # and every plain file still syncs.
+  local ctx=''
+  if [[ -n $(find "$dir/tools" -name '*.tmpl' -type f -print -quit) ]]; then
+    ctx=$(mktemp "${TMPDIR:-/tmp}/repo-sync-ctx.XXXXXX") || { rm -rf -- "$dir"; return 1; }
+    _RS_TMPS+=("$ctx")
+    _rs_context "$values" "$ctx" || { _rs_log "cannot build the template context"; ctx=''; }
+  fi
+
+  local tool path worst=0 ok=0 failed=() total=0
+  for tool in $_RS_TOOLS; do
+    while IFS= read -r path; do
+      [[ -n $path ]] || continue
+      ((total += 1))
+      rc=0
+      _rs_file "$dir" "$tool" "$path" "$dry_run" "$core" "$ctx" || rc=$?
+      if ((rc == 0)); then
+        ((ok += 1))
+      else
+        failed+=("$tool/$path")
+        ((rc > worst)) && worst=$rc
+      fi
+    done < <(cd "$dir/tools/$tool" && find . -type f ! -name tool.toml | sed 's#^\./##' | sort)
   done
   rm -rf -- "$dir"
 

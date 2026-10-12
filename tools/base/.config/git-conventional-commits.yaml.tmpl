@@ -48,10 +48,11 @@ changelog:
     refactor: Refactors
     revert: Reverts
     breakingChange: BREAKING CHANGES
-<% if has . "repo_url" %>
-  # The changelog links, from `repo_url` in .config/repo-config.toml.
-  commitUrl: <% .repo_url %>/commit/%commit%
-  commitRangeUrl: <% .repo_url %>/compare/%from%...%to%?diff=split
+<% if has . "repo_url" %><% $web := .repo_url %><% if strings.Contains "gitlab" .repo_url %><% $web = printf "%s/-" .repo_url %><% end %>
+  # The changelog links, from `repo_url` in .config/repo-config.toml. GitLab
+  # puts its pages under `/-/`.
+  commitUrl: <% $web %>/commit/%commit%
+  commitRangeUrl: <% $web %>/compare/%from%...%to%?diff=split
   issueRegexPattern: "#[0-9]+"
-  issueUrl: <% .repo_url %>/issues/%issue%
+  issueUrl: <% $web %>/issues/%issue%
 <% end -%>

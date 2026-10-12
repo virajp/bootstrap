@@ -1,0 +1,7 @@
+{
+  // Written by repo-config's sync from the extensions of this repository's
+  // tools. Add an extension to the tool's tool.toml, not here.
+  "recommendations": [<% range $i, $e := .extensions %><% if $i %>,<% end %>
+    "<% $e %>"<% end %>
+  ]
+}

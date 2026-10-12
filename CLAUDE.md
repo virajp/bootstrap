@@ -10,28 +10,38 @@ it with their own `setup:configs` task. Read `README.md` for the sync contract.
 
 ## Layout rule
 
-All shared files are in `files/`. This repository does not use them itself.
-The files at the root (`README.md`, `CLAUDE.md`) are for this repository only.
+All shared files are in `tools/<tool>/`, one folder for each tool. This
+repository does not use them itself. The files at the root (`README.md`,
+`CLAUDE.md`, `sync.md`) are for this repository only.
 
-Each file in `files/` is at the path that it gets in a consumer repository.
-For example, `files/.config/mise/tasks/code/merge/develop` becomes
-`.config/mise/tasks/code/merge/develop` in a consumer. Do not move a file in
-`files/`. A move breaks every consumer that names the old path in its
-`repo_sync -- <path> ...` call.
+Each file in `tools/<tool>/` is at the path that it gets in a consumer
+repository. For example, `tools/base/.config/mise/tasks/code/merge/develop`
+becomes `.config/mise/tasks/code/merge/develop` in a consumer.
+
+- Each tool folder has a `tool.toml` with four keys: `depends`, `root_only`,
+  `extensions` and `seed`. All four keys are necessary, because the sync
+  reads them without defaults.
+- Two tools must not ship the same path.
+- A file that the consumer owns after the first write is a seed. List it in
+  `seed`.
+- A tool ships its dev-only mise config as `conf.d/<topic>/mise.dev.toml`. The
+  sync writes it as `mise.toml` when the consumer lists the tool in
+  `core_tools`.
 
 Many files refer to files that are not in this repository, for example
-`.config/pre-commit-config.yaml`, `.config/gitleaks.toml`, `.config/grype.yaml`,
-`.vscode/extensions.json`, and the `setup:ai` and `setup:external:update`
-tasks. The consumer repository or a stack overlay supplies them. Do not run
-the shared tasks in this repository.
+`.config/pre-commit-config.yaml`, `.config/gitleaks.toml` and
+`.config/grype.yaml`. The consumer repository supplies them. Do not run the
+shared tasks in this repository.
 
 ## How the sync operates
 
-- `files/.config/mise/tasks/_scripts/repo-sync` defines `repo_sync`. A
-  consumer task sources its own copy of that file. It does a shallow clone of
-  the default branch of this repository over SSH, then copies each path.
-- A consumer gives paths without the `files/` prefix. The sync reads each
-  path from `files/` in the clone.
+- `tools/base/.config/mise/tasks/_scripts/repo-sync` defines `repo_sync`.
+  The consumer task `setup:configs` sources its own copy of that file.
+- `repo_sync` reads `tools` from the consumer file `.config/repo-config.toml`.
+  It does a shallow clone of the default branch of this repository over SSH.
+  Then it adds the `depends` of each tool, and copies each file of each tool.
+- gomplate reads the TOML files: the values file and each `tool.toml`.
+- The sync never deletes a file. `sync.md` tells consumers what to delete.
 - The sync uses the pushed `main` branch. Local changes have no effect on
   consumers until you push them.
 - To test a change before you push it, set `REPO_SYNC_URL` to a local clone
@@ -45,15 +55,17 @@ the shared tasks in this repository.
 - The delimiters are `<% %>`. Do not use `{{ }}` or `[[ ]]` for template
   logic. mise uses `{{ }}` and bash uses `[[ ]]`, and both must reach the
   output unchanged.
-- The values come from the consumer file `.config/repo-config.toml`
-  (`repo_name`, `merge_model_develop`, `merge_model_main`, `[member.<name>]`).
+- The values come from the consumer file `.config/repo-config.toml`. The
+  keys are in `sync.md`, step 3.
 - `.members` is the list of member names: the git submodules (else the
   `MEMBERS` env value), then each `[member.<name>]` key with a folder in the
   consumer repository.
+- `.tools` is the list of the selected tools. `.extensions` is the sorted list
+  of their VS Code extensions.
 
 ## Task scripts
 
-Task scripts are in `files/.config/mise/tasks/`. mise uses the directory path
+Task scripts are in `tools/<tool>/.config/mise/tasks/`. mise uses the directory path
 as the task name, for example `code/merge/develop` is `code:merge:develop`. A
 `_default` file is the task for the directory name.
 
@@ -100,16 +112,17 @@ The `merge` library enforces this model:
 
 ## mise config
 
-- `files/.config/mise.toml` holds the shared `[settings]`.
-- `files/.config/mise/conf.d/<topic>/` holds one topic each. `mise.toml` files
-  are for all environments. `mise.dev.toml` files are for development only.
-- Directories with a `_` prefix (`_env`, `_formatter`, `_linter`, `_security`,
-  `_task`) are for every repository. The other directories (`node`, `python`,
-  `claude`, `pre-commit`) are for each stack or tool.
+- `tools/base/.config/mise.toml` holds the shared `[settings]`.
+- `conf.d/<topic>/` holds one topic each. `mise.toml` files are for all
+  environments. `mise.dev.toml` files are for development only.
+- `base` ships the directories with a `_` prefix (`_base`, `_env`, `_task`)
+  and `pre-commit`. Each other tool ships `conf.d/<tool>/`.
+- A consumer keeps its own mise config in `conf.d/repo/`. No tool ships that
+  directory.
 
 ## Change a shared file
 
-1. Change the file in `files/`.
+1. Change the file in `tools/<tool>/`.
 2. Commit and push to `main`.
 3. In each consumer repository, run `mise run setup:configs`, then commit the
    result.

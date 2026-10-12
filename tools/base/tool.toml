@@ -1,0 +1,5 @@
+# The files every repository gets: mise, the task library, formatter, linters, scanners and pre-commit.
+depends    = ["python"]
+root_only  = false
+extensions = ["dbaeumer.vscode-eslint", "dprint.dprint", "foxundermoon.shell-format", "gruntfuggly.todo-tree", "hverlin.mise-vscode", "oderwat.indent-rainbow", "pkief.material-icon-theme", "redhat.vscode-yaml", "usernamehw.errorlens"]
+seed       = []

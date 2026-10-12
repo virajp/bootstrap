@@ -8,15 +8,25 @@ Do the steps in sequence to make the repository get its shared files from
 ## Rules
 
 - Ask the user before each choice that this file does not decide. Do not
-  assume a stack, a value, or a path.
-- Each shared file is at `files/<path>` in `repo-config`. In the consumer
-  repository, it is at `<path>`. Give `repo_sync` the `<path>` only, without
-  `files/`.
+  assume a tool, a value, or a path.
+- The shared files are grouped by tool. Each tool is a folder
+  `tools/<tool>/` in `repo-config`. A file at `tools/<tool>/<path>` goes to
+  `<path>` in the consumer repository.
+- The values file `.config/repo-config.toml` lists the tools of the
+  repository. `repo_sync` syncs all the files of these tools.
 - Do not edit a synced file in the consumer repository. The next sync replaces
-  it. Put a function that only one repository uses in a local sibling file,
-  for example `.config/mise/tasks/_scripts/<name>.env`.
+  it. Put repository-owned content in the places that the sync never writes:
+  - mise config: `.config/mise/conf.d/repo/mise.toml` and
+    `.config/mise/conf.d/repo/mise.dev.toml`.
+  - shell functions: `.config/mise/tasks/_scripts/local`.
+  - ignore lines: `.config/repo-sync/gitignore`.
+  - tasks: any task name that no tool ships.
+- A seed file is different. The sync writes it only if it is missing. After
+  that, the repository owns it.
 - To change a shared file, change it in `repo-config`, push it to `main`, then
   sync again.
+- Prefix each tool call with `mise x --`, also in the task files and the hook
+  entries of `.config/pre-commit-config.yaml`.
 
 ## Requirements
 
@@ -26,9 +36,9 @@ Do the steps in sequence to make the repository get its shared files from
 
 ## Repositories with git submodules
 
-Each git submodule is a separate repository. It needs its own copy of the
-shared files, its own values file, and its own `setup:configs` task. Do steps
-1 to 9 in each repository of the tree, not only in the root repository.
+Each git submodule is a separate repository. It needs its own values file and
+its own copy of the shared files. Do the steps in each repository of the
+tree, not only in the root repository.
 
 1. Get the list of submodules, nested submodules included.
 
@@ -37,240 +47,326 @@ shared files, its own values file, and its own `setup:configs` task. Do steps
    ```
 
 2. Show the list to the user. Ask which submodules to include.
-3. Do steps 1 to 9 in each included submodule. Start with the deepest
+3. Do the steps in each included submodule. Start with the deepest
    submodules. Do the root repository last.
 4. In each submodule, run the commands from the root of that submodule.
    `MISE_PROJECT_ROOT` and all the paths in this file are relative to it.
 
-The file selection and the values of a submodule can be different from those
-of the root repository. Ask the user for each submodule. You can show the
-answers of a different repository as a default.
+The tools and the values of a submodule can be different from those of the
+root repository. Ask the user for each submodule. You can show the answers of
+a different repository as a default.
 
-Some items are for the root repository only. Do not add them to a
-submodule:
+A tool with `root_only = true` is for the root repository only. The sync
+refuses it in a submodule. When a submodule is in its root checkout, mise
+also loads the tools of the root. Thus a nested submodule still finds, for
+example, graphify.
 
-- The "AI tools" group (`claude`).
-- The `setup:ai` task.
-- The `setup:external:update` task and the other tasks in
-  `setup/external/`.
+If a repository already has a `tools` list in `.config/repo-config.toml`,
+tell the user. Then ask whether to do the steps again in that repository, or
+to go to the next repository.
 
-If a repository already has `.config/mise/tasks/setup/configs`, tell the
-user. Then ask whether to do the steps again in that repository, or to go to
-the next repository.
+## Step 1: Select the tools
 
-## Step 1: Select the files
+Make a shallow clone of `repo-config` into a temporary directory. Keep it
+until all repositories are complete.
 
-Show the user this catalog. Then ask which groups the repository needs.
+```bash
+tmp=$(mktemp -d)
+git clone --quiet --depth 1 git@github.com:virajp/repo-config.git "$tmp"
+```
 
-| Group                  | Paths                                                                                                                                                                 |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sync and task library  | `.config/mise/tasks/_scripts/repo-sync`, `.config/mise/tasks/_scripts/helpers`, `.config/mise/tasks/_scripts/checks`, `.config/mise/tasks/_scripts/placeholder`        |
-| Base config            | `.gitignore`, `.config/mise.toml`, `.config/mise/conf.d/_env/mise.toml.tmpl`, `.config/mise/conf.d/_task/mise.dev.toml`                                               |
-| Code quality           | `.config/mise/conf.d/_formatter/mise.dev.toml`, `.config/mise/conf.d/_linter/mise.dev.toml`, `.config/mise/conf.d/_security/mise.toml`                                |
-| Code tasks             | `.config/mise/tasks/code/_default`, `.config/mise/tasks/code/format`, `.config/mise/tasks/code/lint`, `.config/mise/tasks/code/sec`, `.config/mise/tasks/code/git-config`, `.config/mise/tasks/code/worktrees` |
-| Merge tasks            | `.config/mise/tasks/_scripts/merge`, `.config/mise/tasks/code/merge/develop`, `.config/mise/tasks/code/merge/main`                                                    |
-| Setup tasks            | `.config/mise/tasks/setup/_default.tmpl`, `.config/mise/tasks/setup/mise`, `.config/mise/tasks/setup/dprint`, `.config/mise/tasks/setup/vscode`, `.config/mise/tasks/setup/worktree.tmpl` |
-| Node                   | `.config/mise/conf.d/node/mise.toml`, `.config/mise/tasks/setup/deps/node`                                                                                                                                  |
-| Python                 | `.config/mise/conf.d/python/mise.toml`, `.config/mise/tasks/setup/deps/python`                                                                                                                                |
-| pre-commit             | `.config/mise/conf.d/pre-commit/mise.dev.toml`, `.config/git-conventional-commits.yaml.tmpl`, `.config/mise/tasks/code/precommit`, `.config/mise/tasks/setup/precommit`                                             |
-| AI tools (root only)   | `.config/mise/conf.d/claude/mise.dev.toml`                                                                                                                            |
-| fnox                   | `.config/mise/conf.d/fnox/mise.dev.toml`, `.config/mise/tasks/setup/secrets/fnox`  |
-| graphify               | `.config/mise/tasks/code/graph`                                                                                                                                       |
-| VS Code                | `.vscode/settings.json`                                                                                                                                               |
+Read `"$tmp"/tools/*/tool.toml`. Show the user each tool with its
+description. Then ask which tools the repository needs. `base` is necessary
+in each repository.
 
-Before you ask, read the current file list of `repo-config` (step 2 makes a
-clone). If the catalog and the clone are different, the clone is correct. Tell
-the user about the difference.
+Each `tool.toml` has these keys:
 
-The "Sync and task library" group is necessary. Every task sources `helpers`,
-and `setup:configs` sources `repo-sync`.
+| Key          | Meaning                                                              |
+| ------------ | -------------------------------------------------------------------- |
+| `depends`    | The sync adds these tools automatically.                             |
+| `root_only`  | If `true`, the sync refuses the tool in a submodule.                 |
+| `extensions` | The VS Code extensions of the tool, for `.vscode/extensions.json`.   |
+| `seed`       | Files that the sync writes only if they are missing.                 |
 
-Some groups need other groups:
+Ask which of `python`, `node` and `flutter` is the core language of the
+repository. A core tool goes in `core_tools`. Then its
+`conf.d/<tool>/mise.dev.toml` is written as `mise.toml`, and mise loads it in
+every environment, CI included. A TypeScript repository has `node` as its
+core tool.
 
-- "Merge tasks" needs "Sync and task library" and "Base config". The merge
-  reads `MERGE_MODEL_DEVELOP` and `MERGE_MODEL_MAIN` from `_env`.
-- "pre-commit", "AI tools" and "graphify" need "Python", because their tools
-  use `python` and `uv`.
-- "Setup tasks" runs `linter --init`, so it needs "Code quality".
+## Step 2: Copy the sync files by hand
 
-## Step 2: Copy the sync script by hand
+**CAUTION:** Do this before the first sync. An old copy of `repo-sync` reads
+paths, not tools, and it cannot sync the new layout.
 
-The sync script cannot sync itself before it exists. A copy from before the
-`files/` layout also cannot sync, because it reads from the root of
-`repo-config`.
+Copy these three files from the clone into the repository:
 
-1. Make a shallow clone of `repo-config` into a temporary directory.
-
-   ```bash
-   tmp=$(mktemp -d)
-   git clone --quiet --depth 1 git@github.com:virajp/repo-config.git "$tmp"
-   ```
-
-2. Copy the two library files into the repository.
-
-   ```bash
-   mkdir -p .config/mise/tasks/_scripts
-   cp "$tmp/files/.config/mise/tasks/_scripts/repo-sync" .config/mise/tasks/_scripts/
-   cp "$tmp/files/.config/mise/tasks/_scripts/helpers" .config/mise/tasks/_scripts/
-   ```
-
-3. Keep the clone until all repositories are complete. Use the same clone
-   for each submodule. Then remove it with `rm -rf "$tmp"`.
-
-The template render needs `helpers`, because it calls `members` from it. Thus
-copy `helpers` now, also if the first sync is a dry run.
+```bash
+base="$tmp/tools/base/.config/mise/tasks"
+mkdir -p .config/mise/tasks/_scripts .config/mise/tasks/setup
+cp "$base/_scripts/repo-sync" "$base/_scripts/helpers" .config/mise/tasks/_scripts/
+cp "$base/setup/configs" .config/mise/tasks/setup/
+```
 
 ## Step 3: Write the values file
 
-**CAUTION:** Do not omit a key that a selected template uses. The render
-fails, and the sync keeps the old file.
+Write `.config/repo-config.toml`. Ask the user for each value.
 
-Write `.config/repo-config.toml` if the selected paths include a `.tmpl` file.
-Ask the user for each value.
-
-| Key                           | Used by                     | Values                                       |
-| ----------------------------- | --------------------------- | -------------------------------------------- |
-| `repo_name`                   | `_env`                      | The repository name, for example `my-repo`   |
-| `merge_model_develop`         | `_env`                      | `direct` (local merge) or `pr` (pull request) |
-| `merge_model_main`            | `_env`                      | `direct` or `pr`                             |
-| `[member.<name>]`             | `setup/_default`, `setup/worktree` | One table for each member folder     |
-| `[member.<name>].label`       | `setup/_default`            | The display name. The default is `<name>`.   |
-| `[member.<name>].worktree_install` | `setup/worktree`       | The install command for a new worktree. If it is not set, `setup:worktree` runs the `setup:worktree` task of the member. |
-| `commit_scopes`               | `git-conventional-commits`  | The commit scopes, for example `["backend", "web"]`. The default is no scopes. |
-| `repo_url`                    | `git-conventional-commits`  | The web URL of the repository, for the changelog links. If it is not set, the file has no links. |
-| `worktree_files`              | `setup/worktree`            | The gitignored files to copy from the main worktree into a new worktree, for example `[".env", "backend/.env"]` |
+| Key                                | Used by                     | Values                                                                                     |
+| ---------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------ |
+| `tools`                            | `repo_sync`                 | The tools from step 1. `base` is necessary.                                                |
+| `core_tools`                       | `repo_sync`                 | The core language tools from step 1, for example `["node"]`. The default is none.          |
+| `repo_name`                        | `_env`                      | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree. |
+| `merge_model_develop`              | `_env`                      | `direct` (local merge) or `pr` (pull request)                                              |
+| `merge_model_main`                 | `_env`                      | `direct` or `pr`                                                                           |
+| `commit_scopes`                    | `git-conventional-commits`  | The commit scopes, for example `["backend", "web"]`. The default is no scopes.             |
+| `repo_url`                         | `git-conventional-commits`  | The web URL of the repository, for the changelog links. GitHub and GitLab are supported.   |
+| `worktree_files`                   | `setup:worktree`            | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]` |
+| `[member.<name>]`                  | `setup`, `setup:worktree`   | One table for each member folder                                                           |
+| `[member.<name>].label`            | `setup`                     | The display name. The default is `<name>`.                                                 |
+| `[member.<name>].worktree_install` | `setup:worktree`            | The install command for a new worktree. If it is not set, the member's own `setup:worktree` runs. |
 
 Example:
 
 ```toml
+tools = ["base", "node", "fnox", "claude", "vscode"]
+core_tools = ["node"]
 merge_model_develop = "direct"
 merge_model_main = "pr"
 repo_name = "my-repo"
-worktree_files = [".env", "mise.local.toml"]
-
-[member.backend]
-label = "Backend"
-worktree_install = "pnpm install --frozen-lockfile"
+commit_scopes = ["backend", "web"]
+repo_url = "https://github.com/me/my-repo"
+worktree_files = [".config/mise.local.toml"]
 ```
 
 The member list is the git submodules, then each `[member.<name>]` table. A
 `[member.<name>]` table that is not a submodule must have a folder with that
 name in the repository. If not, the render fails.
 
-## Step 4: Add repository-only ignore lines
+## Step 4: Migrate the existing files
 
-If the repository needs ignore lines that the shared `.gitignore` does not
-have, write them to `.config/repo-sync/gitignore`. The sync adds them after
-the shared lines. A later line wins, so a `!<pattern>` line negates a shared
-pattern.
+Do the "Migration" section below before the first sync. If the repository
+has no mise config and no task files, skip this step.
 
-Do not edit `.gitignore` directly. The next sync replaces it.
-
-## Step 5: Write the `setup:configs` task
-
-Write `.config/mise/tasks/setup/configs`. List the paths from step 1. Put
-`_scripts/helpers` before all `.tmpl` paths.
-
-```bash
-#!/usr/bin/env bash
-
-#MISE description="Sync the shared files from repo-config"
-#MISE tools.gomplate="latest"
-
-#USAGE flag "--dry-run" help="show the changes without writing them"
-
-set -euo pipefail
-# shellcheck source=/dev/null
-source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/repo-sync"
-
-FLAGS=()
-[[ "${usage_dry_run:-false}" == "true" ]] && FLAGS+=(--dry-run)
-
-repo_sync ${FLAGS[@]+"${FLAGS[@]}"} -- \
-  .config/mise/tasks/_scripts/repo-sync \
-  .config/mise/tasks/_scripts/helpers \
-  .gitignore \
-  .config/mise.toml \
-  .config/mise/conf.d/_env/mise.toml.tmpl
-```
-
-Write the scripts for bash 3.2. macOS has bash 3.2 as `/bin/bash`. The
-`${FLAGS[@]+...}` form prevents an "unbound variable" error for an empty array
-in bash 3.2.
-
-Make the task executable with `chmod 755 .config/mise/tasks/setup/configs`.
-
-## Step 6: Run the sync
+## Step 5: Run the sync
 
 1. If mise says that the config files are not trusted, ask the user to run
    `mise trust`.
 2. Run `mise run setup:configs --dry-run`.
 3. Examine the diff for each file that already exists in the repository.
-4. If the dry run replaces repository-only content, stop and ask the user.
+4. If the dry run replaces repository-owned content, stop. Move that content
+   to a repository-owned place (see "Rules"), then do the dry run again.
 5. Run `mise run setup:configs`.
 6. Run `mise run init`. This makes all the task scripts executable.
 
 If `repo_sync` fails, read the exit code:
 
-| Code | Cause                                                        | Action                                         |
-| ---- | ------------------------------------------------------------ | ---------------------------------------------- |
-| 2    | A usage error, or a template that cannot render              | Examine the values file and the gomplate output |
-| 3    | A path that is not in `files/` of `repo-config`              | Correct the path in the task                   |
-| 5    | The clone failed                                             | Examine the network, the SSH key and the access |
-| 1    | A local file system error                                    | Read the `repo-sync:` lines on stderr          |
+| Code | Cause                                                                          | Action                                          |
+| ---- | ------------------------------------------------------------------------------ | ----------------------------------------------- |
+| 2    | No `tools` in the values file, a root-only tool in a submodule, or a template that cannot render | Correct the values file          |
+| 3    | A tool that is not in `repo-config`                                            | Correct the `tools` list                        |
+| 5    | The clone failed                                                               | Examine the network, the SSH key and the access |
+| 1    | A local file system error                                                      | Read the `repo-sync:` lines on stderr           |
 
 A failure does not change an existing file.
 
-## Step 7: Supply the files that `repo-config` does not have
+## Step 6: Supply the files that `repo-config` does not have
 
 The shared files refer to files that each repository must supply. Make sure
-that the repository has each file for the groups that it uses. If a file is
+that the repository has each file for the tools that it uses. If a file is
 missing, ask the user for its content. Do not write a placeholder that hides
 the problem.
 
-| File or task                        | Used by                                             |
-| ----------------------------------- | --------------------------------------------------- |
-| `.config/fnox.toml`                 | `setup:secrets:fnox` (`fnox check`)                 |
-| `.config/pre-commit-config.yaml`    | `code:precommit`, `setup:precommit`, the merge tasks |
-| `.config/gitleaks.toml`             | `code:sec`                                          |
-| `.config/grype.yaml`                | `code:sec`                                          |
-| `~/.config/dprint/dprint.jsonc`     | `setup:dprint`                                      |
-| `.vscode/extensions.json`           | `setup:vscode`                                      |
-| `setup:external:update` task        | `setup` (`setup/_default`), root only, optional     |
-| `setup:ai` task                     | `setup` (`setup/_default`), root only               |
+| File                             | Used by                                              |
+| -------------------------------- | ---------------------------------------------------- |
+| `.config/pre-commit-config.yaml` | `code:precommit`, `setup:precommit`, the merge tasks |
+| `.config/gitleaks.toml`          | `code:sec`                                           |
+| `.config/grype.yaml`             | `code:sec`                                           |
+| `dprint.jsonc`                   | `code:format`. It only excludes paths, for example the submodules. The plugins are in the global dprint config. |
+| `~/.config/dprint/dprint.jsonc`  | `setup:dprint`                                       |
 
 The merge tasks also need the `develop` and `main` branches.
 
-`setup` calls `setup:external:update` and `setup:ai` only if the task exists.
-Thus a submodule does not need them:
-
-- In the root repository, ask the user whether the external tasks in
-  `setup/external/` are necessary. If they are not necessary, do not add
-  them.
-- In the root repository, ask the user for the `setup:ai` task.
-- In a submodule, do not add these tasks.
-
-## Step 8: Make sure that the result is correct
+## Step 7: Make sure that the result is correct
 
 1. Run `mise config ls`. Make sure that mise loads the synced `conf.d` files.
 2. Run `mise tasks`. Make sure that the synced tasks are in the list.
-3. Run `mise run setup:configs` again. Each file must show `unchanged`.
+3. Run `mise run setup`. Make sure that it completes.
+4. Run `mise run setup:configs` again. Each file must show `unchanged` or
+   `kept seed`.
 
 mise loads `mise.toml` from each folder in `conf.d`. It loads a
 `mise.dev.toml` file only when the `dev` config environment is active
 (`MISE_ENV`).
 
-## Step 9: Commit
+## Step 8: Commit
 
 Commit these files:
 
-- The synced files.
-- `.config/repo-config.toml`, `.config/repo-sync/gitignore`, and
-  `.config/mise/tasks/setup/configs`.
-- The files from step 7.
+- The synced files and the seed files.
+- `.config/repo-config.toml` and `.config/repo-sync/gitignore`.
+- The repository-owned files from step 4 and step 6.
 
 Commit in each submodule before you commit in the repository that contains
 it. Then the commit in the containing repository includes the new submodule
 commit. Ask the user before you push. Push each submodule before the
 repository that contains it. If not, the containing repository points to a
 commit that the remote does not have.
+
+## Migration
+
+This section is temporary. It is for the repositories that existed before the
+`tools/` layout. Remove it when all repositories are migrated.
+
+**WARNING:** Do not delete a file before you move its repository-owned
+content. The sync never restores repository content.
+
+The sync never deletes files. Thus you must delete each obsolete file and
+rename each old task by hand. Do the items that apply to the repository, in
+this sequence. Show the user the list of changes before you make them.
+
+### M1: Delete the old sync files
+
+- Delete `.config/gist-sync/` (an old `.gitignore` with only a header).
+- If the repository uses `gist_sync` (macos-setup), delete
+  `.config/mise/tasks/_scripts/gist-sync`. Rename
+  `.config/gist-sync/gitignore` to `.config/repo-sync/gitignore`.
+- Delete the old `.config/mise/tasks/setup/configs`. Step 2 replaces it.
+
+### M2: Delete the old dependency tasks
+
+**CAUTION:** Do this before the first `mise run setup`. The new `setup` runs
+each task in `setup/deps/`. An old task there runs too, and it can fail.
+
+- Delete `setup/deps/{all,install,upgrade,audit,cleanup,outdated,check,restart}`
+  and `setup/pnpm/*`. The tool tasks `setup:deps:<tool>` replace them, with
+  `--upgrade` for the upgrade.
+- If a repository needs a dependency step that no tool ships, write it as
+  `setup/deps/<name>`, with a `--upgrade` flag.
+- Delete each `#PLACEHOLDER` stub in `setup/deps/` and `setup/external/`.
+
+### M3: Rename the old tasks
+
+| Old task                      | New task                     | Action                                                                                |
+| ----------------------------- | ---------------------------- | ------------------------------------------------------------------------------------- |
+| `setup:all` (`setup/all`)     | `setup` (`setup/_default`)   | Delete the old file. `base` ships the new one. Members are called with `setup`.       |
+| `code:all` (`code/all`)       | `code` (`code/_default`)     | Delete the old file. Keep `code:check` and `code:test` as repository-owned tasks.     |
+| `setup:secrets` (fnox)        | `setup:secrets:fnox`         | Delete the old file. Select the `fnox` tool.                                          |
+| `setup:secrets` (Doppler)     | `setup:secrets:doppler`      | Move the file to `setup/secrets/doppler`. It stays repository-owned.                  |
+| `setup:secrets` (stub)        | none                         | Delete it.                                                                            |
+| `setup:deps:check`            | `setup:external:check`       | Delete it. The `docker` tool ships the new one.                                       |
+| `setup:git-config`            | `code:git-config`            | Delete it.                                                                            |
+| top-level `count`, `leaks`, `lint` | `code:*`                | Delete them.                                                                          |
+
+Update each shell alias that calls an old name, for example
+`setup = "mise run setup:all"` becomes `setup = "mise run setup"`.
+
+### M4: Delete root-only items from submodules
+
+In a submodule, delete `setup:ai`, `setup/external/*` and `conf.d/claude/`.
+Keep `code:graph`: `base` ships it to each repository.
+
+### M5: Move the content of `.config/mise.toml`
+
+The sync replaces `.config/mise.toml`. It keeps only the shared `[settings]`.
+
+1. Move `REPO_NAME`, `MEMBERS` and `MERGE_MODEL*` into the values file:
+   - `REPO_NAME` becomes `repo_name`.
+   - The old single `MERGE_MODEL` becomes both `merge_model_develop` and
+     `merge_model_main`, with the same value.
+   - `MEMBERS` is not necessary for submodules. For folders, write
+     `[member.<name>]` tables.
+2. Move repository-owned `[settings]`, `[env]`, `[tools]`, `[tasks]` and
+   `[shell_alias]` to `.config/mise/conf.d/repo/mise.toml`. Examples are
+   `lockfile = true`, `task.timings = true`, `CLOUDSDK_PYTHON` and
+   `GITHUB_OWNER`.
+3. Do the same for `.config/mise.dev.toml`, into
+   `.config/mise/conf.d/repo/mise.dev.toml`. Examples are the emulator, Temporal
+   and OTEL variables of 95octane backend.
+4. Keep `.config/mise.ci.toml`, `.config/mise.test.toml` and
+   `.config/miserc.toml`. The sync does not write them.
+
+### M6: Remove the tools that the shared files now install
+
+From the repository-owned mise files, remove each tool that a selected tool
+installs:
+
+- `base`: dprint, `npm:@askviraj/linter`, gitleaks, grype, osv-scanner,
+  actionlint, shellcheck, shfmt, jq, yq, pre-commit.
+- `python`: python, uv. `node`: node, pnpm. `fnox`: fnox.
+- `claude`: `pipx:graphifyy`, `pipx:mempalace`.
+- `flutter`: flutter, android-sdk, java. `bun`: bun.
+- `rust`: `core:rust`, zola. `cloudflare`: `npm:cf`. `pulumi`: pulumi, gcloud.
+- `kotlin`: `http:kotlin-lsp`.
+
+Remove taplo too. dprint formats TOML now. Also remove the `[toml]` and
+`evenBetterToml.*` keys from `.vscode/settings.json`.
+
+Keep a tool that no selected tool installs, for example `npm:wrangler`,
+`npm:sort-package-json`, `doppler` and `rtk`. Move it to
+`conf.d/repo/`.
+
+If the old tool has a pinned version that is different from the shared one,
+tell the user. Examples: node `26` and pnpm `12` in 95octane, where `node`
+ships `lts` and `latest`.
+
+### M7: Split an old `conf.d/_base`
+
+bootstrap and claude-plugins have an old `.config/mise/conf.d/_base/`. Its
+name is the same as the shared `_base`, but the content is different. Before
+the first sync, move its content:
+
+| Old content in `_base`               | New place                                  |
+| ------------------------------------ | ------------------------------------------ |
+| node, pnpm                           | the `node` tool                            |
+| python, uv, `UV_*`                   | the `python` tool                          |
+| pre-commit, `PRE_COMMIT_HOME`        | the `base` tool                            |
+| `MEMBERS`, `REPO_NAME`               | the values file                            |
+| `MEMPALACE_*`, `min_version`, `task.run_auto_install`, other repository content | `conf.d/repo/` |
+
+Then delete the old `_base/mise.toml`, `_base/mise.dev.toml` and
+`_base/mise.ci.toml`. Also delete an old `conf.d/ai/`: the `claude` tool
+replaces it. Move its repository-owned content to `conf.d/repo/` first.
+Delete the old `conf.d/_formatter`, `_linter` and `_security`.
+
+### M8: Move the fnox config
+
+If the repository has `fnox.toml` at its root, move it to
+`.config/fnox.toml`. Then the seed does not replace it. Change each
+`fnox exec` call to `mise x -- fnox --config .config/fnox.toml exec`.
+
+### M9: Clean the old markers
+
+- Delete `.config/vscode.d/`. Remove the `// >>> vscode.d` blocks from
+  `.vscode/settings.json` and `.config/pre-commit-config.yaml`. The
+  `vscode` tool writes `.vscode/extensions.json` from the tools.
+- Move the repository-owned keys of `.vscode/settings.json` to the user
+  settings or to the workspace, and tell the user. The sync replaces the file.
+  Examples are `[dart]`, `files.associations` and `markdownlint.*`.
+- If an extension is not in a tool, for example astro, tailwind or effect,
+  tell the user. The sync replaces `.vscode/extensions.json`.
+- Replace each `MARKED POSITION` block with its value, in a repository-owned
+  file or in the values file.
+
+### M10: Change the old helper files
+
+- The shared helpers are `_scripts/helpers`, `_scripts/checks` and
+  `_scripts/merge`. Change each `source` of `_helpers`, `_checks` or `_merge`
+  to the new name. Then delete the old files.
+- If a task calls a function that `helpers` does not have, for example
+  `print_ok`, put that function in `_scripts/local` and source it from the
+  task.
+
+### M11: The commit config
+
+The template has 10 types: `feat`, `fix`, `perf`, `refactor`, `revert`,
+`test`, `ops`, `docs`, `merge`, `wip`. Other types are not used. The old types
+`spec`, `security` and `blueprint` are dropped. Tell the user. Put the scopes
+of the old file in `commit_scopes`.
+
+### M12: The pre-commit hooks
+
+In `.config/pre-commit-config.yaml`, prefix each `entry` that calls a tool
+with `mise x --`. The `graphify-refresh` hook must call
+`mise x -- mise run code:graph`. Keep the hook in each repository, submodules
+included.
