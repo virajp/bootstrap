@@ -14,4 +14,4 @@ if [[ ! -f "${HOME}/.config/dprint/dprint.jsonc" ]]; then
   exit 1
 fi
 
-dprint config update --global
+mise x -- dprint config update --global

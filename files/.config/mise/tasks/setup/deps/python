@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+#MISE description="Install the Python dependencies; --upgrade also upgrades them"
+#MISE hide=true
+
+#USAGE flag "--upgrade" help="also upgrade the dependencies to their latest versions"
+
+set -e
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+# Shipped with the python topic. A repository with the topic but no project
+# file yet has nothing to install, and that is not a failure.
+if [[ ! -f "${MISE_PROJECT_ROOT}/pyproject.toml" ]]; then
+  print_info "No pyproject.toml — no Python dependencies to install."
+  exit 0
+fi
+
+if [[ "${usage_upgrade:-false}" == "true" ]]; then
+  print_header "Upgrading Python dependencies ..."
+  mise x -- uv sync --directory "${MISE_PROJECT_ROOT}" --upgrade
+else
+  print_header "Installing Python dependencies ..."
+  # `--locked` installs from uv.lock and fails, rather than rewriting it, when
+  # the lockfile no longer matches pyproject.toml.
+  mise x -- uv sync --directory "${MISE_PROJECT_ROOT}" --locked
+fi

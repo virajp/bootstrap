@@ -54,15 +54,15 @@ precommit_safety_net() {
     print_warn "No .config/pre-commit-config.yaml — skipping the hook safety net."
     return 0
   fi
-  if ! command -v pre-commit >/dev/null 2>&1; then
+  if ! mise x -- which pre-commit >/dev/null 2>&1; then
     print_warn "pre-commit is not on PATH — skipping the hook safety net."
-    print_yellow "Run \`mise run setup:all\` to install the dev toolchain."
+    print_yellow "Run \`mise run setup\` to install the dev toolchain."
     return 0
   fi
 
   print_wait "Running the hooks over every file ... "
   local hooks_passed=true
-  if ! pre-commit run --config "${config}" --all-files >/dev/null 2>&1; then
+  if ! mise x -- pre-commit run --config "${config}" --all-files >/dev/null 2>&1; then
     hooks_passed=false
   fi
 
@@ -114,12 +114,12 @@ open_pull_request() {
   # `gh` is tried first when both are installed. Two forge CLIs on one machine is
   # far more often a GitHub repo on a laptop that still has glab than the
   # reverse, and the request has to be opened against ONE forge.
-  if command -v gh >/dev/null 2>&1; then
+  if mise x -- which gh >/dev/null 2>&1; then
     print_yellow "Opening a pull request into ${DESTINATION_BRANCH} ..."
-    gh pr create --base "${DESTINATION_BRANCH}" --head "${SOURCE_BRANCH}" --fill
-  elif command -v glab >/dev/null 2>&1; then
+    mise x -- gh pr create --base "${DESTINATION_BRANCH}" --head "${SOURCE_BRANCH}" --fill
+  elif mise x -- which glab >/dev/null 2>&1; then
     print_yellow "Opening a merge request into ${DESTINATION_BRANCH} ..."
-    glab mr create --target-branch "${DESTINATION_BRANCH}" --source-branch "${SOURCE_BRANCH}" --fill
+    mise x -- glab mr create --target-branch "${DESTINATION_BRANCH}" --source-branch "${SOURCE_BRANCH}" --fill
   else
     # Not a failure. The branch is pushed, which was the part that needed a
     # shell; opening the request is a click, and no forge CLI on PATH is the

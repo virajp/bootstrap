@@ -72,7 +72,7 @@ _rs_members() {
     printf '%s\n' "$member"
     seen+="$member "
   done < <(members)
-  keys=$(gomplate --left-delim '<%' --right-delim '%>' -c "v=${values}" \
+  keys=$(mise x -- gomplate --left-delim '<%' --right-delim '%>' -c "v=${values}" \
     -i '<% if has .v "member" %><% range $k, $x := .v.member %><% $k %>
 <% end %><% end %>') || return 2
   while IFS= read -r member; do
@@ -89,7 +89,7 @@ _rs_members() {
 _rs_render() {
   local src=$1 out=$2 name=$3 ctx list
   local values=${REPO_SYNC_VALUES:-${MISE_PROJECT_ROOT:-$PWD}/.config/repo-config.toml}
-  if ! command -v gomplate >/dev/null 2>&1; then
+  if ! mise x -- which gomplate >/dev/null 2>&1; then
     _rs_log "$name: gomplate is not on PATH - cannot render the template"
     return 2
   fi
@@ -103,9 +103,9 @@ _rs_render() {
   # One context file: gomplate's `.` root replaces every other context, so the
   # values and the member list are merged into it first. `members` comes first
   # in the merge, so a `members` key in the values file cannot replace it.
-  if ! REPO_SYNC_MEMBERS=$list gomplate --left-delim '<%' --right-delim '%>' -c "v=${values}" -o "$ctx" \
+  if ! REPO_SYNC_MEMBERS=$list mise x -- gomplate --left-delim '<%' --right-delim '%>' -c "v=${values}" -o "$ctx" \
     -i '<% $l := coll.Slice %><% range (env.Getenv "REPO_SYNC_MEMBERS" | strings.Split "\n") %><% if . %><% $l = coll.Append . $l %><% end %><% end %><% coll.Merge (dict "members" $l) .v | data.ToJSON %>' >&2 ||
-    ! gomplate --left-delim '<%' --right-delim '%>' -c ".=${ctx}?type=application/json" -f "$src" -o "$out" >&2; then
+    ! mise x -- gomplate --left-delim '<%' --right-delim '%>' -c ".=${ctx}?type=application/json" -f "$src" -o "$out" >&2; then
     rm -f -- "$ctx"
     _rs_log "$name: gomplate failed to render the template"
     return 2

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
-#MISE description="Setup the project: install precommit hooks, upgrade dependencies, clean up cache, etc."
+#MISE description="Setup the project: install tools, dependencies and hooks; --upgrade also upgrades them"
 #MISE hide=true
 
+#USAGE flag "--upgrade" help="also upgrade tools, dependencies, plugins and hooks"
 <% $last := math.Sub (len .members) 1 -%>
 #USAGE flag "--all" help="Setup all: workspace<% range $i, $m := .members %><% if eq $i $last %> and <% else %>, <% end %><% $m %><% end %>"
 <% range .members -%>
@@ -14,25 +15,46 @@ SETUP_<% . | strings.ReplaceAll "-" "_" | strings.ToUpper %>=$([[ "${usage_all:-
 set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-mise run setup:mise
+# Without --upgrade every step only installs what the lockfiles and configs
+# already pin. Unquoted on purpose where it is used: empty adds no argument.
+[[ "${usage_upgrade:-false}" == "true" ]] && UPGRADE="--upgrade" || UPGRADE=""
 
-mise run setup:external:update
+mise run setup:mise ${UPGRADE}
+
+for task in $(own_tasks setup:secrets); do
+  mise run "${task}"
+done
+
+for task in $(own_tasks setup:deps); do
+  mise run "${task}" ${UPGRADE}
+done
+
+# Optional, and only in the root repository.
+if [[ -n "${UPGRADE}" ]] && has_own_task setup:external:update; then
+  mise run setup:external:update
+fi
 
 print_header "Linter setup ..."
-pnpm dlx @askviraj/linter@latest --init
+mise x -- linter --init
 
-print_header "Upgrading dprint plugins..."
-dprint config update
+# The plugins are in the global dprint config. The repository's
+# dprint.jsonc only excludes paths, so it has nothing to update.
+if [[ -n "${UPGRADE}" ]]; then
+  mise run setup:dprint
+fi
 
-mise run setup:precommit
+mise run setup:precommit ${UPGRADE}
 
-mise run setup:ai
+# Only in the root repository.
+if has_own_task setup:ai; then
+  mise run setup:ai
+fi
 
 <% range .members -%>
 <% $x := dict %><% if and (has $ "member") (has $.member .) %><% $x = index $.member . %><% end -%>
 if [[ "${SETUP_<% . | strings.ReplaceAll "-" "_" | strings.ToUpper %>}" == "true" ]]; then
   print_header "Setting up <% index $x "label" | default . %> project ..."
-  mise run --cd <% . %> setup:all
+  mise run --cd <% . %> setup ${UPGRADE}
 fi
 <% end %>
 print_header "Setup complete!"

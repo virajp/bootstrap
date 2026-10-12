@@ -46,6 +46,14 @@ The file selection and the values of a submodule can be different from those
 of the root repository. Ask the user for each submodule. You can show the
 answers of a different repository as a default.
 
+Some items are for the root repository only. Do not add them to a
+submodule:
+
+- The "AI tools" group (`claude`).
+- The `setup:ai` task.
+- The `setup:external:update` task and the other tasks in
+  `setup/external/`.
+
 If a repository already has `.config/mise/tasks/setup/configs`, tell the
 user. Then ask whether to do the steps again in that repository, or to go to
 the next repository.
@@ -62,10 +70,11 @@ Show the user this catalog. Then ask which groups the repository needs.
 | Code tasks             | `.config/mise/tasks/code/_default`, `.config/mise/tasks/code/format`, `.config/mise/tasks/code/lint`, `.config/mise/tasks/code/sec`, `.config/mise/tasks/code/git-config`, `.config/mise/tasks/code/worktrees` |
 | Merge tasks            | `.config/mise/tasks/_scripts/merge`, `.config/mise/tasks/code/merge/develop`, `.config/mise/tasks/code/merge/main`                                                    |
 | Setup tasks            | `.config/mise/tasks/setup/_default.tmpl`, `.config/mise/tasks/setup/mise`, `.config/mise/tasks/setup/dprint`, `.config/mise/tasks/setup/vscode`, `.config/mise/tasks/setup/worktree.tmpl` |
-| Node                   | `.config/mise/conf.d/node/mise.toml`                                                                                                                                  |
-| Python                 | `.config/mise/conf.d/python/mise.toml`                                                                                                                                |
-| pre-commit             | `.config/mise/conf.d/pre-commit/mise.dev.toml`, `.config/mise/tasks/code/precommit`, `.config/mise/tasks/setup/precommit`                                             |
-| AI tools               | `.config/mise/conf.d/claude/mise.dev.toml`                                                                                                                            |
+| Node                   | `.config/mise/conf.d/node/mise.toml`, `.config/mise/tasks/setup/deps/node`                                                                                                                                  |
+| Python                 | `.config/mise/conf.d/python/mise.toml`, `.config/mise/tasks/setup/deps/python`                                                                                                                                |
+| pre-commit             | `.config/mise/conf.d/pre-commit/mise.dev.toml`, `.config/git-conventional-commits.yaml.tmpl`, `.config/mise/tasks/code/precommit`, `.config/mise/tasks/setup/precommit`                                             |
+| AI tools (root only)   | `.config/mise/conf.d/claude/mise.dev.toml`                                                                                                                            |
+| fnox                   | `.config/mise/conf.d/fnox/mise.dev.toml`, `.config/mise/tasks/setup/secrets/fnox`  |
 | graphify               | `.config/mise/tasks/code/graph`                                                                                                                                       |
 | VS Code                | `.vscode/settings.json`                                                                                                                                               |
 
@@ -82,7 +91,7 @@ Some groups need other groups:
   reads `MERGE_MODEL_DEVELOP` and `MERGE_MODEL_MAIN` from `_env`.
 - "pre-commit", "AI tools" and "graphify" need "Python", because their tools
   use `python` and `uv`.
-- "Setup tasks" runs `pnpm dlx`, so it needs "Node".
+- "Setup tasks" runs `linter --init`, so it needs "Code quality".
 
 ## Step 2: Copy the sync script by hand
 
@@ -126,7 +135,10 @@ Ask the user for each value.
 | `merge_model_main`            | `_env`                      | `direct` or `pr`                             |
 | `[member.<name>]`             | `setup/_default`, `setup/worktree` | One table for each member folder     |
 | `[member.<name>].label`       | `setup/_default`            | The display name. The default is `<name>`.   |
-| `[member.<name>].worktree_install` | `setup/worktree`       | The install command for a new worktree       |
+| `[member.<name>].worktree_install` | `setup/worktree`       | The install command for a new worktree. If it is not set, `setup:worktree` runs the `setup:worktree` task of the member. |
+| `commit_scopes`               | `git-conventional-commits`  | The commit scopes, for example `["backend", "web"]`. The default is no scopes. |
+| `repo_url`                    | `git-conventional-commits`  | The web URL of the repository, for the changelog links. If it is not set, the file has no links. |
+| `worktree_files`              | `setup/worktree`            | The gitignored files to copy from the main worktree into a new worktree, for example `[".env", "backend/.env"]` |
 
 Example:
 
@@ -134,6 +146,7 @@ Example:
 merge_model_develop = "direct"
 merge_model_main = "pr"
 repo_name = "my-repo"
+worktree_files = [".env", "mise.local.toml"]
 
 [member.backend]
 label = "Backend"
@@ -217,15 +230,25 @@ the problem.
 
 | File or task                        | Used by                                             |
 | ----------------------------------- | --------------------------------------------------- |
+| `.config/fnox.toml`                 | `setup:secrets:fnox` (`fnox check`)                 |
 | `.config/pre-commit-config.yaml`    | `code:precommit`, `setup:precommit`, the merge tasks |
 | `.config/gitleaks.toml`             | `code:sec`                                          |
 | `.config/grype.yaml`                | `code:sec`                                          |
 | `~/.config/dprint/dprint.jsonc`     | `setup:dprint`                                      |
 | `.vscode/extensions.json`           | `setup:vscode`                                      |
-| `setup:external:update` task        | `setup` (`setup/_default`)                          |
-| `setup:ai` task                     | `setup` (`setup/_default`)                          |
+| `setup:external:update` task        | `setup` (`setup/_default`), root only, optional     |
+| `setup:ai` task                     | `setup` (`setup/_default`), root only               |
 
 The merge tasks also need the `develop` and `main` branches.
+
+`setup` calls `setup:external:update` and `setup:ai` only if the task exists.
+Thus a submodule does not need them:
+
+- In the root repository, ask the user whether the external tasks in
+  `setup/external/` are necessary. If they are not necessary, do not add
+  them.
+- In the root repository, ask the user for the `setup:ai` task.
+- In a submodule, do not add these tasks.
 
 ## Step 8: Make sure that the result is correct
 

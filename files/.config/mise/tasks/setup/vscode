@@ -29,7 +29,7 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 # whose directory is named after the branch.
 #
 # **Everything here is best-effort and silent when it does not apply.** It runs
-# from `setup:all`, which a machine without the editor must still finish.
+# from `setup`, which a machine without the editor must still finish.
 
 EDITOR_CLI="code"
 RECOMMENDATIONS="${MISE_PROJECT_ROOT}/.vscode/extensions.json"

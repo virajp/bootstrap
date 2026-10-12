@@ -57,6 +57,7 @@ Example values file:
 merge_model_develop = "direct"
 merge_model_main = "pr"
 repo_name = "my-repo"
+worktree_files = [".env", "mise.local.toml"]
 
 [member.backend]
 label = "Backend"

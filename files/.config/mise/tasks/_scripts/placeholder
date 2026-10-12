@@ -7,7 +7,7 @@
 # of the contract but whose mechanism depends on a stack nobody has pinned.
 #
 # A placeholder ALWAYS exits 0. An unconfigured repo must still be able to run
-# `mise run code` and `mise run setup:all` end to end: the docs a product is
+# `mise run code` and `mise run setup` end to end: the docs a product is
 # defined in are formatted, linted and gated from day one, and the unfilled
 # slots announce themselves rather than halting the aggregator that called them.
 #

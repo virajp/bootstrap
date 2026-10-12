@@ -11,7 +11,7 @@ print_header "Formatting files ..."
 [[ "${usage_debug:-false}" == "true" ]] && LOG_LEVEL="debug" || LOG_LEVEL="warn"
 [[ "${usage_fix:-false}" == "true" ]] && CMD="fmt ." || CMD="check"
 
-dprint ${CMD} \
+mise x -- dprint ${CMD} \
   --log-level ${LOG_LEVEL}
 
 print_success "Formatting done"

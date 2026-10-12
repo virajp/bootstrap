@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+#MISE description="Install the Node dependencies; --upgrade also upgrades them"
+#MISE hide=true
+
+#USAGE flag "--upgrade" help="also upgrade the dependencies to their latest versions"
+
+set -e
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+# Shipped with the node topic. A repository with the topic but no package
+# manifest yet has nothing to install, and that is not a failure.
+if [[ ! -f "${MISE_PROJECT_ROOT}/package.json" ]]; then
+  print_info "No package.json — no Node dependencies to install."
+  exit 0
+fi
+
+print_header "Installing Node dependencies ..."
+# The lockfile decides the versions; an install never changes it.
+mise x -- pnpm install --dir "${MISE_PROJECT_ROOT}" --frozen-lockfile
+
+if [[ "${usage_upgrade:-false}" == "true" ]]; then
+  print_header "Upgrading Node dependencies ..."
+  mise x -- pnpm update --dir "${MISE_PROJECT_ROOT}" --recursive --latest
+fi

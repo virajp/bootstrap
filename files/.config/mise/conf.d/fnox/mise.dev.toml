@@ -1,0 +1,3 @@
+# Fnox resolves the repo's secrets from the providers in .config/fnox.toml
+[tools.fnox]
+version = "latest"

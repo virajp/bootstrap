@@ -235,6 +235,33 @@ print_header_wait() { print_line 1 no "${COLOR_GREEN}${STYLE_BOLD}" '' '' "$*"; 
 print_yellow() { print_line 1 yes "${COLOR_YELLOW}" '' '' "$*"; }
 print_newline() { echo ""; }
 
+# The task files are read from this repository's own task directory, never
+# asked of mise. Inside a superproject mise also lists the parent's tasks, and
+# runs a parent task in the PARENT's directory: a submodule that asked
+# `mise tasks info setup:ai` would find the root's task and run it again.
+
+# Whether this repository defines the task <name> itself, as a file task:
+# `setup:ai` is `setup/ai`, or `setup/ai/_default`. For a step that only some
+# repositories have — `setup:ai` and `setup:external:update` are root-only.
+has_own_task() {
+  local path="${MISE_PROJECT_ROOT}/.config/mise/tasks/${1//://}"
+  { [ -f "${path}" ] && [ -x "${path}" ]; } || [ -x "${path}/_default" ]
+}
+
+# The tasks this repository defines in the group <group> (`setup:deps`), one
+# name per line, sorted; nothing when it defines none. For a step that runs
+# every tool's task in a group, without the parent's tasks that a wildcard
+# `mise run 'setup:deps:*'` would add.
+own_tasks() {
+  local dir="${MISE_PROJECT_ROOT}/.config/mise/tasks/${1//://}" file name
+  for file in "${dir}"/*; do
+    [ -f "${file}" ] && [ -x "${file}" ] || continue
+    name="$(basename "${file}")"
+    case "${name}" in _*) continue ;; esac
+    printf '%s:%s\n' "$1" "${name}"
+  done
+}
+
 # The repo's members, one repo-relative path per line.
 #
 # Two sources, and which one answers depends on how the members are LINKED:
@@ -246,7 +273,7 @@ print_newline() { echo ""; }
 #               fills, space separated, each path relative to the repo root.
 #
 # Defined ONCE here rather than in each caller, which is the whole point: every
-# task that walks the members — `setup:all --all`, `code:worktrees` — walks the
+# task that walks the members — `setup --all`, `code:worktrees` — walks the
 # same list, so a repo that changes how it links its members changes it in one
 # place. A single-project repo has neither source and this prints nothing but
 # blank output; every caller already skips empty lines.

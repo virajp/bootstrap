@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-#MISE description="Setup MISE: reshim, doctor, install & upgrade"
+#MISE description="Setup MISE: reshim, doctor, install; --upgrade also upgrades"
 #MISE hide=true
+
+#USAGE flag "--upgrade" help="also upgrade the installed tools"
 
 set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
@@ -16,8 +18,10 @@ mise reshim
 print_subheader "Running mise doctor ..."
 mise doctor --quiet --silent > /dev/null
 
-# Install & upgrade mise
+# Install mise tools, and upgrade them only on request
 print_subheader "Installing mise tools ..."
 mise install --yes --jobs 10
-print_subheader "Upgrading mise tools ..."
-mise upgrade --yes --jobs 10 --local
+if [[ "${usage_upgrade:-false}" == "true" ]]; then
+  print_subheader "Upgrading mise tools ..."
+  mise upgrade --yes --jobs 10 --local
+fi

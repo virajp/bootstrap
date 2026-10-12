@@ -70,6 +70,14 @@ as the task name, for example `code/merge/develop` is `code:merge:develop`. A
     contains the `#PLACEHOLDER` marker and always exits 0. A stack overlay
     replaces the file. Do not edit a placeholder in place.
   - `repo-sync`: the sync function.
+- Prefix each tool call with `mise x --`, for example `mise x -- dprint check`.
+  To find whether a tool is available, use `mise x -- which <tool>`, not
+  `command -v`. System commands (`git`, `awk`, `sed`) and `mise` itself do not
+  get the prefix.
+- To find whether the repository has an optional task, use `has_own_task` and
+  `own_tasks` from `helpers`. Do not use `mise tasks info` or a wildcard
+  `mise run`. In a submodule, mise also finds the tasks of the root
+  repository, and it runs them in the root directory.
 - Write shell for bash 3.2 and bash 5.x. macOS has bash 3.2 as `/bin/bash`. Do
   not use namerefs, `${var,,}`, or associative arrays.
 - Tasks use `#MISE` and `#USAGE` header comments for metadata and flags. A

@@ -6,4 +6,4 @@ set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
 print_header "Running pre-commit ..."
-pre-commit run --config .config/pre-commit-config.yaml --all-files
+mise x -- pre-commit run --config .config/pre-commit-config.yaml --all-files
