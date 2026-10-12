@@ -1,0 +1,24 @@
+# Formatter
+[tools.dprint]
+version = "latest"
+
+# Linter
+[tools."npm:@askviraj/linter"]
+version = "latest"
+
+# Shell and workflow linters
+[tools.actionlint]
+version = "latest"
+
+[tools.shellcheck]
+version = "latest"
+
+[tools.shfmt]
+version = "latest"
+
+# JSON and YAML queries
+[tools.jq]
+version = "latest"
+
+[tools.yq]
+version = "latest"

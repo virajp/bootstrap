@@ -1,0 +1,9 @@
+# Security scanners. In every environment, because CI runs `code:sec` too.
+[tools.gitleaks]
+version = "latest"
+
+[tools.grype]
+version = "latest"
+
+[tools.osv-scanner]
+version = "latest"
