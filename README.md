@@ -17,10 +17,10 @@ Each tool folder has a `tool.toml` manifest:
 
 ```toml
 # Flutter and Dart, with the Android toolchain.
-depends    = []                                          # tools added with this one
-root_only  = false                                       # true: refused in a submodule
-extensions = ["dart-code.dart-code", "dart-code.flutter"] # VS Code extensions
-seed       = []                                          # written only when missing
+depends = [] # tools added with this one
+extensions = [ "dart-code.dart-code", "dart-code.flutter" ] # VS Code extensions
+root_only = false # true: refused in a submodule
+seed = [] # written only when missing
 ```
 
 ## Adopt in a repository
@@ -77,14 +77,14 @@ A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
 Example values file:
 
 ```toml
-tools = ["base", "node", "fnox", "claude", "vscode"]
-core_tools = ["node"]
+commit_scopes = [ "backend", "web" ]
+core_tools = [ "node" ]
 merge_model_develop = "direct"
 merge_model_main = "pr"
 repo_name = "my-repo"
-commit_scopes = ["backend", "web"]
 repo_url = "https://github.com/me/my-repo"
-worktree_files = [".config/mise.local.toml"]
+tools = [ "base", "node", "fnox", "claude", "vscode" ]
+worktree_files = [ ".config/mise.local.toml" ]
 
 [member.backend]
 label = "Backend"

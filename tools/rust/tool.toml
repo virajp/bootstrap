@@ -1,5 +1,5 @@
 # Rust and the zola site generator.
-depends    = []
-root_only  = false
+depends = []
 extensions = []
-seed       = []
+root_only = false
+seed = []

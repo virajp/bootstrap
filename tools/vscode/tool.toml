@@ -1,5 +1,5 @@
 # VS Code settings, and extensions.json from the extensions of the selected tools.
-depends    = []
-root_only  = false
+depends = []
 extensions = []
-seed       = []
+root_only = false
+seed = []

@@ -1,5 +1,5 @@
 # Local services in .tools/docker-compose.yaml, run by setup:external:*.
-depends    = []
-root_only  = true
+depends = []
 extensions = []
-seed       = [".tools/docker-compose.yaml"]
+root_only = true
+seed = [ ".tools/docker-compose.yaml" ]

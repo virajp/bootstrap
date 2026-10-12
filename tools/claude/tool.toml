@@ -1,5 +1,5 @@
 # AI tools: graphify, mempalace and setup:ai. Submodules inherit the tools from the root.
-depends    = ["python"]
-root_only  = true
+depends = [ "python" ]
 extensions = []
-seed       = []
+root_only = true
+seed = []

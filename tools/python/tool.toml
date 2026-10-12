@@ -1,5 +1,5 @@
 # Python and uv. Dev-only, unless python is in core_tools.
-depends    = []
-root_only  = false
+depends = []
 extensions = []
-seed       = []
+root_only = false
+seed = []

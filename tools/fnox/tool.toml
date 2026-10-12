@@ -1,5 +1,5 @@
 # Secrets from .config/fnox.toml, checked by setup:secrets:fnox.
-depends    = []
-root_only  = false
+depends = []
 extensions = []
-seed       = [".config/fnox.toml"]
+root_only = false
+seed = [ ".config/fnox.toml" ]

@@ -1,5 +1,5 @@
 # Node and pnpm. Dev-only, unless node is in core_tools.
-depends    = []
-root_only  = false
-extensions = ["christian-kohler.npm-intellisense"]
-seed       = []
+depends = []
+extensions = [ "christian-kohler.npm-intellisense" ]
+root_only = false
+seed = []

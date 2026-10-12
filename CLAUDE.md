@@ -1,6 +1,7 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with
+code in this repository.
 
 ## Purpose
 
@@ -65,7 +66,8 @@ shared tasks in this repository.
 
 ## Task scripts
 
-Task scripts are in `tools/<tool>/.config/mise/tasks/`. mise uses the directory path
+Task scripts are in `tools/<tool>/.config/mise/tasks/`. mise uses the directory
+path
 as the task name, for example `code/merge/develop` is `code:merge:develop`. A
 `_default` file is the task for the directory name.
 

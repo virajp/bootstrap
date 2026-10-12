@@ -1,4 +1,4 @@
 [tools."npm:cf"]
 allow_builds = [ "workerd" ]
-depends      = [ "node", "pnpm" ]
-version      = "latest"
+depends = [ "node", "pnpm" ]
+version = "latest"

@@ -81,12 +81,12 @@ in each repository.
 
 Each `tool.toml` has these keys:
 
-| Key          | Meaning                                                              |
-| ------------ | -------------------------------------------------------------------- |
-| `depends`    | The sync adds these tools automatically.                             |
-| `root_only`  | If `true`, the sync refuses the tool in a submodule.                 |
-| `extensions` | The VS Code extensions of the tool, for `.vscode/extensions.json`.   |
-| `seed`       | Files that the sync writes only if they are missing.                 |
+| Key          | Meaning                                                            |
+| ------------ | ------------------------------------------------------------------ |
+| `depends`    | The sync adds these tools automatically.                           |
+| `root_only`  | If `true`, the sync refuses the tool in a submodule.               |
+| `extensions` | The VS Code extensions of the tool, for `.vscode/extensions.json`. |
+| `seed`       | Files that the sync writes only if they are missing.               |
 
 Ask which of `python`, `node` and `flutter` is the core language of the
 repository. A core tool goes in `core_tools`. Then its
@@ -112,31 +112,31 @@ cp "$base/setup/configs" .config/mise/tasks/setup/
 
 Write `.config/repo-config.toml`. Ask the user for each value.
 
-| Key                                | Used by                     | Values                                                                                     |
-| ---------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------ |
-| `tools`                            | `repo_sync`                 | The tools from step 1. `base` is necessary.                                                |
-| `core_tools`                       | `repo_sync`                 | The core language tools from step 1, for example `["node"]`. The default is none.          |
-| `repo_name`                        | `_env`                      | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree. |
-| `merge_model_develop`              | `_env`                      | `direct` (local merge) or `pr` (pull request)                                              |
-| `merge_model_main`                 | `_env`                      | `direct` or `pr`                                                                           |
-| `commit_scopes`                    | `git-conventional-commits`  | The commit scopes, for example `["backend", "web"]`. The default is no scopes.             |
-| `repo_url`                         | `git-conventional-commits`  | The web URL of the repository, for the changelog links. GitHub and GitLab are supported.   |
-| `worktree_files`                   | `setup:worktree`            | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]` |
-| `[member.<name>]`                  | `setup`, `setup:worktree`   | One table for each member folder                                                           |
-| `[member.<name>].label`            | `setup`                     | The display name. The default is `<name>`.                                                 |
-| `[member.<name>].worktree_install` | `setup:worktree`            | The install command for a new worktree. If it is not set, the member's own `setup:worktree` runs. |
+| Key                                | Used by                    | Values                                                                                                             |
+| ---------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `tools`                            | `repo_sync`                | The tools from step 1. `base` is necessary.                                                                        |
+| `core_tools`                       | `repo_sync`                | The core language tools from step 1, for example `["node"]`. The default is none.                                  |
+| `repo_name`                        | `_env`                     | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                    |
+| `merge_model_develop`              | `_env`                     | `direct` (local merge) or `pr` (pull request)                                                                      |
+| `merge_model_main`                 | `_env`                     | `direct` or `pr`                                                                                                   |
+| `commit_scopes`                    | `git-conventional-commits` | The commit scopes, for example `["backend", "web"]`. The default is no scopes.                                     |
+| `repo_url`                         | `git-conventional-commits` | The web URL of the repository, for the changelog links. GitHub and GitLab are supported.                           |
+| `worktree_files`                   | `setup:worktree`           | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]` |
+| `[member.<name>]`                  | `setup`, `setup:worktree`  | One table for each member folder                                                                                   |
+| `[member.<name>].label`            | `setup`                    | The display name. The default is `<name>`.                                                                         |
+| `[member.<name>].worktree_install` | `setup:worktree`           | The install command for a new worktree. If it is not set, the member's own `setup:worktree` runs.                  |
 
 Example:
 
 ```toml
-tools = ["base", "node", "fnox", "claude", "vscode"]
-core_tools = ["node"]
+commit_scopes = [ "backend", "web" ]
+core_tools = [ "node" ]
 merge_model_develop = "direct"
 merge_model_main = "pr"
 repo_name = "my-repo"
-commit_scopes = ["backend", "web"]
 repo_url = "https://github.com/me/my-repo"
-worktree_files = [".config/mise.local.toml"]
+tools = [ "base", "node", "fnox", "claude", "vscode" ]
+worktree_files = [ ".config/mise.local.toml" ]
 ```
 
 The member list is the git submodules, then each `[member.<name>]` table. A
@@ -161,12 +161,12 @@ has no mise config and no task files, skip this step.
 
 If `repo_sync` fails, read the exit code:
 
-| Code | Cause                                                                          | Action                                          |
-| ---- | ------------------------------------------------------------------------------ | ----------------------------------------------- |
-| 2    | No `tools` in the values file, a root-only tool in a submodule, or a template that cannot render | Correct the values file          |
-| 3    | A tool that is not in `repo-config`                                            | Correct the `tools` list                        |
-| 5    | The clone failed                                                               | Examine the network, the SSH key and the access |
-| 1    | A local file system error                                                      | Read the `repo-sync:` lines on stderr           |
+| Code | Cause                                                                                            | Action                                          |
+| ---- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| 2    | No `tools` in the values file, a root-only tool in a submodule, or a template that cannot render | Correct the values file                         |
+| 3    | A tool that is not in `repo-config`                                                              | Correct the `tools` list                        |
+| 5    | The clone failed                                                                                 | Examine the network, the SSH key and the access |
+| 1    | A local file system error                                                                        | Read the `repo-sync:` lines on stderr           |
 
 A failure does not change an existing file.
 
@@ -177,13 +177,13 @@ that the repository has each file for the tools that it uses. If a file is
 missing, ask the user for its content. Do not write a placeholder that hides
 the problem.
 
-| File                             | Used by                                              |
-| -------------------------------- | ---------------------------------------------------- |
-| `.config/pre-commit-config.yaml` | `code:precommit`, `setup:precommit`, the merge tasks |
-| `.config/gitleaks.toml`          | `code:sec`                                           |
-| `.config/grype.yaml`             | `code:sec`                                           |
+| File                             | Used by                                                                                                         |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `.config/pre-commit-config.yaml` | `code:precommit`, `setup:precommit`, the merge tasks                                                            |
+| `.config/gitleaks.toml`          | `code:sec`                                                                                                      |
+| `.config/grype.yaml`             | `code:sec`                                                                                                      |
 | `dprint.jsonc`                   | `code:format`. It only excludes paths, for example the submodules. The plugins are in the global dprint config. |
-| `~/.config/dprint/dprint.jsonc`  | `setup:dprint`                                       |
+| `~/.config/dprint/dprint.jsonc`  | `setup:dprint`                                                                                                  |
 
 The merge tasks also need the `develop` and `main` branches.
 
@@ -247,16 +247,16 @@ each task in `setup/deps/`. An old task there runs too, and it can fail.
 
 ### M3: Rename the old tasks
 
-| Old task                      | New task                     | Action                                                                                |
-| ----------------------------- | ---------------------------- | ------------------------------------------------------------------------------------- |
-| `setup:all` (`setup/all`)     | `setup` (`setup/_default`)   | Delete the old file. `base` ships the new one. Members are called with `setup`.       |
-| `code:all` (`code/all`)       | `code` (`code/_default`)     | Delete the old file. Keep `code:check` and `code:test` as repository-owned tasks.     |
-| `setup:secrets` (fnox)        | `setup:secrets:fnox`         | Delete the old file. Select the `fnox` tool.                                          |
-| `setup:secrets` (Doppler)     | `setup:secrets:doppler`      | Move the file to `setup/secrets/doppler`. It stays repository-owned.                  |
-| `setup:secrets` (stub)        | none                         | Delete it.                                                                            |
-| `setup:deps:check`            | `setup:external:check`       | Delete it. The `docker` tool ships the new one.                                       |
-| `setup:git-config`            | `code:git-config`            | Delete it.                                                                            |
-| top-level `count`, `leaks`, `lint` | `code:*`                | Delete them.                                                                          |
+| Old task                           | New task                   | Action                                                                            |
+| ---------------------------------- | -------------------------- | --------------------------------------------------------------------------------- |
+| `setup:all` (`setup/all`)          | `setup` (`setup/_default`) | Delete the old file. `base` ships the new one. Members are called with `setup`.   |
+| `code:all` (`code/all`)            | `code` (`code/_default`)   | Delete the old file. Keep `code:check` and `code:test` as repository-owned tasks. |
+| `setup:secrets` (fnox)             | `setup:secrets:fnox`       | Delete the old file. Select the `fnox` tool.                                      |
+| `setup:secrets` (Doppler)          | `setup:secrets:doppler`    | Move the file to `setup/secrets/doppler`. It stays repository-owned.              |
+| `setup:secrets` (stub)             | none                       | Delete it.                                                                        |
+| `setup:deps:check`                 | `setup:external:check`     | Delete it. The `docker` tool ships the new one.                                   |
+| `setup:git-config`                 | `code:git-config`          | Delete it.                                                                        |
+| top-level `count`, `leaks`, `lint` | `code:*`                   | Delete them.                                                                      |
 
 Update each shell alias that calls an old name, for example
 `setup = "mise run setup:all"` becomes `setup = "mise run setup"`.
@@ -316,13 +316,13 @@ bootstrap and claude-plugins have an old `.config/mise/conf.d/_base/`. Its
 name is the same as the shared `_base`, but the content is different. Before
 the first sync, move its content:
 
-| Old content in `_base`               | New place                                  |
-| ------------------------------------ | ------------------------------------------ |
-| node, pnpm                           | the `node` tool                            |
-| python, uv, `UV_*`                   | the `python` tool                          |
-| pre-commit, `PRE_COMMIT_HOME`        | the `base` tool                            |
-| `MEMBERS`, `REPO_NAME`               | the values file                            |
-| `MEMPALACE_*`, `min_version`, `task.run_auto_install`, other repository content | `conf.d/repo/` |
+| Old content in `_base`                                                          | New place         |
+| ------------------------------------------------------------------------------- | ----------------- |
+| node, pnpm                                                                      | the `node` tool   |
+| python, uv, `UV_*`                                                              | the `python` tool |
+| pre-commit, `PRE_COMMIT_HOME`                                                   | the `base` tool   |
+| `MEMBERS`, `REPO_NAME`                                                          | the values file   |
+| `MEMPALACE_*`, `min_version`, `task.run_auto_install`, other repository content | `conf.d/repo/`    |
 
 Then delete the old `_base/mise.toml`, `_base/mise.dev.toml` and
 `_base/mise.ci.toml`. Also delete an old `conf.d/ai/`: the `claude` tool
