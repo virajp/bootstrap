@@ -17,10 +17,11 @@ example, `files/.config/mise/tasks/code/merge/develop` here is
 files. Copy this prompt into an AI session in that repository:
 
 ```text
-Make this repository get its shared files from repo-config.
-Make a shallow clone of git@github.com:virajp/repo-config.git into a
-temporary directory. Read sync.md in the clone, and do its steps in sequence.
-Ask me before each choice that sync.md does not decide.
+Make this repository and each of its git submodules get their shared files
+from repo-config. Make a shallow clone of
+git@github.com:virajp/repo-config.git into a temporary directory. Read
+sync.md in the clone, and do its steps in sequence. Ask me before each choice
+that sync.md does not decide.
 ```
 
 ## How a repository syncs

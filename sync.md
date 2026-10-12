@@ -24,6 +24,32 @@ Do the steps in sequence to make the repository get its shared files from
   sync uses `BatchMode=yes`, so it does not ask for a password.
 - mise is installed. The `setup:configs` task gets gomplate through mise.
 
+## Repositories with git submodules
+
+Each git submodule is a separate repository. It needs its own copy of the
+shared files, its own values file, and its own `setup:configs` task. Do steps
+1 to 9 in each repository of the tree, not only in the root repository.
+
+1. Get the list of submodules, nested submodules included.
+
+   ```bash
+   git submodule foreach --quiet --recursive 'echo $displaypath'
+   ```
+
+2. Show the list to the user. Ask which submodules to include.
+3. Do steps 1 to 9 in each included submodule. Start with the deepest
+   submodules. Do the root repository last.
+4. In each submodule, run the commands from the root of that submodule.
+   `MISE_PROJECT_ROOT` and all the paths in this file are relative to it.
+
+The file selection and the values of a submodule can be different from those
+of the root repository. Ask the user for each submodule. You can show the
+answers of a different repository as a default.
+
+If a repository already has `.config/mise/tasks/setup/configs`, tell the
+user. Then ask whether to do the steps again in that repository, or to go to
+the next repository.
+
 ## Step 1: Select the files
 
 Show the user this catalog. Then ask which groups the repository needs.
@@ -79,8 +105,8 @@ The sync script cannot sync itself before it exists. A copy from before the
    cp "$tmp/files/.config/mise/tasks/_scripts/helpers" .config/mise/tasks/_scripts/
    ```
 
-3. Keep the clone until step 1 is complete. Then remove it with
-   `rm -rf "$tmp"`.
+3. Keep the clone until all repositories are complete. Use the same clone
+   for each submodule. Then remove it with `rm -rf "$tmp"`.
 
 The template render needs `helpers`, because it calls `members` from it. Thus
 copy `helpers` now, also if the first sync is a dry run.
@@ -219,3 +245,9 @@ Commit these files:
 - `.config/repo-config.toml`, `.config/repo-sync/gitignore`, and
   `.config/mise/tasks/setup/configs`.
 - The files from step 7.
+
+Commit in each submodule before you commit in the repository that contains
+it. Then the commit in the containing repository includes the new submodule
+commit. Ask the user before you push. Push each submodule before the
+repository that contains it. If not, the containing repository points to a
+commit that the remote does not have.
