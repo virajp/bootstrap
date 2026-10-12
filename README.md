@@ -11,6 +11,18 @@ Each file in `files/` is at the path that it gets in a repository. For
 example, `files/.config/mise/tasks/code/merge/develop` here is
 `.config/mise/tasks/code/merge/develop` in every repository that uses it.
 
+## Adopt in a repository
+
+[`sync.md`](sync.md) tells an AI agent how to make a repository use these
+files. Copy this prompt into an AI session in that repository:
+
+```text
+Make this repository get its shared files from repo-config.
+Make a shallow clone of git@github.com:virajp/repo-config.git into a
+temporary directory. Read sync.md in the clone, and do its steps in sequence.
+Ask me before each choice that sync.md does not decide.
+```
+
 ## How a repository syncs
 
 1. `setup:configs` sources `.config/mise/tasks/_scripts/repo-sync`.
