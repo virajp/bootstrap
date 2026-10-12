@@ -8,7 +8,7 @@ version = "lts"
 
 [tools.pnpm]
 depends = [ "node" ]
-version = "12"
+version = "latest"
 
 [env]
 _.path = { path = "node_modules/.bin", tools = true }
