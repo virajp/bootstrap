@@ -9,13 +9,13 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
+print_header "Updating the Claude Code plugins ..."
+
 if ! mise x -- which claude > /dev/null 2>&1; then
   print_warn "claude is not on PATH — skipping AI setup."
   print_yellow "Install it from https://claude.com/code, then run this task again."
   exit 0
 fi
-
-print_header "Updating the Claude Code plugins ..."
 print_wait "Updating the marketplaces ... "
 mise x -- claude plugin marketplace update > /dev/null
 print_success

@@ -40,18 +40,18 @@ if ! command -v "${EDITOR_CLI}" > /dev/null 2>&1; then
   exit 0
 fi
 
-if [ -z "${REPO_NAME:-}" ] || [ "${REPO_NAME}" = "unfilled" ]; then
-  print_warn "REPO_NAME is not filled in .config/mise.toml — skipping the editor profile."
-  print_yellow "It is the marked position the orchestrator fills with this repo's id."
-  exit 0
-fi
-
+# Without a recommendation list there is nothing to reconcile.
 if [ ! -f "${RECOMMENDATIONS}" ]; then
-  print_warn "No .vscode/extensions.json — skipping the editor profile."
   exit 0
 fi
 
-print_header "Reconciling the ${REPO_NAME} editor profile ..."
+print_header "Reconciling the ${REPO_NAME:-} editor profile ..."
+
+if [ -z "${REPO_NAME:-}" ] || [ "${REPO_NAME}" = "unfilled" ]; then
+  print_warn "REPO_NAME is not set — skipping the editor profile."
+  print_yellow "Set repo_name in .config/repo-config.toml, then run setup:configs."
+  exit 0
+fi
 
 # The file is JSONC: comments are legal and the shipped one has them. Rather
 # than pull in a parser, read the one array this task cares about with awk —

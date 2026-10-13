@@ -13,18 +13,20 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 # machine. grype reads the lockfiles of the whole tree, so it belongs to the
 # full run and to CI, not to each commit.
 if [[ "${usage_staged:-false}" == "true" ]]; then
-  print_header "Run gitleaks on the staged changes ..."
+  print_header "Scanning the staged changes for secrets ..."
   [[ "${usage_debug:-false}" == "true" ]] && FLAGS="--verbose" || FLAGS=""
   mise x -- gitleaks git --staged --config "$MISE_PROJECT_ROOT/.config/gitleaks.toml" --redact 50 ${FLAGS}
   exit 0
 fi
 
-print_header "Scanning files using grype (${MISE_PROJECT_ROOT}) ..."
+print_header "Scanning for security problems ..."
+
+print_subheader "Scanning the dependencies with grype ..."
 [[ "${usage_debug:-false}" == "true" ]] && FLAGS="-vv" || FLAGS=""
 mise x -- grype . --config .config/grype.yaml --name ${MISE_PROJECT_ROOT} ${FLAGS}
 
-print_header "Run gitleaks on $PWD ..."
+print_subheader "Scanning the files for secrets with gitleaks ..."
 [[ "${usage_debug:-false}" == "true" ]] && FLAGS="--verbose" || FLAGS=""
 mise x -- gitleaks dir ${PWD} --config $MISE_PROJECT_ROOT/.config/gitleaks.toml --redact 50 ${FLAGS}
 
-print_header "Scanning done"
+print_success "Scanning done"

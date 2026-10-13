@@ -22,6 +22,7 @@ print_header "Linting files ..."
 FILES=()
 [[ -n "${usage_files:-}" ]] && eval "FILES=(${usage_files})"
 
+print_subheader "Running the linter ..."
 mise x -- linter \
   ${LOG_LEVEL} \
   ${FIX} \
@@ -37,6 +38,7 @@ while IFS= read -r file; do
   SHELL_FILES+=("${file}")
 done < <(shell_files_in_scope "${FILES[@]}")
 if ((${#SHELL_FILES[@]})); then
+  print_subheader "Checking the shell scripts with ShellCheck ..."
   mise x -- shellcheck --severity=warning "${SHELL_FILES[@]}"
 fi
 

@@ -166,6 +166,8 @@ merge_to_destination_branch() {
   fi
   [ "${MERGE_MODE}" = "pr" ] || MERGE_MODE="direct"
 
+  print_header "Landing ${SOURCE_BRANCH} on ${DESTINATION_BRANCH} (${MERGE_MODE}) ..."
+
   if [ "${SOURCE_BRANCH}" = "main" ]; then
     print_error "merges FROM 'main' are not allowed."
     print_warn "- 'main' is the release branch; nothing is authored there"

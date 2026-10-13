@@ -10,12 +10,9 @@
 set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-# Shipped with the flutter tool. A repository without a pubspec yet has
-# nothing to install, and that is not a failure.
-if [[ ! -f "${MISE_PROJECT_ROOT}/pubspec.yaml" ]]; then
-  print_info "No pubspec.yaml — no Flutter dependencies to install."
-  exit 0
-fi
+# Shipped with the flutter tool. Without a pubspec.yaml, this is not a Flutter
+# project, so the task does not apply and prints nothing.
+[[ -f "${MISE_PROJECT_ROOT}/pubspec.yaml" ]] || exit 0
 
 cd "${MISE_PROJECT_ROOT}"
 if [[ "${usage_upgrade:-false}" == "true" ]]; then
