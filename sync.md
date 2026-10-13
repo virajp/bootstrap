@@ -20,19 +20,38 @@ Do the steps in sequence to make the repository get its shared files from
     `.config/mise/conf.d/repo/mise.dev.toml`.
   - shell functions: `.config/mise/tasks/_scripts/local`.
   - ignore lines: `.config/repo-sync/gitignore`.
+  - pre-commit hooks: `.config/repo-sync/pre-commit.yaml`, a YAML list of
+    `repos:` entries.
   - tasks: any task name that no tool ships.
 - A seed file is different. The sync writes it only if it is missing. After
   that, the repository owns it.
 - To change a shared file, change it in `repo-config`, push it to `main`, then
   sync again.
 - Prefix each tool call with `mise x --`, also in the task files and the hook
-  entries of `.config/pre-commit-config.yaml`.
+  entries of `.config/repo-sync/pre-commit.yaml`.
 
 ## Requirements
 
 - The machine has SSH access to `git@github.com:virajp/repo-config.git`. The
   sync uses `BatchMode=yes`, so it does not ask for a password.
 - mise is installed. The `setup:configs` task gets gomplate through mise.
+
+## An empty repository
+
+If the repository has no commit, do these steps first:
+
+1. Write `.gitignore` with these two lines:
+
+   ```text
+   .worktrees/
+   .claude/worktrees/
+   ```
+
+2. Commit it on `main`. This is the first commit.
+
+Then do the other steps. A worktree in `.worktrees/` is now ignored, and the
+branch `main` exists. The first sync replaces `.gitignore` with the shared one,
+which has the same two lines.
 
 ## Repositories with git submodules
 
@@ -119,7 +138,7 @@ Write `.config/repo-config.toml`. Ask the user for each value.
 | `repo_name`                        | `_env`                     | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                    |
 | `merge_model_develop`              | `_env`                     | `direct` (local merge) or `pr` (pull request)                                                                      |
 | `merge_model_main`                 | `_env`                     | `direct` or `pr`                                                                                                   |
-| `commit_scopes`                    | `git-conventional-commits` | The commit scopes, for example `["backend", "web"]`. The default is no scopes.                                     |
+| `commit_scopes`                    | `git-conventional-commits` | The commit scopes, for example `["backend", "web"]`. The default is the member list.                               |
 | `repo_url`                         | `git-conventional-commits` | The web URL of the repository, for the changelog links. GitHub and GitLab are supported.                           |
 | `worktree_files`                   | `setup:worktree`           | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]` |
 | `[member.<name>]`                  | `setup`, `setup:worktree`  | One table for each member folder                                                                                   |
@@ -143,12 +162,40 @@ The member list is the git submodules, then each `[member.<name>]` table. A
 `[member.<name>]` table that is not a submodule must have a folder with that
 name in the repository. If not, the render fails.
 
-## Step 4: Migrate the existing files
+## Step 4: Select the branch model
+
+The merge tasks follow the branches `main` and `develop`. A branch counts if it
+exists locally or on `origin`.
+
+| Branches             | Merge tasks                              | Rule                                                                   |
+| -------------------- | ---------------------------------------- | ---------------------------------------------------------------------- |
+| `main` and `develop` | `code:merge:develop`, `code:merge:main`  | Feature branches merge into `develop`. Only `develop` merges into `main`. |
+| only one of them     | `code:merge`                             | Any feature branch merges into that branch.                            |
+| neither              | none                                     | The sync stops with code 2.                                            |
+
+1. Find the branches:
+
+   ```bash
+   for b in main develop; do
+     git show-ref --verify --quiet "refs/heads/$b" ||
+       git show-ref --verify --quiet "refs/remotes/origin/$b" && echo "$b"
+   done
+   ```
+
+2. Show the result to the user.
+3. If a branch is missing, ask the user whether to create it. If the user
+   agrees, create it from the existing branch, and ask before you push it.
+
+`repo_sync` does not ask. It writes the merge tasks of the model that it
+finds, and removes the merge tasks of the other model. If the branches change
+later, run `setup:configs` again.
+
+## Step 5: Migrate the existing files
 
 Do the "Migration" section below before the first sync. If the repository
 has no mise config and no task files, skip this step.
 
-## Step 5: Run the sync
+## Step 6: Run the sync
 
 1. If mise says that the config files are not trusted, ask the user to run
    `mise trust`.
@@ -164,13 +211,14 @@ If `repo_sync` fails, read the exit code:
 | Code | Cause                                                                                            | Action                                          |
 | ---- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
 | 2    | No `tools` in the values file, a root-only tool in a submodule, or a template that cannot render | Correct the values file                         |
+| 2    | Neither `main` nor `develop` exists                                                              | Do step 4                                       |
 | 3    | A tool that is not in `repo-config`                                                              | Correct the `tools` list                        |
 | 5    | The clone failed                                                                                 | Examine the network, the SSH key and the access |
 | 1    | A local file system error                                                                        | Read the `repo-sync:` lines on stderr           |
 
 A failure does not change an existing file.
 
-## Step 6: Supply the files that `repo-config` does not have
+## Step 7: Supply the files that `repo-config` does not have
 
 The shared files refer to files that each repository must supply. Make sure
 that the repository has each file for the tools that it uses. If a file is
@@ -179,15 +227,15 @@ the problem.
 
 | File                             | Used by                                                                                                         |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `.config/pre-commit-config.yaml` | `code:precommit`, `setup:precommit`, the merge tasks                                                            |
-| `.config/gitleaks.toml`          | `code:sec`                                                                                                      |
-| `.config/grype.yaml`             | `code:sec`                                                                                                      |
 | `dprint.jsonc`                   | `code:format`. It only excludes paths, for example the submodules. The plugins are in the global dprint config. |
 | `~/.config/dprint/dprint.jsonc`  | `setup:dprint`                                                                                                  |
 
-The merge tasks also need the `develop` and `main` branches.
+`base` supplies `.config/pre-commit-config.yaml` (synced), and
+`.config/gitleaks.toml` and `.config/grype.yaml` (seeds). A seed keeps an
+existing file. Examine an existing `gitleaks.toml`: without
+`[extend] useDefault = true`, gitleaks uses only the rules of the file.
 
-## Step 7: Make sure that the result is correct
+## Step 8: Make sure that the result is correct
 
 1. Run `mise config ls`. Make sure that mise loads the synced `conf.d` files.
 2. Run `mise tasks`. Make sure that the synced tasks are in the list.
@@ -199,13 +247,14 @@ mise loads `mise.toml` from each folder in `conf.d`. It loads a
 `mise.dev.toml` file only when the `dev` config environment is active
 (`MISE_ENV`).
 
-## Step 8: Commit
+## Step 9: Commit
 
 Commit these files:
 
 - The synced files and the seed files.
-- `.config/repo-config.toml` and `.config/repo-sync/gitignore`.
-- The repository-owned files from step 4 and step 6.
+- `.config/repo-config.toml`, `.config/repo-sync/gitignore` and
+  `.config/repo-sync/pre-commit.yaml`.
+- The repository-owned files from step 5 and step 7.
 
 Commit in each submodule before you commit in the repository that contains
 it. Then the commit in the containing repository includes the new submodule
@@ -366,7 +415,13 @@ of the old file in `commit_scopes`.
 
 ### M12: The pre-commit hooks
 
-In `.config/pre-commit-config.yaml`, prefix each `entry` that calls a tool
-with `mise x --`. The `graphify-refresh` hook must call
-`mise x -- mise run code:graph`. Keep the hook in each repository, submodules
-included.
+**WARNING:** Do this before the first sync. The sync replaces
+`.config/pre-commit-config.yaml`, and it does not keep the hooks of the
+repository.
+
+1. Compare the hooks of the existing file with the rendered file. Use
+   `mise run setup:configs --dry-run`.
+2. Move each hook that no tool ships to `.config/repo-sync/pre-commit.yaml`.
+   Prefix each `entry` that calls a tool with `mise x --`.
+3. Remove each hook that a tool now ships, for example `graphify-refresh`,
+   `gitleaks` and `conventional-commits`.
