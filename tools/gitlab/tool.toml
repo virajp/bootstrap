@@ -1,0 +1,17 @@
+# GitLab: the glab CLI, and the issue and merge request templates.
+depends = []
+extensions = [ "gitlab.gitlab-workflow" ]
+root_only = false
+seed = []
+
+# `glab ci lint` asks the GitLab API, so it needs the network and `glab auth`.
+[[precommit]]
+repo = "local"
+
+[[precommit.hooks]]
+entry = "mise x -- glab ci lint"
+files = '^\.gitlab-ci\.yml$'
+id = "glab-ci-lint"
+language = "system"
+name = "Lint the GitLab CI config (glab ci lint)"
+pass_filenames = false

@@ -9,10 +9,7 @@ version = "latest"
 [tools."npm:@askviraj/linter"]
 version = "latest"
 
-# Shell and workflow linters
-[tools.actionlint]
-version = "latest"
-
+# Shell linter
 [tools.shellcheck]
 version = "latest"
 
