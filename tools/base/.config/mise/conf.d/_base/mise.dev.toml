@@ -16,9 +16,6 @@ version = "latest"
 [tools.shellcheck]
 version = "latest"
 
-[tools.shfmt]
-version = "latest"
-
 # JSON and YAML queries
 [tools.jq]
 version = "latest"

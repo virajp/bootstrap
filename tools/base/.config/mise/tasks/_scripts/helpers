@@ -40,7 +40,6 @@ readonly EMOJI_SUCCESS='✅'
 readonly EMOJI_WARN='⚠️'
 readonly EMOJI_ERROR='❌'
 readonly EMOJI_INFO='ℹ️'
-readonly EMOJI_SETTINGS='⚙️'
 readonly EMOJI_HEADER='🚀'
 readonly EMOJI_SUBHEADER='📌'
 
@@ -170,7 +169,7 @@ print_header() {
 # Not bold, so a step reads as subordinate to the section it sits in.
 print_subheader() {
   line_sep2
-  print_line 1 yes "${COLOR_GREEN}" "${EMOJI_SETTINGS}" '' "$*"
+  print_line 1 yes "${COLOR_GREEN}" "${EMOJI_SUBHEADER}" '' "$*"
 }
 
 # A single-step task calls NEITHER. A task that does one thing and prints one
@@ -298,10 +297,9 @@ members() {
 # The shell files in scope, one path per line: the paths given as arguments
 # filtered down to shell, or every TRACKED shell file when no argument is given.
 #
-# Defined here because both `code:format` (shfmt) and `code:lint` (shellcheck)
-# need the same answer, and an overlay that replaces either of those files still
-# gets it. `git ls-files` rather than a `find`, so nothing ignored is ever
-# rewritten. The shebang test is what catches the extension-less task files this
+# Defined here because `code:lint` (shellcheck) needs it, and an overlay that
+# replaces that file still gets it. `git ls-files` rather than a `find`, so
+# nothing ignored is ever checked. The shebang test is what catches the extension-less task files this
 # library lives among — the shell a repo most wants checked, and the only shell
 # with no `.sh` on the end.
 shell_files_in_scope() {
