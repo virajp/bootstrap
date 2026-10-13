@@ -138,7 +138,7 @@ Write `.config/repo-config.toml`. Ask the user for each value.
 | `repo_name`                        | `_env`                     | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                    |
 | `merge_model_develop`              | `_env`                     | `direct` (local merge) or `pr` (pull request)                                                                      |
 | `merge_model_main`                 | `_env`                     | `direct` or `pr`                                                                                                   |
-| `commit_scopes`                    | `git-conventional-commits` | The commit scopes, for example `["backend", "web"]`. The default is no scopes.                                     |
+| `commit_scopes`                    | `git-conventional-commits` | The commit scopes, for example `["backend", "web"]`. The default is the member list.                               |
 | `repo_url`                         | `git-conventional-commits` | The web URL of the repository, for the changelog links. GitHub and GitLab are supported.                           |
 | `worktree_files`                   | `setup:worktree`           | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]` |
 | `[member.<name>]`                  | `setup`, `setup:worktree`  | One table for each member folder                                                                                   |

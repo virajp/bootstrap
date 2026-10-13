@@ -1,0 +1,4 @@
+# `os = "macos"` in .config/mise.toml selects macOS binaries. CI runs on
+# Linux, so this file selects Linux binaries when MISE_ENV includes `ci`.
+[settings]
+os = "linux"
