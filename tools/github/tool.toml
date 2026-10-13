@@ -1,0 +1,16 @@
+# GitHub: the gh CLI, actionlint, and the issue and pull request templates.
+depends = []
+extensions = [ "github.vscode-github-actions" ]
+root_only = false
+seed = []
+
+[[precommit]]
+repo = "local"
+
+[[precommit.hooks]]
+entry = "mise x -- actionlint"
+files = '^\.github/workflows/.*\.ya?ml$'
+id = "actionlint"
+language = "system"
+name = "Lint GitHub Actions workflows (actionlint)"
+pass_filenames = true

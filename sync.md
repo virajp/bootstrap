@@ -113,6 +113,10 @@ repository. A core tool goes in `core_tools`. Then its
 every environment, CI included. A TypeScript repository has `node` as its
 core tool.
 
+Ask whether the repository is on GitHub or on GitLab. Select `github` or
+`gitlab` for its forge. The `pr` merge model needs the CLI of the forge: `gh`
+or `glab`.
+
 ## Step 2: Copy the sync files by hand
 
 **CAUTION:** Do this before the first sync. An old copy of `repo-sync` reads
@@ -154,7 +158,7 @@ merge_model_develop = "direct"
 merge_model_main = "pr"
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
-tools = [ "base", "node", "fnox", "claude", "vscode" ]
+tools = [ "base", "github", "node", "fnox", "claude", "vscode" ]
 worktree_files = [ ".config/mise.local.toml" ]
 ```
 
@@ -341,9 +345,10 @@ From the repository-owned mise files, remove each tool that a selected tool
 installs:
 
 - `base`: dprint, `npm:@askviraj/linter`, gitleaks, grype, osv-scanner,
-  actionlint, shellcheck, gomplate, jq, yq, pre-commit. Remove shfmt
+  shellcheck, gomplate, jq, yq, pre-commit. Remove shfmt
   too: dprint formats shell scripts now.
 - `python`: python, uv. `node`: node, pnpm. `fnox`: fnox.
+- `github`: gh, actionlint. `gitlab`: glab.
 - `claude`: `pipx:graphifyy`, `pipx:mempalace`.
 - `flutter`: flutter, android-sdk, java. `bun`: bun.
 - `rust`: `core:rust`, zola. `cloudflare`: `npm:cf`. `pulumi`: pulumi, gcloud.
@@ -426,3 +431,16 @@ repository.
    Prefix each `entry` that calls a tool with `mise x --`.
 3. Remove each hook that a tool now ships, for example `graphify-refresh`,
    `gitleaks` and `conventional-commits`.
+
+### M13: The forge files
+
+`github` and `gitlab` replace these files, if they exist:
+
+- `github`: `.github/ISSUE_TEMPLATE/bug_report.yml`, `feature_request.yml`,
+  `config.yml`, and `.github/pull_request_template.md`.
+- `gitlab`: `.gitlab/issue_templates/Bug.md`, `Feature.md`, and
+  `.gitlab/merge_request_templates/Default.md`.
+
+Before the first sync, compare them with the shared files. Tell the user
+about each repository-specific change, for example an extra contact link.
+Remove `actionlint`, `gh` and `glab` from the repository-owned mise files.

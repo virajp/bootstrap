@@ -110,7 +110,7 @@ merge_model_develop = "direct"
 merge_model_main = "pr"
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
-tools = [ "base", "node", "fnox", "claude", "vscode" ]
+tools = [ "base", "github", "node", "fnox", "claude", "vscode" ]
 worktree_files = [ ".config/mise.local.toml" ]
 
 [member.backend]
