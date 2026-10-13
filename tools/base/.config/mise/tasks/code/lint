@@ -27,4 +27,17 @@ mise x -- linter \
   ${FIX} \
   "${FILES[@]}"
 
+# The shell files go to ShellCheck: the given ones, else every tracked one. It
+# cannot parse zsh or a template, so they are skipped. Only warnings and errors
+# fail; the info and style notes are advice.
+SHELL_FILES=()
+while IFS= read -r file; do
+  [[ "${file}" == *.tmpl ]] && continue
+  head -n 1 "${file}" | grep -q zsh && continue
+  SHELL_FILES+=("${file}")
+done < <(shell_files_in_scope "${FILES[@]}")
+if ((${#SHELL_FILES[@]})); then
+  mise x -- shellcheck --severity=warning "${SHELL_FILES[@]}"
+fi
+
 print_success "Linting done"

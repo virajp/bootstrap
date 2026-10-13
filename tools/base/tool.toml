@@ -3,7 +3,6 @@ depends = [ "python" ]
 extensions = [
   "dbaeumer.vscode-eslint",
   "dprint.dprint",
-  "foxundermoon.shell-format",
   "gruntfuggly.todo-tree",
   "hverlin.mise-vscode",
   "oderwat.indent-rainbow",
