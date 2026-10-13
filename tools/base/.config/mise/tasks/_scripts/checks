@@ -46,6 +46,15 @@ has_unpushed_commits() {
   [ -n "$(git log --oneline "${branch}@{u}..${branch}" 2>/dev/null)" ]
 }
 
+# A branch that exists here or on origin.
+#
+# The remote counts too: a fresh clone has only the default branch locally, and
+# `git checkout <branch>` creates the local branch from origin when it runs.
+branch_exists() {
+  git show-ref --verify --quiet "refs/heads/$1" ||
+    git show-ref --verify --quiet "refs/remotes/origin/$1"
+}
+
 # Whether this is a linked worktree rather than the main checkout.
 #
 # The distinction matters to a merge because a branch checked out in one

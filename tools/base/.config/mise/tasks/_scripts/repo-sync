@@ -19,6 +19,7 @@
 #   extensions = ["a.b"]        VS Code extensions, for `.vscode/extensions.json`
 #   seed       = ["bunfig.toml"] files written only when missing; the repo owns
 #                               them after that
+#   [[precommit]]               `repos:` entries of `.config/pre-commit-config.yaml`
 #
 # One call clones the default branch once (shallow, over SSH) and syncs every
 # file of every selected tool from that one clone.
@@ -37,9 +38,17 @@
 #                exist
 #   .tools       the selected tools, dependencies included
 #   .extensions  the VS Code extensions of those tools, sorted, no duplicates
+#   .precommit   the `[[precommit]]` entries of those tools, in tool order, then
+#                the entries of this repo's `.config/repo-sync/pre-commit.yaml`
 # The delimiters are `<% %>`, because `{{ }}` belongs to mise and `[[ ]]` to
 # bash, and both must reach the output unchanged. gomplate reads the TOML too;
 # the calling task provides it with `#MISE tools.gomplate="latest"`.
+#
+# Merge tasks: the branch model follows the branches that exist, here or on
+# origin. With `main` and `develop`, the sync writes `code/merge/develop` and
+# `code/merge/main`; with only one of them, `code/merge/_default`. It removes the
+# merge tasks of the other model: they are not seeds, so the repo does not own
+# them. With neither branch, the sync stops.
 #
 # .gitignore: the shared ignore set is written first, then the lines of this
 # repo's `.config/repo-sync/gitignore`, if that file exists. A later line wins,
@@ -54,7 +63,8 @@
 # Return codes
 #   0  success (or nothing to change)
 #   2  usage error, a values file without `tools`, a root-only tool in a
-#      submodule, or a template that cannot render
+#      submodule, a repo with neither `main` nor `develop`, or a template that
+#      cannot render
 #   3  a tool that is not in repo-config (fix the values file)
 #   5  the clone failed: network, SSH key or access to the repo
 #   1  anything else (local filesystem errors, ...)
@@ -180,15 +190,65 @@ _rs_resolve() {
   _RS_EXTENSIONS=$(printf '%s' "$_RS_EXTENSIONS" | sort -u)
 }
 
+# A branch that exists here or on origin; the same test as `branch_exists` in
+# `checks`, which a first sync does not have yet.
+_rs_branch_exists() {
+  git -C "$MISE_PROJECT_ROOT" show-ref --verify --quiet "refs/heads/$1" ||
+    git -C "$MISE_PROJECT_ROOT" show-ref --verify --quiet "refs/remotes/origin/$1"
+}
+
+# Set _RS_SKIP to the ` base/<path> ` words of the merge tasks of the other
+# branch model. Returns 2, after a message, when neither branch exists.
+_rs_merge_model() {
+  local tasks=base/.config/mise/tasks/code/merge
+  local main=0 develop=0
+  _rs_branch_exists main && main=1
+  _rs_branch_exists develop && develop=1
+  if ((main && develop)); then
+    _RS_SKIP=" $tasks/_default "
+  elif ((main || develop)); then
+    _RS_SKIP=" $tasks/develop $tasks/main "
+  else
+    _rs_log "the repo has neither 'main' nor 'develop' - create one, then sync again"
+    return 2
+  fi
+}
+
+# Remove the file <path> of <tool> from this repo, if it exists.
+_rs_remove() {
+  local tool=$1 path=$2 dry_run=$3 dest show
+  dest="${MISE_PROJECT_ROOT}/${path}"
+  show=$(_rs_path "$dest")
+  [[ -e $dest ]] || return 0
+  if ((dry_run)); then
+    _rs_log "would remove $show"
+    return 0
+  fi
+  rm -f -- "$dest" || { _rs_log "cannot remove $show"; return 1; }
+  _rs_log "removed    $show"
+}
+
 # Write the template context to <out>: the values of <values>, with
-# `members`, `tools` and `extensions` merged in first, so a key of the same
-# name in the values file cannot replace them.
+# `members`, `tools`, `extensions` and `precommit` merged in first, so a key of
+# the same name in the values file cannot replace them. <dir> is the clone.
 _rs_context() {
-  local values=$1 out=$2 members
+  local dir=$1 values=$2 out=$3 members tool
   members=$(_rs_members "$values" "template context") || return 2
-  REPO_SYNC_MEMBERS=$members REPO_SYNC_TOOLS=$(printf '%s\n' $_RS_TOOLS) REPO_SYNC_EXTENSIONS=$_RS_EXTENSIONS \
-    _rs_gomplate -c "v=${values}" -o "$out" \
-    -i '<% $ctx := dict %><% range (coll.Slice "members" "tools" "extensions") %><% $l := coll.Slice %><% range (env.Getenv (printf "REPO_SYNC_%s" (strings.ToUpper .)) | strings.Split "\n") %><% if . %><% $l = coll.Append . $l %><% end %><% end %><% $ctx = coll.Merge $ctx (dict . $l) %><% end %><% coll.Merge $ctx .v | data.ToJSON %>' >&2
+  # One context per tool manifest, `tool_<name>`, for the `[[precommit]]`
+  # entries; `repo_precommit` for the repo's own entries.
+  local args=(-c "v=${values}")
+  for tool in $_RS_TOOLS; do
+    args+=(-c "tool_${tool}=${dir}/tools/${tool}/tool.toml")
+  done
+  local own="${MISE_PROJECT_ROOT}/.config/repo-sync/pre-commit.yaml"
+  local has_own=''
+  if [[ -f $own ]]; then
+    args+=(-c "repo_precommit=${own}")
+    has_own=1
+  fi
+  REPO_SYNC_OWN_PRECOMMIT=$has_own REPO_SYNC_MEMBERS=$members REPO_SYNC_TOOLS=$(printf '%s\n' $_RS_TOOLS) REPO_SYNC_EXTENSIONS=$_RS_EXTENSIONS \
+    _rs_gomplate "${args[@]}" -o "$out" \
+    -i '<% $ctx := dict %><% range (coll.Slice "members" "tools" "extensions") %><% $l := coll.Slice %><% range (env.Getenv (printf "REPO_SYNC_%s" (strings.ToUpper .)) | strings.Split "\n") %><% if . %><% $l = coll.Append . $l %><% end %><% end %><% $ctx = coll.Merge $ctx (dict . $l) %><% end %><% $pc := coll.Slice %><% range $ctx.tools %><% $t := index $ (printf "tool_%s" .) %><% if has $t "precommit" %><% range $t.precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% end %><% if env.Getenv "REPO_SYNC_OWN_PRECOMMIT" %><% range $.repo_precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% $ctx = coll.Merge $ctx (dict "precommit" $pc) %><% coll.Merge $ctx .v | data.ToJSON %>' >&2
 }
 
 # Sync the file <path> of <tool> from the clone in <dir>. Leaves the
@@ -305,6 +365,7 @@ repo_sync() {
   local rc=0
   _rs_resolve "$dir" "$values" || { rc=$?; rm -rf -- "$dir"; return "$rc"; }
   _rs_log "tools:${_RS_TOOLS% }"
+  _rs_merge_model || { rc=$?; rm -rf -- "$dir"; return "$rc"; }
 
   local core
   core=" $(_rs_list "$values" core_tools | tr '\n' ' ')"
@@ -316,7 +377,7 @@ repo_sync() {
   if [[ -n $(find "$dir/tools" -name '*.tmpl' -type f -print -quit) ]]; then
     ctx=$(mktemp "${TMPDIR:-/tmp}/repo-sync-ctx.XXXXXX") || { rm -rf -- "$dir"; return 1; }
     _RS_TMPS+=("$ctx")
-    _rs_context "$values" "$ctx" || { _rs_log "cannot build the template context"; ctx=''; }
+    _rs_context "$dir" "$values" "$ctx" || { _rs_log "cannot build the template context"; ctx=''; }
   fi
 
   local tool path worst=0 ok=0 failed=() total=0
@@ -325,7 +386,11 @@ repo_sync() {
       [[ -n $path ]] || continue
       ((total += 1))
       rc=0
-      _rs_file "$dir" "$tool" "$path" "$dry_run" "$core" "$ctx" || rc=$?
+      if [[ $_RS_SKIP == *" $tool/$path "* ]]; then
+        _rs_remove "$tool" "$path" "$dry_run" || rc=$?
+      else
+        _rs_file "$dir" "$tool" "$path" "$dry_run" "$core" "$ctx" || rc=$?
+      fi
       if ((rc == 0)); then
         ((ok += 1))
       else

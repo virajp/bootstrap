@@ -23,6 +23,21 @@ root_only = false # true: refused in a submodule
 seed = [] # written only when missing
 ```
 
+A tool can also add hooks to `.config/pre-commit-config.yaml` with
+`[[precommit]]` tables. Each table is one `repos:` entry, with its
+`[[precommit.hooks]]`:
+
+```toml
+[[precommit]]
+repo = "local"
+
+[[precommit.hooks]]
+id = "format"
+name = "Format (mise run code:format)"
+entry = "mise x -- mise run code:format --fix"
+language = "system"
+```
+
 ## Adopt in a repository
 
 [`sync.md`](sync.md) tells an AI agent how to make a repository use these
@@ -45,7 +60,9 @@ that sync.md does not decide.
 3. It clones the default branch of this repository once (shallow, over SSH).
 4. It adds the `depends` of each tool. It refuses a `root_only` tool in a git
    submodule.
-5. It copies each file of each tool.
+5. It finds the branch model from the branches `main` and `develop`, local or
+   on origin. It stops if neither branch exists.
+6. It copies each file of each tool.
 
 These rules apply to each file:
 
@@ -55,7 +72,10 @@ These rules apply to each file:
   owns it.
 - For a tool in `core_tools`, `conf.d/<tool>/mise.dev.toml` is written as
   `mise.toml`. Thus mise loads it in every environment.
-- The sync never deletes a file.
+- The sync never deletes a file, with one exception: the merge tasks. With
+  `main` and `develop`, the repository gets `code:merge:develop` and
+  `code:merge:main`. With only one of them, it gets `code:merge`. The sync
+  removes the merge tasks of the other model.
 
 A copy of `repo-sync` from before the `tools/` layout cannot sync. Copy
 `tools/base/.config/mise/tasks/_scripts/repo-sync` and `helpers` into the
@@ -73,6 +93,9 @@ A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
   then each `[member.<name>]` table whose folder exists in the repository.
 - `.tools` is the list of the selected tools, dependencies included.
 - `.extensions` is the sorted list of the VS Code extensions of those tools.
+- `.precommit` is the list of the `[[precommit]]` entries of those tools, in
+  tool order, then the entries of the repository's
+  `.config/repo-sync/pre-commit.yaml`.
 
 Example values file:
 
@@ -96,6 +119,22 @@ worktree_install = "pnpm install --frozen-lockfile"
 `repo_sync` writes the shared `.gitignore` first. Then it adds the lines of the
 repository's `.config/repo-sync/gitignore`, if that file exists. A later line
 wins, so a repository can negate a shared pattern with `!`.
+
+## `.config/pre-commit-config.yaml`
+
+`base` renders this file from the `[[precommit]]` entries of the selected
+tools. Then it adds the entries of the repository's
+`.config/repo-sync/pre-commit.yaml`, if that file exists. That file is a YAML
+list of `repos:` entries:
+
+```yaml
+- repo: local
+  hooks:
+    - id: my-hook
+      name: My hook
+      entry: mise x -- mise run my:task
+      language: system
+```
 
 ## Change a shared file
 

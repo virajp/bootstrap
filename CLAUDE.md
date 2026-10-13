@@ -25,13 +25,15 @@ becomes `.config/mise/tasks/code/merge/develop` in a consumer.
 - Two tools must not ship the same path.
 - A file that the consumer owns after the first write is a seed. List it in
   `seed`.
+- A tool can add `[[precommit]]` tables to its `tool.toml`. Each table is one
+  `repos:` entry of `.config/pre-commit-config.yaml`, with its
+  `[[precommit.hooks]]`. This key is optional.
 - A tool ships its dev-only mise config as `conf.d/<topic>/mise.dev.toml`. The
   sync writes it as `mise.toml` when the consumer lists the tool in
   `core_tools`.
 
-Many files refer to files that are not in this repository, for example
-`.config/pre-commit-config.yaml`, `.config/gitleaks.toml` and
-`.config/grype.yaml`. The consumer repository supplies them. Do not run the
+Some files refer to files that are not in this repository, for example
+`dprint.jsonc`. The consumer repository supplies them. Do not run the
 shared tasks in this repository.
 
 ## How the sync operates
@@ -42,13 +44,18 @@ shared tasks in this repository.
   It does a shallow clone of the default branch of this repository over SSH.
   Then it adds the `depends` of each tool, and copies each file of each tool.
 - gomplate reads the TOML files: the values file and each `tool.toml`.
-- The sync never deletes a file. `sync.md` tells consumers what to delete.
+- The sync never deletes a file, except the merge tasks of the other branch
+  model (see "Branch model in the merge tasks"). `sync.md` tells consumers
+  what to delete.
 - The sync uses the pushed `main` branch. Local changes have no effect on
   consumers until you push them.
 - To test a change before you push it, set `REPO_SYNC_URL` to a local clone
   with a commit of the change. Use `repo_sync --dry-run` to show a diff.
 - The sync writes the shared `.gitignore` first. Then it adds the lines of the
   consumer file `.config/repo-sync/gitignore`.
+- `base` renders `.config/pre-commit-config.yaml` from the `[[precommit]]`
+  tables of the selected tools. Then it adds the entries of the consumer file
+  `.config/repo-sync/pre-commit.yaml`.
 
 ## Templates (`*.tmpl`)
 
@@ -62,7 +69,8 @@ shared tasks in this repository.
   `MEMBERS` env value), then each `[member.<name>]` key with a folder in the
   consumer repository.
 - `.tools` is the list of the selected tools. `.extensions` is the sorted list
-  of their VS Code extensions.
+  of their VS Code extensions. `.precommit` is the list of their
+  `[[precommit]]` tables, then the consumer's own entries.
 
 ## Task scripts
 
@@ -78,7 +86,7 @@ as the task name, for example `code/merge/develop` is `code:merge:develop`. A
     functions for all task output.
   - `checks`: git predicates. They return an exit status only and print
     nothing.
-  - `merge`: `merge_to_destination_branch`, which the two `code:merge:*` tasks
+  - `merge`: `merge_to_destination_branch`, which the `code:merge` tasks
     use.
   - `placeholder`: for a task that no stack fills yet. A placeholder task
     contains the `#PLACEHOLDER` marker and always exits 0. A stack overlay
@@ -103,11 +111,16 @@ as the task name, for example `code/merge/develop` is `code:merge:develop`. A
 
 ## Branch model in the merge tasks
 
-The `merge` library enforces this model:
+The branches `main` and `develop` select the model. A branch counts if it
+exists locally or on `origin`. `repo_sync` writes the merge tasks of the model
+that it finds, and removes the others. It stops if neither branch exists.
 
-- Work starts on feature branches. `code:merge:develop <branch>` lands a
-  branch on `develop`. `code:merge:main` lands `develop` on `main`.
-- Nothing merges from `main`. Only `develop` merges into `main`.
+- `main` and `develop`: work starts on feature branches.
+  `code:merge:develop <branch>` lands a branch on `develop`.
+  `code:merge:main` lands `develop` on `main`. Nothing merges from `main`.
+  Only `develop` merges into `main`.
+- Only one of them: `code:merge <branch>` (`code/merge/_default`) lands any
+  feature branch on that branch.
 - Merges use `--no-ff`. A hook pass over all files runs first as a safety net.
 - `MERGE_MODEL_DEVELOP` and `MERGE_MODEL_MAIN` select `direct` (local merge and
   push) or `pr` (push and open a pull request with `gh` or `glab`).

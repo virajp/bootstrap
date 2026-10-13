@@ -12,4 +12,140 @@ extensions = [
   "usernamehw.errorlens",
 ]
 root_only = false
-seed = []
+seed = [ ".config/gitleaks.toml.tmpl", ".config/grype.yaml" ]
+
+# The gate hooks are tool-neutral: each names a task and nothing else. Which
+# formatter, linters and scanners run is decided inside the task, so a hook and
+# CI cannot drift apart. `code:format` comes first because it rewrites files;
+# `code:sec` comes last because it is the only one that cannot fix what it finds.
+[[precommit]]
+repo = "local"
+
+[[precommit.hooks]]
+id = "git-config"
+name = "Forbidden local git-config"
+description = "Prevents a local .git/config from overriding global user and signing settings."
+entry = "mise x -- mise run code:git-config --fix"
+language = "system"
+pass_filenames = false
+always_run = true
+
+[[precommit.hooks]]
+id = "format"
+name = "Format (mise run code:format)"
+description = "The repo's formatters, run over the files being committed."
+entry = "mise x -- mise run code:format --fix"
+language = "system"
+pass_filenames = true
+
+[[precommit.hooks]]
+id = "lint"
+name = "Lint (mise run code:lint)"
+description = "The repo's linters, run over the files being committed."
+entry = "mise x -- mise run code:lint --fix"
+language = "system"
+pass_filenames = true
+
+[[precommit.hooks]]
+id = "sec"
+name = "Secrets (mise run code:sec --staged)"
+description = "The secret scan, over what is staged rather than over the tree."
+entry = "mise x -- mise run code:sec --staged"
+language = "system"
+pass_filenames = false
+always_run = true
+
+[[precommit.hooks]]
+id = "graphify-refresh"
+name = "Refresh the graphify graph (mise run code:graph)"
+description = "Refreshes the graphify graph after each commit, instead of the raw git hook of graphify."
+entry = "mise x -- mise run code:graph"
+language = "system"
+pass_filenames = false
+always_run = true
+stages = [ "post-commit" ]
+
+[[precommit]]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v6.0.0"
+
+[[precommit.hooks]]
+id = "check-added-large-files"
+name = "Check for added large files (>1MB)"
+args = [ "--maxkb=1024" ]
+
+[[precommit.hooks]]
+id = "check-case-conflict"
+name = "Check for case-conflicting filenames"
+
+[[precommit.hooks]]
+id = "check-illegal-windows-names"
+name = "Check for filenames Windows cannot check out"
+
+[[precommit.hooks]]
+id = "check-executables-have-shebangs"
+name = "Check that executables have shebangs"
+
+[[precommit.hooks]]
+id = "check-shebang-scripts-are-executable"
+name = "Check that scripts with shebangs are executable"
+
+[[precommit.hooks]]
+id = "check-merge-conflict"
+name = "Check for merge conflict markers"
+
+[[precommit.hooks]]
+id = "check-symlinks"
+name = "Check for broken symlinks"
+
+[[precommit.hooks]]
+id = "destroyed-symlinks"
+name = "Check for destroyed symlinks"
+
+[[precommit.hooks]]
+id = "check-json"
+name = "Check JSON syntax"
+# tsconfig and the VS Code files are JSONC: comments and trailing commas.
+exclude = '(^|/)tsconfig[^/]*\.json$|^\.vscode/'
+
+[[precommit.hooks]]
+id = "check-toml"
+name = "Check TOML syntax"
+
+[[precommit.hooks]]
+id = "check-yaml"
+name = "Check YAML syntax"
+args = [ "--allow-multiple-documents" ]
+
+[[precommit.hooks]]
+id = "detect-private-key"
+name = "Check for committed private keys"
+
+[[precommit.hooks]]
+id = "end-of-file-fixer"
+name = "Ensure files end with a newline"
+
+[[precommit.hooks]]
+id = "trailing-whitespace"
+name = "Remove trailing whitespace"
+
+[[precommit.hooks]]
+id = "mixed-line-ending"
+name = "Normalise line endings to LF"
+args = [ "--fix=lf" ]
+
+[[precommit.hooks]]
+id = "no-commit-to-branch"
+name = "Refuse a direct commit to main or develop"
+description = "These branches take merges only. git runs pre-merge-commit for a merge, so merges are not affected."
+args = [ "--branch", "main", "--branch", "develop" ]
+
+[[precommit]]
+repo = "https://github.com/qoomon/git-conventional-commits"
+rev = "v2.9.0"
+
+[[precommit.hooks]]
+id = "conventional-commits"
+name = "Conventional Commits"
+args = [ "--config", ".config/git-conventional-commits.yaml" ]
+stages = [ "commit-msg" ]

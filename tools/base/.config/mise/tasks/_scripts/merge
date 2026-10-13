@@ -3,16 +3,22 @@
 #MISE description="The merge both code:merge:* tasks run"
 #MISE hide=true
 
-# One function, two entrypoints. `code/merge/develop` and `code/merge/main`
-# differ only in the branches they name, and keeping the sequence here is what
-# stops them drifting into two subtly different merges.
+# One function, three entrypoints. `code/merge/develop`, `code/merge/main` and
+# `code/merge/_default` differ only in the branches they name, and keeping the
+# sequence here is what stops them drifting into different merges.
 #
-# **The policy this enforces is the repo's branch model.** Work is authored on
-# feature branches, integrated on `develop`, and reaches `main` only by merge:
+# **The policy this enforces is the repo's branch model.** The model follows
+# from the branches that exist (`branch_exists` in `checks`):
 #
-#   - nothing merges *from* `main` — nothing is authored there to merge
-#   - only `develop` merges *into* `main` — a feature branch that skipped
-#     `develop` has not been through the branch the pipeline builds
+#   - `main` and `develop`: work is authored on feature branches, integrated on
+#     `develop`, and reaches `main` only by merge. Nothing merges *from* `main`,
+#     and only `develop` merges *into* `main` — a feature branch that skipped
+#     `develop` has not been through the branch the pipeline builds. The tasks
+#     are `code:merge:develop` and `code:merge:main`.
+#   - only one of them: any feature branch merges into that branch. The task is
+#     `code:merge`.
+#
+# `repo_sync` writes the tasks of the model it detects, and removes the others.
 #
 # It merges `--no-ff` on purpose. A fast-forward would leave `main` and
 # `develop` as the same commit with no record that a merge happened, and the
@@ -165,7 +171,12 @@ merge_to_destination_branch() {
     exit 1
   fi
 
-  if [ "${DESTINATION_BRANCH}" = "main" ] && [ "${CURRENT_BRANCH}" != "develop" ]; then
+  local BOTH_BRANCHES=false
+  if branch_exists main && branch_exists develop; then
+    BOTH_BRANCHES=true
+  fi
+
+  if [ "${BOTH_BRANCHES}" = true ] && [ "${DESTINATION_BRANCH}" = "main" ] && [ "${CURRENT_BRANCH}" != "develop" ]; then
     print_error "merges INTO 'main' are only allowed from 'develop'."
     print_warn "- you are on '${CURRENT_BRANCH}'"
     print_warn "- run \`mise run code:merge:develop\` first, then merge develop into main"
@@ -184,17 +195,13 @@ merge_to_destination_branch() {
   fi
 
   # The destination has to EXIST, and it is asked here rather than discovered at
-  # the checkout below. A repo whose branches were never laid out — one commit on
-  # `main` and no `develop` — otherwise passes every predicate above, runs the
+  # the checkout below. Otherwise the run passes every predicate above, runs the
   # whole-tree hook pass, hops to the main worktree, and only then fails on
   # `git checkout`, having spent minutes to say something knowable in one command.
-  if ! git show-ref --verify --quiet "refs/heads/${DESTINATION_BRANCH}"; then
-    print_error "branch '${DESTINATION_BRANCH}' does not exist locally."
-    print_warn "- this repo's branch model needs both 'develop' and 'main': work is"
-    print_warn "  authored on feature branches, integrated on 'develop', and reaches"
-    print_warn "  'main' only by merge"
-    print_warn "- create it (\`git branch ${DESTINATION_BRANCH}\`, or fetch it from the"
-    print_warn "  remote) and run this again"
+  if ! branch_exists "${DESTINATION_BRANCH}"; then
+    print_error "branch '${DESTINATION_BRANCH}' does not exist here or on origin."
+    print_warn "- create it (\`git branch ${DESTINATION_BRANCH}\`), then run"
+    print_warn "  \`mise run setup:configs\` so the merge tasks match the branches"
     exit 1
   fi
 

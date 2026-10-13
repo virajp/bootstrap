@@ -1,0 +1,15 @@
+# gitleaks config. A seed: the repo owns this file after the first sync.
+title = "<% .repo_name %> gitleaks config"
+
+# Without this, the rules below *replace* the built-in rules of gitleaks,
+# instead of adding to them. The built-in rules also skip node_modules.
+[extend]
+useDefault = true
+
+# Add the secrets of this repo as [[rules]] here. A rule with the `id` of a
+# built-in rule changes that rule.
+
+# Generated output that no person writes.
+[[allowlists]]
+description = "generated files"
+paths = [ '''(^|/)graphify-out/''' ]
