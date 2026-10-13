@@ -82,6 +82,8 @@ Some files refer to files that are not in `tools/`, for example
 - `.members` is the list of member names: the git submodules (else the
   `MEMBERS` env value), then each `[member.<name>]` key with a folder in the
   consumer repository.
+- `.submodules` is the list of the git submodules only, nested ones included.
+  It is empty in a repository without submodules.
 - `.tools` is the list of the selected tools. `.extensions` is the sorted list
   of their VS Code extensions. `.precommit` is the list of their
   `[[precommit]]` tables, then the consumer's own entries.
