@@ -1,0 +1,5 @@
+merge_model_develop = "direct"
+merge_model_main = "direct"
+repo_name = "repo-config"
+repo_url = "https://github.com/virajp/repo-config"
+tools = [ "base" ]

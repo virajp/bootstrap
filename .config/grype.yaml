@@ -1,0 +1,33 @@
+---
+# grype config. A seed: the repo owns this file after the first sync.
+# `code:sec` passes `--config .config/grype.yaml`.
+
+# Anything medium or above fails the run. Low and negligible are reported and
+# do not block.
+fail-on-severity: medium
+
+# **An ignore rule is a claim that a finding is wrong, not that it is
+# inconvenient.** Each entry must state four things, in a comment above it:
+#
+#   1. the vulnerability, by id;
+#   2. the package and version it is matched against;
+#   3. why it does not apply here — a reachability argument, not a severity
+#      opinion;
+#   4. what makes it expire — a date, or the upstream release that fixes it.
+#
+# Scope an entry to the FINDING, never to the package: ignoring the package
+# means the next, unrelated advisory against it arrives silently. Prefer
+# upgrading; ignore only when there is nothing to upgrade to. Put the reason in
+# the `reason` field too, so the report shows it.
+ignore: []
+
+# Generated output and other worktrees, which are not this tree.
+exclude:
+  - ./graphify-out/**
+  - ./.worktrees/**
+
+# Show the ignored findings in the table, so an ignore stays visible.
+show-suppressed: true
+
+# mise pins the grype version, so the update check only adds noise.
+check-for-app-update: false

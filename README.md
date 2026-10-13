@@ -7,7 +7,8 @@ copies the files of those tools.
 ## Layout
 
 The shared files are in `tools/`, one folder for each tool. This repository
-does not use them itself. Each file in `tools/<tool>/` is at the path that it
+also syncs its own `base` tool. Each file in `tools/<tool>/` is at the path that
+it
 gets in a repository. For example,
 `tools/base/.config/mise/tasks/code/merge/develop` here is
 `.config/mise/tasks/code/merge/develop` in every repository that selects
@@ -32,10 +33,10 @@ A tool can also add hooks to `.config/pre-commit-config.yaml` with
 repo = "local"
 
 [[precommit.hooks]]
-id = "format"
-name = "Format (mise run code:format)"
 entry = "mise x -- mise run code:format --fix"
+id = "format"
 language = "system"
+name = "Format (mise run code:format)"
 ```
 
 ## Adopt in a repository
