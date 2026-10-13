@@ -311,8 +311,8 @@ each task in `setup/deps/`. An old task there runs too, and it can fail.
 | `setup:git-config`                 | `code:git-config`          | Delete it.                                                                        |
 | top-level `count`, `leaks`, `lint` | `code:*`                   | Delete them.                                                                      |
 
-Update each shell alias that calls an old name, for example
-`setup = "mise run setup:all"` becomes `setup = "mise run setup"`.
+Update each shell alias that calls an old name. Remove a repository-owned
+`setup` alias: `base` ships `setup = "mise run setup"`.
 
 ### M4: Delete root-only items from submodules
 

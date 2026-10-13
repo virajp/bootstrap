@@ -24,3 +24,6 @@ version = "latest"
 
 [tools.yq]
 version = "latest"
+
+[shell_alias]
+setup = "mise run setup"
