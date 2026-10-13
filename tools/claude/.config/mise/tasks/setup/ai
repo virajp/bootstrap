@@ -9,7 +9,7 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-if ! mise x -- which claude >/dev/null 2>&1; then
+if ! mise x -- which claude > /dev/null 2>&1; then
   print_warn "claude is not on PATH — skipping AI setup."
   print_yellow "Install it from https://claude.com/code, then run this task again."
   exit 0
@@ -17,7 +17,7 @@ fi
 
 print_header "Updating the Claude Code plugins ..."
 print_wait "Updating the marketplaces ... "
-mise x -- claude plugin marketplace update >/dev/null
+mise x -- claude plugin marketplace update > /dev/null
 print_success
 
 # Every plugin installed on this machine, in every scope.
@@ -25,10 +25,10 @@ PLUGINS="$(mise x -- claude plugin list --json | mise x -- jq -r '.[] | "\(.id)|
 while IFS= read -r PLUGIN; do
   [[ -n "${PLUGIN}" ]] || continue
   print_wait "- ${PLUGIN%%|*} (${PLUGIN##*|}) ... "
-  mise x -- claude plugin update --scope "${PLUGIN##*|}" "${PLUGIN%%|*}" >/dev/null
+  mise x -- claude plugin update --scope "${PLUGIN##*|}" "${PLUGIN%%|*}" > /dev/null
   print_success
-done <<<"${PLUGINS}"
+done <<< "${PLUGINS}"
 
 print_wait "Removing the plugins that nothing references ... "
-mise x -- claude plugin autoremove --scope project --yes >/dev/null
+mise x -- claude plugin autoremove --scope project --yes > /dev/null
 print_success

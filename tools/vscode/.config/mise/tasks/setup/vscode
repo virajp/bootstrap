@@ -36,7 +36,7 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 EDITOR_CLI="code"
 RECOMMENDATIONS="${MISE_PROJECT_ROOT}/.vscode/extensions.json"
 
-if ! command -v "${EDITOR_CLI}" >/dev/null 2>&1; then
+if ! command -v "${EDITOR_CLI}" > /dev/null 2>&1; then
   exit 0
 fi
 
@@ -102,7 +102,7 @@ wanted="$(read_recommendations)"
 probe_err="$(mktemp)"
 # shellcheck disable=SC2064
 trap "rm -f '${probe_err}'" EXIT
-before="$("${EDITOR_CLI}" --profile "${REPO_NAME}" --list-extensions 2>"${probe_err}" || true)"
+before="$("${EDITOR_CLI}" --profile "${REPO_NAME}" --list-extensions 2> "${probe_err}" || true)"
 
 if grep -qF "Profile '${REPO_NAME}' not found." "${probe_err}"; then
   print_warn "The '${REPO_NAME}' editor profile does not exist yet."
@@ -135,7 +135,7 @@ if [ -n "${to_install}" ]; then
   while IFS= read -r id; do
     [ -n "${id}" ] || continue
     print_wait "  ${id} ... "
-    if "${EDITOR_CLI}" --profile "${REPO_NAME}" --install-extension "${id}" >/dev/null 2>&1; then
+    if "${EDITOR_CLI}" --profile "${REPO_NAME}" --install-extension "${id}" > /dev/null 2>&1; then
       print_success
     else
       # A id that no longer exists in the marketplace is a stale list, not a
@@ -143,7 +143,7 @@ if [ -n "${to_install}" ]; then
       # the rest of the toolchain from arriving.
       print_warn "FAILED (not installed)"
     fi
-  done <<<"${to_install}"
+  done <<< "${to_install}"
 fi
 
 # **Pruning is the half a recommendation list cannot do.** An extension dropped
@@ -155,12 +155,12 @@ if [ -n "${to_remove}" ]; then
   while IFS= read -r id; do
     [ -n "${id}" ] || continue
     print_wait "  ${id} ... "
-    if "${EDITOR_CLI}" --profile "${REPO_NAME}" --uninstall-extension "${id}" >/dev/null 2>&1; then
+    if "${EDITOR_CLI}" --profile "${REPO_NAME}" --uninstall-extension "${id}" > /dev/null 2>&1; then
       print_success
     else
       print_warn "FAILED (still installed)"
     fi
-  done <<<"${to_remove}"
+  done <<< "${to_remove}"
 fi
 
 print_success "Profile '${REPO_NAME}' reconciled."

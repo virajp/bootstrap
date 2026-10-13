@@ -10,7 +10,9 @@
 #USAGE flag "--all" help="Setup all: workspace<% range $i, $m := .members %><% if eq $i $last %> and <% else %>, <% end %><% $m %><% end %>"
 <% range .members -%>
 #USAGE flag "--<% . %>" help="Setup workspace & <% . %>"
-<% end %>
+<% end -%>
+<% if .members %>
+<% end -%>
 <% range .members -%>
 SETUP_<% . | strings.ReplaceAll "-" "_" | strings.ToUpper %>=$([[ "${usage_all:-false}" == "true" || "${usage_<% . | strings.ReplaceAll "-" "_" %>:-false}" == "true" ]] && echo true || echo false)
 <% end %>
@@ -58,5 +60,6 @@ if [[ "${SETUP_<% . | strings.ReplaceAll "-" "_" | strings.ToUpper %>}" == "true
   print_header "Setting up <% index $x "label" | default . %> project ..."
   mise run --cd <% . %> setup ${UPGRADE}
 fi
-<% end %>
+
+<% end -%>
 print_header "Setup complete!"

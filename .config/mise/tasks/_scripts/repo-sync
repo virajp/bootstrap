@@ -31,8 +31,9 @@
 # environment. Nothing is deleted: a repo that moves a tool in or out of
 # `core_tools` deletes the old file itself.
 #
-# Templates: a file that ends in `.tmpl` is rendered with gomplate and written
-# without the suffix. The context is the values file (`<% .repo_name %>`,
+# Templates: a file that ends in `.tmpl` is rendered with gomplate, formatted
+# with this repo's dprint config when dprint is available, and written without
+# the suffix. The context is the values file (`<% .repo_name %>`,
 # `<% .member.<name>.label %>`) plus:
 #   .members     the git members from `members()` in `helpers` (submodules,
 #                else MEMBERS), then each `[member.<name>]` of the values file
@@ -81,14 +82,17 @@
 _rs_log() { printf '%s\n' "repo-sync: $*" >&2; }
 
 # Print the permission bits of <path>, for example 755.
-_rs_mode() { stat -c %a -- "$1" 2>/dev/null || stat -f %Lp -- "$1"; }
+_rs_mode() { stat -c %a -- "$1" 2> /dev/null || stat -f %Lp -- "$1"; }
 
 # Show <path> relative to the current directory when it is under it.
 _rs_path() { [[ $1 == "$PWD"/* ]] && printf '%s' "${1#"$PWD"/}" || printf '%s' "$1"; }
 
 # Temp files and directories still on disk; removed if the task exits early.
 _RS_TMPS=()
-_rs_cleanup() { ((${#_RS_TMPS[@]})) && rm -rf -- "${_RS_TMPS[@]}"; return 0; }
+_rs_cleanup() {
+  ((${#_RS_TMPS[@]})) && rm -rf -- "${_RS_TMPS[@]}"
+  return 0
+}
 trap _rs_cleanup EXIT
 trap '_rs_cleanup; exit 130' INT
 trap '_rs_cleanup; exit 143' TERM
@@ -98,7 +102,7 @@ trap '_rs_cleanup; exit 143' TERM
 # folders in the repo. Returns 2 when a key is neither.
 _rs_members() {
   local values=$1 name=$2 member keys seen=" "
-  if ! declare -F members >/dev/null; then
+  if ! declare -F members > /dev/null; then
     # shellcheck source=/dev/null
     source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
   fi
@@ -108,7 +112,7 @@ _rs_members() {
     seen+="$member "
   done < <(members)
   keys=$(mise x -- gomplate --left-delim '<%' --right-delim '%>' -c "v=${values}" \
-    -i '<% if has .v "member" %><% range $k, $x := .v.member %><% $k %>
+  -i '<% if has .v "member" %><% range $k, $x := .v.member %><% $k %>
 <% end %><% end %>') || return 2
   while IFS= read -r member; do
     [[ -n $member && $seen != *" $member "* ]] || continue
@@ -117,7 +121,7 @@ _rs_members() {
       return 2
     fi
     printf '%s\n' "$member"
-  done <<<"$keys"
+  done <<< "$keys"
 }
 
 # gomplate with the template delimiters this repo uses.
@@ -148,12 +152,15 @@ _rs_manifest() {
 # (` <tool>/<path> ` words). Returns 2 or 3, after a message, on any problem.
 _rs_resolve() {
   local dir=$1 values=$2 requested tool field value pending in_submodule
-  requested=$(_rs_list "$values" tools) || { _rs_log "cannot read $(_rs_path "$values")"; return 2; }
+  requested=$(_rs_list "$values" tools) || {
+    _rs_log "cannot read $(_rs_path "$values")"
+    return 2
+  }
   if [[ -z ${requested//[$'\n ']/} ]]; then
     _rs_log "$(_rs_path "$values") lists no tools - add tools = [\"base\", ...]"
     return 2
   fi
-  in_submodule=$(git -C "$MISE_PROJECT_ROOT" rev-parse --show-superproject-working-tree 2>/dev/null) || in_submodule=''
+  in_submodule=$(git -C "$MISE_PROJECT_ROOT" rev-parse --show-superproject-working-tree 2> /dev/null) || in_submodule=''
 
   _RS_TOOLS=' ' _RS_SEEDS=' ' _RS_EXTENSIONS=''
   # Depth-first, so each dependency lands before the tool that named it. A
@@ -170,10 +177,13 @@ _rs_resolve() {
       return 3
     fi
     local deps='' manifest
-    manifest=$(_rs_manifest "$dir" "$tool") || { _rs_log "cannot read tools/$tool/tool.toml"; return 2; }
+    manifest=$(_rs_manifest "$dir" "$tool") || {
+      _rs_log "cannot read tools/$tool/tool.toml"
+      return 2
+    }
     while read -r field value; do
       [[ $field == depends && $_RS_TOOLS != *" $value "* ]] && deps+="$value "
-    done <<<"$manifest"
+    done <<< "$manifest"
     if [[ -n $deps && $visiting != *" $tool "* ]]; then
       # Come back to this tool after its dependencies.
       visiting+="$tool "
@@ -182,8 +192,12 @@ _rs_resolve() {
     fi
     while read -r field value; do
       case $field in
-        extension) _RS_EXTENSIONS+="$value"$'\n' ;;
-        seed) _RS_SEEDS+="$tool/$value " ;;
+        extension)
+          _RS_EXTENSIONS+="$value"$'\n'
+          ;;
+        seed)
+          _RS_SEEDS+="$tool/$value "
+          ;;
         root_only)
           if [[ $value == true && -n $in_submodule ]]; then
             _rs_log "tool '$tool' is for the root repository only - remove it from the tools of this submodule"
@@ -191,7 +205,7 @@ _rs_resolve() {
           fi
           ;;
       esac
-    done <<<"$manifest"
+    done <<< "$manifest"
     _RS_TOOLS+="$tool "
   done
   _RS_EXTENSIONS=$(printf '%s' "$_RS_EXTENSIONS" | sort -u)
@@ -231,7 +245,10 @@ _rs_remove() {
     _rs_log "would remove $show"
     return 0
   fi
-  rm -f -- "$dest" || { _rs_log "cannot remove $show"; return 1; }
+  rm -f -- "$dest" || {
+    _rs_log "cannot remove $show"
+    return 1
+  }
   _rs_log "removed    $show"
 }
 
@@ -281,10 +298,16 @@ _rs_file() {
     destdir=${TMPDIR:-/tmp}
   else
     destdir=$(dirname -- "$dest")
-    mkdir -p -- "$destdir" || { _rs_log "cannot create $(_rs_path "$destdir")"; return 1; }
+    mkdir -p -- "$destdir" || {
+      _rs_log "cannot create $(_rs_path "$destdir")"
+      return 1
+    }
   fi
   # Temp file in the destination directory so the final mv is atomic.
-  tmp=$(mktemp "${destdir%/}/.repo-sync.XXXXXX") || { _rs_log "cannot create a temp file in $(_rs_path "$destdir")"; return 1; }
+  tmp=$(mktemp "${destdir%/}/.repo-sync.XXXXXX") || {
+    _rs_log "cannot create a temp file in $(_rs_path "$destdir")"
+    return 1
+  }
   _RS_TMPS+=("$tmp")
 
   if [[ $path == *.tmpl ]]; then
@@ -297,9 +320,30 @@ _rs_file() {
   else
     cp -- "$src" "$tmp" || rc=1
   fi
+  # A rendered template goes through this repo's formatter before the compare.
+  # Otherwise the format hook changes the render, and the next sync writes it
+  # back: a loop. A plain file needs no step, because dprint formats its
+  # source in repo-config. Without dprint, or if dprint fails, the raw render
+  # stays.
+  if ((rc == 0)) && [[ $path == *.tmpl && -n $_RS_DPRINT ]]; then
+    local fmt
+    fmt=$(mktemp "${destdir%/}/.repo-sync.XXXXXX") || fmt=''
+    if [[ -n $fmt ]]; then
+      _RS_TMPS+=("$fmt")
+      if (cd "$MISE_PROJECT_ROOT" && mise x -- dprint fmt --stdin "$out" < "$tmp" > "$fmt" 2> /dev/null); then
+        mv -f -- "$fmt" "$tmp"
+      else
+        rm -f -- "$fmt"
+      fi
+    fi
+  fi
+
   local own="${MISE_PROJECT_ROOT}/.config/repo-sync/gitignore"
   if ((rc == 0)) && [[ $path == .gitignore && -f $own ]]; then
-    { printf '\n'; cat -- "$own"; } >>"$tmp" || rc=1
+    {
+      printf '\n'
+      cat -- "$own"
+    } >> "$tmp" || rc=1
   fi
   if ((rc != 0)); then
     rm -f -- "$tmp"
@@ -318,7 +362,10 @@ _rs_file() {
     elif ((dry_run)); then
       _rs_log "would chmod $mode $show"
     else
-      chmod "$mode" "$dest" || { _rs_log "cannot chmod $show"; return 1; }
+      chmod "$mode" "$dest" || {
+        _rs_log "cannot chmod $show"
+        return 1
+      }
       _rs_log "chmod $mode  $show"
     fi
     return 0
@@ -334,7 +381,11 @@ _rs_file() {
   fi
 
   chmod "$mode" "$tmp"
-  mv -f -- "$tmp" "$dest" || { rm -f -- "$tmp"; _rs_log "cannot write $show"; return 1; }
+  mv -f -- "$tmp" "$dest" || {
+    rm -f -- "$tmp"
+    _rs_log "cannot write $show"
+    return 1
+  }
   _rs_log "updated    $show"
 }
 
@@ -346,8 +397,14 @@ repo_sync() {
   local dry_run=0
   while (($#)); do
     case $1 in
-      --dry-run) dry_run=1; shift ;;
-      *) _rs_log "usage: repo_sync [--dry-run]"; return 2 ;;
+      --dry-run)
+        dry_run=1
+        shift
+        ;;
+      *)
+        _rs_log "usage: repo_sync [--dry-run]"
+        return 2
+        ;;
     esac
   done
 
@@ -356,14 +413,17 @@ repo_sync() {
     _rs_log "values file $(_rs_path "$values") not found - it lists the tools to sync"
     return 2
   fi
-  if ! mise x -- which gomplate >/dev/null 2>&1; then
+  if ! mise x -- which gomplate > /dev/null 2>&1; then
     _rs_log "gomplate is not available - add #MISE tools.gomplate=\"latest\" to the calling task"
     return 2
   fi
 
   local url=${REPO_SYNC_URL:-git@github.com:virajp/repo-config.git}
   local dir rev
-  dir=$(mktemp -d "${TMPDIR:-/tmp}/repo-sync.XXXXXX") || { _rs_log "cannot create a temp directory"; return 1; }
+  dir=$(mktemp -d "${TMPDIR:-/tmp}/repo-sync.XXXXXX") || {
+    _rs_log "cannot create a temp directory"
+    return 1
+  }
   _RS_TMPS+=("$dir")
   # BatchMode and no terminal prompt: a missing key or no access fails here
   # instead of waiting for a password nobody will type.
@@ -376,10 +436,22 @@ repo_sync() {
   rev=$(git -C "$dir" rev-parse --short HEAD)
   _rs_log "using repo-config at ${rev}"
 
+  # The formatter for rendered templates; empty when dprint is not available.
+  _RS_DPRINT=''
+  mise x -- which dprint > /dev/null 2>&1 && _RS_DPRINT=1
+
   local rc=0
-  _rs_resolve "$dir" "$values" || { rc=$?; rm -rf -- "$dir"; return "$rc"; }
+  _rs_resolve "$dir" "$values" || {
+    rc=$?
+    rm -rf -- "$dir"
+    return "$rc"
+  }
   _rs_log "tools:${_RS_TOOLS% }"
-  _rs_merge_model || { rc=$?; rm -rf -- "$dir"; return "$rc"; }
+  _rs_merge_model || {
+    rc=$?
+    rm -rf -- "$dir"
+    return "$rc"
+  }
 
   local core
   core=" $(_rs_list "$values" core_tools | tr '\n' ' ')"
@@ -389,9 +461,15 @@ repo_sync() {
   # and every plain file still syncs.
   local ctx=''
   if [[ -n $(find "$dir/tools" -name '*.tmpl' -type f -print -quit) ]]; then
-    ctx=$(mktemp "${TMPDIR:-/tmp}/repo-sync-ctx.XXXXXX") || { rm -rf -- "$dir"; return 1; }
+    ctx=$(mktemp "${TMPDIR:-/tmp}/repo-sync-ctx.XXXXXX") || {
+      rm -rf -- "$dir"
+      return 1
+    }
     _RS_TMPS+=("$ctx")
-    _rs_context "$dir" "$values" "$ctx" || { _rs_log "cannot build the template context"; ctx=''; }
+    _rs_context "$dir" "$values" "$ctx" || {
+      _rs_log "cannot build the template context"
+      ctx=''
+    }
   fi
 
   local tool path worst=0 ok=0 failed=() total=0

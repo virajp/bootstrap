@@ -8,7 +8,6 @@
 #USAGE flag "--upgrade" help="also upgrade tools, dependencies, plugins and hooks"
 #USAGE flag "--all" help="Setup all: workspace"
 
-
 set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
@@ -46,6 +45,5 @@ mise run setup:precommit ${UPGRADE}
 if [[ -n "${UPGRADE}" ]] && has_own_task setup:ai; then
   mise run setup:ai
 fi
-
 
 print_header "Setup complete!"

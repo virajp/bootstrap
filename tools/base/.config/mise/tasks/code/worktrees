@@ -14,14 +14,14 @@ COMMON_DIR="$(git -C "${ROOT}" rev-parse --path-format=absolute --git-common-dir
 # Default branch of a repo, read from origin/HEAD; falls back to develop.
 default_branch() {
   local ref
-  ref="$(git "$@" symbolic-ref -q refs/remotes/origin/HEAD 2>/dev/null || true)"
+  ref="$(git "$@" symbolic-ref -q refs/remotes/origin/HEAD 2> /dev/null || true)"
   if [[ -n "${ref}" ]]; then echo "${ref#refs/remotes/origin/}"; else echo "develop"; fi
 }
 
 # "↑<ahead> ↓<behind>" of a commit against a base ref; "-" when the base is missing.
 ahead_behind() {
   local base="$1" head="$2" counts
-  if [[ -z "${base}" ]] || ! git "${GIT[@]}" rev-parse --verify -q "${base}^{commit}" >/dev/null; then
+  if [[ -z "${base}" ]] || ! git "${GIT[@]}" rev-parse --verify -q "${base}^{commit}" > /dev/null; then
     echo "-"
     return
   fi
@@ -50,9 +50,12 @@ pad() {
 # Path relative to the workspace root when it lives inside it, else absolute.
 display_path() {
   local p="$1"
-  if [[ "${p}" == "${ROOT}" ]]; then echo "."
-  elif [[ "${p}" == "${ROOT}"/* ]]; then echo "${p#"${ROOT}"/}"
-  else echo "${p}"
+  if [[ "${p}" == "${ROOT}" ]]; then
+    echo "."
+  elif [[ "${p}" == "${ROOT}"/* ]]; then
+    echo "${p#"${ROOT}"/}"
+  else
+    echo "${p}"
   fi
 }
 
@@ -67,10 +70,18 @@ print_repo() {
 
   while IFS= read -r line; do
     case "${line}" in
-      worktree\ *) wt="${line#worktree }" ;;
-      HEAD\ *) head="${line#HEAD }" ;;
-      branch\ *) branch="${line#branch refs/heads/}" ;;
-      detached) branch="(detached)" ;;
+      worktree\ *)
+        wt="${line#worktree }"
+        ;;
+      HEAD\ *)
+        head="${line#HEAD }"
+        ;;
+      branch\ *)
+        branch="${line#branch refs/heads/}"
+        ;;
+      detached)
+        branch="(detached)"
+        ;;
       "")
         # The submodule main worktree is reported as its gitdir; show the checkout.
         if [[ -n "${MAIN_CHECKOUT:-}" && "${wt}" == "${COMMON_DIR}"/modules/* ]]; then
@@ -120,7 +131,7 @@ print_repo() {
 
 line_sep1
 
-ROOT_LABEL="$(basename -s .git "$(git -C "${ROOT}" config --get remote.origin.url 2>/dev/null || echo "${ROOT}")")"
+ROOT_LABEL="$(basename -s .git "$(git -C "${ROOT}" config --get remote.origin.url 2> /dev/null || echo "${ROOT}")")"
 GIT=(-C "${ROOT}")
 ROOT_BASE="$(default_branch "${GIT[@]}")"
 MAIN_CHECKOUT=""

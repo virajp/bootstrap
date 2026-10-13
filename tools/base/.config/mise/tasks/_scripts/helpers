@@ -130,7 +130,7 @@ _line_sep() {
   # exit status, and under the `set -euo pipefail` every task sets, `set -e`
   # kills the caller on the assignment line — silently, before a single
   # separator or title is printed. Hence the explicit `|| COL=''`.
-  COL=$(stty size 2>/dev/null | awk '{print $2}') || COL=''
+  COL=$(stty size 2> /dev/null | awk '{print $2}') || COL=''
   local width="${COL:-80}"
 
   # The argument is a PATTERN, not a single character: `line_sep "-="` repeats
@@ -285,7 +285,7 @@ own_tasks() {
 # shellcheck disable=SC2016
 members() {
   if [ -f "${MISE_PROJECT_ROOT}/.gitmodules" ]; then
-    git -C "${MISE_PROJECT_ROOT}" submodule --quiet foreach --recursive 'echo $displaypath' 2>/dev/null || true
+    git -C "${MISE_PROJECT_ROOT}" submodule --quiet foreach --recursive 'echo $displaypath' 2> /dev/null || true
   else
     # Unquoted ON PURPOSE: the value is one space-separated string — TOML `[env]`
     # values are strings, never arrays — and word splitting is what turns it back
@@ -314,7 +314,7 @@ shell_files_in_scope() {
       if [ -n "${tracked}" ]; then
         candidates+=("${tracked}")
       fi
-    done < <(git -C "${MISE_PROJECT_ROOT}" ls-files 2>/dev/null || true)
+    done < <(git -C "${MISE_PROJECT_ROOT}" ls-files 2> /dev/null || true)
   fi
 
   local candidate
@@ -326,7 +326,7 @@ shell_files_in_scope() {
         continue
         ;;
     esac
-    if head -n 1 "${candidate}" 2>/dev/null | grep -qE '^#!.*[/ ](ba|da|k|z)?sh( |$)'; then
+    if head -n 1 "${candidate}" 2> /dev/null | grep -qE '^#!.*[/ ](ba|da|k|z)?sh( |$)'; then
       printf '%s\n' "${candidate}"
     fi
   done

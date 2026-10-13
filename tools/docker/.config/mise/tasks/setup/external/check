@@ -7,12 +7,12 @@
 set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-if ! mise x -- which docker >/dev/null 2>&1; then
+if ! mise x -- which docker > /dev/null 2>&1; then
   print_error "The 'docker' command-line tool is not installed."
   exit 1
 fi
 
-if ! mise x -- docker info >/dev/null 2>&1; then
+if ! mise x -- docker info > /dev/null 2>&1; then
   print_error "Cannot connect to the Docker server."
   print_yellow "Start the Docker daemon, or correct DOCKER_HOST."
   exit 1

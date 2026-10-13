@@ -22,7 +22,7 @@ if [ "${GRAPHIFY_SKIP_HOOK:-0}" = "1" ]; then
   exit 0
 fi
 
-if ! mise x -- which graphify >/dev/null 2>&1; then
+if ! mise x -- which graphify > /dev/null 2>&1; then
   print_warn "graphify is not on PATH — graph not refreshed (mise use -g pipx:graphifyy@latest)"
   exit 0
 fi
@@ -44,7 +44,7 @@ for marker in MERGE_HEAD CHERRY_PICK_HEAD; do
 done
 
 if [ "$FORCE" = false ]; then
-  CHANGED="$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only HEAD 2>/dev/null || true)"
+  CHANGED="$(git diff --name-only HEAD~1 HEAD 2> /dev/null || git diff --name-only HEAD 2> /dev/null || true)"
   # A commit that only touched graphify-out/ is the previous rebuild landing;
   # rebuilding again would loop.
   if [ -z "$(printf '%s\n' "$CHANGED" | grep -v '^graphify-out/' || true)" ]; then
@@ -64,6 +64,6 @@ FORCE_FLAG=""
 
 print_yellow "graphify: refreshing the graph in the background (log: ${LOG})"
 # Detached so the commit returns at once; a full rebuild can take minutes.
-nohup mise x -- graphify update . $FORCE_FLAG >>"$LOG" 2>&1 </dev/null &
+nohup mise x -- graphify update . $FORCE_FLAG >> "$LOG" 2>&1 < /dev/null &
 disown
 exit 0

@@ -34,7 +34,7 @@ has_untracked_files() {
 # Defaults to the branch you are standing on.
 is_local_branch() {
   local branch="${1:-HEAD}"
-  ! git rev-parse --abbrev-ref "${branch}@{u}" >/dev/null 2>&1
+  ! git rev-parse --abbrev-ref "${branch}@{u}" > /dev/null 2>&1
 }
 
 # Commits on ONE branch that its upstream does not have.
@@ -45,7 +45,7 @@ is_local_branch() {
 # lying around would then refuse a merge it has nothing to do with.
 has_unpushed_commits() {
   local branch="${1:-HEAD}"
-  [ -n "$(git log --oneline "${branch}@{u}..${branch}" 2>/dev/null)" ]
+  [ -n "$(git log --oneline "${branch}@{u}..${branch}" 2> /dev/null)" ]
 }
 
 # A branch that exists here or on origin.
@@ -68,8 +68,8 @@ is_git_worktree() {
   # right answer — but only if the status is discarded at the assignment. A bare
   # `VAR=$(...)` takes the command's status, which `set -e` acts on the moment
   # this predicate is called anywhere other than an `if`.
-  git_dir=$(git rev-parse --git-dir 2>/dev/null) || git_dir=''
-  git_common_dir=$(git rev-parse --git-common-dir 2>/dev/null) || git_common_dir=''
+  git_dir=$(git rev-parse --git-dir 2> /dev/null) || git_dir=''
+  git_common_dir=$(git rev-parse --git-common-dir 2> /dev/null) || git_common_dir=''
   [ "${git_dir}" != "${git_common_dir}" ]
 }
 
