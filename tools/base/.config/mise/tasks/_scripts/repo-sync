@@ -35,6 +35,7 @@
 # with this repo's dprint config when dprint is available, and written without
 # the suffix. The context is the values file (`<% .repo_name %>`,
 # `<% .member.<name>.label %>`) plus:
+#   .submodules  the git submodules only, nested ones included
 #   .members     the git members from `members()` in `helpers` (submodules,
 #                else MEMBERS), then each `[member.<name>]` of the values file
 #                that is not one of them — a folder of a monorepo, which must
@@ -253,11 +254,17 @@ _rs_remove() {
 }
 
 # Write the template context to <out>: the values of <values>, with
-# `members`, `tools`, `extensions` and `precommit` merged in first, so a key of
-# the same name in the values file cannot replace them. <dir> is the clone.
+# `members`, `submodules`, `tools`, `extensions` and `precommit` merged in
+# first, so a key of the same name in the values file cannot replace them.
+# <dir> is the clone.
 _rs_context() {
   local dir=$1 values=$2 out=$3 members tool
   members=$(_rs_members "$values" "template context") || return 2
+  # The git submodules alone: `members` also has the folder members.
+  local submodules=''
+  if [[ -f ${MISE_PROJECT_ROOT}/.gitmodules ]]; then
+    submodules=$(git -C "$MISE_PROJECT_ROOT" submodule --quiet foreach --recursive 'echo $displaypath' 2> /dev/null) || submodules=''
+  fi
   # One context per tool manifest, `tool_<name>`, for the `[[precommit]]`
   # entries; `repo_precommit` for the repo's own entries.
   local args=(-c "v=${values}")
@@ -270,9 +277,9 @@ _rs_context() {
     args+=(-c "repo_precommit=${own}")
     has_own=1
   fi
-  REPO_SYNC_OWN_PRECOMMIT=$has_own REPO_SYNC_MEMBERS=$members REPO_SYNC_TOOLS=$(printf '%s\n' $_RS_TOOLS) REPO_SYNC_EXTENSIONS=$_RS_EXTENSIONS \
+  REPO_SYNC_OWN_PRECOMMIT=$has_own REPO_SYNC_MEMBERS=$members REPO_SYNC_SUBMODULES=$submodules REPO_SYNC_TOOLS=$(printf '%s\n' $_RS_TOOLS) REPO_SYNC_EXTENSIONS=$_RS_EXTENSIONS \
     _rs_gomplate "${args[@]}" -o "$out" \
-    -i '<% $ctx := dict %><% range (coll.Slice "members" "tools" "extensions") %><% $l := coll.Slice %><% range (env.Getenv (printf "REPO_SYNC_%s" (strings.ToUpper .)) | strings.Split "\n") %><% if . %><% $l = coll.Append . $l %><% end %><% end %><% $ctx = coll.Merge $ctx (dict . $l) %><% end %><% $pc := coll.Slice %><% range $ctx.tools %><% $t := index $ (printf "tool_%s" .) %><% if has $t "precommit" %><% range $t.precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% end %><% if env.Getenv "REPO_SYNC_OWN_PRECOMMIT" %><% range $.repo_precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% $ctx = coll.Merge $ctx (dict "precommit" $pc) %><% coll.Merge $ctx .v | data.ToJSON %>' >&2
+    -i '<% $ctx := dict %><% range (coll.Slice "members" "submodules" "tools" "extensions") %><% $l := coll.Slice %><% range (env.Getenv (printf "REPO_SYNC_%s" (strings.ToUpper .)) | strings.Split "\n") %><% if . %><% $l = coll.Append . $l %><% end %><% end %><% $ctx = coll.Merge $ctx (dict . $l) %><% end %><% $pc := coll.Slice %><% range $ctx.tools %><% $t := index $ (printf "tool_%s" .) %><% if has $t "precommit" %><% range $t.precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% end %><% if env.Getenv "REPO_SYNC_OWN_PRECOMMIT" %><% range $.repo_precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% $ctx = coll.Merge $ctx (dict "precommit" $pc) %><% coll.Merge $ctx .v | data.ToJSON %>' >&2
 }
 
 # Sync the file <path> of <tool> from the clone in <dir>. Leaves the

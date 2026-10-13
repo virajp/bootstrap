@@ -95,6 +95,8 @@ A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
 - The values come from the repository's `.config/repo-config.toml`.
 - `.members` is the list of member names: the git submodules (else `MEMBERS`),
   then each `[member.<name>]` table whose folder exists in the repository.
+- `.submodules` is the list of the git submodules only. It is empty in a
+  repository without submodules.
 - `.tools` is the list of the selected tools, dependencies included.
 - `.extensions` is the sorted list of the VS Code extensions of those tools.
 - `.precommit` is the list of the `[[precommit]]` entries of those tools, in
