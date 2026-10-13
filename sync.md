@@ -341,7 +341,7 @@ From the repository-owned mise files, remove each tool that a selected tool
 installs:
 
 - `base`: dprint, `npm:@askviraj/linter`, gitleaks, grype, osv-scanner,
-  actionlint, shellcheck, jq, yq, pre-commit. Remove shfmt
+  actionlint, shellcheck, gomplate, jq, yq, pre-commit. Remove shfmt
   too: dprint formats shell scripts now.
 - `python`: python, uv. `node`: node, pnpm. `fnox`: fnox.
 - `claude`: `pipx:graphifyy`, `pipx:mempalace`.

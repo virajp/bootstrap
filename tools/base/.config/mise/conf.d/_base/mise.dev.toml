@@ -16,6 +16,11 @@ version = "latest"
 [tools.shellcheck]
 version = "latest"
 
+# Template renderer for `setup:configs`. Declared here too, because `mise prune`
+# keeps only the tools that a config file names, not a task header.
+[tools.gomplate]
+version = "latest"
+
 # JSON and YAML queries
 [tools.jq]
 version = "latest"
