@@ -68,6 +68,9 @@ These rules apply to each file:
 
 - A file is only replaced when its content changes. Use `--dry-run` to see the
   changes without writing them.
+- A file takes the mode of its source, also when the file exists already. A
+  template keeps the mode of its `.tmpl`, so an executable `.tmpl` gives an
+  executable file.
 - A seed file is written only when it is missing. After that, the repository
   owns it.
 - For a tool in `core_tools`, `conf.d/<tool>/mise.dev.toml` is written as

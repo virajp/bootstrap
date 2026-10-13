@@ -57,6 +57,8 @@
 # so the repo can negate a shared pattern with `!`.
 #
 # Failure handling
+#   * A file takes the mode of its source, also when it exists already. To
+#     make a template executable, make its `.tmpl` executable.
 #   * A destination is only replaced after a complete copy or render, so a
 #     failure always leaves the existing file as it was.
 #   * A bad file does not stop the others; a failed clone, an unknown tool or a
@@ -77,6 +79,9 @@
 #                     (default $MISE_PROJECT_ROOT/.config/repo-config.toml)
 
 _rs_log() { printf '%s\n' "repo-sync: $*" >&2; }
+
+# Print the permission bits of <path>, for example 755.
+_rs_mode() { stat -c %a -- "$1" 2>/dev/null || stat -f %Lp -- "$1"; }
 
 # Show <path> relative to the current directory when it is under it.
 _rs_path() { [[ $1 == "$PWD"/* ]] && printf '%s' "${1#"$PWD"/}" || printf '%s' "$1"; }
@@ -302,9 +307,20 @@ _rs_file() {
     return "$rc"
   fi
 
+  # The file takes the mode of its source in repo-config, also when it exists:
+  # a template task is executable because its `.tmpl` is. mktemp creates 0600.
+  local mode
+  mode=$(_rs_mode "$src")
   if [[ -f $dest ]] && cmp -s -- "$tmp" "$dest"; then
     rm -f -- "$tmp"
-    _rs_log "unchanged  $show"
+    if [[ $(_rs_mode "$dest") == "$mode" ]]; then
+      _rs_log "unchanged  $show"
+    elif ((dry_run)); then
+      _rs_log "would chmod $mode $show"
+    else
+      chmod "$mode" "$dest" || { _rs_log "cannot chmod $show"; return 1; }
+      _rs_log "chmod $mode  $show"
+    fi
     return 0
   fi
 
@@ -317,11 +333,7 @@ _rs_file() {
     return 0
   fi
 
-  # Keep the existing file's mode; a new file takes the mode it has in
-  # repo-config, so a task stays executable. mktemp creates 0600.
-  local ref=$src
-  [[ -f $dest ]] && ref=$dest
-  chmod "$(stat -c %a -- "$ref" 2>/dev/null || stat -f %Lp -- "$ref")" "$tmp"
+  chmod "$mode" "$tmp"
   mv -f -- "$tmp" "$dest" || { rm -f -- "$tmp"; _rs_log "cannot write $show"; return 1; }
   _rs_log "updated    $show"
 }

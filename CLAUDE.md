@@ -68,6 +68,8 @@ shared tasks in this repository.
 ## Templates (`*.tmpl`)
 
 - gomplate renders each `.tmpl` file. The output file has no `.tmpl` suffix.
+- The output file takes the git mode of the `.tmpl` file. Make a `.tmpl` that
+  renders a task or a script executable (`755`).
 - The delimiters are `<% %>`. Do not use `{{ }}` or `[[ ]]` for template
   logic. mise uses `{{ }}` and bash uses `[[ ]]`, and both must reach the
   output unchanged.
