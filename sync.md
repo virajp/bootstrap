@@ -167,11 +167,11 @@ name in the repository. If not, the render fails.
 The merge tasks follow the branches `main` and `develop`. A branch counts if it
 exists locally or on `origin`.
 
-| Branches             | Merge tasks                              | Rule                                                                   |
-| -------------------- | ---------------------------------------- | ---------------------------------------------------------------------- |
-| `main` and `develop` | `code:merge:develop`, `code:merge:main`  | Feature branches merge into `develop`. Only `develop` merges into `main`. |
-| only one of them     | `code:merge`                             | Any feature branch merges into that branch.                            |
-| neither              | none                                     | The sync stops with code 2.                                            |
+| Branches             | Merge tasks                             | Rule                                                                      |
+| -------------------- | --------------------------------------- | ------------------------------------------------------------------------- |
+| `main` and `develop` | `code:merge:develop`, `code:merge:main` | Feature branches merge into `develop`. Only `develop` merges into `main`. |
+| only one of them     | `code:merge`                            | Any feature branch merges into that branch.                               |
+| neither              | none                                    | The sync stops with code 2.                                               |
 
 1. Find the branches:
 
@@ -225,10 +225,10 @@ that the repository has each file for the tools that it uses. If a file is
 missing, ask the user for its content. Do not write a placeholder that hides
 the problem.
 
-| File                             | Used by                                                                                                         |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `dprint.jsonc`                   | `code:format`. It only excludes paths, for example the submodules. The plugins are in the global dprint config. |
-| `~/.config/dprint/dprint.jsonc`  | `setup:dprint`                                                                                                  |
+| File                            | Used by                                                                                                                                               |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dprint.jsonc`                  | `code:format`. It must have `"extends": "~/.config/dprint/dprint.jsonc"`, which has the plugins. It only adds `excludes`, for example the submodules. |
+| `~/.config/dprint/dprint.jsonc` | `setup:dprint`                                                                                                                                        |
 
 `base` supplies `.config/pre-commit-config.yaml` (synced), and
 `.config/gitleaks.toml` and `.config/grype.yaml` (seeds). A seed keeps an

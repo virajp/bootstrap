@@ -1,0 +1,6 @@
+{
+  // The global config holds the plugins and the rules. This file only adds the
+  // paths that this repository excludes. dprint merges the two excludes.
+  "extends": "~/.config/dprint/dprint.jsonc",
+  "excludes": [],
+}

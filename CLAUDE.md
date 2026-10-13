@@ -11,9 +11,14 @@ it with their own `setup:configs` task. Read `README.md` for the sync contract.
 
 ## Layout rule
 
-All shared files are in `tools/<tool>/`, one folder for each tool. This
-repository does not use them itself. The files at the root (`README.md`,
-`CLAUDE.md`, `sync.md`) are for this repository only.
+All shared files are in `tools/<tool>/`, one folder for each tool. The files
+at the root (`README.md`, `CLAUDE.md`, `sync.md`) are for this repository
+only.
+
+This repository is also a consumer of its own `base` tool. Its values file is
+`.config/repo-config.toml`, and `setup:configs` writes the synced copies at
+the root (`.config/`, `.gitignore`). Do not edit a synced copy. Change the
+file in `tools/<tool>/`, push it, then run `mise run setup:configs` here too.
 
 Each file in `tools/<tool>/` is at the path that it gets in a consumer
 repository. For example, `tools/base/.config/mise/tasks/code/merge/develop`
@@ -40,9 +45,8 @@ becomes `.config/mise/tasks/code/merge/develop` in a consumer.
   sync writes it as `mise.toml` when the consumer lists the tool in
   `core_tools`.
 
-Some files refer to files that are not in this repository, for example
-`dprint.jsonc`. The consumer repository supplies them. Do not run the
-shared tasks in this repository.
+Some files refer to files that are not in `tools/`, for example
+`dprint.jsonc`. The consumer repository supplies them.
 
 ## How the sync operates
 
@@ -149,5 +153,5 @@ that it finds, and removes the others. It stops if neither branch exists.
 
 1. Change the file in `tools/<tool>/`.
 2. Commit and push to `main`.
-3. In each consumer repository, run `mise run setup:configs`, then commit the
-   result.
+3. In this repository and in each consumer repository, run
+   `mise run setup:configs`, then commit the result.
