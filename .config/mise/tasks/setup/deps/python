@@ -10,12 +10,9 @@
 set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-# Shipped with the python topic. A repository with the topic but no project
-# file yet has nothing to install, and that is not a failure.
-if [[ ! -f "${MISE_PROJECT_ROOT}/pyproject.toml" ]]; then
-  print_info "No pyproject.toml — no Python dependencies to install."
-  exit 0
-fi
+# Shipped with the python tool. Without a pyproject.toml, this is not a Python
+# project, so the task does not apply and prints nothing.
+[[ -f "${MISE_PROJECT_ROOT}/pyproject.toml" ]] || exit 0
 
 if [[ "${usage_upgrade:-false}" == "true" ]]; then
   print_header "Upgrading Python dependencies ..."

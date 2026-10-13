@@ -30,8 +30,7 @@ if [[ -n "${UPGRADE}" ]] && has_own_task setup:external:update; then
   mise run setup:external:update
 fi
 
-print_header "Linter setup ..."
-mise x -- linter --init
+mise run setup:linter
 
 # The plugins are in the global dprint config. The repository's
 # dprint.jsonc only excludes paths, so it has nothing to update.
@@ -46,4 +45,5 @@ if [[ -n "${UPGRADE}" ]] && has_own_task setup:ai; then
   mise run setup:ai
 fi
 
-print_header "Setup complete!"
+line_sep1
+print_success "Setup complete!"

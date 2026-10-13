@@ -113,10 +113,10 @@ print_repo() {
 
   print_newline
   if [[ -n "${pinned}" ]]; then
-    print_header "${label} — default ${base} · pinned by ${ROOT_LABEL}/${ROOT_BASE} at ${pinned:0:7}"
+    print_subheader "${label} — default ${base} · pinned by ${ROOT_LABEL}/${ROOT_BASE} at ${pinned:0:7}"
     print_yellow "  $(pad "BRANCH" "${w_branch}")  $(pad "COMMIT" 7)  $(pad "${head_base}" "${w_ab}")  $(pad "${head_pinned}" "${w_ab}")  PATH"
   else
-    print_header "${label} — default ${base}"
+    print_subheader "${label} — default ${base}"
     print_yellow "  $(pad "BRANCH" "${w_branch}")  $(pad "COMMIT" 7)  $(pad "${head_base}" "${w_ab}")  PATH"
   fi
 
@@ -129,7 +129,7 @@ print_repo() {
   done
 }
 
-line_sep1
+print_header "Listing the worktrees ..."
 
 ROOT_LABEL="$(basename -s .git "$(git -C "${ROOT}" config --get remote.origin.url 2> /dev/null || echo "${ROOT}")")"
 GIT=(-C "${ROOT}")
@@ -142,7 +142,7 @@ while read -r _ path; do
   gitdir="${COMMON_DIR}/modules/${name}"
   if [[ ! -d "${gitdir}" ]]; then
     print_newline
-    print_header "${name}"
+    print_subheader "${name}"
     print_warn "  not initialised — run: mise run setup:worktree"
     continue
   fi
@@ -151,6 +151,3 @@ while read -r _ path; do
   pinned="$(git -C "${ROOT}" ls-tree "${ROOT_BASE}" -- "${path}" | awk '{print $3}')"
   print_repo "${name}" "${pinned}"
 done < <(git config -f "${ROOT}/.gitmodules" --get-regexp '^submodule\..*\.path$')
-
-print_newline
-line_sep1

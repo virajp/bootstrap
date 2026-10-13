@@ -9,7 +9,11 @@
 
 set -euo pipefail
 # shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+# shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/repo-sync"
+
+print_header "Syncing the shared files from repo-config ..."
 
 # The tools come from `tools` in .config/repo-config.toml.
 if [[ "${usage_dry_run:-false}" == "true" ]]; then

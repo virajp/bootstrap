@@ -123,6 +123,32 @@ as the task name, for example `code/merge/develop` is `code:merge:develop`. A
 - Only the `init` task is in mise config (`_task/mise.dev.toml`). It makes the
   task scripts executable.
 
+## Task output: headers and subheaders
+
+An orchestrator is a task that runs other tasks with `mise run`. A leaf is a
+task that runs only commands.
+
+1. A task first checks whether it applies. If it does not apply, it prints
+   nothing and exits 0. For example, `setup:deps:python` without a
+   `pyproject.toml`.
+2. A leaf prints `print_header` first, and only once. Nothing comes before
+   it.
+3. Each later step of a leaf that needs separation is a `print_subheader`.
+4. Status lines (`print_wait`, `print_success`, `print_info`, `print_warn`,
+   `print_error`) go under a header or a subheader. They never replace one.
+5. An orchestrator prints nothing for a `mise run`. The subtask prints its own
+   header. Exception: before `mise run --cd <member>`, it prints a header that
+   names the member, because a member is a separate repository.
+6. A group of commands in an orchestrator is its own subtask, for example
+   `setup:linter`. A single direct command in an orchestrator gets a
+   `print_header`, because it is at the level of the sibling subtasks.
+7. The top-level orchestrator ends with `line_sep1` and
+   `print_success "<Done message>"`, not with a header.
+8. Header and subheader text is an "-ing" verb phrase with " ..." at the end,
+   for example "Installing pre-commit hooks ...".
+9. A task that runs only inside a git hook (`code:graph`, `code:git-config`)
+   prints status lines only, no header.
+
 ## Branch model in the merge tasks
 
 The branches `main` and `develop` select the model. A branch counts if it

@@ -10,18 +10,15 @@
 set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-# Shipped with the node topic. A repository with the topic but no package
-# manifest yet has nothing to install, and that is not a failure.
-if [[ ! -f "${MISE_PROJECT_ROOT}/package.json" ]]; then
-  print_info "No package.json — no Node dependencies to install."
-  exit 0
-fi
+# Shipped with the node tool. Without a package.json, this is not a Node
+# project, so the task does not apply and prints nothing.
+[[ -f "${MISE_PROJECT_ROOT}/package.json" ]] || exit 0
 
 print_header "Installing Node dependencies ..."
 # The lockfile decides the versions; an install never changes it.
 mise x -- pnpm install --dir "${MISE_PROJECT_ROOT}" --frozen-lockfile
 
 if [[ "${usage_upgrade:-false}" == "true" ]]; then
-  print_header "Upgrading Node dependencies ..."
+  print_subheader "Upgrading Node dependencies ..."
   mise x -- pnpm update --dir "${MISE_PROJECT_ROOT}" --recursive --latest
 fi

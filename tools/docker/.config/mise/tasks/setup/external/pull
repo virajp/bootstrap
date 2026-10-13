@@ -13,8 +13,10 @@ if [[ "${MISE_ENV:-}" != "dev" ]]; then
   exit 0
 fi
 
-print_header "Building the local images ..."
+print_header "Getting the images of the local services ..."
+
+print_subheader "Building the local images ..."
 mise x -- docker compose --file "${MISE_PROJECT_ROOT}/.tools/docker-compose.yaml" build
 
-print_header "Pulling the images ..."
+print_subheader "Pulling the images ..."
 mise x -- docker compose --file "${MISE_PROJECT_ROOT}/.tools/docker-compose.yaml" pull --ignore-buildable

@@ -9,6 +9,8 @@
 set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
+print_header "Setting up pre-commit hooks ..."
+
 if [[ "${usage_upgrade:-false}" == "true" ]]; then
   print_subheader "Updating pre-commit hooks ..."
   mise x -- pre-commit autoupdate --config .config/pre-commit-config.yaml

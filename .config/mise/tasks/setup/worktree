@@ -32,4 +32,5 @@ if has_own_task setup:precommit; then
   mise run setup:precommit
 fi
 
-print_header "Worktree ready!"
+line_sep1
+print_success "Worktree ready!"
