@@ -62,7 +62,7 @@ precommit_safety_net() {
     print_warn "No .config/pre-commit-config.yaml — skipping the hook safety net."
     return 0
   fi
-  if ! mise x -- which pre-commit >/dev/null 2>&1; then
+  if ! mise x -- which pre-commit > /dev/null 2>&1; then
     print_warn "pre-commit is not on PATH — skipping the hook safety net."
     print_yellow "Run \`mise run setup\` to install the dev toolchain."
     return 0
@@ -70,7 +70,7 @@ precommit_safety_net() {
 
   print_wait "Running the hooks over every file ... "
   local hooks_passed=true
-  if ! mise x -- pre-commit run --config "${config}" --all-files >/dev/null 2>&1; then
+  if ! mise x -- pre-commit run --config "${config}" --all-files > /dev/null 2>&1; then
     hooks_passed=false
   fi
 
@@ -88,7 +88,7 @@ precommit_safety_net() {
     print_error "- The hooks rewrote files, so this branch was committed without them:"
     while IFS= read -r line; do
       [ -n "${line}" ] && print_warn "  ${line}"
-    done <<<"${dirty}"
+    done <<< "${dirty}"
     print_error "- Commit the fixes on this branch, then merge again."
     exit 1
   fi
@@ -112,7 +112,7 @@ open_pull_request() {
   local SOURCE_BRANCH="$2"
 
   print_wait "Pushing ${SOURCE_BRANCH} to origin ... "
-  if ! git push --follow-tags -u origin "${SOURCE_BRANCH}" >/dev/null 2>&1; then
+  if ! git push --follow-tags -u origin "${SOURCE_BRANCH}" > /dev/null 2>&1; then
     print_error
     print_error "FAILED to push '${SOURCE_BRANCH}' to origin!"
     exit 1
@@ -122,10 +122,10 @@ open_pull_request() {
   # `gh` is tried first when both are installed. Two forge CLIs on one machine is
   # far more often a GitHub repo on a laptop that still has glab than the
   # reverse, and the request has to be opened against ONE forge.
-  if mise x -- which gh >/dev/null 2>&1; then
+  if mise x -- which gh > /dev/null 2>&1; then
     print_yellow "Opening a pull request into ${DESTINATION_BRANCH} ..."
     mise x -- gh pr create --base "${DESTINATION_BRANCH}" --head "${SOURCE_BRANCH}" --fill
-  elif mise x -- which glab >/dev/null 2>&1; then
+  elif mise x -- which glab > /dev/null 2>&1; then
     print_yellow "Opening a merge request into ${DESTINATION_BRANCH} ..."
     mise x -- glab mr create --target-branch "${DESTINATION_BRANCH}" --source-branch "${SOURCE_BRANCH}" --fill
   else
@@ -287,7 +287,7 @@ merge_to_destination_branch() {
   fi
 
   print_wait "Checkout ${DESTINATION_BRANCH} branch ... "
-  if ! git checkout "${DESTINATION_BRANCH}" >/dev/null 2>&1; then
+  if ! git checkout "${DESTINATION_BRANCH}" > /dev/null 2>&1; then
     print_error
     print_error "FAILED to checkout '${DESTINATION_BRANCH}' branch!"
     exit 1
@@ -297,8 +297,8 @@ merge_to_destination_branch() {
   # Tags come with it because `main` is where releases are cut, and a stale tag
   # list is how a version gets reused.
   print_wait "Pulling latest changes from ${DESTINATION_BRANCH} branch ... "
-  if ! git pull origin "${DESTINATION_BRANCH}" --tags >/dev/null 2>&1; then
-    [ -n "${RESTORE_BRANCH}" ] && git checkout "${RESTORE_BRANCH}" -q >/dev/null 2>&1
+  if ! git pull origin "${DESTINATION_BRANCH}" --tags > /dev/null 2>&1; then
+    [ -n "${RESTORE_BRANCH}" ] && git checkout "${RESTORE_BRANCH}" -q > /dev/null 2>&1
     print_error
     print_error "FAILED to pull latest changes from '${DESTINATION_BRANCH}' branch!"
     exit 1
@@ -309,7 +309,7 @@ merge_to_destination_branch() {
   # Aborting would discard the one piece of information worth having — which
   # files disagree — and resolving it is a judgement call this task cannot make.
   print_wait "Merging ${SOURCE_BRANCH} into ${DESTINATION_BRANCH} ... "
-  if ! git merge --no-ff --no-edit "${SOURCE_BRANCH}" >/dev/null 2>&1; then
+  if ! git merge --no-ff --no-edit "${SOURCE_BRANCH}" > /dev/null 2>&1; then
     print_error
     print_error "FAILED to merge ${SOURCE_BRANCH} into ${DESTINATION_BRANCH}!"
     print_warn "- the tree is left mid-merge; resolve the conflicts and commit,"
@@ -319,7 +319,7 @@ merge_to_destination_branch() {
   print_success
 
   print_wait "Pushing ${DESTINATION_BRANCH} branch to origin ... "
-  if ! git push origin "${DESTINATION_BRANCH}" --follow-tags >/dev/null 2>&1; then
+  if ! git push origin "${DESTINATION_BRANCH}" --follow-tags > /dev/null 2>&1; then
     print_error
     print_error "FAILED to push ${DESTINATION_BRANCH} branch to origin!"
     exit 1
@@ -332,7 +332,7 @@ merge_to_destination_branch() {
     else
       print_wait "Checkout back to ${RESTORE_BRANCH} branch ... "
     fi
-    if ! git checkout "${RESTORE_BRANCH}" >/dev/null 2>&1; then
+    if ! git checkout "${RESTORE_BRANCH}" > /dev/null 2>&1; then
       print_error
       print_error "FAILED to checkout back to '${RESTORE_BRANCH}' branch!"
       exit 1
