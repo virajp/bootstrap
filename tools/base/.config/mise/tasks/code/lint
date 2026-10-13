@@ -6,6 +6,7 @@
 
 #USAGE flag "--debug" help="emit debug logs"
 #USAGE flag "--fix" help="apply fixes"
+#USAGE arg "[files]" var=#true help="the files to lint; the default is the whole tree"
 
 set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
@@ -17,8 +18,13 @@ print_header "Linting files ..."
 [[ "${usage_debug:-false}" == "true" ]] && LOG_LEVEL="--debug" || LOG_LEVEL=""
 [[ "${usage_fix:-false}" == "true" ]] && FIX="--fix" || FIX=""
 
+# The pre-commit hook passes the staged files.
+FILES=()
+[[ -n "${usage_files:-}" ]] && eval "FILES=(${usage_files})"
+
 mise x -- linter \
   ${LOG_LEVEL} \
-  ${FIX}
+  ${FIX} \
+  "${FILES[@]}"
 
 print_success "Linting done"
