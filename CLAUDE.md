@@ -68,6 +68,10 @@ Some files refer to files that are not in `tools/`, for example
 - `base` renders `.config/pre-commit-config.yaml` from the `[[precommit]]`
   tables of the selected tools. Then it adds the entries of the consumer file
   `.config/repo-sync/pre-commit.yaml`.
+- The sync runs `pre-commit autoupdate` on the rendered pre-commit config, so
+  each `rev` becomes the newest tag. A later `autoupdate` in the consumer
+  picks the same tags, so the two never undo each other. Keep a real tag in
+  each `rev` of a `tool.toml`: an older `repo-sync` copies it as it is.
 
 ## Templates (`*.tmpl`)
 

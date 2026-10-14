@@ -217,7 +217,7 @@ If `repo_sync` fails, read the exit code:
 | 2    | No `tools` in the values file, a root-only tool in a submodule, or a template that cannot render | Correct the values file                         |
 | 2    | Neither `main` nor `develop` exists                                                              | Do step 4                                       |
 | 3    | A tool that is not in `repo-config`                                                              | Correct the `tools` list                        |
-| 5    | The clone failed                                                                                 | Examine the network, the SSH key and the access |
+| 5    | The clone failed, or `pre-commit autoupdate` failed                                              | Examine the network, the SSH key and the access |
 | 1    | A local file system error                                                                        | Read the `repo-sync:` lines on stderr           |
 
 A failure does not change an existing file.

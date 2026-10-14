@@ -74,6 +74,8 @@ These rules apply to each file:
   executable file.
 - A seed file is written only when it is missing. After that, the repository
   owns it.
+- In `.config/pre-commit-config.yaml`, each hook `rev` becomes the newest tag:
+  the sync runs `pre-commit autoupdate` on it. This needs the network.
 - For a tool in `core_tools`, `conf.d/<tool>/mise.dev.toml` is written as
   `mise.toml`. Thus mise loads it in every environment.
 - The sync never deletes a file, with one exception: the merge tasks. With
