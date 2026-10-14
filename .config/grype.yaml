@@ -21,9 +21,9 @@ fail-on-severity: medium
 # the `reason` field too, so the report shows it.
 ignore: []
 
-# Generated output and other worktrees, which are not this tree.
+# Other worktrees, which are not this tree.
 exclude:
-  - ./graphify-out/**
+  - ./.claude/worktrees/**
   - ./.worktrees/**
 
 # Show the ignored findings in the table, so an ignore stays visible.
