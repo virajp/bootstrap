@@ -1,5 +1,14 @@
 # AI tools: graphify, mempalace and setup:ai. Submodules inherit the tools from the root.
-depends = [ "python" ]
+depends = []
 extensions = []
 root_only = true
 seed = []
+
+# The mise config, generated into .config/mise/conf.d/claude/.
+[mise.tools."pipx:graphifyy"]
+depends = [ "python", "uv" ]
+version = "latest"
+
+[mise.tools."pipx:mempalace"]
+depends = [ "python", "uv" ]
+version = "latest"

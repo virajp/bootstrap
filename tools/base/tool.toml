@@ -1,5 +1,5 @@
 # The files every repository gets: mise, the task library, formatter, linters, scanners and pre-commit.
-depends = [ "node", "python" ]
+depends = []
 extensions = [
   "dbaeumer.vscode-eslint",
   "dprint.dprint",
@@ -149,3 +149,64 @@ args = [ "--config", ".config/git-conventional-commits.yaml" ]
 id = "conventional-commits"
 name = "Conventional Commits"
 stages = [ "commit-msg" ]
+
+# The mise config, generated into .config/mise/conf.d/_base/. A tool with
+# `env = "dev"` is only for development.
+
+# Security scanners. In every environment, because CI runs `code:sec` too.
+[mise.tools.gitleaks]
+version = "latest"
+
+[mise.tools.grype]
+version = "latest"
+
+[mise.tools.osv-scanner]
+version = "latest"
+
+# Formatter
+[mise.tools.dprint]
+env = "dev"
+version = "latest"
+
+# Linter
+[mise.tools."npm:@askviraj/linter"]
+depends = [ "node", "pnpm" ]
+env = "dev"
+version = "latest"
+
+# Shell linter
+[mise.tools.shellcheck]
+env = "dev"
+version = "latest"
+
+# Template renderer for `setup:configs`. Declared here too, because `mise prune`
+# keeps only the tools that a config file names, not a task header.
+[mise.tools.gomplate]
+env = "dev"
+version = "latest"
+
+# JSON and YAML queries
+[mise.tools.jq]
+env = "dev"
+version = "latest"
+
+[mise.tools.yq]
+env = "dev"
+version = "latest"
+
+[mise.tools.pre-commit]
+depends = [ "python", "uv" ]
+env = "dev"
+version = "latest"
+
+[mise.env]
+PRE_COMMIT_HOME = "$HOME/.cache/pre-commit"
+
+[mise.shell_alias]
+precommit = "mise run code:precommit"
+
+[mise.tasks.init]
+description = "Initialize mise tasks"
+dir = "{{exec(command='git rev-parse --show-toplevel')}}"
+hide = true
+run = "find .config/mise/tasks/ -name '*' -type f -exec chmod 755 {} \\;"

@@ -1,4 +1,4 @@
-# Node and pnpm. Dev-only, unless node is in core_tools.
+# Node and pnpm.
 depends = []
 extensions = [ "christian-kohler.npm-intellisense" ]
 root_only = false
@@ -8,3 +8,21 @@ seed = [ "pnpm-workspace.yaml" ]
 # does not get the pnpm settings.
 [seed_requires]
 "pnpm-workspace.yaml" = "package.json"
+
+# The mise config, generated into .config/mise/conf.d/node/.
+[mise.settings]
+node.compile = false
+npm.package_manager = "pnpm"
+
+[mise.tools.node]
+version = "lts"
+
+[mise.tools.pnpm]
+depends = [ "node" ]
+version = "latest"
+
+[mise.env]
+_.path = { path = "node_modules/.bin", tools = true }
+
+[mise.shell_alias]
+npx = "pnpm dlx"

@@ -1,5 +1,18 @@
 # Pulumi and the Google Cloud CLI.
-depends = [ "python" ]
+depends = []
 extensions = []
 root_only = false
 seed = []
+
+# The mise config, generated into .config/mise/conf.d/pulumi/.
+[mise.tools.gcloud]
+depends = [ "python", "uv" ]
+version = "latest"
+
+[mise.tools.pulumi]
+version = "latest"
+
+[mise.env]
+# gcloud's installer needs Python 3.10 or later. Without this it uses the
+# system python3 (3.9 on macOS) and fails.
+CLOUDSDK_PYTHON = "{{ xdg_data_home }}/mise/installs/python/latest/bin/python"
