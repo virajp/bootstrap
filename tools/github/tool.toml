@@ -14,3 +14,13 @@ id = "actionlint"
 language = "system"
 name = "Lint GitHub Actions workflows (actionlint)"
 pass_filenames = true
+
+# The mise config, generated into .config/mise/conf.d/github/.
+
+# GitHub CLI: issues, pull requests, and `code:merge` under the `pr` model
+[mise.tools.gh]
+version = "latest"
+
+# GitHub Actions workflow linter
+[mise.tools.actionlint]
+version = "latest"

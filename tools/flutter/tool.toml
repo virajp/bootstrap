@@ -3,3 +3,14 @@ depends = []
 extensions = [ "dart-code.dart-code", "dart-code.flutter" ]
 root_only = false
 seed = []
+
+# The mise config, generated into .config/mise/conf.d/flutter/.
+[mise.tools.android-sdk]
+depends = [ "java" ]
+version = "23"
+
+[mise.tools.flutter]
+version = "3"
+
+[mise.tools.java]
+version = "21"

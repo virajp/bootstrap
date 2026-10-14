@@ -3,3 +3,13 @@ depends = []
 extensions = []
 root_only = false
 seed = []
+
+# The mise config, generated into .config/mise/conf.d/kotlin/.
+[mise.tools."http:kotlin-lsp"]
+version = "latest"
+version_list_url = "https://api.github.com/repos/Kotlin/kotlin-lsp/releases/latest"
+version_regex = 'kotlin-lsp/v(\d+\.\d+\.\d+)'
+
+[mise.tools."http:kotlin-lsp".platforms]
+macos-arm64 = { checksum_url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.sit.sha256", format = "zip", rename_exe = "kotlin-lsp", url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.sit" }
+macos-x64 = { checksum_url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.sit.sha256", format = "zip", rename_exe = "kotlin-lsp", url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.sit" }

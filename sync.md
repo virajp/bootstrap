@@ -112,11 +112,15 @@ key is a seed, and its value is a file of the repository. The sync writes the
 seed only if the repository has that file. For example, the `node` tool writes
 `pnpm-workspace.yaml` only if the repository has a `package.json`.
 
-Ask which of `python`, `node` and `flutter` is the core language of the
-repository. A core tool goes in `core_tools`. Then its
-`conf.d/<tool>/mise.dev.toml` is written as `mise.toml`, and mise loads it in
-every environment, CI included. A TypeScript repository has `node` as its
-core tool.
+The `[mise.*]` tables of a `tool.toml` hold the mise config of the tool. The
+sync generates `.config/mise/conf.d/<tool>/` from them. A mise `depends` adds
+the tool that defines the dependency. For example, `base` adds `python` and
+`node`, because pre-commit and the linter need them.
+
+A tool that you list in `tools` is installed in every environment, CI
+included. A tool that only a dependency adds is installed for development
+only. Thus list the core language of the repository in `tools`. A TypeScript
+repository lists `node`.
 
 Ask whether the repository is on GitHub or on GitLab. Select `github` or
 `gitlab` for its forge. The `pr` merge model needs the CLI of the forge: `gh`
@@ -143,7 +147,6 @@ Write `.config/repo-config.toml`. Ask the user for each value.
 | Key                                | Used by                    | Values                                                                                                             |
 | ---------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `tools`                            | `repo_sync`                | The tools from step 1. `base` is necessary.                                                                        |
-| `core_tools`                       | `repo_sync`                | The core language tools from step 1, for example `["node"]`. The default is none.                                  |
 | `repo_name`                        | `_env`                     | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                    |
 | `merge_model_develop`              | `_env`                     | `direct` (local merge) or `pr` (pull request)                                                                      |
 | `merge_model_main`                 | `_env`                     | `direct` or `pr`                                                                                                   |
@@ -158,7 +161,6 @@ Example:
 
 ```toml
 commit_scopes = [ "backend", "web" ]
-core_tools = [ "node" ]
 merge_model_develop = "direct"
 merge_model_main = "pr"
 repo_name = "my-repo"
@@ -254,7 +256,7 @@ without `[extend] useDefault = true`, gitleaks uses only the rules of the file.
 
 mise loads `mise.toml` from each folder in `conf.d`. It loads a
 `mise.dev.toml` file only when the `dev` config environment is active
-(`MISE_ENV`).
+(`MISE_ENV`), and a `mise.ci.toml` file only when `ci` is active.
 
 ## Step 9: Commit
 
@@ -279,7 +281,9 @@ This section is temporary. It is for the repositories that existed before the
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
 
-The sync never deletes files. Thus you must delete each obsolete file and
+The sync deletes only two kinds of files: the merge tasks of the other branch
+model, and a `.config/mise/conf.d/*/mise*.toml` with the repo-config header
+that it did not write. Thus you must delete each other obsolete file and
 rename each old task by hand. Do the items that apply to the repository, in
 this sequence. Show the user the list of changes before you make them.
 
@@ -394,6 +398,20 @@ Delete the old `conf.d/_formatter`, `_linter` and `_security`.
 If the repository has `fnox.toml` at its root, move it to
 `.config/fnox.toml`. Then the seed does not replace it. Change each
 `fnox exec` call to `mise x -- fnox --config .config/fnox.toml exec`.
+
+### M9: Remove `core_tools`
+
+The sync no longer reads `core_tools`. A tool listed in `tools` is in every
+environment.
+
+1. For each tool in `core_tools`, make sure that it is also in `tools`.
+2. Delete the `core_tools` key from `.config/repo-config.toml`.
+3. Run `mise run setup:configs` two times. The first run brings the new
+   `repo-sync`, but it still uses the old copy. The second run generates the
+   mise config.
+
+The second run removes the old `conf.d/_task/` and `conf.d/pre-commit/`
+folders, and each old `mise.dev.toml` that it no longer writes.
 
 ### M9: Clean the old markers
 

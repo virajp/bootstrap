@@ -22,6 +22,15 @@ depends = [] # tools added with this one
 extensions = [ "dart-code.dart-code", "dart-code.flutter" ] # VS Code extensions
 root_only = false # true: refused in a submodule
 seed = [] # written only when missing
+
+# The mise config, in mise syntax. The sync generates .config/mise/conf.d/flutter/.
+[mise.tools.android-sdk]
+depends = [ "java" ] # also adds the tool that defines java
+version = "23"
+
+[mise.tools.java]
+env = "dev" # only for development, also when the tool is listed directly
+version = "21"
 ```
 
 A tool can also add hooks to `.config/pre-commit-config.yaml` with
@@ -86,12 +95,19 @@ These rules apply to each file:
   named file.
 - In `.config/pre-commit-config.yaml`, each hook `rev` becomes the newest tag:
   the sync runs `pre-commit autoupdate` on it. This needs the network.
-- For a tool in `core_tools`, `conf.d/<tool>/mise.dev.toml` is written as
-  `mise.toml`. Thus mise loads it in every environment.
-- The sync never deletes a file, with one exception: the merge tasks. With
-  `main` and `develop`, the repository gets `code:merge:develop` and
-  `code:merge:main`. With only one of them, it gets `code:merge`. The sync
-  removes the merge tasks of the other model.
+- The mise config of each tool is generated from its `[mise.*]` tables into
+  `.config/mise/conf.d/<tool>/` (`_base` for `base`). A tool that the
+  repository lists in `tools` goes to `mise.toml`, for every environment. A
+  tool that only a dependency adds goes to `mise.dev.toml`, unless an
+  every-environment tool needs it. Aliases, hooks, vars and tasks always go to
+  `mise.dev.toml`. With the `github` or `gitlab` tool, `mise.ci.toml` selects
+  Linux binaries in CI. `CLAUDE.md` has the full rules.
+- The sync never deletes a file, with two exceptions. The first is the merge
+  tasks. With `main` and `develop`, the repository gets `code:merge:develop`
+  and `code:merge:main`. With only one of them, it gets `code:merge`. The sync
+  removes the merge tasks of the other model. The second is a
+  `.config/mise/conf.d/*/mise*.toml` file with the repo-config header that the
+  sync did not write. `conf.d/repo/` has no header, so the sync keeps it.
 
 A copy of `repo-sync` from before the `tools/` layout cannot sync. Copy
 `tools/base/.config/mise/tasks/_scripts/repo-sync` and `helpers` into the
@@ -119,7 +135,6 @@ Example values file:
 
 ```toml
 commit_scopes = [ "backend", "web" ]
-core_tools = [ "node" ]
 merge_model_develop = "direct"
 merge_model_main = "pr"
 repo_name = "my-repo"

@@ -1,5 +1,23 @@
-# Python and uv. Dev-only, unless python is in core_tools.
+# Python and uv.
 depends = []
 extensions = []
 root_only = false
 seed = []
+
+# The mise config, generated into .config/mise/conf.d/python/.
+[mise.settings]
+pipx.uvx = true
+python.compile = false
+python.uv_venv_auto = "create|source"
+
+[mise.tools.python]
+version = "3.14"
+
+[mise.tools.uv]
+depends = [ "python" ]
+version = "latest"
+
+[mise.env]
+UV_NO_CACHE = true
+UV_NO_MANAGED_PYTHON = true
+UV_PYTHON_DOWNLOADS = "never"

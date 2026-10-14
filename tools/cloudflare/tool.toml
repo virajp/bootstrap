@@ -1,5 +1,11 @@
 # The Cloudflare CLI (npm:cf).
-depends = [ "node" ]
+depends = []
 extensions = []
 root_only = false
 seed = []
+
+# The mise config, generated into .config/mise/conf.d/cloudflare/.
+[mise.tools."npm:cf"]
+allow_builds = [ "workerd" ]
+depends = [ "node", "pnpm" ]
+version = "latest"

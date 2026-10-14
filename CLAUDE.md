@@ -43,9 +43,10 @@ becomes `.config/mise/tasks/code/merge/develop` in a consumer.
 - A tool can add `[[precommit]]` tables to its `tool.toml`. Each table is one
   `repos:` entry of `.config/pre-commit-config.yaml`, with its
   `[[precommit.hooks]]`. This key is optional.
-- A tool ships its dev-only mise config as `conf.d/<topic>/mise.dev.toml`. The
-  sync writes it as `mise.toml` when the consumer lists the tool in
-  `core_tools`.
+- A tool does not ship mise files. It writes its mise config in `[mise.*]`
+  tables of its `tool.toml`, in mise syntax. The sync generates
+  `conf.d/<folder>/mise.toml`, `mise.dev.toml` and `mise.ci.toml` from them
+  (`_base` for `base`, else the tool name). See "mise config".
 
 Some files refer to files that are not in `tools/`, for example
 `dprint.jsonc`. The consumer repository supplies them.
@@ -59,8 +60,8 @@ Some files refer to files that are not in `tools/`, for example
   Then it adds the `depends` of each tool, and copies each file of each tool.
 - gomplate reads the TOML files: the values file and each `tool.toml`.
 - The sync never deletes a file, except the merge tasks of the other branch
-  model (see "Branch model in the merge tasks"). `sync.md` tells consumers
-  what to delete.
+  model (see "Branch model in the merge tasks") and the stale generated mise
+  files (see "mise config"). `sync.md` tells consumers what to delete.
 - The sync uses the pushed `main` branch. Local changes have no effect on
   consumers until you push them.
 - To test a change before you push it, set `REPO_SYNC_URL` to a local clone
@@ -128,8 +129,9 @@ as the task name, for example `code/merge/develop` is `code:merge:develop`. A
   `#USAGE flag "--fix"` is available in the script as `usage_fix`.
 - Under `set -e`, write a command substitution that can fail as
   `VAR=$(cmd) || VAR=''`. The existing scripts explain this in comments.
-- Only the `init` task is in mise config (`_task/mise.dev.toml`). It makes the
-  task scripts executable.
+- Only the `init` task is in mise config (`[mise.tasks.init]` of
+  `tools/base/tool.toml`, always dev). It makes the task scripts executable.
+  The task files load in every environment.
 
 ## Task output: headers and subheaders
 
@@ -176,13 +178,36 @@ that it finds, and removes the others. It stops if neither branch exists.
 
 ## mise config
 
-- `tools/base/.config/mise.toml` holds the shared `[settings]`.
-- `conf.d/<topic>/` holds one topic each. `mise.toml` files are for all
-  environments. `mise.dev.toml` files are for development only.
-- `base` ships the directories with a `_` prefix (`_base`, `_env`, `_task`)
-  and `pre-commit`. Each other tool ships `conf.d/<tool>/`.
-- A consumer keeps its own mise config in `conf.d/repo/`. No tool ships that
-  directory.
+- `tools/base/.config/mise.toml` holds the shared `[settings]`. `min_version`,
+  `monorepo_root` and `[monorepo]` go only in a repository's own
+  `.config/mise.toml`.
+- `mise.toml` files are for all environments, `mise.dev.toml` files for
+  development only, and `mise.ci.toml` files for CI.
+- The sync generates `conf.d/<folder>/` from the `[mise.*]` tables of each
+  selected tool:
+  - A mise tool of a tool that the consumer lists in `tools` is in all
+    environments, unless its entry has `env = "dev"`. A mise tool of a tool
+    that only a dependency adds is for development. A mise tool that an
+    all-environment mise tool `depends` on is in all environments too.
+  - `[tools]`, `[tool_alias]` and `[plugins]` follow each entry. `[settings]`,
+    `[env]`, `[tool_config]`, `[task_config]`, `[task_templates]`, `[doctor]`,
+    `[deps]` and `[oci]` follow the folder: all environments if one of its
+    tools is.
+  - `[vars]`, `[secrets]`, `redactions`, `[shell_alias]`, `[hooks]`,
+    `[[watch_files]]`, `[tasks]` and the daemon sections are always for
+    development.
+  - Any other section stops the sync for that tool.
+  - With the `github` or `gitlab` tool, a folder with a `mise.toml` also gets
+    a `mise.ci.toml` with `os = "linux"`.
+  - The mise `depends` of an entry adds the tool that defines that mise tool.
+    Do not repeat it in the `depends` key. Two tools must not define the same
+    mise tool.
+- The sync removes a `conf.d/*/mise*.toml` with the repo-config header that
+  it did not write. Thus a removed tool or folder disappears from consumers.
+- `base` also ships two templates, because they need consumer values:
+  `_env/mise.toml.tmpl` and `_alias/mise.dev.toml.tmpl`.
+- A consumer keeps its own mise config in `conf.d/repo/`. No tool writes that
+  directory, and its files have no header.
 
 ## Change a shared file
 
