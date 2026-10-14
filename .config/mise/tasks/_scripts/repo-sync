@@ -21,6 +21,8 @@
 #   extensions = ["a.b"]        VS Code extensions, for `.vscode/extensions.json`
 #   seed       = ["bunfig.toml"] files written only when missing; the repo owns
 #                               them after that
+#   [seed_requires]             optional: a seed written only when this repo
+#                               has the file, `"pnpm-workspace.yaml" = "package.json"`
 #   [[precommit]]               `repos:` entries of `.config/pre-commit-config.yaml`
 #
 # One call clones the default branch once (shallow, over SSH) and syncs every
@@ -138,20 +140,23 @@ _rs_list() {
 }
 
 # Print the manifest of <tool> in the clone <dir> as `<field> <value>` lines:
-# `depends`, `extension`, `seed`, and one `root_only true|false`.
+# `depends`, `extension`, `seed`, `seed_requires <seed> <file>`, and one
+# `root_only true|false`.
 _rs_manifest() {
   local dir=$1 tool=$2
   _rs_gomplate -c "t=${dir}/tools/${tool}/tool.toml" -i '<% range .t.depends %>depends <% . %>
 <% end %><% range .t.extensions %>extension <% . %>
 <% end %><% range .t.seed %>seed <% . %>
-<% end %>root_only <% .t.root_only %>
+<% end %><% if has .t "seed_requires" %><% range $k, $v := .t.seed_requires %>seed_requires <% $k %> <% $v %>
+<% end %><% end %>root_only <% .t.root_only %>
 '
 }
 
 # Resolve the tools of <values> against the clone <dir>, dependencies
 # included, into _RS_TOOLS (space separated, a dependency before the tool that
-# needs it), _RS_EXTENSIONS (one per line, sorted, unique) and _RS_SEEDS
-# (` <tool>/<path> ` words). Returns 2 or 3, after a message, on any problem.
+# needs it), _RS_EXTENSIONS (one per line, sorted, unique), _RS_SEEDS
+# (` <tool>/<path> ` words) and _RS_SEED_REQUIRES (` <tool>/<path>=<file> `
+# words). Returns 2 or 3, after a message, on any problem.
 _rs_resolve() {
   local dir=$1 values=$2 requested tool field value pending in_submodule
   requested=$(_rs_list "$values" tools) || {
@@ -164,7 +169,7 @@ _rs_resolve() {
   fi
   in_submodule=$(git -C "$MISE_PROJECT_ROOT" rev-parse --show-superproject-working-tree 2> /dev/null) || in_submodule=''
 
-  _RS_TOOLS=' ' _RS_SEEDS=' ' _RS_EXTENSIONS=''
+  _RS_TOOLS=' ' _RS_SEEDS=' ' _RS_SEED_REQUIRES=' ' _RS_EXTENSIONS=''
   # Depth-first, so each dependency lands before the tool that named it. A
   # stack of words rather than recursion: bash 3.2 has no local arrays worth
   # passing around, and the manifests are tiny.
@@ -199,6 +204,10 @@ _rs_resolve() {
           ;;
         seed)
           _RS_SEEDS+="$tool/$value "
+          ;;
+        seed_requires)
+          # `<seed> <file>`: neither path has a space.
+          _RS_SEED_REQUIRES+="$tool/${value% *}=${value#* } "
           ;;
         root_only)
           if [[ $value == true && -n $in_submodule ]]; then
@@ -285,7 +294,8 @@ _rs_context() {
 
 # Sync the file <path> of <tool> from the clone in <dir>. Leaves the
 # destination untouched when the content is identical, when it is a seed that
-# exists, or on any failure.
+# exists, when it is a seed whose `seed_requires` file is missing, or on any
+# failure.
 _rs_file() {
   local dir=$1 tool=$2 path=$3 dry_run=$4 core=$5 ctx=$6
   local src="${dir}/tools/${tool}/${path}" out=${path%.tmpl}
@@ -300,6 +310,15 @@ _rs_file() {
   if [[ $_RS_SEEDS == *" $tool/$path "* && -e $dest ]]; then
     _rs_log "kept seed  $show"
     return 0
+  fi
+  # A seed with `seed_requires` is only for a repo that has the named file.
+  local requires=${_RS_SEED_REQUIRES#* "$tool/$path="}
+  if [[ $requires != "$_RS_SEED_REQUIRES" ]]; then
+    requires=${requires%% *}
+    if [[ ! -e ${MISE_PROJECT_ROOT}/${requires} ]]; then
+      _rs_log "skip seed  $show (no $requires)"
+      return 0
+    fi
   fi
 
   if ((dry_run)); then
