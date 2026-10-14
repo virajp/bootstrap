@@ -24,14 +24,28 @@
 #   [seed_requires]             optional: a seed written only when this repo
 #                               has the file, `"pnpm-workspace.yaml" = "package.json"`
 #   [[precommit]]               `repos:` entries of `.config/pre-commit-config.yaml`
+#   [mise.<section>]            the mise config of the tool, in mise syntax
 #
 # One call clones the default branch once (shallow, over SSH) and syncs every
 # file of every selected tool from that one clone.
 #
-# Core tools: a tool in `core_tools` of the values file ships its
-# `conf.d/<topic>/mise.dev.toml` here as `mise.toml`, so mise loads it in every
-# environment. Nothing is deleted: a repo that moves a tool in or out of
-# `core_tools` deletes the old file itself.
+# mise config: the sync generates `.config/mise/conf.d/<folder>/` for each tool
+# with `[mise]` tables (`_base` for base, else the tool name):
+#   * A mise tool of a tool listed in `tools` is in every environment, unless
+#     its entry has `env = "dev"`. A mise tool of a tool that only a
+#     dependency adds is for development. A mise tool that an every-environment
+#     mise tool `depends` on is in every environment too.
+#   * `[tools]`, `[tool_alias]` and `[plugins]` follow each entry. `[settings]`,
+#     `[env]` and the other shared sections follow the folder: every
+#     environment if one of its tools is. `[vars]`, `[secrets]`, `[shell_alias]`,
+#     `[hooks]`, `[tasks]`, the daemons and the like are for development only.
+#   * Every environment goes to `mise.toml`, development to `mise.dev.toml`.
+#     With the github or gitlab tool, a folder with a `mise.toml` also gets a
+#     `mise.ci.toml` that selects Linux binaries.
+#   * The mise `depends` of an entry adds the tool that defines that mise tool.
+#   * Afterwards, a file in `conf.d/*/` with the repo-config header that this
+#     run did not write is removed: it belongs to a tool or a layout that is
+#     gone. A file without the header, such as `conf.d/repo/`, is never touched.
 #
 # Templates: a file that ends in `.tmpl` is rendered with gomplate, formatted
 # with this repo's dprint config when dprint is available, and written without
@@ -71,8 +85,8 @@
 # Return codes
 #   0  success (or nothing to change)
 #   2  usage error, a values file without `tools`, a root-only tool in a
-#      submodule, a repo with neither `main` nor `develop`, or a template that
-#      cannot render
+#      submodule, a repo with neither `main` nor `develop`, a template that
+#      cannot render, or a `[mise]` config that cannot be generated
 #   3  a tool that is not in repo-config (fix the values file)
 #   5  the clone failed (network, SSH key or access to the repo), or
 #      `pre-commit autoupdate` could not resolve the hook revisions
@@ -140,23 +154,58 @@ _rs_list() {
 }
 
 # Print the manifest of <tool> in the clone <dir> as `<field> <value>` lines:
-# `depends`, `extension`, `seed`, `seed_requires <seed> <file>`, and one
-# `root_only true|false`.
+# `depends`, `extension`, `seed`, `seed_requires <seed> <file>`,
+# `mise <mise-tool> <dev|-> [<mise-depends>...]`, and one `root_only true|false`.
 _rs_manifest() {
   local dir=$1 tool=$2
   _rs_gomplate -c "t=${dir}/tools/${tool}/tool.toml" -i '<% range .t.depends %>depends <% . %>
 <% end %><% range .t.extensions %>extension <% . %>
 <% end %><% range .t.seed %>seed <% . %>
 <% end %><% if has .t "seed_requires" %><% range $k, $v := .t.seed_requires %>seed_requires <% $k %> <% $v %>
+<% end %><% end %><% if and (has .t "mise") (has .t.mise "tools") %><% range $k, $v := .t.mise.tools %>mise <% $k %><% if and (test.IsKind "map" $v) (has $v "env") %> <% $v.env %><% else %> -<% end %><% if and (test.IsKind "map" $v) (has $v "depends") %><% if test.IsKind "string" $v.depends %> <% $v.depends %><% else %><% range $v.depends %> <% . %><% end %><% end %><% end %>
 <% end %><% end %>root_only <% .t.root_only %>
 '
 }
 
+# Set _RS_MISE_DEFS to the ` <mise-tool>=<tool> ` words of every tool in the
+# clone <dir>, selected or not: the mise `depends` of an entry find their tool
+# here. Returns 2, after a message, when two tools define the same mise tool.
+_rs_mise_index() {
+  local dir=$1 manifest tool name names
+  _RS_MISE_DEFS=' '
+  for manifest in "$dir"/tools/*/tool.toml; do
+    tool=${manifest%/tool.toml}
+    tool=${tool##*/}
+    names=$(_rs_gomplate -c "t=${manifest}" -i '<% if and (has .t "mise") (has .t.mise "tools") %><% range $k, $v := .t.mise.tools %><% $k %>
+<% end %><% end %>') || {
+
+      _rs_log "cannot read tools/$tool/tool.toml"
+      return 2
+    }
+    for name in $names; do
+      if [[ $_RS_MISE_DEFS == *" $name="* ]]; then
+        _rs_log "mise tool '$name' is defined in tools/$tool and in another tool - keep one"
+        return 2
+      fi
+      _RS_MISE_DEFS+="$name=$tool "
+    done
+  done
+}
+
+# Print the tool that defines the mise tool <name>, or nothing.
+_rs_mise_owner() {
+  local def=${_RS_MISE_DEFS#* "$1="}
+  [[ $def != "$_RS_MISE_DEFS" ]] && printf '%s' "${def%% *}"
+}
+
 # Resolve the tools of <values> against the clone <dir>, dependencies
 # included, into _RS_TOOLS (space separated, a dependency before the tool that
-# needs it), _RS_EXTENSIONS (one per line, sorted, unique), _RS_SEEDS
-# (` <tool>/<path> ` words) and _RS_SEED_REQUIRES (` <tool>/<path>=<file> `
-# words). Returns 2 or 3, after a message, on any problem.
+# needs it), _RS_DIRECT (the tools that <values> lists), _RS_EXTENSIONS (one
+# per line, sorted, unique), _RS_SEEDS (` <tool>/<path> ` words),
+# _RS_SEED_REQUIRES (` <tool>/<path>=<file> ` words) and _RS_MISE_ENTRIES
+# (`<tool> <mise-tool> <dev|-> [<mise-depends>...]` lines). A mise `depends`
+# adds the tool that defines it. Returns 2 or 3, after a message, on any
+# problem.
 _rs_resolve() {
   local dir=$1 values=$2 requested tool field value pending in_submodule
   requested=$(_rs_list "$values" tools) || {
@@ -169,7 +218,8 @@ _rs_resolve() {
   fi
   in_submodule=$(git -C "$MISE_PROJECT_ROOT" rev-parse --show-superproject-working-tree 2> /dev/null) || in_submodule=''
 
-  _RS_TOOLS=' ' _RS_SEEDS=' ' _RS_SEED_REQUIRES=' ' _RS_EXTENSIONS=''
+  _RS_TOOLS=' ' _RS_SEEDS=' ' _RS_SEED_REQUIRES=' ' _RS_EXTENSIONS='' _RS_MISE_ENTRIES=''
+  _RS_DIRECT=" $(printf '%s\n' "$requested" | tr '\n' ' ')"
   # Depth-first, so each dependency lands before the tool that named it. A
   # stack of words rather than recursion: bash 3.2 has no local arrays worth
   # passing around, and the manifests are tiny.
@@ -183,13 +233,28 @@ _rs_resolve() {
       _rs_log "tool '$tool' is not in repo-config"
       return 3
     fi
-    local deps='' manifest
+    local deps='' manifest entry flag name owner
     manifest=$(_rs_manifest "$dir" "$tool") || {
       _rs_log "cannot read tools/$tool/tool.toml"
       return 2
     }
     while read -r field value; do
-      [[ $field == depends && $_RS_TOOLS != *" $value "* ]] && deps+="$value "
+      case $field in
+        depends)
+          [[ $_RS_TOOLS != *" $value "* ]] && deps+="$value "
+          ;;
+        mise)
+          read -r entry flag value <<< "$value"
+          for name in $value; do
+            owner=$(_rs_mise_owner "$name") || owner=''
+            if [[ -z $owner ]]; then
+              _rs_log "mise tool '$entry' of tools/$tool depends on '$name', which no tool defines"
+              return 2
+            fi
+            [[ $owner != "$tool" && $_RS_TOOLS != *" $owner "* ]] && deps+="$owner "
+          done
+          ;;
+      esac
     done <<< "$manifest"
     if [[ -n $deps && $visiting != *" $tool "* ]]; then
       # Come back to this tool after its dependencies.
@@ -208,6 +273,9 @@ _rs_resolve() {
         seed_requires)
           # `<seed> <file>`: neither path has a space.
           _RS_SEED_REQUIRES+="$tool/${value% *}=${value#* } "
+          ;;
+        mise)
+          _RS_MISE_ENTRIES+="$tool $value"$'\n'
           ;;
         root_only)
           if [[ $value == true && -n $in_submodule ]]; then
@@ -263,6 +331,129 @@ _rs_remove() {
   _rs_log "removed    $show"
 }
 
+# Set _RS_MISE_ALL to the ` <mise-tool> ` words for every environment: each
+# entry of a tool that the values file lists, without `env = "dev"`, then,
+# until nothing changes, each mise `depends` of one of them. A tool that runs
+# in CI needs its dependencies there too.
+_rs_mise_env() {
+  local tool entry flag deps name changed=1
+  _RS_MISE_ALL=' '
+  while read -r tool entry flag deps; do
+    if [[ -n $entry && $_RS_DIRECT == *" $tool "* && $flag != dev ]]; then
+      _RS_MISE_ALL+="$entry "
+    fi
+  done <<< "$_RS_MISE_ENTRIES"
+  while ((changed)); do
+    changed=0
+    while read -r tool entry flag deps; do
+      [[ -n $entry && $_RS_MISE_ALL == *" $entry "* ]] || continue
+      for name in $deps; do
+        if [[ $_RS_MISE_ALL != *" $name "* ]]; then
+          _RS_MISE_ALL+="$name "
+          changed=1
+        fi
+      done
+    done <<< "$_RS_MISE_ENTRIES"
+  done
+  return 0
+}
+
+# The template that splits the `[mise]` tables of a tool.toml (`.t`). It shows
+# the part that REPO_SYNC_PART names, `all` or `dev`, as TOML; the mise tools
+# for every environment are the ` <name> ` words of REPO_SYNC_ALL. A section
+# that it does not know stops the render.
+_RS_MISE_TEMPLATE='<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% end -%>
+<% $allw := env.Getenv "REPO_SYNC_ALL" -%>
+<% $entry := coll.Slice "tools" "tool_alias" "plugins" -%>
+<% $folder := coll.Slice "settings" "env" "tool_config" "task_config" "task_templates" "doctor" "deps" "oci" -%>
+<% $devonly := coll.Slice "vars" "secrets" "redactions" "shell_alias" "hooks" "watch_files" "daemons" "daemon_groups" "daemons_settings" "daemon_providers" "tasks" -%>
+<% $isall := false -%>
+<% if has $m "tools" %><% range $k, $v := $m.tools %><% if strings.Contains (printf " %s " $k) $allw %><% $isall = true %><% end %><% end %><% end -%>
+<% $all := dict -%>
+<% $dev := dict -%>
+<% range $s, $body := $m -%>
+<% if has $entry $s -%>
+<% $a := dict %><% $d := dict -%>
+<% range $k, $v := $body -%>
+<% if and (eq $s "tools") (test.IsKind "map" $v) %><% $v = coll.Omit "env" $v %><% end -%>
+<% if strings.Contains (printf " %s " $k) $allw %><% $a = coll.Merge (dict $k $v) $a %><% else %><% $d = coll.Merge (dict $k $v) $d %><% end -%>
+<% end -%>
+<% if $a %><% $all = coll.Merge (dict $s $a) $all %><% end -%>
+<% if $d %><% $dev = coll.Merge (dict $s $d) $dev %><% end -%>
+<% else if and (has $folder $s) $isall -%>
+<% $all = coll.Merge (dict $s $body) $all -%>
+<% else if or (has $folder $s) (has $devonly $s) -%>
+<% $dev = coll.Merge (dict $s $body) $dev -%>
+<% else -%>
+<% test.Fail (printf "[mise.%s] is not supported in a tool.toml" $s) -%>
+<% end -%>
+<% end -%>
+<% if eq (env.Getenv "REPO_SYNC_PART") "all" %><% if $all %><% $all | data.ToTOML %><% end %><% else %><% if $dev %><% $dev | data.ToTOML %><% end %><% end -%>'
+
+# Generate the mise config of <tool> from the `[mise]` tables of its tool.toml
+# in the clone <dir>, into tools/<tool>/.config/mise/conf.d/<folder>/ of the
+# clone. The file loop then syncs it like a shipped file. Records each file in
+# _RS_GENERATED. Returns 2, after a message, when the config cannot be
+# generated; the existing files of the folder are then kept.
+_rs_mise_render() {
+  local dir=$1 tool=$2 folder=$2 part name rel tmp err
+  [[ $tool == base ]] && folder=_base
+  local out="${dir}/tools/${tool}/.config/mise/conf.d/${folder}"
+  local header="# Synced from repo-config: tools/${tool}/tool.toml. Do not edit this file.
+# The next sync replaces it, and a manual change is lost.
+"
+  tmp="${dir}/.repo-sync-mise" err="${dir}/.repo-sync-mise-err"
+  for part in all dev; do
+    [[ $part == all ]] && name=mise.toml || name=mise.dev.toml
+    rel=".config/mise/conf.d/${folder}/${name}"
+    # gomplate writes no file for an empty output, so the previous part must go.
+    rm -f -- "$tmp"
+    if ! REPO_SYNC_PART=$part REPO_SYNC_ALL=$_RS_MISE_ALL \
+      _rs_gomplate -c "t=${dir}/tools/${tool}/tool.toml" -i "$_RS_MISE_TEMPLATE" -o "$tmp" 2> "$err"; then
+      _rs_log "tools/$tool/tool.toml: cannot generate the mise config: $(sed -n 's/.*error calling Fail: template generation failed: //p' "$err" | sed 's/"}$//')"
+      _RS_SEEN+="${rel%/*}/mise.toml ${rel%/*}/mise.dev.toml ${rel%/*}/mise.ci.toml "
+      return 2
+    fi
+    [[ -s $tmp && -n $(tr -d ' \n' < "$tmp") ]] || continue
+    if [[ -e $out/$name ]]; then
+      _rs_log "tools/$tool ships $rel and also generates it from [mise] - remove one"
+      return 2
+    fi
+    mkdir -p -- "$out" &&
+      { printf '%s\n' "$header" && cat -- "$tmp"; } > "$out/$name" &&
+      chmod 644 "$out/$name" || return 1
+    _RS_GENERATED+="$tool/$rel "
+
+    # CI runs on Linux; `os = "macos"` in .config/mise.toml selects macOS
+    # binaries. A folder for every environment gets the override, if the
+    # repo has a forge, so CI exists.
+    [[ $part == all && -n $_RS_FORGE ]] || continue
+    { printf '%s\n' "$header" &&
+      printf '%s\n' '# CI runs on Linux, so this file selects Linux binaries when MISE_ENV' \
+        '# includes `ci`.' '[settings]' 'os = "linux"'; } > "$out/mise.ci.toml" &&
+      chmod 644 "$out/mise.ci.toml" || return 1
+    _RS_GENERATED+="$tool/${rel%/*}/mise.ci.toml "
+  done
+  rm -f -- "$tmp" "$err"
+}
+
+# Remove each `.config/mise/conf.d/*/mise*.toml` with the repo-config header
+# that this run did not write or keep (_RS_SEEN): its tool or its layout is
+# gone. A file without the header belongs to the repo and stays.
+_rs_stale() {
+  local dry_run=$1 file rel rc=0
+  local root="${MISE_PROJECT_ROOT}/.config/mise/conf.d"
+  [[ -d $root ]] || return 0
+  while IFS= read -r file; do
+    rel=${file#"$MISE_PROJECT_ROOT"/}
+    [[ $_RS_SEEN != *" $rel "* ]] || continue
+    head -n 1 -- "$file" | grep -q '^# Synced from repo-config: ' || continue
+    _rs_remove '' "$rel" "$dry_run" || rc=$?
+    ((dry_run)) || rmdir -- "${file%/*}" 2> /dev/null || true
+  done < <(find "$root" -mindepth 2 -maxdepth 2 -type f -name 'mise*.toml' | sort)
+  return "$rc"
+}
+
 # Write the template context to <out>: the values of <values>, with
 # `members`, `submodules`, `tools`, `extensions` and `precommit` merged in
 # first, so a key of the same name in the values file cannot replace them.
@@ -297,13 +488,11 @@ _rs_context() {
 # exists, when it is a seed whose `seed_requires` file is missing, or on any
 # failure.
 _rs_file() {
-  local dir=$1 tool=$2 path=$3 dry_run=$4 core=$5 ctx=$6
+  local dir=$1 tool=$2 path=$3 dry_run=$4 ctx=$5
   local src="${dir}/tools/${tool}/${path}" out=${path%.tmpl}
   local dest destdir tmp show rc=0
-  # A core tool's dev-only mise config loads in every environment instead.
-  if [[ $core == *" $tool "* && $out == .config/mise/conf.d/*/mise.dev.toml ]]; then
-    out=${out%mise.dev.toml}mise.toml
-  fi
+  # Written or kept: `_rs_stale` must not remove it, also after a failure.
+  _RS_SEEN+="$out "
   dest="${MISE_PROJECT_ROOT}/${out}"
   show=$(_rs_path "$dest")
 
@@ -362,12 +551,12 @@ _rs_file() {
     fi
   fi
 
-  # A rendered template goes through this repo's formatter before the compare.
-  # Otherwise the format hook changes the render, and the next sync writes it
-  # back: a loop. A plain file needs no step, because dprint formats its
-  # source in repo-config. Without dprint, or if dprint fails, the raw render
-  # stays.
-  if ((rc == 0)) && [[ $path == *.tmpl && -n $_RS_DPRINT ]]; then
+  # A rendered template or a generated mise config goes through this repo's
+  # formatter before the compare. Otherwise the format hook changes the
+  # render, and the next sync writes it back: a loop. A plain file needs no
+  # step, because dprint formats its source in repo-config. Without dprint, or
+  # if dprint fails, the raw render stays.
+  if ((rc == 0)) && [[ ($path == *.tmpl || $_RS_GENERATED == *" $tool/$path "*) && -n $_RS_DPRINT ]]; then
     local fmt
     fmt=$(mktemp "${destdir%/}/.repo-sync.XXXXXX") || fmt=''
     if [[ -n $fmt ]]; then
@@ -483,7 +672,7 @@ repo_sync() {
   mise x -- which dprint > /dev/null 2>&1 && _RS_DPRINT=1
 
   local rc=0
-  _rs_resolve "$dir" "$values" || {
+  { _rs_mise_index "$dir" && _rs_resolve "$dir" "$values"; } || {
     rc=$?
     rm -rf -- "$dir"
     return "$rc"
@@ -495,8 +684,26 @@ repo_sync() {
     return "$rc"
   }
 
-  local core
-  core=" $(_rs_list "$values" core_tools | tr '\n' ' ')"
+  local old_core
+  old_core=$(_rs_list "$values" core_tools) || old_core=''
+  if [[ -n ${old_core//[$'\n ']/} ]]; then
+    _rs_log "core_tools in $(_rs_path "$values") is no longer used - delete it; a tool listed in tools is in every environment"
+  fi
+
+  # The mise config of each tool, generated into the clone before the file
+  # loop. A tool that fails keeps its existing files and counts as failed.
+  local tool worst=0 failed=()
+  _RS_SEEN=' ' _RS_GENERATED=' ' _RS_FORGE=''
+  [[ $_RS_TOOLS == *" github "* || $_RS_TOOLS == *" gitlab "* ]] && _RS_FORGE=1
+  _rs_mise_env
+  for tool in $_RS_TOOLS; do
+    rc=0
+    _rs_mise_render "$dir" "$tool" || rc=$?
+    if ((rc != 0)); then
+      failed+=("$tool/tool.toml [mise]")
+      ((rc > worst)) && worst=$rc
+    fi
+  done
 
   # The context is built once, and only when a template needs it. An empty
   # path tells `_rs_file` that it could not be built, so each template fails
@@ -514,7 +721,7 @@ repo_sync() {
     }
   fi
 
-  local tool path worst=0 ok=0 failed=() total=0
+  local path ok=0 total=0
   for tool in $_RS_TOOLS; do
     while IFS= read -r path; do
       [[ -n $path ]] || continue
@@ -523,7 +730,7 @@ repo_sync() {
       if [[ $_RS_SKIP == *" $tool/$path "* ]]; then
         _rs_remove "$tool" "$path" "$dry_run" || rc=$?
       else
-        _rs_file "$dir" "$tool" "$path" "$dry_run" "$core" "$ctx" || rc=$?
+        _rs_file "$dir" "$tool" "$path" "$dry_run" "$ctx" || rc=$?
       fi
       if ((rc == 0)); then
         ((ok += 1))
@@ -534,6 +741,13 @@ repo_sync() {
     done < <(cd "$dir/tools/$tool" && find . -type f ! -name tool.toml | sed 's#^\./##' | sort)
   done
   rm -rf -- "$dir"
+
+  rc=0
+  _rs_stale "$dry_run" || rc=$?
+  if ((rc != 0)); then
+    failed+=("stale files in .config/mise/conf.d")
+    ((rc > worst)) && worst=$rc
+  fi
 
   if ((${#failed[@]} == 0)); then
     _rs_log "done: $ok/$total files in sync"
