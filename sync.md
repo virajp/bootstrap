@@ -34,7 +34,7 @@ Do the steps in sequence to make the repository get its shared files from
 
 - The machine has SSH access to `git@github.com:virajp/repo-config.git`. The
   sync uses `BatchMode=yes`, so it does not ask for a password.
-- mise is installed. The `setup:configs` task gets gomplate through mise.
+- mise is installed. The `setup:configs:sync` task gets gomplate through mise.
 
 ## An empty repository
 
@@ -131,13 +131,16 @@ or `glab`.
 **CAUTION:** Do this before the first sync. An old copy of `repo-sync` reads
 paths, not tools, and it cannot sync the new layout.
 
-Copy these three files from the clone into the repository:
+Copy these four files from the clone into the repository. An old
+`.config/mise/tasks/setup/configs` is a file, and `setup/configs/` is now a
+folder: delete the old file first.
 
 ```bash
 base="$tmp/tools/base/.config/mise/tasks"
-mkdir -p .config/mise/tasks/_scripts .config/mise/tasks/setup
+rm -f .config/mise/tasks/setup/configs
+mkdir -p .config/mise/tasks/_scripts .config/mise/tasks/setup/configs
 cp "$base/_scripts/repo-sync" "$base/_scripts/helpers" .config/mise/tasks/_scripts/
-cp "$base/setup/configs" .config/mise/tasks/setup/
+cp "$base/setup/configs/_default" "$base/setup/configs/sync" .config/mise/tasks/setup/configs/
 ```
 
 ## Step 3: Write the values file
@@ -406,11 +409,8 @@ environment.
 
 1. For each tool in `core_tools`, make sure that it is also in `tools`.
 2. Delete the `core_tools` key from `.config/repo-config.toml`.
-3. Run `mise run setup:configs` two times. The first run brings the new
-   `repo-sync`, but it still uses the old copy. The second run generates the
-   mise config.
 
-The second run removes the old `conf.d/_task/` and `conf.d/pre-commit/`
+The next sync removes the old `conf.d/_task/` and `conf.d/pre-commit/`
 folders, and each old `mise.dev.toml` that it no longer writes.
 
 ### M9: Clean the old markers

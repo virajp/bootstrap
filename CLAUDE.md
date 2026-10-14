@@ -54,7 +54,10 @@ Some files refer to files that are not in `tools/`, for example
 ## How the sync operates
 
 - `tools/base/.config/mise/tasks/_scripts/repo-sync` defines `repo_sync`.
-  The consumer task `setup:configs` sources its own copy of that file.
+  The consumer task `setup:configs` (`setup/configs/_default`) clones this
+  repository. Then it runs `setup:configs:sync` in a new process with
+  `REPO_SYNC_CLONE` set. That task loads `repo-sync` from the clone, so a
+  change to the sync code applies in the same run.
 - `repo_sync` reads `tools` from the consumer file `.config/repo-config.toml`.
   It does a shallow clone of the default branch of this repository over SSH.
   Then it adds the `depends` of each tool, and copies each file of each tool.
