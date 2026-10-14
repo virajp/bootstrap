@@ -15,7 +15,7 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 [[ -f "${MISE_PROJECT_ROOT}/package.json" ]] || exit 0
 
 # mise installs pnpm itself, so the task never runs `pnpm self-update`. To keep
-# a package at an older major version, pin its range in the `overrides` of
+# a package at its current version, list it in `update.ignoreDeps` of
 # pnpm-workspace.yaml.
 if [[ "${usage_upgrade:-false}" == "true" ]]; then
   print_header "Upgrading Node dependencies ..."
