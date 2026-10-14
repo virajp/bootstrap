@@ -94,6 +94,8 @@
 #
 # Environment:
 #   REPO_SYNC_URL     the repo to clone (default git@github.com:virajp/repo-config.git)
+#   REPO_SYNC_CLONE   an existing clone to use instead of a new one; set by
+#                     `setup:configs`, which also loads this file from it
 #   REPO_SYNC_VALUES  the values file
 #                     (default $MISE_PROJECT_ROOT/.config/repo-config.toml)
 
@@ -656,9 +658,17 @@ repo_sync() {
     return 1
   }
   _RS_TMPS+=("$dir")
+  if [[ -n ${REPO_SYNC_CLONE:-} ]]; then
+    # A clone that `setup:configs` already made, so that this code and the
+    # files come from the same commit. A private copy, because the sync writes
+    # the generated mise config into its clone.
+    if [[ ! -d $REPO_SYNC_CLONE/.git ]] || ! cp -R -- "$REPO_SYNC_CLONE/." "$dir"; then
+      _rs_log "cannot use the clone $REPO_SYNC_CLONE - nothing synced; existing files were left untouched"
+      return 5
+    fi
   # BatchMode and no terminal prompt: a missing key or no access fails here
   # instead of waiting for a password nobody will type.
-  if ! GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="ssh -o BatchMode=yes" \
+  elif ! GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="ssh -o BatchMode=yes" \
     git clone --quiet --depth 1 --single-branch -- "$url" "$dir" 2>&1 | sed 's/^/  /' >&2 ||
     [[ ! -d $dir/.git ]]; then
     _rs_log "cannot clone $url - nothing synced; existing files were left untouched"

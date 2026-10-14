@@ -73,10 +73,11 @@ that sync.md does not decide.
 
 ## How a repository syncs
 
-1. `setup:configs` sources `.config/mise/tasks/_scripts/repo-sync` and calls
-   `repo_sync`.
-2. `repo_sync` reads `tools` from the repository's `.config/repo-config.toml`.
-3. It clones the default branch of this repository once (shallow, over SSH).
+1. `setup:configs` clones the default branch of this repository once
+   (shallow, over SSH).
+2. It runs `setup:configs:sync`, which loads `repo-sync` from that clone and
+   calls `repo_sync`. Thus a change to the sync code applies in the same run.
+3. `repo_sync` reads `tools` from the repository's `.config/repo-config.toml`.
 4. It adds the `depends` of each tool. It refuses a `root_only` tool in a git
    submodule.
 5. It finds the branch model from the branches `main` and `develop`, local or
