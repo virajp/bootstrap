@@ -12,7 +12,7 @@ extensions = [
   "usernamehw.errorlens",
 ]
 root_only = false
-seed = [ ".config/gitleaks.toml.tmpl", ".config/grype.yaml" ]
+seed = [ ".config/gitleaks.toml.tmpl", ".config/grype.yaml", ".config/osv-scanner.toml" ]
 
 # The gate hooks are tool-neutral: each names a task and nothing else. Which
 # formatter, linters and scanners run is decided inside the task, so a hook and

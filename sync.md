@@ -235,9 +235,9 @@ the problem.
 | `~/.config/dprint/dprint.jsonc` | `setup:dprint`                                                                                                                                        |
 
 `base` supplies `.config/pre-commit-config.yaml` (synced), and
-`.config/gitleaks.toml` and `.config/grype.yaml` (seeds). A seed keeps an
-existing file. Examine an existing `gitleaks.toml`: without
-`[extend] useDefault = true`, gitleaks uses only the rules of the file.
+`.config/gitleaks.toml`, `.config/grype.yaml` and `.config/osv-scanner.toml`
+(seeds). A seed keeps an existing file. Examine an existing `gitleaks.toml`:
+without `[extend] useDefault = true`, gitleaks uses only the rules of the file.
 
 ## Step 8: Make sure that the result is correct
 
