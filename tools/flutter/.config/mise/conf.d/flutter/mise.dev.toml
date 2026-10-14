@@ -2,6 +2,7 @@
 # The next sync replaces it, and a manual change is lost.
 
 [tools.android-sdk]
+depends = [ "java" ]
 version = "23"
 
 [tools.flutter]

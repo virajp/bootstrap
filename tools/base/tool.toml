@@ -1,5 +1,5 @@
 # The files every repository gets: mise, the task library, formatter, linters, scanners and pre-commit.
-depends = [ "python" ]
+depends = [ "node", "python" ]
 extensions = [
   "dbaeumer.vscode-eslint",
   "dprint.dprint",

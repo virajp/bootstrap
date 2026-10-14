@@ -118,6 +118,10 @@ repository. A core tool goes in `core_tools`. Then its
 every environment, CI included. A TypeScript repository has `node` as its
 core tool.
 
+`base` depends on `python` and `node`, because pre-commit and the linter need
+them. Thus each repository gets both tools for development. Only a tool in
+`core_tools` is also installed in the other environments.
+
 Ask whether the repository is on GitHub or on GitLab. Select `github` or
 `gitlab` for its forge. The `pr` merge model needs the CLI of the forge: `gh`
 or `glab`.
