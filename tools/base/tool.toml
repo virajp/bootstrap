@@ -8,6 +8,7 @@ extensions = [
   "oderwat.indent-rainbow",
   "pkief.material-icon-theme",
   "redhat.vscode-yaml",
+  "tombi-toml.tombi",
   "usernamehw.errorlens",
 ]
 root_only = false
