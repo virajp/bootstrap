@@ -39,6 +39,15 @@ language = "system"
 name = "Format (mise run code:format)"
 ```
 
+A tool can also make a seed depend on a file of the repository with a
+`[seed_requires]` table. The sync then writes the seed only if the repository
+has that file:
+
+```toml
+[seed_requires]
+"pnpm-workspace.yaml" = "package.json"
+```
+
 ## Adopt in a repository
 
 [`sync.md`](sync.md) tells an AI agent how to make a repository use these
@@ -73,7 +82,8 @@ These rules apply to each file:
   template keeps the mode of its `.tmpl`, so an executable `.tmpl` gives an
   executable file.
 - A seed file is written only when it is missing. After that, the repository
-  owns it.
+  owns it. A seed in `seed_requires` is written only if the repository has the
+  named file.
 - In `.config/pre-commit-config.yaml`, each hook `rev` becomes the newest tag:
   the sync runs `pre-commit autoupdate` on it. This needs the network.
 - For a tool in `core_tools`, `conf.d/<tool>/mise.dev.toml` is written as

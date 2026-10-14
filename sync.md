@@ -107,6 +107,11 @@ Each `tool.toml` has these keys:
 | `extensions` | The VS Code extensions of the tool, for `.vscode/extensions.json`. |
 | `seed`       | Files that the sync writes only if they are missing.               |
 
+A `tool.toml` can also have a `[seed_requires]` table. It is optional. Each
+key is a seed, and its value is a file of the repository. The sync writes the
+seed only if the repository has that file. For example, the `node` tool writes
+`pnpm-workspace.yaml` only if the repository has a `package.json`.
+
 Ask which of `python`, `node` and `flutter` is the core language of the
 repository. A core tool goes in `core_tools`. Then its
 `conf.d/<tool>/mise.dev.toml` is written as `mise.toml`, and mise loads it in

@@ -30,6 +30,8 @@ becomes `.config/mise/tasks/code/merge/develop` in a consumer.
 - Two tools must not ship the same path.
 - A file that the consumer owns after the first write is a seed. List it in
   `seed`.
+- A seed that applies only when the consumer has a specific file goes in the
+  optional `[seed_requires]` table: `"<seed>" = "<file>"`.
 - Each file that is not a seed starts with this header, in the comment syntax
   of the file (after the shebang in a script, after `---` in YAML, inside `{`
   in JSONC, as an HTML comment in Markdown):
