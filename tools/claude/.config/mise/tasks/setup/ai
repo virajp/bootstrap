@@ -16,19 +16,37 @@ if ! mise x -- which claude > /dev/null 2>&1; then
   print_yellow "Install it from https://claude.com/code, then run this task again."
   exit 0
 fi
-print_wait "Updating the marketplaces ... "
-mise x -- claude plugin marketplace update > /dev/null
-print_success
+# One step: `claude` writes its progress to stdout and its errors to stderr.
+# The progress is discarded. On a failure, the error goes under the step, and
+# the next steps still run: one failed plugin does not block the others.
+FAILED=0
+claude_step() {
+  local label=$1 err line
+  shift
+  print_wait "${label} ... "
+  if err=$(mise x -- claude "$@" 2>&1 > /dev/null); then
+    print_success
+  else
+    print_error
+    while IFS= read -r line; do
+      [[ -n "${line}" ]] && print_error "  ${line}"
+    done <<< "${err}"
+    FAILED=1
+  fi
+}
+
+claude_step "Updating the marketplaces" plugin marketplace update
 
 # Every plugin installed on this machine, in every scope.
 PLUGINS="$(mise x -- claude plugin list --json | mise x -- jq -r '.[] | "\(.id)|\(.scope)"')"
 while IFS= read -r PLUGIN; do
   [[ -n "${PLUGIN}" ]] || continue
-  print_wait "- ${PLUGIN%%|*} (${PLUGIN##*|}) ... "
-  mise x -- claude plugin update --scope "${PLUGIN##*|}" "${PLUGIN%%|*}" > /dev/null
-  print_success
+  claude_step "- ${PLUGIN%%|*} (${PLUGIN##*|})" plugin update --scope "${PLUGIN##*|}" "${PLUGIN%%|*}"
 done <<< "${PLUGINS}"
 
-print_wait "Removing the plugins that nothing references ... "
-mise x -- claude plugin autoremove --scope project --yes > /dev/null
-print_success
+claude_step "Removing the plugins that nothing references" plugin autoremove --scope project --yes
+
+if ((FAILED)); then
+  print_error "Some Claude Code updates failed. The errors are above."
+  exit 1
+fi

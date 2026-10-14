@@ -72,7 +72,8 @@
 #      submodule, a repo with neither `main` nor `develop`, or a template that
 #      cannot render
 #   3  a tool that is not in repo-config (fix the values file)
-#   5  the clone failed: network, SSH key or access to the repo
+#   5  the clone failed (network, SSH key or access to the repo), or
+#      `pre-commit autoupdate` could not resolve the hook revisions
 #   1  anything else (local filesystem errors, ...)
 #
 # Environment:
@@ -327,6 +328,21 @@ _rs_file() {
   else
     cp -- "$src" "$tmp" || rc=1
   fi
+  # The hook revisions: each one becomes the newest tag, chosen by
+  # `pre-commit autoupdate` itself. The `rev` in a tool.toml is a real tag, so
+  # an older repo-sync without this step still writes a config that runs. A later autoupdate in
+  # this repo then picks the same tags, so it and the sync never undo each
+  # other. It needs the network; on a failure the existing file stays.
+  if ((rc == 0)) && [[ $out == .config/pre-commit-config.yaml ]]; then
+    if ! mise x -- which pre-commit > /dev/null 2>&1; then
+      _rs_log "$tool/$path: pre-commit is not available to resolve the hook revisions"
+      rc=5
+    elif ! (cd "$MISE_PROJECT_ROOT" && mise x -- pre-commit autoupdate --config "$tmp" > /dev/null 2>&1); then
+      _rs_log "$tool/$path: pre-commit autoupdate failed - examine the network and the hook repositories"
+      rc=5
+    fi
+  fi
+
   # A rendered template goes through this repo's formatter before the compare.
   # Otherwise the format hook changes the render, and the next sync writes it
   # back: a loop. A plain file needs no step, because dprint formats its

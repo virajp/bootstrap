@@ -1,0 +1,36 @@
+# pnpm settings: https://pnpm.io/settings
+# The sync writes this file only when it is missing and the repository has a
+# package.json. Edit it for this repository; the next sync keeps your version.
+# pnpm 11 reads only the auth and registry settings from .npmrc. Put all other
+# settings here.
+
+# For a workspace, list the folders of its packages:
+# packages:
+#   - packages/*
+
+# The packages that can run a build script (preinstall, install, postinstall),
+# for example `esbuild: true`. pnpm does not run the build script of a package
+# that is not in this list.
+allowBuilds: {}
+
+# Stop the install when a dependency has a build script that is not in
+# allowBuilds. https://pnpm.io/settings#strictdepbuilds
+strictDepBuilds: true
+
+# Do not resolve a version that was released less than 24 hours ago (in
+# minutes). https://pnpm.io/settings#minimumreleaseage
+minimumReleaseAge: 1440
+
+# A transitive dependency must come from the registry, not from git or a
+# tarball URL. https://pnpm.io/settings#blockexoticsubdeps
+blockExoticSubdeps: true
+
+# Stop the install when the trust level of a package is lower than in a
+# previous version. Versions older than 30 days (in minutes) are exempt.
+# https://pnpm.io/settings#trustpolicy
+trustPolicy: no-downgrade
+trustPolicyIgnoreAfter: 43200
+
+# Stop `pnpm run` and `pnpm exec` when node_modules does not agree with the
+# lockfile. https://pnpm.io/settings#verifydepsbeforerun
+verifyDepsBeforeRun: error

@@ -1,0 +1,17 @@
+#:schema https://fnox.jdx.dev/schema.json
+# fnox: this repository's secrets. A seed: the repo owns this file after the
+# first sync. Values never live here. From the repository root, add each
+# secret with `fnox --config .config/fnox.toml set <NAME>` and load them with
+# `fnox --config .config/fnox.toml exec -- <command>`. Name this file every
+# time: fnox's default search may not look under .config/.
+
+# fnox is a development tool here, so the secrets live in the OS keychain:
+# the macOS Keychain, the Windows Credential Manager, or the Linux Secret
+# Service. The keychain needs an unlocked desktop session, so it does not work
+# in CI. The service name keeps this repository's secrets apart.
+default_provider = "keychain"
+
+[providers]
+keychain = { type = "keychain", service = "<% .repo_name %>" }
+
+[secrets]

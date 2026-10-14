@@ -107,6 +107,11 @@ Each `tool.toml` has these keys:
 | `extensions` | The VS Code extensions of the tool, for `.vscode/extensions.json`. |
 | `seed`       | Files that the sync writes only if they are missing.               |
 
+A `tool.toml` can also have a `[seed_requires]` table. It is optional. Each
+key is a seed, and its value is a file of the repository. The sync writes the
+seed only if the repository has that file. For example, the `node` tool writes
+`pnpm-workspace.yaml` only if the repository has a `package.json`.
+
 Ask which of `python`, `node` and `flutter` is the core language of the
 repository. A core tool goes in `core_tools`. Then its
 `conf.d/<tool>/mise.dev.toml` is written as `mise.toml`, and mise loads it in
@@ -217,7 +222,7 @@ If `repo_sync` fails, read the exit code:
 | 2    | No `tools` in the values file, a root-only tool in a submodule, or a template that cannot render | Correct the values file                         |
 | 2    | Neither `main` nor `develop` exists                                                              | Do step 4                                       |
 | 3    | A tool that is not in `repo-config`                                                              | Correct the `tools` list                        |
-| 5    | The clone failed                                                                                 | Examine the network, the SSH key and the access |
+| 5    | The clone failed, or `pre-commit autoupdate` failed                                              | Examine the network, the SSH key and the access |
 | 1    | A local file system error                                                                        | Read the `repo-sync:` lines on stderr           |
 
 A failure does not change an existing file.
@@ -235,9 +240,9 @@ the problem.
 | `~/.config/dprint/dprint.jsonc` | `setup:dprint`                                                                                                                                        |
 
 `base` supplies `.config/pre-commit-config.yaml` (synced), and
-`.config/gitleaks.toml` and `.config/grype.yaml` (seeds). A seed keeps an
-existing file. Examine an existing `gitleaks.toml`: without
-`[extend] useDefault = true`, gitleaks uses only the rules of the file.
+`.config/gitleaks.toml`, `.config/grype.yaml` and `.config/osv-scanner.toml`
+(seeds). A seed keeps an existing file. Examine an existing `gitleaks.toml`:
+without `[extend] useDefault = true`, gitleaks uses only the rules of the file.
 
 ## Step 8: Make sure that the result is correct
 

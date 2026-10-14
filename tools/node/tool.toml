@@ -2,4 +2,9 @@
 depends = []
 extensions = [ "christian-kohler.npm-intellisense" ]
 root_only = false
-seed = []
+seed = [ "pnpm-workspace.yaml" ]
+
+# A repository that uses node only as a dev tool has no package.json, and it
+# does not get the pnpm settings.
+[seed_requires]
+"pnpm-workspace.yaml" = "package.json"

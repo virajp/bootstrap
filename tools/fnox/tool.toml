@@ -2,4 +2,4 @@
 depends = []
 extensions = []
 root_only = false
-seed = [ ".config/fnox.toml" ]
+seed = [ ".config/fnox.toml.tmpl" ]
