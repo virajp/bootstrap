@@ -112,7 +112,7 @@ These rules apply to each file:
   and `code:merge:main`. With only one of them, it gets `code:merge`. The sync
   removes the merge tasks of the other model. The second is a
   `.config/mise/conf.d/*/mise*.toml` file with the repo-config header that the
-  sync did not write. A seed, such as `_env/mise.<env>.toml`, has no header, so
+  sync did not write. A seed, such as `_repo/mise.<env>.toml`, has no header, so
   the sync keeps it.
 
 A copy of `repo-sync` from before the `tools/` layout cannot sync. Copy

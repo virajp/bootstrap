@@ -1,5 +1,0 @@
-# The environment variables of this repository for `MISE_ENV=dev`.
-# The sync writes this file only when it is missing. Edit it for this
-# repository; the next sync keeps your version. The shared variables are in
-# .config/mise.toml.
-[env]

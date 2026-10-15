@@ -19,7 +19,7 @@ task.output = "interleave"
 task.timings = true
 
 # From .config/repo-config.toml. The repository's own variables go in
-# .config/mise/conf.d/_env/mise.<env>.toml.
+# .config/mise/conf.d/_repo/mise.<env>.toml.
 [env]
 # Member projects within the repository
 MEMBERS = "<% range $i, $m := .members %><% if $i %> <% end %><% $m %><% end %>"

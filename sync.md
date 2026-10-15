@@ -16,8 +16,8 @@ Do the steps in sequence to make the repository get its shared files from
   repository. `repo_sync` syncs all the files of these tools.
 - Do not edit a synced file in the consumer repository. The next sync replaces
   it. Put repository-owned content in the places that the sync never writes:
-  - environment variables: the seeds `.config/mise/conf.d/_env/mise.<env>.toml`,
-    one for each environment.
+  - mise config and environment variables: the seeds
+    `.config/mise/conf.d/_repo/mise.<env>.toml`, one for each environment.
   - shell functions: `.config/mise/tasks/_scripts/local`.
   - ignore lines: `.config/repo-sync/gitignore`.
   - pre-commit hooks: `.config/repo-sync/pre-commit.yaml`, a YAML list of
@@ -359,7 +359,7 @@ The sync replaces `.config/mise.toml`. It keeps only the shared `[settings]`.
    - `MEMBERS` is not necessary for submodules. For folders, write
      `[member.<name>]` tables.
 2. Move the repository's own `[env]` values to the seed
-   `.config/mise/conf.d/_env/mise.<env>.toml` of each environment that needs
+   `.config/mise/conf.d/_repo/mise.<env>.toml` of each environment that needs
    them. Examples are `GITHUB_OWNER`, and the emulator, Temporal and OTEL
    variables of 95octane backend (`mise.dev.toml`).
 3. Delete what a tool now supplies: `CLOUDSDK_PYTHON` (the `gcloud` tool) and
@@ -402,14 +402,14 @@ bootstrap and claude-plugins have an old `.config/mise/conf.d/_base/`. Its
 name is the same as the shared `_base`, but the content is different. Before
 the first sync, move its content:
 
-| Old content in `_base`                                           | New place              |
-| ---------------------------------------------------------------- | ---------------------- |
-| node, pnpm                                                       | the `node` tool        |
-| python, uv, `UV_*`                                               | the `python` tool      |
-| pre-commit, `PRE_COMMIT_HOME`                                    | the `base` tool        |
-| `MEMBERS`, `REPO_NAME`                                           | the values file        |
-| `MEMPALACE_*` and other repository variables                     | `_env/mise.<env>.toml` |
-| `min_version`, `task.run_auto_install`, other repository content | step M5                |
+| Old content in `_base`                                           | New place               |
+| ---------------------------------------------------------------- | ----------------------- |
+| node, pnpm                                                       | the `node` tool         |
+| python, uv, `UV_*`                                               | the `python` tool       |
+| pre-commit, `PRE_COMMIT_HOME`                                    | the `base` tool         |
+| `MEMBERS`, `REPO_NAME`                                           | the values file         |
+| `MEMPALACE_*` and other repository variables                     | `_repo/mise.<env>.toml` |
+| `min_version`, `task.run_auto_install`, other repository content | step M5                 |
 
 Then delete the old `_base/mise.toml`, `_base/mise.dev.toml` and
 `_base/mise.ci.toml`. Also delete an old `conf.d/ai/`: the `claude` tool
@@ -482,10 +482,12 @@ Remove `actionlint`, `gh` and `glab` from the repository-owned mise files.
 1. Add `environments` to `.config/repo-config.toml` (step 1). Delete an old
    `core_tools` key: the `envs` of each tool decide its environments now.
 2. Move the repository variables of an old `_env/mise.toml` or
-   `conf.d/repo/` to the `_env/mise.<env>.toml` seeds (step M5). Move each
+   `conf.d/repo/` to the `_repo/mise.<env>.toml` seeds (step M5). Move each
    tool of an old `conf.d/repo/` to a repo-config tool (step M6). Then delete
    `conf.d/repo/`.
+3. Move the seeds of an old `conf.d/_env/` folder to `conf.d/_repo/`. The sync
+   does not remove them, because a seed has no header.
 
 The next sync removes the old `conf.d/*/mise.toml`, `_env/mise.toml`,
-`conf.d/_task/` and `conf.d/pre-commit/` files that have the repo-config
-header.
+`_alias/mise.dev.toml`, `conf.d/_task/` and `conf.d/pre-commit/` files that
+have the repo-config header.

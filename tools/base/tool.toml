@@ -15,10 +15,10 @@ root_only = false
 seed = [
   ".config/gitleaks.toml.tmpl",
   ".config/grype.yaml",
-  ".config/mise/conf.d/_env/mise.ci.toml",
-  ".config/mise/conf.d/_env/mise.dev.toml",
-  ".config/mise/conf.d/_env/mise.prod.toml",
-  ".config/mise/conf.d/_env/mise.stage.toml",
+  ".config/mise/conf.d/_repo/mise.ci.toml",
+  ".config/mise/conf.d/_repo/mise.dev.toml",
+  ".config/mise/conf.d/_repo/mise.prod.toml",
+  ".config/mise/conf.d/_repo/mise.stage.toml",
   ".config/osv-scanner.toml",
 ]
 
@@ -211,6 +211,7 @@ PRE_COMMIT_HOME = "$HOME/.cache/pre-commit"
 
 [mise.shell_alias]
 precommit = "mise run code:precommit"
+setup = "mise run setup"
 
 [mise.tasks.init]
 description = "Initialize mise tasks"
