@@ -6,6 +6,7 @@ PRE_COMMIT_HOME = "$HOME/.cache/pre-commit"
 
 [shell_alias]
 precommit = "mise run code:precommit"
+setup = "mise run setup"
 
 [tasks]
 [tasks.init]
