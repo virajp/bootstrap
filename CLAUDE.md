@@ -212,11 +212,13 @@ that it finds, and removes the others. It stops if neither branch exists.
 - The sync removes a `conf.d/*/mise*.toml` with the repo-config header that
   it did not write. Thus a removed tool, environment or folder disappears from
   consumers.
-- `base` also ships `_alias/mise.dev.toml.tmpl` (the `setup` aliases, which need
-  the submodules) and the seeds `_env/mise.<env>.toml`. A repository keeps its
-  own variables for each environment in the `_env` seeds.
-- A repository has no mise config of its own, other than the `_env` seeds.
-  Each mise tool comes from a repo-config tool. A tool that a repository needs
+- The `setup` aliases are in the generated `_base/mise.dev.toml`. `setup` comes
+  from `tools/base/tool.toml`. The sync adds `setup-all` and
+  `setup-<submodule>` there for a repository with git submodules.
+- `conf.d/_repo/` is the folder that each repository owns and customizes. `base`
+  ships the seeds `_repo/mise.<env>.toml`, for example for the repository's own
+  `[env]` values. The sync writes a seed only when it is missing.
+- Each mise tool comes from a repo-config tool. A tool that a repository needs
   gets added to a tool in `tools/`, or becomes a new tool, for example
   `doppler`.
 
