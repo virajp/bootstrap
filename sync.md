@@ -424,12 +424,24 @@ Delete the old `conf.d/_formatter`, `_linter` and `_security`.
 
 If the repository has `fnox.toml` at its root, move it to
 `.config/fnox.toml`. Then the seed does not replace it. Change each
-`fnox exec` call to `mise x -- fnox --config .config/fnox.toml exec`.
+`fnox exec` call to `mise x -- fnox exec`. Remove each
+`--config .config/fnox.toml`: fnox finds the file by itself, and an explicit
+`--config` still loads the global config. This needs fnox 1.39.0 or later,
+because fnox 1.36.0 does not search `.config/`. If `mise x -- fnox --version`
+shows an older version, run `mise upgrade fnox`.
 
 `.config/fnox.toml` is a seed, so the sync does not change an existing file.
-In a repository of a product with members, set `product_name`, then change
-the keychain provider by hand: `service = "<product_name>"` and
-`prefix = "<repo_name>/"`. Move the existing secrets to the new names.
+Change it by hand:
+
+1. Add `root = true` before `[providers]`. Then fnox does not search parent
+   directories, so a submodule does not get the secrets of its root.
+2. In a repository of a product with members, set `product_name`. Then change
+   the keychain provider: `service = "<product_name>"` and
+   `prefix = "<repo_name>/"`. Move the existing secrets to the new names.
+
+The `fnox` tool sets `FNOX_CONFIG_DIR` to `.config/fnox/` in dev, so the
+global `~/.config/fnox/config.toml` does not load in the repository. Do not
+put a `config.toml` in `.config/fnox/`.
 
 ### M9: Clean the old markers
 
