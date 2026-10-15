@@ -11,6 +11,11 @@
 # in CI. The service name keeps this repository's secrets apart.
 default_provider = "keychain"
 
+# Secrets go only into `fnox exec` subprocesses, never into the interactive
+# shell. Thus a tool or an AI agent that runs in the shell does not inherit
+# them. A secret can opt back in with its own `env = true`.
+env = "exec"
+
 [providers]
 keychain = { type = "keychain", service = "<% .repo_name %>" }
 
