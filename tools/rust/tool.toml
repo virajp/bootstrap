@@ -4,12 +4,14 @@ extensions = []
 root_only = false
 seed = []
 
-# The mise config, generated into .config/mise/conf.d/rust/.
+# The mise config, generated into .config/mise/conf.d/rust/mise.<env>.toml.
 
 # `default` profile, not `minimal`: `minimal` has no clippy and no rustfmt.
 [mise.tools."core:rust"]
+envs = [ "dev", "ci" ]
 profile = "default"
 version = "latest"
 
 [mise.tools.zola]
+envs = [ "dev", "ci" ]
 version = "latest"

@@ -4,17 +4,19 @@ extensions = []
 root_only = false
 seed = []
 
-# The mise config, generated into .config/mise/conf.d/python/.
+# The mise config, generated into .config/mise/conf.d/python/mise.<env>.toml.
 [mise.settings]
 pipx.uvx = true
 python.compile = false
 python.uv_venv_auto = "create|source"
 
 [mise.tools.python]
+envs = [ "dev", "ci", "prod", "stage" ]
 version = "3.14"
 
 [mise.tools.uv]
 depends = [ "python" ]
+envs = [ "dev", "ci", "prod", "stage" ]
 version = "latest"
 
 [mise.env]

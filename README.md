@@ -23,14 +23,16 @@ extensions = [ "dart-code.dart-code", "dart-code.flutter" ] # VS Code extensions
 root_only = false # true: refused in a submodule
 seed = [] # written only when missing
 
-# The mise config, in mise syntax. The sync generates .config/mise/conf.d/flutter/.
+# The mise config, in mise syntax. The sync generates
+# .config/mise/conf.d/flutter/mise.<env>.toml.
 [mise.tools.android-sdk]
 depends = [ "java" ] # also adds the tool that defines java
+envs = [ "dev", "ci" ] # the default is [ "dev" ]
 version = "23"
 
-[mise.tools.java]
-env = "dev" # only for development, also when the tool is listed directly
-version = "21"
+# Content for one environment only
+[mise_env.ci.env]
+ANDROID_HOME = "/opt/android"
 ```
 
 A tool can also add hooks to `.config/pre-commit-config.yaml` with
@@ -96,19 +98,22 @@ These rules apply to each file:
   named file.
 - In `.config/pre-commit-config.yaml`, each hook `rev` becomes the newest tag:
   the sync runs `pre-commit autoupdate` on it. This needs the network.
+- The repository selects its environments in `environments`: `dev`
+  (necessary), `ci`, and `prod` and `stage` (only with `ci`).
 - The mise config of each tool is generated from its `[mise.*]` tables into
-  `.config/mise/conf.d/<tool>/` (`_base` for `base`). A tool that the
-  repository lists in `tools` goes to `mise.toml`, for every environment. A
-  tool that only a dependency adds goes to `mise.dev.toml`, unless an
-  every-environment tool needs it. Aliases, hooks, vars and tasks always go to
-  `mise.dev.toml`. With the `github` or `gitlab` tool, `mise.ci.toml` selects
-  Linux binaries in CI. `CLAUDE.md` has the full rules.
+  `.config/mise/conf.d/<tool>/mise.<env>.toml` (`_base` for `base`), one file
+  for each environment. A tool that the repository lists in `tools` goes to the
+  environments of its `envs`. A tool that only a dependency adds goes to dev,
+  unless a tool in another environment needs it. Aliases, hooks, vars and
+  tasks go only to dev. `.config/mise.toml` is the only file for every
+  environment. `CLAUDE.md` has the full rules.
 - The sync never deletes a file, with two exceptions. The first is the merge
   tasks. With `main` and `develop`, the repository gets `code:merge:develop`
   and `code:merge:main`. With only one of them, it gets `code:merge`. The sync
   removes the merge tasks of the other model. The second is a
   `.config/mise/conf.d/*/mise*.toml` file with the repo-config header that the
-  sync did not write. `conf.d/repo/` has no header, so the sync keeps it.
+  sync did not write. A seed, such as `_env/mise.<env>.toml`, has no header, so
+  the sync keeps it.
 
 A copy of `repo-sync` from before the `tools/` layout cannot sync. Copy
 `tools/base/.config/mise/tasks/_scripts/repo-sync` and `helpers` into the
@@ -136,6 +141,7 @@ Example values file:
 
 ```toml
 commit_scopes = [ "backend", "web" ]
+environments = [ "dev", "ci", "prod" ]
 merge_model_develop = "direct"
 merge_model_main = "pr"
 repo_name = "my-repo"

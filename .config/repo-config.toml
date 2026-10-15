@@ -1,3 +1,4 @@
+environments = [ "dev" ]
 merge_model_develop = "direct"
 merge_model_main = "direct"
 repo_name = "repo-config"

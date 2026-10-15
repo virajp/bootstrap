@@ -16,9 +16,10 @@ language = "system"
 name = "Lint the GitLab CI config (glab ci lint)"
 pass_filenames = false
 
-# The mise config, generated into .config/mise/conf.d/gitlab/.
+# The mise config, generated into .config/mise/conf.d/gitlab/mise.<env>.toml.
 
 # GitLab CLI: issues, merge requests, `glab ci lint`, and `code:merge` under
 # the `pr` model
 [mise.tools.glab]
+envs = [ "dev", "ci" ]
 version = "latest"
