@@ -1,5 +1,7 @@
 # VS Code settings, and extensions.json from the extensions of the selected tools.
+# Root only: VS Code opens the root repository, and its extensions.json also
+# has the extensions of every git submodule.
 depends = []
 extensions = []
-root_only = false
+root_only = true
 seed = []

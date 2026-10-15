@@ -132,7 +132,10 @@ A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
 - `.submodules` is the list of the git submodules only. It is empty in a
   repository without submodules.
 - `.tools` is the list of the selected tools, dependencies included.
-- `.extensions` is the sorted list of the VS Code extensions of those tools.
+- `.extensions` is the sorted list of the VS Code extensions of those tools,
+  plus the `extensions` list of the values file. In the root repository, it
+  also has the extensions of each git submodule: the tools and the
+  `extensions` list of its values file.
 - `.precommit` is the list of the `[[precommit]]` entries of those tools, in
   tool order, then the entries of the repository's
   `.config/repo-sync/pre-commit.yaml`.

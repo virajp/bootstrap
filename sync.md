@@ -170,6 +170,7 @@ Write `.config/repo-config.toml`. Ask the user for each value.
 | `commit_scopes`                    | `git-conventional-commits` | The commit scopes, for example `["backend", "web"]`. The default is the member list.                               |
 | `repo_url`                         | `git-conventional-commits` | The web URL of the repository, for the changelog links. GitHub and GitLab are supported.                           |
 | `worktree_files`                   | `setup:worktree`           | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]` |
+| `extensions`                       | `vscode` (in the root)     | VS Code extensions that no tool has, for example `["astro-build.astro-vscode"]`. A submodule lists its own too.    |
 | `[member.<name>]`                  | `setup`, `setup:worktree`  | One table for each member folder                                                                                   |
 | `[member.<name>].label`            | `setup`                    | The display name. The default is `<name>`.                                                                         |
 | `[member.<name>].worktree_install` | `setup:worktree`           | The install command for a new worktree. If it is not set, the member's own `setup:worktree` runs.                  |
@@ -345,7 +346,8 @@ Update each shell alias that calls an old name. Remove a repository-owned
 
 ### M4: Delete root-only items from submodules
 
-In a submodule, delete `setup:ai`, `setup/external/*` and `conf.d/claude/`.
+In a submodule, delete `setup:ai`, `setup/external/*`, `setup/vscode`,
+`.vscode/` and `conf.d/claude/`.
 Keep `code:graph`: `base` ships it to each repository.
 
 ### M5: Move the content of `.config/mise.toml`
@@ -431,7 +433,11 @@ If the repository has `fnox.toml` at its root, move it to
   settings or to the workspace, and tell the user. The sync replaces the file.
   Examples are `[dart]`, `files.associations` and `markdownlint.*`.
 - If an extension is not in a tool, for example astro, tailwind or effect,
-  tell the user. The sync replaces `.vscode/extensions.json`.
+  tell the user. Put it in the values key `extensions` of the repository that
+  needs it. The sync replaces `.vscode/extensions.json`.
+- `vscode` is root only. VS Code opens the root repository, and the root
+  `.vscode/extensions.json` has the extensions of each submodule. In a
+  submodule, delete `.vscode/` and `.config/mise/tasks/setup/vscode`.
 - Replace each `MARKED POSITION` block with its value, in a repository-owned
   file or in the values file.
 
