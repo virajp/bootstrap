@@ -31,8 +31,27 @@ print_subheader "Scanning the dependencies with osv-scanner ..."
 mise x -- osv-scanner scan source --recursive --allow-no-lockfiles \
   --config "${MISE_PROJECT_ROOT}/.config/osv-scanner.toml" --verbosity "${FLAGS}" "${MISE_PROJECT_ROOT}"
 
+# gitleaks reads no .gitignore: `gitleaks dir` scans every file, also the
+# ignored ones such as graphify-out/ and node_modules/. It takes one path only.
+# Thus copy the files that git knows about (tracked, and new files that are
+# not ignored) into a temporary folder, and scan that folder once. The report
+# paths stay relative to the repository.
 print_subheader "Scanning the files for secrets with gitleaks ..."
 [[ "${usage_debug:-false}" == "true" ]] && FLAGS="--verbose" || FLAGS=""
-mise x -- gitleaks dir ${PWD} --config $MISE_PROJECT_ROOT/.config/gitleaks.toml --redact 50 ${FLAGS}
+SCAN_DIR=$(mktemp -d "${TMPDIR:-/tmp}/code-sec.XXXXXX")
+trap 'rm -rf -- "${SCAN_DIR}"' EXIT
+(
+  cd "${MISE_PROJECT_ROOT}"
+  # A tracked file that is deleted in the working tree is not on disk.
+  git ls-files -z --cached --others --exclude-standard \
+    | while IFS= read -r -d '' file; do
+      [[ -f "${file}" && ! -L "${file}" ]] && printf '%s\0' "${file}"
+    done \
+    | tar --null -T - -cf - \
+    | tar -xf - -C "${SCAN_DIR}"
+)
+# The gitleaks of this repository, found from the repository root.
+GITLEAKS=$(cd "${MISE_PROJECT_ROOT}" && mise which gitleaks)
+(cd "${SCAN_DIR}" && "${GITLEAKS}" dir . --config "${MISE_PROJECT_ROOT}/.config/gitleaks.toml" --redact 50 ${FLAGS})
 
 print_success "Scanning done"
