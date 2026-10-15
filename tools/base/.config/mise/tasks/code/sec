@@ -21,14 +21,26 @@ fi
 
 print_header "Scanning for security problems ..."
 
+# A git submodule is a separate repository with its own `code:sec`. Thus the
+# dependency scanners skip each submodule here, nested ones included.
+GRYPE_EXCLUDES=()
+OSV_EXCLUDES=()
+while IFS= read -r submodule; do
+  [[ -n "${submodule}" ]] || continue
+  GRYPE_EXCLUDES+=(--exclude "./${submodule}/**")
+  # osv-scanner matches the regex against the full path of each directory.
+  OSV_EXCLUDES+=(--x-exclude "r:(^|/)$(printf '%s' "${submodule}" | sed 's/[][\\.*^$()+?{}|]/\\&/g')\$")
+done < <(git -C "${MISE_PROJECT_ROOT}" submodule --quiet foreach --recursive 'echo $displaypath' 2> /dev/null)
+
 print_subheader "Scanning the dependencies with grype ..."
 [[ "${usage_debug:-false}" == "true" ]] && FLAGS="-vv" || FLAGS=""
-mise x -- grype . --config .config/grype.yaml --name ${MISE_PROJECT_ROOT} ${FLAGS}
+mise x -- grype . --config .config/grype.yaml --name ${MISE_PROJECT_ROOT} ${GRYPE_EXCLUDES[@]+"${GRYPE_EXCLUDES[@]}"} ${FLAGS}
 
 # Without --allow-no-lockfiles, a repo with no lockfile fails with exit 128.
 print_subheader "Scanning the dependencies with osv-scanner ..."
 [[ "${usage_debug:-false}" == "true" ]] && FLAGS="info" || FLAGS="warn"
 mise x -- osv-scanner scan source --recursive --allow-no-lockfiles \
+  ${OSV_EXCLUDES[@]+"${OSV_EXCLUDES[@]}"} \
   --config "${MISE_PROJECT_ROOT}/.config/osv-scanner.toml" --verbosity "${FLAGS}" "${MISE_PROJECT_ROOT}"
 
 # gitleaks reads no .gitignore: `gitleaks dir` scans every file, also the
