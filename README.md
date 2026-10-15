@@ -147,6 +147,7 @@ commit_scopes = [ "backend", "web" ]
 environments = [ "dev", "ci", "prod" ]
 merge_model_develop = "direct"
 merge_model_main = "pr"
+product_name = "my-product"
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
 tools = [ "base", "github", "node", "fnox", "claude", "vscode" ]

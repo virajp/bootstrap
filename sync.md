@@ -160,20 +160,21 @@ cp "$base/setup/configs/_default" "$base/setup/configs/sync" .config/mise/tasks/
 
 Write `.config/repo-config.toml`. Ask the user for each value.
 
-| Key                                | Used by                    | Values                                                                                                             |
-| ---------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `tools`                            | `repo_sync`                | The tools from step 1. `base` is necessary.                                                                        |
-| `environments`                     | `repo_sync`                | The environments from step 1, for example `["dev", "ci"]`. The default is `["dev"]`.                               |
-| `repo_name`                        | `.config/mise.toml`        | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                    |
-| `merge_model_develop`              | `.config/mise.toml`        | `direct` (local merge) or `pr` (pull request)                                                                      |
-| `merge_model_main`                 | `.config/mise.toml`        | `direct` or `pr`                                                                                                   |
-| `commit_scopes`                    | `git-conventional-commits` | The commit scopes, for example `["backend", "web"]`. The default is the member list.                               |
-| `repo_url`                         | `git-conventional-commits` | The web URL of the repository, for the changelog links. GitHub and GitLab are supported.                           |
-| `worktree_files`                   | `setup:worktree`           | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]` |
-| `extensions`                       | `vscode` (in the root)     | VS Code extensions that no tool has, for example `["astro-build.astro-vscode"]`. A submodule lists its own too.    |
-| `[member.<name>]`                  | `setup`, `setup:worktree`  | One table for each member folder                                                                                   |
-| `[member.<name>].label`            | `setup`                    | The display name. The default is `<name>`.                                                                         |
-| `[member.<name>].worktree_install` | `setup:worktree`           | The install command for a new worktree. If it is not set, the member's own `setup:worktree` runs.                  |
+| Key                                | Used by                    | Values                                                                                                                                                                                                                                                      |
+| ---------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tools`                            | `repo_sync`                | The tools from step 1. `base` is necessary.                                                                                                                                                                                                                 |
+| `environments`                     | `repo_sync`                | The environments from step 1, for example `["dev", "ci"]`. The default is `["dev"]`.                                                                                                                                                                        |
+| `repo_name`                        | `.config/mise.toml`        | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                                                                                                                                                             |
+| `product_name`                     | `fnox.toml`                | The product name, for example `95octane`. Set it in each repository of a product with members, the root included. Then the fnox keychain uses it as `service`, and `<repo_name>/` as `prefix`. Without it, `service` is `repo_name` and there is no prefix. |
+| `merge_model_develop`              | `.config/mise.toml`        | `direct` (local merge) or `pr` (pull request)                                                                                                                                                                                                               |
+| `merge_model_main`                 | `.config/mise.toml`        | `direct` or `pr`                                                                                                                                                                                                                                            |
+| `commit_scopes`                    | `git-conventional-commits` | The commit scopes, for example `["backend", "web"]`. The default is the member list.                                                                                                                                                                        |
+| `repo_url`                         | `git-conventional-commits` | The web URL of the repository, for the changelog links. GitHub and GitLab are supported.                                                                                                                                                                    |
+| `worktree_files`                   | `setup:worktree`           | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]`                                                                                                                                          |
+| `extensions`                       | `vscode` (in the root)     | VS Code extensions that no tool has, for example `["astro-build.astro-vscode"]`. A submodule lists its own too.                                                                                                                                             |
+| `[member.<name>]`                  | `setup`, `setup:worktree`  | One table for each member folder                                                                                                                                                                                                                            |
+| `[member.<name>].label`            | `setup`                    | The display name. The default is `<name>`.                                                                                                                                                                                                                  |
+| `[member.<name>].worktree_install` | `setup:worktree`           | The install command for a new worktree. If it is not set, the member's own `setup:worktree` runs.                                                                                                                                                           |
 
 Example:
 
@@ -182,6 +183,7 @@ commit_scopes = [ "backend", "web" ]
 environments = [ "dev", "ci", "prod" ]
 merge_model_develop = "direct"
 merge_model_main = "pr"
+product_name = "my-product"
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
 tools = [ "base", "github", "node", "fnox", "claude", "vscode" ]
@@ -423,6 +425,11 @@ Delete the old `conf.d/_formatter`, `_linter` and `_security`.
 If the repository has `fnox.toml` at its root, move it to
 `.config/fnox.toml`. Then the seed does not replace it. Change each
 `fnox exec` call to `mise x -- fnox --config .config/fnox.toml exec`.
+
+`.config/fnox.toml` is a seed, so the sync does not change an existing file.
+In a repository of a product with members, set `product_name`, then change
+the keychain provider by hand: `service = "<product_name>"` and
+`prefix = "<repo_name>/"`. Move the existing secrets to the new names.
 
 ### M9: Clean the old markers
 

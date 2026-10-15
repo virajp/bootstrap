@@ -8,7 +8,9 @@
 # fnox is a development tool here, so the secrets live in the OS keychain:
 # the macOS Keychain, the Windows Credential Manager, or the Linux Secret
 # Service. The keychain needs an unlocked desktop session, so it does not work
-# in CI. The service name keeps this repository's secrets apart.
+# in CI. The service is the product. In a product with members, each
+# repository adds its name as a prefix, so its secrets stay apart from those of
+# the other repositories of the product.
 default_provider = "keychain"
 
 # Secrets go only into `fnox exec` subprocesses, never into the interactive
@@ -17,6 +19,6 @@ default_provider = "keychain"
 env = "exec"
 
 [providers]
-keychain = { type = "keychain", service = "<% .repo_name %>" }
+keychain = { type = "keychain", <% if has . "product_name" %>service = "<% .product_name %>", prefix = "<% .repo_name %>/"<% else %>service = "<% .repo_name %>"<% end %> }
 
 [secrets]
