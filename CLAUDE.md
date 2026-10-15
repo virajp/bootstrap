@@ -45,8 +45,8 @@ becomes `.config/mise/tasks/code/merge/develop` in a consumer.
   `[[precommit.hooks]]`. This key is optional.
 - A tool does not ship mise files. It writes its mise config in `[mise.*]`
   tables of its `tool.toml`, in mise syntax. The sync generates
-  `conf.d/<folder>/mise.toml`, `mise.dev.toml` and `mise.ci.toml` from them
-  (`_base` for `base`, else the tool name). See "mise config".
+  `conf.d/<folder>/mise.<env>.toml` from them, one file for each environment
+  of the consumer (`_base` for `base`, else the tool name). See "mise config".
 
 Some files refer to files that are not in `tools/`, for example
 `dprint.jsonc`. The consumer repository supplies them.
@@ -181,36 +181,43 @@ that it finds, and removes the others. It stops if neither branch exists.
 
 ## mise config
 
-- `tools/base/.config/mise.toml` holds the shared `[settings]`. `min_version`,
-  `monorepo_root` and `[monorepo]` go only in a repository's own
-  `.config/mise.toml`.
-- `mise.toml` files are for all environments, `mise.dev.toml` files for
-  development only, and `mise.ci.toml` files for CI.
-- The sync generates `conf.d/<folder>/` from the `[mise.*]` tables of each
-  selected tool:
-  - A mise tool of a tool that the consumer lists in `tools` is in all
-    environments, unless its entry has `env = "dev"`. A mise tool of a tool
-    that only a dependency adds is for development. A mise tool that an
-    all-environment mise tool `depends` on is in all environments too.
+- The consumer selects its environments with `environments` in the values
+  file: `dev` (necessary), `ci`, and `prod` and `stage` (only with `ci`).
+- `.config/mise.toml` (`tools/base/.config/mise.toml.tmpl`) is the only file for
+  every environment. It holds the shared `[settings]` and the `[env]` values
+  from the values file (MEMBERS, MERGE_MODEL_*, REPO_NAME). `min_version`,
+  `monorepo_root` and `[monorepo]` go only in a repository's own copy.
+- Each file in `.config/mise/conf.d/` is for one environment:
+  `mise.<env>.toml`. mise loads it only when `MISE_ENV` includes that
+  environment. No tool ships or generates a `conf.d/*/mise.toml`.
+- The sync generates `conf.d/<folder>/mise.<env>.toml` from the `[mise.*]`
+  tables of each selected tool:
+  - A mise tool of a tool that the consumer lists in `tools` is in the
+    environments of its `envs` list (default `["dev"]`). A mise tool of a
+    tool that only a dependency adds is in dev. Each mise `depends` of a mise
+    tool is in the environments of that mise tool too.
   - `[tools]`, `[tool_alias]` and `[plugins]` follow each entry. `[settings]`,
     `[env]`, `[tool_config]`, `[task_config]`, `[task_templates]`, `[doctor]`,
-    `[deps]` and `[oci]` follow the folder: all environments if one of its
-    tools is.
+    `[deps]` and `[oci]` go to each environment where the folder has a tool.
   - `[vars]`, `[secrets]`, `redactions`, `[shell_alias]`, `[hooks]`,
-    `[[watch_files]]`, `[tasks]` and the daemon sections are always for
-    development.
+    `[[watch_files]]`, `[tasks]` and the daemon sections are only for dev.
   - Any other section stops the sync for that tool.
-  - With the `github` or `gitlab` tool, a folder with a `mise.toml` also gets
-    a `mise.ci.toml` with `os = "linux"`.
+  - `[mise_env.<env>.<section>]` adds content to one environment only. `base`
+    uses it for `os = "linux"` in `ci`, `prod` and `stage`.
   - The mise `depends` of an entry adds the tool that defines that mise tool.
     Do not repeat it in the `depends` key. Two tools must not define the same
     mise tool.
+- The sync skips a shipped `conf.d/*/mise.<env>.toml` of an environment that
+  the consumer did not select.
 - The sync removes a `conf.d/*/mise*.toml` with the repo-config header that
-  it did not write. Thus a removed tool or folder disappears from consumers.
-- `base` also ships two templates, because they need consumer values:
-  `_env/mise.toml.tmpl` and `_alias/mise.dev.toml.tmpl`.
-- A consumer keeps its own mise config in `conf.d/repo/`. No tool writes that
-  directory, and its files have no header.
+  it did not write. Thus a removed tool, environment or folder disappears from
+  consumers.
+- `base` also ships `_alias/mise.dev.toml.tmpl` (the `setup` aliases, which need
+  the submodules) and the seeds `_env/mise.<env>.toml`. A repository keeps its
+  own variables for each environment in the `_env` seeds.
+- A repository keeps a tool that no shared tool installs in
+  `conf.d/repo/mise.<env>.toml`. No tool writes that directory, and its files
+  have no header.
 
 ## Change a shared file
 

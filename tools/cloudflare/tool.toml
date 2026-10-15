@@ -4,8 +4,9 @@ extensions = []
 root_only = false
 seed = []
 
-# The mise config, generated into .config/mise/conf.d/cloudflare/.
+# The mise config, generated into .config/mise/conf.d/cloudflare/mise.<env>.toml.
 [mise.tools."npm:cf"]
 allow_builds = [ "workerd" ]
 depends = [ "node", "pnpm" ]
+envs = [ "dev", "ci" ]
 version = "latest"

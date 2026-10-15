@@ -12,7 +12,15 @@ extensions = [
   "usernamehw.errorlens",
 ]
 root_only = false
-seed = [ ".config/gitleaks.toml.tmpl", ".config/grype.yaml", ".config/osv-scanner.toml" ]
+seed = [
+  ".config/gitleaks.toml.tmpl",
+  ".config/grype.yaml",
+  ".config/mise/conf.d/_env/mise.ci.toml",
+  ".config/mise/conf.d/_env/mise.dev.toml",
+  ".config/mise/conf.d/_env/mise.prod.toml",
+  ".config/mise/conf.d/_env/mise.stage.toml",
+  ".config/osv-scanner.toml",
+]
 
 # The gate hooks are tool-neutral: each names a task and nothing else. Which
 # formatter, linters and scanners run is decided inside the task, so a hook and
@@ -150,53 +158,52 @@ id = "conventional-commits"
 name = "Conventional Commits"
 stages = [ "commit-msg" ]
 
-# The mise config, generated into .config/mise/conf.d/_base/. A tool with
-# `env = "dev"` is only for development.
+# The mise config, generated into .config/mise/conf.d/_base/mise.<env>.toml. A
+# tool without `envs` is only for dev.
 
-# Security scanners. In every environment, because CI runs `code:sec` too.
+# Security scanners. In dev and ci, because CI runs `code:sec` too.
 [mise.tools.gitleaks]
+envs = [ "dev", "ci" ]
 version = "latest"
 
 [mise.tools.grype]
+envs = [ "dev", "ci" ]
 version = "latest"
 
 [mise.tools.osv-scanner]
+envs = [ "dev", "ci" ]
 version = "latest"
 
 # Formatter
 [mise.tools.dprint]
-env = "dev"
+envs = [ "dev", "ci" ]
 version = "latest"
 
 # Linter
 [mise.tools."npm:@askviraj/linter"]
 depends = [ "node", "pnpm" ]
-env = "dev"
+envs = [ "dev", "ci" ]
 version = "latest"
 
 # Shell linter
 [mise.tools.shellcheck]
-env = "dev"
+envs = [ "dev", "ci" ]
 version = "latest"
 
 # Template renderer for `setup:configs`. Declared here too, because `mise prune`
 # keeps only the tools that a config file names, not a task header.
 [mise.tools.gomplate]
-env = "dev"
 version = "latest"
 
 # JSON and YAML queries
 [mise.tools.jq]
-env = "dev"
 version = "latest"
 
 [mise.tools.yq]
-env = "dev"
 version = "latest"
 
 [mise.tools.pre-commit]
 depends = [ "python", "uv" ]
-env = "dev"
 version = "latest"
 
 [mise.env]
@@ -210,3 +217,14 @@ description = "Initialize mise tasks"
 dir = "{{exec(command='git rev-parse --show-toplevel')}}"
 hide = true
 run = "find .config/mise/tasks/ -name '*' -type f -exec chmod 755 {} \\;"
+
+# CI, prod and stage run on Linux, but `os = "macos"` in .config/mise.toml
+# selects macOS binaries.
+[mise_env.ci.settings]
+os = "linux"
+
+[mise_env.prod.settings]
+os = "linux"
+
+[mise_env.stage.settings]
+os = "linux"

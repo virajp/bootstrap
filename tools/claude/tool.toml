@@ -4,7 +4,7 @@ extensions = []
 root_only = true
 seed = []
 
-# The mise config, generated into .config/mise/conf.d/claude/.
+# The mise config, generated into .config/mise/conf.d/claude/mise.<env>.toml.
 [mise.tools."pipx:graphifyy"]
 depends = [ "python", "uv" ]
 version = "latest"

@@ -16,8 +16,8 @@ Do the steps in sequence to make the repository get its shared files from
   repository. `repo_sync` syncs all the files of these tools.
 - Do not edit a synced file in the consumer repository. The next sync replaces
   it. Put repository-owned content in the places that the sync never writes:
-  - mise config: `.config/mise/conf.d/repo/mise.toml` and
-    `.config/mise/conf.d/repo/mise.dev.toml`.
+  - environment variables: the seeds `.config/mise/conf.d/_env/mise.<env>.toml`,
+    one for each environment.
   - shell functions: `.config/mise/tasks/_scripts/local`.
   - ignore lines: `.config/repo-sync/gitignore`.
   - pre-commit hooks: `.config/repo-sync/pre-commit.yaml`, a YAML list of
@@ -113,14 +113,27 @@ seed only if the repository has that file. For example, the `node` tool writes
 `pnpm-workspace.yaml` only if the repository has a `package.json`.
 
 The `[mise.*]` tables of a `tool.toml` hold the mise config of the tool. The
-sync generates `.config/mise/conf.d/<tool>/` from them. A mise `depends` adds
-the tool that defines the dependency. For example, `base` adds `python` and
-`node`, because pre-commit and the linter need them.
+sync generates `.config/mise/conf.d/<tool>/mise.<env>.toml` from them, one
+file for each environment. A mise `depends` adds the tool that defines the
+dependency. For example, `base` adds `python` and `node`, because pre-commit
+and the linter need them.
 
-A tool that you list in `tools` is installed in every environment, CI
-included. A tool that only a dependency adds is installed for development
-only. Thus list the core language of the repository in `tools`. A TypeScript
-repository lists `node`.
+A tool that you list in `tools` is installed in the environments of its
+`envs`. A tool that only a dependency adds is installed in dev only. Thus list
+the core language of the repository in `tools`. A TypeScript repository lists
+`node`, which then goes to every selected environment.
+
+Ask which mise environments the repository needs. Offer only these:
+
+| Environment | Use                                                                                         |
+| ----------- | ------------------------------------------------------------------------------------------- |
+| `dev`       | Local development. It usually has everything. Necessary.                                    |
+| `ci`        | The CI environment, to build and examine the code. Optional.                                |
+| `prod`      | Production. Only the tools that are necessary to run the application. Optional, needs `ci`. |
+| `stage`     | Staging. The same tools as `prod`, with different `[env]` values. Optional, needs `ci`.     |
+
+The sync stops if `dev` is missing, or if `prod` or `stage` is selected
+without `ci`.
 
 Ask whether the repository is on GitHub or on GitLab. Select `github` or
 `gitlab` for its forge. The `pr` merge model needs the CLI of the forge: `gh`
@@ -150,9 +163,10 @@ Write `.config/repo-config.toml`. Ask the user for each value.
 | Key                                | Used by                    | Values                                                                                                             |
 | ---------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `tools`                            | `repo_sync`                | The tools from step 1. `base` is necessary.                                                                        |
-| `repo_name`                        | `_env`                     | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                    |
-| `merge_model_develop`              | `_env`                     | `direct` (local merge) or `pr` (pull request)                                                                      |
-| `merge_model_main`                 | `_env`                     | `direct` or `pr`                                                                                                   |
+| `environments`                     | `repo_sync`                | The environments from step 1, for example `["dev", "ci"]`. The default is `["dev"]`.                               |
+| `repo_name`                        | `.config/mise.toml`        | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                    |
+| `merge_model_develop`              | `.config/mise.toml`        | `direct` (local merge) or `pr` (pull request)                                                                      |
+| `merge_model_main`                 | `.config/mise.toml`        | `direct` or `pr`                                                                                                   |
 | `commit_scopes`                    | `git-conventional-commits` | The commit scopes, for example `["backend", "web"]`. The default is the member list.                               |
 | `repo_url`                         | `git-conventional-commits` | The web URL of the repository, for the changelog links. GitHub and GitLab are supported.                           |
 | `worktree_files`                   | `setup:worktree`           | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]` |
@@ -164,6 +178,7 @@ Example:
 
 ```toml
 commit_scopes = [ "backend", "web" ]
+environments = [ "dev", "ci", "prod" ]
 merge_model_develop = "direct"
 merge_model_main = "pr"
 repo_name = "my-repo"
@@ -251,15 +266,17 @@ without `[extend] useDefault = true`, gitleaks uses only the rules of the file.
 
 ## Step 8: Make sure that the result is correct
 
-1. Run `mise config ls`. Make sure that mise loads the synced `conf.d` files.
+1. For each selected environment, run `MISE_ENV=<env> mise config ls`. Make
+   sure that mise loads the `conf.d/*/mise.<env>.toml` files of that
+   environment.
 2. Run `mise tasks`. Make sure that the synced tasks are in the list.
 3. Run `mise run setup`. Make sure that it completes.
-4. Run `mise run setup:configs` again. Each file must show `unchanged` or
-   `kept seed`.
+4. Run `mise run setup:configs` again. Each file must show `unchanged`,
+   `kept seed` or `skip env`.
 
-mise loads `mise.toml` from each folder in `conf.d`. It loads a
-`mise.dev.toml` file only when the `dev` config environment is active
-(`MISE_ENV`), and a `mise.ci.toml` file only when `ci` is active.
+mise always loads `.config/mise.toml`. It loads a `conf.d/*/mise.<env>.toml`
+file only when `MISE_ENV` includes that environment. Without `MISE_ENV`, no
+file in `conf.d` loads.
 
 ## Step 9: Commit
 
@@ -341,15 +358,17 @@ The sync replaces `.config/mise.toml`. It keeps only the shared `[settings]`.
      `merge_model_main`, with the same value.
    - `MEMBERS` is not necessary for submodules. For folders, write
      `[member.<name>]` tables.
-2. Move repository-owned `[settings]`, `[env]`, `[tools]`, `[tasks]` and
-   `[shell_alias]` to `.config/mise/conf.d/repo/mise.toml`. Examples are
-   `lockfile = true`, `task.timings = true`, `CLOUDSDK_PYTHON` and
-   `GITHUB_OWNER`.
-3. Do the same for `.config/mise.dev.toml`, into
-   `.config/mise/conf.d/repo/mise.dev.toml`. Examples are the emulator, Temporal
-   and OTEL variables of 95octane backend.
-4. Keep `.config/mise.ci.toml`, `.config/mise.test.toml` and
-   `.config/miserc.toml`. The sync does not write them.
+2. Move the repository's own `[env]` values to the seed
+   `.config/mise/conf.d/_env/mise.<env>.toml` of each environment that needs
+   them. Examples are `GITHUB_OWNER`, and the emulator, Temporal and OTEL
+   variables of 95octane backend (`mise.dev.toml`).
+3. Delete what a tool now supplies: `CLOUDSDK_PYTHON` (the `gcloud` tool) and
+   `task.timings = true` (the shared `[settings]`). Delete `lockfile = true`.
+4. Move a tool that no selected tool installs to
+   `.config/mise/conf.d/repo/mise.<env>.toml`, one file for each environment
+   that needs it. The sync never writes `conf.d/repo/`.
+5. Keep `.config/mise.test.toml` and `.config/miserc.toml`. The sync does not
+   write them.
 
 ### M6: Remove the tools that the shared files now install
 
@@ -363,7 +382,8 @@ installs:
 - `github`: gh, actionlint. `gitlab`: glab.
 - `claude`: `pipx:graphifyy`, `pipx:mempalace`.
 - `flutter`: flutter, android-sdk, java. `bun`: bun.
-- `rust`: `core:rust`, zola. `cloudflare`: `npm:cf`. `pulumi`: pulumi, gcloud.
+- `rust`: `core:rust`, zola. `cloudflare`: `npm:cf`. `pulumi`: pulumi.
+  `gcloud`: gcloud.
 - `kotlin`: `http:kotlin-lsp`.
 
 Remove taplo too. dprint formats TOML now. Also remove the `[toml]` and
@@ -371,7 +391,7 @@ Remove taplo too. dprint formats TOML now. Also remove the `[toml]` and
 
 Keep a tool that no selected tool installs, for example `npm:wrangler`,
 `npm:sort-package-json`, `doppler` and `rtk`. Move it to
-`conf.d/repo/`.
+`conf.d/repo/mise.<env>.toml` (step M5).
 
 If the old tool has a pinned version that is different from the shared one,
 tell the user. Examples: node `26` and pnpm `12` in 95octane, where `node`
@@ -383,17 +403,18 @@ bootstrap and claude-plugins have an old `.config/mise/conf.d/_base/`. Its
 name is the same as the shared `_base`, but the content is different. Before
 the first sync, move its content:
 
-| Old content in `_base`                                                          | New place         |
-| ------------------------------------------------------------------------------- | ----------------- |
-| node, pnpm                                                                      | the `node` tool   |
-| python, uv, `UV_*`                                                              | the `python` tool |
-| pre-commit, `PRE_COMMIT_HOME`                                                   | the `base` tool   |
-| `MEMBERS`, `REPO_NAME`                                                          | the values file   |
-| `MEMPALACE_*`, `min_version`, `task.run_auto_install`, other repository content | `conf.d/repo/`    |
+| Old content in `_base`                                           | New place              |
+| ---------------------------------------------------------------- | ---------------------- |
+| node, pnpm                                                       | the `node` tool        |
+| python, uv, `UV_*`                                               | the `python` tool      |
+| pre-commit, `PRE_COMMIT_HOME`                                    | the `base` tool        |
+| `MEMBERS`, `REPO_NAME`                                           | the values file        |
+| `MEMPALACE_*` and other repository variables                     | `_env/mise.<env>.toml` |
+| `min_version`, `task.run_auto_install`, other repository content | step M5                |
 
 Then delete the old `_base/mise.toml`, `_base/mise.dev.toml` and
 `_base/mise.ci.toml`. Also delete an old `conf.d/ai/`: the `claude` tool
-replaces it. Move its repository-owned content to `conf.d/repo/` first.
+replaces it. Move its repository-owned content first (step M5).
 Delete the old `conf.d/_formatter`, `_linter` and `_security`.
 
 ### M8: Move the fnox config
@@ -401,17 +422,6 @@ Delete the old `conf.d/_formatter`, `_linter` and `_security`.
 If the repository has `fnox.toml` at its root, move it to
 `.config/fnox.toml`. Then the seed does not replace it. Change each
 `fnox exec` call to `mise x -- fnox --config .config/fnox.toml exec`.
-
-### M9: Remove `core_tools`
-
-The sync no longer reads `core_tools`. A tool listed in `tools` is in every
-environment.
-
-1. For each tool in `core_tools`, make sure that it is also in `tools`.
-2. Delete the `core_tools` key from `.config/repo-config.toml`.
-
-The next sync removes the old `conf.d/_task/` and `conf.d/pre-commit/`
-folders, and each old `mise.dev.toml` that it no longer writes.
 
 ### M9: Clean the old markers
 
@@ -467,3 +477,14 @@ repository.
 Before the first sync, compare them with the shared files. Tell the user
 about each repository-specific change, for example an extra contact link.
 Remove `actionlint`, `gh` and `glab` from the repository-owned mise files.
+
+### M14: The mise environments
+
+1. Add `environments` to `.config/repo-config.toml` (step 1). Delete an old
+   `core_tools` key: the `envs` of each tool decide its environments now.
+2. Move the repository variables of an old `_env/mise.toml` or
+   `conf.d/repo/mise.toml` to the `_env/mise.<env>.toml` seeds (step M5).
+
+The next sync removes the old `conf.d/*/mise.toml`, `_env/mise.toml`,
+`conf.d/_task/` and `conf.d/pre-commit/` files that have the repo-config
+header.

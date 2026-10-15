@@ -4,6 +4,7 @@ extensions = []
 root_only = false
 seed = [ "bunfig.toml" ]
 
-# The mise config, generated into .config/mise/conf.d/bun/.
+# The mise config, generated into .config/mise/conf.d/bun/mise.<env>.toml.
 [mise.tools.bun]
+envs = [ "dev", "ci", "prod", "stage" ]
 version = "latest"

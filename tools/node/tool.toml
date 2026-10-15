@@ -9,16 +9,18 @@ seed = [ "pnpm-workspace.yaml" ]
 [seed_requires]
 "pnpm-workspace.yaml" = "package.json"
 
-# The mise config, generated into .config/mise/conf.d/node/.
+# The mise config, generated into .config/mise/conf.d/node/mise.<env>.toml.
 [mise.settings]
 node.compile = false
 npm.package_manager = "pnpm"
 
 [mise.tools.node]
+envs = [ "dev", "ci", "prod", "stage" ]
 version = "lts"
 
 [mise.tools.pnpm]
 depends = [ "node" ]
+envs = [ "dev", "ci", "prod", "stage" ]
 version = "latest"
 
 [mise.env]

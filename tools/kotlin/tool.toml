@@ -4,7 +4,7 @@ extensions = []
 root_only = false
 seed = []
 
-# The mise config, generated into .config/mise/conf.d/kotlin/.
+# The mise config, generated into .config/mise/conf.d/kotlin/mise.<env>.toml.
 [mise.tools."http:kotlin-lsp"]
 version = "latest"
 version_list_url = "https://api.github.com/repos/Kotlin/kotlin-lsp/releases/latest"
