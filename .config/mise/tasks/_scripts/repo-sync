@@ -45,6 +45,8 @@
 #     the folder's tools. `[vars]`, `[secrets]`, `[shell_alias]`, `[hooks]`,
 #     `[tasks]`, the daemons and the like are for dev only.
 #   * `[mise_env.<env>]` is added to that environment as it is.
+#   * base also gets `setup-all` and `setup-<submodule>` in dev, from the git
+#     submodules of this repo.
 #   * The mise `depends` of an entry adds the tool that defines that mise tool.
 #   * A shipped `conf.d/*/mise.<env>.toml` of an environment that is not
 #     selected is skipped.
@@ -426,7 +428,8 @@ _rs_mise_env() {
 # The template that builds one environment, REPO_SYNC_ENV, from the `[mise]`
 # and `[mise_env]` tables of a tool.toml (`.t`), as TOML. An entry is in the
 # environment when ` <name>:<env> ` is in REPO_SYNC_ENVS. A section that it
-# does not know stops the render.
+# does not know stops the render. REPO_SYNC_DEV_ALIASES adds `<name>=<command>`
+# lines to `[shell_alias]` of dev.
 _RS_MISE_TEMPLATE='<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% end -%>
 <% $env := env.Getenv "REPO_SYNC_ENV" -%>
 <% $envw := env.Getenv "REPO_SYNC_ENVS" -%>
@@ -459,6 +462,12 @@ _RS_MISE_TEMPLATE='<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% en
 <% $out = coll.Merge (dict $s $body) $out -%>
 <% end -%>
 <% end -%>
+<% $extra := env.Getenv "REPO_SYNC_DEV_ALIASES" -%>
+<% if and (eq $env "dev") $extra -%>
+<% $al := dict %><% if has $out "shell_alias" %><% $al = index $out "shell_alias" %><% end -%>
+<% range (strings.Split "\n" $extra) %><% if . %><% $kv := strings.SplitN "=" 2 . %><% $al = coll.Merge (dict (index $kv 0) (index $kv 1)) $al %><% end %><% end -%>
+<% $out = coll.Merge (dict "shell_alias" $al) $out -%>
+<% end -%>
 <% if $out %><% $out | data.ToTOML %><% end -%>'
 
 # Generate the mise config of <tool> from the `[mise]` and `[mise_env]` tables
@@ -475,12 +484,25 @@ _rs_mise_render() {
 # The next sync replaces it, and a manual change is lost.
 "
   tmp="${dir}/.repo-sync-mise" err="${dir}/.repo-sync-mise-err"
+  # `setup-all` and `setup-<submodule>` exist only in a repo with git
+  # submodules. They depend on this repo, not on tool.toml, so base gets them
+  # here.
+  local aliases='' subs sub
+  if [[ $tool == base && -f ${MISE_PROJECT_ROOT}/.gitmodules ]]; then
+    subs=$(git -C "$MISE_PROJECT_ROOT" submodule --quiet foreach --recursive 'echo $displaypath' 2> /dev/null) || subs=''
+    if [[ -n $subs ]]; then
+      aliases='setup-all=mise run setup --all'
+      for sub in $subs; do
+        aliases+=$'\n'"setup-${sub}=mise run setup --${sub}"
+      done
+    fi
+  fi
   for env in $_RS_ENVS; do
     name=mise.${env}.toml
     rel=".config/mise/conf.d/${folder}/${name}"
     # gomplate writes no file for an empty output, so the previous one must go.
     rm -f -- "$tmp"
-    if ! REPO_SYNC_ENV=$env REPO_SYNC_ENVS=$_RS_MISE_ENVS \
+    if ! REPO_SYNC_ENV=$env REPO_SYNC_ENVS=$_RS_MISE_ENVS REPO_SYNC_DEV_ALIASES=$aliases \
       _rs_gomplate -c "t=${dir}/tools/${tool}/tool.toml" -i "$_RS_MISE_TEMPLATE" -o "$tmp" 2> "$err"; then
       _rs_log "tools/$tool/tool.toml: cannot generate the mise config: $(sed -n 's/.*error calling Fail: template generation failed: //p' "$err" | sed 's/"}$//')"
       for name in dev ci prod stage; do
