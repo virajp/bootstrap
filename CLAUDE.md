@@ -215,9 +215,10 @@ that it finds, and removes the others. It stops if neither branch exists.
 - `base` also ships `_alias/mise.dev.toml.tmpl` (the `setup` aliases, which need
   the submodules) and the seeds `_env/mise.<env>.toml`. A repository keeps its
   own variables for each environment in the `_env` seeds.
-- A repository keeps a tool that no shared tool installs in
-  `conf.d/repo/mise.<env>.toml`. No tool writes that directory, and its files
-  have no header.
+- A repository has no mise config of its own, other than the `_env` seeds.
+  Each mise tool comes from a repo-config tool. A tool that a repository needs
+  gets added to a tool in `tools/`, or becomes a new tool, for example
+  `doppler`.
 
 ## Change a shared file
 

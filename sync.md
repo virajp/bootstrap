@@ -334,7 +334,7 @@ each task in `setup/deps/`. An old task there runs too, and it can fail.
 | `setup:all` (`setup/all`)          | `setup` (`setup/_default`) | Delete the old file. `base` ships the new one. Members are called with `setup`.   |
 | `code:all` (`code/all`)            | `code` (`code/_default`)   | Delete the old file. Keep `code:check` and `code:test` as repository-owned tasks. |
 | `setup:secrets` (fnox)             | `setup:secrets:fnox`       | Delete the old file. Select the `fnox` tool.                                      |
-| `setup:secrets` (Doppler)          | `setup:secrets:doppler`    | Move the file to `setup/secrets/doppler`. It stays repository-owned.              |
+| `setup:secrets` (Doppler)          | `setup:secrets:doppler`    | Delete the old file. Select the `doppler` tool. It needs a `doppler.yaml`.        |
 | `setup:secrets` (stub)             | none                       | Delete it.                                                                        |
 | `setup:deps:check`                 | `setup:external:check`     | Delete it. The `docker` tool ships the new one.                                   |
 | `setup:git-config`                 | `code:git-config`          | Delete it.                                                                        |
@@ -364,10 +364,7 @@ The sync replaces `.config/mise.toml`. It keeps only the shared `[settings]`.
    variables of 95octane backend (`mise.dev.toml`).
 3. Delete what a tool now supplies: `CLOUDSDK_PYTHON` (the `gcloud` tool) and
    `task.timings = true` (the shared `[settings]`). Delete `lockfile = true`.
-4. Move a tool that no selected tool installs to
-   `.config/mise/conf.d/repo/mise.<env>.toml`, one file for each environment
-   that needs it. The sync never writes `conf.d/repo/`.
-5. Keep `.config/mise.test.toml` and `.config/miserc.toml`. The sync does not
+4. Keep `.config/mise.test.toml` and `.config/miserc.toml`. The sync does not
    write them.
 
 ### M6: Remove the tools that the shared files now install
@@ -383,15 +380,17 @@ installs:
 - `claude`: `pipx:graphifyy`, `pipx:mempalace`.
 - `flutter`: flutter, android-sdk, java. `bun`: bun.
 - `rust`: `core:rust`, zola. `cloudflare`: `npm:cf`. `pulumi`: pulumi.
-  `gcloud`: gcloud.
+  `gcloud`: gcloud. `doppler`: doppler.
 - `kotlin`: `http:kotlin-lsp`.
 
 Remove taplo too. dprint formats TOML now. Also remove the `[toml]` and
-`evenBetterToml.*` keys from `.vscode/settings.json`.
+`evenBetterToml.*` keys from `.vscode/settings.json`. Remove `npm:wrangler`:
+it is deprecated, and `npm:cf` of the `cloudflare` tool replaces it.
 
-Keep a tool that no selected tool installs, for example `npm:wrangler`,
-`npm:sort-package-json`, `doppler` and `rtk`. Move it to
-`conf.d/repo/mise.<env>.toml` (step M5).
+Each tool must come from a repo-config tool. If the repository needs a tool
+that no repo-config tool installs, for example `npm:sort-package-json` or
+`rtk`, tell the user. Then add it to a repo-config tool, or make a new tool
+for it.
 
 If the old tool has a pinned version that is different from the shared one,
 tell the user. Examples: node `26` and pnpm `12` in 95octane, where `node`
@@ -483,7 +482,9 @@ Remove `actionlint`, `gh` and `glab` from the repository-owned mise files.
 1. Add `environments` to `.config/repo-config.toml` (step 1). Delete an old
    `core_tools` key: the `envs` of each tool decide its environments now.
 2. Move the repository variables of an old `_env/mise.toml` or
-   `conf.d/repo/mise.toml` to the `_env/mise.<env>.toml` seeds (step M5).
+   `conf.d/repo/` to the `_env/mise.<env>.toml` seeds (step M5). Move each
+   tool of an old `conf.d/repo/` to a repo-config tool (step M6). Then delete
+   `conf.d/repo/`.
 
 The next sync removes the old `conf.d/*/mise.toml`, `_env/mise.toml`,
 `conf.d/_task/` and `conf.d/pre-commit/` files that have the repo-config

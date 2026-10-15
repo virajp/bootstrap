@@ -1,0 +1,11 @@
+# The Doppler CLI and setup:secrets:doppler. A repository selects it only when
+# it keeps its secrets in Doppler.
+depends = []
+extensions = []
+root_only = false
+seed = []
+
+# The mise config, generated into .config/mise/conf.d/doppler/mise.<env>.toml.
+# Only dev: ci, prod and stage have their own secret management.
+[mise.tools.doppler]
+version = "latest"
