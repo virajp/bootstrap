@@ -65,7 +65,10 @@
 #                that is not one of them — a folder of a monorepo, which must
 #                exist
 #   .tools       the selected tools, dependencies included
-#   .extensions  the VS Code extensions of those tools, sorted, no duplicates
+#   .extensions  the VS Code extensions of those tools and of the `extensions`
+#                list of the values file, sorted, no duplicates. In the root
+#                repository, also those of each git submodule (the tools and
+#                the `extensions` list of its values file)
 #   .precommit   the `[[precommit]]` entries of those tools, in tool order, then
 #                the entries of this repo's `.config/repo-sync/pre-commit.yaml`
 # The delimiters are `<% %>`, because `{{ }}` belongs to mise and `[[ ]]` to
@@ -299,6 +302,56 @@ _rs_resolve() {
     _RS_TOOLS+="$tool "
   done
   _RS_EXTENSIONS=$(printf '%s' "$_RS_EXTENSIONS" | sort -u)
+}
+
+# Print the VS Code extensions of the tools of <values>, dependencies
+# included, one per line. Like `_rs_resolve`, a mise `depends` adds the tool
+# that defines it. Nothing is checked: a problem in a member's values file is
+# for that member's own sync to report.
+_rs_tool_extensions() {
+  local dir=$1 values=$2 pending tool field value seen=' ' entry name owner
+  pending=$(_rs_list "$values" tools 2> /dev/null | tr '\n' ' ') || pending=''
+  while [[ -n ${pending// /} ]]; do
+    tool=${pending%% *}
+    pending=${pending#* }
+    [[ -n $tool && $seen != *" $tool "* && -f $dir/tools/$tool/tool.toml ]] || continue
+    seen+="$tool "
+    while read -r field value; do
+      case $field in
+        extension)
+          printf '%s\n' "$value"
+          ;;
+        depends)
+          pending+=" $value "
+          ;;
+        mise)
+          read -r entry _ value <<< "$value"
+          for name in $value; do
+            owner=$(_rs_mise_owner "$name") || owner=''
+            [[ -n $owner ]] && pending+=" $owner "
+          done
+          ;;
+      esac
+    done < <(_rs_manifest "$dir" "$tool" 2> /dev/null)
+  done
+}
+
+# Add to _RS_EXTENSIONS the `extensions` list of <values>. In the root
+# repository, also add the extensions of each git submodule: the tools of its
+# `.config/repo-config.toml` and its own `extensions` list. VS Code opens the
+# root only, so the root recommends the extensions of the whole tree.
+_rs_extensions() {
+  local dir=$1 values=$2 sub subvalues extra
+  extra=$(_rs_list "$values" extensions) || extra=''
+  if [[ -z $(git -C "$MISE_PROJECT_ROOT" rev-parse --show-superproject-working-tree 2> /dev/null) && -f ${MISE_PROJECT_ROOT}/.gitmodules ]]; then
+    while IFS= read -r sub; do
+      subvalues="${MISE_PROJECT_ROOT}/${sub}/.config/repo-config.toml"
+      [[ -n $sub && -f $subvalues ]] || continue
+      extra+=$'\n'$(_rs_tool_extensions "$dir" "$subvalues")
+      extra+=$'\n'$(_rs_list "$subvalues" extensions 2> /dev/null) || true
+    done < <(git -C "$MISE_PROJECT_ROOT" submodule --quiet foreach --recursive 'echo $displaypath' 2> /dev/null)
+  fi
+  _RS_EXTENSIONS=$(printf '%s\n%s\n' "$_RS_EXTENSIONS" "$extra" | grep -v '^$' | sort -u) || _RS_EXTENSIONS=''
 }
 
 # A branch that exists here or on origin; the same test as `branch_exists` in
@@ -776,7 +829,7 @@ repo_sync() {
   mise x -- which dprint > /dev/null 2>&1 && _RS_DPRINT=1
 
   local rc=0
-  { _rs_envs "$values" && _rs_mise_index "$dir" && _rs_resolve "$dir" "$values"; } || {
+  { _rs_envs "$values" && _rs_mise_index "$dir" && _rs_resolve "$dir" "$values" && _rs_extensions "$dir" "$values"; } || {
     rc=$?
     rm -rf -- "$dir"
     return "$rc"

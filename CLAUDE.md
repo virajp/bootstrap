@@ -95,7 +95,9 @@ Some files refer to files that are not in `tools/`, for example
 - `.submodules` is the list of the git submodules only, nested ones included.
   It is empty in a repository without submodules.
 - `.tools` is the list of the selected tools. `.extensions` is the sorted list
-  of their VS Code extensions. `.precommit` is the list of their
+  of their VS Code extensions and of the values key `extensions`. In the root
+  repository, it also has those of each git submodule. `.precommit` is the list
+  of their
   `[[precommit]]` tables, then the consumer's own entries.
 
 ## Task scripts
