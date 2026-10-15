@@ -38,7 +38,8 @@ if [[ -n "${UPGRADE}" ]] && has_own_task setup:external:update; then
   mise run setup:external:update
 fi
 
-mise run setup:linter
+# `setup:linter` (`linter --init`) is not run for now: it writes
+# .vscode/settings.json, also in a submodule. Run it by hand when necessary.
 
 # The plugins are in the global dprint config. The repository's
 # dprint.jsonc only excludes paths, so it has nothing to update.
