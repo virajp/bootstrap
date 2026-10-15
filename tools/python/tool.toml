@@ -10,6 +10,7 @@ pipx.uvx = true
 python.compile = false
 python.uv_venv_auto = "create|source"
 
+# CLOUDSDK_PYTHON of the gcloud tool uses the same minor version. Change both.
 [mise.tools.python]
 envs = [ "dev", "ci", "prod", "stage" ]
 version = "3.14"
