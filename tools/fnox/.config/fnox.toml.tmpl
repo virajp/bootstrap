@@ -1,9 +1,14 @@
 #:schema https://fnox.jdx.dev/schema.json
 # fnox: this repository's secrets. A seed: the repo owns this file after the
-# first sync. Values never live here. From the repository root, add each
-# secret with `fnox --config .config/fnox.toml set <NAME>` and load them with
-# `fnox --config .config/fnox.toml exec -- <command>`. Name this file every
-# time: fnox's default search may not look under .config/.
+# first sync. Values never live here. Add each secret with `fnox set <NAME>`,
+# and load them with `fnox exec -- <command>`. fnox finds .config/fnox.toml by
+# itself.
+
+# Only this file. `root = true` stops the search in parent directories, so a
+# submodule does not get the secrets of the repository that contains it. The
+# fnox tool sets FNOX_CONFIG_DIR to .config/fnox/, a folder without a
+# config.toml, so your global ~/.config/fnox/config.toml does not load here.
+root = true
 
 # fnox is a development tool here, so the secrets live in the OS keychain:
 # the macOS Keychain, the Windows Credential Manager, or the Linux Secret

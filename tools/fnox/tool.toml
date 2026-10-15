@@ -9,3 +9,9 @@ seed = [ ".config/fnox.toml.tmpl" ]
 # Only dev: ci, prod and stage have their own secret management.
 [mise.tools.fnox]
 version = "latest"
+
+[mise.env]
+# fnox always loads the global config of FNOX_CONFIG_DIR. This folder of the
+# repository has no config.toml, so no global secrets load here. config_root is
+# the folder of the generated file, .config/mise/conf.d/fnox/.
+FNOX_CONFIG_DIR = "{{ config_root }}/../../../../.config/fnox"
