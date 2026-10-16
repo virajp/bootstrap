@@ -46,6 +46,7 @@ id = "format"
 language = "system"
 name = "Format (mise run code:format)"
 pass_filenames = true
+require_serial = true
 
 [[precommit.hooks]]
 description = "The repo's linters, run over the files being committed."
@@ -54,6 +55,7 @@ id = "lint"
 language = "system"
 name = "Lint (mise run code:lint)"
 pass_filenames = true
+require_serial = true
 
 [[precommit.hooks]]
 always_run = true
