@@ -1,6 +1,6 @@
 # Node and pnpm.
 depends = []
-extensions = [ "christian-kohler.npm-intellisense" ]
+extensions = [ "christian-kohler.npm-intellisense", "meganrogge.template-string-converter" ]
 root_only = false
 seed = [ "pnpm-workspace.yaml" ]
 
