@@ -622,6 +622,30 @@ _rs_context() {
     -i '<% $ctx := dict %><% range (coll.Slice "members" "submodules" "tools" "extensions") %><% $l := coll.Slice %><% range (env.Getenv (printf "REPO_SYNC_%s" (strings.ToUpper .)) | strings.Split "\n") %><% if . %><% $l = coll.Append . $l %><% end %><% end %><% $ctx = coll.Merge $ctx (dict . $l) %><% end %><% $pc := coll.Slice %><% range $ctx.tools %><% $t := index $ (printf "tool_%s" .) %><% if has $t "precommit" %><% range $t.precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% end %><% if env.Getenv "REPO_SYNC_OWN_PRECOMMIT" %><% range $.repo_precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% $ctx = coll.Merge $ctx (dict "precommit" $pc) %><% coll.Merge $ctx .v | data.ToJSON %>' >&2
 }
 
+# Remove each synced file (with the repo-config header) that is at the place
+# of a folder in <dir> or above it, up to the repo root. Returns 1, after a
+# message, when such a file is the repo's own.
+_rs_unblock() {
+  local dir=$1 dry_run=$2 show
+  while [[ $dir == "$MISE_PROJECT_ROOT"/* ]]; do
+    if [[ -f $dir && ! -L $dir ]]; then
+      show=$(_rs_path "$dir")
+      if ! head -n 3 -- "$dir" | grep -q 'Synced from repo-config: '; then
+        _rs_log "$show is a file of this repo, but the sync needs a folder there - move it"
+        return 1
+      fi
+      if ((dry_run)); then
+        _rs_log "would remove $show (a folder replaces it)"
+      else
+        rm -f -- "$dir" || return 1
+        _rs_log "removed    $show (a folder replaces it)"
+      fi
+      return 0
+    fi
+    dir=$(dirname -- "$dir")
+  done
+}
+
 # Sync the file <path> of <tool> from the clone in <dir>. Leaves the
 # destination untouched when the content is identical, when it is a seed that
 # exists, when it is a seed whose `seed_requires` file is missing, or on any
@@ -658,6 +682,11 @@ _rs_file() {
       return 0
     fi
   fi
+
+  # A synced file can become a folder in a later layout, for example
+  # code/format -> code/format/_default. Remove the old synced file that is in
+  # the way. A file without the header is the repo's, so the sync stops there.
+  _rs_unblock "$(dirname -- "$dest")" "$dry_run" || return 1
 
   if ((dry_run)); then
     destdir=${TMPDIR:-/tmp}

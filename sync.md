@@ -23,6 +23,10 @@ Do the steps in sequence to make the repository get its shared files from
   - pre-commit hooks: `.config/repo-sync/pre-commit.yaml`, a YAML list of
     `repos:` entries.
   - tasks: any task name that no tool ships.
+  - formatters and linters: a task `code:format:<name>` or `code:lint:<name>`
+    (`.config/mise/tasks/code/format/<name>`). `code:format` and `code:lint`
+    run each of them with the same `--fix` and files. A pre-commit hook only
+    calls a task, so do not call a formatter or a linter from a hook.
 - A seed file is different. The sync writes it only if it is missing. After
   that, the repository owns it.
 - To change a shared file, change it in `repo-config`, push it to `main`, then
@@ -336,6 +340,8 @@ each task in `setup/deps/`. An old task there runs too, and it can fail.
 | ---------------------------------- | -------------------------- | --------------------------------------------------------------------------------- |
 | `setup:all` (`setup/all`)          | `setup` (`setup/_default`) | Delete the old file. `base` ships the new one. Members are called with `setup`.   |
 | `code:all` (`code/all`)            | `code` (`code/_default`)   | Delete the old file. Keep `code:check` and `code:test` as repository-owned tasks. |
+| `code:format` (`code/format`)      | `code/format/_default`     | Delete the old file. Move each extra formatter step to `code/format/<name>`.      |
+| `code:lint` (`code/lint`)          | `code/lint/_default`       | Delete the old file. Move each extra linter step to `code/lint/<name>`.           |
 | `setup:secrets` (fnox)             | `setup:secrets:fnox`       | Delete the old file. Select the `fnox` tool.                                      |
 | `setup:secrets` (Doppler)          | `setup:secrets:doppler`    | Delete the old file. Select the `doppler` tool. It needs a `doppler.yaml`.        |
 | `setup:secrets` (stub)             | none                       | Delete it.                                                                        |
