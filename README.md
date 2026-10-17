@@ -61,16 +61,27 @@ has that file:
 
 ## Adopt in a repository
 
-[`sync.md`](sync.md) tells an AI agent how to make a repository use these
-files, and how to migrate a repository that has older copies. Copy this
-prompt into an AI session in that repository:
+A repository uses this repository in two ways, in this sequence:
+
+1. **Adoption, one time, by an AI agent.** [`docs/sync/`](docs/sync/index.md)
+   tells the agent how to apply the rules of this repository to a consumer
+   repository. The agent makes sure that each rule is relevant to that
+   repository. `docs/sync/index.md` has the general steps, `migrate.md` has
+   the items for a repository with older copies, and one file for each tool
+   tells when the tool is relevant and how to use it.
+2. **Sync, each time after that, by `repo-sync`.** The adoption installs the
+   `setup:configs` task, which keeps the shared files equal to this
+   repository.
+
+Copy this prompt into an AI session in the consumer repository:
 
 ```text
 Make this repository and each of its git submodules get their shared files
 from bootstrap. Make a shallow clone of
 git@github.com:virajp/bootstrap.git into a temporary directory. Read
-sync.md in the clone, and do its steps in sequence. Ask me before each choice
-that sync.md does not decide.
+docs/sync/index.md in the clone, and do its steps in sequence. Read the other
+files of docs/sync/ when index.md tells you to. Apply only what is relevant to
+this repository. Ask me before each choice that docs/sync/ does not decide.
 ```
 
 ## How a repository syncs
@@ -117,7 +128,7 @@ These rules apply to each file:
 
 A copy of `repo-sync` from before the `tools/` layout cannot sync. Copy
 `tools/base/.config/mise/tasks/_scripts/repo-sync` and `helpers` into the
-repository by hand one time. `sync.md` tells you how.
+repository by hand one time. Step 2 of `docs/sync/index.md` tells you how.
 
 ## Templates
 

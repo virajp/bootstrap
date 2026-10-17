@@ -5,10 +5,44 @@ Do the steps in sequence to make the repository get its shared files from
 `bootstrap` (`git@github.com:virajp/bootstrap.git`). Read `README.md` in
 `bootstrap` for the sync contract.
 
+## Two ways to use bootstrap
+
+A repository uses `bootstrap` in two ways, in this sequence:
+
+1. **Adoption, one time, by an AI agent.** The agent reads this folder and
+   applies the rules of `bootstrap` to the repository. The agent makes sure
+   that each rule is relevant to the repository: it selects only the tools
+   that the repository needs, it keeps the repository-owned content, and it
+   asks the user about each difference.
+2. **Sync, each time after that, by `repo-sync`.** The adoption installs the
+   `setup:configs` task. The task runs `repo_sync`, which copies the newest
+   shared files of the selected tools into the repository.
+
+The adoption makes sure that the repository is ready for the sync. The sync
+then keeps the repository equal to `bootstrap`, without an agent.
+
+## Files in this folder
+
+| File         | Use                                                                         |
+| ------------ | --------------------------------------------------------------------------- |
+| `index.md`   | This file: the general steps of an adoption.                                |
+| `migrate.md` | The items for a repository that has older copies, or the old name.          |
+| `<tool>.md`  | One file for each folder in `tools/`: when the tool is relevant, and usage. |
+
+The tool files are `base.md`, `bun.md`, `claude-tool.md`, `cloudflare.md`,
+`docker.md`, `doppler.md`, `flutter.md`, `fnox.md`, `gcloud.md`, `github.md`,
+`gitlab.md`, `kotlin.md`, `node.md`, `pulumi.md`, `python.md`, `rust.md` and
+`vscode.md`. The file of the `claude` tool is `claude-tool.md`, because a
+file system that ignores case reads `claude.md` as `CLAUDE.md`, and AI agents
+load that name as instructions.
+
 ## Rules
 
 - Ask the user before each choice that this file does not decide. Do not
   assume a tool, a value, or a path.
+- Apply only what is relevant to the repository. Before you select a tool,
+  read its tool file. Examine the repository for the signs in "When the tool
+  is relevant", then show the user the result.
 - The shared files are grouped by tool. Each tool is a folder
   `tools/<tool>/` in `bootstrap`. A file at `tools/<tool>/<path>` goes to
   `<path>` in the consumer repository.
@@ -98,9 +132,13 @@ tmp=$(mktemp -d)
 git clone --quiet --depth 1 git@github.com:virajp/bootstrap.git "$tmp"
 ```
 
-Read `"$tmp"/tools/*/tool.toml`. Show the user each tool with its
-description. Then ask which tools the repository needs. `base` is necessary
-in each repository.
+Read `"$tmp"/tools/*/tool.toml` and `"$tmp"/docs/sync/<tool>.md`. Examine
+the repository for the signs in "When the tool is relevant" of each tool
+file. Show the user each tool with its description and the result. Then ask
+which tools the repository needs. `base` is necessary in each repository.
+
+For each selected tool, do the items in "Adapt to the repository" of its tool
+file.
 
 Each `tool.toml` has these keys:
 
@@ -228,7 +266,8 @@ later, run `setup:configs` again.
 
 ## Step 5: Migrate the existing files
 
-Do the "Migration" section below before the first sync. If the repository
+Do the items of [`migrate.md`](migrate.md) that apply, before the first sync.
+Also do the "Migration" section of each selected tool file. If the repository
 has no mise config and no task files, skip this step.
 
 ## Step 6: Run the sync
@@ -261,15 +300,8 @@ that the repository has each file for the tools that it uses. If a file is
 missing, ask the user for its content. Do not write a placeholder that hides
 the problem.
 
-| File                            | Used by                                                                                                                                               |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dprint.jsonc`                  | `code:format`. It must have `"extends": "~/.config/dprint/dprint.jsonc"`, which has the plugins. It only adds `excludes`, for example the submodules. |
-| `~/.config/dprint/dprint.jsonc` | `setup:dprint`                                                                                                                                        |
-
-`base` supplies `.config/pre-commit-config.yaml` (synced), and
-`.config/gitleaks.toml`, `.config/grype.yaml` and `.config/osv-scanner.toml`
-(seeds). A seed keeps an existing file. Examine an existing `gitleaks.toml`:
-without `[extend] useDefault = true`, gitleaks uses only the rules of the file.
+Each tool file lists these files in "Files the repository supplies". Do this
+for each selected tool.
 
 ## Step 8: Make sure that the result is correct
 
@@ -299,238 +331,3 @@ it. Then the commit in the containing repository includes the new submodule
 commit. Ask the user before you push. Push each submodule before the
 repository that contains it. If not, the containing repository points to a
 commit that the remote does not have.
-
-## Migration
-
-This section is temporary. It is for the repositories that existed before the
-`tools/` layout. Remove it when all repositories are migrated.
-
-**WARNING:** Do not delete a file before you move its repository-owned
-content. The sync never restores repository content.
-
-The sync deletes only two kinds of files: the merge tasks of the other branch
-model, and a `.config/mise/conf.d/*/mise*.toml` with the bootstrap header
-that it did not write. Thus you must delete each other obsolete file and
-rename each old task by hand. Do the items that apply to the repository, in
-this sequence. Show the user the list of changes before you make them.
-
-### M1: Delete the old sync files
-
-- Delete `.config/gist-sync/` (an old `.gitignore` with only a header).
-- If the repository uses `gist_sync` (macos-setup), delete
-  `.config/mise/tasks/_scripts/gist-sync`. Rename
-  `.config/gist-sync/gitignore` to `.config/repo-sync/gitignore`.
-- Delete the old `.config/mise/tasks/setup/configs`. Step 2 replaces it.
-
-### M2: Delete the old dependency tasks
-
-**CAUTION:** Do this before the first `mise run setup`. The new `setup` runs
-each task in `setup/deps/`. An old task there runs too, and it can fail.
-
-- Delete `setup/deps/{all,install,upgrade,audit,cleanup,outdated,check,restart}`
-  and `setup/pnpm/*`. The tool tasks `setup:deps:<tool>` replace them, with
-  `--upgrade` for the upgrade.
-- If a repository needs a dependency step that no tool ships, write it as
-  `setup/deps/<name>`, with a `--upgrade` flag.
-- Delete each `#PLACEHOLDER` stub in `setup/deps/` and `setup/external/`.
-
-### M3: Rename the old tasks
-
-| Old task                           | New task                   | Action                                                                            |
-| ---------------------------------- | -------------------------- | --------------------------------------------------------------------------------- |
-| `setup:all` (`setup/all`)          | `setup` (`setup/_default`) | Delete the old file. `base` ships the new one. Members are called with `setup`.   |
-| `code:all` (`code/all`)            | `code` (`code/_default`)   | Delete the old file. Keep `code:check` and `code:test` as repository-owned tasks. |
-| `code:format` (`code/format`)      | `code/format/_default`     | Delete the old file. Move each extra formatter step to `code/format/<name>`.      |
-| `code:lint` (`code/lint`)          | `code/lint/_default`       | Delete the old file. Move each extra linter step to `code/lint/<name>`.           |
-| `setup:secrets` (fnox)             | `setup:secrets:fnox`       | Delete the old file. Select the `fnox` tool.                                      |
-| `setup:secrets` (Doppler)          | `setup:secrets:doppler`    | Delete the old file. Select the `doppler` tool. It needs a `doppler.yaml`.        |
-| `setup:secrets` (stub)             | none                       | Delete it.                                                                        |
-| `setup:deps:check`                 | `setup:external:check`     | Delete it. The `docker` tool ships the new one.                                   |
-| `setup:git-config`                 | `code:git-config`          | Delete it.                                                                        |
-| top-level `count`, `leaks`, `lint` | `code:*`                   | Delete them.                                                                      |
-
-Update each shell alias that calls an old name. Remove a repository-owned
-`setup` alias: `base` ships `setup = "mise run setup"`.
-
-### M4: Delete root-only items from submodules
-
-In a submodule, delete `setup:ai`, `setup/external/*`, `setup/vscode`,
-`.vscode/` and `conf.d/claude/`.
-Keep `code:graph`: `base` ships it to each repository.
-
-### M5: Move the content of `.config/mise.toml`
-
-The sync replaces `.config/mise.toml`. It keeps only the shared `[settings]`.
-
-1. Move `REPO_NAME`, `MEMBERS` and `MERGE_MODEL*` into the values file:
-   - `REPO_NAME` becomes `repo_name`.
-   - The old single `MERGE_MODEL` becomes both `merge_model_develop` and
-     `merge_model_main`, with the same value.
-   - `MEMBERS` is not necessary for submodules. For folders, write
-     `[member.<name>]` tables.
-2. Move the repository's own `[env]` values to the seed
-   `.config/mise/conf.d/_repo/mise.<env>.toml` of each environment that needs
-   them. Examples are `GITHUB_OWNER`, and the emulator, Temporal and OTEL
-   variables of 95octane backend (`mise.dev.toml`).
-3. Delete what a tool now supplies: `CLOUDSDK_PYTHON` (the `gcloud` tool) and
-   `task.timings = true` (the shared `[settings]`). Delete `lockfile = true`.
-4. Keep `.config/mise.test.toml` and `.config/miserc.toml`. The sync does not
-   write them.
-
-### M6: Remove the tools that the shared files now install
-
-From the repository-owned mise files, remove each tool that a selected tool
-installs:
-
-- `base`: dprint, `npm:@askviraj/linter`, gitleaks, grype, osv-scanner,
-  shellcheck, gomplate, jq, yq, pre-commit. Remove shfmt
-  too: dprint formats shell scripts now.
-- `python`: python, uv. `node`: node, pnpm. `fnox`: fnox.
-- `github`: gh, actionlint. `gitlab`: glab.
-- `claude`: `pipx:graphifyy`, `pipx:mempalace`.
-- `flutter`: flutter, android-sdk, java. `bun`: bun.
-- `rust`: `core:rust`, zola. `cloudflare`: `npm:cf`. `pulumi`: pulumi.
-  `gcloud`: gcloud. `doppler`: doppler.
-- `kotlin`: `http:kotlin-lsp`.
-
-Remove taplo too. dprint formats TOML now. Also remove the `[toml]` and
-`evenBetterToml.*` keys from `.vscode/settings.json`. Remove `npm:wrangler`:
-it is deprecated, and `npm:cf` of the `cloudflare` tool replaces it.
-
-Each tool must come from a bootstrap tool. If the repository needs a tool
-that no bootstrap tool installs, for example `npm:sort-package-json` or
-`rtk`, tell the user. Then add it to a bootstrap tool, or make a new tool
-for it.
-
-If the old tool has a pinned version that is different from the shared one,
-tell the user. Examples: node `26` and pnpm `12` in 95octane, where `node`
-ships `lts` and `latest`.
-
-### M7: Split an old `conf.d/_base`
-
-claude-plugins has an old `.config/mise/conf.d/_base/`. Its
-name is the same as the shared `_base`, but the content is different. Before
-the first sync, move its content:
-
-| Old content in `_base`                                           | New place               |
-| ---------------------------------------------------------------- | ----------------------- |
-| node, pnpm                                                       | the `node` tool         |
-| python, uv, `UV_*`                                               | the `python` tool       |
-| pre-commit, `PRE_COMMIT_HOME`                                    | the `base` tool         |
-| `MEMBERS`, `REPO_NAME`                                           | the values file         |
-| `MEMPALACE_*` and other repository variables                     | `_repo/mise.<env>.toml` |
-| `min_version`, `task.run_auto_install`, other repository content | step M5                 |
-
-Then delete the old `_base/mise.toml`, `_base/mise.dev.toml` and
-`_base/mise.ci.toml`. Also delete an old `conf.d/ai/`: the `claude` tool
-replaces it. Move its repository-owned content first (step M5).
-Delete the old `conf.d/_formatter`, `_linter` and `_security`.
-
-### M8: Move the fnox config
-
-If the repository has `fnox.toml` at its root, move it to
-`.config/fnox.toml`. Then the seed does not replace it. Change each
-`fnox exec` call to `mise x -- fnox exec`. Remove each
-`--config .config/fnox.toml`: fnox finds the file by itself, and an explicit
-`--config` still loads the global config. This needs fnox 1.39.0 or later,
-because fnox 1.36.0 does not search `.config/`. If `mise x -- fnox --version`
-shows an older version, run `mise upgrade fnox`.
-
-`.config/fnox.toml` is a seed, so the sync does not change an existing file.
-Change it by hand:
-
-1. Add `root = true` before `[providers]`. Then fnox does not search parent
-   directories, so a submodule does not get the secrets of its root.
-2. In a repository of a product with members, set `product_name`. Then change
-   the keychain provider: `service = "<product_name>"` and
-   `prefix = "<repo_name>/"`. Move the existing secrets to the new names.
-
-The `fnox` tool sets `FNOX_CONFIG_DIR` to `.config/fnox/` in dev, so the
-global `~/.config/fnox/config.toml` does not load in the repository. Do not
-put a `config.toml` in `.config/fnox/`.
-
-### M9: Clean the old markers
-
-- Delete `.config/vscode.d/`. Remove the `// >>> vscode.d` blocks from
-  `.vscode/settings.json` and `.config/pre-commit-config.yaml`. The
-  `vscode` tool writes `.vscode/extensions.json` from the tools.
-- Move the repository-owned keys of `.vscode/settings.json` to the user
-  settings or to the workspace, and tell the user. The sync replaces the file.
-  Examples are `[dart]`, `files.associations` and `markdownlint.*`.
-- If an extension is not in a tool, for example astro, tailwind or effect,
-  tell the user. Put it in the values key `extensions` of the repository that
-  needs it. The sync replaces `.vscode/extensions.json`.
-- `vscode` is root only. VS Code opens the root repository, and the root
-  `.vscode/extensions.json` has the extensions of each submodule. In a
-  submodule, delete `.vscode/` and `.config/mise/tasks/setup/vscode`.
-- Replace each `MARKED POSITION` block with its value, in a repository-owned
-  file or in the values file.
-
-### M10: Change the old helper files
-
-- The shared helpers are `_scripts/helpers`, `_scripts/checks` and
-  `_scripts/merge`. Change each `source` of `_helpers`, `_checks` or `_merge`
-  to the new name. Then delete the old files.
-- If a task calls a function that `helpers` does not have, for example
-  `print_ok`, put that function in `_scripts/local` and source it from the
-  task.
-
-### M11: The commit config
-
-The template has 10 types: `feat`, `fix`, `perf`, `refactor`, `revert`,
-`test`, `ops`, `docs`, `merge`, `wip`. Other types are not used. The old types
-`spec`, `security` and `blueprint` are dropped. Tell the user. Put the scopes
-of the old file in `commit_scopes`.
-
-### M12: The pre-commit hooks
-
-**WARNING:** Do this before the first sync. The sync replaces
-`.config/pre-commit-config.yaml`, and it does not keep the hooks of the
-repository.
-
-1. Compare the hooks of the existing file with the rendered file. Use
-   `mise run setup:configs --dry-run`.
-2. Move each hook that no tool ships to `.config/repo-sync/pre-commit.yaml`.
-   Prefix each `entry` that calls a tool with `mise x --`.
-3. Remove each hook that a tool now ships, for example `graphify-refresh`,
-   `gitleaks` and `conventional-commits`.
-
-### M13: The forge files
-
-`github` and `gitlab` replace these files, if they exist:
-
-- `github`: `.github/ISSUE_TEMPLATE/bug_report.yml`, `feature_request.yml`,
-  `config.yml`, and `.github/pull_request_template.md`.
-- `gitlab`: `.gitlab/issue_templates/Bug.md`, `Feature.md`, and
-  `.gitlab/merge_request_templates/Default.md`.
-
-Before the first sync, compare them with the shared files. Tell the user
-about each repository-specific change, for example an extra contact link.
-Remove `actionlint`, `gh` and `glab` from the repository-owned mise files.
-
-### M14: The mise environments
-
-1. Add `environments` to `.config/bootstrap.toml` (step 1). Delete an old
-   `core_tools` key: the `envs` of each tool decide its environments now.
-2. Move the repository variables of an old `_env/mise.toml` or
-   `conf.d/repo/` to the `_repo/mise.<env>.toml` seeds (step M5). Move each
-   tool of an old `conf.d/repo/` to a bootstrap tool (step M6). Then delete
-   `conf.d/repo/`.
-3. Move the seeds of an old `conf.d/_env/` folder to `conf.d/_repo/`. The sync
-   does not remove them, because a seed has no header.
-
-The next sync removes the old `conf.d/*/mise.toml`, `_env/mise.toml`,
-`_alias/mise.dev.toml`, `conf.d/_task/` and `conf.d/pre-commit/` files that
-have the header of this repository (`Synced from repo-config:` or `Synced from
-bootstrap:`).
-
-### M15: The rename to bootstrap
-
-This repository was `virajp/repo-config` before. GitHub redirects the old
-URL, so an old copy of the sync still works.
-
-1. Rename `.config/repo-config.toml` to `.config/bootstrap.toml`. The sync
-   still reads the old name, but it shows a notice.
-2. Run `mise run setup:configs`. It changes the header of each synced file
-   from `Synced from repo-config:` to `Synced from bootstrap:`. The sync
-   accepts both headers, so it still removes stale files with the old one.

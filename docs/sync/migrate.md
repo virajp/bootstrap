@@ -1,0 +1,322 @@
+# Migrate a repository that has older copies
+
+These instructions are for an AI agent that works in a consumer repository.
+They are for a repository that has files from an older version of
+`bootstrap`, or from `repo-config`, the old name of `bootstrap`. Read
+[`index.md`](index.md) first. Its rules apply here too.
+
+This file is temporary. Remove an item when all repositories have done it.
+
+## Find the items that apply
+
+| The repository has                                      | Do                                                                                             |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `.config/bootstrap.toml` with a `tools` list            | Nothing in this file. Run `mise run setup:configs`.                                            |
+| `.config/repo-config.toml` with a `tools` list          | Only M15.                                                                                      |
+| No values file, but older shared files or a mise config | The steps of `index.md`. Its step 5 sends you here for M1 to M14. Write the new name directly. |
+
+**WARNING:** Do not delete a file before you move its repository-owned
+content. The sync never restores repository content.
+
+The sync deletes only two kinds of files: the merge tasks of the other branch
+model, and a `.config/mise/conf.d/*/mise*.toml` with the bootstrap header
+that it did not write. Thus you must delete each other obsolete file and
+rename each old task by hand. Do the items that apply to the repository, in
+this sequence. Show the user the list of changes before you make them.
+
+## M1: Delete the old sync files
+
+- Delete `.config/gist-sync/` (an old `.gitignore` with only a header).
+- If the repository uses `gist_sync` (macos-setup), delete
+  `.config/mise/tasks/_scripts/gist-sync`. Rename
+  `.config/gist-sync/gitignore` to `.config/repo-sync/gitignore`.
+- Delete the old `.config/mise/tasks/setup/configs`. Step 2 of `index.md`
+  replaces it.
+
+## M2: Delete the old dependency tasks
+
+**CAUTION:** Do this before the first `mise run setup`. The new `setup` runs
+each task in `setup/deps/`. An old task there runs too, and it can fail.
+
+- Delete `setup/deps/{all,install,upgrade,audit,cleanup,outdated,check,restart}`
+  and `setup/pnpm/*`. The tool tasks `setup:deps:<tool>` replace them, with
+  `--upgrade` for the upgrade.
+- If a repository needs a dependency step that no tool ships, write it as
+  `setup/deps/<name>`, with a `--upgrade` flag.
+- Delete each `#PLACEHOLDER` stub in `setup/deps/` and `setup/external/`.
+
+## M3: Rename the old tasks
+
+| Old task                           | New task                   | Action                                                                            |
+| ---------------------------------- | -------------------------- | --------------------------------------------------------------------------------- |
+| `setup:all` (`setup/all`)          | `setup` (`setup/_default`) | Delete the old file. `base` ships the new one. Members are called with `setup`.   |
+| `code:all` (`code/all`)            | `code` (`code/_default`)   | Delete the old file. Keep `code:check` and `code:test` as repository-owned tasks. |
+| `code:format` (`code/format`)      | `code/format/_default`     | Delete the old file. Move each extra formatter step to `code/format/<name>`.      |
+| `code:lint` (`code/lint`)          | `code/lint/_default`       | Delete the old file. Move each extra linter step to `code/lint/<name>`.           |
+| `setup:secrets` (fnox)             | `setup:secrets:fnox`       | Delete the old file. Select the `fnox` tool.                                      |
+| `setup:secrets` (Doppler)          | `setup:secrets:doppler`    | Delete the old file. Select the `doppler` tool. It needs a `doppler.yaml`.        |
+| `setup:secrets` (stub)             | none                       | Delete it.                                                                        |
+| `setup:deps:check`                 | `setup:external:check`     | Delete it. The `docker` tool ships the new one.                                   |
+| `setup:git-config`                 | `code:git-config`          | Delete it.                                                                        |
+| top-level `count`, `leaks`, `lint` | `code:*`                   | Delete them.                                                                      |
+
+Update each shell alias that calls an old name. Remove a repository-owned
+`setup` alias: `base` ships `setup = "mise run setup"`.
+
+## M4: Delete root-only items from submodules
+
+In a submodule, delete `setup:ai`, `setup/external/*`, `setup/vscode`,
+`.vscode/` and `conf.d/claude/`. Keep `code:graph`: `base` ships it to each
+repository.
+
+## M5: Move the content of `.config/mise.toml`
+
+The sync replaces `.config/mise.toml`. It keeps only the shared `[settings]`.
+
+1. Move `REPO_NAME`, `MEMBERS` and `MERGE_MODEL*` into the values file:
+   - `REPO_NAME` becomes `repo_name`.
+   - The old single `MERGE_MODEL` becomes both `merge_model_develop` and
+     `merge_model_main`, with the same value.
+   - `MEMBERS` is not necessary for submodules. For folders, write
+     `[member.<name>]` tables.
+2. Move the repository's own `[env]` values to the seed
+   `.config/mise/conf.d/_repo/mise.<env>.toml` of each environment that needs
+   them. Examples are `GITHUB_OWNER`, and the emulator, Temporal and OTEL
+   variables of 95octane backend (`mise.dev.toml`).
+3. Delete what a tool now supplies: `CLOUDSDK_PYTHON` (the `gcloud` tool) and
+   `task.timings = true` (the shared `[settings]`). Delete `lockfile = true`.
+4. Keep `.config/mise.test.toml` and `.config/miserc.toml`. The sync does not
+   write them.
+
+## M6: Remove the tools that the shared files now install
+
+Each tool file in this folder lists the mise tools of that tool (section
+"mise tools"). From the repository-owned mise files, remove each mise tool
+that a selected tool installs. The "Migration" section of a tool file lists
+the old tools that the tool replaces, for example taplo (`base`) and
+`npm:wrangler` (`cloudflare`).
+
+Each mise tool must come from a bootstrap tool. If the repository needs a
+mise tool that no bootstrap tool installs, for example
+`npm:sort-package-json` or `rtk`, tell the user. Then add it to a bootstrap
+tool, or make a new tool for it.
+
+If the old mise tool has a pinned version that is different from the shared
+one, tell the user. Examples: node `26` and pnpm `12` in 95octane, where
+`node` ships `lts` and `latest`.
+
+## M7: Split an old `conf.d/_base`
+
+claude-plugins has an old `.config/mise/conf.d/_base/`. Its name is the same
+as the shared `_base`, but the content is different. Before the first sync,
+move its content:
+
+| Old content in `_base`                                           | New place               |
+| ---------------------------------------------------------------- | ----------------------- |
+| node, pnpm                                                       | the `node` tool         |
+| python, uv, `UV_*`                                               | the `python` tool       |
+| pre-commit, `PRE_COMMIT_HOME`                                    | the `base` tool         |
+| `MEMBERS`, `REPO_NAME`                                           | the values file         |
+| `MEMPALACE_*` and other repository variables                     | `_repo/mise.<env>.toml` |
+| `min_version`, `task.run_auto_install`, other repository content | step M5                 |
+
+Then delete the old `_base/mise.toml`, `_base/mise.dev.toml` and
+`_base/mise.ci.toml`. Also delete an old `conf.d/ai/`: the `claude` tool
+replaces it. Move its repository-owned content first (step M5). Delete the old
+`conf.d/_formatter`, `_linter` and `_security`.
+
+## M8: Move the fnox config
+
+See "Migration" in [`fnox.md`](fnox.md).
+
+## M9: Clean the old markers
+
+- Replace each `MARKED POSITION` block with its value, in a repository-owned
+  file or in the values file.
+- For the `// >>> vscode.d` blocks and `.config/vscode.d/`, see "Migration"
+  in [`vscode.md`](vscode.md).
+
+## M10: Change the old helper files
+
+- The shared helpers are `_scripts/helpers`, `_scripts/checks` and
+  `_scripts/merge`. Change each `source` of `_helpers`, `_checks` or `_merge`
+  to the new name. Then delete the old files.
+- If a task calls a function that `helpers` does not have, for example
+  `print_ok`, put that function in `_scripts/local` and source it from the
+  task.
+
+## M11: The commit config
+
+The template has 10 types: `feat`, `fix`, `perf`, `refactor`, `revert`,
+`test`, `ops`, `docs`, `merge`, `wip`. Other types are not used. The old types
+`spec`, `security` and `blueprint` are dropped. Tell the user. Put the scopes
+of the old file in `commit_scopes`.
+
+## M12: The pre-commit hooks
+
+**WARNING:** Do this before the first sync. The sync replaces
+`.config/pre-commit-config.yaml`, and it does not keep the hooks of the
+repository.
+
+1. Compare the hooks of the existing file with the rendered file. Use
+   `mise run setup:configs --dry-run`.
+2. Move each hook that no tool ships to `.config/repo-sync/pre-commit.yaml`.
+   Prefix each `entry` that calls a tool with `mise x --`.
+3. Remove each hook that a tool now ships, for example `graphify-refresh`,
+   `gitleaks` and `conventional-commits`.
+
+## M13: The forge files
+
+See "Migration" in [`github.md`](github.md) or [`gitlab.md`](gitlab.md).
+
+## M14: The mise environments
+
+1. Add `environments` to `.config/bootstrap.toml` (step 1 of `index.md`).
+   Delete an old `core_tools` key: the `envs` of each tool decide its
+   environments now.
+2. Move the repository variables of an old `_env/mise.toml` or
+   `conf.d/repo/` to the `_repo/mise.<env>.toml` seeds (step M5). Move each
+   tool of an old `conf.d/repo/` to a bootstrap tool (step M6). Then delete
+   `conf.d/repo/`.
+3. Move the seeds of an old `conf.d/_env/` folder to `conf.d/_repo/`. The sync
+   does not remove them, because a seed has no header.
+
+The next sync removes the old `conf.d/*/mise.toml`, `_env/mise.toml`,
+`_alias/mise.dev.toml`, `conf.d/_task/` and `conf.d/pre-commit/` files that
+have the header of this repository (`Synced from repo-config:` or
+`Synced from bootstrap:`).
+
+## M15: The rename to bootstrap
+
+The repository `virajp/repo-config` is now `virajp/bootstrap`
+(`git@github.com:virajp/bootstrap.git`).
+
+| Item              | Old                                     | New                                   |
+| ----------------- | --------------------------------------- | ------------------------------------- |
+| Source repository | `git@github.com:virajp/repo-config.git` | `git@github.com:virajp/bootstrap.git` |
+| Values file       | `.config/repo-config.toml`              | `.config/bootstrap.toml`              |
+| Synced header     | `# Synced from repo-config: ...`        | `# Synced from bootstrap: ...`        |
+
+The old names still work for a short time. Do not rely on these fallbacks. A
+later version of `bootstrap` can remove them.
+
+- GitHub redirects the old URL. Thus an old copy of `setup:configs` still
+  clones the new repository. The sync code then comes from that clone.
+- The sync reads `.config/repo-config.toml` when `.config/bootstrap.toml` is
+  missing. It shows a notice: `rename it to .config/bootstrap.toml`.
+- The sync accepts both headers. Thus it still finds the files that it wrote
+  with the old header.
+
+Do not change the `tools` list or other values in the values file. This item
+changes only the name of the file.
+
+### M15.1: Find the repositories to migrate
+
+1. Get the list of submodules, nested submodules included:
+
+   ```bash
+   git submodule foreach --quiet --recursive 'echo $displaypath'
+   ```
+
+2. For the root repository and each submodule, find whether
+   `.config/repo-config.toml` exists.
+3. Show the user the list of repositories that have the file. A repository
+   without `.config/repo-config.toml` and without `.config/bootstrap.toml`
+   does not use `bootstrap`. Do not migrate it.
+4. Ask the user which repositories to migrate.
+
+Do M15.2 to M15.7 in each selected repository. Start with the deepest
+submodules. Do the root repository last. Run the commands from the root of
+the repository that you migrate.
+
+### M15.2: Make sure that the repository is ready
+
+1. Run `git status`. If the tree has changes that are not committed, stop.
+   Ask the user what to do with them.
+2. In the root repository, run `git submodule status`. A `+` before a
+   submodule shows that its checkout is not at the commit that the root
+   records. Tell the user, and ask whether to continue.
+3. If the repository already has `.config/bootstrap.toml`, tell the user.
+   Then go to the next repository.
+
+### M15.3: Rename the values file
+
+```bash
+git mv .config/repo-config.toml .config/bootstrap.toml
+```
+
+Do not change the content of the file.
+
+### M15.4: Run the sync
+
+1. If mise says that the config files are not trusted, ask the user to run
+   `mise trust`.
+2. Run `mise run setup:configs --dry-run`.
+3. Examine the diff. Each synced file changes its header. Other changes come
+   from the commits in `bootstrap` since the last sync of this repository.
+   Show the user the list of files with changes that are not only the header.
+4. If the dry run replaces repository-owned content, stop. Tell the user.
+   "Rules" in `index.md` lists the places for repository-owned content.
+5. Run `mise run setup:configs`.
+6. Run `mise run init`. This makes all the task scripts executable.
+
+If `repo_sync` fails, read the table of exit codes in step 6 of `index.md`.
+
+### M15.5: Find the files with the old header
+
+The sync replaces only the files of the tools that the values file lists. A
+file with the old header that remains is from a tool or a path that
+`bootstrap` no longer ships.
+
+1. Find these files:
+
+   ```bash
+   git grep -l 'Synced from repo-config:'
+   ```
+
+2. If the list is empty, go to M15.6.
+3. Show the list to the user. For each file, ask whether to delete it.
+
+### M15.6: Find the other mentions of the old name
+
+1. Find the other mentions:
+
+   ```bash
+   git grep -n 'repo-config'
+   ```
+
+2. Ignore the mentions in the synced files. The sync owns them.
+3. Show the user the other mentions, for example in `README.md`,
+   `CLAUDE.md`, the docs and `.config/repo-sync/`.
+4. Ask the user which mentions to change. Do not change a mention in a
+   changelog, in dated history or in a quote.
+
+### M15.7: Make sure that the result is correct
+
+1. Make sure that `.config/repo-config.toml` does not exist.
+2. Run `git grep -l 'Synced from repo-config:'`. The list must be empty,
+   except for the files that the user decided to keep in M15.5.
+3. Run `mise run setup:configs` again. It must not show the notice about the
+   old values file. Each file must show `unchanged`, `kept seed` or
+   `skip env`.
+4. Run `mise tasks`. Make sure that the synced tasks are in the list.
+5. Run `mise run setup`. Make sure that it completes.
+
+### M15.8: Commit
+
+Commit these changes in each migrated repository:
+
+- The rename of the values file.
+- The synced files.
+- The deletes from M15.5 and the changes from M15.6.
+
+Use a commit message such as
+`ops(repo-sync): migrate from repo-config to bootstrap`. Read
+`.config/git-conventional-commits.yaml` for the types and scopes of the
+repository. Use the git workflow of the repository, and ask the user before
+each commit.
+
+Commit in each submodule before you commit in the repository that contains
+it. Ask the user before you push. Push each submodule before the repository
+that contains it. If not, the containing repository points to a commit that
+the remote does not have.

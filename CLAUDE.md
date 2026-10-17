@@ -12,8 +12,17 @@ it with their own `setup:configs` task. Read `README.md` for the sync contract.
 ## Layout rule
 
 All shared files are in `tools/<tool>/`, one folder for each tool. The files
-at the root (`README.md`, `CLAUDE.md`, `sync.md`) are for this repository
+at the root (`README.md`, `CLAUDE.md`) and in `docs/` are for this repository
 only.
+
+`docs/sync/` tells an AI agent how to adopt `bootstrap` in a consumer
+repository. After the adoption, `repo-sync` keeps the consumer in sync.
+
+- `docs/sync/index.md`: the general steps of an adoption.
+- `docs/sync/migrate.md`: the items for a repository with older copies.
+- `docs/sync/<tool>.md`: one file for each folder in `tools/`, with the same
+  sections in each file. The file of the `claude` tool is `claude-tool.md`,
+  because a file system that ignores case reads `claude.md` as `CLAUDE.md`.
 
 This repository is also a consumer of its own `base` tool. Its values file is
 `.config/bootstrap.toml`, and `setup:configs` writes the synced copies at
@@ -64,7 +73,8 @@ Some files refer to files that are not in `tools/`, for example
 - gomplate reads the TOML files: the values file and each `tool.toml`.
 - The sync never deletes a file, except the merge tasks of the other branch
   model (see "Branch model in the merge tasks") and the stale generated mise
-  files (see "mise config"). `sync.md` tells consumers what to delete.
+  files (see "mise config"). `docs/sync/migrate.md` tells consumers what to
+  delete.
 - The sync uses the pushed `main` branch. Local changes have no effect on
   consumers until you push them.
 - To test a change before you push it, set `REPO_SYNC_URL` to a local clone
@@ -88,7 +98,7 @@ Some files refer to files that are not in `tools/`, for example
   logic. mise uses `{{ }}` and bash uses `[[ ]]`, and both must reach the
   output unchanged.
 - The values come from the consumer file `.config/bootstrap.toml`. The
-  keys are in `sync.md`, step 3.
+  keys are in `docs/sync/index.md`, step 3.
 - `.members` is the list of member names: the git submodules (else the
   `MEMBERS` env value), then each `[member.<name>]` key with a folder in the
   consumer repository.
@@ -227,6 +237,10 @@ that it finds, and removes the others. It stops if neither branch exists.
 ## Change a shared file
 
 1. Change the file in `tools/<tool>/`.
-2. Commit and push to `main`.
-3. In this repository and in each consumer repository, run
+2. If the change adds, removes or changes a file, a mise tool, a task, a hook,
+   a seed or a value of the tool, change `docs/sync/<tool>.md` too. A new tool
+   needs a new file in `docs/sync/`, and a line in the list of
+   `docs/sync/index.md`.
+3. Commit and push to `main`.
+4. In this repository and in each consumer repository, run
    `mise run setup:configs`, then commit the result.
