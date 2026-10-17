@@ -46,8 +46,14 @@ if [[ "${usage_upgrade:-false}" == "true" ]]; then
 
   print_subheader "Upgrading the Dart and Flutter packages ..."
   mise x -- flutter pub upgrade --major-versions
+  LOCKED_PUB=()
+  LOCKED_POD=()
 else
   print_header "Installing Flutter dependencies ..."
+  # The lockfiles decide the versions; an install never changes them. A lockfile
+  # that does not match its manifest fails the install.
+  LOCKED_PUB=(--enforce-lockfile)
+  LOCKED_POD=(--deployment)
 fi
 
 print_subheader "Configuring Flutter ..."
@@ -59,11 +65,11 @@ print_subheader "Accepting the Android licenses ..."
 yes | mise x -- flutter doctor --android-licenses > /dev/null || true
 
 print_subheader "Installing the Dart and Flutter packages ..."
-mise x -- flutter pub get
+mise x -- flutter pub get ${LOCKED_PUB[@]+"${LOCKED_PUB[@]}"}
 
 if [[ "${HAS_PODS}" == "true" ]]; then
   print_subheader "Installing CocoaPods ..."
-  (cd ios && pod install)
+  (cd ios && pod install ${LOCKED_POD[@]+"${LOCKED_POD[@]}"})
 fi
 
 if [[ "${HAS_GRADLE}" == "true" ]]; then
