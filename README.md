@@ -4,12 +4,36 @@ Shared configuration files, mise task scripts and templates for my
 repositories. Each repository selects its tools, and its `setup:configs` task
 copies the files of those tools.
 
+## Adopt in a repository
+
+A repository uses this repository in two ways, in this sequence:
+
+1. **Adoption, one time, by an AI agent.** [`docs/sync/`](docs/sync/index.md)
+   tells the agent how to apply the rules of this repository to a consumer
+   repository. The agent makes sure that each rule is relevant to that
+   repository. `docs/sync/index.md` has the general steps, `migrate.md` has
+   the items for a repository with older copies, and one file for each tool
+   tells when the tool is relevant and how to use it.
+2. **Sync, each time after that, by `repo-sync`.** The adoption installs the
+   `setup:configs` task, which keeps the shared files equal to this
+   repository.
+
+Copy this prompt into an AI session in the consumer repository:
+
+```text
+Make this repository and each of its git submodules get their shared files
+from bootstrap. Make a shallow clone of
+git@github.com:virajp/bootstrap.git into a temporary directory. Read
+docs/sync/index.md in the clone, and do its steps in sequence. Read the other
+files of docs/sync/ when index.md tells you to. Apply only what is relevant to
+this repository. Ask me before each choice that docs/sync/ does not decide.
+```
+
 ## Layout
 
 The shared files are in `tools/`, one folder for each tool. This repository
 also syncs its own `base` tool. Each file in `tools/<tool>/` is at the path that
-it
-gets in a repository. For example,
+it gets in a repository. For example,
 `tools/base/.config/mise/tasks/code/merge/develop` here is
 `.config/mise/tasks/code/merge/develop` in every repository that selects
 `base`.
@@ -57,31 +81,6 @@ has that file:
 ```toml
 [seed_requires]
 "pnpm-workspace.yaml" = "package.json"
-```
-
-## Adopt in a repository
-
-A repository uses this repository in two ways, in this sequence:
-
-1. **Adoption, one time, by an AI agent.** [`docs/sync/`](docs/sync/index.md)
-   tells the agent how to apply the rules of this repository to a consumer
-   repository. The agent makes sure that each rule is relevant to that
-   repository. `docs/sync/index.md` has the general steps, `migrate.md` has
-   the items for a repository with older copies, and one file for each tool
-   tells when the tool is relevant and how to use it.
-2. **Sync, each time after that, by `repo-sync`.** The adoption installs the
-   `setup:configs` task, which keeps the shared files equal to this
-   repository.
-
-Copy this prompt into an AI session in the consumer repository:
-
-```text
-Make this repository and each of its git submodules get their shared files
-from bootstrap. Make a shallow clone of
-git@github.com:virajp/bootstrap.git into a temporary directory. Read
-docs/sync/index.md in the clone, and do its steps in sequence. Read the other
-files of docs/sync/ when index.md tells you to. Apply only what is relevant to
-this repository. Ask me before each choice that docs/sync/ does not decide.
 ```
 
 ## How a repository syncs
