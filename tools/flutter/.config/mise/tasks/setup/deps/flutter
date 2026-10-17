@@ -61,8 +61,13 @@ mise x -- flutter config --disable-analytics
 mise x -- dart --disable-analytics
 [[ -n "${ANDROID_HOME:-}" ]] && mise x -- flutter config --android-sdk "${ANDROID_HOME}"
 
-print_subheader "Accepting the Android licenses ..."
-yes | mise x -- flutter doctor --android-licenses > /dev/null || true
+if [[ "${HAS_GRADLE}" == "true" ]]; then
+  print_subheader "Accepting the Android licenses ..."
+  # cmdline-tools 23 has no license prompt: a package install accepts the SDK
+  # license and writes licenses/, which Gradle reads before it downloads the
+  # NDK and the platforms. Flutter needs platform-tools (adb) anyway.
+  mise x -- android sdk install platform-tools
+fi
 
 print_subheader "Installing the Dart and Flutter packages ..."
 mise x -- flutter pub get ${LOCKED_PUB[@]+"${LOCKED_PUB[@]}"}
