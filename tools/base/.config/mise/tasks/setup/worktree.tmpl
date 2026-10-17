@@ -24,7 +24,8 @@ git -C "${MISE_PROJECT_ROOT}" submodule update --init --recursive
 if is_git_worktree; then
   print_header "Copying local files from the main worktree ..."
   MAIN_WORKTREE_PATH=$(get_main_worktree_path)
-  for file in<% range .worktree_files %> "<% . %>"<% end %>; do
+  files=(<% range .worktree_files %> "<% . %>"<% end %>)
+  for file in "${files[@]}"; do
     if [[ -e "${MISE_PROJECT_ROOT}/${file}" ]]; then
       print_info "${file}: already present"
     elif [[ -e "${MAIN_WORKTREE_PATH}/${file}" ]]; then
