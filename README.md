@@ -1,4 +1,4 @@
-# repo-config
+# bootstrap
 
 Shared configuration files, mise task scripts and templates for my
 repositories. Each repository selects its tools, and its `setup:configs` task
@@ -67,8 +67,8 @@ prompt into an AI session in that repository:
 
 ```text
 Make this repository and each of its git submodules get their shared files
-from repo-config. Make a shallow clone of
-git@github.com:virajp/repo-config.git into a temporary directory. Read
+from bootstrap. Make a shallow clone of
+git@github.com:virajp/bootstrap.git into a temporary directory. Read
 sync.md in the clone, and do its steps in sequence. Ask me before each choice
 that sync.md does not decide.
 ```
@@ -79,7 +79,7 @@ that sync.md does not decide.
    (shallow, over SSH).
 2. It runs `setup:configs:sync`, which loads `repo-sync` from that clone and
    calls `repo_sync`. Thus a change to the sync code applies in the same run.
-3. `repo_sync` reads `tools` from the repository's `.config/repo-config.toml`.
+3. `repo_sync` reads `tools` from the repository's `.config/bootstrap.toml`.
 4. It adds the `depends` of each tool. It refuses a `root_only` tool in a git
    submodule.
 5. It finds the branch model from the branches `main` and `develop`, local or
@@ -111,7 +111,7 @@ These rules apply to each file:
   tasks. With `main` and `develop`, the repository gets `code:merge:develop`
   and `code:merge:main`. With only one of them, it gets `code:merge`. The sync
   removes the merge tasks of the other model. The second is a
-  `.config/mise/conf.d/*/mise*.toml` file with the repo-config header that the
+  `.config/mise/conf.d/*/mise*.toml` file with the bootstrap header that the
   sync did not write. A seed, such as `_repo/mise.<env>.toml`, has no header, so
   the sync keeps it.
 
@@ -126,7 +126,7 @@ A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
 
 - The delimiters are `<% %>`. mise uses `{{ }}` and bash uses `[[ ]]`, so
   both reach the output unchanged.
-- The values come from the repository's `.config/repo-config.toml`.
+- The values come from the repository's `.config/bootstrap.toml`.
 - `.members` is the list of member names: the git submodules (else `MEMBERS`),
   then each `[member.<name>]` table whose folder exists in the repository.
 - `.submodules` is the list of the git submodules only. It is empty in a
