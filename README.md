@@ -158,6 +158,7 @@ environments = [ "dev", "ci", "prod" ]
 merge_model_develop = "direct"
 merge_model_main = "pr"
 product_name = "my-product"
+release_tag_pattern = '^my-repo-v\d+$'
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
 tools = [ "base", "github", "node", "fnox", "claude", "vscode" ]

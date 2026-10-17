@@ -25,7 +25,9 @@ convention:
   featureCommitTypes:
     - feat
 
-  # A repo that namespaces its tags per component narrows this to that prefix.
+  # A repo that namespaces its tags per component narrows this with
+  # `release_tag_pattern` in .config/bootstrap.toml. Single quotes keep each
+  # backslash.
   releaseTagGlobPattern: "*"
 
 changelog:

@@ -27,8 +27,10 @@ convention:
   featureCommitTypes:
     - feat
 
-  # A repo that namespaces its tags per component narrows this to that prefix.
-  releaseTagGlobPattern: "*"
+  # A repo that namespaces its tags per component narrows this with
+  # `release_tag_pattern` in .config/bootstrap.toml. Single quotes keep each
+  # backslash.
+  releaseTagGlobPattern: <% if has . "release_tag_pattern" %>'<% strings.ReplaceAll "'" "''" .release_tag_pattern %>'<% else %>"*"<% end %>
 
 changelog:
   # test, ops, docs, merge and wip are deliberately absent from the notes.

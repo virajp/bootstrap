@@ -106,6 +106,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+.pnpm-debug.log*
 lerna-debug.log*
 crash.log
 crash.*.log
@@ -113,6 +114,7 @@ crash.*.log
 *.pid.lock
 *.seed
 pids/
+logs/
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # ==== Build output and coverage ====
@@ -122,6 +124,7 @@ build/
 bin/
 !**/src/bin/
 dist/
+out/
 coverage/
 *.lcov
 .nyc_output/
@@ -138,6 +141,13 @@ bower_components/
 .pnpm-store/
 .yarn-integrity
 .pnp.*
+# Yarn v3 keeps these .yarn/ folders tracked.
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 *.tsbuildinfo
 .eslintcache
 .stylelintcache
@@ -162,6 +172,16 @@ vite.config.ts.timestamp-*
 .firebase/
 .dynamodb/
 .temp/
+# Bundler and tool caches.
+.fusebox/
+.grunt
+.lock-wscript
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+.webpack-cache/
+.tern-port
 
 # ==== Python ====
 __pycache__/

@@ -212,6 +212,7 @@ Write `.config/bootstrap.toml`. Ask the user for each value.
 | `merge_model_main`                 | `.config/mise.toml`        | `direct` or `pr`                                                                                                                                                                                                                                            |
 | `commit_scopes`                    | `git-conventional-commits` | The commit scopes, for example `["backend", "web"]`. The default is the member list.                                                                                                                                                                        |
 | `repo_url`                         | `git-conventional-commits` | The web URL of the repository, for the changelog links. GitHub and GitLab are supported.                                                                                                                                                                    |
+| `release_tag_pattern`              | `git-conventional-commits` | The pattern of the release tags, for example `'^web-v\d+$'`. Use a TOML literal string (single quotes), so that each backslash stays. The default is `"*"`, all tags.                                                                                       |
 | `worktree_files`                   | `setup:worktree`           | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]`                                                                                                                                          |
 | `extensions`                       | `vscode` (in the root)     | VS Code extensions that no tool has, for example `["astro-build.astro-vscode"]`. A submodule lists its own too.                                                                                                                                             |
 | `[member.<name>]`                  | `setup`, `setup:worktree`  | One table for each member folder                                                                                                                                                                                                                            |
@@ -226,6 +227,7 @@ environments = [ "dev", "ci", "prod" ]
 merge_model_develop = "direct"
 merge_model_main = "pr"
 product_name = "my-product"
+release_tag_pattern = '^my-repo-v\d+$'
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
 tools = [ "base", "github", "node", "fnox", "claude", "vscode" ]

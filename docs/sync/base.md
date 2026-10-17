@@ -15,18 +15,18 @@ Always. Each repository selects `base`.
 
 ## What the tool ships
 
-| Path in the repository                           | Kind           | Use                                                                                 |
-| ------------------------------------------------ | -------------- | ----------------------------------------------------------------------------------- |
-| `.config/mise.toml`                              | Template       | The shared `[settings]`, and the `[env]` values from the values file.               |
-| `.config/mise/conf.d/_base/mise.<env>.toml`      | Generated      | The mise config of this tool, one file for each environment.                        |
-| `.config/mise/conf.d/_repo/mise.<env>.toml`      | Seed           | The repository's own mise config and `[env]` values, one file for each environment. |
-| `.config/mise/tasks/_scripts/`                   | Synced         | The libraries `helpers`, `checks`, `merge`, `placeholder` and `repo-sync`.          |
-| `.config/mise/tasks/code/`, `setup/`             | Synced         | The tasks in "Tasks".                                                               |
-| `.config/pre-commit-config.yaml`                 | Template       | The hooks of the selected tools, then `.config/repo-sync/pre-commit.yaml`.          |
-| `.config/git-conventional-commits.yaml`          | Template       | The commit types, and the scopes from `commit_scopes`.                              |
-| `.config/gitleaks.toml`                          | Seed, template | The gitleaks rules.                                                                 |
-| `.config/grype.yaml`, `.config/osv-scanner.toml` | Seed           | The config of the vulnerability scanners.                                           |
-| `.gitignore`                                     | Synced         | The shared ignore lines, then the lines of `.config/repo-sync/gitignore`.           |
+| Path in the repository                           | Kind           | Use                                                                                                |
+| ------------------------------------------------ | -------------- | -------------------------------------------------------------------------------------------------- |
+| `.config/mise.toml`                              | Template       | The shared `[settings]`, and the `[env]` values from the values file.                              |
+| `.config/mise/conf.d/_base/mise.<env>.toml`      | Generated      | The mise config of this tool, one file for each environment.                                       |
+| `.config/mise/conf.d/_repo/mise.<env>.toml`      | Seed           | The repository's own mise config and `[env]` values, one file for each environment.                |
+| `.config/mise/tasks/_scripts/`                   | Synced         | The libraries `helpers`, `checks`, `merge`, `placeholder` and `repo-sync`.                         |
+| `.config/mise/tasks/code/`, `setup/`             | Synced         | The tasks in "Tasks".                                                                              |
+| `.config/pre-commit-config.yaml`                 | Template       | The hooks of the selected tools, then `.config/repo-sync/pre-commit.yaml`.                         |
+| `.config/git-conventional-commits.yaml`          | Template       | The commit types, the scopes from `commit_scopes`, and the tag pattern from `release_tag_pattern`. |
+| `.config/gitleaks.toml`                          | Seed, template | The gitleaks rules.                                                                                |
+| `.config/grype.yaml`, `.config/osv-scanner.toml` | Seed           | The config of the vulnerability scanners.                                                          |
+| `.gitignore`                                     | Synced         | The shared ignore lines, then the lines of `.config/repo-sync/gitignore`.                          |
 
 ## mise tools
 
