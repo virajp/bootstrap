@@ -1,5 +1,5 @@
 # gitleaks config. A seed: the repo owns this file after the first sync.
-title = "repo-config gitleaks config"
+title = "bootstrap gitleaks config"
 
 # Without this, the rules below *replace* the built-in rules of gitleaks,
 # instead of adding to them. The built-in rules also skip node_modules.
