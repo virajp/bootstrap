@@ -1,18 +1,18 @@
-# Adopt repo-config in a repository
+# Adopt bootstrap in a repository
 
 These instructions are for an AI agent that works in a consumer repository.
 Do the steps in sequence to make the repository get its shared files from
-`repo-config` (`git@github.com:virajp/repo-config.git`). Read `README.md` in
-`repo-config` for the sync contract.
+`bootstrap` (`git@github.com:virajp/bootstrap.git`). Read `README.md` in
+`bootstrap` for the sync contract.
 
 ## Rules
 
 - Ask the user before each choice that this file does not decide. Do not
   assume a tool, a value, or a path.
 - The shared files are grouped by tool. Each tool is a folder
-  `tools/<tool>/` in `repo-config`. A file at `tools/<tool>/<path>` goes to
+  `tools/<tool>/` in `bootstrap`. A file at `tools/<tool>/<path>` goes to
   `<path>` in the consumer repository.
-- The values file `.config/repo-config.toml` lists the tools of the
+- The values file `.config/bootstrap.toml` lists the tools of the
   repository. `repo_sync` syncs all the files of these tools.
 - Do not edit a synced file in the consumer repository. The next sync replaces
   it. Put repository-owned content in the places that the sync never writes:
@@ -29,14 +29,14 @@ Do the steps in sequence to make the repository get its shared files from
     calls a task, so do not call a formatter or a linter from a hook.
 - A seed file is different. The sync writes it only if it is missing. After
   that, the repository owns it.
-- To change a shared file, change it in `repo-config`, push it to `main`, then
+- To change a shared file, change it in `bootstrap`, push it to `main`, then
   sync again.
 - Prefix each tool call with `mise x --`, also in the task files and the hook
   entries of `.config/repo-sync/pre-commit.yaml`.
 
 ## Requirements
 
-- The machine has SSH access to `git@github.com:virajp/repo-config.git`. The
+- The machine has SSH access to `git@github.com:virajp/bootstrap.git`. The
   sync uses `BatchMode=yes`, so it does not ask for a password.
 - mise is installed. The `setup:configs:sync` task gets gomplate through mise.
 
@@ -84,18 +84,18 @@ refuses it in a submodule. When a submodule is in its root checkout, mise
 also loads the tools of the root. Thus a nested submodule still finds, for
 example, graphify.
 
-If a repository already has a `tools` list in `.config/repo-config.toml`,
+If a repository already has a `tools` list in `.config/bootstrap.toml`,
 tell the user. Then ask whether to do the steps again in that repository, or
 to go to the next repository.
 
 ## Step 1: Select the tools
 
-Make a shallow clone of `repo-config` into a temporary directory. Keep it
+Make a shallow clone of `bootstrap` into a temporary directory. Keep it
 until all repositories are complete.
 
 ```bash
 tmp=$(mktemp -d)
-git clone --quiet --depth 1 git@github.com:virajp/repo-config.git "$tmp"
+git clone --quiet --depth 1 git@github.com:virajp/bootstrap.git "$tmp"
 ```
 
 Read `"$tmp"/tools/*/tool.toml`. Show the user each tool with its
@@ -162,7 +162,7 @@ cp "$base/setup/configs/_default" "$base/setup/configs/sync" .config/mise/tasks/
 
 ## Step 3: Write the values file
 
-Write `.config/repo-config.toml`. Ask the user for each value.
+Write `.config/bootstrap.toml`. Ask the user for each value.
 
 | Key                                | Used by                    | Values                                                                                                                                                                                                                                                      |
 | ---------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -248,13 +248,13 @@ If `repo_sync` fails, read the exit code:
 | ---- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
 | 2    | No `tools` in the values file, a root-only tool in a submodule, or a template that cannot render | Correct the values file                         |
 | 2    | Neither `main` nor `develop` exists                                                              | Do step 4                                       |
-| 3    | A tool that is not in `repo-config`                                                              | Correct the `tools` list                        |
+| 3    | A tool that is not in `bootstrap`                                                                | Correct the `tools` list                        |
 | 5    | The clone failed, or `pre-commit autoupdate` failed                                              | Examine the network, the SSH key and the access |
 | 1    | A local file system error                                                                        | Read the `repo-sync:` lines on stderr           |
 
 A failure does not change an existing file.
 
-## Step 7: Supply the files that `repo-config` does not have
+## Step 7: Supply the files that `bootstrap` does not have
 
 The shared files refer to files that each repository must supply. Make sure
 that the repository has each file for the tools that it uses. If a file is
@@ -290,7 +290,7 @@ file in `conf.d` loads.
 Commit these files:
 
 - The synced files and the seed files.
-- `.config/repo-config.toml`, `.config/repo-sync/gitignore` and
+- `.config/bootstrap.toml`, `.config/repo-sync/gitignore` and
   `.config/repo-sync/pre-commit.yaml`.
 - The repository-owned files from step 5 and step 7.
 
@@ -309,7 +309,7 @@ This section is temporary. It is for the repositories that existed before the
 content. The sync never restores repository content.
 
 The sync deletes only two kinds of files: the merge tasks of the other branch
-model, and a `.config/mise/conf.d/*/mise*.toml` with the repo-config header
+model, and a `.config/mise/conf.d/*/mise*.toml` with the bootstrap header
 that it did not write. Thus you must delete each other obsolete file and
 rename each old task by hand. Do the items that apply to the repository, in
 this sequence. Show the user the list of changes before you make them.
@@ -397,9 +397,9 @@ Remove taplo too. dprint formats TOML now. Also remove the `[toml]` and
 `evenBetterToml.*` keys from `.vscode/settings.json`. Remove `npm:wrangler`:
 it is deprecated, and `npm:cf` of the `cloudflare` tool replaces it.
 
-Each tool must come from a repo-config tool. If the repository needs a tool
-that no repo-config tool installs, for example `npm:sort-package-json` or
-`rtk`, tell the user. Then add it to a repo-config tool, or make a new tool
+Each tool must come from a bootstrap tool. If the repository needs a tool
+that no bootstrap tool installs, for example `npm:sort-package-json` or
+`rtk`, tell the user. Then add it to a bootstrap tool, or make a new tool
 for it.
 
 If the old tool has a pinned version that is different from the shared one,
@@ -408,7 +408,7 @@ ships `lts` and `latest`.
 
 ### M7: Split an old `conf.d/_base`
 
-bootstrap and claude-plugins have an old `.config/mise/conf.d/_base/`. Its
+claude-plugins has an old `.config/mise/conf.d/_base/`. Its
 name is the same as the shared `_base`, but the content is different. Before
 the first sync, move its content:
 
@@ -510,15 +510,27 @@ Remove `actionlint`, `gh` and `glab` from the repository-owned mise files.
 
 ### M14: The mise environments
 
-1. Add `environments` to `.config/repo-config.toml` (step 1). Delete an old
+1. Add `environments` to `.config/bootstrap.toml` (step 1). Delete an old
    `core_tools` key: the `envs` of each tool decide its environments now.
 2. Move the repository variables of an old `_env/mise.toml` or
    `conf.d/repo/` to the `_repo/mise.<env>.toml` seeds (step M5). Move each
-   tool of an old `conf.d/repo/` to a repo-config tool (step M6). Then delete
+   tool of an old `conf.d/repo/` to a bootstrap tool (step M6). Then delete
    `conf.d/repo/`.
 3. Move the seeds of an old `conf.d/_env/` folder to `conf.d/_repo/`. The sync
    does not remove them, because a seed has no header.
 
 The next sync removes the old `conf.d/*/mise.toml`, `_env/mise.toml`,
 `_alias/mise.dev.toml`, `conf.d/_task/` and `conf.d/pre-commit/` files that
-have the repo-config header.
+have the header of this repository (`Synced from repo-config:` or `Synced from
+bootstrap:`).
+
+### M15: The rename to bootstrap
+
+This repository was `virajp/repo-config` before. GitHub redirects the old
+URL, so an old copy of the sync still works.
+
+1. Rename `.config/repo-config.toml` to `.config/bootstrap.toml`. The sync
+   still reads the old name, but it shows a notice.
+2. Run `mise run setup:configs`. It changes the header of each synced file
+   from `Synced from repo-config:` to `Synced from bootstrap:`. The sync
+   accepts both headers, so it still removes stale files with the old one.
