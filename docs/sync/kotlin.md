@@ -16,9 +16,10 @@ dependencies against the committed lockfiles.
 - The user edits Kotlin with an editor or an agent that uses a language
   server.
 - The repository root has a Gradle build with an executable `./gradlew`.
-  `setup:deps:kotlin` needs committed lockfiles (`dependencyLocking`) and a
-  `distributionSha256Sum` in `gradle/wrapper/gradle-wrapper.properties`. The
-  `android/` build of a Flutter app is for `setup:deps:flutter`, not for this
+  `setup:deps:kotlin` needs a `distributionSha256Sum` in
+  `gradle/wrapper/gradle-wrapper.properties`. It checks the lockfiles only of
+  the projects with `dependencyLocking`. The `android/` build of a Flutter app
+  is for `setup:deps:flutter`, not for this
   task.
 
 ## What the tool ships
