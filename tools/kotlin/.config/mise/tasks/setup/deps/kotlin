@@ -161,7 +161,7 @@ RESTORE=false
 print_files() {
   local file
   while IFS= read -r file; do
-    [[ -n "${file}" ]] && print_error "  ${file}"
+    [[ -z "${file}" ]] || print_error "  ${file}"
   done <<< "$1"
 }
 
