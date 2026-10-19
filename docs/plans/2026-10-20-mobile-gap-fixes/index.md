@@ -16,9 +16,9 @@ gaps_of:
 
 ## Status
 
-**BLOCKED**
+**RUNNING**
 
-BLOCKED at wave 0 — preflight: doctor blocking findings (graphify CLI has no
+RUNNING since 2026-10-19T19:56Z in .worktrees/2026-10-20-mobile-gap-fixes
 version; no graph reachable); worktree .worktrees/2026-10-20-mobile-gap-fixes
 
 ## Consent
@@ -187,15 +187,15 @@ in a temporary folder, as the earlier plan did; nothing of it is committed.
 
 ## Units
 
-| Id | Wave | Unit file                      | Kind   | Owns                                                                                                                                                       | Depends on | Status  | Commit |
-| -- | ---- | ------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------- | ------ |
-| U1 | 1    | [01-vwf.md](01-vwf.md)         | edit   | `docs/sync/vwf.md`                                                                                                                                         | —          | pending |        |
-| U2 | 1    | [02-kotlin.md](02-kotlin.md)   | edit   | `tools/kotlin/.config/mise/tasks/setup/deps/kotlin`, `docs/sync/kotlin.md`                                                                                 | —          | pending |        |
-| U3 | 1    | [03-android.md](03-android.md) | edit   | `tools/android/.config/mise/tasks/setup/deps/android`, `tools/android/.config/mise/tasks/code/lint/android`, `docs/sync/android.md`                        | —          | pending |        |
-| U4 | 1    | [04-swift.md](04-swift.md)     | edit   | `tools/swift/.config/mise/tasks/setup/deps/swift`, `docs/sync/swift.md`                                                                                    | —          | pending |        |
-| U5 | 2    | [05-review.md](05-review.md)   | review | —                                                                                                                                                          | U2, U3, U4 | pending |        |
-| U6 | 3    | [06-docs.md](06-docs.md)       | edit   | `README.md`, `CLAUDE.md`, `docs/sync/index.md`, `docs/sync/migrate.md`, and any other doc that `vwf:docs-sync` finds falsified, except the files U1–U4 own | U1, U5     | pending |        |
-| U7 | 4    | [07-gates.md](07-gates.md)     | edit   | none (a fix it needs goes back to the unit that owns the file)                                                                                             | U6         | pending |        |
+| Id | Wave | Unit file                      | Kind   | Owns                                                                                                                                                       | Depends on | Status  | Commit    |
+| -- | ---- | ------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------- | --------- |
+| U1 | 1    | [01-vwf.md](01-vwf.md)         | edit   | `docs/sync/vwf.md`                                                                                                                                         | —          | green   | `7ad3632` |
+| U2 | 1    | [02-kotlin.md](02-kotlin.md)   | edit   | `tools/kotlin/.config/mise/tasks/setup/deps/kotlin`, `docs/sync/kotlin.md`                                                                                 | —          | green   | `141d056` |
+| U3 | 1    | [03-android.md](03-android.md) | edit   | `tools/android/.config/mise/tasks/setup/deps/android`, `tools/android/.config/mise/tasks/code/lint/android`, `docs/sync/android.md`                        | —          | green   | `b64d96b` |
+| U4 | 1    | [04-swift.md](04-swift.md)     | edit   | `tools/swift/.config/mise/tasks/setup/deps/swift`, `docs/sync/swift.md`                                                                                    | —          | green   | `7289d1f` |
+| U5 | 2    | [05-review.md](05-review.md)   | review | —                                                                                                                                                          | U2, U3, U4 | pending |           |
+| U6 | 3    | [06-docs.md](06-docs.md)       | edit   | `README.md`, `CLAUDE.md`, `docs/sync/index.md`, `docs/sync/migrate.md`, and any other doc that `vwf:docs-sync` finds falsified, except the files U1–U4 own | U1, U5     | pending |           |
+| U7 | 4    | [07-gates.md](07-gates.md)     | edit   | none (a fix it needs goes back to the unit that owns the file)                                                                                             | U6         | pending |           |
 
 ## Shared-file rule
 
@@ -297,11 +297,37 @@ A unit returns exactly this block and nothing else — no file contents, no diff
   (`skills/execute/references/review-unit.md`). Examine there why fresh
   `/code-review` rounds keep the count level, for a later plan in that repo.
 
+## Gaps surfaced during execution
+
+- G1 (U2, non-blocking): the init script sets `LockMode.STRICT` before the build
+  script runs, so a build script that sets its own `lockMode` (for example
+  `LENIENT`) overrides it. The plan does not say which wins. Assumption taken:
+  an explicit lock mode in the build is the build owner's choice.
+- G2 (U3, non-blocking): R12 makes `git ls-files` the file source of the android
+  detects, and the plan does not cover a Gradle root that is not a git work
+  tree. Assumption taken: `git ls-files` lists nothing there, so
+  `setup:deps:android` does not apply and prints nothing.
+- G3 (R1, non-blocking): the comment at `tools/swift/tool.toml:1` ("Swift and
+  SwiftPM from the host Xcode (macOS only).") is false after R14 and R15. No
+  unit owns the file (Shared-file rule: `tools/*/tool.toml` not changed), and U6
+  must not touch `tools/**`. It stays as it is.
+
 ## Run log
 
-| Wave | Unit      | Model  | Round | Outcome | Detail                                                                                                                                                                                                                                                                                            | Commit |
-| ---- | --------- | ------ | ----- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 0    | preflight | sonnet | 1     | blocked | wave gate lines 1 and 2 green; format check skipped (no `covers:`); doctor BLOCKING: graphify CLI shim has no version (`mise x -- graphify` → "No version is set for shim: graphify"), no `graphify-out/` graph in the worktree or the main checkout; why: hard halt on a doctor blocking finding | —      |
+| Wave | Unit            | Model  | Round | Outcome     | Detail                                                                                                                                                                                                                                                                                                                                                                              | Commit |
+| ---- | --------------- | ------ | ----- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 0    | preflight       | sonnet | 1     | blocked     | wave gate lines 1 and 2 green; format check skipped (no `covers:`); doctor BLOCKING: graphify CLI shim has no version (`mise x -- graphify` → "No version is set for shim: graphify"), no `graphify-out/` graph in the worktree or the main checkout; why: hard halt on a doctor blocking finding                                                                                   | —      |
+| 0    | preflight       | sonnet | 2     | pass        | resume after `30b9e8f` (graphify in mise) merged from main at `9c283db`; doctor BLOCKING none, LSP none (no `.config/vwf.yaml`); non-blocking: no `.graphifyignore`, no `mempalace.yaml`, no `post-merge` hook type; wave gate lines 1 and 2 green; stack conventions skipped (no `code` unit); order: W1 U1,U2,U3,U4 → W2 U5 → W3 U6 → W4 U7                                       | —      |
+| 1    | U1 remove tools | opus   | 1     | pass        | edit; DECIDED: step 1 cites the Add closure rule; step 4 names dependency-only tools; Template path is the output path. GAP: assumed every tool has a `docs/sync/<tool>.md` ships table                                                                                                                                                                                             | —      |
+| 1    | U4 swift        | opus   | 1     | pass        | edit; DECIDED: SwiftPM-only check runs `swift --version` (the `/usr/bin/swift` stub is always on PATH); both `Package.swift` and `.xcodeproj` → Xcode check only; multi-`.xcodeproj` check stays before the host check. Linux simulated with stub `uname`: header + warn, exit 0                                                                                                    | —      |
+| 1    | U2 kotlin       | opus   | 1     | pass        | edit; DECIDED: one init script, STRICT line added only without `--upgrade`; `lockMode.set(LockMode.STRICT)` in `allprojects` (Context7: Property since Gradle 6.4); no-lockfile check after the resolve. GAP: G1 (build-script `lockMode` overrides STRICT)                                                                                                                         | —      |
+| 1    | U3 android      | opus   | 1     | pass        | edit; DECIDED: one `git ls-files -z` list, `build/` and `.gradle/` still skipped; level pattern already matched Groovy forms; root-level file lints every module; folders passed one per line; Context7 confirmed `projectsEvaluated`, `allprojects`, `projectDir`. GAP: G2 (non-git Gradle root); R9 and the init script not run end to end (no SDK install, Gradle runs are U7's) | —      |
+| 1    | R1              | opus   | 1     | findings(7) | RULINGS: U4 departed from R15 (multi-`.xcodeproj` fails on non-Darwin); U4 swift.md:26 Xcode-only text; U2 kotlin.md:42 + task:124 "every configuration"; U2 kotlin.md:52 "committed lockfile"; U3 android.md:13 Groovy relevance; U3 android.md:39,40,84 fold; U3 module_of prints `all`, not `.` (Edit 4). tool.toml:1 → G3. CONTRACT clean                                       | —      |
+| 1    | U4 swift        | opus   | 2     | pass        | edit; R1 loop-back: host check before the multi-`.xcodeproj` check (non-Darwin: warn, exit 0); swift.md:3,:26,:48 and multi-project text fixed. DECIDED: multi-`.xcodeproj` failure stays on macOS only                                                                                                                                                                             | —      |
+| 1    | U2 kotlin       | opus   | 2     | pass        | edit; R1 loop-back: "resolvable-only configurations" in kotlin.md table and task success line; "lockfiles on the disk", "without a lockfile". DECIDED: same fix in `#MISE description`, cache reason and doc intro; "commit the lockfiles" hints kept                                                                                                                               | —      |
+| 1    | U3 android      | opus   | 2     | pass        | edit; R1 loop-back: `module_of` prints `.` for the root (Edit 4); android.md relevance names Groovy DSL; lint paragraph and refold to 80 columns. DECIDED: a file under a folder with no build file maps to `.`. Note: a root module folder named `all` collides with the lint-all marker (lints too much) — a code finding for U5, not a plan gap                                  | —      |
+| 1    | R1              | opus   | 2     | pass        | wave review round 2: FINDINGS 0, CONTRACT clean, RULINGS clean                                                                                                                                                                                                                                                                                                                      | —      |
+| 1    | gate            | —      | 1     | pass        | wave gate lines 1 and 2 exit 0 (57/57 in sync); no `UNRESOLVED:`; commits U1 `7ad3632`, U2 `141d056`, U3 `b64d96b`, U4 `7289d1f`                                                                                                                                                                                                                                                    | —      |
 
 ## Launch
 
