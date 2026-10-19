@@ -36,11 +36,15 @@ if ! grep -Eqs '^[[:space:]]*distributionSha256Sum[[:space:]]*[=:][[:space:]]*[0
 fi
 print_success "distributionSha256Sum is set."
 
-# The lockfiles that git sees, relative to the root: tracked, and untracked
-# but not ignored. Gradle writes gradle.lockfile, settings-gradle.lockfile and
-# buildscript-gradle.lockfile; the pattern matches all of them in any folder.
+# The lockfiles on the disk below the root. Gradle writes
+# gradle.lockfile, settings-gradle.lockfile and buildscript-gradle.lockfile;
+# the pattern matches all of them in any folder. find does not use git, so the
+# result is correct in a root that is not a git repository and for ignored
+# lockfiles. It does not go into hidden folders (.git, .gradle, worktrees),
+# build outputs or node_modules.
 lockfiles() {
-  git ls-files --cached --others --exclude-standard -- '*gradle.lockfile'
+  find . \( -type d \( -name '.?*' -o -name build -o -name node_modules \) -prune \) \
+    -o \( -type f -name '*gradle.lockfile' -print \)
 }
 
 # The temporary folder holds the init script and the dependencyUpdates log.
