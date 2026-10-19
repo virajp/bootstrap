@@ -88,16 +88,30 @@ if [[ "${UPGRADE}" == "true" ]]; then
   print_subheader "Writing new lockfiles for every project ..."
   ./gradlew --init-script "${INIT_SCRIPT}" bootstrapResolveAll --write-locks --refresh-dependencies
 
+  # Gradle writes a lockfile only for a project with dependencyLocking. The
+  # last message tells whether there is anything to commit.
+  LOCKS=$(lockfiles) || LOCKS=''
+  UPDATED=$(git ls-files --modified --others --exclude-standard -- '*gradle.lockfile') || UPDATED=''
+  upgrade_done() {
+    if [[ -z "${LOCKS}" ]]; then
+      print_warn "No project has dependencyLocking, so the resolve wrote no lockfile."
+    elif [[ -n "${UPDATED}" ]]; then
+      print_success "Commit the new lockfiles."
+    else
+      print_success "The lockfiles did not change."
+    fi
+  }
+
   # dependencyUpdates comes from the ben-manes versions plugin. Only Gradle's
   # task-not-found error is a skip; any other failure is the build's.
   print_subheader "Checking for outdated Gradle dependencies ..."
   if ./gradlew dependencyUpdates 2>&1 | tee "${TMP_DIR}/outdated.log"; then
-    print_success "Commit the new lockfiles."
+    upgrade_done
     exit 0
   fi
   if grep -Eq "Task '(:)?dependencyUpdates' not found" "${TMP_DIR}/outdated.log"; then
     print_info "No dependencyUpdates task (the ben-manes plugin com.github.ben-manes.versions), so no report."
-    print_success "Commit the new lockfiles."
+    upgrade_done
     exit 0
   fi
   print_error "./gradlew dependencyUpdates failed; its output is above."
@@ -105,8 +119,9 @@ if [[ "${UPGRADE}" == "true" ]]; then
 fi
 
 # A normal run writes the locks of every configuration, then compares them
-# with git. A module without a committed lockfile gets a new one, so the check
-# does not depend on LockMode.STRICT in the build.
+# with git. A module with dependencyLocking but without a committed lockfile
+# gets a new one, so the check does not depend on LockMode.STRICT in the
+# build. A module without dependencyLocking gets no lockfile and is not checked.
 lockfiles > "${TMP_DIR}/lockfiles" || {
   print_error "The lock check needs a git repository at ${MISE_PROJECT_ROOT}."
   exit 1
@@ -125,16 +140,49 @@ print_subheader "Checking the lockfiles against git ..."
 # Modified or deleted against the index, and untracked.
 CHANGED=$(git ls-files --modified --others --exclude-standard -- '*gradle.lockfile' | sort -u) || CHANGED=''
 
+# Split them: the ones that the resolve changed or created need --upgrade; the
+# ones that already differed from git before the run, and that the resolve
+# left as they were, only need a commit.
+RESOLVED=''
+UNCOMMITTED=''
+while IFS= read -r file; do
+  [[ -n "${file}" ]] || continue
+  if [[ ! -f "${file}" ]] || { [[ -f "${TMP_DIR}/before/${file}" ]] && cmp -s "${TMP_DIR}/before/${file}" "${file}"; }; then
+    UNCOMMITTED="${UNCOMMITTED}${file}"$'\n'
+  else
+    RESOLVED="${RESOLVED}${file}"$'\n'
+  fi
+done <<< "${CHANGED}"
+
 lockfiles >> "${TMP_DIR}/lockfiles"
 restore_lockfiles
 RESTORE=false
 
-if [[ -n "${CHANGED}" ]]; then
-  print_error "The resolve changed or created lockfiles that git does not have:"
+print_files() {
+  local file
   while IFS= read -r file; do
-    print_error "  ${file}"
-  done <<< "${CHANGED}"
+    [[ -n "${file}" ]] && print_error "  ${file}"
+  done <<< "$1"
+}
+
+if [[ -n "${RESOLVED}" ]]; then
+  print_error "The resolve changed or created lockfiles that git does not have:"
+  print_files "${RESOLVED}"
+fi
+if [[ -n "${UNCOMMITTED}" ]]; then
+  print_error "These lockfiles already differed from git before the run:"
+  print_files "${UNCOMMITTED}"
+fi
+if [[ -n "${RESOLVED}" ]]; then
   print_yellow "Run 'mise run setup:deps:kotlin --upgrade', then commit the lockfiles."
   exit 1
 fi
-print_success "The committed lockfiles cover every configuration."
+if [[ -n "${UNCOMMITTED}" ]]; then
+  print_yellow "Commit the lockfiles, or restore them from git, then re-run."
+  exit 1
+fi
+if ! grep -q . "${TMP_DIR}/lockfiles"; then
+  print_warn "No project has dependencyLocking, so there is no lockfile to check."
+  exit 0
+fi
+print_success "The committed lockfiles cover every configuration of each project with dependencyLocking."

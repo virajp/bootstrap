@@ -36,9 +36,9 @@ dependencies against the committed lockfiles.
 
 ## Tasks
 
-| Task                | Use                                                                                                                                  |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `setup:deps:kotlin` | Resolve every configuration of every Gradle project, and fail when the committed lockfiles do not cover it. `--upgrade` writes them. |
+| Task                | Use                                                                                                                               |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:deps:kotlin` | Resolve every configuration of every Gradle project, and fail when a lockfile differs from git. `--upgrade` writes the lockfiles. |
 
 - The task applies only when the repository root has an executable
   `./gradlew`. Else it prints nothing. It does not look in `android/` or in
@@ -46,13 +46,20 @@ dependencies against the committed lockfiles.
 - It fails when `gradle/wrapper/gradle-wrapper.properties` has no
   `distributionSha256Sum` of 64 hex digits.
 - A normal run resolves with `--write-locks`, then compares each
-  `*gradle.lockfile` with git. A changed or new lockfile fails the run and is
-  named, so a module without a committed lockfile fails even without
-  `LockMode.STRICT`. The run restores the lockfiles as it found them.
+  `*gradle.lockfile` with git. A lockfile that differs from git, or that git
+  does not track, fails the run and is named. So a module with
+  `dependencyLocking` but without a committed lockfile fails even without
+  `LockMode.STRICT`. The task tells `--upgrade` for a lockfile that the
+  resolve changed or created, and a commit for one that already differed from
+  git before the run. The run restores the lockfiles as it found them.
+- Gradle writes a lockfile only for a project with `dependencyLocking`. The
+  task does not check a project without it. When no project has it, the
+  normal run prints a warning and passes.
 - `--upgrade` resolves with `--write-locks --refresh-dependencies` and keeps
   the new lockfiles. Then it runs `./gradlew dependencyUpdates` if the
-  ben-manes plugin `com.github.ben-manes.versions` is applied. Commit the
-  lockfiles after it.
+  ben-manes plugin `com.github.ben-manes.versions` is applied. It ends with
+  "Commit the new lockfiles." when a lockfile differs from git, and with a
+  warning when the build has no lockfile.
 
 ## Pre-commit hooks
 
@@ -68,12 +75,15 @@ None.
    platform, tell the user.
 2. The tool adds `java` only as a dependency, so `java` is in dev only,
    unless another selected tool puts `java` in CI through a mise `depends`
-   (for example `flutter`). If CI builds with Gradle and `java` is not in CI,
-   add `java` to `tools`. See `java.md`.
-3. If the root Gradle build does not lock its dependencies, tell the user that
-   `setup:deps:kotlin` fails until each project has
-   `dependencyLocking { lockAllConfigurations() }` and the lockfiles are
-   committed (`mise run setup:deps:kotlin --upgrade` writes them).
+   (for example `flutter`). `setup` runs `setup:deps:kotlin` in every
+   environment, and the task runs `./gradlew` when the root has one. If the
+   root has an executable `./gradlew`, CI runs `mise run setup`, and `java` is
+   not in CI, add `java` to `tools`. See `java.md`.
+3. If a project of the root Gradle build does not lock its dependencies, tell
+   the user that `setup:deps:kotlin` does not check that project. It is
+   checked after the project has
+   `dependencyLocking { lockAllConfigurations() }` and its lockfile is
+   committed (`mise run setup:deps:kotlin --upgrade` writes it).
 4. If `gradle/wrapper/gradle-wrapper.properties` has no
    `distributionSha256Sum`, tell the user to add the checksum that Gradle
    publishes for the distribution.
