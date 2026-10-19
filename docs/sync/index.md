@@ -23,18 +23,20 @@ then keeps the repository equal to `bootstrap`, without an agent.
 
 ## Files in this folder
 
-| File         | Use                                                                         |
-| ------------ | --------------------------------------------------------------------------- |
-| `index.md`   | This file: the general steps of an adoption.                                |
-| `migrate.md` | The items for a repository that has older copies, or the old name.          |
-| `<tool>.md`  | One file for each folder in `tools/`: when the tool is relevant, and usage. |
+| File         | Use                                                                                            |
+| ------------ | ---------------------------------------------------------------------------------------------- |
+| `index.md`   | This file: the general steps of an adoption.                                                   |
+| `migrate.md` | The items for a repository that has older copies, or the old name.                             |
+| `<tool>.md`  | One file for each folder in `tools/`: when the tool is relevant, and usage.                    |
+| `vwf.md`     | The entry point for the vwf and stackgen plugins: `add tools` and `remove tools` instructions. |
 
-The tool files are `base.md`, `bun.md`, `claude-tool.md`, `cloudflare.md`,
-`docker.md`, `doppler.md`, `flutter.md`, `fnox.md`, `gcloud.md`, `github.md`,
-`gitlab.md`, `kotlin.md`, `node.md`, `pulumi.md`, `python.md`, `rust.md` and
-`vscode.md`. The file of the `claude` tool is `claude-tool.md`, because a
-file system that ignores case reads `claude.md` as `CLAUDE.md`, and AI agents
-load that name as instructions.
+The tool files are `android.md`, `base.md`, `bun.md`, `claude-tool.md`,
+`cloudflare.md`, `docker.md`, `doppler.md`, `flutter.md`, `fnox.md`,
+`gcloud.md`, `github.md`, `gitlab.md`, `java.md`, `kotlin.md`, `node.md`,
+`pulumi.md`, `python.md`, `rust.md`, `swift.md` and `vscode.md`. The file of
+the `claude` tool is `claude-tool.md`, because a file system that ignores case
+reads `claude.md` as `CLAUDE.md`, and AI agents load that name as
+instructions.
 
 ## Rules
 
@@ -163,7 +165,9 @@ and the linter need them.
 A tool that you list in `tools` is installed in the environments of its
 `envs`. A tool that only a dependency adds is installed in dev only. Thus list
 the core language of the repository in `tools`. A TypeScript repository lists
-`node`, which then goes to every selected environment.
+`node`, which then goes to every selected environment. A mise `depends` is
+different: it is installed in the environments of the mise tool that needs it.
+For example, `flutter` adds `android-sdk` and `java` in dev and ci.
 
 Ask which mise environments the repository needs. Offer only these:
 

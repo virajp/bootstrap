@@ -16,10 +16,14 @@ at the root (`README.md`, `CLAUDE.md`) and in `docs/` are for this repository
 only.
 
 `docs/sync/` tells an AI agent how to adopt `bootstrap` in a consumer
-repository. After the adoption, `repo-sync` keeps the consumer in sync.
+repository, and how to add and remove tools after the adoption. After the
+adoption, `repo-sync` keeps the consumer in sync.
 
 - `docs/sync/index.md`: the general steps of an adoption.
 - `docs/sync/migrate.md`: the items for a repository with older copies.
+- `docs/sync/vwf.md`: the entry point for the vwf and stackgen plugins. It
+  accepts `add tools` and `remove tools` instructions. A plugin names this path
+  and no other bootstrap path.
 - `docs/sync/<tool>.md`: one file for each folder in `tools/`, with the same
   sections in each file. The file of the `claude` tool is `claude-tool.md`,
   because a file system that ignores case reads `claude.md` as `CLAUDE.md`.
