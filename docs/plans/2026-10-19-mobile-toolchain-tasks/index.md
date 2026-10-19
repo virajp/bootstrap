@@ -12,9 +12,10 @@ gaps_of: []
 
 ## Status
 
-**RUNNING**
+**COMPLETE**
 
-RUNNING since 2026-10-19 23:50 in .worktrees/2026-10-19-mobile-toolchain-tasks
+COMPLETE 2026-10-20 — 307e7ca, 0124a01, 6d04733, 0869d42, 12b4f8c, 05839a0,
+0f50f9a, 2333ff1
 
 ## Consent
 
@@ -170,14 +171,14 @@ committed.
 
 ## Units
 
-| Id | Wave | Unit file                      | Kind   | Owns                                                                                                                                                       | Depends on | Status  | Commit    |
-| -- | ---- | ------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------- | --------- |
-| U1 | 1    | [01-kotlin.md](01-kotlin.md)   | edit   | `tools/kotlin/.config/mise/tasks/setup/deps/kotlin`, `docs/sync/kotlin.md`                                                                                 | —          | green   | `307e7ca` |
-| U2 | 1    | [02-swift.md](02-swift.md)     | edit   | `tools/swift/.config/mise/tasks/setup/deps/swift`, `docs/sync/swift.md`                                                                                    | —          | green   | `0124a01` |
-| U3 | 1    | [03-android.md](03-android.md) | edit   | `tools/android/.config/mise/tasks/setup/deps/android`, `tools/android/.config/mise/tasks/code/lint/android`, `docs/sync/android.md`                        | —          | green   | `6d04733` |
-| U4 | 2    | [04-review.md](04-review.md)   | review | —                                                                                                                                                          | U1, U2, U3 | green   |           |
-| U5 | 3    | [05-docs.md](05-docs.md)       | edit   | `README.md`, `CLAUDE.md`, `docs/sync/index.md`, `docs/sync/migrate.md`, and any other doc that `vwf:docs-sync` finds falsified, except the files U1–U3 own | U4         | green   |           |
-| U6 | 4    | [06-gates.md](06-gates.md)     | edit   | none (a fix it needs goes back to the unit that owns the file)                                                                                             | U5         | pending |           |
+| Id | Wave | Unit file                      | Kind   | Owns                                                                                                                                                       | Depends on | Status | Commit    |
+| -- | ---- | ------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------ | --------- |
+| U1 | 1    | [01-kotlin.md](01-kotlin.md)   | edit   | `tools/kotlin/.config/mise/tasks/setup/deps/kotlin`, `docs/sync/kotlin.md`                                                                                 | —          | green  | `307e7ca` |
+| U2 | 1    | [02-swift.md](02-swift.md)     | edit   | `tools/swift/.config/mise/tasks/setup/deps/swift`, `docs/sync/swift.md`                                                                                    | —          | green  | `0124a01` |
+| U3 | 1    | [03-android.md](03-android.md) | edit   | `tools/android/.config/mise/tasks/setup/deps/android`, `tools/android/.config/mise/tasks/code/lint/android`, `docs/sync/android.md`                        | —          | green  | `6d04733` |
+| U4 | 2    | [04-review.md](04-review.md)   | review | —                                                                                                                                                          | U1, U2, U3 | green  |           |
+| U5 | 3    | [05-docs.md](05-docs.md)       | edit   | `README.md`, `CLAUDE.md`, `docs/sync/index.md`, `docs/sync/migrate.md`, and any other doc that `vwf:docs-sync` finds falsified, except the files U1–U3 own | U4         | green  |           |
+| U6 | 4    | [06-gates.md](06-gates.md)     | edit   | none (a fix it needs goes back to the unit that owns the file)                                                                                             | U5         | green  |           |
 
 ## Shared-file rule
 
@@ -388,6 +389,12 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 4    | U1           | opus  | 4     | pass         | fix for U6: ``print_files`` line 164 `[[ -z "${file}" ]]                                                                                                                                                                                                                                                                                                                                                                                                                              |           | print_error``, so a failing run prints both lists and the hint and still exits 1; stub check under ``/bin/bash` 3.2, tree clean | `2333ff1` |
 | 4    | R4           | opus  | 1     | pass         | findings(0); CONTRACT clean; RULINGS clean                                                                                                                                                                                                                                                                                                                                                                                                                                            | —         |
 | 4    | gate         | —     | 1     | pass         | wave-gate line 1 exit 0; line 2 exit 0. U1 fixed after U4: late re-run U4-late2 due                                                                                                                                                                                                                                                                                                                                                                                                   | —         |
+| 4    | U4           | opus  | 1     | pass         | re-run 2 (`U4-late2`), review, range `970b2eb..2333ff1`, file kotlin task (U1); engine `/code-review` 10 findings, none caused by 2333ff1; reviewer no findings, VERDICT approve                                                                                                                                                                                                                                                                                                      | —         |
+| 4    | U4           | opus  | 1     | pass         | re-run 2 (`U4-late2`), security, same range; engine and reviewer no findings                                                                                                                                                                                                                                                                                                                                                                                                          | —         |
+| 4    | R4-late      | —     | —     | skipped      | `U4-late2` made no fix commit, so no contract review is due                                                                                                                                                                                                                                                                                                                                                                                                                           | —         |
+| 4    | U6           | opus  | 2     | pass         | final pass over the finished tree: lines 1 and 2 exit 0 (57/57); four skip runs exit 0, 0 bytes; scratch Kotlin step 4 exit 0, tree clean; step 5 exit 1, names `extra/gradle.lockfile`, prints the `--upgrade` hint, tree clean                                                                                                                                                                                                                                                      | —         |
+| —    | reconcile    | —     | —     | pass         | final wave gate (lines 1 and 2) and the gates the orchestrator keeps (skip runs, scratch Kotlin lock check) pass over the finished tree                                                                                                                                                                                                                                                                                                                                               | —         |
+| —    | landing      | —     | —     | pass         | Status COMPLETE; folder not archived (13 open gaps); backlog B03 `Done` via `/vwf:backlog done`                                                                                                                                                                                                                                                                                                                                                                                       | —         |
 
 ## Launch
 
