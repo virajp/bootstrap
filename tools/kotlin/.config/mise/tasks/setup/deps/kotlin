@@ -36,12 +36,11 @@ if ! grep -Eqs '^[[:space:]]*distributionSha256Sum[[:space:]]*[=:][[:space:]]*[0
 fi
 print_success "distributionSha256Sum is set."
 
-# The lockfiles on the disk below the root. Gradle writes
-# gradle.lockfile, settings-gradle.lockfile and buildscript-gradle.lockfile;
-# the pattern matches all of them in any folder. find does not use git, so the
-# result is correct in a root that is not a git repository and for ignored
-# lockfiles. It does not go into hidden folders (.git, .gradle, worktrees),
-# build outputs or node_modules.
+# The lockfiles on the disk below the root. Gradle writes gradle.lockfile,
+# settings-gradle.lockfile and buildscript-gradle.lockfile; the pattern matches
+# all of them in any folder. find does not use git, so the result is correct in
+# a root that is not a git repository and for ignored lockfiles. It does not go
+# into hidden folders (.git, .gradle, worktrees), build outputs or node_modules.
 lockfiles() {
   find . \( -type d \( -name '.?*' -o -name build -o -name node_modules \) -prune \) \
     -o \( -type f -name '*gradle.lockfile' -print \)
@@ -58,14 +57,14 @@ TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/bootstrap-gradle.XXXXXX")
 trap 'rm -rf "${TMP_DIR}"' EXIT
 trap 'exit 130' INT TERM
 
-# Every resolvable-only configuration of every project, not the root's alone.
-# A configuration that is also consumable (legacy default, archives) is for
-# other projects, so the task does not resolve it. The list is a copy, so a
-# resolve that adds a configuration does not change the loop. A normal run
-# sets LockMode.STRICT on each project and on its buildscript classpath when
-# Gradle creates the project, before its build script: a resolve fails on a
-# mismatch with a lockfile, and on a locked configuration with no lock state. --upgrade does not set STRICT, so a new
-# module gets its first lockfile there.
+# Every resolvable-only configuration of every project, not the root's alone. A
+# configuration that is also consumable (legacy default, archives) is for other
+# projects, so the task does not resolve it. The list is a copy, so a resolve
+# that adds a configuration does not change the loop. A normal run sets
+# LockMode.STRICT on each project and on its buildscript classpath when Gradle
+# creates the project, before its build script: a resolve fails on a mismatch
+# with a lockfile, and on a locked configuration with no lock state. --upgrade
+# does not set STRICT, so a new module gets its first lockfile there.
 INIT_SCRIPT="${TMP_DIR}/resolve-all.gradle"
 {
   printf '%s\n' 'allprojects { p ->'

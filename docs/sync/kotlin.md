@@ -47,13 +47,12 @@ dependencies against the lockfiles.
 - It fails when `gradle/wrapper/gradle-wrapper.properties` has no
   `distributionSha256Sum` of 64 hex digits.
 - A normal run sets `LockMode.STRICT` on each project and on its buildscript
-  classpath, then resolves without
-  `--write-locks`. Gradle enforces the lockfiles on the disk: a dynamic version
-  stays at its locked version, and a resolve that does not match a lockfile
-  fails. A locked configuration with no lock state also fails, for example a
-  new module without a lockfile. The Gradle output names the project
-  and the configuration, and the task tells `--upgrade`. The run changes no
-  file.
+  classpath, then resolves without `--write-locks`. Gradle enforces the
+  lockfiles on the disk: a dynamic version stays at its locked version, and a
+  resolve that does not match a lockfile fails. A locked configuration with no
+  lock state also fails, for example a new module without a lockfile. The Gradle
+  output names the project and the configuration, and the task tells
+  `--upgrade`. The run changes no file.
 - The task resolves only the configurations that are resolvable and not
   consumable (`canBeConsumed`). So it does not resolve the legacy `default`
   and `archives` configurations.
