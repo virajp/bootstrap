@@ -1,0 +1,11 @@
+/security-review — loop U5-late1, round 1, range 362cdaf..a4eb77a
+
+# Security review
+
+No vulnerabilities found. The identification pass returned NO FINDINGS:
+
+- The diff is 23 added and 25 removed lines, all rewrapped `#` comment lines in
+  setup/deps/kotlin and code/lint/android and one rewrapped paragraph in
+  docs/sync/kotlin.md.
+- With comment lines dropped and whitespace collapsed, each file hashes the same
+  before and after: no code, init-script content, find pattern or trap changed.
