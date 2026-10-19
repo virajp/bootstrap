@@ -12,9 +12,10 @@ gaps_of: []
 
 ## Status
 
-**APPROVED**
+**BLOCKED**
 
-APPROVED 2026-10-19 by the user
+BLOCKED at wave 0 (preflight) in .worktrees/2026-10-19-android-swift-java-tools
+— UNRESOLVED: wave-gate line 2 cannot run from a linked worktree; see Gaps G1
 
 ## Consent
 
@@ -262,10 +263,25 @@ A unit returns exactly this block and nothing else — no file contents, no diff
   `2026-10-18-vwf-hands-off-to-bootstrap` checks for it in its wave gate
   (`index.md:181-182`). It needs its own backlog item and plan.
 
+## Gaps surfaced during execution
+
+- G1 (blocking, all units): wave-gate line 2 cannot run from the run's worktree.
+  `tools/base/.config/mise/tasks/_scripts/repo-sync:850` refuses a
+  `REPO_SYNC_CLONE` whose `.git` is not a directory, and `.git` is a file in a
+  linked worktree. The line was green on 2026-10-19 because it ran in the main
+  checkout. Ruling needed: one of (a) fix `repo-sync` to accept a `.git` file
+  (`-e` in place of `-d` at :850 and :858) in its own change, landed on `main`
+  first; (b) change wave-gate line 2 in this folder so that it gives
+  `REPO_SYNC_CLONE` a path with a real `.git` directory that holds the
+  uncommitted wave edits; (c) another gate that the folder states.
+
 ## Run log
 
-| Wave | Unit | Model | Round | Outcome | Detail | Commit |
-| ---- | ---- | ----- | ----- | ------- | ------ | ------ |
+| Wave | Unit      | Model | Round | Outcome | Detail                                                                                                                                                                                                                                             | Commit |
+| ---- | --------- | ----- | ----- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 0    | preflight | —     | 1     | pass    | node: doctor — no blocking finding (repo has no `.config/vwf.yaml`: "not onboarded", information only); edit units only, so no LSP or conventions read                                                                                             | —      |
+| 0    | preflight | —     | 1     | pass    | node: wave-gate line 1 `mise run code` — exit 0                                                                                                                                                                                                    | —      |
+| 0    | preflight | —     | 1     | blocked | node: wave-gate line 2 — exit 5, `repo-sync: cannot use the clone <worktree> - nothing synced`; why: `repo-sync:850` tests `-d $REPO_SYNC_CLONE/.git`, and `.git` is a file in a linked worktree. Inherited from `main`, not caused by a unit (G1) | —      |
 
 ## Launch
 
