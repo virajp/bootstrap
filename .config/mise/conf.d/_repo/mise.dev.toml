@@ -3,3 +3,6 @@
 # repository; the next sync keeps your version. The shared variables are in
 # .config/mise.toml.
 [env]
+
+[tools]
+"pipx:graphifyy" = "latest"
