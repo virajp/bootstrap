@@ -325,6 +325,12 @@ A unit returns exactly this block and nothing else — no file contents, no diff
   also replaces an explicit `EMULATOR_IMAGE` at any API level, so the 4 KB image
   the user asked for is never installed. R12 does not say whether the shortcut
   applies to an explicit image. Kept as R12 says.
+- G7 (U5, non-blocking, ruling question on R4 and U2 Edit 2): the normal run
+  reports every `./gradlew` failure as a lockfile mismatch and advises
+  `--upgrade` — a network outage, a 401, a compile error or a JDK mismatch
+  included. After a transient failure that advice rewrites every lockfile with
+  `--refresh-dependencies`. The plan does not separate a lock failure from other
+  Gradle failures. Kept as Edit 2 says.
 
 ## Run log
 
@@ -346,6 +352,9 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 2    | U5              | opus   | 1     | findings(8) | review; range `30b9e8f..0f9c230`; engine `/code-review` 10 findings (engine/U5-1-review.log); reviewer 8 findings, SPEC COMPLIANCE met, API COMPAT n/a, VERDICT approve; ruling questions → G4 (R8 root lint), G5 (R5 tool configs), G6 (R12 explicit image); loop back U2: kotlin:119 non-git false warning; U3: android:37 build-logic arm, :203 ANDROID_HOME, lint:81 `all` collision, android:31 pathspecs; 0 findings on uncovered units; tags U5/review/1, U5/gap/1 | —         |
 | 2    | U2 kotlin       | opus   | 3     | pass        | edit; U5 r1 loop-back: `lockfiles()` uses `find` on the disk (skips hidden, `build`, `node_modules`), so a non-git root or ignored lockfiles no longer warn falsely. Note: `--upgrade` "did not change" check still uses git (not named by the finding)                                                                                                                                                                                                                   | `7a276fb` |
 | 2    | U3 android      | opus   | 3     | pass        | edit; U5 r1 loop-back: `git ls-files` pathspecs; every `build-logic/` file in the AGP detect (level detect `grep -I`); fail after the header when `ANDROID_HOME` is unset; lint-all marker `/` (no folder collision). DECIDED: unset `ANDROID_HOME` is an error, not "does not apply"                                                                                                                                                                                     | `b7ecfd4` |
+| 2    | U5              | opus   | 2     | pass        | security; range `30b9e8f..2919bfe`; engine `/security-review` no findings (engine/U5-2-security.log); reviewer FINDINGS none, VERDICT approve; tag U5/security/2                                                                                                                                                                                                                                                                                                          | —         |
+| 2    | U5              | opus   | 2     | findings(3) | review; range `30b9e8f..2919bfe`; engine `/code-review` 10 findings (engine/U5-2-review.log), 6 already recorded as G1, G2, G4–G6 or ruled by R15; reviewer 3 findings, SPEC COMPLIANCE met, VERDICT approve; guard: 8 → 3, none resurfaced; ruling question → G7 (every Gradle failure reported as a lock mismatch); loop back U2: kotlin:67 STRICT on buildscript locks, kotlin:84-93 + kotlin.md:65 `--upgrade` summary uses git; tags U5/review/2, U5/gap/2           | —         |
+| 2    | U2 kotlin       | opus   | 4     | pass        | edit; U5 r2 loop-back: STRICT also on `p.buildscript.dependencyLocking` (Context7: `ScriptHandler.getDependencyLocking()`); `--upgrade` summary compares `cksum` snapshots of `lockfiles()`, no git; kotlin.md agrees                                                                                                                                                                                                                                                     | `7637767` |
 
 ## Launch
 
