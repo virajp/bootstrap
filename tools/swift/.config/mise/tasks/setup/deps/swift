@@ -30,21 +30,30 @@ else
   print_header "Installing Swift dependencies ..."
 fi
 
+# On a host that is not macOS, the task skips, so setup on a Linux CI host
+# continues.
+HOST=$(uname -s) || HOST=''
+if [[ "${HOST}" != "Darwin" ]]; then
+  print_warn "Swift dependencies are macOS only, skipped"
+  exit 0
+fi
+
 if [[ ${#PROJECTS[@]} -gt 1 ]]; then
   print_error "The root has more than one *.xcodeproj: ${PROJECTS[*]}. Keep one."
   exit 1
 fi
 
-HOST=$(uname -s) || HOST=''
-if [[ "${HOST}" != "Darwin" ]]; then
-  print_error "Swift is macOS only; this host is ${HOST:-unknown}."
-  exit 1
-fi
-
-# swift and xcodebuild come from the Xcode that xcode-select selects, not from
-# mise. Without a full Xcode (only the Command Line Tools), xcodebuild fails.
-if ! xcodebuild -version > /dev/null 2>&1; then
-  print_error "Xcode is not selected. Run: sudo xcode-select -s /Applications/Xcode.app"
+# swift and xcodebuild come from the developer folder that xcode-select
+# selects, not from mise. An *.xcodeproj needs a full Xcode: with only the
+# Command Line Tools, xcodebuild fails. A SwiftPM-only root needs only swift,
+# which the Command Line Tools supply.
+if [[ ${#PROJECTS[@]} -gt 0 ]]; then
+  if ! xcodebuild -version > /dev/null 2>&1; then
+    print_error "Xcode is not selected. Run: sudo xcode-select -s /Applications/Xcode.app"
+    exit 1
+  fi
+elif ! swift --version > /dev/null 2>&1; then
+  print_error "swift is not available. Install the Command Line Tools: xcode-select --install"
   exit 1
 fi
 

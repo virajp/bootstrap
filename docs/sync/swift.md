@@ -1,6 +1,6 @@
 # The `swift` tool
 
-Swift and SwiftPM from the host Xcode (macOS only).
+Swift and SwiftPM from the host Xcode or Command Line Tools (macOS only).
 
 | Property  | Value |
 | --------- | ----- |
@@ -23,8 +23,9 @@ VS Code extensions: `swiftlang.swift-vscode`.
 
 ## mise tools
 
-None. Swift, SwiftPM and `sourcekit-lsp` come from the Xcode that
-`xcode-select` selects.
+None. Swift, SwiftPM and `sourcekit-lsp` come from the developer folder that
+`xcode-select` selects: a full Xcode for a root `*.xcodeproj`, or the Command
+Line Tools for a root with only `Package.swift`.
 
 ## Tasks
 
@@ -34,7 +35,7 @@ None. Swift, SwiftPM and `sourcekit-lsp` come from the Xcode that
 
 `setup:deps:swift` acts on the repository root only. It applies when the root
 has `Package.swift` or one `*.xcodeproj`, and runs for both when both exist.
-More than one root `*.xcodeproj` fails.
+On macOS, more than one root `*.xcodeproj` fails.
 
 - `Package.swift`: a normal run is
   `swift package resolve --force-resolved-versions`. `--upgrade` runs
@@ -45,8 +46,12 @@ More than one root `*.xcodeproj` fails.
   `Package.resolved` and resolves again. If the resolve fails, the task puts
   the old file back.
 
-The task fails on a host that is not macOS. It uses the Xcode that
-`xcode-select` selects, and fails when no Xcode is selected.
+On a host that is not macOS, the task prints a warning, skips and exits 0 for
+each Swift root, also for a root with more than one `*.xcodeproj`. Thus `setup`
+on a Linux CI host continues. It uses the developer folder that
+`xcode-select` selects. A root `*.xcodeproj` needs a full Xcode, and the task
+fails when no Xcode is selected. A root with only `Package.swift` needs only
+the Command Line Tools, and the task fails when `swift` is not available.
 
 ## Pre-commit hooks
 
@@ -58,10 +63,12 @@ None.
 
 ## Adapt to the repository
 
-1. The tool is for macOS only. There is no Linux toolchain. If the user
-   develops on a different platform, tell the user.
-2. Xcode must be installed and selected:
-   `sudo xcode-select -s /Applications/Xcode.app`.
+1. The tool is for macOS only. There is no Linux toolchain. On a different
+   host, `setup:deps:swift` skips. If the user develops on a different
+   platform, tell the user.
+2. For a root `*.xcodeproj`, Xcode must be installed and selected:
+   `sudo xcode-select -s /Applications/Xcode.app`. A root with only
+   `Package.swift` needs only the Command Line Tools: `xcode-select --install`.
 3. Commit `Package.resolved` (for an `*.xcodeproj`, the file in
    `<project>/project.xcworkspace/xcshareddata/swiftpm/`). A normal run of
    `setup:deps:swift` installs only the versions that it names. The task does
