@@ -1,7 +1,7 @@
 # The `kotlin` tool
 
 The Kotlin language server, and the task that resolves the Gradle
-dependencies against the committed lockfiles.
+dependencies against the lockfiles.
 
 | Property  | Value  |
 | --------- | ------ |
@@ -37,30 +37,35 @@ dependencies against the committed lockfiles.
 
 ## Tasks
 
-| Task                | Use                                                                                                                               |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `setup:deps:kotlin` | Resolve every configuration of every Gradle project, and fail when a lockfile differs from git. `--upgrade` writes the lockfiles. |
+| Task                | Use                                                                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:deps:kotlin` | Resolve the resolvable-only configurations of every Gradle project, and fail when the resolve does not match the lockfiles. `--upgrade` writes the lockfiles. |
 
 - The task applies only when the repository root has an executable
   `./gradlew`. Else it prints nothing. It does not look in `android/` or in
   another folder.
 - It fails when `gradle/wrapper/gradle-wrapper.properties` has no
   `distributionSha256Sum` of 64 hex digits.
-- A normal run resolves with `--write-locks`, then compares each
-  `*gradle.lockfile` with git. A lockfile that differs from git, or that git
-  does not track, fails the run and is named. So a module with
-  `dependencyLocking` but without a committed lockfile fails even without
-  `LockMode.STRICT`. The task tells `--upgrade` for a lockfile that the
-  resolve changed or created, and a commit for one that already differed from
-  git before the run. The run restores the lockfiles as it found them.
+- A normal run sets `LockMode.STRICT` on each project and on its buildscript
+  classpath, then resolves without `--write-locks`. Gradle enforces the
+  lockfiles on the disk: a dynamic version stays at its locked version, and a
+  resolve that does not match a lockfile fails. A locked configuration with no
+  lock state also fails, for example a new module without a lockfile. The Gradle
+  output names the project and the configuration, and the task tells
+  `--upgrade`. The run changes no file.
+- The task resolves only the configurations that are resolvable and not
+  consumable (`canBeConsumed`). So it does not resolve the legacy `default`
+  and `archives` configurations.
 - Gradle writes a lockfile only for a project with `dependencyLocking`. The
   task does not check a project without it. When no project has it, the
   normal run prints a warning and passes.
 - `--upgrade` resolves with `--write-locks --refresh-dependencies` and keeps
   the new lockfiles. Then it runs `./gradlew dependencyUpdates` if the
   ben-manes plugin `com.github.ben-manes.versions` is applied. It ends with
-  "Commit the new lockfiles." when a lockfile differs from git, and with a
-  warning when the build has no lockfile.
+  "Commit the new lockfiles." when the resolve added, changed or removed a
+  lockfile. It compares a checksum of each lockfile before and after the
+  resolve, so it does not use git. It ends with a warning when the build has
+  no lockfile.
 
 ## Pre-commit hooks
 

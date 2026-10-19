@@ -1,0 +1,14 @@
+/code-review high — loop U5, round 2, range 30b9e8f..2919bfe
+
+1. tools/android/.config/mise/tasks/code/lint/android:56 — module_of returns "." (root project only) for a file at the Gradle root or in a folder without a build file; before it returned "all". Root build files and lint configs (lint.xml, lint-baseline.xml, shared *.pro, Flutter android/build.gradle) now lint nothing in a multi-module build.
+2. tools/kotlin/.config/mise/tasks/setup/deps/kotlin:73 — filter canBeResolved && !canBeConsumed in both runs; plugin configurations made with configurations.create("detekt") (ktlint, jacocoAgent) are locked by lockAllConfigurations() but never checked or written.
+3. tools/kotlin/.config/mise/tasks/setup/deps/kotlin:117 — every ./gradlew failure is reported as a lockfile mismatch with the advice to run --upgrade. Failure: network outage, 401, script compile error, JDK mismatch → "The resolve does not match the lockfiles" → --upgrade rewrites every lockfile with --refresh-dependencies for no reason.
+4. tools/android/.config/mise/tasks/setup/deps/android:51 — detection reads files only through git ls-files (errors to /dev/null); outside a git work tree or on a safe.directory error the task exits 0 silently; opposite of the kotlin change that moved off git.
+5. tools/kotlin/.config/mise/tasks/setup/deps/kotlin:67 — STRICT is set only on the project's dependencyLocking; buildscript and settings locks (buildscript-gradle.lockfile, settings-gradle.lockfile) stay DEFAULT, so a locked buildscript classpath with no lock state passes. A build script that sets LENIENT overrides STRICT.
+6. tools/android/.config/mise/tasks/setup/deps/android:167 — an installed _ps16k variant replaces the requested image for every API level and an explicit EMULATOR_IMAGE; the requested image is never installed.
+7. tools/kotlin/.config/mise/tasks/setup/deps/kotlin:85 — --upgrade summary mixes find (LOCKS) with git ls-files (UPDATED); in a non-git root or with ignored lockfiles it prints "The lockfiles did not change." after it changed them.
+8. tools/swift/.config/mise/tasks/setup/deps/swift:36 — off macOS the task prints its header and a warning, then exits 0, against CLAUDE.md "Task output" rule 1 ("If it does not apply, it prints nothing and exits 0").
+9. tools/swift/.config/mise/tasks/setup/deps/swift:37 — a Package.swift-only root is skipped on Linux although `swift package resolve` works there; Package.resolved drift is no longer caught in Linux CI.
+10. tools/android/.config/mise/tasks/setup/deps/android:210 — the post-install check assumes the package folder equals its id (e.g. platforms/android-37.0 for a normalized level >= 37); if the SDK uses another folder name, a successful install fails on every run. (Weakest; not confirmed.)
+
+Engine notes: most confident are 1, 3, 4 and 8; 2 and 5 rest on recalled Gradle behaviour not checked against the docs; 1 is documented as intended in docs/sync/android.md.

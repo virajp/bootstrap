@@ -96,17 +96,32 @@ These cases are not a stop:
 Do the checks of "Before each instruction" first. A tool that another selected
 tool needs cannot be removed alone.
 
-1. Remove each tool name from `tools` in `.config/bootstrap.toml`.
-2. For each removed tool, read "What the tool ships" in `docs/sync/<tool>.md`
-   in the clone:
+1. Find the dependency-only tools that leave. Make two sets of tools, with
+   the rule of step 2 of "Add tools":
+   - The first set is the tools of `tools` in `.config/bootstrap.toml` before
+     the change, and each tool that they add in turn.
+   - The second set is the same tools without the removed tools, and each
+     tool that they add in turn.
+
+   A tool that is in the first set, is not in the second set, and is not in
+   `tools` is a dependency-only tool that leaves. Step 3 deletes its files
+   too.
+2. Remove each tool name from `tools` in `.config/bootstrap.toml`. Do not
+   change `tools` for a dependency-only tool. It was never in the list.
+3. For each removed tool and each dependency-only tool of step 1, read "What
+   the tool ships" in `docs/sync/<tool>.md` in the clone:
    - Delete each file of kind `Synced`. These files start with the bootstrap
      header.
+   - Delete each file of kind `Template` that has `Synced from bootstrap` in
+     its first three lines. The path in the row is the output path, with no
+     `.tmpl` suffix.
    - Keep each file of kind `Seed` or `Seed, template`. Each of them is a
      seed, and the repository owns it.
-   - Do not delete a file of kind `Generated`. Step 3 removes it.
-   - Do not delete a file of another kind, for example `Template`.
-3. Run `mise run setup:configs`. The sync removes the generated mise files of
-   the removed tools.
+   - Do not delete a file of kind `Generated`. Step 4 removes it.
+   - Keep a file of kind `Template` without that header in its first three
+     lines. Keep a file of any other kind.
+4. Run `mise run setup:configs`. The sync removes the generated mise files of
+   the removed tools and of the dependency-only tools of step 1.
 
 ## After the change
 

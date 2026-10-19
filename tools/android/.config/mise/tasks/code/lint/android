@@ -30,33 +30,36 @@ fi
 INFO=()
 [[ "${usage_debug:-false}" == "true" ]] && INFO=(--info)
 
-# Prints the Gradle path of the module of a file (relative to the Gradle
-# root), or "all" when the file is for the whole build: the root, gradle/,
-# settings.gradle.kts, build-logic/ or buildSrc/. buildSrc/ is not a Gradle
-# project, so :buildSrc:lint would fail. The module is the nearest folder with
-# build.gradle.kts or build.gradle.
+# Prints the folder of the module of a file (relative to the Gradle root, "."
+# for the root), or "/" when the file is for the whole build: gradle/,
+# settings.gradle(.kts), build-logic/ or buildSrc/. A relative folder path is
+# never "/", so no module folder is read as that marker. The module is the
+# nearest folder with build.gradle.kts or build.gradle, else the root. The init
+# script finds the project of that folder, so a projectDir that
+# settings.gradle(.kts) remaps is found too.
 module_of() {
   local file="$1" dir
   case "${file}" in
-    gradle/* | settings.gradle.kts | build-logic/* | buildSrc/*)
-      echo all
+    gradle/* | settings.gradle.kts | settings.gradle | build-logic/* | buildSrc/*)
+      echo /
       return 0
       ;;
   esac
   dir=$(dirname "${file}")
   while [[ "${dir}" != "." ]]; do
     if [[ -f "${ROOT}/${dir}/build.gradle.kts" || -f "${ROOT}/${dir}/build.gradle" ]]; then
-      echo ":${dir//\//:}"
+      echo "${dir}"
       return 0
     fi
     dir=$(dirname "${dir}")
   done
-  echo all
+  echo .
 }
 
 # code:lint passes its files to each code:lint:* task. Only the Android
 # sources and build files trigger the lint, and only the modules they are in.
-# MODULES_ARG holds their Gradle paths; it stays empty for every module.
+# MODULES_ARG holds their folders, one on each line; it stays empty for every
+# module.
 FILES=()
 [[ -n "${usage_files:-}" ]] && eval "FILES=(${usage_files})"
 MODULES_ARG=''
@@ -64,7 +67,7 @@ if ((${#FILES[@]})); then
   MODULES=''
   for file in "${FILES[@]}"; do
     case "${file}" in
-      *src/*.kt | *src/*.java | *src/*.xml | *.gradle.kts | *.pro | *libs.versions.toml | *lint.xml | *lint-baseline.xml) ;;
+      *src/*.kt | *src/*.java | *src/*.xml | *.gradle.kts | *.gradle | *.pro | *libs.versions.toml | *lint.xml | *lint-baseline.xml) ;;
       *)
         continue
         ;;
@@ -76,17 +79,19 @@ if ((${#FILES[@]})); then
     MODULES="${MODULES}$(module_of "${file}")"$'\n'
   done
   [[ -n "${MODULES}" ]] || exit 0
-  if ! grep -qx all <<< "${MODULES}"; then
-    MODULES_ARG=$(sort -u <<< "${MODULES}" | sed '/^$/d' | tr '\n' ' ')
+  if ! grep -qxF / <<< "${MODULES}"; then
+    MODULES_ARG=$(sort -u <<< "${MODULES}" | sed '/^$/d')
   fi
 fi
 
 # A module without the Android Gradle plugin, for example a Kotlin/JVM
 # library, has no lint task, and :<module>:lint would stop the build. The
 # init script makes one task that runs the lint task of each listed module
-# that has one. Every module means each project below the Gradle root, so the
-# pub plugins of a Flutter app, which are projects of its android/ build, are
-# not linted. An unknown module path fails.
+# that has one. It finds the project whose canonical projectDir is the
+# canonical folder. A folder with no project, for example buildSrc/ or an
+# included build, makes the lint run on every module. Every module means each
+# project below the Gradle root, so the pub plugins of a Flutter app, which
+# are projects of its android/ build, are not linted.
 TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/bootstrap-lint.XXXXXX")
 trap 'rm -rf "${TMP_DIR}"' EXIT
 INIT_SCRIPT="${TMP_DIR}/lint.gradle"
@@ -95,9 +100,15 @@ printf '%s\n' \
   '  def root = g.rootProject' \
   '  def rootDir = root.projectDir.toPath().normalize()' \
   '  def name = System.getenv("BOOTSTRAP_LINT_TASK")' \
-  '  def paths = (System.getenv("BOOTSTRAP_LINT_MODULES") ?: "").tokenize()' \
-  '  def projects = paths ? paths.collect { root.project(it) }' \
-  '    : root.allprojects.findAll { it.projectDir.toPath().normalize().startsWith(rootDir) }' \
+  '  def dirs = (System.getenv("BOOTSTRAP_LINT_MODULES") ?: "").tokenize("\n")' \
+  '  def projects = root.allprojects.findAll { it.projectDir.toPath().normalize().startsWith(rootDir) }' \
+  '  if (dirs) {' \
+  '    def found = dirs.collect { d ->' \
+  '      def dir = new File(root.projectDir, d).canonicalFile' \
+  '      root.allprojects.find { it.projectDir.canonicalFile == dir }' \
+  '    }' \
+  '    if (!found.contains(null)) projects = found.unique()' \
+  '  }' \
   '  root.tasks.register("bootstrapLint") { t ->' \
   '    projects.findAll { it.tasks.names.contains(name) }.each { t.dependsOn(it.tasks.named(name)) }' \
   '  }' \
