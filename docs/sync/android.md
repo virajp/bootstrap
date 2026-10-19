@@ -10,8 +10,9 @@ The Android SDK command-line tools.
 
 ## When the tool is relevant
 
-- The repository has an Android build: a `settings.gradle.kts` with the
-  Android Gradle plugin, or the `android/` folder of a Flutter app.
+- The repository has an Android build: a Gradle build with the Android Gradle
+  plugin, in the Kotlin DSL (`settings.gradle.kts`) or the Groovy DSL
+  (`settings.gradle`), or the `android/` folder of a Flutter app.
 - The `flutter` tool adds it.
 
 ## What the tool ships
@@ -36,45 +37,57 @@ The Android SDK command-line tools.
 | `code:lint:android`  | Run Android lint on the Gradle modules of the given files. `--fix` runs `lintFix`.                                                 |
 
 `setup:deps:android` applies only when the root has an executable `./gradlew`
-and a `*.gradle.kts` file, `build-logic/` or `gradle/libs.versions.toml`
-applies `com.android.application` or `com.android.library`. The `android/`
+and a `*.gradle.kts` or `*.gradle` file, `build-logic/` or
+`gradle/libs.versions.toml` applies `com.android.application` or
+`com.android.library`. The Kotlin DSL and the Groovy DSL are supported. The
+detects read only the files that git tracks or does not ignore, so an ignored
+folder, for example `.worktrees/` or `node_modules`, is not read. The `android/`
 folder of a Flutter app is for `setup:deps:flutter`.
 
 - The level is the env value `COMPILE_SDK`, else the first `compileSdk` in the
-  `build.gradle.kts` files, then in `build-logic/`, then in
-  `gradle/libs.versions.toml`. Only a literal number counts. Without a level,
-  the task fails. A bare level of 37 or more becomes `<level>.0`.
+  `build.gradle.kts` and `*.gradle` files, then in `build-logic/`, then in
+  `gradle/libs.versions.toml`. Only a literal number counts, with or without
+  `=` (`compileSdk = 36`, `compileSdk 35`, `compileSdkVersion 35`). Without a
+  level, the task fails. A bare level of 37 or more becomes `<level>.0`.
 - The emulator image is the env value `EMULATOR_IMAGE`, else
   `system-images/android-<targetSdk>/google_apis`, with `targetSdk` found as
   `compileSdk`. Without a `targetSdk` level, the task fails and tells the user
   to set `EMULATOR_IMAGE`. The task adds the ABI of the host: `arm64-v8a` on
   arm64, else `x86_64`. The ids use `/`, the form of `android sdk list`; an
   `EMULATOR_IMAGE` with `;` (the sdkmanager form) is accepted.
-- A package is installed when `$ANDROID_HOME/<id>/package.xml` exists. If
-  the image is not installed, the task checks it against
+- A package is installed when `$ANDROID_HOME/<id>/package.xml` exists. An
+  installed `_ps16k` variant of the image counts as the image: the task uses it
+  and names it. If the image is not installed, the task checks it against
   `android sdk list --all`. If the image is not in the list and its `_ps16k`
-  variant is, the task installs the variant and names it. From
-  `android-37.1`, only the `_ps16k` images exist. If neither is there, the
-  task fails and names both.
+  variant is, the task installs the variant and names it. From `android-37.1`,
+  only the `_ps16k` images exist. If neither is there, the task fails and names
+  both.
 - It installs the packages of `platform-tools`, `platforms/android-<level>`,
   `emulator` and the image that are not installed, with `android sdk install`
   of the `android-sdk` mise tool. When all four are installed, the task does
   not list or install, so it needs no network. Only the image is checked
   against the list. The install accepts the SDK license and writes
   `licenses/`.
+- After the install, each package must have its `package.xml`. An unknown
+  platform or image id that installs nothing fails the task, and the task
+  names the id.
 
 `code:lint:android` uses the Gradle root `./gradlew`, else `android/gradlew`,
 and applies only when `$ANDROID_HOME/platforms` exists. Given files, it runs
-only for a `src/` `.kt`, `.java` or `.xml` file, a `*.gradle.kts`, a `*.pro`,
-`libs.versions.toml`, `lint.xml` or `lint-baseline.xml`. It lints only the
-modules of those files: the nearest folder with `build.gradle.kts` or
-`build.gradle`. A file at the Gradle root, in `gradle/`, `build-logic/` or
-`buildSrc/` (not a Gradle project), or `settings.gradle.kts` lints every
-module, as a run without files does. Every module is each Gradle project
-below the Gradle root, so the pub plugins of a Flutter app, which are
-projects of its `android/` build, are not linted. A temporary init script
-runs `lint` (`lintFix` with `--fix`) in each of these modules that has the
-task; a module without the Android Gradle plugin has none and is skipped.
+only for a `src/` `.kt`, `.java` or `.xml` file, a `*.gradle.kts`, a
+`*.gradle`, a `*.pro`, `libs.versions.toml`, `lint.xml` or `lint-baseline.xml`.
+It lints only the modules of those files: the nearest folder with
+`build.gradle.kts` or `build.gradle`, else the Gradle root. The task finds the
+Gradle project whose `projectDir` is that folder, so a `projectDir` that
+`settings.gradle(.kts)` changes is found too. A file at the Gradle root, for
+example the root `build.gradle.kts`, lints only the root project. A folder with
+no project lints every module. A file in `gradle/`, `build-logic/` or
+`buildSrc/` (not a Gradle project), `settings.gradle.kts` or `settings.gradle`
+lints every module, as a run without files does. Every module is each Gradle
+project below the Gradle root, so the pub plugins of a Flutter app, which are
+projects of its `android/` build, are not linted. A temporary init script runs
+`lint` (`lintFix` with `--fix`) in each of these modules that has the task; a
+module without the Android Gradle plugin has none and is skipped.
 `--debug` adds `--info`.
 
 ## Pre-commit hooks

@@ -17,39 +17,62 @@ cd "${MISE_PROJECT_ROOT}"
 # executable ./gradlew and the Android Gradle plugin, the task does not apply
 # and prints nothing.
 [[ -x gradlew ]] || exit 0
-AGP_FILES=()
-[[ -d build-logic ]] && AGP_FILES+=(build-logic)
-[[ -f gradle/libs.versions.toml ]] && AGP_FILES+=(gradle/libs.versions.toml)
-HAS_AGP=false
-grep -rqsE --include='*.gradle.kts' --exclude-dir=build --exclude-dir=.gradle --exclude-dir=.git \
-  'com\.android\.(application|library)' . && HAS_AGP=true
-if [[ "${HAS_AGP}" == "false" ]] && ((${#AGP_FILES[@]})); then
-  grep -rqsE --exclude-dir=build --exclude-dir=.gradle \
-    'com\.android\.(application|library)' "${AGP_FILES[@]}" && HAS_AGP=true
-fi
-[[ "${HAS_AGP}" == "true" ]] || exit 0
 
-# Prints "<level> <file>" for the first hit of <key> (compileSdk or targetSdk):
-# the build.gradle.kts files, then build-logic/, then gradle/libs.versions.toml.
-# Only a literal level counts, for example `compileSdk = 36`,
-# `compileSdkVersion(34)` or `compileSdk = "36"` in the version catalog.
-# Prints nothing without a hit.
+# The detects read only the files that git tracks or does not ignore, so an
+# ignored folder (.worktrees/, .claude/worktrees/, node_modules) is not read.
+# The build/ and .gradle/ folders are not read either. LEVEL_FILES has the
+# order of the level detect: the build.gradle.kts and *.gradle files (Kotlin
+# and Groovy DSL), then build-logic/, then gradle/libs.versions.toml. Each
+# part is sorted.
+BUILD_FILES=()
+LOGIC_FILES=()
+CATALOG_FILES=()
+KTS_FILES=()
+while IFS= read -r -d '' file; do
+  [[ -f "${file}" ]] || continue
+  case "${file}" in
+    build/* | */build/* | .gradle/* | */.gradle/*)
+      continue
+      ;;
+    build-logic/*.kts | build-logic/*.kt | build-logic/*.gradle | build-logic/*.toml)
+      LOGIC_FILES+=("${file}")
+      ;;
+    build-logic/*) ;;
+    gradle/libs.versions.toml)
+      CATALOG_FILES+=("${file}")
+      ;;
+    build.gradle.kts | */build.gradle.kts | *.gradle)
+      BUILD_FILES+=("${file}")
+      ;;
+    *.gradle.kts)
+      KTS_FILES+=("${file}")
+      ;;
+  esac
+done < <(git ls-files -z --cached --others --exclude-standard 2> /dev/null | sort -z)
+LEVEL_FILES=(${BUILD_FILES[@]+"${BUILD_FILES[@]}"} ${LOGIC_FILES[@]+"${LOGIC_FILES[@]}"}
+  ${CATALOG_FILES[@]+"${CATALOG_FILES[@]}"})
+
+# The Android Gradle plugin is in the files of the level detect, or in an
+# other *.gradle.kts file, for example settings.gradle.kts.
+AGP_FILES=(${LEVEL_FILES[@]+"${LEVEL_FILES[@]}"} ${KTS_FILES[@]+"${KTS_FILES[@]}"})
+((${#AGP_FILES[@]})) || exit 0
+grep -qsE 'com\.android\.(application|library)' "${AGP_FILES[@]}" || exit 0
+
+# Prints "<level> <file>" for the first hit of <key> (compileSdk or targetSdk)
+# in LEVEL_FILES. Only a literal level counts, for example `compileSdk = 36`,
+# `compileSdkVersion(34)`, `compileSdk 35` or `compileSdkVersion 35` (Groovy
+# DSL), or `compileSdk = "36"` in the version catalog. Prints nothing without
+# a hit.
 detect_level() {
   local key="$1" pattern file hit
   pattern="(^|[^A-Za-z])${key}(Version)?[[:space:]]*[=(]?[[:space:]]*\"?[0-9]+(\.[0-9]+)?"
-  while IFS= read -r file; do
+  for file in ${LEVEL_FILES[@]+"${LEVEL_FILES[@]}"}; do
     hit=$(grep -hoE "${pattern}" "${file}" | head -n 1) || hit=''
     if [[ -n "${hit}" ]]; then
-      echo "$(echo "${hit}" | grep -oE '[0-9]+(\.[0-9]+)?$') ${file#./}"
+      echo "$(echo "${hit}" | grep -oE '[0-9]+(\.[0-9]+)?$') ${file}"
       return 0
     fi
-  done < <(
-    find . \( -name build -o -name .gradle -o -name .git -o -name build-logic \) -prune \
-      -o -type f -name build.gradle.kts -print | sort
-    [[ -d build-logic ]] && find build-logic \( -name build -o -name .gradle \) -prune \
-      -o -type f \( -name '*.kts' -o -name '*.kt' -o -name '*.toml' \) -print | sort
-    [[ -f gradle/libs.versions.toml ]] && echo gradle/libs.versions.toml
-  )
+  done
   return 0
 }
 
@@ -77,7 +100,7 @@ if [[ -n "${COMPILE_SDK:-}" ]]; then
 else
   HIT=$(detect_level compileSdk)
   if [[ -z "${HIT}" ]]; then
-    print_error "No compileSdk level found in the build.gradle.kts files, build-logic/ or gradle/libs.versions.toml"
+    print_error "No compileSdk level found in the build.gradle.kts and *.gradle files, build-logic/ or gradle/libs.versions.toml"
     print_info "Set COMPILE_SDK in the [env] of .config/mise/conf.d/_repo/mise.<env>.toml"
     exit 1
   fi
@@ -101,7 +124,7 @@ if [[ -n "${EMULATOR_IMAGE:-}" ]]; then
 else
   HIT=$(detect_level targetSdk)
   if [[ -z "${HIT}" ]]; then
-    print_error "No targetSdk level found in the build.gradle.kts files, build-logic/ or gradle/libs.versions.toml"
+    print_error "No targetSdk level found in the build.gradle.kts and *.gradle files, build-logic/ or gradle/libs.versions.toml"
     print_info "Set EMULATOR_IMAGE in the [env] of .config/mise/conf.d/_repo/mise.<env>.toml"
     exit 1
   fi
@@ -130,6 +153,14 @@ for package in platform-tools "${PLATFORM}" emulator; do
   installed "${package}" || MISSING+=("${package}")
 done
 
+# From android-37.1, only the _ps16k variant (16 KB pages) of an image exists.
+# An installed variant counts as the image, so the task needs no network list.
+VARIANT="${IMAGE%/*}_ps16k/${IMAGE##*/}"
+if ! installed "${IMAGE}" && installed "${VARIANT}"; then
+  print_info "${IMAGE} is not installed; using the installed ${VARIANT}"
+  IMAGE="${VARIANT}"
+fi
+
 # The list has the installed packages, then the available ones; the id is the
 # first column. The emulator image is checked against it, unless the image is
 # installed.
@@ -142,12 +173,8 @@ if ! installed "${IMAGE}"; then
   fi
   has_package() { grep -qxF "$1" <<< "${PACKAGES}"; }
 
-  # From android-37.1, only the _ps16k variant (16 KB pages) of an image
-  # exists. The variant replaces a missing image, and the task names the id it
-  # used.
+  # The variant replaces a missing image, and the task names the id it used.
   if ! has_package "${IMAGE}"; then
-    ABI_PART="${IMAGE##*/}"
-    VARIANT="${IMAGE%/*}_ps16k/${ABI_PART}"
     if has_package "${VARIANT}"; then
       print_warn "The SDK has no package ${IMAGE}; using ${VARIANT}"
       IMAGE="${VARIANT}"
@@ -170,4 +197,17 @@ print_subheader "Installing ${MISSING[*]} ..."
 # license and writes licenses/, which Gradle reads before it downloads the
 # build tools and the NDK.
 mise x -- android sdk install "${MISSING[@]}"
+
+# An unknown id can install nothing, and the install can still exit 0. Each
+# package that the task asked for must have its package.xml now.
+NOT_INSTALLED=()
+for package in "${MISSING[@]}"; do
+  installed "${package}" || NOT_INSTALLED+=("${package}")
+done
+if ((${#NOT_INSTALLED[@]})); then
+  for package in "${NOT_INSTALLED[@]}"; do
+    print_error "The android CLI did not install ${package}"
+  done
+  exit 1
+fi
 print_success "Android SDK packages installed"
