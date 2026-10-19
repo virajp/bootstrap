@@ -1,0 +1,5 @@
+# Swift and SwiftPM from the host Xcode (macOS only).
+depends = []
+extensions = [ "swiftlang.swift-vscode" ]
+root_only = false
+seed = []
