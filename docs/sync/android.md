@@ -50,14 +50,18 @@ folder of a Flutter app is for `setup:deps:flutter`.
   to set `EMULATOR_IMAGE`. The task adds the ABI of the host: `arm64-v8a` on
   arm64, else `x86_64`. The ids use `/`, the form of `android sdk list`; an
   `EMULATOR_IMAGE` with `;` (the sdkmanager form) is accepted.
-- If the image is not in `android sdk list --all` and its `_ps16k` variant
-  is, the task installs the variant and names it. From `android-37.1`, only
-  the `_ps16k` images exist. If neither is there, the task fails and names
-  both.
-- It installs `platform-tools`, `platforms/android-<level>`, `emulator` and
-  the image with `android sdk install` of the `android-sdk` mise tool. Only
-  the image is checked against the list. The install accepts the SDK license
-  and writes `licenses/`.
+- A package is installed when `$ANDROID_HOME/<id>/package.xml` exists. If
+  the image is not installed, the task checks it against
+  `android sdk list --all`. If the image is not in the list and its `_ps16k`
+  variant is, the task installs the variant and names it. From
+  `android-37.1`, only the `_ps16k` images exist. If neither is there, the
+  task fails and names both.
+- It installs the packages of `platform-tools`, `platforms/android-<level>`,
+  `emulator` and the image that are not installed, with `android sdk install`
+  of the `android-sdk` mise tool. When all four are installed, the task does
+  not list or install, so it needs no network. Only the image is checked
+  against the list. The install accepts the SDK license and writes
+  `licenses/`.
 
 `code:lint:android` uses the Gradle root `./gradlew`, else `android/gradlew`,
 and applies only when `$ANDROID_HOME/platforms` exists. Given files, it runs
@@ -66,7 +70,12 @@ only for a `src/` `.kt`, `.java` or `.xml` file, a `*.gradle.kts`, a `*.pro`,
 modules of those files: the nearest folder with `build.gradle.kts` or
 `build.gradle`. A file at the Gradle root, in `gradle/`, `build-logic/` or
 `buildSrc/` (not a Gradle project), or `settings.gradle.kts` lints every
-module, as a run without files does. `--debug` adds `--info`.
+module, as a run without files does. Every module is each Gradle project
+below the Gradle root, so the pub plugins of a Flutter app, which are
+projects of its `android/` build, are not linted. A temporary init script
+runs `lint` (`lintFix` with `--fix`) in each of these modules that has the
+task; a module without the Android Gradle plugin has none and is skipped.
+`--debug` adds `--info`.
 
 ## Pre-commit hooks
 
