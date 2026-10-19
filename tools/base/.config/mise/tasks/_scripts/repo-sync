@@ -847,7 +847,7 @@ repo_sync() {
     # A clone that `setup:configs` already made, so that this code and the
     # files come from the same commit. A private copy, because the sync writes
     # the generated mise config into its clone.
-    if [[ ! -d $REPO_SYNC_CLONE/.git ]] || ! cp -R -- "$REPO_SYNC_CLONE/." "$dir"; then
+    if [[ ! -e $REPO_SYNC_CLONE/.git ]] || ! cp -R -- "$REPO_SYNC_CLONE/." "$dir"; then
       _rs_log "cannot use the clone $REPO_SYNC_CLONE - nothing synced; existing files were left untouched"
       return 5
     fi
@@ -855,7 +855,7 @@ repo_sync() {
   # instead of waiting for a password nobody will type.
   elif ! GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="ssh -o BatchMode=yes" \
     git clone --quiet --depth 1 --single-branch -- "$url" "$dir" 2>&1 | sed 's/^/  /' >&2 ||
-    [[ ! -d $dir/.git ]]; then
+    [[ ! -e $dir/.git ]]; then
     _rs_log "cannot clone $url - nothing synced; existing files were left untouched"
     return 5
   fi
