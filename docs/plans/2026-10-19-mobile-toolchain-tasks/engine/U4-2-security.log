@@ -1,0 +1,11 @@
+/security-review — loop U4, round 2, range 34ea0ea..05839a0
+
+NO FINDINGS. Candidates excluded (all below confidence 8):
+- eval "FILES=(${usage_files})" in tools/android/.config/mise/tasks/code/lint/android:61 (2): already on the base branch in code/lint/_default.tmpl, code/format/_default.tmpl and the flutter dart tasks; inputs are file paths from git or the CLI.
+- Code injection into the generated Gradle init scripts (code/lint/android, setup/deps/kotlin) (1): fixed text written with printf '%s\n'; task name and module list reach Gradle only via System.getenv("BOOTSTRAP_LINT_TASK") / System.getenv("BOOTSTRAP_LINT_MODULES"); root.project(it) only looks paths up.
+- Unsafe temp files (1): mktemp -d / mktemp with EXIT traps; no fixed /tmp path.
+- Deletion and overwrite in kotlin restore_lockfiles (2): rm -f and cp only on relative paths from git ls-files inside the repository.
+- Swift backup and restore trap (1): fixed path under the single root *.xcodeproj; BACKUP from mktemp.
+- Android sdk install arguments (1): env values trusted; detected levels match ^[0-9]+(\.[0-9]+)?$; quoted array, no eval.
+- Running ./gradlew, swift package or xcodebuild on repository content (1): runs arbitrary code by design; not new.
+- Credential exposure (1): none read, printed or written.
