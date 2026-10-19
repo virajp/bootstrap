@@ -45,23 +45,25 @@ folder, for example `.worktrees/` or `node_modules`, is not read. The `android/`
 folder of a Flutter app is for `setup:deps:flutter`.
 
 - The level is the env value `COMPILE_SDK`, else the first `compileSdk` in the
-  `build.gradle.kts` and `*.gradle` files, then in `build-logic/`, then in
-  `gradle/libs.versions.toml`. Only a literal number counts, with or without
-  `=` (`compileSdk = 36`, `compileSdk 35`, `compileSdkVersion 35`). Without a
-  level, the task fails. A bare level of 37 or more becomes `<level>.0`.
+  `build.gradle.kts` and `*.gradle` files, then in the text files of
+  `build-logic/`, then in `gradle/libs.versions.toml`. Only a literal number
+  counts, with or without `=` (`compileSdk = 36`, `compileSdk 35`,
+  `compileSdkVersion 35`). Without a level, the task fails. A bare level of 37
+  or more becomes `<level>.0`.
 - The emulator image is the env value `EMULATOR_IMAGE`, else
   `system-images/android-<targetSdk>/google_apis`, with `targetSdk` found as
   `compileSdk`. Without a `targetSdk` level, the task fails and tells the user
   to set `EMULATOR_IMAGE`. The task adds the ABI of the host: `arm64-v8a` on
   arm64, else `x86_64`. The ids use `/`, the form of `android sdk list`; an
   `EMULATOR_IMAGE` with `;` (the sdkmanager form) is accepted.
-- A package is installed when `$ANDROID_HOME/<id>/package.xml` exists. An
-  installed `_ps16k` variant of the image counts as the image: the task uses it
-  and names it. If the image is not installed, the task checks it against
-  `android sdk list --all`. If the image is not in the list and its `_ps16k`
-  variant is, the task installs the variant and names it. From `android-37.1`,
-  only the `_ps16k` images exist. If neither is there, the task fails and names
-  both.
+- A package is installed when `$ANDROID_HOME/<id>/package.xml` exists. The
+  `android-sdk` mise tool sets `ANDROID_HOME`; if it is not set, the task fails
+  and names it. An installed `_ps16k` variant of the image counts as the image:
+  the task uses it and names it. If the image is not installed, the task checks
+  it against `android sdk list --all`. If the image is not in the list and its
+  `_ps16k` variant is, the task installs the variant and names it. From
+  `android-37.1`, only the `_ps16k` images exist. If neither is there, the task
+  fails and names both.
 - It installs the packages of `platform-tools`, `platforms/android-<level>`,
   `emulator` and the image that are not installed, with `android sdk install`
   of the `android-sdk` mise tool. When all four are installed, the task does

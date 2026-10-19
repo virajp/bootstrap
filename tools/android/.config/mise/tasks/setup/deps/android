@@ -20,10 +20,11 @@ cd "${MISE_PROJECT_ROOT}"
 
 # The detects read only the files that git tracks or does not ignore, so an
 # ignored folder (.worktrees/, .claude/worktrees/, node_modules) is not read.
-# The build/ and .gradle/ folders are not read either. LEVEL_FILES has the
-# order of the level detect: the build.gradle.kts and *.gradle files (Kotlin
-# and Groovy DSL), then build-logic/, then gradle/libs.versions.toml. Each
-# part is sorted.
+# The pathspecs give only the files that the detects read. The build/ and
+# .gradle/ folders are not read. LEVEL_FILES has the order of the level
+# detect: the build.gradle.kts and *.gradle files (Kotlin and Groovy DSL),
+# then each file in build-logic/, then gradle/libs.versions.toml. Each part is
+# sorted.
 BUILD_FILES=()
 LOGIC_FILES=()
 CATALOG_FILES=()
@@ -34,10 +35,9 @@ while IFS= read -r -d '' file; do
     build/* | */build/* | .gradle/* | */.gradle/*)
       continue
       ;;
-    build-logic/*.kts | build-logic/*.kt | build-logic/*.gradle | build-logic/*.toml)
+    build-logic/*)
       LOGIC_FILES+=("${file}")
       ;;
-    build-logic/*) ;;
     gradle/libs.versions.toml)
       CATALOG_FILES+=("${file}")
       ;;
@@ -48,7 +48,8 @@ while IFS= read -r -d '' file; do
       KTS_FILES+=("${file}")
       ;;
   esac
-done < <(git ls-files -z --cached --others --exclude-standard 2> /dev/null | sort -z)
+done < <(git ls-files -z --cached --others --exclude-standard -- \
+  '*.gradle' '*.gradle.kts' 'build-logic/*' 'gradle/libs.versions.toml' 2> /dev/null | sort -z)
 LEVEL_FILES=(${BUILD_FILES[@]+"${BUILD_FILES[@]}"} ${LOGIC_FILES[@]+"${LOGIC_FILES[@]}"}
   ${CATALOG_FILES[@]+"${CATALOG_FILES[@]}"})
 
@@ -62,12 +63,12 @@ grep -qsE 'com\.android\.(application|library)' "${AGP_FILES[@]}" || exit 0
 # in LEVEL_FILES. Only a literal level counts, for example `compileSdk = 36`,
 # `compileSdkVersion(34)`, `compileSdk 35` or `compileSdkVersion 35` (Groovy
 # DSL), or `compileSdk = "36"` in the version catalog. Prints nothing without
-# a hit.
+# a hit. A binary file, for example a jar in build-logic/, is not read.
 detect_level() {
   local key="$1" pattern file hit
   pattern="(^|[^A-Za-z])${key}(Version)?[[:space:]]*[=(]?[[:space:]]*\"?[0-9]+(\.[0-9]+)?"
   for file in ${LEVEL_FILES[@]+"${LEVEL_FILES[@]}"}; do
-    hit=$(grep -hoE "${pattern}" "${file}" | head -n 1) || hit=''
+    hit=$(grep -IhoE "${pattern}" "${file}" | head -n 1) || hit=''
     if [[ -n "${hit}" ]]; then
       echo "$(echo "${hit}" | grep -oE '[0-9]+(\.[0-9]+)?$') ${file}"
       return 0
@@ -92,6 +93,14 @@ normalize_level() {
 }
 
 print_header "Installing the Android SDK packages ..."
+
+# The android-sdk mise tool sets ANDROID_HOME, the SDK root of the android CLI.
+# The installed check reads the packages there.
+if [[ -z "${ANDROID_HOME:-}" ]]; then
+  print_error "ANDROID_HOME is not set, so the task cannot find the SDK"
+  print_info "The android-sdk mise tool sets it; do not unset it in the mise config"
+  exit 1
+fi
 
 print_subheader "Detecting the SDK levels ..."
 if [[ -n "${COMPILE_SDK:-}" ]]; then
@@ -147,7 +156,7 @@ PLATFORM="platforms/android-${COMPILE_LEVEL}"
 # An installed package has <id>/package.xml in the SDK, so this check needs
 # no network. When every package is there, the task lists and installs
 # nothing.
-installed() { [[ -f "${ANDROID_HOME:-}/$1/package.xml" ]]; }
+installed() { [[ -f "${ANDROID_HOME}/$1/package.xml" ]]; }
 MISSING=()
 for package in platform-tools "${PLATFORM}" emulator; do
   installed "${package}" || MISSING+=("${package}")
