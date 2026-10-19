@@ -14,7 +14,9 @@ gaps_of: []
 
 **BLOCKED**
 
-BLOCKED at wave 0 (preflight) in .worktrees/2026-10-19-android-swift-java-tools
+BLOCKED at wave 1 — U1 UNRESOLVED: flutter consumers with `ci` lose
+`android-sdk` and `java` in CI (G2); U3, U4 skipped (depend on U1). Worktree
+.worktrees/2026-10-19-android-swift-java-tools
 — UNRESOLVED: wave-gate line 2 cannot run from a linked worktree; see Gaps G1
 
 ## Consent
@@ -154,12 +156,12 @@ None. `java` and `android-sdk` come from the mise registry and are in use today.
 
 ## Units
 
-| Id | Wave | Unit file                  | Kind | Owns                                                                                                                                                                                                                                              | Depends on | Status  | Commit |
-| -- | ---- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------- | ------ |
-| U1 | 1    | [01-tools.md](01-tools.md) | edit | `tools/java/tool.toml`, `tools/android/tool.toml`, `tools/swift/tool.toml`, `tools/flutter/tool.toml`, `tools/kotlin/tool.toml`, `docs/sync/java.md`, `docs/sync/android.md`, `docs/sync/swift.md`, `docs/sync/flutter.md`, `docs/sync/kotlin.md` | —          | pending |        |
-| U2 | 1    | [02-vwf.md](02-vwf.md)     | edit | `docs/sync/vwf.md`                                                                                                                                                                                                                                | —          | pending |        |
-| U3 | 2    | [03-docs.md](03-docs.md)   | edit | `README.md`, `CLAUDE.md`, `docs/sync/index.md`, `docs/sync/migrate.md`, and any other doc that `vwf:docs-sync` finds falsified, except the files U1 and U2 own                                                                                    | U1, U2     | pending |        |
-| U4 | 3    | [04-gates.md](04-gates.md) | edit | none (a fix it needs goes back to the unit that owns the file)                                                                                                                                                                                    | U3         | pending |        |
+| Id | Wave | Unit file                  | Kind | Owns                                                                                                                                                                                                                                              | Depends on | Status     | Commit  |
+| -- | ---- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ---------- | ------- |
+| U1 | 1    | [01-tools.md](01-tools.md) | edit | `tools/java/tool.toml`, `tools/android/tool.toml`, `tools/swift/tool.toml`, `tools/flutter/tool.toml`, `tools/kotlin/tool.toml`, `docs/sync/java.md`, `docs/sync/android.md`, `docs/sync/swift.md`, `docs/sync/flutter.md`, `docs/sync/kotlin.md` | —          | unresolved |         |
+| U2 | 1    | [02-vwf.md](02-vwf.md)     | edit | `docs/sync/vwf.md`                                                                                                                                                                                                                                | —          | green      | 632e820 |
+| U3 | 2    | [03-docs.md](03-docs.md)   | edit | `README.md`, `CLAUDE.md`, `docs/sync/index.md`, `docs/sync/migrate.md`, and any other doc that `vwf:docs-sync` finds falsified, except the files U1 and U2 own                                                                                    | U1, U2     | skipped    |         |
+| U4 | 3    | [04-gates.md](04-gates.md) | edit | none (a fix it needs goes back to the unit that owns the file)                                                                                                                                                                                    | U3         | skipped    |         |
 
 ## Shared-file rule
 
@@ -265,7 +267,8 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 
 ## Gaps surfaced during execution
 
-- G1 (blocking, all units): wave-gate line 2 cannot run from the run's worktree.
+- G1 (resolved 2026-10-19 by ruling (a), `9a3f5e8` on `main`, merged into the
+  run branch as `cd03113`): wave-gate line 2 cannot run from the run's worktree.
   `tools/base/.config/mise/tasks/_scripts/repo-sync:850` refuses a
   `REPO_SYNC_CLONE` whose `.git` is not a directory, and `.git` is a file in a
   linked worktree. The line was green on 2026-10-19 because it ran in the main
@@ -274,14 +277,44 @@ A unit returns exactly this block and nothing else — no file contents, no diff
   first; (b) change wave-gate line 2 in this folder so that it gives
   `REPO_SYNC_CLONE` a path with a real `.git` directory that holds the
   uncommitted wave edits; (c) another gate that the folder states.
+- G2 (blocking, U1 and dependents): with `flutter` in `tools`, `android` is a
+  dependency only, so under the `_rs_mise_env` rule `android-sdk` and `java`
+  render to dev only. A flutter consumer with `ci` loses both in CI, which it
+  has today. This contradicts the Release-levels reason "a flutter consumer gets
+  the same mise tools through `depends`". D4 gives no CI item for flutter (D5
+  gives one for kotlin). Ruling needed, one of: (a) a `docs/sync/flutter.md`
+  "Adapt to the repository" item, and a `docs/sync/migrate.md` item for U3, that
+  tell the agent to add `android` to `tools` when CI builds Android; (b) change
+  `_rs_mise_env` so that a dependency tool takes the environments of the tool
+  that depends on it (a `tools/base` change, outside this plan's Owns); (c)
+  accept dev only and correct the Release-levels reason.
+- G3 (non-blocking, U2): D8 does not name the kind `Template`.
+  `docs/sync/vwf.md` follows D8 literally, so `remove` deletes only `Synced`
+  files, and the `Template` outputs of a removed tool (for example in `base`,
+  `github`, `vscode`) stay in the consumer. A ruling is needed only if they must
+  be deleted too.
+- G4 (non-blocking, U2): `docs/sync/vwf.md` stops on `remove tools [base]`. D10
+  does not list it; assumed because `docs/sync/index.md:138,207` make `base`
+  necessary.
+- G5 (non-blocking, U2): `remove` does not take out of `tools` the tools that
+  only the removed tool's `depends` added. They drop from the next selection;
+  their synced task files stay, because the sync never deletes files.
 
 ## Run log
 
-| Wave | Unit      | Model | Round | Outcome | Detail                                                                                                                                                                                                                                             | Commit |
-| ---- | --------- | ----- | ----- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 0    | preflight | —     | 1     | pass    | node: doctor — no blocking finding (repo has no `.config/vwf.yaml`: "not onboarded", information only); edit units only, so no LSP or conventions read                                                                                             | —      |
-| 0    | preflight | —     | 1     | pass    | node: wave-gate line 1 `mise run code` — exit 0                                                                                                                                                                                                    | —      |
-| 0    | preflight | —     | 1     | blocked | node: wave-gate line 2 — exit 5, `repo-sync: cannot use the clone <worktree> - nothing synced`; why: `repo-sync:850` tests `-d $REPO_SYNC_CLONE/.git`, and `.git` is a file in a linked worktree. Inherited from `main`, not caused by a unit (G1) | —      |
+| Wave | Unit                   | Model | Round | Outcome     | Detail                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Commit |
+| ---- | ---------------------- | ----- | ----- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 0    | preflight              | —     | 1     | pass        | node: doctor — no blocking finding (repo has no `.config/vwf.yaml`: "not onboarded", information only); edit units only, so no LSP or conventions read                                                                                                                                                                                                                                                                                                                    | —      |
+| 0    | preflight              | —     | 1     | pass        | node: wave-gate line 1 `mise run code` — exit 0                                                                                                                                                                                                                                                                                                                                                                                                                           | —      |
+| 0    | preflight              | —     | 1     | blocked     | node: wave-gate line 2 — exit 5, `repo-sync: cannot use the clone <worktree> - nothing synced`; why: `repo-sync:850` tests `-d $REPO_SYNC_CLONE/.git`, and `.git` is a file in a linked worktree. Inherited from `main`, not caused by a unit (G1)                                                                                                                                                                                                                        | —      |
+| 0    | preflight              | —     | 2     | pass        | node: resume — `main` merged in (`9a3f5e8`, repo-sync accepts a `.git` file); wave-gate line 1 exit 0; line 2 exit 0, 49/49 in sync                                                                                                                                                                                                                                                                                                                                       | —      |
+| 1    | U2 docs/sync/vwf.md    | opus  | 1     | pass        | node: edit — DECIDED: remove also deletes `Template` files (they carry the header), keeps files without it; `remove base` stops; all instructions checked before any change; failed sync points to the exit-code table. GAP: remove leaves tools added only by the removed tool's `depends` to drop from the next selection. DOCS FALSIFIED: `docs/sync/index.md` files table, `CLAUDE.md` Layout rule (both U3)                                                          | —      |
+| 1    | U1 tools and tool docs | opus  | 1     | blocked     | node: edit — UNRESOLVED: flutter CI regression. With `flutter` in `tools`, `android` is a dependency only, so `android-sdk` and `java` render to dev only and a flutter consumer with `ci` loses them in CI; contradicts the Release-levels reason. Verification otherwise green (gate lines 1-2, full-selection dry-run 53/53). why: ruling needed; edits set aside as `/tmp/vwf-run/U1-round1.patch`, not committed                                                     | —      |
+| 2    | U3 docs                | —     | —     | skipped     | why: depends on U1                                                                                                                                                                                                                                                                                                                                                                                                                                                        | —      |
+| 3    | U4 gates               | —     | —     | skipped     | why: depends on U3, which depends on U1                                                                                                                                                                                                                                                                                                                                                                                                                                   | —      |
+| 1    | R1 wave review         | opus  | 1     | findings(4) | U2: add step misses tools added through a mise `depends` (:83); kind `Seed, template` not handled (:101); failed-sync pointer only in add, and unnamed (:90); `remove base` stop not ruled (:63). RULINGS: U2 departed from D8 (deletes `Template` files too, adds keep-and-report). CONTRACT clean                                                                                                                                                                       | —      |
+| 1    | U2 docs/sync/vwf.md    | opus  | 2     | pass        | node: edit — remove now deletes only `Synced` (D8), keeps `Seed` and `Seed, template`; add follows mise `depends` too; failed-sync pointer moved to "After the change" (DECIDED). GAP: `Template` files of a removed tool stay (D8 literal); `remove base` stop not in D10, kept because `docs/sync/index.md:138,207` make base necessary; dependency-only tools drop at next selection. Its UNRESOLVED was the orchestrator's unformatted Run log, fixed by `dprint fmt` | —      |
+| 1    | R1 wave review         | opus  | 2     | pass        | FINDINGS 0; CONTRACT clean; RULINGS clean                                                                                                                                                                                                                                                                                                                                                                                                                                 | —      |
 
 ## Launch
 
