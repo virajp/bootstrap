@@ -64,7 +64,8 @@ None.
    `sudo xcode-select -s /Applications/Xcode.app`.
 3. Commit `Package.resolved` (for an `*.xcodeproj`, the file in
    `<project>/project.xcworkspace/xcshareddata/swiftpm/`). A normal run of
-   `setup:deps:swift` installs only the versions that it names.
+   `setup:deps:swift` installs only the versions that it names. The task does
+   not read a root `*.xcworkspace` or its `Package.resolved`.
 4. In a Flutter app, `setup:deps:flutter` handles the `ios/` and `macos/`
    folders. `setup:deps:swift` acts only on the repository root.
 5. bootstrap does not read `XCODE_VERSION` or `SIMULATOR_*`. They stay with
