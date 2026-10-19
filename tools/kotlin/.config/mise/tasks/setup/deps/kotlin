@@ -47,6 +47,12 @@ lockfiles() {
     -o \( -type f -name '*gradle.lockfile' -print \)
 }
 
+# A checksum line for each lockfile, in a fixed order. Two snapshots are equal
+# only when no lockfile was added, removed or changed. It does not use git.
+lock_state() {
+  lockfiles | LC_ALL=C sort | while IFS= read -r file; do cksum "${file}"; done
+}
+
 # The temporary folder holds the init script and the dependencyUpdates log.
 TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/bootstrap-gradle.XXXXXX")
 trap 'rm -rf "${TMP_DIR}"' EXIT
@@ -56,15 +62,17 @@ trap 'exit 130' INT TERM
 # A configuration that is also consumable (legacy default, archives) is for
 # other projects, so the task does not resolve it. The list is a copy, so a
 # resolve that adds a configuration does not change the loop. A normal run
-# sets LockMode.STRICT on each project when Gradle creates it, before its
-# build script: a resolve fails on a mismatch with a lockfile, and on a locked
-# configuration with no lock state. --upgrade does not set STRICT, so a new
+# sets LockMode.STRICT on each project and on its buildscript classpath when
+# Gradle creates the project, before its build script: a resolve fails on a
+# mismatch with a lockfile, and on a locked configuration with no lock state. --upgrade does not set STRICT, so a new
 # module gets its first lockfile there.
 INIT_SCRIPT="${TMP_DIR}/resolve-all.gradle"
 {
   printf '%s\n' 'allprojects { p ->'
   if [[ "${UPGRADE}" != "true" ]]; then
-    printf '%s\n' '  p.dependencyLocking.lockMode.set(org.gradle.api.artifacts.dsl.LockMode.STRICT)'
+    printf '%s\n' \
+      '  p.dependencyLocking.lockMode.set(org.gradle.api.artifacts.dsl.LockMode.STRICT)' \
+      '  p.buildscript.dependencyLocking.lockMode.set(org.gradle.api.artifacts.dsl.LockMode.STRICT)'
   fi
   printf '%s\n' \
     '  p.tasks.register("bootstrapResolveAll") {' \
@@ -77,16 +85,17 @@ INIT_SCRIPT="${TMP_DIR}/resolve-all.gradle"
 
 if [[ "${UPGRADE}" == "true" ]]; then
   print_subheader "Writing new lockfiles for every project ..."
+  BEFORE=$(lock_state) || BEFORE=''
   ./gradlew --init-script "${INIT_SCRIPT}" bootstrapResolveAll --write-locks --refresh-dependencies
 
   # Gradle writes a lockfile only for a project with dependencyLocking. The
-  # last message tells whether there is anything to commit.
-  LOCKS=$(lockfiles) || LOCKS=''
-  UPDATED=$(git ls-files --modified --others --exclude-standard -- '*gradle.lockfile') || UPDATED=''
+  # last message tells whether the resolve changed a lockfile, from the two
+  # checksum snapshots, so it is correct without git and for ignored lockfiles.
+  AFTER=$(lock_state) || AFTER=''
   upgrade_done() {
-    if [[ -z "${LOCKS}" ]]; then
+    if [[ -z "${AFTER}" ]]; then
       print_warn "No project has dependencyLocking, so the resolve wrote no lockfile."
-    elif [[ -n "${UPDATED}" ]]; then
+    elif [[ "${AFTER}" != "${BEFORE}" ]]; then
       print_success "Commit the new lockfiles."
     else
       print_success "The lockfiles did not change."

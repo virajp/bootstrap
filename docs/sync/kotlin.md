@@ -46,7 +46,8 @@ dependencies against the lockfiles.
   another folder.
 - It fails when `gradle/wrapper/gradle-wrapper.properties` has no
   `distributionSha256Sum` of 64 hex digits.
-- A normal run sets `LockMode.STRICT` on each project, then resolves without
+- A normal run sets `LockMode.STRICT` on each project and on its buildscript
+  classpath, then resolves without
   `--write-locks`. Gradle enforces the lockfiles on the disk: a dynamic version
   stays at its locked version, and a resolve that does not match a lockfile
   fails. A locked configuration with no lock state also fails, for example a
@@ -62,8 +63,10 @@ dependencies against the lockfiles.
 - `--upgrade` resolves with `--write-locks --refresh-dependencies` and keeps
   the new lockfiles. Then it runs `./gradlew dependencyUpdates` if the
   ben-manes plugin `com.github.ben-manes.versions` is applied. It ends with
-  "Commit the new lockfiles." when a lockfile differs from git, and with a
-  warning when the build has no lockfile.
+  "Commit the new lockfiles." when the resolve added, changed or removed a
+  lockfile. It compares a checksum of each lockfile before and after the
+  resolve, so it does not use git. It ends with a warning when the build has
+  no lockfile.
 
 ## Pre-commit hooks
 
