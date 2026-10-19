@@ -1,0 +1,64 @@
+/code-review high — loop U4, round 1, branch 2026-10-19-mobile-toolchain-tasks (main...HEAD, 4 commits)
+
+[
+  {
+    "file": "tools/android/.config/mise/tasks/code/lint/android",
+    "line": 82,
+    "summary": "Given files, the task asks Gradle for `:<module>:lint` for every module that holds a matched file, including modules that have no `lint` task (plain Kotlin/JVM modules without the `com.android.lint` plugin).",
+    "failure_scenario": "In an Android repo with a pure-Kotlin `:core` module, the user commits `core/src/main/kotlin/Foo.kt`. module_of returns `:core` and the task runs `./gradlew :core:lint`. Gradle fails with \"Task 'lint' not found in project ':core'\" and the pre-commit `code:lint` blocks the commit. Without a project path, the `lint` task selector would have skipped `:core`."
+  },
+  {
+    "file": "tools/kotlin/.config/mise/tasks/setup/deps/kotlin",
+    "line": 122,
+    "summary": "The lock check only sees lockfiles that Gradle writes, and `--write-locks` writes lock state only for configurations with dependency locking turned on. A build, or a single module, without `dependencyLocking` passes as 'covered'.",
+    "failure_scenario": "Root Gradle build with no `dependencyLocking { lockAllConfigurations() }`: the resolve writes no `*gradle.lockfile`, CHANGED is empty, and the task prints 'The committed lockfiles cover every configuration.' and exits 0. docs/sync/kotlin.md item 3 says the task fails until locking is on. A new module added without the locking convention also passes unlocked. `--upgrade` writes nothing but still says 'Commit the new lockfiles.'"
+  },
+  {
+    "file": "tools/android/.config/mise/tasks/setup/deps/android",
+    "line": 152,
+    "summary": "Only the emulator image is checked against `android sdk list`. A platform id that does not exist makes `android sdk install` install nothing and exit 0 (the run log records this), and the task still prints success.",
+    "failure_scenario": "Say compileSdk = 37, which normalize_level turns into `platforms/android-37.0`, but the repository names it `android-37`. Or COMPILE_SDK has a typo. The install skips the platform silently and prints 'Android SDK packages installed'. The first Gradle build then fails, or downloads the platform itself, long after setup reported success."
+  },
+  {
+    "file": "tools/swift/.config/mise/tasks/setup/deps/swift",
+    "line": 46,
+    "summary": "The full-Xcode check (`xcodebuild -version`) runs even when the root has only Package.swift, but `swift package resolve` / `update` work with the Command Line Tools alone.",
+    "failure_scenario": "A SwiftPM-only repo on a Mac with only the Command Line Tools (a common CI image or a server-side Swift developer): `mise run setup` fails with 'Xcode is not selected', although the SwiftPM resolve would have worked."
+  },
+  {
+    "file": "tools/swift/.config/mise/tasks/setup/deps/swift",
+    "line": 84,
+    "summary": "The task always resolves with `-project <x>.xcodeproj` and that project's own `project.xcworkspace` Package.resolved. It ignores a root `*.xcworkspace`, whose `xcshareddata/swiftpm/Package.resolved` is the file Xcode actually uses and that teams commit.",
+    "failure_scenario": "A root with App.xcworkspace and App.xcodeproj, with Package.resolved committed under App.xcworkspace/xcshareddata/swiftpm/. The normal run passes `-onlyUsePackageVersionsFromResolvedFile`, but the project's own file is missing, so the run fails. `--upgrade` writes a new Package.resolved in the wrong place, and the committed workspace file never changes."
+  },
+  {
+    "file": "tools/android/.config/mise/tasks/code/lint/android",
+    "line": 91,
+    "summary": "In a Flutter app (ROOT=android), lint of every module runs the `lint` task selector across all Gradle subprojects. Flutter's settings include each plugin as a subproject, so third-party plugin code from the pub cache gets linted.",
+    "failure_scenario": "Flutter consumer (flutter depends on android, so this task ships): editing `android/build.gradle.kts`, or running `mise run code:lint` with no files, runs `cd android && ./gradlew lint`. That lints every plugin module (e.g. `:path_provider_android`). It is slow, and lint errors in plugin code the user does not own fail the commit or CI. `:app:lint` would be the right scope."
+  },
+  {
+    "file": "tools/kotlin/.config/mise/tasks/setup/deps/kotlin",
+    "line": 17,
+    "summary": "setup:deps:kotlin now runs `./gradlew` in every `mise run setup` whenever a root gradlew exists, but the kotlin tool brings in `java` only as a dependency, so java is in dev only.",
+    "failure_scenario": "A consumer with `tools = [\"kotlin\"]` and environments dev and ci (no `java` or `android` tool): the CI `mise run setup` reaches setup:deps:kotlin, and `./gradlew` fails with 'JAVA_HOME is not set'. Before this change, setup ran no Gradle, so adapt item 2 ('if CI builds with Gradle') no longer covers the case."
+  },
+  {
+    "file": "tools/kotlin/.config/mise/tasks/setup/deps/kotlin",
+    "line": 126,
+    "summary": "CHANGED compares the worktree with the git index (`ls-files --modified --others`), not with the copies saved before the resolve. Lockfile edits that were already unstaged count as changes the resolve made.",
+    "failure_scenario": "The user runs `setup:deps:kotlin --upgrade` (new lockfiles in the worktree, not yet staged), then `mise run setup` or `setup:worktree`. The resolve writes identical content, but `--modified` and `--others` still list those files. The task fails and tells the user to run `--upgrade` again, which loops until they stage or commit. A `cmp` against `${TMP_DIR}/before` would detect only what the resolve really changed."
+  },
+  {
+    "file": "tools/android/.config/mise/tasks/code/lint/android",
+    "line": 20,
+    "summary": "The lint task applies to any root `./gradlew`. Unlike setup:deps:android, it does not check whether the build applies the Android Gradle plugin.",
+    "failure_scenario": "A repo with the android tool (for example through flutter) and a root Gradle build that is pure JVM (a backend), with ANDROID_HOME/platforms present: `code:lint` runs `./gradlew lint`, which fails with \"Task 'lint' not found in root project\". The HAS_AGP detection in setup:deps:android exists, but this task does not use it."
+  },
+  {
+    "file": "tools/android/.config/mise/tasks/setup/deps/android",
+    "line": 125,
+    "summary": "`android sdk list --all` fetches the remote repository listing on every run, including every `setup:worktree`, even when all four packages are already installed. Similarly, the swift task clones packages into `.build/SourcePackages`, which Xcode builds (they use DerivedData) never reuse.",
+    "failure_scenario": "Each new worktree or `mise run setup` makes a network round trip to the SDK repository (and fails offline with 'The android CLI listed no SDK packages'), though nothing needs installing. Checking the installed packages first and fetching the remote list only when the image is missing would avoid the wasted I/O."
+  }
+]
