@@ -1,0 +1,13 @@
+/security-review — loop U5, round 3, range 30b9e8f..362cdaf
+
+# Security review
+
+No vulnerabilities found. The identification pass returned NO FINDINGS:
+
+- 7637767 (setup/deps/kotlin): the STRICT buildscript line is fixed printf text
+  in a mktemp -d folder; no input reaches the Gradle init script.
+- lock_state: `find .` paths start with `./`, so none can be read as a cksum
+  option; a file name with a newline can only make the comparison wrong.
+- The cksum snapshots only feed a status message; no decision or command
+  depends on them.
+- android and swift tasks unchanged since round 2.

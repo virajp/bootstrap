@@ -192,7 +192,7 @@ in a temporary folder, as the earlier plan did; nothing of it is committed.
 | U2 | 1    | [02-kotlin.md](02-kotlin.md)   | edit   | `tools/kotlin/.config/mise/tasks/setup/deps/kotlin`, `docs/sync/kotlin.md`                                                                                 | —          | green   | `141d056` |
 | U3 | 1    | [03-android.md](03-android.md) | edit   | `tools/android/.config/mise/tasks/setup/deps/android`, `tools/android/.config/mise/tasks/code/lint/android`, `docs/sync/android.md`                        | —          | green   | `b64d96b` |
 | U4 | 1    | [04-swift.md](04-swift.md)     | edit   | `tools/swift/.config/mise/tasks/setup/deps/swift`, `docs/sync/swift.md`                                                                                    | —          | green   | `7289d1f` |
-| U5 | 2    | [05-review.md](05-review.md)   | review | —                                                                                                                                                          | U2, U3, U4 | pending |           |
+| U5 | 2    | [05-review.md](05-review.md)   | review | —                                                                                                                                                          | U2, U3, U4 | green   |           |
 | U6 | 3    | [06-docs.md](06-docs.md)       | edit   | `README.md`, `CLAUDE.md`, `docs/sync/index.md`, `docs/sync/migrate.md`, and any other doc that `vwf:docs-sync` finds falsified, except the files U1–U4 own | U1, U5     | pending |           |
 | U7 | 4    | [07-gates.md](07-gates.md)     | edit   | none (a fix it needs goes back to the unit that owns the file)                                                                                             | U6         | pending |           |
 
@@ -331,6 +331,19 @@ A unit returns exactly this block and nothing else — no file contents, no diff
   included. After a transient failure that advice rewrites every lockfile with
   `--refresh-dependencies`. The plan does not separate a lock failure from other
   Gradle failures. Kept as Edit 2 says.
+- G8 (U5, non-blocking, oscillation — convergence guard, not a plan hole): the
+  review loop of U5 ran 3 rounds (findings 8 → 3 → 3) and stopped when the count
+  did not strictly decrease. Each fix brought a new edge case (the round 1
+  `find` fix of `lockfiles()` caused the submodule finding). Contested findings:
+  (1) `setup/deps/kotlin:74` (U2) — STRICT is not set on the settings
+  buildscript (`settings-gradle.lockfile`), so a locked settings classpath with
+  no lock state passes; (2) `setup/deps/kotlin:46` (U2) — `lockfiles()` with
+  `find` enters git-submodule members and nested Gradle builds, so a root
+  without `dependencyLocking` but with a member's lockfiles prints success in
+  place of the R6 warning; (3) `setup/deps/android:214` (U3, ruling question on
+  R9) — a leftover `<id>` folder with no `package.xml` makes the installer write
+  to a suffixed folder, and the post-install check then fails for an installed
+  package. Examine the loop first, then the findings.
 
 ## Run log
 
@@ -355,6 +368,13 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 2    | U5              | opus   | 2     | pass        | security; range `30b9e8f..2919bfe`; engine `/security-review` no findings (engine/U5-2-security.log); reviewer FINDINGS none, VERDICT approve; tag U5/security/2                                                                                                                                                                                                                                                                                                          | —         |
 | 2    | U5              | opus   | 2     | findings(3) | review; range `30b9e8f..2919bfe`; engine `/code-review` 10 findings (engine/U5-2-review.log), 6 already recorded as G1, G2, G4–G6 or ruled by R15; reviewer 3 findings, SPEC COMPLIANCE met, VERDICT approve; guard: 8 → 3, none resurfaced; ruling question → G7 (every Gradle failure reported as a lock mismatch); loop back U2: kotlin:67 STRICT on buildscript locks, kotlin:84-93 + kotlin.md:65 `--upgrade` summary uses git; tags U5/review/2, U5/gap/2           | —         |
 | 2    | U2 kotlin       | opus   | 4     | pass        | edit; U5 r2 loop-back: STRICT also on `p.buildscript.dependencyLocking` (Context7: `ScriptHandler.getDependencyLocking()`); `--upgrade` summary compares `cksum` snapshots of `lockfiles()`, no git; kotlin.md agrees                                                                                                                                                                                                                                                     | `7637767` |
+| 2    | U5              | opus   | 3     | pass        | security; range `30b9e8f..362cdaf`; engine `/security-review` no findings (engine/U5-3-security.log); reviewer FINDINGS none, VERDICT approve; tag U5/security/3                                                                                                                                                                                                                                                                                                          | —         |
+| 2    | U5              | opus   | 3     | findings(3) | review; range `30b9e8f..362cdaf`; engine `/code-review` 10 findings (engine/U5-3-review.log), 6 recorded or ruled; reviewer 3 findings, SPEC COMPLIANCE met, VERDICT approve; guard: 3 → 3, not converging → loop ended, 3 findings `contested` → G8 (oscillation); tag U5/review/3                                                                                                                                                                                       | —         |
+| 2    | R2              | opus   | 1     | findings(4) | wave review over `0f9c230..362cdaf` (U2, U3 fixes): rule 4 folds — kotlin:61-68 comment (117 cols), kotlin:39-44 comment, lint/android:33-39 comment (82 cols), kotlin.md:49-56; CONTRACT clean, RULINGS clean                                                                                                                                                                                                                                                            | —         |
+| 2    | U2 kotlin       | opus   | 5     | pass        | edit; R2 r1 loop-back: refold kotlin:39-43, :60-67 comments and kotlin.md:49-55 to 80 columns, words unchanged                                                                                                                                                                                                                                                                                                                                                            | `e9a0d7b` |
+| 2    | U3 android      | opus   | 4     | pass        | edit; R2 r1 loop-back: refold lint/android:33-39 comment to 80 columns, words unchanged                                                                                                                                                                                                                                                                                                                                                                                   | `a4eb77a` |
+| 2    | R2              | opus   | 2     | pass        | wave review round 2: FINDINGS 0, CONTRACT clean, RULINGS clean                                                                                                                                                                                                                                                                                                                                                                                                            | —         |
+| 2    | gate            | —      | 1     | pass        | wave gate lines 1 and 2 exit 0 (57/57 in sync); no `UNRESOLVED:`; U5 marked for a late re-run over `e9a0d7b`, `a4eb77a` (R2 fixes after the last row covering U2, U3)                                                                                                                                                                                                                                                                                                     | —         |
 
 ## Launch
 
