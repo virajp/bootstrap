@@ -33,10 +33,10 @@ INFO=()
 # Prints the folder of the module of a file (relative to the Gradle root, "."
 # for the root), or "/" when the file is for the whole build: gradle/,
 # settings.gradle(.kts), build-logic/ or buildSrc/. A relative folder path is
-# never "/", so no module folder is read as that marker. The module is the nearest
-# folder with build.gradle.kts or build.gradle, else the root. The init script
-# finds the project of that folder, so a projectDir that settings.gradle(.kts)
-# remaps is found too.
+# never "/", so no module folder is read as that marker. The module is the
+# nearest folder with build.gradle.kts or build.gradle, else the root. The init
+# script finds the project of that folder, so a projectDir that
+# settings.gradle(.kts) remaps is found too.
 module_of() {
   local file="$1" dir
   case "${file}" in
