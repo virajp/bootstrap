@@ -13,7 +13,9 @@ A repository uses this repository in two ways, in this sequence:
    repository. The agent makes sure that each rule is relevant to that
    repository. `docs/sync/index.md` has the general steps, `migrate.md` has
    the items for a repository with older copies, and one file for each tool
-   tells when the tool is relevant and how to use it.
+   tells when the tool is relevant and how to use it. `docs/sync/vwf.md` is
+   the entry point for the vwf and stackgen plugins: they give it
+   `add tools` and `remove tools` instructions after the adoption.
 2. **Sync, each time after that, by `repo-sync`.** The adoption installs the
    `setup:configs` task, which keeps the shared files equal to this
    repository.
@@ -41,22 +43,26 @@ it gets in a repository. For example,
 Each tool folder has a `tool.toml` manifest:
 
 ```toml
-# Flutter and Dart, with the Android toolchain.
+# The Android SDK command-line tools.
 depends = [] # tools added with this one
-extensions = [ "dart-code.dart-code", "dart-code.flutter" ] # VS Code extensions
+extensions = [] # VS Code extensions
 root_only = false # true: refused in a submodule
 seed = [] # written only when missing
 
 # The mise config, in mise syntax. The sync generates
-# .config/mise/conf.d/flutter/mise.<env>.toml.
+# .config/mise/conf.d/android/mise.<env>.toml.
 [mise.tools.android-sdk]
 depends = [ "java" ] # also adds the tool that defines java
 envs = [ "dev", "ci" ] # the default is [ "dev" ]
 version = "23"
+```
 
-# Content for one environment only
-[mise_env.ci.env]
-ANDROID_HOME = "/opt/android"
+A `[mise_env.<env>.<section>]` table adds content to one environment only.
+For example, `base` sets the mise `os` setting in `ci`:
+
+```toml
+[mise_env.ci.settings]
+os = "linux"
 ```
 
 A tool can also add hooks to `.config/pre-commit-config.yaml` with

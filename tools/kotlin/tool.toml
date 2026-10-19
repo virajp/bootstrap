@@ -1,5 +1,5 @@
 # The Kotlin language server.
-depends = []
+depends = [ "java" ]
 extensions = []
 root_only = false
 seed = []

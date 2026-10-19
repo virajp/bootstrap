@@ -11,8 +11,8 @@ This file is temporary. Remove an item when all repositories have done it.
 
 | The repository has                                      | Do                                                                                             |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `.config/bootstrap.toml` with a `tools` list            | Nothing in this file. Run `mise run setup:configs`.                                            |
-| `.config/repo-config.toml` with a `tools` list          | Only M15.                                                                                      |
+| `.config/bootstrap.toml` with a `tools` list            | Only M16. Then run `mise run setup:configs`.                                                   |
+| `.config/repo-config.toml` with a `tools` list          | M15, then M16.                                                                                 |
 | No values file, but older shared files or a mise config | The steps of `index.md`. Its step 5 sends you here for M1 to M14. Write the new name directly. |
 
 **WARNING:** Do not delete a file before you move its repository-owned
@@ -320,3 +320,27 @@ Commit in each submodule before you commit in the repository that contains
 it. Ask the user before you push. Push each submodule before the repository
 that contains it. If not, the containing repository points to a commit that
 the remote does not have.
+
+## M16: `android-sdk` and `java` moved out of `flutter`
+
+Do this item only if `tools` lists `flutter` or `kotlin`.
+
+The `flutter` tool no longer defines `android-sdk` and `java`. The `android`
+tool defines `android-sdk`, and the `java` tool defines `java`. The mise
+`depends` of `flutter` adds both tools, in dev and ci. Do not add them to
+`tools` for `flutter`. See [`android.md`](android.md) and
+[`java.md`](java.md).
+
+1. The `java` version changes from `21` to `lts`. If the repository needs
+   Java 21, for example for its Gradle or Android Gradle Plugin version, tell
+   the user. Then ask how to keep Java 21.
+2. The `kotlin` tool now depends on `java`. Do the items in "Adapt to the
+   repository" of [`kotlin.md`](kotlin.md).
+3. Run `mise run setup:configs --dry-run`. Examine the output:
+   - With `flutter`: it must list the `.config/mise/conf.d/android/` and
+     `.config/mise/conf.d/java/` files for each environment of `flutter`.
+   - With `kotlin` and no `flutter`: it must list
+     `.config/mise/conf.d/java/mise.dev.toml`. `java` is in dev only. If CI
+     builds with Gradle, add `java` to `tools`, as `kotlin.md` says. Then the
+     output must also list `.config/mise/conf.d/java/mise.ci.toml`.
+4. Run `mise run setup:configs`.

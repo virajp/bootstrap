@@ -30,7 +30,12 @@ From index.md, assumed decisions:
 > exports `ANDROID_HOME`, `ANDROID_SDK_ROOT` and `PATH`.
 
 > D4 — `tools/flutter/tool.toml` drops `[mise.tools.android-sdk]` and
-> `[mise.tools.java]` and sets `depends = ["android"]`.
+> `[mise.tools.java]`, keeps `depends = []`, and gives `[mise.tools.flutter]`
+> the mise `depends = ["android-sdk"]`. The sync then adds the `android` tool,
+> and each mise `depends` is in the environments of `flutter` (dev and ci), so
+> `android-sdk` and `java` are in dev and ci. Ruled 2026-10-19 (G2):
+> "`android`, `java`, `android-sdk`: all must support `dev` as well as `ci`
+> since they are required to build the app".
 
 > D5 — `tools/kotlin/tool.toml` sets `depends = ["java"]`. Under the sync rule
 > a tool added only as a dependency is dev only, so `docs/sync/kotlin.md`
@@ -76,10 +81,13 @@ kotlin depends on java "Yes, now"; swift "Manifest + extension".
    `root_only = false`, `seed = []`. No `[mise.*]` table.
 
 4. **`tools/flutter/tool.toml`** — remove the `[mise.tools.android-sdk]` and
-   `[mise.tools.java]` tables. Set `depends = [ "android" ]`. Keep
-   `[mise.tools.flutter]` and the other keys. Change the description comment
+   `[mise.tools.java]` tables. Keep `depends = []`. In `[mise.tools.flutter]`,
+   add `depends = [ "android-sdk" ]`, and keep its `version` and `envs`. Keep
+   the other keys. Do not set the tool-level `depends` to `android`: the mise
+   `depends` adds the tool, and CLAUDE.md says not to repeat it there. Change
+   the description comment
    so that it no longer says that the tool ships the Android toolchain (for
-   example `# Flutter and Dart. Adds the android tool for the Android build.`).
+   example `# Flutter and Dart. Needs android-sdk, from the android tool.`).
 
 5. **`tools/kotlin/tool.toml`** — set `depends = [ "java" ]`. Nothing else.
 
@@ -123,7 +131,9 @@ kotlin depends on java "Yes, now"; swift "Manifest + extension".
      installed and selected (`sudo xcode-select -s /Applications/Xcode.app`).
    - Migration: None.
 
-9. **`docs/sync/flutter.md`** — Property table: Depends `android`. The
+9. **`docs/sync/flutter.md`** — Property table: Depends None. Say in
+   "mise tools" that `flutter` has the mise `depends` `android-sdk`, which adds
+   the `android` tool, in the environments of `flutter`. The
    description line: drop "with the Android toolchain" or say that the tool
    adds the `android` tool. The mise tools table: only `flutter`. Remove the
    `android-sdk` and `java` rows and the "Needs java" note. Keep the Tasks
@@ -141,6 +151,9 @@ kotlin depends on java "Yes, now"; swift "Manifest + extension".
 - Wave-gate lines 1 and 2 (index.md, Wave gate) pass.
 - The full-selection dry-run passes: the line-2 command with
   `tools = ["base", "flutter", "kotlin", "android", "java", "swift"]` exits 0.
+- Wave-gate line 2 (`tools = ["base", "flutter", "kotlin"]`, environments
+  dev and ci) lists `.config/mise/conf.d/android/mise.ci.toml` and
+  `.config/mise/conf.d/java/mise.ci.toml`, with their `mise.dev.toml`.
 - `grep -rn 'mise.tools.java\]' tools/*/tool.toml` prints exactly one line,
   in `tools/java/tool.toml`.
 - `grep -rn 'mise.tools.android-sdk\]' tools/*/tool.toml` prints exactly one

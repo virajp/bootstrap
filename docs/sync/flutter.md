@@ -1,6 +1,6 @@
 # The `flutter` tool
 
-Flutter and Dart, with the Android toolchain.
+Flutter and Dart. The tool adds the `android` tool for the Android build.
 
 | Property  | Value |
 | --------- | ----- |
@@ -25,11 +25,13 @@ VS Code extensions: `dart-code.dart-code`, `dart-code.flutter`.
 
 ## mise tools
 
-| mise tool     | Version | Environments | Note       |
-| ------------- | ------- | ------------ | ---------- |
-| `flutter`     | `3`     | dev, ci      |            |
-| `android-sdk` | `23`    | dev, ci      | Needs java |
-| `java`        | `21`    | dev, ci      |            |
+| mise tool | Version | Environments | Note               |
+| --------- | ------- | ------------ | ------------------ |
+| `flutter` | `3`     | dev, ci      | Needs android-sdk. |
+
+`flutter` has the mise `depends` `android-sdk`. Thus the sync adds the
+`android` tool, and `android-sdk` and `java` are in the environments of
+`flutter` (dev and ci). See `android.md` and `java.md`.
 
 ## Tasks
 
@@ -40,7 +42,9 @@ VS Code extensions: `dart-code.dart-code`, `dart-code.flutter`.
 | `code:lint:dart`     | Analyze the `.dart` files. `dart analyze` only reports.                                                                                                                     |
 
 `setup:deps:flutter` uses CocoaPods only with `ios/Podfile`, and Gradle only
-with an executable `android/gradlew`. It accepts the Android licenses.
+with an executable `android/gradlew`. It accepts the Android licenses. It
+installs `platform-tools` with `android-sdk`, which comes from the `android`
+tool.
 
 ## Pre-commit hooks
 
@@ -55,11 +59,11 @@ None. The `format` and `lint` hooks of `base` run the Dart tasks.
 
 ## Adapt to the repository
 
-1. If the repository pins a different Flutter, Android SDK or Java version,
-   tell the user.
+1. If the repository pins a different Flutter version, tell the user.
 2. Move the repository-owned `[dart]` keys of `.vscode/settings.json` (M9 of
    `migrate.md`).
 
 ## Migration
 
-- Remove flutter, android-sdk and java from the repository-owned mise files.
+- Remove `flutter` from the repository-owned mise files. For `android-sdk`
+  and `java`, see `android.md` and `java.md`.
