@@ -16,9 +16,10 @@ gaps_of:
 
 ## Status
 
-**APPROVED**
+**BLOCKED**
 
-APPROVED 2026-10-20 by the user
+BLOCKED at wave 0 — preflight: doctor blocking findings (graphify CLI has no
+version; no graph reachable); worktree .worktrees/2026-10-20-mobile-gap-fixes
 
 ## Consent
 
@@ -298,8 +299,9 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 
 ## Run log
 
-| Wave | Unit | Model | Round | Outcome | Detail | Commit |
-| ---- | ---- | ----- | ----- | ------- | ------ | ------ |
+| Wave | Unit      | Model  | Round | Outcome | Detail                                                                                                                                                                                                                                                                                            | Commit |
+| ---- | --------- | ------ | ----- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 0    | preflight | sonnet | 1     | blocked | wave gate lines 1 and 2 green; format check skipped (no `covers:`); doctor BLOCKING: graphify CLI shim has no version (`mise x -- graphify` → "No version is set for shim: graphify"), no `graphify-out/` graph in the worktree or the main checkout; why: hard halt on a doctor blocking finding | —      |
 
 ## Launch
 
