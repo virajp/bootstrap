@@ -1,7 +1,7 @@
 # mise design
 
 This document describes the way mise will be used across. It is the base tool
-which is required in anyrepo and is expected to be already installed in the
+which is required in any repo and is expected to be already installed in the
 machine before setting up with `bootstrap`
 
 ## The parts of the design
