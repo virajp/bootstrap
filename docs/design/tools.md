@@ -47,6 +47,12 @@ The user gave these dependencies for a Flutter app for Android:
 - Kotlin DSL (`kotlin-dsl`) is the only supported build script language.
   Android and Flutter support it since 2025.
 
+### The core of Flutter
+
+`tools/flutter/tools.toml` has the mise tool `flutter`, which is the Flutter
+SDK. `flutter` is its name in the mise registry. `flutter-sdk` is not a name in
+the registry.
+
 ### The current state
 
 - `tools/flutter/tools.toml` gives the mise tool `flutter` the static mise

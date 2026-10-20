@@ -28,7 +28,13 @@ depends = [ "flutter" ]
 ```
 
 - A pack names all its tools in `depends`, the group tool included.
-- A name in `depends` is a tool folder in `tools/`.
+- A name in `depends` is a tool folder in `tools/`, or a pack with the prefix
+  `p:`, for example `p:security`.
+- A pack name must not be the name of a tool folder. The sync reads all the
+  packs and all the tool folders, and it stops with code 2 for a duplicate.
+- A pack must not include itself, directly or through other packs. The sync
+  stops with code 2 for a loop, and it shows the packs of the loop, for example
+  `a -> b -> a`.
 - The `depends` lists of this document are examples. The packs of each group
   tool are decided when the tool is designed.
 
@@ -56,6 +62,9 @@ consumer gets it with no AI step.
 
 A pack name that is not in `tools/packs.toml` stops the sync with code 3, as
 an unknown tool does.
+
+The `packs` key has the names without the prefix `p:`, because each name in
+it is a pack.
 
 ## Environments
 
@@ -100,29 +109,46 @@ depends = [
   "pre-commit",
   "dprint",
   "linter",
-  "security",
+  "p:security",
 ]
 
 [pack.security]
 depends = [ "gitleaks", "grype", "osv-scanner" ]
+required = [ "_security_base" ]
 ```
 
-A name in the `depends` of a pack can be a tool or a pack. `security` is a
-pack in the `base` pack.
+`p:security` adds the pack `security` to the `base` pack.
+
+### Common tools and required tools
+
+A pack can have a common tool. It holds the items that all the other tools of
+the pack use, for example an orchestrator task and its hook. The name of a
+common tool starts with `_`, for example `_security_base`.
+
+`required` lists the tools of a pack that a consumer cannot remove.
+
+- A name in `required` is not in `depends`.
+- When a pack is selected, `repo-sync` always installs the tools of its
+  `required`. The values file does not list them.
+- `bootstrap` gives a consumer no way to remove a tool of a pack. But a user
+  can edit `.config/bootstrap.toml` by hand. `repo-sync` follows the edit if
+  it does not break a tool. It never removes a tool of `required`.
+- The format of `required` is a draft.
 
 ### The tools of the `base` pack
 
-| Tool          | Files and config                                                                                                                                                                                                                                                                                          |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mise`        | `.config/mise.toml.tmpl`, the `_repo` seeds, `_scripts/helpers`, `_scripts/checks`, `_scripts/placeholder`, `setup`, `setup:mise`, `setup:worktree`, `code`, `code:worktrees`, the `init` task, the `setup` alias, the `os` settings of each environment. The mise tools `jq` and `yq`, in `dev` and `ci` |
-| `repo-sync`   | `_scripts/repo-sync`, `setup:configs`, `setup:configs:sync`, the mise tool `gomplate`                                                                                                                                                                                                                     |
-| `git`         | `.gitignore`, `git-conventional-commits.yaml.tmpl`, `_scripts/merge`, `code:merge` and `code:merge:*`, `code:git-config`. The hooks `git-config`, `no-commit-to-branch` and `conventional-commits`                                                                                                        |
-| `pre-commit`  | `pre-commit-config.yaml.tmpl`, `setup:precommit`, `code:precommit`, the mise tool `pre-commit`, `PRE_COMMIT_HOME`, the `precommit` alias. The file-check hooks from `pre-commit/pre-commit-hooks`                                                                                                         |
-| `dprint`      | The mise tool `dprint`, `code:format`, `setup:dprint`, the `format` hook                                                                                                                                                                                                                                  |
-| `linter`      | The mise tools `npm:@askviraj/linter` and `shellcheck`, `code:lint`, `setup:linter`, the `lint` hook                                                                                                                                                                                                      |
-| `gitleaks`    | The mise tool `gitleaks`, `.config/gitleaks.toml.tmpl` (a seed)                                                                                                                                                                                                                                           |
-| `grype`       | The mise tool `grype`, `.config/grype.yaml` (a seed)                                                                                                                                                                                                                                                      |
-| `osv-scanner` | The mise tool `osv-scanner`, `.config/osv-scanner.toml` (a seed)                                                                                                                                                                                                                                          |
+| Tool             | Files and config                                                                                                                                                                                                                                                                                          |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mise`           | `.config/mise.toml.tmpl`, the `_repo` seeds, `_scripts/helpers`, `_scripts/checks`, `_scripts/placeholder`, `setup`, `setup:mise`, `setup:worktree`, `code`, `code:worktrees`, the `init` task, the `setup` alias, the `os` settings of each environment. The mise tools `jq` and `yq`, in `dev` and `ci` |
+| `repo-sync`      | `_scripts/repo-sync`, `setup:configs`, `setup:configs:sync`, the mise tool `gomplate`                                                                                                                                                                                                                     |
+| `git`            | `.gitignore`, `git-conventional-commits.yaml.tmpl`, `_scripts/merge`, `code:merge` and `code:merge:*`, `code:git-config`. The hooks `git-config`, `no-commit-to-branch` and `conventional-commits`                                                                                                        |
+| `pre-commit`     | `pre-commit-config.yaml.tmpl`, `setup:precommit`, `code:precommit`, the mise tool `pre-commit`, `PRE_COMMIT_HOME`, the `precommit` alias. The file-check hooks from `pre-commit/pre-commit-hooks`                                                                                                         |
+| `dprint`         | The mise tool `dprint`, `code:format`, `setup:dprint`, the `format` hook                                                                                                                                                                                                                                  |
+| `linter`         | The mise tools `npm:@askviraj/linter` and `shellcheck`, `code:lint`, `setup:linter`, the `lint` hook                                                                                                                                                                                                      |
+| `gitleaks`       | The mise tool `gitleaks`, `.config/gitleaks.toml.tmpl` (a seed), `code:sec:gitleaks`                                                                                                                                                                                                                      |
+| `grype`          | The mise tool `grype`, `.config/grype.yaml` (a seed), `code:sec:grype`                                                                                                                                                                                                                                    |
+| `_security_base` | `code:sec`, which runs each `code:sec:*` task. The `sec` hook                                                                                                                                                                                                                                             |
+| `osv-scanner`    | The mise tool `osv-scanner`, `.config/osv-scanner.toml` (a seed), `code:sec:osv-scanner`                                                                                                                                                                                                                  |
 
 Each hook moves to the tool that owns its task. Thus a removed tool also
 removes its hook, and no hook calls a task that is missing.
@@ -133,6 +159,14 @@ removes its hook, and no hook calls a task that is missing.
   for graphify.
 - `claude` gets `root_only = false`, so that a submodule also gets
   `code:graph`.
+
+## Open points
+
+- Later, not now: a key of `.config/bootstrap.toml` that removes a tool of a
+  pack, for example `grype` of the `security` pack. Until then, a user cannot
+  remove a tool of a pack, also not by hand.
+
+## Generated folders
 
 - The generated folder `.config/mise/conf.d/_base/` goes away. Each tool of
   the pack gets its own folder `.config/mise/conf.d/<tool>/`. The consumer does
