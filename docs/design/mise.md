@@ -1,8 +1,47 @@
 # mise design
 
-This document describes the way mise will be used across. It is the base tool
-which is required in any repo and is expected to be already installed in the
-machine before setting up with `bootstrap`
+This document describes the way mise will be used across all projects. It is the
+base tool which is required in all repos and is expected to be already installed
+in the machine before setting up with `bootstrap`
+
+## Rules
+
+- `mise` is ONLY used in `dev` & `ci` environments
+- `mise` configuration is always stored in `.config/` folder
+
+## Usage
+
+Mise will be used to manage tools, environments, and tasks consistently across
+all projects
+
+## Repository Types
+
+### Polyrepo
+
+Mise setup is straight forward in polyrepos, where each repository is
+independent and contains its own tools and configuration
+
+### Monorepo
+
+A monorepo setup will be very similar to that of polyrepo, with the main
+difference being that all tools and configurations are common for all projects
+in the monorepo
+
+### Repos with Submodules
+
+In repositories with submodules, mise setup requires careful handling to ensure
+that each submodule's tools and configurations are correctly integrated.
+
+- Each repository (root as well as submodules) will have it's own `mise`
+  configuration
+- Root repo will have tasks that can call tasks in submodules as needed
+- The root repo or submodule can be either a polyrepo or a monorepo
+
+## Design Overview
+
+Mise configuration are generated from templates and each tool will have its own
+configuration section in the `tools.toml` file. The sync process reads these
+sections and generates the necessary mise configuration files accordingly.
 
 ## The parts of the design
 
@@ -45,7 +84,20 @@ mise files from these tables.
 Without `MISE_ENV`, no file in `conf.d/` loads. No tool ships or generates a
 `conf.d/*/mise.toml`.
 
+## Environments
+
+The consumer selects its environments with `environments` in the values file.
+
+| Environment | Rule      | Use                                      |
+| ----------- | --------- | ---------------------------------------- |
+| `dev`       | Necessary | Local development                        |
+| `ci`        | Optional  | The CI build and the examination of code |
+
 ## `.config/mise.toml`
+
+`min_version`: The minimum version of the mise configuration required by the
+consumer repository. Currently set to `"2026.10.11"`, but must be continously
+upgraded as new versions of the mise configuration are released.
 
 The template is `tools/base/.config/mise.toml.tmpl`. It holds the shared
 `[settings]` and the `[env]` values from the values file.
@@ -65,32 +117,11 @@ The template is `tools/base/.config/mise.toml.tmpl`. It holds the shared
 | `task.output`                        | `"interleave"` |
 | `task.timings`                       | `true`         |
 
-| `[env]` key           | Source in `.config/bootstrap.toml`                     |
-| --------------------- | ------------------------------------------------------ |
-| `MEMBERS`             | `.members`: the git submodules, then each `[member.*]` |
-| `MERGE_MODEL_DEVELOP` | `merge_model_develop`                                  |
-| `MERGE_MODEL_MAIN`    | `merge_model_main`                                     |
-| `REPO_NAME`           | `repo_name`                                            |
+> As of now, we will NOT be supporting `monorepo_root` and `[monorepo]`
+> The repository puts its own `[env]` values in the `_repo` seeds.
 
-`min_version`, `monorepo_root` and `[monorepo]` go only in the own copy of a
-repository. The repository puts its own `[env]` values in the `_repo` seeds.
-
-## Environments
-
-The consumer selects its environments with `environments` in the values file.
-
-| Environment | Rule                     | Use                                       |
-| ----------- | ------------------------ | ----------------------------------------- |
-| `dev`       | Necessary                | Local development                         |
-| `ci`        | Optional                 | The CI build and the examination of code  |
-| `prod`      | Optional, only with `ci` | Only the tools that run the application   |
-| `stage`     | Optional, only with `ci` | The tools of `prod`, other `[env]` values |
-
-Without the key, the sync uses `dev` only. The sync stops with code 2 for an
-unknown name, for a list without `dev`, or for `prod` or `stage` without `ci`.
-
-`.config/mise.toml` sets `os = "macos"`. `base` sets `os = "linux"` in `ci`,
-`prod` and `stage` with `[mise_env.<env>.settings]` tables.
+> `.config/mise.toml` sets `os = "macos"`. `base` sets `os = "linux"` in `ci`
+> with `[mise_env.<env>.settings]` tables.
 
 ## The mise config of a tool
 

@@ -1,52 +1,11 @@
 # Tools design
 
-This document records the design decisions for the tools of `bootstrap` and
-for a repository-level skill that adds a tool. The decisions come from a design
-session on 2026-10-20. They are not implemented yet. See [Backlog](#backlog).
+`Tools` are fundamental building block of `bootstrap`. They define `mise`
+configuration to install the required applications (also called as tools in
+mise), tasks, environment, dependencies, etc. They also contain configuration of
+the tool they are installing
 
-## The goal of the skill
-
-The skill adds any new tool to `bootstrap`, with a correct dependency tree.
-Flutter is only the example, because it is one of the most difficult tools.
-The skill creates the tool files. It does not create the Flutter tool now. The
-user stated:
-
-> Please create skill only and not the tool itself
-
-## How bootstrap is used
-
-`bootstrap` uses AI and scripts together:
-
-- **AI, for the non-deterministic part.** A user opens an AI session in the
-  consumer repository with the prompt of `README.md`. The AI reads
-  `docs/sync/index.md`, asks the questions, and writes `.config/bootstrap.toml`.
-- **Script, for the deterministic part.** The `setup` task calls `repo-sync`.
-  It reads `.config/bootstrap.toml` and syncs the files of the selected tools.
-
-The repository solves two problems: add tools and dependencies to many
-repositories without manual edits that drift, and keep the updates in sync.
-
-The AI part is for a new repository, and after that only in rare situations.
-The user stated:
-
-> I want the user to use the AI part when their repo is new and post that in
-> rare situations only
-
-## Conditional dependencies become deterministic
-
-The structure of the tools makes each dependency deterministic. The user
-selects a tool, and the tool brings its dependencies. For example:
-
-- A Flutter app: the user selects `flutter`. It brings `dart`, `android` and
-  the other tools of the selected platforms.
-- A native Android app: the user selects only `android`. The sync does not
-  install `flutter` or `dart`.
-
-## Multi-step questions
-
-The AI asks the questions in layers. The user selects Flutter, then the
-platforms, and so on. If the prompt of the user already gives the answers,
-the AI does not ask those questions.
+## The tools.toml` file
 
 ## The `options.toml` file
 
@@ -84,10 +43,6 @@ depends = [ "flutter-ios" ]
 id = "ios"
 optional = [ "flutter-ios-pods" ] # the AI asks before it selects
 ```
-
-## Optional dependencies
-
-For each optional dependency, the AI asks a yes or no question.
 
 ## The answers go into the values file
 
