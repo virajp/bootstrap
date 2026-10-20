@@ -17,6 +17,7 @@ tools = [ "base", "github", "node", "fnox", "claude", "vscode" ]
 worktree_files = [ ".config/mise.local.toml" ]
 
 [member.web]
+folder = "projects/web"
 label = "Web"
 worktree_install = "mise run setup"
 
@@ -25,8 +26,8 @@ merge_from = [ "develop" ]
 merge_model = "pr"
 
 [member.web.branch.develop]
-merge_from = []
 merge_model = "direct"
+merge_never = [ "main" ]
 ```
 
 ## Summary of the keys
@@ -43,9 +44,11 @@ merge_model = "direct"
 | `extensions`                                  | List of strings | No        | `vscode` tool                          |
 | `[member.<name>]`                             | Table           | No        | `repo-sync`, `setup`, `setup:worktree` |
 | `[member.<name>].label`                       | String          | No        | `setup`, `setup:worktree`              |
+| `[member.<name>].folder`                      | String          | Yes       | `repo-sync`, `setup`, `setup:worktree` |
 | `[member.<name>].worktree_install`            | String          | No        | `setup:worktree`                       |
 | `[member.<name>.branch.<branch>].merge_model` | String          | No        | `code:merge:<branch>`                  |
 | `[member.<name>.branch.<branch>].merge_from`  | List of strings | No        | `code:merge:<branch>`                  |
+| `[member.<name>.branch.<branch>].merge_never` | List of strings | No        | `code:merge:<branch>`                  |
 
 All the paths in this document are relative to the root of the consumer
 repository.
@@ -62,6 +65,8 @@ The tools of the repository. Each name is a folder `tools/<name>/` of
 - All dependencies are configured for same environment as parent
 - A tool that is installed for `dev` environment will have all it's dependencies
   configured for `dev`
+- If a dependency is not available in an environment of its parent tool, for
+  example `ci`, the sync stops with an error
 - Without the key, or with an empty list, the sync stops with code 2
 - A name that is not in `bootstrap` stops the sync with code 3
 - A tool with `root_only = true` in a git submodule stops the sync with
@@ -73,7 +78,7 @@ The mise environments of the repository, from `dev` and `ci`
 
 - `dev` is necessary. `ci` is optional
 - Without the key, the sync uses `dev` only and prints a message.
-- An unknown name, a list without `dev`, or `ci` stops the sync with code 2.
+- An unknown name, or a list without `dev`, stops the sync with code 2.
 - The sync writes `conf.d/<folder>/mise.<env>.toml` only for these
   environments. See [mise.md](mise.md).
 
@@ -141,8 +146,8 @@ One table for each member folder of the repository. The member list is the
 git submodules (else the `MEMBERS` value), then each `[member.<name>]` key
 that is not a submodule.
 
-- A `[member.<name>]` table that is not a submodule must have a folder with
-  that name in the repository. If not, the render stops with code 2.
+- A `[member.<name>]` table that is not a submodule must have the folder of
+  its `folder` key in the repository. If not, the render stops with code 2.
 - The templates get the list as `.members`. `MEMBERS` in `.config/mise.toml`
   is this list, with one space between the names.
 - `setup`, `code:format` and `code:lint` get a `--<name>` flag and an `--all`
@@ -163,7 +168,7 @@ it can simply be "."
 
 The install command of the member for a new worktree, for example
 `pnpm install`. `setup:worktree` runs it as
-`mise x --cd <name> -- <command>`. Without the key, `setup:worktree` runs the
+`mise x --cd <folder> -- <command>`. Without the key, `setup:worktree` runs the
 own `setup:worktree` task of the member, if the member has one.
 
 ### `[member.<name>.branch.<branch>].merge_model`
@@ -188,10 +193,13 @@ the list is empty, except from the ones mentioned in
 
 ### `[member.<name>.branch.<branch>].merge_never`
 
-List of branches the merge can NEVER be allowed from. If the list is empty, only
-the `[member.<name>.branch.<branch>].merge_from` will be allowed
+List of branches the merge can NEVER be allowed from. If the list is empty and
+`[member.<name>.branch.<branch>].merge_from` is set, only the branches of
+`merge_from` will be allowed
 
 - This can be set ONLY if `[member.<name>.branch.<branch>].merge_from` is empty
+- Both lists are empty only in a repository with a single protected branch
+  (`main` or `develop`). Then any branch can be merged into that branch
 
 ## Reserved names
 

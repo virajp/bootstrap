@@ -120,8 +120,8 @@ The template is `tools/base/.config/mise.toml.tmpl`. It holds the shared
 > As of now, we will NOT be supporting `monorepo_root` and `[monorepo]`
 > The repository puts its own `[env]` values in the `_repo` seeds.
 
-> `.config/mise.toml` sets `os = "macos"`. `base` sets `os = "linux"` in `ci`
-> with `[mise_env.<env>.settings]` tables.
+> `.config/mise.toml` does not set `os`. `base` sets `os = "macos"` in `dev`
+> and `os = "linux"` in `ci`, with `[mise_env.<env>.settings]` tables.
 
 ## The mise config of a tool
 
@@ -154,15 +154,13 @@ A `[mise.tools.<name>]` table has the mise keys of the tool, for example
 
 The sync calculates the environments of each mise tool in this sequence:
 
-1. A mise tool of a tool that the values file lists gets the environments of
-   its `envs`.
-2. A mise tool of a tool that only a dependency adds gets `dev` only.
-3. Each mise `depends` gets the environments of the mise tool that needs it.
-   The sync repeats this step until nothing changes.
-4. The sync keeps only the environments that the values file selects.
-
-Thus a consumer lists its core language in `tools`. For example, a TypeScript
-repository lists `node`, so that `node` goes to each selected environment.
+1. A mise tool gets the environments of its `envs`.
+2. Each dependency gets the environments of the tool that needs it: a tool of
+   the `depends` key, and a mise tool of a mise `depends`. The sync repeats
+   this step until nothing changes.
+3. The sync keeps only the environments that the values file selects.
+4. If a dependency is not available in an environment of the tool that needs
+   it, the sync stops with an error.
 
 ### The dependencies between tools
 
@@ -233,9 +231,9 @@ These tools have no mise tools: `docker`, `swift` (the host Xcode), and
 `vscode`. `kotlin` gets `java` through its `depends` key.
 
 Because `base` needs `node`, `pnpm`, `python` and `uv`, each consumer gets the
-`node` and `python` tools. If the consumer does not list them in `tools`, they
-are in `dev` and in the environments of the `base` mise tools that need them
-(`ci` for `npm:@askviraj/linter`).
+`node` and `python` tools. They get the environments of the `base` mise tools
+that need them: `dev` and `ci` for `node` and `pnpm` (`npm:@askviraj/linter`),
+and `dev` for `python` and `uv` (`pre-commit`).
 
 ## Tasks
 

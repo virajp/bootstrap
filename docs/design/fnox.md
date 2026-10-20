@@ -15,10 +15,11 @@ profile. The user stated the rule as:
 The task runs the command through fnox:
 
 ```bash
-mise x -- fnox exec --profile "${MISE_ENV}" -- <command>
+mise x -- fnox exec --profile "${MISE_ENV%%,*}" -- <command>
 ```
 
-- The profile is the mise environment: `dev` or `ci`.
+- The profile is the mise environment: `dev` or `ci`. If `MISE_ENV` is a
+  list, for example `dev,ci`, the profile is the first name of the list.
 - The task runs `fnox exec` from the folder of its project. Thus fnox loads the
   shared files of `.config/` and the files of that project folder.
 

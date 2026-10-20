@@ -15,8 +15,10 @@ optional.
 
 - A folder can have `options.toml` only: a selection with no shared files.
 - A folder can have `tools.toml` and `options.toml`: a real tool with options.
-  For example, `tools/flutter/tools.toml` is the core (the Flutter SDK, Dart,
-  and the common tasks), and `tools/flutter/options.toml` lists the platforms.
+  For example, `tools/flutter/tools.toml` is the core (the mise tool
+  `flutter-sdk`,
+  Dart, and the common tasks), and `tools/flutter/options.toml` lists the
+  platforms.
 - One `options.toml` holds all the layers of the tree of that tool. Native
   Android and native iOS have their own `options.toml`, because they have more
   options than Flutter. The Flutter path does not ask the questions of the
@@ -25,8 +27,8 @@ optional.
 A first draft of the format, to show the idea. The format is not decided:
 
 ```toml
-# tools/flutter/options.toml
-depends = [ "flutter-sdk" ] # always selected
+# tools/flutter/options.toml. The core, with flutter-sdk, is always in
+# tools/flutter/tools.toml, so the options do not name it.
 description = "Flutter apps for mobile, desktop and web."
 
 [[question]]
