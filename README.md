@@ -40,7 +40,7 @@ it gets in a repository. For example,
 `.config/mise/tasks/code/merge/develop` in every repository that selects
 `base`.
 
-Each tool folder has a `tool.toml` manifest:
+Each tool folder has a `tools.toml` manifest:
 
 ```toml
 # The Android SDK command-line tools.

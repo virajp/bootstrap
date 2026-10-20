@@ -105,7 +105,7 @@ From index.md, assumed decisions:
 
 ## Guardrails
 
-- Do not touch `tools/kotlin/tool.toml`, any other tool, or the docs that U5
+- Do not touch `tools/kotlin/tools.toml`, any other tool, or the docs that U5
   owns (`README.md`, `CLAUDE.md`, `docs/sync/index.md`,
   `docs/sync/migrate.md`). Report each falsified passage as
   `DOCS FALSIFIED:`.

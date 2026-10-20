@@ -132,7 +132,7 @@ neither exists, it stops and names both ids."
 
 ## Guardrails
 
-- Do not touch `tools/android/tool.toml`, any other tool, or the docs that U5
+- Do not touch `tools/android/tools.toml`, any other tool, or the docs that U5
   owns. Report each falsified passage as `DOCS FALSIFIED:`.
 - Do not change `tools/flutter/**`; the Flutter `android/` deps stay there.
 - Do not add a `test:*` task.

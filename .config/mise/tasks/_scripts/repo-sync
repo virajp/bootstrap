@@ -14,7 +14,7 @@
 #
 # The values file lists the tools: `tools = ["base", "node"]`. Each tool is a
 # folder `tools/<tool>/` in `bootstrap`, which holds its files at the path
-# they get here, and a `tool.toml` manifest:
+# they get here, and a `tools.toml` manifest:
 #
 #   depends    = ["python"]     tools added with this one
 #   root_only  = false          true: refused in a git submodule
@@ -30,8 +30,8 @@
 # One call clones the default branch once (shallow, over SSH) and syncs every
 # file of every selected tool from that one clone.
 #
-# Environments: `environments` of the values file, from dev (necessary), ci,
-# prod and stage (prod and stage only with ci). Without the key, only dev.
+# Environments: `environments` of the values file, from dev (necessary) and
+# ci. Without the key, only dev.
 #
 # mise config: the sync generates `.config/mise/conf.d/<folder>/mise.<env>.toml`
 # for each selected environment and each tool with `[mise]` tables (`_base` for
@@ -172,7 +172,7 @@ _rs_list() {
 # `root_only true|false`.
 _rs_manifest() {
   local dir=$1 tool=$2
-  _rs_gomplate -c "t=${dir}/tools/${tool}/tool.toml" -i '<% range .t.depends %>depends <% . %>
+  _rs_gomplate -c "t=${dir}/tools/${tool}/tools.toml" -i '<% range .t.depends %>depends <% . %>
 <% end %><% range .t.extensions %>extension <% . %>
 <% end %><% range .t.seed %>seed <% . %>
 <% end %><% if has .t "seed_requires" %><% range $k, $v := .t.seed_requires %>seed_requires <% $k %> <% $v %>
@@ -187,13 +187,13 @@ _rs_manifest() {
 _rs_mise_index() {
   local dir=$1 manifest tool name names
   _RS_MISE_DEFS=' '
-  for manifest in "$dir"/tools/*/tool.toml; do
-    tool=${manifest%/tool.toml}
+  for manifest in "$dir"/tools/*/tools.toml; do
+    tool=${manifest%/tools.toml}
     tool=${tool##*/}
     names=$(_rs_gomplate -c "t=${manifest}" -i '<% if and (has .t "mise") (has .t.mise "tools") %><% range $k, $v := .t.mise.tools %><% $k %>
 <% end %><% end %>') || {
 
-      _rs_log "cannot read tools/$tool/tool.toml"
+      _rs_log "cannot read tools/$tool/tools.toml"
       return 2
     }
     for name in $names; do
@@ -243,13 +243,13 @@ _rs_resolve() {
     tool=${pending%% *}
     pending=${pending#* }
     [[ -n $tool && $_RS_TOOLS != *" $tool "* ]] || continue
-    if [[ ! -f $dir/tools/$tool/tool.toml ]]; then
+    if [[ ! -f $dir/tools/$tool/tools.toml ]]; then
       _rs_log "tool '$tool' is not in bootstrap"
       return 3
     fi
     local deps='' manifest entry name owner
     manifest=$(_rs_manifest "$dir" "$tool") || {
-      _rs_log "cannot read tools/$tool/tool.toml"
+      _rs_log "cannot read tools/$tool/tools.toml"
       return 2
     }
     while read -r field value; do
@@ -314,7 +314,7 @@ _rs_tool_extensions() {
   while [[ -n ${pending// /} ]]; do
     tool=${pending%% *}
     pending=${pending#* }
-    [[ -n $tool && $seen != *" $tool "* && -f $dir/tools/$tool/tool.toml ]] || continue
+    [[ -n $tool && $seen != *" $tool "* && -f $dir/tools/$tool/tools.toml ]] || continue
     seen+="$tool "
     while read -r field value; do
       case $field in
@@ -397,8 +397,8 @@ _rs_remove() {
 }
 
 # Set _RS_ENVS to the ` <env> ` words of `environments` in <values>, in the
-# order dev, ci, prod, stage. Without the key, only dev. Returns 2, after a
-# message, for an unknown name, no dev, or prod or stage without ci.
+# order dev, ci. Without the key, only dev. Returns 2, after a message, for
+# an unknown name or no dev.
 _rs_envs() {
   local values=$1 list name
   list=$(_rs_list "$values" environments) || {
@@ -411,9 +411,9 @@ _rs_envs() {
   fi
   for name in $list; do
     case $name in
-      dev | ci | prod | stage) ;;
+      dev | ci) ;;
       *)
-        _rs_log "environment '$name' in $(_rs_path "$values") is not one of dev, ci, prod, stage"
+        _rs_log "environment '$name' in $(_rs_path "$values") is not one of dev, ci"
         return 2
         ;;
     esac
@@ -423,12 +423,8 @@ _rs_envs() {
     _rs_log "environments in $(_rs_path "$values") must include dev"
     return 2
   fi
-  if [[ ($list == *" prod "* || $list == *" stage "*) && $list != *" ci "* ]]; then
-    _rs_log "environments in $(_rs_path "$values"): prod and stage need ci"
-    return 2
-  fi
   _RS_ENVS=' '
-  for name in dev ci prod stage; do
+  for name in dev ci; do
     [[ $list == *" $name "* ]] && _RS_ENVS+="$name "
   done
   return 0
@@ -450,9 +446,9 @@ _rs_mise_env() {
     fi
     for env in ${envs//,/ }; do
       case $env in
-        dev | ci | prod | stage) ;;
+        dev | ci) ;;
         *)
-          _rs_log "envs of mise tool '$entry' in tools/$tool/tool.toml: '$env' is not one of dev, ci, prod, stage"
+          _rs_log "envs of mise tool '$entry' in tools/$tool/tools.toml: '$env' is not one of dev, ci"
           return 2
           ;;
       esac
@@ -480,7 +476,7 @@ _rs_mise_env() {
 }
 
 # The template that builds one environment, REPO_SYNC_ENV, from the `[mise]`
-# and `[mise_env]` tables of a tool.toml (`.t`), as TOML. An entry is in the
+# and `[mise_env]` tables of a tools.toml (`.t`), as TOML. An entry is in the
 # environment when ` <name>:<env> ` is in REPO_SYNC_ENVS. A section that it
 # does not know stops the render. REPO_SYNC_DEV_ALIASES adds `<name>=<command>`
 # lines to `[shell_alias]` of dev.
@@ -506,12 +502,12 @@ _RS_MISE_TEMPLATE='<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% en
 <% else if has $devonly $s -%>
 <% if eq $env "dev" %><% $out = coll.Merge (dict $s $body) $out %><% end -%>
 <% else -%>
-<% test.Fail (printf "[mise.%s] is not supported in a tool.toml" $s) -%>
+<% test.Fail (printf "[mise.%s] is not supported in a tools.toml" $s) -%>
 <% end -%>
 <% end -%>
 <% if and (has .t "mise_env") (has .t.mise_env $env) -%>
 <% range $s, $body := index .t.mise_env $env -%>
-<% if not (or (has $entry $s) (has $folder $s) (has $devonly $s)) %><% test.Fail (printf "[mise_env.%s.%s] is not supported in a tool.toml" $env $s) %><% end -%>
+<% if not (or (has $entry $s) (has $folder $s) (has $devonly $s)) %><% test.Fail (printf "[mise_env.%s.%s] is not supported in a tools.toml" $env $s) %><% end -%>
 <% if has $out $s %><% $body = coll.Merge $body (index $out $s) %><% end -%>
 <% $out = coll.Merge (dict $s $body) $out -%>
 <% end -%>
@@ -525,7 +521,7 @@ _RS_MISE_TEMPLATE='<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% en
 <% if $out %><% $out | data.ToTOML %><% end -%>'
 
 # Generate the mise config of <tool> from the `[mise]` and `[mise_env]` tables
-# of its tool.toml in the clone <dir>: one `mise.<env>.toml` for each selected
+# of its tools.toml in the clone <dir>: one `mise.<env>.toml` for each selected
 # environment with content, into tools/<tool>/.config/mise/conf.d/<folder>/ of
 # the clone. The file loop then syncs it like a shipped file. Records each
 # file in _RS_GENERATED. Returns 2, after a message, when the config cannot be
@@ -534,12 +530,12 @@ _rs_mise_render() {
   local dir=$1 tool=$2 folder=$2 env name rel tmp err
   [[ $tool == base ]] && folder=_base
   local out="${dir}/tools/${tool}/.config/mise/conf.d/${folder}"
-  local header="# Synced from bootstrap: tools/${tool}/tool.toml. Do not edit this file.
+  local header="# Synced from bootstrap: tools/${tool}/tools.toml. Do not edit this file.
 # The next sync replaces it, and a manual change is lost.
 "
   tmp="${dir}/.repo-sync-mise" err="${dir}/.repo-sync-mise-err"
   # `setup-all` and `setup-<submodule>` exist only in a repo with git
-  # submodules. They depend on this repo, not on tool.toml, so base gets them
+  # submodules. They depend on this repo, not on tools.toml, so base gets them
   # here.
   local aliases='' subs sub
   if [[ $tool == base && -f ${MISE_PROJECT_ROOT}/.gitmodules ]]; then
@@ -557,9 +553,9 @@ _rs_mise_render() {
     # gomplate writes no file for an empty output, so the previous one must go.
     rm -f -- "$tmp"
     if ! REPO_SYNC_ENV=$env REPO_SYNC_ENVS=$_RS_MISE_ENVS REPO_SYNC_DEV_ALIASES=$aliases \
-      _rs_gomplate -c "t=${dir}/tools/${tool}/tool.toml" -i "$_RS_MISE_TEMPLATE" -o "$tmp" 2> "$err"; then
-      _rs_log "tools/$tool/tool.toml: cannot generate the mise config: $(sed -n 's/.*error calling Fail: template generation failed: //p' "$err" | sed 's/"}$//')"
-      for name in dev ci prod stage; do
+      _rs_gomplate -c "t=${dir}/tools/${tool}/tools.toml" -i "$_RS_MISE_TEMPLATE" -o "$tmp" 2> "$err"; then
+      _rs_log "tools/$tool/tools.toml: cannot generate the mise config: $(sed -n 's/.*error calling Fail: template generation failed: //p' "$err" | sed 's/"}$//')"
+      for name in dev ci; do
         _RS_SEEN+="${rel%/*}/mise.${name}.toml "
       done
       return 2
@@ -611,7 +607,7 @@ _rs_context() {
   # entries; `repo_precommit` for the repo's own entries.
   local args=(-c "v=${values}")
   for tool in $_RS_TOOLS; do
-    args+=(-c "tool_${tool}=${dir}/tools/${tool}/tool.toml")
+    args+=(-c "tool_${tool}=${dir}/tools/${tool}/tools.toml")
   done
   local own="${MISE_PROJECT_ROOT}/.config/repo-sync/pre-commit.yaml"
   local has_own=''
@@ -717,7 +713,7 @@ _rs_file() {
     cp -- "$src" "$tmp" || rc=1
   fi
   # The hook revisions: each one becomes the newest tag, chosen by
-  # `pre-commit autoupdate` itself. The `rev` in a tool.toml is a real tag, so
+  # `pre-commit autoupdate` itself. The `rev` in a tools.toml is a real tag, so
   # an older repo-sync without this step still writes a config that runs. A later autoupdate in
   # this repo then picks the same tags, so it and the sync never undo each
   # other. It needs the network; on a failure the existing file stays.
@@ -847,7 +843,7 @@ repo_sync() {
     # A clone that `setup:configs` already made, so that this code and the
     # files come from the same commit. A private copy, because the sync writes
     # the generated mise config into its clone.
-    if [[ ! -d $REPO_SYNC_CLONE/.git ]] || ! cp -R -- "$REPO_SYNC_CLONE/." "$dir"; then
+    if [[ ! -e $REPO_SYNC_CLONE/.git ]] || ! cp -R -- "$REPO_SYNC_CLONE/." "$dir"; then
       _rs_log "cannot use the clone $REPO_SYNC_CLONE - nothing synced; existing files were left untouched"
       return 5
     fi
@@ -855,7 +851,7 @@ repo_sync() {
   # instead of waiting for a password nobody will type.
   elif ! GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="ssh -o BatchMode=yes" \
     git clone --quiet --depth 1 --single-branch -- "$url" "$dir" 2>&1 | sed 's/^/  /' >&2 ||
-    [[ ! -d $dir/.git ]]; then
+    [[ ! -e $dir/.git ]]; then
     _rs_log "cannot clone $url - nothing synced; existing files were left untouched"
     return 5
   fi
@@ -899,7 +895,7 @@ repo_sync() {
     rc=0
     _rs_mise_render "$dir" "$tool" || rc=$?
     if ((rc != 0)); then
-      failed+=("$tool/tool.toml [mise]")
+      failed+=("$tool/tools.toml [mise]")
       ((rc > worst)) && worst=$rc
     fi
   done
@@ -937,7 +933,7 @@ repo_sync() {
         failed+=("$tool/$path")
         ((rc > worst)) && worst=$rc
       fi
-    done < <(cd "$dir/tools/$tool" && find . -type f ! -name tool.toml | sed 's#^\./##' | sort)
+    done < <(cd "$dir/tools/$tool" && find . -type f ! -name tools.toml | sed 's#^\./##' | sort)
   done
   rm -rf -- "$dir"
 

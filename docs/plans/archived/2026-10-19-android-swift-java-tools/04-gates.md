@@ -15,13 +15,13 @@
 
 From index.md, assumed decisions:
 
-> D2 — A new `java` tool. `tools/java/tool.toml` defines only
+> D2 — A new `java` tool. `tools/java/tools.toml` defines only
 > `[mise.tools.java]`, `version = "lts"`, `envs = ["dev", "ci"]`.
 
 > D3 — A new `android` tool defines `[mise.tools.android-sdk]`,
 > `version = "23"`, `envs = ["dev", "ci"]`, mise `depends = ["java"]`.
 
-> D4 — `tools/flutter/tool.toml` drops `[mise.tools.android-sdk]` and
+> D4 — `tools/flutter/tools.toml` drops `[mise.tools.android-sdk]` and
 > `[mise.tools.java]` and sets `depends = ["android"]`.
 
 This plan names no generator. No version file exists to bump.

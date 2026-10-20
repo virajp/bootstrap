@@ -18,8 +18,6 @@ seed = [
   ".config/grype.yaml",
   ".config/mise/conf.d/_repo/mise.ci.toml",
   ".config/mise/conf.d/_repo/mise.dev.toml",
-  ".config/mise/conf.d/_repo/mise.prod.toml",
-  ".config/mise/conf.d/_repo/mise.stage.toml",
   ".config/osv-scanner.toml",
 ]
 
@@ -222,13 +220,12 @@ dir = "{{exec(command='git rev-parse --show-toplevel')}}"
 hide = true
 run = "find .config/mise/tasks/ -name '*' -type f -exec chmod 755 {} \\;"
 
-# CI, prod and stage run on Linux, but `os = "macos"` in .config/mise.toml
+# dev run on macOS
 # selects macOS binaries.
+[mise_env.dev.settings]
+os = "macos"
+
+# CI run on Linux
+# selects Linux binaries.
 [mise_env.ci.settings]
-os = "linux"
-
-[mise_env.prod.settings]
-os = "linux"
-
-[mise_env.stage.settings]
 os = "linux"

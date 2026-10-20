@@ -87,7 +87,7 @@ From index.md, assumed decisions:
 
 ## Guardrails
 
-- Do not touch `tools/swift/tool.toml`, any other tool, or the docs that U5
+- Do not touch `tools/swift/tools.toml`, any other tool, or the docs that U5
   owns. Report each falsified passage as `DOCS FALSIFIED:`.
 - Do not use `mise x --` for `swift` or `xcodebuild`: they come from the host
   Xcode.

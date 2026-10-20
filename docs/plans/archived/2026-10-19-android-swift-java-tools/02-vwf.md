@@ -6,7 +6,7 @@
 - **Model:** opus
 - **Kind:** edit
 - **Read first:** `docs/sync/index.md` (whole file: the adoption steps, the
-  `tool.toml` keys, the values file keys) and `docs/sync/flutter.md` (the
+  `tools.toml` keys, the values file keys) and `docs/sync/flutter.md` (the
   structure of a tool file, especially "What the tool ships" with its Kind
   column `Synced`, `Seed`, `Generated`).
 - **Lazy-load:** `README.md` (the sync contract), `CLAUDE.md` ("How the sync

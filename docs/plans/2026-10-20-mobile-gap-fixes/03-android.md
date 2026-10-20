@@ -110,7 +110,7 @@ From index.md, assumed decisions:
 
 ## Guardrails
 
-- Do not touch `tools/android/tool.toml`, any other tool, or the docs that U6
+- Do not touch `tools/android/tools.toml`, any other tool, or the docs that U6
   owns. Report each falsified passage as `DOCS FALSIFIED:`.
 - Do not install SDK packages on this host to test; the review row and the
   wave review judge the change.

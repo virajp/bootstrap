@@ -134,7 +134,7 @@ tmp=$(mktemp -d)
 git clone --quiet --depth 1 git@github.com:virajp/bootstrap.git "$tmp"
 ```
 
-Read `"$tmp"/tools/*/tool.toml` and `"$tmp"/docs/sync/<tool>.md`. Examine
+Read `"$tmp"/tools/*/tools.toml` and `"$tmp"/docs/sync/<tool>.md`. Examine
 the repository for the signs in "When the tool is relevant" of each tool
 file. Show the user each tool with its description and the result. Then ask
 which tools the repository needs. `base` is necessary in each repository.
@@ -142,7 +142,7 @@ which tools the repository needs. `base` is necessary in each repository.
 For each selected tool, do the items in "Adapt to the repository" of its tool
 file.
 
-Each `tool.toml` has these keys:
+Each `tools.toml` has these keys:
 
 | Key          | Meaning                                                            |
 | ------------ | ------------------------------------------------------------------ |
@@ -151,12 +151,12 @@ Each `tool.toml` has these keys:
 | `extensions` | The VS Code extensions of the tool, for `.vscode/extensions.json`. |
 | `seed`       | Files that the sync writes only if they are missing.               |
 
-A `tool.toml` can also have a `[seed_requires]` table. It is optional. Each
+A `tools.toml` can also have a `[seed_requires]` table. It is optional. Each
 key is a seed, and its value is a file of the repository. The sync writes the
 seed only if the repository has that file. For example, the `node` tool writes
 `pnpm-workspace.yaml` only if the repository has a `package.json`.
 
-The `[mise.*]` tables of a `tool.toml` hold the mise config of the tool. The
+The `[mise.*]` tables of a `tools.toml` hold the mise config of the tool. The
 sync generates `.config/mise/conf.d/<tool>/mise.<env>.toml` from them, one
 file for each environment. A mise `depends` adds the tool that defines the
 dependency. For example, `base` adds `python` and `node`, because pre-commit

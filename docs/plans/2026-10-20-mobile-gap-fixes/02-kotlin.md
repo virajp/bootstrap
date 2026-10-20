@@ -91,7 +91,7 @@ From index.md, assumed decisions:
 
 ## Guardrails
 
-- Do not touch `tools/kotlin/tool.toml`, any other tool, or the docs that U6
+- Do not touch `tools/kotlin/tools.toml`, any other tool, or the docs that U6
   owns. Report each falsified passage as `DOCS FALSIFIED:`.
 - Do not write or commit any lockfile in this repository.
 - Keep the script safe for bash 3.2 and 5.x; write `VAR=$(cmd) || VAR=''`
