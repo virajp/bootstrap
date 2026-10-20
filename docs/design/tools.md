@@ -55,11 +55,14 @@ The user gave these dependencies for a Flutter app for Android:
 - Gradle does not come from mise. The Android tasks use the `gradlew` wrapper
   of the project. The `kotlin` tool ships only `kotlin-lsp`.
 
-## Open points
+## Tasks of a group tool for one platform
 
-- The tool that holds a task for one group tool on one platform, for example
-  `flutter build apk`: the group tool (`flutter`) or the platform tool
-  (`android`).
+A task that is for Flutter on one platform goes in the `flutter` tool, not in
+the platform tool. For example, a task that runs `flutter build apk` is in
+`tools/flutter/`, not in `tools/android/`.
+
+- Each Flutter consumer gets the task, also without an Android target.
+- If the project has no `android/` folder, the task prints nothing and exits 0.
 
 ## Secrets
 
