@@ -66,8 +66,9 @@ the `base` pack. See [packs.md](packs.md#the-base-pack)
 - All dependencies are configured for same environment as parent
 - A tool that is installed for `dev` environment will have all it's dependencies
   configured for `dev`
-- If a dependency is not available in an environment of its parent tool, for
-  example `ci`, the sync stops with an error
+- The `envs` of a dependency must include each environment of its parent. If
+  not, the sync stops with code 2. See
+  [mise.md](mise.md#the-environments-of-a-mise-tool)
 - Without the key, or with an empty list, the repository gets only the `base`
   pack
 - A name that is not in `bootstrap` stops the sync with code 3
