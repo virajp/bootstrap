@@ -11,7 +11,6 @@ env_shell_expand = true
 gpg_verify = true
 lockfile = false
 minimum_release_age = "10h"
-os = "macos"
 raw = true
 status.missing_tools = "always"
 task.disable_spec_from_run_scripts = true
@@ -23,8 +22,5 @@ task.timings = true
 [env]
 # Member projects within the repository
 MEMBERS = ""
-# Merge model per destination: `direct` merges locally, `pr` opens a pull request
-MERGE_MODEL_DEVELOP = "direct"
-MERGE_MODEL_MAIN = "direct"
 # Repository name, used for identification within the toolchain
 REPO_NAME = "bootstrap"

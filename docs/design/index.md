@@ -49,6 +49,7 @@ sync the updates from `bootstrap` repo to consumer repo
 ## References
 
 - [tools](./tools.md)
+- [packs](./packs.md)
 - [.config/bootstrap.toml](./bootstrap-config.md)
 
 ## Tools

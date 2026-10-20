@@ -4,6 +4,9 @@
 [env]
 PRE_COMMIT_HOME = "$HOME/.cache/pre-commit"
 
+[settings]
+os = "macos"
+
 [shell_alias]
 precommit = "mise run code:precommit"
 setup = "mise run setup"
