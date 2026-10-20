@@ -1,5 +1,0 @@
-# The mise config of this repository for `MISE_ENV=prod`, for example its own
-# [env] values. This repository owns the file: the sync writes it only when it
-# is missing, and the next sync keeps your version. The shared variables are
-# in .config/mise.toml.
-[env]

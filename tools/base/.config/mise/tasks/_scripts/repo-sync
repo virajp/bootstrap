@@ -30,8 +30,8 @@
 # One call clones the default branch once (shallow, over SSH) and syncs every
 # file of every selected tool from that one clone.
 #
-# Environments: `environments` of the values file, from dev (necessary), ci,
-# prod and stage (prod and stage only with ci). Without the key, only dev.
+# Environments: `environments` of the values file, from dev (necessary) and
+# ci. Without the key, only dev.
 #
 # mise config: the sync generates `.config/mise/conf.d/<folder>/mise.<env>.toml`
 # for each selected environment and each tool with `[mise]` tables (`_base` for
@@ -397,8 +397,8 @@ _rs_remove() {
 }
 
 # Set _RS_ENVS to the ` <env> ` words of `environments` in <values>, in the
-# order dev, ci, prod, stage. Without the key, only dev. Returns 2, after a
-# message, for an unknown name, no dev, or prod or stage without ci.
+# order dev, ci. Without the key, only dev. Returns 2, after a message, for
+# an unknown name or no dev.
 _rs_envs() {
   local values=$1 list name
   list=$(_rs_list "$values" environments) || {
@@ -411,9 +411,9 @@ _rs_envs() {
   fi
   for name in $list; do
     case $name in
-      dev | ci | prod | stage) ;;
+      dev | ci) ;;
       *)
-        _rs_log "environment '$name' in $(_rs_path "$values") is not one of dev, ci, prod, stage"
+        _rs_log "environment '$name' in $(_rs_path "$values") is not one of dev, ci"
         return 2
         ;;
     esac
@@ -423,12 +423,8 @@ _rs_envs() {
     _rs_log "environments in $(_rs_path "$values") must include dev"
     return 2
   fi
-  if [[ ($list == *" prod "* || $list == *" stage "*) && $list != *" ci "* ]]; then
-    _rs_log "environments in $(_rs_path "$values"): prod and stage need ci"
-    return 2
-  fi
   _RS_ENVS=' '
-  for name in dev ci prod stage; do
+  for name in dev ci; do
     [[ $list == *" $name "* ]] && _RS_ENVS+="$name "
   done
   return 0
@@ -450,9 +446,9 @@ _rs_mise_env() {
     fi
     for env in ${envs//,/ }; do
       case $env in
-        dev | ci | prod | stage) ;;
+        dev | ci) ;;
         *)
-          _rs_log "envs of mise tool '$entry' in tools/$tool/tools.toml: '$env' is not one of dev, ci, prod, stage"
+          _rs_log "envs of mise tool '$entry' in tools/$tool/tools.toml: '$env' is not one of dev, ci"
           return 2
           ;;
       esac
@@ -559,7 +555,7 @@ _rs_mise_render() {
     if ! REPO_SYNC_ENV=$env REPO_SYNC_ENVS=$_RS_MISE_ENVS REPO_SYNC_DEV_ALIASES=$aliases \
       _rs_gomplate -c "t=${dir}/tools/${tool}/tools.toml" -i "$_RS_MISE_TEMPLATE" -o "$tmp" 2> "$err"; then
       _rs_log "tools/$tool/tools.toml: cannot generate the mise config: $(sed -n 's/.*error calling Fail: template generation failed: //p' "$err" | sed 's/"}$//')"
-      for name in dev ci prod stage; do
+      for name in dev ci; do
         _RS_SEEN+="${rel%/*}/mise.${name}.toml "
       done
       return 2
