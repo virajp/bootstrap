@@ -5,7 +5,7 @@ configuration to install the required applications (also called as tools in
 mise), tasks, environment, dependencies, etc. They also contain configuration of
 the tool they are installing
 
-## The tools.toml` file
+## The `tools.toml` file
 
 ## The `options.toml` file
 
@@ -25,8 +25,8 @@ optional.
 A first draft of the format, to show the idea. The format is not decided:
 
 ```toml
-depends = [ "flutter-sdk" ] # always selected
 # tools/flutter/options.toml
+depends = [ "flutter-sdk" ] # always selected
 description = "Flutter apps for mobile, desktop and web."
 
 [[question]]
@@ -108,20 +108,3 @@ The user gave these dependencies for a Flutter app for Android:
 ## Secrets
 
 Each task that runs the application uses fnox. See [fnox.md](fnox.md).
-
-## Open points
-
-- The final format of `options.toml`.
-- The format of the answers in `.config/bootstrap.toml`.
-- The name and the location of the skill, for example
-  `.claude/skills/<name>/SKILL.md`.
-- The tasks that count as "tasks that run the application", and their names.
-
-## Backlog
-
-1. `repo-sync` reads `options.toml` and resolves the answers in
-   `.config/bootstrap.toml` on each sync.
-2. Rename `tools.toml` to `tools.toml` in all tools, the sync code and the
-   docs. Most tools install more than one mise tool, and the name matches
-   mise. Until this item lands, the skill writes `tools.toml`.
-3. The `fnox` redesign. See [fnox.md](fnox.md#backlog).

@@ -21,8 +21,6 @@ mise x -- fnox exec --profile "${MISE_ENV}" -- <command>
 - The profile is the mise environment: `dev` or `ci`.
 - The task runs `fnox exec` from the folder of its project. Thus fnox loads the
   shared files of `.config/` and the files of that project folder.
-- In `stage` and `prod`, the task runs the command directly. These
-  environments have their own secrets management.
 
 ## Environments
 
@@ -30,8 +28,6 @@ mise x -- fnox exec --profile "${MISE_ENV}" -- <command>
 | ----------- | ------------------------------------------------------------- |
 | `dev`       | fnox. The `age` key comes from the keychain.                  |
 | `ci`        | fnox. The `age` key comes from the secrets manager of the CI. |
-| `stage`     | Its own secrets management. fnox is not used.                 |
-| `prod`      | Its own secrets management. fnox is not used.                 |
 
 The current `fnox` tool installs fnox in dev only. The new design installs it
 in dev and ci.
