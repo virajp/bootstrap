@@ -13,7 +13,7 @@ extensions = [ "astro-build.astro-vscode" ]
 product_name = "my-product"
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
-tools = [ "base", "github", "node", "fnox", "claude", "vscode" ]
+tools = [ "github", "node", "fnox", "claude", "vscode" ]
 worktree_files = [ ".config/mise.local.toml" ]
 
 [member.web]
@@ -34,7 +34,7 @@ merge_never = [ "main" ]
 
 | Key                                           | Type            | Necessary | Read by                                |
 | --------------------------------------------- | --------------- | --------- | -------------------------------------- |
-| `tools`                                       | List of strings | Yes       | `repo-sync`                            |
+| `tools`                                       | List of strings | No        | `repo-sync`                            |
 | `environments`                                | List of strings | No        | `repo-sync`                            |
 | `repo_name`                                   | String          | Yes       | `mise.toml`, `gitleaks.toml`           |
 | `product_name`                                | String          | No        |                                        |
@@ -58,7 +58,8 @@ repository.
 ### `tools`
 
 The tools of the repository. Each name is a folder `tools/<name>/` of
-`bootstrap`. `base` is necessary in each repository
+`bootstrap`. Do not list the tools of the `base` pack: `repo-sync` always adds
+the `base` pack. See [packs.md](packs.md#the-base-pack)
 
 - `repo-sync` adds the `depends` of each tool, and the tool of each mise
   `depends`, depth first
@@ -67,7 +68,8 @@ The tools of the repository. Each name is a folder `tools/<name>/` of
   configured for `dev`
 - If a dependency is not available in an environment of its parent tool, for
   example `ci`, the sync stops with an error
-- Without the key, or with an empty list, the sync stops with code 2
+- Without the key, or with an empty list, the repository gets only the `base`
+  pack
 - A name that is not in `bootstrap` stops the sync with code 3
 - A tool with `root_only = true` in a git submodule stops the sync with
   code 2
@@ -223,6 +225,6 @@ different path. Without the file, the sync stops with code 2.
 
 ## Planned keys
 
-The design in [tools.md](tools.md) adds the answers of the questions of each
-`options.toml`, for example `[options.flutter] platforms = ["android"]`. The
-format is not decided, and `repo-sync` does not read it yet.
+`packs`: a list of the packs of `tools/packs.toml`, for example
+`["flutter-android", "flutter-ios"]`. `repo-sync` adds the tools of each pack
+to `tools`. See [packs.md](packs.md). `repo-sync` does not read it yet.

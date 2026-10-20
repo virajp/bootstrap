@@ -7,71 +7,19 @@ the tool they are installing
 
 ## The `tools.toml` file
 
-## The `options.toml` file
+## Kinds of tool
 
-A tool folder can have `options.toml`. It lists the options that the user can
-select. Each option names its dependencies. An option can mark a dependency as
-optional.
+A tool is one of two kinds:
 
-- A folder can have `options.toml` only: a selection with no shared files.
-- A folder can have `tools.toml` and `options.toml`: a real tool with options.
-  For example, `tools/flutter/tools.toml` is the core (the mise tool
-  `flutter-sdk`,
-  Dart, and the common tasks), and `tools/flutter/options.toml` lists the
-  platforms.
-- One `options.toml` holds all the layers of the tree of that tool. Native
-  Android and native iOS have their own `options.toml`, because they have more
-  options than Flutter. The Flutter path does not ask the questions of the
-  native Android file.
+- **A plain tool**, for example `claude`. It is a set of config for mise and
+  for other CLIs.
+- **A group tool**, for example `flutter`. It has its own config, as a plain
+  tool has. It also has packs, which select other tools. See
+  [packs.md](packs.md).
 
-A first draft of the format, to show the idea. The format is not decided:
+## Packs
 
-```toml
-# tools/flutter/options.toml. The core, with flutter-sdk, is always in
-# tools/flutter/tools.toml, so the options do not name it.
-description = "Flutter apps for mobile, desktop and web."
-
-[[question]]
-id = "platforms"
-multiple = true
-prompt = "Which platforms does the app target?"
-
-[[question.option]]
-depends = [ "flutter-android" ]
-id = "android"
-
-[[question.option]]
-depends = [ "flutter-ios" ]
-id = "ios"
-optional = [ "flutter-ios-pods" ] # the AI asks before it selects
-```
-
-## The answers go into the values file
-
-The AI records all the answers in `.config/bootstrap.toml`: the answers of the
-questions and the yes or no answers of the optional dependencies. For example,
-`[options.flutter] platforms = ["android"]`.
-
-`repo-sync` reads `options.toml` and resolves the answers to tools on each
-sync. Thus, if `bootstrap` later adds a tool to an option, each consumer gets
-it with no AI step.
-
-## Folder layout
-
-The layout is flat. Each real tool is a top-level folder in `tools/`:
-
-```text
-tools/
-├── flutter/
-│   ├── tools.toml        # the core of Flutter
-│   └── options.toml     # the platform choices
-├── flutter-android/     # the Android build and run tasks of Flutter
-├── flutter-ios/         # the iOS build and run tasks of Flutter
-├── flutter-web/         # the web build and run tasks of Flutter
-└── android/             # native Android, also usable without Flutter
-```
-
-The names of the variant folders are examples, not decisions.
+A group tool has packs. See [packs.md](packs.md).
 
 ## The Flutter example
 
@@ -106,6 +54,12 @@ The user gave these dependencies for a Flutter app for Android:
   `java`, also a web-only or a desktop-only app.
 - Gradle does not come from mise. The Android tasks use the `gradlew` wrapper
   of the project. The `kotlin` tool ships only `kotlin-lsp`.
+
+## Open points
+
+- The tool that holds a task for one group tool on one platform, for example
+  `flutter build apk`: the group tool (`flutter`) or the platform tool
+  (`android`).
 
 ## Secrets
 
