@@ -51,7 +51,7 @@ From index.md, assumed decisions:
 
 ## Guardrails
 
-- Do not touch `tools/swift/tool.toml`, any other tool, or the docs that U6
+- Do not touch `tools/swift/tools.toml`, any other tool, or the docs that U6
   owns. Report each falsified passage as `DOCS FALSIFIED:`.
 - Keep the script safe for bash 3.2 and 5.x.
 - Delete with `rm`, never `git rm`.

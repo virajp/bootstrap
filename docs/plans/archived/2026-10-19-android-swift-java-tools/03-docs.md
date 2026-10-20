@@ -21,10 +21,10 @@ From index.md, assumed decisions:
 > that agents run, so the edit units own them. The docs unit owns
 > `README.md`, `CLAUDE.md`, `docs/sync/index.md` and `docs/sync/migrate.md`.
 
-> D4 — `tools/flutter/tool.toml` drops `[mise.tools.android-sdk]` and
+> D4 — `tools/flutter/tools.toml` drops `[mise.tools.android-sdk]` and
 > `[mise.tools.java]` and sets `depends = ["android"]`.
 
-> D2 — A new `java` tool. `tools/java/tool.toml` defines only
+> D2 — A new `java` tool. `tools/java/tools.toml` defines only
 > `[mise.tools.java]`, `version = "lts"`, `envs = ["dev", "ci"]`.
 
 > D3 — A new `android` tool defines `[mise.tools.android-sdk]`,
@@ -43,7 +43,7 @@ From index.md, assumed decisions:
      the vwf and stackgen plugins, which give it `add tools` and
      `remove tools` instructions;
    - any example that shows `android-sdk` or `java` in `flutter`.
-3. **`README.md`** — the `tool.toml` example at :44-60 shows `flutter`
+3. **`README.md`** — the `tools.toml` example at :44-60 shows `flutter`
    defining `android-sdk` with `depends = ["java"]`. After this plan, that is
    false. Change the example so that it is true of a real tool: either the
    `android` tool (`android-sdk`, `depends = ["java"]`, envs dev and ci) or

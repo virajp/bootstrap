@@ -55,8 +55,8 @@ select. Each option names its dependencies. An option can mark a dependency as
 optional.
 
 - A folder can have `options.toml` only: a selection with no shared files.
-- A folder can have `tool.toml` and `options.toml`: a real tool with options.
-  For example, `tools/flutter/tool.toml` is the core (the Flutter SDK, Dart,
+- A folder can have `tools.toml` and `options.toml`: a real tool with options.
+  For example, `tools/flutter/tools.toml` is the core (the Flutter SDK, Dart,
   and the common tasks), and `tools/flutter/options.toml` lists the platforms.
 - One `options.toml` holds all the layers of the tree of that tool. Native
   Android and native iOS have their own `options.toml`, because they have more
@@ -106,7 +106,7 @@ The layout is flat. Each real tool is a top-level folder in `tools/`:
 ```text
 tools/
 ├── flutter/
-│   ├── tool.toml        # the core of Flutter
+│   ├── tools.toml        # the core of Flutter
 │   └── options.toml     # the platform choices
 ├── flutter-android/     # the Android build and run tasks of Flutter
 ├── flutter-ios/         # the iOS build and run tasks of Flutter
@@ -144,7 +144,7 @@ The user gave these dependencies for a Flutter app for Android:
 
 ### The current state
 
-- `tools/flutter/tool.toml` gives the mise tool `flutter` the static mise
+- `tools/flutter/tools.toml` gives the mise tool `flutter` the static mise
   `depends` `android-sdk`. Thus each Flutter consumer gets `android` and
   `java`, also a web-only or a desktop-only app.
 - Gradle does not come from mise. The Android tasks use the `gradlew` wrapper
@@ -166,7 +166,7 @@ Each task that runs the application uses fnox. See [fnox.md](fnox.md).
 
 1. `repo-sync` reads `options.toml` and resolves the answers in
    `.config/bootstrap.toml` on each sync.
-2. Rename `tool.toml` to `tools.toml` in all tools, the sync code and the
+2. Rename `tools.toml` to `tools.toml` in all tools, the sync code and the
    docs. Most tools install more than one mise tool, and the name matches
-   mise. Until this item lands, the skill writes `tool.toml`.
+   mise. Until this item lands, the skill writes `tools.toml`.
 3. The `fnox` redesign. See [fnox.md](fnox.md#backlog).

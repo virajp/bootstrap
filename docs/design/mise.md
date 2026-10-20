@@ -1,9 +1,8 @@
 # mise design
 
-This document describes the current mise design of `bootstrap`. It is reverse
-engineered on 2026-10-20 from `tools/`, from the sync function
-`tools/base/.config/mise/tasks/_scripts/repo-sync`, and from the generated
-files of this repository. It records the current state, not new decisions.
+This document describes the way mise will be used across. It is the base tool
+which is required in anyrepo and is expected to be already installed in the
+machine before setting up with `bootstrap`
 
 ## The parts of the design
 
@@ -11,12 +10,12 @@ mise has three jobs in a consumer repository:
 
 | Job          | Files                                                  |
 | ------------ | ------------------------------------------------------ |
-| Tools        | `[mise.tools.*]` tables of each `tool.toml`            |
+| Tools        | `[mise.tools.*]` tables of each `tools.toml`           |
 | Environments | `.config/mise.toml` and `.config/mise/conf.d/`         |
 | Tasks        | The task scripts in `.config/mise/tasks/` of each tool |
 
 A tool never ships a mise config file. It writes its mise config in the
-`[mise.*]` tables of its `tool.toml`, in mise syntax. The sync generates the
+`[mise.*]` tables of its `tools.toml`, in mise syntax. The sync generates the
 mise files from these tables.
 
 ## The files in a consumer repository
@@ -27,8 +26,8 @@ mise files from these tables.
 ├── mise.toml                       # synced; the only file for every environment
 └── mise/
     ├── conf.d/
-    │   ├── _base/mise.<env>.toml   # generated from tools/base/tool.toml
-    │   ├── <tool>/mise.<env>.toml  # generated from tools/<tool>/tool.toml
+    │   ├── _base/mise.<env>.toml   # generated from tools/base/tools.toml
+    │   ├── <tool>/mise.<env>.toml  # generated from tools/<tool>/tools.toml
     │   └── _repo/mise.<env>.toml   # seeds; the repository owns them
     └── tasks/
         ├── _scripts/               # libraries, not tasks
@@ -140,14 +139,14 @@ A tool gets other tools in two ways:
 
 | Link                       | Example                                | Effect                                      |
 | -------------------------- | -------------------------------------- | ------------------------------------------- |
-| `depends` of `tool.toml`   | `kotlin` has `depends = ["java"]`      | The sync adds the tool `java`.              |
+| `depends` of `tools.toml`  | `kotlin` has `depends = ["java"]`      | The sync adds the tool `java`.              |
 | mise `depends` of an entry | `android-sdk` has `depends = ["java"]` | The sync adds the tool that defines `java`. |
 
 The sync resolves the tools depth first. A dependency comes before the tool
 that needs it. Do not repeat a mise `depends` in the `depends` key.
 
 Two tools must not define the same mise tool. The sync reads all the
-`tool.toml` files of `bootstrap`, also the files of the tools that are not
+`tools.toml` files of `bootstrap`, also the files of the tools that are not
 selected, and stops with code 2 for a duplicate.
 
 ### The generated files
@@ -217,7 +216,7 @@ its folder. A `.tmpl` task is rendered by the sync, and the output keeps the
 git mode of the template.
 
 Only the `init` task is in mise config, in `[mise.tasks.init]` of
-`tools/base/tool.toml`. It makes the task scripts executable. The task files
+`tools/base/tools.toml`. It makes the task scripts executable. The task files
 load in each environment.
 
 ### Orchestrators and groups
@@ -280,11 +279,11 @@ not the tasks of a parent repository.
 
 | Alias               | Command                        | Source                               |
 | ------------------- | ------------------------------ | ------------------------------------ |
-| `setup`             | `mise run setup`               | `tools/base/tool.toml`               |
-| `precommit`         | `mise run code:precommit`      | `tools/base/tool.toml`               |
+| `setup`             | `mise run setup`               | `tools/base/tools.toml`              |
+| `precommit`         | `mise run code:precommit`      | `tools/base/tools.toml`              |
 | `setup-all`         | `mise run setup --all`         | The sync, only with git submodules   |
 | `setup-<submodule>` | `mise run setup --<submodule>` | The sync, one for each git submodule |
-| `npx`               | `pnpm dlx`                     | `tools/node/tool.toml`               |
+| `npx`               | `pnpm dlx`                     | `tools/node/tools.toml`              |
 
 All aliases are in `dev` only, because `shell_alias` is a dev-only section.
 

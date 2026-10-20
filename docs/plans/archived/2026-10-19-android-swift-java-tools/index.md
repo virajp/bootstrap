@@ -42,7 +42,7 @@ point for vwf and stackgen), an `android` tool and a `swift` tool, and the mise
 tool `java` has exactly one owner tool. The `virajp/claude-plugins` plan
 `docs/plans/2026-10-18-packs-hand-off-to-bootstrap` then passes its first
 wave-gate line, which checks that the three files `docs/sync/vwf.md`,
-`tools/android/tool.toml` and `tools/swift/tool.toml` are on `main`.
+`tools/android/tools.toml` and `tools/swift/tools.toml` are on `main`.
 
 This plan is plan 1 of 2 for backlog item B03 (move mobile toolchain setup into
 bootstrap). It finishes B11 and lands one piece of B03. Plan 2,
@@ -55,7 +55,7 @@ B03 (see Parked). No standing decision is reversed.
   `doppler`, `flutter`, `fnox`, `gcloud`, `github`, `gitlab`, `kotlin`, `node`,
   `pulumi`, `python`, `rust`, `vscode`. No `android`, `swift`, `java` or
   `xcode` tool exists.
-- `tools/flutter/tool.toml`:
+- `tools/flutter/tools.toml`:
   - keys `depends = []`, `extensions = ["dart-code.dart-code",
     "dart-code.flutter"]`,
     `root_only = false`, `seed = []`;
@@ -67,19 +67,19 @@ B03 (see Parked). No standing decision is reversed.
   `code/lint/dart`. `setup/deps/flutter` reads `${ANDROID_HOME:-}` (:62) and
   runs `mise x -- android sdk install platform-tools` when `android/gradlew`
   exists (:64-70). This plan does not change these tasks.
-- `tools/kotlin/tool.toml`:
+- `tools/kotlin/tools.toml`:
   - keys `depends = []`, `extensions = []`, `root_only = false`, `seed = []`;
   - one mise tool `http:kotlin-lsp`, version `latest`, dev only, macOS
     platforms only (lines 8-15).
-- `java` is defined only in `tools/flutter/tool.toml` (lines 17-19).
-  `android-sdk` is defined only in `tools/flutter/tool.toml` (lines 8-11).
+- `java` is defined only in `tools/flutter/tools.toml` (lines 17-19).
+  `android-sdk` is defined only in `tools/flutter/tools.toml` (lines 8-11).
 - The mise registry maps `android-sdk` to `vfox:jdx/vfox-android-sdk`
   (versions 21.0, 22.0, 23.0). The plugin exports `ANDROID_HOME`,
   `ANDROID_SDK_ROOT` and the `cmdline-tools/<v>/bin` and `platform-tools`
   `PATH` entries. A tool that ships `android-sdk` needs no `[env]` table for
   them.
 - `mise latest java@lts` resolves to `25.0.4+101.0.LTS`.
-  `tools/node/tool.toml:19`
+  `tools/node/tools.toml:19`
   already uses `version = "lts"`.
 - repo-sync (`tools/base/.config/mise/tasks/_scripts/repo-sync`):
   - `_rs_mise_index` (:187-209) indexes every tool in the clone and fails with
@@ -96,9 +96,9 @@ B03 (see Parked). No standing decision is reversed.
   `## Adapt to the repository`, `## Migration`. `docs/sync/flutter.md` and
   `docs/sync/kotlin.md` are the models.
 - `docs/sync/index.md`: the files table is at :24-30, the tool list at :32-36
-  (one sentence, alphabetical), the `tool.toml` key table at :143-150, the
+  (one sentence, alphabetical), the `tools.toml` key table at :143-150, the
   mise and environment text at :157-182.
-- `README.md:44-60` shows a `tool.toml` example where `flutter` defines
+- `README.md:44-60` shows a `tools.toml` example where `flutter` defines
   `android-sdk` with `depends = ["java"]`, and a `[mise_env.ci.env]`
   `ANDROID_HOME`.
 - `CLAUDE.md` "Layout rule" lists the files of `docs/sync/`: `index.md`,
@@ -133,11 +133,11 @@ B03 (see Parked). No standing decision is reversed.
 | #   | Decision                        | Ruling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Rejected                                                                                                                                                        | Unit |
 | --- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
 | D1  | Scope                           | Two plans. This plan finishes B11 and lands one piece of B03. Plan 2 requires this plan and finishes B03.                                                                                                                                                                                                                                                                                                                                                                                                           | One plan for B11 and B03 (keeps claude-plugins blocked longer); only B11 now                                                                                    | —    |
-| D2  | Owner of mise `java`            | A new `java` tool. `tools/java/tool.toml` defines only `[mise.tools.java]`, `version = "lts"`, `envs = ["dev", "ci"]`.                                                                                                                                                                                                                                                                                                                                                                                              | java in the `android` tool (a Kotlin repo without Android must select android); java in the `kotlin` tool (Flutter pulls kotlin-lsp); `temurin-25`; `21`        | U1   |
-| D3  | The `android` tool              | A new `android` tool defines `[mise.tools.android-sdk]`, `version = "23"`, `envs = ["dev", "ci"]`, mise `depends = ["java"]` — moved unchanged from `tools/flutter/tool.toml`. No `[env]` table: the plugin exports `ANDROID_HOME`, `ANDROID_SDK_ROOT` and `PATH`.                                                                                                                                                                                                                                                  | Keep `android-sdk` in `flutter`                                                                                                                                 | U1   |
-| D4  | Flutter and Android             | `tools/flutter/tool.toml` drops `[mise.tools.android-sdk]` and `[mise.tools.java]`, keeps `depends = []`, and gives `[mise.tools.flutter]` the mise `depends = ["android-sdk"]`. The sync then adds the `android` tool, and each mise `depends` is in the environments of `flutter` (dev and ci), so `android-sdk` and `java` are in dev and ci. Ruled 2026-10-19 (G2): "`android`, `java`, `android-sdk`: all must support `dev` as well as `ci` since they are required to build the app".                        | Tool-level `depends = ["android"]` (a dependency-only tool is dev only, so CI loses `android-sdk` and `java`); a sync-rule change; a doc item to list `android` | U1   |
-| D5  | Kotlin and Java                 | `tools/kotlin/tool.toml` sets `depends = ["java"]`. Under the sync rule a tool added only as a dependency is dev only, so `docs/sync/kotlin.md` "Adapt to the repository" tells the agent to add `java` to `tools` when CI builds with Gradle.                                                                                                                                                                                                                                                                      | Add the dependency in plan 2                                                                                                                                    | U1   |
-| D6  | The `swift` tool                | `tools/swift/tool.toml` has no mise tool, `depends = []`, `extensions = ["swiftlang.swift-vscode"]`, `root_only = false`, `seed = []`. `docs/sync/swift.md` says: macOS only; Swift and `sourcekit-lsp` come from the Xcode that `xcode-select` selects; no Linux toolchain. Its tasks come in plan 2.                                                                                                                                                                                                              | Manifest only (empty lists); also the `setup:deps:swift` task now                                                                                               | U1   |
+| D2  | Owner of mise `java`            | A new `java` tool. `tools/java/tools.toml` defines only `[mise.tools.java]`, `version = "lts"`, `envs = ["dev", "ci"]`.                                                                                                                                                                                                                                                                                                                                                                                             | java in the `android` tool (a Kotlin repo without Android must select android); java in the `kotlin` tool (Flutter pulls kotlin-lsp); `temurin-25`; `21`        | U1   |
+| D3  | The `android` tool              | A new `android` tool defines `[mise.tools.android-sdk]`, `version = "23"`, `envs = ["dev", "ci"]`, mise `depends = ["java"]` — moved unchanged from `tools/flutter/tools.toml`. No `[env]` table: the plugin exports `ANDROID_HOME`, `ANDROID_SDK_ROOT` and `PATH`.                                                                                                                                                                                                                                                 | Keep `android-sdk` in `flutter`                                                                                                                                 | U1   |
+| D4  | Flutter and Android             | `tools/flutter/tools.toml` drops `[mise.tools.android-sdk]` and `[mise.tools.java]`, keeps `depends = []`, and gives `[mise.tools.flutter]` the mise `depends = ["android-sdk"]`. The sync then adds the `android` tool, and each mise `depends` is in the environments of `flutter` (dev and ci), so `android-sdk` and `java` are in dev and ci. Ruled 2026-10-19 (G2): "`android`, `java`, `android-sdk`: all must support `dev` as well as `ci` since they are required to build the app".                       | Tool-level `depends = ["android"]` (a dependency-only tool is dev only, so CI loses `android-sdk` and `java`); a sync-rule change; a doc item to list `android` | U1   |
+| D5  | Kotlin and Java                 | `tools/kotlin/tools.toml` sets `depends = ["java"]`. Under the sync rule a tool added only as a dependency is dev only, so `docs/sync/kotlin.md` "Adapt to the repository" tells the agent to add `java` to `tools` when CI builds with Gradle.                                                                                                                                                                                                                                                                     | Add the dependency in plan 2                                                                                                                                    | U1   |
+| D6  | The `swift` tool                | `tools/swift/tools.toml` has no mise tool, `depends = []`, `extensions = ["swiftlang.swift-vscode"]`, `root_only = false`, `seed = []`. `docs/sync/swift.md` says: macOS only; Swift and `sourcekit-lsp` come from the Xcode that `xcode-select` selects; no Linux toolchain. Its tasks come in plan 2.                                                                                                                                                                                                             | Manifest only (empty lists); also the `setup:deps:swift` task now                                                                                               | U1   |
 | D7  | Instructions of `vwf.md`        | `docs/sync/vwf.md` accepts `bootstrap: add tools [<tool>, …]` and `bootstrap: remove tools [<tool>, …]`, each with `reason: <why>`. For each tool it follows `docs/sync/<tool>.md`. A plugin never edits `.config/bootstrap.toml` itself; the agent that reads `vwf.md` does.                                                                                                                                                                                                                                       | —                                                                                                                                                               | U2   |
 | D8  | `remove tools` and files        | The agent removes the tool from `tools`, deletes each file that `docs/sync/<tool>.md` lists as Synced (they carry the bootstrap header), keeps each Seed (the repository owns it), then runs `mise run setup:configs`, which removes the stale generated mise files.                                                                                                                                                                                                                                                | Keep all files (orphans); ask the user per file                                                                                                                 | U2   |
 | D9  | Consent and commit              | The instruction is the consent: the plugin asked the user before it sent it. The agent applies the change, runs `mise run setup:configs`, shows the changed files and the reason, and does not commit. The caller commits.                                                                                                                                                                                                                                                                                          | Ask the user first; apply and commit                                                                                                                            | U2   |
@@ -153,12 +153,12 @@ None. `java` and `android-sdk` come from the mise registry and are in use today.
 
 ## Units
 
-| Id | Wave | Unit file                  | Kind | Owns                                                                                                                                                                                                                                              | Depends on | Status | Commit  |
-| -- | ---- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------ | ------- |
-| U1 | 1    | [01-tools.md](01-tools.md) | edit | `tools/java/tool.toml`, `tools/android/tool.toml`, `tools/swift/tool.toml`, `tools/flutter/tool.toml`, `tools/kotlin/tool.toml`, `docs/sync/java.md`, `docs/sync/android.md`, `docs/sync/swift.md`, `docs/sync/flutter.md`, `docs/sync/kotlin.md` | —          | green  | da0e607 |
-| U2 | 1    | [02-vwf.md](02-vwf.md)     | edit | `docs/sync/vwf.md`                                                                                                                                                                                                                                | —          | green  | 632e820 |
-| U3 | 2    | [03-docs.md](03-docs.md)   | edit | `README.md`, `CLAUDE.md`, `docs/sync/index.md`, `docs/sync/migrate.md`, and any other doc that `vwf:docs-sync` finds falsified, except the files U1 and U2 own                                                                                    | U1, U2     | green  | 48d791c |
-| U4 | 3    | [04-gates.md](04-gates.md) | edit | none (a fix it needs goes back to the unit that owns the file)                                                                                                                                                                                    | U3         | green  | —       |
+| Id | Wave | Unit file                  | Kind | Owns                                                                                                                                                                                                                                                   | Depends on | Status | Commit  |
+| -- | ---- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ------ | ------- |
+| U1 | 1    | [01-tools.md](01-tools.md) | edit | `tools/java/tools.toml`, `tools/android/tools.toml`, `tools/swift/tools.toml`, `tools/flutter/tools.toml`, `tools/kotlin/tools.toml`, `docs/sync/java.md`, `docs/sync/android.md`, `docs/sync/swift.md`, `docs/sync/flutter.md`, `docs/sync/kotlin.md` | —          | green  | da0e607 |
+| U2 | 1    | [02-vwf.md](02-vwf.md)     | edit | `docs/sync/vwf.md`                                                                                                                                                                                                                                     | —          | green  | 632e820 |
+| U3 | 2    | [03-docs.md](03-docs.md)   | edit | `README.md`, `CLAUDE.md`, `docs/sync/index.md`, `docs/sync/migrate.md`, and any other doc that `vwf:docs-sync` finds falsified, except the files U1 and U2 own                                                                                         | U1, U2     | green  | 48d791c |
+| U4 | 3    | [04-gates.md](04-gates.md) | edit | none (a fix it needs goes back to the unit that owns the file)                                                                                                                                                                                         | U3         | green  | —       |
 
 ## Shared-file rule
 
@@ -213,7 +213,7 @@ were green on 2026-10-19.
   or by the next claude-plugins run). This command exits 0:
 
   ```text
-  bash -c 'for p in docs/sync/vwf.md tools/android/tool.toml tools/swift/tool.toml; do gh api "repos/virajp/bootstrap/contents/$p" --silent || { echo "bootstrap main lacks $p"; exit 1; }; done'
+  bash -c 'for p in docs/sync/vwf.md tools/android/tools.toml tools/swift/tools.toml; do gh api "repos/virajp/bootstrap/contents/$p" --silent || { echo "bootstrap main lacks $p"; exit 1; }; done'
   ```
 
 ## Unit contract

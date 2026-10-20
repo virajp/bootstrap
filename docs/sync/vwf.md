@@ -62,12 +62,12 @@ file. If a check stops, change nothing, and give its message to the caller.
 | `remove` names a tool that another selected tool needs, through `depends` or a mise `depends`. | `<tool>` cannot be removed alone: `<other tool>` needs it. Remove `<other tool>` in the same instruction. |
 | `remove` names `base`.                                                                         | `base` is necessary in each repository.                                                                   |
 
-To find whether a selected tool needs a tool, read `tools/<selected>/tool.toml`
+To find whether a selected tool needs a tool, read `tools/<selected>/tools.toml`
 in the clone:
 
 - Its `depends` key names the tool.
 - A mise `depends` of one of its `[mise.tools.<name>]` entries names a mise
-  tool that a `[mise.tools.<name>]` entry of `tools/<tool>/tool.toml` defines.
+  tool that a `[mise.tools.<name>]` entry of `tools/<tool>/tools.toml` defines.
 
 A tool that the same instruction also removes does not count.
 
@@ -81,10 +81,10 @@ These cases are not a stop:
 1. Add each tool name to `tools` in `.config/bootstrap.toml`. Keep the list
    sorted, with no duplicates.
 2. Find the tools that each added tool adds, then the tools that these tools
-   add in turn. Read `tools/<tool>/tool.toml` in the clone. A tool adds:
+   add in turn. Read `tools/<tool>/tools.toml` in the clone. A tool adds:
    - each tool of its `depends` key;
    - for each mise `depends` of one of its `[mise.tools.<name>]` entries, the
-     tool whose `tool.toml` has the `[mise.tools.<name>]` entry of that mise
+     tool whose `tools.toml` has the `[mise.tools.<name>]` entry of that mise
      tool.
 3. For each added tool and each tool of step 2, read `docs/sync/<tool>.md` in
    the clone. Do the items of its "Adapt to the repository" and "Migration"

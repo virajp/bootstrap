@@ -2,18 +2,18 @@
 
 - **Wave:** 1
 - **Depends on:** —
-- **Owns:** `tools/java/tool.toml` (new), `tools/android/tool.toml` (new),
-  `tools/swift/tool.toml` (new), `tools/flutter/tool.toml`,
-  `tools/kotlin/tool.toml`, `docs/sync/java.md` (new), `docs/sync/android.md`
+- **Owns:** `tools/java/tools.toml` (new), `tools/android/tools.toml` (new),
+  `tools/swift/tools.toml` (new), `tools/flutter/tools.toml`,
+  `tools/kotlin/tools.toml`, `docs/sync/java.md` (new), `docs/sync/android.md`
   (new), `docs/sync/swift.md` (new), `docs/sync/flutter.md`,
   `docs/sync/kotlin.md`
 - **Model:** opus
 - **Kind:** edit
 - **Read first:** every owned file that exists, top to bottom, before editing;
-  also `tools/node/tool.toml` (a tool with `version = "lts"`) and
-  `tools/bun/tool.toml` (a small tool), as style models.
+  also `tools/node/tools.toml` (a tool with `version = "lts"`) and
+  `tools/bun/tools.toml` (a small tool), as style models.
 - **Lazy-load:** `CLAUDE.md` (sections "Layout rule" and "mise config"),
-  `docs/sync/index.md:143-182` (the `tool.toml` keys and the mise environment
+  `docs/sync/index.md:143-182` (the `tools.toml` keys and the mise environment
   rules), `tools/base/.config/mise/tasks/_scripts/repo-sync:171-209,443-470`
   (manifest read, duplicate check, environments).
 
@@ -21,15 +21,15 @@
 
 From index.md, assumed decisions:
 
-> D2 — A new `java` tool. `tools/java/tool.toml` defines only
+> D2 — A new `java` tool. `tools/java/tools.toml` defines only
 > `[mise.tools.java]`, `version = "lts"`, `envs = ["dev", "ci"]`.
 
 > D3 — A new `android` tool defines `[mise.tools.android-sdk]`,
 > `version = "23"`, `envs = ["dev", "ci"]`, mise `depends = ["java"]` — moved
-> unchanged from `tools/flutter/tool.toml`. No `[env]` table: the plugin
+> unchanged from `tools/flutter/tools.toml`. No `[env]` table: the plugin
 > exports `ANDROID_HOME`, `ANDROID_SDK_ROOT` and `PATH`.
 
-> D4 — `tools/flutter/tool.toml` drops `[mise.tools.android-sdk]` and
+> D4 — `tools/flutter/tools.toml` drops `[mise.tools.android-sdk]` and
 > `[mise.tools.java]`, keeps `depends = []`, and gives `[mise.tools.flutter]`
 > the mise `depends = ["android-sdk"]`. The sync then adds the `android` tool,
 > and each mise `depends` is in the environments of `flutter` (dev and ci), so
@@ -37,12 +37,12 @@ From index.md, assumed decisions:
 > "`android`, `java`, `android-sdk`: all must support `dev` as well as `ci`
 > since they are required to build the app".
 
-> D5 — `tools/kotlin/tool.toml` sets `depends = ["java"]`. Under the sync rule
+> D5 — `tools/kotlin/tools.toml` sets `depends = ["java"]`. Under the sync rule
 > a tool added only as a dependency is dev only, so `docs/sync/kotlin.md`
 > "Adapt to the repository" tells the agent to add `java` to `tools` when CI
 > builds with Gradle.
 
-> D6 — `tools/swift/tool.toml` has no mise tool, `depends = []`,
+> D6 — `tools/swift/tools.toml` has no mise tool, `depends = []`,
 > `extensions = ["swiftlang.swift-vscode"]`, `root_only = false`, `seed = []`.
 > `docs/sync/swift.md` says: macOS only; Swift and `sourcekit-lsp` come from
 > the Xcode that `xcode-select` selects; no Linux toolchain. Its tasks come in
@@ -56,8 +56,8 @@ kotlin depends on java "Yes, now"; swift "Manifest + extension".
 
 ## Edits
 
-1. **`tools/java/tool.toml`** (new) — the same layout and comment style as
-   `tools/flutter/tool.toml`. First line: a one-line comment that describes the
+1. **`tools/java/tools.toml`** (new) — the same layout and comment style as
+   `tools/flutter/tools.toml`. First line: a one-line comment that describes the
    tool, for example `# The Java development kit (JDK), for Gradle and the
    Android SDK.` Then `depends = []`, `extensions = []`, `root_only = false`,
    `seed = []`, then:
@@ -68,19 +68,19 @@ kotlin depends on java "Yes, now"; swift "Manifest + extension".
    version = "lts"
    ```
 
-2. **`tools/android/tool.toml`** (new) — description comment, for example
+2. **`tools/android/tools.toml`** (new) — description comment, for example
    `# The Android SDK command-line tools.` Then `depends = []`,
    `extensions = []`, `root_only = false`, `seed = []`, then the
-   `[mise.tools.android-sdk]` table cut from `tools/flutter/tool.toml` byte
+   `[mise.tools.android-sdk]` table cut from `tools/flutter/tools.toml` byte
    for byte (`depends = ["java"]`, `envs = ["dev", "ci"]`, `version = "23"`,
    and any comment it carries). No `[env]` table.
 
-3. **`tools/swift/tool.toml`** (new) — description comment, for example
+3. **`tools/swift/tools.toml`** (new) — description comment, for example
    `# Swift and SwiftPM from the host Xcode (macOS only).` Then
    `depends = []`, `extensions = [ "swiftlang.swift-vscode" ]`,
    `root_only = false`, `seed = []`. No `[mise.*]` table.
 
-4. **`tools/flutter/tool.toml`** — remove the `[mise.tools.android-sdk]` and
+4. **`tools/flutter/tools.toml`** — remove the `[mise.tools.android-sdk]` and
    `[mise.tools.java]` tables. Keep `depends = []`. In `[mise.tools.flutter]`,
    add `depends = [ "android-sdk" ]`, and keep its `version` and `envs`. Keep
    the other keys. Do not set the tool-level `depends` to `android`: the mise
@@ -89,7 +89,7 @@ kotlin depends on java "Yes, now"; swift "Manifest + extension".
    so that it no longer says that the tool ships the Android toolchain (for
    example `# Flutter and Dart. Needs android-sdk, from the android tool.`).
 
-5. **`tools/kotlin/tool.toml`** — set `depends = [ "java" ]`. Nothing else.
+5. **`tools/kotlin/tools.toml`** — set `depends = [ "java" ]`. Nothing else.
 
 6. **``docs/sync/java.md``** (new) — the fixed structure of a tool file (see
    Facts in index.md and the model ``docs/sync/kotlin.md``): title
@@ -154,11 +154,11 @@ kotlin depends on java "Yes, now"; swift "Manifest + extension".
 - Wave-gate line 2 (`tools = ["base", "flutter", "kotlin"]`, environments
   dev and ci) lists `.config/mise/conf.d/android/mise.ci.toml` and
   `.config/mise/conf.d/java/mise.ci.toml`, with their `mise.dev.toml`.
-- `grep -rn 'mise.tools.java\]' tools/*/tool.toml` prints exactly one line,
-  in `tools/java/tool.toml`.
-- `grep -rn 'mise.tools.android-sdk\]' tools/*/tool.toml` prints exactly one
-  line, in `tools/android/tool.toml`.
-- Each of the three new `tool.toml` files has the four keys `depends`,
+- `grep -rn 'mise.tools.java\]' tools/*/tools.toml` prints exactly one line,
+  in `tools/java/tools.toml`.
+- `grep -rn 'mise.tools.android-sdk\]' tools/*/tools.toml` prints exactly one
+  line, in `tools/android/tools.toml`.
+- Each of the three new `tools.toml` files has the four keys `depends`,
   `root_only`, `extensions` and `seed`.
 - Each new `docs/sync/*.md` has the eight fixed headings, in order.
 
@@ -171,7 +171,7 @@ kotlin depends on java "Yes, now"; swift "Manifest + extension".
 - Do not change any task under `tools/flutter/.config/` — plan 2 owns tasks.
 - Do not edit the synced copies at the repository root (`.config/`,
   `.gitignore`).
-- `tool.toml` files are formatted by dprint/taplo in `mise run code`: keep the
+- `tools.toml` files are formatted by dprint/taplo in `mise run code`: keep the
   array spacing of the existing files (`[ "a", "b" ]`) and sorted keys.
 - Delete with `rm`, never `git rm`.
 - Markdown: follow the style of the existing `docs/sync/*.md` files (STE

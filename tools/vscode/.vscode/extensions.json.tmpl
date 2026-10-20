@@ -3,7 +3,7 @@
   // The next sync replaces it, and a manual change is lost.
   // Written by bootstrap's sync from the extensions of the tools of this
   // repository and of its git submodules. Add an extension to the tool's
-  // tool.toml, or to `extensions` in .config/bootstrap.toml, not here.
+  // tools.toml, or to `extensions` in .config/bootstrap.toml, not here.
   "recommendations": [<% range $i, $e := .extensions %><% if $i %>,<% end %>
     "<% $e %>"<% end %>
   ]
