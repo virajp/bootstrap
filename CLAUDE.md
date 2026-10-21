@@ -17,6 +17,9 @@ are in `tools/packs.toml`, outside each tool folder, so the sync never copies
 it. The files at the root (`README.md`, `CLAUDE.md`) and in `docs/` are for
 this repository only.
 
+`examples/<example>/` holds sample values files (`bootstrap.toml`), one
+folder for each repository shape. The sync never copies or generates them.
+
 `docs/sync/` tells an AI agent how to adopt `bootstrap` in a consumer
 repository, and how to add and remove tools after the adoption. After the
 adoption, `repo-sync` keeps the consumer in sync.

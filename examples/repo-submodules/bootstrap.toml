@@ -1,0 +1,42 @@
+# Example: the root repository of a product with three git submodules.
+# It is a polyrepo with the branch develop only. See the folders of the
+# submodules for their own values files.
+
+# The commit scopes of git-conventional-commits. The default is the member
+# list.
+commit_scopes = [ "backend", "frontend", "iac", "docs" ]
+# The mise environments: dev (necessary) and ci.
+environments = [ "dev", "ci" ]
+# The VS Code extensions that no tool has. The root also gets the extensions
+# of each submodule.
+extensions = [ "yzhang.markdown-all-in-one" ]
+# The product name, for the fnox keychain service. Each submodule has the
+# same value.
+product_name = "acme"
+repo_name = "acme"
+# The web URL of the repository, for the github tool.
+repo_url = "https://github.com/example/acme"
+# The gitignored files to copy into a new worktree.
+worktree_files = [ ".config/mise.local.toml", "docs/memory/handoff" ]
+
+# A feature branch merges into develop. main never merges into develop.
+[branch.develop]
+merge_model = "direct"
+merge_never = [ "main" ]
+
+# The submodule members. setup:worktree runs worktree_install in each
+# submodule.
+[member.backend]
+label = "Backend"
+type = "submodule"
+worktree_install = "mise run setup:worktree"
+
+[member.frontend]
+label = "Frontend"
+type = "submodule"
+worktree_install = "mise run setup:worktree"
+
+[member.iac]
+label = "Infrastructure"
+type = "submodule"
+worktree_install = "mise run setup:worktree"
