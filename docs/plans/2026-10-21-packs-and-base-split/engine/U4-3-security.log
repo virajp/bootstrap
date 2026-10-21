@@ -1,0 +1,11 @@
+/security-review — loop U4, round 3, range 31fcdb7..71fcfa5
+
+No high-confidence vulnerabilities found.
+
+Dropped: tools/repo-sync/.config/mise/tasks/_scripts/repo-sync:703 — commit `b3667de` only narrows output. Folder, dev-only and `[mise_env]` sections, and the `setup-*` aliases, now render only when the tool is in that environment. `REPO_SYNC_IN` is set by the script itself and is not attacker input. The TOML is rebuilt from parsed data, not spliced in as text. (confidence 1)
+Dropped: tools/repo-sync/.config/mise/tasks/_scripts/repo-sync:743-747 — submodule display paths go into `setup-<sub>` shell alias strings without escaping. They come from the consumer's own `.gitmodules`, and from nested repos it chose to include, which the stated trust model covers, so there is no concrete path for untrusted input. (confidence 2)
+Dropped: tools/repo-sync/.config/mise/tasks/_scripts/repo-sync:838-1000 — files are copied and rendered from the trusted clone into `MISE_PROJECT_ROOT`. The temp file sits in the destination folder (mktemp, 0600) and is moved into place atomically. `_rs_unblock` deletes only files that carry the sync header and skips symlinks. Paths come from the trusted clone and values file. (confidence 2)
+Dropped: tools/repo-sync/.config/mise/tasks/_scripts/repo-sync:1042-1060 — `REPO_SYNC_URL` overrides the clone source. Environment variables are trusted, and the default is SSH to a fixed GitHub repo. (confidence 1)
+Dropped: tools/claude/.config/mise/tasks/setup/ai:43-46 — plugin IDs and scopes come from the local `claude plugin list --json` output. They are passed to `claude` as quoted arguments, and nothing is evaluated. (confidence 1)
+Dropped: tools/_security_base/.config/mise/tasks/code/sec/_default:36-38 — the `mise run` loop over `own_tasks code:sec` runs only the repo's own trusted task files. The flags left unquoted on purpose are fixed literals. The required-scanner check fails closed. (confidence 1)
+Dropped: tools/gitleaks/.config/mise/tasks/code/sec/gitleaks — files are copied for scanning from `git ls-files` into a fresh mktemp directory. Symlinks and anything that is not a regular file are skipped, and git does not allow `..` in tracked paths. This is a local scan of the user's own tree. (confidence 1)
