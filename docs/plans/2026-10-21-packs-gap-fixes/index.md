@@ -13,10 +13,10 @@ gaps_of:
 
 ## Status
 
-**RUNNING**
+**COMPLETE**
 
-RUNNING since 2026-10-21 17:25 in
-/Users/virajpatel/Projects/github.com/virajp/bootstrap/.worktrees/2026-10-21-packs-gap-fixes
+COMPLETE 2026-10-21 — 05ccf8c, d8e2768, 6a2b4cc, f536a32, 19257a9, c90c987,
+df16e1c, 58f1fd1, 7f2e23b
 
 ## Consent
 
@@ -108,7 +108,7 @@ None.
 | U3 | 1    | [03-tests.md](03-tests.md)   | edit   | `.config/mise/tasks/test/repo-sync`                                                                                         | —          | green  | 05ccf8c |
 | U4 | 2    | [04-review.md](04-review.md) | review | —                                                                                                                           | U1, U2, U3 | green  |         |
 | U5 | 3    | [05-docs.md](05-docs.md)     | edit   | `docs/sync/**`, `README.md`, `CLAUDE.md`, `docs/design/*.md`                                                                | U4         | green  | 58f1fd1 |
-| U6 | 4    | [06-gates.md](06-gates.md)   | edit   | `.config/bootstrap.toml`, `.config/mise/conf.d/**`, every synced copy in `.config/` and at the root                         | U5         | green  |         |
+| U6 | 4    | [06-gates.md](06-gates.md)   | edit   | `.config/bootstrap.toml`, `.config/mise/conf.d/**`, every synced copy in `.config/` and at the root                         | U5         | green  | 7f2e23b |
 
 ## Shared-file rule
 
@@ -194,7 +194,9 @@ A unit returns exactly this block and nothing else — no file contents, no diff
   change it. After the landing, the task tells a consumer to edit a folder that
   no longer exists. Fix: rename the three paths to `zz-repo` in a later change.
 
-- G2 (wave 1 commit, blocking): `test:repo-sync` runs `git` in scratch
+- G2 (wave 1 commit, blocking — RESOLVED by D7: commits c90c987 and 19257a9; the
+  hook passed inside every later `tools/` commit, and `core.bare` stayed
+  `false`): `test:repo-sync` runs `git` in scratch
   repositories without clearing the `GIT_*` variables that a git hook sets. As
   the `test-repo-sync` pre-commit hook, it wrote to the real repository: it
   set `core.bare = true` in `.git/config` and made the commits `test copy` and
@@ -248,8 +250,11 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 | 3    | U5 Docs                            | opus  | 2     | pass        | edit (R3 loop-back): migrate — M17 before M16 in the row; M15.4 "first sync, do not run it yourself" with the hand copy, tables, M17, M16 first; M15.4 step 6 and M16 step 4 ask the user (D1); index step 2 names the real sync, byte order in the folder rule; bootstrap-config gets the default_envs and folder rules. DECIDED: M15.7 and vwf.md syncs are later syncs, AI-run                                                                                                                                                                                                       | 58f1fd1 |
 | 3    | R3                                 | opus  | 2     | findings(1) | round-1 findings resolved; CONTRACT clean, RULINGS clean. **contested** (wave-review cap of 2 rounds): `docs/sync/migrate.md:361` and `:17` say M17 runs "before the first sync", but a repository with `conf.d/_repo/` synced before; it means "before the next sync"                                                                                                                                                                                                                                                                                                                  | —       |
 | 3    | wave gate                          | —     | 1     | pass        | `code:precommit` and `test:repo-sync` green; no UNRESOLVED                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | —       |
-| 4    | U6 Gates                           | opus  | 1     | pass        | edit: `[tools.claude]` added; `conf.d/_repo/` → `zz-repo/`, `"pipx:graphifyy"` and the empty `[tools]` removed; sync from a scratch clone: `using bootstrap at eadc4d4`, 51/51; `mise run init`; second sync: 40 unchanged, 4 kept seed, 1 skip env, 1 skip seed (pnpm-workspace.yaml, no package.json); `code/graph` header now tools/claude, `graphify-refresh` hook back, new `conf.d/claude/`, `setup/ai`; test:repo-sync green; core.bare false                                                                                                                                    | —       |
+| 4    | U6 Gates                           | opus  | 1     | pass        | edit: `[tools.claude]` added; `conf.d/_repo/` → `zz-repo/`, `"pipx:graphifyy"` and the empty `[tools]` removed; sync from a scratch clone: `using bootstrap at eadc4d4`, 51/51; `mise run init`; second sync: 40 unchanged, 4 kept seed, 1 skip env, 1 skip seed (pnpm-workspace.yaml, no package.json); `code/graph` header now tools/claude, `graphify-refresh` hook back, new `conf.d/claude/`, `setup/ai`; test:repo-sync green; core.bare false                                                                                                                                    | 7f2e23b |
 | 4    | R4                                 | opus  | 1     | pass        | CONTRACT clean, RULINGS clean; synced copies match their sources                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | —       |
+| 4    | wave gate                          | —     | 1     | pass        | `code:precommit` and `test:repo-sync` green; no UNRESOLVED                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | —       |
+| —    | reconcile                          | —     | 1     | pass        | final wave gate green over the finished tree (`code:precommit`, `test:repo-sync` 16 checks)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | —       |
+| —    | reconcile                          | —     | 1     | pass        | orchestrator gates: `conf.d/zz-repo/` exists, `conf.d/_repo/` gone; `graphify-refresh` in `.config/pre-commit-config.yaml`; `code/graph` header `tools/claude/...`; U6 second sync only unchanged, kept seed, skip env, plus one accepted skip seed                                                                                                                                                                                                                                                                                                                                     | —       |
 
 ## Launch
 
