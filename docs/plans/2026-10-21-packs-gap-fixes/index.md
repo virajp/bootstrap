@@ -187,7 +187,8 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 
 ## Gaps surfaced during execution
 
-- G1 (R1, plan gap, non-blocking):
+- G1 (R1, plan gap, non-blocking — RESOLVED on branch `gap-fixes`: the three
+  paths now name `zz-repo`):
   `tools/android/.config/mise/tasks/setup/deps/android` lines 113, 137 and 192
   still print `.config/mise/conf.d/_repo/mise.<env>.toml`. The Facts list of
   `_repo` mentions left this file out, and no unit owns it, so the run does not

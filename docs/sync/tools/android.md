@@ -59,18 +59,22 @@ folder of a Flutter app is for `setup:deps:flutter`.
   `EMULATOR_IMAGE` with `;` (the sdkmanager form) is accepted.
 - A package is installed when `$ANDROID_HOME/<id>/package.xml` exists. The
   `android-sdk` mise tool sets `ANDROID_HOME`; if it is not set, the task fails
-  and names it. An installed `_ps16k` variant of the image counts as the image:
-  the task uses it and names it. If the image is not installed, the task checks
-  it against `android sdk list --all`. If the image is not in the list and its
-  `_ps16k` variant is, the task installs the variant and names it. From
-  `android-37.1`, only the `_ps16k` images exist. If neither is there, the task
-  fails and names both.
+  and names it. If the image is not installed, the task checks it against
+  `android sdk list --all`. For an image from `targetSdk`, an installed
+  `_ps16k` variant counts as the image: the task uses it and names it. If that
+  image is not in the list and its `_ps16k` variant is, the task installs the
+  variant and names it. From `android-37.1`, only the `_ps16k` images exist. If
+  neither is there, the task fails and names both. The task never replaces an
+  `EMULATOR_IMAGE`: if it is not in the list, the task fails and names it.
 - It installs the packages of `platform-tools`, `platforms/android-<level>`,
   `emulator` and the image that are not installed, with `android sdk install`
   of the `android-sdk` mise tool. When all four are installed, the task does
   not list or install, so it needs no network. Only the image is checked
   against the list. The install accepts the SDK license and writes
   `licenses/`.
+- Before the install, a folder of a package to install that has no
+  `package.xml` is left from an install that did not complete. The task fails,
+  names each such folder, and tells the user to delete it.
 - After the install, each package must have its `package.xml`. An unknown
   platform or image id that installs nothing fails the task, and the task
   names the id.
@@ -82,11 +86,12 @@ only for a `src/` `.kt`, `.java` or `.xml` file, a `*.gradle.kts`, a
 It lints only the modules of those files: the nearest folder with
 `build.gradle.kts` or `build.gradle`, else the Gradle root. The task finds the
 Gradle project whose `projectDir` is that folder, so a `projectDir` that
-`settings.gradle(.kts)` changes is found too. A file at the Gradle root, for
-example the root `build.gradle.kts`, lints only the root project. A folder with
-no project lints every module. A file in `gradle/`, `build-logic/` or
-`buildSrc/` (not a Gradle project), `settings.gradle.kts` or `settings.gradle`
-lints every module, as a run without files does. Every module is each Gradle
+`settings.gradle(.kts)` changes is found too. A folder with no project lints
+every module. A file in `gradle/`, `build-logic/` or `buildSrc/` (not a Gradle
+project), `settings.gradle.kts`, `settings.gradle`, or the root
+`build.gradle.kts`, `build.gradle`, `lint.xml` or `lint-baseline.xml` lints
+every module, as a run without files does. Another file at the Gradle root
+lints only the root project. Every module is each Gradle
 project below the Gradle root, so the pub plugins of a Flutter app, which are
 projects of its `android/` build, are not linted. A temporary init script runs
 `lint` (`lintFix` with `--fix`) in each of these modules that has the task; a

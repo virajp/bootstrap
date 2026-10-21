@@ -110,7 +110,7 @@ else
   HIT=$(detect_level compileSdk)
   if [[ -z "${HIT}" ]]; then
     print_error "No compileSdk level found in the build.gradle.kts and *.gradle files, build-logic/ or gradle/libs.versions.toml"
-    print_info "Set COMPILE_SDK in the [env] of .config/mise/conf.d/_repo/mise.<env>.toml"
+    print_info "Set COMPILE_SDK in the [env] of .config/mise/conf.d/zz-repo/mise.<env>.toml"
     exit 1
   fi
   COMPILE_RAW="${HIT%% *}"
@@ -126,15 +126,17 @@ case "$(uname -m)" in
 esac
 
 # The android CLI names a package with "/", where sdkmanager uses ";". An id
-# in either form is accepted.
+# in either form is accepted. The task never replaces an explicit image.
+EXPLICIT=false
 if [[ -n "${EMULATOR_IMAGE:-}" ]]; then
+  EXPLICIT=true
   IMAGE="${EMULATOR_IMAGE//;//}"
   print_info "Emulator image ${IMAGE}, from the env value EMULATOR_IMAGE"
 else
   HIT=$(detect_level targetSdk)
   if [[ -z "${HIT}" ]]; then
     print_error "No targetSdk level found in the build.gradle.kts and *.gradle files, build-logic/ or gradle/libs.versions.toml"
-    print_info "Set EMULATOR_IMAGE in the [env] of .config/mise/conf.d/_repo/mise.<env>.toml"
+    print_info "Set EMULATOR_IMAGE in the [env] of .config/mise/conf.d/zz-repo/mise.<env>.toml"
     exit 1
   fi
   TARGET_RAW="${HIT%% *}"
@@ -163,9 +165,10 @@ for package in platform-tools "${PLATFORM}" emulator; do
 done
 
 # From android-37.1, only the _ps16k variant (16 KB pages) of an image exists.
-# An installed variant counts as the image, so the task needs no network list.
+# An installed variant counts as the derived image, so the task needs no
+# network list.
 VARIANT="${IMAGE%/*}_ps16k/${IMAGE##*/}"
-if ! installed "${IMAGE}" && installed "${VARIANT}"; then
+if [[ "${EXPLICIT}" != "true" ]] && ! installed "${IMAGE}" && installed "${VARIANT}"; then
   print_info "${IMAGE} is not installed; using the installed ${VARIANT}"
   IMAGE="${VARIANT}"
 fi
@@ -182,14 +185,19 @@ if ! installed "${IMAGE}"; then
   fi
   has_package() { grep -qxF "$1" <<< "${PACKAGES}"; }
 
-  # The variant replaces a missing image, and the task names the id it used.
+  # The variant replaces a missing derived image, and the task names the id it
+  # used.
   if ! has_package "${IMAGE}"; then
-    if has_package "${VARIANT}"; then
+    if [[ "${EXPLICIT}" == "true" ]]; then
+      print_error "The SDK has no package ${IMAGE}"
+      print_info "Change EMULATOR_IMAGE in the [env] of .config/mise/conf.d/zz-repo/mise.<env>.toml"
+      exit 1
+    elif has_package "${VARIANT}"; then
       print_warn "The SDK has no package ${IMAGE}; using ${VARIANT}"
       IMAGE="${VARIANT}"
     else
       print_error "The SDK has neither ${IMAGE} nor ${VARIANT}"
-      print_info "Set EMULATOR_IMAGE in the [env] of .config/mise/conf.d/_repo/mise.<env>.toml"
+      print_info "Set EMULATOR_IMAGE in the [env] of .config/mise/conf.d/zz-repo/mise.<env>.toml"
       exit 1
     fi
   fi
@@ -199,6 +207,21 @@ fi
 if ((${#MISSING[@]} == 0)); then
   print_success "platform-tools, ${PLATFORM}, emulator and ${IMAGE} are installed"
   exit 0
+fi
+
+# A folder of a package without its package.xml is left from an install that
+# did not complete. The installer then writes to another folder, and the check
+# after the install fails, so the task stops first and names the folder.
+LEFTOVER=()
+for package in "${MISSING[@]}"; do
+  [[ -d "${ANDROID_HOME}/${package}" ]] && LEFTOVER+=("${package}")
+done
+if ((${#LEFTOVER[@]})); then
+  for package in "${LEFTOVER[@]}"; do
+    print_error "${ANDROID_HOME}/${package} has no package.xml; an install of it did not complete"
+  done
+  print_info "Delete each folder above, then run the task again."
+  exit 1
 fi
 
 print_subheader "Installing ${MISSING[*]} ..."

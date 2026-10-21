@@ -1,4 +1,5 @@
-# Swift and SwiftPM from the host Xcode (macOS only).
+# Swift and SwiftPM from the host (macOS only): Xcode for a root with an
+# .xcodeproj, else the Command Line Tools.
 default_envs = [ "dev" ]
 depends = []
 extensions = [ "swiftlang.swift-vscode" ]

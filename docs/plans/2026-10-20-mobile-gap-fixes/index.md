@@ -299,41 +299,59 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 
 ## Gaps surfaced during execution
 
-- G1 (U2, non-blocking): the init script sets `LockMode.STRICT` before the build
-  script runs, so a build script that sets its own `lockMode` (for example
+- G1 (U2, non-blocking — RESOLVED: the user kept the assumption): the init
+  script sets `LockMode.STRICT` before the build script runs, so a build script
+  that sets its own `lockMode` (for example
   `LENIENT`) overrides it. The plan does not say which wins. Assumption taken:
   an explicit lock mode in the build is the build owner's choice.
-- G2 (U3, non-blocking): R12 makes `git ls-files` the file source of the android
+- G2 (U3, non-blocking — RESOLVED: the user kept the assumption; git is
+  necessary for each repository that uses bootstrap): R12 makes `git ls-files`
+  the file source of the android
   detects, and the plan does not cover a Gradle root that is not a git work
   tree. Assumption taken: `git ls-files` lists nothing there, so
   `setup:deps:android` does not apply and prints nothing.
-- G3 (R1, non-blocking): the comment at `tools/swift/tools.toml:1` ("Swift and
+- G3 (R1, non-blocking — RESOLVED on branch `gap-fixes`: the comment now names
+  Xcode for an `.xcodeproj`, else the Command Line Tools): the comment at
+  `tools/swift/tools.toml:1` ("Swift and
   SwiftPM from the host Xcode (macOS only).") is false after R14 and R15. No
   unit owns the file (Shared-file rule: `tools/*/tools.toml` not changed), and
   U6
   must not touch `tools/**`. It stays as it is.
-- G4 (U5, non-blocking, ruling question on R8 and U3 Edit 4): `module_of` maps a
+- G4 (U5, non-blocking, ruling question on R8 and U3 Edit 4 — RESOLVED on
+  branch `gap-fixes`: the root `build.gradle(.kts)`, `lint.xml` and
+  `lint-baseline.xml` now lint every module): `module_of` maps a
   file at the Gradle root to `.`, the root project. In a multi-module build the
   root has no `lint` task, so a change to the root `build.gradle(.kts)`,
   `lint.xml` or `lint-baseline.xml` lints nothing; the code before this plan
   linted every module. The rulings do not say whether root-level build and lint
   files lint every module. Kept as Edit 4 says.
-- G5 (U5, non-blocking, ruling question on R5): the filter `canBeResolved &&
+- G5 (U5, non-blocking, ruling question on R5 — RESOLVED on branch
+  `gap-fixes`: the filter is now `canBeResolved` without `default` and
+  `archives`): the filter `canBeResolved &&
   !canBeConsumed` skips configurations made with
   `configurations.create()`/`creating`, which Gradle 8 makes resolvable and
   consumable by default (detekt, ktlint, custom tool configurations). STRICT
   never checks their locks and `--upgrade` never writes them. Kept as R5 says.
-- G6 (U5, non-blocking, ruling question on R12): the installed `_ps16k` shortcut
+- G6 (U5, non-blocking, ruling question on R12 — RESOLVED on branch
+  `gap-fixes`: the `_ps16k` substitution now applies only to the image from
+  `targetSdk`): the installed `_ps16k` shortcut
   also replaces an explicit `EMULATOR_IMAGE` at any API level, so the 4 KB image
   the user asked for is never installed. R12 does not say whether the shortcut
   applies to an explicit image. Kept as R12 says.
-- G7 (U5, non-blocking, ruling question on R4 and U2 Edit 2): the normal run
+- G7 (U5, non-blocking, ruling question on R4 and U2 Edit 2 — RESOLVED on
+  branch `gap-fixes`: the failure text advises `--upgrade` only when the
+  Gradle output names the dependency lock state): the normal run
   reports every `./gradlew` failure as a lockfile mismatch and advises
   `--upgrade` — a network outage, a 401, a compile error or a JDK mismatch
   included. After a transient failure that advice rewrites every lockfile with
   `--refresh-dependencies`. The plan does not separate a lock failure from other
   Gradle failures. Kept as Edit 2 says.
-- G8 (U5, non-blocking, oscillation — convergence guard, not a plan hole): the
+- G8 (U5, non-blocking, oscillation — convergence guard, not a plan hole —
+  RESOLVED on branch `gap-fixes`: the loop part goes with Parked G10 of
+  `2026-10-19-mobile-toolchain-tasks`; finding (1) sets `STRICT` with
+  `beforeSettings`, finding (2) prunes submodules and nested builds in
+  `lockfiles()`, finding (3) fails on a leftover `<id>` folder before the
+  install): the
   review loop of U5 ran 3 rounds (findings 8 → 3 → 3) and stopped when the count
   did not strictly decrease. Each fix brought a new edge case (the round 1
   `find` fix of `lockfiles()` caused the submodule finding). Contested findings:
@@ -346,7 +364,9 @@ A unit returns exactly this block and nothing else — no file contents, no diff
   R9) — a leftover `<id>` folder with no `package.xml` makes the installer write
   to a suffixed folder, and the post-install check then fails for an installed
   package. Examine the loop first, then the findings.
-- G9 (U7, non-blocking): with `org.gradle.configuration-cache` on (the `gradle
+- G9 (U7, non-blocking — RESOLVED on branch `gap-fixes`: each `./gradlew`
+  call of `setup:deps:kotlin` passes `--no-configuration-cache`): with
+  `org.gradle.configuration-cache` on (the `gradle
   init` default), each `setup:deps:kotlin` run prints "cannot serialize …
   DefaultConfigurationContainer" and "Configuration cache entry discarded" for
   `bootstrapResolveAll`. The task is marked
