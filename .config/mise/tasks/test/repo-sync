@@ -10,8 +10,7 @@
 
 set -euo pipefail
 
-# The test-repo-sync pre-commit hook runs this task inside `git commit`, which
-# exports these variables. With them set, the git init, add and commit of the
+# A git hook that runs this task inside `git commit` exports these variables. With them set, the git init, add and commit of the
 # scratch repositories write to the real repository (gap G2).
 # The fixed list goes first, with no git call before it. Then
 # `git rev-parse --local-env-vars`, in a clean environment, lists any other

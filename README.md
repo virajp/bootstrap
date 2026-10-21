@@ -250,8 +250,8 @@ list of `repos:` entries:
 
 `mise run test:repo-sync` runs `repo_sync --dry-run` of the working tree's
 `tools/` against scratch values files, and checks the exit code and the
-message of each case. It needs no network. The local hook `test-repo-sync`
-runs it on each commit that changes `tools/`.
+message of each case. It needs no network. No hook runs it: run it by hand
+before you commit a change to `tools/`.
 
 ## Change a shared file
 
