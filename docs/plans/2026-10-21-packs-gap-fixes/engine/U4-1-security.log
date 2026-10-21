@@ -1,0 +1,9 @@
+/security-review — loop U4, round 1, range b0696c8..2b5d8c9
+
+No high-confidence vulnerabilities found.
+
+Dropped: .config/mise/tasks/test/repo-sync:16 — The fix looks complete. Under `git commit`, the variables that send writes to the real repository are `GIT_DIR`, `GIT_INDEX_FILE`, `GIT_WORK_TREE`, `GIT_OBJECT_DIRECTORY`, `GIT_ALTERNATE_OBJECT_DIRECTORIES` and `GIT_COMMON_DIR` (the last one in a worktree). The task unsets all of them before its first `git` call. All scratch `git` calls use `-C` on folders under `mktemp -d` in `$TMPDIR`, which are outside the real repository, so discovery cannot reach it. Inside `repo_sync`, `git -C "$MISE_PROJECT_ROOT"` points at the scratch consumer, because the subshell sets `MISE_PROJECT_ROOT=$consumer`. The variables still set (`GIT_AUTHOR_*`, `GIT_EDITOR`, `GIT_REFLOG_ACTION`) do not redirect writes. I found no remaining write path. (confidence 2)
+Dropped: .config/mise/tasks/test/repo-sync:28 — `GIT_CONFIG_PARAMETERS` is not unset, so a user's own `git -c ... commit` reaches the scratch `git` calls. Only the user can set it, and the precedent treats the environment as trusted. (confidence 2)
+Dropped: tools/repo-sync/.config/mise/tasks/_scripts/repo-sync:339 — The new `zz-repo` check (glob, `sed`, `awk`) only reads folder names of the trusted bootstrap clone and only prints them in a log message. No eval and no injection path. (confidence 1)
+Dropped: tools/repo-sync/.config/mise/tasks/_scripts/repo-sync:392 — The new dev check (`[[ ,$envs, == *,dev,* ]]`) adds a stop condition only. The values come from the trusted values file, and the names are still checked as before. No new sink. (confidence 1)
+Dropped: tools/mise/.config/mise/conf.d/zz-repo/ — Renaming the seed folder changes no permissions or trust boundary, and seeds are still written only when they are missing. (confidence 1)
