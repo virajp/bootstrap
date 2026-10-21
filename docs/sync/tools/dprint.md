@@ -32,10 +32,10 @@ VS Code extension: `dprint.dprint`.
 
 ## Tasks
 
-| Task           | Use                                                                                                                                                                                                                                         |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `code:format`  | Run dprint, then each `code:format:<name>`, on the `[files]` arguments, else on the whole tree. `--fix` applies the fixes, and `--debug` prints debug logs. With members, `--all` and `--<member>` also run `code:format` in those members. |
-| `setup:dprint` | Upgrade the dprint plugins.                                                                                                                                                                                                                 |
+| Task           | Use                                                                                                                                                                                                                                                                                                  |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `code:format`  | Run dprint, then each `code:format:<name>`, on the `[files]` arguments, else on the whole tree. `--fix` applies the fixes, and `--debug` prints debug logs. With git submodules, `--all` and `--<submodule>` also run `code:format` in those submodules. A folder member of a monorepo gets no flag. |
+| `setup:dprint` | Upgrade the dprint plugins.                                                                                                                                                                                                                                                                          |
 
 ## Pre-commit hooks
 

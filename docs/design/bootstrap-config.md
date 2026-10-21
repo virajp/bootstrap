@@ -212,7 +212,9 @@ that is not a submodule.
   `MEMBERS` in `.config/mise.toml` is the list of the folders, with one space
   between them.
 - `setup`, `code:format` and `code:lint` get a `--<name>` flag and an `--all`
-  flag for the members. They run in the folder of the member.
+  flag only for the members of type `submodule`. They run in the folder of the
+  submodule. A folder member of a monorepo is part of the tree of the root, so
+  it gets no flag. `setup:worktree` runs `worktree_install` for each member.
 
 ### `[member.<name>].label`
 

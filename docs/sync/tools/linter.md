@@ -33,10 +33,10 @@ VS Code extensions: `dbaeumer.vscode-eslint`, `foxundermoon.shell-format`.
 
 ## Tasks
 
-| Task           | Use                                                                                                                                                                                                                                      |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `code:lint`    | Run the linters, then each `code:lint:<name>`, on the `[files]` arguments, else on the whole tree. `--fix` applies fixes, and `--debug` prints debug logs. With members, `--all` and `--<member>` also run `code:lint` in those members. |
-| `setup:linter` | Write the linter config files, if they are missing.                                                                                                                                                                                      |
+| Task           | Use                                                                                                                                                                                                                                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `code:lint`    | Run the linters, then each `code:lint:<name>`, on the `[files]` arguments, else on the whole tree. `--fix` applies fixes, and `--debug` prints debug logs. With git submodules, `--all` and `--<submodule>` also run `code:lint` in those submodules. A folder member of a monorepo gets no flag. |
+| `setup:linter` | Write the linter config files, if they are missing.                                                                                                                                                                                                                                               |
 
 ## Pre-commit hooks
 

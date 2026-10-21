@@ -6,14 +6,17 @@
 #MISE hide=true
 
 #USAGE flag "--upgrade" help="also upgrade tools, dependencies, plugins and hooks"
-<% $last := math.Sub (len .members) 1 -%>
-#USAGE flag "--all" help="Setup all: workspace<% range $i, $m := .members %><% if eq $i $last %> and <% else %>, <% end %><% $m %><% end %>"
-<% range .members -%>
+<%/* The member flags are only for the submodules: a folder of a monorepo is
+   part of this tree. */ -%>
+<% $subs := coll.Slice %><% range .members %><% if eq (index $.member_types .) "submodule" %><% $subs = coll.Append . $subs %><% end %><% end -%>
+<% $last := math.Sub (len $subs) 1 -%>
+#USAGE flag "--all" help="Setup all: workspace<% range $i, $m := $subs %><% if eq $i $last %> and <% else %>, <% end %><% $m %><% end %>"
+<% range $subs -%>
 #USAGE flag "--<% . %>" help="Setup workspace & <% . %>"
 <% end -%>
-<% if .members %>
+<% if $subs %>
 <% end -%>
-<% range .members -%>
+<% range $subs -%>
 SETUP_<% . | strings.ReplaceAll "-" "_" | strings.ToUpper %>=$([[ "${usage_all:-false}" == "true" || "${usage_<% . | strings.ReplaceAll "-" "_" %>:-false}" == "true" ]] && echo true || echo false)
 <% end %>
 set -e
@@ -54,7 +57,7 @@ if [[ -n "${UPGRADE}" ]] && has_own_task setup:ai; then
   mise run setup:ai
 fi
 
-<% range .members -%>
+<% range $subs -%>
 <% $x := dict %><% if and (has $ "member") (has $.member .) %><% $x = index $.member . %><% end -%>
 if [[ "${SETUP_<% . | strings.ReplaceAll "-" "_" | strings.ToUpper %>}" == "true" ]]; then
   print_header "Setting up <% index $x "label" | default . %> project ..."
