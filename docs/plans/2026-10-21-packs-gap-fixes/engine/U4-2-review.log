@@ -1,0 +1,62 @@
+/code-review high — loop U4, round 2, range b0696c8..a8dff9b
+
+I found 9 issues on `2026-10-21-packs-gap-fixes` (`main...HEAD`), most severe first. None of them was checked by a separate verify pass. I read the diff hunks, the whole functions around them in the engine and the test, and the rules in the CLAUDE.md files. I also used Context7 to check how mise orders the folders in `conf.d`: one folder at a time by name, after the single-file fragments and before `config.toml`. So the byte-order check on folder names matches how mise loads them. The guard is written correctly; its gaps are covered below.
+
+```json
+[
+  {
+    "file": "tools/android/.config/mise/tasks/setup/deps/android",
+    "line": 113,
+    "summary": "The android task still tells users to set COMPILE_SDK and EMULATOR_IMAGE in `.config/mise/conf.d/_repo/mise.<env>.toml` (lines 113, 137, 192), but this branch renames that seed folder to `zz-repo`.",
+    "failure_scenario": "A consumer selects `android` and runs `setup:deps:android` without COMPILE_SDK. The hint names `conf.d/_repo/`, which the sync no longer seeds. If the user creates that folder, mise loads it before every tool folder, so their value loses to any tool that sets the same variable. The rename was meant to fix exactly that. No unit of the plan owns this file (gap G1), so it lands broken."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 1100,
+    "summary": "Only the test unsets the GIT_* variables a hook exports. The engine itself still runs `git clone`, `git -C \"$dir\" rev-parse --short HEAD` and `git -C \"$MISE_PROJECT_ROOT\" ...` with whatever GIT_DIR or GIT_INDEX_FILE it inherits.",
+    "failure_scenario": "`setup:configs` or `repo_sync` runs from any git hook, or with GIT_DIR exported. `git -C \"$dir\" rev-parse HEAD` then reads the outer repository, so the 'using bootstrap at <rev>' line shows the wrong commit, and the clone and the submodule or branch probes can act on the outer repository. This is gap G2 again, outside the test. The unset belongs in `repo_sync`, or in a shared git wrapper, rather than only at the top of `test/repo-sync`."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 339,
+    "summary": "The zz-repo guard checks only the names of the tool folders. It does not check the conf.d folders that a tool ships, so the comment's promise that 'no tool may write there' is not enforced.",
+    "failure_scenario": "Tool `docker` ships `.config/mise/conf.d/zz-repo/mise.dev.toml`, or a seed in `.config/mise/conf.d/zzz-extra/`. Seeds and shipped conf.d files are allowed, and the mise tool already ships into `zz-repo/`. The guard passes. The shipped file then either writes into the folder the repository owns or loads after it and overrides its values. A check on the shipped `.config/mise/conf.d/<folder>/` paths would cover both generated and shipped files."
+  },
+  {
+    "file": "CLAUDE.md",
+    "line": 279,
+    "summary": "Convention: the seed rename is not reflected in the docs that the repository's CLAUDE.md requires to change with it.",
+    "failure_scenario": "CLAUDE.md (/Users/virajpatel/Projects/github.com/virajp/bootstrap/CLAUDE.md) says: 'If the change adds, removes or changes a file, a mise tool, a task, a hook, a seed or a value of the tool, change docs/sync/tools/<tool>.md too.' The seed paths in `tools/mise/tools.toml:6` move to `zz-repo/`. Still on `_repo`: `docs/sync/tools/mise.md:11,24`, `docs/sync/tools/android.md:111`, `docs/sync/index.md:62`, `README.md:160`, CLAUDE.md lines 279-280, and the synced `.config/mise.toml:21`. CLAUDE.md also lacks the new dev rule and the zz-repo rule. An adopting agent following `docs/sync` writes the repository's values to `_repo/`. The plan defers this to U5 and U6, which are still pending."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 339,
+    "summary": "The folder name `zz-repo` is a bare literal in the awk filter, the error message and the comments. The file already defines a named constant for a fixed name: `_RS_BASE_PACK=base` (line 210).",
+    "failure_scenario": "A later rename has to find every literal again, in the awk string, the message and the comments, and the test matches the message text. This rename itself already missed spots (gap G1). A `_RS_REPO_FOLDER=zz-repo`, used in the awk call (`-v f=\"$_RS_REPO_FOLDER\"`) and in the message, keeps the guard and the message in step."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 337,
+    "summary": "Altitude: making the repository's own folder load last depends on a name-order trick (`zz-` prefix plus a global guard that fails every consumer's sync). mise already has a file that loads after every conf.d fragment.",
+    "failure_scenario": "Per the mise docs, conf.d fragments, folders included, load 'before the directory's own config such as config.toml'. Putting the repository's own values in `.config/mise/config.<env>.toml` would make them win by mise's design, with no name rule and no `zzz-*` guard. As it stands, one oddly named tool folder on bootstrap `main` stops every consumer's sync with code 2. Note: the plan records the zz-repo choice as confirmed by the user, so this is a design note rather than a defect."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 364,
+    "summary": "Efficiency: `_rs_mise_index` now starts a `sed` process for every tool folder in the clone, about 30 per sync, on top of the gomplate call per tool, only to strip a `mise ` prefix.",
+    "failure_scenario": "Every sync, and each of the 16 cases of test:repo-sync, pays about 30 extra fork and exec calls. A `while read -r kind name; do [[ $kind == mise ]] || continue; ...; done <<< \"$names\"` loop does the same job in bash with no extra process."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 402,
+    "summary": "Simplification: the `has_dev` flag is set before the loop only because the loop eats `$envs`. The check can run in one line before the loop, without the extra variable and the second `if` after the loop.",
+    "failure_scenario": "Three extra lines and a late check. Writing `[[ ,$envs, == *,dev,* ]] || { _rs_log ...; return 2; }` after the empty check keeps the same result, unless the order of the messages is meant to change: as written, a name error is reported before the missing-dev error. A separate `local has_dev` line also sits apart from the function's other locals."
+  },
+  {
+    "file": ".config/mise/tasks/test/repo-sync",
+    "line": 19,
+    "summary": "The unset block calls `git rev-parse --local-env-vars` while GIT_DIR and GIT_CONFIG_PARAMETERS are still set, and keeps a long hand-written list that it calls a fallback. The test already has a `_git` wrapper (line 35) where this isolation could live.",
+    "failure_scenario": "Two lists of variable names to keep in step: a fixed list, plus `${!GIT_CONFIG_KEY_*}` and `${!GIT_CONFIG_VALUE_*}`, plus the output of `--local-env-vars`. Running the scratch git calls with a clean environment inside `_git` (or in the engine, see the GIT_DIR finding) would remove the duplication. A newer git variable that the fixed list lacks would then not depend on the fallback."
+  }
+]
+```

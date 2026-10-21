@@ -112,6 +112,16 @@ repos:
         always_run: true
   - repo: local
     hooks:
+      - id: graphify-refresh
+        name: "Refresh the graphify graph (mise run code:graph)"
+        description: "Refreshes the graphify graph after each commit, instead of the raw git hook of graphify."
+        entry: "mise x -- mise run code:graph"
+        language: "system"
+        pass_filenames: false
+        always_run: true
+        stages: [ "post-commit" ]
+  - repo: local
+    hooks:
       - id: test-repo-sync
         name: "Test repo-sync"
         entry: "mise x -- mise run test:repo-sync"

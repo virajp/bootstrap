@@ -108,7 +108,7 @@ None.
 2. If `setup:deps:android` finds no `compileSdk` level, for example when it
    comes from a variable such as `libs.versions.sdk.get().toInt()`, set
    `COMPILE_SDK` in the `[env]` of
-   `.config/mise/conf.d/_repo/mise.<env>.toml`. If it finds no `targetSdk`
+   `.config/mise/conf.d/zz-repo/mise.<env>.toml`. If it finds no `targetSdk`
    level, or for another image, set `EMULATOR_IMAGE` there, for example
    `system-images/android-36/google_apis_playstore`.
 

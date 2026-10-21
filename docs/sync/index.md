@@ -53,13 +53,18 @@ The pack files in `packs/` are `base.md` and `security.md`.
 - The shared files are grouped by tool. Each tool is a folder
   `tools/<tool>/` in `bootstrap`. A file at `tools/<tool>/<path>` goes to
   `<path>` in the consumer repository.
+  A tool folder must not be `zz-repo`, and its name must not sort after
+  `zz-repo` in byte order. If it does, the sync stops with code 2.
 - The values file `.config/bootstrap.toml` lists the tools and the packs of
   the repository. `repo_sync` always adds the `base` pack, and it syncs all
   the files of these tools.
 - Do not edit a synced file in the consumer repository. The next sync replaces
   it. Put repository-owned content in the places that the sync never writes:
   - mise config and environment variables: the seeds
-    `.config/mise/conf.d/_repo/mise.<env>.toml`, one for each environment.
+    `.config/mise/conf.d/zz-repo/mise.<env>.toml`, one for each environment.
+    mise loads the folders of `conf.d/` in name order, and a later folder
+    wins. The name `zz-repo` sorts last, so the repository config wins over
+    the config of each tool.
   - shell functions: `.config/mise/tasks/_scripts/local`.
   - ignore lines: `.config/repo-sync/gitignore`.
   - pre-commit hooks: `.config/repo-sync/pre-commit.yaml`, a YAML list of
@@ -162,13 +167,13 @@ never a tool folder.
 
 Each `tools.toml` has these keys:
 
-| Key            | Meaning                                                              |
-| -------------- | -------------------------------------------------------------------- |
-| `default_envs` | The environments of the tool when the values file gives it no `env`. |
-| `depends`      | The sync adds these tools automatically.                             |
-| `root_only`    | If `true`, the sync refuses the tool in a submodule.                 |
-| `extensions`   | The VS Code extensions of the tool, for `.vscode/extensions.json`.   |
-| `seed`         | Files that the sync writes only if they are missing.                 |
+| Key            | Meaning                                                                                     |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| `default_envs` | The environments of the tool when the values file gives it no `env`. It must include `dev`. |
+| `depends`      | The sync adds these tools automatically.                                                    |
+| `root_only`    | If `true`, the sync refuses the tool in a submodule.                                        |
+| `extensions`   | The VS Code extensions of the tool, for `.vscode/extensions.json`.                          |
+| `seed`         | Files that the sync writes only if they are missing.                                        |
 
 A `tools.toml` can also have a `[seed_requires]` table. It is optional. Each
 key is a seed, and its value is a file of the repository. The sync writes the
@@ -192,6 +197,10 @@ The sync finds the environments of each tool in this sequence:
    `depends` or a mise `depends`. For example, `flutter` adds `android-sdk`
    and `java` in dev and ci.
 3. `environments` of the values file limits every result.
+4. Each tool must be in `dev`. An `env` without `dev` stops the sync with
+   code 2. A `default_envs` without `dev` in a `tools.toml` of `bootstrap`
+   also stops the sync with code 2, also for a tool that the repository does
+   not select.
 
 The `envs` of a mise tool (default `["dev"]`) lists the environments that the
 mise tool allows. In a tool file, the "Environments" column of "mise tools"
@@ -236,6 +245,9 @@ mkdir -p .config/mise/tasks/_scripts .config/mise/tasks/setup/configs
 cp "$sync/_scripts/repo-sync" "$lib/_scripts/helpers" .config/mise/tasks/_scripts/
 cp "$sync/setup/configs/_default" "$sync/setup/configs/sync" .config/mise/tasks/setup/configs/
 ```
+
+Do not run the sync, `mise run setup:configs` without `--dry-run`, yourself.
+In step 6, ask the user to run it. You can run a dry run.
 
 ## Step 3: Write the values file
 
@@ -287,8 +299,9 @@ env = [ "dev", "ci" ]
 ```
 
 The only key of a `[tools.*]` or a `[packs.*]` entry is `env`. Each name in
-`env` must be in `environments`. A list (`tools = [...]` or `packs = [...]`)
-is the old format, and the sync stops with code 2.
+`env` must be in `environments`, and `env` must include `dev`. A list
+(`tools = [...]` or `packs = [...]`) is the old format, and the sync stops
+with code 2.
 
 The member list is the git submodules, then each `[member.<name>]` table. A
 `[member.<name>]` table that is not a submodule must have a folder with that
@@ -337,20 +350,22 @@ skip this step.
 3. Examine the diff for each file that already exists in the repository.
 4. If the dry run replaces repository-owned content, stop. Move that content
    to a repository-owned place (see "Rules"), then do the dry run again.
-5. Run `mise run setup:configs`.
+5. Ask the user to run `mise run setup:configs`. Wait until the user tells
+   you the result.
 6. Run `mise run init`. This makes all the task scripts executable.
 
 If `repo_sync` fails, read the exit code:
 
-| Code | Cause                                                                                                                                                         | Action                                           |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| 2    | The old list format, a bad `[tools.*]` or `[packs.*]` entry, a bad `env` or `environments`, a root-only tool in a submodule, or a template that cannot render | Correct the values file                          |
-| 2    | A tool in an environment that one of its mise tools does not allow                                                                                            | Correct the `env`, or tell the `bootstrap` owner |
-| 2    | A pack loop, or a pack name that is also a tool folder                                                                                                        | Tell the `bootstrap` owner                       |
-| 2    | Neither `main` nor `develop` exists                                                                                                                           | Do step 4                                        |
-| 3    | A tool or a pack that is not in `bootstrap`                                                                                                                   | Correct the `[tools.*]` and `[packs.*]` entries  |
-| 5    | The clone failed, or `pre-commit autoupdate` failed                                                                                                           | Examine the network, the SSH key and the access  |
-| 1    | A local file system error                                                                                                                                     | Read the `repo-sync:` lines on stderr            |
+| Code | Cause                                                                                                                                                                                       | Action                                           |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| 2    | The old list format, a bad `[tools.*]` or `[packs.*]` entry, a bad `env` (also an `env` without `dev`) or `environments`, a root-only tool in a submodule, or a template that cannot render | Correct the values file                          |
+| 2    | A tool in an environment that one of its mise tools does not allow                                                                                                                          | Correct the `env`, or tell the `bootstrap` owner |
+| 2    | A pack loop, or a pack name that is also a tool folder                                                                                                                                      | Tell the `bootstrap` owner                       |
+| 2    | A `default_envs` without `dev`, or a tool folder that is `zz-repo` or that sorts after `zz-repo`                                                                                            | Tell the `bootstrap` owner                       |
+| 2    | Neither `main` nor `develop` exists                                                                                                                                                         | Do step 4                                        |
+| 3    | A tool or a pack that is not in `bootstrap`                                                                                                                                                 | Correct the `[tools.*]` and `[packs.*]` entries  |
+| 5    | The clone failed, or `pre-commit autoupdate` failed                                                                                                                                         | Examine the network, the SSH key and the access  |
+| 1    | A local file system error                                                                                                                                                                   | Read the `repo-sync:` lines on stderr            |
 
 A failure does not change an existing file.
 

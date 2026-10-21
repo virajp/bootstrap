@@ -66,21 +66,27 @@ mise files from these tables.
 └── mise/
     ├── conf.d/
     │   ├── <tool>/mise.<env>.toml  # generated from tools/<tool>/tools.toml
-    │   └── _repo/mise.<env>.toml   # seeds; the repository owns them
+    │   └── zz-repo/mise.<env>.toml # seeds; the repository owns them; loads last
     └── tasks/
         ├── _scripts/               # libraries, not tasks
         ├── code/                   # code:* tasks
         └── setup/                  # setup:* tasks
 ```
 
-| File                                         | Kind      | Owner          | Loads when                  |
-| -------------------------------------------- | --------- | -------------- | --------------------------- |
-| `.config/mise.toml`                          | Template  | `mise`         | Always                      |
-| `.config/mise/conf.d/<tool>/mise.<env>.toml` | Generated | `<tool>`       | `MISE_ENV` includes `<env>` |
-| `.config/mise/conf.d/_repo/mise.<env>.toml`  | Seed      | The repository | `MISE_ENV` includes `<env>` |
+| File                                          | Kind      | Owner          | Loads when                  |
+| --------------------------------------------- | --------- | -------------- | --------------------------- |
+| `.config/mise.toml`                           | Template  | `mise`         | Always                      |
+| `.config/mise/conf.d/<tool>/mise.<env>.toml`  | Generated | `<tool>`       | `MISE_ENV` includes `<env>` |
+| `.config/mise/conf.d/zz-repo/mise.<env>.toml` | Seed      | The repository | `MISE_ENV` includes `<env>` |
 
 Without `MISE_ENV`, no file in `conf.d/` loads. No tool ships or generates a
 `conf.d/*/mise.toml`.
+
+mise loads the folders of `conf.d/` in name order, and a later folder wins.
+The name `zz-repo` sorts after each tool folder, so the config of the
+repository wins over the config of each tool. A tool folder that is
+`zz-repo`, or whose name sorts after `zz-repo` in byte order, stops the sync
+with code 2.
 
 ## Environments
 
@@ -88,7 +94,7 @@ The consumer selects its environments with `environments` in the values file.
 
 | Environment | Rule      | Use                                      |
 | ----------- | --------- | ---------------------------------------- |
-| `dev`       | Necessary | Local development                        |
+| `dev`       | Necessary | Local development. Each tool is in `dev` |
 | `ci`        | Optional  | The CI build and the examination of code |
 
 ## `.config/mise.toml`
@@ -115,7 +121,7 @@ The template is `tools/mise/.config/mise.toml.tmpl`. It holds the shared
 | `task.timings`                       | `true`         |
 
 > As of now, we will NOT be supporting `monorepo_root` and `[monorepo]`
-> The repository puts its own `[env]` values in the `_repo` seeds.
+> The repository puts its own `[env]` values in the `zz-repo` seeds.
 
 > `.config/mise.toml` does not set `os`. The `mise` tool sets `os = "macos"` in
 > `dev`
@@ -162,7 +168,12 @@ mise tool gets the environments of its tool.
    the `depends` key, and the tool of a mise `depends`. The sync repeats this
    step until nothing changes.
 3. The sync keeps only the environments that the values file selects.
-4. The `envs` of each mise tool must include each environment of its tool. If
+4. Each tool must be in `dev`. An `env` without `dev` stops the sync with
+   code 2. A `default_envs` without `dev` also stops the sync with code 2.
+   The sync examines the `default_envs` of each tool of the clone, also of a
+   tool that the values file does not select, so the tests of `bootstrap`
+   find it first.
+5. The `envs` of each mise tool must include each environment of its tool. If
    not, the sync stops with code 2. The message names the cause: the
    `default_envs`, the `env` of the values file, or the tool that needs the
    dependency. For example, if `node` has

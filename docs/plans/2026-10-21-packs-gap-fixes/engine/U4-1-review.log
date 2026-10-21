@@ -1,0 +1,61 @@
+/code-review high — loop U4, round 1, range b0696c8..2b5d8c9
+
+I found 8 issues in the branch `2026-10-21-packs-gap-fixes` (`main...HEAD`, excluding the plan docs). The two most important:
+
+- **Wrong folder in the android task.** The shipped android task still tells consumers to put their values in `conf.d/_repo/`. That folder is no longer seeded, and the tool folders override it. The plan already logs this as gap G1, but no unit owns the file.
+- **The dev rule on `default_envs` is only checked for selected tools.** A bootstrap tool without dev slips past this repo's own test and fails the sync of every consumer that later selects it.
+
+The docs that still name `_repo` (finding 7) are planned for the pending units U5 and U6, so that finding is about the state of the branch now. As the review mode asked, I did not verify these findings.
+
+```json
+[
+  {
+    "file": "tools/android/.config/mise/tasks/setup/deps/android",
+    "line": 113,
+    "summary": "The shipped android task still tells consumers to set COMPILE_SDK / EMULATOR_IMAGE in .config/mise/conf.d/_repo/mise.<env>.toml (lines 113, 137, 192), a folder the rename made obsolete.",
+    "failure_scenario": "A consumer with the android tool hits 'No compileSdk level found' and follows the hint, putting COMPILE_SDK in conf.d/_repo/. Nothing seeds that folder any more, and mise loads it before every tool folder, so any tool that sets the same key overrides it. The value can be lost and the task keeps failing, even though the user did what the hint said. docs/sync/tools/android.md:111 has the same stale path."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 494,
+    "summary": "The dev rule on default_envs only runs for the tools a consumer selects, while the new folder rule checks every tool in the clone. A bootstrap tool with default_envs = [\"ci\"] (or []) is never caught by this repo's own test:repo-sync, which only resolves the base pack.",
+    "failure_scenario": "Someone adds tools/foo with default_envs = [\"ci\"] and pushes. test:repo-sync stays green and the pre-commit hook passes. Every consumer that later adds [tools.foo] gets code 2 and a message telling them to edit tools/foo/tools.toml, a bootstrap file they don't own. Fix: run the dev check in the _rs_mise_index loop, which already reads every manifest, so the bootstrap commit fails instead."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 339,
+    "summary": "The load-order guard only checks tool folder names, but the sync also accepts and copies conf.d files that a tool ships itself (line 80 and the conf.d/*/mise.*.toml branch near line 899) under any folder name.",
+    "failure_scenario": "tools/foo ships .config/mise/conf.d/zzz/mise.dev.toml (the folder is named zzz, not foo). The guard passes because tools/foo sorts before zz-repo. The consumer gets conf.d/zzz/, which loads after conf.d/zz-repo/ and quietly overrides the repo's own settings, the exact problem G3 was meant to fix. The guard should check the conf.d folder names that actually get written."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 339,
+    "summary": "`|| late=''` treats any failure of the guard pipeline as 'no late folder', so the zz-repo check fails open.",
+    "failure_scenario": "If `cd \"$dir/tools\"` fails, or the pipeline returns non-zero under the caller's pipefail (for example SIGPIPE from `head -n 1` when awk writes more matches), `late` becomes empty. The sync then goes on and writes a tool folder that loads after conf.d/zz-repo/ without any error."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 494,
+    "summary": "The default_envs dev check also stops the sync for a tool whose default_envs are never used: one with an explicit values-file env that includes dev, or a dependency, which takes its environments from its parents.",
+    "failure_scenario": "Bootstrap tool X has default_envs = [\"ci\"]. A consumer writes [tools.X] env = [\"dev\", \"ci\"], which passes the env rule. The sync still exits 2 with 'default_envs of tools/X/tools.toml has no dev'. The consumer has no values-file fix, because the explicit env, the documented override, can't get past it."
+  },
+  {
+    "file": ".config/mise/tasks/test/repo-sync",
+    "line": 16,
+    "summary": "The hand-written list of GIT_* variables to unset is incomplete. It leaves out repo-local variables a hook can inherit (GIT_CONFIG_PARAMETERS, GIT_CONFIG_COUNT/KEY_n/VALUE_n, GIT_NAMESPACE, GIT_SHALLOW_FILE, GIT_GRAFT_FILE, GIT_IMPLICIT_WORK_TREE, GIT_NO_REPLACE_OBJECTS, GIT_REPLACE_REF_BASE, GIT_CONFIG). Git has a built-in command that prints this exact list.",
+    "failure_scenario": "A commit made with `git -c <key>=<val> commit` (or a GIT_CONFIG_COUNT env config) runs the test-repo-sync hook with GIT_CONFIG_PARAMETERS set. Every scratch `git init/add/commit` then inherits that config, so the G2 isolation is only partial. Simpler and complete: `unset $(git rev-parse --local-env-vars)`."
+  },
+  {
+    "file": "tools/mise/tools.toml",
+    "line": 6,
+    "summary": "The seeds move from _repo/ to zz-repo/, but the docs for the tool still name _repo. This breaks a CLAUDE.md rule.",
+    "failure_scenario": "Repo-root CLAUDE.md, 'Change a shared file' step 2: \"If the change adds, removes or changes a file, a mise tool, a task, a hook, a seed or a value of the tool, change `docs/sync/tools/<tool>.md` too.\" docs/sync/tools/mise.md:11,24 still list `_repo/mise.*.toml` seeds. Other files that are now wrong: CLAUDE.md:279-280, README.md:160, docs/sync/index.md:62, docs/sync/migrate.md:83,119,178,181, and the root synced copy .config/mise.toml:21. An adopting AI that follows docs/sync would create conf.d/_repo/."
+  },
+  {
+    "file": ".config/mise/tasks/test/repo-sync",
+    "line": 175,
+    "summary": "There are no test cases for two paths the branch says it handles: a tool folder named exactly zz-repo (the `>=` fix from review round 2) and `default_envs = []`.",
+    "failure_scenario": "Changing `$0 >= \"zz-repo\"` back to `>` (the bug the review found in round 1), or a refactor that skips the has_dev check when default_envs is empty, would still pass all 14 checks. A tools/zz-repo folder, which would write into the repo-owned conf.d/zz-repo/, would sync without error."
+  }
+]
+```

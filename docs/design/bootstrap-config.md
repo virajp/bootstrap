@@ -88,15 +88,22 @@ One table for each tool of the repository. Each key is a folder
 - A list, `tools = [...]`, is the old format. It stops the sync with code 2,
   and the message names the table format
 - A folder that is not in `bootstrap` stops the sync with code 3
+- A tool folder of `bootstrap` that is `zz-repo`, or whose name sorts after
+  `zz-repo` in byte order, stops the sync with code 2. The folder
+  `conf.d/zz-repo/` of the repository must load last. See
+  [mise.md](mise.md)
 - A tool with `root_only = true` in a git submodule stops the sync with
   code 2
 
 ### `[tools.<folder>].env`
 
 The environments of the tool, for example `["dev", "ci"]`. Without the key,
-the tool gets the `default_envs` of its `tools.toml`.
+the tool gets the `default_envs` of its `tools.toml`. Each `default_envs`
+must include `dev`. A `default_envs` without `dev` stops the sync with code 2,
+also for a tool that the values file does not select.
 
 - Each name must be in `environments`. If not, the sync stops with code 2
+- The list must include `dev`. If not, the sync stops with code 2
 - An empty list, or an item with a space, stops the sync with code 2
 - Each mise tool of the tool must allow each environment in its `envs`. If
   not, the sync stops with code 2

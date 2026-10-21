@@ -1,0 +1,73 @@
+/code-review high — loop U4-late1, round 1, range a8dff9b..df16e1c (engine is branch-scoped)
+
+The review found 10 findings. None of them breaks the shipped sync logic, and all 16 test cases pass.
+
+- **Most important:** the android setup task (finding 1) still tells consumers to edit the old folder `conf.d/_repo/`. It is already noted as gap G1, but no unit in the plan fixes it.
+- **Next:** the new `zz-repo` guard checks only the names of the tool folders. A tool can still ship its own `conf.d/` folder that sorts after `zz-repo` and override the repository's settings (finding 2).
+- **Docs:** findings 3 and 4 are about docs that no longer match the code. Finding 4's CLAUDE.md docs are planned for U5 (wave 3), so they are a problem only if the branch lands before U5.
+- **The rest:** findings 5 and 6 are design choices, 7 and 8 are missing tests, and 9 and 10 are cleanups. I did not include an upgrade warning for consumers who still have `conf.d/_repo/`, because the plan and your standing rule leave upgrade paths out of scope.
+
+```json
+[
+  {
+    "file": "tools/android/.config/mise/tasks/setup/deps/android",
+    "line": 113,
+    "summary": "After the rename of the seed folder to zz-repo, the android task still tells users to set COMPILE_SDK and EMULATOR_IMAGE in .config/mise/conf.d/_repo/mise.<env>.toml (lines 113, 137, 192), and no unit of the plan owns this file.",
+    "failure_scenario": "A new consumer runs setup:deps:android without COMPILE_SDK. The hint sends it to conf.d/_repo/, which the sync no longer creates. If the user creates that folder by hand, it sorts before every tool folder, so the tool fragments override the value: the exact bug (G3) that this plan fixes."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 340,
+    "summary": "The zz-repo load-order guard checks only the tool folder names under tools/. It does not check the folder names of the conf.d/ files that a tool ships, so a shipped .config/mise/conf.d/<name>/ that sorts after zz-repo gets through.",
+    "failure_scenario": "A tool ships tools/foo/.config/mise/conf.d/zzz-foo/mise.dev.toml. The sync accepts it, because the tool folder 'foo' sorts before zz-repo. mise then loads zzz-foo/ after zz-repo/, and it overrides the repository's own [env] and [tools] values without any error. Checking the second path segment of each shipped .config/mise/conf.d/* path, as well as the tool names, would close the gap."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 86,
+    "summary": "The header comment (lines 86-88) and the exit-code list (line 134) say that only a folder that 'sorts after zz-repo' stops the sync. The code uses >= and also stops on a folder named exactly zz-repo, as the _rs_mise_index comment and the error message say.",
+    "failure_scenario": "A maintainer reads the exit-code list to find why a tools/zz-repo folder fails with code 2. The documented causes in the same file leave out the equal-name case, so the docs written from this header (U5) will copy the inaccurate wording."
+  },
+  {
+    "file": "docs/sync/tools/mise.md",
+    "line": 24,
+    "summary": "The branch changes the seeds of the mise tool (_repo to zz-repo) and adds two exit-code-2 rules (dev in every env/default_envs; the zz-repo folder order), but docs/sync/tools/mise.md, docs/sync/index.md, README.md:160 and CLAUDE.md:279-280 still describe _repo and have no dev rule.",
+    "failure_scenario": "CLAUDE.md (repo root), 'Change a shared file' step 2: 'If the change adds, removes or changes a file, a mise tool, a task, a hook, a seed or a value of the tool, change docs/sync/tools/<tool>.md too.' If the branch lands or is pushed before U5, an adopting AI that follows docs/sync/ writes the env [env] values into conf.d/_repo/, where they lose to the tool fragments."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 360,
+    "summary": "The default_envs dev check runs over every tool in the clone, selected or not, so one tool in bootstrap without dev stops setup:configs with code 2 for every consumer, including the ones that never select that tool.",
+    "failure_scenario": "Someone pushes tools/swift/tools.toml with default_envs = [\"ci\"] (for example, with --no-verify, or from a commit that does not touch the test hook's paths). From then on, every consumer's sync fails with 'default_envs of tools/swift/tools.toml has no dev', and none of them can sync until bootstrap is fixed. The check could fail only for selected tools in a consumer, and fail for all tools only under test:repo-sync."
+  },
+  {
+    "file": ".config/mise/tasks/test/repo-sync",
+    "line": 20,
+    "summary": "The fix for G2 (inherited GIT_* hook variables) is only in the test task. The engine repo_sync still runs git with the inherited environment (git clone, git -C \"$dir\" rev-parse --short HEAD, git -C \"$MISE_PROJECT_ROOT\" rev-parse --show-superproject-working-tree, git submodule foreach).",
+    "failure_scenario": "Any other task or hook that sources repo-sync while GIT_DIR or GIT_INDEX_FILE is exported (for example, setup:configs from a git hook or from a later test) makes these git calls resolve against the outer repository. For example, rev-parse --short HEAD reports the wrong commit, and the superproject check returns the wrong answer. Clearing the hook variables at the entry of repo_sync, or in one git wrapper, would fix this for all callers instead of only this task."
+  },
+  {
+    "file": ".config/mise/tasks/test/repo-sync",
+    "line": 191,
+    "summary": "The new has_dev branch in _rs_resolve also applies to [packs.<name>] env, but the only new test of the env rule uses [tools.node]. No case tests a pack whose env has no dev.",
+    "failure_scenario": "A later refactor changes the kind handling (for example, it skips the check when kind == packs). [packs.security] env = [\"ci\"] then syncs a ci-only pack again, against D4, and test:repo-sync stays green."
+  },
+  {
+    "file": ".config/mise/tasks/test/repo-sync",
+    "line": 180,
+    "summary": "No test covers the zz-repo guard when the folder listing fails or when a folder name sorts in an unusual way (for example, '~x', or a name between 'zz-repo' and 'zzz'). The only cases are zzz-late and zz-repo.",
+    "failure_scenario": "A change to the awk comparison (for example, removing LC_ALL=C, so that a locale-aware awk compares by locale order) lets a folder such as 'zz_repo' or '~tool' sort after zz-repo in mise without the sync stopping. Both existing cases still pass."
+  },
+  {
+    "file": ".config/mise/tasks/test/repo-sync",
+    "line": 150,
+    "summary": "tool_folder_zz_repo and late_tool_folder are the same function with a different folder name, and node_ci_only and node_no_envs are the same sed command with a different value.",
+    "failure_scenario": "There are four near-identical helpers where two parameterized ones (new_tool_folder <name>, node_default_envs <list>) would do the same job. A change to the five-key tools.toml template must be made in two places, or the cases drift apart."
+  },
+  {
+    "file": ".config/mise/tasks/test/repo-sync",
+    "line": 20,
+    "summary": "The fixed unset list repeats 10 of the 15 names that `git rev-parse --local-env-vars` prints in the next lines, so the two mechanisms overlap almost entirely.",
+    "failure_scenario": "Each name that is in both lists must be maintained in two places. A minimal fixed list (GIT_DIR, GIT_INDEX_FILE, GIT_WORK_TREE, GIT_CONFIG_PARAMETERS/COUNT/KEY_n/VALUE_n), followed by unset $(git rev-parse --local-env-vars), gives the same result with less code to keep current."
+  }
+]
+```
