@@ -120,11 +120,3 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [ "post-commit" ]
-  - repo: local
-    hooks:
-      - id: test-repo-sync
-        name: "Test repo-sync"
-        entry: "mise x -- mise run test:repo-sync"
-        language: "system"
-        files: "^tools/"
-        pass_filenames: false

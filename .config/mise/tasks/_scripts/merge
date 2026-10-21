@@ -9,36 +9,41 @@
 # `code/merge/_default` differ only in the branches they name, and keeping the
 # sequence here is what stops them drifting into different merges.
 #
-# **The policy this enforces is the repo's branch model.** The model follows
-# from the branches that exist (`branch_exists` in `checks`):
+# **The branch model follows from the branches that exist** (`branch_exists` in
+# `checks`):
 #
 #   - `main` and `develop`: work is authored on feature branches, integrated on
-#     `develop`, and reaches `main` only by merge. Nothing merges *from* `main`,
-#     and only `develop` merges *into* `main` — a feature branch that skipped
-#     `develop` has not been through the branch the pipeline builds. The tasks
-#     are `code:merge:develop` and `code:merge:main`.
+#     `develop`, and reaches `main` only by merge. The tasks are
+#     `code:merge:develop` and `code:merge:main`.
 #   - only one of them: any feature branch merges into that branch. The task is
 #     `code:merge`.
 #
 # `repo_sync` writes the tasks of the model it detects, and removes the others.
+#
+# **The merge config is in the values file.** Each repository reads the table
+# `[branch.<destination>]` of its own `.config/bootstrap.toml`, also the root
+# of a repository with submodules and each submodule. The table has `merge_model`, and one of `merge_from` (the
+# only branches that can merge in) and `merge_never` (the branches that never
+# merge in). Without both lists, the defaults are the branch model: into `main`
+# with `develop`, only from `develop`; into any other destination, never from
+# `main`. A feature branch that skipped `develop` has not been through the
+# branch the pipeline builds, and `main` is where nothing is authored.
 #
 # It merges `--no-ff` on purpose. A fast-forward would leave `main` and
 # `develop` as the same commit with no record that a merge happened, and the
 # merge commit is what makes "what shipped" a question git can answer.
 #
 # **The merge model chooses HOW the source reaches the destination, never
-# WHETHER.** Each destination has its own: `MERGE_MODEL_DEVELOP` for a branch
-# landing on `develop`, `MERGE_MODEL_MAIN` for `develop` landing on `main`. The
-# branch model above holds under both values, and every predicate below runs
-# under both:
+# WHETHER.** Each destination has its own `merge_model`. The branch rules above
+# hold under both values, and every predicate below runs under both:
 #
 #   direct  the default: merge locally and push the destination. A solo repo, or
 #           one whose review happens before the branch lands.
 #   pr      push the branch and open a pull request against the destination.
 #           Nothing merges locally; the forge is what merges.
 #
-# Both are `[env]` values in the repo's mise config, so the choice is the
-# repo's and this file names no forge until it has to open a request.
+# The choice is the repo's, and this file names no forge until it has to open
+# a request.
 
 set -euo pipefail
 # shellcheck source=/dev/null
@@ -96,7 +101,7 @@ precommit_safety_net() {
   if [ "${hooks_passed}" = false ]; then
     print_error
     print_error "- A hook failed without changing anything, so it needs a fix by hand."
-    print_error "- Run \`mise run code:precommit --all\` to see it."
+    print_error "- Run \`mise run code:precommit\` to see it."
     exit 1
   fi
   print_success
@@ -142,48 +147,82 @@ open_pull_request() {
   print_success "Branch pushed — the merge happens on the forge."
 }
 
+# read_merge_config <destination>
+#
+# Sets MERGE_MODE (`direct` or `pr`), and MERGE_FROM and MERGE_NEVER (branch
+# names, one on each line) from `[branch.<destination>]` of
+# `.config/bootstrap.toml`. Without the file, the table or a key, the defaults
+# of the branch model apply. Stops when the table sets both lists, or when yq
+# cannot read the file.
+read_merge_config() {
+  local DESTINATION_BRANCH="$1"
+  local FILE="${MISE_PROJECT_ROOT}/.config/bootstrap.toml"
+  local HAS_FROM=false HAS_NEVER=false
+  MERGE_MODE=''
+  MERGE_FROM=''
+  MERGE_NEVER=''
+
+  # yq reads the table by name through strenv, so a branch name with "-" or
+  # "/" is one key. A failed read stops the merge: a branch rule that cannot
+  # be read must not become "any branch".
+  merge_yq() {
+    B="${DESTINATION_BRANCH}" mise x -- yq -p toml -o yaml "$1" "${FILE}"
+  }
+  if [ -f "${FILE}" ]; then
+    if ! MERGE_MODE=$(merge_yq '.branch[strenv(B)].merge_model // ""') ||
+      ! HAS_FROM=$(merge_yq '.branch[strenv(B)] | has("merge_from")') ||
+      ! HAS_NEVER=$(merge_yq '.branch[strenv(B)] | has("merge_never")') ||
+      ! MERGE_FROM=$(merge_yq '(.branch[strenv(B)].merge_from // [])[]') ||
+      ! MERGE_NEVER=$(merge_yq '(.branch[strenv(B)].merge_never // [])[]'); then
+      print_error "cannot read the merge config of .config/bootstrap.toml."
+      exit 1
+    fi
+  fi
+
+  if [ "${HAS_FROM}" = true ] && [ "${HAS_NEVER}" = true ]; then
+    print_error "[branch.${DESTINATION_BRANCH}] sets both merge_from and merge_never."
+    print_warn "- keep one of them in .config/bootstrap.toml"
+    exit 1
+  fi
+  if [ "${HAS_FROM}" = false ] && [ "${HAS_NEVER}" = false ]; then
+    if [ "${DESTINATION_BRANCH}" = "main" ] && branch_exists develop; then
+      MERGE_FROM=develop
+    else
+      MERGE_NEVER=main
+    fi
+  fi
+
+  # `direct` is both the default and the behaviour every repo had before the
+  # setting existed. Anything that is not `pr` reads as `direct` rather than
+  # erroring: a typo in a config value should not stand between a branch and
+  # its merge.
+  [ "${MERGE_MODE}" = "pr" ] || MERGE_MODE="direct"
+}
+
 # merge_to_destination_branch <destination> [<source>]
 #
 # <source> defaults to the branch you are standing on, which is the shape
-# `code:merge:develop` uses. `code:merge:main` names both, and the checks below
-# still read the CURRENT branch — merging develop into main is only allowed from
-# develop, so where you launched it from is part of the question.
+# `code:merge:develop` uses. `code:merge:main` names both.
 merge_to_destination_branch() {
   local DESTINATION_BRANCH="$1"
   local CURRENT_BRANCH
   CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local SOURCE_BRANCH="${2:-${CURRENT_BRANCH}}"
 
-  # `direct` is both the default and the behaviour every repo had before the
-  # setting existed, so an unset or unfilled value merges locally exactly as
-  # before. Anything that is not `pr` reads as `direct` rather than erroring: a
-  # typo in a config value should not stand between a branch and its merge.
-  local MERGE_MODE
-  if [ "${DESTINATION_BRANCH}" = "main" ]; then
-    MERGE_MODE="${MERGE_MODEL_MAIN:-direct}"
-  else
-    MERGE_MODE="${MERGE_MODEL_DEVELOP:-direct}"
-  fi
-  [ "${MERGE_MODE}" = "pr" ] || MERGE_MODE="direct"
+  local MERGE_MODE MERGE_FROM MERGE_NEVER
+  read_merge_config "${DESTINATION_BRANCH}"
 
   print_header "Landing ${SOURCE_BRANCH} on ${DESTINATION_BRANCH} (${MERGE_MODE}) ..."
 
-  if [ "${SOURCE_BRANCH}" = "main" ]; then
-    print_error "merges FROM 'main' are not allowed."
-    print_warn "- 'main' is the release branch; nothing is authored there"
-    print_warn "- name a feature branch, or 'develop', as the source"
+  if [ -n "${MERGE_FROM}" ] && ! grep -qxF -- "${SOURCE_BRANCH}" <<< "${MERGE_FROM}"; then
+    print_error "merges INTO '${DESTINATION_BRANCH}' are only allowed from: $(paste -sd ' ' - <<< "${MERGE_FROM}")"
+    print_warn "- the source is '${SOURCE_BRANCH}'"
+    print_warn "- merge_from of .config/bootstrap.toml decides this"
     exit 1
   fi
-
-  local BOTH_BRANCHES=false
-  if branch_exists main && branch_exists develop; then
-    BOTH_BRANCHES=true
-  fi
-
-  if [ "${BOTH_BRANCHES}" = true ] && [ "${DESTINATION_BRANCH}" = "main" ] && [ "${CURRENT_BRANCH}" != "develop" ]; then
-    print_error "merges INTO 'main' are only allowed from 'develop'."
-    print_warn "- you are on '${CURRENT_BRANCH}'"
-    print_warn "- run \`mise run code:merge:develop\` first, then merge develop into main"
+  if [ -n "${MERGE_NEVER}" ] && grep -qxF -- "${SOURCE_BRANCH}" <<< "${MERGE_NEVER}"; then
+    print_error "merges FROM '${SOURCE_BRANCH}' into '${DESTINATION_BRANCH}' are not allowed."
+    print_warn "- merge_never of .config/bootstrap.toml decides this"
     exit 1
   fi
 
