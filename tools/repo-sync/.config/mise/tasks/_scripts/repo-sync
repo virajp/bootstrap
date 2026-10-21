@@ -60,6 +60,8 @@
 #     allows. A tool in an environment that one of its mise tools does not
 #     allow stops the sync, as does an `env` name that is not in
 #     `environments`.
+#   * Each tool must be in dev: an `env` of the values file or a
+#     `default_envs` without dev stops the sync.
 #
 # mise config: the sync generates `.config/mise/conf.d/<tool>/mise.<env>.toml`
 # for each selected environment and each tool with `[mise]` tables.
@@ -81,6 +83,9 @@
 #     run did not write is removed: it belongs to a tool, an environment or a
 #     layout that is gone. A file without the header, such as a seed, is never
 #     touched.
+#   * `conf.d/zz-repo/` is the repo's own folder, and it must load last: mise
+#     loads the folders in name order and a later one wins. A tool folder
+#     whose name sorts after `zz-repo` in byte order stops the sync.
 #
 # Templates: a file that ends in `.tmpl` is rendered with gomplate, formatted
 # with this repo's dprint config when dprint is available, and written without
@@ -125,9 +130,11 @@
 #   0  success (or nothing to change)
 #   2  usage error, a values file in the old list format, a pack loop, a pack
 #      name that is also a tool folder, an environment that is not in
-#      `environments` or that a mise tool does not allow, a root-only tool in
-#      a submodule, a repo with neither `main` nor `develop`, a template that
-#      cannot render, or a `[mise]` config that cannot be generated
+#      `environments` or that a mise tool does not allow, an `env` or a
+#      `default_envs` without dev, a tool folder that sorts after `zz-repo`,
+#      a root-only tool in a submodule, a repo with neither `main` nor
+#      `develop`, a template that cannot render, or a `[mise]` config that
+#      cannot be generated
 #   3  a tool or a pack that is not in bootstrap (fix the values file)
 #   5  the clone failed (network, SSH key or access to the repo), or
 #      `pre-commit autoupdate` could not resolve the hook revisions
@@ -323,9 +330,17 @@ _rs_manifest() {
 
 # Set _RS_MISE_DEFS to the ` <mise-tool>=<tool> ` words of every tool in the
 # clone <dir>, selected or not: the mise `depends` of an entry find their tool
-# here. Returns 2, after a message, when two tools define the same mise tool.
+# here. Returns 2, after a message, when two tools define the same mise tool,
+# or for a tool folder named zz-repo or that sorts after it in byte order:
+# mise loads the folders of conf.d/ in name order and a later one wins, so the
+# repo's own conf.d/zz-repo/ must load last and no tool may write there.
 _rs_mise_index() {
-  local dir=$1 manifest tool name names
+  local dir=$1 manifest tool name names late
+  late=$(cd "$dir/tools" && printf '%s\n' */ | sed 's#/$##' | LC_ALL=C awk '$0 >= "zz-repo"' | head -n 1) || late=''
+  if [[ -n $late ]]; then
+    _rs_log "tool folder tools/$late sorts after zz-repo or is named zz-repo - rename it, because conf.d/zz-repo/ must load last"
+    return 2
+  fi
   _RS_MISE_DEFS=' '
   for manifest in "$dir"/tools/*/tools.toml; do
     tool=${manifest%/tools.toml}
@@ -365,13 +380,17 @@ _rs_mise_owner() {
 _rs_resolve() {
   local dir=$1 values=$2 sel tool field value pending in_submodule kind name envs env
   sel=$(_rs_values_sel "$values") || return 2
-  # An `env` of the values file names only environments of this repo.
+  # An `env` of the values file names only environments of this repo, and
+  # always dev: each tool must be in dev.
+  local has_dev
   while read -r kind name envs; do
     [[ -n $kind && $envs != - ]] || continue
     if [[ -z $envs ]]; then
       _rs_log "env of [$kind.$name] in $(_rs_path "$values") is empty - name an environment, or remove env to use default_envs"
       return 2
     fi
+    has_dev=0
+    [[ ,$envs, == *,dev,* ]] && has_dev=1
     # Split on commas only, so an item with a space fails the name check.
     envs+=,
     while [[ -n $envs ]]; do
@@ -385,6 +404,10 @@ _rs_resolve() {
         return 2
       fi
     done
+    if ((!has_dev)); then
+      _rs_log "env of [$kind.$name] in $(_rs_path "$values") has no dev - each tool must be in dev, for example env = [\"dev\", \"ci\"]"
+      return 2
+    fi
   done <<< "$sel"
   _RS_SEL=$(_rs_selected "$dir" "$sel") || return
   in_submodule=$(git -C "$MISE_PROJECT_ROOT" rev-parse --show-superproject-working-tree 2> /dev/null) || in_submodule=''
@@ -436,6 +459,7 @@ _rs_resolve() {
       continue
     fi
     [[ -n $all ]] && _RS_DEPS+="$tool$all"$'\n'
+    has_dev=0
     while read -r field value; do
       case $field in
         default_env)
@@ -443,6 +467,7 @@ _rs_resolve() {
             _rs_log "default_envs of tools/$tool/tools.toml: '$value' is not one of ${_RS_ENV_NAMES// /, }"
             return 2
           fi
+          [[ $value == dev ]] && has_dev=1
           _RS_DEFAULT_ENVS+="$tool:$value "
           ;;
         extension)
@@ -466,6 +491,10 @@ _rs_resolve() {
           ;;
       esac
     done <<< "$manifest"
+    if ((!has_dev)); then
+      _rs_log "default_envs of tools/$tool/tools.toml has no dev - each tool must be in dev, for example default_envs = [\"dev\", \"ci\"]"
+      return 2
+    fi
     _RS_TOOLS+="$tool "
   done
   _RS_EXTENSIONS=$(printf '%s' "$_RS_EXTENSIONS" | sort -u)
