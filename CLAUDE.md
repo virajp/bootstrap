@@ -245,9 +245,9 @@ that it finds, and removes the others. It stops if neither branch exists.
 
 - The consumer selects its environments with `environments` in the values
   file: `dev` (necessary) and `ci`. Any other name stops the sync with code 2.
-  A `tools.toml` can also name `prod` and `stage` in `default_envs` and
-  `envs`. The sync ignores each environment that `environments` does not
-  select.
+  bootstrap is only for `dev` and `ci`: a `tools.toml` names only these two in
+  `default_envs` and `envs`, and any other name stops the sync with code 2.
+  The sync ignores each environment that `environments` does not select.
 - `.config/mise.toml` (`tools/mise/.config/mise.toml.tmpl`) is the only file for
   every environment. It holds the shared `[settings]` and the `[env]` values
   from the values file (MEMBERS, REPO_NAME). It does not set
