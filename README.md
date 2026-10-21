@@ -195,8 +195,6 @@ Example values file:
 ```toml
 commit_scopes = [ "backend", "web" ]
 environments = [ "dev", "ci" ]
-merge_model_develop = "direct"
-merge_model_main = "pr"
 product_name = "my-product"
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
@@ -216,6 +214,11 @@ env = [ "dev", "ci" ] # optional; without it, the default_envs of the tool
 [member.backend]
 label = "Backend"
 worktree_install = "pnpm install --frozen-lockfile"
+
+# The merge config of this repository: the table of its own repo_name.
+[member.my-repo.branch.main]
+merge_from = [ "develop" ]
+merge_model = "pr"
 ```
 
 ## `.gitignore`

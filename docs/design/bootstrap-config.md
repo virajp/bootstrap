@@ -31,11 +31,11 @@ folder = "projects/web"
 label = "Web"
 worktree_install = "mise run setup"
 
-[member.web.branch.main]
+[member.my-repo.branch.main]
 merge_from = [ "develop" ]
 merge_model = "pr"
 
-[member.web.branch.develop]
+[member.my-repo.branch.develop]
 merge_model = "direct"
 merge_never = [ "main" ]
 ```
@@ -206,7 +206,9 @@ that is not a submodule.
   is this list, with one space between the names.
 - `setup`, `code:format` and `code:lint` get a `--<name>` flag and an `--all`
   flag for the members.
-- A repo without any member will have itself as a member
+- The key `[member.<repo_name>]` is the repository itself, not a member.
+  `repo-sync` skips it. It holds the merge config of the repository (see
+  `[member.<name>.branch.<branch>]`).
 
 ### `[member.<name>].label`
 
@@ -230,6 +232,12 @@ own `setup:worktree` task of the member, if the member has one.
 How `code:merge:<branch>` merges a branch on specified branch: `direct`
 or `pr`
 
+Each repository reads only `[member.<repo_name>.branch.<branch>]` of its own
+`.config/bootstrap.toml`, with its own `repo_name`. This applies to a
+repository without submodules, to the root of a repository with submodules,
+and to each submodule. The merge tasks read the file when they run, with
+`mise x -- yq`.
+
 | Value    | Effect                                                         |
 | -------- | -------------------------------------------------------------- |
 | `direct` | A local `--no-ff` merge, then a push.                          |
@@ -252,8 +260,10 @@ List of branches the merge can NEVER be allowed from. If the list is empty and
 `merge_from` will be allowed
 
 - This can be set ONLY if `[member.<name>.branch.<branch>].merge_from` is empty
-- Both lists are empty only in a repository with a single protected branch
-  (`main` or `develop`). Then any branch can be merged into that branch
+- Without both lists, the defaults are the branch model: into `main` when
+  `develop` exists, only from `develop` (`merge_from = ["develop"]`); into any
+  other branch, never from `main` (`merge_never = ["main"]`)
+- A table that sets both lists stops the merge
 
 ## Reserved names
 

@@ -170,9 +170,10 @@ trap '_rs_cleanup; exit 143' TERM
 
 # Print the repo's member names, one per line: the git members first, then the
 # `[member.<name>]` keys of <values> that are not git members, which must be
-# folders in the repo. Returns 2 when a key is neither.
+# folders in the repo. Returns 2 when a key is neither. The key `repo_name` is
+# the repo itself, for example its merge config, so it is not a member.
 _rs_members() {
-  local values=$1 name=$2 member keys seen=" "
+  local values=$1 name=$2 member keys self seen=" "
   if ! declare -F members > /dev/null; then
     # shellcheck source=/dev/null
     source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
@@ -185,8 +186,10 @@ _rs_members() {
   keys=$(mise x -- gomplate --left-delim '<%' --right-delim '%>' -c "v=${values}" \
   -i '<% if has .v "member" %><% range $k, $x := .v.member %><% $k %>
 <% end %><% end %>') || return 2
+  self=$(mise x -- gomplate --left-delim '<%' --right-delim '%>' -c "v=${values}" \
+    -i '<% if has .v "repo_name" %><% .v.repo_name %><% end %>') || return 2
   while IFS= read -r member; do
-    [[ -n $member && $seen != *" $member "* ]] || continue
+    [[ -n $member && $seen != *" $member "* && $member != "$self" ]] || continue
     if [[ ! -d ${MISE_PROJECT_ROOT}/${member} ]]; then
       _rs_log "$name: [member.${member}] in $(_rs_path "$values") is not a submodule or a folder of the repo"
       return 2

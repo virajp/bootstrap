@@ -77,8 +77,12 @@ The sync replaces `.config/mise.toml`. It keeps only the shared `[settings]`.
 
 1. Move `REPO_NAME`, `MEMBERS` and `MERGE_MODEL*` into the values file:
    - `REPO_NAME` becomes `repo_name`.
-   - The old single `MERGE_MODEL` becomes both `merge_model_develop` and
-     `merge_model_main`, with the same value.
+   - `MERGE_MODEL_DEVELOP` becomes `merge_model` of
+     `[member.<repo_name>.branch.develop]`, and `MERGE_MODEL_MAIN` becomes
+     `merge_model` of `[member.<repo_name>.branch.main]`. The old single
+     `MERGE_MODEL` goes to both tables. A `direct` value is the default, so
+     it can stay out. Remove the old keys `merge_model_develop` and
+     `merge_model_main`: nothing reads them.
    - `MEMBERS` is not necessary for submodules. For folders, write
      `[member.<name>]` tables.
 2. Move the repository's own `[env]` values to the seed

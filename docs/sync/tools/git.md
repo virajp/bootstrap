@@ -40,8 +40,13 @@ None.
 
 The sync writes the merge tasks of the branch model that it finds (step 4 of
 `index.md`), and removes the merge tasks of the other model.
-`MERGE_MODEL_DEVELOP` and `MERGE_MODEL_MAIN` select `direct` or `pr`. The
-`pr` model needs the CLI of the forge, from the `github` or the `gitlab` tool.
+The merge tasks read `[member.<repo_name>.branch.<destination>]` of the
+repository's own `.config/bootstrap.toml`, with `mise x -- yq`. Its
+`merge_model` selects `direct` (the default) or `pr`. Its `merge_from` or
+`merge_never` limits the source branches. Without both lists, only `develop`
+merges into `main` when `develop` exists, and nothing merges from `main`. A
+table with both lists stops the merge. The `pr` model needs the CLI of the
+forge, from the `github` or the `gitlab` tool.
 
 ## Pre-commit hooks
 

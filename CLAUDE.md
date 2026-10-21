@@ -223,14 +223,20 @@ that it finds, and removes the others. It stops if neither branch exists.
 
 - `main` and `develop`: work starts on feature branches.
   `code:merge:develop <branch>` lands a branch on `develop`.
-  `code:merge:main` lands `develop` on `main`. Nothing merges from `main`.
-  Only `develop` merges into `main`.
+  `code:merge:main` lands `develop` on `main`, and runs only from `develop`.
 - Only one of them: `code:merge <branch>` (`code/merge/_default`) lands any
   feature branch on that branch.
 - Merges use `--no-ff`. A hook pass over all files runs first as a safety net.
-- `MERGE_MODEL_DEVELOP` and `MERGE_MODEL_MAIN` select `direct` (local merge and
-  push) or `pr` (push and open a pull request with `gh` or `glab`). The
-  `github` and `gitlab` tools install these CLIs.
+- The merge tasks read `[member.<repo_name>.branch.<destination>]` of the
+  repository's own `.config/bootstrap.toml` when they run. Each repository
+  uses its own `repo_name`: the root and each submodule. `merge_model` selects
+  `direct` (local merge and push, the default) or `pr` (push and open a pull
+  request with `gh` or `glab`). The `github` and `gitlab` tools install these
+  CLIs. `merge_from` lists the only source branches, and `merge_never` the
+  forbidden ones. A table with both stops the merge. Without both, the
+  defaults are: into `main` with `develop`, only from `develop`; into another
+  branch, never from `main`.
+- `repo_sync` does not read a `[member.<repo_name>]` key as a member.
 
 ## mise config
 
@@ -241,7 +247,7 @@ that it finds, and removes the others. It stops if neither branch exists.
   select.
 - `.config/mise.toml` (`tools/mise/.config/mise.toml.tmpl`) is the only file for
   every environment. It holds the shared `[settings]` and the `[env]` values
-  from the values file (MEMBERS, MERGE_MODEL_*, REPO_NAME). It does not set
+  from the values file (MEMBERS, REPO_NAME). It does not set
   `min_version`. `monorepo_root` and `[monorepo]` are not supported.
 - Each file in `.config/mise/conf.d/` is for one environment:
   `mise.<env>.toml`. mise loads it only when `MISE_ENV` includes that
