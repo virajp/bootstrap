@@ -336,7 +336,10 @@ _rs_manifest() {
 # repo's own conf.d/zz-repo/ must load last and no tool may write there.
 _rs_mise_index() {
   local dir=$1 manifest tool name names late
-  late=$(cd "$dir/tools" && printf '%s\n' */ | sed 's#/$##' | LC_ALL=C awk '$0 >= "zz-repo"' | head -n 1) || late=''
+  late=$(cd "$dir/tools" && printf '%s\n' */ | sed 's#/$##' | LC_ALL=C awk '$0 >= "zz-repo" { print; exit }') || {
+    _rs_log "cannot list the tool folders of the clone"
+    return 2
+  }
   if [[ -n $late ]]; then
     _rs_log "tool folder tools/$late sorts after zz-repo or is named zz-repo - rename it, because conf.d/zz-repo/ must load last"
     return 2
@@ -345,13 +348,20 @@ _rs_mise_index() {
   for manifest in "$dir"/tools/*/tools.toml; do
     tool=${manifest%/tools.toml}
     tool=${tool##*/}
-    names=$(_rs_gomplate -c "t=${manifest}" -i '<% if and (has .t "mise") (has .t.mise "tools") %><% range $k, $v := .t.mise.tools %><% $k %>
+    names=$(_rs_gomplate -c "t=${manifest}" -i '<% range .t.default_envs %>env <% . %>
+<% end %><% if and (has .t "mise") (has .t.mise "tools") %><% range $k, $v := .t.mise.tools %>mise <% $k %>
 <% end %><% end %>') || {
 
       _rs_log "cannot read tools/$tool/tools.toml"
       return 2
     }
-    for name in $names; do
+    # Each tool must be in dev, selected or not, so this repo's own test
+    # finds a tool without dev before a consumer selects it.
+    if [[ $'\n'$names$'\n' != *$'\n'"env dev"$'\n'* ]]; then
+      _rs_log "default_envs of tools/$tool/tools.toml has no dev - each tool must be in dev, for example default_envs = [\"dev\", \"ci\"]"
+      return 2
+    fi
+    for name in $(printf '%s\n' "$names" | sed -n 's/^mise //p'); do
       if [[ $_RS_MISE_DEFS == *" $name="* ]]; then
         _rs_log "mise tool '$name' is defined in tools/$tool and in another tool - keep one"
         return 2
@@ -459,7 +469,6 @@ _rs_resolve() {
       continue
     fi
     [[ -n $all ]] && _RS_DEPS+="$tool$all"$'\n'
-    has_dev=0
     while read -r field value; do
       case $field in
         default_env)
@@ -467,7 +476,6 @@ _rs_resolve() {
             _rs_log "default_envs of tools/$tool/tools.toml: '$value' is not one of ${_RS_ENV_NAMES// /, }"
             return 2
           fi
-          [[ $value == dev ]] && has_dev=1
           _RS_DEFAULT_ENVS+="$tool:$value "
           ;;
         extension)
@@ -491,10 +499,6 @@ _rs_resolve() {
           ;;
       esac
     done <<< "$manifest"
-    if ((!has_dev)); then
-      _rs_log "default_envs of tools/$tool/tools.toml has no dev - each tool must be in dev, for example default_envs = [\"dev\", \"ci\"]"
-      return 2
-    fi
     _RS_TOOLS+="$tool "
   done
   _RS_EXTENSIONS=$(printf '%s' "$_RS_EXTENSIONS" | sort -u)
