@@ -12,10 +12,10 @@ gaps_of: []
 
 ## Status
 
-**RUNNING**
+**COMPLETE**
 
-RUNNING since 2026-10-21 10:19 in
-/Users/virajpatel/Projects/github.com/virajp/bootstrap/.worktrees/2026-10-21-packs-and-base-split
+COMPLETE 2026-10-21 — c95e4ff, 39139fe, ce30bf1, 94c87f8, 1076790, 99bfe52,
+b3667de, f633afe, 94b19ea, e9c8419
 
 ## Consent
 
