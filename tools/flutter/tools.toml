@@ -1,4 +1,5 @@
 # Flutter and Dart. Needs android-sdk, from the android tool.
+default_envs = [ "dev", "ci" ]
 depends = []
 extensions = [ "dart-code.dart-code", "dart-code.flutter" ]
 root_only = false

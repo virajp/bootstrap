@@ -1,0 +1,8 @@
+# The packs. A pack is a named list of tools; it has no files of its own.
+# repo-sync always adds the pack `base`. See docs/design/packs.md.
+[pack.base]
+depends = [ "mise", "repo-sync", "git", "pre-commit", "dprint", "linter", "p:security" ]
+
+[pack.security]
+depends = [ "gitleaks", "grype", "osv-scanner" ]
+required = [ "_security_base" ]

@@ -1,0 +1,36 @@
+# mise: the shared mise config, the task library and the setup and code orchestrators.
+default_envs = [ "dev", "ci" ]
+depends = []
+extensions = [ "hverlin.mise-vscode", "redhat.vscode-yaml", "tamasfe.even-better-toml" ]
+root_only = false
+seed = [ ".config/mise/conf.d/_repo/mise.ci.toml", ".config/mise/conf.d/_repo/mise.dev.toml" ]
+
+# The mise config, generated into .config/mise/conf.d/mise/mise.<env>.toml.
+
+# JSON and YAML queries. In dev and ci, because the tasks use them in both.
+[mise.tools.jq]
+envs = [ "dev", "ci" ]
+version = "latest"
+
+[mise.tools.yq]
+envs = [ "dev", "ci" ]
+version = "latest"
+
+[mise.shell_alias]
+setup = "mise run setup"
+
+[mise.tasks.init]
+description = "Initialize mise tasks"
+dir = "{{exec(command='git rev-parse --show-toplevel')}}"
+hide = true
+run = "find .config/mise/tasks/ -name '*' -type f -exec chmod 755 {} \\;"
+
+# dev run on macOS
+# selects macOS binaries.
+[mise_env.dev.settings]
+os = "macos"
+
+# CI run on Linux
+# selects Linux binaries.
+[mise_env.ci.settings]
+os = "linux"

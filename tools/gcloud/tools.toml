@@ -1,4 +1,5 @@
 # The Google Cloud CLI, for a repository that deploys to Google Cloud.
+default_envs = [ "dev", "ci" ]
 depends = []
 extensions = []
 root_only = false

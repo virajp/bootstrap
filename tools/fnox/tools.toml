@@ -1,4 +1,5 @@
 # Secrets from .config/fnox.toml, checked by setup:secrets:fnox.
+default_envs = [ "dev" ]
 depends = []
 extensions = []
 root_only = false

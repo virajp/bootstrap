@@ -1,0 +1,39 @@
+# git: the shared .gitignore, the commit convention, the git-config check and the merge tasks.
+default_envs = [ "dev", "ci" ]
+depends = []
+extensions = []
+root_only = false
+seed = []
+
+# The gate hooks are tool-neutral: each names a task and nothing else.
+[[precommit]]
+repo = "local"
+
+[[precommit.hooks]]
+always_run = true
+description = "Prevents a local .git/config from overriding global user and signing settings."
+entry = "mise x -- mise run code:git-config --fix"
+id = "git-config"
+language = "system"
+name = "Forbidden local git-config"
+pass_filenames = false
+
+[[precommit]]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v6.0.0"
+
+[[precommit.hooks]]
+args = [ "--branch", "main", "--branch", "develop" ]
+description = "These branches take merges only. git runs pre-merge-commit for a merge, so merges are not affected."
+id = "no-commit-to-branch"
+name = "Refuse a direct commit to main or develop"
+
+[[precommit]]
+repo = "https://github.com/qoomon/git-conventional-commits"
+rev = "v2.9.0"
+
+[[precommit.hooks]]
+args = [ "--config", ".config/git-conventional-commits.yaml" ]
+id = "conventional-commits"
+name = "Conventional Commits"
+stages = [ "commit-msg" ]

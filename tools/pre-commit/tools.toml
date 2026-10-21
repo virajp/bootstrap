@@ -1,0 +1,86 @@
+# pre-commit: the rendered pre-commit config, its setup task and code:precommit.
+default_envs = [ "dev" ]
+depends = []
+extensions = []
+root_only = false
+seed = []
+
+[[precommit]]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v6.0.0"
+
+[[precommit.hooks]]
+args = [ "--maxkb=1024" ]
+id = "check-added-large-files"
+name = "Check for added large files (>1MB)"
+
+[[precommit.hooks]]
+id = "check-case-conflict"
+name = "Check for case-conflicting filenames"
+
+[[precommit.hooks]]
+id = "check-illegal-windows-names"
+name = "Check for filenames Windows cannot check out"
+
+[[precommit.hooks]]
+id = "check-executables-have-shebangs"
+name = "Check that executables have shebangs"
+
+[[precommit.hooks]]
+id = "check-shebang-scripts-are-executable"
+name = "Check that scripts with shebangs are executable"
+
+[[precommit.hooks]]
+id = "check-merge-conflict"
+name = "Check for merge conflict markers"
+
+[[precommit.hooks]]
+id = "check-symlinks"
+name = "Check for broken symlinks"
+
+[[precommit.hooks]]
+id = "destroyed-symlinks"
+name = "Check for destroyed symlinks"
+
+[[precommit.hooks]]
+# tsconfig and the VS Code files are JSONC: comments and trailing commas.
+exclude = '(^|/)tsconfig[^/]*\.json$|(^|/)\.vscode/'
+id = "check-json"
+name = "Check JSON syntax"
+
+[[precommit.hooks]]
+id = "check-toml"
+name = "Check TOML syntax"
+
+[[precommit.hooks]]
+args = [ "--allow-multiple-documents" ]
+id = "check-yaml"
+name = "Check YAML syntax"
+
+[[precommit.hooks]]
+id = "detect-private-key"
+name = "Check for committed private keys"
+
+[[precommit.hooks]]
+id = "end-of-file-fixer"
+name = "Ensure files end with a newline"
+
+[[precommit.hooks]]
+id = "trailing-whitespace"
+name = "Remove trailing whitespace"
+
+[[precommit.hooks]]
+args = [ "--fix=lf" ]
+id = "mixed-line-ending"
+name = "Normalise line endings to LF"
+
+# The mise config, generated into .config/mise/conf.d/pre-commit/mise.<env>.toml.
+[mise.tools.pre-commit]
+depends = [ "python", "uv" ]
+version = "latest"
+
+[mise.env]
+PRE_COMMIT_HOME = "$HOME/.cache/pre-commit"
+
+[mise.shell_alias]
+precommit = "mise run code:precommit"

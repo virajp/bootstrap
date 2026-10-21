@@ -1,0 +1,33 @@
+# linter: the house linter and ShellCheck, code:lint and setup:linter.
+default_envs = [ "dev", "ci" ]
+depends = []
+extensions = [ "dbaeumer.vscode-eslint", "foxundermoon.shell-format" ]
+root_only = false
+seed = []
+
+# The gate hooks are tool-neutral: each names a task and nothing else. Which
+# linters run is decided inside the task, so a hook and CI cannot drift apart.
+[[precommit]]
+repo = "local"
+
+[[precommit.hooks]]
+description = "The repo's linters, run over the files being committed."
+entry = "mise x -- mise run code:lint --fix"
+id = "lint"
+language = "system"
+name = "Lint (mise run code:lint)"
+pass_filenames = true
+require_serial = true
+
+# The mise config, generated into .config/mise/conf.d/linter/mise.<env>.toml.
+
+# Linter
+[mise.tools."npm:@askviraj/linter"]
+depends = [ "node", "pnpm" ]
+envs = [ "dev", "ci" ]
+version = "latest"
+
+# Shell linter
+[mise.tools.shellcheck]
+envs = [ "dev", "ci" ]
+version = "latest"

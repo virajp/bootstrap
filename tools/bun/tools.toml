@@ -1,4 +1,5 @@
 # Bun, with a bunfig.toml that the repository owns.
+default_envs = [ "dev", "ci", "prod", "stage" ]
 depends = []
 extensions = []
 root_only = false
