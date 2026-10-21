@@ -1,0 +1,12 @@
+# grype: the dependency scanner, and code:sec:grype.
+default_envs = [ "dev", "ci" ]
+depends = []
+extensions = []
+root_only = false
+seed = [ ".config/grype.yaml" ]
+
+# The mise config, generated into .config/mise/conf.d/grype/mise.<env>.toml.
+# In dev and ci, because CI runs `code:sec` too.
+[mise.tools.grype]
+envs = [ "dev", "ci" ]
+version = "latest"

@@ -1,7 +1,8 @@
 # VS Code settings, and extensions.json from the extensions of the selected tools.
 # Root only: VS Code opens the root repository, and its extensions.json also
 # has the extensions of every git submodule.
+default_envs = [ "dev" ]
 depends = []
-extensions = []
+extensions = [ "gruntfuggly.todo-tree", "oderwat.indent-rainbow", "pkief.material-icon-theme", "usernamehw.errorlens" ]
 root_only = true
 seed = []

@@ -5,9 +5,9 @@ This document describes the packs of `bootstrap`. A pack is outside
 tools.
 
 A pack is a named list of tools. It is only a pointer: it has `depends` and
-nothing else. The config, the tasks and the files are in the tools that the
-pack selects. If the group tool has config, tasks or files that all its packs
-use, they are in the group tool.
+an optional `required`, and nothing else. The config, the tasks and the files
+are in the tools that the pack selects. If the group tool has config, tasks or
+files that all its packs use, they are in the group tool.
 
 ## `tools/packs.toml`
 
@@ -41,36 +41,47 @@ depends = [ "flutter" ]
 ## The questions are in `docs/sync/`
 
 `tools.toml` and `tools/packs.toml` hold only the relationships. The
-questions are in `docs/sync/<tool>.md` of the group tool. The adopting AI asks
-them, and it does not ask a question that the prompt of the user already
-answers.
+questions are in `docs/sync/packs/<pack>.md` of each pack, and in
+`docs/sync/tools/<tool>.md` of the group tool. The adopting AI asks them, and
+it does not ask a question that the prompt of the user already answers.
 
 ## The answers go into the values file
 
-The adopting AI writes the selected packs to the `packs` key of
-`.config/bootstrap.toml`:
+The adopting AI writes one `[packs.<name>]` table for each selected pack in
+`.config/bootstrap.toml`, next to the `[tools.<folder>]` tables:
 
 ```toml
-packs = [ "flutter-android", "flutter-ios" ]
-tools = [ "github" ]
+[packs.flutter-android]
+
+[packs.flutter-ios]
+env = [ "dev" ]
+
+[tools.github]
 ```
 
-On each sync, `repo-sync` reads `tools/packs.toml`. It adds the tools of each
-selected pack to the tools of `tools`. Then it resolves the dependencies of
-each tool as now. Thus, if `bootstrap` later adds a tool to a pack, each
-consumer gets it with no AI step.
+The only key of an entry is `env`. A list (`packs = [...]` or
+`tools = [...]`) is the old format, and it stops the sync with code 2.
+
+On each sync, `repo-sync` reads `tools/packs.toml`. It adds the tools of the
+`base` pack, then the tools of each selected pack, then the tools of
+`[tools.*]`. Then it resolves the dependencies of each tool. Thus, if
+`bootstrap` later adds a tool to a pack, each consumer gets it with no AI
+step.
 
 A pack name that is not in `tools/packs.toml` stops the sync with code 3, as
 an unknown tool does.
 
-The `packs` key has the names without the prefix `p:`, because each name in
-it is a pack.
+The `[packs.*]` keys have the names without the prefix `p:`, because each
+name in it is a pack.
 
 ## Environments
 
-A tool that a pack adds gets the environments of the `envs` of its mise tools,
-as a tool that `tools` lists. Each dependency gets the environments of the tool
-that needs it. `[shell_alias]` is only in `dev`.
+A tool that a pack adds gets the `env` of the `[packs.<name>]` entry, else
+its own `default_envs`. Each tool of the `base` pack gets its own
+`default_envs`. A tool that is selected more than once gets each of these
+environments. Each dependency gets the environments of the tool that needs it.
+`[shell_alias]` is only in `dev`. See
+[mise.md](mise.md#the-environments-of-a-mise-tool).
 
 ## The Flutter packs
 
@@ -96,8 +107,8 @@ consumer cannot remove a tool of it. Only `bootstrap` changes the tools of the
 - Its `depends` are in `tools/packs.toml`, as for each other pack. Thus a
   change to the pack is a change to `tools/packs.toml` only.
 
-The current `base` tool becomes independent tools. Then a change adds or
-removes one tool of the pack, and does not change one large tool.
+The old `base` tool is now independent tools. Thus a change adds or removes
+one tool of the pack, and does not change one large tool.
 
 ```toml
 # tools/packs.toml
@@ -133,7 +144,6 @@ common tool starts with `_`, for example `_security_base`.
 - `bootstrap` gives a consumer no way to remove a tool of a pack. But a user
   can edit `.config/bootstrap.toml` by hand. `repo-sync` follows the edit if
   it does not break a tool. It never removes a tool of `required`.
-- The format of `required` is a draft.
 
 ### The tools of the `base` pack
 
@@ -155,10 +165,10 @@ removes its hook, and no hook calls a task that is missing.
 
 ### Changes to other tools
 
-- `claude` gets `code:graph` and the `graphify-refresh` hook, because they are
+- `claude` has `code:graph` and the `graphify-refresh` hook, because they are
   for graphify.
-- `claude` gets `root_only = false`, so that a submodule also gets
-  `code:graph`.
+- `claude` has `root_only = false`, so that a submodule also gets
+  `code:graph`. `setup:ai` skips in a git submodule.
 
 ## Open points
 
@@ -168,7 +178,7 @@ removes its hook, and no hook calls a task that is missing.
 
 ## Generated folders
 
-- The generated folder `.config/mise/conf.d/_base/` goes away. Each tool of
+- There is no generated folder `.config/mise/conf.d/_base`. Each tool of
   the pack gets its own folder `.config/mise/conf.d/<tool>/`. The consumer does
   not edit these folders.
 - `.config/mise/conf.d/_repo/` stays. It holds the customization of the

@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+
+#MISE description="Test repo-sync against scratch values files"
+#MISE tools.gomplate="latest"
+
+# Runs `repo_sync --dry-run` of the working tree's tools/ against scratch
+# values files, and checks the exit code and message of each case. Needs no
+# network: REPO_SYNC_NO_AUTOUPDATE=1 skips `pre-commit autoupdate`. Writes
+# nothing outside its temporary folder.
+
+set -euo pipefail
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+root=${MISE_PROJECT_ROOT}
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-repo-sync.XXXXXX")
+trap 'rm -rf -- "$tmp"' EXIT
+
+# git without the user's hooks, signing or identity.
+_git() {
+  git -c user.name=test -c user.email=test@example.com -c commit.gpgsign=false \
+    -c core.hooksPath=/dev/null "$@"
+}
+
+print_header "Testing repo-sync against scratch values files ..."
+
+# The bootstrap copy: the working tree's tools/, uncommitted work included,
+# committed in a temporary repository.
+clone="$tmp/bootstrap"
+mkdir -p -- "$clone"
+cp -R -- "$root/tools" "$clone/tools"
+_git -C "$clone" init --quiet
+_git -C "$clone" add -A
+_git -C "$clone" commit --quiet --no-verify -m "test copy"
+
+# The consumer: a repository with a `main` branch.
+consumer="$tmp/consumer"
+mkdir -p -- "$consumer/.config"
+_git -C "$consumer" init --quiet -b main
+_git -C "$consumer" commit --quiet --no-verify --allow-empty -m "init"
+values="$consumer/.config/bootstrap.toml"
+log="$tmp/log"
+
+failures=0
+
+# run_case <name> <code> <values> [<change>] [<message>]
+# Writes <values> after the common keys, applies <change> to the copy (a
+# function name, or empty), runs the dry run, and compares the exit code.
+# A <message> (a fixed string) must also be in the output. The copy is reset
+# afterwards.
+run_case() {
+  local name=$1 want=$2 body=$3 change=${4:-} message=${5:-} got=0
+  {
+    printf '%s\n' 'repo_name = "test"' 'repo_url = "https://example.com/test"' \
+      'merge_model_develop = "direct"' 'merge_model_main = "direct"'
+    printf '%s\n' "$body"
+  } > "$values"
+  if [[ -n $change ]]; then
+    "$change"
+  fi
+  (
+    unset REPO_SYNC_URL
+    export REPO_SYNC_CLONE=$clone REPO_SYNC_VALUES=$values \
+      MISE_PROJECT_ROOT=$consumer REPO_SYNC_NO_AUTOUPDATE=1
+    # shellcheck source=/dev/null
+    source "$clone/tools/repo-sync/.config/mise/tasks/_scripts/repo-sync"
+    repo_sync --dry-run
+  ) > "$log" 2>&1 || got=$?
+  _git -C "$clone" checkout --quiet -- .
+  _git -C "$clone" clean --quiet -fd
+  if [[ $got != "$want" ]]; then
+    print_error "$name: exit $got, expected $want"
+  elif [[ -n $message ]] && ! grep -qF -- "$message" "$log"; then
+    print_error "$name: exit $got, but the output lacks: $message"
+  else
+    print_success "$name: exit $got"
+    return 0
+  fi
+  sed 's/^/    /' "$log" >&2
+  failures=$((failures + 1))
+  return 1
+}
+
+# The tools of the pack base, the required tool of the pack security
+# included. The first case checks that each one syncs a file.
+base_tools="mise repo-sync git pre-commit dprint linter _security_base gitleaks grype osv-scanner"
+
+check_base_files() {
+  local tool path found missing=''
+  for tool in $base_tools; do
+    found=0
+    while IFS= read -r path; do
+      if grep -qF "would update $consumer/${path%.tmpl}" "$log"; then
+        found=1
+        break
+      fi
+    done < <(cd "$clone/tools/$tool" && find . -type f ! -name tools.toml | sed 's#^\./##')
+    ((found)) || missing+=" $tool"
+  done
+  if [[ -n $missing ]]; then
+    print_error "base: no file listed for:$missing"
+    failures=$((failures + 1))
+  else
+    print_success "base: a file of each tool listed"
+  fi
+  if grep -qF "conf.d/_base/" "$log"; then
+    print_error "base: the output lists conf.d/_base/"
+    failures=$((failures + 1))
+  else
+    print_success "base: no conf.d/_base/"
+  fi
+}
+
+pack_loop() {
+  printf '%s\n' '' '[pack.a]' 'depends = [ "p:b" ]' '' '[pack.b]' 'depends = [ "p:a" ]' \
+    >> "$clone/tools/packs.toml"
+}
+
+pack_named_like_tool() {
+  printf '%s\n' '' '[pack.node]' 'depends = [ "node" ]' >> "$clone/tools/packs.toml"
+}
+
+node_needs_pulumi() {
+  sed 's/^depends = \[\]$/depends = [ "pulumi" ]/' "$clone/tools/node/tools.toml" > "$tmp/node.toml"
+  cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
+}
+
+if run_case "no [tools], environments dev" 0 'environments = [ "dev" ]'; then
+  check_base_files
+fi
+run_case "[tools.node] env dev, ci" 0 'environments = [ "dev", "ci" ]
+[tools.node]
+env = [ "dev", "ci" ]' || true
+run_case "tools = [\"node\"], the old list" 2 'environments = [ "dev" ]
+tools = [ "node" ]' '' 'is a list, the old format' || true
+run_case "a pack loop a -> b -> a" 2 'environments = [ "dev" ]
+[packs.a]' pack_loop 'a pack loop: a -> b -> a' || true
+run_case "a pack named like a tool folder" 2 'environments = [ "dev" ]
+[packs.node]' pack_named_like_tool "pack 'node' is also a tool folder" || true
+run_case "[packs.nope], an unknown pack" 3 'environments = [ "dev" ]
+[packs.nope]' '' "pack 'nope' is not in bootstrap" || true
+run_case "env ci on a tool whose mise tool allows dev only" 2 'environments = [ "dev", "ci" ]
+[tools.pulumi]
+env = [ "ci" ]' '' "mise tool 'pulumi' of tools/pulumi allows only dev" || true
+run_case "env ci not in environments dev" 2 'environments = [ "dev" ]
+[tools.node]
+env = [ "ci" ]' '' 'is not in environments: dev' || true
+run_case "a dependency without the environment of its parent" 2 'environments = [ "dev", "ci" ]
+[tools.node]
+env = [ "ci" ]' node_needs_pulumi \
+  "tools/node needs tools/pulumi in 'ci', but its mise tool 'pulumi' allows only dev" || true
+
+if ((failures)); then
+  print_error "$failures check(s) failed"
+  exit 1
+fi
+print_success "All repo-sync cases passed"

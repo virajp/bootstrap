@@ -1,0 +1,13 @@
+# repo-sync: the sync function and the setup:configs tasks that copy these tools.
+default_envs = [ "dev" ]
+depends = []
+extensions = []
+root_only = false
+seed = []
+
+# The mise config, generated into .config/mise/conf.d/repo-sync/mise.<env>.toml.
+
+# Template renderer for `setup:configs`. Declared here too, because `mise prune`
+# keeps only the tools that a config file names, not a task header.
+[mise.tools.gomplate]
+version = "latest"

@@ -1,4 +1,5 @@
 # The Kotlin language server.
+default_envs = [ "dev" ]
 depends = [ "java" ]
 extensions = []
 root_only = false

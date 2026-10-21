@@ -9,6 +9,11 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
+# A git submodule shares the Claude Code setup of its root repository: the
+# task does not apply there.
+SUPERPROJECT=$(git -C "${MISE_PROJECT_ROOT}" rev-parse --show-superproject-working-tree 2> /dev/null) || SUPERPROJECT=''
+[[ -z "${SUPERPROJECT}" ]] || exit 0
+
 print_header "Updating the Claude Code plugins ..."
 
 if ! mise x -- which claude > /dev/null 2>&1; then

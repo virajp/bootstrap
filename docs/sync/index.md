@@ -23,20 +23,25 @@ then keeps the repository equal to `bootstrap`, without an agent.
 
 ## Files in this folder
 
-| File         | Use                                                                                            |
-| ------------ | ---------------------------------------------------------------------------------------------- |
-| `index.md`   | This file: the general steps of an adoption.                                                   |
-| `migrate.md` | The items for a repository that has older copies, or the old name.                             |
-| `<tool>.md`  | One file for each folder in `tools/`: when the tool is relevant, and usage.                    |
-| `vwf.md`     | The entry point for the vwf and stackgen plugins: `add tools` and `remove tools` instructions. |
+| File              | Use                                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------------------- |
+| `index.md`        | This file: the general steps of an adoption.                                                   |
+| `migrate.md`      | The items for a repository that has older copies, or the old name.                             |
+| `tools/<tool>.md` | One file for each folder in `tools/`: when the tool is relevant, and usage.                    |
+| `packs/<pack>.md` | One file for each pack of `tools/packs.toml`: the tools that it adds, and its questions.       |
+| `vwf.md`          | The entry point for the vwf and stackgen plugins: `add tools` and `remove tools` instructions. |
 
-The tool files are `android.md`, `base.md`, `bun.md`, `claude-tool.md`,
-`cloudflare.md`, `docker.md`, `doppler.md`, `flutter.md`, `fnox.md`,
-`gcloud.md`, `github.md`, `gitlab.md`, `java.md`, `kotlin.md`, `node.md`,
-`pulumi.md`, `python.md`, `rust.md`, `swift.md` and `vscode.md`. The file of
-the `claude` tool is `claude-tool.md`, because a file system that ignores case
+The tool files in `tools/` are `_security_base.md`, `android.md`, `bun.md`,
+`claude-tool.md`, `cloudflare.md`, `docker.md`, `doppler.md`, `dprint.md`,
+`flutter.md`, `fnox.md`, `gcloud.md`, `git.md`, `github.md`, `gitlab.md`,
+`gitleaks.md`, `grype.md`, `java.md`, `kotlin.md`, `linter.md`, `mise.md`,
+`node.md`, `osv-scanner.md`, `pre-commit.md`, `pulumi.md`, `python.md`,
+`repo-sync.md`, `rust.md`, `swift.md` and `vscode.md`. The file of the
+`claude` tool is `claude-tool.md`, because a file system that ignores case
 reads `claude.md` as `CLAUDE.md`, and AI agents load that name as
 instructions.
+
+The pack files in `packs/` are `base.md` and `security.md`.
 
 ## Rules
 
@@ -48,8 +53,9 @@ instructions.
 - The shared files are grouped by tool. Each tool is a folder
   `tools/<tool>/` in `bootstrap`. A file at `tools/<tool>/<path>` goes to
   `<path>` in the consumer repository.
-- The values file `.config/bootstrap.toml` lists the tools of the
-  repository. `repo_sync` syncs all the files of these tools.
+- The values file `.config/bootstrap.toml` lists the tools and the packs of
+  the repository. `repo_sync` always adds the `base` pack, and it syncs all
+  the files of these tools.
 - Do not edit a synced file in the consumer repository. The next sync replaces
   it. Put repository-owned content in the places that the sync never writes:
   - mise config and environment variables: the seeds
@@ -120,11 +126,11 @@ refuses it in a submodule. When a submodule is in its root checkout, mise
 also loads the tools of the root. Thus a nested submodule still finds, for
 example, graphify.
 
-If a repository already has a `tools` list in `.config/bootstrap.toml`,
-tell the user. Then ask whether to do the steps again in that repository, or
-to go to the next repository.
+If a repository already has a `.config/bootstrap.toml`, tell the user. Then ask
+whether to do the steps again in that repository, or to go to the next
+repository.
 
-## Step 1: Select the tools
+## Step 1: Select the tools and the packs
 
 Make a shallow clone of `bootstrap` into a temporary directory. Keep it
 until all repositories are complete.
@@ -134,22 +140,35 @@ tmp=$(mktemp -d)
 git clone --quiet --depth 1 git@github.com:virajp/bootstrap.git "$tmp"
 ```
 
-Read `"$tmp"/tools/*/tools.toml` and `"$tmp"/docs/sync/<tool>.md`. Examine
-the repository for the signs in "When the tool is relevant" of each tool
-file. Show the user each tool with its description and the result. Then ask
-which tools the repository needs. `base` is necessary in each repository.
+Read `"$tmp"/tools/*/tools.toml`, `"$tmp"/tools/packs.toml`,
+`"$tmp"/docs/sync/tools/<tool>.md` and `"$tmp"/docs/sync/packs/<pack>.md`.
+Examine the repository for the signs in "When the tool is relevant" of each
+tool file. Show the user each tool and each pack with its description and the
+result. Then ask which tools and packs the repository needs. Ask the questions
+of each pack file.
 
-For each selected tool, do the items in "Adapt to the repository" of its tool
-file.
+The `base` pack is always added: `repo_sync` adds it, and the values file does
+not list it. Its tools are `mise`, `repo-sync`, `git`, `pre-commit`, `dprint`,
+`linter`, and the tools of the `security` pack. Do not select a tool of the
+`base` pack. See [`packs/base.md`](packs/base.md).
+
+For each selected tool, and each tool of the `base` pack, do the items in
+"Adapt to the repository" of its tool file.
+
+A pack is a `[pack.<name>]` table of `tools/packs.toml`. Its `depends` lists
+tool folders, or a pack with the prefix `p:`, for example `p:security`. Its
+optional `required` lists the tools that the pack always adds. A pack name is
+never a tool folder.
 
 Each `tools.toml` has these keys:
 
-| Key          | Meaning                                                            |
-| ------------ | ------------------------------------------------------------------ |
-| `depends`    | The sync adds these tools automatically.                           |
-| `root_only`  | If `true`, the sync refuses the tool in a submodule.               |
-| `extensions` | The VS Code extensions of the tool, for `.vscode/extensions.json`. |
-| `seed`       | Files that the sync writes only if they are missing.               |
+| Key            | Meaning                                                              |
+| -------------- | -------------------------------------------------------------------- |
+| `default_envs` | The environments of the tool when the values file gives it no `env`. |
+| `depends`      | The sync adds these tools automatically.                             |
+| `root_only`    | If `true`, the sync refuses the tool in a submodule.                 |
+| `extensions`   | The VS Code extensions of the tool, for `.vscode/extensions.json`.   |
+| `seed`         | Files that the sync writes only if they are missing.                 |
 
 A `tools.toml` can also have a `[seed_requires]` table. It is optional. Each
 key is a seed, and its value is a file of the repository. The sync writes the
@@ -159,27 +178,39 @@ seed only if the repository has that file. For example, the `node` tool writes
 The `[mise.*]` tables of a `tools.toml` hold the mise config of the tool. The
 sync generates `.config/mise/conf.d/<tool>/mise.<env>.toml` from them, one
 file for each environment. A mise `depends` adds the tool that defines the
-dependency. For example, `base` adds `python` and `node`, because pre-commit
-and the linter need them.
+dependency. For example, the `pre-commit` tool adds `python`, and the
+`linter` tool adds `node`.
 
-A tool that you list in `tools` is installed in the environments of its
-`envs`. A tool that only a dependency adds is installed in dev only. Thus list
-the core language of the repository in `tools`. A TypeScript repository lists
-`node`, which then goes to every selected environment. A mise `depends` is
-different: it is installed in the environments of the mise tool that needs it.
-For example, `flutter` adds `android-sdk` and `java` in dev and ci.
+The sync finds the environments of each tool in this sequence:
+
+1. A tool of a `[tools.<folder>]` entry gets its `env`, else its
+   `default_envs`. A tool of a `[packs.<name>]` entry gets the `env` of the
+   pack entry, else its own `default_envs`. Each tool of the `base` pack gets
+   its own `default_envs`. A tool that is selected more than once gets each of
+   these environments.
+2. A dependency gets each environment of each tool that needs it, through
+   `depends` or a mise `depends`. For example, `flutter` adds `android-sdk`
+   and `java` in dev and ci.
+3. `environments` of the values file limits every result.
+
+The `envs` of a mise tool (default `["dev"]`) lists the environments that the
+mise tool allows. In a tool file, the "Environments" column of "mise tools"
+shows them. If a tool gets an environment that one of its mise tools does not
+allow, the sync stops with code 2.
+
+A tool that only a dependency adds goes only to the environments of the tools
+that need it. Thus list the core language of the repository in `[tools.*]`. A
+TypeScript repository lists `[tools.node]`, which then goes to each
+environment of its `default_envs`.
 
 Ask which mise environments the repository needs. Offer only these:
 
-| Environment | Use                                                                                         |
-| ----------- | ------------------------------------------------------------------------------------------- |
-| `dev`       | Local development. It usually has everything. Necessary.                                    |
-| `ci`        | The CI environment, to build and examine the code. Optional.                                |
-| `prod`      | Production. Only the tools that are necessary to run the application. Optional, needs `ci`. |
-| `stage`     | Staging. The same tools as `prod`, with different `[env]` values. Optional, needs `ci`.     |
+| Environment | Use                                                          |
+| ----------- | ------------------------------------------------------------ |
+| `dev`       | Local development. It usually has everything. Necessary.     |
+| `ci`        | The CI environment, to build and examine the code. Optional. |
 
-The sync stops if `dev` is missing, or if `prod` or `stage` is selected
-without `ci`.
+The sync stops with code 2 if `dev` is missing, or for a different name.
 
 Ask whether the repository is on GitHub or on GitLab. Select `github` or
 `gitlab` for its forge. The `pr` merge model needs the CLI of the forge: `gh`
@@ -187,19 +218,23 @@ or `glab`.
 
 ## Step 2: Copy the sync files by hand
 
-**CAUTION:** Do this before the first sync. An old copy of `repo-sync` reads
-paths, not tools, and it cannot sync the new layout.
+**CAUTION:** Do this before the first sync. An old synced
+`setup/configs/sync` loads `tools/base/.../repo-sync` from the clone, and the
+`tools/base/` folder no longer exists. An old copy of `repo-sync` reads paths,
+not tools. Thus neither can sync the new layout.
 
-Copy these four files from the clone into the repository. An old
-`.config/mise/tasks/setup/configs` is a file, and `setup/configs/` is now a
-folder: delete the old file first.
+Copy these four files from the clone into the repository: `repo-sync` and the
+`setup:configs` tasks of the `repo-sync` tool, and `helpers` of the `mise`
+tool. An old `.config/mise/tasks/setup/configs` is a file, and
+`setup/configs/` is now a folder: delete the old file first.
 
 ```bash
-base="$tmp/tools/base/.config/mise/tasks"
+sync="$tmp/tools/repo-sync/.config/mise/tasks"
+lib="$tmp/tools/mise/.config/mise/tasks"
 rm -f .config/mise/tasks/setup/configs
 mkdir -p .config/mise/tasks/_scripts .config/mise/tasks/setup/configs
-cp "$base/_scripts/repo-sync" "$base/_scripts/helpers" .config/mise/tasks/_scripts/
-cp "$base/setup/configs/_default" "$base/setup/configs/sync" .config/mise/tasks/setup/configs/
+cp "$sync/_scripts/repo-sync" "$lib/_scripts/helpers" .config/mise/tasks/_scripts/
+cp "$sync/setup/configs/_default" "$sync/setup/configs/sync" .config/mise/tasks/setup/configs/
 ```
 
 ## Step 3: Write the values file
@@ -208,7 +243,10 @@ Write `.config/bootstrap.toml`. Ask the user for each value.
 
 | Key                                | Used by                    | Values                                                                                                                                                                                                                                                      |
 | ---------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tools`                            | `repo_sync`                | The tools from step 1. `base` is necessary.                                                                                                                                                                                                                 |
+| `[tools.<folder>]`                 | `repo_sync`                | One table for each tool from step 1. Do not write a tool of the `base` pack.                                                                                                                                                                                |
+| `[tools.<folder>].env`             | `repo_sync`                | Optional. The environments of the tool, for example `["dev", "ci"]`. Without it, the tool gets its `default_envs`.                                                                                                                                          |
+| `[packs.<name>]`                   | `repo_sync`                | One table for each pack from step 1, without the prefix `p:`. Do not write `base`.                                                                                                                                                                          |
+| `[packs.<name>].env`               | `repo_sync`                | Optional. The environments of each tool of the pack. Without it, each tool gets its own `default_envs`.                                                                                                                                                     |
 | `environments`                     | `repo_sync`                | The environments from step 1, for example `["dev", "ci"]`. The default is `["dev"]`.                                                                                                                                                                        |
 | `repo_name`                        | `.config/mise.toml`        | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                                                                                                                                                             |
 | `product_name`                     | `fnox.toml`                | The product name, for example `95octane`. Set it in each repository of a product with members, the root included. Then the fnox keychain uses it as `service`, and `<repo_name>/` as `prefix`. Without it, `service` is `repo_name` and there is no prefix. |
@@ -227,16 +265,30 @@ Example:
 
 ```toml
 commit_scopes = [ "backend", "web" ]
-environments = [ "dev", "ci", "prod" ]
+environments = [ "dev", "ci" ]
 merge_model_develop = "direct"
 merge_model_main = "pr"
 product_name = "my-product"
 release_tag_pattern = '^my-repo-v\d+$'
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
-tools = [ "base", "github", "node", "fnox", "claude", "vscode" ]
 worktree_files = [ ".config/mise.local.toml" ]
+
+[tools.claude]
+
+[tools.fnox]
+
+[tools.github]
+
+[tools.node]
+env = [ "dev", "ci" ]
+
+[tools.vscode]
 ```
+
+The only key of a `[tools.*]` or a `[packs.*]` entry is `env`. Each name in
+`env` must be in `environments`. A list (`tools = [...]` or `packs = [...]`)
+is the old format, and the sync stops with code 2.
 
 The member list is the git submodules, then each `[member.<name>]` table. A
 `[member.<name>]` table that is not a submodule must have a folder with that
@@ -273,8 +325,9 @@ later, run `setup:configs` again.
 ## Step 5: Migrate the existing files
 
 Do the items of [`migrate.md`](migrate.md) that apply, before the first sync.
-Also do the "Migration" section of each selected tool file. If the repository
-has no mise config and no task files, skip this step.
+Also do the "Migration" section of each selected tool file, and of each tool
+of the `base` pack. If the repository has no mise config and no task files,
+skip this step.
 
 ## Step 6: Run the sync
 
@@ -289,13 +342,15 @@ has no mise config and no task files, skip this step.
 
 If `repo_sync` fails, read the exit code:
 
-| Code | Cause                                                                                            | Action                                          |
-| ---- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| 2    | No `tools` in the values file, a root-only tool in a submodule, or a template that cannot render | Correct the values file                         |
-| 2    | Neither `main` nor `develop` exists                                                              | Do step 4                                       |
-| 3    | A tool that is not in `bootstrap`                                                                | Correct the `tools` list                        |
-| 5    | The clone failed, or `pre-commit autoupdate` failed                                              | Examine the network, the SSH key and the access |
-| 1    | A local file system error                                                                        | Read the `repo-sync:` lines on stderr           |
+| Code | Cause                                                                                                                                                         | Action                                           |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| 2    | The old list format, a bad `[tools.*]` or `[packs.*]` entry, a bad `env` or `environments`, a root-only tool in a submodule, or a template that cannot render | Correct the values file                          |
+| 2    | A tool in an environment that one of its mise tools does not allow                                                                                            | Correct the `env`, or tell the `bootstrap` owner |
+| 2    | A pack loop, or a pack name that is also a tool folder                                                                                                        | Tell the `bootstrap` owner                       |
+| 2    | Neither `main` nor `develop` exists                                                                                                                           | Do step 4                                        |
+| 3    | A tool or a pack that is not in `bootstrap`                                                                                                                   | Correct the `[tools.*]` and `[packs.*]` entries  |
+| 5    | The clone failed, or `pre-commit autoupdate` failed                                                                                                           | Examine the network, the SSH key and the access  |
+| 1    | A local file system error                                                                                                                                     | Read the `repo-sync:` lines on stderr            |
 
 A failure does not change an existing file.
 

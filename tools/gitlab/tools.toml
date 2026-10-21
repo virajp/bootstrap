@@ -1,4 +1,5 @@
 # GitLab: the glab CLI, and the issue and merge request templates.
+default_envs = [ "dev", "ci" ]
 depends = []
 extensions = [ "gitlab.gitlab-workflow" ]
 root_only = false

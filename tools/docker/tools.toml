@@ -1,4 +1,5 @@
 # Local services in .tools/docker-compose.yaml, run by setup:external:*.
+default_envs = [ "dev" ]
 depends = []
 extensions = []
 root_only = true

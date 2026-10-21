@@ -1,0 +1,29 @@
+# dprint: the formatter, code:format and setup:dprint.
+default_envs = [ "dev", "ci" ]
+depends = []
+extensions = [ "dprint.dprint" ]
+root_only = false
+seed = []
+
+# The gate hooks are tool-neutral: each names a task and nothing else. Which
+# formatters run is decided inside the task, so a hook and CI cannot drift
+# apart. `code:format` runs before `code:lint` and `code:sec` (the pack order),
+# because it rewrites the files that they read.
+[[precommit]]
+repo = "local"
+
+[[precommit.hooks]]
+description = "The repo's formatters, run over the files being committed."
+entry = "mise x -- mise run code:format --fix"
+id = "format"
+language = "system"
+name = "Format (mise run code:format)"
+pass_filenames = true
+require_serial = true
+
+# The mise config, generated into .config/mise/conf.d/dprint/mise.<env>.toml.
+
+# Formatter
+[mise.tools.dprint]
+envs = [ "dev", "ci" ]
+version = "latest"

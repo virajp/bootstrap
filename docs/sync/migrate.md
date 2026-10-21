@@ -9,11 +9,11 @@ This file is temporary. Remove an item when all repositories have done it.
 
 ## Find the items that apply
 
-| The repository has                                      | Do                                                                                             |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `.config/bootstrap.toml` with a `tools` list            | Only M16. Then run `mise run setup:configs`.                                                   |
-| `.config/repo-config.toml` with a `tools` list          | M15, then M16.                                                                                 |
-| No values file, but older shared files or a mise config | The steps of `index.md`. Its step 5 sends you here for M1 to M14. Write the new name directly. |
+| The repository has                                      | Do                                                                                                                                                                          |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.config/bootstrap.toml` with a `tools` list            | The list stops the sync, and the old synced `setup/configs/sync` loads the removed `tools/base/`. Do step 2 of `index.md` first. Then write the tables of step 3, then M16. |
+| `.config/repo-config.toml` with a `tools` list          | M15, then the row above.                                                                                                                                                    |
+| No values file, but older shared files or a mise config | The steps of `index.md`. Its step 5 sends you here for M1 to M14. Write the new name directly.                                                                              |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -49,7 +49,7 @@ each task in `setup/deps/`. An old task there runs too, and it can fail.
 
 | Old task                           | New task                   | Action                                                                            |
 | ---------------------------------- | -------------------------- | --------------------------------------------------------------------------------- |
-| `setup:all` (`setup/all`)          | `setup` (`setup/_default`) | Delete the old file. `base` ships the new one. Members are called with `setup`.   |
+| `setup:all` (`setup/all`)          | `setup` (`setup/_default`) | Delete the old file. `mise` ships the new one. Members are called with `setup`.   |
 | `code:all` (`code/all`)            | `code` (`code/_default`)   | Delete the old file. Keep `code:check` and `code:test` as repository-owned tasks. |
 | `code:format` (`code/format`)      | `code/format/_default`     | Delete the old file. Move each extra formatter step to `code/format/<name>`.      |
 | `code:lint` (`code/lint`)          | `code/lint/_default`       | Delete the old file. Move each extra linter step to `code/lint/<name>`.           |
@@ -61,13 +61,13 @@ each task in `setup/deps/`. An old task there runs too, and it can fail.
 | top-level `count`, `leaks`, `lint` | `code:*`                   | Delete them.                                                                      |
 
 Update each shell alias that calls an old name. Remove a repository-owned
-`setup` alias: `base` ships `setup = "mise run setup"`.
+`setup` alias: `mise` ships `setup = "mise run setup"`.
 
 ## M4: Delete root-only items from submodules
 
-In a submodule, delete `setup:ai`, `setup/external/*`, `setup/vscode`,
-`.vscode/` and `conf.d/claude/`. Keep `code:graph`: `base` ships it to each
-repository.
+In a submodule, delete `setup/external/*`, `setup/vscode` and `.vscode/`.
+Keep `setup:ai` and `code:graph`: the `claude` tool ships them to a submodule
+too, and `setup:ai` skips there.
 
 ## M5: Move the content of `.config/mise.toml`
 
@@ -90,11 +90,11 @@ The sync replaces `.config/mise.toml`. It keeps only the shared `[settings]`.
 
 ## M6: Remove the tools that the shared files now install
 
-Each tool file in this folder lists the mise tools of that tool (section
-"mise tools"). From the repository-owned mise files, remove each mise tool
-that a selected tool installs. The "Migration" section of a tool file lists
-the old tools that the tool replaces, for example taplo (`base`) and
-`npm:wrangler` (`cloudflare`).
+Each tool file in [`tools/`](tools/) lists the mise tools of that tool
+(section "mise tools"). From the repository-owned mise files, remove each mise
+tool that a selected tool or a tool of the `base` pack installs. The
+"Migration" section of a tool file lists the old tools that the tool replaces,
+for example taplo (`dprint`) and `npm:wrangler` (`cloudflare`).
 
 Each mise tool must come from a bootstrap tool. If the repository needs a
 mise tool that no bootstrap tool installs, for example
@@ -107,34 +107,33 @@ one, tell the user. Examples: node `26` and pnpm `12` in 95octane, where
 
 ## M7: Split an old `conf.d/_base`
 
-claude-plugins has an old `.config/mise/conf.d/_base/`. Its name is the same
-as the shared `_base`, but the content is different. Before the first sync,
-move its content:
+claude-plugins has an old folder `.config/mise/conf.d/_base`, from before the
+`tools/` layout. Before the first sync, move its content:
 
 | Old content in `_base`                                           | New place               |
 | ---------------------------------------------------------------- | ----------------------- |
 | node, pnpm                                                       | the `node` tool         |
 | python, uv, `UV_*`                                               | the `python` tool       |
-| pre-commit, `PRE_COMMIT_HOME`                                    | the `base` tool         |
+| pre-commit, `PRE_COMMIT_HOME`                                    | the `pre-commit` tool   |
 | `MEMBERS`, `REPO_NAME`                                           | the values file         |
 | `MEMPALACE_*` and other repository variables                     | `_repo/mise.<env>.toml` |
 | `min_version`, `task.run_auto_install`, other repository content | step M5                 |
 
-Then delete the old `_base/mise.toml`, `_base/mise.dev.toml` and
-`_base/mise.ci.toml`. Also delete an old `conf.d/ai/`: the `claude` tool
-replaces it. Move its repository-owned content first (step M5). Delete the old
+Then delete the old files `mise.toml`, `mise.dev.toml` and `mise.ci.toml` of
+that folder. Also delete an old `conf.d/ai/`: the `claude` tool replaces it.
+Move its repository-owned content first (step M5). Delete the old
 `conf.d/_formatter`, `_linter` and `_security`.
 
 ## M8: Move the fnox config
 
-See "Migration" in [`fnox.md`](fnox.md).
+See "Migration" in [`tools/fnox.md`](tools/fnox.md).
 
 ## M9: Clean the old markers
 
 - Replace each `MARKED POSITION` block with its value, in a repository-owned
   file or in the values file.
 - For the `// >>> vscode.d` blocks and `.config/vscode.d/`, see "Migration"
-  in [`vscode.md`](vscode.md).
+  in [`tools/vscode.md`](tools/vscode.md).
 
 ## M10: Change the old helper files
 
@@ -167,13 +166,14 @@ repository.
 
 ## M13: The forge files
 
-See "Migration" in [`github.md`](github.md) or [`gitlab.md`](gitlab.md).
+See "Migration" in [`tools/github.md`](tools/github.md) or
+[`tools/gitlab.md`](tools/gitlab.md).
 
 ## M14: The mise environments
 
 1. Add `environments` to `.config/bootstrap.toml` (step 1 of `index.md`).
-   Delete an old `core_tools` key: the `envs` of each tool decide its
-   environments now.
+   Delete an old `core_tools` key: the `env` of each `[tools.*]` entry, else
+   the `default_envs` of the tool, decides its environments now.
 2. Move the repository variables of an old `_env/mise.toml` or
    `conf.d/repo/` to the `_repo/mise.<env>.toml` seeds (step M5). Move each
    tool of an old `conf.d/repo/` to a bootstrap tool (step M6). Then delete
@@ -207,8 +207,8 @@ later version of `bootstrap` can remove them.
 - The sync accepts both headers. Thus it still finds the files that it wrote
   with the old header.
 
-Do not change the `tools` list or other values in the values file. This item
-changes only the name of the file.
+Do not change the tools or other values in the values file. This item changes
+only the name of the file.
 
 ### M15.1: Find the repositories to migrate
 
@@ -323,24 +323,24 @@ the remote does not have.
 
 ## M16: `android-sdk` and `java` moved out of `flutter`
 
-Do this item only if `tools` lists `flutter` or `kotlin`.
+Do this item only if the values file selects `flutter` or `kotlin`.
 
 The `flutter` tool no longer defines `android-sdk` and `java`. The `android`
 tool defines `android-sdk`, and the `java` tool defines `java`. The mise
-`depends` of `flutter` adds both tools, in dev and ci. Do not add them to
-`tools` for `flutter`. See [`android.md`](android.md) and
-[`java.md`](java.md).
+`depends` of `flutter` adds both tools, in dev and ci. Do not add
+`[tools.android]` or `[tools.java]` for `flutter`. See
+[`tools/android.md`](tools/android.md) and [`tools/java.md`](tools/java.md).
 
 1. The `java` version changes from `21` to `lts`. If the repository needs
    Java 21, for example for its Gradle or Android Gradle Plugin version, tell
    the user. Then ask how to keep Java 21.
 2. The `kotlin` tool now depends on `java`. Do the items in "Adapt to the
-   repository" of [`kotlin.md`](kotlin.md).
+   repository" of [`tools/kotlin.md`](tools/kotlin.md).
 3. Run `mise run setup:configs --dry-run`. Examine the output:
    - With `flutter`: it must list the `.config/mise/conf.d/android/` and
      `.config/mise/conf.d/java/` files for each environment of `flutter`.
    - With `kotlin` and no `flutter`: it must list
      `.config/mise/conf.d/java/mise.dev.toml`. `java` is in dev only. If CI
-     builds with Gradle, add `java` to `tools`, as `kotlin.md` says. Then the
+     builds with Gradle, add `[tools.java]`, as `kotlin.md` says. Then the
      output must also list `.config/mise/conf.d/java/mise.ci.toml`.
 4. Run `mise run setup:configs`.

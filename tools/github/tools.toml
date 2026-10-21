@@ -1,4 +1,5 @@
 # GitHub: the gh CLI, actionlint, and the issue and pull request templates.
+default_envs = [ "dev", "ci" ]
 depends = []
 extensions = [ "github.vscode-github-actions" ]
 root_only = false

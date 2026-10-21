@@ -3,4 +3,3 @@ merge_model_develop = "direct"
 merge_model_main = "direct"
 repo_name = "bootstrap"
 repo_url = "https://github.com/virajp/bootstrap"
-tools = [ "base" ]

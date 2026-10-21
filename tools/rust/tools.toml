@@ -1,4 +1,5 @@
 # Rust and the zola site generator.
+default_envs = [ "dev", "ci" ]
 depends = []
 extensions = []
 root_only = false
