@@ -7,7 +7,7 @@ seed = [ ".config/fnox.toml.tmpl" ]
 
 # The mise config, generated into .config/mise/conf.d/fnox/mise.<env>.toml.
 # Fnox resolves the repo's secrets from the providers in .config/fnox.toml.
-# Only dev: ci, prod and stage have their own secret management.
+# Only dev: ci has its own secret management.
 [mise.tools.fnox]
 version = "latest"
 

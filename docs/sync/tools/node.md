@@ -6,7 +6,7 @@ Node and pnpm.
 | ------------ | ------------------------------------------------- |
 | Root only    | No                                                |
 | Depends      | None                                              |
-| Default envs | dev, ci, prod, stage                              |
+| Default envs | dev, ci                                           |
 | Seeds        | `pnpm-workspace.yaml`, only with a `package.json` |
 
 ## When the tool is relevant
@@ -36,10 +36,10 @@ VS Code extensions: `christian-kohler.npm-intellisense`,
 
 ## mise tools
 
-| mise tool | Version  | Environments         |
-| --------- | -------- | -------------------- |
-| `node`    | `lts`    | dev, ci, prod, stage |
-| `pnpm`    | `latest` | dev, ci, prod, stage |
+| mise tool | Version  | Environments |
+| --------- | -------- | ------------ |
+| `node`    | `lts`    | dev, ci      |
+| `pnpm`    | `latest` | dev, ci      |
 
 The tool also sets:
 

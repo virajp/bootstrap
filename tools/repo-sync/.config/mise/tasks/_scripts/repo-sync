@@ -635,8 +635,9 @@ _rs_remove() {
 }
 
 # The environment names that a tools.toml can use in `default_envs` and
-# `envs`, in their order. `environments` of the values file limits them.
-_RS_ENV_NAMES='dev ci prod stage'
+# `envs`, in their order. bootstrap is only for dev and ci. `environments` of
+# the values file limits them.
+_RS_ENV_NAMES='dev ci'
 _rs_env_name() {
   [[ -n $1 && $1 != *[[:space:]]* && " $_RS_ENV_NAMES " == *" $1 "* ]]
 }

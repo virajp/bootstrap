@@ -140,6 +140,11 @@ node_needs_pulumi() {
   cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
 }
 
+node_prod() {
+  sed 's/^default_envs = .*$/default_envs = [ "dev", "prod" ]/' "$clone/tools/node/tools.toml" > "$tmp/node.toml"
+  cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
+}
+
 node_ci_only() {
   sed 's/^default_envs = .*$/default_envs = [ "ci" ]/' "$clone/tools/node/tools.toml" > "$tmp/node.toml"
   cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
@@ -216,6 +221,8 @@ run_case "env ci without dev" 2 'environments = [ "dev", "ci" ]
 env = [ "ci" ]' '' 'has no dev - each tool must be in dev, for example env = ' || true
 run_case "default_envs ci without dev" 2 'environments = [ "dev", "ci" ]
 [tools.node]' node_ci_only 'default_envs of tools/node/tools.toml has no dev' || true
+run_case "default_envs with prod, outside dev and ci" 2 'environments = [ "dev" ]
+[tools.node]' node_prod "default_envs of tools/node/tools.toml: 'prod' is not one of dev, ci" || true
 run_case "a tool folder that sorts after zz-repo" 2 'environments = [ "dev" ]' late_tool_folder \
   'tool folder tools/zzz-late sorts after zz-repo' || true
 run_case "a tool folder named zz-repo" 2 'environments = [ "dev" ]' tool_folder_zz_repo \

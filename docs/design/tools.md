@@ -18,8 +18,9 @@ them without defaults.
 | `extensions`   | The VS Code extensions of the tool.                                                                                        |
 | `seed`         | The files that the sync writes only when they are missing.                                                                 |
 
-`default_envs` and the `envs` of a mise tool can name `dev`, `ci`, `prod` and
-`stage`. A name of `default_envs` that the values file selects, and that a
+`default_envs` and the `envs` of a mise tool can name only `dev` and `ci`, the
+scope of `bootstrap`. Any other name stops the sync with code 2. A name of
+`default_envs` that the values file selects, and that a
 mise tool of the tool does not allow in its `envs`, stops the sync with
 code 2. See [mise.md](mise.md#the-environments-of-a-mise-tool).
 

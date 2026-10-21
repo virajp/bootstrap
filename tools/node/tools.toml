@@ -1,5 +1,5 @@
 # Node and pnpm.
-default_envs = [ "dev", "ci", "prod", "stage" ]
+default_envs = [ "dev", "ci" ]
 depends = []
 extensions = [ "christian-kohler.npm-intellisense", "meganrogge.template-string-converter" ]
 root_only = false
@@ -16,12 +16,12 @@ node.compile = false
 npm.package_manager = "pnpm"
 
 [mise.tools.node]
-envs = [ "dev", "ci", "prod", "stage" ]
+envs = [ "dev", "ci" ]
 version = "lts"
 
 [mise.tools.pnpm]
 depends = [ "node" ]
-envs = [ "dev", "ci", "prod", "stage" ]
+envs = [ "dev", "ci" ]
 version = "latest"
 
 [mise.env]

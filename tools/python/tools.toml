@@ -1,5 +1,5 @@
 # Python and uv.
-default_envs = [ "dev", "ci", "prod", "stage" ]
+default_envs = [ "dev", "ci" ]
 depends = []
 extensions = []
 root_only = false
@@ -13,12 +13,12 @@ python.uv_venv_auto = "create|source"
 
 # CLOUDSDK_PYTHON of the gcloud tool uses the same minor version. Change both.
 [mise.tools.python]
-envs = [ "dev", "ci", "prod", "stage" ]
+envs = [ "dev", "ci" ]
 version = "3.14"
 
 [mise.tools.uv]
 depends = [ "python" ]
-envs = [ "dev", "ci", "prod", "stage" ]
+envs = [ "dev", "ci" ]
 version = "latest"
 
 [mise.env]

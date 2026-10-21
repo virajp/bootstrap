@@ -2,12 +2,12 @@
 
 Bun, with a `bunfig.toml` that the repository owns.
 
-| Property     | Value                |
-| ------------ | -------------------- |
-| Root only    | No                   |
-| Depends      | None                 |
-| Default envs | dev, ci, prod, stage |
-| Seeds        | `bunfig.toml`        |
+| Property     | Value         |
+| ------------ | ------------- |
+| Root only    | No            |
+| Depends      | None          |
+| Default envs | dev, ci       |
+| Seeds        | `bunfig.toml` |
 
 ## When the tool is relevant
 
@@ -23,9 +23,9 @@ Bun, with a `bunfig.toml` that the repository owns.
 
 ## mise tools
 
-| mise tool | Version  | Environments         |
-| --------- | -------- | -------------------- |
-| `bun`     | `latest` | dev, ci, prod, stage |
+| mise tool | Version  | Environments |
+| --------- | -------- | ------------ |
+| `bun`     | `latest` | dev, ci      |
 
 ## Tasks
 
