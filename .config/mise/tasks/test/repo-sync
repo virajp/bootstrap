@@ -13,15 +13,17 @@ set -euo pipefail
 # The test-repo-sync pre-commit hook runs this task inside `git commit`, which
 # exports these variables. With them set, the git init, add and commit of the
 # scratch repositories write to the real repository (gap G2).
-# `git rev-parse --local-env-vars` lists each of them, GIT_CONFIG_PARAMETERS
-# (from `git -c`) included; the fixed list stays in case it fails. It does not
-# list GIT_CONFIG_KEY_<n> and GIT_CONFIG_VALUE_<n>.
-git_vars=$(git rev-parse --local-env-vars 2> /dev/null) || git_vars=''
-# shellcheck disable=SC2086
+# The fixed list goes first, with no git call before it. Then
+# `git rev-parse --local-env-vars`, in a clean environment, lists any other
+# local variable of this git version. It does not list GIT_CONFIG_KEY_<n> and
+# GIT_CONFIG_VALUE_<n>.
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_OBJECT_DIRECTORY \
   GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_PREFIX GIT_EXEC_PATH \
-  GIT_CONFIG GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT $git_vars \
-  ${!GIT_CONFIG_KEY_*} ${!GIT_CONFIG_VALUE_*}
+  GIT_CONFIG GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT \
+  "${!GIT_CONFIG_KEY_@}" "${!GIT_CONFIG_VALUE_@}"
+git_vars=$(git rev-parse --local-env-vars 2> /dev/null) || git_vars=''
+# shellcheck disable=SC2086
+unset $git_vars
 unset git_vars
 
 # shellcheck source=/dev/null
