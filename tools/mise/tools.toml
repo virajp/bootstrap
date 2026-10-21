@@ -3,7 +3,7 @@ default_envs = [ "dev", "ci" ]
 depends = []
 extensions = [ "hverlin.mise-vscode", "redhat.vscode-yaml", "tamasfe.even-better-toml" ]
 root_only = false
-seed = [ ".config/mise/conf.d/_repo/mise.ci.toml", ".config/mise/conf.d/_repo/mise.dev.toml" ]
+seed = [ ".config/mise/conf.d/zz-repo/mise.ci.toml", ".config/mise/conf.d/zz-repo/mise.dev.toml" ]
 
 # The mise config, generated into .config/mise/conf.d/mise/mise.<env>.toml.
 
