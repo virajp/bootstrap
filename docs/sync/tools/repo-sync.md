@@ -37,15 +37,34 @@ file.
 | `setup:configs`      | Sync the shared files from `bootstrap`. `--dry-run` shows the diff.     |
 | `setup:configs:sync` | Run `repo_sync` from the clone of `setup:configs`. Do not run it alone. |
 
+`setup:configs` stops with code 5 if the clone fails. Besides the copy of the
+files, `repo_sync` does these steps:
+
+- It writes the merge tasks of the branch model that it finds, and removes the
+  others. If neither `main` nor `develop` exists, it stops with code 2.
+- It removes each `conf.d/*/mise*.toml` with the bootstrap header that it did
+  not write.
+
+These environment variables change the sync:
+
+| Variable                  | Use                                                                 |
+| ------------------------- | ------------------------------------------------------------------- |
+| `REPO_SYNC_URL`           | The repository to clone. The default is the `bootstrap` repository. |
+| `REPO_SYNC_CLONE`         | An existing clone. `setup:configs` sets it.                         |
+| `REPO_SYNC_VALUES`        | The values file. The default is `.config/bootstrap.toml`.           |
+| `REPO_SYNC_NO_AUTOUPDATE` | `1` skips `pre-commit autoupdate`, so no network is necessary.      |
+
 ## Pre-commit hooks
 
 None.
 
 ## Files the repository supplies
 
-| File                     | Used by                                               |
-| ------------------------ | ----------------------------------------------------- |
-| `.config/bootstrap.toml` | `repo_sync`. The values file of step 3 of `index.md`. |
+| File                                | Used by                                                     |
+| ----------------------------------- | ----------------------------------------------------------- |
+| `.config/bootstrap.toml`            | `repo_sync`. The values file of step 3 of `index.md`.       |
+| `.config/repo-sync/gitignore`       | `.gitignore`. Optional: lines added after the shared lines. |
+| `.config/repo-sync/pre-commit.yaml` | `.config/pre-commit-config.yaml`. Optional: its own hooks.  |
 
 ## Adapt to the repository
 

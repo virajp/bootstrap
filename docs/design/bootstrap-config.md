@@ -50,7 +50,7 @@ merge_never = [ "main" ]
 | `[packs.<name>].env`                          | List of strings | No        | `repo-sync`                            |
 | `environments`                                | List of strings | No        | `repo-sync`                            |
 | `repo_name`                                   | String          | Yes       | `mise.toml`, `gitleaks.toml`           |
-| `product_name`                                | String          | No        |                                        |
+| `product_name`                                | String          | No        | `fnox.toml`                            |
 | `commit_scopes`                               | List of strings | No        | `git-conventional-commits.yaml`        |
 | `repo_url`                                    | String          | No        | `github` tool                          |
 | `worktree_files`                              | List of strings | No        | `setup:worktree`                       |

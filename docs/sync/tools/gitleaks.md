@@ -30,9 +30,9 @@ Do not list it in the values file.
 
 ## Tasks
 
-| Task                | Use                                                                                  |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| `code:sec:gitleaks` | Scan the files that git knows for secrets. `--staged` scans only the staged changes. |
+| Task                | Use                                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `code:sec:gitleaks` | Scan the files that git knows for secrets. `--staged` scans only the staged changes. `--debug` adds `--verbose`. |
 
 `code:sec` runs this task.
 

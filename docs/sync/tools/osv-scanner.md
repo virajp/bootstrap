@@ -30,9 +30,9 @@ Do not list it in the values file.
 
 ## Tasks
 
-| Task                   | Use                                                                                     |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| `code:sec:osv-scanner` | Scan the dependencies of the tree, without the git submodules. `--staged` does nothing. |
+| Task                   | Use                                                                                                                               |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `code:sec:osv-scanner` | Scan the dependencies of the tree, without the git submodules. `--staged` does nothing. `--debug` raises the verbosity to `info`. |
 
 `code:sec` runs this task.
 

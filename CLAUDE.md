@@ -98,8 +98,9 @@ Some files refer to files that are not in `tools/`, for example
 - gomplate reads the TOML files: the values file, `tools/packs.toml` and each
   `tools.toml`.
 - The sync never deletes a file, except the merge tasks of the other branch
-  model (see "Branch model in the merge tasks") and the stale generated mise
-  files (see "mise config"). `docs/sync/migrate.md` tells consumers what to
+  model (see "Branch model in the merge tasks"), the stale generated mise
+  files (see "mise config"), and a synced file at a path where the sync needs
+  a folder. `docs/sync/migrate.md` tells consumers what to
   delete.
 - The sync uses the pushed `main` branch. Local changes have no effect on
   consumers until you push them.
@@ -240,8 +241,8 @@ that it finds, and removes the others. It stops if neither branch exists.
   select.
 - `.config/mise.toml` (`tools/mise/.config/mise.toml.tmpl`) is the only file for
   every environment. It holds the shared `[settings]` and the `[env]` values
-  from the values file (MEMBERS, MERGE_MODEL_*, REPO_NAME). `min_version`,
-  `monorepo_root` and `[monorepo]` go only in a repository's own copy.
+  from the values file (MEMBERS, MERGE_MODEL_*, REPO_NAME). It does not set
+  `min_version`. `monorepo_root` and `[monorepo]` are not supported.
 - Each file in `.config/mise/conf.d/` is for one environment:
   `mise.<env>.toml`. mise loads it only when `MISE_ENV` includes that
   environment. No tool ships or generates a `conf.d/*/mise.toml`.

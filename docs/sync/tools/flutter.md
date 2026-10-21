@@ -39,8 +39,10 @@ VS Code extensions: `dart-code.dart-code`, `dart-code.flutter`.
 | Task                 | Use                                                                                                                                                                         |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `setup:deps:flutter` | Install the Dart, Flutter, CocoaPods and Gradle dependencies from the lockfiles, then report the outdated ones. `--upgrade` cleans the caches and lockfiles, then upgrades. |
-| `code:format:dart`   | Check or format the `.dart` files. The default is `lib/` and `test/`.                                                                                                       |
-| `code:lint:dart`     | Analyze the `.dart` files. `dart analyze` only reports.                                                                                                                     |
+| `code:format:dart`   | Check or format the existing `.dart` files of the `[files]` arguments, else `lib/` and `test/`.                                                                             |
+| `code:lint:dart`     | Analyze the existing `.dart` files of the `[files]` arguments, else the whole project. An info also fails the task (`--fatal-infos`). `dart analyze` only reports.          |
+
+The two Dart tasks apply only when the root has `pubspec.yaml`.
 
 `setup:deps:flutter` uses CocoaPods only with `ios/Podfile`, and Gradle only
 with an executable `android/gradlew`. It accepts the Android licenses. It
@@ -62,8 +64,8 @@ tasks.
 ## Adapt to the repository
 
 1. If the repository pins a different Flutter version, tell the user.
-2. Move the repository-owned `[dart]` keys of `.vscode/settings.json` (M9 of
-   `migrate.md`).
+2. Move the repository-owned `[dart]` keys of `.vscode/settings.json` (see
+   "Adapt to the repository" in `vscode.md`).
 
 ## Migration
 

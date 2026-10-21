@@ -96,7 +96,7 @@ precommit_safety_net() {
   if [ "${hooks_passed}" = false ]; then
     print_error
     print_error "- A hook failed without changing anything, so it needs a fix by hand."
-    print_error "- Run \`mise run code:precommit --all\` to see it."
+    print_error "- Run \`mise run code:precommit\` to see it."
     exit 1
   fi
   print_success

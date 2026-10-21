@@ -30,13 +30,16 @@ None. The tool uses the Docker of the machine.
 
 ## Tasks
 
-| Task                    | Use                                                                    |
-| ----------------------- | ---------------------------------------------------------------------- |
-| `setup:external:check`  | Make sure that the Docker server is reachable.                         |
-| `setup:external:pull`   | Build the local images and pull the other images.                      |
-| `setup:external:start`  | Start the local services.                                              |
-| `setup:external:stop`   | Stop the local services and remove their volumes.                      |
-| `setup:external:update` | Stop, pull and start, at most once a week. `--force` ignores the week. |
+| Task                    | Use                                                                         |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `setup:external:check`  | Make sure that the Docker server is reachable.                              |
+| `setup:external:pull`   | Build the local images and pull the other images.                           |
+| `setup:external:start`  | Start the local services.                                                   |
+| `setup:external:stop`   | Stop the local services and remove their volumes.                           |
+| `setup:external:update` | Stop, pull and start, at most once a week. `-f`/`--force` ignores the week. |
+
+`setup:external:pull`, `start`, `stop` and `update` apply only when
+`MISE_ENV` is `dev`. In another environment, they print nothing and exit 0.
 
 ## Pre-commit hooks
 
@@ -53,8 +56,9 @@ None.
 1. If the repository has a Docker Compose file at a different path, ask the
    user whether to move its services to `.tools/docker-compose.yaml`.
 
-**WARNING:** `setup:external:stop` removes the volumes of the services. Tell
-the user before a service keeps data that is not in a different location.
+**WARNING:** `setup:external:stop` removes the volumes of the services, and
+`setup:external:update` runs it at most once a week. Tell the user before a
+service keeps data that is not in a different location.
 
 ## Migration
 

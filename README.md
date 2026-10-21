@@ -153,15 +153,17 @@ These rules apply to each file:
   must be in dev: an `env` or a `default_envs` without dev stops the sync.
   Aliases, hooks, vars and tasks go only to dev. `.config/mise.toml` is the
   only file for every environment. `CLAUDE.md` has the full rules.
-- The sync never deletes a file, with two exceptions. The first is the merge
+- The sync never deletes a file, with three exceptions. The first is the merge
   tasks. With `main` and `develop`, the repository gets `code:merge:develop`
   and `code:merge:main`. With only one of them, it gets `code:merge`. The sync
   removes the merge tasks of the other model. The second is a
   `.config/mise/conf.d/*/mise*.toml` file with the bootstrap header that the
   sync did not write. A seed, such as `zz-repo/mise.<env>.toml`, has no header,
-  so the sync keeps it.
+  so the sync keeps it. The third is a file with the bootstrap header at a path
+  where the sync needs a folder.
 
-A repository synced before the `tools/` layout cannot sync. Its
+A repository synced before the split of the base tool (`c95e4ff`) cannot sync.
+Its
 `setup/configs/sync` loads `tools/base/.../repo-sync` from the clone, and the
 `tools/base/` folder no longer exists. Copy the sync files into the repository
 by hand one time, as step 2 of `docs/sync/index.md` tells you.
@@ -196,7 +198,6 @@ environments = [ "dev", "ci" ]
 merge_model_develop = "direct"
 merge_model_main = "pr"
 product_name = "my-product"
-release_tag_pattern = '^my-repo-v\d+$'
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
 worktree_files = [ ".config/mise.local.toml" ]

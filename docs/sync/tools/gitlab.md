@@ -50,8 +50,7 @@ None.
 
 ## Adapt to the repository
 
-1. Set `repo_url` in the values file to the GitLab web URL of the repository.
-2. Tell the user that the `glab-ci-lint` hook needs `glab auth login`.
+1. Tell the user that the `glab-ci-lint` hook needs `glab auth login`.
 
 ## Migration
 

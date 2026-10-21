@@ -17,13 +17,13 @@ file.
 
 ## What the tool ships
 
-| Path in the repository                  | Kind     | Use                                                                                                |
-| --------------------------------------- | -------- | -------------------------------------------------------------------------------------------------- |
-| `.gitignore`                            | Synced   | The shared ignore lines, then the lines of `.config/repo-sync/gitignore`.                          |
-| `.config/git-conventional-commits.yaml` | Template | The commit types, the scopes from `commit_scopes`, and the tag pattern from `release_tag_pattern`. |
-| `.config/mise/tasks/_scripts/merge`     | Synced   | The library `merge`, with `merge_to_destination_branch`.                                           |
-| `.config/mise/tasks/code/git-config`    | Synced   | The task `code:git-config`.                                                                        |
-| `.config/mise/tasks/code/merge/`        | Synced   | The merge tasks of the branch model (see "Tasks").                                                 |
+| Path in the repository                  | Kind     | Use                                                                                        |
+| --------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
+| `.gitignore`                            | Synced   | The shared ignore lines, then the lines of `.config/repo-sync/gitignore`.                  |
+| `.config/git-conventional-commits.yaml` | Template | The commit types, and the scopes from `commit_scopes`, else the members of the repository. |
+| `.config/mise/tasks/_scripts/merge`     | Synced   | The library `merge`, with `merge_to_destination_branch`.                                   |
+| `.config/mise/tasks/code/git-config`    | Synced   | The task `code:git-config`.                                                                |
+| `.config/mise/tasks/code/merge/`        | Synced   | The merge tasks of the branch model (see "Tasks").                                         |
 
 ## mise tools
 
@@ -57,8 +57,7 @@ None.
 ## Adapt to the repository
 
 1. Select the branch model (step 4 of `index.md`).
-2. Set `commit_scopes`, `repo_url` and `release_tag_pattern` in the values
-   file.
+2. Set `commit_scopes` in the values file.
 3. Move each repository ignore line to `.config/repo-sync/gitignore`.
 
 ## Migration

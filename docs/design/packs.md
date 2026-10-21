@@ -141,9 +141,8 @@ common tool starts with `_`, for example `_security_base`.
 - A name in `required` is not in `depends`.
 - When a pack is selected, `repo-sync` always installs the tools of its
   `required`. The values file does not list them.
-- `bootstrap` gives a consumer no way to remove a tool of a pack. But a user
-  can edit `.config/bootstrap.toml` by hand. `repo-sync` follows the edit if
-  it does not break a tool. It never removes a tool of `required`.
+- `bootstrap` gives a consumer no way to remove a tool of a pack, also not by
+  hand (see "Open points"). It never removes a tool of `required`.
 
 ### The tools of the `base` pack
 

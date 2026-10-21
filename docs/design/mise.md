@@ -100,7 +100,7 @@ The consumer selects its environments with `environments` in the values file.
 ## `.config/mise.toml`
 
 `min_version`: The minimum version of the mise cli required by the
-consumer repository. Currently set to `"2026.10.11"`, but must be continously
+consumer repository. It is not set now. When it is set, it must be continously
 upgraded as new versions of the mise configuration are released.
 
 The template is `tools/mise/.config/mise.toml.tmpl`. It holds the shared

@@ -36,9 +36,9 @@ management.
 
 ## Tasks
 
-| Task                    | Use                                                                                                            |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `setup:secrets:doppler` | Select the Doppler project and config from `doppler.yaml`. It skips without `doppler.yaml` or without a login. |
+| Task                    | Use                                                                                                                                                             |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:secrets:doppler` | Select the Doppler project and config from `doppler.yaml`. It skips without `doppler.yaml`, without a login, or with a warning when `doppler` is not installed. |
 
 The task does not run `doppler login`, because that command opens a browser.
 

@@ -31,8 +31,9 @@ various tools that it supports
   `docs/sync/index.md`, asks the questions, and writes `.config/bootstrap.toml`
   in consumer repo
 - **Script, for the deterministic part.** Once the `.config/bootstrap.toml` and
-  base configuration is done in the consumer repo, they will have `setup` task
-  in mise. The `setup` task, when run, calls `repo-sync` which reads
+  base configuration is done in the consumer repo, they will have the
+  `setup:configs` task in mise. The `setup:configs` task, when run, calls
+  `repo-sync` which reads
   `.config/bootstrap.toml` and syncs the files of the selected tools.
 
 The repository solves two problems: add tools and dependencies to many

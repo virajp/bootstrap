@@ -19,9 +19,10 @@ This file is temporary. Remove an item when all repositories have done it.
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
 
-The sync deletes only two kinds of files: the merge tasks of the other branch
-model, and a `.config/mise/conf.d/*/mise*.toml` with the bootstrap header
-that it did not write. Thus you must delete each other obsolete file and
+The sync deletes only three kinds of files: the merge tasks of the other
+branch model, a `.config/mise/conf.d/*/mise*.toml` with the bootstrap header
+that it did not write, and a file with the bootstrap header at a path where
+the sync needs a folder. Thus you must delete each other obsolete file and
 rename each old task by hand. Do the items that apply to the repository, in
 this sequence. Show the user the list of changes before you make them.
 
@@ -182,10 +183,12 @@ See "Migration" in [`tools/github.md`](tools/github.md) or
 3. Move the seeds of an old `conf.d/_env/` folder to `conf.d/zz-repo/`. The sync
    does not remove them, because a seed has no header.
 
-The next sync removes the old `conf.d/*/mise.toml`, `_env/mise.toml`,
-`_alias/mise.dev.toml`, `conf.d/_task/` and `conf.d/pre-commit/` files that
-have the header of this repository (`Synced from repo-config:` or
-`Synced from bootstrap:`).
+The next sync removes the old `conf.d/*/mise.toml`, `_env/mise.toml` and
+`_alias/mise.dev.toml` files, and the old `mise*.toml` files of
+`conf.d/_task/`, that have the header of this repository
+(`Synced from repo-config:` or `Synced from bootstrap:`). Delete each other
+file of `conf.d/_task/` by hand. `conf.d/pre-commit/` is now the generated
+folder of the `pre-commit` tool, and the sync writes its `mise.dev.toml`.
 
 ## M15: The rename to bootstrap
 
@@ -306,8 +309,8 @@ file with the old header that remains is from a tool or a path that
 2. Run `git grep -l 'Synced from repo-config:'`. The list must be empty,
    except for the files that the user decided to keep in M15.5.
 3. Run `mise run setup:configs` again. It must not show the notice about the
-   old values file. Each file must show `unchanged`, `kept seed` or
-   `skip env`.
+   old values file. Each file must show `unchanged`, `kept seed`,
+   `skip seed` or `skip env`.
 4. Run `mise tasks`. Make sure that the synced tasks are in the list.
 5. Run `mise run setup`. Make sure that it completes.
 

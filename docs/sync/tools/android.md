@@ -48,8 +48,9 @@ folder of a Flutter app is for `setup:deps:flutter`.
 - The level is the env value `COMPILE_SDK`, else the first `compileSdk` in the
   `build.gradle.kts` and `*.gradle` files, then in the text files of
   `build-logic/`, then in `gradle/libs.versions.toml`. Only a literal number
-  counts, with or without `=` (`compileSdk = 36`, `compileSdk 35`,
-  `compileSdkVersion 35`). Without a level, the task fails. A bare level of 37
+  counts, with `=`, `(` or a space (`compileSdk = 36`, `compileSdkVersion(34)`,
+  `compileSdk 35`, `compileSdkVersion 35`), or quoted in the version catalog
+  (`compileSdk = "36"`). Without a level, the task fails. A bare level of 37
   or more becomes `<level>.0`.
 - The emulator image is the env value `EMULATOR_IMAGE`, else
   `system-images/android-<targetSdk>/google_apis`, with `targetSdk` found as
