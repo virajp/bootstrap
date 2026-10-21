@@ -28,19 +28,15 @@ that the values file does not select. A tool folder that is `zz-repo`, or
 whose name sorts after `zz-repo` in byte order, also stops the sync with
 code 2: the folder `conf.d/zz-repo/` of the repository must load last.
 
-## Kinds of tool
+## Tools and packs
 
-A tool is one of two kinds:
+A tool, for example `claude`, is a set of config for mise and for other CLIs.
 
-- **A plain tool**, for example `claude`. It is a set of config for mise and
-  for other CLIs.
-- **A group tool**, for example `flutter`. It has its own config, as a plain
-  tool has. It also has packs, which select other tools. See
-  [packs.md](packs.md).
-
-## Packs
-
-A group tool has packs. See [packs.md](packs.md).
+A pack groups tools, for example the pack `security`. A tool never selects a
+group of tools: a pack does. The config, the tasks and the files that all the
+packs of one kind use are in one tool that each of these packs names in
+`depends`, for example `flutter` for the Flutter packs, or in a common tool
+`_<name>`, for example `_security_base`. See [packs.md](packs.md).
 
 ## The Flutter example
 
@@ -82,7 +78,7 @@ the registry.
 - Gradle does not come from mise. The Android tasks use the `gradlew` wrapper
   of the project. The `kotlin` tool ships only `kotlin-lsp`.
 
-## Tasks of a group tool for one platform
+## Tasks of a shared tool for one platform
 
 A task that is for Flutter on one platform goes in the `flutter` tool, not in
 the platform tool. For example, a task that runs `flutter build apk` is in
