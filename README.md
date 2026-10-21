@@ -224,7 +224,6 @@ env = [ "dev", "ci" ] # optional; without it, the default_envs of the tool
 [member.backend]
 folder = "projects/backend" # optional; the default is the name
 label = "Backend"
-worktree_install = "pnpm install --frozen-lockfile"
 
 # The merge config of this repository.
 [branch.main]

@@ -29,7 +29,6 @@ env = [ "dev", "ci" ]
 [member.web]
 folder = "projects/web"
 label = "Web"
-worktree_install = "mise run setup"
 
 [branch.main]
 merge_from = [ "develop" ]
@@ -214,7 +213,8 @@ that is not a submodule.
 - `setup`, `code:format` and `code:lint` get a `--<name>` flag and an `--all`
   flag only for the members of type `submodule`. They run in the folder of the
   submodule. A folder member of a monorepo is part of the tree of the root, so
-  it gets no flag. `setup:worktree` runs `worktree_install` for each member.
+  it gets no flag. `setup:worktree` runs `worktree_install` for each submodule
+  member.
 
 ### `[member.<name>].label`
 
@@ -240,6 +240,9 @@ The install command of the member for a new worktree, for example
 `pnpm install`. `setup:worktree` runs it as
 `mise x --cd <folder> -- <command>`. Without the key, `setup:worktree` runs the
 own `setup:worktree` task of the member, if the member has one.
+
+The key is only for a member of type `submodule`. A member of type `folder`
+never has it.
 
 ### `[branch.<branch>].merge_model`
 
