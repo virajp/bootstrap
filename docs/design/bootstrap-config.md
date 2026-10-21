@@ -13,8 +13,18 @@ extensions = [ "astro-build.astro-vscode" ]
 product_name = "my-product"
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
-tools = [ "github", "node", "fnox", "claude", "vscode" ]
 worktree_files = [ ".config/mise.local.toml" ]
+
+[tools.claude]
+
+[tools.fnox]
+
+[tools.github]
+
+[tools.node]
+env = [ "dev", "ci" ]
+
+[tools.vscode]
 
 [member.web]
 folder = "projects/web"
@@ -34,7 +44,10 @@ merge_never = [ "main" ]
 
 | Key                                           | Type            | Necessary | Read by                                |
 | --------------------------------------------- | --------------- | --------- | -------------------------------------- |
-| `tools`                                       | List of strings | No        | `repo-sync`                            |
+| `[tools.<folder>]`                            | Table           | No        | `repo-sync`                            |
+| `[tools.<folder>].env`                        | List of strings | No        | `repo-sync`                            |
+| `[packs.<name>]`                              | Table           | No        | `repo-sync`                            |
+| `[packs.<name>].env`                          | List of strings | No        | `repo-sync`                            |
 | `environments`                                | List of strings | No        | `repo-sync`                            |
 | `repo_name`                                   | String          | Yes       | `mise.toml`, `gitleaks.toml`           |
 | `product_name`                                | String          | No        |                                        |
@@ -55,12 +68,14 @@ repository.
 
 ## The keys
 
-### `tools`
+### `[tools.<folder>]`
 
-The tools of the repository. Each name is a folder `tools/<name>/` of
-`bootstrap`. Do not list the tools of the `base` pack: `repo-sync` always adds
-the `base` pack. See [packs.md](packs.md#the-base-pack)
+One table for each tool of the repository. Each key is a folder
+`tools/<folder>/` of `bootstrap`. Do not write the tools of the `base` pack:
+`repo-sync` always adds the `base` pack. See
+[packs.md](packs.md#the-base-pack)
 
+- The only key of an entry is `env`. Another key stops the sync with code 2
 - `repo-sync` adds the `depends` of each tool, and the tool of each mise
   `depends`, depth first
 - All dependencies are configured for same environment as parent
@@ -69,11 +84,40 @@ the `base` pack. See [packs.md](packs.md#the-base-pack)
 - The `envs` of a dependency must include each environment of its parent. If
   not, the sync stops with code 2. See
   [mise.md](mise.md#the-environments-of-a-mise-tool)
-- Without the key, or with an empty list, the repository gets only the `base`
-  pack
-- A name that is not in `bootstrap` stops the sync with code 3
+- Without `[tools]` and `[packs]`, the repository gets only the `base` pack
+- A list, `tools = [...]`, is the old format. It stops the sync with code 2,
+  and the message names the table format
+- A folder that is not in `bootstrap` stops the sync with code 3
 - A tool with `root_only = true` in a git submodule stops the sync with
   code 2
+
+### `[tools.<folder>].env`
+
+The environments of the tool, for example `["dev", "ci"]`. Without the key,
+the tool gets the `default_envs` of its `tools.toml`.
+
+- Each name must be in `environments`. If not, the sync stops with code 2
+- An empty list, or an item with a space, stops the sync with code 2
+- Each mise tool of the tool must allow each environment in its `envs`. If
+  not, the sync stops with code 2
+- A tool that is selected more than once, for example also by a pack, gets
+  each of these environments
+
+### `[packs.<name>]`
+
+One table for each pack of the repository. Each key is a pack of
+`tools/packs.toml`, without the prefix `p:`. Do not write `base`. See
+[packs.md](packs.md)
+
+- The only key of an entry is `env`. Another key stops the sync with code 2
+- A list, `packs = [...]`, is the old format. It stops the sync with code 2
+- A pack that is not in `tools/packs.toml` stops the sync with code 3
+
+### `[packs.<name>].env`
+
+The environments of each tool of the pack, with the same rules as
+`[tools.<folder>].env`. Without the key, each tool of the pack gets its own
+`default_envs`.
 
 ### `environments`
 
@@ -214,18 +258,12 @@ values that the templates get.
 
 ## Old keys and old names
 
-| Old item                   | Effect                                                                                           |
-| -------------------------- | ------------------------------------------------------------------------------------------------ |
-| `core_tools`               | Not used. The sync prints a message: delete it. The `envs` of each tool decide its environments. |
-| `.config/repo-config.toml` | The old name of the values file. The sync reads it and prints a message: rename it.              |
+| Old item                   | Effect                                                                                                                  |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `core_tools`               | Not used. The sync prints a message: delete it. The `env` of each entry, else `default_envs`, decides the environments. |
+| `.config/repo-config.toml` | The old name of the values file. The sync reads it and prints a message: rename it.                                     |
 
 ## The location of the file
 
 The default path is `.config/bootstrap.toml`. `REPO_SYNC_VALUES` sets a
 different path. Without the file, the sync stops with code 2.
-
-## Planned keys
-
-`packs`: a list of the packs of `tools/packs.toml`, for example
-`["flutter-android", "flutter-ios"]`. `repo-sync` adds the tools of each pack
-to `tools`. See [packs.md](packs.md). `repo-sync` does not read it yet.

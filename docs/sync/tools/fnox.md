@@ -2,11 +2,12 @@
 
 The secrets from `.config/fnox.toml`, checked by `setup:secrets:fnox`.
 
-| Property  | Value               |
-| --------- | ------------------- |
-| Root only | No                  |
-| Depends   | None                |
-| Seeds     | `.config/fnox.toml` |
+| Property     | Value               |
+| ------------ | ------------------- |
+| Root only    | No                  |
+| Depends      | None                |
+| Default envs | dev                 |
+| Seeds        | `.config/fnox.toml` |
 
 ## When the tool is relevant
 

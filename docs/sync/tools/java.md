@@ -2,11 +2,12 @@
 
 The Java development kit (JDK), for Gradle and the Android SDK.
 
-| Property  | Value |
-| --------- | ----- |
-| Root only | No    |
-| Depends   | None  |
-| Seeds     | None  |
+| Property     | Value   |
+| ------------ | ------- |
+| Root only    | No      |
+| Depends      | None    |
+| Default envs | dev, ci |
+| Seeds        | None    |
 
 ## When the tool is relevant
 
@@ -39,10 +40,10 @@ None.
 
 ## Adapt to the repository
 
-1. If a tool adds `java` only through its `depends` key (for example
-   `kotlin`), `java` is in dev only. To have it in CI, add `java` to `tools`.
-   Through the mise `depends` of `flutter` and `android-sdk`, `java` is in the
-   environments of `flutter`.
+1. A tool that adds `java` gives it its own environments. `kotlin` is in dev
+   only, so `java` of `kotlin` is in dev only. To have it in CI, add
+   `[tools.java]` to the values file. Through the mise `depends` of `flutter`
+   and `android-sdk`, `java` is in the environments of `flutter`.
 2. If the repository pins a different JDK, tell the user.
 
 ## Migration

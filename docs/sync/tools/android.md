@@ -2,11 +2,12 @@
 
 The Android SDK command-line tools.
 
-| Property  | Value                                               |
-| --------- | --------------------------------------------------- |
-| Root only | No                                                  |
-| Depends   | None. Its mise tool adds `java` (see "mise tools"). |
-| Seeds     | None                                                |
+| Property     | Value                                               |
+| ------------ | --------------------------------------------------- |
+| Root only    | No                                                  |
+| Depends      | None. Its mise tool adds `java` (see "mise tools"). |
+| Default envs | dev, ci                                             |
+| Seeds        | None                                                |
 
 ## When the tool is relevant
 

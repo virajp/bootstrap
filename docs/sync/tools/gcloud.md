@@ -2,11 +2,12 @@
 
 The Google Cloud CLI, for a repository that deploys to Google Cloud.
 
-| Property  | Value |
-| --------- | ----- |
-| Root only | No    |
-| Depends   | None  |
-| Seeds     | None  |
+| Property     | Value   |
+| ------------ | ------- |
+| Root only    | No      |
+| Depends      | None    |
+| Default envs | dev, ci |
+| Seeds        | None    |
 
 ## When the tool is relevant
 

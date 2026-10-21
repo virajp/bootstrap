@@ -23,6 +23,21 @@ mise x -- fnox exec --profile "${MISE_ENV%%,*}" -- <command>
 - The task runs `fnox exec` from the folder of its project. Thus fnox loads the
   shared files of `.config/` and the files of that project folder.
 
+## The secret helper
+
+A run task does not call fnox directly. It calls a helper of
+`_scripts/helpers`, for example `run_with_secrets <command>`. The helper
+selects the secrets source:
+
+| Condition                                  | The helper runs                                                |
+| ------------------------------------------ | -------------------------------------------------------------- |
+| fnox is available (`mise x -- which fnox`) | `mise x -- fnox exec --profile "${MISE_ENV%%,*}" -- <command>` |
+| doppler is available                       | `doppler run -- <command>`                                     |
+| neither                                    | `<command>`                                                    |
+
+A values file that selects both `fnox` and `doppler` stops the sync with
+code 2. The helper and this check are not built yet.
+
 ## Environments
 
 | Environment | Secrets source                                                |

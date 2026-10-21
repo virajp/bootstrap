@@ -3,11 +3,12 @@
 The local services in `.tools/docker-compose.yaml`, run by the
 `setup:external:*` tasks.
 
-| Property  | Value                        |
-| --------- | ---------------------------- |
-| Root only | Yes                          |
-| Depends   | None                         |
-| Seeds     | `.tools/docker-compose.yaml` |
+| Property     | Value                        |
+| ------------ | ---------------------------- |
+| Root only    | Yes                          |
+| Depends      | None                         |
+| Default envs | dev                          |
+| Seeds        | `.tools/docker-compose.yaml` |
 
 ## When the tool is relevant
 

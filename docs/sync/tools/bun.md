@@ -2,11 +2,12 @@
 
 Bun, with a `bunfig.toml` that the repository owns.
 
-| Property  | Value         |
-| --------- | ------------- |
-| Root only | No            |
-| Depends   | None          |
-| Seeds     | `bunfig.toml` |
+| Property     | Value                |
+| ------------ | -------------------- |
+| Root only    | No                   |
+| Depends      | None                 |
+| Default envs | dev, ci, prod, stage |
+| Seeds        | `bunfig.toml`        |
 
 ## When the tool is relevant
 

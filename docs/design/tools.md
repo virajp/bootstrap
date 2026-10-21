@@ -7,6 +7,22 @@ the tool they are installing
 
 ## The `tools.toml` file
 
+Each tool folder has a `tools.toml` with five necessary keys. The sync reads
+them without defaults.
+
+| Key            | Meaning                                                                                             |
+| -------------- | --------------------------------------------------------------------------------------------------- |
+| `default_envs` | A list: the environments of the tool when the values file gives it no `env`, for example `["dev"]`. |
+| `depends`      | The tools that the sync adds with this one. Each gets the environments of this tool.                |
+| `root_only`    | `true`: the sync refuses the tool in a git submodule.                                               |
+| `extensions`   | The VS Code extensions of the tool.                                                                 |
+| `seed`         | The files that the sync writes only when they are missing.                                          |
+
+`default_envs` and the `envs` of a mise tool can name `dev`, `ci`, `prod` and
+`stage`. A name of `default_envs` that the values file selects, and that a
+mise tool of the tool does not allow in its `envs`, stops the sync with
+code 2. See [mise.md](mise.md#the-environments-of-a-mise-tool).
+
 ## Kinds of tool
 
 A tool is one of two kinds:

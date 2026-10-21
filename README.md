@@ -12,8 +12,9 @@ A repository uses this repository in two ways, in this sequence:
    tells the agent how to apply the rules of this repository to a consumer
    repository. The agent makes sure that each rule is relevant to that
    repository. `docs/sync/index.md` has the general steps, `migrate.md` has
-   the items for a repository with older copies, and one file for each tool
-   tells when the tool is relevant and how to use it. `docs/sync/vwf.md` is
+   the items for a repository with older copies, one file for each tool in
+   `docs/sync/tools/` tells when the tool is relevant and how to use it, and
+   one file for each pack is in `docs/sync/packs/`. `docs/sync/vwf.md` is
    the entry point for the vwf and stackgen plugins: they give it
    `add tools` and `remove tools` instructions after the adoption.
 2. **Sync, each time after that, by `repo-sync`.** The adoption installs the
@@ -33,17 +34,43 @@ this repository. Ask me before each choice that docs/sync/ does not decide.
 
 ## Layout
 
-The shared files are in `tools/`, one folder for each tool. This repository
-also syncs its own `base` tool. Each file in `tools/<tool>/` is at the path that
-it gets in a repository. For example,
-`tools/base/.config/mise/tasks/code/merge/develop` here is
-`.config/mise/tasks/code/merge/develop` in every repository that selects
-`base`.
+The shared files are in `tools/`, one folder for each tool. Each file in
+`tools/<tool>/` is at the path that it gets in a repository. For example,
+`tools/git/.config/mise/tasks/code/merge/develop` here is
+`.config/mise/tasks/code/merge/develop` in every repository, because the
+`base` pack adds the `git` tool. This repository also syncs its own `base`
+pack.
+
+A pack is a named list of tools in `tools/packs.toml`. It has no files of its
+own. The sync always adds the `base` pack:
+
+```toml
+[pack.base]
+depends = [
+  "mise",
+  "repo-sync",
+  "git",
+  "pre-commit",
+  "dprint",
+  "linter",
+  "p:security",
+]
+
+[pack.security]
+depends = [ "gitleaks", "grype", "osv-scanner" ]
+required = [ "_security_base" ] # always added with the pack
+```
+
+A name with the prefix `p:` is a pack.
 
 Each tool folder has a `tools.toml` manifest:
 
 ```toml
 # The Android SDK command-line tools.
+default_envs = [
+  "dev",
+  "ci",
+] # the environments when the values file gives no env
 depends = [] # tools added with this one
 extensions = [] # VS Code extensions
 root_only = false # true: refused in a submodule
@@ -53,12 +80,12 @@ seed = [] # written only when missing
 # .config/mise/conf.d/android/mise.<env>.toml.
 [mise.tools.android-sdk]
 depends = [ "java" ] # also adds the tool that defines java
-envs = [ "dev", "ci" ] # the default is [ "dev" ]
+envs = [ "dev", "ci" ] # the allowed environments; the default is [ "dev" ]
 version = "23"
 ```
 
 A `[mise_env.<env>.<section>]` table adds content to one environment only.
-For example, `base` sets the mise `os` setting in `ci`:
+For example, the `mise` tool sets the mise `os` setting in `ci`:
 
 ```toml
 [mise_env.ci.settings]
@@ -95,9 +122,10 @@ has that file:
    (shallow, over SSH).
 2. It runs `setup:configs:sync`, which loads `repo-sync` from that clone and
    calls `repo_sync`. Thus a change to the sync code applies in the same run.
-3. `repo_sync` reads `tools` from the repository's `.config/bootstrap.toml`.
-4. It adds the `depends` of each tool. It refuses a `root_only` tool in a git
-   submodule.
+3. `repo_sync` reads the `[tools.*]` and `[packs.*]` tables of the
+   repository's `.config/bootstrap.toml`, and it adds the `base` pack.
+4. It expands each pack, and it adds the `depends` of each tool. It refuses a
+   `root_only` tool in a git submodule.
 5. It finds the branch model from the branches `main` and `develop`, local or
    on origin. It stops if neither branch exists.
 6. It copies each file of each tool.
@@ -115,14 +143,15 @@ These rules apply to each file:
 - In `.config/pre-commit-config.yaml`, each hook `rev` becomes the newest tag:
   the sync runs `pre-commit autoupdate` on it. This needs the network.
 - The repository selects its environments in `environments`: `dev`
-  (necessary), `ci`, and `prod` and `stage` (only with `ci`).
+  (necessary) and `ci`.
 - The mise config of each tool is generated from its `[mise.*]` tables into
-  `.config/mise/conf.d/<tool>/mise.<env>.toml` (`_base` for `base`), one file
-  for each environment. A tool that the repository lists in `tools` goes to the
-  environments of its `envs`. A tool that only a dependency adds goes to dev,
-  unless a tool in another environment needs it. Aliases, hooks, vars and
-  tasks go only to dev. `.config/mise.toml` is the only file for every
-  environment. `CLAUDE.md` has the full rules.
+  `.config/mise/conf.d/<tool>/mise.<env>.toml`, one file for each environment.
+  A tool of a `[tools.*]` or a `[packs.*]` entry goes to the environments of
+  its `env`, else of its `default_envs`. A dependency goes to each environment
+  of the tools that need it. The `envs` of a mise tool lists the environments
+  that it allows; a tool in a different environment stops the sync. Aliases,
+  hooks, vars and tasks go only to dev. `.config/mise.toml` is the only file
+  for every environment. `CLAUDE.md` has the full rules.
 - The sync never deletes a file, with two exceptions. The first is the merge
   tasks. With `main` and `develop`, the repository gets `code:merge:develop`
   and `code:merge:main`. With only one of them, it gets `code:merge`. The sync
@@ -131,9 +160,10 @@ These rules apply to each file:
   sync did not write. A seed, such as `_repo/mise.<env>.toml`, has no header, so
   the sync keeps it.
 
-A copy of `repo-sync` from before the `tools/` layout cannot sync. Copy
-`tools/base/.config/mise/tasks/_scripts/repo-sync` and `helpers` into the
-repository by hand one time. Step 2 of `docs/sync/index.md` tells you how.
+A repository synced before the `tools/` layout cannot sync. Its
+`setup/configs/sync` loads `tools/base/.../repo-sync` from the clone, and the
+`tools/base/` folder no longer exists. Copy the sync files into the repository
+by hand one time, as step 2 of `docs/sync/index.md` tells you.
 
 ## Templates
 
@@ -147,7 +177,8 @@ A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
   then each `[member.<name>]` table whose folder exists in the repository.
 - `.submodules` is the list of the git submodules only. It is empty in a
   repository without submodules.
-- `.tools` is the list of the selected tools, dependencies included.
+- `.tools` is the list of the selected tools, packs expanded and dependencies
+  included.
 - `.extensions` is the sorted list of the VS Code extensions of those tools,
   plus the `extensions` list of the values file. In the root repository, it
   also has the extensions of each git submodule: the tools and the
@@ -160,15 +191,25 @@ Example values file:
 
 ```toml
 commit_scopes = [ "backend", "web" ]
-environments = [ "dev", "ci", "prod" ]
+environments = [ "dev", "ci" ]
 merge_model_develop = "direct"
 merge_model_main = "pr"
 product_name = "my-product"
 release_tag_pattern = '^my-repo-v\d+$'
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
-tools = [ "base", "github", "node", "fnox", "claude", "vscode" ]
 worktree_files = [ ".config/mise.local.toml" ]
+
+[tools.claude]
+
+[tools.fnox]
+
+[tools.github]
+
+[tools.node]
+env = [ "dev", "ci" ] # optional; without it, the default_envs of the tool
+
+[tools.vscode]
 
 [member.backend]
 label = "Backend"
@@ -183,8 +224,8 @@ wins, so a repository can negate a shared pattern with `!`.
 
 ## `.config/pre-commit-config.yaml`
 
-`base` renders this file from the `[[precommit]]` entries of the selected
-tools. Then it adds the entries of the repository's
+The `pre-commit` tool renders this file from the `[[precommit]]` entries of the
+selected tools. Then it adds the entries of the repository's
 `.config/repo-sync/pre-commit.yaml`, if that file exists. That file is a YAML
 list of `repos:` entries:
 
@@ -196,6 +237,13 @@ list of `repos:` entries:
       entry: mise x -- mise run my:task
       language: system
 ```
+
+## Tests
+
+`mise run test:repo-sync` runs `repo_sync --dry-run` of the working tree's
+`tools/` against scratch values files, and checks the exit code and the
+message of each case. It needs no network. The local hook `test-repo-sync`
+runs it on each commit that changes `tools/`.
 
 ## Change a shared file
 

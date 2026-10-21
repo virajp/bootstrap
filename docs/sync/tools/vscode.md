@@ -3,11 +3,12 @@
 The VS Code settings, and `extensions.json` from the extensions of the
 selected tools.
 
-| Property  | Value |
-| --------- | ----- |
-| Root only | Yes   |
-| Depends   | None  |
-| Seeds     | None  |
+| Property     | Value |
+| ------------ | ----- |
+| Root only    | Yes   |
+| Depends      | None  |
+| Default envs | dev   |
+| Seeds        | None  |
 
 ## When the tool is relevant
 
@@ -24,6 +25,9 @@ selected tools.
 | `.vscode/settings.json`           | Synced   | The shared editor settings. The sync replaces the file.                                      |
 | `.vscode/extensions.json`         | Template | The extensions of the selected tools, of the values key `extensions`, and of each submodule. |
 | `.config/mise/tasks/setup/vscode` | Synced   | The task `setup:vscode`.                                                                     |
+
+VS Code extensions: `gruntfuggly.todo-tree`, `oderwat.indent-rainbow`,
+`pkief.material-icon-theme`, `usernamehw.errorlens`.
 
 ## mise tools
 

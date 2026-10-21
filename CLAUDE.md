@@ -6,14 +6,16 @@ code in this repository.
 ## Purpose
 
 This repository is the source of shared files for other repositories. It has
-no build, no tests, and no application code. Other repositories copy files from
-it with their own `setup:configs` task. Read `README.md` for the sync contract.
+no build and no application code. Its only test is `test:repo-sync` (see "How
+the sync operates"). Other repositories copy files from it with their own
+`setup:configs` task. Read `README.md` for the sync contract.
 
 ## Layout rule
 
-All shared files are in `tools/<tool>/`, one folder for each tool. The files
-at the root (`README.md`, `CLAUDE.md`) and in `docs/` are for this repository
-only.
+All shared files are in `tools/<tool>/`, one folder for each tool. The packs
+are in `tools/packs.toml`, outside each tool folder, so the sync never copies
+it. The files at the root (`README.md`, `CLAUDE.md`) and in `docs/` are for
+this repository only.
 
 `docs/sync/` tells an AI agent how to adopt `bootstrap` in a consumer
 repository, and how to add and remove tools after the adoption. After the
@@ -24,22 +26,35 @@ adoption, `repo-sync` keeps the consumer in sync.
 - `docs/sync/vwf.md`: the entry point for the vwf and stackgen plugins. It
   accepts `add tools` and `remove tools` instructions. A plugin names this path
   and no other bootstrap path.
-- `docs/sync/<tool>.md`: one file for each folder in `tools/`, with the same
-  sections in each file. The file of the `claude` tool is `claude-tool.md`,
-  because a file system that ignores case reads `claude.md` as `CLAUDE.md`.
+- `docs/sync/tools/<tool>.md`: one file for each folder in `tools/`, with the
+  same sections in each file. The file of the `claude` tool is
+  `claude-tool.md`, because a file system that ignores case reads `claude.md`
+  as `CLAUDE.md`.
+- `docs/sync/packs/<pack>.md`: one file for each pack of `tools/packs.toml`,
+  with the tools that it adds and the questions of the adopting AI.
 
-This repository is also a consumer of its own `base` tool. Its values file is
+This repository is also a consumer of its own `base` pack. Its values file is
 `.config/bootstrap.toml`, and `setup:configs` writes the synced copies at
 the root (`.config/`, `.gitignore`). Do not edit a synced copy. Change the
 file in `tools/<tool>/`, push it, then run `mise run setup:configs` here too.
 
 Each file in `tools/<tool>/` is at the path that it gets in a consumer
-repository. For example, `tools/base/.config/mise/tasks/code/merge/develop`
+repository. For example, `tools/git/.config/mise/tasks/code/merge/develop`
 becomes `.config/mise/tasks/code/merge/develop` in a consumer.
 
-- Each tool folder has a `tools.toml` with four keys: `depends`, `root_only`,
-  `extensions` and `seed`. All four keys are necessary, because the sync
-  reads them without defaults.
+- Each tool folder has a `tools.toml` with five keys: `default_envs`,
+  `depends`, `root_only`, `extensions` and `seed`. All five keys are
+  necessary, because the sync reads them without defaults. `default_envs` is
+  the list of the environments of the tool when the values file gives it no
+  `env`.
+- A pack is a `[pack.<name>]` table of `tools/packs.toml`. Its `depends` lists
+  tool folders, or `p:<name>` for a pack. Its optional `required` lists the
+  tools that the pack always adds. A pack name must not be a tool folder, and
+  a pack must not include itself. The sync always adds the `base` pack; its
+  name is fixed in `repo-sync`.
+- A common tool of a pack holds the items that the other tools of the pack
+  use, for example an orchestrator and its hook. Its name starts with `_`, for
+  example `_security_base`.
 - Two tools must not ship the same path.
 - A file that the consumer owns after the first write is a seed. List it in
   `seed`.
@@ -58,23 +73,27 @@ becomes `.config/mise/tasks/code/merge/develop` in a consumer.
   `[[precommit.hooks]]`. This key is optional.
 - A tool does not ship mise files. It writes its mise config in `[mise.*]`
   tables of its `tools.toml`, in mise syntax. The sync generates
-  `conf.d/<folder>/mise.<env>.toml` from them, one file for each environment
-  of the consumer (`_base` for `base`, else the tool name). See "mise config".
+  `conf.d/<tool>/mise.<env>.toml` from them, one file for each environment
+  of the consumer. See "mise config".
 
 Some files refer to files that are not in `tools/`, for example
 `dprint.jsonc`. The consumer repository supplies them.
 
 ## How the sync operates
 
-- `tools/base/.config/mise/tasks/_scripts/repo-sync` defines `repo_sync`.
+- `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync` defines `repo_sync`.
   The consumer task `setup:configs` (`setup/configs/_default`) clones this
   repository. Then it runs `setup:configs:sync` in a new process with
   `REPO_SYNC_CLONE` set. That task loads `repo-sync` from the clone, so a
   change to the sync code applies in the same run.
-- `repo_sync` reads `tools` from the consumer file `.config/bootstrap.toml`.
-  It does a shallow clone of the default branch of this repository over SSH.
-  Then it adds the `depends` of each tool, and copies each file of each tool.
-- gomplate reads the TOML files: the values file and each `tools.toml`.
+- `repo_sync` reads the `[tools.<folder>]` and `[packs.<name>]` tables of the
+  consumer file `.config/bootstrap.toml`. The only key of an entry is `env`.
+  A list (`tools = [...]`, `packs = [...]`) is the old format and stops the
+  sync with code 2. It does a shallow clone of the default branch of this
+  repository over SSH. Then it adds the `base` pack, expands each pack, adds
+  the `depends` of each tool, and copies each file of each tool.
+- gomplate reads the TOML files: the values file, `tools/packs.toml` and each
+  `tools.toml`.
 - The sync never deletes a file, except the merge tasks of the other branch
   model (see "Branch model in the merge tasks") and the stale generated mise
   files (see "mise config"). `docs/sync/migrate.md` tells consumers what to
@@ -85,13 +104,20 @@ Some files refer to files that are not in `tools/`, for example
   with a commit of the change. Use `repo_sync --dry-run` to show a diff.
 - The sync writes the shared `.gitignore` first. Then it adds the lines of the
   consumer file `.config/repo-sync/gitignore`.
-- `base` renders `.config/pre-commit-config.yaml` from the `[[precommit]]`
-  tables of the selected tools. Then it adds the entries of the consumer file
-  `.config/repo-sync/pre-commit.yaml`.
+- The `pre-commit` tool renders `.config/pre-commit-config.yaml` from the
+  `[[precommit]]` tables of the selected tools. Then it adds the entries of the
+  consumer file `.config/repo-sync/pre-commit.yaml`.
 - The sync runs `pre-commit autoupdate` on the rendered pre-commit config, so
   each `rev` becomes the newest tag. A later `autoupdate` in the consumer
   picks the same tags, so the two never undo each other. Keep a real tag in
   each `rev` of a `tools.toml`: an older `repo-sync` copies it as it is.
+  `REPO_SYNC_NO_AUTOUPDATE=1` skips `autoupdate`, so no network is necessary.
+- `test:repo-sync` is the task of this repository in
+  `.config/mise/tasks/test/repo-sync`. It runs `repo_sync --dry-run` of the
+  working tree's `tools/` against scratch values files, and it compares the
+  exit code and the message of each case. It needs no network. The local hook
+  `test-repo-sync` of `.config/repo-sync/pre-commit.yaml` runs it on each
+  commit that changes `tools/`.
 
 ## Templates (`*.tmpl`)
 
@@ -111,15 +137,13 @@ Some files refer to files that are not in `tools/`, for example
 - `.tools` is the list of the selected tools. `.extensions` is the sorted list
   of their VS Code extensions and of the values key `extensions`. In the root
   repository, it also has those of each git submodule. `.precommit` is the list
-  of their
-  `[[precommit]]` tables, then the consumer's own entries.
+  of their `[[precommit]]` tables, then the consumer's own entries.
 
 ## Task scripts
 
 Task scripts are in `tools/<tool>/.config/mise/tasks/`. mise uses the directory
-path
-as the task name, for example `code/merge/develop` is `code:merge:develop`. A
-`_default` file is the task for the directory name.
+path as the task name, for example `code/merge/develop` is
+`code:merge:develop`. A `_default` file is the task for the directory name.
 
 - `_scripts/` contains libraries, not tasks. Each task sources them through
   `${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/<name>`.
@@ -134,6 +158,9 @@ as the task name, for example `code/merge/develop` is `code:merge:develop`. A
     contains the `#PLACEHOLDER` marker and always exits 0. A stack overlay
     replaces the file. Do not edit a placeholder in place.
   - `repo-sync`: the sync function.
+
+  The `mise` tool ships `helpers`, `checks` and `placeholder`, the `git` tool
+  ships `merge`, and the `repo-sync` tool ships `repo-sync`.
 - Prefix each tool call with `mise x --`, for example `mise x -- dprint check`.
   To find whether a tool is available, use `mise x -- which <tool>`, not
   `command -v`. System commands (`git`, `awk`, `sed`) and `mise` itself do not
@@ -149,7 +176,7 @@ as the task name, for example `code/merge/develop` is `code:merge:develop`. A
 - Under `set -e`, write a command substitution that can fail as
   `VAR=$(cmd) || VAR=''`. The existing scripts explain this in comments.
 - Only the `init` task is in mise config (`[mise.tasks.init]` of
-  `tools/base/tools.toml`, always dev). It makes the task scripts executable.
+  `tools/mise/tools.toml`, always dev). It makes the task scripts executable.
   The task files load in every environment.
 
 ## Task output: headers and subheaders
@@ -177,6 +204,10 @@ task that runs only commands.
    for example "Installing pre-commit hooks ...".
 9. A task that runs only inside a git hook (`code:graph`, `code:git-config`)
    prints status lines only, no header.
+10. Exception to rules 2 and 5: `code:sec` prints a `print_header` before it
+    runs its `code:sec:<scanner>` tasks. Each scanner task prints only a
+    `print_subheader` under that header. With `--staged`, a scanner task
+    without a staged mode prints nothing.
 
 ## Branch model in the merge tasks
 
@@ -198,28 +229,42 @@ that it finds, and removes the others. It stops if neither branch exists.
 ## mise config
 
 - The consumer selects its environments with `environments` in the values
-  file: `dev` (necessary), `ci`, and `prod` and `stage` (only with `ci`).
-- `.config/mise.toml` (`tools/base/.config/mise.toml.tmpl`) is the only file for
+  file: `dev` (necessary) and `ci`. Any other name stops the sync with code 2.
+  A `tools.toml` can also name `prod` and `stage` in `default_envs` and
+  `envs`. The sync ignores each environment that `environments` does not
+  select.
+- `.config/mise.toml` (`tools/mise/.config/mise.toml.tmpl`) is the only file for
   every environment. It holds the shared `[settings]` and the `[env]` values
   from the values file (MEMBERS, MERGE_MODEL_*, REPO_NAME). `min_version`,
   `monorepo_root` and `[monorepo]` go only in a repository's own copy.
 - Each file in `.config/mise/conf.d/` is for one environment:
   `mise.<env>.toml`. mise loads it only when `MISE_ENV` includes that
   environment. No tool ships or generates a `conf.d/*/mise.toml`.
-- The sync generates `conf.d/<folder>/mise.<env>.toml` from the `[mise.*]`
+- The sync finds the environments of each tool:
+  - A tool of a `[tools.*]` entry gets its `env`, else its `default_envs`. A
+    tool of a `[packs.*]` entry gets the `env` of that entry, else its own
+    `default_envs`. Each tool of the `base` pack gets its `default_envs`. A
+    tool that is selected more than once gets each of these environments.
+  - A dependency (a tool of `depends`, or the tool that defines a mise
+    `depends`) gets each environment of each tool that needs it.
+  - `environments` limits every result.
+  - An `env` name that is not in `environments`, an empty `env`, or an `env`
+    item with a space stops the sync with code 2.
+  - The `envs` of a mise tool (default `["dev"]`) lists the environments that
+    it allows. A tool in an environment that one of its mise tools does not
+    allow stops the sync with code 2.
+- The sync generates `conf.d/<tool>/mise.<env>.toml` from the `[mise.*]`
   tables of each selected tool:
-  - A mise tool of a tool that the consumer lists in `tools` is in the
-    environments of its `envs` list (default `["dev"]`). A mise tool of a
-    tool that only a dependency adds is in dev. Each mise `depends` of a mise
-    tool is in the environments of that mise tool too.
+  - Each mise tool is in the environments of its tool.
   - `[tools]`, `[tool_alias]` and `[plugins]` follow each entry. `[settings]`,
     `[env]`, `[tool_config]`, `[task_config]`, `[task_templates]`, `[doctor]`,
-    `[deps]` and `[oci]` go to each environment where the folder has a tool.
+    `[deps]` and `[oci]` go to each environment of the tool.
   - `[vars]`, `[secrets]`, `redactions`, `[shell_alias]`, `[hooks]`,
-    `[[watch_files]]`, `[tasks]` and the daemon sections are only for dev.
+    `[[watch_files]]`, `[tasks]` and the daemon sections are only for dev,
+    when the tool is in dev.
   - Any other section stops the sync for that tool.
-  - `[mise_env.<env>.<section>]` adds content to one environment only. `base`
-    uses it for `os = "linux"` in `ci`, `prod` and `stage`.
+  - `[mise_env.<env>.<section>]` adds content to one environment only. `mise`
+    uses it for `os = "macos"` in `dev` and `os = "linux"` in `ci`.
   - The mise `depends` of an entry adds the tool that defines that mise tool.
     Do not repeat it in the `depends` key. Two tools must not define the same
     mise tool.
@@ -228,10 +273,10 @@ that it finds, and removes the others. It stops if neither branch exists.
 - The sync removes a `conf.d/*/mise*.toml` with the bootstrap header that
   it did not write. Thus a removed tool, environment or folder disappears from
   consumers.
-- The `setup` aliases are in the generated `_base/mise.dev.toml`. `setup` comes
-  from `tools/base/tools.toml`. The sync adds `setup-all` and
+- The `setup` aliases are in the generated `mise/mise.dev.toml`. `setup` comes
+  from `tools/mise/tools.toml`. The sync adds `setup-all` and
   `setup-<submodule>` there for a repository with git submodules.
-- `conf.d/_repo/` is the folder that each repository owns and customizes. `base`
+- `conf.d/_repo/` is the folder that each repository owns and customizes. `mise`
   ships the seeds `_repo/mise.<env>.toml`, for example for the repository's own
   `[env]` values. The sync writes a seed only when it is missing.
 - Each mise tool comes from a bootstrap tool. A tool that a repository needs
@@ -242,9 +287,10 @@ that it finds, and removes the others. It stops if neither branch exists.
 
 1. Change the file in `tools/<tool>/`.
 2. If the change adds, removes or changes a file, a mise tool, a task, a hook,
-   a seed or a value of the tool, change `docs/sync/<tool>.md` too. A new tool
-   needs a new file in `docs/sync/`, and a line in the list of
-   `docs/sync/index.md`.
+   a seed or a value of the tool, change `docs/sync/tools/<tool>.md` too. A
+   new tool needs a new file in `docs/sync/tools/`, and a line in the list of
+   `docs/sync/index.md`. A change to `tools/packs.toml` changes
+   `docs/sync/packs/<pack>.md` too, and a new pack needs a new file there.
 3. Commit and push to `main`.
 4. In this repository and in each consumer repository, run
    `mise run setup:configs`, then commit the result.

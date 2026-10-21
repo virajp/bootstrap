@@ -2,11 +2,12 @@
 
 GitLab: the `glab` CLI, and the issue and merge request templates.
 
-| Property  | Value |
-| --------- | ----- |
-| Root only | No    |
-| Depends   | None  |
-| Seeds     | None  |
+| Property     | Value   |
+| ------------ | ------- |
+| Root only    | No      |
+| Depends      | None    |
+| Default envs | dev, ci |
+| Seeds        | None    |
 
 ## When the tool is relevant
 
@@ -35,7 +36,8 @@ VS Code extension: `gitlab.gitlab-workflow`.
 
 ## Tasks
 
-None. The `code:merge` tasks of `base` use `glab` under the `pr` merge model.
+None. The `code:merge` tasks of the `git` tool use `glab` under the `pr` merge
+model.
 
 ## Pre-commit hooks
 

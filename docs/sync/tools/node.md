@@ -2,20 +2,22 @@
 
 Node and pnpm.
 
-| Property  | Value                                             |
-| --------- | ------------------------------------------------- |
-| Root only | No                                                |
-| Depends   | None                                              |
-| Seeds     | `pnpm-workspace.yaml`, only with a `package.json` |
+| Property     | Value                                             |
+| ------------ | ------------------------------------------------- |
+| Root only    | No                                                |
+| Depends      | None                                              |
+| Default envs | dev, ci, prod, stage                              |
+| Seeds        | `pnpm-workspace.yaml`, only with a `package.json` |
 
 ## When the tool is relevant
 
 - The repository has `package.json`.
 - The core language of the repository is JavaScript or TypeScript.
 
-`base` adds `node` in dev for the linter. A repository that uses Node only as
-a development tool does not need to list `node`. A TypeScript repository
-lists `node`, which then goes to each selected environment.
+The `linter` tool adds `node` in dev and ci, through its mise `depends`. A
+repository that uses Node only as a development tool does not need to list
+`node`. A TypeScript repository lists `[tools.node]`, which then goes to each
+environment of its `default_envs` that the repository selects.
 
 ## What the tool ships
 

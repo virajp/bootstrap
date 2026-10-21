@@ -2,11 +2,12 @@
 
 Swift and SwiftPM from the host Xcode or Command Line Tools (macOS only).
 
-| Property  | Value |
-| --------- | ----- |
-| Root only | No    |
-| Depends   | None  |
-| Seeds     | None  |
+| Property     | Value |
+| ------------ | ----- |
+| Root only    | No    |
+| Depends      | None  |
+| Default envs | dev   |
+| Seeds        | None  |
 
 ## When the tool is relevant
 

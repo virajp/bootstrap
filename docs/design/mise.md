@@ -143,22 +143,29 @@ section must be in one of the three classes.
 A `[mise.tools.<name>]` table has the mise keys of the tool, for example
 `version`, and two keys for the sync:
 
-| Key       | Meaning                                                                   |
-| --------- | ------------------------------------------------------------------------- |
-| `envs`    | The environments of the mise tool. The default is `["dev"]`. Not written. |
-| `depends` | The mise tools that this mise tool needs. mise reads it too, so it stays. |
+| Key       | Meaning                                                                            |
+| --------- | ---------------------------------------------------------------------------------- |
+| `envs`    | The environments that the mise tool allows. The default is `["dev"]`. Not written. |
+| `depends` | The mise tools that this mise tool needs. mise reads it too, so it stays.          |
 
 ### The environments of a mise tool
 
-The sync calculates the environments of each mise tool in this sequence:
+The sync calculates the environments of each tool in this sequence. Each
+mise tool gets the environments of its tool.
 
-1. A mise tool gets the environments of its `envs`.
+1. A tool of a `[tools.<folder>]` entry gets its `env`, else the
+   `default_envs` of its `tools.toml`. A tool of a `[packs.<name>]` entry gets
+   the `env` of that entry, else its own `default_envs`. Each tool of the
+   `base` pack gets its own `default_envs`. A tool that is selected more than
+   once gets each of these environments.
 2. Each dependency gets the environments of the tool that needs it: a tool of
-   the `depends` key, and a mise tool of a mise `depends`. The sync repeats
-   this step until nothing changes.
+   the `depends` key, and the tool of a mise `depends`. The sync repeats this
+   step until nothing changes.
 3. The sync keeps only the environments that the values file selects.
-4. The `envs` of a dependency must include each environment of the tool that
-   needs it. If not, the sync stops with code 2. For example, if `node` has
+4. The `envs` of each mise tool must include each environment of its tool. If
+   not, the sync stops with code 2. The message names the cause: the
+   `default_envs`, the `env` of the values file, or the tool that needs the
+   dependency. For example, if `node` has
    `envs = ["dev", "ci"]` and needs `pnpm` with `envs = ["dev"]`, a consumer
    with `ci` gets this error. The error shows a wrong `envs` in a `tools.toml`
    of `bootstrap`, so the tests of `bootstrap` must find it first.
@@ -237,9 +244,9 @@ These tools have no mise tools: `docker`, `swift` (the host Xcode), and
 `vscode`. `kotlin` gets `java` through its `depends` key.
 
 Because the `base` pack needs `node`, `pnpm`, `python` and `uv`, each consumer
-gets the `node` and `python` tools. They get the environments of the mise tools
-that need them: `dev` and `ci` for `node` and `pnpm` (`npm:@askviraj/linter`
-of `linter`), and `dev` for `python` and `uv` (`pre-commit`).
+gets the `node` and `python` tools. They get the environments of the tools
+that need them: `dev` and `ci` for `node` and `pnpm` (the `linter` tool), and
+`dev` for `python` and `uv` (the `pre-commit` tool).
 
 ## Tasks
 
@@ -268,7 +275,7 @@ not the tasks of a parent repository.
 | `code`           | None                                                      | `code:format`, `code:lint`, `code:sec`                                                                                   |
 | `code:format`    | `code:format:*` (with `--fix` and the files)              | `dprint`; then each selected member                                                                                      |
 | `code:lint`      | `code:lint:*` (with `--fix` and the files)                | Each selected member                                                                                                     |
-| `code:sec`       | `code:sec:*` (with `--staged`)                            | None                                                                                                                     |
+| `code:sec`       | `code:sec:*` (with `--staged` and `--debug`)              | First, it stops if `code:sec:gitleaks`, `code:sec:grype` or `code:sec:osv-scanner` is missing or not executable          |
 
 `has_own_task` finds an optional task, for example `setup:ai` or
 `setup:external:update`.
@@ -343,7 +350,7 @@ These facts came from the examination. They are not decisions.
   of the project.
 - `fnox` and `doppler` install their CLI in `dev` only. See
   [fnox.md](fnox.md) for the new fnox design.
-- `tools/base/.config/mise/tasks/code/_default` has the shebang
+- `tools/mise/.config/mise/tasks/code/_default` has the shebang
   `#!/usr/bin/env zsh`. The other task scripts use bash.
 - No file of `tools/` sets `MISE_ENV`. The session of this examination had
   `MISE_ENV=dev`, but its source is not known. It is not in

@@ -2,19 +2,21 @@
 
 Python and uv.
 
-| Property  | Value |
-| --------- | ----- |
-| Root only | No    |
-| Depends   | None  |
-| Seeds     | None  |
+| Property     | Value                |
+| ------------ | -------------------- |
+| Root only    | No                   |
+| Depends      | None                 |
+| Default envs | dev, ci, prod, stage |
+| Seeds        | None                 |
 
 ## When the tool is relevant
 
 - The repository has `pyproject.toml`.
 - The core language of the repository is Python.
 
-`base` adds `python` in dev for pre-commit. A repository that uses Python only
-as a development tool does not need to list `python`.
+The `pre-commit` and `claude` tools add `python` in dev, through their mise
+`depends`. A repository that uses Python only as a development tool does not
+need to list `python`.
 
 ## What the tool ships
 

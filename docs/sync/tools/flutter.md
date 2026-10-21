@@ -2,11 +2,12 @@
 
 Flutter and Dart. The tool adds the `android` tool for the Android build.
 
-| Property  | Value |
-| --------- | ----- |
-| Root only | No    |
-| Depends   | None  |
-| Seeds     | None  |
+| Property     | Value   |
+| ------------ | ------- |
+| Root only    | No      |
+| Depends      | None    |
+| Default envs | dev, ci |
+| Seeds        | None    |
 
 ## When the tool is relevant
 
@@ -48,7 +49,8 @@ tool.
 
 ## Pre-commit hooks
 
-None. The `format` and `lint` hooks of `base` run the Dart tasks.
+None. The `format` hook of `dprint` and the `lint` hook of `linter` run the Dart
+tasks.
 
 ## Files the repository supplies
 

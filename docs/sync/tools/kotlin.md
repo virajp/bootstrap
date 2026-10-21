@@ -3,11 +3,12 @@
 The Kotlin language server, and the task that resolves the Gradle
 dependencies against the lockfiles.
 
-| Property  | Value  |
-| --------- | ------ |
-| Root only | No     |
-| Depends   | `java` |
-| Seeds     | None   |
+| Property     | Value  |
+| ------------ | ------ |
+| Root only    | No     |
+| Depends      | `java` |
+| Default envs | dev    |
+| Seeds        | None   |
 
 ## When the tool is relevant
 
@@ -19,8 +20,7 @@ dependencies against the lockfiles.
   `setup:deps:kotlin` needs a `distributionSha256Sum` in
   `gradle/wrapper/gradle-wrapper.properties`. It checks the lockfiles only of
   the projects with `dependencyLocking`. The `android/` build of a Flutter app
-  is for `setup:deps:flutter`, not for this
-  task.
+  is for `setup:deps:flutter`, not for this task.
 
 ## What the tool ships
 
@@ -79,12 +79,12 @@ None.
 
 1. The tool has binaries for macOS only. If the user develops on a different
    platform, tell the user.
-2. The tool adds `java` only as a dependency, so `java` is in dev only,
-   unless another selected tool puts `java` in CI through a mise `depends`
-   (for example `flutter`). `setup` runs `setup:deps:kotlin` in every
-   environment, and the task runs `./gradlew` when the root has one. If the
-   root has an executable `./gradlew`, CI runs `mise run setup`, and `java` is
-   not in CI, add `java` to `tools`. See `java.md`.
+2. The tool adds `java` as a dependency, and `java` gets the environments of
+   `kotlin`: dev only. Another selected tool can put `java` in CI through a
+   mise `depends` (for example `flutter`). `setup` runs `setup:deps:kotlin` in
+   every environment, and the task runs `./gradlew` when the root has one. If
+   the root has an executable `./gradlew`, CI runs `mise run setup`, and `java`
+   is not in CI, add `[tools.java]` to the values file. See `java.md`.
 3. If a project of the root Gradle build does not lock its dependencies, tell
    the user that `setup:deps:kotlin` does not check that project. It is
    checked after the project has

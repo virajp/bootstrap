@@ -27,7 +27,8 @@ In this file, "the clone" is that temporary directory. Each path in
 
 ## Instructions
 
-An instruction adds tools or removes tools. It has this format:
+An instruction adds tools or removes tools. A name in the list is a tool
+folder of `tools/`, or a pack of `tools/packs.toml`. It has this format:
 
 ```text
 bootstrap: add tools [<tool>, …]
@@ -58,9 +59,9 @@ file. If a check stops, change nothing, and give its message to the caller.
 | Condition                                                                                      | Message                                                                                                   |
 | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | The repository has no `.config/bootstrap.toml`.                                                | The repository did not adopt `bootstrap`. The adoption is `docs/sync/index.md`.                           |
-| A tool name is not a folder in `tools/` of the clone.                                          | `<tool>` is not a tool of `bootstrap`.                                                                    |
+| A name is not a folder in `tools/` of the clone, and not a pack of `tools/packs.toml`.         | `<name>` is not a tool or a pack of `bootstrap`.                                                          |
 | `remove` names a tool that another selected tool needs, through `depends` or a mise `depends`. | `<tool>` cannot be removed alone: `<other tool>` needs it. Remove `<other tool>` in the same instruction. |
-| `remove` names `base`.                                                                         | `base` is necessary in each repository.                                                                   |
+| A name is `base`, or a tool or a pack that the `base` pack adds.                               | `<tool>` is in the `base` pack. The sync always adds it.                                                  |
 
 To find whether a selected tool needs a tool, read `tools/<selected>/tools.toml`
 in the clone:
@@ -73,22 +74,27 @@ A tool that the same instruction also removes does not count.
 
 These cases are not a stop:
 
-- `add` of a tool that is already in `tools` changes nothing for that tool.
-- `remove` of a tool that is not in `tools` changes nothing for that tool.
+- `add` of a tool that already has a `[tools.<tool>]` entry (or a pack that
+  already has a `[packs.<pack>]` entry) changes nothing for that name.
+- `remove` of a name that has no entry changes nothing for that name.
 
 ## Add tools
 
-1. Add each tool name to `tools` in `.config/bootstrap.toml`. Keep the list
-   sorted, with no duplicates.
+1. In `.config/bootstrap.toml`, add a `[tools.<tool>]` table for each tool,
+   and a `[packs.<pack>]` table for each pack. Write no `env` key: the tool
+   then gets its `default_envs`. Keep the tables sorted.
 2. Find the tools that each added tool adds, then the tools that these tools
-   add in turn. Read `tools/<tool>/tools.toml` in the clone. A tool adds:
+   add in turn. For a pack, start with the tools of its `depends` and its
+   `required` in `tools/packs.toml`, and expand each `p:<pack>` in turn. Read
+   `tools/<tool>/tools.toml` in the clone. A tool adds:
    - each tool of its `depends` key;
    - for each mise `depends` of one of its `[mise.tools.<name>]` entries, the
      tool whose `tools.toml` has the `[mise.tools.<name>]` entry of that mise
      tool.
-3. For each added tool and each tool of step 2, read `docs/sync/<tool>.md` in
-   the clone. Do the items of its "Adapt to the repository" and "Migration"
-   sections.
+3. For each added tool and each tool of step 2, read
+   `docs/sync/tools/<tool>.md` in the clone. For each added pack, also read
+   `docs/sync/packs/<pack>.md`. Do the items of its "Adapt to the repository"
+   and "Migration" sections.
 4. Run `mise run setup:configs`.
 
 ## Remove tools
@@ -98,18 +104,20 @@ tool needs cannot be removed alone.
 
 1. Find the dependency-only tools that leave. Make two sets of tools, with
    the rule of step 2 of "Add tools":
-   - The first set is the tools of `tools` in `.config/bootstrap.toml` before
-     the change, and each tool that they add in turn.
-   - The second set is the same tools without the removed tools, and each
-     tool that they add in turn.
+   - The first set is the tools of the `[tools.*]` and `[packs.*]` entries of
+     `.config/bootstrap.toml` before the change, the tools of the `base` pack,
+     and each tool that they add in turn.
+   - The second set is the same, without the removed tools and packs, and
+     each tool that they add in turn.
 
-   A tool that is in the first set, is not in the second set, and is not in
-   `tools` is a dependency-only tool that leaves. Step 3 deletes its files
-   too.
-2. Remove each tool name from `tools` in `.config/bootstrap.toml`. Do not
-   change `tools` for a dependency-only tool. It was never in the list.
-3. For each removed tool and each dependency-only tool of step 1, read "What
-   the tool ships" in `docs/sync/<tool>.md` in the clone:
+   A tool that is in the first set, is not in the second set, and has no
+   `[tools.*]` entry is a dependency-only tool that leaves. Step 3 deletes its
+   files too.
+2. Remove the `[tools.<tool>]` or `[packs.<pack>]` table of each name from
+   `.config/bootstrap.toml`. A dependency-only tool has no table.
+3. For each tool that is in the first set of step 1 and not in the second
+   set, read "What the tool ships" in `docs/sync/tools/<tool>.md` in the
+   clone:
    - Delete each file of kind `Synced`. These files start with the bootstrap
      header.
    - Delete each file of kind `Template` that has `Synced from bootstrap` in
@@ -121,7 +129,7 @@ tool needs cannot be removed alone.
    - Keep a file of kind `Template` without that header in its first three
      lines. Keep a file of any other kind.
 4. Run `mise run setup:configs`. The sync removes the generated mise files of
-   the removed tools and of the dependency-only tools of step 1.
+   the tools of step 3.
 
 ## After the change
 

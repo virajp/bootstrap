@@ -2,11 +2,12 @@
 
 The Cloudflare CLI (`npm:cf`).
 
-| Property  | Value |
-| --------- | ----- |
-| Root only | No    |
-| Depends   | None  |
-| Seeds     | None  |
+| Property     | Value   |
+| ------------ | ------- |
+| Root only    | No      |
+| Depends      | None    |
+| Default envs | dev, ci |
+| Seeds        | None    |
 
 ## When the tool is relevant
 
