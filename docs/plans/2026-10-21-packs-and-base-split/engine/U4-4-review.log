@@ -1,0 +1,86 @@
+/code-review high — loop U4, round 4, range 31fcdb7..00e083c
+
+```json
+[
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 820,
+    "summary": "_rs_context puts the [[precommit]] entries of every tool in _RS_TOOLS into the pre-commit config, whatever its environments. A tool that a values-file `env` keeps out of dev still adds its hooks to the dev config, but its mise tools are not installed in dev.",
+    "failure_scenario": "Values file: environments = [\"dev\",\"ci\"] and [tools.github] env = [\"ci\"]. conf.d/github/ gets only mise.ci.toml, so actionlint is not installed in dev. .config/pre-commit-config.yaml (used in dev, because pre-commit is dev only) still has the hook `entry: mise x -- actionlint`. Every commit that touches .github/workflows/*.yml then fails the hook with command not found."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 739,
+    "summary": "The generated config moved from conf.d/_base/ to one folder per tool (mise/, pre-commit/, repo-sync/, dprint/, linter/, ...). All of them sort after conf.d/_repo/, so the repository's own overrides now lose to the shared fragments. Gap G3 is still open; the root fix is a repo folder name that sorts last.",
+    "failure_scenario": "mise loads the conf.d folders in alphabetical order and the later one wins. A consumer sets PRE_COMMIT_HOME, `os`, or a jq/yq/gomplate version in conf.d/_repo/mise.dev.toml. Before, `_base` < `_repo`, so that override won. Now pre-commit/mise.dev.toml and mise/mise.dev.toml load after `_repo` and quietly undo it."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 441,
+    "summary": "Each default_envs item is checked, but an empty list is accepted. A tool selected without `env` then gets no environment, and its whole mise config disappears with no message.",
+    "failure_scenario": "tools/dprint/tools.toml has `default_envs = []`. _RS_DEFAULT_ENVS has no dprint entry, so _rs_mise_env gives dprint no environment and _rs_mise_render writes nothing. The sync ends with 'done: N/N' and exit 0, and any old conf.d/dprint/ is removed as stale. code:format then runs without the dprint binary. The values-file `env = []` case is rejected with code 2, but this one is not."
+  },
+  {
+    "file": "tools/_security_base/.config/mise/tasks/code/sec/_default",
+    "line": 37,
+    "summary": "The orchestrator invites the repository's own code:sec:<x> tasks, then passes --staged and --debug to every one of them without checking that the task declares those flags.",
+    "failure_scenario": "A consumer adds .config/mise/tasks/code/sec/trivy without `#USAGE flag \"--staged\"`. On every commit the sec hook runs `mise run code:sec:trivy --staged`. Either mise rejects the unknown flag and the commit is blocked, or the task ignores it and runs a full scan on each commit."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 588,
+    "summary": "_rs_envs still accepts only dev and ci in `environments`, but _RS_ENV_NAMES, the default_envs of node, python and bun, and CLAUDE.md all include prod and stage. Those environments are accepted in tools.toml but can never be selected.",
+    "failure_scenario": "A consumer writes environments = [\"dev\",\"ci\",\"prod\"], as CLAUDE.md describes (\"prod and stage (only with ci)\"). The sync stops with \"environment 'prod' ... is not one of dev, ci\". `[tools.node] env = [\"prod\"]` passes _rs_env_name but then fails with 'not in environments', so the prod/stage entries in default_envs are dead config with two sources of truth."
+  },
+  {
+    "file": "tools/_security_base/.config/mise/tasks/code/sec/_default",
+    "line": 27,
+    "summary": "The required-scanner list (code:sec:gitleaks, code:sec:grype, code:sec:osv-scanner) is hard-coded, and so is the description. It repeats `[pack.security] depends` in tools/packs.toml.",
+    "failure_scenario": "Someone adds a scanner tool such as trivy to the security pack. The gate does not require code:sec:trivy, so a missing or non-executable trivy task is skipped without a word: the fail-open case that commit 94c87f8 meant to close. The list could be rendered from .tools (a .tmpl) instead of kept by hand."
+  },
+  {
+    "file": "tools/_security_base/.config/mise/tasks/code/sec/_default",
+    "line": 36,
+    "summary": "The secret-scan hook that runs on every commit (`code:sec --staged`) now starts three nested `mise run` processes. Two of them, grype and osv-scanner, only parse --staged and exit 0.",
+    "failure_scenario": "Each commit pays for two extra mise startups, each of which resolves the config and toolset, on top of gitleaks. The old script called gitleaks directly. In --staged mode, running only code:sec:gitleaks, or skipping the tasks that have no staged mode, avoids that cost."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 678,
+    "summary": "_RS_MISE_ENVS, REPO_SYNC_ENVS and the per-entry `strings.Contains` check in the template can now be derived from _RS_TOOL_ENVS. _rs_mise_env stops the sync whenever a mise tool does not allow an environment of its tool, so an entry is in an environment exactly when REPO_SYNC_IN is 1.",
+    "failure_scenario": "Two sets of state with the same meaning have to be kept in step. The per-name match also silently drops a [mise.tool_alias] or [mise.plugins] key that is not a mise tool name. The template could gate the entry sections on `$in` as well. _rs_mise_render could then skip gomplate when in=0, because the output is always empty there (for example pre-commit, repo-sync and claude in ci)."
+  },
+  {
+    "file": "tools/grype/.config/mise/tasks/code/sec/grype",
+    "line": 24,
+    "summary": "The new scanner leaves (grype, osv-scanner, gitleaks) print a print_subheader with no print_header before it. The code:sec orchestrator prints a header before its `mise run` calls.",
+    "failure_scenario": "This breaks the 'Task output' rules in /Users/virajpatel/Projects/github.com/virajp/bootstrap/CLAUDE.md. Rule 2: \"A leaf prints `print_header` first, and only once. Nothing comes before it.\" Rule 5: \"An orchestrator prints nothing for a `mise run`. The subtask prints its own header.\" `mise run code:sec:grype` on its own shows a subheader with no header. Recorded as plan gap G2, but still a break of the rule."
+  },
+  {
+    "file": "tools/packs.toml",
+    "line": 1,
+    "summary": "Ten tool folders were added and tools/base was deleted, but nothing under docs/sync/ changed. CLAUDE.md still describes four tools.toml keys, tools/base paths and conf.d/_base.",
+    "failure_scenario": "This breaks /Users/virajpatel/Projects/github.com/virajp/bootstrap/CLAUDE.md, 'Change a shared file' step 2: \"A new tool needs a new file in `docs/sync/`, and a line in the list of `docs/sync/index.md`.\" It also breaks the layout rule \"`docs/sync/<tool>.md`: one file for each folder in `tools/`\". There is no doc for mise, repo-sync, git, pre-commit, dprint, linter, gitleaks, grype, osv-scanner or _security_base. U5 is planned to fix this, but the branch breaks the rule until then."
+  }
+]
+```
+
+This is the round-4 review of `main...HEAD`, the commits through f633afe. I did not run the tests or the sync this round.
+
+- **New this round:**
+  - Findings 1, 6 and 8.
+  - Finding 1 is the most serious. Choosing environments in the values file now limits where a tool's mise tools are installed, but its pre-commit hooks still go into the dev config.
+- **Carried over from round 3 and still unfixed:**
+  - Findings 2, 3, 4, 5, 7, 9 and 10.
+  - Finding 2 is the open gap G3.
+  - Finding 9 is the open gap G2.
+- **Left out on purpose:**
+  - Existing consumers fail on their first sync, because the old `setup/configs/sync` still loads the deleted `tools/base/` path. This is gap G1, and the user rule against upgrade paths covers it.
+  - This repository's `.config/bootstrap.toml` still has `tools = ["base"]`. U6 owns that change.
+  - Lower-ranked candidates that did not fit under the cap of 10:
+    - The fixers in the pre-commit-hooks repository now run before `format`.
+    - The `pre-commit-hooks` repository appears twice, once in the git tool and once in the pre-commit tool.
+    - `_rs_tool_extensions` expands the base pack again for each submodule.
+    - The `test-repo-sync` hook filter (`^tools/`) misses changes to the test itself.
+    - The `[tools.node] env dev, ci` test case checks only the exit code.
+    - The whitespace-in-env fix from f633afe has no test.
