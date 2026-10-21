@@ -37,28 +37,36 @@ dependencies against the lockfiles.
 
 ## Tasks
 
-| Task                | Use                                                                                                                                                           |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `setup:deps:kotlin` | Resolve the resolvable-only configurations of every Gradle project, and fail when the resolve does not match the lockfiles. `--upgrade` writes the lockfiles. |
+| Task                | Use                                                                                                                                                      |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:deps:kotlin` | Resolve the resolvable configurations of every Gradle project, and fail when the resolve does not match the lockfiles. `--upgrade` writes the lockfiles. |
 
 - The task applies only when the repository root has an executable
   `./gradlew`. Else it prints nothing. It does not look in `android/` or in
   another folder.
 - It fails when `gradle/wrapper/gradle-wrapper.properties` has no
   `distributionSha256Sum` of 64 hex digits.
-- A normal run sets `LockMode.STRICT` on each project and on its buildscript
-  classpath, then resolves without `--write-locks`. Gradle enforces the
-  lockfiles on the disk: a dynamic version stays at its locked version, and a
+- A normal run sets `LockMode.STRICT` on the settings buildscript classpath,
+  and on each project and on its buildscript classpath, then resolves without
+  `--write-locks`. Gradle enforces the lockfiles on the disk: a dynamic version
+  stays at its locked version, and a
   resolve that does not match a lockfile fails. A locked configuration with no
   lock state also fails, for example a new module without a lockfile. The Gradle
-  output names the project and the configuration, and the task tells
-  `--upgrade`. The run changes no file.
-- The task resolves only the configurations that are resolvable and not
-  consumable (`canBeConsumed`). So it does not resolve the legacy `default`
-  and `archives` configurations.
+  output names the project and the configuration. On any failure of
+  `./gradlew`, the task tells the user to run `--upgrade` only if the output
+  names the dependency lock state. The run changes no file.
+- The task resolves each resolvable configuration, except the legacy
+  `default` and `archives` configurations. A configuration from
+  `configurations.create()`, for example of detekt or ktlint, is also
+  consumable. The task resolves it, so its lock is examined and written.
 - Gradle writes a lockfile only for a project with `dependencyLocking`. The
   task does not check a project without it. When no project has it, the
-  normal run prints a warning and passes.
+  normal run prints a warning and passes. The task finds the lockfiles below
+  the Gradle root, but not in a folder with `.git` or `settings.gradle(.kts)`:
+  a git submodule or a nested Gradle build.
+- Each `./gradlew` call of the task passes `--no-configuration-cache`. The
+  resolve and `dependencyUpdates` cannot use the configuration cache, so Gradle
+  prints no cache warnings.
 - `--upgrade` resolves with `--write-locks --refresh-dependencies` and keeps
   the new lockfiles. Then it runs `./gradlew dependencyUpdates` if the
   ben-manes plugin `com.github.ben-manes.versions` is applied. It ends with

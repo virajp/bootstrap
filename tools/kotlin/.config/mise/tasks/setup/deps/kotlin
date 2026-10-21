@@ -41,8 +41,13 @@ print_success "distributionSha256Sum is set."
 # all of them in any folder. find does not use git, so the result is correct in
 # a root that is not a git repository and for ignored lockfiles. It does not go
 # into hidden folders (.git, .gradle, worktrees), build outputs or node_modules.
+# It also does not go into a folder below the root with .git or
+# settings.gradle(.kts): a git submodule or a nested Gradle build, which the
+# resolve does not cover.
 lockfiles() {
   find . \( -type d \( -name '.?*' -o -name build -o -name node_modules \) -prune \) \
+    -o \( -type d ! -path . \( -exec test -e '{}/.git' \; -o -exec test -e '{}/settings.gradle.kts' \; \
+    -o -exec test -e '{}/settings.gradle' \; \) -prune \) \
     -o \( -type f -name '*gradle.lockfile' -print \)
 }
 
@@ -57,16 +62,25 @@ TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/bootstrap-gradle.XXXXXX")
 trap 'rm -rf "${TMP_DIR}"' EXIT
 trap 'exit 130' INT TERM
 
-# Every resolvable-only configuration of every project, not the root's alone. A
-# configuration that is also consumable (legacy default, archives) is for other
-# projects, so the task does not resolve it. The list is a copy, so a resolve
+# Every resolvable configuration of every project, not the root's alone. The
+# legacy default and archives configurations are for other projects, so the
+# task does not resolve them. A configuration from configurations.create() is
+# also consumable (detekt, ktlint, a custom tool), and the task resolves it, so
+# its lock is examined and written. The list is a copy, so a resolve
 # that adds a configuration does not change the loop. A normal run sets
-# LockMode.STRICT on each project and on its buildscript classpath when Gradle
+# LockMode.STRICT on the settings buildscript classpath before the settings
+# script, and on each project and on its buildscript classpath when Gradle
 # creates the project, before its build script: a resolve fails on a mismatch
 # with a lockfile, and on a locked configuration with no lock state. --upgrade
 # does not set STRICT, so a new module gets its first lockfile there.
+# bootstrapResolveAll and dependencyUpdates cannot use the configuration cache,
+# so each ./gradlew call turns it off, and Gradle prints no cache warnings.
 INIT_SCRIPT="${TMP_DIR}/resolve-all.gradle"
 {
+  if [[ "${UPGRADE}" != "true" ]]; then
+    printf '%s\n' \
+      'beforeSettings { s -> s.buildscript.dependencyLocking.lockMode.set(org.gradle.api.artifacts.dsl.LockMode.STRICT) }'
+  fi
   printf '%s\n' 'allprojects { p ->'
   if [[ "${UPGRADE}" != "true" ]]; then
     printf '%s\n' \
@@ -77,7 +91,7 @@ INIT_SCRIPT="${TMP_DIR}/resolve-all.gradle"
     '  p.tasks.register("bootstrapResolveAll") {' \
     '    notCompatibleWithConfigurationCache("resolves the configurations at execution time")' \
     '    def confs = p.configurations' \
-    '    doLast { confs.matching { it.canBeResolved && !it.canBeConsumed }.toList().each { it.resolve() } }' \
+    '    doLast { confs.matching { it.canBeResolved && !(it.name in ["default", "archives"]) }.toList().each { it.resolve() } }' \
     '  }' \
     '}'
 } > "${INIT_SCRIPT}"
@@ -85,7 +99,7 @@ INIT_SCRIPT="${TMP_DIR}/resolve-all.gradle"
 if [[ "${UPGRADE}" == "true" ]]; then
   print_subheader "Writing new lockfiles for every project ..."
   BEFORE=$(lock_state) || BEFORE=''
-  ./gradlew --init-script "${INIT_SCRIPT}" bootstrapResolveAll --write-locks --refresh-dependencies
+  ./gradlew --no-configuration-cache --init-script "${INIT_SCRIPT}" bootstrapResolveAll --write-locks --refresh-dependencies
 
   # Gradle writes a lockfile only for a project with dependencyLocking. The
   # last message tells whether the resolve changed a lockfile, from the two
@@ -104,7 +118,7 @@ if [[ "${UPGRADE}" == "true" ]]; then
   # dependencyUpdates comes from the ben-manes versions plugin. Only Gradle's
   # task-not-found error is a skip; any other failure is the build's.
   print_subheader "Checking for outdated Gradle dependencies ..."
-  if ./gradlew dependencyUpdates 2>&1 | tee "${TMP_DIR}/outdated.log"; then
+  if ./gradlew --no-configuration-cache dependencyUpdates 2>&1 | tee "${TMP_DIR}/outdated.log"; then
     upgrade_done
     exit 0
   fi
@@ -120,11 +134,12 @@ fi
 # A normal run resolves against the lockfiles on the disk and writes no file.
 # Gradle pins each locked version, so a dynamic version stays at its locked
 # version. A module without dependencyLocking has no lock state and is not
-# checked.
+# checked. A failure can also come from the network or the build, so the
+# advice to run --upgrade applies only when Gradle names the lock state.
 print_subheader "Resolving every project against its lockfile ..."
-if ! ./gradlew --init-script "${INIT_SCRIPT}" bootstrapResolveAll; then
-  print_error "The resolve does not match the lockfiles; the Gradle output above names the project and the configuration."
-  print_info "Run 'mise run setup:deps:kotlin --upgrade', then commit the lockfiles."
+if ! ./gradlew --no-configuration-cache --init-script "${INIT_SCRIPT}" bootstrapResolveAll; then
+  print_error "./gradlew failed; its output is above."
+  print_info "If the output names the dependency lock state, run 'mise run setup:deps:kotlin --upgrade', then commit the lockfiles."
   exit 1
 fi
 
@@ -133,4 +148,4 @@ if [[ -z "${LOCKS}" ]]; then
   print_warn "No project has dependencyLocking, so there is no lockfile to check."
   exit 0
 fi
-print_success "The lockfiles cover each resolvable-only configuration of each project with dependencyLocking."
+print_success "The lockfiles cover each resolvable configuration of each project with dependencyLocking."
