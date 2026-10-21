@@ -432,7 +432,7 @@ _rs_resolve() {
       case $field in
         default_env)
           if ! _rs_env_name "$value"; then
-            _rs_log "default_envs of tools/$tool/tools.toml: '$value' is not one of $_RS_ENV_NAMES"
+            _rs_log "default_envs of tools/$tool/tools.toml: '$value' is not one of ${_RS_ENV_NAMES// /, }"
             return 2
           fi
           _RS_DEFAULT_ENVS+="$tool:$value "
@@ -556,9 +556,16 @@ _rs_remove() {
   _rs_log "removed    $show"
 }
 
+# The environment names that a tools.toml can use in `default_envs` and
+# `envs`, in their order. `environments` of the values file limits them.
+_RS_ENV_NAMES='dev ci prod stage'
+_rs_env_name() {
+  [[ -n $1 && $1 != *[[:space:]]* && " $_RS_ENV_NAMES " == *" $1 "* ]]
+}
+
 # Set _RS_ENVS to the ` <env> ` words of `environments` in <values>, in the
-# order dev, ci. Without the key, only dev. Returns 2, after a message, for
-# an unknown name or no dev.
+# order of _RS_ENV_NAMES. Without the key, only dev. Returns 2, after a
+# message, for a name other than dev or ci, or no dev.
 _rs_envs() {
   local values=$1 list name
   list=$(_rs_list "$values" environments) || {
@@ -571,12 +578,13 @@ _rs_envs() {
   fi
   for name in $list; do
     case $name in
-      dev | ci) ;;
+      prod | stage) ;;
       *)
-        _rs_log "environment '$name' in $(_rs_path "$values") is not one of dev, ci"
-        return 2
+        _rs_env_name "$name" && continue
         ;;
     esac
+    _rs_log "environment '$name' in $(_rs_path "$values") is not one of dev, ci"
+    return 2
   done
   list=" $(printf '%s ' $list)"
   if [[ $list != *" dev "* ]]; then
@@ -584,22 +592,10 @@ _rs_envs() {
     return 2
   fi
   _RS_ENVS=' '
-  for name in dev ci; do
+  for name in $_RS_ENV_NAMES; do
     [[ $list == *" $name "* ]] && _RS_ENVS+="$name "
   done
   return 0
-}
-
-# The environment names that a tools.toml can use in `default_envs` and
-# `envs`. `environments` of the values file limits them.
-_RS_ENV_NAMES='dev, ci, prod, stage'
-_rs_env_name() {
-  case $1 in
-    dev | ci | prod | stage)
-      return 0
-      ;;
-  esac
-  return 1
 }
 
 # Set _RS_TOOL_ENVS to the ` <tool>:<env> ` words and _RS_MISE_ENVS to the
@@ -654,7 +650,7 @@ _rs_mise_env() {
     [[ $allowed == - ]] && allowed=dev
     for name in ${allowed//,/ }; do
       if ! _rs_env_name "$name"; then
-        _rs_log "envs of mise tool '$entry' in tools/$tool/tools.toml: '$name' is not one of $_RS_ENV_NAMES"
+        _rs_log "envs of mise tool '$entry' in tools/$tool/tools.toml: '$name' is not one of ${_RS_ENV_NAMES// /, }"
         return 2
       fi
     done
