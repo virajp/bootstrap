@@ -9,11 +9,12 @@ This file is temporary. Remove an item when all repositories have done it.
 
 ## Find the items that apply
 
-| The repository has                                      | Do                                                                                                                                                                          |
-| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.config/bootstrap.toml` with a `tools` list            | The list stops the sync, and the old synced `setup/configs/sync` loads the removed `tools/base/`. Do step 2 of `index.md` first. Then write the tables of step 3, then M16. |
-| `.config/repo-config.toml` with a `tools` list          | M15, then the row above.                                                                                                                                                    |
-| No values file, but older shared files or a mise config | The steps of `index.md`. Its step 5 sends you here for M1 to M14. Write the new name directly.                                                                              |
+| The repository has                                      | Do                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.config/bootstrap.toml` with a `tools` list            | The list stops the sync, and the old synced `setup/configs/sync` loads the removed `tools/base/`. Do step 2 of `index.md` first: copy the sync files by hand. Then write the tables of step 3, then M17 and M16. Then ask the user to run `mise run setup:configs`. |
+| `.config/repo-config.toml` with a `tools` list          | M15. Its M15.4 includes the row above.                                                                                                                                                                                                                              |
+| No values file, but older shared files or a mise config | The steps of `index.md`. Its step 5 sends you here for M1 to M14. Write the new name directly.                                                                                                                                                                      |
+| `.config/mise/conf.d/_repo/`, or an `env` without `dev` | M17, before the first sync.                                                                                                                                                                                                                                         |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -80,7 +81,7 @@ The sync replaces `.config/mise.toml`. It keeps only the shared `[settings]`.
    - `MEMBERS` is not necessary for submodules. For folders, write
      `[member.<name>]` tables.
 2. Move the repository's own `[env]` values to the seed
-   `.config/mise/conf.d/_repo/mise.<env>.toml` of each environment that needs
+   `.config/mise/conf.d/zz-repo/mise.<env>.toml` of each environment that needs
    them. Examples are `GITHUB_OWNER`, and the emulator, Temporal and OTEL
    variables of 95octane backend (`mise.dev.toml`).
 3. Delete what a tool now supplies: `CLOUDSDK_PYTHON` (the `gcloud` tool) and
@@ -110,14 +111,14 @@ one, tell the user. Examples: node `26` and pnpm `12` in 95octane, where
 claude-plugins has an old folder `.config/mise/conf.d/_base`, from before the
 `tools/` layout. Before the first sync, move its content:
 
-| Old content in `_base`                                           | New place               |
-| ---------------------------------------------------------------- | ----------------------- |
-| node, pnpm                                                       | the `node` tool         |
-| python, uv, `UV_*`                                               | the `python` tool       |
-| pre-commit, `PRE_COMMIT_HOME`                                    | the `pre-commit` tool   |
-| `MEMBERS`, `REPO_NAME`                                           | the values file         |
-| `MEMPALACE_*` and other repository variables                     | `_repo/mise.<env>.toml` |
-| `min_version`, `task.run_auto_install`, other repository content | step M5                 |
+| Old content in `_base`                                           | New place                 |
+| ---------------------------------------------------------------- | ------------------------- |
+| node, pnpm                                                       | the `node` tool           |
+| python, uv, `UV_*`                                               | the `python` tool         |
+| pre-commit, `PRE_COMMIT_HOME`                                    | the `pre-commit` tool     |
+| `MEMBERS`, `REPO_NAME`                                           | the values file           |
+| `MEMPALACE_*` and other repository variables                     | `zz-repo/mise.<env>.toml` |
+| `min_version`, `task.run_auto_install`, other repository content | step M5                   |
 
 Then delete the old files `mise.toml`, `mise.dev.toml` and `mise.ci.toml` of
 that folder. Also delete an old `conf.d/ai/`: the `claude` tool replaces it.
@@ -175,10 +176,10 @@ See "Migration" in [`tools/github.md`](tools/github.md) or
    Delete an old `core_tools` key: the `env` of each `[tools.*]` entry, else
    the `default_envs` of the tool, decides its environments now.
 2. Move the repository variables of an old `_env/mise.toml` or
-   `conf.d/repo/` to the `_repo/mise.<env>.toml` seeds (step M5). Move each
+   `conf.d/repo/` to the `zz-repo/mise.<env>.toml` seeds (step M5). Move each
    tool of an old `conf.d/repo/` to a bootstrap tool (step M6). Then delete
    `conf.d/repo/`.
-3. Move the seeds of an old `conf.d/_env/` folder to `conf.d/_repo/`. The sync
+3. Move the seeds of an old `conf.d/_env/` folder to `conf.d/zz-repo/`. The sync
    does not remove them, because a seed has no header.
 
 The next sync removes the old `conf.d/*/mise.toml`, `_env/mise.toml`,
@@ -249,16 +250,24 @@ Do not change the content of the file.
 
 ### M15.4: Run the sync
 
+This is the first sync with `bootstrap`. Do not run it yourself. You can run
+a dry run.
+
 1. If mise says that the config files are not trusted, ask the user to run
    `mise trust`.
-2. Run `mise run setup:configs --dry-run`.
-3. Examine the diff. Each synced file changes its header. Other changes come
+2. If the values file has a `tools` list, do the first row of "Find the items
+   that apply" now, but not its last sentence: copy the sync files by hand,
+   write the tables, then do M17 and M16. If not, do M17 and M16 if they
+   apply.
+3. Run `mise run setup:configs --dry-run`.
+4. Examine the diff. Each synced file changes its header. Other changes come
    from the commits in `bootstrap` since the last sync of this repository.
    Show the user the list of files with changes that are not only the header.
-4. If the dry run replaces repository-owned content, stop. Tell the user.
+5. If the dry run replaces repository-owned content, stop. Tell the user.
    "Rules" in `index.md` lists the places for repository-owned content.
-5. Run `mise run setup:configs`.
-6. Run `mise run init`. This makes all the task scripts executable.
+6. Ask the user to run `mise run setup:configs`. Wait until the user tells
+   you the result.
+7. Run `mise run init`. This makes all the task scripts executable.
 
 If `repo_sync` fails, read the table of exit codes in step 6 of `index.md`.
 
@@ -343,4 +352,27 @@ tool defines `android-sdk`, and the `java` tool defines `java`. The mise
      `.config/mise/conf.d/java/mise.dev.toml`. `java` is in dev only. If CI
      builds with Gradle, add `[tools.java]`, as `kotlin.md` says. Then the
      output must also list `.config/mise/conf.d/java/mise.ci.toml`.
-4. Run `mise run setup:configs`.
+4. Ask the user to run `mise run setup:configs`. Wait until the user tells
+   you the result. If you do this item before the first sync, skip this step:
+   the first sync is a later step of the row, of M15.4 or of `index.md`.
+
+## M17: `conf.d/_repo/` is now `conf.d/zz-repo/`, and each tool is in `dev`
+
+Do this item before the first sync.
+
+1. Rename an existing `.config/mise/conf.d/_repo/` to
+   `.config/mise/conf.d/zz-repo/`:
+
+   ```bash
+   git mv .config/mise/conf.d/_repo .config/mise/conf.d/zz-repo
+   ```
+
+   mise loads the folders of `conf.d/` in name order, and a later folder
+   wins. `_repo` sorts before the tool folders, so a tool overrides the
+   repository config. `zz-repo` sorts last, so the repository config wins. If
+   you do not rename the folder, the sync writes new seeds in `zz-repo/`, and
+   the old `_repo/` stays.
+2. Make sure that each `env` of a `[tools.*]` or a `[packs.*]` entry includes
+   `dev`, for example `env = ["dev", "ci"]`. An `env` without `dev`, for
+   example `env = ["ci"]`, stops the sync with code 2. If the user needs a
+   tool in `ci` only, tell the user that `bootstrap` does not support it.

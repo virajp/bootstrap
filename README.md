@@ -149,16 +149,17 @@ These rules apply to each file:
   A tool of a `[tools.*]` or a `[packs.*]` entry goes to the environments of
   its `env`, else of its `default_envs`. A dependency goes to each environment
   of the tools that need it. The `envs` of a mise tool lists the environments
-  that it allows; a tool in a different environment stops the sync. Aliases,
-  hooks, vars and tasks go only to dev. `.config/mise.toml` is the only file
-  for every environment. `CLAUDE.md` has the full rules.
+  that it allows; a tool in a different environment stops the sync. Each tool
+  must be in dev: an `env` or a `default_envs` without dev stops the sync.
+  Aliases, hooks, vars and tasks go only to dev. `.config/mise.toml` is the
+  only file for every environment. `CLAUDE.md` has the full rules.
 - The sync never deletes a file, with two exceptions. The first is the merge
   tasks. With `main` and `develop`, the repository gets `code:merge:develop`
   and `code:merge:main`. With only one of them, it gets `code:merge`. The sync
   removes the merge tasks of the other model. The second is a
   `.config/mise/conf.d/*/mise*.toml` file with the bootstrap header that the
-  sync did not write. A seed, such as `_repo/mise.<env>.toml`, has no header, so
-  the sync keeps it.
+  sync did not write. A seed, such as `zz-repo/mise.<env>.toml`, has no header,
+  so the sync keeps it.
 
 A repository synced before the `tools/` layout cannot sync. Its
 `setup/configs/sync` loads `tools/base/.../repo-sync` from the clone, and the

@@ -10,18 +10,23 @@ the tool they are installing
 Each tool folder has a `tools.toml` with five necessary keys. The sync reads
 them without defaults.
 
-| Key            | Meaning                                                                                             |
-| -------------- | --------------------------------------------------------------------------------------------------- |
-| `default_envs` | A list: the environments of the tool when the values file gives it no `env`, for example `["dev"]`. |
-| `depends`      | The tools that the sync adds with this one. Each gets the environments of this tool.                |
-| `root_only`    | `true`: the sync refuses the tool in a git submodule.                                               |
-| `extensions`   | The VS Code extensions of the tool.                                                                 |
-| `seed`         | The files that the sync writes only when they are missing.                                          |
+| Key            | Meaning                                                                                                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `default_envs` | A list: the environments of the tool when the values file gives it no `env`, for example `["dev"]`. It must include `dev`. |
+| `depends`      | The tools that the sync adds with this one. Each gets the environments of this tool.                                       |
+| `root_only`    | `true`: the sync refuses the tool in a git submodule.                                                                      |
+| `extensions`   | The VS Code extensions of the tool.                                                                                        |
+| `seed`         | The files that the sync writes only when they are missing.                                                                 |
 
 `default_envs` and the `envs` of a mise tool can name `dev`, `ci`, `prod` and
 `stage`. A name of `default_envs` that the values file selects, and that a
 mise tool of the tool does not allow in its `envs`, stops the sync with
 code 2. See [mise.md](mise.md#the-environments-of-a-mise-tool).
+
+A `default_envs` without `dev` stops the sync with code 2, also for a tool
+that the values file does not select. A tool folder that is `zz-repo`, or
+whose name sorts after `zz-repo` in byte order, also stops the sync with
+code 2: the folder `conf.d/zz-repo/` of the repository must load last.
 
 ## Kinds of tool
 

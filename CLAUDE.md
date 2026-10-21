@@ -46,7 +46,10 @@ becomes `.config/mise/tasks/code/merge/develop` in a consumer.
   `depends`, `root_only`, `extensions` and `seed`. All five keys are
   necessary, because the sync reads them without defaults. `default_envs` is
   the list of the environments of the tool when the values file gives it no
-  `env`.
+  `env`. It must include `dev`.
+- A tool folder must not be `zz-repo`, and its name must not sort after
+  `zz-repo` in byte order. If it does, the sync stops with code 2. The folder
+  `conf.d/zz-repo/` of the repository must load last (see "mise config").
 - A pack is a `[pack.<name>]` table of `tools/packs.toml`. Its `depends` lists
   tool folders, or `p:<name>` for a pack. Its optional `required` lists the
   tools that the pack always adds. A pack name must not be a tool folder, and
@@ -115,7 +118,9 @@ Some files refer to files that are not in `tools/`, for example
 - `test:repo-sync` is the task of this repository in
   `.config/mise/tasks/test/repo-sync`. It runs `repo_sync --dry-run` of the
   working tree's `tools/` against scratch values files, and it compares the
-  exit code and the message of each case. It needs no network. The local hook
+  exit code and the message of each case. It needs no network. Before its
+  first `git` call, it unsets the `GIT_*` variables of a git hook, so its
+  scratch repositories never write to this repository. The local hook
   `test-repo-sync` of `.config/repo-sync/pre-commit.yaml` runs it on each
   commit that changes `tools/`.
 
@@ -250,6 +255,10 @@ that it finds, and removes the others. It stops if neither branch exists.
   - `environments` limits every result.
   - An `env` name that is not in `environments`, an empty `env`, or an `env`
     item with a space stops the sync with code 2.
+  - Each tool must be in `dev`. An `env` without `dev` stops the sync with
+    code 2. A `default_envs` without `dev` also stops the sync with code 2.
+    The sync examines the `default_envs` of each tool of the clone, also of a
+    tool that the consumer does not select.
   - The `envs` of a mise tool (default `["dev"]`) lists the environments that
     it allows. A tool in an environment that one of its mise tools does not
     allow stops the sync with code 2.
@@ -276,9 +285,12 @@ that it finds, and removes the others. It stops if neither branch exists.
 - The `setup` aliases are in the generated `mise/mise.dev.toml`. `setup` comes
   from `tools/mise/tools.toml`. The sync adds `setup-all` and
   `setup-<submodule>` there for a repository with git submodules.
-- `conf.d/_repo/` is the folder that each repository owns and customizes. `mise`
-  ships the seeds `_repo/mise.<env>.toml`, for example for the repository's own
-  `[env]` values. The sync writes a seed only when it is missing.
+- `conf.d/zz-repo/` is the folder that each repository owns and customizes.
+  `mise` ships the seeds `zz-repo/mise.<env>.toml`, for example for the
+  repository's own `[env]` values. The sync writes a seed only when it is
+  missing. mise loads the folders of `conf.d/` in name order, and a later
+  folder wins. `zz-repo` sorts after each tool folder, so the config of the
+  repository wins over the config of each tool.
 - Each mise tool comes from a bootstrap tool. A tool that a repository needs
   gets added to a tool in `tools/`, or becomes a new tool, for example
   `doppler`.

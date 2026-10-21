@@ -3,12 +3,12 @@
 The shared mise config, the task library, and the `setup` and `code`
 orchestrators.
 
-| Property     | Value               |
-| ------------ | ------------------- |
-| Root only    | No                  |
-| Depends      | None                |
-| Default envs | dev, ci             |
-| Seeds        | `_repo/mise.*.toml` |
+| Property     | Value                 |
+| ------------ | --------------------- |
+| Root only    | No                    |
+| Depends      | None                  |
+| Default envs | dev, ci               |
+| Seeds        | `zz-repo/mise.*.toml` |
 
 ## When the tool is relevant
 
@@ -17,16 +17,16 @@ file.
 
 ## What the tool ships
 
-| Path in the repository                          | Kind      | Use                                                                                 |
-| ----------------------------------------------- | --------- | ----------------------------------------------------------------------------------- |
-| `.config/mise.toml`                             | Template  | The shared `[settings]`, and the `[env]` values from the values file.               |
-| `.config/mise/conf.d/mise/mise.<env>.toml`      | Generated | The mise config of this tool, one file for each environment.                        |
-| `.config/mise/conf.d/_repo/mise.<env>.toml`     | Seed      | The repository's own mise config and `[env]` values, one file for each environment. |
-| `.config/mise/tasks/_scripts/`                  | Synced    | The libraries `helpers`, `checks` and `placeholder`.                                |
-| `.config/mise/tasks/setup/_default`             | Template  | The task `setup`.                                                                   |
-| `.config/mise/tasks/setup/worktree`             | Template  | The task `setup:worktree`.                                                          |
-| `.config/mise/tasks/setup/mise`                 | Synced    | The task `setup:mise`.                                                              |
-| `.config/mise/tasks/code/_default`, `worktrees` | Synced    | The tasks `code` and `code:worktrees`.                                              |
+| Path in the repository                          | Kind      | Use                                                                                                                                                               |
+| ----------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.config/mise.toml`                             | Template  | The shared `[settings]`, and the `[env]` values from the values file.                                                                                             |
+| `.config/mise/conf.d/mise/mise.<env>.toml`      | Generated | The mise config of this tool, one file for each environment.                                                                                                      |
+| `.config/mise/conf.d/zz-repo/mise.<env>.toml`   | Seed      | The repository's own mise config and `[env]` values, one file for each environment. The folder name sorts last, so this config wins over the config of each tool. |
+| `.config/mise/tasks/_scripts/`                  | Synced    | The libraries `helpers`, `checks` and `placeholder`.                                                                                                              |
+| `.config/mise/tasks/setup/_default`             | Template  | The task `setup`.                                                                                                                                                 |
+| `.config/mise/tasks/setup/worktree`             | Template  | The task `setup:worktree`.                                                                                                                                        |
+| `.config/mise/tasks/setup/mise`                 | Synced    | The task `setup:mise`.                                                                                                                                            |
+| `.config/mise/tasks/code/_default`, `worktrees` | Synced    | The tasks `code` and `code:worktrees`.                                                                                                                            |
 
 VS Code extensions: `hverlin.mise-vscode`, `redhat.vscode-yaml`,
 `tamasfe.even-better-toml`.
