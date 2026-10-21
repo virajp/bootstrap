@@ -331,6 +331,7 @@ _rs_manifest() {
 # Set _RS_MISE_DEFS to the ` <mise-tool>=<tool> ` words of every tool in the
 # clone <dir>, selected or not: the mise `depends` of an entry find their tool
 # here. Returns 2, after a message, when two tools define the same mise tool,
+# when the default_envs of a tool, selected or not, has no dev,
 # or for a tool folder named zz-repo or that sorts after it in byte order:
 # mise loads the folders of conf.d/ in name order and a later one wins, so the
 # repo's own conf.d/zz-repo/ must load last and no tool may write there.
