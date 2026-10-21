@@ -31,8 +31,7 @@ one keeps the secrets of the repository.
 | --------- | -------- | ------------ |
 | `doppler` | `latest` | dev          |
 
-Only dev. The `ci`, `prod` and `stage` environments have their own secret
-management.
+Only dev. The `ci` environment has its own secret management.
 
 ## Tasks
 

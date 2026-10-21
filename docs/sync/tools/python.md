@@ -2,12 +2,12 @@
 
 Python and uv.
 
-| Property     | Value                |
-| ------------ | -------------------- |
-| Root only    | No                   |
-| Depends      | None                 |
-| Default envs | dev, ci, prod, stage |
-| Seeds        | None                 |
+| Property     | Value   |
+| ------------ | ------- |
+| Root only    | No      |
+| Depends      | None    |
+| Default envs | dev, ci |
+| Seeds        | None    |
 
 ## When the tool is relevant
 
@@ -28,10 +28,10 @@ need to list `python`.
 
 ## mise tools
 
-| mise tool | Version  | Environments         |
-| --------- | -------- | -------------------- |
-| `python`  | `3.14`   | dev, ci, prod, stage |
-| `uv`      | `latest` | dev, ci, prod, stage |
+| mise tool | Version  | Environments |
+| --------- | -------- | ------------ |
+| `python`  | `3.14`   | dev, ci      |
+| `uv`      | `latest` | dev, ci      |
 
 The tool also sets:
 

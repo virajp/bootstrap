@@ -35,8 +35,7 @@ parent directories, and the secrets go only to `fnox exec` subprocesses.
 | --------- | -------- | ------------ |
 | `fnox`    | `latest` | dev          |
 
-Only dev. The `ci`, `prod` and `stage` environments have their own secret
-management.
+Only dev. The `ci` environment has its own secret management.
 
 The tool sets `FNOX_CONFIG_DIR` to `.config/fnox/`. This folder has no
 `config.toml`, so the global `~/.config/fnox/config.toml` does not load in the

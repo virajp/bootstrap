@@ -1,5 +1,5 @@
 # Bun, with a bunfig.toml that the repository owns.
-default_envs = [ "dev", "ci", "prod", "stage" ]
+default_envs = [ "dev", "ci" ]
 depends = []
 extensions = []
 root_only = false
@@ -7,5 +7,5 @@ seed = [ "bunfig.toml" ]
 
 # The mise config, generated into .config/mise/conf.d/bun/mise.<env>.toml.
 [mise.tools.bun]
-envs = [ "dev", "ci", "prod", "stage" ]
+envs = [ "dev", "ci" ]
 version = "latest"
