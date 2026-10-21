@@ -110,7 +110,7 @@ else
   HIT=$(detect_level compileSdk)
   if [[ -z "${HIT}" ]]; then
     print_error "No compileSdk level found in the build.gradle.kts and *.gradle files, build-logic/ or gradle/libs.versions.toml"
-    print_info "Set COMPILE_SDK in the [env] of .config/mise/conf.d/_repo/mise.<env>.toml"
+    print_info "Set COMPILE_SDK in the [env] of .config/mise/conf.d/zz-repo/mise.<env>.toml"
     exit 1
   fi
   COMPILE_RAW="${HIT%% *}"
@@ -134,7 +134,7 @@ else
   HIT=$(detect_level targetSdk)
   if [[ -z "${HIT}" ]]; then
     print_error "No targetSdk level found in the build.gradle.kts and *.gradle files, build-logic/ or gradle/libs.versions.toml"
-    print_info "Set EMULATOR_IMAGE in the [env] of .config/mise/conf.d/_repo/mise.<env>.toml"
+    print_info "Set EMULATOR_IMAGE in the [env] of .config/mise/conf.d/zz-repo/mise.<env>.toml"
     exit 1
   fi
   TARGET_RAW="${HIT%% *}"
@@ -189,7 +189,7 @@ if ! installed "${IMAGE}"; then
       IMAGE="${VARIANT}"
     else
       print_error "The SDK has neither ${IMAGE} nor ${VARIANT}"
-      print_info "Set EMULATOR_IMAGE in the [env] of .config/mise/conf.d/_repo/mise.<env>.toml"
+      print_info "Set EMULATOR_IMAGE in the [env] of .config/mise/conf.d/zz-repo/mise.<env>.toml"
       exit 1
     fi
   fi

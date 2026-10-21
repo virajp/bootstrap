@@ -307,7 +307,9 @@ A unit returns exactly this block and nothing else — no file contents, no diff
   detects, and the plan does not cover a Gradle root that is not a git work
   tree. Assumption taken: `git ls-files` lists nothing there, so
   `setup:deps:android` does not apply and prints nothing.
-- G3 (R1, non-blocking): the comment at `tools/swift/tools.toml:1` ("Swift and
+- G3 (R1, non-blocking — RESOLVED on branch `gap-fixes`: the comment now names
+  Xcode for an `.xcodeproj`, else the Command Line Tools): the comment at
+  `tools/swift/tools.toml:1` ("Swift and
   SwiftPM from the host Xcode (macOS only).") is false after R14 and R15. No
   unit owns the file (Shared-file rule: `tools/*/tools.toml` not changed), and
   U6
