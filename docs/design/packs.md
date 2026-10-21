@@ -6,8 +6,10 @@ tools.
 
 A pack is a named list of tools. It is only a pointer: it has `depends` and
 an optional `required`, and nothing else. The config, the tasks and the files
-are in the tools that the pack selects. If the group tool has config, tasks or
-files that all its packs use, they are in the group tool.
+are in the tools that the pack selects. The pack is the group: no tool selects
+other tools. If several packs share config, tasks or files, they are in one
+tool that each of these packs names in `depends`, for example `flutter`, or in
+a common tool `_<name>`.
 
 ## `tools/packs.toml`
 
@@ -27,7 +29,7 @@ depends = [ "flutter", "swift" ]
 depends = [ "flutter" ]
 ```
 
-- A pack names all its tools in `depends`, the group tool included.
+- A pack names all its tools in `depends`, the shared tool included.
 - A name in `depends` is a tool folder in `tools/`, or a pack with the prefix
   `p:`, for example `p:security`.
 - A pack name must not be the name of a tool folder. The sync reads all the
@@ -35,14 +37,14 @@ depends = [ "flutter" ]
 - A pack must not include itself, directly or through other packs. The sync
   stops with code 2 for a loop, and it shows the packs of the loop, for example
   `a -> b -> a`.
-- The `depends` lists of this document are examples. The packs of each group
-  tool are decided when the tool is designed.
+- The `depends` lists of this document are examples. The Flutter packs are
+  decided when they are designed.
 
 ## The questions are in `docs/sync/`
 
 `tools.toml` and `tools/packs.toml` hold only the relationships. The
 questions are in `docs/sync/packs/<pack>.md` of each pack, and in
-`docs/sync/tools/<tool>.md` of the group tool. The adopting AI asks them, and
+`docs/sync/tools/<tool>.md` of the shared tool. The adopting AI asks them, and
 it does not ask a question that the prompt of the user already answers.
 
 ## The answers go into the values file

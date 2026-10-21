@@ -9,10 +9,12 @@
 set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
+# Each subtask accepts --debug and passes it on to its own subtasks. Unquoted
+# on purpose: empty adds no argument.
 [[ "${usage_debug:-false}" == "true" ]] && FLAGS="--debug" || FLAGS=""
 
-mise run code:format
+mise run code:format ${FLAGS}
 
-mise run code:lint
+mise run code:lint ${FLAGS}
 
-mise run code:sec
+mise run code:sec ${FLAGS}
