@@ -1,0 +1,29 @@
+# Example: the submodule frontend. It is a flutter polyrepo with the branches
+# main and develop.
+
+# The commit scopes of git-conventional-commits.
+commit_scopes = [ "app", "l10n" ]
+# The mise environments: dev (necessary) and ci.
+environments = [ "dev", "ci" ]
+# The VS Code extensions that no tool has.
+extensions = [ "localizely.flutter-intl" ]
+# The product name, for the fnox keychain service.
+product_name = "acme"
+repo_name = "acme-frontend"
+# The web URL of the repository, for the github tool.
+repo_url = "https://github.com/example/acme-frontend"
+# The gitignored files to copy into a new worktree.
+worktree_files = [ ".config/mise.local.toml" ]
+
+[tools.flutter]
+env = [ "dev", "ci" ]
+
+# A feature branch merges into develop. main never merges into develop.
+[branch.develop]
+merge_model = "direct"
+merge_never = [ "main" ]
+
+# Only develop merges into main, through a pull request.
+[branch.main]
+merge_from = [ "develop" ]
+merge_model = "pr"

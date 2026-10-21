@@ -1,0 +1,25 @@
+# Example: the submodule iac. It is a pulumi polyrepo with the branch develop
+# only.
+
+# The commit scopes of git-conventional-commits.
+commit_scopes = [ "network", "storage" ]
+# The mise environments: dev (necessary) and ci.
+environments = [ "dev", "ci" ]
+# The VS Code extensions that no tool has.
+extensions = [ "pulumi.pulumi-lsp-client" ]
+# The product name, for the fnox keychain service.
+product_name = "acme"
+repo_name = "acme-iac"
+# The web URL of the repository, for the github tool.
+repo_url = "https://github.com/example/acme-iac"
+# The gitignored files to copy into a new worktree.
+worktree_files = [ ".config/mise.local.toml" ]
+
+# pulumi is for dev only: its mise tool does not allow ci.
+[tools.pulumi]
+env = [ "dev" ]
+
+# A feature branch merges into develop. main never merges into develop.
+[branch.develop]
+merge_model = "direct"
+merge_never = [ "main" ]

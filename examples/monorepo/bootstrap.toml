@@ -1,0 +1,46 @@
+# Example: a node monorepo with the branches main and develop.
+# Feature branches merge into develop. Only develop merges into main.
+
+# The commit scopes of git-conventional-commits. The default is the member
+# list.
+commit_scopes = [ "common", "deps", "service", "worker" ]
+# The mise environments: dev (necessary) and ci.
+environments = [ "dev", "ci" ]
+# The VS Code extensions that no tool has.
+extensions = [ "dbaeumer.vscode-eslint" ]
+# The product name, for the fnox keychain service.
+product_name = "shop"
+repo_name = "shop-platform"
+# The web URL of the repository, for the github tool.
+repo_url = "https://github.com/example/shop-platform"
+# The gitignored files to copy into a new worktree.
+worktree_files = [ ".config/mise.local.toml", ".env" ]
+
+[tools.node]
+env = [ "dev", "ci" ]
+
+# A feature branch merges into develop. main never merges into develop.
+[branch.develop]
+merge_model = "direct"
+merge_never = [ "main" ]
+
+# Only develop merges into main, through a pull request.
+[branch.main]
+merge_from = [ "develop" ]
+merge_model = "pr"
+
+# The folder members. A folder member is part of the root tree.
+[member.common]
+folder = "packages/common"
+label = "Common"
+type = "folder"
+
+[member.service]
+folder = "projects/service"
+label = "Service"
+type = "folder"
+
+[member.worker]
+folder = "projects/worker"
+label = "Worker"
+type = "folder"
