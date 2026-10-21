@@ -153,15 +153,17 @@ These rules apply to each file:
   must be in dev: an `env` or a `default_envs` without dev stops the sync.
   Aliases, hooks, vars and tasks go only to dev. `.config/mise.toml` is the
   only file for every environment. `CLAUDE.md` has the full rules.
-- The sync never deletes a file, with two exceptions. The first is the merge
+- The sync never deletes a file, with three exceptions. The first is the merge
   tasks. With `main` and `develop`, the repository gets `code:merge:develop`
   and `code:merge:main`. With only one of them, it gets `code:merge`. The sync
   removes the merge tasks of the other model. The second is a
   `.config/mise/conf.d/*/mise*.toml` file with the bootstrap header that the
   sync did not write. A seed, such as `zz-repo/mise.<env>.toml`, has no header,
-  so the sync keeps it.
+  so the sync keeps it. The third is a file with the bootstrap header at a path
+  where the sync needs a folder.
 
-A repository synced before the `tools/` layout cannot sync. Its
+A repository synced before the split of the base tool (`c95e4ff`) cannot sync.
+Its
 `setup/configs/sync` loads `tools/base/.../repo-sync` from the clone, and the
 `tools/base/` folder no longer exists. Copy the sync files into the repository
 by hand one time, as step 2 of `docs/sync/index.md` tells you.
@@ -174,8 +176,10 @@ A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
 - The delimiters are `<% %>`. mise uses `{{ }}` and bash uses `[[ ]]`, so
   both reach the output unchanged.
 - The values come from the repository's `.config/bootstrap.toml`.
-- `.members` is the list of member names: the git submodules (else `MEMBERS`),
-  then each `[member.<name>]` table whose folder exists in the repository.
+- `.members` is the list of member names: the git submodules, then each other
+  `[member.<name>]` table, whose `folder` (default the name) must exist.
+  `.member_folders` and `.member_types` give the folder and the type
+  (`submodule` or `folder`) of each name.
 - `.submodules` is the list of the git submodules only. It is empty in a
   repository without submodules.
 - `.tools` is the list of the selected tools, packs expanded and dependencies
@@ -193,10 +197,7 @@ Example values file:
 ```toml
 commit_scopes = [ "backend", "web" ]
 environments = [ "dev", "ci" ]
-merge_model_develop = "direct"
-merge_model_main = "pr"
 product_name = "my-product"
-release_tag_pattern = '^my-repo-v\d+$'
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
 worktree_files = [ ".config/mise.local.toml" ]
@@ -213,8 +214,14 @@ env = [ "dev", "ci" ] # optional; without it, the default_envs of the tool
 [tools.vscode]
 
 [member.backend]
+folder = "projects/backend" # optional; the default is the name
 label = "Backend"
 worktree_install = "pnpm install --frozen-lockfile"
+
+# The merge config of this repository.
+[branch.main]
+merge_from = [ "develop" ]
+merge_model = "pr"
 ```
 
 ## `.gitignore`
@@ -243,8 +250,8 @@ list of `repos:` entries:
 
 `mise run test:repo-sync` runs `repo_sync --dry-run` of the working tree's
 `tools/` against scratch values files, and checks the exit code and the
-message of each case. It needs no network. The local hook `test-repo-sync`
-runs it on each commit that changes `tools/`.
+message of each case. It needs no network. No hook runs it: run it by hand
+before you commit a change to `tools/`.
 
 ## Change a shared file
 

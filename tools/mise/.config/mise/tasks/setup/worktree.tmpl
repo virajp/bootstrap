@@ -56,11 +56,11 @@ fi
 <% $x := dict %><% if and (has $ "member") (has $.member .) %><% $x = index $.member . %><% end -%>
 <% if has $x "worktree_install" -%>
 print_header "Installing <% . %> dependencies ..."
-mise x --cd "${MISE_PROJECT_ROOT}/<% . %>" -- <% $x.worktree_install %>
+mise x --cd "${MISE_PROJECT_ROOT}/<% index $.member_folders . %>" -- <% $x.worktree_install %>
 <% else -%>
-if MISE_PROJECT_ROOT="${MISE_PROJECT_ROOT}/<% . %>" has_own_task setup:worktree; then
+if MISE_PROJECT_ROOT="${MISE_PROJECT_ROOT}/<% index $.member_folders . %>" has_own_task setup:worktree; then
   print_header "Setting up the <% index $x "label" | default . %> worktree ..."
-  mise run --cd "${MISE_PROJECT_ROOT}/<% . %>" setup:worktree
+  mise run --cd "${MISE_PROJECT_ROOT}/<% index $.member_folders . %>" setup:worktree
 fi
 <% end -%>
 

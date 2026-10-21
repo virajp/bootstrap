@@ -194,8 +194,8 @@ The sync finds the environments of each tool in this sequence:
    its own `default_envs`. A tool that is selected more than once gets each of
    these environments.
 2. A dependency gets each environment of each tool that needs it, through
-   `depends` or a mise `depends`. For example, `flutter` adds `android-sdk`
-   and `java` in dev and ci.
+   `depends` or a mise `depends`. For example, `flutter` adds the `android` and
+   `java` tools in dev and ci.
 3. `environments` of the values file limits every result.
 4. Each tool must be in `dev`. An `env` without `dev` stops the sync with
    code 2. A `default_envs` without `dev` in a `tools.toml` of `bootstrap`
@@ -253,35 +253,34 @@ In step 6, ask the user to run it. You can run a dry run.
 
 Write `.config/bootstrap.toml`. Ask the user for each value.
 
-| Key                                | Used by                    | Values                                                                                                                                                                                                                                                      |
-| ---------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[tools.<folder>]`                 | `repo_sync`                | One table for each tool from step 1. Do not write a tool of the `base` pack.                                                                                                                                                                                |
-| `[tools.<folder>].env`             | `repo_sync`                | Optional. The environments of the tool, for example `["dev", "ci"]`. Without it, the tool gets its `default_envs`.                                                                                                                                          |
-| `[packs.<name>]`                   | `repo_sync`                | One table for each pack from step 1, without the prefix `p:`. Do not write `base`.                                                                                                                                                                          |
-| `[packs.<name>].env`               | `repo_sync`                | Optional. The environments of each tool of the pack. Without it, each tool gets its own `default_envs`.                                                                                                                                                     |
-| `environments`                     | `repo_sync`                | The environments from step 1, for example `["dev", "ci"]`. The default is `["dev"]`.                                                                                                                                                                        |
-| `repo_name`                        | `.config/mise.toml`        | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                                                                                                                                                             |
-| `product_name`                     | `fnox.toml`                | The product name, for example `95octane`. Set it in each repository of a product with members, the root included. Then the fnox keychain uses it as `service`, and `<repo_name>/` as `prefix`. Without it, `service` is `repo_name` and there is no prefix. |
-| `merge_model_develop`              | `.config/mise.toml`        | `direct` (local merge) or `pr` (pull request)                                                                                                                                                                                                               |
-| `merge_model_main`                 | `.config/mise.toml`        | `direct` or `pr`                                                                                                                                                                                                                                            |
-| `commit_scopes`                    | `git-conventional-commits` | The commit scopes, for example `["backend", "web"]`. The default is the member list.                                                                                                                                                                        |
-| `repo_url`                         | `git-conventional-commits` | The web URL of the repository, for the changelog links. GitHub and GitLab are supported.                                                                                                                                                                    |
-| `release_tag_pattern`              | `git-conventional-commits` | The pattern of the release tags, for example `'^web-v\d+$'`. Use a TOML literal string (single quotes), so that each backslash stays. The default is `"*"`, all tags.                                                                                       |
-| `worktree_files`                   | `setup:worktree`           | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]`                                                                                                                                          |
-| `extensions`                       | `vscode` (in the root)     | VS Code extensions that no tool has, for example `["astro-build.astro-vscode"]`. A submodule lists its own too.                                                                                                                                             |
-| `[member.<name>]`                  | `setup`, `setup:worktree`  | One table for each member folder                                                                                                                                                                                                                            |
-| `[member.<name>].label`            | `setup`                    | The display name. The default is `<name>`.                                                                                                                                                                                                                  |
-| `[member.<name>].worktree_install` | `setup:worktree`           | The install command for a new worktree. If it is not set, the member's own `setup:worktree` runs.                                                                                                                                                           |
+| Key                                | Used by                                                            | Values                                                                                                                                                                                                                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[tools.<folder>]`                 | `repo_sync`                                                        | One table for each tool from step 1. Do not write a tool of the `base` pack.                                                                                                                                                                                            |
+| `[tools.<folder>].env`             | `repo_sync`                                                        | Optional. The environments of the tool, for example `["dev", "ci"]`. Without it, the tool gets its `default_envs`.                                                                                                                                                      |
+| `[packs.<name>]`                   | `repo_sync`                                                        | One table for each pack from step 1, without the prefix `p:`. Do not write `base`.                                                                                                                                                                                      |
+| `[packs.<name>].env`               | `repo_sync`                                                        | Optional. The environments of each tool of the pack. Without it, each tool gets its own `default_envs`.                                                                                                                                                                 |
+| `environments`                     | `repo_sync`                                                        | The environments from step 1, for example `["dev", "ci"]`. The default is `["dev"]`.                                                                                                                                                                                    |
+| `repo_name`                        | `.config/mise.toml`, `gitleaks.toml`, `fnox.toml`                  | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                                                                                                                                                                         |
+| `product_name`                     | `fnox.toml`                                                        | The product name, for example `95octane`. Set it in each repository of a product with members, the root included. Then the fnox keychain uses it as `service`, and `<repo_name>/` as `prefix`. Without it, `service` is `repo_name` and there is no prefix.             |
+| `[branch.<branch>].merge_model`    | `code:merge:*`                                                     | The merge config of this repository, for the destination `<branch>`: `direct` (local merge, the default) or `pr` (pull request). Each repository has its own, also a submodule.                                                                                         |
+| `[branch.<branch>].merge_from`     | `code:merge:*`                                                     | Optional. The only branches that can merge into `<branch>`. Do not set it with `merge_never`.                                                                                                                                                                           |
+| `[branch.<branch>].merge_never`    | `code:merge:*`                                                     | Optional. The branches that never merge into `<branch>`. Without both lists: into `main` with `develop`, only from `develop`; into any other branch, never from `main`.                                                                                                 |
+| `commit_scopes`                    | `git-conventional-commits`                                         | The commit scopes, for example `["backend", "web"]`. The default is the member list.                                                                                                                                                                                    |
+| `repo_url`                         | `github` tool                                                      | The web URL of the repository, for the links of the GitHub issue form: the README and a new security advisory.                                                                                                                                                          |
+| `worktree_files`                   | `setup:worktree`                                                   | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]`                                                                                                                                                      |
+| `extensions`                       | `vscode` (in the root)                                             | VS Code extensions that no tool has, for example `["astro-build.astro-vscode"]`. A submodule lists its own too.                                                                                                                                                         |
+| `[member.<name>]`                  | `setup`, `setup:worktree`                                          | One table for each member folder                                                                                                                                                                                                                                        |
+| `[member.<name>].folder`           | `repo_sync`, `setup`, `setup:worktree`, `code:format`, `code:lint` | Optional. The folder of the member below the root, for example `projects/web`. The default is `<name>`. A table whose folder is a submodule path names that submodule. A submodule without a table has its path as its name. The folder `.` stops the sync with code 2. |
+| `[member.<name>].type`             | `repo_sync`                                                        | Optional. `submodule` or `folder`. Without it, the sync finds the type. A type that is not correct stops the sync with code 2.                                                                                                                                          |
+| `[member.<name>].label`            | `setup`, `setup:worktree`                                          | The display name. The default is `<name>`.                                                                                                                                                                                                                              |
+| `[member.<name>].worktree_install` | `setup:worktree`                                                   | The install command for a new worktree. If it is not set, the member's own `setup:worktree` runs.                                                                                                                                                                       |
 
 Example:
 
 ```toml
 commit_scopes = [ "backend", "web" ]
 environments = [ "dev", "ci" ]
-merge_model_develop = "direct"
-merge_model_main = "pr"
 product_name = "my-product"
-release_tag_pattern = '^my-repo-v\d+$'
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
 worktree_files = [ ".config/mise.local.toml" ]
@@ -296,6 +295,10 @@ worktree_files = [ ".config/mise.local.toml" ]
 env = [ "dev", "ci" ]
 
 [tools.vscode]
+
+[branch.main]
+merge_from = [ "develop" ]
+merge_model = "pr"
 ```
 
 The only key of a `[tools.*]` or a `[packs.*]` entry is `env`. Each name in
@@ -356,16 +359,18 @@ skip this step.
 
 If `repo_sync` fails, read the exit code:
 
-| Code | Cause                                                                                                                                                                                       | Action                                           |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| 2    | The old list format, a bad `[tools.*]` or `[packs.*]` entry, a bad `env` (also an `env` without `dev`) or `environments`, a root-only tool in a submodule, or a template that cannot render | Correct the values file                          |
-| 2    | A tool in an environment that one of its mise tools does not allow                                                                                                                          | Correct the `env`, or tell the `bootstrap` owner |
-| 2    | A pack loop, or a pack name that is also a tool folder                                                                                                                                      | Tell the `bootstrap` owner                       |
-| 2    | A `default_envs` without `dev`, or a tool folder that is `zz-repo` or that sorts after `zz-repo`                                                                                            | Tell the `bootstrap` owner                       |
-| 2    | Neither `main` nor `develop` exists                                                                                                                                                         | Do step 4                                        |
-| 3    | A tool or a pack that is not in `bootstrap`                                                                                                                                                 | Correct the `[tools.*]` and `[packs.*]` entries  |
-| 5    | The clone failed, or `pre-commit autoupdate` failed                                                                                                                                         | Examine the network, the SSH key and the access  |
-| 1    | A local file system error                                                                                                                                                                   | Read the `repo-sync:` lines on stderr            |
+| Code | Cause                                                                                                                                                                                                                                                          | Action                                           |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| 2    | The old list format, a bad `[tools.*]` or `[packs.*]` entry, a bad `env` (also an `env` without `dev`) or `environments`, a root-only tool in a submodule, or a template that cannot render                                                                    | Correct the values file                          |
+| 2    | A tool in an environment that one of its mise tools does not allow                                                                                                                                                                                             | Correct the `env`, or tell the `bootstrap` owner |
+| 2    | A pack loop, or a pack name that is also a tool folder                                                                                                                                                                                                         | Tell the `bootstrap` owner                       |
+| 2    | A `default_envs` without `dev`, or a tool folder that is `zz-repo` or that sorts after `zz-repo`                                                                                                                                                               | Tell the `bootstrap` owner                       |
+| 2    | Two tools define the same mise tool, a mise `depends` that no tool defines, a tool that ships and generates the same `conf.d` file, an unsupported `[mise.*]` or `[mise_env.*]` section, or a `default_envs` or `envs` name that is not dev, ci, prod or stage | Tell the `bootstrap` owner                       |
+| 2    | The values file is missing, or gomplate is not available                                                                                                                                                                                                       | Correct the values file, or run `mise install`   |
+| 2    | Neither `main` nor `develop` exists                                                                                                                                                                                                                            | Do step 4                                        |
+| 3    | A tool or a pack that is not in `bootstrap`                                                                                                                                                                                                                    | Correct the `[tools.*]` and `[packs.*]` entries  |
+| 5    | The clone failed, `REPO_SYNC_CLONE` is not usable, pre-commit is not available, or `pre-commit autoupdate` failed                                                                                                                                              | Examine the network, the SSH key and the access  |
+| 1    | A local file system error                                                                                                                                                                                                                                      | Read the `repo-sync:` lines on stderr            |
 
 A failure does not change an existing file.
 
@@ -387,7 +392,7 @@ for each selected tool.
 2. Run `mise tasks`. Make sure that the synced tasks are in the list.
 3. Run `mise run setup`. Make sure that it completes.
 4. Run `mise run setup:configs` again. Each file must show `unchanged`,
-   `kept seed` or `skip env`.
+   `kept seed`, `skip seed` or `skip env`.
 
 mise always loads `.config/mise.toml`. It loads a `conf.d/*/mise.<env>.toml`
 file only when `MISE_ENV` includes that environment. Without `MISE_ENV`, no

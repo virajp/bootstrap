@@ -30,9 +30,9 @@ Do not list it in the values file.
 
 ## Tasks
 
-| Task             | Use                                                                                     |
-| ---------------- | --------------------------------------------------------------------------------------- |
-| `code:sec:grype` | Scan the dependencies of the tree, without the git submodules. `--staged` does nothing. |
+| Task             | Use                                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------------------- |
+| `code:sec:grype` | Scan the dependencies of the tree, without the git submodules. `--staged` does nothing. `--debug` adds `-vv`. |
 
 `code:sec` runs this task.
 

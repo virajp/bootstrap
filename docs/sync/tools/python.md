@@ -14,8 +14,9 @@ Python and uv.
 - The repository has `pyproject.toml`.
 - The core language of the repository is Python.
 
-The `pre-commit` and `claude` tools add `python` in dev, through their mise
-`depends`. A repository that uses Python only as a development tool does not
+The `pre-commit` and `claude` tools add `python` in dev, and the `gcloud` tool
+adds it in dev and ci, through their mise `depends`. A repository that uses
+Python only as a development tool does not
 need to list `python`.
 
 ## What the tool ships

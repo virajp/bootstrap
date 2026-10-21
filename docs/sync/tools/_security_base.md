@@ -27,9 +27,9 @@ None.
 
 ## Tasks
 
-| Task       | Use                                                                                                         |
-| ---------- | ----------------------------------------------------------------------------------------------------------- |
-| `code:sec` | Run each `code:sec:<scanner>` task with `--staged` and `--debug`. `--staged` scans only the staged changes. |
+| Task       | Use                                                                                                                                                                                          |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `code:sec` | Run each `code:sec:<scanner>` task, and pass on `--staged` and `--debug` when they are given. `--staged` scans only the staged changes for secrets, skips grype, and prints no success line. |
 
 `code:sec` stops with an error if one of `code:sec:gitleaks`,
 `code:sec:grype` and `code:sec:osv-scanner` is missing or not executable. Then

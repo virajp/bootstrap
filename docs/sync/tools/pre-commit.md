@@ -48,9 +48,16 @@ The tool also sets:
 shebangs, merge conflicts, symlinks, JSON, TOML and YAML syntax, private keys,
 end of file, trailing whitespace and line endings.
 
+The sync runs `pre-commit autoupdate` on the rendered config, so each `rev`
+becomes the newest tag, not the `rev` of the `tools.toml`. If pre-commit is not
+available or the autoupdate fails, the sync stops with code 5.
+`REPO_SYNC_NO_AUTOUPDATE=1` skips the autoupdate.
+
 ## Files the repository supplies
 
-None.
+| File                                | Used by                                                    |
+| ----------------------------------- | ---------------------------------------------------------- |
+| `.config/repo-sync/pre-commit.yaml` | `.config/pre-commit-config.yaml`. Optional: its own hooks. |
 
 ## Adapt to the repository
 

@@ -20,7 +20,7 @@ task.timings = true
 # From .config/bootstrap.toml. The repository's own variables go in
 # .config/mise/conf.d/zz-repo/mise.<env>.toml.
 [env]
-# Member projects within the repository
+# The folders of the member projects within the repository
 MEMBERS = ""
 # Repository name, used for identification within the toolchain
 REPO_NAME = "bootstrap"

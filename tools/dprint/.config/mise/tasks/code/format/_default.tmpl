@@ -5,11 +5,14 @@
 
 #USAGE flag "--debug" help="emit debug logs"
 #USAGE flag "--fix" help="apply fixes"
-<% $last := math.Sub (len .members) 1 -%>
-<% if .members -%>
-#USAGE flag "--all" help="Also format all members: <% range $i, $m := .members %><% if $i %><% if eq $i $last %> and <% else %>, <% end %><% end %><% $m %><% end %>"
+<%/* The member flags are only for the submodules: a folder of a monorepo is
+   part of this tree. */ -%>
+<% $subs := coll.Slice %><% range .members %><% if eq (index $.member_types .) "submodule" %><% $subs = coll.Append . $subs %><% end %><% end -%>
+<% $last := math.Sub (len $subs) 1 -%>
+<% if $subs -%>
+#USAGE flag "--all" help="Also format all members: <% range $i, $m := $subs %><% if $i %><% if eq $i $last %> and <% else %>, <% end %><% end %><% $m %><% end %>"
 <% end -%>
-<% range .members -%>
+<% range $subs -%>
 #USAGE flag "--<% . %>" help="Also format <% . %>"
 <% end -%>
 #USAGE arg "[files]" var=#true help="the files to format in this repository; the default is the whole tree"
@@ -42,11 +45,11 @@ fi
 for task in $(own_tasks code:format); do
   mise run "${task}" ${FIX} ${DEBUG} ${FILES[@]+"${FILES[@]}"}
 done
-<% range .members %>
+<% range $subs %>
 if [[ "${usage_all:-false}" == "true" || "${usage_<% . | strings.ReplaceAll "-" "_" %>:-false}" == "true" ]]; then
   # A member is a separate repository: it formats its whole tree.
   print_header "Formatting <% . %> ..."
-  mise run --cd <% . %> code:format ${FIX} ${DEBUG}
+  mise run --cd <% index $.member_folders . %> code:format ${FIX} ${DEBUG}
 fi
 <% end %>
 print_success "Formatting done"

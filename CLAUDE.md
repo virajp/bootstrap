@@ -98,8 +98,9 @@ Some files refer to files that are not in `tools/`, for example
 - gomplate reads the TOML files: the values file, `tools/packs.toml` and each
   `tools.toml`.
 - The sync never deletes a file, except the merge tasks of the other branch
-  model (see "Branch model in the merge tasks") and the stale generated mise
-  files (see "mise config"). `docs/sync/migrate.md` tells consumers what to
+  model (see "Branch model in the merge tasks"), the stale generated mise
+  files (see "mise config"), and a synced file at a path where the sync needs
+  a folder. `docs/sync/migrate.md` tells consumers what to
   delete.
 - The sync uses the pushed `main` branch. Local changes have no effect on
   consumers until you push them.
@@ -120,9 +121,9 @@ Some files refer to files that are not in `tools/`, for example
   working tree's `tools/` against scratch values files, and it compares the
   exit code and the message of each case. It needs no network. Before its
   first `git` call, it unsets the `GIT_*` variables of a git hook, so its
-  scratch repositories never write to this repository. The local hook
-  `test-repo-sync` of `.config/repo-sync/pre-commit.yaml` runs it on each
-  commit that changes `tools/`.
+  scratch repositories never write to this repository. No hook runs it, because
+  it is slow. Run `mise run test:repo-sync` by hand before you commit a change
+  to `tools/`.
 
 ## Templates (`*.tmpl`)
 
@@ -134,9 +135,13 @@ Some files refer to files that are not in `tools/`, for example
   output unchanged.
 - The values come from the consumer file `.config/bootstrap.toml`. The
   keys are in `docs/sync/index.md`, step 3.
-- `.members` is the list of member names: the git submodules (else the
-  `MEMBERS` env value), then each `[member.<name>]` key with a folder in the
-  consumer repository.
+- `.members` is the list of member names: the git submodules (the key of the
+  `[member.<name>]` table whose `folder` is the submodule path, else the
+  path), then each other `[member.<name>]` key. `.member_folders` maps each
+  name to its folder (`folder`, default the name), and `.member_types` to
+  `submodule` or `folder`. A task that runs in a member uses its folder. The
+  member flags (`--all`, `--<name>`) of `setup`, `code:format` and `code:lint`
+  are only for the submodules: a folder member is part of the root tree.
 - `.submodules` is the list of the git submodules only, nested ones included.
   It is empty in a repository without submodules.
 - `.tools` is the list of the selected tools. `.extensions` is the sorted list
@@ -222,14 +227,19 @@ that it finds, and removes the others. It stops if neither branch exists.
 
 - `main` and `develop`: work starts on feature branches.
   `code:merge:develop <branch>` lands a branch on `develop`.
-  `code:merge:main` lands `develop` on `main`. Nothing merges from `main`.
-  Only `develop` merges into `main`.
+  `code:merge:main` lands `develop` on `main`, and runs only from `develop`.
 - Only one of them: `code:merge <branch>` (`code/merge/_default`) lands any
   feature branch on that branch.
 - Merges use `--no-ff`. A hook pass over all files runs first as a safety net.
-- `MERGE_MODEL_DEVELOP` and `MERGE_MODEL_MAIN` select `direct` (local merge and
-  push) or `pr` (push and open a pull request with `gh` or `glab`). The
-  `github` and `gitlab` tools install these CLIs.
+- The merge tasks read `[branch.<destination>]` of the repository's own
+  `.config/bootstrap.toml` when they run: the root and each submodule read
+  their own file. `merge_model` selects
+  `direct` (local merge and push, the default) or `pr` (push and open a pull
+  request with `gh` or `glab`). The `github` and `gitlab` tools install these
+  CLIs. `merge_from` lists the only source branches, and `merge_never` the
+  forbidden ones. A table with both stops the merge. Without both, the
+  defaults are: into `main` with `develop`, only from `develop`; into another
+  branch, never from `main`.
 
 ## mise config
 
@@ -240,8 +250,8 @@ that it finds, and removes the others. It stops if neither branch exists.
   select.
 - `.config/mise.toml` (`tools/mise/.config/mise.toml.tmpl`) is the only file for
   every environment. It holds the shared `[settings]` and the `[env]` values
-  from the values file (MEMBERS, MERGE_MODEL_*, REPO_NAME). `min_version`,
-  `monorepo_root` and `[monorepo]` go only in a repository's own copy.
+  from the values file (MEMBERS, REPO_NAME). It does not set
+  `min_version`. `monorepo_root` and `[monorepo]` are not supported.
 - Each file in `.config/mise/conf.d/` is for one environment:
   `mise.<env>.toml`. mise loads it only when `MISE_ENV` includes that
   environment. No tool ships or generates a `conf.d/*/mise.toml`.

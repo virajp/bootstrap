@@ -28,19 +28,32 @@ A submodule can select the tool too. Then it gets `code:graph` and the
 
 ## mise tools
 
-| mise tool        | Version  | Environments | Note         |
-| ---------------- | -------- | ------------ | ------------ |
-| `pipx:graphifyy` | `latest` | dev          | Needs python |
-| `pipx:mempalace` | `latest` | dev          | Needs python |
+| mise tool        | Version  | Environments | Note                |
+| ---------------- | -------- | ------------ | ------------------- |
+| `pipx:graphifyy` | `latest` | dev          | Needs python and uv |
+| `pipx:mempalace` | `latest` | dev          | Needs python and uv |
 
 A submodule in its root checkout also gets these tools from the root.
 
 ## Tasks
 
-| Task         | Use                                                                                                                 |
-| ------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `setup:ai`   | Update the Claude Code marketplaces and plugins. It skips if `claude` is not installed, and in a git submodule.     |
-| `code:graph` | Refresh the graphify graph. Only the post-commit hook runs it. It skips without graphify, and in a linked worktree. |
+| Task         | Use                                                                                                                                                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:ai`   | Update the Claude Code marketplaces and plugins, then remove the project-scope plugins that nothing references. It skips if `claude` is not installed, and in a git submodule. A failed step fails the task, and the other steps still run. |
+| `code:graph` | Refresh the graphify graph. Only the post-commit hook runs it. See below.                                                                                                                                                                   |
+
+`code:graph` runs `graphify update` in the background, with its log in
+`~/.cache/graphify-rebuild.log`, so the commit does not wait. It exits 0 in
+these cases:
+
+- graphify is not installed. The task prints a warning.
+- `GRAPHIFY_SKIP_HOOK=1` is set.
+- The checkout is a linked worktree.
+- A rebase, merge or cherry-pick is in progress.
+- The commit changed only `graphify-out/`.
+
+The argument `--force` rebuilds the graph, also when the commit changed only
+`graphify-out/`.
 
 ## Pre-commit hooks
 

@@ -31,37 +31,37 @@ folder = "projects/web"
 label = "Web"
 worktree_install = "mise run setup"
 
-[member.web.branch.main]
+[branch.main]
 merge_from = [ "develop" ]
 merge_model = "pr"
 
-[member.web.branch.develop]
+[branch.develop]
 merge_model = "direct"
 merge_never = [ "main" ]
 ```
 
 ## Summary of the keys
 
-| Key                                           | Type            | Necessary | Read by                                |
-| --------------------------------------------- | --------------- | --------- | -------------------------------------- |
-| `[tools.<folder>]`                            | Table           | No        | `repo-sync`                            |
-| `[tools.<folder>].env`                        | List of strings | No        | `repo-sync`                            |
-| `[packs.<name>]`                              | Table           | No        | `repo-sync`                            |
-| `[packs.<name>].env`                          | List of strings | No        | `repo-sync`                            |
-| `environments`                                | List of strings | No        | `repo-sync`                            |
-| `repo_name`                                   | String          | Yes       | `mise.toml`, `gitleaks.toml`           |
-| `product_name`                                | String          | No        |                                        |
-| `commit_scopes`                               | List of strings | No        | `git-conventional-commits.yaml`        |
-| `repo_url`                                    | String          | No        | `github` tool                          |
-| `worktree_files`                              | List of strings | No        | `setup:worktree`                       |
-| `extensions`                                  | List of strings | No        | `vscode` tool                          |
-| `[member.<name>]`                             | Table           | No        | `repo-sync`, `setup`, `setup:worktree` |
-| `[member.<name>].label`                       | String          | No        | `setup`, `setup:worktree`              |
-| `[member.<name>].folder`                      | String          | Yes       | `repo-sync`, `setup`, `setup:worktree` |
-| `[member.<name>].worktree_install`            | String          | No        | `setup:worktree`                       |
-| `[member.<name>.branch.<branch>].merge_model` | String          | No        | `code:merge:<branch>`                  |
-| `[member.<name>.branch.<branch>].merge_from`  | List of strings | No        | `code:merge:<branch>`                  |
-| `[member.<name>.branch.<branch>].merge_never` | List of strings | No        | `code:merge:<branch>`                  |
+| Key                                | Type            | Necessary | Read by                                |
+| ---------------------------------- | --------------- | --------- | -------------------------------------- |
+| `[tools.<folder>]`                 | Table           | No        | `repo-sync`                            |
+| `[tools.<folder>].env`             | List of strings | No        | `repo-sync`                            |
+| `[packs.<name>]`                   | Table           | No        | `repo-sync`                            |
+| `[packs.<name>].env`               | List of strings | No        | `repo-sync`                            |
+| `environments`                     | List of strings | No        | `repo-sync`                            |
+| `repo_name`                        | String          | Yes       | `mise.toml`, `gitleaks.toml`           |
+| `product_name`                     | String          | No        | `fnox.toml`                            |
+| `commit_scopes`                    | List of strings | No        | `git-conventional-commits.yaml`        |
+| `repo_url`                         | String          | No        | `github` tool                          |
+| `worktree_files`                   | List of strings | No        | `setup:worktree`                       |
+| `extensions`                       | List of strings | No        | `vscode` tool                          |
+| `[member.<name>]`                  | Table           | No        | `repo-sync`, `setup`, `setup:worktree` |
+| `[member.<name>].label`            | String          | No        | `setup`, `setup:worktree`              |
+| `[member.<name>].folder`           | String          | Yes       | `repo-sync`, `setup`, `setup:worktree` |
+| `[member.<name>].worktree_install` | String          | No        | `setup:worktree`                       |
+| `[branch.<branch>].merge_model`    | String          | No        | `code:merge:<branch>`                  |
+| `[branch.<branch>].merge_from`     | List of strings | No        | `code:merge:<branch>`                  |
+| `[branch.<branch>].merge_never`    | List of strings | No        | `code:merge:<branch>`                  |
 
 All the paths in this document are relative to the root of the consumer
 repository.
@@ -200,13 +200,21 @@ One table for each member folder of the repository. The member list is the
 git submodules (else the `MEMBERS` value), then each `[member.<name>]` key
 that is not a submodule.
 
-- A `[member.<name>]` table that is not a submodule must have the folder of
-  its `folder` key in the repository. If not, the render stops with code 2.
-- The templates get the list as `.members`. `MEMBERS` in `.config/mise.toml`
-  is this list, with one space between the names.
+- A submodule without a table is a member. Its name and its folder are its
+  path. A table whose `folder` is a submodule path gives that submodule its
+  name.
+- A `[member.<name>]` table that is not a submodule must have its folder in
+  the repository. If not, the render stops with code 2.
+- No member is the repository itself: a `folder` of `.` stops the render
+  with code 2. The merge config of the repository is in `[branch.<branch>]`.
+- The templates get the names as `.members`, the folder of each name as
+  `.member_folders`, and the type of each name as `.member_types`.
+  `MEMBERS` in `.config/mise.toml` is the list of the folders, with one space
+  between them.
 - `setup`, `code:format` and `code:lint` get a `--<name>` flag and an `--all`
-  flag for the members.
-- A repo without any member will have itself as a member
+  flag only for the members of type `submodule`. They run in the folder of the
+  submodule. A folder member of a monorepo is part of the tree of the root, so
+  it gets no flag. `setup:worktree` runs `worktree_install` for each member.
 
 ### `[member.<name>].label`
 
@@ -215,8 +223,16 @@ The display name of the member in the headers of `setup` and
 
 ### `[member.<name>].folder`
 
-This must contain the folder of the submodule or member project. For a polyrepo,
-it can simply be "."
+The folder of the member, relative to the root of the repository, for example
+`projects/web`. The default is `<name>`. A polyrepo has no members, so it has
+no `[member.<name>]` table.
+
+### `[member.<name>].type`
+
+`submodule` or `folder`. Optional: without it, the type is `submodule` when
+`.gitmodules` has the `folder` path, else `folder`. With it, the render stops
+with code 2 when the type is not correct, or when the value is a different
+word.
 
 ### `[member.<name>].worktree_install`
 
@@ -225,10 +241,16 @@ The install command of the member for a new worktree, for example
 `mise x --cd <folder> -- <command>`. Without the key, `setup:worktree` runs the
 own `setup:worktree` task of the member, if the member has one.
 
-### `[member.<name>.branch.<branch>].merge_model`
+### `[branch.<branch>].merge_model`
 
 How `code:merge:<branch>` merges a branch on specified branch: `direct`
 or `pr`
+
+Each repository reads only `[branch.<branch>]` of its own
+`.config/bootstrap.toml`. This applies to a repository without submodules, to
+the root of a repository with submodules, and to each submodule. The merge tasks
+read the file when they run, with
+`mise x -- yq`.
 
 | Value    | Effect                                                         |
 | -------- | -------------------------------------------------------------- |
@@ -237,23 +259,25 @@ or `pr`
 
 The merge script uses `direct` when the value is empty
 
-### `[member.<name>.branch.<branch>].merge_from`
+### `[branch.<branch>].merge_from`
 
 List of branches the merge can be allowed from. Any branch can be merged from if
 the list is empty, except from the ones mentioned in
-`[member.<name>.branch.<branch>].merge_never`
+`[branch.<branch>].merge_never`
 
-- This can be set ONLY if `[member.<name>.branch.<branch>].merge_never` is empty
+- This can be set ONLY if `[branch.<branch>].merge_never` is empty
 
-### `[member.<name>.branch.<branch>].merge_never`
+### `[branch.<branch>].merge_never`
 
 List of branches the merge can NEVER be allowed from. If the list is empty and
-`[member.<name>.branch.<branch>].merge_from` is set, only the branches of
+`[branch.<branch>].merge_from` is set, only the branches of
 `merge_from` will be allowed
 
-- This can be set ONLY if `[member.<name>.branch.<branch>].merge_from` is empty
-- Both lists are empty only in a repository with a single protected branch
-  (`main` or `develop`). Then any branch can be merged into that branch
+- This can be set ONLY if `[branch.<branch>].merge_from` is empty
+- Without both lists, the defaults are the branch model: into `main` when
+  `develop` exists, only from `develop` (`merge_from = ["develop"]`); into any
+  other branch, never from `main` (`merge_never = ["main"]`)
+- A table that sets both lists stops the merge
 
 ## Reserved names
 

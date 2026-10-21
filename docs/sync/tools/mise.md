@@ -47,13 +47,13 @@ The tool also sets:
 
 ## Tasks
 
-| Task             | Use                                                                    |
-| ---------------- | ---------------------------------------------------------------------- |
-| `setup`          | Install tools, dependencies and hooks. `--upgrade` also upgrades them. |
-| `setup:mise`     | Reshim, doctor and install. `--upgrade` also upgrades.                 |
-| `setup:worktree` | Initialize a new git worktree. It is lighter than `setup`.             |
-| `code`           | Run `code:format`, `code:lint` and `code:sec`.                         |
-| `code:worktrees` | List the worktrees of the root repository and of each submodule.       |
+| Task             | Use                                                                                                                                                                                                       |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup`          | Install tools, dependencies and hooks. `--upgrade` also upgrades them. With git submodules, `--all` and `--<submodule>` also run `setup` in those submodules. A folder member of a monorepo gets no flag. |
+| `setup:mise`     | Reshim, doctor and install. `--upgrade` also upgrades.                                                                                                                                                    |
+| `setup:worktree` | Initialize a new git worktree. It is lighter than `setup`.                                                                                                                                                |
+| `code`           | Run `code:format`, `code:lint` and `code:sec`.                                                                                                                                                            |
+| `code:worktrees` | List the worktrees of the root repository and of each submodule.                                                                                                                                          |
 
 ## Pre-commit hooks
 
@@ -71,5 +71,5 @@ None.
 ## Migration
 
 - Remove `jq` and `yq` from the repository-owned mise files.
-- The general items M3, M5, M10 and M14 of `migrate.md` are about the files
-  of this tool.
+- The general items M3, M5, M10, M14 and M17 of `migrate.md` are about the
+  files of this tool.

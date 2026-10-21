@@ -10,8 +10,7 @@
 
 set -euo pipefail
 
-# The test-repo-sync pre-commit hook runs this task inside `git commit`, which
-# exports these variables. With them set, the git init, add and commit of the
+# A git hook that runs this task inside `git commit` exports these variables. With them set, the git init, add and commit of the
 # scratch repositories write to the real repository (gap G2).
 # The fixed list goes first, with no git call before it. Then
 # `git rev-parse --local-env-vars`, in a clean environment, lists any other
@@ -68,8 +67,7 @@ failures=0
 run_case() {
   local name=$1 want=$2 body=$3 change=${4:-} message=${5:-} got=0
   {
-    printf '%s\n' 'repo_name = "test"' 'repo_url = "https://example.com/test"' \
-      'merge_model_develop = "direct"' 'merge_model_main = "direct"'
+    printf '%s\n' 'repo_name = "test"' 'repo_url = "https://example.com/test"'
     printf '%s\n' "$body"
   } > "$values"
   if [[ -n $change ]]; then
@@ -158,6 +156,11 @@ node_no_envs() {
   cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
 }
 
+# A folder member below the root of the consumer.
+member_folder() {
+  mkdir -p -- "$consumer/projects/web"
+}
+
 late_tool_folder() {
   mkdir -p -- "$clone/tools/zzz-late"
   printf '%s\n' 'default_envs = [ "dev" ]' 'depends = []' 'extensions = []' \
@@ -176,6 +179,26 @@ run_case "a pack loop a -> b -> a" 2 'environments = [ "dev" ]
 [packs.a]' pack_loop 'a pack loop: a -> b -> a' || true
 run_case "a pack named like a tool folder" 2 'environments = [ "dev" ]
 [packs.node]' pack_named_like_tool "pack 'node' is also a tool folder" || true
+run_case "[branch.main], the merge config of the repo" 0 'environments = [ "dev" ]
+[branch.main]
+merge_model = "pr"
+merge_never = [ "develop" ]' || true
+run_case "[member.web], a folder below the root" 0 'environments = [ "dev" ]
+[member.web]
+folder = "projects/web"' member_folder || true
+run_case "[member.nope], not a submodule or a folder" 2 'environments = [ "dev" ]
+[member.nope]' '' '[member.nope] in' || true
+run_case "[member.self], the folder of the repo itself" 2 'environments = [ "dev" ]
+[member.self]
+folder = "."' '' 'has the folder of the repo itself' || true
+run_case "[member.web], type submodule without a submodule" 2 'environments = [ "dev" ]
+[member.web]
+folder = "projects/web"
+type = "submodule"' member_folder 'has type submodule, but projects/web is not in .gitmodules' || true
+run_case "[member.web], an unknown type" 2 'environments = [ "dev" ]
+[member.web]
+folder = "projects/web"
+type = "repo"' member_folder "has the type 'repo'" || true
 run_case "[packs.nope], an unknown pack" 3 'environments = [ "dev" ]
 [packs.nope]' '' "pack 'nope' is not in bootstrap" || true
 run_case "env ci on a tool whose mise tool allows dev only" 2 'environments = [ "dev", "ci" ]
