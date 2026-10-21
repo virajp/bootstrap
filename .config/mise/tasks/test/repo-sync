@@ -13,8 +13,16 @@ set -euo pipefail
 # The test-repo-sync pre-commit hook runs this task inside `git commit`, which
 # exports these variables. With them set, the git init, add and commit of the
 # scratch repositories write to the real repository (gap G2).
+# `git rev-parse --local-env-vars` lists each of them, GIT_CONFIG_PARAMETERS
+# (from `git -c`) included; the fixed list stays in case it fails. It does not
+# list GIT_CONFIG_KEY_<n> and GIT_CONFIG_VALUE_<n>.
+git_vars=$(git rev-parse --local-env-vars 2> /dev/null) || git_vars=''
+# shellcheck disable=SC2086
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_OBJECT_DIRECTORY \
-  GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_PREFIX GIT_EXEC_PATH
+  GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_PREFIX GIT_EXEC_PATH \
+  GIT_CONFIG GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT $git_vars \
+  ${!GIT_CONFIG_KEY_*} ${!GIT_CONFIG_VALUE_*}
+unset git_vars
 
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
@@ -137,6 +145,17 @@ node_ci_only() {
   cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
 }
 
+tool_folder_zz_repo() {
+  mkdir -p -- "$clone/tools/zz-repo"
+  printf '%s\n' 'default_envs = [ "dev" ]' 'depends = []' 'extensions = []' \
+    'root_only = false' 'seed = []' > "$clone/tools/zz-repo/tools.toml"
+}
+
+node_no_envs() {
+  sed 's/^default_envs = .*$/default_envs = []/' "$clone/tools/node/tools.toml" > "$tmp/node.toml"
+  cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
+}
+
 late_tool_folder() {
   mkdir -p -- "$clone/tools/zzz-late"
   printf '%s\n' 'default_envs = [ "dev" ]' 'depends = []' 'extensions = []' \
@@ -174,6 +193,10 @@ run_case "default_envs ci without dev" 2 'environments = [ "dev", "ci" ]
 [tools.node]' node_ci_only 'default_envs of tools/node/tools.toml has no dev' || true
 run_case "a tool folder that sorts after zz-repo" 2 'environments = [ "dev" ]' late_tool_folder \
   'tool folder tools/zzz-late sorts after zz-repo' || true
+run_case "a tool folder named zz-repo" 2 'environments = [ "dev" ]' tool_folder_zz_repo \
+  'tool folder tools/zz-repo sorts after zz-repo or is named zz-repo' || true
+run_case "default_envs empty" 2 'environments = [ "dev" ]' node_no_envs \
+  'default_envs of tools/node/tools.toml has no dev' || true
 
 if ((failures)); then
   print_error "$failures check(s) failed"
