@@ -372,7 +372,14 @@ _rs_resolve() {
       _rs_log "env of [$kind.$name] in $(_rs_path "$values") is empty - name an environment, or remove env to use default_envs"
       return 2
     fi
-    for env in ${envs//,/ }; do
+    # Split on commas only, so an item with a space fails the name check.
+    envs+=,
+    while [[ -n $envs ]]; do
+      env=${envs%%,*} envs=${envs#*,}
+      if ! _rs_env_name "$env"; then
+        _rs_log "env of [$kind.$name] in $(_rs_path "$values"): '$env' is not one of ${_RS_ENV_NAMES// /, }"
+        return 2
+      fi
       if [[ $_RS_ENVS != *" $env "* ]]; then
         _rs_log "env '$env' of [$kind.$name] in $(_rs_path "$values") is not in environments:${_RS_ENVS% }"
         return 2
