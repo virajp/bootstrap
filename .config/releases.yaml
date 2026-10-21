@@ -1,3 +1,3 @@
 # Pending release levels, written by /vwf:execute at landing.
 # Each key is cleared by the release step that releases the project.
-bootstrap: MINOR
+bootstrap: MAJOR
