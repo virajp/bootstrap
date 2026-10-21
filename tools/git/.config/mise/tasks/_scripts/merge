@@ -21,9 +21,8 @@
 # `repo_sync` writes the tasks of the model it detects, and removes the others.
 #
 # **The merge config is in the values file.** Each repository reads the table
-# `[member.<repo_name>.branch.<destination>]` of its own
-# `.config/bootstrap.toml`, also the root of a repository with submodules and
-# each submodule. The table has `merge_model`, and one of `merge_from` (the
+# `[branch.<destination>]` of its own `.config/bootstrap.toml`, also the root
+# of a repository with submodules and each submodule. The table has `merge_model`, and one of `merge_from` (the
 # only branches that can merge in) and `merge_never` (the branches that never
 # merge in). Without both lists, the defaults are the branch model: into `main`
 # with `develop`, only from `develop`; into any other destination, never from
@@ -151,38 +150,37 @@ open_pull_request() {
 # read_merge_config <destination>
 #
 # Sets MERGE_MODE (`direct` or `pr`), and MERGE_FROM and MERGE_NEVER (branch
-# names, one on each line) from `[member.<repo_name>.branch.<destination>]` of
+# names, one on each line) from `[branch.<destination>]` of
 # `.config/bootstrap.toml`. Without the file, the table or a key, the defaults
 # of the branch model apply. Stops when the table sets both lists, or when yq
 # cannot read the file.
 read_merge_config() {
   local DESTINATION_BRANCH="$1"
   local FILE="${MISE_PROJECT_ROOT}/.config/bootstrap.toml"
-  local NAME='' HAS_FROM=false HAS_NEVER=false
+  local HAS_FROM=false HAS_NEVER=false
   MERGE_MODE=''
   MERGE_FROM=''
   MERGE_NEVER=''
 
-  # yq reads the table by name through strenv, so a name with "-" or "." is
-  # one key. A failed read stops the merge: a branch rule that cannot be read
-  # must not become "any branch".
+  # yq reads the table by name through strenv, so a branch name with "-" or
+  # "/" is one key. A failed read stops the merge: a branch rule that cannot
+  # be read must not become "any branch".
   merge_yq() {
-    N="${NAME}" B="${DESTINATION_BRANCH}" mise x -- yq -p toml -o yaml "$1" "${FILE}"
+    B="${DESTINATION_BRANCH}" mise x -- yq -p toml -o yaml "$1" "${FILE}"
   }
   if [ -f "${FILE}" ]; then
-    if ! NAME=$(merge_yq '.repo_name // ""') ||
-      ! MERGE_MODE=$(merge_yq '.member[strenv(N)].branch[strenv(B)].merge_model // ""') ||
-      ! HAS_FROM=$(merge_yq '.member[strenv(N)].branch[strenv(B)] | has("merge_from")') ||
-      ! HAS_NEVER=$(merge_yq '.member[strenv(N)].branch[strenv(B)] | has("merge_never")') ||
-      ! MERGE_FROM=$(merge_yq '(.member[strenv(N)].branch[strenv(B)].merge_from // [])[]') ||
-      ! MERGE_NEVER=$(merge_yq '(.member[strenv(N)].branch[strenv(B)].merge_never // [])[]'); then
+    if ! MERGE_MODE=$(merge_yq '.branch[strenv(B)].merge_model // ""') ||
+      ! HAS_FROM=$(merge_yq '.branch[strenv(B)] | has("merge_from")') ||
+      ! HAS_NEVER=$(merge_yq '.branch[strenv(B)] | has("merge_never")') ||
+      ! MERGE_FROM=$(merge_yq '(.branch[strenv(B)].merge_from // [])[]') ||
+      ! MERGE_NEVER=$(merge_yq '(.branch[strenv(B)].merge_never // [])[]'); then
       print_error "cannot read the merge config of .config/bootstrap.toml."
       exit 1
     fi
   fi
 
   if [ "${HAS_FROM}" = true ] && [ "${HAS_NEVER}" = true ]; then
-    print_error "[member.${NAME}.branch.${DESTINATION_BRANCH}] sets both merge_from and merge_never."
+    print_error "[branch.${DESTINATION_BRANCH}] sets both merge_from and merge_never."
     print_warn "- keep one of them in .config/bootstrap.toml"
     exit 1
   fi

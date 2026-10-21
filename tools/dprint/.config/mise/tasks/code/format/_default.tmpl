@@ -46,7 +46,7 @@ done
 if [[ "${usage_all:-false}" == "true" || "${usage_<% . | strings.ReplaceAll "-" "_" %>:-false}" == "true" ]]; then
   # A member is a separate repository: it formats its whole tree.
   print_header "Formatting <% . %> ..."
-  mise run --cd <% . %> code:format ${FIX} ${DEBUG}
+  mise run --cd <% index $.member_folders . %> code:format ${FIX} ${DEBUG}
 fi
 <% end %>
 print_success "Formatting done"

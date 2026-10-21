@@ -176,8 +176,10 @@ A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
 - The delimiters are `<% %>`. mise uses `{{ }}` and bash uses `[[ ]]`, so
   both reach the output unchanged.
 - The values come from the repository's `.config/bootstrap.toml`.
-- `.members` is the list of member names: the git submodules (else `MEMBERS`),
-  then each `[member.<name>]` table whose folder exists in the repository.
+- `.members` is the list of member names: the git submodules, then each other
+  `[member.<name>]` table, whose `folder` (default the name) must exist.
+  `.member_folders` and `.member_types` give the folder and the type
+  (`submodule` or `folder`) of each name.
 - `.submodules` is the list of the git submodules only. It is empty in a
   repository without submodules.
 - `.tools` is the list of the selected tools, packs expanded and dependencies
@@ -212,11 +214,12 @@ env = [ "dev", "ci" ] # optional; without it, the default_envs of the tool
 [tools.vscode]
 
 [member.backend]
+folder = "projects/backend" # optional; the default is the name
 label = "Backend"
 worktree_install = "pnpm install --frozen-lockfile"
 
-# The merge config of this repository: the table of its own repo_name.
-[member.my-repo.branch.main]
+# The merge config of this repository.
+[branch.main]
 merge_from = [ "develop" ]
 merge_model = "pr"
 ```

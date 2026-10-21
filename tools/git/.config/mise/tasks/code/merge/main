@@ -12,7 +12,7 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/merge"
 # nothing to name and nothing to get wrong. Run it from `develop` — the task
 # refuses from anywhere else, and says so before touching a branch.
 #
-# Under `merge_model = "pr"` of `[member.<repo_name>.branch.main]` the same
+# Under `merge_model = "pr"` of `[branch.main]` of `.config/bootstrap.toml` the same
 # pair becomes the request this opens: `develop` → `main`.
 
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)

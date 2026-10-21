@@ -157,6 +157,11 @@ node_no_envs() {
   cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
 }
 
+# A folder member below the root of the consumer.
+member_folder() {
+  mkdir -p -- "$consumer/projects/web"
+}
+
 late_tool_folder() {
   mkdir -p -- "$clone/tools/zzz-late"
   printf '%s\n' 'default_envs = [ "dev" ]' 'depends = []' 'extensions = []' \
@@ -175,12 +180,26 @@ run_case "a pack loop a -> b -> a" 2 'environments = [ "dev" ]
 [packs.a]' pack_loop 'a pack loop: a -> b -> a' || true
 run_case "a pack named like a tool folder" 2 'environments = [ "dev" ]
 [packs.node]' pack_named_like_tool "pack 'node' is also a tool folder" || true
-run_case "[member.<repo_name>], the merge config of the repo" 0 'environments = [ "dev" ]
-[member.test.branch.main]
+run_case "[branch.main], the merge config of the repo" 0 'environments = [ "dev" ]
+[branch.main]
 merge_model = "pr"
 merge_never = [ "develop" ]' || true
+run_case "[member.web], a folder below the root" 0 'environments = [ "dev" ]
+[member.web]
+folder = "projects/web"' member_folder || true
 run_case "[member.nope], not a submodule or a folder" 2 'environments = [ "dev" ]
 [member.nope]' '' '[member.nope] in' || true
+run_case "[member.self], the folder of the repo itself" 2 'environments = [ "dev" ]
+[member.self]
+folder = "."' '' 'has the folder of the repo itself' || true
+run_case "[member.web], type submodule without a submodule" 2 'environments = [ "dev" ]
+[member.web]
+folder = "projects/web"
+type = "submodule"' member_folder 'has type submodule, but projects/web is not in .gitmodules' || true
+run_case "[member.web], an unknown type" 2 'environments = [ "dev" ]
+[member.web]
+folder = "projects/web"
+type = "repo"' member_folder "has the type 'repo'" || true
 run_case "[packs.nope], an unknown pack" 3 'environments = [ "dev" ]
 [packs.nope]' '' "pack 'nope' is not in bootstrap" || true
 run_case "env ci on a tool whose mise tool allows dev only" 2 'environments = [ "dev", "ci" ]

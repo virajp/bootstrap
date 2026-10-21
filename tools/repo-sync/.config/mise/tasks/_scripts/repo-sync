@@ -92,10 +92,12 @@
 # the suffix. The context is the values file (`<% .repo_name %>`,
 # `<% .member.<name>.label %>`) plus:
 #   .submodules  the git submodules only, nested ones included
-#   .members     the git members from `members()` in `helpers` (submodules,
-#                else MEMBERS), then each `[member.<name>]` of the values file
-#                that is not one of them — a folder of a monorepo, which must
-#                exist
+#   .members     the member names: the git submodules (the name of their
+#                `[member.<name>]` table, else their path), then each other
+#                `[member.<name>]` of the values file — a folder of a monorepo,
+#                which must exist
+#   .member_folders  a map from each member name to its folder
+#   .member_types    a map from each member name to `submodule` or `folder`
 #   .tools       the selected tools, packs expanded, dependencies included
 #   .extensions  the VS Code extensions of those tools and of the `extensions`
 #                list of the values file, sorted, no duplicates. In the root
@@ -168,34 +170,65 @@ trap _rs_cleanup EXIT
 trap '_rs_cleanup; exit 130' INT
 trap '_rs_cleanup; exit 143' TERM
 
-# Print the repo's member names, one per line: the git members first, then the
-# `[member.<name>]` keys of <values> that are not git members, which must be
-# folders in the repo. Returns 2 when a key is neither. The key `repo_name` is
-# the repo itself, for example its merge config, so it is not a member.
+# Print the repo's members, one per line as `<name> <folder> <type>` with a
+# tab between them: the git submodules first, then the other `[member.<name>]`
+# tables of <values>. A submodule without a table has its path as its name. A
+# table has an optional `folder` (the default is the name) and an optional
+# `type`, `submodule` or `folder`; without `type`, the folder decides it. A
+# folder member must exist, and no member is the repo itself (`.`). Returns 2,
+# after a message, when a table breaks one of these rules.
 _rs_members() {
-  local values=$1 name=$2 member keys self seen=" "
-  if ! declare -F members > /dev/null; then
-    # shellcheck source=/dev/null
-    source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+  local values=$1 name=$2 path rows key folder type found submodules='' tab=$'\t'
+  if [[ -f ${MISE_PROJECT_ROOT}/.gitmodules ]]; then
+    # shellcheck disable=SC2016
+    submodules=$(git -C "$MISE_PROJECT_ROOT" submodule --quiet foreach --recursive 'echo $displaypath' 2> /dev/null) || submodules=''
   fi
-  while IFS= read -r member; do
-    [[ -n $member ]] || continue
-    printf '%s\n' "$member"
-    seen+="$member "
-  done < <(members)
-  keys=$(mise x -- gomplate --left-delim '<%' --right-delim '%>' -c "v=${values}" \
-  -i '<% if has .v "member" %><% range $k, $x := .v.member %><% $k %>
+  rows=$(mise x -- gomplate --left-delim '<%' --right-delim '%>' -c "v=${values}" \
+  -i '<% if has .v "member" %><% range $k, $x := .v.member %><% $k %>	<% if has $x "folder" %><% $x.folder %><% else %><% $k %><% end %>	<% if has $x "type" %><% $x.type %><% end %>
 <% end %><% end %>') || return 2
-  self=$(mise x -- gomplate --left-delim '<%' --right-delim '%>' -c "v=${values}" \
-    -i '<% if has .v "repo_name" %><% .v.repo_name %><% end %>') || return 2
-  while IFS= read -r member; do
-    [[ -n $member && $seen != *" $member "* && $member != "$self" ]] || continue
-    if [[ ! -d ${MISE_PROJECT_ROOT}/${member} ]]; then
-      _rs_log "$name: [member.${member}] in $(_rs_path "$values") is not a submodule or a folder of the repo"
+  while IFS="$tab" read -r key folder type; do
+    [[ -n $key ]] || continue
+    folder=${folder%/}
+    if [[ $folder == "." || -z $folder ]]; then
+      _rs_log "$name: [member.${key}] in $(_rs_path "$values") has the folder of the repo itself - a member is a submodule or a folder below the root"
       return 2
     fi
-    printf '%s\n' "$member"
-  done <<< "$keys"
+    case $type in
+      '' | submodule | folder) ;;
+      *)
+        _rs_log "$name: [member.${key}] in $(_rs_path "$values") has the type '${type}' - use submodule or folder"
+        return 2
+        ;;
+    esac
+    if grep -qxF -- "$folder" <<< "$submodules"; then
+      if [[ $type == folder ]]; then
+        _rs_log "$name: [member.${key}] in $(_rs_path "$values") has type folder, but ${folder} is a submodule"
+        return 2
+      fi
+    elif [[ $type == submodule ]]; then
+      _rs_log "$name: [member.${key}] in $(_rs_path "$values") has type submodule, but ${folder} is not in .gitmodules"
+      return 2
+    elif [[ ! -d ${MISE_PROJECT_ROOT}/${folder} ]]; then
+      _rs_log "$name: [member.${key}] in $(_rs_path "$values") is not a submodule or a folder of the repo"
+      return 2
+    fi
+  done <<< "$rows"
+  # The submodules, each with the name of its table, else its path.
+  while IFS= read -r path; do
+    [[ -n $path ]] || continue
+    found=$path
+    while IFS="$tab" read -r key folder type; do
+      [[ -n $key && ${folder%/} == "$path" ]] && found=$key
+    done <<< "$rows"
+    printf '%s\t%s\t%s\n' "$found" "$path" submodule
+  done <<< "$submodules"
+  # Then the folder members.
+  while IFS="$tab" read -r key folder type; do
+    [[ -n $key ]] || continue
+    folder=${folder%/}
+    grep -qxF -- "$folder" <<< "$submodules" && continue
+    printf '%s\t%s\t%s\n' "$key" "$folder" folder
+  done <<< "$rows"
 }
 
 # gomplate with the template delimiters this repo uses.
@@ -844,8 +877,11 @@ _rs_stale() {
 # first, so a key of the same name in the values file cannot replace them.
 # <dir> is the clone.
 _rs_context() {
-  local dir=$1 values=$2 out=$3 members tool
-  members=$(_rs_members "$values" "template context") || return 2
+  local dir=$1 values=$2 out=$3 rows members folders types tool
+  rows=$(_rs_members "$values" "template context") || return 2
+  members=$(cut -f1 <<< "$rows")
+  folders=$(cut -f2 <<< "$rows")
+  types=$(cut -f3 <<< "$rows")
   # The git submodules alone: `members` also has the folder members.
   local submodules=''
   if [[ -f ${MISE_PROJECT_ROOT}/.gitmodules ]]; then
@@ -863,9 +899,9 @@ _rs_context() {
     args+=(-c "repo_precommit=${own}")
     has_own=1
   fi
-  REPO_SYNC_OWN_PRECOMMIT=$has_own REPO_SYNC_MEMBERS=$members REPO_SYNC_SUBMODULES=$submodules REPO_SYNC_TOOLS=$(printf '%s\n' $_RS_TOOLS) REPO_SYNC_EXTENSIONS=$_RS_EXTENSIONS \
+  REPO_SYNC_OWN_PRECOMMIT=$has_own REPO_SYNC_MEMBERS=$members REPO_SYNC_MEMBER_FOLDERS=$folders REPO_SYNC_MEMBER_TYPES=$types REPO_SYNC_SUBMODULES=$submodules REPO_SYNC_TOOLS=$(printf '%s\n' $_RS_TOOLS) REPO_SYNC_EXTENSIONS=$_RS_EXTENSIONS \
     _rs_gomplate "${args[@]}" -o "$out" \
-    -i '<% $ctx := dict %><% range (coll.Slice "members" "submodules" "tools" "extensions") %><% $l := coll.Slice %><% range (env.Getenv (printf "REPO_SYNC_%s" (strings.ToUpper .)) | strings.Split "\n") %><% if . %><% $l = coll.Append . $l %><% end %><% end %><% $ctx = coll.Merge $ctx (dict . $l) %><% end %><% $pc := coll.Slice %><% range $ctx.tools %><% $t := index $ (printf "tool_%s" .) %><% if has $t "precommit" %><% range $t.precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% end %><% if env.Getenv "REPO_SYNC_OWN_PRECOMMIT" %><% range $.repo_precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% $ctx = coll.Merge $ctx (dict "precommit" $pc) %><% coll.Merge $ctx .v | data.ToJSON %>' >&2
+    -i '<% $ctx := dict %><% range (coll.Slice "members" "submodules" "tools" "extensions") %><% $l := coll.Slice %><% range (env.Getenv (printf "REPO_SYNC_%s" (strings.ToUpper .)) | strings.Split "\n") %><% if . %><% $l = coll.Append . $l %><% end %><% end %><% $ctx = coll.Merge $ctx (dict . $l) %><% end %><% $mf := dict %><% $mt := dict %><% $fl := env.Getenv "REPO_SYNC_MEMBER_FOLDERS" | strings.Split "\n" %><% $tl := env.Getenv "REPO_SYNC_MEMBER_TYPES" | strings.Split "\n" %><% range $i, $n := $ctx.members %><% $mf = coll.Merge (dict $n (index $fl $i)) $mf %><% $mt = coll.Merge (dict $n (index $tl $i)) $mt %><% end %><% $ctx = coll.Merge $ctx (dict "member_folders" $mf "member_types" $mt) %><% $pc := coll.Slice %><% range $ctx.tools %><% $t := index $ (printf "tool_%s" .) %><% if has $t "precommit" %><% range $t.precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% end %><% if env.Getenv "REPO_SYNC_OWN_PRECOMMIT" %><% range $.repo_precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% $ctx = coll.Merge $ctx (dict "precommit" $pc) %><% coll.Merge $ctx .v | data.ToJSON %>' >&2
 }
 
 # Remove each synced file (with the bootstrap header) that is at the place

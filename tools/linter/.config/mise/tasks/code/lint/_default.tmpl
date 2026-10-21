@@ -61,7 +61,7 @@ done
 if [[ "${usage_all:-false}" == "true" || "${usage_<% . | strings.ReplaceAll "-" "_" %>:-false}" == "true" ]]; then
   # A member is a separate repository: it lints its whole tree.
   print_header "Linting <% . %> ..."
-  mise run --cd <% . %> code:lint ${FIX} ${DEBUG}
+  mise run --cd <% index $.member_folders . %> code:lint ${FIX} ${DEBUG}
 fi
 <% end %>
 print_success "Linting done"

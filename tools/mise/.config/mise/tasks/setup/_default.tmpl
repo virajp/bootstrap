@@ -58,7 +58,7 @@ fi
 <% $x := dict %><% if and (has $ "member") (has $.member .) %><% $x = index $.member . %><% end -%>
 if [[ "${SETUP_<% . | strings.ReplaceAll "-" "_" | strings.ToUpper %>}" == "true" ]]; then
   print_header "Setting up <% index $x "label" | default . %> project ..."
-  mise run --cd <% . %> setup ${UPGRADE}
+  mise run --cd <% index $.member_folders . %> setup ${UPGRADE}
 fi
 
 <% end -%>

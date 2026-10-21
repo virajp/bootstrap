@@ -135,9 +135,11 @@ Some files refer to files that are not in `tools/`, for example
   output unchanged.
 - The values come from the consumer file `.config/bootstrap.toml`. The
   keys are in `docs/sync/index.md`, step 3.
-- `.members` is the list of member names: the git submodules (else the
-  `MEMBERS` env value), then each `[member.<name>]` key with a folder in the
-  consumer repository.
+- `.members` is the list of member names: the git submodules (the key of the
+  `[member.<name>]` table whose `folder` is the submodule path, else the
+  path), then each other `[member.<name>]` key. `.member_folders` maps each
+  name to its folder (`folder`, default the name), and `.member_types` to
+  `submodule` or `folder`. A task that runs in a member uses its folder.
 - `.submodules` is the list of the git submodules only, nested ones included.
   It is empty in a repository without submodules.
 - `.tools` is the list of the selected tools. `.extensions` is the sorted list
@@ -227,16 +229,15 @@ that it finds, and removes the others. It stops if neither branch exists.
 - Only one of them: `code:merge <branch>` (`code/merge/_default`) lands any
   feature branch on that branch.
 - Merges use `--no-ff`. A hook pass over all files runs first as a safety net.
-- The merge tasks read `[member.<repo_name>.branch.<destination>]` of the
-  repository's own `.config/bootstrap.toml` when they run. Each repository
-  uses its own `repo_name`: the root and each submodule. `merge_model` selects
+- The merge tasks read `[branch.<destination>]` of the repository's own
+  `.config/bootstrap.toml` when they run: the root and each submodule read
+  their own file. `merge_model` selects
   `direct` (local merge and push, the default) or `pr` (push and open a pull
   request with `gh` or `glab`). The `github` and `gitlab` tools install these
   CLIs. `merge_from` lists the only source branches, and `merge_never` the
   forbidden ones. A table with both stops the merge. Without both, the
   defaults are: into `main` with `develop`, only from `develop`; into another
   branch, never from `main`.
-- `repo_sync` does not read a `[member.<repo_name>]` key as a member.
 
 ## mise config
 
