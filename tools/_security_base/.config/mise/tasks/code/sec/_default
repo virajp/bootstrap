@@ -22,6 +22,15 @@ else
   print_header "Scanning for security problems ..."
 fi
 
+# The scanners of the pack `security` must be there: own_tasks skips a missing
+# or non-executable task without a word, and the gate would pass unscanned.
+for task in code:sec:gitleaks code:sec:grype code:sec:osv-scanner; do
+  if ! has_own_task "${task}"; then
+    print_error "The task ${task} is missing or not executable - run mise run init"
+    exit 1
+  fi
+done
+
 # Each code:sec:<scanner> task, from a scanner tool or from this repository.
 # With --staged, a scanner that has no staged mode prints nothing.
 for task in $(own_tasks code:sec); do

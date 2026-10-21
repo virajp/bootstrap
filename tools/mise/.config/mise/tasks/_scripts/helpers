@@ -243,7 +243,7 @@ print_newline() { echo ""; }
 
 # Whether this repository defines the task <name> itself, as a file task:
 # `setup:ai` is `setup/ai`, or `setup/ai/_default`. For a step that only some
-# repositories have — `setup:ai` and `setup:external:update` are root-only.
+# repositories have, for example `setup:ai` or `setup:external:update`.
 has_own_task() {
   local path="${MISE_PROJECT_ROOT}/.config/mise/tasks/${1//://}"
   { [ -f "${path}" ] && [ -x "${path}" ]; } || [ -x "${path}/_default" ]
