@@ -84,6 +84,14 @@ envs = [ "dev", "ci" ] # the allowed environments; the default is [ "dev" ]
 version = "23"
 ```
 
+The sync removes the prefix `mise.` from each table: `[mise.settings]` becomes
+`[settings]` of the generated file. The section decides the environments that
+get it. `tools`, `tool_alias` and `plugins` follow the `envs` of each entry.
+`settings`, `env` and the other folder sections go to each environment of the
+tool. `shell_alias`, `tasks` and the other dev-only sections go only to `dev`.
+`docs/design/mise.md` ("The `[mise.*]` sections") has the full list and an
+example.
+
 A `[mise_env.<env>.<section>]` table adds content to one environment only.
 For example, the `mise` tool sets the mise `os` setting in `ci`:
 

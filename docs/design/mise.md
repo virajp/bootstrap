@@ -131,6 +131,13 @@ The template is `tools/mise/.config/mise.toml.tmpl`. It holds the shared
 
 ### The `[mise.*]` sections
 
+A tool does not ship mise files. It writes its mise config in `[mise.*]`
+tables of its `tools.toml`, in mise syntax. The sync removes the prefix
+`mise.` and writes each table into `.config/mise/conf.d/<tool>/mise.<env>.toml`
+as a normal mise section: `[mise.settings]` becomes `[settings]`, `[mise.env]`
+becomes `[env]`, and `[mise.shell_alias]` becomes `[shell_alias]`. The
+generator is `_RS_MISE_TEMPLATE` in `repo-sync`.
+
 The sync sorts each `[mise.<section>]` table into one of three classes:
 
 | Class    | Sections                                                                                                                                            | Goes to                                      |
@@ -142,7 +149,49 @@ The sync sorts each `[mise.<section>]` table into one of three classes:
 Any other section stops the sync for that tool, with code 2.
 
 A `[mise_env.<env>.<section>]` table adds content to one environment only. Its
-section must be in one of the three classes.
+section must be in one of the three classes. The sync writes it only when the
+tool is in that environment. If `[mise.<section>]` has the same section, the
+sync merges the two, and `[mise_env.<env>.<section>]` wins on a key that is in
+both.
+
+#### An example
+
+The `node` tool is in `dev` and `ci`. Its `tools.toml` has:
+
+```toml
+[mise.settings] # folder class: dev and ci
+node.compile = false
+npm.package_manager = "pnpm"
+
+[mise.env] # folder class: dev and ci
+_.path = { path = "node_modules/.bin", tools = true }
+
+[mise.shell_alias] # dev only: an alias is for a person at a terminal
+npx = "pnpm dlx"
+```
+
+So `conf.d/node/mise.dev.toml` gets `[settings]`, `[env]` and
+`[shell_alias]`, and `conf.d/node/mise.ci.toml` gets only `[settings]` and
+`[env]`.
+
+The `mise` tool selects the binaries of the host with one table for each
+environment:
+
+```toml
+[mise_env.dev.settings]
+os = "macos" # a developer works on macOS
+
+[mise_env.ci.settings]
+os = "linux" # CI runs on Linux
+```
+
+So `conf.d/mise/mise.dev.toml` gets `os = "macos"`, and
+`conf.d/mise/mise.ci.toml` gets `os = "linux"`.
+
+mise loads a `conf.d/*/mise.<env>.toml` only when `MISE_ENV` includes that
+environment. It loads the folders in name order, and `conf.d/zz-repo/` loads
+last. Thus a value in the repository's own `zz-repo/mise.<env>.toml` wins over
+the value of each tool.
 
 ### The keys of a mise tool
 
