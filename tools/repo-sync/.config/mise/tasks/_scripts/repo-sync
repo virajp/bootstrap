@@ -67,10 +67,11 @@
 # is generated.
 #   * Each mise tool of a tool is in the environments of its tool.
 #   * `[tools]`, `[tool_alias]` and `[plugins]` follow each entry. `[settings]`,
-#     `[env]` and the other shared sections go to each environment of one of
-#     the folder's tools. `[vars]`, `[secrets]`, `[shell_alias]`, `[hooks]`,
-#     `[tasks]`, the daemons and the like are for dev only.
-#   * `[mise_env.<env>]` is added to that environment as it is.
+#     `[env]` and the other shared sections go to each environment of the
+#     tool. `[vars]`, `[secrets]`, `[shell_alias]`, `[hooks]`, `[tasks]`, the
+#     daemons and the like go to dev only, when the tool is in dev.
+#   * `[mise_env.<env>]` is added to that environment as it is, when the tool
+#     is in it.
 #   * The `mise` tool also gets `setup-all` and `setup-<submodule>` in dev, from
 #     the git submodules of this repo.
 #   * The mise `depends` of an entry adds the tool that defines that mise tool.
@@ -577,12 +578,7 @@ _rs_envs() {
     list=dev
   fi
   for name in $list; do
-    case $name in
-      prod | stage) ;;
-      *)
-        _rs_env_name "$name" && continue
-        ;;
-    esac
+    [[ $name == dev || $name == ci ]] && continue
     _rs_log "environment '$name' in $(_rs_path "$values") is not one of dev, ci"
     return 2
   done
@@ -680,8 +676,10 @@ _rs_mise_env() {
 
 # The template that builds one environment, REPO_SYNC_ENV, from the `[mise]`
 # and `[mise_env]` tables of a tools.toml (`.t`), as TOML. An entry is in the
-# environment when ` <name>:<env> ` is in REPO_SYNC_ENVS. A section that it
-# does not know stops the render. REPO_SYNC_DEV_ALIASES adds `<name>=<command>`
+# environment when ` <name>:<env> ` is in REPO_SYNC_ENVS. The other sections,
+# and `[mise_env.<env>]`, are in it only when REPO_SYNC_IN is 1 (the tool is in
+# the environment); the dev-only sections only in dev. A section that it does
+# not know stops the render. REPO_SYNC_DEV_ALIASES adds `<name>=<command>`
 # lines to `[shell_alias]` of dev.
 _RS_MISE_TEMPLATE='<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% end -%>
 <% $env := env.Getenv "REPO_SYNC_ENV" -%>
@@ -689,8 +687,7 @@ _RS_MISE_TEMPLATE='<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% en
 <% $entry := coll.Slice "tools" "tool_alias" "plugins" -%>
 <% $folder := coll.Slice "settings" "env" "tool_config" "task_config" "task_templates" "doctor" "deps" "oci" -%>
 <% $devonly := coll.Slice "vars" "secrets" "redactions" "shell_alias" "hooks" "watch_files" "daemons" "daemon_groups" "daemons_settings" "daemon_providers" "tasks" -%>
-<% $in := eq $env "dev" -%>
-<% if has $m "tools" %><% $in = false %><% range $k, $v := $m.tools %><% if strings.Contains (printf " %s:%s " $k $env) $envw %><% $in = true %><% end %><% end %><% end -%>
+<% $in := eq (env.Getenv "REPO_SYNC_IN") "1" -%>
 <% $out := dict -%>
 <% range $s, $body := $m -%>
 <% if has $entry $s -%>
@@ -703,7 +700,7 @@ _RS_MISE_TEMPLATE='<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% en
 <% else if has $folder $s -%>
 <% if $in %><% $out = coll.Merge (dict $s $body) $out %><% end -%>
 <% else if has $devonly $s -%>
-<% if eq $env "dev" %><% $out = coll.Merge (dict $s $body) $out %><% end -%>
+<% if and $in (eq $env "dev") %><% $out = coll.Merge (dict $s $body) $out %><% end -%>
 <% else -%>
 <% test.Fail (printf "[mise.%s] is not supported in a tools.toml" $s) -%>
 <% end -%>
@@ -711,12 +708,14 @@ _RS_MISE_TEMPLATE='<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% en
 <% if and (has .t "mise_env") (has .t.mise_env $env) -%>
 <% range $s, $body := index .t.mise_env $env -%>
 <% if not (or (has $entry $s) (has $folder $s) (has $devonly $s)) %><% test.Fail (printf "[mise_env.%s.%s] is not supported in a tools.toml" $env $s) %><% end -%>
+<% if $in -%>
 <% if has $out $s %><% $body = coll.Merge $body (index $out $s) %><% end -%>
 <% $out = coll.Merge (dict $s $body) $out -%>
 <% end -%>
 <% end -%>
+<% end -%>
 <% $extra := env.Getenv "REPO_SYNC_DEV_ALIASES" -%>
-<% if and (eq $env "dev") $extra -%>
+<% if and $in (eq $env "dev") $extra -%>
 <% $al := dict %><% if has $out "shell_alias" %><% $al = index $out "shell_alias" %><% end -%>
 <% range (strings.Split "\n" $extra) %><% if . %><% $kv := strings.SplitN "=" 2 . %><% $al = coll.Merge (dict (index $kv 0) (index $kv 1)) $al %><% end %><% end -%>
 <% $out = coll.Merge (dict "shell_alias" $al) $out -%>
@@ -749,15 +748,18 @@ _rs_mise_render() {
       done
     fi
   fi
+  local in
   for env in $_RS_ENVS; do
     name=mise.${env}.toml
     rel=".config/mise/conf.d/${folder}/${name}"
+    in=0
+    [[ $_RS_TOOL_ENVS == *" $tool:$env "* ]] && in=1
     # gomplate writes no file for an empty output, so the previous one must go.
     rm -f -- "$tmp"
-    if ! REPO_SYNC_ENV=$env REPO_SYNC_ENVS=$_RS_MISE_ENVS REPO_SYNC_DEV_ALIASES=$aliases \
+    if ! REPO_SYNC_ENV=$env REPO_SYNC_ENVS=$_RS_MISE_ENVS REPO_SYNC_IN=$in REPO_SYNC_DEV_ALIASES=$aliases \
       _rs_gomplate -c "t=${dir}/tools/${tool}/tools.toml" -i "$_RS_MISE_TEMPLATE" -o "$tmp" 2> "$err"; then
       _rs_log "tools/$tool/tools.toml: cannot generate the mise config: $(sed -n 's/.*error calling Fail: template generation failed: //p' "$err" | sed 's/"}$//')"
-      for name in dev ci; do
+      for name in $_RS_ENVS; do
         _RS_SEEN+="${rel%/*}/mise.${name}.toml "
       done
       return 2
