@@ -1,0 +1,68 @@
+/code-review high — loop U4, round 1, range 31fcdb7..ac6b930
+
+I reviewed all 72 files of `main...HEAD` (U1 to U3). `mise run test:repo-sync` passes all 11 cases. I also ran a real sync with `environments = ["dev","ci"]` into a scratch consumer, and it wrote 55 of 55 files. The engine's environment handling held up in every case I traced. The one serious finding is the first one: the next `setup:configs` fails in every existing consumer, this repo included, and the planned U6 step 2 hits it. Everything after it is low severity.
+
+```json
+[
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/setup/configs/sync",
+    "line": 20,
+    "summary": "Moving the sync library from tools/base/ to tools/repo-sync/ breaks every existing consumer's `setup:configs`: their synced copy of `setup:configs:sync` still runs `source \"$REPO_SYNC_CLONE/tools/base/.config/mise/tasks/_scripts/repo-sync\"`.",
+    "failure_scenario": "After this lands on main, U6 step 2 runs `mise run setup:configs` here (and so does any other consumer). The local `_default` clones the new bootstrap and runs the local, old `.config/mise/tasks/setup/configs/sync`. That copy sources tools/base/... from the clone, the file no longer exists, and under `set -euo pipefail` the task exits with 'No such file' before `repo_sync` runs. Nothing syncs, the old list check never gets a chance to report, and U6's gate cannot pass unless someone patches the synced copy by hand, which CLAUDE.md forbids. Fixes: leave a shim at the old path, or have U6 source the new library directly."
+  },
+  {
+    "file": "tools/gitleaks/.config/mise/tasks/code/sec/gitleaks",
+    "line": 25,
+    "summary": "The new leaf scanner tasks print only `print_subheader` and never `print_header`. Their orchestrator prints a header around its `mise run` calls. Both break CLAUDE.md task-output rules 2 and 5, and the sibling `code:format:dart` / `code:lint:dart` tasks do print headers.",
+    "failure_scenario": "Repo CLAUDE.md, rule 2: 'A leaf prints `print_header` first, and only once. Nothing comes before it.' Rule 5: 'An orchestrator prints nothing for a `mise run`. The subtask prints its own header.' Running `mise run code:sec:gitleaks` (or `:grype` at grype:24, `:osv-scanner` at osv-scanner:26) on its own shows a subheader with no header. `_security_base/.../code/sec/_default:20-23` prints the header for them instead."
+  },
+  {
+    "file": "tools/_security_base/.config/mise/tasks/code/sec/_default",
+    "line": 27,
+    "summary": "On every commit the `sec` hook (`code:sec --staged`) now starts three separate `mise run` processes. Two of them (`code:sec:grype`, `code:sec:osv-scanner`) do nothing with `--staged` and exit at once.",
+    "failure_scenario": "Before, the staged path was one direct `mise x -- gitleaks git --staged`. Now each commit pays two extra mise startups and toolset resolutions just to exit 0. A cheaper option: in `--staged` mode, skip the tasks that have no staged mode, or call `code:sec:gitleaks` directly."
+  },
+  {
+    "file": "tools/dprint/tools.toml",
+    "line": 10,
+    "summary": "The hook order changed. `format` no longer runs first: the git hooks and the pre-commit-hooks fixers (end-of-file-fixer, trailing-whitespace, mixed-line-ending) now run before it. The comment '`code:format` comes first because it rewrites files' is now false.",
+    "failure_scenario": "The rendered `.config/pre-commit-config.yaml` has, in order: git-config, no-commit-to-branch, conventional-commits, then the pre-commit-hooks checks and fixers, then format, lint, sec. Before, it was git-config, format, lint, sec, then the checks. A reader who trusts the comment reasons wrongly about which hook rewrites files first."
+  },
+  {
+    "file": "tools/git/tools.toml",
+    "line": 22,
+    "summary": "The split puts the same `https://github.com/pre-commit/pre-commit-hooks` repo, with its own `rev = \"v6.0.0\"`, in both `git` and `pre-commit`. The rendered config now has two `repos:` entries for one repo.",
+    "failure_scenario": "Two `rev` pins of one repo must be kept in step in two tools.toml files. An older repo-sync copies each `rev` as it is (CLAUDE.md), so if one is bumped and the other is not, two versions of pre-commit-hooks run in one config. Simpler: put `no-commit-to-branch` in the `pre-commit` tool's single entry."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 528,
+    "summary": "The engine still hardcodes tool names in shared code: `git/` for the merge-model paths (528), `mise` for the setup-all aliases (747), and the `base` pack constant. This patches over the base split instead of fixing the underlying problem.",
+    "failure_scenario": "The plan itself notes that the old hardcoded `base/` path would have made both merge models sync silently after the split. Renaming or moving `git` or `mise` later fails the same way, with no error. Declaring these roles in tools.toml would remove the special cases."
+  },
+  {
+    "file": "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+    "line": 574,
+    "summary": "There are now two lists of environment names. `_rs_envs` hardcodes `dev | ci` (line 574), and the new `_rs_env_name` / `_RS_ENV_NAMES` (line 598) has `dev | ci | prod | stage`.",
+    "failure_scenario": "Adding `prod`/`stage` to `environments` later means changing both checks and both messages. If only one is changed, an `env` that tools.toml accepts is still refused in the values file, or the reverse. `_rs_envs` should reuse `_rs_env_name`."
+  },
+  {
+    "file": ".config/repo-sync/pre-commit.yaml",
+    "line": 173,
+    "summary": "The `test-repo-sync` hook runs only for `files: \"^tools/\"`, so a commit that changes only the test (`.config/mise/tasks/test/repo-sync`) never runs it.",
+    "failure_scenario": "A broken edit to the test script (a syntax error, or a case whose expected exit code is wrong) is committed and merged green. The breakage only shows on the next commit that touches tools/, and blames that commit."
+  },
+  {
+    "file": ".config/mise/tasks/test/repo-sync",
+    "line": 76,
+    "summary": "The test checks only the exit code, never the message, and most error paths share code 2.",
+    "failure_scenario": "Code 2 covers the old list format, a pack loop, a pack named like a tool, an env not in environments, a mise tool that does not allow the env, a root-only tool, a template failure, and others. A regression that sends 'env ci not in environments' or 'dependency without parent env' to a different code-2 error still passes. A grep on the expected message in `$log` would catch it."
+  },
+  {
+    "file": "tools/mise/.config/mise/tasks/_scripts/helpers",
+    "line": 246,
+    "summary": "The helpers comment still says '`setup:ai` and `setup:external:update` are root-only'. This change makes `claude` `root_only = false` and gives `setup:ai` its own submodule skip.",
+    "failure_scenario": "A maintainer who reads the helper thinks `setup:ai` can never exist in a submodule. They rely on `has_own_task setup:ai` being false there, but a submodule that selects `claude` now has the task (it exits 0 silently)."
+  }
+]
+```
