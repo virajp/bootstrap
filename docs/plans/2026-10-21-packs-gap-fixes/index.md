@@ -13,9 +13,10 @@ gaps_of:
 
 ## Status
 
-**APPROVED**
+**RUNNING**
 
-APPROVED 2026-10-21 by the user
+RUNNING since 2026-10-21 17:25 in
+/Users/virajpatel/Projects/github.com/virajp/bootstrap/.worktrees/2026-10-21-packs-gap-fixes
 
 ## Consent
 
@@ -92,6 +93,7 @@ Reversals, each confirmed by the user: `conf.d/_repo/` becomes
 | D4 | G4, `dev` always      | "yes, every tool must be in dev". Each `env` of the values file and each `default_envs` without `dev` stops the sync with code 2. The pre-commit code does not change.                                                                          | Skip the hooks of a tool without `dev`              | U1, U3 |
 | D5 | G5, this repository   | "Let AI fix the changes due to migration and get the repo in sync". This repository selects `[tools.claude]`, moves its `conf.d/_repo/` files to `conf.d/zz-repo/`, and removes `"pipx:graphifyy"` from its seed, because `claude` supplies it. | Delete the stale `code/graph` and keep `claude` out | U6     |
 | D6 | Review row            | One review row after U3, because the plan changes shell scripts.                                                                                                                                                                                | No review row                                       | U4     |
+| D7 | G2, hook variables    | Added after the block of wave 1, by the user: "do steps 1 to 3". Before its first `git` call, `test:repo-sync` unsets each `GIT_*` variable that a git hook exports, so its scratch repositories never write to the real repository.            | Run the hook with `pass_filenames` only; no hook    | U3     |
 
 ## New dependencies
 
@@ -103,7 +105,7 @@ None.
 | -- | ---- | ---------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------- | ---------- | ------- | ------ |
 | U1 | 1    | [01-engine.md](01-engine.md) | edit   | `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync`                                                                     | —          | pending |        |
 | U2 | 1    | [02-rename.md](02-rename.md) | edit   | `tools/mise/.config/mise/conf.d/_repo/` (moves to `zz-repo/`), `tools/mise/tools.toml`, `tools/mise/.config/mise.toml.tmpl` | —          | pending |        |
-| U3 | 1    | [03-tests.md](03-tests.md)   | edit   | `.config/mise/tasks/test/repo-sync`                                                                                         | —          | pending |        |
+| U3 | 1    | [03-tests.md](03-tests.md)   | edit   | `.config/mise/tasks/test/repo-sync`                                                                                         | —          | green   |        |
 | U4 | 2    | [04-review.md](04-review.md) | review | —                                                                                                                           | U1, U2, U3 | pending |        |
 | U5 | 3    | [05-docs.md](05-docs.md)     | edit   | `docs/sync/**`, `README.md`, `CLAUDE.md`, `docs/design/*.md`                                                                | U4         | pending |        |
 | U6 | 4    | [06-gates.md](06-gates.md)   | edit   | `.config/bootstrap.toml`, `.config/mise/conf.d/**`, every synced copy in `.config/` and at the root                         | U5         | pending |        |
@@ -185,10 +187,44 @@ A unit returns exactly this block and nothing else — no file contents, no diff
 
 ## Gaps surfaced during execution
 
+- G1 (R1, plan gap, non-blocking):
+  `tools/android/.config/mise/tasks/setup/deps/android` lines 113, 137 and 192
+  still print `.config/mise/conf.d/_repo/mise.<env>.toml`. The Facts list of
+  `_repo` mentions left this file out, and no unit owns it, so the run does not
+  change it. After the landing, the task tells a consumer to edit a folder that
+  no longer exists. Fix: rename the three paths to `zz-repo` in a later change.
+
+- G2 (wave 1 commit, blocking): `test:repo-sync` runs `git` in scratch
+  repositories without clearing the `GIT_*` variables that a git hook sets. As
+  the `test-repo-sync` pre-commit hook, it wrote to the real repository: it
+  set `core.bare = true` in `.git/config` and made the commits `test copy` and
+  `init` on the run branch. Fix needed in U3's file: unset `GIT_DIR`,
+  `GIT_INDEX_FILE`, `GIT_WORK_TREE`, `GIT_OBJECT_DIRECTORY` and the other
+  `GIT_*` variables of a hook before any `git` call of the task.
+  Ruling added as D7 (U3 edit 4). Recovery done by hand: `core.bare` set back
+  to `false`, the run branch reset (soft) to `b0696c8`, and the index reset;
+  the unit edits stay on disk.
+
 ## Run log
 
-| Wave | Unit | Model | Round | Outcome | Detail | Commit |
-| ---- | ---- | ----- | ----- | ------- | ------ | ------ |
+| Wave | Unit                               | Model | Round | Outcome     | Detail                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Commit |
+| ---- | ---------------------------------- | ----- | ----- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 0    | preflight                          | —     | 1     | pass        | doctor: mise 2026.10.17, graphify CLI present, graph in main checkout; no `.config/vwf.yaml` (review_round_cap 4); mempalace down, journal not written; wave gate `code:precommit` and `test:repo-sync` green                                                                                                                                                                                                                                                                                     | —      |
+| 0    | format-check                       | —     | 1     | skipped     | why: no `covers:`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | —      |
+| 0    | stack conventions                  | —     | 1     | skipped     | why: no `code` unit                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | —      |
+| 0    | wave order                         | —     | 1     | pass        | W1 U1, U2, U3 (edit, one message); W2 U4 (review); acceptance/ux; reconcile; W3 U5 (docs); W4 U6 (gates)                                                                                                                                                                                                                                                                                                                                                                                          | —      |
+| 1    | U2 Rename the seed folder          | opus  | 1     | pass        | edit: `tools/mise/.config/mise/conf.d/_repo/` → `zz-repo/` (mode 644 kept); seed paths in `tools/mise/tools.toml:6`; comment in `mise.toml.tmpl:21`. DOCS FALSIFIED: every `_repo` mention in the Facts doc list → U5                                                                                                                                                                                                                                                                             | —      |
+| 1    | U3 Test the dev and zz-repo rules  | opus  | 1     | pass        | edit: pulumi case uses `env = ["dev", "ci"]`; 3 new code-2 cases (`env = ["ci"]`, `default_envs = ["ci"]`, `tools/zzz-late`) with message checks; 14 checks pass. DECIDED: the node dependency case also moves to `["dev", "ci"]`; message checks leave out the absolute path. GAP: the plan named only line 142; line 148 also needed the change                                                                                                                                                 | —      |
+| 1    | U1 repo-sync dev and zz-repo rules | opus  | 1     | pass        | edit: code 2 for an `env` without dev, a `default_envs` without dev (and `[]`), and a tools/ folder that sorts after `zz-repo` (LC_ALL=C, every clone folder, in `_rs_mise_index`); header comments. DOCS FALSIFIED: CLAUDE.md mise-config env rules → U5. GAP: a folder named exactly `zz-repo` is not stopped (wording taken literally)                                                                                                                                                         | —      |
+| 1    | R1                                 | opus  | 1     | findings(4) | CONTRACT clean, RULINGS clean. `repo-sync:339` (U1) `> "zz-repo"` lets a folder named `zz-repo` through → loop to U1. Docs → U5: `docs/sync/index.md:184-199,349` (dev rule, exit-code causes), `docs/design/mise.md:152` (env rules). `tools/android/.config/mise/tasks/setup/deps/android:113,137,192` still prints `conf.d/_repo/` in a file no unit owns → gap G1                                                                                                                             | —      |
+| 1    | U1 repo-sync dev and zz-repo rules | opus  | 2     | pass        | edit (R1 loop-back): `>= "zz-repo"`, so a folder named `zz-repo` also stops with code 2; message adds "or is named zz-repo" (the part U3 matches is unchanged). DOCS FALSIFIED: the equal name is not in D3 → U5 docs say "sorts after or is named zz-repo"                                                                                                                                                                                                                                       | —      |
+| 1    | R1                                 | opus  | 2     | pass        | CONTRACT clean, RULINGS clean; `>=` fix holds                                                                                                                                                                                                                                                                                                                                                                                                                                                     | —      |
+| 1    | wave commit                        | —     | 1     | blocked     | why: the `test-repo-sync` pre-commit hook ran `test:repo-sync` inside `git commit`; the task ran `git init/add/commit` with the hook's inherited GIT_DIR/GIT_INDEX_FILE, so it set `core.bare = true` in the main `.git/config` and made the commits `test copy` and `init` on the run branch (bc2db48, 2dbb8ed, 13e844b, cf40a8a). The unit commits df5a624 and 9a8d923 sit on them and their trees are wrong. The working files on disk hold the unit edits. origin/main is unchanged (b0696c8) | —      |
+| 1    | resume                             | —     | 1     | pass        | resume after the G2 block: worktree exists, row RUNNING, ruling D7 in the plan (U3 edit 4); U1-U3 edits on disk, uncommitted; wave 1 runs again. Commit order: U3 first, so the `test-repo-sync` hook of the `tools/` commits runs the fixed task                                                                                                                                                                                                                                                 | —      |
+| 1    | U1 repo-sync dev and zz-repo rules | opus  | 3     | pass        | resume: edits on disk verified (dev rule, default_envs rule, `>= "zz-repo"` folder rule); no change                                                                                                                                                                                                                                                                                                                                                                                               | —      |
+| 1    | U2 Rename the seed folder          | opus  | 2     | pass        | resume: edits on disk verified (`zz-repo/` seeds equal HEAD `_repo/`, mode 644; seed paths; comment); no change. GAP: the unit file's `rg` check skips `.config/`; with `--hidden --no-ignore` only the G1 lines remain                                                                                                                                                                                                                                                                           | —      |
+| 1    | U3 Test the dev and zz-repo rules  | opus  | 2     | pass        | resume: edits 1-3 on disk verified; edit 4 (D7): `unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_PREFIX GIT_EXEC_PATH` after `set -euo pipefail`, with a G2 comment; 14 checks pass, bash 3.2 and 5; hook-style run against a scratch repo: its HEAD, status, core.bare unchanged; real repo unchanged                                                                                                                       | —      |
+| 1    | R1                                 | opus  | 3     | pass        | resume: contract review of U3 edit 4 (D7): CONTRACT clean, RULINGS clean                                                                                                                                                                                                                                                                                                                                                                                                                          | —      |
 
 ## Launch
 

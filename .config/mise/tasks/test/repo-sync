@@ -9,6 +9,13 @@
 # nothing outside its temporary folder.
 
 set -euo pipefail
+
+# The test-repo-sync pre-commit hook runs this task inside `git commit`, which
+# exports these variables. With them set, the git init, add and commit of the
+# scratch repositories write to the real repository (gap G2).
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_OBJECT_DIRECTORY \
+  GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_PREFIX GIT_EXEC_PATH
+
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
@@ -125,6 +132,17 @@ node_needs_pulumi() {
   cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
 }
 
+node_ci_only() {
+  sed 's/^default_envs = .*$/default_envs = [ "ci" ]/' "$clone/tools/node/tools.toml" > "$tmp/node.toml"
+  cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
+}
+
+late_tool_folder() {
+  mkdir -p -- "$clone/tools/zzz-late"
+  printf '%s\n' 'default_envs = [ "dev" ]' 'depends = []' 'extensions = []' \
+    'root_only = false' 'seed = []' > "$clone/tools/zzz-late/tools.toml"
+}
+
 if run_case "no [tools], environments dev" 0 'environments = [ "dev" ]'; then
   check_base_files
 fi
@@ -141,14 +159,21 @@ run_case "[packs.nope], an unknown pack" 3 'environments = [ "dev" ]
 [packs.nope]' '' "pack 'nope' is not in bootstrap" || true
 run_case "env ci on a tool whose mise tool allows dev only" 2 'environments = [ "dev", "ci" ]
 [tools.pulumi]
-env = [ "ci" ]' '' "mise tool 'pulumi' of tools/pulumi allows only dev" || true
+env = [ "dev", "ci" ]' '' "mise tool 'pulumi' of tools/pulumi allows only dev" || true
 run_case "env ci not in environments dev" 2 'environments = [ "dev" ]
 [tools.node]
 env = [ "ci" ]' '' 'is not in environments: dev' || true
 run_case "a dependency without the environment of its parent" 2 'environments = [ "dev", "ci" ]
 [tools.node]
-env = [ "ci" ]' node_needs_pulumi \
+env = [ "dev", "ci" ]' node_needs_pulumi \
   "tools/node needs tools/pulumi in 'ci', but its mise tool 'pulumi' allows only dev" || true
+run_case "env ci without dev" 2 'environments = [ "dev", "ci" ]
+[tools.node]
+env = [ "ci" ]' '' 'has no dev - each tool must be in dev, for example env = ' || true
+run_case "default_envs ci without dev" 2 'environments = [ "dev", "ci" ]
+[tools.node]' node_ci_only 'default_envs of tools/node/tools.toml has no dev' || true
+run_case "a tool folder that sorts after zz-repo" 2 'environments = [ "dev" ]' late_tool_folder \
+  'tool folder tools/zzz-late sorts after zz-repo' || true
 
 if ((failures)); then
   print_error "$failures check(s) failed"
