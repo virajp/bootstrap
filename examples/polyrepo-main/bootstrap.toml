@@ -18,3 +18,7 @@ worktree_files = [ ".config/mise.local.toml" ]
 [branch.main]
 merge_model = "pr"
 merge_never = [ "gh-pages" ]
+
+# The repository's own ignore lines, added at the end of the shared .gitignore.
+[overrides.gitignore]
+add = [ "/dist/" ]

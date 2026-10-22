@@ -109,8 +109,11 @@ Some files refer to files that are not in `tools/`, for example
   consumers until you push them.
 - To test a change before you push it, set `REPO_SYNC_URL` to a local clone
   with a commit of the change. Use `repo_sync --dry-run` to show a diff.
-- The sync writes the shared `.gitignore` first. Then it adds the lines of the
-  consumer file `.config/repo-sync/gitignore`.
+- The sync writes the shared `.gitignore` with `[overrides.gitignore]` of the
+  values file applied: it comments out each line of `remove`, then adds the
+  lines of `add` at the end. A line of `remove` that the shared `.gitignore`
+  does not have, a line in both lists, and the old consumer file
+  `.config/repo-sync/gitignore` stop the sync with code 2.
 - The `pre-commit` tool renders `.config/pre-commit-config.yaml` from the
   `[[precommit]]` tables of the selected tools. Then it adds the entries of the
   consumer file `.config/repo-sync/pre-commit.yaml`.
@@ -305,10 +308,11 @@ that it finds, and removes the others. It stops if neither branch exists.
   `tools.toml`, without the tool name. The sync applies it to each selected
   tool with a value at that path. A table merges key by key; any other value
   replaces the default. A path that no selected tool has, a key of
-  `[overrides]` other than `mise` and `mise_env`, an environment outside
-  `environments`, and the `envs` or the `depends` of a mise tool stop the
-  sync with code 2. Each overridden line gets an
-  `# override: .config/bootstrap.toml` comment.
+  `[overrides]` other than `mise`, `mise_env` and `gitignore`, an environment
+  outside `environments`, and the `envs` or the `depends` of a mise tool stop
+  the sync with code 2. Each overridden line gets an
+  `# override: .config/bootstrap.toml` comment. `[overrides.gitignore]` is
+  different: see "How the sync operates".
 - `conf.d/zz-repo/` is the folder that each repository owns and customizes.
   `mise` ships the seeds `zz-repo/mise.<env>.toml`, for example for the
   repository's own `[env]` values. The sync writes a seed only when it is

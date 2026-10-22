@@ -264,14 +264,53 @@ run_case "[overrides.mise.tools.java] envs" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.mise.tools.java]
 envs = [ "dev" ]' '' 'the envs and the depends of a mise tool cannot be overridden' || true
-run_case "[overrides.tools.java], not mise or mise_env" 2 'environments = [ "dev" ]
+run_case "[overrides.tools.java], not mise, mise_env or gitignore" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.tools.java]
-version = "21"' '' 'the only keys of [overrides] are mise and mise_env' || true
+version = "21"' '' 'the only keys of [overrides] are mise, mise_env and gitignore' || true
 run_case "[overrides.mise_env.ci] without ci in environments" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.mise_env.ci.tools.java]
 version = "21"' '' "overrides.mise_env.ci in $values: 'ci' is not in environments: dev" || true
+
+# The consumer already has a .gitignore, so the dry run shows its diff.
+gitignore_file() {
+  printf '%s\n' x > "$consumer/.gitignore"
+}
+
+old_gitignore_file() {
+  mkdir -p -- "$consumer/.config/repo-sync"
+  printf '%s\n' '/build/' > "$consumer/.config/repo-sync/gitignore"
+}
+
+run_case "[overrides.gitignore] remove" 0 'environments = [ "dev" ]
+[overrides.gitignore]
+remove = [ "*.log" ]
+add = [ "/coverage/" ]' gitignore_file '+# *.log  # override: removed by .config/bootstrap.toml' || true
+run_case "[overrides.gitignore] add" 0 'environments = [ "dev" ]
+[overrides.gitignore]
+remove = [ "*.log" ]
+add = [ "/coverage/" ]' gitignore_file '+# ==== Overrides from .config/bootstrap.toml ====' || true
+rm -f -- "$consumer/.gitignore"
+run_case "[overrides.gitignore] remove, a line that is not shipped" 2 'environments = [ "dev" ]
+[overrides.gitignore]
+remove = [ "/nope/" ]' '' "'/nope/' is not a line of the shipped .gitignore" || true
+run_case "[overrides.gitignore], a line in add and in remove" 2 'environments = [ "dev" ]
+[overrides.gitignore]
+add = [ "*.log" ]
+remove = [ "*.log" ]' '' "'*.log' is in add and in remove" || true
+run_case "[overrides.gitignore], a key other than add and remove" 2 'environments = [ "dev" ]
+[overrides.gitignore]
+append = [ "/build/" ]' '' 'the only keys of [overrides.gitignore] are add and remove' || true
+run_case "[overrides.gitignore] add, not a list" 2 'environments = [ "dev" ]
+[overrides.gitignore]
+add = "/build/"' '' 'must be a list of one-line strings' || true
+run_case "[overrides.gitignore] add, an empty line" 2 'environments = [ "dev" ]
+[overrides.gitignore]
+add = [ " " ]' '' 'has an empty line' || true
+run_case "the old .config/repo-sync/gitignore" 2 'environments = [ "dev" ]' old_gitignore_file \
+  '.config/repo-sync/gitignore is no longer used' || true
+rm -rf -- "$consumer/.config/repo-sync"
 
 if ((failures)); then
   print_error "$failures check(s) failed"

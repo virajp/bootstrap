@@ -15,6 +15,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | `.config/repo-config.toml` with a `tools` list          | M15. Its M15.4 includes the row above.                                                                                                                                                                                                                              |
 | No values file, but older shared files or a mise config | The steps of `index.md`. Its step 5 sends you here for M1 to M14. Write the new name directly.                                                                                                                                                                      |
 | `.config/mise/conf.d/_repo/`, or an `env` without `dev` | M17, before the first sync.                                                                                                                                                                                                                                         |
+| `.config/repo-sync/gitignore`                           | M18, before the next sync.                                                                                                                                                                                                                                          |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -30,8 +31,8 @@ this sequence. Show the user the list of changes before you make them.
 
 - Delete `.config/gist-sync/` (an old `.gitignore` with only a header).
 - If the repository uses `gist_sync` (macos-setup), delete
-  `.config/mise/tasks/_scripts/gist-sync`. Rename
-  `.config/gist-sync/gitignore` to `.config/repo-sync/gitignore`.
+  `.config/mise/tasks/_scripts/gist-sync`. Move the lines of
+  `.config/gist-sync/gitignore` to `[overrides.gitignore]` as M18 tells you.
 - Delete the old `.config/mise/tasks/setup/configs`. Step 2 of `index.md`
   replaces it.
 
@@ -383,3 +384,34 @@ Do this item before the first sync.
    `dev`, for example `env = ["dev", "ci"]`. An `env` without `dev`, for
    example `env = ["ci"]`, stops the sync with code 2. If the user needs a
    tool in `ci` only, tell the user that `bootstrap` does not support it.
+
+## M18: `.config/repo-sync/gitignore` is now `[overrides.gitignore]`
+
+Do this item before the next sync. The old file stops the sync with code 2.
+
+1. Read `.config/repo-sync/gitignore`. Show the user its lines.
+2. For each line, find the type. Show the user the result:
+   - A blank line or a comment line: drop it.
+   - A line that cancels a shared pattern with `!`, for example
+     `!.env.example`: put it in `add`.
+   - A line that the repository needs to ignore: put it in `add`.
+3. If the old file only cancels a shared line, for example `!*.log` for the
+   shared `*.log`, ask the user whether to put `*.log` in `remove` instead.
+   `remove` comments out the shared line, and the result is easier to read.
+4. Write the lists in `.config/bootstrap.toml`:
+
+   ```toml
+   [overrides.gitignore]
+   add = [ "/build/", "!.env.example" ]
+   remove = [ "*.log" ]
+   ```
+
+5. Delete the old file:
+
+   ```bash
+   git rm .config/repo-sync/gitignore
+   ```
+
+6. Run `mise run setup:configs --dry-run`, and examine the diff of
+   `.gitignore`. The lines of `add` are at the end, under
+   `# ==== Overrides from .config/bootstrap.toml ====`.

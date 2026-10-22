@@ -31,6 +31,12 @@ version = "22"
 [overrides.mise.settings]
 node.compile = true
 
+# Change the shared .gitignore. remove comments out a shared line, then add
+# puts the repository's own lines at the end.
+[overrides.gitignore]
+add = [ "/coverage/", "!.env.example" ]
+remove = [ "*.log" ]
+
 # A feature branch merges into develop. main never merges into develop.
 [branch.develop]
 merge_model = "direct"

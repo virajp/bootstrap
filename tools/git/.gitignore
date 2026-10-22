@@ -2,9 +2,9 @@
 # The next sync replaces it, and a manual change is lost.
 
 # Universal ignore set, by tech stack and tool, for every repository.
-# The sync writes this file first, then appends the repository's own lines
-# from .config/repo-sync/gitignore. A later line wins, so a repository can
-# negate any pattern here.
+# The sync applies [overrides.gitignore] of .config/bootstrap.toml: it
+# comments out each line of remove, then adds the lines of add at the end. A
+# later line wins, so a repository can also negate any pattern here.
 
 # ==== macOS ====
 .DS_Store
