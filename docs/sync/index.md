@@ -60,7 +60,9 @@ The pack files in `packs/` are `base.md` and `security.md`.
   the files of these tools.
 - Do not edit a synced file in the consumer repository. The next sync replaces
   it. Put repository-owned content in the places that the sync never writes:
-  - mise config and environment variables: the seeds
+  - a different default of a tool, for example a version, a mise setting or
+    an env value: `[overrides]` of the values file (see step 3).
+  - mise config and environment variables that no tool has: the seeds
     `.config/mise/conf.d/zz-repo/mise.<env>.toml`, one for each environment.
     mise loads the folders of `conf.d/` in name order, and a later folder
     wins. The name `zz-repo` sorts last, so the repository config wins over
@@ -253,27 +255,29 @@ In step 6, ask the user to run it. You can run a dry run.
 
 Write `.config/bootstrap.toml`. Ask the user for each value.
 
-| Key                                | Used by                                                            | Values                                                                                                                                                                                                                                                                  |
-| ---------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[tools.<folder>]`                 | `repo_sync`                                                        | One table for each tool from step 1. Do not write a tool of the `base` pack.                                                                                                                                                                                            |
-| `[tools.<folder>].env`             | `repo_sync`                                                        | Optional. The environments of the tool, for example `["dev", "ci"]`. Without it, the tool gets its `default_envs`.                                                                                                                                                      |
-| `[packs.<name>]`                   | `repo_sync`                                                        | One table for each pack from step 1, without the prefix `p:`. Do not write `base`.                                                                                                                                                                                      |
-| `[packs.<name>].env`               | `repo_sync`                                                        | Optional. The environments of each tool of the pack. Without it, each tool gets its own `default_envs`.                                                                                                                                                                 |
-| `environments`                     | `repo_sync`                                                        | The environments from step 1, for example `["dev", "ci"]`. The default is `["dev"]`.                                                                                                                                                                                    |
-| `repo_name`                        | `.config/mise.toml`, `gitleaks.toml`, `fnox.toml`                  | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                                                                                                                                                                         |
-| `product_name`                     | `fnox.toml`                                                        | The product name, for example `95octane`. Set it in each repository of a product with members, the root included. Then the fnox keychain uses it as `service`, and `<repo_name>/` as `prefix`. Without it, `service` is `repo_name` and there is no prefix.             |
-| `[branch.<branch>].merge_model`    | `code:merge:*`                                                     | The merge config of this repository, for the destination `<branch>`: `direct` (local merge, the default) or `pr` (pull request). Each repository has its own, also a submodule.                                                                                         |
-| `[branch.<branch>].merge_from`     | `code:merge:*`                                                     | Optional. The only branches that can merge into `<branch>`. Do not set it with `merge_never`.                                                                                                                                                                           |
-| `[branch.<branch>].merge_never`    | `code:merge:*`                                                     | Optional. The branches that never merge into `<branch>`. Without both lists: into `main` with `develop`, only from `develop`; into any other branch, never from `main`.                                                                                                 |
-| `commit_scopes`                    | `git-conventional-commits`                                         | The commit scopes, for example `["backend", "web"]`. The default is the member list.                                                                                                                                                                                    |
-| `repo_url`                         | `github` tool                                                      | The web URL of the repository, for the links of the GitHub issue form: the README and a new security advisory.                                                                                                                                                          |
-| `worktree_files`                   | `setup:worktree`                                                   | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]`                                                                                                                                                      |
-| `extensions`                       | `vscode` (in the root)                                             | VS Code extensions that no tool has, for example `["astro-build.astro-vscode"]`. A submodule lists its own too.                                                                                                                                                         |
-| `[member.<name>]`                  | `setup`, `setup:worktree`                                          | One table for each member folder                                                                                                                                                                                                                                        |
-| `[member.<name>].folder`           | `repo_sync`, `setup`, `setup:worktree`, `code:format`, `code:lint` | Optional. The folder of the member below the root, for example `projects/web`. The default is `<name>`. A table whose folder is a submodule path names that submodule. A submodule without a table has its path as its name. The folder `.` stops the sync with code 2. |
-| `[member.<name>].type`             | `repo_sync`                                                        | Optional. `submodule` or `folder`. Without it, the sync finds the type. A type that is not correct stops the sync with code 2.                                                                                                                                          |
-| `[member.<name>].label`            | `setup`, `setup:worktree`                                          | The display name. The default is `<name>`.                                                                                                                                                                                                                              |
-| `[member.<name>].worktree_install` | `setup:worktree`                                                   | Only for a submodule member. The install command for a new worktree. If it is not set, the member's own `setup:worktree` runs. A folder member never has it.                                                                                                            |
+| Key                                    | Used by                                                            | Values                                                                                                                                                                                                                                                                  |
+| -------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[tools.<folder>]`                     | `repo_sync`                                                        | One table for each tool from step 1. Do not write a tool of the `base` pack.                                                                                                                                                                                            |
+| `[tools.<folder>].env`                 | `repo_sync`                                                        | Optional. The environments of the tool, for example `["dev", "ci"]`. Without it, the tool gets its `default_envs`.                                                                                                                                                      |
+| `[packs.<name>]`                       | `repo_sync`                                                        | One table for each pack from step 1, without the prefix `p:`. Do not write `base`.                                                                                                                                                                                      |
+| `[packs.<name>].env`                   | `repo_sync`                                                        | Optional. The environments of each tool of the pack. Without it, each tool gets its own `default_envs`.                                                                                                                                                                 |
+| `[overrides.mise.<section>]`           | `repo_sync`                                                        | Optional. New values for the `[mise.<section>]` defaults of the selected tools, in all environments, for example `[overrides.mise.tools.java]` with `version = "21"`. See "Overrides".                                                                                  |
+| `[overrides.mise_env.<env>.<section>]` | `repo_sync`                                                        | Optional. New values for one environment only. They win over `[overrides.mise]`. See "Overrides".                                                                                                                                                                       |
+| `environments`                         | `repo_sync`                                                        | The environments from step 1, for example `["dev", "ci"]`. The default is `["dev"]`.                                                                                                                                                                                    |
+| `repo_name`                            | `.config/mise.toml`, `gitleaks.toml`, `fnox.toml`                  | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                                                                                                                                                                         |
+| `product_name`                         | `fnox.toml`                                                        | The product name, for example `95octane`. Set it in each repository of a product with members, the root included. Then the fnox keychain uses it as `service`, and `<repo_name>/` as `prefix`. Without it, `service` is `repo_name` and there is no prefix.             |
+| `[branch.<branch>].merge_model`        | `code:merge:*`                                                     | The merge config of this repository, for the destination `<branch>`: `direct` (local merge, the default) or `pr` (pull request). Each repository has its own, also a submodule.                                                                                         |
+| `[branch.<branch>].merge_from`         | `code:merge:*`                                                     | Optional. The only branches that can merge into `<branch>`. Do not set it with `merge_never`.                                                                                                                                                                           |
+| `[branch.<branch>].merge_never`        | `code:merge:*`                                                     | Optional. The branches that never merge into `<branch>`. Without both lists: into `main` with `develop`, only from `develop`; into any other branch, never from `main`.                                                                                                 |
+| `commit_scopes`                        | `git-conventional-commits`                                         | The commit scopes, for example `["backend", "web"]`. The default is the member list.                                                                                                                                                                                    |
+| `repo_url`                             | `github` tool                                                      | The web URL of the repository, for the links of the GitHub issue form: the README and a new security advisory.                                                                                                                                                          |
+| `worktree_files`                       | `setup:worktree`                                                   | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]`                                                                                                                                                      |
+| `extensions`                           | `vscode` (in the root)                                             | VS Code extensions that no tool has, for example `["astro-build.astro-vscode"]`. A submodule lists its own too.                                                                                                                                                         |
+| `[member.<name>]`                      | `setup`, `setup:worktree`                                          | One table for each member folder                                                                                                                                                                                                                                        |
+| `[member.<name>].folder`               | `repo_sync`, `setup`, `setup:worktree`, `code:format`, `code:lint` | Optional. The folder of the member below the root, for example `projects/web`. The default is `<name>`. A table whose folder is a submodule path names that submodule. A submodule without a table has its path as its name. The folder `.` stops the sync with code 2. |
+| `[member.<name>].type`                 | `repo_sync`                                                        | Optional. `submodule` or `folder`. Without it, the sync finds the type. A type that is not correct stops the sync with code 2.                                                                                                                                          |
+| `[member.<name>].label`                | `setup`, `setup:worktree`                                          | The display name. The default is `<name>`.                                                                                                                                                                                                                              |
+| `[member.<name>].worktree_install`     | `setup:worktree`                                                   | Only for a submodule member. The install command for a new worktree. If it is not set, the member's own `setup:worktree` runs. A folder member never has it.                                                                                                            |
 
 Example:
 
@@ -309,6 +313,41 @@ with code 2.
 The member list is the git submodules, then each `[member.<name>]` table. A
 `[member.<name>]` table that is not a submodule must have a folder with that
 name in the repository. If not, the render fails.
+
+### Overrides
+
+`[overrides]` replaces a default of a tool. The path after `overrides.` is the
+path in `tools/<tool>/tools.toml`, without the tool name. The sync applies the
+override to each selected tool that has a value at that path.
+
+```toml
+# Java 21, not lts, in all environments.
+[overrides.mise.tools.java]
+version = "21"
+
+# Node 22 in CI only. This wins over [overrides.mise.tools.node].
+[overrides.mise_env.ci.tools.node]
+version = "22"
+
+# A mise setting and an env value of the python tool.
+[overrides.mise.settings]
+python.compile = true
+
+[overrides.mise.env]
+UV_NO_CACHE = false
+```
+
+- A table merges key by key. Any other value, also a list, replaces the
+  default.
+- `[overrides.mise_env.<env>]` matches a value in `[mise.*]` or in
+  `[mise_env.<env>.*]` of a tool. The environment must be in `environments`.
+- Each line that an override changes gets the comment
+  `# override: .config/bootstrap.toml` in
+  `.config/mise/conf.d/<tool>/mise.<env>.toml`.
+- These stop the sync with code 2: a key of `[overrides]` other than `mise`
+  and `mise_env`, a path that no selected tool has, and the `envs` or the
+  `depends` of a mise tool. An override cannot add a key. Put a new key in
+  `conf.d/zz-repo/mise.<env>.toml`.
 
 ## Step 4: Select the branch model
 
@@ -361,7 +400,7 @@ If `repo_sync` fails, read the exit code:
 
 | Code | Cause                                                                                                                                                                                                                                             | Action                                           |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| 2    | The old list format, a bad `[tools.*]` or `[packs.*]` entry, a bad `env` (also an `env` without `dev`) or `environments`, a root-only tool in a submodule, or a template that cannot render                                                       | Correct the values file                          |
+| 2    | The old list format, a bad `[tools.*]` or `[packs.*]` entry, a bad `env` (also an `env` without `dev`) or `environments`, a bad `[overrides]`, a root-only tool in a submodule, or a template that cannot render                                  | Correct the values file                          |
 | 2    | A tool in an environment that one of its mise tools does not allow                                                                                                                                                                                | Correct the `env`, or tell the `bootstrap` owner |
 | 2    | A pack loop, or a pack name that is also a tool folder                                                                                                                                                                                            | Tell the `bootstrap` owner                       |
 | 2    | A `default_envs` without `dev`, or a tool folder that is `zz-repo` or that sorts after `zz-repo`                                                                                                                                                  | Tell the `bootstrap` owner                       |

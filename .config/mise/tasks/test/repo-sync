@@ -230,6 +230,49 @@ run_case "a tool folder named zz-repo" 2 'environments = [ "dev" ]' tool_folder_
 run_case "default_envs empty" 2 'environments = [ "dev" ]' node_no_envs \
   'default_envs of tools/node/tools.toml has no dev' || true
 
+# The generated java config already exists in the consumer, so the dry run
+# shows its diff, with the override comments.
+java_conf() {
+  mkdir -p -- "$consumer/.config/mise/conf.d/java"
+  printf '%s\n' x > "$consumer/.config/mise/conf.d/java/mise.dev.toml"
+  printf '%s\n' x > "$consumer/.config/mise/conf.d/java/mise.ci.toml"
+}
+
+run_case "[overrides.mise.tools.java] version" 0 'environments = [ "dev" ]
+[tools.java]
+[overrides.mise.tools.java]
+version = "21"' java_conf 'version = "21"  # override: .config/bootstrap.toml' || true
+run_case "[overrides.mise_env.ci] wins over [overrides.mise]" 0 'environments = [ "dev", "ci" ]
+[tools.java]
+[overrides.mise.tools.java]
+version = "21"
+[overrides.mise_env.ci.tools.java]
+version = "17"' java_conf 'version = "17"  # override: .config/bootstrap.toml' || true
+rm -rf -- "$consumer/.config/mise/conf.d/java"
+run_case "[overrides.mise.tools.jav], an unknown mise tool" 2 'environments = [ "dev" ]
+[tools.java]
+[overrides.mise.tools.jav]
+version = "21"' '' 'no selected tool has mise.tools.jav.version' || true
+run_case "[overrides.mise.tools.java] without the java tool" 2 'environments = [ "dev" ]
+[overrides.mise.tools.java]
+version = "21"' '' 'no selected tool has mise.tools.java.version' || true
+run_case "[overrides.mise.env], a key that no tool has" 2 'environments = [ "dev" ]
+[tools.python]
+[overrides.mise.env]
+NEW_VAR = "1"' '' 'no selected tool has mise.env.NEW_VAR' || true
+run_case "[overrides.mise.tools.java] envs" 2 'environments = [ "dev" ]
+[tools.java]
+[overrides.mise.tools.java]
+envs = [ "dev" ]' '' 'the envs and the depends of a mise tool cannot be overridden' || true
+run_case "[overrides.tools.java], not mise or mise_env" 2 'environments = [ "dev" ]
+[tools.java]
+[overrides.tools.java]
+version = "21"' '' 'the only keys of [overrides] are mise and mise_env' || true
+run_case "[overrides.mise_env.ci] without ci in environments" 2 'environments = [ "dev" ]
+[tools.java]
+[overrides.mise_env.ci.tools.java]
+version = "21"' '' "overrides.mise_env.ci in $values: 'ci' is not in environments: dev" || true
+
 if ((failures)); then
   print_error "$failures check(s) failed"
   exit 1

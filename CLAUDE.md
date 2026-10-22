@@ -298,6 +298,17 @@ that it finds, and removes the others. It stops if neither branch exists.
 - The `setup` aliases are in the generated `mise/mise.dev.toml`. `setup` comes
   from `tools/mise/tools.toml`. The sync adds `setup-all` and
   `setup-<submodule>` there for a repository with git submodules.
+- `[overrides]` of the values file replaces the defaults of the tools.
+  `[overrides.mise.<path>]` applies to each environment, and
+  `[overrides.mise_env.<env>.<path>]` to one environment, where it wins.
+  `<path>` is the path below `[mise]` or `[mise_env.<env>]` of a
+  `tools.toml`, without the tool name. The sync applies it to each selected
+  tool with a value at that path. A table merges key by key; any other value
+  replaces the default. A path that no selected tool has, a key of
+  `[overrides]` other than `mise` and `mise_env`, an environment outside
+  `environments`, and the `envs` or the `depends` of a mise tool stop the
+  sync with code 2. Each overridden line gets an
+  `# override: .config/bootstrap.toml` comment.
 - `conf.d/zz-repo/` is the folder that each repository owns and customizes.
   `mise` ships the seeds `zz-repo/mise.<env>.toml`, for example for the
   repository's own `[env]` values. The sync writes a seed only when it is

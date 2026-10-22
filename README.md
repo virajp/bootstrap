@@ -161,6 +161,10 @@ These rules apply to each file:
   must be in dev: an `env` or a `default_envs` without dev stops the sync.
   Aliases, hooks, vars and tasks go only to dev. `.config/mise.toml` is the
   only file for every environment. `CLAUDE.md` has the full rules.
+- `[overrides]` of the values file replaces a default of a tool, for example
+  `[overrides.mise.tools.java]` with `version = "21"`. Each overridden line
+  gets an `# override: .config/bootstrap.toml` comment.
+  `docs/sync/index.md` has the rules.
 - The sync never deletes a file, with three exceptions. The first is the merge
   tasks. With `main` and `develop`, the repository gets `code:merge:develop`
   and `code:merge:main`. With only one of them, it gets `code:merge`. The sync

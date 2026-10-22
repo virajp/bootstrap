@@ -19,6 +19,11 @@ worktree_files = [ ".config/mise.local.toml" ]
 [tools.pulumi]
 env = [ "dev" ]
 
+# Pin pulumi instead of latest. The path after overrides is the path in
+# tools/pulumi/tools.toml.
+[overrides.mise.tools.pulumi]
+version = "3"
+
 # A feature branch merges into develop. main never merges into develop.
 [branch.develop]
 merge_model = "direct"
