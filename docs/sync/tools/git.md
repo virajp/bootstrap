@@ -19,7 +19,7 @@ file.
 
 | Path in the repository                  | Kind     | Use                                                                                        |
 | --------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
-| `.gitignore`                            | Synced   | The shared ignore lines, then the lines of `.config/repo-sync/gitignore`.                  |
+| `.gitignore`                            | Synced   | The shared ignore lines, with `[overrides.gitignore]` of the values file applied.          |
 | `.config/git-conventional-commits.yaml` | Template | The commit types, and the scopes from `commit_scopes`, else the members of the repository. |
 | `.config/mise/tasks/_scripts/merge`     | Synced   | The library `merge`, with `merge_to_destination_branch`.                                   |
 | `.config/mise/tasks/code/git-config`    | Synced   | The task `code:git-config`.                                                                |
@@ -63,9 +63,11 @@ None.
 
 1. Select the branch model (step 4 of `index.md`).
 2. Set `commit_scopes` in the values file.
-3. Move each repository ignore line to `.config/repo-sync/gitignore`.
+3. Put each repository ignore line in `add` of `[overrides.gitignore]` in the
+   values file. Put each shared line that the repository must not ignore in
+   `remove`.
 
 ## Migration
 
-- The general items M10 and M11 of `migrate.md` are about the files of this
-  tool.
+- The general items M10, M11 and M18 of `migrate.md` are about the files of
+  this tool.

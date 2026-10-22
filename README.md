@@ -237,9 +237,10 @@ merge_model = "pr"
 
 ## `.gitignore`
 
-`repo_sync` writes the shared `.gitignore` first. Then it adds the lines of the
-repository's `.config/repo-sync/gitignore`, if that file exists. A later line
-wins, so a repository can negate a shared pattern with `!`.
+`repo_sync` writes the shared `.gitignore`, with `[overrides.gitignore]` of the
+values file applied. It comments out each line of `remove`, then it adds the
+lines of `add` at the end. A later line wins, so a line of `add` can also
+negate a shared pattern with `!`. `docs/sync/index.md` has the rules.
 
 ## `.config/pre-commit-config.yaml`
 

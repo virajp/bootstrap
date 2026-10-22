@@ -44,8 +44,8 @@ files, `repo_sync` does these steps:
   others. If neither `main` nor `develop` exists, it stops with code 2.
 - It removes each `conf.d/*/mise*.toml` with the bootstrap header that it did
   not write.
-- It applies `[overrides]` of the values file to the generated mise config.
-  Each overridden line gets an `# override: .config/bootstrap.toml` comment.
+- It applies `[overrides]` of the values file to the generated mise config
+  and to `.gitignore`. Each overridden line gets an `# override:` comment.
   A bad `[overrides]` stops the sync with code 2. See "Overrides" in step 3
   of `index.md`.
 
@@ -64,11 +64,10 @@ None.
 
 ## Files the repository supplies
 
-| File                                | Used by                                                     |
-| ----------------------------------- | ----------------------------------------------------------- |
-| `.config/bootstrap.toml`            | `repo_sync`. The values file of step 3 of `index.md`.       |
-| `.config/repo-sync/gitignore`       | `.gitignore`. Optional: lines added after the shared lines. |
-| `.config/repo-sync/pre-commit.yaml` | `.config/pre-commit-config.yaml`. Optional: its own hooks.  |
+| File                                | Used by                                                    |
+| ----------------------------------- | ---------------------------------------------------------- |
+| `.config/bootstrap.toml`            | `repo_sync`. The values file of step 3 of `index.md`.      |
+| `.config/repo-sync/pre-commit.yaml` | `.config/pre-commit-config.yaml`. Optional: its own hooks. |
 
 ## Adapt to the repository
 

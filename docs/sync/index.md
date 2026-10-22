@@ -68,7 +68,7 @@ The pack files in `packs/` are `base.md` and `security.md`.
     wins. The name `zz-repo` sorts last, so the repository config wins over
     the config of each tool.
   - shell functions: `.config/mise/tasks/_scripts/local`.
-  - ignore lines: `.config/repo-sync/gitignore`.
+  - ignore lines: `[overrides.gitignore]` of the values file (see step 3).
   - pre-commit hooks: `.config/repo-sync/pre-commit.yaml`, a YAML list of
     `repos:` entries.
   - tasks: any task name that no tool ships.
@@ -263,6 +263,8 @@ Write `.config/bootstrap.toml`. Ask the user for each value.
 | `[packs.<name>].env`                   | `repo_sync`                                                        | Optional. The environments of each tool of the pack. Without it, each tool gets its own `default_envs`.                                                                                                                                                                 |
 | `[overrides.mise.<section>]`           | `repo_sync`                                                        | Optional. New values for the `[mise.<section>]` defaults of the selected tools, in all environments, for example `[overrides.mise.tools.java]` with `version = "21"`. See "Overrides".                                                                                  |
 | `[overrides.mise_env.<env>.<section>]` | `repo_sync`                                                        | Optional. New values for one environment only. They win over `[overrides.mise]`. See "Overrides".                                                                                                                                                                       |
+| `[overrides.gitignore].remove`         | `repo_sync`                                                        | Optional. The lines of the shared `.gitignore` to comment out, for example `["*.log"]`. See "Overrides".                                                                                                                                                                |
+| `[overrides.gitignore].add`            | `repo_sync`                                                        | Optional. The repository's own lines, added at the end of `.gitignore`, for example `["/build/"]`. See "Overrides".                                                                                                                                                     |
 | `environments`                         | `repo_sync`                                                        | The environments from step 1, for example `["dev", "ci"]`. The default is `["dev"]`.                                                                                                                                                                                    |
 | `repo_name`                            | `.config/mise.toml`, `gitleaks.toml`, `fnox.toml`                  | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                                                                                                                                                                         |
 | `product_name`                         | `fnox.toml`                                                        | The product name, for example `95octane`. Set it in each repository of a product with members, the root included. Then the fnox keychain uses it as `service`, and `<repo_name>/` as `prefix`. Without it, `service` is `repo_name` and there is no prefix.             |
@@ -344,10 +346,31 @@ UV_NO_CACHE = false
 - Each line that an override changes gets the comment
   `# override: .config/bootstrap.toml` in
   `.config/mise/conf.d/<tool>/mise.<env>.toml`.
-- These stop the sync with code 2: a key of `[overrides]` other than `mise`
-  and `mise_env`, a path that no selected tool has, and the `envs` or the
-  `depends` of a mise tool. An override cannot add a key. Put a new key in
-  `conf.d/zz-repo/mise.<env>.toml`.
+- These stop the sync with code 2: a key of `[overrides]` other than `mise`,
+  `mise_env` and `gitignore`, a path that no selected tool has, and the
+  `envs` or the `depends` of a mise tool. An override cannot add a key. Put a
+  new key in `conf.d/zz-repo/mise.<env>.toml`.
+
+`[overrides.gitignore]` changes the shared `.gitignore`. It has two lists of
+lines. The sync applies `remove` first, then `add`.
+
+```toml
+[overrides.gitignore]
+add = [ "/build/", "/coverage/", "!.vscode/settings.json" ]
+remove = [ ".env", "*.log" ]
+```
+
+- `remove` comments out each matching line of the shared `.gitignore` and
+  adds `# override: removed by .config/bootstrap.toml`. A line matches when it
+  is the same after the sync removes the spaces at its start and its end.
+- `add` puts its lines at the end, under the heading
+  `# ==== Overrides from .config/bootstrap.toml ====`. A later line wins, so
+  a line with `!` cancels a shared pattern.
+- These stop the sync with code 2: a key other than `add` and `remove`, a
+  value that is not a list of one-line strings, an empty line, a line in both
+  lists, and a line of `remove` that the shared `.gitignore` does not have.
+- The old file `.config/repo-sync/gitignore` also stops the sync with code 2.
+  See M18 of `migrate.md`.
 
 ## Step 4: Select the branch model
 
@@ -442,8 +465,7 @@ file in `conf.d` loads.
 Commit these files:
 
 - The synced files and the seed files.
-- `.config/bootstrap.toml`, `.config/repo-sync/gitignore` and
-  `.config/repo-sync/pre-commit.yaml`.
+- `.config/bootstrap.toml` and `.config/repo-sync/pre-commit.yaml`.
 - The repository-owned files from step 5 and step 7.
 
 Commit in each submodule before you commit in the repository that contains
