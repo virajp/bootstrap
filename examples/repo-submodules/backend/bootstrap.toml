@@ -19,6 +19,11 @@ worktree_files = [ ".config/mise.local.toml", ".env" ]
 [tools.node]
 env = [ "dev", "ci" ]
 
+# Override the defaults of the tools. The path after overrides is the path in
+# tools/<tool>/tools.toml.
+[overrides.mise.tools.node]
+version = "22"
+
 # A feature branch merges into develop. main never merges into develop.
 [branch.develop]
 merge_model = "direct"
