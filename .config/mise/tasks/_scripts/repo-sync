@@ -124,9 +124,11 @@
 # merge tasks of the other model: they are not seeds, so the repo does not own
 # them. With neither branch, the sync stops.
 #
-# .gitignore: the shared ignore set is written first, then the lines of this
-# repo's `.config/repo-sync/gitignore`, if that file exists. A later line wins,
-# so the repo can negate a shared pattern with `!`.
+# .gitignore: the shared ignore set, with `[overrides.gitignore]` of the
+# values file applied. Each line of `remove` is commented out, then the lines
+# of `add` go at the end. A later line wins, so `add` can also negate a shared
+# pattern with `!`. A line of `remove` that the shared set does not have, a
+# line in both lists, and the old `.config/repo-sync/gitignore` stop the sync.
 #
 # Failure handling
 #   * A file takes the mode of its source, also when it exists already. To
@@ -775,11 +777,17 @@ _RS_DEFINES='<% define "rs_leaves" %><% range $k, $x := .v %><% $p := coll.Appen
 # REPO_SYNC_TOOLS). It prints one `<problem> <path> <arg>` line, tab
 # separated, for each problem:
 #   table    a key of [overrides] that must be a table and is not
-#   key      a key of [overrides] other than mise and mise_env
+#   key      a key of [overrides] other than mise, mise_env and gitignore
+#   gikey    a key of [overrides.gitignore] other than add and remove
+#   gilist   an add or a remove that is not a list of one-line strings
+#   giempty  an empty line in add or remove
 #   envname  an environment of [overrides.mise_env] that is not dev or ci
 #   env      an environment that is not in REPO_SYNC_ENVS
 #   lock     an `envs` or a `depends` of a mise tool
 #   none     a value that no selected tool has; <arg> is the path in tools.toml
+# It also prints an `add <path> <line>` or a `remove <path> <line>` line for
+# each line of [overrides.gitignore], without the spaces at the start and the
+# end.
 _RS_OVERRIDES_TEMPLATE="$_RS_DEFINES"'<% if has .o "overrides" -%>
 <% $ov := .o.overrides -%>
 <% $envs := env.Getenv "REPO_SYNC_ENVS" -%>
@@ -787,8 +795,22 @@ _RS_OVERRIDES_TEMPLATE="$_RS_DEFINES"'<% if has .o "overrides" -%>
 <% if not (test.IsKind "map" $ov) %>table	overrides	-
 <% else -%>
 <% range $k, $x := $ov -%>
-<% if not (has (coll.Slice "mise" "mise_env") $k) %>key	overrides.<% $k %>	-
+<% if not (has (coll.Slice "mise" "mise_env" "gitignore") $k) %>key	overrides.<% $k %>	-
 <% else if not (test.IsKind "map" $x) %>table	overrides.<% $k %>	-
+<% else if eq $k "gitignore" -%>
+<% range $gk, $gv := $x -%>
+<% if not (has (coll.Slice "add" "remove") $gk) %>gikey	overrides.gitignore.<% $gk %>	-
+<% else if not (test.IsKind "slice" $gv) %>gilist	overrides.gitignore.<% $gk %>	-
+<% else -%>
+<% range $gv -%>
+<% if not (test.IsKind "string" .) %>gilist	overrides.gitignore.<% $gk %>	-
+<% else if or (strings.Contains "\n" .) (strings.Contains "\t" .) %>gilist	overrides.gitignore.<% $gk %>	-
+<% else if not (strings.TrimSpace .) %>giempty	overrides.gitignore.<% $gk %>	-
+<% else %><% $gk %>	overrides.gitignore.<% $gk %>	<% strings.TrimSpace . %>
+<% end -%>
+<% end -%>
+<% end -%>
+<% end -%>
 <% else if eq $k "mise_env" -%>
 <% range $e, $y := $x -%>
 <% if not (has (coll.Slice "dev" "ci") $e) %>envname	overrides.mise_env.<% $e %>	<% $e %>
@@ -837,10 +859,20 @@ none	overrides.<% join $p "." %>	<% if $only %>mise_env.<% $only %>.<% join $res
 # `[overrides.mise_env.<env>]` must replace a value that a selected tool has,
 # at the same path below `[mise]` or `[mise_env.<env>]`. The `envs` and the
 # `depends` of a mise tool decide the tools and the environments, so they
-# cannot be overridden. Returns 2, after a message for each problem.
+# cannot be overridden. Each line of `remove` of `[overrides.gitignore]` must
+# be a line of the shipped .gitignore, and no line can be in `add` and in
+# `remove`. Sets _RS_GI_ADD and _RS_GI_REMOVE to the lines of `add` and
+# `remove`, one per line, and _RS_VALUES_NOTE to the values file for the
+# override comments. Returns 2, after a message for each problem, also when
+# the old `.config/repo-sync/gitignore` exists.
 _rs_overrides() {
   local dir=$1 values=$2 out tool problem path arg rc=0 show
   show=$(_rs_path "$values")
+  _RS_GI_ADD='' _RS_GI_REMOVE='' _RS_VALUES_NOTE=${values#"$MISE_PROJECT_ROOT"/}
+  if [[ -f ${MISE_PROJECT_ROOT}/.config/repo-sync/gitignore ]]; then
+    _rs_log ".config/repo-sync/gitignore is no longer used - move its lines to add of [overrides.gitignore] in $show, then delete it (M18 of docs/sync/migrate.md)"
+    rc=2
+  fi
   local args=(-c "o=${values}")
   for tool in $_RS_TOOLS; do
     args+=(-c "tool_${tool}=${dir}/tools/${tool}/tools.toml")
@@ -855,7 +887,24 @@ _rs_overrides() {
         _rs_log "$path in $show must be a table"
         ;;
       key)
-        _rs_log "$path in $show: the only keys of [overrides] are mise and mise_env"
+        _rs_log "$path in $show: the only keys of [overrides] are mise, mise_env and gitignore"
+        ;;
+      gikey)
+        _rs_log "$path in $show: the only keys of [overrides.gitignore] are add and remove"
+        ;;
+      gilist)
+        _rs_log "$path in $show must be a list of one-line strings, for example [\"/build/\"]"
+        ;;
+      giempty)
+        _rs_log "$path in $show has an empty line"
+        ;;
+      add)
+        _RS_GI_ADD+="$arg"$'\n'
+        continue
+        ;;
+      remove)
+        _RS_GI_REMOVE+="$arg"$'\n'
+        continue
         ;;
       envname)
         _rs_log "$path in $show: '$arg' is not one of ${_RS_ENV_NAMES// /, }"
@@ -875,6 +924,17 @@ _rs_overrides() {
     esac
     rc=2
   done <<< "$out"
+  local line shipped="${dir}/tools/git/.gitignore"
+  while IFS= read -r line; do
+    [[ -n $line ]] || continue
+    if [[ $'\n'$_RS_GI_ADD == *$'\n'"$line"$'\n'* ]]; then
+      _rs_log "overrides.gitignore in $show: '$line' is in add and in remove - keep one"
+      rc=2
+    elif ! RS_LINE=$line awk '{ gsub(/^[ \t]+|[ \t]+$/, "") } $0 == ENVIRON["RS_LINE"] { found = 1 } END { exit !found }' "$shipped" 2> /dev/null; then
+      _rs_log "overrides.gitignore.remove in $show: '$line' is not a line of the shipped .gitignore (tools/git/.gitignore)"
+      rc=2
+    fi
+  done <<< "$_RS_GI_REMOVE"
   return "$rc"
 }
 
@@ -1204,12 +1264,20 @@ _rs_file() {
     fi
   fi
 
-  local own="${MISE_PROJECT_ROOT}/.config/repo-sync/gitignore"
-  if ((rc == 0)) && [[ $path == .gitignore && -f $own ]]; then
+  # [overrides.gitignore]: comment out each line of `remove`, then add the
+  # lines of `add` at the end, so they win.
+  if ((rc == 0)) && [[ $path == .gitignore && -n $_RS_GI_REMOVE$_RS_GI_ADD ]]; then
     {
-      printf '\n'
-      cat -- "$own"
-    } >> "$tmp" || rc=1
+      RS_REMOVE=$_RS_GI_REMOVE RS_NOTE="# override: removed by $_RS_VALUES_NOTE" awk '
+        BEGIN { n = split(ENVIRON["RS_REMOVE"], r, "\n"); for (i = 1; i <= n; i++) if (r[i] != "") rm[r[i]] = 1 }
+        { t = $0; gsub(/^[ \t]+|[ \t]+$/, "", t) }
+        t in rm { print "# " t "  " ENVIRON["RS_NOTE"]; next }
+        { print }
+      ' "$tmp" &&
+        if [[ -n $_RS_GI_ADD ]]; then
+          printf '\n# ==== Overrides from %s ====\n%s' "$_RS_VALUES_NOTE" "$_RS_GI_ADD"
+        fi
+    } > "$tmp.gi" && mv -f -- "$tmp.gi" "$tmp" || rc=1
   fi
   if ((rc != 0)); then
     rm -f -- "$tmp"
