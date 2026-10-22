@@ -9,3 +9,6 @@ seed = []
 [mise.tools.java]
 envs = [ "dev", "ci" ]
 version = "lts"
+
+[mise.settings]
+java.shorthand_vendor = "temurin"

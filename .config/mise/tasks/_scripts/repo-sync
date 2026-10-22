@@ -83,6 +83,15 @@
 #     run did not write is removed: it belongs to a tool, an environment or a
 #     layout that is gone. A file without the header, such as a seed, is never
 #     touched.
+#   * `[overrides.mise.<section>...]` and `[overrides.mise_env.<env>.<section>...]`
+#     of the values file replace the defaults of the tools. The path after
+#     `overrides.` is the path in a tools.toml, without the tool name: each
+#     selected tool with a value at that path gets the override.
+#     `[overrides.mise_env.<env>]` is for that environment only, and it wins
+#     over `[overrides.mise]`. A table merges key by key; any other value
+#     replaces the default. A path that no selected tool has, and the `envs`
+#     and the `depends` of a mise tool, stop the sync. Each overridden line
+#     gets an `# override: <values file>` comment.
 #   * `conf.d/zz-repo/` is the repo's own folder, and it must load last: mise
 #     loads the folders in name order and a later one wins. A tool folder
 #     whose name sorts after `zz-repo` in byte order stops the sync.
@@ -135,8 +144,8 @@
 #      `environments` or that a mise tool does not allow, an `env` or a
 #      `default_envs` without dev, a tool folder that sorts after `zz-repo`,
 #      a root-only tool in a submodule, a repo with neither `main` nor
-#      `develop`, a template that cannot render, or a `[mise]` config that
-#      cannot be generated
+#      `develop`, a template that cannot render, a bad `[overrides]`, or a
+#      `[mise]` config that cannot be generated
 #   3  a tool or a pack that is not in bootstrap (fix the values file)
 #   5  the clone failed (network, SSH key or access to the repo), or
 #      `pre-commit autoupdate` could not resolve the hook revisions
@@ -635,8 +644,9 @@ _rs_remove() {
 }
 
 # The environment names that a tools.toml can use in `default_envs` and
-# `envs`, in their order. `environments` of the values file limits them.
-_RS_ENV_NAMES='dev ci prod stage'
+# `envs`, in their order. bootstrap is only for dev and ci. `environments` of
+# the values file limits them.
+_RS_ENV_NAMES='dev ci'
 _rs_env_name() {
   [[ -n $1 && $1 != *[[:space:]]* && " $_RS_ENV_NAMES " == *" $1 "* ]]
 }
@@ -751,6 +761,123 @@ _rs_mise_env() {
   return 0
 }
 
+# The templates that the override check and the mise template share.
+# `rs_leaves` prints the key path of each value of the table .v that is not a
+# table, as a JSON list after the path .p, one per line. `rs_has` prints 1 when
+# the table .v has a value at the path .p that is not a table.
+_RS_DEFINES='<% define "rs_leaves" %><% range $k, $x := .v %><% $p := coll.Append $k $.p %><% if test.IsKind "map" $x %><% template "rs_leaves" (dict "p" $p "v" $x) %><% else %><% $p | data.ToJSON %>
+<% end %><% end %><% end -%>
+<% define "rs_has" %><% $v := .v %><% $ok := true %><% range .p %><% if not (test.IsKind "map" $v) %><% $ok = false %><% else if not (has $v .) %><% $ok = false %><% else %><% $v = index $v . %><% end %><% end %><% if and $ok (not (test.IsKind "map" $v)) %>1<% end %><% end -%>
+'
+
+# The template that examines `[overrides]` of the values file (`.o`) against
+# the tools.toml of each selected tool (`.tool_<name>`, the names in
+# REPO_SYNC_TOOLS). It prints one `<problem> <path> <arg>` line, tab
+# separated, for each problem:
+#   table    a key of [overrides] that must be a table and is not
+#   key      a key of [overrides] other than mise and mise_env
+#   envname  an environment of [overrides.mise_env] that is not dev or ci
+#   env      an environment that is not in REPO_SYNC_ENVS
+#   lock     an `envs` or a `depends` of a mise tool
+#   none     a value that no selected tool has; <arg> is the path in tools.toml
+_RS_OVERRIDES_TEMPLATE="$_RS_DEFINES"'<% if has .o "overrides" -%>
+<% $ov := .o.overrides -%>
+<% $envs := env.Getenv "REPO_SYNC_ENVS" -%>
+<% $tools := strings.Split " " (env.Getenv "REPO_SYNC_TOOLS") -%>
+<% if not (test.IsKind "map" $ov) %>table	overrides	-
+<% else -%>
+<% range $k, $x := $ov -%>
+<% if not (has (coll.Slice "mise" "mise_env") $k) %>key	overrides.<% $k %>	-
+<% else if not (test.IsKind "map" $x) %>table	overrides.<% $k %>	-
+<% else if eq $k "mise_env" -%>
+<% range $e, $y := $x -%>
+<% if not (has (coll.Slice "dev" "ci") $e) %>envname	overrides.mise_env.<% $e %>	<% $e %>
+<% else if not (strings.Contains (printf " %s " $e) $envs) %>env	overrides.mise_env.<% $e %>	<% $e %>
+<% else if not (test.IsKind "map" $y) %>table	overrides.mise_env.<% $e %>	-
+<% end -%>
+<% end -%>
+<% end -%>
+<% end -%>
+<% range strings.Split "\n" (tmpl.Exec "rs_leaves" (dict "p" (coll.Slice) "v" $ov)) -%>
+<% if . -%>
+<% $p := data.JSONArray . -%>
+<% $k := index $p 0 -%>
+<% $rest := coll.Slice -%>
+<% $only := "" -%>
+<% if and (eq $k "mise") (gt (len $p) 1) %><% $rest = slice $p 1 -%>
+<% else if and (eq $k "mise_env") (gt (len $p) 2) (has (coll.Slice "dev" "ci") (index $p 1)) (strings.Contains (printf " %s " (index $p 1)) $envs) %><% $rest = slice $p 2 %><% $only = index $p 1 %><% end -%>
+<% if $rest -%>
+<% if and (gt (len $rest) 2) (eq (index $rest 0) "tools") (has (coll.Slice "envs" "depends") (index $rest 2)) -%>
+lock	overrides.<% join $p "." %>	-
+<% else -%>
+<% $found := false -%>
+<% range $tools -%>
+<% if . -%>
+<% $t := index $ (printf "tool_%s" .) -%>
+<% if tmpl.Exec "rs_has" (dict "v" (index $t "mise") "p" $rest) %><% $found = true %><% end -%>
+<% if has $t "mise_env" -%>
+<% range $e, $y := $t.mise_env -%>
+<% if and (strings.Contains (printf " %s " $e) $envs) (or (not $only) (eq $only $e)) (tmpl.Exec "rs_has" (dict "v" $y "p" $rest)) %><% $found = true %><% end -%>
+<% end -%>
+<% end -%>
+<% end -%>
+<% end -%>
+<% if not $found -%>
+none	overrides.<% join $p "." %>	<% if $only %>mise_env.<% $only %>.<% join $rest "." %> or <% end %>mise.<% join $rest "." %>
+<% end -%>
+<% end -%>
+<% end -%>
+<% end -%>
+<% end -%>
+<% end -%>
+<% end -%>'
+
+# Examine `[overrides]` of <values> against the tools.toml of each selected
+# tool in the clone <dir>. Each value of `[overrides.mise]` and
+# `[overrides.mise_env.<env>]` must replace a value that a selected tool has,
+# at the same path below `[mise]` or `[mise_env.<env>]`. The `envs` and the
+# `depends` of a mise tool decide the tools and the environments, so they
+# cannot be overridden. Returns 2, after a message for each problem.
+_rs_overrides() {
+  local dir=$1 values=$2 out tool problem path arg rc=0 show
+  show=$(_rs_path "$values")
+  local args=(-c "o=${values}")
+  for tool in $_RS_TOOLS; do
+    args+=(-c "tool_${tool}=${dir}/tools/${tool}/tools.toml")
+  done
+  out=$(REPO_SYNC_ENVS=$_RS_ENVS REPO_SYNC_TOOLS=$_RS_TOOLS _rs_gomplate "${args[@]}" -i "$_RS_OVERRIDES_TEMPLATE") || {
+    _rs_log "cannot read [overrides] of $show"
+    return 2
+  }
+  while IFS=$'\t' read -r problem path arg; do
+    case $problem in
+      table)
+        _rs_log "$path in $show must be a table"
+        ;;
+      key)
+        _rs_log "$path in $show: the only keys of [overrides] are mise and mise_env"
+        ;;
+      envname)
+        _rs_log "$path in $show: '$arg' is not one of ${_RS_ENV_NAMES// /, }"
+        ;;
+      env)
+        _rs_log "$path in $show: '$arg' is not in environments:${_RS_ENVS% }"
+        ;;
+      lock)
+        _rs_log "$path in $show: the envs and the depends of a mise tool cannot be overridden - use env of [tools.<tool>]"
+        ;;
+      none)
+        _rs_log "$path in $show: no selected tool has $arg - the path after overrides. is the path in tools/<tool>/tools.toml"
+        ;;
+      *)
+        continue
+        ;;
+    esac
+    rc=2
+  done <<< "$out"
+  return "$rc"
+}
+
 # The template that builds one environment, REPO_SYNC_ENV, from the `[mise]`
 # and `[mise_env]` tables of a tools.toml (`.t`), as TOML. An entry is in the
 # environment when ` <name>:<env> ` is in REPO_SYNC_ENVS. The other sections,
@@ -758,8 +885,36 @@ _rs_mise_env() {
 # the environment); the dev-only sections only in dev. A section that it does
 # not know stops the render. REPO_SYNC_DEV_ALIASES adds `<name>=<command>`
 # lines to `[shell_alias]` of dev.
-_RS_MISE_TEMPLATE='<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% end -%>
+# Before that, each value of `[overrides]` of the values file (`.o`) replaces
+# the value at its path in `[mise]` and in `[mise_env.<env>]`, where the tool
+# has it. A value of `[overrides.mise_env.<env>]` goes to `[mise_env.<env>]`,
+# so it wins over `[overrides.mise]`. After the TOML, a `#@override <path>`
+# line names each output path that an override changed.
+_RS_MISE_TEMPLATE="$_RS_DEFINES"'<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% end -%>
 <% $env := env.Getenv "REPO_SYNC_ENV" -%>
+<% $me := dict %><% if and (has .t "mise_env") (has .t.mise_env $env) %><% $me = index .t.mise_env $env %><% end -%>
+<% $marks := coll.Slice -%>
+<% if and (has .o "overrides") (test.IsKind "map" .o.overrides) -%>
+<% $ov := .o.overrides -%>
+<% range strings.Split "\n" (tmpl.Exec "rs_leaves" (dict "p" (coll.Slice) "v" $ov)) -%>
+<% if . -%>
+<% $p := data.JSONArray . -%>
+<% $k := index $p 0 -%>
+<% $rest := coll.Slice -%>
+<% if and (eq $k "mise") (gt (len $p) 1) %><% $rest = slice $p 1 -%>
+<% else if and (eq $k "mise_env") (gt (len $p) 2) (eq (index $p 1) $env) %><% $rest = slice $p 2 %><% end -%>
+<% if $rest -%>
+<% $v := $ov %><% range $p %><% $v = index $v . %><% end -%>
+<% $n := $v %><% range math.Seq (math.Sub (len $rest) 1) 0 %><% $n = dict (index $rest .) $n %><% end -%>
+<% $inm := tmpl.Exec "rs_has" (dict "v" $m "p" $rest) -%>
+<% $ine := tmpl.Exec "rs_has" (dict "v" $me "p" $rest) -%>
+<% if and $inm (eq $k "mise") %><% $m = coll.Merge $n $m %><% end -%>
+<% if or $ine (and $inm (eq $k "mise_env")) %><% $me = coll.Merge $n $me %><% end -%>
+<% if or $inm $ine %><% $marks = coll.Append (join $rest ".") $marks %><% end -%>
+<% end -%>
+<% end -%>
+<% end -%>
+<% end -%>
 <% $envw := env.Getenv "REPO_SYNC_ENVS" -%>
 <% $entry := coll.Slice "tools" "tool_alias" "plugins" -%>
 <% $folder := coll.Slice "settings" "env" "tool_config" "task_config" "task_templates" "doctor" "deps" "oci" -%>
@@ -782,13 +937,11 @@ _RS_MISE_TEMPLATE='<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% en
 <% test.Fail (printf "[mise.%s] is not supported in a tools.toml" $s) -%>
 <% end -%>
 <% end -%>
-<% if and (has .t "mise_env") (has .t.mise_env $env) -%>
-<% range $s, $body := index .t.mise_env $env -%>
+<% range $s, $body := $me -%>
 <% if not (or (has $entry $s) (has $folder $s) (has $devonly $s)) %><% test.Fail (printf "[mise_env.%s.%s] is not supported in a tools.toml" $env $s) %><% end -%>
 <% if $in -%>
 <% if has $out $s %><% $body = coll.Merge $body (index $out $s) %><% end -%>
 <% $out = coll.Merge (dict $s $body) $out -%>
-<% end -%>
 <% end -%>
 <% end -%>
 <% $extra := env.Getenv "REPO_SYNC_DEV_ALIASES" -%>
@@ -797,16 +950,21 @@ _RS_MISE_TEMPLATE='<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% en
 <% range (strings.Split "\n" $extra) %><% if . %><% $kv := strings.SplitN "=" 2 . %><% $al = coll.Merge (dict (index $kv 0) (index $kv 1)) $al %><% end %><% end -%>
 <% $out = coll.Merge (dict "shell_alias" $al) $out -%>
 <% end -%>
-<% if $out %><% $out | data.ToTOML %><% end -%>'
+<% if $out %><% $out | data.ToTOML %><% end -%>
+<% range $marks %>#@override <% . %>
+<% end -%>'
 
 # Generate the mise config of <tool> from the `[mise]` and `[mise_env]` tables
-# of its tools.toml in the clone <dir>: one `mise.<env>.toml` for each selected
-# environment with content, into tools/<tool>/.config/mise/conf.d/<tool>/ of
-# the clone. The file loop then syncs it like a shipped file. Records each
-# file in _RS_GENERATED. Returns 2, after a message, when the config cannot be
-# generated; the existing files of the folder are then kept.
+# of its tools.toml in the clone <dir>, with `[overrides]` of <values> applied:
+# one `mise.<env>.toml` for each selected environment with content, into
+# tools/<tool>/.config/mise/conf.d/<tool>/ of the clone. Each line that an
+# override changed gets an `# override: <values>` comment. The file loop then
+# syncs it like a shipped file. Records each file in _RS_GENERATED. Returns 2,
+# after a message, when the config cannot be generated; the existing files of
+# the folder are then kept.
 _rs_mise_render() {
-  local dir=$1 tool=$2 folder=$2 env name rel tmp err
+  local dir=$1 tool=$2 values=$3 folder=$2 env name rel tmp err
+  local note="# override: ${values#"$MISE_PROJECT_ROOT"/}"
   local out="${dir}/tools/${tool}/.config/mise/conf.d/${folder}"
   local header="# Synced from bootstrap: tools/${tool}/tools.toml. Do not edit this file.
 # The next sync replaces it, and a manual change is lost.
@@ -834,13 +992,27 @@ _rs_mise_render() {
     # gomplate writes no file for an empty output, so the previous one must go.
     rm -f -- "$tmp"
     if ! REPO_SYNC_ENV=$env REPO_SYNC_ENVS=$_RS_MISE_ENVS REPO_SYNC_IN=$in REPO_SYNC_DEV_ALIASES=$aliases \
-      _rs_gomplate -c "t=${dir}/tools/${tool}/tools.toml" -i "$_RS_MISE_TEMPLATE" -o "$tmp" 2> "$err"; then
+      _rs_gomplate -c "t=${dir}/tools/${tool}/tools.toml" -c "o=${values}" -i "$_RS_MISE_TEMPLATE" -o "$tmp" 2> "$err"; then
       _rs_log "tools/$tool/tools.toml: cannot generate the mise config: $(sed -n 's/.*error calling Fail: template generation failed: //p' "$err" | sed 's/"}$//')"
       for name in $_RS_ENVS; do
         _RS_SEEN+="${rel%/*}/mise.${name}.toml "
       done
       return 2
     fi
+    [[ -e $tmp ]] || continue
+    # The `#@override <path>` lines name the overridden keys. Mark each of
+    # them in the TOML, then drop those lines. <path> is the table header and
+    # the key, joined with dots and without quotes.
+    awk -v note="$note" '
+      FNR == NR { if (index($0, "#@override ") == 1) mark[substr($0, 12)] = 1; next }
+      index($0, "#@override ") == 1 { next }
+      /^[ \t]*\[/ { head = $0; gsub(/^[ \t]*\[+|\]+[ \t]*$|"/, "", head) }
+      !/^[ \t]*\[/ && / = / {
+        key = $0; sub(/ = .*/, "", key); gsub(/^[ \t]+|"/, "", key)
+        if ((head == "" ? key : head "." key) in mark) $0 = $0 "  " note
+      }
+      { print }
+    ' "$tmp" "$tmp" > "$tmp.marked" && mv -f -- "$tmp.marked" "$tmp" || return 1
     [[ -s $tmp && -n $(tr -d ' \n' < "$tmp") ]] || continue
     if [[ -e $out/$name ]]; then
       _rs_log "tools/$tool ships $rel and also generates it from [mise] - remove one"
@@ -1173,14 +1345,14 @@ repo_sync() {
   # loop. A tool that fails keeps its existing files and counts as failed.
   local tool worst=0 failed=()
   _RS_SEEN=' ' _RS_GENERATED=' '
-  _rs_mise_env || {
+  { _rs_mise_env && _rs_overrides "$dir" "$values"; } || {
     rc=$?
     rm -rf -- "$dir"
     return "$rc"
   }
   for tool in $_RS_TOOLS; do
     rc=0
-    _rs_mise_render "$dir" "$tool" || rc=$?
+    _rs_mise_render "$dir" "$tool" "$values" || rc=$?
     if ((rc != 0)); then
       failed+=("$tool/tools.toml [mise]")
       ((rc > worst)) && worst=$rc

@@ -11,11 +11,6 @@ env_shell_expand = true
 gpg_verify = true
 lockfile = false
 minimum_release_age = "10h"
-raw = true
-status.missing_tools = "always"
-task.disable_spec_from_run_scripts = true
-task.output = "interleave"
-task.timings = true
 
 # From .config/bootstrap.toml. The repository's own variables go in
 # .config/mise/conf.d/zz-repo/mise.<env>.toml.
