@@ -1,0 +1,13 @@
+# The bootstrap commit that the examples agree with. All the examples change
+# together, so they have one value. It tracks the examples only: a consumer
+# never reads this file. Each example has an empty bootstrap_commit, which
+# repo-sync replaces in a consumer.
+#
+# To find whether the examples can be out of date, read the contract changes
+# since this commit:
+#
+#   git log <commit_id>..HEAD -- tools docs/sync CLAUDE.md
+#
+# After a review of the examples, set it to `git rev-parse HEAD`. It is always
+# older than main, because a commit cannot contain its own id.
+commit_id = "a2f5bcc3a5dabc057f91ff918f27dbaafcb87391"

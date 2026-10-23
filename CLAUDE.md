@@ -24,6 +24,20 @@ never copies or generates them. `docs/sync/index.md` and `docs/sync/vwf.md`
 use them as the model of a values file, so a change to the contract of the
 values file changes the examples in the same commit.
 
+`examples/last_sync.toml` holds `commit_id`, the `bootstrap` commit that the
+examples agree with. This id tracks the examples only. It is not for
+consumers, and no consumer reads it. Each example has an empty
+`bootstrap_commit`, so a consumer that copies an example gets no wrong
+value: `repo_sync` replaces the empty line with the commit of its sync. A
+consumer value is newer than `commit_id`, and that is correct.
+
+- To find whether the examples can be out of date, run
+  `git log <commit_id>..HEAD -- tools docs/sync CLAUDE.md`. A contract change
+  in that log needs a review of the examples.
+- All the examples change together. After a review, set `commit_id` to
+  `git rev-parse HEAD`. The value is always older than `main`, because a
+  commit cannot contain its own id.
+
 `docs/sync/` tells an AI agent how to adopt `bootstrap` in a consumer
 repository, how to bring it up to date, and how to add and remove tools after
 the adoption. After the adoption, `repo-sync` keeps the consumer in sync.

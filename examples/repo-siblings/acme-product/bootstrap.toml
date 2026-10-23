@@ -3,7 +3,7 @@
 # submodules. See the folders of the siblings for their own values files.
 
 # The bootstrap commit of the last sync. repo-sync writes it.
-bootstrap_commit = "0123456789abcdef0123456789abcdef01234567"
+bootstrap_commit = ""
 # The commit scopes of git-conventional-commits. A sibling is not a member, so
 # the default member list is empty.
 commit_scopes = [ "blueprint", "docs" ]
