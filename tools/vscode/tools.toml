@@ -6,3 +6,11 @@ depends = []
 extensions = [ "gruntfuggly.todo-tree", "oderwat.indent-rainbow", "pkief.material-icon-theme", "usernamehw.errorlens" ]
 root_only = true
 seed = []
+
+# The mise config, generated into .config/mise/conf.d/vscode/mise.dev.toml.
+
+# `code` opens the repository root in its own profile, named $REPO_NAME, also
+# from a subdirectory. config_root is conf.d/vscode/, so four dirname go up
+# to the root. The shell expands $REPO_NAME, because the template has no env.
+[mise.shell_alias]
+code = "command code --profile \"$REPO_NAME\" {{config_root | dirname | dirname | dirname | dirname | quote}}"
