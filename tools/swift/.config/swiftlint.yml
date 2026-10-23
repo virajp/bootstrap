@@ -1,0 +1,43 @@
+# The SwiftLint rules of this repository. code:lint:swiftlint passes this file
+# with --config. A path here is relative to this file, so each path starts
+# with ../ to get to the repository root.
+
+excluded:
+  - ../.build
+  - ../.swiftpm
+  - ../**/Derived
+  - ../**/DerivedData
+  - ../**/*.generated.swift
+
+# When this config excludes each given file, SwiftLint does not fail.
+allow_zero_lintable_files: true
+
+# The layout rules are off: swift-format decides the layout.
+disabled_rules:
+  - trailing_comma # swift-format adds a trailing comma to a multi-line collection
+  - opening_brace # swift-format puts the brace of a wrapped declaration on its own line
+  - line_length # the formatter wraps the lines, and it cannot break a literal
+
+# The correctness and clarity rules that are off by default. Each one is a
+# failure.
+opt_in_rules:
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - empty_count
+  - empty_string
+  - first_where
+  - last_where
+  - contains_over_first_not_nil
+  - sorted_first_last
+  - fatal_error_message
+  - discouraged_optional_boolean
+  - unowned_variable_capture
+  - private_swiftui_state
+  - unused_parameter
+
+identifier_name:
+  excluded:
+    - id
+    - x
+    - y
+    - z

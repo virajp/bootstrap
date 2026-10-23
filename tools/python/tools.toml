@@ -1,7 +1,8 @@
-# Python and uv.
+# Python and uv. In a repository with a pyproject.toml, also ruff and pyrefly,
+# with their code:lint and code:format tasks.
 default_envs = [ "dev", "ci" ]
 depends = []
-extensions = []
+extensions = [ "meta.pyrefly" ]
 root_only = false
 seed = []
 
@@ -19,6 +20,20 @@ version = "3.14"
 [mise.tools.uv]
 depends = [ "python" ]
 envs = [ "dev", "ci" ]
+version = "latest"
+
+# The gates of a Python project. Many repositories have python only for the
+# tools of other bootstrap tools, so the sync installs these two only when the
+# repository has a pyproject.toml.
+[mise.tools.ruff]
+envs = [ "dev", "ci" ]
+requires = "pyproject.toml"
+version = "latest"
+
+[mise.tools."pipx:pyrefly"]
+depends = [ "python", "uv" ]
+envs = [ "dev", "ci" ]
+requires = "pyproject.toml"
 version = "latest"
 
 [mise.env]

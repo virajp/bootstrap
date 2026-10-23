@@ -1,16 +1,29 @@
-# The Kotlin language server.
+# The Kotlin language server (dev only), and the ktlint and detekt gates.
 default_envs = [ "dev" ]
 depends = [ "java" ]
 extensions = []
 root_only = false
-seed = []
+seed = [ ".config/detekt.yml", ".config/ktlint.editorconfig" ]
 
 # The mise config, generated into .config/mise/conf.d/kotlin/mise.<env>.toml.
-[mise.tools."http:kotlin-lsp"]
+# ktlint is the layout gate, and detekt the correctness gate. detekt-cli runs
+# on the JDK of the java tool.
+[mise.tools.ktlint]
+envs = [ "dev", "ci" ]
+version = "latest"
+
+[mise.tools."github:detekt/detekt"]
+asset_pattern = "detekt-cli-*.zip"
+envs = [ "dev", "ci" ]
+version = "latest"
+
+# The language server is for an editor, so it is in dev only. As a
+# [mise_env.dev] entry, it does not stop the kotlin tool in ci.
+[mise_env.dev.tools."http:kotlin-lsp"]
 version = "latest"
 version_list_url = "https://api.github.com/repos/Kotlin/kotlin-lsp/releases/latest"
 version_regex = 'kotlin-lsp/v(\d+\.\d+\.\d+)'
 
-[mise.tools."http:kotlin-lsp".platforms]
+[mise_env.dev.tools."http:kotlin-lsp".platforms]
 macos-arm64 = { checksum_url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.sit.sha256", format = "zip", rename_exe = "kotlin-lsp", url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.sit" }
 macos-x64 = { checksum_url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.sit.sha256", format = "zip", rename_exe = "kotlin-lsp", url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.sit" }

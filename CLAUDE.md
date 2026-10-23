@@ -114,6 +114,10 @@ Some files refer to files that are not in `tools/`, for example
   lines of `add` at the end. A line of `remove` that the shared `.gitignore`
   does not have, a line in both lists, and the old consumer file
   `.config/repo-sync/gitignore` stop the sync with code 2.
+- The `claude` tool ships `.graphifyignore`. The sync applies
+  `[overrides.graphifyignore]` to it with the same rules.
+  `[overrides.graphifyignore]` without the `claude` tool stops the sync with
+  code 2.
 - The `pre-commit` tool renders `.config/pre-commit-config.yaml` from the
   `[[precommit]]` tables of the selected tools. Then it adds the entries of the
   consumer file `.config/repo-sync/pre-commit.yaml`.
@@ -293,6 +297,11 @@ that it finds, and removes the others. It stops if neither branch exists.
   - The mise `depends` of an entry adds the tool that defines that mise tool.
     Do not repeat it in the `depends` key. Two tools must not define the same
     mise tool.
+  - The optional `requires` of an entry is a file name. The sync writes the
+    entry only when the repository has a file with that name, at the root or
+    down to 4 folders below it, that git does not ignore. The generated file
+    has no `requires`. For example, `python` installs `ruff` only with a
+    `pyproject.toml`.
 - The sync skips a shipped `conf.d/*/mise.<env>.toml` of an environment that
   the consumer did not select.
 - The sync removes a `conf.d/*/mise*.toml` with the bootstrap header that
@@ -308,11 +317,12 @@ that it finds, and removes the others. It stops if neither branch exists.
   `tools.toml`, without the tool name. The sync applies it to each selected
   tool with a value at that path. A table merges key by key; any other value
   replaces the default. A path that no selected tool has, a key of
-  `[overrides]` other than `mise`, `mise_env` and `gitignore`, an environment
-  outside `environments`, and the `envs` or the `depends` of a mise tool stop
-  the sync with code 2. Each overridden line gets an
-  `# override: .config/bootstrap.toml` comment. `[overrides.gitignore]` is
-  different: see "How the sync operates".
+  `[overrides]` other than `mise`, `mise_env`, `gitignore` and
+  `graphifyignore`, an environment
+  outside `environments`, and the `envs`, the `depends` or the `requires` of a
+  mise tool stop the sync with code 2. Each overridden line gets an
+  `# override: .config/bootstrap.toml` comment. `[overrides.gitignore]` and
+  `[overrides.graphifyignore]` are different: see "How the sync operates".
 - `conf.d/zz-repo/` is the folder that each repository owns and customizes.
   `mise` ships the seeds `zz-repo/mise.<env>.toml`, for example for the
   repository's own `[env]` values. The sync writes a seed only when it is

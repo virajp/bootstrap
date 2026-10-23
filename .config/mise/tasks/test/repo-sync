@@ -263,15 +263,93 @@ NEW_VAR = "1"' '' 'no selected tool has mise.env.NEW_VAR' || true
 run_case "[overrides.mise.tools.java] envs" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.mise.tools.java]
-envs = [ "dev" ]' '' 'the envs and the depends of a mise tool cannot be overridden' || true
+envs = [ "dev" ]' '' 'the envs, the depends and the requires of a mise tool cannot be overridden' || true
 run_case "[overrides.tools.java], not mise, mise_env or gitignore" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.tools.java]
-version = "21"' '' 'the only keys of [overrides] are mise, mise_env and gitignore' || true
+version = "21"' '' 'the only keys of [overrides] are mise, mise_env, gitignore and graphifyignore' || true
 run_case "[overrides.mise_env.ci] without ci in environments" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.mise_env.ci.tools.java]
 version = "21"' '' "overrides.mise_env.ci in $values: 'ci' is not in environments: dev" || true
+
+# The `requires` of a mise tool: ruff and pyrefly of the python tool need a
+# pyproject.toml. The generated python config already exists in the
+# consumer, so the dry run shows its diff.
+python_conf() {
+  mkdir -p -- "$consumer/.config/mise/conf.d/python"
+  printf '%s\n' x > "$consumer/.config/mise/conf.d/python/mise.dev.toml"
+}
+
+pyproject_at() {
+  python_conf
+  mkdir -p -- "$consumer/$1"
+  : > "$consumer/$1/pyproject.toml"
+}
+pyproject_root() { pyproject_at .; }
+pyproject_depth4() { pyproject_at a/b/c/d; }
+pyproject_depth5() { pyproject_at a/b/c/d/e; }
+pyproject_ignored() {
+  pyproject_at ignored
+  printf '%s\n' '/ignored/' > "$consumer/.gitignore"
+}
+
+# check_log_lacks <name> <text>: the output of the last case must not have
+# the fixed string <text>.
+check_log_lacks() {
+  if grep -qF -- "$2" "$log"; then
+    print_error "$1: the output has: $2"
+    sed 's/^/    /' "$log" >&2
+    failures=$((failures + 1))
+  else
+    print_success "$1: no $2"
+  fi
+}
+
+python_values='environments = [ "dev" ]
+[tools.python]'
+if run_case "requires, a pyproject.toml at the root" 0 "$python_values" pyproject_root '[tools.ruff]'; then
+  check_log_lacks "requires, a pyproject.toml at the root" 'requires ='
+fi
+rm -f -- "$consumer/pyproject.toml"
+run_case "requires, a pyproject.toml 4 folders down" 0 "$python_values" pyproject_depth4 \
+  '[tools."pipx:pyrefly"]' || true
+rm -rf -- "$consumer/a"
+if run_case "requires, a pyproject.toml 5 folders down" 0 "$python_values" pyproject_depth5 '[tools.uv]'; then
+  check_log_lacks "requires, a pyproject.toml 5 folders down" '[tools.ruff]'
+fi
+rm -rf -- "$consumer/a"
+if run_case "requires, a pyproject.toml in an ignored folder" 0 "$python_values" pyproject_ignored '[tools.uv]'; then
+  check_log_lacks "requires, a pyproject.toml in an ignored folder" '[tools.ruff]'
+fi
+rm -rf -- "$consumer/ignored" "$consumer/.gitignore" "$consumer/.config/mise/conf.d/python"
+run_case "[overrides.mise.tools.ruff] requires" 2 "$python_values
+[overrides.mise.tools.ruff]
+requires = \"setup.py\"" '' 'the envs, the depends and the requires of a mise tool cannot be overridden' || true
+
+# kotlin and swift in ci. A dry run shows the diff of an existing file only,
+# so each case makes one generated file of the consumer.
+conf_file() {
+  mkdir -p -- "$consumer/.config/mise/conf.d/$1"
+  printf '%s\n' x > "$consumer/.config/mise/conf.d/$1/mise.$2.toml"
+}
+kotlin_ci() { conf_file kotlin ci; }
+kotlin_dev() { conf_file kotlin dev; }
+swift_ci() { conf_file swift ci; }
+
+kotlin_values='environments = [ "dev", "ci" ]
+[tools.kotlin]
+env = [ "dev", "ci" ]'
+if run_case "[tools.kotlin] env dev, ci: the gates in ci" 0 "$kotlin_values" kotlin_ci '+[tools.ktlint]'; then
+  check_log_lacks "[tools.kotlin] env dev, ci: the gates in ci" 'kotlin-lsp'
+fi
+rm -rf -- "$consumer/.config/mise/conf.d/kotlin"
+run_case "[tools.kotlin] env dev, ci: kotlin-lsp in dev" 0 "$kotlin_values" kotlin_dev 'kotlin-lsp' || true
+rm -rf -- "$consumer/.config/mise/conf.d/kotlin"
+run_case "[tools.swift] env dev, ci: os macos in ci" 0 'environments = [ "dev", "ci" ]
+[tools.swift]
+env = [ "dev", "ci" ]' swift_ci '+os = "macos"' || true
+rm -rf -- "$consumer/.config/mise/conf.d/swift"
 
 # The consumer already has a .gitignore, so the dry run shows its diff.
 gitignore_file() {
@@ -308,6 +386,33 @@ add = "/build/"' '' 'must be a list of one-line strings' || true
 run_case "[overrides.gitignore] add, an empty line" 2 'environments = [ "dev" ]
 [overrides.gitignore]
 add = [ " " ]' '' 'has an empty line' || true
+
+# The consumer already has a .graphifyignore, so the dry run shows its diff.
+graphifyignore_file() {
+  printf '%s\n' x > "$consumer/.graphifyignore"
+}
+
+run_case "[overrides.graphifyignore] remove" 0 'environments = [ "dev" ]
+[tools.claude]
+[overrides.graphifyignore]
+remove = [ "docs/prompts/" ]
+add = [ "fixtures/" ]' graphifyignore_file '+# docs/prompts/  # override: removed by .config/bootstrap.toml' || true
+run_case "[overrides.graphifyignore] add" 0 'environments = [ "dev" ]
+[tools.claude]
+[overrides.graphifyignore]
+add = [ "fixtures/" ]' graphifyignore_file '+fixtures/' || true
+rm -f -- "$consumer/.graphifyignore"
+run_case "[overrides.graphifyignore] without the claude tool" 2 'environments = [ "dev" ]
+[overrides.graphifyignore]
+add = [ "fixtures/" ]' '' '.graphifyignore comes from the claude tool, which is not selected' || true
+run_case "[overrides.graphifyignore] remove, a line that is not shipped" 2 'environments = [ "dev" ]
+[tools.claude]
+[overrides.graphifyignore]
+remove = [ "/nope/" ]' '' "'/nope/' is not a line of the shipped .graphifyignore" || true
+run_case "[overrides.graphifyignore], a key other than add and remove" 2 'environments = [ "dev" ]
+[tools.claude]
+[overrides.graphifyignore]
+append = [ "fixtures/" ]' '' 'the only keys of [overrides.graphifyignore] are add and remove' || true
 run_case "the old .config/repo-sync/gitignore" 2 'environments = [ "dev" ]' old_gitignore_file \
   '.config/repo-sync/gitignore is no longer used' || true
 rm -rf -- "$consumer/.config/repo-sync"

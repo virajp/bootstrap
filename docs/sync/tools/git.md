@@ -1,7 +1,7 @@
 # The `git` tool
 
-The shared `.gitignore`, the commit convention, the git-config check and the
-merge tasks.
+The shared `.gitignore` and `.gitattributes`, the commit convention, the
+git-config check and the merge tasks.
 
 | Property     | Value   |
 | ------------ | ------- |
@@ -20,6 +20,7 @@ file.
 | Path in the repository                  | Kind     | Use                                                                                        |
 | --------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
 | `.gitignore`                            | Synced   | The shared ignore lines, with `[overrides.gitignore]` of the values file applied.          |
+| `.gitattributes`                        | Synced   | LF line endings, the generated lockfiles, and the binary files of each stack.              |
 | `.config/git-conventional-commits.yaml` | Template | The commit types, and the scopes from `commit_scopes`, else the members of the repository. |
 | `.config/mise/tasks/_scripts/merge`     | Synced   | The library `merge`, with `merge_to_destination_branch`.                                   |
 | `.config/mise/tasks/code/git-config`    | Synced   | The task `code:git-config`.                                                                |
@@ -66,6 +67,8 @@ None.
 3. Put each repository ignore line in `add` of `[overrides.gitignore]` in the
    values file. Put each shared line that the repository must not ignore in
    `remove`.
+4. If the repository has its own lines in `.gitattributes`, tell the user. The
+   sync replaces the file, and it has no overrides.
 
 ## Migration
 
