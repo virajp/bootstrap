@@ -171,9 +171,10 @@ Some files refer to files that are not in `tools/`, for example
   working tree's `tools/` against scratch values files, and it compares the
   exit code and the message of each case. It needs no network. Before its
   first `git` call, it unsets the `GIT_*` variables of a git hook, so its
-  scratch repositories never write to this repository. No hook runs it, because
-  it is slow. Run `mise run test:repo-sync` by hand before you commit a change
-  to `tools/`.
+  scratch repositories never write to this repository. It runs the cases in
+  parallel, one job for each CPU, and each case in its own folder. No hook runs
+  it, because it is slow. Run `mise run test:repo-sync` by hand before you
+  commit a change to `tools/`.
 
 ## Templates (`*.tmpl`)
 

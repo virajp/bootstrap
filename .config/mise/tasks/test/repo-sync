@@ -30,7 +30,8 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
 root=${MISE_PROJECT_ROOT}
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-repo-sync.XXXXXX")
-trap 'rm -rf -- "$tmp"' EXIT
+# shellcheck disable=SC2046
+trap 'kill $(jobs -p) 2> /dev/null || true; rm -rf -- "$tmp"' EXIT
 
 # git without the user's hooks, signing or identity.
 _git() {
@@ -54,18 +55,51 @@ consumer="$tmp/consumer"
 mkdir -p -- "$consumer/.config"
 _git -C "$consumer" init --quiet -b main
 _git -C "$consumer" commit --quiet --no-verify --allow-empty -m "init"
-values="$consumer/.config/bootstrap.toml"
 log="$tmp/log"
 
 failures=0
 
-# run_case <name> <code> <values> [<change>] [<message>]
+# The cases run in parallel, one job for each CPU. Each case has its own
+# folder: a clone of the bootstrap copy and a copy of the consumer. Inside a
+# case, `tmp`, `clone`, `consumer`, `values` and `log` name the files of that
+# case, so a <change> or a <check> function changes only its own case. The
+# output of each case is printed in the sequence of the cases.
+base_clone=$clone
+base_consumer=$consumer
+max_jobs=$(getconf _NPROCESSORS_ONLN 2> /dev/null) || max_jobs=4
+case_color=''
+style_enabled && case_color=1
+case_count=0
+case_pids=()
+case_dirs=()
+
+# run_case <name> <code> <values> [<change>] [<message>] [<check>]
 # Writes <values> after the common keys, applies <change> to the copy (a
 # function name, or empty), runs the dry run, and compares the exit code.
-# A <message> (a fixed string) must also be in the output. The copy is reset
-# afterwards.
+# A <message> (a fixed string) must also be in the output. If the case
+# passes, the function <check> examines its output.
 run_case() {
-  local name=$1 want=$2 body=$3 change=${4:-} message=${5:-} got=0
+  local dir
+  case_count=$((case_count + 1))
+  dir="$tmp/case-$case_count"
+  mkdir -p -- "$dir"
+  (
+    trap - EXIT
+    case_body "$dir" "$@" > "$dir/out" 2>&1
+  ) &
+  case_pids+=("$!")
+  case_dirs+=("$dir")
+  if ((${#case_pids[@]} >= max_jobs)); then
+    collect_case
+  fi
+}
+
+case_body() {
+  local dir=$1 name=$2 want=$3 body=$4 change=${5:-} message=${6:-} check=${7:-} got=0
+  tmp=$dir clone=$dir/bootstrap consumer=$dir/consumer log=$dir/log failures=0
+  values="$consumer/.config/bootstrap.toml"
+  _git clone --quiet -- "$base_clone" "$clone"
+  cp -R -- "$base_consumer" "$consumer"
   {
     printf '%s\n' 'repo_name = "test"' 'repo_url = "https://example.com/test"'
     printf '%s\n' "$body"
@@ -81,19 +115,33 @@ run_case() {
     source "$clone/tools/repo-sync/.config/mise/tasks/_scripts/repo-sync"
     repo_sync --dry-run
   ) > "$log" 2>&1 || got=$?
-  _git -C "$clone" checkout --quiet -- .
-  _git -C "$clone" clean --quiet -fd
+  # After the dry run, so that its output stays plain for the greps.
+  [[ -n $case_color ]] && export FORCE_COLOR=1
   if [[ $got != "$want" ]]; then
     print_error "$name: exit $got, expected $want"
   elif [[ -n $message ]] && ! grep -qF -- "$message" "$log"; then
     print_error "$name: exit $got, but the output lacks: $message"
   else
     print_success "$name: exit $got"
+    [[ -n $check ]] && "$check"
+    printf '%s\n' "$failures" > "$dir/failures"
     return 0
   fi
   sed 's/^/    /' "$log" >&2
-  failures=$((failures + 1))
-  return 1
+  printf '%s\n' "$((failures + 1))" > "$dir/failures"
+}
+
+# Wait for the oldest case, print its output and add its failures. A case
+# without a failures file stopped before its end, which is a failure.
+collect_case() {
+  local dir=${case_dirs[0]} n=1
+  wait "${case_pids[0]}"
+  cat -- "$dir/out"
+  [[ -f $dir/failures ]] && n=$(cat -- "$dir/failures")
+  failures=$((failures + n))
+  rm -rf -- "$dir"
+  case_pids=("${case_pids[@]:1}")
+  case_dirs=("${case_dirs[@]:1}")
 }
 
 # The tools of the pack base, the required tool of the pack security
@@ -172,86 +220,84 @@ late_tool_folder() {
     'root_only = false' 'seed = []' > "$clone/tools/zzz-late/tools.toml"
 }
 
-if run_case "no [tools], environments dev" 0 'environments = [ "dev" ]'; then
-  check_base_files
-fi
+run_case "no [tools], environments dev" 0 'environments = [ "dev" ]' '' '' check_base_files
 run_case "bootstrap_commit: a dry run names the commit of the clone" 0 'environments = [ "dev" ]' '' \
-  "would set bootstrap_commit $(git -C "$clone" rev-parse HEAD)" || true
+  "would set bootstrap_commit $(git -C "$clone" rev-parse HEAD)"
 run_case "[tools.node] env dev, ci" 0 'environments = [ "dev", "ci" ]
 [tools.node]
-env = [ "dev", "ci" ]' || true
+env = [ "dev", "ci" ]'
 run_case "tools = [\"node\"], the old list" 2 'environments = [ "dev" ]
-tools = [ "node" ]' '' 'is a list, the old format' || true
+tools = [ "node" ]' '' 'is a list, the old format'
 run_case "a pack loop a -> b -> a" 2 'environments = [ "dev" ]
-[packs.a]' pack_loop 'a pack loop: a -> b -> a' || true
+[packs.a]' pack_loop 'a pack loop: a -> b -> a'
 run_case "a pack named like a tool folder" 2 'environments = [ "dev" ]
-[packs.node]' pack_named_like_tool "pack 'node' is also a tool folder" || true
+[packs.node]' pack_named_like_tool "pack 'node' is also a tool folder"
 run_case "[branch.main], the merge config of the repo" 0 'environments = [ "dev" ]
 [branch.main]
 merge_model = "pr"
-merge_never = [ "develop" ]' || true
+merge_never = [ "develop" ]'
 run_case "[member.web], a folder below the root" 0 'environments = [ "dev" ]
 [member.web]
-folder = "projects/web"' member_folder || true
+folder = "projects/web"' member_folder
 run_case "[member.nope], not a submodule or a folder" 2 'environments = [ "dev" ]
-[member.nope]' '' '[member.nope] in' || true
+[member.nope]' '' '[member.nope] in'
 run_case "[member.self], the folder of the repo itself" 2 'environments = [ "dev" ]
 [member.self]
-folder = "."' '' 'has the folder of the repo itself' || true
+folder = "."' '' 'has the folder of the repo itself'
 run_case "[member.web], type submodule without a submodule" 2 'environments = [ "dev" ]
 [member.web]
 folder = "projects/web"
-type = "submodule"' member_folder 'has type submodule, but projects/web is not in .gitmodules' || true
+type = "submodule"' member_folder 'has type submodule, but projects/web is not in .gitmodules'
 run_case "[member.web], an unknown type" 2 'environments = [ "dev" ]
 [member.web]
 folder = "projects/web"
-type = "repo"' member_folder "has the type 'repo'" || true
+type = "repo"' member_folder "has the type 'repo'"
 run_case "[packs.nope], an unknown pack" 3 'environments = [ "dev" ]
-[packs.nope]' '' "pack 'nope' is not in bootstrap" || true
+[packs.nope]' '' "pack 'nope' is not in bootstrap"
 run_case "env ci on a tool whose mise tool allows dev only" 2 'environments = [ "dev", "ci" ]
 [tools.pulumi]
-env = [ "dev", "ci" ]' '' "mise tool 'pulumi' of tools/pulumi allows only dev" || true
+env = [ "dev", "ci" ]' '' "mise tool 'pulumi' of tools/pulumi allows only dev"
 run_case "env ci not in environments dev" 2 'environments = [ "dev" ]
 [tools.node]
-env = [ "ci" ]' '' 'is not in environments: dev' || true
+env = [ "ci" ]' '' 'is not in environments: dev'
 run_case "a dependency without the environment of its parent" 2 'environments = [ "dev", "ci" ]
 [tools.node]
 env = [ "dev", "ci" ]' node_needs_pulumi \
-  "tools/node needs tools/pulumi in 'ci', but its mise tool 'pulumi' allows only dev" || true
+  "tools/node needs tools/pulumi in 'ci', but its mise tool 'pulumi' allows only dev"
 run_case "env ci without dev" 2 'environments = [ "dev", "ci" ]
 [tools.node]
-env = [ "ci" ]' '' 'has no dev - each tool must be in dev, for example env = ' || true
+env = [ "ci" ]' '' 'has no dev - each tool must be in dev, for example env = '
 run_case "default_envs ci without dev" 2 'environments = [ "dev", "ci" ]
-[tools.node]' node_ci_only 'default_envs of tools/node/tools.toml has no dev' || true
+[tools.node]' node_ci_only 'default_envs of tools/node/tools.toml has no dev'
 run_case "default_envs with prod, outside dev and ci" 2 'environments = [ "dev" ]
-[tools.node]' node_prod "default_envs of tools/node/tools.toml: 'prod' is not one of dev, ci" || true
+[tools.node]' node_prod "default_envs of tools/node/tools.toml: 'prod' is not one of dev, ci"
 run_case "a tool folder that sorts after zz-repo" 2 'environments = [ "dev" ]' late_tool_folder \
-  'tool folder tools/zzz-late sorts after zz-repo' || true
+  'tool folder tools/zzz-late sorts after zz-repo'
 run_case "a tool folder named zz-repo" 2 'environments = [ "dev" ]' tool_folder_zz_repo \
-  'tool folder tools/zz-repo sorts after zz-repo or is named zz-repo' || true
+  'tool folder tools/zz-repo sorts after zz-repo or is named zz-repo'
 run_case "default_envs empty" 2 'environments = [ "dev" ]' node_no_envs \
-  'default_envs of tools/node/tools.toml has no dev' || true
+  'default_envs of tools/node/tools.toml has no dev'
 
 # The consumer as a git submodule: a gitlink at its path in a superproject
-# at $tmp. Removing $tmp/.git after the case undoes it.
+# at the folder of the case.
 consumer_submodule() {
   _git init --quiet "$tmp"
   _git -C "$tmp" update-index --add --cacheinfo "160000,$(git -C "$consumer" rev-parse HEAD),consumer"
 }
 
-if run_case "a submodule skips vscode, a root_only tool of the pack base" 0 'environments = [ "dev" ]' \
-  consumer_submodule; then
+check_no_vscode() {
   if grep -F 'repo-sync: tools:' "$log" | grep -qw vscode; then
     print_error "submodule: the tools include vscode"
     failures=$((failures + 1))
   else
     print_success "submodule: the tools do not include vscode"
   fi
-fi
-rm -rf -- "$tmp/.git"
+}
+
+run_case "a submodule skips vscode, a root_only tool of the pack base" 0 'environments = [ "dev" ]' \
+  consumer_submodule '' check_no_vscode
 run_case "a submodule with [tools.vscode], a root_only tool" 2 'environments = [ "dev" ]
-[tools.vscode]' consumer_submodule "tool 'vscode' is for the root repository only" || true
-rm -rf -- "$tmp/.git"
+[tools.vscode]' consumer_submodule "tool 'vscode' is for the root repository only"
 
 # The generated java config already exists in the consumer, so the dry run
 # shows its diff, with the override comments.
@@ -264,37 +310,36 @@ java_conf() {
 run_case "[overrides.mise.tools.java] version" 0 'environments = [ "dev" ]
 [tools.java]
 [overrides.mise.tools.java]
-version = "21"' java_conf 'version = "21"  # override: .config/bootstrap.toml' || true
+version = "21"' java_conf 'version = "21"  # override: .config/bootstrap.toml'
 run_case "[overrides.mise_env.ci] wins over [overrides.mise]" 0 'environments = [ "dev", "ci" ]
 [tools.java]
 [overrides.mise.tools.java]
 version = "21"
 [overrides.mise_env.ci.tools.java]
-version = "17"' java_conf 'version = "17"  # override: .config/bootstrap.toml' || true
-rm -rf -- "$consumer/.config/mise/conf.d/java"
+version = "17"' java_conf 'version = "17"  # override: .config/bootstrap.toml'
 run_case "[overrides.mise.tools.jav], an unknown mise tool" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.mise.tools.jav]
-version = "21"' '' 'no selected tool has mise.tools.jav.version' || true
+version = "21"' '' 'no selected tool has mise.tools.jav.version'
 run_case "[overrides.mise.tools.java] without the java tool" 2 'environments = [ "dev" ]
 [overrides.mise.tools.java]
-version = "21"' '' 'no selected tool has mise.tools.java.version' || true
+version = "21"' '' 'no selected tool has mise.tools.java.version'
 run_case "[overrides.mise.env], a key that no tool has" 2 'environments = [ "dev" ]
 [tools.python]
 [overrides.mise.env]
-NEW_VAR = "1"' '' 'no selected tool has mise.env.NEW_VAR' || true
+NEW_VAR = "1"' '' 'no selected tool has mise.env.NEW_VAR'
 run_case "[overrides.mise.tools.java] envs" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.mise.tools.java]
-envs = [ "dev" ]' '' 'the envs, the depends and the requires of a mise tool cannot be overridden' || true
+envs = [ "dev" ]' '' 'the envs, the depends and the requires of a mise tool cannot be overridden'
 run_case "[overrides.tools.java], not mise, mise_env or gitignore" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.tools.java]
-version = "21"' '' 'the only keys of [overrides] are mise, mise_env, gitignore and graphifyignore' || true
+version = "21"' '' 'the only keys of [overrides] are mise, mise_env, gitignore and graphifyignore'
 run_case "[overrides.mise_env.ci] without ci in environments" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.mise_env.ci.tools.java]
-version = "21"' '' "overrides.mise_env.ci in $values: 'ci' is not in environments: dev" || true
+version = "21"' '' ".config/bootstrap.toml: 'ci' is not in environments: dev"
 
 # The `requires` of a mise tool: ruff and pyrefly of the python tool need a
 # pyproject.toml. The generated python config already exists in the
@@ -329,26 +374,22 @@ check_log_lacks() {
   fi
 }
 
+lacks_requires() { check_log_lacks "requires, a pyproject.toml at the root" 'requires ='; }
+lacks_ruff_depth5() { check_log_lacks "requires, a pyproject.toml 5 folders down" '[tools.ruff]'; }
+lacks_ruff_ignored() { check_log_lacks "requires, a pyproject.toml in an ignored folder" '[tools.ruff]'; }
+
 python_values='environments = [ "dev" ]
 [tools.python]'
-if run_case "requires, a pyproject.toml at the root" 0 "$python_values" pyproject_root '[tools.ruff]'; then
-  check_log_lacks "requires, a pyproject.toml at the root" 'requires ='
-fi
-rm -f -- "$consumer/pyproject.toml"
+run_case "requires, a pyproject.toml at the root" 0 "$python_values" pyproject_root '[tools.ruff]' lacks_requires
 run_case "requires, a pyproject.toml 4 folders down" 0 "$python_values" pyproject_depth4 \
-  '[tools."pipx:pyrefly"]' || true
-rm -rf -- "$consumer/a"
-if run_case "requires, a pyproject.toml 5 folders down" 0 "$python_values" pyproject_depth5 '[tools.uv]'; then
-  check_log_lacks "requires, a pyproject.toml 5 folders down" '[tools.ruff]'
-fi
-rm -rf -- "$consumer/a"
-if run_case "requires, a pyproject.toml in an ignored folder" 0 "$python_values" pyproject_ignored '[tools.uv]'; then
-  check_log_lacks "requires, a pyproject.toml in an ignored folder" '[tools.ruff]'
-fi
-rm -rf -- "$consumer/ignored" "$consumer/.gitignore" "$consumer/.config/mise/conf.d/python"
+  '[tools."pipx:pyrefly"]'
+run_case "requires, a pyproject.toml 5 folders down" 0 "$python_values" pyproject_depth5 '[tools.uv]' \
+  lacks_ruff_depth5
+run_case "requires, a pyproject.toml in an ignored folder" 0 "$python_values" pyproject_ignored '[tools.uv]' \
+  lacks_ruff_ignored
 run_case "[overrides.mise.tools.ruff] requires" 2 "$python_values
 [overrides.mise.tools.ruff]
-requires = \"setup.py\"" '' 'the envs, the depends and the requires of a mise tool cannot be overridden' || true
+requires = \"setup.py\"" '' 'the envs, the depends and the requires of a mise tool cannot be overridden'
 
 # kotlin and swift in ci. A dry run shows the diff of an existing file only,
 # so each case makes one generated file of the consumer.
@@ -363,16 +404,13 @@ swift_ci() { conf_file swift ci; }
 kotlin_values='environments = [ "dev", "ci" ]
 [tools.kotlin]
 env = [ "dev", "ci" ]'
-if run_case "[tools.kotlin] env dev, ci: the gates in ci" 0 "$kotlin_values" kotlin_ci '+[tools.ktlint]'; then
-  check_log_lacks "[tools.kotlin] env dev, ci: the gates in ci" 'kotlin-lsp'
-fi
-rm -rf -- "$consumer/.config/mise/conf.d/kotlin"
-run_case "[tools.kotlin] env dev, ci: kotlin-lsp in dev" 0 "$kotlin_values" kotlin_dev 'kotlin-lsp' || true
-rm -rf -- "$consumer/.config/mise/conf.d/kotlin"
+lacks_kotlin_lsp() { check_log_lacks "[tools.kotlin] env dev, ci: the gates in ci" 'kotlin-lsp'; }
+run_case "[tools.kotlin] env dev, ci: the gates in ci" 0 "$kotlin_values" kotlin_ci '+[tools.ktlint]' \
+  lacks_kotlin_lsp
+run_case "[tools.kotlin] env dev, ci: kotlin-lsp in dev" 0 "$kotlin_values" kotlin_dev 'kotlin-lsp'
 run_case "[tools.swift] env dev, ci: os macos in ci" 0 'environments = [ "dev", "ci" ]
 [tools.swift]
-env = [ "dev", "ci" ]' swift_ci '+os = "macos"' || true
-rm -rf -- "$consumer/.config/mise/conf.d/swift"
+env = [ "dev", "ci" ]' swift_ci '+os = "macos"'
 
 # The consumer already has a .gitignore, so the dry run shows its diff.
 gitignore_file() {
@@ -387,28 +425,27 @@ old_gitignore_file() {
 run_case "[overrides.gitignore] remove" 0 'environments = [ "dev" ]
 [overrides.gitignore]
 remove = [ "*.log" ]
-add = [ "/coverage/" ]' gitignore_file '+# *.log  # override: removed by .config/bootstrap.toml' || true
+add = [ "/coverage/" ]' gitignore_file '+# *.log  # override: removed by .config/bootstrap.toml'
 run_case "[overrides.gitignore] add" 0 'environments = [ "dev" ]
 [overrides.gitignore]
 remove = [ "*.log" ]
-add = [ "/coverage/" ]' gitignore_file '+# ==== Overrides from .config/bootstrap.toml ====' || true
-rm -f -- "$consumer/.gitignore"
+add = [ "/coverage/" ]' gitignore_file '+# ==== Overrides from .config/bootstrap.toml ===='
 run_case "[overrides.gitignore] remove, a line that is not shipped" 2 'environments = [ "dev" ]
 [overrides.gitignore]
-remove = [ "/nope/" ]' '' "'/nope/' is not a line of the shipped .gitignore" || true
+remove = [ "/nope/" ]' '' "'/nope/' is not a line of the shipped .gitignore"
 run_case "[overrides.gitignore], a line in add and in remove" 2 'environments = [ "dev" ]
 [overrides.gitignore]
 add = [ "*.log" ]
-remove = [ "*.log" ]' '' "'*.log' is in add and in remove" || true
+remove = [ "*.log" ]' '' "'*.log' is in add and in remove"
 run_case "[overrides.gitignore], a key other than add and remove" 2 'environments = [ "dev" ]
 [overrides.gitignore]
-append = [ "/build/" ]' '' 'the only keys of [overrides.gitignore] are add and remove' || true
+append = [ "/build/" ]' '' 'the only keys of [overrides.gitignore] are add and remove'
 run_case "[overrides.gitignore] add, not a list" 2 'environments = [ "dev" ]
 [overrides.gitignore]
-add = "/build/"' '' 'must be a list of one-line strings' || true
+add = "/build/"' '' 'must be a list of one-line strings'
 run_case "[overrides.gitignore] add, an empty line" 2 'environments = [ "dev" ]
 [overrides.gitignore]
-add = [ " " ]' '' 'has an empty line' || true
+add = [ " " ]' '' 'has an empty line'
 
 # The consumer already has a .graphifyignore, so the dry run shows its diff.
 graphifyignore_file() {
@@ -419,26 +456,28 @@ run_case "[overrides.graphifyignore] remove" 0 'environments = [ "dev" ]
 [tools.claude]
 [overrides.graphifyignore]
 remove = [ "docs/prompts/" ]
-add = [ "fixtures/" ]' graphifyignore_file '+# docs/prompts/  # override: removed by .config/bootstrap.toml' || true
+add = [ "fixtures/" ]' graphifyignore_file '+# docs/prompts/  # override: removed by .config/bootstrap.toml'
 run_case "[overrides.graphifyignore] add" 0 'environments = [ "dev" ]
 [tools.claude]
 [overrides.graphifyignore]
-add = [ "fixtures/" ]' graphifyignore_file '+fixtures/' || true
-rm -f -- "$consumer/.graphifyignore"
+add = [ "fixtures/" ]' graphifyignore_file '+fixtures/'
 run_case "[overrides.graphifyignore] without the claude tool" 2 'environments = [ "dev" ]
 [overrides.graphifyignore]
-add = [ "fixtures/" ]' '' '.graphifyignore comes from the claude tool, which is not selected' || true
+add = [ "fixtures/" ]' '' '.graphifyignore comes from the claude tool, which is not selected'
 run_case "[overrides.graphifyignore] remove, a line that is not shipped" 2 'environments = [ "dev" ]
 [tools.claude]
 [overrides.graphifyignore]
-remove = [ "/nope/" ]' '' "'/nope/' is not a line of the shipped .graphifyignore" || true
+remove = [ "/nope/" ]' '' "'/nope/' is not a line of the shipped .graphifyignore"
 run_case "[overrides.graphifyignore], a key other than add and remove" 2 'environments = [ "dev" ]
 [tools.claude]
 [overrides.graphifyignore]
-append = [ "fixtures/" ]' '' 'the only keys of [overrides.graphifyignore] are add and remove' || true
+append = [ "fixtures/" ]' '' 'the only keys of [overrides.graphifyignore] are add and remove'
 run_case "the old .config/repo-sync/gitignore" 2 'environments = [ "dev" ]' old_gitignore_file \
-  '.config/repo-sync/gitignore is no longer used' || true
-rm -rf -- "$consumer/.config/repo-sync"
+  '.config/repo-sync/gitignore is no longer used'
+
+while ((${#case_pids[@]})); do
+  collect_case
+done
 
 # The cache and the lock of setup:configs. A fake `mise` replaces
 # `mise run setup:configs:sync`: it records the commit of the copy that it
