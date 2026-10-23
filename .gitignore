@@ -347,3 +347,6 @@ brag-output/work/frames/
 gitleaks-report.*
 grype-report.*
 sbom.*
+
+# ==== Overrides from .config/bootstrap.toml ====
+docs/prompts/
