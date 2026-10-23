@@ -1,7 +1,21 @@
 # Swift and SwiftPM from the host (macOS only): Xcode for a root with an
-# .xcodeproj, else the Command Line Tools.
+# .xcodeproj, else the Command Line Tools. Also the SwiftLint and swift-format
+# gates, and the Xcode and simulator lookup of _scripts/xcode.
 default_envs = [ "dev" ]
 depends = []
 extensions = [ "swiftlang.swift-vscode" ]
 root_only = false
-seed = []
+seed = [ ".config/swift-format.json", ".config/swiftlint.yml" ]
+
+# The mise config, generated into .config/mise/conf.d/swift/mise.<env>.toml.
+# SwiftLint is the correctness gate. swift-format comes with the Swift
+# toolchain of the host, so it has no mise tool.
+[mise.tools.swiftlint]
+envs = [ "dev", "ci" ]
+version = "latest"
+
+# Swift needs a macOS host, also in CI. The mise tool sets os = "linux" for
+# ci, and conf.d/swift/ loads after conf.d/mise/, so this value wins. Thus each
+# CI job of a repository with swift in ci runs on a macOS runner.
+[mise_env.ci.settings]
+os = "macos"

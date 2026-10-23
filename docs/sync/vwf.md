@@ -27,8 +27,9 @@ In this file, "the clone" is that temporary directory. Each path in
 
 ## Instructions
 
-An instruction adds tools or removes tools. A name in the list is a tool
-folder of `tools/`, or a pack of `tools/packs.toml`. It has this format:
+An instruction adds tools or removes tools, or it adds or removes Claude Code
+plugins. In a tools instruction, a name in the list is a tool folder of
+`tools/`, or a pack of `tools/packs.toml`. It has this format:
 
 ```text
 bootstrap: add tools [<tool>, …]
@@ -46,6 +47,28 @@ One message can hold several instructions. Each instruction has its own
 ```text
 bootstrap: add tools [flutter]
 reason: stackgen pack app-framework/flutter pinned
+```
+
+A plugins instruction names the scope, `user` or `project`. In `add`, each
+item is `<name>@<marketplace>=<source>`, where `<source>` is the source of the
+marketplace for `claude plugin marketplace add`. In `remove`, each item is
+`<name>@<marketplace>`:
+
+```text
+bootstrap: add user plugins [<name>@<marketplace>=<source>, …]
+reason: <why>
+```
+
+```text
+bootstrap: remove project plugins [<name>@<marketplace>, …]
+reason: <why>
+```
+
+For example:
+
+```text
+bootstrap: add user plugins [taste-skill@taste-skill=Leonxlnx/taste-skill]
+reason: stackgen pack design-tool/claude-code pinned
 ```
 
 The instruction is the consent. The plugin asked the user before it sent the
@@ -72,11 +95,20 @@ in the clone:
 
 A tool that the same instruction also removes does not count.
 
+A plugins instruction has one more check:
+
+| Condition                                                    | Message                                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| An item of `add` has no `=<source>`, or a plugin has no `@`. | `<item>` is not `<name>@<marketplace>=<source>`.                         |
+| The scope is not `user` or `project`.                        | `<scope>` is not a plugin scope of `bootstrap`. Use `user` or `project`. |
+
 These cases are not a stop:
 
 - `add` of a tool that already has a `[tools.<tool>]` entry (or a pack that
   already has a `[packs.<pack>]` entry) changes nothing for that name.
 - `remove` of a name that has no entry changes nothing for that name.
+- `add` of a plugin that the table of that scope already has replaces its
+  source.
 
 ## Add tools
 
@@ -130,6 +162,24 @@ tool needs cannot be removed alone.
      lines. Keep a file of any other kind.
 4. Run `mise run setup:configs`. The sync removes the generated mise files of
    the tools of step 3.
+
+## Add plugins
+
+1. In `.config/bootstrap.toml`, add each plugin to `[claude.plugins.user]` or
+   `[claude.plugins.project]`, the table of the scope:
+   `"<name>@<marketplace>" = "<source>"`. Make the table if it is missing.
+   Keep the keys sorted.
+2. If no selected tool or pack adds the `claude` tool, do "Add tools" for
+   `claude` first.
+3. Run `mise run setup:ai`. It installs each missing plugin.
+
+## Remove plugins
+
+1. Remove each plugin from the table of the scope in `.config/bootstrap.toml`.
+   Keep the table, also when it is empty.
+2. Uninstall each plugin at that scope:
+   `claude plugin uninstall --scope <scope> <name>@<marketplace>`. `setup:ai`
+   does not uninstall a plugin.
 
 ## After the change
 

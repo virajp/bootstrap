@@ -157,7 +157,9 @@ These rules apply to each file:
   A tool of a `[tools.*]` or a `[packs.*]` entry goes to the environments of
   its `env`, else of its `default_envs`. A dependency goes to each environment
   of the tools that need it. The `envs` of a mise tool lists the environments
-  that it allows; a tool in a different environment stops the sync. Each tool
+  that it allows; a tool in a different environment stops the sync. The
+  `requires` of a mise tool names a file: the sync writes the mise tool only
+  when the repository has that file. Each tool
   must be in dev: an `env` or a `default_envs` without dev stops the sync.
   Aliases, hooks, vars and tasks go only to dev. `.config/mise.toml` is the
   only file for every environment. `CLAUDE.md` has the full rules.
@@ -241,6 +243,9 @@ merge_model = "pr"
 values file applied. It comments out each line of `remove`, then it adds the
 lines of `add` at the end. A later line wins, so a line of `add` can also
 negate a shared pattern with `!`. `docs/sync/index.md` has the rules.
+
+The `claude` tool ships `.graphifyignore`. The sync applies
+`[overrides.graphifyignore]` to it in the same way.
 
 ## `.config/pre-commit-config.yaml`
 

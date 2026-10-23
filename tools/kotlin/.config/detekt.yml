@@ -1,0 +1,23 @@
+# The changes to the default detekt rules. code:lint:detekt passes
+# --build-upon-default-config, so the default rules apply, and this file
+# changes only what is different.
+
+config:
+  validation: true
+  warningsAsErrors: true
+
+build:
+  maxIssues: 0
+
+# The layout rules are off: ktlint decides the layout.
+style:
+  MaxLineLength:
+    active: false # ktlint wraps the lines, at the width of its config
+  NewLineAtEndOfFile:
+    active: false # the final-newline rule of ktlint
+  WildcardImport:
+    active: false # the no-wildcard-imports rule of ktlint
+  TrailingWhitespace:
+    active: false # the no-trailing-spaces rule of ktlint
+  NoTabs:
+    active: false # the indentation rule of ktlint

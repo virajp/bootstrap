@@ -1,4 +1,4 @@
-# git: the shared .gitignore, the commit convention, the git-config check and the merge tasks.
+# git: the shared .gitignore and .gitattributes, the commit convention, the git-config check and the merge tasks.
 default_envs = [ "dev", "ci" ]
 depends = []
 extensions = []

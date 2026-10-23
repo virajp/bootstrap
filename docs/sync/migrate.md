@@ -16,6 +16,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | No values file, but older shared files or a mise config | The steps of `index.md`. Its step 5 sends you here for M1 to M14. Write the new name directly.                                                                                                                                                                      |
 | `.config/mise/conf.d/_repo/`, or an `env` without `dev` | M17, before the first sync.                                                                                                                                                                                                                                         |
 | `.config/repo-sync/gitignore`                           | M18, before the next sync.                                                                                                                                                                                                                                          |
+| Files from the stackgen `tool-config` skill or packs    | M19, before the next sync.                                                                                                                                                                                                                                          |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -415,3 +416,37 @@ Do this item before the next sync. The old file stops the sync with code 2.
 6. Run `mise run setup:configs --dry-run`, and examine the diff of
    `.gitignore`. The lines of `add` are at the end, under
    `# ==== Overrides from .config/bootstrap.toml ====`.
+
+## M19: The stackgen files that bootstrap now ships
+
+The `tool-config` skill and the packs of stackgen wrote some files that
+bootstrap now ships. Do this item before the next sync. The old files do not
+have the bootstrap header, so the sync does not remove them.
+
+1. Find the old files and show the user the list:
+
+   | Old file                                      | Do                                                                                                                                                                           |
+   | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `.config/mise/conf.d/ktlint/mise.toml`        | Delete it. The `kotlin` tool installs ktlint.                                                                                                                                |
+   | `.config/mise/conf.d/detekt/mise.toml`        | Delete it. The `kotlin` tool installs detekt.                                                                                                                                |
+   | `.config/mise/conf.d/swiftlint/mise.toml`     | Delete it. The `swift` tool installs SwiftLint.                                                                                                                              |
+   | `.config/mise/conf.d/swiftui/mise.toml`       | Move each value of its `[env]` that the user wants to keep to the `[env]` of `conf.d/zz-repo/mise.dev.toml`. Then delete it. `_scripts/xcode` finds a value that is not set. |
+   | `.config/mise/tasks/code/lint/ktlint`         | Delete it. `code:format:ktlint` reports the same problems.                                                                                                                   |
+   | `.config/mise/tasks/code/lint/swift-format`   | Delete it. `code:format:swift-format` reports the same problems.                                                                                                             |
+   | `.config/mise/tasks/code/check/uv`            | Delete it. `code:lint:uv` of the `python` tool does the same check. If `code/check/all` runs only this task, delete `code/check/all` too.                                    |
+   | `.config/mise/tasks/code/count`               | Delete it, unless the user wants to keep it. bootstrap does not ship it.                                                                                                     |
+   | A ruff or pyrefly pin in `pyproject.toml`     | Tell the user. The gates of the `python` tool use the mise version.                                                                                                          |
+   | `.graphifyignore`                             | Put each line that is not in the shared file or in `.gitignore` in `add` of `[overrides.graphifyignore]`. The sync replaces the file. The `claude` tool is necessary.        |
+   | `.gitattributes` with lines of the repository | Tell the user. The sync replaces the file, and it has no overrides.                                                                                                          |
+
+2. Keep these files. The sync writes the same path, but only when it is
+   missing, or it does not write the path:
+   - `.config/swiftlint.yml`, `.config/swift-format.json`,
+     `.config/ktlint.editorconfig` and `.config/detekt.yml`: they are seeds.
+   - `.config/miserc.toml` and `.config/claude-status.json`: bootstrap does
+     not ship them.
+
+3. Run `mise run setup:configs --dry-run`, and examine the diff. The sync
+   replaces the old copies of `code/lint/ruff`, `code/format/ruff`,
+   `code/lint/swiftlint`, `code/format/swift-format`, `code/format/ktlint`,
+   `code/lint/detekt` and `_scripts/xcode`.
