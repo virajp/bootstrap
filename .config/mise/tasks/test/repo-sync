@@ -98,7 +98,7 @@ run_case() {
 
 # The tools of the pack base, the required tool of the pack security
 # included. The first case checks that each one syncs a file.
-base_tools="mise repo-sync git pre-commit dprint linter _security_base gitleaks grype osv-scanner"
+base_tools="mise repo-sync git pre-commit dprint linter vscode _security_base gitleaks grype osv-scanner"
 
 check_base_files() {
   local tool path found missing=''
@@ -231,6 +231,27 @@ run_case "a tool folder named zz-repo" 2 'environments = [ "dev" ]' tool_folder_
   'tool folder tools/zz-repo sorts after zz-repo or is named zz-repo' || true
 run_case "default_envs empty" 2 'environments = [ "dev" ]' node_no_envs \
   'default_envs of tools/node/tools.toml has no dev' || true
+
+# The consumer as a git submodule: a gitlink at its path in a superproject
+# at $tmp. Removing $tmp/.git after the case undoes it.
+consumer_submodule() {
+  _git init --quiet "$tmp"
+  _git -C "$tmp" update-index --add --cacheinfo "160000,$(git -C "$consumer" rev-parse HEAD),consumer"
+}
+
+if run_case "a submodule skips vscode, a root_only tool of the pack base" 0 'environments = [ "dev" ]' \
+  consumer_submodule; then
+  if grep -F 'repo-sync: tools:' "$log" | grep -qw vscode; then
+    print_error "submodule: the tools include vscode"
+    failures=$((failures + 1))
+  else
+    print_success "submodule: the tools do not include vscode"
+  fi
+fi
+rm -rf -- "$tmp/.git"
+run_case "a submodule with [tools.vscode], a root_only tool" 2 'environments = [ "dev" ]
+[tools.vscode]' consumer_submodule "tool 'vscode' is for the root repository only" || true
+rm -rf -- "$tmp/.git"
 
 # The generated java config already exists in the consumer, so the dry run
 # shows its diff, with the override comments.

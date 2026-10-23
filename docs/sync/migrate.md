@@ -9,14 +9,15 @@ This file is temporary. Remove an item when all repositories have done it.
 
 ## Find the items that apply
 
-| The repository has                                      | Do                                                                                                                                                                                                                                                                  |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.config/bootstrap.toml` with a `tools` list            | The list stops the sync, and the old synced `setup/configs/sync` loads the removed `tools/base/`. Do step 2 of `index.md` first: copy the sync files by hand. Then write the tables of step 3, then M17 and M16. Then ask the user to run `mise run setup:configs`. |
-| `.config/repo-config.toml` with a `tools` list          | M15. Its M15.4 includes the row above.                                                                                                                                                                                                                              |
-| No values file, but older shared files or a mise config | The steps of `index.md`. Its step 5 sends you here for M1 to M14. Write the new name directly.                                                                                                                                                                      |
-| `.config/mise/conf.d/_repo/`, or an `env` without `dev` | M17, before the first sync.                                                                                                                                                                                                                                         |
-| `.config/repo-sync/gitignore`                           | M18, before the next sync.                                                                                                                                                                                                                                          |
-| Files from the stackgen `tool-config` skill or packs    | M19, before the next sync.                                                                                                                                                                                                                                          |
+| The repository has                                              | Do                                                                                                                                                                                                                                                                  |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.config/bootstrap.toml` with a `tools` list                    | The list stops the sync, and the old synced `setup/configs/sync` loads the removed `tools/base/`. Do step 2 of `index.md` first: copy the sync files by hand. Then write the tables of step 3, then M17 and M16. Then ask the user to run `mise run setup:configs`. |
+| `.config/repo-config.toml` with a `tools` list                  | M15. Its M15.4 includes the row above.                                                                                                                                                                                                                              |
+| No values file, but older shared files or a mise config         | The steps of `index.md`. Its step 5 sends you here for M1 to M14. Write the new name directly.                                                                                                                                                                      |
+| `.config/mise/conf.d/_repo/`, or an `env` without `dev`         | M17, before the first sync.                                                                                                                                                                                                                                         |
+| `.config/repo-sync/gitignore`                                   | M18, before the next sync.                                                                                                                                                                                                                                          |
+| Files from the stackgen `tool-config` skill or packs            | M19, before the next sync.                                                                                                                                                                                                                                          |
+| `[tools.vscode]` in the values file, or no `vscode` in the root | M20.                                                                                                                                                                                                                                                                |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -450,3 +451,14 @@ have the bootstrap header, so the sync does not remove them.
    replaces the old copies of `code/lint/ruff`, `code/format/ruff`,
    `code/lint/swiftlint`, `code/format/swift-format`, `code/format/ktlint`,
    `code/lint/detekt` and `_scripts/xcode`.
+
+## M20: The `base` pack now adds `vscode`
+
+The sync adds `vscode` to each root repository, and it skips the tool in a
+git submodule.
+
+1. If the values file has `[tools.vscode]`, remove the table. The entry does
+   nothing in a root repository, and a submodule refuses it with code 2.
+2. If a root repository did not select `vscode` before, do "Adapt to the
+   repository" of [`tools/vscode.md`](tools/vscode.md) before the next sync.
+   The sync replaces `.vscode/settings.json`.
