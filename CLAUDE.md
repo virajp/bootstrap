@@ -109,15 +109,24 @@ Some files refer to files that are not in `tools/`, for example
 ## How the sync operates
 
 - `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync` defines `repo_sync`.
-  The consumer task `setup:configs` (`setup/configs/_default`) clones this
-  repository. Then it runs `setup:configs:sync` in a new process with
-  `REPO_SYNC_CLONE` set. That task loads `repo-sync` from the clone, so a
-  change to the sync code applies in the same run.
+  The consumer task `setup:configs` (`setup/configs/_default`) keeps a
+  shallow clone of this repository in `${XDG_CACHE_HOME:-~/.cache}/bootstrap`,
+  for each consumer of the machine. It fetches the default branch into it,
+  and copies it to a temporary folder. Then it runs `setup:configs:sync` in a
+  new process with `REPO_SYNC_CLONE` set to the copy. That task loads
+  `repo-sync` from the copy, so a change to the sync code applies in the same
+  run.
+- The lock folder `bootstrap.lock` next to the cache makes a second
+  `setup:configs` wait until the first has copied the cache. A waiter removes
+  the lock of a dead holder. A failed fetch or clone stops the task with code
+  5. A cache with another `origin`, for example after a test with
+  `REPO_SYNC_URL`, is cloned again.
 - `repo_sync` reads the `[tools.<folder>]` and `[packs.<name>]` tables of the
   consumer file `.config/bootstrap.toml`. The only key of an entry is `env`.
   A list (`tools = [...]`, `packs = [...]`) is the old format and stops the
-  sync with code 2. It does a shallow clone of the default branch of this
-  repository over SSH. Then it adds the `base` pack, expands each pack, adds
+  sync with code 2. It copies the clone of `REPO_SYNC_CLONE`, else it does a
+  shallow clone of the default branch of this repository over SSH. Then it
+  adds the `base` pack, expands each pack, adds
   the `depends` of each tool, and copies each file of each tool.
 - gomplate reads the TOML files: the values file, `tools/packs.toml` and each
   `tools.toml`.
