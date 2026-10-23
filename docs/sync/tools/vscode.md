@@ -20,11 +20,12 @@ selected tools.
 
 ## What the tool ships
 
-| Path in the repository            | Kind     | Use                                                                                          |
-| --------------------------------- | -------- | -------------------------------------------------------------------------------------------- |
-| `.vscode/settings.json`           | Synced   | The shared editor settings. The sync replaces the file.                                      |
-| `.vscode/extensions.json`         | Template | The extensions of the selected tools, of the values key `extensions`, and of each submodule. |
-| `.config/mise/tasks/setup/vscode` | Synced   | The task `setup:vscode`.                                                                     |
+| Path in the repository                     | Kind      | Use                                                                                          |
+| ------------------------------------------ | --------- | -------------------------------------------------------------------------------------------- |
+| `.vscode/settings.json`                    | Synced    | The shared editor settings. The sync replaces the file.                                      |
+| `.vscode/extensions.json`                  | Template  | The extensions of the selected tools, of the values key `extensions`, and of each submodule. |
+| `.config/mise/tasks/setup/vscode`          | Synced    | The task `setup:vscode`.                                                                     |
+| `.config/mise/conf.d/vscode/mise.dev.toml` | Generated | The mise config of this tool.                                                                |
 
 VS Code extensions: `gruntfuggly.todo-tree`, `oderwat.indent-rainbow`,
 `pkief.material-icon-theme`, `usernamehw.errorlens`.
@@ -33,14 +34,19 @@ VS Code extensions: `gruntfuggly.todo-tree`, `oderwat.indent-rainbow`,
 
 None.
 
+The tool also sets the shell alias `code`. It opens the root of the
+repository in the VS Code profile `$REPO_NAME`, also from a subdirectory. The
+first `code` creates the profile.
+
 ## Tasks
 
 | Task           | Use                                                                                                                            |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `setup:vscode` | Make the VS Code profile of the repository match `extensions.json`. It installs the missing extensions and removes the others. |
 
-The task uses a profile for each repository, not a global install. Thus an
-extension of one repository does not stay on in each other window.
+`setup` runs `setup:vscode`. The task uses a profile for each repository, not a
+global install. Thus an extension of one repository does not stay on in each
+other window.
 
 ## Pre-commit hooks
 
