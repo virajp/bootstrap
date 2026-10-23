@@ -1382,10 +1382,6 @@ _rs_file() {
   _rs_log "updated    $show"
 }
 
-# repo_sync [--dry-run]
-#
-# Clone bootstrap once, resolve the tools of the values file, then sync
-# every file of every tool. Returns the most severe failure code, or 0.
 # Set the top-level `bootstrap_commit` of <values> to <commit>, the bootstrap
 # commit of this sync. A line that has the key before the first table is
 # replaced. Else the key and its comment go after the header comments, when a
@@ -1441,6 +1437,10 @@ _rs_record_commit() {
   _rs_log "set bootstrap_commit ${commit} in $show"
 }
 
+# repo_sync [--dry-run]
+#
+# Clone bootstrap once, resolve the tools of the values file, then sync
+# every file of every tool. Returns the most severe failure code, or 0.
 repo_sync() {
   local dry_run=0
   while (($#)); do
