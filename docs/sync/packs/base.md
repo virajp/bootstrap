@@ -1,12 +1,12 @@
 # The `base` pack
 
 The tools that each repository gets: mise, the sync, git, pre-commit, the
-formatter, the linters and the scanners.
+formatter, the linters, VS Code and the scanners.
 
-| Property | Value                                                                      |
-| -------- | -------------------------------------------------------------------------- |
-| Depends  | `mise`, `repo-sync`, `git`, `pre-commit`, `dprint`, `linter`, `p:security` |
-| Required | None                                                                       |
+| Property | Value                                                                                |
+| -------- | ------------------------------------------------------------------------------------ |
+| Depends  | `mise`, `repo-sync`, `git`, `pre-commit`, `dprint`, `linter`, `vscode`, `p:security` |
+| Required | None                                                                                 |
 
 ## When the pack is relevant
 
@@ -23,10 +23,13 @@ Always. `repo-sync` always adds the `base` pack. Its name is fixed in
 | `pre-commit` | [`tools/pre-commit.md`](../tools/pre-commit.md)   |
 | `dprint`     | [`tools/dprint.md`](../tools/dprint.md)           |
 | `linter`     | [`tools/linter.md`](../tools/linter.md)           |
+| `vscode`     | [`tools/vscode.md`](../tools/vscode.md)           |
 | `p:security` | The `security` pack, [`security.md`](security.md) |
 
 The mise `depends` of `pre-commit` and `linter` add the `python` and `node`
 tools too.
+
+`vscode` is a `root_only` tool. In a git submodule, the sync skips it.
 
 ## Environments
 

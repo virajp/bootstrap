@@ -76,7 +76,7 @@ default_envs = [
 ] # the environments when the values file gives no env
 depends = [] # tools added with this one
 extensions = [] # VS Code extensions
-root_only = false # true: refused in a submodule
+root_only = false # true: refused in a submodule; skipped there from a pack
 seed = [] # written only when missing
 
 # The mise config, in mise syntax. The sync generates
@@ -136,7 +136,8 @@ has that file:
 3. `repo_sync` reads the `[tools.*]` and `[packs.*]` tables of the
    repository's `.config/bootstrap.toml`, and it adds the `base` pack.
 4. It expands each pack, and it adds the `depends` of each tool. It refuses a
-   `root_only` tool in a git submodule.
+   `root_only` tool in a git submodule. It skips a `root_only` tool that only
+   a pack adds.
 5. It finds the branch model from the branches `main` and `develop`, local or
    on origin. It stops if neither branch exists.
 6. It copies each file of each tool.
@@ -231,8 +232,6 @@ worktree_files = [ ".config/mise.local.toml" ]
 
 [tools.node]
 env = [ "dev", "ci" ] # optional; without it, the default_envs of the tool
-
-[tools.vscode]
 
 [member.backend]
 folder = "projects/backend" # optional; the default is the name

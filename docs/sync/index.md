@@ -167,9 +167,10 @@ The base repository has the members as git submodules, for example
    submodule, with its `label`.
 
 A tool with `root_only = true` is for the base repository only. The sync
-refuses it in a submodule. When a submodule is in its root checkout, mise
-also loads the tools of the root. Thus a nested submodule still finds, for
-example, graphify.
+refuses it in a submodule. A `root_only` tool of a pack, for example `vscode`
+of `base`, is skipped in a submodule. When a submodule is in its root
+checkout, mise also loads the tools of the root. Thus a nested submodule still
+finds, for example, graphify.
 
 ### Siblings
 
@@ -255,13 +256,13 @@ never a tool folder.
 
 Each `tools.toml` has these keys:
 
-| Key            | Meaning                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------- |
-| `default_envs` | The environments of the tool when the values file gives it no `env`. It must include `dev`. |
-| `depends`      | The sync adds these tools automatically.                                                    |
-| `root_only`    | If `true`, the sync refuses the tool in a submodule.                                        |
-| `extensions`   | The VS Code extensions of the tool, for `.vscode/extensions.json`.                          |
-| `seed`         | Files that the sync writes only if they are missing.                                        |
+| Key            | Meaning                                                                                      |
+| -------------- | -------------------------------------------------------------------------------------------- |
+| `default_envs` | The environments of the tool when the values file gives it no `env`. It must include `dev`.  |
+| `depends`      | The sync adds these tools automatically.                                                     |
+| `root_only`    | If `true`, the sync refuses the tool in a submodule, and skips it there when a pack adds it. |
+| `extensions`   | The VS Code extensions of the tool, for `.vscode/extensions.json`.                           |
+| `seed`         | Files that the sync writes only if they are missing.                                         |
 
 A `tools.toml` can also have a `[seed_requires]` table. It is optional. Each
 key is a seed, and its value is a file of the repository. The sync writes the
@@ -428,8 +429,6 @@ worktree_files = [ ".config/mise.local.toml" ]
 
 [tools.node]
 env = [ "dev", "ci" ]
-
-[tools.vscode]
 
 [branch.main]
 merge_from = [ "develop" ]
