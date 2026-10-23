@@ -36,13 +36,15 @@ None.
 
 The tool also sets the shell alias `code`. It opens the root of the
 repository in the VS Code profile `$REPO_NAME`, also from a subdirectory. The
-first `code` creates the profile.
+first `code` or `setup:vscode` creates the profile. A new profile does not
+use the user settings and keybindings of the Default profile. To use them,
+turn on "Use Default profile" for them in the profile editor.
 
 ## Tasks
 
-| Task           | Use                                                                                                                            |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `setup:vscode` | Make the VS Code profile of the repository match `extensions.json`. It installs the missing extensions and removes the others. |
+| Task           | Use                                                                                                                                                                                                                                 |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:vscode` | Make the VS Code profile of the repository match `extensions.json`. It installs the missing extensions and removes the others. If the profile does not exist, it opens the root in a new window with the profile, which creates it. |
 
 `setup` runs `setup:vscode`. The task uses a profile for each repository, not a
 global install. Thus an extension of one repository does not stay on in each
