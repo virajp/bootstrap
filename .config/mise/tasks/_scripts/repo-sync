@@ -51,6 +51,12 @@
 # One call clones the default branch once (shallow, over SSH) and syncs every
 # file of every selected tool from that one clone.
 #
+# After a sync without a failure, the sync sets the top-level
+# `bootstrap_commit` of the values file to the full commit of that clone. It
+# replaces only that line, or it adds the line after the header comments.
+# This is the only change that the sync makes to the values file. An agent
+# compares the value with main of bootstrap to find what changed since.
+#
 # Environments: `environments` of the values file, from dev (necessary) and
 # ci. Without the key, only dev. The environments of each tool:
 #   * A tool of `[tools.*]` or of a pack gets its `env`, else its
@@ -1380,6 +1386,61 @@ _rs_file() {
 #
 # Clone bootstrap once, resolve the tools of the values file, then sync
 # every file of every tool. Returns the most severe failure code, or 0.
+# Set the top-level `bootstrap_commit` of <values> to <commit>, the bootstrap
+# commit of this sync. A line that has the key before the first table is
+# replaced. Else the key and its comment go after the header comments, when a
+# blank line ends them, or else on the first line: a comment just above a key
+# belongs to that key. Each other line stays as it is. With <dry_run> 1, only
+# print the change.
+_rs_record_commit() {
+  local values=$1 commit=$2 dry_run=$3 show tmp line
+  show=$(_rs_path "$values")
+  line="bootstrap_commit = \"${commit}\""
+  # Before the first table only: a key in a table is a different key.
+  # An `exit` in a rule also runs END, so END gives the result.
+  if awk -v line="$line" '/^[ \t]*\[/ { exit } $0 == line { found = 1; exit } END { exit !found }' "$values"; then
+    return 0
+  fi
+  if ((dry_run)); then
+    _rs_log "would set bootstrap_commit ${commit} in $show"
+    return 0
+  fi
+  tmp=$(mktemp "${values}.XXXXXX") || {
+    _rs_log "cannot write $show"
+    return 1
+  }
+  _RS_TMPS+=("$tmp")
+  awk -v line="$line" '
+    # The first pass finds the key, and the line to insert before: after the
+    # first blank line that ends the header comments, else the first line.
+    FNR == NR {
+      if (/^[ \t]*\[/) tables = 1
+      if (!tables && /^bootstrap_commit[ \t]*=/) has = 1
+      if (FNR == 1) { header = /^[ \t]*#/; at = 1 }
+      if (header && !found && /^[ \t]*$/) { at = FNR + 1; found = 1 }
+      if (header && !found && !/^[ \t]*#/) header = 0
+      next
+    }
+    has && !done && /^bootstrap_commit[ \t]*=/ { print line; done = 1; next }
+    !has && !done && FNR == at {
+      print "# The bootstrap commit of the last sync. repo-sync writes it."
+      print line
+      done = 1
+    }
+    { print }
+    END {
+      if (!done) {
+        print "# The bootstrap commit of the last sync. repo-sync writes it."
+        print line
+      }
+    }
+  ' "$values" "$values" > "$tmp" && chmod "$(_rs_mode "$values")" "$tmp" && mv -f -- "$tmp" "$values" || {
+    _rs_log "cannot write $show"
+    return 1
+  }
+  _rs_log "set bootstrap_commit ${commit} in $show"
+}
+
 repo_sync() {
   local dry_run=0
   while (($#)); do
@@ -1437,6 +1498,9 @@ repo_sync() {
   fi
   rev=$(git -C "$dir" rev-parse --short HEAD)
   _rs_log "using bootstrap at ${rev}"
+  # The full id, for `bootstrap_commit` after a sync without a failure.
+  local commit
+  commit=$(git -C "$dir" rev-parse HEAD) || commit=''
 
   # The formatter for rendered templates; empty when dprint is not available.
   _RS_DPRINT=''
@@ -1525,6 +1589,11 @@ repo_sync() {
   fi
 
   if ((${#failed[@]} == 0)); then
+    # Only a sync without a failure records its commit: then each file is
+    # at that commit, and an agent can compare it with main of bootstrap.
+    if [[ -n $commit ]]; then
+      _rs_record_commit "$values" "$commit" "$dry_run" || return 1
+    fi
     _rs_log "done: $ok/$total files in sync"
     return 0
   fi
