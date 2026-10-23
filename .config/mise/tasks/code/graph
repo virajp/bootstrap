@@ -8,12 +8,18 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-# Runs from the pre-commit framework's post-commit stage (see
+# Runs from the pre-commit framework's post-commit and post-merge stages (see
 # .config/pre-commit-config.yaml), replacing graphify's own raw git hook. The
 # raw hook pinned a Python interpreter path at install time and broke on every
 # graphify upgrade; here mise resolves the CLI, so nothing is pinned.
 #
 # `--force` rebuilds whatever HEAD changed; `GRAPHIFY_SKIP_HOOK=1` skips.
+#
+# One refresh at a time: the lock folder `graphify-refresh.lock` in the git
+# folder holds the pid of the background refresh. A run that finds a live
+# refresh leaves the mark `graphify-refresh.again`, and the refresh runs once
+# more when it ends. Thus `code:merge`, whose pull and merge each run this
+# task, ends with one graph of the newest tree.
 
 FORCE=false
 [ "${1:-}" = "--force" ] && FORCE=true
@@ -44,7 +50,14 @@ for marker in MERGE_HEAD CHERRY_PICK_HEAD; do
 done
 
 if [ "$FORCE" = false ]; then
-  CHANGED="$(git diff --name-only HEAD~1 HEAD 2> /dev/null || git diff --name-only HEAD 2> /dev/null || true)"
+  # pre-commit sets PRE_COMMIT_IS_SQUASH_MERGE only in post-merge. A merge or
+  # a fast-forward pull can bring many commits: git sets ORIG_HEAD to the tip
+  # before it. A squash merge makes no commit, so its diff is empty.
+  if [ -n "${PRE_COMMIT_IS_SQUASH_MERGE+x}" ]; then
+    CHANGED="$(git diff --name-only ORIG_HEAD HEAD 2> /dev/null || true)"
+  else
+    CHANGED="$(git diff --name-only HEAD~1 HEAD 2> /dev/null || git diff --name-only HEAD 2> /dev/null || true)"
+  fi
   # A commit that only touched graphify-out/ is the previous rebuild landing;
   # rebuilding again would loop.
   if [ -z "$(printf '%s\n' "$CHANGED" | grep -v '^graphify-out/' || true)" ]; then
@@ -62,8 +75,64 @@ mkdir -p "$(dirname "$LOG")"
 FORCE_FLAG=""
 [ "$FORCE" = true ] && FORCE_FLAG="--force"
 
+LOCK="${GIT_COMMON_ABS}/graphify-refresh.lock"
+AGAIN="${GIT_COMMON_ABS}/graphify-refresh.again"
+
+# 0 when the lock of a dead refresh was removed. The removal is in its own
+# lock, so that two runs cannot both remove it. A folder without a pid that is
+# older than one minute is from a run that stopped before it wrote the pid.
+remove_stale_lock() {
+  local pid stale=1
+  mkdir -- "${LOCK}.takeover" 2> /dev/null || {
+    if [ -n "$(find "${LOCK}.takeover" -maxdepth 0 -mmin +1 2> /dev/null)" ]; then
+      rm -rf -- "${LOCK}.takeover"
+    fi
+    return 1
+  }
+  pid="$(cat -- "${LOCK}/pid" 2> /dev/null)" || pid=''
+  if [ -n "$pid" ]; then
+    kill -0 "$pid" 2> /dev/null || stale=0
+  elif [ -n "$(find "${LOCK}" -maxdepth 0 -mmin +1 2> /dev/null)" ]; then
+    stale=0
+  fi
+  [ "$stale" = 0 ] && rm -rf -- "${LOCK}"
+  rmdir -- "${LOCK}.takeover"
+  return "$stale"
+}
+
+# Take the lock, or leave the mark for the refresh that holds it. The second
+# mkdir covers a refresh that ended between the first mkdir and the mark.
+until mkdir -- "$LOCK" 2> /dev/null; do
+  remove_stale_lock && continue
+  : > "$AGAIN"
+  mkdir -- "$LOCK" 2> /dev/null && break
+  print_yellow "graphify: a refresh is running - it refreshes once more when it ends"
+  exit 0
+done
+
+# The pid of this subshell: bash 3.2 has no BASHPID, and the parent of a
+# simple command is the shell that runs it.
+write_pid() { sh -c 'echo "$PPID"' > "${LOCK}/pid"; }
+
 print_yellow "graphify: refreshing the graph in the background (log: ${LOG})"
 # Detached so the commit returns at once; a full rebuild can take minutes.
-nohup mise x -- graphify update . $FORCE_FLAG >> "$LOG" 2>&1 < /dev/null &
+# The subshell ignores SIGHUP, as nohup does, and releases the lock at its
+# end. A mark that comes after its last check makes it take the lock again.
+(
+  trap '' HUP
+  write_pid
+  while :; do
+    while :; do
+      rm -f -- "$AGAIN"
+      # shellcheck disable=SC2086
+      mise x -- graphify update . $FORCE_FLAG || true
+      FORCE_FLAG=""
+      [ -e "$AGAIN" ] || break
+    done
+    rm -rf -- "$LOCK"
+    [ -e "$AGAIN" ] && mkdir -- "$LOCK" 2> /dev/null || break
+    write_pid
+  done
+) >> "$LOG" 2>&1 < /dev/null &
 disown
 exit 0

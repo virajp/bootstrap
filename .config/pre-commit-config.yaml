@@ -11,12 +11,14 @@
 # 3.2.0 is the first version with the `pre-commit` and `pre-push` stage names.
 minimum_pre_commit_version: "3.2.0"
 
-# `commit-msg` is for the conventional-commits hook, `post-commit` for
-# graphify-refresh. A hook type that is not installed never runs.
+# `commit-msg` is for the conventional-commits hook, `post-commit` and
+# `post-merge` for graphify-refresh. A hook type that is not installed never
+# runs.
 default_install_hook_types:
   - pre-commit
   - commit-msg
   - post-commit
+  - post-merge
 
 default_stages: [ pre-commit ]
 
@@ -114,9 +116,9 @@ repos:
     hooks:
       - id: graphify-refresh
         name: "Refresh the graphify graph (mise run code:graph)"
-        description: "Refreshes the graphify graph after each commit, instead of the raw git hook of graphify."
+        description: "Refreshes the graphify graph after each commit and merge, instead of the raw git hook of graphify."
         entry: "mise x -- mise run code:graph"
         language: "system"
         pass_filenames: false
         always_run: true
-        stages: [ "post-commit" ]
+        stages: [ "post-commit", "post-merge" ]
