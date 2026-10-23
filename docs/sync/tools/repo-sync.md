@@ -20,7 +20,7 @@ file.
 | Path in the repository                        | Kind      | Use                                                                 |
 | --------------------------------------------- | --------- | ------------------------------------------------------------------- |
 | `.config/mise/tasks/_scripts/repo-sync`       | Synced    | The library with the sync function `repo_sync`.                     |
-| `.config/mise/tasks/setup/configs/_default`   | Synced    | The task `setup:configs`. It clones `bootstrap`.                    |
+| `.config/mise/tasks/setup/configs/_default`   | Synced    | The task `setup:configs`. It fetches `bootstrap` into the cache.    |
 | `.config/mise/tasks/setup/configs/sync`       | Synced    | The task `setup:configs:sync`. It loads `repo-sync` from the clone. |
 | `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                       |
 
@@ -37,8 +37,20 @@ file.
 | `setup:configs`      | Sync the shared files from `bootstrap`. `--dry-run` shows the diff.     |
 | `setup:configs:sync` | Run `repo_sync` from the clone of `setup:configs`. Do not run it alone. |
 
-`setup:configs` stops with code 5 if the clone fails. Besides the copy of the
-files, `repo_sync` does these steps:
+`setup:configs` keeps a shallow clone of `bootstrap` in
+`${XDG_CACHE_HOME:-~/.cache}/bootstrap`, for each consumer of the machine:
+
+- Each run fetches the default branch into the clone, and gives a copy of it
+  to `setup:configs:sync`.
+- The lock folder `bootstrap.lock` next to the clone makes a second run wait
+  until the first has made its copy. A waiter removes the lock of a dead
+  holder.
+- A clone with another `origin`, for example after a test with
+  `REPO_SYNC_URL`, is cloned again.
+- If the fetch or the clone fails, `setup:configs` stops with code 5. It
+  never uses an old clone.
+
+Besides the copy of the files, `repo_sync` does these steps:
 
 - It writes the merge tasks of the branch model that it finds, and removes the
   others. If neither `main` nor `develop` exists, it stops with code 2.
@@ -56,12 +68,13 @@ files, `repo_sync` does these steps:
 
 These environment variables change the sync:
 
-| Variable                  | Use                                                                 |
-| ------------------------- | ------------------------------------------------------------------- |
-| `REPO_SYNC_URL`           | The repository to clone. The default is the `bootstrap` repository. |
-| `REPO_SYNC_CLONE`         | An existing clone. `setup:configs` sets it.                         |
-| `REPO_SYNC_VALUES`        | The values file. The default is `.config/bootstrap.toml`.           |
-| `REPO_SYNC_NO_AUTOUPDATE` | `1` skips `pre-commit autoupdate`, so no network is necessary.      |
+| Variable                  | Use                                                                    |
+| ------------------------- | ---------------------------------------------------------------------- |
+| `REPO_SYNC_URL`           | The repository to clone. The default is the `bootstrap` repository.    |
+| `XDG_CACHE_HOME`          | The folder of the clone of `setup:configs`. The default is `~/.cache`. |
+| `REPO_SYNC_CLONE`         | An existing clone. `setup:configs` sets it.                            |
+| `REPO_SYNC_VALUES`        | The values file. The default is `.config/bootstrap.toml`.              |
+| `REPO_SYNC_NO_AUTOUPDATE` | `1` skips `pre-commit autoupdate`, so no network is necessary.         |
 
 ## Pre-commit hooks
 

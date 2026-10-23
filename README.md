@@ -129,9 +129,11 @@ has that file:
 
 ## How a repository syncs
 
-1. `setup:configs` clones the default branch of this repository once
-   (shallow, over SSH).
-2. It runs `setup:configs:sync`, which loads `repo-sync` from that clone and
+1. `setup:configs` fetches the default branch of this repository (shallow,
+   over SSH) into a clone in `${XDG_CACHE_HOME:-~/.cache}/bootstrap`. Each
+   consumer of the machine uses that clone. A lock makes a second sync wait
+   until the first has copied the clone.
+2. It runs `setup:configs:sync`, which loads `repo-sync` from that copy and
    calls `repo_sync`. Thus a change to the sync code applies in the same run.
 3. `repo_sync` reads the `[tools.*]` and `[packs.*]` tables of the
    repository's `.config/bootstrap.toml`, and it adds the `base` pack.
