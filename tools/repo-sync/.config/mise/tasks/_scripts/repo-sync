@@ -1255,14 +1255,17 @@ _rs_unblock() {
   done
 }
 
-# Sync the file <path> of <tool> from the clone in <dir>. Leaves the
-# destination untouched when the content is identical, when it is a seed that
-# exists, when it is a seed whose `seed_requires` file is missing, or on any
-# failure.
+# Sync the file <path> of <tool> from the clone in <dir>, first step: render
+# the file into a temp file. Leaves the destination untouched when it is a
+# seed that exists, when it is a seed whose `seed_requires` file is missing,
+# or on any failure. Else it adds `<tool><tab><path><tab><temp file>` to
+# _RS_PENDING and sets _RS_DEFERRED, and `_rs_file_finish` does the rest after
+# `_rs_format`.
 _rs_file() {
   local dir=$1 tool=$2 path=$3 dry_run=$4 ctx=$5
   local src="${dir}/tools/${tool}/${path}" out=${path%.tmpl}
   local dest destdir tmp show rc=0 env
+  _RS_DEFERRED=''
   dest="${MISE_PROJECT_ROOT}/${out}"
   show=$(_rs_path "$dest")
   # A mise file of an environment that this repo does not use. Not recorded,
@@ -1341,22 +1344,48 @@ _rs_file() {
     fi
   fi
 
+  if ((rc != 0)); then
+    rm -f -- "$tmp"
+    [[ -e $dest ]] && _rs_log "kept existing $show"
+    return "$rc"
+  fi
+
   # A rendered template or a generated mise config goes through this repo's
   # formatter before the compare. Otherwise the format hook changes the
   # render, and the next sync writes it back: a loop. A plain file needs no
-  # step, because dprint formats its source in bootstrap. Without dprint, or
-  # if dprint fails, the raw render stays.
-  if ((rc == 0)) && [[ ($path == *.tmpl || $_RS_GENERATED == *" $tool/$path "*) && -n $_RS_DPRINT ]]; then
-    local fmt
-    fmt=$(mktemp "${destdir%/}/.repo-sync.XXXXXX") || fmt=''
-    if [[ -n $fmt ]]; then
-      _RS_TMPS+=("$fmt")
-      if (cd "$MISE_PROJECT_ROOT" && mise x -- dprint fmt --stdin "$out" < "$tmp" > "$fmt" 2> /dev/null); then
-        mv -f -- "$fmt" "$tmp"
-      else
-        rm -f -- "$fmt"
-      fi
-    fi
+  # step, because dprint formats its source in bootstrap. The file goes to the
+  # stage, at its path in this repo, and `_rs_format` formats the stage in one
+  # dprint call.
+  if [[ ($path == *.tmpl || $_RS_GENERATED == *" $tool/$path "*) && -n $_RS_STAGE ]]; then
+    mkdir -p -- "$(dirname -- "$_RS_STAGE/$out")" && cp -- "$tmp" "$_RS_STAGE/$out" || true
+  fi
+  _RS_PENDING+="$tool"$'\t'"$path"$'\t'"$tmp"$'\n'
+  _RS_DEFERRED=1
+}
+
+# Format the files of the stage in one dprint call. The stage has a copy of
+# the dprint config of this repo at the same path, so the plugins and the
+# excludes select the same files as in this repo. Without dprint, or if
+# dprint fails for a file, the raw render of that file stays.
+_rs_format() {
+  [[ -n $_RS_STAGE ]] || return 0
+  local files name
+  files=$(cd "$_RS_STAGE" && find . -type f | sed 's#^\./##' | grep -vxE '\.?dprint\.jsonc?|\.config/dprint\.jsonc?') || files=''
+  [[ -n $files ]] || return 0
+  (cd "$MISE_PROJECT_ROOT" && mise x -- bash -c 'cd "$1" && dprint fmt --no-gitignore --allow-no-files --stdin-files' _ "$_RS_STAGE" <<< "$files") > /dev/null 2>&1 || true
+}
+
+# Sync the file <path> of <tool>, second step: take the formatted copy from the
+# stage, apply the overrides, and compare and write the temp file <tmp> of
+# `_rs_file`.
+_rs_file_finish() {
+  local dir=$1 tool=$2 path=$3 dry_run=$4 tmp=$5
+  local src="${dir}/tools/${tool}/${path}" out=${path%.tmpl}
+  local dest show rc=0
+  dest="${MISE_PROJECT_ROOT}/${out}"
+  show=$(_rs_path "$dest")
+  if [[ -n $_RS_STAGE && -f $_RS_STAGE/$out ]]; then
+    cp -- "$_RS_STAGE/$out" "$tmp" || true
   fi
 
   # [overrides.gitignore] and [overrides.graphifyignore]: comment out each
@@ -1601,25 +1630,53 @@ repo_sync() {
     }
   fi
 
-  local path ok=0 total=0
+  # The stage of `_rs_format`, with a copy of the dprint config of this repo.
+  _RS_STAGE='' _RS_PENDING=''
+  local name
+  if [[ -n $_RS_DPRINT ]] && _RS_STAGE=$(mktemp -d "${TMPDIR:-/tmp}/repo-sync-stage.XXXXXX"); then
+    _RS_TMPS+=("$_RS_STAGE")
+    for name in dprint.json dprint.jsonc .dprint.json .dprint.jsonc .config/dprint.json .config/dprint.jsonc; do
+      if [[ -f $MISE_PROJECT_ROOT/$name ]]; then
+        mkdir -p -- "$(dirname -- "$_RS_STAGE/$name")" && cp -- "$MISE_PROJECT_ROOT/$name" "$_RS_STAGE/$name"
+      fi
+    done
+  else
+    _RS_STAGE=''
+  fi
+
+  local path ok=0 total=0 tmp
   for tool in $_RS_TOOLS; do
     while IFS= read -r path; do
       [[ -n $path ]] || continue
       ((total += 1))
-      rc=0
+      rc=0 _RS_DEFERRED=''
       if [[ $_RS_SKIP == *" $tool/$path "* ]]; then
         _rs_remove "$tool" "$path" "$dry_run" || rc=$?
       else
         _rs_file "$dir" "$tool" "$path" "$dry_run" "$ctx" || rc=$?
       fi
-      if ((rc == 0)); then
-        ((ok += 1))
-      else
+      if ((rc != 0)); then
         failed+=("$tool/$path")
         ((rc > worst)) && worst=$rc
+      elif [[ -z $_RS_DEFERRED ]]; then
+        ((ok += 1))
       fi
     done < <(cd "$dir/tools/$tool" && find . -type f ! -name tools.toml | sed 's#^\./##' | sort)
   done
+
+  _rs_format
+  while IFS=$'\t' read -r tool path tmp; do
+    [[ -n $tool ]] || continue
+    rc=0
+    _rs_file_finish "$dir" "$tool" "$path" "$dry_run" "$tmp" || rc=$?
+    if ((rc == 0)); then
+      ((ok += 1))
+    else
+      failed+=("$tool/$path")
+      ((rc > worst)) && worst=$rc
+    fi
+  done <<< "$_RS_PENDING"
+  [[ -n $_RS_STAGE ]] && rm -rf -- "$_RS_STAGE"
   rm -rf -- "$dir"
 
   rc=0
