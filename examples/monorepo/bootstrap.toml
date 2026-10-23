@@ -16,6 +16,8 @@ repo_url = "https://github.com/example/shop-platform"
 # The gitignored files to copy into a new worktree.
 worktree_files = [ ".config/mise.local.toml", ".env" ]
 
+[tools.claude]
+
 [tools.node]
 env = [ "dev", "ci" ]
 
@@ -37,6 +39,18 @@ node.compile = true
 add = [ "/coverage/", "!.env.example" ]
 remove = [ "*.log" ]
 
+# Change the shared .graphifyignore of the claude tool, with the same rules.
+# graphify also reads .gitignore, so add only committed files that are not
+# code.
+[overrides.graphifyignore]
+add = [ "fixtures/" ]
+
+# The Claude Code plugins that setup:ai installs. The key is the plugin, and
+# the value is the source of its marketplace. Each table can be empty.
+[claude.plugins.user]
+"taste-skill@taste-skill" = "Leonxlnx/taste-skill"
+
+[claude.plugins.project]
 # A feature branch merges into develop. main never merges into develop.
 [branch.develop]
 merge_model = "direct"
