@@ -41,6 +41,11 @@ fi
 
 mise run setup:precommit ${UPGRADE}
 
+# Only in the root repository, with the vscode tool.
+if has_own_task setup:vscode; then
+  mise run setup:vscode
+fi
+
 # Only in the root repository. It updates the plugins, so only on request.
 if [[ -n "${UPGRADE}" ]] && has_own_task setup:ai; then
   mise run setup:ai
