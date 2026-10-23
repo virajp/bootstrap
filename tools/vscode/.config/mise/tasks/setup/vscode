@@ -93,7 +93,9 @@ wanted="$(read_recommendations)"
 # for `--list-extensions`, still exits 0 — so neither the status nor stdout says
 # anything, and that one line is the whole signal. Creating a profile is a
 # windowed action: opening the folder under it creates the profile and records
-# the association, after which the folder always reopens under it.
+# the association, after which the folder always reopens under it. So a missing
+# profile is created by opening the repo root under it, and the task waits for
+# the editor to report it before it installs the list.
 #
 # The two streams are kept apart rather than merged: stdout is the id list, and
 # stderr carries both the sentinel and whatever runtime deprecation notices the
@@ -102,22 +104,36 @@ wanted="$(read_recommendations)"
 probe_err="$(mktemp)"
 # shellcheck disable=SC2064
 trap "rm -f '${probe_err}'" EXIT
-before="$("${EDITOR_CLI}" --profile "${REPO_NAME}" --list-extensions 2> "${probe_err}" || true)"
 
-if grep -qF "Profile '${REPO_NAME}' not found." "${probe_err}"; then
-  print_warn "The '${REPO_NAME}' editor profile does not exist yet."
-  print_yellow "Create it once, from this directory:"
-  print_yellow ""
-  print_yellow "  ${EDITOR_CLI} --profile \"${REPO_NAME}\" ."
-  print_yellow ""
-  print_yellow "The editor creates the profile and remembers it for this folder, so"
-  print_yellow "every later open uses it. In the profile dialog, choose to SHARE"
-  print_yellow "settings and keybindings with the Default profile — this repo's own"
-  print_yellow "settings live in .vscode/settings.json, and a profile that copies the"
-  print_yellow "defaults instead of sharing them stops tracking your global ones."
-  print_yellow ""
-  print_yellow "Then run this again to install the recommended extensions."
-  exit 0
+# Set `before` to the extensions of the profile. 1 when the profile is missing.
+probe_profile() {
+  before="$("${EDITOR_CLI}" --profile "${REPO_NAME}" --list-extensions 2> "${probe_err}" || true)"
+  ! grep -qF "Profile '${REPO_NAME}' not found." "${probe_err}"
+}
+
+if ! probe_profile; then
+  print_subheader "Creating the '${REPO_NAME}' editor profile ..."
+  print_info "Opening ${MISE_PROJECT_ROOT} in a new window with the profile."
+  if ! "${EDITOR_CLI}" --profile "${REPO_NAME}" "${MISE_PROJECT_ROOT}" > /dev/null 2>&1; then
+    print_warn "The editor did not open - skipping the editor profile."
+    exit 0
+  fi
+  # The editor creates the profile after the CLI returns.
+  waited=0
+  while ! probe_profile; do
+    if ((waited >= 30)); then
+      print_warn "The '${REPO_NAME}' editor profile does not exist after 30 seconds."
+      print_yellow "Run this task again when the editor window is open."
+      exit 0
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  print_success "Profile '${REPO_NAME}' created."
+  # A new profile copies nothing from the Default profile. This repo's own
+  # settings live in .vscode/settings.json; the user ones stay in Default.
+  print_yellow "To use your user settings and keybindings in it, turn on"
+  print_yellow "'Use Default profile' for them in the profile editor of the window."
 fi
 
 installed="$(printf '%s\n' "${before}" | sed '/^[[:space:]]*$/d' | sort -u)"
