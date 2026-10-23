@@ -1,5 +1,5 @@
 # The bootstrap commit of the last sync. repo-sync writes it.
-bootstrap_commit = "fd8d8874dfa5605394fd10eea1b05362d2e54bee"
+bootstrap_commit = "b5740934df0adfa472b80440726b856d2795c0c5"
 environments = [ "dev" ]
 repo_name = "bootstrap"
 repo_url = "https://github.com/virajp/bootstrap"
