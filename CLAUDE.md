@@ -118,6 +118,10 @@ Some files refer to files that are not in `tools/`, for example
   `[overrides.graphifyignore]` to it with the same rules.
   `[overrides.graphifyignore]` without the `claude` tool stops the sync with
   code 2.
+- The sync does not read `[claude.plugins.user]` and
+  `[claude.plugins.project]` of the values file. `setup:ai` of the `claude`
+  tool reads them when it runs, as the merge tasks read `[branch.*]`. It
+  installs each plugin that is missing at that scope.
 - The `pre-commit` tool renders `.config/pre-commit-config.yaml` from the
   `[[precommit]]` tables of the selected tools. Then it adds the entries of the
   consumer file `.config/repo-sync/pre-commit.yaml`.
@@ -293,7 +297,10 @@ that it finds, and removes the others. It stops if neither branch exists.
     when the tool is in dev.
   - Any other section stops the sync for that tool.
   - `[mise_env.<env>.<section>]` adds content to one environment only. `mise`
-    uses it for `os = "macos"` in `dev` and `os = "linux"` in `ci`.
+    uses it for `os = "macos"` in `dev` and `os = "linux"` in `ci`. A mise
+    tool in `[mise_env.<env>.tools]` is only in that environment, and its tool
+    gets no `envs` check for it. For example, `kotlin-lsp` of `kotlin` is in
+    `[mise_env.dev.tools]`, so `kotlin` can be in `ci`.
   - The mise `depends` of an entry adds the tool that defines that mise tool.
     Do not repeat it in the `depends` key. Two tools must not define the same
     mise tool.

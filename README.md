@@ -235,6 +235,10 @@ label = "Backend"
 [branch.main]
 merge_from = [ "develop" ]
 merge_model = "pr"
+
+# The Claude Code plugins that setup:ai of the claude tool installs.
+[claude.plugins.user]
+"taste-skill@taste-skill" = "Leonxlnx/taste-skill"
 ```
 
 ## `.gitignore`

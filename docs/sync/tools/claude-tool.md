@@ -1,6 +1,7 @@
 # The `claude` tool
 
-The AI tools: graphify, mempalace, `setup:ai` and `code:graph`.
+The AI tools: graphify and its `.graphifyignore`, mempalace, `setup:ai` (the
+Claude Code plugin installs and updates) and `code:graph`.
 
 | Property     | Value |
 | ------------ | ----- |
