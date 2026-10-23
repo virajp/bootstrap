@@ -42,7 +42,7 @@ A submodule in its root checkout also gets these tools from the root.
 | Task         | Use                                                                                                                                                                                                                                                                                           |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `setup:ai`   | Install the missing plugins, update the marketplaces and the plugins of the repository, then remove the project-scope plugins that nothing references. It skips if `claude` is not installed, and in a git submodule. A failed step fails the task, and the other steps still run. See below. |
-| `code:graph` | Refresh the graphify graph. Only the post-commit hook runs it. See below.                                                                                                                                                                                                                     |
+| `code:graph` | Refresh the graphify graph. Only the post-commit and post-merge hooks run it. See below.                                                                                                                                                                                                      |
 
 `code:graph` runs `graphify update` in the background, with its log in
 `~/.cache/graphify-rebuild.log`, so the commit does not wait. It exits 0 in
@@ -52,7 +52,16 @@ these cases:
 - `GRAPHIFY_SKIP_HOOK=1` is set.
 - The checkout is a linked worktree.
 - A rebase, merge or cherry-pick is in progress.
-- The commit changed only `graphify-out/`.
+- The commit changed only `graphify-out/`. For a merge or a pull, the task
+  compares `ORIG_HEAD` with `HEAD`, so it sees each commit that came in.
+- A refresh is still running. Then the task leaves the mark
+  `.git/graphify-refresh.again`, and the running refresh runs one more time
+  when it ends.
+
+The lock folder `.git/graphify-refresh.lock` holds the pid of the running
+refresh. Thus only one `graphify update` runs at a time, also when
+`code:merge` runs a pull and a merge. A run removes the lock of a refresh
+whose process is dead.
 
 The argument `--force` rebuilds the graph, also when the commit changed only
 `graphify-out/`.
@@ -81,8 +90,8 @@ graphify reads `.gitignore` and `.graphifyignore`. The shared
 
 ## Pre-commit hooks
 
-- The local hook `graphify-refresh` in the post-commit stage, which calls
-  `code:graph`.
+- The local hook `graphify-refresh` in the post-commit and post-merge stages,
+  which calls `code:graph`.
 
 ## Files the repository supplies
 
@@ -117,6 +126,8 @@ The sync does not read these tables. `setup:ai` reads them when it runs.
 
 ## Migration
 
+- Run `mise run setup:precommit` after the sync. It installs the new
+  `post-merge` hook type of `graphify-refresh`.
 - Remove `pipx:graphifyy` and `pipx:mempalace` from the repository-owned mise
   files.
 - Delete an old `conf.d/ai/` (M7 of `migrate.md`).

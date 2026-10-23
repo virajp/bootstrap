@@ -11,12 +11,14 @@
 # 3.2.0 is the first version with the `pre-commit` and `pre-push` stage names.
 minimum_pre_commit_version: "3.2.0"
 
-# `commit-msg` is for the conventional-commits hook, `post-commit` for
-# graphify-refresh. A hook type that is not installed never runs.
+# `commit-msg` is for the conventional-commits hook, `post-commit` and
+# `post-merge` for graphify-refresh. A hook type that is not installed never
+# runs.
 default_install_hook_types:
   - pre-commit
   - commit-msg
   - post-commit
+  - post-merge
 
 default_stages: [ pre-commit ]
 
