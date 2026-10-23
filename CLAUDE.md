@@ -17,10 +17,6 @@ are in `tools/packs.toml`, outside each tool folder, so the sync never copies
 it. The files at the root (`README.md`, `CLAUDE.md`) and in `docs/` are for
 this repository only.
 
-`docs/prompts/` holds temporary prompts for a session, for example a handoff
-from another repository. Never commit them. Delete a prompt when its work is
-on `main`.
-
 `examples/<example>/` holds sample values files (`bootstrap.toml`), one
 folder for each repository shape: `polyrepo`, `polyrepo-main`,
 `polyrepo-develop`, `monorepo`, `repo-submodules` and `repo-siblings`. The sync
