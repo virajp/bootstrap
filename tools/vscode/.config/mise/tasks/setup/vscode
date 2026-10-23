@@ -92,10 +92,12 @@ wanted="$(read_recommendations)"
 # missing profile the CLI writes `Profile '<name>' not found.` to STDERR and,
 # for `--list-extensions`, still exits 0 — so neither the status nor stdout says
 # anything, and that one line is the whole signal. Creating a profile is a
-# windowed action: opening the folder under it creates the profile and records
-# the association, after which the folder always reopens under it. So a missing
-# profile is created by opening the repo root under it, and the task waits for
-# the editor to report it before it installs the list.
+# windowed action: a window opened under it creates the profile. Opening the
+# folder under it also records the association, but only when no window has
+# the folder open: else the editor only focuses that window, and creates
+# nothing. So a missing profile is created by a new empty window under it,
+# and the task waits for the editor to report it before it installs the list.
+# The `code` alias of this tool then opens the folder under the profile.
 #
 # The two streams are kept apart rather than merged: stdout is the id list, and
 # stderr carries both the sentinel and whatever runtime deprecation notices the
@@ -113,8 +115,8 @@ probe_profile() {
 
 if ! probe_profile; then
   print_subheader "Creating the '${REPO_NAME}' editor profile ..."
-  print_info "Opening ${MISE_PROJECT_ROOT} in a new window with the profile."
-  if ! "${EDITOR_CLI}" --profile "${REPO_NAME}" "${MISE_PROJECT_ROOT}" > /dev/null 2>&1; then
+  print_info "Opening a new empty window with the profile."
+  if ! "${EDITOR_CLI}" --new-window --profile "${REPO_NAME}" > /dev/null 2>&1; then
     print_warn "The editor did not open - skipping the editor profile."
     exit 0
   fi
@@ -132,8 +134,10 @@ if ! probe_profile; then
   print_success "Profile '${REPO_NAME}' created."
   # A new profile copies nothing from the Default profile. This repo's own
   # settings live in .vscode/settings.json; the user ones stay in Default.
-  print_yellow "To use your user settings and keybindings in it, turn on"
-  print_yellow "'Use Default profile' for them in the profile editor of the window."
+  print_yellow "Close the empty window. Then close each window of this folder, and"
+  print_yellow "run \`code\` here: the folder then opens under the profile, always."
+  print_yellow "To use your user settings and keybindings in the profile, turn on"
+  print_yellow "'Use Default profile' for them in its profile editor."
 fi
 
 installed="$(printf '%s\n' "${before}" | sed '/^[[:space:]]*$/d' | sort -u)"
