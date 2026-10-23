@@ -36,7 +36,8 @@
 #   default_envs = ["dev"]      the environments of the tool when no `env` names
 #                               them
 #   depends    = ["python"]     tools added with this one
-#   root_only  = false          true: refused in a git submodule
+#   root_only  = false          true: refused in a git submodule; a pack
+#                               tool is skipped there
 #   extensions = ["a.b"]        VS Code extensions, for `.vscode/extensions.json`
 #   seed       = ["bunfig.toml"] files written only when missing; the repo owns
 #                               them after that
@@ -484,6 +485,19 @@ _rs_resolve() {
   done <<< "$sel"
   _RS_SEL=$(_rs_selected "$dir" "$sel") || return
   in_submodule=$(git -C "$MISE_PROJECT_ROOT" rev-parse --show-superproject-working-tree 2> /dev/null) || in_submodule=''
+  # In a submodule, a root_only tool of a pack is skipped: the pack base adds
+  # vscode to each repository. A [tools.*] entry of it still stops the sync.
+  if [[ -n $in_submodule ]]; then
+    local kept='' src
+    while read -r name envs src; do
+      [[ -n $name ]] || continue
+      if [[ $src != tools.* ]] && _rs_manifest "$dir" "$name" 2> /dev/null | grep -qx 'root_only true'; then
+        continue
+      fi
+      kept+="$name $envs $src"$'\n'
+    done <<< "$_RS_SEL"
+    _RS_SEL=${kept%$'\n'}
+  fi
 
   _RS_TOOLS=' ' _RS_SEEDS=' ' _RS_SEED_REQUIRES=' ' _RS_EXTENSIONS='' _RS_MISE_ENTRIES=''
   _RS_MISE_REQUIRES=' '
