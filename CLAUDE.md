@@ -18,16 +18,22 @@ it. The files at the root (`README.md`, `CLAUDE.md`) and in `docs/` are for
 this repository only.
 
 `examples/<example>/` holds sample values files (`bootstrap.toml`), one
-folder for each repository shape. The sync never copies or generates them.
+folder for each repository shape: `polyrepo`, `polyrepo-main`,
+`polyrepo-develop`, `monorepo`, `repo-submodules` and `repo-siblings`. The sync
+never copies or generates them. `docs/sync/index.md` and `docs/sync/vwf.md`
+use them as the model of a values file, so a change to the contract of the
+values file changes the examples in the same commit.
 
 `docs/sync/` tells an AI agent how to adopt `bootstrap` in a consumer
-repository, and how to add and remove tools after the adoption. After the
-adoption, `repo-sync` keeps the consumer in sync.
+repository, how to bring it up to date, and how to add and remove tools after
+the adoption. After the adoption, `repo-sync` keeps the consumer in sync.
 
-- `docs/sync/index.md`: the general steps of an adoption.
+- `docs/sync/index.md`: the adoption prompt. It does the first adoption, and
+  it brings an adopted repository up to date with `bootstrap_commit`.
 - `docs/sync/migrate.md`: the items for a repository with older copies.
 - `docs/sync/vwf.md`: the entry point for the vwf and stackgen plugins. It
-  accepts `add tools` and `remove tools` instructions. A plugin names this path
+  accepts the `adopt`, `add tools`, `remove tools`, `add plugins` and
+  `remove plugins` instructions. A plugin names this path
   and no other bootstrap path.
 - `docs/sync/tools/<tool>.md`: one file for each folder in `tools/`, with the
   same sections in each file. The file of the `claude` tool is
@@ -105,6 +111,12 @@ Some files refer to files that are not in `tools/`, for example
   files (see "mise config"), and a synced file at a path where the sync needs
   a folder. `docs/sync/migrate.md` tells consumers what to
   delete.
+- After a sync without a failure, `repo_sync` sets the top-level
+  `bootstrap_commit` of the values file to the full commit of its clone. It
+  replaces only that line, or adds it after the header comments. This is the
+  only write to the values file. An agent compares it with `main` to find
+  what changed since the last sync. A dry run prints
+  `would set bootstrap_commit <commit>`.
 - The sync uses the pushed `main` branch. Local changes have no effect on
   consumers until you push them.
 - To test a change before you push it, set `REPO_SYNC_URL` to a local clone

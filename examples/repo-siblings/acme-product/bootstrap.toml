@@ -1,0 +1,29 @@
+# Example: the base repository of a product with two sibling repositories,
+# ../acme-api and ../acme-app. They are separate checkouts next to it, not
+# submodules. See the folders of the siblings for their own values files.
+
+# The bootstrap commit of the last sync. repo-sync writes it.
+bootstrap_commit = "0123456789abcdef0123456789abcdef01234567"
+# The commit scopes of git-conventional-commits. A sibling is not a member, so
+# the default member list is empty.
+commit_scopes = [ "blueprint", "docs" ]
+# The mise environments: dev (necessary) and ci.
+environments = [ "dev" ]
+# The product name, for the fnox keychain service. Each sibling has the same
+# value.
+product_name = "acme"
+repo_name = "acme-product"
+# The web URL of the repository, for the github tool.
+repo_url = "https://github.com/example/acme-product"
+# The gitignored files to copy into a new worktree.
+worktree_files = [ ".config/mise.local.toml", "docs/memory/handoff" ]
+
+[tools.claude]
+
+[tools.github]
+# Only main exists. A feature branch merges into main through a pull request.
+[branch.main]
+merge_model = "pr"
+
+# No [member.*] table: a member table names a folder below the root, and a
+# sibling is not below the root.

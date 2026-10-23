@@ -8,26 +8,29 @@ copies the files of those tools.
 
 A repository uses this repository in two ways, in this sequence:
 
-1. **Adoption, one time, by an AI agent.** [`docs/sync/`](docs/sync/index.md)
+1. **Adoption and update, by an AI agent.** [`docs/sync/`](docs/sync/index.md)
    tells the agent how to apply the rules of this repository to a consumer
-   repository. The agent makes sure that each rule is relevant to that
+   repository, the first time and each time that the repository is not up to
+   date. The agent makes sure that each rule is relevant to that
    repository. `docs/sync/index.md` has the general steps, `migrate.md` has
    the items for a repository with older copies, one file for each tool in
    `docs/sync/tools/` tells when the tool is relevant and how to use it, and
    one file for each pack is in `docs/sync/packs/`. `docs/sync/vwf.md` is
-   the entry point for the vwf and stackgen plugins: they give it
-   `add tools` and `remove tools` instructions after the adoption.
+   the entry point for the vwf and stackgen plugins: they give it the
+   `adopt`, `add tools`, `remove tools`, `add plugins` and `remove plugins`
+   instructions.
 2. **Sync, each time after that, by `repo-sync`.** The adoption installs the
    `setup:configs` task, which keeps the shared files equal to this
    repository.
 
-Copy this prompt into an AI session in the consumer repository:
+Copy this prompt into an AI session in the consumer repository. It does the
+first adoption, and it also brings an adopted repository up to date:
 
 ```text
-Make this repository and each of its git submodules get their shared files
-from bootstrap. Make a shallow clone of
-git@github.com:virajp/bootstrap.git into a temporary directory. Read
-docs/sync/index.md in the clone, and do its steps in sequence. Read the other
+Make this repository, each of its git submodules and each of its sibling
+repositories get their shared files from bootstrap. Clone
+git@github.com:virajp/bootstrap.git with --filter=blob:none into a temporary
+directory. Read docs/sync/index.md in the clone, and do its steps in sequence. Read the other
 files of docs/sync/ when index.md tells you to. Apply only what is relevant to
 this repository. Ask me before each choice that docs/sync/ does not decide.
 ```
@@ -137,6 +140,10 @@ has that file:
 5. It finds the branch model from the branches `main` and `develop`, local or
    on origin. It stops if neither branch exists.
 6. It copies each file of each tool.
+7. After a sync without a failure, it sets `bootstrap_commit` of the values
+   file to the commit of its clone. This is its only write to the values
+   file. An agent compares the value with `main` to find what changed since
+   the last sync.
 
 These rules apply to each file:
 

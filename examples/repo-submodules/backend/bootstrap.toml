@@ -1,6 +1,8 @@
 # Example: the submodule backend. It is a node monorepo with the branches main
 # and develop.
 
+# The bootstrap commit of the last sync. repo-sync writes it.
+bootstrap_commit = "0123456789abcdef0123456789abcdef01234567"
 # The commit scopes of git-conventional-commits. The default is the member
 # list.
 commit_scopes = [ "common", "deps", "service", "worker" ]

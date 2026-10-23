@@ -175,6 +175,8 @@ late_tool_folder() {
 if run_case "no [tools], environments dev" 0 'environments = [ "dev" ]'; then
   check_base_files
 fi
+run_case "bootstrap_commit: a dry run names the commit of the clone" 0 'environments = [ "dev" ]' '' \
+  "would set bootstrap_commit $(git -C "$clone" rev-parse HEAD)" || true
 run_case "[tools.node] env dev, ci" 0 'environments = [ "dev", "ci" ]
 [tools.node]
 env = [ "dev", "ci" ]' || true
