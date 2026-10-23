@@ -1,16 +1,28 @@
-# Adopt bootstrap in a repository
+# Adopt bootstrap in a repository, or bring it up to date
 
 These instructions are for an AI agent that works in a consumer repository.
 Do the steps in sequence to make the repository get its shared files from
 `bootstrap` (`git@github.com:virajp/bootstrap.git`). Read `README.md` in
 `bootstrap` for the sync contract.
 
+This file is a prompt. A user or an agent of a consumer repository can use it
+directly, for example: "Read `docs/sync/index.md` of bootstrap and do its
+steps in this repository." The `bootstrap: adopt` instruction of
+[`vwf.md`](vwf.md) also sends an agent here.
+
+Use this file for the first adoption, and also later, to bring a repository
+up to date with `bootstrap`. For a repository that already has
+`.config/bootstrap.toml`, start with
+"A repository that already has `.config/bootstrap.toml`".
+
 ## Two ways to use bootstrap
 
 A repository uses `bootstrap` in two ways, in this sequence:
 
-1. **Adoption, one time, by an AI agent.** The agent reads this folder and
-   applies the rules of `bootstrap` to the repository. The agent makes sure
+1. **Adoption and update, by an AI agent.** The agent reads this folder and
+   applies the rules of `bootstrap` to the repository. It does this one time
+   for the adoption, and again when the repository is not up to date. The agent
+   makes sure
    that each rule is relevant to the repository: it selects only the tools
    that the repository needs, it keeps the repository-owned content, and it
    asks the user about each difference.
@@ -23,13 +35,13 @@ then keeps the repository equal to `bootstrap`, without an agent.
 
 ## Files in this folder
 
-| File              | Use                                                                                            |
-| ----------------- | ---------------------------------------------------------------------------------------------- |
-| `index.md`        | This file: the general steps of an adoption.                                                   |
-| `migrate.md`      | The items for a repository that has older copies, or the old name.                             |
-| `tools/<tool>.md` | One file for each folder in `tools/`: when the tool is relevant, and usage.                    |
-| `packs/<pack>.md` | One file for each pack of `tools/packs.toml`: the tools that it adds, and its questions.       |
-| `vwf.md`          | The entry point for the vwf and stackgen plugins: `add tools` and `remove tools` instructions. |
+| File              | Use                                                                                                                                          |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.md`        | This file: the general steps of an adoption.                                                                                                 |
+| `migrate.md`      | The items for a repository that has older copies, or the old name.                                                                           |
+| `tools/<tool>.md` | One file for each folder in `tools/`: when the tool is relevant, and usage.                                                                  |
+| `packs/<pack>.md` | One file for each pack of `tools/packs.toml`: the tools that it adds, and its questions.                                                     |
+| `vwf.md`          | The entry point for the vwf and stackgen plugins: the `adopt`, `add tools`, `remove tools`, `add plugins` and `remove plugins` instructions. |
 
 The tool files in `tools/` are `_security_base.md`, `android.md`, `bun.md`,
 `claude-tool.md`, `cloudflare.md`, `docker.md`, `doppler.md`, `dprint.md`,
@@ -45,8 +57,11 @@ The pack files in `packs/` are `base.md` and `security.md`.
 
 ## Rules
 
+- Ask each question of this file. Do not skip a question: only the user can
+  skip one. Before you ask, find each value that you can, and show it as the
+  default. A value of a `bootstrap: adopt` instruction is a default too.
 - Ask the user before each choice that this file does not decide. Do not
-  assume a tool, a value, or a path.
+  use a tool, a value, or a path that the user did not see.
 - Apply only what is relevant to the repository. Before you select a tool,
   read its tool file. Examine the repository for the signs in "When the tool
   is relevant", then show the user the result.
@@ -101,17 +116,41 @@ If the repository has no commit, do these steps first:
    .claude/worktrees/
    ```
 
-2. Commit it on `main`. This is the first commit.
+2. Ask the user whether to commit it on `main`. This is the first commit.
+   Without a commit, no branch exists, and the sync stops (step 4).
 
 Then do the other steps. A worktree in `.worktrees/` is now ignored, and the
 branch `main` exists. The first sync replaces `.gitignore` with the shared one,
 which has the same two lines.
 
-## Repositories with git submodules
+## A product with more than one repository
 
-Each git submodule is a separate repository. It needs its own values file and
-its own copy of the shared files. Do the steps in each repository of the
-tree, not only in the root repository.
+A product can have more than one repository. Each repository has its own
+values file and its own copy of the shared files. Do the steps in each
+repository of the product, not only in the base repository. Run the commands
+from the root of each repository: `MISE_PROJECT_ROOT` and all the paths in
+this file are relative to it.
+
+The tools and the values of each repository can be different. For each
+repository, show the answers of the repositories before it as the defaults.
+Each repository of a product has the same `product_name`.
+
+`examples/` of `bootstrap` has one folder for each shape. Use the folder of
+the shape of the product as the model of each values file:
+
+| Shape                                                  | Example                      |
+| ------------------------------------------------------ | ---------------------------- |
+| One repository, with `main` and `develop`              | `examples/polyrepo/`         |
+| One repository, with `main` only                       | `examples/polyrepo-main/`    |
+| One repository, with `develop` only                    | `examples/polyrepo-develop/` |
+| One repository, with member folders                    | `examples/monorepo/`         |
+| A base repository with git submodules                  | `examples/repo-submodules/`  |
+| A base repository with sibling repositories next to it | `examples/repo-siblings/`    |
+
+### Git submodules
+
+The base repository has the members as git submodules, for example
+`backend/` and `frontend/`.
 
 1. Get the list of submodules, nested submodules included.
 
@@ -119,33 +158,79 @@ tree, not only in the root repository.
    git submodule foreach --quiet --recursive 'echo $displaypath'
    ```
 
-2. Show the list to the user. Ask which submodules to include.
+2. Show the list to the user. Ask which submodules to include. If a
+   submodule is not initialized, ask whether to run
+   `git submodule update --init <path>`, or to skip it.
 3. Do the steps in each included submodule. Start with the deepest
-   submodules. Do the root repository last.
-4. In each submodule, run the commands from the root of that submodule.
-   `MISE_PROJECT_ROOT` and all the paths in this file are relative to it.
+   submodules. Do the base repository last.
+4. In the base repository, write a `[member.<name>]` table for each
+   submodule, with its `label`.
 
-The tools and the values of a submodule can be different from those of the
-root repository. Ask the user for each submodule. You can show the answers of
-a different repository as a default.
-
-A tool with `root_only = true` is for the root repository only. The sync
+A tool with `root_only = true` is for the base repository only. The sync
 refuses it in a submodule. When a submodule is in its root checkout, mise
 also loads the tools of the root. Thus a nested submodule still finds, for
 example, graphify.
 
-If a repository already has a `.config/bootstrap.toml`, tell the user. Then ask
-whether to do the steps again in that repository, or to go to the next
-repository.
+### Siblings
+
+The members are separate checkouts next to the base repository, for example
+`../acme-api` and `../acme-app`. They are not submodules. vwf names this
+shape `linkage: siblings`, and lists the paths in `members:` of
+`.config/vwf.yaml`.
+
+1. Get the paths of the members from `members:` of `.config/vwf.yaml`, or ask
+   the user for them. Show the list to the user. Ask which members to include.
+2. If a member checkout is missing, ask whether to clone it to its path, or
+   to skip it.
+3. Do the steps in each included member, then in the base repository.
+4. Do not write a `[member.<name>]` table for a sibling. A member table names
+   a folder below the root, and a sibling is not below the root.
+
+## A repository that already has `.config/bootstrap.toml`
+
+Do not stop. Find whether the repository is up to date, then do only the
+steps that are not. Show the result of each check to the user before you
+change a file.
+
+1. Make the clone of step 1, and get the newest commit of `bootstrap`:
+   `git -C "$tmp" rev-parse HEAD`.
+2. Read `bootstrap_commit` of the values file. `repo_sync` writes it after
+   each sync without a failure.
+3. Use `bootstrap_commit` to select the checks of step 4:
+
+   | `bootstrap_commit` | The checks of the kind `bootstrap`                                                                                              | The checks of the kind `repository` |
+   | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+   | The same as `main` | Skip them. The shared files are current.                                                                                        | Do them.                            |
+   | Older than `main`  | Do them only for the tools and the migrate items that changed: `git -C "$tmp" log --oneline <commit>..HEAD -- tools docs/sync`. | Do them.                            |
+   | Missing            | Do them all.                                                                                                                    | Do them.                            |
+
+   The checks of the kind `repository` are always necessary: the repository
+   can change also when `bootstrap` does not, for example with a new
+   `pyproject.toml` or a new submodule.
+4. Do the selected checks of this table. Each check that fails sends you to
+   a step:
+
+   | Check                                                                                                                      | Kind       | If it fails, do         |
+   | -------------------------------------------------------------------------------------------------------------------------- | ---------- | ----------------------- |
+   | The values file has no old format and no old key, for example `tools = [...]` or `.config/repo-sync/gitignore`.            | bootstrap  | Step 3 and `migrate.md` |
+   | No item of `migrate.md` applies, and no "Migration" item of a selected tool applies.                                       | bootstrap  | Step 5                  |
+   | `mise run setup:configs --dry-run` shows no change.                                                                        | bootstrap  | Step 6                  |
+   | The selected tools agree with the signs of their tool files: no tool is missing, and no tool is selected without a reason. | repository | Step 1                  |
+   | Each value that you can find agrees with the file, for example `repo_url` and `origin`, or the members and `.gitmodules`.  | repository | Step 3                  |
+   | Each file of "Files the repository supplies" of a selected tool exists.                                                    | repository | Step 7                  |
+
+5. If all the checks pass, tell the user that the repository is up to date,
+   and stop.
 
 ## Step 1: Select the tools and the packs
 
-Make a shallow clone of `bootstrap` into a temporary directory. Keep it
-until all repositories are complete.
+Clone `bootstrap` into a temporary directory. Keep it until all repositories
+are complete. `--filter=blob:none` gets all the commits, for the `git log` of
+an update, but only the files of the newest commit.
 
 ```bash
 tmp=$(mktemp -d)
-git clone --quiet --depth 1 git@github.com:virajp/bootstrap.git "$tmp"
+git clone --quiet --filter=blob:none git@github.com:virajp/bootstrap.git "$tmp"
 ```
 
 Read `"$tmp"/tools/*/tools.toml`, `"$tmp"/tools/packs.toml`,
@@ -222,7 +307,9 @@ that need it. Thus list the core language of the repository in `[tools.*]`. A
 TypeScript repository lists `[tools.node]`, which then goes to each
 environment of its `default_envs`.
 
-Ask which mise environments the repository needs. Offer only these:
+Ask which mise environments the repository needs. A CI config, for example
+`.github/workflows/` or `.gitlab-ci.yml`, is a sign of `ci`. Offer only
+these:
 
 | Environment | Use                                                          |
 | ----------- | ------------------------------------------------------------ |
@@ -231,8 +318,9 @@ Ask which mise environments the repository needs. Offer only these:
 
 The sync stops with code 2 if `dev` is missing, or for a different name.
 
-Ask whether the repository is on GitHub or on GitLab. Select `github` or
-`gitlab` for its forge. The `pr` merge model needs the CLI of the forge: `gh`
+Find the forge from the host of `origin`, `github.com` or `gitlab.com`. Show
+it, and ask whether the repository is on GitHub or on GitLab. Select `github`
+or `gitlab` for its forge. The `pr` merge model needs the CLI of the forge: `gh`
 or `glab`.
 
 ## Step 2: Copy the sync files by hand
@@ -241,6 +329,10 @@ or `glab`.
 `setup/configs/sync` loads `tools/base/.../repo-sync` from the clone, and the
 `tools/base/` folder no longer exists. An old copy of `repo-sync` reads paths,
 not tools. Thus neither can sync the new layout.
+
+For an update, skip this step when `.config/mise/tasks/setup/configs/_default`
+and `.config/mise/tasks/setup/configs/sync` exist and have the bootstrap
+header. Then `setup:configs` loads the sync code from its own clone.
 
 Copy these four files from the clone into the repository: `repo-sync` and the
 `setup:configs` tasks of the `repo-sync` tool, and `helpers` of the `mise`
@@ -256,15 +348,40 @@ cp "$sync/_scripts/repo-sync" "$lib/_scripts/helpers" .config/mise/tasks/_script
 cp "$sync/setup/configs/_default" "$sync/setup/configs/sync" .config/mise/tasks/setup/configs/
 ```
 
-Do not run the sync, `mise run setup:configs` without `--dry-run`, yourself.
-In step 6, ask the user to run it. You can run a dry run.
+Do not run the sync, `mise run setup:configs` without `--dry-run`, before
+step 6. You can run a dry run.
 
 ## Step 3: Write the values file
 
-Write `.config/bootstrap.toml`. Ask the user for each value.
+1. Find each value of the table below that you can. These are the usual
+   places:
+
+   | Value                    | Where to find it                                                                                                    |
+   | ------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+   | `repo_name`              | The last part of the path of `origin`, without `.git`. Else the folder name, but not the name of a worktree folder. |
+   | `repo_url`               | `origin`, as an `https://` URL.                                                                                     |
+   | `product_name`           | `product.name` of `.config/vwf.yaml`, or the value of the other repositories of the product.                        |
+   | `environments`           | Step 1.                                                                                                             |
+   | `[tools.*]`, `[packs.*]` | Step 1.                                                                                                             |
+   | `[branch.<branch>]`      | Step 4. Without a sign, `merge_model = "direct"`.                                                                   |
+   | `[member.<name>]`        | `.gitmodules`, and the member folders of a monorepo.                                                                |
+   | `commit_scopes`          | The scopes of the existing commits, `git log --format=%s`. Else the members.                                        |
+   | `worktree_files`         | Gitignored files that a new worktree needs, for example `.config/mise.local.toml`.                                  |
+   | `extensions`             | The `recommendations` of `.vscode/extensions.json` that no selected tool has.                                       |
+   | `[overrides.gitignore]`  | The lines of the existing `.gitignore` that the shared one does not have.                                           |
+   | `[claude.plugins.*]`     | The plugins of `.claude/settings.json` (project scope).                                                             |
+
+2. Use the example of `examples/` with the shape of the repository as the
+   model (see "A product with more than one repository").
+3. Show the user the full draft of `.config/bootstrap.toml`. Ask whether the
+   user wants to change a value.
+4. Write the file with the values of the user.
+
+The keys:
 
 | Key                                    | Used by                                                            | Values                                                                                                                                                                                                                                                                  |
 | -------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bootstrap_commit`                     | `repo_sync`, this file                                             | Do not write it. `repo_sync` writes the `bootstrap` commit of each sync without a failure. See "A repository that already has `.config/bootstrap.toml`".                                                                                                                |
 | `[tools.<folder>]`                     | `repo_sync`                                                        | One table for each tool from step 1. Do not write a tool of the `base` pack.                                                                                                                                                                                            |
 | `[tools.<folder>].env`                 | `repo_sync`                                                        | Optional. The environments of the tool, for example `["dev", "ci"]`. Without it, the tool gets its `default_envs`.                                                                                                                                                      |
 | `[packs.<name>]`                       | `repo_sync`                                                        | One table for each pack from step 1, without the prefix `p:`. Do not write `base`.                                                                                                                                                                                      |
@@ -422,10 +539,19 @@ later, run `setup:configs` again.
 
 ## Step 5: Migrate the existing files
 
-Do the items of [`migrate.md`](migrate.md) that apply, before the first sync.
-Also do the "Migration" section of each selected tool file, and of each tool
-of the `base` pack. If the repository has no mise config and no task files,
-skip this step.
+The items of [`migrate.md`](migrate.md) that apply come before the first
+sync. So do the "Migration" sections of each selected tool file, and of each
+tool of the `base` pack. If the repository has no mise config and no task
+files, skip this step.
+
+1. Find the items that apply. For an update, find only the items of the
+   checks of "A repository that already has `.config/bootstrap.toml`".
+2. Show the user the list, with the files that each item changes.
+3. Ask one question: do all the items? The user can name the items to leave
+   out.
+4. Do the items, without a question for each step. The warning of
+   `migrate.md` still applies: move the repository-owned content before you
+   delete a file.
 
 ## Step 6: Run the sync
 
@@ -435,9 +561,12 @@ skip this step.
 3. Examine the diff for each file that already exists in the repository.
 4. If the dry run replaces repository-owned content, stop. Move that content
    to a repository-owned place (see "Rules"), then do the dry run again.
-5. Ask the user to run `mise run setup:configs`. Wait until the user tells
-   you the result.
-6. Run `mise run init`. This makes all the task scripts executable.
+5. Ask the user whether to run `mise run setup:configs`. In the same
+   question, ask whether to commit the changes at the end (step 9), or to
+   leave them for review.
+6. If the user agrees, run `mise run setup:configs`. A sync without a failure
+   sets `bootstrap_commit` in the values file.
+7. Run `mise run init`. This makes all the task scripts executable.
 
 If `repo_sync` fails, read the exit code:
 
@@ -482,7 +611,8 @@ file in `conf.d` loads.
 
 ## Step 9: Commit
 
-Commit these files:
+If the user chose to leave the changes for review in step 6, show
+`git status --short` in each repository, and stop. Else commit these files:
 
 - The synced files and the seed files.
 - `.config/bootstrap.toml` and `.config/repo-sync/pre-commit.yaml`.

@@ -1,4 +1,4 @@
-# Change the tools of a repository for vwf and stackgen
+# Adopt bootstrap, and change the tools of a repository, for vwf and stackgen
 
 These instructions are for an AI agent that works in a consumer repository.
 This file is the one entry point of `bootstrap` for the vwf and stackgen
@@ -7,11 +7,13 @@ files of `docs/sync/`.
 
 ## How a plugin uses this file
 
-1. Make a shallow clone of `bootstrap` into a temporary directory:
+1. Clone `bootstrap` into a temporary directory. `--filter=blob:none` gets
+   all the commits, for the update check of `index.md`, but only the files of
+   the newest commit:
 
    ```bash
    tmp=$(mktemp -d)
-   git clone --quiet --depth 1 git@github.com:virajp/bootstrap.git "$tmp"
+   git clone --quiet --filter=blob:none git@github.com:virajp/bootstrap.git "$tmp"
    ```
 
 2. Read `"$tmp"/docs/sync/vwf.md`, this file.
@@ -27,8 +29,9 @@ In this file, "the clone" is that temporary directory. Each path in
 
 ## Instructions
 
-An instruction adds tools or removes tools, or it adds or removes Claude Code
-plugins. In a tools instruction, a name in the list is a tool folder of
+An instruction adopts `bootstrap` in a product, adds tools or removes tools,
+or adds or removes Claude Code plugins. In a tools instruction, a name in the
+list is a tool folder of
 `tools/`, or a pack of `tools/packs.toml`. It has this format:
 
 ```text
@@ -71,8 +74,58 @@ bootstrap: add user plugins [taste-skill@taste-skill=Leonxlnx/taste-skill]
 reason: stackgen pack design-tool/claude-code pinned
 ```
 
+An adopt instruction has one values block for each repository of the
+product. A `repository:` line before the block gives the path of the
+repository from the root of the base repository: `.` for the base, the path
+of a git submodule, or the path of a sibling, for example `../acme-api`. The
+block is the draft of the `.config/bootstrap.toml` of that repository, in the
+format of `examples/` of the clone. It also holds the tools, the packs and the
+plugins, as `[tools.*]`, `[packs.*]` and `[claude.plugins.*]` tables:
+
+````text
+bootstrap: adopt
+reason: <why>
+repository: <path>
+```toml
+<the draft values file of that repository>
+```
+````
+
+For example, for a base repository with one sibling:
+
+````text
+bootstrap: adopt
+reason: /vwf:init survey of acme
+repository: .
+```toml
+environments = [ "dev" ]
+product_name = "acme"
+repo_name = "acme-product"
+repo_url = "https://github.com/example/acme-product"
+
+[tools.claude]
+
+[branch.main]
+merge_model = "pr"
+```
+repository: ../acme-api
+```toml
+environments = [ "dev", "ci" ]
+product_name = "acme"
+repo_name = "acme-api"
+repo_url = "https://github.com/example/acme-api"
+
+[tools.python]
+
+[claude.plugins.user]
+"taste-skill@taste-skill" = "Leonxlnx/taste-skill"
+```
+````
+
 The instruction is the consent. The plugin asked the user before it sent the
-instruction. Do not ask the user again to apply it.
+instruction. Do not ask the user again to apply it. An adopt instruction is
+the consent to start the adoption: `index.md` still asks each of its
+questions, and the values of the blocks are the defaults.
 
 ## Before each instruction
 
@@ -81,7 +134,7 @@ file. If a check stops, change nothing, and give its message to the caller.
 
 | Condition                                                                                      | Message                                                                                                   |
 | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| The repository has no `.config/bootstrap.toml`.                                                | The repository did not adopt `bootstrap`. The adoption is `docs/sync/index.md`.                           |
+| A tools or a plugins instruction, and the repository has no `.config/bootstrap.toml`.          | The repository did not adopt `bootstrap`. Send `bootstrap: adopt` first.                                  |
 | A name is not a folder in `tools/` of the clone, and not a pack of `tools/packs.toml`.         | `<name>` is not a tool or a pack of `bootstrap`.                                                          |
 | `remove` names a tool that another selected tool needs, through `depends` or a mise `depends`. | `<tool>` cannot be removed alone: `<other tool>` needs it. Remove `<other tool>` in the same instruction. |
 | A name is `base`, or a tool or a pack that the `base` pack adds.                               | `<tool>` is in the `base` pack. The sync always adds it.                                                  |
@@ -95,6 +148,17 @@ in the clone:
 
 A tool that the same instruction also removes does not count.
 
+An adopt instruction has these checks too:
+
+| Condition                                                                                  | Message                                                                   |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| The base repository is not a git work tree.                                                | `bootstrap` needs a git repository. Run `git init` first.                 |
+| The instruction has no `repository:` line, or a block has no `repository:` line before it. | Each values block needs a `repository: <path>` line before it.            |
+| Two blocks have the same path.                                                             | `<path>` has more than one values block. Keep one.                        |
+| A path exists, but it is not the root of a git work tree.                                  | `<path>` is not the root of a git repository.                             |
+| A block is not valid TOML.                                                                 | The values block of `<path>` is not valid TOML: `<error>`.                |
+| A `[tools.*]` or `[packs.*]` name of a block is not a tool or a pack of the clone.         | `<name>` in the block of `<path>` is not a tool or a pack of `bootstrap`. |
+
 A plugins instruction has one more check:
 
 | Condition                                                    | Message                                                                  |
@@ -104,11 +168,33 @@ A plugins instruction has one more check:
 
 These cases are not a stop:
 
+- `adopt` for a repository that already has `.config/bootstrap.toml`. The
+  agent finds whether that repository is up to date, and does only the steps
+  that are not.
+- `adopt` with a path that does not exist. The agent asks whether to clone or
+  to initialize that repository, or to skip it.
+
 - `add` of a tool that already has a `[tools.<tool>]` entry (or a pack that
   already has a `[packs.<pack>]` entry) changes nothing for that name.
 - `remove` of a name that has no entry changes nothing for that name.
 - `add` of a plugin that the table of that scope already has replaces its
   source.
+
+## Adopt
+
+1. Read `docs/sync/index.md` in the clone, and do its steps in each
+   repository of the instruction. Use the clone of this file as the clone of
+   its step 1.
+2. Use the order of "A product with more than one repository" of `index.md`:
+   the deepest submodules first, the siblings, then the base repository.
+3. For each repository, use its values block as the defaults: of the tools
+   and the packs in step 1, and of the values in step 3. Ask each question of
+   `index.md`, also when the block has the answer. Only the user can skip a
+   question.
+4. For a repository that already has `.config/bootstrap.toml`, start with "A
+   repository that already has `.config/bootstrap.toml`" of `index.md`.
+5. A repository without a block gets no defaults. Ask the user whether to
+   include it.
 
 ## Add tools
 
@@ -186,6 +272,9 @@ tool needs cannot be removed alone.
 If `mise run setup:configs` fails, read its exit code in "Step 6: Run the
 sync" of `docs/sync/index.md`.
 
-1. Show the changed files to the caller, with `git status --short`.
+1. Show the changed files to the caller, with `git status --short`, in each
+   repository that changed.
 2. Show the `reason:` of each instruction to the caller.
-3. Do not commit. The caller commits.
+3. For a tools or a plugins instruction, do not commit. The caller commits.
+   For an adopt instruction, commit only if the user chose it in step 6 of
+   `index.md`.

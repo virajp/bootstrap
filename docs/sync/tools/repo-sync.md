@@ -48,6 +48,11 @@ files, `repo_sync` does these steps:
   and to `.gitignore`. Each overridden line gets an `# override:` comment.
   A bad `[overrides]` stops the sync with code 2. See "Overrides" in step 3
   of `index.md`.
+- After a sync without a failure, it sets the top-level `bootstrap_commit` of
+  the values file to the full commit of its clone. It replaces only that
+  line, or adds it after the header comments. A dry run prints
+  `would set bootstrap_commit <commit>`. See "A repository that already has
+  `.config/bootstrap.toml`" of `index.md`.
 
 These environment variables change the sync:
 
@@ -64,10 +69,10 @@ None.
 
 ## Files the repository supplies
 
-| File                                | Used by                                                    |
-| ----------------------------------- | ---------------------------------------------------------- |
-| `.config/bootstrap.toml`            | `repo_sync`. The values file of step 3 of `index.md`.      |
-| `.config/repo-sync/pre-commit.yaml` | `.config/pre-commit-config.yaml`. Optional: its own hooks. |
+| File                                | Used by                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `.config/bootstrap.toml`            | `repo_sync`. The values file of step 3 of `index.md`. `repo_sync` writes its `bootstrap_commit`. |
+| `.config/repo-sync/pre-commit.yaml` | `.config/pre-commit-config.yaml`. Optional: its own hooks.                                       |
 
 ## Adapt to the repository
 

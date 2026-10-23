@@ -1,6 +1,8 @@
 # Example: a polyrepo with the branches main and develop.
 # Feature branches merge into develop. Only develop merges into main.
 
+# The bootstrap commit of the last sync. repo-sync writes it.
+bootstrap_commit = "0123456789abcdef0123456789abcdef01234567"
 # The commit scopes of git-conventional-commits.
 commit_scopes = [ "api", "db" ]
 # The mise environments: dev (necessary) and ci.
