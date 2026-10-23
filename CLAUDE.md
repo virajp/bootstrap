@@ -17,6 +17,10 @@ are in `tools/packs.toml`, outside each tool folder, so the sync never copies
 it. The files at the root (`README.md`, `CLAUDE.md`) and in `docs/` are for
 this repository only.
 
+`docs/prompts/` holds temporary prompts for a session, for example a handoff
+from another repository. Never commit them. Delete a prompt when its work is
+on `main`.
+
 `examples/<example>/` holds sample values files (`bootstrap.toml`), one
 folder for each repository shape: `polyrepo`, `polyrepo-main`,
 `polyrepo-develop`, `monorepo`, `repo-submodules` and `repo-siblings`. The sync
@@ -83,7 +87,8 @@ becomes `.config/mise/tasks/code/merge/develop` in a consumer.
   example `_security_base`.
 - Two tools must not ship the same path.
 - A file that the consumer owns after the first write is a seed. List it in
-  `seed`.
+  `seed`. A config file that a project tunes, for example the rules of a
+  linter (`.config/swiftlint.yml`, `.config/detekt.yml`), is a seed.
 - A seed that applies only when the consumer has a specific file goes in the
   optional `[seed_requires]` table: `"<seed>" = "<file>"`.
 - Each file that is not a seed starts with this header, in the comment syntax
@@ -228,6 +233,31 @@ path as the task name, for example `code/merge/develop` is
 - Only the `init` task is in mise config (`[mise.tasks.init]` of
   `tools/mise/tools.toml`, always dev). It makes the task scripts executable.
   The task files load in every environment.
+- A gate of a language is a `code:lint:<gate>` or `code:format:<gate>` task
+  in the tool of that language, for example `code:lint:ruff` in `python`:
+  - Without its tool (`mise x -- which <tool>`) or without a file of its
+    language, the gate prints nothing and exits 0. The task files load in
+    every environment, also where the tool is not installed.
+  - With a list of files, it uses only the files of its language. Without
+    files, it lists them with `git ls-files --cached --others
+    --exclude-standard`, because most linters do not read `.gitignore`.
+  - Without `--fix`, a format task is the check of its tool. Do not add a
+    lint task that runs the same check, for example `code:lint:ktlint` next
+    to `code:format:ktlint`.
+  - Its config file is a seed.
+
+`bootstrap` does not ship these items on purpose. Do not add them again
+without a new reason:
+
+- `code:count`: it only counts the lines of code.
+- `.config/claude-status.json`: claude-status finds the name of the
+  repository from `origin`. The file is plain JSON, so it cannot have the
+  bootstrap header.
+- `.config/miserc.toml` with `env_conf_d`: the sync writes only folder
+  fragments `conf.d/<tool>/mise.<env>.toml`, and that setting does not apply
+  to them.
+- A `code:check` task group: a check of a language is a `code:lint:<name>`
+  task, for example `code:lint:uv` for `uv lock --check`.
 
 ## Task output: headers and subheaders
 
@@ -376,4 +406,9 @@ that it finds, and removes the others. It stops if neither branch exists.
    `docs/sync/packs/<pack>.md` too, and a new pack needs a new file there.
 3. Commit and push to `main`.
 4. In this repository and in each consumer repository, run
-   `mise run setup:configs`, then commit the result.
+   `mise run setup:configs`, then commit the result. The
+   `no-commit-to-branch` hook refuses a commit on `main`. Thus in this
+   repository, sync on a local `sync-<name>` branch, commit
+   `ops: sync bootstrap with <change>`, and land it with
+   `mise run code:merge sync-<name>`. The sync also updates
+   `bootstrap_commit`, which stays one merge behind `main`.
