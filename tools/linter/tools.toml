@@ -22,7 +22,7 @@ require_serial = true
 # The mise config, generated into .config/mise/conf.d/linter/mise.<env>.toml.
 
 # Linter
-[mise.tools."npm:@askviraj/linter"]
+[mise.tools."npm:@virajp.dev/linter"]
 depends = [ "node", "pnpm" ]
 envs = [ "dev", "ci" ]
 version = "latest"

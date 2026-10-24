@@ -26,10 +26,10 @@ VS Code extensions: `dbaeumer.vscode-eslint`, `foxundermoon.shell-format`.
 
 ## mise tools
 
-| mise tool              | Version  | Environments | Note                |
-| ---------------------- | -------- | ------------ | ------------------- |
-| `npm:@askviraj/linter` | `latest` | dev, ci      | Linter. Needs node. |
-| `shellcheck`           | `latest` | dev, ci      | Shell linter        |
+| mise tool                | Version  | Environments | Note                |
+| ------------------------ | -------- | ------------ | ------------------- |
+| `npm:@virajp.dev/linter` | `latest` | dev, ci      | Linter. Needs node. |
+| `shellcheck`             | `latest` | dev, ci      | Shell linter        |
 
 ## Tasks
 
@@ -53,5 +53,7 @@ None.
 
 ## Migration
 
-- Remove `npm:@askviraj/linter` and `shellcheck` from the repository-owned
-  mise files.
+- Remove `npm:@virajp.dev/linter`, the old `npm:@askviraj/linter` and
+  `shellcheck` from the repository-owned mise files.
+- Replace the old package name `@askviraj/linter` with `@virajp.dev/linter`
+  in `eslint.config.mjs` and `.config/linter.yaml` (M21 of `migrate.md`).

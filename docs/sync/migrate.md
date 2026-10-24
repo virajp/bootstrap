@@ -18,6 +18,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | `.config/repo-sync/gitignore`                                   | M18, before the next sync.                                                                                                                                                                                                                                          |
 | Files from the stackgen `tool-config` skill or packs            | M19, before the next sync.                                                                                                                                                                                                                                          |
 | `[tools.vscode]` in the values file, or no `vscode` in the root | M20.                                                                                                                                                                                                                                                                |
+| `@askviraj/linter` in a file of the repository                  | M21, before the next sync.                                                                                                                                                                                                                                          |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -462,3 +463,22 @@ git submodule.
 2. If a root repository did not select `vscode` before, do "Adapt to the
    repository" of [`tools/vscode.md`](tools/vscode.md) before the next sync.
    The sync replaces `.vscode/settings.json`.
+
+## M21: The linter package is now `@virajp.dev/linter`
+
+The `linter` tool installs `npm:@virajp.dev/linter`, not
+`npm:@askviraj/linter`. `setup:linter` writes the linter config files only
+when they are missing. Thus it does not change the old files.
+
+1. Find the old name:
+
+   ```bash
+   git grep -n '@askviraj/linter'
+   ```
+
+2. Ignore the mentions in the synced files. The sync owns them.
+3. In `eslint.config.mjs` and `.config/linter.yaml`, replace
+   `@askviraj/linter` with `@virajp.dev/linter`.
+4. Remove `npm:@askviraj/linter` from the repository-owned mise files.
+5. Run `mise run setup:configs`, then `mise run code:lint`. The lint must
+   complete without an error about a missing module.
