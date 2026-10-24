@@ -2,7 +2,7 @@
 # The next sync replaces it, and a manual change is lost.
 
 [tools]
-[tools."npm:@askviraj/linter"]
+[tools."npm:@virajp.dev/linter"]
 depends = [ "node", "pnpm" ]
 version = "latest"
 [tools.shellcheck]
