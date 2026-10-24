@@ -45,8 +45,8 @@
 #                               has the file, `"pnpm-workspace.yaml" = "package.json"`
 #   [[precommit]]               `repos:` entries of `.config/pre-commit-config.yaml`
 #   [mise.<section>]            the mise config of the tool, in mise syntax; an
-#                               entry of `[mise.tools]` can also have `envs`
-#                               and `requires` (see "mise config")
+#                               entry of `[mise.tools]` can also have `envs`,
+#                               `requires` and `files` (see "mise config")
 #   [mise_env.<env>.<section>]  optional: more mise config for one environment
 #
 # One call clones the default branch once (shallow, over SSH) and syncs every
@@ -89,6 +89,12 @@
 #   * The `requires` of an entry, a file name, keeps the entry only when this
 #     repo has a file of that name, at the root or down to 4 folders below
 #     it, and not ignored by git. The generated file has no `requires`.
+#   * The `files` of an entry with `requires` lists paths of its tool folder,
+#     for example the tasks of that mise tool. Without the `requires` file, the
+#     sync does not write them, and it removes a copy with the bootstrap
+#     header. A file that two entries list needs both files. `files` without
+#     `requires`, or a path that is not a file of the tool folder, stops the
+#     sync. The generated file has no `files`.
 #   * A shipped `conf.d/*/mise.<env>.toml` of an environment that is not
 #     selected is skipped.
 #   * Afterwards, a file in `conf.d/*/` with the bootstrap header that this
@@ -102,8 +108,8 @@
 #     `[overrides.mise_env.<env>]` is for that environment only, and it wins
 #     over `[overrides.mise]`. A table merges key by key; any other value
 #     replaces the default. A path that no selected tool has, and the `envs`,
-#     the `depends` and the `requires` of a mise tool, stop the sync. Each
-#     overridden line gets an `# override: <values file>` comment.
+#     the `depends`, the `requires` and the `files` of a mise tool, stop the
+#     sync. Each overridden line gets an `# override: <values file>` comment.
 #   * `conf.d/zz-repo/` is the repo's own folder, and it must load last: mise
 #     loads the folders in name order and a later one wins. A tool folder
 #     whose name sorts after `zz-repo` in byte order stops the sync.
@@ -384,13 +390,16 @@ _RS_MANIFEST_TEMPLATE='<% range $t.default_envs %>@P@default_env <% . %>
 <% end %><% if has $t "seed_requires" %><% range $k, $v := $t.seed_requires %>@P@seed_requires <% $k %> <% $v %>
 <% end %><% end %><% if and (has $t "mise") (has $t.mise "tools") %><% range $k, $v := $t.mise.tools %>@P@mise <% $k %><% if and (test.IsKind "map" $v) (has $v "envs") %> <% join $v.envs "," %><% else %> -<% end %><% if and (test.IsKind "map" $v) (has $v "depends") %><% if test.IsKind "string" $v.depends %> <% $v.depends %><% else %><% range $v.depends %> <% . %><% end %><% end %><% end %>
 <% if and (test.IsKind "map" $v) (has $v "requires") %>@P@mise_requires <% $k %> <% $v.requires %>
-<% end %><% end %><% end %>@P@root_only <% $t.root_only %>
+<% end %><% if and (test.IsKind "map" $v) (has $v "files") %><% range $v.files %>@P@mise_files <% $k %> <% . %>
+<% end %><% end %><% end %><% end %>@P@root_only <% $t.root_only %>
 '
 
 # Print the manifest of <tool> in the clone <dir> as `<field> <value>` lines:
 # `default_env`, `depends`, `extension`, `seed`, `seed_requires <seed> <file>`,
 # `mise <mise-tool> <envs,...|-> [<mise-depends>...]`,
-# `mise_requires <mise-tool> <file>`, and one `root_only true|false`.
+# `mise_requires <mise-tool> <file>`, `mise_files <mise-tool> <path>`, and one
+# `root_only true|false`. The `mise_requires` line of an entry comes before its
+# `mise_files` lines.
 # `_rs_mise_index` reads each manifest of <dir> in one call, so this only
 # selects the lines of <tool>. A tool that it did not read is read alone.
 _rs_manifest() {
@@ -405,14 +414,16 @@ _rs_manifest() {
 # Set _RS_MISE_DEFS to the ` <mise-tool>=<tool> ` words of every tool in the
 # clone <dir>, selected or not: the mise `depends` of an entry find their tool
 # here. Returns 2, after a message, when two tools define the same mise tool,
-# when the default_envs of a tool, selected or not, has no dev,
+# when the default_envs of a tool, selected or not, has no dev, for `files`
+# of an entry without `requires` or with a path that is not a file of its tool
+# folder,
 # or for a tool folder named zz-repo or that sorts after it in byte order:
 # mise loads the folders of conf.d/ in name order and a later one wins, so the
 # repo's own conf.d/zz-repo/ must load last and no tool may write there.
 # It also sets _RS_MANIFESTS to the manifest of each tool, as
 # `<tool> <field> <value>` lines from one gomplate call, for `_rs_manifest`.
 _rs_mise_index() {
-  local dir=$1 manifest tool name names late tools='' args=()
+  local dir=$1 manifest tool name names path late tools='' args=()
   late=$(cd "$dir/tools" && printf '%s\n' */ | sed 's#/$##' | LC_ALL=C awk '$0 >= "zz-repo" { print; exit }') || {
     _rs_log "cannot list the tool folders of the clone"
     return 2
@@ -458,6 +469,17 @@ _rs_mise_index() {
       fi
       _RS_MISE_DEFS+="$name=$tool "
     done
+    while read -r name path; do
+      [[ -n $name ]] || continue
+      if [[ $'\n'$names$'\n' != *$'\n'"mise_requires $name "* ]]; then
+        _rs_log "files of mise tool '$name' in tools/$tool/tools.toml: the entry has no requires - add requires, or remove files"
+        return 2
+      fi
+      if [[ $path == /* || $path == ../* || $path == */../* || $path == tools.toml || ! -f $dir/tools/$tool/$path ]]; then
+        _rs_log "files of mise tool '$name' in tools/$tool/tools.toml: '$path' is not a file of tools/$tool"
+        return 2
+      fi
+    done < <(printf '%s\n' "$names" | awk '$1 == "mise_files" { print $2, $3 }')
   done
 }
 
@@ -475,7 +497,8 @@ _rs_mise_owner() {
 # _RS_EXTENSIONS (one per line, sorted, unique), _RS_SEEDS
 # (` <tool>/<path> ` words), _RS_SEED_REQUIRES (` <tool>/<path>=<file> `
 # words), _RS_MISE_ENTRIES (`<tool> <mise-tool> <envs,...|-> [<mise-depends>...]`
-# lines) and _RS_MISE_REQUIRES (` <mise-tool>=<file> ` words). A mise
+# lines), _RS_MISE_REQUIRES (` <mise-tool>=<file> ` words) and
+# _RS_FILE_REQUIRES (` <tool>/<path>=<file> ` words, from `files`). A mise
 # `depends` adds the tool that defines it. Returns 2 or 3,
 # after a message, on any problem.
 _rs_resolve() {
@@ -527,7 +550,7 @@ _rs_resolve() {
   fi
 
   _RS_TOOLS=' ' _RS_SEEDS=' ' _RS_SEED_REQUIRES=' ' _RS_EXTENSIONS='' _RS_MISE_ENTRIES=''
-  _RS_MISE_REQUIRES=' '
+  _RS_MISE_REQUIRES=' ' _RS_FILE_REQUIRES=' '
   _RS_DEPS='' _RS_DEFAULT_ENVS=' '
   # Depth-first, so each dependency lands before the tool that named it. A
   # stack of words rather than recursion: bash 3.2 has no local arrays worth
@@ -599,6 +622,12 @@ _rs_resolve() {
         mise_requires)
           # `<mise-tool> <file>`: neither has a space.
           _RS_MISE_REQUIRES+="${value% *}=${value#* } "
+          ;;
+        mise_files)
+          # `<mise-tool> <path>`. The `mise_requires` line of the entry came
+          # first, and `_rs_mise_index` made sure that it exists.
+          name=${_RS_MISE_REQUIRES#* "${value% *}="}
+          _RS_FILE_REQUIRES+="$tool/${value#* }=${name%% *} "
           ;;
         root_only)
           if [[ $value == true && -n $in_submodule ]]; then
@@ -704,6 +733,44 @@ _rs_remove() {
     return 1
   }
   _rs_log "removed    $show"
+}
+
+# Set _RS_REQ_SKIP to the ` <tool>/<path>=<file> ` words of _RS_FILE_REQUIRES
+# whose <file> this repo does not have (`_rs_has_file`). A path that more than
+# one entry lists is skipped when one of its files is missing.
+_rs_file_skips() {
+  local word key file
+  _RS_REQ_SKIP=' '
+  for word in $_RS_FILE_REQUIRES; do
+    key=${word%=*} file=${word#*=}
+    [[ $_RS_REQ_SKIP != *" $key="* ]] || continue
+    _rs_has_file "$file" || _RS_REQ_SKIP+="$word "
+  done
+}
+
+# Do not write the file <path> of <tool>: its `files` entry needs a file that
+# this repo does not have. Remove a copy with the bootstrap header, from a
+# sync before the repo lost the file or before the entry had `files`. A copy
+# without the header is the repo's own, and it stays.
+_rs_skip_required() {
+  local tool=$1 path=$2 dry_run=$3 requires dest show
+  requires=${_RS_REQ_SKIP#* "$tool/$path="}
+  requires=${requires%% *}
+  dest="${MISE_PROJECT_ROOT}/${path%.tmpl}"
+  show=$(_rs_path "$dest")
+  if [[ -f $dest ]] && head -n 3 -- "$dest" | grep -qE 'Synced from (bootstrap|repo-config): '; then
+    if ((dry_run)); then
+      _rs_log "would remove $show (no $requires)"
+      return 0
+    fi
+    rm -f -- "$dest" || {
+      _rs_log "cannot remove $show"
+      return 1
+    }
+    _rs_log "removed    $show (no $requires)"
+    return 0
+  fi
+  _rs_log "skip file  $show (no $requires)"
 }
 
 # The environment names that a tools.toml can use in `default_envs` and
@@ -866,7 +933,7 @@ _RS_DEFINES='<% define "rs_leaves" %><% range $k, $x := .v %><% $p := coll.Appen
 #   giempty  an empty line in add or remove
 #   envname  an environment of [overrides.mise_env] that is not dev or ci
 #   env      an environment that is not in REPO_SYNC_ENVS
-#   lock     an `envs`, a `depends` or a `requires` of a mise tool
+#   lock     an `envs`, a `depends`, a `requires` or a `files` of a mise tool
 #   none     a value that no selected tool has; <arg> is the path in tools.toml
 # It also prints an `add <path> <line>` or a `remove <path> <line>` line for
 # each line of [overrides.gitignore] and [overrides.graphifyignore], without
@@ -912,7 +979,7 @@ _RS_OVERRIDES_TEMPLATE="$_RS_DEFINES"'<% if has .o "overrides" -%>
 <% if and (eq $k "mise") (gt (len $p) 1) %><% $rest = slice $p 1 -%>
 <% else if and (eq $k "mise_env") (gt (len $p) 2) (has (coll.Slice "dev" "ci") (index $p 1)) (strings.Contains (printf " %s " (index $p 1)) $envs) %><% $rest = slice $p 2 %><% $only = index $p 1 %><% end -%>
 <% if $rest -%>
-<% if and (gt (len $rest) 2) (eq (index $rest 0) "tools") (has (coll.Slice "envs" "depends" "requires") (index $rest 2)) -%>
+<% if and (gt (len $rest) 2) (eq (index $rest 0) "tools") (has (coll.Slice "envs" "depends" "requires" "files") (index $rest 2)) -%>
 lock	overrides.<% join $p "." %>	-
 <% else -%>
 <% $found := false -%>
@@ -941,8 +1008,8 @@ none	overrides.<% join $p "." %>	<% if $only %>mise_env.<% $only %>.<% join $res
 # tool in the clone <dir>. Each value of `[overrides.mise]` and
 # `[overrides.mise_env.<env>]` must replace a value that a selected tool has,
 # at the same path below `[mise]` or `[mise_env.<env>]`. The `envs`, the
-# `depends` and the `requires` of a mise tool decide the tools and the
-# environments, so they cannot be overridden. Each line of `remove` of
+# `depends`, the `requires` and the `files` of a mise tool decide the tools,
+# the files and the environments, so they cannot be overridden. Each line of `remove` of
 # `[overrides.gitignore]` and `[overrides.graphifyignore]` must be a line of
 # the shipped file, and no line can be in `add` and in `remove`. Sets
 # _RS_GI_ADD and _RS_GI_REMOVE to the `<ignore><tab><line>` lines of `add`
@@ -1006,7 +1073,7 @@ _rs_overrides() {
         _rs_log "$path in $show: '$arg' is not in environments:${_RS_ENVS% }"
         ;;
       lock)
-        _rs_log "$path in $show: the envs, the depends and the requires of a mise tool cannot be overridden - use env of [tools.<tool>]"
+        _rs_log "$path in $show: the envs, the depends, the requires and the files of a mise tool cannot be overridden - use env of [tools.<tool>]"
         ;;
       none)
         _rs_log "$path in $show: no selected tool has $arg - the path after overrides. is the path in tools/<tool>/tools.toml"
@@ -1080,7 +1147,7 @@ _RS_MISE_TEMPLATE="$_RS_DEFINES"'<% $m := dict %><% if has .t "mise" %><% $m = .
 <% if has $entry $s -%>
 <% $a := dict -%>
 <% range $k, $v := $body -%>
-<% if and (eq $s "tools") (test.IsKind "map" $v) %><% $v = coll.Omit "envs" "requires" $v %><% end -%>
+<% if and (eq $s "tools") (test.IsKind "map" $v) %><% $v = coll.Omit "envs" "requires" "files" $v %><% end -%>
 <% if strings.Contains (printf " %s:%s " $k $env) $envw %><% $a = coll.Merge (dict $k $v) $a %><% end -%>
 <% end -%>
 <% if $a %><% $out = coll.Merge (dict $s $a) $out %><% end -%>
@@ -1589,6 +1656,7 @@ repo_sync() {
     rm -rf -- "$dir"
     return "$rc"
   }
+  _rs_file_skips
 
   local old_core
   old_core=$(_rs_list "$values" core_tools) || old_core=''
@@ -1652,6 +1720,8 @@ repo_sync() {
       rc=0 _RS_DEFERRED=''
       if [[ $_RS_SKIP == *" $tool/$path "* ]]; then
         _rs_remove "$tool" "$path" "$dry_run" || rc=$?
+      elif [[ $_RS_REQ_SKIP == *" $tool/$path="* ]]; then
+        _rs_skip_required "$tool" "$path" "$dry_run" || rc=$?
       else
         _rs_file "$dir" "$tool" "$path" "$dry_run" "$ctx" || rc=$?
       fi

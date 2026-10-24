@@ -21,14 +21,14 @@ need to list `python`.
 
 ## What the tool ships
 
-| Path in the repository                       | Kind      | Use                           |
-| -------------------------------------------- | --------- | ----------------------------- |
-| `.config/mise/tasks/setup/deps/python`       | Synced    | The task `setup:deps:python`. |
-| `.config/mise/tasks/code/lint/ruff`          | Synced    | The task `code:lint:ruff`.    |
-| `.config/mise/tasks/code/lint/pyrefly`       | Synced    | The task `code:lint:pyrefly`. |
-| `.config/mise/tasks/code/lint/uv`            | Synced    | The task `code:lint:uv`.      |
-| `.config/mise/tasks/code/format/ruff`        | Synced    | The task `code:format:ruff`.  |
-| `.config/mise/conf.d/python/mise.<env>.toml` | Generated | The mise config of this tool. |
+| Path in the repository                       | Kind      | Use                                                         |
+| -------------------------------------------- | --------- | ----------------------------------------------------------- |
+| `.config/mise/tasks/setup/deps/python`       | Synced    | The task `setup:deps:python`.                               |
+| `.config/mise/tasks/code/lint/ruff`          | Synced    | The task `code:lint:ruff`. Only with a `pyproject.toml`.    |
+| `.config/mise/tasks/code/lint/pyrefly`       | Synced    | The task `code:lint:pyrefly`. Only with a `pyproject.toml`. |
+| `.config/mise/tasks/code/lint/uv`            | Synced    | The task `code:lint:uv`.                                    |
+| `.config/mise/tasks/code/format/ruff`        | Synced    | The task `code:format:ruff`. Only with a `pyproject.toml`.  |
+| `.config/mise/conf.d/python/mise.<env>.toml` | Generated | The mise config of this tool.                               |
 
 The VS Code extension is `meta.pyrefly`.
 
@@ -44,8 +44,11 @@ The VS Code extension is `meta.pyrefly`.
 Many repositories get `python` only as a dependency of other tools. Thus the
 sync installs `ruff` and `pyrefly` only when the repository has a
 `pyproject.toml`, at the root or down to 4 folders below it, that git does not
-ignore. If the repository adds its first `pyproject.toml` later, run
-`mise run setup:configs` again.
+ignore. The `files` of the two entries apply the same condition to their
+tasks: `code:lint:ruff`, `code:format:ruff` and `code:lint:pyrefly`. Without
+a `pyproject.toml`, the sync does not write them, and it removes the copies
+of an earlier sync. If the repository adds its first `pyproject.toml` later,
+run `mise run setup:configs` again.
 
 The tool also sets:
 

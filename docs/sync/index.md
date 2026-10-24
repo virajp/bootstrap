@@ -282,6 +282,12 @@ down to 4 folders below it, that git does not ignore. For example, the
 `pyproject.toml`. If the repository adds its first `pyproject.toml` later,
 run `mise run setup:configs` again.
 
+The `files` key of a mise tool with `requires` lists files of its tool, for
+example the tasks of that mise tool. The sync writes them under the same
+condition. Without the file, it removes a copy with the bootstrap header. For
+example, the `python` tool writes `code:lint:ruff`, `code:format:ruff` and
+`code:lint:pyrefly` only in a repository with a `pyproject.toml`.
+
 The sync finds the environments of each tool in this sequence:
 
 1. A tool of a `[tools.<folder>]` entry gets its `env`, else its
@@ -477,7 +483,8 @@ UV_NO_CACHE = false
 - These stop the sync with code 2: a key of `[overrides]` other than `mise`,
   `mise_env`, `gitignore` and `graphifyignore`, a path that no selected tool
   has, and the
-  `envs`, the `depends` or the `requires` of a mise tool. An override cannot
+  `envs`, the `depends`, the `requires` or the `files` of a mise tool. An
+  override cannot
   add a key. Put a
   new key in `conf.d/zz-repo/mise.<env>.toml`.
 
