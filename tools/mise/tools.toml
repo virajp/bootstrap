@@ -17,7 +17,9 @@ envs = [ "dev", "ci" ]
 version = "latest"
 
 [mise.shell_alias]
+precommit = "mise run code:precommit"
 setup = "mise run setup"
+worktrees = "mise run code:worktrees"
 
 [mise.tasks.init]
 description = "Initialize mise tasks"
