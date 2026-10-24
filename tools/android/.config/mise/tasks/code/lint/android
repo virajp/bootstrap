@@ -16,7 +16,8 @@ cd "${MISE_PROJECT_ROOT}"
 
 # Shipped with the android tool. The Gradle root is the root of the
 # repository, else the android/ folder of a Flutter app. Without a Gradle
-# wrapper or the SDK platforms, the task does not apply and prints nothing.
+# wrapper, the SDK platforms or an AndroidManifest.xml, the task does not apply
+# and prints nothing.
 if [[ -x gradlew ]]; then
   ROOT=.
 elif [[ -x android/gradlew ]]; then
@@ -84,6 +85,13 @@ if ((${#FILES[@]})); then
   if ! grep -qxF / <<< "${MODULES}"; then
     MODULES_ARG=$(sort -u <<< "${MODULES}" | sed '/^$/d')
   fi
+else
+  # Every module, but only in an Android build: a Gradle build without an
+  # AndroidManifest.xml, for example a Kotlin/JVM library, has no Android
+  # module. A failed git stops the task, with the error of git.
+  LIST=$(git -c core.quotePath=off ls-files --cached --others --exclude-standard -- \
+    "${ROOT}/AndroidManifest.xml" "${ROOT}/*/AndroidManifest.xml")
+  [[ -n "${LIST}" ]] || exit 0
 fi
 
 # A module without the Android Gradle plugin, for example a Kotlin/JVM

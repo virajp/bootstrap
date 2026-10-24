@@ -71,7 +71,9 @@ The `gcloud` tool uses the same Python minor version. Change both together.
 | `code:lint:uv`      | Fail when a `uv.lock` does not agree with the `pyproject.toml` next to it.            |
 
 `code:lint` and `code:format` run the four gates. Without ruff or pyrefly,
-the gate skips. `code:lint:uv` runs `uv lock --check` for each project with a
+the gate skips. Without files, the ruff and pyrefly gates also skip when the
+repository has no `.py` or `.pyi` file that git does not ignore. `code:lint:uv`
+runs `uv lock --check` for each project with a
 `uv.lock` and a `pyproject.toml`. With a list of files, it checks only the
 projects of a given `uv.lock` or `pyproject.toml`. It replaces the
 `code:check:uv` task of stackgen. With a list of files, a gate uses only the

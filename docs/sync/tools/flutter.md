@@ -42,7 +42,8 @@ VS Code extensions: `dart-code.dart-code`, `dart-code.flutter`.
 | `code:format:dart`   | Check or format the existing `.dart` files of the `[files]` arguments, else `lib/` and `test/`.                                                                             |
 | `code:lint:dart`     | Analyze the existing `.dart` files of the `[files]` arguments, else the whole project. An info also fails the task (`--fatal-infos`). `dart analyze` only reports.          |
 
-The two Dart tasks apply only when the root has `pubspec.yaml`.
+The two Dart tasks apply only when the root has `pubspec.yaml`. Without
+files, they also need a `.dart` file that git does not ignore.
 
 `setup:deps:flutter` uses CocoaPods only with `ios/Podfile`, and Gradle only
 with an executable `android/gradlew`. It accepts the Android licenses. It

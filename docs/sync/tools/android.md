@@ -81,7 +81,10 @@ folder of a Flutter app is for `setup:deps:flutter`.
   names the id.
 
 `code:lint:android` uses the Gradle root `./gradlew`, else `android/gradlew`,
-and applies only when `$ANDROID_HOME/platforms` exists. Given files, it runs
+and applies only when `$ANDROID_HOME/platforms` exists. Without files, it
+applies only when the Gradle root has an `AndroidManifest.xml` that git does
+not ignore, at any depth. Thus a Kotlin/JVM build without an Android module
+skips it. Given files, it runs
 only for a `src/` `.kt`, `.java` or `.xml` file, a `*.gradle.kts`, a
 `*.gradle`, a `*.pro`, `libs.versions.toml`, `lint.xml` or `lint-baseline.xml`.
 It lints only the modules of those files: the nearest folder with
