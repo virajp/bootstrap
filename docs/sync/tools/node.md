@@ -80,6 +80,6 @@ None.
 ## Migration
 
 - Remove node and pnpm from the repository-owned mise files.
-- If the old files pin a different version, tell the user. For example,
-  95octane pinned node `26` and pnpm `12` (M6 of `migrate.md`).
+- If the old files pin a different version, tell the user. For example, a
+  repository pins node `26` and pnpm `12` (M6 of `migrate.md`).
 - Delete the old `setup/pnpm/*` tasks (M2).

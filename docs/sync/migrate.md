@@ -18,6 +18,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | `.config/repo-sync/gitignore`                                   | M18, before the next sync.                                                                                                                                                                                                                                          |
 | Files from the stackgen `tool-config` skill or packs            | M19, before the next sync.                                                                                                                                                                                                                                          |
 | `[tools.vscode]` in the values file, or no `vscode` in the root | M20.                                                                                                                                                                                                                                                                |
+| `@askviraj/linter` in a file of the repository                  | M21, before the next sync.                                                                                                                                                                                                                                          |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -32,7 +33,7 @@ this sequence. Show the user the list of changes before you make them.
 ## M1: Delete the old sync files
 
 - Delete `.config/gist-sync/` (an old `.gitignore` with only a header).
-- If the repository uses `gist_sync` (macos-setup), delete
+- If the repository uses `gist_sync`, delete
   `.config/mise/tasks/_scripts/gist-sync`. Move the lines of
   `.config/gist-sync/gitignore` to `[overrides.gitignore]` as M18 tells you.
 - Delete the old `.config/mise/tasks/setup/configs`. Step 2 of `index.md`
@@ -90,8 +91,8 @@ The sync replaces `.config/mise.toml`. It keeps only the shared `[settings]`.
      `[member.<name>]` tables.
 2. Move the repository's own `[env]` values to the seed
    `.config/mise/conf.d/zz-repo/mise.<env>.toml` of each environment that needs
-   them. Examples are `GITHUB_OWNER`, and the emulator, Temporal and OTEL
-   variables of 95octane backend (`mise.dev.toml`).
+   them. Examples are `GITHUB_OWNER`, and the variables of the local services
+   of a backend (`mise.dev.toml`).
 3. Delete what a tool now supplies: `CLOUDSDK_PYTHON` (the `gcloud` tool) and
    `task.timings = true` (the shared `[settings]`). Delete `lockfile = true`.
 4. Keep `.config/mise.test.toml` and `.config/miserc.toml`. The sync does not
@@ -111,13 +112,13 @@ mise tool that no bootstrap tool installs, for example
 tool, or make a new tool for it.
 
 If the old mise tool has a pinned version that is different from the shared
-one, tell the user. Examples: node `26` and pnpm `12` in 95octane, where
-`node` ships `lts` and `latest`.
+one, tell the user. For example, the repository pins node `26`, and `node`
+ships `lts` and `latest`.
 
 ## M7: Split an old `conf.d/_base`
 
-claude-plugins has an old folder `.config/mise/conf.d/_base`, from before the
-`tools/` layout. Before the first sync, move its content:
+A repository can have an old folder `.config/mise/conf.d/_base`, from before
+the `tools/` layout. Before the first sync, move its content:
 
 | Old content in `_base`                                           | New place                 |
 | ---------------------------------------------------------------- | ------------------------- |
@@ -462,3 +463,22 @@ git submodule.
 2. If a root repository did not select `vscode` before, do "Adapt to the
    repository" of [`tools/vscode.md`](tools/vscode.md) before the next sync.
    The sync replaces `.vscode/settings.json`.
+
+## M21: The linter package is now `@virajp.dev/linter`
+
+The `linter` tool installs `npm:@virajp.dev/linter`, not
+`npm:@askviraj/linter`. `setup:linter` writes the linter config files only
+when they are missing. Thus it does not change the old files.
+
+1. Find the old name:
+
+   ```bash
+   git grep -n '@askviraj/linter'
+   ```
+
+2. Ignore the mentions in the synced files. The sync owns them.
+3. In `eslint.config.mjs` and `.config/linter.yaml`, replace
+   `@askviraj/linter` with `@virajp.dev/linter`.
+4. Remove `npm:@askviraj/linter` from the repository-owned mise files.
+5. Run `mise run setup:configs`, then `mise run code:lint`. The lint must
+   complete without an error about a missing module.

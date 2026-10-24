@@ -266,39 +266,39 @@ This table is the target state, with the tools of the `base` pack. The
 Flutter packs add `android` or `swift`, so the mise tool `flutter` has no mise
 `depends`.
 
-| Tool          | mise tool              | Version  | `envs`  | mise `depends` | Other `[mise.*]` sections                           |
-| ------------- | ---------------------- | -------- | ------- | -------------- | --------------------------------------------------- |
-| `android`     | `android-sdk`          | `23`     | dev, ci | `java`         |                                                     |
-| `dprint`      | `dprint`               | `latest` | dev, ci |                |                                                     |
-| `gitleaks`    | `gitleaks`             | `latest` | dev, ci |                |                                                     |
-| `grype`       | `grype`                | `latest` | dev, ci |                |                                                     |
-| `linter`      | `npm:@askviraj/linter` | `latest` | dev, ci | `node`, `pnpm` |                                                     |
-| `linter`      | `shellcheck`           | `latest` | dev, ci |                |                                                     |
-| `mise`        | `jq`                   | `latest` | dev, ci |                | `tasks` (`init`), `shell_alias`; `mise_env` (`os`)  |
-| `mise`        | `yq`                   | `latest` | dev, ci |                |                                                     |
-| `osv-scanner` | `osv-scanner`          | `latest` | dev, ci |                |                                                     |
-| `pre-commit`  | `pre-commit`           | `latest` | dev     | `python`, `uv` | `env` (`PRE_COMMIT_HOME`), `shell_alias`            |
-| `repo-sync`   | `gomplate`             | `latest` | dev     |                |                                                     |
-| `bun`         | `bun`                  | `latest` | dev, ci |                |                                                     |
-| `claude`      | `pipx:graphifyy`       | `latest` | dev     | `python`, `uv` |                                                     |
-| `claude`      | `pipx:mempalace`       | `latest` | dev     | `python`, `uv` |                                                     |
-| `cloudflare`  | `npm:cf`               | `latest` | dev, ci | `node`, `pnpm` |                                                     |
-| `doppler`     | `doppler`              | `latest` | dev     |                |                                                     |
-| `flutter`     | `flutter`              | `3`      | dev, ci |                |                                                     |
-| `fnox`        | `fnox`                 | `latest` | dev     |                | `env` (`FNOX_CONFIG_DIR`)                           |
-| `gcloud`      | `gcloud`               | `latest` | dev, ci | `python`, `uv` | `env` (`CLOUDSDK_PYTHON`)                           |
-| `github`      | `gh`                   | `latest` | dev, ci |                |                                                     |
-| `github`      | `actionlint`           | `latest` | dev, ci |                |                                                     |
-| `gitlab`      | `glab`                 | `latest` | dev, ci |                |                                                     |
-| `java`        | `java`                 | `lts`    | dev, ci |                |                                                     |
-| `kotlin`      | `http:kotlin-lsp`      | `latest` | dev     |                | Platform URLs for macOS                             |
-| `node`        | `node`                 | `lts`    | dev, ci |                | `settings`, `env` (`_.path`), `shell_alias` (`npx`) |
-| `node`        | `pnpm`                 | `latest` | dev, ci | `node`         |                                                     |
-| `pulumi`      | `pulumi`               | `latest` | dev     |                |                                                     |
-| `python`      | `python`               | `3.14`   | dev, ci |                | `settings`, `env` (`UV_*`)                          |
-| `python`      | `uv`                   | `latest` | dev, ci | `python`       |                                                     |
-| `rust`        | `core:rust`            | `latest` | dev, ci |                | `profile = "default"`                               |
-| `rust`        | `zola`                 | `latest` | dev, ci |                |                                                     |
+| Tool          | mise tool                | Version  | `envs`  | mise `depends` | Other `[mise.*]` sections                           |
+| ------------- | ------------------------ | -------- | ------- | -------------- | --------------------------------------------------- |
+| `android`     | `android-sdk`            | `23`     | dev, ci | `java`         |                                                     |
+| `dprint`      | `dprint`                 | `latest` | dev, ci |                |                                                     |
+| `gitleaks`    | `gitleaks`               | `latest` | dev, ci |                |                                                     |
+| `grype`       | `grype`                  | `latest` | dev, ci |                |                                                     |
+| `linter`      | `npm:@virajp.dev/linter` | `latest` | dev, ci | `node`, `pnpm` |                                                     |
+| `linter`      | `shellcheck`             | `latest` | dev, ci |                |                                                     |
+| `mise`        | `jq`                     | `latest` | dev, ci |                | `tasks` (`init`), `shell_alias`; `mise_env` (`os`)  |
+| `mise`        | `yq`                     | `latest` | dev, ci |                |                                                     |
+| `osv-scanner` | `osv-scanner`            | `latest` | dev, ci |                |                                                     |
+| `pre-commit`  | `pre-commit`             | `latest` | dev     | `python`, `uv` | `env` (`PRE_COMMIT_HOME`), `shell_alias`            |
+| `repo-sync`   | `gomplate`               | `latest` | dev     |                |                                                     |
+| `bun`         | `bun`                    | `latest` | dev, ci |                |                                                     |
+| `claude`      | `pipx:graphifyy`         | `latest` | dev     | `python`, `uv` |                                                     |
+| `claude`      | `pipx:mempalace`         | `latest` | dev     | `python`, `uv` |                                                     |
+| `cloudflare`  | `npm:cf`                 | `latest` | dev, ci | `node`, `pnpm` |                                                     |
+| `doppler`     | `doppler`                | `latest` | dev     |                |                                                     |
+| `flutter`     | `flutter`                | `3`      | dev, ci |                |                                                     |
+| `fnox`        | `fnox`                   | `latest` | dev     |                | `env` (`FNOX_CONFIG_DIR`)                           |
+| `gcloud`      | `gcloud`                 | `latest` | dev, ci | `python`, `uv` | `env` (`CLOUDSDK_PYTHON`)                           |
+| `github`      | `gh`                     | `latest` | dev, ci |                |                                                     |
+| `github`      | `actionlint`             | `latest` | dev, ci |                |                                                     |
+| `gitlab`      | `glab`                   | `latest` | dev, ci |                |                                                     |
+| `java`        | `java`                   | `lts`    | dev, ci |                |                                                     |
+| `kotlin`      | `http:kotlin-lsp`        | `latest` | dev     |                | Platform URLs for macOS                             |
+| `node`        | `node`                   | `lts`    | dev, ci |                | `settings`, `env` (`_.path`), `shell_alias` (`npx`) |
+| `node`        | `pnpm`                   | `latest` | dev, ci | `node`         |                                                     |
+| `pulumi`      | `pulumi`                 | `latest` | dev     |                |                                                     |
+| `python`      | `python`                 | `3.14`   | dev, ci |                | `settings`, `env` (`UV_*`)                          |
+| `python`      | `uv`                     | `latest` | dev, ci | `python`       |                                                     |
+| `rust`        | `core:rust`              | `latest` | dev, ci |                | `profile = "default"`                               |
+| `rust`        | `zola`                   | `latest` | dev, ci |                |                                                     |
 
 These tools have no mise tools: `docker`, `swift` (the host Xcode), and
 `vscode`. `kotlin` gets `java` through its `depends` key.

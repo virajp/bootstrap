@@ -1,3 +1,0 @@
-/security-review — loop U4-late2, round 1, range 970b2eb..2333ff1 (branch diff 34ea0ea..0d15fd1)
-
-NO FINDINGS. The only code change since 0f50f9a is 2333ff1 (print_files: `[[ -n ]] &&` → `[[ -z ]] ||`); no new input, eval, path or file operation; lockfile names from git ls-files, quoted, output only. restore_lockfiles/cp/rm unchanged, names from the repository's own index. TMP_DIR from mktemp -d, fixed init-script content.

@@ -1,4 +1,0 @@
-/security-review — loop U4-late1, round 1, range 05839a0..0f50f9a (branch diff 34ea0ea..6c2d56b)
-
-NO FINDINGS. Since 05839a0 only docs/sync/kotlin.md and docs/plans/** changed; git diff 05839a0..HEAD -- tools/ is empty.
-Excluded: eval "FILES=(${usage_files})" (same pattern as base/flutter tasks); BOOTSTRAP_LINT_MODULES read as an env value in Groovy, never by a shell; rm -f/cp of lockfiles on git ls-files paths inside the repo; mktemp -d/mktemp with EXIT traps; COMPILE_SDK/EMULATOR_IMAGE trusted, detected levels pass a numeric regex, quoted, no eval; swift package/xcodebuild on the repo's own manifests; no credentials read, printed or logged.
