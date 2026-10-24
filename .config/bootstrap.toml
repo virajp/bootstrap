@@ -1,5 +1,5 @@
 # The bootstrap commit of the last sync. repo-sync writes it.
-bootstrap_commit = "47c4c82bd27ea56cc3561c9c03f8950d57916480"
+bootstrap_commit = "0ed04977bbc968598d9125494cfd2de00012c08b"
 environments = [ "dev" ]
 repo_name = "bootstrap"
 repo_url = "https://github.com/virajp/bootstrap"
@@ -7,4 +7,4 @@ repo_url = "https://github.com/virajp/bootstrap"
 [tools.claude]
 # The temporary prompts of a session. They are never committed.
 [overrides.gitignore]
-add = [ "docs/prompts/" ]
+add = [ "docs/prompts/", "docs/plans/archived/" ]

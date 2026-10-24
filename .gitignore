@@ -350,3 +350,4 @@ sbom.*
 
 # ==== Overrides from .config/bootstrap.toml ====
 docs/prompts/
+docs/plans/archived/
