@@ -169,7 +169,8 @@ These rules apply to each file:
   of the tools that need it. The `envs` of a mise tool lists the environments
   that it allows; a tool in a different environment stops the sync. The
   `requires` of a mise tool names a file: the sync writes the mise tool only
-  when the repository has that file. Each tool
+  when the repository has that file. Its `files` lists the files of the tool,
+  for example its tasks, that follow the same condition. Each tool
   must be in dev: an `env` or a `default_envs` without dev stops the sync.
   Aliases, hooks, vars and tasks go only to dev. `.config/mise.toml` is the
   only file for every environment. `CLAUDE.md` has the full rules.
@@ -177,14 +178,16 @@ These rules apply to each file:
   `[overrides.mise.tools.java]` with `version = "21"`. Each overridden line
   gets an `# override: .config/bootstrap.toml` comment.
   `docs/sync/index.md` has the rules.
-- The sync never deletes a file, with three exceptions. The first is the merge
+- The sync never deletes a file, with four exceptions. The first is the merge
   tasks. With `main` and `develop`, the repository gets `code:merge:develop`
   and `code:merge:main`. With only one of them, it gets `code:merge`. The sync
   removes the merge tasks of the other model. The second is a
   `.config/mise/conf.d/*/mise*.toml` file with the bootstrap header that the
   sync did not write. A seed, such as `zz-repo/mise.<env>.toml`, has no header,
   so the sync keeps it. The third is a file with the bootstrap header at a path
-  where the sync needs a folder.
+  where the sync needs a folder. The fourth is a file with the bootstrap header
+  of a `files` list of a mise tool, when the `requires` file of that mise tool
+  is missing.
 
 A repository synced before the split of the base tool (`c95e4ff`) cannot sync.
 Its

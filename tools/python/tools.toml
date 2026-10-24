@@ -23,16 +23,18 @@ envs = [ "dev", "ci" ]
 version = "latest"
 
 # The gates of a Python project. Many repositories have python only for the
-# tools of other bootstrap tools, so the sync installs these two only when the
-# repository has a pyproject.toml.
+# tools of other bootstrap tools, so the sync installs these two, and writes
+# their tasks, only when the repository has a pyproject.toml.
 [mise.tools.ruff]
 envs = [ "dev", "ci" ]
+files = [ ".config/mise/tasks/code/format/ruff", ".config/mise/tasks/code/lint/ruff" ]
 requires = "pyproject.toml"
 version = "latest"
 
 [mise.tools."pipx:pyrefly"]
 depends = [ "python", "uv" ]
 envs = [ "dev", "ci" ]
+files = [ ".config/mise/tasks/code/lint/pyrefly" ]
 requires = "pyproject.toml"
 version = "latest"
 
