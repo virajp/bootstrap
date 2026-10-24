@@ -13,7 +13,8 @@ set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
 # Shipped with the flutter tool. Without a pubspec.yaml, this is not a Dart
-# project, so the task does not apply and prints nothing.
+# project. Without a pubspec.yaml or without a .dart file, the task does not
+# apply and prints nothing.
 [[ -f "${MISE_PROJECT_ROOT}/pubspec.yaml" ]] || exit 0
 cd "${MISE_PROJECT_ROOT}"
 
@@ -28,6 +29,10 @@ if ((${#FILES[@]})); then
   done
   ((${#TARGETS[@]})) || exit 0
 else
+  # Without a tracked or new .dart file, nothing to do. A failed git stops the
+  # task, with the error of git.
+  LIST=$(git -c core.quotePath=off ls-files --cached --others --exclude-standard -- '*.dart')
+  [[ -n "${LIST}" ]] || exit 0
   for dir in lib test; do
     [[ -d "${dir}" ]] && TARGETS+=("${dir}")
   done

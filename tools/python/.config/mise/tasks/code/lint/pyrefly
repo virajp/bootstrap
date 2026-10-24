@@ -13,8 +13,8 @@ set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
 # Shipped with the python tool. The sync installs pyrefly only in a repository
-# with a pyproject.toml. Without pyrefly, the task does not apply and prints
-# nothing.
+# with a pyproject.toml. Without pyrefly, or without a Python file, the task
+# does not apply and prints nothing.
 mise x -- which pyrefly > /dev/null 2>&1 || exit 0
 cd "${MISE_PROJECT_ROOT}"
 
@@ -28,6 +28,12 @@ if ((${#FILES[@]})); then
     [[ ("${file}" == *.py || "${file}" == *.pyi) && -f "${file}" ]] && TARGETS+=("${file}")
   done
   ((${#TARGETS[@]})) || exit 0
+else
+  # Without files, the tool checks the project of its config, which holds its
+  # excludes. Without a tracked or new Python file, nothing to do. A failed
+  # git stops the task, with the error of git.
+  LIST=$(git -c core.quotePath=off ls-files --cached --others --exclude-standard -- '*.py' '*.pyi')
+  [[ -n "${LIST}" ]] || exit 0
 fi
 
 print_header "Type checking the Python files with pyrefly ..."
