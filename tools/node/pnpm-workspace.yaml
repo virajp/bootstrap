@@ -35,7 +35,7 @@ trustPolicyIgnoreAfter: 43200
 # lockfile. https://pnpm.io/settings#verifydepsbeforerun
 verifyDepsBeforeRun: error
 
-# The packages that `pnpm update --latest` does not upgrade, for example
+# The packages that `pnpm update` does not upgrade, for example
 # `typescript` or `"@babel/*"`. `pnpm outdated` does not show them either.
 # https://pnpm.io/settings#updateignoredeps
 update:
