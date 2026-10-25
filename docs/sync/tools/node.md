@@ -56,6 +56,11 @@ The tool also sets:
 A vulnerability at or above `audit.level` of `pnpm-workspace.yaml` stops the
 setup. The task never runs `pnpm self-update`, because mise installs pnpm.
 
+`--upgrade` runs `pnpm update --recursive --no-save`. It moves the lockfile to
+the newest versions inside the ranges of each `package.json`, and it does not
+change a range. A package in `update.ignoreDeps` of `pnpm-workspace.yaml`
+stays at its locked version.
+
 ## Pre-commit hooks
 
 None.
