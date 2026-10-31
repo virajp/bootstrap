@@ -595,12 +595,28 @@ files, skip this step.
 3. Examine the diff for each file that already exists in the repository.
 4. If the dry run replaces repository-owned content, stop. Move that content
    to a repository-owned place (see "Rules"), then do the dry run again.
-5. Ask the user whether to run `mise run setup:configs`. In the same
+5. If the dry run fails with `pre-commit is not available` or
+   `gomplate is not available`, and its diff adds a `#MISE tools.<tool>` line
+   to `.config/mise/tasks/setup/configs/sync`, the cause is the old task file
+   of the repository, not the values file. `setup:configs` runs the
+   repository's own copy of that task, and only a real sync writes the new
+   copy. Thus the dry run cannot pass before a real sync. Continue with item
+   6, and at item 7 use the two runs of the note under the list.
+6. Ask the user whether to run `mise run setup:configs`. In the same
    question, ask whether to commit the changes at the end (step 9), or to
    leave them for review.
-6. If the user agrees, run `mise run setup:configs`. A sync without a failure
+7. If the user agrees, run `mise run setup:configs`. A sync without a failure
    sets `bootstrap_commit` in the values file.
-7. Run `mise run init`. This makes all the task scripts executable.
+8. Run `mise run init`. This makes all the task scripts executable.
+
+**An old task file (item 5).** Run `mise run setup:configs` two times:
+
+1. The first run writes the new task file and the other files. It fails on
+   the file that needs the tool, keeps the old copy of that file, and does not
+   set `bootstrap_commit`.
+2. The second run uses the new task file, so mise installs the tool before
+   the task runs. This run must pass. If it fails again, read the exit code
+   below.
 
 If `repo_sync` fails, read the exit code:
 
@@ -611,10 +627,10 @@ If `repo_sync` fails, read the exit code:
 | 2    | A pack loop, or a pack name that is also a tool folder                                                                                                                                                                                            | Tell the `bootstrap` owner                       |
 | 2    | A `default_envs` without `dev`, or a tool folder that is `zz-repo` or that sorts after `zz-repo`                                                                                                                                                  | Tell the `bootstrap` owner                       |
 | 2    | Two tools define the same mise tool, a mise `depends` that no tool defines, a tool that ships and generates the same `conf.d` file, an unsupported `[mise.*]` or `[mise_env.*]` section, or a `default_envs` or `envs` name that is not dev or ci | Tell the `bootstrap` owner                       |
-| 2    | The values file is missing, or gomplate is not available                                                                                                                                                                                          | Correct the values file, or run `mise install`   |
+| 2    | The values file is missing, or gomplate is not available (see item 5 of step 6)                                                                                                                                                                   | Correct the values file, or run `mise install`   |
 | 2    | Neither `main` nor `develop` exists                                                                                                                                                                                                               | Do step 4                                        |
 | 3    | A tool or a pack that is not in `bootstrap`                                                                                                                                                                                                       | Correct the `[tools.*]` and `[packs.*]` entries  |
-| 5    | The clone failed, `REPO_SYNC_CLONE` is not usable, pre-commit is not available, or `pre-commit autoupdate` failed                                                                                                                                 | Examine the network, the SSH key and the access  |
+| 5    | The clone failed, `REPO_SYNC_CLONE` is not usable, pre-commit is not available (see item 5 of step 6), or `pre-commit autoupdate` failed                                                                                                          | Examine the network, the SSH key and the access  |
 | 1    | A local file system error                                                                                                                                                                                                                         | Read the `repo-sync:` lines on stderr            |
 
 A failure does not change an existing file.
