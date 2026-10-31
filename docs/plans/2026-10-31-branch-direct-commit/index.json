@@ -202,11 +202,11 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-10-31T12:02:03.561Z",
+      "ended": "2026-10-31T12:03:17.756Z",
+      "commit": "badb8de",
+      "rounds": 1
     }
   ],
   "waves": [
@@ -230,9 +230,9 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-10-31T12:02:03.524Z",
+      "ended": "2026-10-31T12:03:41.205Z"
     }
   ],
   "shared_files": [
