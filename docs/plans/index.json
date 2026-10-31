@@ -1,25 +1,4 @@
 {
   "format": 1,
-  "plans": [
-    {
-      "id": "2026-10-31-branch-direct-commit",
-      "folder": "docs/plans/2026-10-31-branch-direct-commit",
-      "kind": "change",
-      "title": "Allow direct commits on a core branch from bootstrap.toml",
-      "target_repo": null,
-      "priority": 10,
-      "status": "COMPLETE",
-      "started": "2026-10-31T11:37:48.058Z",
-      "ended": "2026-10-31T12:08:37.235Z",
-      "gaps": {
-        "open": 4,
-        "moved_to": []
-      },
-      "requires": [],
-      "backlog": [
-        "B13"
-      ],
-      "backlog_pieces": []
-    }
-  ]
+  "plans": []
 }

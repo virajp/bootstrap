@@ -416,29 +416,29 @@
       "id": "G1",
       "unit": "U3",
       "stage": "edit",
-      "text": "03-examples.md did not say where in [branch.develop] the commented direct_commit lines go · put them as the last lines of the table, after merge_never",
-      "state": "open"
+      "text": "03-examples.md did not say where in [branch.develop] the commented direct_commit lines go · put them as the last lines of the table, after merge_never · accepted by the user 2026-10-31",
+      "state": "closed"
     },
     {
       "id": "G2",
       "unit": "U3",
       "stage": "edit",
-      "text": "03-examples.md Verification says code:format must pass, but code:format formats rather than checks · ran code:format (no file outside the unit changed) plus dprint check on the two changed files, which passed",
-      "state": "open"
+      "text": "03-examples.md Verification says code:format must pass, but code:format formats rather than checks · ran code:format (no file outside the unit changed) plus dprint check on the two changed files, which passed · accepted by the user 2026-10-31",
+      "state": "closed"
     },
     {
       "id": "G3",
       "unit": "U2",
       "stage": "edit",
-      "text": "02-repo-sync.md did not say what to do with a trailing --branch that has no value in a consumer no-commit-to-branch hook · treated as a plain arg, not a pair, so it stays",
-      "state": "open"
+      "text": "02-repo-sync.md did not say what to do with a trailing --branch that has no value in a consumer no-commit-to-branch hook · treated as a plain arg, not a pair, so it stays · accepted by the user 2026-10-31",
+      "state": "closed"
     },
     {
       "id": "G4",
       "unit": "U2",
       "stage": "edit",
-      "text": "02-repo-sync.md gave no exact message texts for the direct_commit errors · used messages that name the table and the values file: key of [branch.main] and [branch.develop] only; must be true or false; branch does not exist; main true without develop true",
-      "state": "open"
+      "text": "02-repo-sync.md gave no exact message texts for the direct_commit errors · used messages that name the table and the values file: key of [branch.main] and [branch.develop] only; must be true or false; branch does not exist; main true without develop true · accepted by the user 2026-10-31",
+      "state": "closed"
     },
     {
       "id": "G5",
