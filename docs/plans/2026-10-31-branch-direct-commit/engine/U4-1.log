@@ -1,0 +1,12 @@
+/security-review — U4 round 1 — range 72074be..68f272f
+Note: the built-in /security-review skill computed its diff in the session's cwd (another worktree) and saw an empty diff. The orchestrator ran the same engine prompt in one subagent pointed at the run worktree and the range.
+
+No high-confidence vulnerabilities found.
+
+Candidates checked and rejected:
+- Template injection through [branch.*] keys in _rs_direct_commit (repo-sync ~L740): a key with a tab or newline could fake a row, but the values file is the consumer's own .config/bootstrap.toml; no trust boundary is crossed. The key only reaches _rs_log; _rs_branch_exists gets only main or develop, quoted.
+- Command injection: the rendered value reaches the shell only quoted, in [[ ]] comparisons and git show-ref. Nothing is evaluated.
+- Bypass of branch protection through hook filtering in _rs_context: removes only --branch pairs of main or develop, only for direct_commit = true or a missing branch; consumer pre-commit.yaml is consumer-owned. Intended feature.
+- A missing branch drops its pair: a develop created after a sync has no hook until the next setup:configs. Hardening gap, not exploitable.
+- SKIP=...no-commit-to-branch in precommit_safety_net (merge L78-81): the run makes no commit; caller SKIP kept; env vars trusted.
+- The direct_commit boolean check: non-bool stops the sync with code 2; keys outside main/develop rejected.
