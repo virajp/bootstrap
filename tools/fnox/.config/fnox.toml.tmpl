@@ -26,4 +26,9 @@ env = "exec"
 [providers]
 keychain = { type = "keychain", <% if has . "product_name" %>service = "<% .product_name %>", prefix = "<% .repo_name %>/"<% else %>service = "<% .repo_name %>"<% end %> }
 
+# A repository with one set of secrets for each target (for example each
+# Pulumi stack) can keep them in `[profiles.<name>.secrets]`, with its own
+# `[profiles.<name>.providers]`. `setup:secrets:fnox` checks each profile, and
+# `fnox -P <name> exec -- <command>` loads one.
+
 [secrets]
