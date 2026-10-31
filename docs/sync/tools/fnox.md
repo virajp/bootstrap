@@ -43,11 +43,16 @@ repository. Do not put a `config.toml` in `.config/fnox/`.
 
 ## Tasks
 
-| Task                 | Use                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------- |
-| `setup:secrets:fnox` | Make sure that each secret that fnox needs is configured. It skips without `.config/fnox.toml`. |
+| Task                 | Use                                                                                                                                                                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:secrets:fnox` | Make sure that each secret that fnox needs is configured: `fnox check` for the `default` profile, then `fnox -P <profile> check` for each other profile. It runs every check, and it fails at the end and names each profile that failed. It skips without `.config/fnox.toml`. |
 
 The task needs fnox 1.39.0 or later.
+
+The task checks each profile in its own call. `fnox -P a,b check` merges the
+profiles into one overlay, where a later profile replaces a secret of the same
+name, so it can hide a missing secret. A profile inherits the top-level
+secrets, so its check examines them again.
 
 ## Pre-commit hooks
 
