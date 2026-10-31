@@ -1,0 +1,417 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "Allow direct commits on a core branch from bootstrap.toml",
+  "requires": [],
+  "source": [
+    "B13"
+  ],
+  "backlog": [
+    "B13"
+  ],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-10-31 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test:repo-sync"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "From the run worktree, resolve the pre-commit binary with mise x -- which pre-commit, and prepend its folder to PATH so that mise x -- which pre-commit also finds it in a folder without a mise config. Make a temporary git repository with the branches main and develop, and check out develop. Copy tools/mise/.config/mise/tasks/_scripts/helpers and tools/mise/.config/mise/tasks/_scripts/checks of the worktree into its .config/mise/tasks/_scripts/, and write a minimal .config/pre-commit-config.yaml that holds only the pre-commit/pre-commit-hooks repo (rev v6.0.0) with the no-commit-to-branch hook and args [\"--branch\", \"main\", \"--branch\", \"develop\"]. Commit all three files, so the tree is clean. From the temporary repository, with MISE_PROJECT_ROOT set to it, run precommit_safety_net twice in fresh shells: first after sourcing the merge library of the branch base (git show <base>:tools/git/.config/mise/tasks/_scripts/merge), then after sourcing the changed tools/git/.config/mise/tasks/_scripts/merge. pre-commit may fetch the hook repo over the network or use its cache. No remote and no push.",
+        "pass": "The base library returns non-zero and the changed library returns 0, and neither run prints \"pre-commit is not on PATH\" or \"No .config/pre-commit-config.yaml\", so both runs really ran the hooks."
+      },
+      {
+        "id": "K2",
+        "check": "Run repo_sync --dry-run in this repository against a clone that holds the plan's commits (REPO_SYNC_URL set to a local clone of the run's branch, REPO_SYNC_NO_AUTOUPDATE=1). This repository sets no direct_commit key.",
+        "pass": "In .config/pre-commit-config.yaml, the no-commit-to-branch hook changes in exactly two ways: its name becomes the neutral text of D6, and the --branch develop pair is gone, because this repository has no develop branch (D15). Its args become [\"--branch\", \"main\"]. Nothing else in the file changes."
+      }
+    ]
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "mise x -- mise run code:graph",
+      "mode": "run",
+      "notes": "Refreshes the graphify graph over the landed tree."
+    },
+    {
+      "id": "A2",
+      "step": "plan-management archive docs/plans/2026-10-31-branch-direct-commit",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "A new optional values-file key, direct_commit, is new behavior; no consumer must change anything."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "git: neutral hook text and the safety-net skip",
+      "wave": 1,
+      "file": "01-git.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "tools/git/tools.toml",
+        "tools/git/.config/mise/tasks/_scripts/merge"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "repo-sync: validate direct_commit and render the hook args",
+      "wave": 1,
+      "file": "02-repo-sync.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+        ".config/mise/tasks/test/repo-sync"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Examples: add direct_commit and review them",
+      "wave": 1,
+      "file": "03-examples.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "examples/polyrepo/bootstrap.toml",
+        "examples/polyrepo-main/bootstrap.toml",
+        "examples/polyrepo-develop/bootstrap.toml",
+        "examples/monorepo/bootstrap.toml",
+        "examples/repo-submodules/bootstrap.toml",
+        "examples/repo-submodules/backend/bootstrap.toml",
+        "examples/repo-submodules/frontend/bootstrap.toml",
+        "examples/repo-submodules/iac/bootstrap.toml",
+        "examples/repo-siblings/acme-api/bootstrap.toml",
+        "examples/repo-siblings/acme-app/bootstrap.toml",
+        "examples/repo-siblings/acme-product/bootstrap.toml"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Review: U1 to U3",
+      "wave": 2,
+      "file": "04-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U5",
+      "title": "Docs",
+      "wave": 3,
+      "file": "05-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/bootstrap-config.md",
+        "docs/design/packs.md",
+        "docs/sync/index.md",
+        "docs/sync/vwf.md",
+        "docs/sync/migrate.md",
+        "docs/sync/tools/git.md",
+        "docs/sync/tools/pre-commit.md",
+        "docs/sync/tools/repo-sync.md"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U6",
+      "title": "Gates",
+      "wave": 4,
+      "file": "06-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "examples/last_sync.toml"
+      ],
+      "depends_on": [
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "examples/last_sync.toml",
+      "why": "commit_id must name a commit after the last contract commit of the plan, so only the last unit sets it",
+      "owner": "U6"
+    },
+    {
+      "id": "S2",
+      "file": "README.md, CLAUDE.md, docs/**",
+      "why": "every human-facing doc; the earlier units report DOCS FALSIFIED lines and never edit a doc",
+      "owner": "U5"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Does this plan finish B13 or land one piece of it?",
+      "ruling": "Finish B13. The plan lands the key, the validation, the render, the tests and the docs. The user does the macos-setup change by hand after the landing.",
+      "rejected": "Land a piece of B13 and keep the macos-setup step open on a Parked line.",
+      "units": []
+    },
+    {
+      "id": "D2",
+      "decision": "Which combinations of direct_commit are valid?",
+      "ruling": "One core branch, either main or develop, depending on the repo's need: direct_commit on that branch drops it from the hook, and with no branch left the sync removes the hook. With both main and develop: develop only (the hook keeps --branch main), or both (the sync removes the hook). User: \"There can never be a situation where main is allowed for direct-commit but develop is NOT.\" That case stops the sync with code 2.",
+      "rejected": "Any combination, with no rule between the branches.",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "How must the merge safety net treat no-commit-to-branch?",
+      "ruling": "The safety net always runs with SKIP=no-commit-to-branch. The hook guards a commit, and the safety net does not make a commit; a merge never runs the hook, because the hook types do not include pre-merge-commit.",
+      "rejected": "Skip the hook only when the source branch is protected; a flag of code:merge:main that skips it.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "What is the shape of the new key, and who validates it?",
+      "ruling": "A boolean direct_commit in [branch.main] and [branch.develop]. repo-sync validates it before it writes any file, in the same step as _rs_mise_env and _rs_overrides: a non-boolean value, the key in any other [branch.*] table, and main true without develop true when both branches exist each stop the sync with code 2. The merge tasks do not read the key.",
+      "rejected": "One top-level list direct_commit = [\"develop\"]; one mode for each repository (\"none\", \"develop\", \"all\").",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "What does the sync do with direct_commit for a core branch that the repository does not have?",
+      "ruling": "It stops the sync with code 2. The message names the table and says that the branch does not exist.",
+      "rejected": "Log a warning and continue; ignore it with no message.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "What do the name and the description of the hook say after the change?",
+      "ruling": "Neutral fixed text, for example \"Refuse a direct commit to a protected branch\". The --branch args show which branches the hook protects.",
+      "rejected": "Render the branch names into the name.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "Where does the sync change the args of the hook?",
+      "ruling": "In repo-sync, where _rs_context builds .precommit: find the hook with the id no-commit-to-branch, remove each --branch <b> pair whose branch has direct_commit = true, and remove the hook when no branch is left. The template does not change. Accepted: a no-commit-to-branch hook in the consumer file .config/repo-sync/pre-commit.yaml changes the same way.",
+      "rejected": "Change the args in the loop over the hooks of the pre-commit template.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "What happens to the examples?",
+      "ruling": "Add direct_commit to the examples where it fits, review all the examples against the contract commits since commit_id (git log <commit_id>..HEAD -- tools docs/sync CLAUDE.md), and set commit_id. The gates unit sets commit_id last, so no contract commit of the plan comes after it.",
+      "rejected": "Add the key only and park the full review; do not change the examples.",
+      "units": [
+        "U3",
+        "U6"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "How does B14 relate to this plan?",
+      "ruling": "B14 is a separate plan that requires this one, planned next in the same session.",
+      "rejected": "Include B14 in this plan; leave B14 in the backlog.",
+      "units": []
+    },
+    {
+      "id": "D10",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "Yes. U1 and U2 change shell scripts that run: the merge library and repo-sync. One review unit in wave 2 covers U1, U2 and U3.",
+      "rejected": "No review unit; the wave review only.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "How does the docs unit make sure that the docs are correct?",
+      "ruling": "All four parts: (1) the explicit list of passages in 05-docs.md, each with its change; (2) then vwf:docs-sync over the full branch delta, with a fix for each passage it finds that the list does not name; (3) a grep check: no doc names the old hook text \"main or develop\", and each listed file that describes the key has a hit for direct_commit; dprint check over the docs; (4) the examples stay a separate unit (U3). The unit also adds one optional M<n> item to docs/sync/migrate.md.",
+      "rejected": "vwf:docs-sync only.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "How do the examples show the key?",
+      "ruling": "Assumed: as a commented line under [branch.develop], with one comment line that gives the rule, so that a consumer who copies an example does not allow direct commits by accident. Only polyrepo-develop and monorepo get the line. No other example gets it, and no example shows it in [branch.main].",
+      "rejected": "A real (not commented) key in the examples.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Is direct_commit = false validated like true?",
+      "ruling": "Yes. The sync validates the key when it is present, whatever its value: false in a table other than [branch.main] or [branch.develop], and false for a core branch that does not exist, each stop the sync with code 2. false has no effect on the render.",
+      "rejected": "Treat false as no key everywhere.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Which forms of a consumer no-commit-to-branch hook does the sync change?",
+      "ruling": "Only --branch <b> pairs, the form of the git tool. A hook with no args, or with --branch=<b> or -b <b>, stays as it is. The sync removes a hook that had --branch pairs and has none left, also when it has other args: with no --branch arg, no-commit-to-branch of pre-commit-hooks v6.0.0 protects main and master by default.",
+      "rejected": "Also match --branch=<b> and -b <b>; drop a hook with no args; keep a hook with its other args when its --branch pairs are gone (it then protects main and master by default).",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Does the sync drop the --branch pair of a core branch that does not exist?",
+      "ruling": "Yes. The render drops the --branch <b> pair of each core branch (main, develop) that _rs_branch_exists does not find, and of each branch with direct_commit = true. So the hook protects only the core branches that exist and do not allow direct commits, and a one-branch repo with direct_commit on that branch has no hook (D2). Side effect, accepted: each one-branch consumer gets --branch <its branch> only at its next sync, with no new key; a new develop branch comes back at the sync after it exists.",
+      "rejected": "Drop pairs only for direct_commit = true, and change D2 so that a one-branch repo keeps the hook for the missing branch.",
+      "units": [
+        "U2"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
