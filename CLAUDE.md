@@ -273,6 +273,14 @@ path as the task name, for example `code/merge/develop` is
   get the prefix. The tools that mise does not install also do not get it, for
   example `xcodebuild`, `swift`, `pod`, `./gradlew` and the VS Code `code`
   command.
+- Exception: a tool that a task must have in every repository and environment
+  gets a `#MISE tools.<tool>="latest"` directive in that task, and the task
+  and the libraries that it sources call it without `mise x --` and find it
+  with `command -v`. `mise x` finds only the tools of a config file, and a
+  repository before its first sync, or a shell without `MISE_ENV=dev`, has no
+  config that names them. The tools are `gomplate` and `pre-commit` in
+  `setup:configs:sync`, `pre-commit` in `setup:precommit` and
+  `code:precommit`, and `pre-commit` and `yq` in the `code:merge` tasks.
 - To find whether the repository has an optional task, use `has_own_task` and
   `own_tasks` from `helpers`. Do not use `mise tasks info` or a wildcard
   `mise run`. In a submodule, mise also finds the tasks of the root

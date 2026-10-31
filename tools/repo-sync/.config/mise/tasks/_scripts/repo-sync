@@ -138,9 +138,10 @@
 #                no pair left goes, and an entry with no hook left goes
 # The delimiters are `<% %>`, because `{{ }}` belongs to mise and `[[ ]]` to
 # bash, and both must reach the output unchanged. gomplate reads the TOML too.
-# Each call names the tool (`mise x gomplate@latest --`): `mise x` finds only
-# the tools of a config file, and a repo before its first sync has no config
-# that names gomplate, also when the calling task declares it.
+# The calling task provides gomplate and pre-commit with
+# `#MISE tools.<tool>="latest"`, and this script calls them without `mise x --`:
+# `mise x` finds only the tools of a config file, and a repo before its first
+# sync, or a shell without MISE_ENV=dev, has no config that names them.
 #
 # Merge tasks: the branch model follows the branches that exist, here or on
 # origin. With `main` and `develop`, the sync writes `code/merge/develop` and
@@ -273,9 +274,9 @@ _rs_members() {
   done <<< "$rows"
 }
 
-# gomplate with the template delimiters this repo uses. The tool is named in
-# the call, so it works before the first sync writes a config that names it.
-_rs_gomplate() { mise x gomplate@latest -- gomplate --left-delim '<%' --right-delim '%>' "$@"; }
+# gomplate with the template delimiters this repo uses. The calling task puts
+# gomplate on PATH with its tools directive.
+_rs_gomplate() { gomplate --left-delim '<%' --right-delim '%>' "$@"; }
 
 # Print the items of the list <key> in the TOML file <file>, one per line;
 # nothing when the key is absent.
@@ -1487,10 +1488,10 @@ _rs_file() {
   if ((rc == 0)) && [[ $out == .config/pre-commit-config.yaml ]]; then
     if [[ ${REPO_SYNC_NO_AUTOUPDATE:-} == 1 ]]; then
       _rs_log "$tool/$path: REPO_SYNC_NO_AUTOUPDATE=1 - pre-commit autoupdate skipped"
-    elif ! mise x -- which pre-commit > /dev/null 2>&1; then
+    elif ! command -v pre-commit > /dev/null 2>&1; then
       _rs_log "$tool/$path: pre-commit is not available to resolve the hook revisions"
       rc=5
-    elif ! (cd "$MISE_PROJECT_ROOT" && mise x -- pre-commit autoupdate --config "$tmp" > /dev/null 2>&1); then
+    elif ! (cd "$MISE_PROJECT_ROOT" && pre-commit autoupdate --config "$tmp" > /dev/null 2>&1); then
       _rs_log "$tool/$path: pre-commit autoupdate failed - examine the network and the hook repositories"
       rc=5
     fi
@@ -1690,8 +1691,8 @@ repo_sync() {
     _rs_log "values file $(_rs_path "$values") not found - it lists the tools to sync"
     return 2
   fi
-  if ! mise x gomplate@latest -- which gomplate > /dev/null 2>&1; then
-    _rs_log "gomplate is not available - mise cannot install gomplate@latest; run mise install gomplate@latest"
+  if ! command -v gomplate > /dev/null 2>&1; then
+    _rs_log "gomplate is not available - add #MISE tools.gomplate=\"latest\" to the calling task"
     return 2
   fi
 

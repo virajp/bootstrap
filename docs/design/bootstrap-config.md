@@ -256,7 +256,7 @@ Each repository reads only `[branch.<branch>]` of its own
 `.config/bootstrap.toml`. This applies to a repository without submodules, to
 the root of a repository with submodules, and to each submodule. The merge tasks
 read the file when they run, with
-`mise x -- yq`.
+`yq`, which each merge task declares with `#MISE tools.yq="latest"`.
 
 | Value    | Effect                                                         |
 | -------- | -------------------------------------------------------------- |

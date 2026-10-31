@@ -3,6 +3,8 @@
 # The next sync replaces it, and a manual change is lost.
 
 #MISE description="Land develop on main — merge it, or open a pull request"
+#MISE tools.pre-commit="latest"
+#MISE tools.yq="latest"
 
 set -euo pipefail
 # shellcheck source=/dev/null

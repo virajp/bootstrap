@@ -4,6 +4,7 @@
 
 #MISE description="Sync the shared files from the bootstrap clone of setup:configs"
 #MISE hide=true
+#MISE tools.pre-commit="latest"
 #MISE tools.gomplate="latest"
 
 #USAGE flag "--dry-run" help="show the changes without writing them"
