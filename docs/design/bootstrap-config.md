@@ -37,6 +37,7 @@ merge_model = "pr"
 [branch.develop]
 merge_model = "direct"
 merge_never = [ "main" ]
+# direct_commit = true
 ```
 
 ## Summary of the keys
@@ -61,6 +62,7 @@ merge_never = [ "main" ]
 | `[branch.<branch>].merge_model`    | String          | No        | `code:merge:<branch>`                  |
 | `[branch.<branch>].merge_from`     | List of strings | No        | `code:merge:<branch>`                  |
 | `[branch.<branch>].merge_never`    | List of strings | No        | `code:merge:<branch>`                  |
+| `[branch.<branch>].direct_commit`  | Boolean         | No        | `repo-sync`                            |
 
 All the paths in this document are relative to the root of the consumer
 repository.
@@ -205,7 +207,8 @@ that is not a submodule.
 - A `[member.<name>]` table that is not a submodule must have its folder in
   the repository. If not, the render stops with code 2.
 - No member is the repository itself: a `folder` of `.` stops the render
-  with code 2. The merge config of the repository is in `[branch.<branch>]`.
+  with code 2. The merge config of the repository, and its `direct_commit`,
+  are in `[branch.<branch>]`.
 - The templates get the names as `.members`, the folder of each name as
   `.member_folders`, and the type of each name as `.member_types`.
   `MEMBERS` in `.config/mise.toml` is the list of the folders, with one space
@@ -281,6 +284,50 @@ List of branches the merge can NEVER be allowed from. If the list is empty and
   `develop` exists, only from `develop` (`merge_from = ["develop"]`); into any
   other branch, never from `main` (`merge_never = ["main"]`)
 - A table that sets both lists stops the merge
+
+### `[branch.<branch>].direct_commit`
+
+`true` allows a direct commit to the branch. `repo-sync` reads the key. The
+merge tasks do not read it. The key is only for `[branch.main]` and
+`[branch.develop]`, the core branches. Without the key, or with `false`, the
+`no-commit-to-branch` hook of the `git` tool refuses a direct commit to the
+branch.
+
+The hook protects only the core branches that exist and that do not allow
+direct commits. The sync removes the `"--branch", "<branch>"` pair of each
+core branch that does not exist and of each core branch with
+`direct_commit = true`. When no pair is left, the sync removes the hook.
+
+| Core branches of the repository | `direct_commit = true` in | Hook args                         |
+| ------------------------------- | ------------------------- | --------------------------------- |
+| `main` only                     | `[branch.main]`           | No hook                           |
+| `develop` only                  | `[branch.develop]`        | No hook                           |
+| `main` and `develop`            | `[branch.develop]` only   | `--branch main`                   |
+| `main` and `develop`            | Both tables               | No hook                           |
+| `main` and `develop`            | `[branch.main]` only      | The sync stops with code 2        |
+| `main` and `develop`            | No table                  | `--branch main --branch develop`  |
+| `main` only, or `develop` only  | No table                  | `--branch <branch>` of the branch |
+
+These values stop the sync with code 2, before it writes a file. The sync
+validates the key when it is present, also when it is `false`:
+
+- A value that is not a boolean: `direct_commit must be true or false`
+- The key in a `[branch.*]` table other than `[branch.main]` and
+  `[branch.develop]`:
+  `direct_commit is a key of [branch.main] and [branch.develop] only`
+- The key for a core branch that does not exist, locally or on `origin`. The
+  message names the table and the branch: create the branch, or remove the
+  key
+- With `main` and `develop`, `direct_commit = true` for `main` but not for
+  `develop`. A repository with both branches never allows a direct commit to
+  `main` and refuses it on `develop`
+
+The same rule applies to a `no-commit-to-branch` hook in
+`.config/repo-sync/pre-commit.yaml`. The sync changes only its
+`"--branch", "<branch>"` pairs. A hook without args, or with `--branch=<b>` or
+`-b <b>`, does not change. A hook that had `--branch` pairs and has none left
+goes, also when it has other args: without `--branch`, the hook protects
+`main` and `master`. An entry with no hook left goes too.
 
 ## Reserved names
 

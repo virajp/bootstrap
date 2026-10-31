@@ -17,12 +17,12 @@ file.
 
 ## What the tool ships
 
-| Path in the repository                         | Kind      | Use                                                                        |
-| ---------------------------------------------- | --------- | -------------------------------------------------------------------------- |
-| `.config/pre-commit-config.yaml`               | Template  | The hooks of the selected tools, then `.config/repo-sync/pre-commit.yaml`. |
-| `.config/mise/tasks/setup/precommit`           | Synced    | The task `setup:precommit`.                                                |
-| `.config/mise/tasks/code/precommit`            | Synced    | The task `code:precommit`.                                                 |
-| `.config/mise/conf.d/pre-commit/mise.dev.toml` | Generated | The mise config of this tool.                                              |
+| Path in the repository                         | Kind      | Use                                                                                                                                  |
+| ---------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `.config/pre-commit-config.yaml`               | Template  | The hooks of the selected tools, then `.config/repo-sync/pre-commit.yaml`. The args of `no-commit-to-branch` follow `direct_commit`. |
+| `.config/mise/tasks/setup/precommit`           | Synced    | The task `setup:precommit`.                                                                                                          |
+| `.config/mise/tasks/code/precommit`            | Synced    | The task `code:precommit`.                                                                                                           |
+| `.config/mise/conf.d/pre-commit/mise.dev.toml` | Generated | The mise config of this tool.                                                                                                        |
 
 ## mise tools
 
@@ -53,11 +53,19 @@ becomes the newest tag, not the `rev` of the `tools.toml`. If pre-commit is not
 available or the autoupdate fails, the sync stops with code 5.
 `REPO_SYNC_NO_AUTOUPDATE=1` skips the autoupdate.
 
+Before the render, `repo-sync` changes the `no-commit-to-branch` hook of each
+entry. It removes each `"--branch", "<branch>"` pair of a core branch (`main`,
+`develop`) that does not exist, or whose `[branch.<branch>]` table has
+`direct_commit = true`. A hook with no pair left goes, and an entry with no
+hook left goes too. Thus a repository with one core branch gets only
+`--branch <its branch>`. `repo-sync` validates `direct_commit` first: see
+`repo-sync.md`.
+
 ## Files the repository supplies
 
-| File                                | Used by                                                    |
-| ----------------------------------- | ---------------------------------------------------------- |
-| `.config/repo-sync/pre-commit.yaml` | `.config/pre-commit-config.yaml`. Optional: its own hooks. |
+| File                                | Used by                                                                                                                             |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `.config/repo-sync/pre-commit.yaml` | `.config/pre-commit-config.yaml`. Optional: its own hooks. A `no-commit-to-branch` hook here changes as the hook of the `git` tool. |
 
 ## Adapt to the repository
 

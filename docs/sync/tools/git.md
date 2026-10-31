@@ -47,13 +47,20 @@ repository's own `.config/bootstrap.toml`, with `mise x -- yq`. Its
 `merge_never` limits the source branches. Without both lists, only `develop`
 merges into `main` when `develop` exists, and nothing merges from `main`. A
 table with both lists stops the merge. The `pr` model needs the CLI of the
-forge, from the `github` or the `gitlab` tool.
+forge, from the `github` or the `gitlab` tool. The merge tasks do not read
+`direct_commit`: `repo-sync` reads it. Before a merge, the merge tasks run the
+hooks over all files as a safety net, with `SKIP=no-commit-to-branch`. The
+safety net makes no commit, so that hook does not apply to it.
 
 ## Pre-commit hooks
 
 - The local hook `git-config`, which calls `code:git-config --fix`.
-- `no-commit-to-branch` of `pre-commit/pre-commit-hooks`, for `main` and
-  `develop`.
+- `no-commit-to-branch` of `pre-commit/pre-commit-hooks`, with the name
+  "Refuse a direct commit to a protected branch". Its args are
+  `--branch main --branch develop`. The sync removes the `--branch` pair of a
+  core branch that does not exist, and of a branch with `direct_commit = true`
+  in its `[branch.<branch>]` table. When no branch is left, the sync removes
+  the hook. See step 4 of `index.md`.
 - `qoomon/git-conventional-commits` in the commit-msg stage.
 
 ## Files the repository supplies

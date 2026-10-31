@@ -60,6 +60,18 @@ Besides the copy of the files, `repo_sync` does these steps:
   and to `.gitignore`. Each overridden line gets an `# override:` comment.
   A bad `[overrides]` stops the sync with code 2. See "Overrides" in step 3
   of `index.md`.
+- It validates `direct_commit` of the `[branch.*]` tables before it writes a
+  file. These values stop the sync with code 2: a value that is not a
+  boolean, the key in a table other than `[branch.main]` and
+  `[branch.develop]`, the key for a core branch that does not exist (also
+  `false`), and `direct_commit = true` for `main` but not for `develop` when
+  both branches exist.
+- It changes the `no-commit-to-branch` hook in `.precommit`, the hooks of the
+  tools and of `.config/repo-sync/pre-commit.yaml`. It removes each
+  `"--branch", "<branch>"` pair of a core branch that does not exist or that
+  has `direct_commit = true`. A hook with no pair left goes, and an entry with
+  no hook left goes too. Thus a repository with one core branch gets only
+  `--branch <its branch>`.
 - After a sync without a failure, it sets the top-level `bootstrap_commit` of
   the values file to the full commit of its clone. It replaces only that
   line, or adds it after the header comments. A dry run prints

@@ -19,6 +19,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | Files from the stackgen `tool-config` skill or packs            | M19, before the next sync.                                                                                                                                                                                                                                          |
 | `[tools.vscode]` in the values file, or no `vscode` in the root | M20.                                                                                                                                                                                                                                                                |
 | `@askviraj/linter` in a file of the repository                  | M21, before the next sync.                                                                                                                                                                                                                                          |
+| A core branch that must allow direct commits                    | M22. Optional.                                                                                                                                                                                                                                                      |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -482,3 +483,18 @@ when they are missing. Thus it does not change the old files.
 4. Remove `npm:@askviraj/linter` from the repository-owned mise files.
 5. Run `mise run setup:configs`, then `mise run code:lint`. The lint must
    complete without an error about a missing module.
+
+## M22: Allow direct commits on a core branch (optional)
+
+The `no-commit-to-branch` hook protects only the core branches (`main`,
+`develop`) that exist and do not allow direct commits. The key
+`direct_commit` of `[branch.main]` and `[branch.develop]` is new. No old form
+of it exists.
+
+1. If the repository does not want direct commits on a core branch, do
+   nothing. At the next sync, a repository with one core branch gets only
+   `--branch <its branch>` in the hook.
+2. To allow direct commits on a core branch, set `direct_commit = true` in its
+   `[branch.<branch>]` table. With `main` and `develop`, `main` can allow
+   them only when `develop` allows them too. See step 4 of `index.md`.
+3. Run `mise run setup:configs`.

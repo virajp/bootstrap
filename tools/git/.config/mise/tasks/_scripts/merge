@@ -75,7 +75,10 @@ precommit_safety_net() {
 
   print_wait "Running the hooks over every file ... "
   local hooks_passed=true
-  if ! mise x -- pre-commit run --config "${config}" --all-files > /dev/null 2>&1; then
+  # no-commit-to-branch guards a commit, and the safety net makes none. It is
+  # skipped here because `code:merge:main` runs from `develop`, which the hook
+  # can protect. A SKIP that the caller set is kept.
+  if ! SKIP="${SKIP:+${SKIP},}no-commit-to-branch" mise x -- pre-commit run --config "${config}" --all-files > /dev/null 2>&1; then
     hooks_passed=false
   fi
 

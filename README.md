@@ -141,7 +141,9 @@ has that file:
    `root_only` tool in a git submodule. It skips a `root_only` tool that only
    a pack adds.
 5. It finds the branch model from the branches `main` and `develop`, local or
-   on origin. It stops if neither branch exists.
+   on origin. It stops if neither branch exists. It validates `direct_commit`
+   of `[branch.main]` and `[branch.develop]`, and stops with code 2 for a bad
+   value.
 6. It copies each file of each tool.
 7. After a sync without a failure, it sets `bootstrap_commit` of the values
    file to the commit of its clone. This is its only write to the values
@@ -217,7 +219,10 @@ A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
   `extensions` list of its values file.
 - `.precommit` is the list of the `[[precommit]]` entries of those tools, in
   tool order, then the entries of the repository's
-  `.config/repo-sync/pre-commit.yaml`.
+  `.config/repo-sync/pre-commit.yaml`. A `no-commit-to-branch` hook in it
+  loses each `--branch` pair of a core branch that does not exist or that
+  has `direct_commit = true`. A hook with no pair left goes, and an entry with
+  no hook left goes too.
 
 Example values file:
 
@@ -247,6 +252,10 @@ label = "Backend"
 merge_from = [ "develop" ]
 merge_model = "pr"
 
+[branch.develop]
+# Allow a direct commit to develop. main can allow it only when develop does.
+# direct_commit = true
+
 # The Claude Code plugins that setup:ai of the claude tool installs.
 [claude.plugins.user]
 "taste-skill@taste-skill" = "Leonxlnx/taste-skill"
@@ -266,8 +275,12 @@ The `claude` tool ships `.graphifyignore`. The sync applies
 
 The `pre-commit` tool renders this file from the `[[precommit]]` entries of the
 selected tools. Then it adds the entries of the repository's
-`.config/repo-sync/pre-commit.yaml`, if that file exists. That file is a YAML
-list of `repos:` entries:
+`.config/repo-sync/pre-commit.yaml`, if that file exists. The args of the
+`no-commit-to-branch` hook follow the core branches (`main`, `develop`) that
+exist and `direct_commit` of their `[branch.*]` tables: the hook protects
+only the core branches that exist and do not allow direct commits. Without a
+protected branch, the sync removes the hook.
+`.config/repo-sync/pre-commit.yaml` is a YAML list of `repos:` entries:
 
 ```yaml
 - repo: local

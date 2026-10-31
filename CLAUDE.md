@@ -147,7 +147,8 @@ Some files refer to files that are not in `tools/`, for example
   adds the `base` pack, expands each pack, adds
   the `depends` of each tool, and copies each file of each tool.
 - Exit codes: 2 for a values file or a `tools.toml` that breaks a rule (also a
-  missing values file or a missing gomplate), 3 for a tool or a pack that is
+  missing values file, a missing gomplate, or a bad `direct_commit`: see
+  "Branch model in the merge tasks"), 3 for a tool or a pack that is
   not in bootstrap, 5 for a clone, a fetch or an `autoupdate` that fails. A
   failure of one file does not stop the other files. The sync returns the
   highest code of all its failures.
@@ -188,7 +189,11 @@ Some files refer to files that are not in `tools/`, for example
   updates the marketplaces and the plugins.
 - The `pre-commit` tool renders `.config/pre-commit-config.yaml` from the
   `[[precommit]]` tables of the selected tools. Then it adds the entries of the
-  consumer file `.config/repo-sync/pre-commit.yaml`.
+  consumer file `.config/repo-sync/pre-commit.yaml`. Before the render, the
+  sync removes each `"--branch", "<b>"` pair of a `no-commit-to-branch` hook
+  whose core branch does not exist or has `direct_commit = true`. A hook with
+  no pair left goes, and an entry with no hook left goes too (see "Branch
+  model in the merge tasks").
 - The sync runs `pre-commit autoupdate` on the rendered pre-commit config, so
   each `rev` becomes the newest tag. A later `autoupdate` in the consumer
   picks the same tags, so the two never undo each other. Keep a real tag in
@@ -231,7 +236,9 @@ Some files refer to files that are not in `tools/`, for example
   of their VS Code extensions and of the values key `extensions`. In the root
   repository, it also has those of each git submodule. `.precommit` is the list
   of their `[[precommit]]` tables, then the entries of the consumer file
-  `.config/repo-sync/pre-commit.yaml`.
+  `.config/repo-sync/pre-commit.yaml`, with the `--branch` pairs of
+  `no-commit-to-branch` filtered by `direct_commit` (see "How the sync
+  operates").
 
 ## Task scripts
 
@@ -350,7 +357,10 @@ that it finds, and removes the others. It stops if neither branch exists.
   `code:merge:main` lands `develop` on `main`, and runs only from `develop`.
 - Only one of them: `code:merge <branch>` (`code/merge/_default`) lands any
   feature branch on that branch.
-- Merges use `--no-ff`. A hook pass over all files runs first as a safety net.
+- Merges use `--no-ff`. A hook pass over all files runs first as a safety net,
+  with `SKIP=no-commit-to-branch`: that hook guards a commit, and the safety
+  net makes none. Thus `code:merge:main` also runs from a protected
+  `develop`.
 - The merge tasks read `[branch.<destination>]` of the repository's own
   `.config/bootstrap.toml` when they run: the root and each submodule read
   their own file. `merge_model` selects
@@ -361,6 +371,18 @@ that it finds, and removes the others. It stops if neither branch exists.
   forbidden ones. A table with both stops the merge. Without both, the
   defaults are: into `main` with `develop`, only from `develop`; into another
   branch, never from `main`.
+- `direct_commit = true` in `[branch.main]` or `[branch.develop]` allows a
+  direct commit to that branch. `repo_sync` reads it, and the merge tasks do
+  not. The `no-commit-to-branch` hook protects only the core branches that
+  exist and do not allow direct commits: the sync removes the `--branch` pair
+  of each other core branch, and the hook when no pair is left. Thus a
+  repository with one core branch gets only `--branch <its branch>`. With
+  both branches, `main` can allow direct commits only when `develop` does.
+- `repo_sync` validates `direct_commit` before it writes a file, also when it
+  is `false`. A value that is not a boolean, the key in another
+  `[branch.*]` table, the key of a core branch that does not exist, and
+  `main` true without `develop` true when both exist stop the sync with
+  code 2.
 
 ## mise config
 
@@ -477,8 +499,9 @@ that it finds, and removes the others. It stops if neither branch exists.
 3. Commit on a local work branch. Land it on `main` with
    `mise run code:merge <branch>`, which merges and pushes.
 4. In this repository and in each consumer repository, run
-   `mise run setup:configs`, then commit the result. The
-   `no-commit-to-branch` hook refuses a commit on `main`. Thus in this
+   `mise run setup:configs`, then commit the result. This repository sets no
+   `direct_commit`, so the `no-commit-to-branch` hook refuses a commit on
+   `main`. Thus in this
    repository, sync on a local `sync-<name>` branch, commit
    `ops: sync bootstrap with <change>`, and land it with
    `mise run code:merge sync-<name>`. The sync also updates

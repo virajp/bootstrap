@@ -12,8 +12,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-10-31 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-10-31 — 5a712c5 67aba25 82346bb 2e5da78 badb8de"
   },
   "consent": {
     "merge": true,
@@ -79,11 +79,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-10-31T11:39:31.138Z",
+      "ended": "2026-10-31T11:40:47.138Z",
+      "commit": "5a712c5",
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -98,11 +98,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-10-31T11:39:31.214Z",
+      "ended": "2026-10-31T11:45:59.303Z",
+      "commit": "67aba25",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -126,11 +126,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-10-31T11:39:31.290Z",
+      "ended": "2026-10-31T11:41:29.827Z",
+      "commit": "82346bb",
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -146,14 +146,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-10-31T11:50:23.406Z",
+      "ended": "2026-10-31T11:52:08.864Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "72074be",
+        "to": "68f272f"
       }
     },
     {
@@ -182,11 +182,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-10-31T11:52:40.108Z",
+      "ended": "2026-10-31T11:58:01.096Z",
+      "commit": "2e5da78",
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -202,37 +202,37 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-10-31T12:02:03.561Z",
+      "ended": "2026-10-31T12:03:17.756Z",
+      "commit": "badb8de",
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-10-31T11:39:31.099Z",
+      "ended": "2026-10-31T11:50:03.968Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-10-31T11:50:23.370Z",
+      "ended": "2026-10-31T11:52:21.483Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-10-31T11:52:40.071Z",
+      "ended": "2026-10-31T12:01:47.186Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-10-31T12:02:03.524Z",
+      "ended": "2026-10-31T12:03:41.205Z"
     }
   ],
   "shared_files": [
@@ -387,31 +387,81 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers — no blueprint slice, no acceptance criteria, no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T11:52:39.706Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers — no blueprint slice, no acceptance criteria, no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T11:52:39.489Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers — no blueprint slice, no acceptance criteria, no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T11:52:39.597Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers (no stamps, registry or environment edits) and no code unit (nothing to persist); no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T11:52:39.852Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "03-examples.md did not say where in [branch.develop] the commented direct_commit lines go · put them as the last lines of the table, after merge_never",
+      "state": "open"
+    },
+    {
+      "id": "G2",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "03-examples.md Verification says code:format must pass, but code:format formats rather than checks · ran code:format (no file outside the unit changed) plus dprint check on the two changed files, which passed",
+      "state": "open"
+    },
+    {
+      "id": "G3",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "02-repo-sync.md did not say what to do with a trailing --branch that has no value in a consumer no-commit-to-branch hook · treated as a plain arg, not a pair, so it stays",
+      "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "02-repo-sync.md gave no exact message texts for the direct_commit errors · used messages that name the table and the values file: key of [branch.main] and [branch.develop] only; must be true or false; branch does not exist; main true without develop true",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "R1 rule 3: U2 added a 12th test:repo-sync case (direct_commit main = false in a develop-only repo) that 02-repo-sync.md does not list · kept: the case tests D13 (false for a missing core branch stops the sync with code 2), so it is inside the rulings; no loop-back",
+      "state": "closed"
+    },
+    {
+      "id": "G6",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "vwf:docs-sync standalone mode says to commit, the unit contract forbids a commit · the unit did not commit; the orchestrator commits the unit per the staging discipline",
+      "state": "closed"
+    },
+    {
+      "id": "G7",
+      "unit": "",
+      "stage": "keeps",
+      "text": "K1 says to prepend the folder of the mise pre-commit binary to PATH, but mise x drops mise install folders from PATH, so the safety net printed pre-commit is not on PATH · symlinked the same binary into a scratch bin folder and prepended that; K1 then passed (base exit 1 on no-commit-to-branch, changed exit 0)",
+      "state": "closed"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".worktrees/branch-direct-commit",

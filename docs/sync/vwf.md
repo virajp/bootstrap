@@ -123,6 +123,10 @@ repo_url = "https://github.com/example/acme-api"
 ```
 ````
 
+A `[branch.main]` or `[branch.develop]` table of a block can also have
+`direct_commit = true`, to allow a direct commit to that branch. See step 4 of
+`index.md`.
+
 The instruction is the consent. The plugin asked the user before it sent the
 instruction. Do not ask the user again to apply it. An adopt instruction is
 the consent to start the adoption: `index.md` still asks each of its
