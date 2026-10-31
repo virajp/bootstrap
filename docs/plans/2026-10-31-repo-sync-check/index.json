@@ -1,0 +1,372 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "Validate bootstrap.toml at commit time with repo_sync --check",
+  "requires": [],
+  "source": [
+    "B14"
+  ],
+  "backlog": [
+    "B14"
+  ],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-10-31 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test:repo-sync"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Make a temporary consumer repository with a main branch and a valid .config/bootstrap.toml that has environments = [\"dev\", \"ci\"]. Set XDG_CACHE_HOME to a scratch folder for every step, so the shared ~/.cache/bootstrap is not touched. Sync it from the run's branch (REPO_SYNC_URL set to a local clone of the run's branch, REPO_SYNC_NO_AUTOUPDATE=1), run mise trust in it, and make pre-commit reachable: symlink the pre-commit binary that mise x -- which pre-commit finds in the run worktree into a scratch bin folder and prepend that folder to PATH (the B13 lesson: mise x drops the mise install folders from PATH in a temporary folder). Run mise run setup to install the hooks, and commit the result on a feature branch. Then change .config/bootstrap.toml so that it has two local errors: [branch.main].direct_commit = \"yes\" and a [tools.<tool>] entry with env = [\"ci\"]. Stage it and run git commit.",
+        "pass": "The lint hook blocks the commit, and its output has both messages: the direct_commit message that the value must be true or false, and the env message that the entry has no dev. After both errors are fixed, git commit passes."
+      },
+      {
+        "id": "K2",
+        "check": "In the consumer of K1, with the bad values file, run mise x -- mise run code:lint:repo-sync .config/bootstrap.toml with HOME and the mise data, state and config folders as usual, XDG_CACHE_HOME set to a new empty folder, MISE_CACHE_DIR set to the normal mise cache folder, REPO_SYNC_CLONE unset, REPO_SYNC_URL=file:///nonexistent and GIT_SSH_COMMAND=false.",
+        "pass": "The exit code and the messages are the same as with the normal environment, and no bootstrap or bootstrap.lock folder exists under the empty XDG_CACHE_HOME afterwards."
+      }
+    ]
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "mise x -- mise run code:graph",
+      "mode": "run",
+      "notes": "Refreshes the graphify graph over the landed tree."
+    },
+    {
+      "id": "A2",
+      "step": "plan-management archive docs/plans/2026-10-31-repo-sync-check",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "A new repo_sync --check mode and a new code:lint:repo-sync gate are new behavior; no consumer must change anything."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "repo-sync: the --check mode and its tests",
+      "wave": 1,
+      "file": "01-repo-sync.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+        ".config/mise/tasks/test/repo-sync"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Gate: code:lint:repo-sync",
+      "wave": 1,
+      "file": "02-gate.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "tools/repo-sync/.config/mise/tasks/code/lint/repo-sync"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Review: U1 and U2",
+      "wave": 2,
+      "file": "03-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U4",
+      "title": "Docs",
+      "wave": 3,
+      "file": "04-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "CLAUDE.md",
+        "README.md",
+        "docs/sync/tools/repo-sync.md",
+        "docs/sync/index.md",
+        "docs/sync/migrate.md",
+        "docs/design/bootstrap-config.md",
+        "docs/design/mise.md",
+        "docs/design/packs.md"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Gates",
+      "wave": 4,
+      "file": "05-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "README.md, CLAUDE.md, docs/**",
+      "why": "every human-facing doc; the earlier units report DOCS FALSIFIED lines and never edit a doc",
+      "owner": "U4"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "How does the check run without a full sync?",
+      "ruling": "User: \"repo_sync --check will be better way of doing this without needing the bootstrap clone.\" A --check mode of repo_sync, with no bootstrap clone, no REPO_SYNC_CLONE and no network.",
+      "rejected": "A check that uses the bootstrap clone or the cached clone.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Which rules does --check examine?",
+      "ruling": "User: \"It should validate all rules which are outside the scope of shell-lint\", confirmed as: every content rule of repo_sync that needs only the values file and the local git repository. TOML syntax stays with the check-toml hook.",
+      "rejected": "TOML syntax only; the rules that need the clone too.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Does this plan finish B14 or land one piece of it?",
+      "ruling": "Finish B14. The seven rules that need the clone stay with setup:configs: a tool or a pack that is not in bootstrap (code 3); a pack loop or a pack named like a tool; an env that a mise tool does not allow; an [overrides.mise*] path that no selected tool has; [overrides.graphifyignore] without the claude tool; a remove line that the shared .gitignore or .graphifyignore does not have; a root_only tool in a submodule.",
+      "rejected": "Land a piece of B14 and park the clone rules.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "How does a commit run --check?",
+      "ruling": "A gate task code:lint:repo-sync in the repo-sync tool. code:lint runs each code:lint:<name> task with the staged files, and the existing lint hook runs code:lint, so no new hook is added. It follows the gate rules of CLAUDE.md: without gomplate (mise x -- which gomplate) it prints nothing and exits 0; with a file list that does not include .config/bootstrap.toml it prints nothing and exits 0; with no file list it runs when .config/bootstrap.toml exists.",
+      "rejected": "A new [[precommit]] hook in tools/repo-sync/tools.toml with files ^\\.config/bootstrap\\.toml$; both a gate and a hook.",
+      "units": [
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "Where do the rules of --check live?",
+      "ruling": "--check calls the same validation functions as the sync. Where a function mixes a local rule and a clone rule (for example the env rules in _rs_resolve with the tool lookup), the local part becomes its own function, and both the sync and --check call it. A rule never differs between the two paths.",
+      "rejected": "A separate copy of the rules for --check.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "Does --check report every error or stop at the first?",
+      "ruling": "--check runs each local check, prints each message, and returns the highest code. The sync does not change: it keeps its && chain and its order.",
+      "rejected": "Stop at the first error, as the sync does; change the sync to report every error too.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "Does --check add rules that the sync does not have?",
+      "ruling": "No. --check examines exactly the existing local rules. The five parts that no code validates are parked: unknown top-level keys, [claude.plugins.*], the types of commit_scopes and extensions, the [branch.*] merge keys, and .config/repo-sync/pre-commit.yaml.",
+      "rejected": "New rules in --check only; new rules in both --check and the sync.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "How does --check combine with the other arguments?",
+      "ruling": "--check with --dry-run is a usage error, code 2, with the usage text. --check makes no clone, writes no file and does not set bootstrap_commit. The [member.*] rules (_rs_members) and the neither-main-nor-develop rule (_rs_merge_model) are local, so --check runs them.",
+      "rejected": "--check accepts --dry-run and ignores it.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "Yes. U1 changes repo-sync and U2 adds a task script, which both run. One review unit in wave 2 covers U1 and U2.",
+      "rejected": "No review unit; the wave review only.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "How does the docs unit make sure that the docs are correct?",
+      "ruling": "The method of the B13 plan: (1) the explicit list of passages in 04-docs.md, each with its change; (2) then vwf:docs-sync over the full branch delta, with a fix for each passage it finds that the list does not name; (3) grep checks: each listed file that describes the check has a hit for --check or code:lint:repo-sync; dprint check over the docs. It adds M23 to docs/sync/migrate.md: after the sync, run mise run code:lint once and fix each error that code:lint:repo-sync reports.",
+      "rejected": "vwf:docs-sync only.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "What does --check do with a check whose input failed?",
+      "ruling": "A check whose input failed is skipped, with no message, because the cause is already reported: when _rs_envs fails, the local env rules are skipped, and _rs_overrides in its local-only mode skips only its env and envname problems (both need the environments list) and still reports its other problems; when _rs_values_sel fails, the local env rules are skipped. The env-rule function takes the result of _rs_values_sel and does not call it a second time, so no message shows twice.",
+      "rejected": "Run each check anyway (false errors); run it on a fallback value.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "How does the gate get gomplate?",
+      "ruling": "The gate has no #MISE tools directive. The repo-sync tool already declares [mise.tools.gomplate], so mise run setup installs it in each consumer. The gate finds it with mise x -- which gomplate; without it, the gate prints nothing and exits 0, so a commit never needs the network.",
+      "rejected": "Keep #MISE tools.gomplate=\"latest\", which installs gomplate over the network before the script runs.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "How is the local part of _rs_overrides split without a change to the order of the sync messages?",
+      "ruling": "_rs_overrides stays one function with a local-only mode (for example an argument), which skips the problems that need the tool list or the shipped file (none, the path of no selected tool, graphifyignore without claude, a remove line that is not shipped). In the local-only mode it loads no tool_<name> templates and reads no clone folder; it reads _RS_TOOLS as empty, and _RS_ENVS as empty when _rs_envs failed, with ${var:-}, so it runs under set -u. The sync calls it as today, so its messages keep their order and interleaving; --check calls it in the local-only mode.",
+      "rejected": "Two functions, which changes the order of the sync messages when local and clone problems are both present.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Which local rules need no --check test case?",
+      "ruling": "Accepted as exempt: the old name of the values file (a warning that needs REPO_SYNC_VALUES unset) and the missing values file. Both run before the --check path, in the code that the sync already uses, and case_body always exports REPO_SYNC_VALUES. Every other local rule gets a case.",
+      "rejected": "Change case_body so that it can unset REPO_SYNC_VALUES for these two cases.",
+      "units": [
+        "U1"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
