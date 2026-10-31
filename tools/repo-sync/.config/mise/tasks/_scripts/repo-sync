@@ -137,8 +137,10 @@
 #                that has `direct_commit = true` in `[branch.<b>]`. A hook with
 #                no pair left goes, and an entry with no hook left goes
 # The delimiters are `<% %>`, because `{{ }}` belongs to mise and `[[ ]]` to
-# bash, and both must reach the output unchanged. gomplate reads the TOML too;
-# the calling task provides it with `#MISE tools.gomplate="latest"`.
+# bash, and both must reach the output unchanged. gomplate reads the TOML too.
+# Each call names the tool (`mise x gomplate@latest --`): `mise x` finds only
+# the tools of a config file, and a repo before its first sync has no config
+# that names gomplate, also when the calling task declares it.
 #
 # Merge tasks: the branch model follows the branches that exist, here or on
 # origin. With `main` and `develop`, the sync writes `code/merge/develop` and
@@ -223,7 +225,7 @@ _rs_members() {
     # shellcheck disable=SC2016
     submodules=$(git -C "$MISE_PROJECT_ROOT" submodule --quiet foreach --recursive 'echo $displaypath' 2> /dev/null) || submodules=''
   fi
-  rows=$(mise x -- gomplate --left-delim '<%' --right-delim '%>' -c "v=${values}" \
+  rows=$(_rs_gomplate -c "v=${values}" \
   -i '<% if has .v "member" %><% range $k, $x := .v.member %><% $k %>	<% if has $x "folder" %><% $x.folder %><% else %><% $k %><% end %>	<% if has $x "type" %><% $x.type %><% end %>
 <% end %><% end %>') || return 2
   while IFS="$tab" read -r key folder type; do
@@ -271,8 +273,9 @@ _rs_members() {
   done <<< "$rows"
 }
 
-# gomplate with the template delimiters this repo uses.
-_rs_gomplate() { mise x -- gomplate --left-delim '<%' --right-delim '%>' "$@"; }
+# gomplate with the template delimiters this repo uses. The tool is named in
+# the call, so it works before the first sync writes a config that names it.
+_rs_gomplate() { mise x gomplate@latest -- gomplate --left-delim '<%' --right-delim '%>' "$@"; }
 
 # Print the items of the list <key> in the TOML file <file>, one per line;
 # nothing when the key is absent.
@@ -1687,8 +1690,8 @@ repo_sync() {
     _rs_log "values file $(_rs_path "$values") not found - it lists the tools to sync"
     return 2
   fi
-  if ! mise x -- which gomplate > /dev/null 2>&1; then
-    _rs_log "gomplate is not available - add #MISE tools.gomplate=\"latest\" to the calling task"
+  if ! mise x gomplate@latest -- which gomplate > /dev/null 2>&1; then
+    _rs_log "gomplate is not available - mise cannot install gomplate@latest; run mise install gomplate@latest"
     return 2
   fi
 
