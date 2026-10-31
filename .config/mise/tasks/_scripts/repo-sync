@@ -131,7 +131,11 @@
 #                repository, also those of each git submodule (the tools and
 #                the `extensions` list of its values file)
 #   .precommit   the `[[precommit]]` entries of those tools, in tool order, then
-#                the entries of this repo's `.config/repo-sync/pre-commit.yaml`
+#                the entries of this repo's `.config/repo-sync/pre-commit.yaml`.
+#                A `no-commit-to-branch` hook loses each `"--branch", "<b>"`
+#                pair of a core branch (main, develop) that does not exist or
+#                that has `direct_commit = true` in `[branch.<b>]`. A hook with
+#                no pair left goes, and an entry with no hook left goes
 # The delimiters are `<% %>`, because `{{ }}` belongs to mise and `[[ ]]` to
 # bash, and both must reach the output unchanged. gomplate reads the TOML too;
 # the calling task provides it with `#MISE tools.gomplate="latest"`.
@@ -166,8 +170,11 @@
 #      `environments` or that a mise tool does not allow, an `env` or a
 #      `default_envs` without dev, a tool folder that sorts after `zz-repo`,
 #      a root-only tool in a submodule, a repo with neither `main` nor
-#      `develop`, a template that cannot render, a bad `[overrides]`, or a
-#      `[mise]` config that cannot be generated
+#      `develop`, a template that cannot render, a bad `[overrides]`, a
+#      `direct_commit` that is not a boolean, that is in a `[branch.*]` table
+#      other than main and develop or of a branch that does not exist, or that
+#      is true for main but not for develop when both exist, or a `[mise]`
+#      config that cannot be generated
 #   3  a tool or a pack that is not in bootstrap (fix the values file)
 #   5  the clone failed (network, SSH key or access to the repo), or
 #      `pre-commit autoupdate` could not resolve the hook revisions
@@ -716,6 +723,48 @@ _rs_merge_model() {
     _rs_log "the repo has neither 'main' nor 'develop' - create one, then sync again"
     return 2
   fi
+}
+
+# Validate `direct_commit` of the `[branch.*]` tables of <values>, a boolean
+# for `[branch.main]` and `[branch.develop]` only, also when it is false. The
+# branch must exist, and with both branches, main can be true only when
+# develop is true too. Sets _RS_HOOK_DROP to the ` <branch> ` words whose
+# `--branch` pair leaves the no-commit-to-branch hook (`_rs_context`): each
+# branch with `direct_commit = true`, and main or develop when it does not
+# exist. Returns 2, after a message for each problem.
+_rs_direct_commit() {
+  local values=$1 out name value show rc=0 main=0 develop=0 tab=$'\t'
+  show=$(_rs_path "$values")
+  _RS_HOOK_DROP=' '
+  out=$(_rs_gomplate -c "v=${values}" -i '<% if and (has .v "branch") (test.IsKind "map" .v.branch) %><% range $k, $b := .v.branch %><% if and (test.IsKind "map" $b) (has $b "direct_commit") %><% $k %>	<% if test.IsKind "bool" $b.direct_commit %><% $b.direct_commit %><% else %>bad<% end %>
+<% end %><% end %><% end %>') || {
+    _rs_log "cannot read [branch] of $show"
+    return 2
+  }
+  _rs_branch_exists main && main=1
+  _rs_branch_exists develop && develop=1
+  while IFS="$tab" read -r name value; do
+    [[ -n $name ]] || continue
+    if [[ $name != main && $name != develop ]]; then
+      _rs_log "[branch.${name}] in $show: direct_commit is a key of [branch.main] and [branch.develop] only"
+      rc=2
+    elif [[ $value == bad ]]; then
+      _rs_log "[branch.${name}] in $show: direct_commit must be true or false"
+      rc=2
+    elif ! _rs_branch_exists "$name"; then
+      _rs_log "[branch.${name}] in $show has direct_commit, but the branch '${name}' does not exist - create it, or remove the key"
+      rc=2
+    elif [[ $value == true ]]; then
+      _RS_HOOK_DROP+="$name "
+    fi
+  done <<< "$out"
+  if ((main && develop)) && [[ $_RS_HOOK_DROP == *" main "* && $_RS_HOOK_DROP != *" develop "* ]]; then
+    _rs_log "[branch.main] in $show has direct_commit = true, but [branch.develop] does not - with main and develop, set direct_commit = true for develop too, or remove it from main"
+    rc=2
+  fi
+  ((main)) || _RS_HOOK_DROP+="main "
+  ((develop)) || _RS_HOOK_DROP+="develop "
+  return "$rc"
 }
 
 # Remove the file <path> of <tool> from this repo, if it exists.
@@ -1293,9 +1342,42 @@ _rs_context() {
     args+=(-c "repo_precommit=${own}")
     has_own=1
   fi
-  REPO_SYNC_OWN_PRECOMMIT=$has_own REPO_SYNC_MEMBERS=$members REPO_SYNC_MEMBER_FOLDERS=$folders REPO_SYNC_MEMBER_TYPES=$types REPO_SYNC_SUBMODULES=$submodules REPO_SYNC_TOOLS=$(printf '%s\n' $_RS_TOOLS) REPO_SYNC_EXTENSIONS=$_RS_EXTENSIONS \
+  # The no-commit-to-branch hook loses each `--branch <b>` pair of a branch
+  # in _RS_HOOK_DROP (`_rs_direct_commit`). Only that pair form changes. A
+  # hook that had a pair and has none left goes, also with other args: without
+  # `--branch`, the hook protects main and master. An entry with no hook left
+  # goes too.
+  REPO_SYNC_HOOK_DROP=$_RS_HOOK_DROP REPO_SYNC_OWN_PRECOMMIT=$has_own REPO_SYNC_MEMBERS=$members REPO_SYNC_MEMBER_FOLDERS=$folders REPO_SYNC_MEMBER_TYPES=$types REPO_SYNC_SUBMODULES=$submodules REPO_SYNC_TOOLS=$(printf '%s\n' $_RS_TOOLS) REPO_SYNC_EXTENSIONS=$_RS_EXTENSIONS \
     _rs_gomplate "${args[@]}" -o "$out" \
-    -i '<% $ctx := dict %><% range (coll.Slice "members" "submodules" "tools" "extensions") %><% $l := coll.Slice %><% range (env.Getenv (printf "REPO_SYNC_%s" (strings.ToUpper .)) | strings.Split "\n") %><% if . %><% $l = coll.Append . $l %><% end %><% end %><% $ctx = coll.Merge $ctx (dict . $l) %><% end %><% $mf := dict %><% $mt := dict %><% $fl := env.Getenv "REPO_SYNC_MEMBER_FOLDERS" | strings.Split "\n" %><% $tl := env.Getenv "REPO_SYNC_MEMBER_TYPES" | strings.Split "\n" %><% range $i, $n := $ctx.members %><% $mf = coll.Merge (dict $n (index $fl $i)) $mf %><% $mt = coll.Merge (dict $n (index $tl $i)) $mt %><% end %><% $ctx = coll.Merge $ctx (dict "member_folders" $mf "member_types" $mt) %><% $pc := coll.Slice %><% range $ctx.tools %><% $t := index $ (printf "tool_%s" .) %><% if has $t "precommit" %><% range $t.precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% end %><% if env.Getenv "REPO_SYNC_OWN_PRECOMMIT" %><% range $.repo_precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% $ctx = coll.Merge $ctx (dict "precommit" $pc) %><% coll.Merge $ctx .v | data.ToJSON %>' >&2
+    -i '<% $ctx := dict %><% range (coll.Slice "members" "submodules" "tools" "extensions") %><% $l := coll.Slice %><% range (env.Getenv (printf "REPO_SYNC_%s" (strings.ToUpper .)) | strings.Split "\n") %><% if . %><% $l = coll.Append . $l %><% end %><% end %><% $ctx = coll.Merge $ctx (dict . $l) %><% end %><% $mf := dict %><% $mt := dict %><% $fl := env.Getenv "REPO_SYNC_MEMBER_FOLDERS" | strings.Split "\n" %><% $tl := env.Getenv "REPO_SYNC_MEMBER_TYPES" | strings.Split "\n" %><% range $i, $n := $ctx.members %><% $mf = coll.Merge (dict $n (index $fl $i)) $mf %><% $mt = coll.Merge (dict $n (index $tl $i)) $mt %><% end %><% $ctx = coll.Merge $ctx (dict "member_folders" $mf "member_types" $mt) %><% $pc := coll.Slice %><% range $ctx.tools %><% $t := index $ (printf "tool_%s" .) %><% if has $t "precommit" %><% range $t.precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% end %><% if env.Getenv "REPO_SYNC_OWN_PRECOMMIT" %><% range $.repo_precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% $drop := strings.Split " " (strings.TrimSpace (env.Getenv "REPO_SYNC_HOOK_DROP")) -%>
+<% $npc := coll.Slice -%>
+<% range $e := $pc -%>
+<% $ne := $e %><% $keep := true -%>
+<% if and (test.IsKind "map" $e) (has $e "hooks") (test.IsKind "slice" (index $e "hooks")) -%>
+<% $hs := coll.Slice %><% $chg := false -%>
+<% range $h := index $e "hooks" -%>
+<% $nh := $h %><% $hk := true -%>
+<% if and (test.IsKind "map" $h) (has $h "id") (eq (printf "%v" (index $h "id")) "no-commit-to-branch") (has $h "args") (test.IsKind "slice" (index $h "args")) -%>
+<% $in := index $h "args" %><% $n := len $in %><% $a := coll.Slice %><% $had := false %><% $left := false %><% $skip := false -%>
+<% range $i, $x := $in -%>
+<% if $skip %><% $skip = false -%>
+<% else if and (eq (printf "%v" $x) "--branch") (lt (math.Add $i 1) $n) -%>
+<% $had = true %><% $skip = true %><% $b := index $in (math.Add $i 1) -%>
+<% if not (has $drop (printf "%v" $b)) %><% $left = true %><% $a = coll.Append $b (coll.Append $x $a) %><% end -%>
+<% else %><% $a = coll.Append $x $a %><% end -%>
+<% end -%>
+<% if $had -%>
+<% if not $left %><% $hk = false %><% $chg = true -%>
+<% else if ne (len $a) $n %><% $nh = coll.Merge (dict "args" $a) $h %><% $chg = true %><% end -%>
+<% end -%>
+<% end -%>
+<% if $hk %><% $hs = coll.Append $nh $hs %><% end -%>
+<% end -%>
+<% if $chg %><% if $hs %><% $ne = coll.Merge (dict "hooks" $hs) $e %><% else %><% $keep = false %><% end %><% end -%>
+<% end -%>
+<% if $keep %><% $npc = coll.Append $ne $npc %><% end -%>
+<% end -%>
+<% $ctx = coll.Merge $ctx (dict "precommit" $npc) %><% coll.Merge $ctx .v | data.ToJSON %>' >&2
 }
 
 # Remove each synced file (with the bootstrap header) that is at the place
@@ -1668,7 +1750,7 @@ repo_sync() {
   # loop. A tool that fails keeps its existing files and counts as failed.
   local tool worst=0 failed=()
   _RS_SEEN=' ' _RS_GENERATED=' '
-  { _rs_mise_env && _rs_overrides "$dir" "$values"; } || {
+  { _rs_mise_env && _rs_overrides "$dir" "$values" && _rs_direct_commit "$values"; } || {
     rc=$?
     rm -rf -- "$dir"
     return "$rc"

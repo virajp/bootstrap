@@ -38,9 +38,9 @@ repos:
     rev: v6.0.0
     hooks:
       - id: no-commit-to-branch
-        name: "Refuse a direct commit to main or develop"
+        name: "Refuse a direct commit to a protected branch"
         description: "These branches take merges only. git runs pre-merge-commit for a merge, so merges are not affected."
-        args: [ "--branch", "main", "--branch", "develop" ]
+        args: [ "--branch", "main" ]
   - repo: https://github.com/qoomon/git-conventional-commits
     rev: v2.9.0
     hooks:
