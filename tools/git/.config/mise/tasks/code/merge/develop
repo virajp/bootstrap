@@ -3,6 +3,8 @@
 # The next sync replaces it, and a manual change is lost.
 
 #MISE description="Land a feature branch on develop — merge it, or open a pull request"
+#MISE tools.pre-commit="latest"
+#MISE tools.yq="latest"
 
 #USAGE arg "<branch>" help="the local branch to merge into develop"
 

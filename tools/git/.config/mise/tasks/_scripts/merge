@@ -67,7 +67,7 @@ precommit_safety_net() {
     print_warn "No .config/pre-commit-config.yaml — skipping the hook safety net."
     return 0
   fi
-  if ! mise x -- which pre-commit > /dev/null 2>&1; then
+  if ! command -v pre-commit > /dev/null 2>&1; then
     print_warn "pre-commit is not on PATH — skipping the hook safety net."
     print_yellow "Run \`mise run setup\` to install the dev toolchain."
     return 0
@@ -78,7 +78,7 @@ precommit_safety_net() {
   # no-commit-to-branch guards a commit, and the safety net makes none. It is
   # skipped here because `code:merge:main` runs from `develop`, which the hook
   # can protect. A SKIP that the caller set is kept.
-  if ! SKIP="${SKIP:+${SKIP},}no-commit-to-branch" mise x -- pre-commit run --config "${config}" --all-files > /dev/null 2>&1; then
+  if ! SKIP="${SKIP:+${SKIP},}no-commit-to-branch" pre-commit run --config "${config}" --all-files > /dev/null 2>&1; then
     hooks_passed=false
   fi
 
@@ -169,7 +169,7 @@ read_merge_config() {
   # "/" is one key. A failed read stops the merge: a branch rule that cannot
   # be read must not become "any branch".
   merge_yq() {
-    B="${DESTINATION_BRANCH}" mise x -- yq -p toml -o yaml "$1" "${FILE}"
+    B="${DESTINATION_BRANCH}" yq -p toml -o yaml "$1" "${FILE}"
   }
   if [ -f "${FILE}" ]; then
     if ! MERGE_MODE=$(merge_yq '.branch[strenv(B)].merge_model // ""') ||
