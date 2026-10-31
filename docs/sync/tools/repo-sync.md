@@ -22,6 +22,7 @@ file.
 | `.config/mise/tasks/_scripts/repo-sync`       | Synced    | The library with the sync function `repo_sync`.                     |
 | `.config/mise/tasks/setup/configs/_default`   | Synced    | The task `setup:configs`. It fetches `bootstrap` into the cache.    |
 | `.config/mise/tasks/setup/configs/sync`       | Synced    | The task `setup:configs:sync`. It loads `repo-sync` from the clone. |
+| `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `repo_sync --check`.        |
 | `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                       |
 
 ## mise tools
@@ -32,10 +33,11 @@ file.
 
 ## Tasks
 
-| Task                 | Use                                                                     |
-| -------------------- | ----------------------------------------------------------------------- |
-| `setup:configs`      | Sync the shared files from `bootstrap`. `--dry-run` shows the diff.     |
-| `setup:configs:sync` | Run `repo_sync` from the clone of `setup:configs`. Do not run it alone. |
+| Task                  | Use                                                                     |
+| --------------------- | ----------------------------------------------------------------------- |
+| `setup:configs`       | Sync the shared files from `bootstrap`. `--dry-run` shows the diff.     |
+| `setup:configs:sync`  | Run `repo_sync` from the clone of `setup:configs`. Do not run it alone. |
+| `code:lint:repo-sync` | Validate `.config/bootstrap.toml` with `repo_sync --check`. Hidden.     |
 
 `setup:configs` keeps a shallow clone of `bootstrap` in
 `${XDG_CACHE_HOME:-~/.cache}/bootstrap`, for each consumer of the machine:
@@ -49,6 +51,30 @@ file.
   `REPO_SYNC_URL`, is cloned again.
 - If the fetch or the clone fails, `setup:configs` stops with code 5. It
   never uses an old clone.
+
+`code:lint:repo-sync` is a gate of `code:lint`. It accepts `--debug` and
+`--fix`, and ignores them, because the check has no fixes. It prints nothing
+and exits 0 in these conditions:
+
+- gomplate is not available (`mise x -- which gomplate`). The gate does not
+  install it, so a commit never needs the network.
+- A list of files does not include `.config/bootstrap.toml`.
+- No list of files is given, and `.config/bootstrap.toml` does not exist.
+
+Else it unsets `REPO_SYNC_CLONE`, loads the local `_scripts/repo-sync`, and
+runs `repo_sync --check`.
+
+`repo_sync --check` examines only the rules that need the values file and the
+local git repository. It runs after the checks of the values file and of
+gomplate, and it stops before the clone. It makes no clone, writes no file and
+does not set `bootstrap_commit`. It runs each local check, prints each
+message, and returns the highest code. `--check` with `--dry-run` is a usage
+error, code 2. These rules need the clone, so only `setup:configs` examines
+them: a tool or a pack that is not in `bootstrap`, a pack loop or a pack named
+like a tool, an environment that a mise tool does not allow, an
+`[overrides.mise*]` path that no selected tool has,
+`[overrides.graphifyignore]` without the `claude` tool, a `remove` line that
+the shared file does not have, and a `root_only` tool in a submodule.
 
 Besides the copy of the files, `repo_sync` does these steps:
 
@@ -78,7 +104,8 @@ Besides the copy of the files, `repo_sync` does these steps:
   `would set bootstrap_commit <commit>`. See "A repository that already has
   `.config/bootstrap.toml`" of `index.md`.
 
-These environment variables change the sync:
+These environment variables change the sync. `--check` does not read
+`REPO_SYNC_URL` and `REPO_SYNC_CLONE`, because it makes no clone:
 
 | Variable                  | Use                                                                    |
 | ------------------------- | ---------------------------------------------------------------------- |
@@ -90,7 +117,8 @@ These environment variables change the sync:
 
 ## Pre-commit hooks
 
-None.
+None. The `lint` hook of the `linter` tool runs `code:lint`, and `code:lint`
+runs `code:lint:repo-sync` with the staged files.
 
 ## Files the repository supplies
 
@@ -106,5 +134,5 @@ None.
 ## Migration
 
 - Remove `gomplate` from the repository-owned mise files.
-- The general items M1 and M15 of `migrate.md` are about the files of this
-  tool.
+- The general items M1, M15 and M23 of `migrate.md` are about the files of
+  this tool.

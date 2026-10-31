@@ -149,11 +149,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-10-31T16:52:58.870Z",
+      "ended": "2026-10-31T16:56:34.167Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -189,8 +189,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-10-31T16:52:58.834Z",
       "ended": ""
     },
     {
@@ -342,28 +342,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T16:52:58.463Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T16:52:58.233Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T16:52:58.346Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers and no code unit; no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T16:52:58.613Z"
     }
   },
   "gaps": [

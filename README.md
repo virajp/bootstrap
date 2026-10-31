@@ -150,6 +150,11 @@ has that file:
    file. An agent compares the value with `main` to find what changed since
    the last sync.
 
+Between two syncs, the gate `code:lint:repo-sync` runs `repo_sync --check` at
+each commit that changes `.config/bootstrap.toml`. It examines the rules that
+need no clone, and it shows each error at once. The rules that need the clone,
+for example a tool that is not in `bootstrap`, stay with `setup:configs`.
+
 These rules apply to each file:
 
 - A file is only replaced when its content changes. Use `--dry-run` to see the
@@ -293,9 +298,10 @@ protected branch, the sync removes the hook.
 
 ## Tests
 
-`mise run test:repo-sync` runs `repo_sync --dry-run` of the working tree's
-`tools/` against scratch values files, and checks the exit code and the
-message of each case. It needs no network. No hook runs it: run it by hand
+`mise run test:repo-sync` runs `repo_sync --dry-run` and `repo_sync --check`
+of the working tree's `tools/` against scratch values files, and checks the
+exit code and the message of each case. It needs no network. No hook runs it:
+run it by hand
 before you commit a change to `tools/`.
 
 ## Change a shared file
