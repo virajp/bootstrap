@@ -413,5 +413,8 @@
   },
   "gaps": [],
   "overrides": [],
-  "run": {}
+  "run": {
+    "worktree": ".worktrees/branch-direct-commit",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-10-31-branch-direct-commit.jsonl"
+  }
 }
