@@ -19,3 +19,5 @@ worktree_files = [ ".config/mise.local.toml" ]
 [branch.develop]
 merge_model = "direct"
 merge_never = [ "main" ]
+# Allow a direct commit to develop. The sync then removes the branch hook.
+# direct_commit = true

@@ -57,6 +57,8 @@ add = [ "fixtures/" ]
 [branch.develop]
 merge_model = "direct"
 merge_never = [ "main" ]
+# Allow a direct commit to develop. main can allow it only when develop does.
+# direct_commit = true
 
 # Only develop merges into main, through a pull request.
 [branch.main]
