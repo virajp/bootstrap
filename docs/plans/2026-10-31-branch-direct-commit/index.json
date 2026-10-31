@@ -182,11 +182,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-10-31T11:52:40.108Z",
+      "ended": "2026-10-31T11:58:01.096Z",
+      "commit": "2e5da78",
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -224,9 +224,9 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-10-31T11:52:40.071Z",
+      "ended": "2026-10-31T12:01:47.186Z"
     },
     {
       "id": "W4",
@@ -387,28 +387,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers — no blueprint slice, no acceptance criteria, no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T11:52:39.706Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers — no blueprint slice, no acceptance criteria, no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T11:52:39.489Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers — no blueprint slice, no acceptance criteria, no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T11:52:39.597Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers (no stamps, registry or environment edits) and no code unit (nothing to persist); no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T11:52:39.852Z"
     }
   },
   "gaps": [
@@ -445,6 +445,13 @@
       "unit": "U2",
       "stage": "edit",
       "text": "R1 rule 3: U2 added a 12th test:repo-sync case (direct_commit main = false in a develop-only repo) that 02-repo-sync.md does not list · kept: the case tests D13 (false for a missing core branch stops the sync with code 2), so it is inside the rulings; no loop-back",
+      "state": "closed"
+    },
+    {
+      "id": "G6",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "vwf:docs-sync standalone mode says to commit, the unit contract forbids a commit · the unit did not commit; the orchestrator commits the unit per the staging discipline",
       "state": "closed"
     }
   ],
