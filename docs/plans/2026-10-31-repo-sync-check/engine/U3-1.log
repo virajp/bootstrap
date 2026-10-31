@@ -1,0 +1,13 @@
+/security-review over 219d057..HEAD (run worktree), loop U3, round 1
+
+No findings.
+
+The engine traced the values-file content through each new or newly called
+path (_rs_envs, _rs_values_sel, _rs_env_rules, _rs_overrides local,
+_rs_direct_commit, _rs_members, _rs_core_tools). The values file is a
+gomplate data context only; the templates are fixed strings; the output is
+read with `read -r`, compared and printed, never evaluated. The
+`eval "FILES=(${usage_files})"` of code/lint/repo-sync:26 is the existing
+gate pattern, with the mise usage file list as input. _rs_members only tests
+whether a folder exists. --check exits before REPO_SYNC_URL or a clone.
+Test-only file .config/mise/tasks/test/repo-sync skipped.

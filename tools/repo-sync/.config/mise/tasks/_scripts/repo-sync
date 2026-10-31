@@ -10,7 +10,16 @@
 # executed:
 #
 #   source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/repo-sync"
-#   repo_sync [--dry-run]
+#   repo_sync [--dry-run | --check]
+#
+# `--check` examines only the rules of the values file that need no clone:
+# the values file and the local git repository. It makes no clone, writes no
+# file and does not set `bootstrap_commit`. It runs each of these checks,
+# prints each message, and returns the highest code. The rules that need the
+# clone (an unknown tool or pack, a pack loop, the `envs` of a mise tool, an
+# `[overrides]` path, `[overrides.graphifyignore]` without `claude`, a
+# `remove` line that is not shipped, a root-only tool in a submodule) are for
+# the sync only.
 #
 # The values file selects tools and packs with one table each; the only key of
 # an entry is `env`, a list of environments:
@@ -142,6 +151,8 @@
 # `#MISE tools.<tool>="latest"`, and this script calls them without `mise x --`:
 # `mise x` finds only the tools of a config file, and a repo before its first
 # sync, or a shell without MISE_ENV=dev, has no config that names them.
+# The gate `code:lint:repo-sync` has no such directive: it runs only when
+# `mise x -- which gomplate` finds gomplate in the config of the repo.
 #
 # Merge tasks: the branch model follows the branches that exist, here or on
 # origin. With `main` and `develop`, the sync writes `code/merge/develop` and
@@ -182,11 +193,15 @@
 #   5  the clone failed (network, SSH key or access to the repo), or
 #      `pre-commit autoupdate` could not resolve the hook revisions
 #   1  anything else (local filesystem errors, ...)
+# With `--check`, 0 when each local rule passes, else the highest code of its
+# checks; `--check` with `--dry-run` is a usage error, 2.
 #
 # Environment:
-#   REPO_SYNC_URL     the repo to clone (default git@github.com:virajp/bootstrap.git)
+#   REPO_SYNC_URL     the repo to clone (default git@github.com:virajp/bootstrap.git);
+#                     `--check` does not read it
 #   REPO_SYNC_CLONE   an existing clone to use instead of a new one; set by
-#                     `setup:configs`, which also loads this file from it
+#                     `setup:configs`, which also loads this file from it;
+#                     `--check` does not read it
 #   REPO_SYNC_VALUES  the values file
 #                     (default $MISE_PROJECT_ROOT/.config/bootstrap.toml)
 #   REPO_SYNC_NO_AUTOUPDATE  1: skip `pre-commit autoupdate`, so the hook
@@ -500,21 +515,12 @@ _rs_mise_owner() {
   [[ $def != "$_RS_MISE_DEFS" ]] && printf '%s' "${def%% *}"
 }
 
-# Resolve the tools and packs of <values> against the clone <dir>, packs
-# expanded and dependencies included, into _RS_TOOLS (space separated, a
-# dependency before the tool that needs it), _RS_SEL (the
-# `<tool> <env,...|-> <source>` lines of `_rs_selected`), _RS_DEPS
-# (`<tool> <dependency>...` lines), _RS_DEFAULT_ENVS (` <tool>:<env> ` words),
-# _RS_EXTENSIONS (one per line, sorted, unique), _RS_SEEDS
-# (` <tool>/<path> ` words), _RS_SEED_REQUIRES (` <tool>/<path>=<file> `
-# words), _RS_MISE_ENTRIES (`<tool> <mise-tool> <envs,...|-> [<mise-depends>...]`
-# lines), _RS_MISE_REQUIRES (` <mise-tool>=<file> ` words) and
-# _RS_FILE_REQUIRES (` <tool>/<path>=<file> ` words, from `files`). A mise
-# `depends` adds the tool that defines it. Returns 2 or 3,
-# after a message, on any problem.
-_rs_resolve() {
-  local dir=$1 values=$2 sel tool field value pending in_submodule kind name envs env
-  sel=$(_rs_values_sel "$values") || return 2
+# Examine the `env` of each entry of the values lines <sel> of
+# `_rs_values_sel` for <values>, against _RS_ENVS of `_rs_envs`. An `env` of
+# the values file names only environments of this repo, and always dev: each
+# tool must be in dev. Returns 2, after a message, at the first problem.
+_rs_env_rules() {
+  local values=$1 sel=$2 kind name envs env
   # An `env` of the values file names only environments of this repo, and
   # always dev: each tool must be in dev.
   local has_dev
@@ -544,6 +550,25 @@ _rs_resolve() {
       return 2
     fi
   done <<< "$sel"
+  return 0
+}
+
+# Resolve the tools and packs of <values> against the clone <dir>, packs
+# expanded and dependencies included, into _RS_TOOLS (space separated, a
+# dependency before the tool that needs it), _RS_SEL (the
+# `<tool> <env,...|-> <source>` lines of `_rs_selected`), _RS_DEPS
+# (`<tool> <dependency>...` lines), _RS_DEFAULT_ENVS (` <tool>:<env> ` words),
+# _RS_EXTENSIONS (one per line, sorted, unique), _RS_SEEDS
+# (` <tool>/<path> ` words), _RS_SEED_REQUIRES (` <tool>/<path>=<file> `
+# words), _RS_MISE_ENTRIES (`<tool> <mise-tool> <envs,...|-> [<mise-depends>...]`
+# lines), _RS_MISE_REQUIRES (` <mise-tool>=<file> ` words) and
+# _RS_FILE_REQUIRES (` <tool>/<path>=<file> ` words, from `files`). A mise
+# `depends` adds the tool that defines it. Returns 2 or 3,
+# after a message, on any problem.
+_rs_resolve() {
+  local dir=$1 values=$2 sel tool field value pending in_submodule name envs
+  sel=$(_rs_values_sel "$values") || return 2
+  _rs_env_rules "$values" "$sel" || return 2
   _RS_SEL=$(_rs_selected "$dir" "$sel") || return
   in_submodule=$(git -C "$MISE_PROJECT_ROOT" rev-parse --show-superproject-working-tree 2> /dev/null) || in_submodule=''
   # In a submodule, a root_only tool of a pack is skipped: the pack base adds
@@ -1070,8 +1095,16 @@ none	overrides.<% join $p "." %>	<% if $only %>mise_env.<% $only %>.<% join $res
 # _RS_VALUES_NOTE to the values file for the override comments. Returns 2,
 # after a message for each problem, also when the old
 # `.config/repo-sync/gitignore` exists.
+# With a third argument `local`, for `repo_sync --check`, it reads no clone:
+# <dir> is not used, no tool is selected, and it skips the problems that need
+# the tools or the shipped files (`none`, `[overrides.graphifyignore]` without
+# claude, a `remove` line that is not shipped). When `_rs_envs` failed,
+# _RS_ENVS is empty, and it also skips `env` and `envname`.
 _rs_overrides() {
-  local dir=$1 values=$2 out tool problem path arg rc=0 show no_claude=0
+  local dir=$1 values=$2 only_local=0 out tool problem path arg rc=0 show no_claude=0
+  [[ ${3:-} == local ]] && only_local=1
+  local tools=${_RS_TOOLS:-} envs=${_RS_ENVS:-}
+  ((only_local)) && tools=''
   show=$(_rs_path "$values")
   _RS_GI_ADD='' _RS_GI_REMOVE='' _RS_VALUES_NOTE=${values#"$MISE_PROJECT_ROOT"/}
   if [[ -f ${MISE_PROJECT_ROOT}/.config/repo-sync/gitignore ]]; then
@@ -1079,10 +1112,10 @@ _rs_overrides() {
     rc=2
   fi
   local args=(-c "o=${values}")
-  for tool in $_RS_TOOLS; do
+  for tool in $tools; do
     args+=(-c "tool_${tool}=${dir}/tools/${tool}/tools.toml")
   done
-  out=$(REPO_SYNC_ENVS=$_RS_ENVS REPO_SYNC_TOOLS=$_RS_TOOLS _rs_gomplate "${args[@]}" -i "$_RS_OVERRIDES_TEMPLATE") || {
+  out=$(REPO_SYNC_ENVS=$envs REPO_SYNC_TOOLS=$tools _rs_gomplate "${args[@]}" -i "$_RS_OVERRIDES_TEMPLATE") || {
     _rs_log "cannot read [overrides] of $show"
     return 2
   }
@@ -1107,7 +1140,7 @@ _rs_overrides() {
         # <path> is overrides.<ignore>.<list>.
         path=${path#overrides.}
         path=${path%.*}
-        if [[ $path == graphifyignore && $_RS_TOOLS != *" claude "* ]]; then
+        if ((!only_local)) && [[ $path == graphifyignore && $tools != *" claude "* ]]; then
           ((no_claude)) ||
             _rs_log "overrides.graphifyignore in $show: .graphifyignore comes from the claude tool, which is not selected - add [tools.claude], or remove the table"
           no_claude=1 rc=2
@@ -1119,16 +1152,20 @@ _rs_overrides() {
         fi
         continue
         ;;
-      envname)
-        _rs_log "$path in $show: '$arg' is not one of ${_RS_ENV_NAMES// /, }"
-        ;;
-      env)
-        _rs_log "$path in $show: '$arg' is not in environments:${_RS_ENVS% }"
+      envname | env)
+        # Without environments, `_rs_envs` already reported the cause.
+        [[ -n ${envs// /} ]] || continue
+        if [[ $problem == envname ]]; then
+          _rs_log "$path in $show: '$arg' is not one of ${_RS_ENV_NAMES// /, }"
+        else
+          _rs_log "$path in $show: '$arg' is not in environments:${envs% }"
+        fi
         ;;
       lock)
         _rs_log "$path in $show: the envs, the depends, the requires and the files of a mise tool cannot be overridden - use env of [tools.<tool>]"
         ;;
       none)
+        ((only_local)) && continue
         _rs_log "$path in $show: no selected tool has $arg - the path after overrides. is the path in tools/<tool>/tools.toml"
         ;;
       *)
@@ -1145,6 +1182,8 @@ _rs_overrides() {
     if [[ $'\n'$_RS_GI_ADD == *$'\n'"$ignore"$'\t'"$line"$'\n'* ]]; then
       _rs_log "overrides.$ignore in $show: '$line' is in add and in remove - keep one"
       rc=2
+    elif ((only_local)); then
+      continue
     elif ! RS_LINE=$line awk '{ gsub(/^[ \t]+|[ \t]+$/, "") } $0 == ENVIRON["RS_LINE"] { found = 1 } END { exit !found }' "$dir/$shipped" 2> /dev/null; then
       _rs_log "overrides.$ignore.remove in $show: '$line' is not a line of the shipped .$ignore ($shipped)"
       rc=2
@@ -1660,24 +1699,85 @@ _rs_record_commit() {
   _rs_log "set bootstrap_commit ${commit} in $show"
 }
 
-# repo_sync [--dry-run]
+# Warn about `core_tools` of <values>, a key that is no longer used.
+_rs_core_tools() {
+  local values=$1 old_core
+  old_core=$(_rs_list "$values" core_tools) || old_core=''
+  if [[ -n ${old_core//[$'\n ']/} ]]; then
+    _rs_log "core_tools in $(_rs_path "$values") is no longer used - delete it; the env of each [tools.*] entry, else default_envs, decides its environments"
+  fi
+  return 0
+}
+
+# Run each check of `repo_sync --check` on <values>, in the order of the
+# sync, and print each message. A check whose input failed is skipped: its
+# cause is already reported. Returns the highest code, or 0 after a line that
+# says the file is valid.
+_rs_check() {
+  local values=$1 rc=0 r sel='' sel_ok=1 envs_ok=1
+  _RS_ENVS='' _RS_TOOLS=''
+  _rs_envs "$values" || {
+    r=$? envs_ok=0
+    ((r <= rc)) || rc=$r
+  }
+  sel=$(_rs_values_sel "$values") || {
+    r=$? sel_ok=0
+    ((r <= rc)) || rc=$r
+  }
+  if ((envs_ok && sel_ok)); then
+    _rs_env_rules "$values" "$sel" || {
+      r=$?
+      ((r <= rc)) || rc=$r
+    }
+  fi
+  _rs_merge_model || {
+    r=$?
+    ((r <= rc)) || rc=$r
+  }
+  _rs_core_tools "$values"
+  _rs_overrides '' "$values" local || {
+    r=$?
+    ((r <= rc)) || rc=$r
+  }
+  _rs_direct_commit "$values" || {
+    r=$?
+    ((r <= rc)) || rc=$r
+  }
+  _rs_members "$values" "${values#"$MISE_PROJECT_ROOT"/}" > /dev/null || {
+    r=$?
+    ((r <= rc)) || rc=$r
+  }
+  ((rc == 0)) && _rs_log "$(_rs_path "$values"): valid (local rules)"
+  return "$rc"
+}
+
+# repo_sync [--dry-run | --check]
 #
 # Clone bootstrap once, resolve the tools of the values file, then sync
 # every file of every tool. Returns the most severe failure code, or 0.
+# With --check, examine only the rules that need no clone (`_rs_check`).
 repo_sync() {
-  local dry_run=0
+  local dry_run=0 check=0
   while (($#)); do
     case $1 in
       --dry-run)
         dry_run=1
         shift
         ;;
+      --check)
+        check=1
+        shift
+        ;;
       *)
-        _rs_log "usage: repo_sync [--dry-run]"
+        _rs_log "usage: repo_sync [--dry-run | --check]"
         return 2
         ;;
     esac
   done
+  if ((dry_run && check)); then
+    _rs_log "usage: repo_sync [--dry-run | --check]"
+    return 2
+  fi
 
   local values=${REPO_SYNC_VALUES:-${MISE_PROJECT_ROOT:-$PWD}/.config/bootstrap.toml}
   # `.config/repo-config.toml` is the old name, from before this repository
@@ -1694,6 +1794,10 @@ repo_sync() {
   if ! command -v gomplate > /dev/null 2>&1; then
     _rs_log "gomplate is not available - add #MISE tools.gomplate=\"latest\" to the calling task"
     return 2
+  fi
+  if ((check)); then
+    _rs_check "$values" || return
+    return 0
   fi
 
   local url=${REPO_SYNC_URL:-git@github.com:virajp/bootstrap.git}
@@ -1744,11 +1848,7 @@ repo_sync() {
   }
   _rs_file_skips
 
-  local old_core
-  old_core=$(_rs_list "$values" core_tools) || old_core=''
-  if [[ -n ${old_core//[$'\n ']/} ]]; then
-    _rs_log "core_tools in $(_rs_path "$values") is no longer used - delete it; the env of each [tools.*] entry, else default_envs, decides its environments"
-  fi
+  _rs_core_tools "$values"
 
   # The mise config of each tool, generated into the clone before the file
   # loop. A tool that fails keeps its existing files and counts as failed.

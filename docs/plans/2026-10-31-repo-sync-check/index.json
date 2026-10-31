@@ -12,8 +12,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-10-31 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-01 — 5c1b2e6 c1960ef a93dd90 519c12c"
   },
   "consent": {
     "merge": true,
@@ -79,11 +79,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-10-31T16:39:42.118Z",
+      "ended": "2026-10-31T16:47:08.098Z",
+      "commit": "5c1b2e6",
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -97,11 +97,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-10-31T16:39:42.191Z",
+      "ended": "2026-10-31T16:41:05.910Z",
+      "commit": "c1960ef",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -116,14 +116,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-10-31T16:50:21.091Z",
+      "ended": "2026-10-31T16:52:26.168Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "219d057",
+        "to": "51e0471"
       }
     },
     {
@@ -149,11 +149,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-10-31T16:52:58.870Z",
+      "ended": "2026-10-31T16:56:34.167Z",
+      "commit": "a93dd90",
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -167,37 +167,37 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-10-31T17:01:01.495Z",
+      "ended": "2026-10-31T17:01:22.609Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-10-31T16:39:42.084Z",
+      "ended": "2026-10-31T16:49:49.934Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-10-31T16:50:21.051Z",
+      "ended": "2026-10-31T16:52:39.586Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-10-31T16:52:58.834Z",
+      "ended": "2026-10-31T17:00:39.796Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-10-31T17:01:01.458Z",
+      "ended": "2026-10-31T17:01:22.718Z"
     }
   ],
   "shared_files": [
@@ -342,31 +342,67 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T16:52:58.463Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T16:52:58.233Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T16:52:58.346Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers and no code unit; no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-10-31T16:52:58.613Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2: the plan does not say what the gate does when a file list names .config/bootstrap.toml and the file is gone (a staged delete) · the exact-match rule is taken as written, so the check runs and repo_sync reports the missing values file (code 2)",
+      "state": "open"
+    },
+    {
+      "id": "G2",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the plan says _rs_members gets the relative path of the values file but not relative to what · relative to MISE_PROJECT_ROOT, as _RS_VALUES_NOTE does, so messages start with .config/bootstrap.toml: [member.x] in ...",
+      "state": "open"
+    },
+    {
+      "id": "G3",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the gomplate-missing message of repo_sync still says to add #MISE tools.gomplate=\"latest\" to the calling task; the plan did not ask to change it · left as is, because under D12 the gate exits 0 before repo_sync when gomplate is missing",
+      "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "",
+      "stage": "plan-gate",
+      "text": "K1 as written does not run in a temporary consumer: mise trust fails for the conf.d files, mise x also drops gomplate and dprint from PATH, the consumer needs dprint.jsonc, nodeenv fails in a new PRE_COMMIT_HOME, and mise run setup also runs setup:vscode · closed: the keep run used MISE_TRUSTED_CONFIG_PATHS, symlinks of pre-commit, gomplate and dprint, a copied dprint.jsonc and the normal PRE_COMMIT_HOME; K1 and K2 passed",
+      "state": "closed"
+    },
+    {
+      "id": "G5",
+      "unit": "",
+      "stage": "land",
+      "text": "The landing conflicted with main in the header comment of _scripts/repo-sync: main gained e1c2956 and b3e7280 (gomplate and pre-commit called without mise x, found with command -v, given by a #MISE tools directive of the calling task) · closed: main was merged into the branch (519c12c), every line main added was kept, the comment keeps both rules (the gate has no directive per D12), the gate was tested on the merged code in the K1 consumer, and every gate line passed again",
+      "state": "closed"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".worktrees/repo-sync-check",

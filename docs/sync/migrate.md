@@ -20,6 +20,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | `[tools.vscode]` in the values file, or no `vscode` in the root | M20.                                                                                                                                                                                                                                                                |
 | `@askviraj/linter` in a file of the repository                  | M21, before the next sync.                                                                                                                                                                                                                                          |
 | A core branch that must allow direct commits                    | M22. Optional.                                                                                                                                                                                                                                                      |
+| A sync that adds `code:lint:repo-sync`                          | M23, after the sync.                                                                                                                                                                                                                                                |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -498,3 +499,17 @@ of it exists.
    `[branch.<branch>]` table. With `main` and `develop`, `main` can allow
    them only when `develop` allows them too. See step 4 of `index.md`.
 3. Run `mise run setup:configs`.
+
+## M23: `code:lint:repo-sync` validates the values file at each commit
+
+The `repo-sync` tool now ships the gate `code:lint:repo-sync`. The `lint` hook
+runs it through `code:lint` at each commit that changes
+`.config/bootstrap.toml`. It runs `repo_sync --check`, which examines the
+rules of the values file that need no `bootstrap` clone and shows each error
+at once. A values file that the sync accepts also passes the check, because
+the check uses the same rules.
+
+1. After the sync, run `mise run code:lint` once.
+2. If `code:lint:repo-sync` reports an error, correct the values file. See
+   step 3 of `index.md`.
+3. A repository with a valid values file does nothing.

@@ -216,6 +216,7 @@ change a file.
    | The values file has no old format and no old key, for example `tools = [...]` or `.config/repo-sync/gitignore`.            | bootstrap  | Step 3 and `migrate.md` |
    | No item of `migrate.md` applies, and no "Migration" item of a selected tool applies.                                       | bootstrap  | Step 5                  |
    | `mise run setup:configs --dry-run` shows no change.                                                                        | bootstrap  | Step 6                  |
+   | If the repository has the task `code:lint:repo-sync`, `mise run code:lint:repo-sync` shows no error in the values file.    | repository | Step 3                  |
    | The selected tools agree with the signs of their tool files: no tool is missing, and no tool is selected without a reason. | repository | Step 1                  |
    | Each value that you can find agrees with the file, for example `repo_url` and `origin`, or the members and `.gitmodules`.  | repository | Step 3                  |
    | Each file of "Files the repository supplies" of a selected tool exists.                                                    | repository | Step 7                  |
@@ -356,7 +357,11 @@ cp "$sync/setup/configs/_default" "$sync/setup/configs/sync" .config/mise/tasks/
 ```
 
 Do not run the sync, `mise run setup:configs` without `--dry-run`, before
-step 6. You can run a dry run.
+step 6. You can run a dry run. When the repository already has the task
+`code:lint:repo-sync`, for example at an update, you can also run
+`mise run code:lint:repo-sync`. It validates the values file with
+`repo_sync --check`, without a clone and without a sync, and it shows each
+error at once.
 
 ## Step 3: Write the values file
 
@@ -591,7 +596,10 @@ files, skip this step.
 
 1. If mise says that the config files are not trusted, ask the user to run
    `mise trust`.
-2. Run `mise run setup:configs --dry-run`.
+2. Run `mise run setup:configs --dry-run`. To validate only the values file,
+   without a sync, run `mise run code:lint:repo-sync` when the repository has
+   that task. It does not examine the rules that need the `bootstrap` clone,
+   for example a tool that is not in `bootstrap`.
 3. Examine the diff for each file that already exists in the repository.
 4. If the dry run replaces repository-owned content, stop. Move that content
    to a repository-owned place (see "Rules"), then do the dry run again.

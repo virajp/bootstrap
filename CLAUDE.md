@@ -151,7 +151,29 @@ Some files refer to files that are not in `tools/`, for example
   "Branch model in the merge tasks"), 3 for a tool or a pack that is
   not in bootstrap, 5 for a clone, a fetch or an `autoupdate` that fails. A
   failure of one file does not stop the other files. The sync returns the
-  highest code of all its failures.
+  highest code of all its failures. `repo_sync --check` returns the highest
+  code of its checks, at most 2. `--check` with `--dry-run` is a usage error,
+  code 2.
+- `repo_sync --check` examines only the local rules of the values file: the
+  rules that need the values file and the local git repository, for example
+  `env`, `environments`, `[member.*]`, the structure of `[overrides]`,
+  `direct_commit`, and a missing `main` and `develop`. It runs after the
+  checks of the values file and of gomplate, and before the clone. It makes
+  no clone, reads no `REPO_SYNC_URL` or `REPO_SYNC_CLONE`, writes no file and
+  does not set `bootstrap_commit`. It runs each local check and prints each
+  message, so every error shows at once. The rules that need the clone stay
+  with the sync: a tool or a pack that is not in bootstrap, a pack loop or a
+  pack named like a tool, an environment that a mise tool does not allow, an
+  `[overrides.mise*]` path that no selected tool has,
+  `[overrides.graphifyignore]` without the `claude` tool, a `remove` line
+  that the shared file does not have, and a `root_only` tool in a submodule.
+- The gate `code:lint:repo-sync` of the `repo-sync` tool runs
+  `repo_sync --check`. The `lint` hook runs `code:lint`, which runs the gate
+  with the staged files, so the tool adds no hook. The gate is hidden, and it
+  ignores `--fix`. It prints nothing and exits 0 without gomplate
+  (`mise x -- which gomplate`), with a list of files that does not include
+  `.config/bootstrap.toml`, or with no list and no values file. It unsets
+  `REPO_SYNC_CLONE` and loads the local `_scripts/repo-sync`.
 - The sync formats each rendered template and each generated mise file with
   the dprint config of the consumer before it compares the file.
 - gomplate reads the TOML files: the values file, `tools/packs.toml` and each
@@ -202,8 +224,9 @@ Some files refer to files that are not in `tools/`, for example
   If `pre-commit` is missing or `autoupdate` fails, the sync keeps the
   existing file and returns code 5.
 - `test:repo-sync` is the task of this repository in
-  `.config/mise/tasks/test/repo-sync`. It runs `repo_sync --dry-run` of the
-  working tree's `tools/` against scratch values files, and it compares the
+  `.config/mise/tasks/test/repo-sync`. It runs `repo_sync --dry-run` and
+  `repo_sync --check` of the working tree's `tools/` against scratch values
+  files, and it compares the
   exit code and the message of each case. It needs no network. Before its
   first `git` call, it unsets the `GIT_*` variables of a git hook, so its
   scratch repositories never write to this repository. It runs the cases in
@@ -295,7 +318,9 @@ path as the task name, for example `code/merge/develop` is
   `tools/mise/tools.toml`, always dev). It makes the task scripts executable.
   The task files load in every environment.
 - A gate of a language is a `code:lint:<gate>` or `code:format:<gate>` task
-  in the tool of that language, for example `code:lint:ruff` in `python`:
+  in the tool of that language, for example `code:lint:ruff` in `python`.
+  `code:lint:repo-sync` of `repo-sync` follows the same rules for the values
+  file `.config/bootstrap.toml`:
   - Without its tool (`mise x -- which <tool>`) or without a file of its
     language, the gate prints nothing and exits 0. Some gates examine a
     project file instead, for example `pubspec.yaml` for dart and `gradlew`
