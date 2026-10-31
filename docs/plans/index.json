@@ -1,1 +1,22 @@
-{ "format": 1, "plans": [] }
+{
+  "format": 1,
+  "plans": [
+    {
+      "id": "2026-10-31-branch-direct-commit",
+      "folder": "docs/plans/2026-10-31-branch-direct-commit",
+      "kind": "change",
+      "title": "Allow direct commits on a core branch from bootstrap.toml",
+      "target_repo": null,
+      "priority": 10,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [],
+      "backlog": [
+        "B13"
+      ],
+      "backlog_pieces": []
+    }
+  ]
+}
