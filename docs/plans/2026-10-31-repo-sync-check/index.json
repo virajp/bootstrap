@@ -12,8 +12,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-10-31T22:09 in .worktrees/repo-sync-check"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-01 — 5c1b2e6 c1960ef a93dd90"
   },
   "consent": {
     "merge": true,
@@ -387,6 +387,13 @@
       "stage": "edit",
       "text": "U1: the gomplate-missing message of repo_sync still says to add #MISE tools.gomplate=\"latest\" to the calling task; the plan did not ask to change it · left as is, because under D12 the gate exits 0 before repo_sync when gomplate is missing",
       "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "",
+      "stage": "plan-gate",
+      "text": "K1 as written does not run in a temporary consumer: mise trust fails for the conf.d files, mise x also drops gomplate and dprint from PATH, the consumer needs dprint.jsonc, nodeenv fails in a new PRE_COMMIT_HOME, and mise run setup also runs setup:vscode · closed: the keep run used MISE_TRUSTED_CONFIG_PATHS, symlinks of pre-commit, gomplate and dprint, a copied dprint.jsonc and the normal PRE_COMMIT_HOME; K1 and K2 passed",
+      "state": "closed"
     }
   ],
   "overrides": [],
