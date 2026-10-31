@@ -12,8 +12,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-10-31 17:09 in .worktrees/branch-direct-commit"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-10-31 — 5a712c5 67aba25 82346bb 2e5da78 badb8de"
   },
   "consent": {
     "merge": true,
@@ -452,6 +452,13 @@
       "unit": "U5",
       "stage": "edit",
       "text": "vwf:docs-sync standalone mode says to commit, the unit contract forbids a commit · the unit did not commit; the orchestrator commits the unit per the staging discipline",
+      "state": "closed"
+    },
+    {
+      "id": "G7",
+      "unit": "",
+      "stage": "keeps",
+      "text": "K1 says to prepend the folder of the mise pre-commit binary to PATH, but mise x drops mise install folders from PATH, so the safety net printed pre-commit is not on PATH · symlinked the same binary into a scratch bin folder and prepended that; K1 then passed (base exit 1 on no-commit-to-branch, changed exit 0)",
       "state": "closed"
     }
   ],
