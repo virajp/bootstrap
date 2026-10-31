@@ -116,14 +116,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-10-31T16:50:21.091Z",
+      "ended": "2026-10-31T16:52:26.168Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "219d057",
+        "to": "51e0471"
       }
     },
     {
@@ -183,9 +183,9 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-10-31T16:50:21.051Z",
+      "ended": "2026-10-31T16:52:39.586Z"
     },
     {
       "id": "W3",
