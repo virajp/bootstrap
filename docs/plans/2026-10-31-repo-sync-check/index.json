@@ -12,8 +12,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "BLOCKED",
-    "detail": "BLOCKED at land — merge conflict with main in tools/repo-sync/.config/mise/tasks/_scripts/repo-sync (main gained e1c2956 and b3e7280, which change the mise x gomplate calls of repo-sync); worktree .worktrees/repo-sync-check, branch repo-sync-check"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-01 — 5c1b2e6 c1960ef a93dd90 519c12c"
   },
   "consent": {
     "merge": true,
@@ -393,6 +393,13 @@
       "unit": "",
       "stage": "plan-gate",
       "text": "K1 as written does not run in a temporary consumer: mise trust fails for the conf.d files, mise x also drops gomplate and dprint from PATH, the consumer needs dprint.jsonc, nodeenv fails in a new PRE_COMMIT_HOME, and mise run setup also runs setup:vscode · closed: the keep run used MISE_TRUSTED_CONFIG_PATHS, symlinks of pre-commit, gomplate and dprint, a copied dprint.jsonc and the normal PRE_COMMIT_HOME; K1 and K2 passed",
+      "state": "closed"
+    },
+    {
+      "id": "G5",
+      "unit": "",
+      "stage": "land",
+      "text": "The landing conflicted with main in the header comment of _scripts/repo-sync: main gained e1c2956 and b3e7280 (gomplate and pre-commit called without mise x, found with command -v, given by a #MISE tools directive of the calling task) · closed: main was merged into the branch (519c12c), every line main added was kept, the comment keeps both rules (the gate has no directive per D12), the gate was tested on the merged code in the K1 consumer, and every gate line passed again",
       "state": "closed"
     }
   ],
