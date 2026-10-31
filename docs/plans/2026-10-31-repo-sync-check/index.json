@@ -12,8 +12,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "COMPLETE",
-    "detail": "COMPLETE 2026-11-01 — 5c1b2e6 c1960ef a93dd90"
+    "state": "BLOCKED",
+    "detail": "BLOCKED at land — merge conflict with main in tools/repo-sync/.config/mise/tasks/_scripts/repo-sync (main gained e1c2956 and b3e7280, which change the mise x gomplate calls of repo-sync); worktree .worktrees/repo-sync-check, branch repo-sync-check"
   },
   "consent": {
     "merge": true,
