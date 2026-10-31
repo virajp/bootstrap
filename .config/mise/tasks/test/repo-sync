@@ -542,6 +542,78 @@ append = [ "fixtures/" ]' '' 'the only keys of [overrides.graphifyignore] are ad
 run_case "the old .config/repo-sync/gitignore" 2 'environments = [ "dev" ]' old_gitignore_file \
   '.config/repo-sync/gitignore is no longer used'
 
+# direct_commit of [branch.main] and [branch.develop], and the args of the
+# no-commit-to-branch hook. The consumer already has a pre-commit config, so
+# the dry run shows its diff. The consumer has main; a case adds develop, or
+# renames main to develop.
+precommit_file() {
+  printf '%s\n' x > "$consumer/.config/pre-commit-config.yaml"
+}
+precommit_both() {
+  precommit_file
+  _git -C "$consumer" branch develop
+}
+precommit_develop() {
+  precommit_file
+  _git -C "$consumer" branch -m main develop
+}
+precommit_both_branches() { _git -C "$consumer" branch develop; }
+precommit_develop_branch() { _git -C "$consumer" branch -m main develop; }
+# A hook of the repo with a --branch pair of develop and another arg, in a
+# repository with main only.
+precommit_own() {
+  precommit_file
+  mkdir -p -- "$consumer/.config/repo-sync"
+  printf '%s\n' '- repo: https://example.com/own-hooks' '  rev: v1.0.0' '  hooks:' \
+    '    - id: no-commit-to-branch' '      args: [ "--branch", "develop", "--pattern", "x" ]' \
+    > "$consumer/.config/repo-sync/pre-commit.yaml"
+}
+
+lacks_hook() { check_log_lacks "$1: no hook" 'id: no-commit-to-branch'; }
+lacks_hook_main() { lacks_hook "direct_commit, main only, main true"; }
+lacks_hook_develop() { lacks_hook "direct_commit, develop only, develop true"; }
+lacks_hook_both() { lacks_hook "direct_commit, both branches, both true"; }
+lacks_own_hook() {
+  check_log_lacks "a hook of the repo, develop missing" '--pattern'
+  check_log_lacks "a hook of the repo, develop missing: no entry" 'example.com/own-hooks'
+}
+
+hook_both='args: [ "--branch", "main", "--branch", "develop" ]'
+hook_main='args: [ "--branch", "main" ]'
+run_case "direct_commit, both branches, no key" 0 'environments = [ "dev" ]' precommit_both "$hook_both"
+run_case "direct_commit, main only, no key" 0 'environments = [ "dev" ]' precommit_file "$hook_main"
+run_case "a hook of the repo, develop missing" 0 'environments = [ "dev" ]' precommit_own "$hook_main" \
+  lacks_own_hook
+run_case "direct_commit, main only, main true" 0 'environments = [ "dev" ]
+[branch.main]
+direct_commit = true' precommit_file 'id: conventional-commits' lacks_hook_main
+run_case "direct_commit, develop only, develop true" 0 'environments = [ "dev" ]
+[branch.develop]
+direct_commit = true' precommit_develop 'id: conventional-commits' lacks_hook_develop
+run_case "direct_commit, both branches, develop true" 0 'environments = [ "dev" ]
+[branch.develop]
+direct_commit = true' precommit_both "$hook_main"
+run_case "direct_commit, both branches, both true" 0 'environments = [ "dev" ]
+[branch.main]
+direct_commit = true
+[branch.develop]
+direct_commit = true' precommit_both 'id: conventional-commits' lacks_hook_both
+run_case "direct_commit, both branches, main true only" 2 'environments = [ "dev" ]
+[branch.main]
+direct_commit = true' precommit_both_branches 'has direct_commit = true, but [branch.develop] does not'
+run_case "direct_commit, not a boolean" 2 'environments = [ "dev" ]
+[branch.main]
+direct_commit = "yes"' '' '.config/bootstrap.toml: direct_commit must be true or false'
+run_case "direct_commit in [branch.feature]" 2 'environments = [ "dev" ]
+[branch.feature]
+direct_commit = false' '' 'direct_commit is a key of [branch.main] and [branch.develop] only'
+run_case "direct_commit, develop true in a main-only repo" 2 'environments = [ "dev" ]
+[branch.develop]
+direct_commit = true' '' ".config/bootstrap.toml has direct_commit, but the branch 'develop' does not exist"
+run_case "direct_commit, main false in a develop-only repo" 2 'environments = [ "dev" ]
+[branch.main]
+direct_commit = false' precommit_develop_branch "the branch 'main' does not exist"
+
 while ((${#case_pids[@]})); do
   collect_case
 done
