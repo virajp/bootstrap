@@ -1,4 +1,22 @@
 {
   "format": 1,
-  "plans": []
+  "plans": [
+    {
+      "id": "2026-10-31-repo-sync-check",
+      "folder": "docs/plans/2026-10-31-repo-sync-check",
+      "kind": "change",
+      "title": "Validate bootstrap.toml at commit time with repo_sync --check",
+      "target_repo": null,
+      "priority": 10,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [],
+      "backlog": [
+        "B14"
+      ],
+      "backlog_pieces": []
+    }
+  ]
 }
