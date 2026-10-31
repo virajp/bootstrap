@@ -3,8 +3,8 @@
 #MISE description="Test repo-sync against scratch values files"
 #MISE tools.gomplate="latest"
 
-# Runs `repo_sync --dry-run` of the working tree's tools/ against scratch
-# values files, and checks the exit code and message of each case. Needs no
+# Runs `repo_sync --dry-run` and `repo_sync --check` of the working tree's
+# tools/ against scratch values files, and checks the exit code and message of each case. Needs no
 # network: REPO_SYNC_NO_AUTOUPDATE=1 skips `pre-commit autoupdate`. Writes
 # nothing outside its temporary folder.
 
@@ -78,6 +78,9 @@ case_dirs=()
 # function name, or empty), runs the dry run, and compares the exit code.
 # A <message> (a fixed string) must also be in the output. If the case
 # passes, the function <check> examines its output.
+# `case_args` replaces the arguments of repo_sync for the case; a case with
+# `--check` in them runs without REPO_SYNC_CLONE. `CASE_REPO_SYNC_URL`, when
+# set, becomes REPO_SYNC_URL of the case.
 run_case() {
   local dir
   case_count=$((case_count + 1))
@@ -107,13 +110,17 @@ case_body() {
   if [[ -n $change ]]; then
     "$change"
   fi
+  local args=${case_args:---dry-run}
   (
     unset REPO_SYNC_URL
+    [[ -z ${CASE_REPO_SYNC_URL:-} ]] || export REPO_SYNC_URL=$CASE_REPO_SYNC_URL
     export REPO_SYNC_CLONE=$clone REPO_SYNC_VALUES=$values \
       MISE_PROJECT_ROOT=$consumer REPO_SYNC_NO_AUTOUPDATE=1
+    [[ " $args " != *" --check "* ]] || unset REPO_SYNC_CLONE
     # shellcheck source=/dev/null
     source "$clone/tools/repo-sync/.config/mise/tasks/_scripts/repo-sync"
-    repo_sync --dry-run
+    # shellcheck disable=SC2086
+    repo_sync $args
   ) > "$log" 2>&1 || got=$?
   # After the dry run, so that its output stays plain for the greps.
   [[ -n $case_color ]] && export FORCE_COLOR=1
@@ -130,6 +137,9 @@ case_body() {
   sed 's/^/    /' "$log" >&2
   printf '%s\n' "$((failures + 1))" > "$dir/failures"
 }
+
+# run_check: run_case with `repo_sync --check`.
+run_check() { case_args=--check run_case "$@"; }
 
 # Wait for the oldest case, print its output and add its failures. A case
 # without a failures file stopped before its end, which is a failure.
@@ -613,6 +623,141 @@ direct_commit = true' '' ".config/bootstrap.toml has direct_commit, but the bran
 run_case "direct_commit, main false in a develop-only repo" 2 'environments = [ "dev" ]
 [branch.main]
 direct_commit = false' precommit_develop_branch "the branch 'main' does not exist"
+
+# repo_sync --check: the local rules of the values file, with no clone.
+check_valid='valid (local rules)'
+consumer_no_core_branch() { _git -C "$consumer" branch -m main trunk; }
+# A git submodule `sub` in the consumer.
+consumer_with_submodule() {
+  _git -C "$consumer" -c protocol.file.allow=always submodule --quiet add -- "$base_clone" sub
+}
+lacks_env_rule() { check_log_lacks "--check, two errors: the env rules are skipped" '[tools.node]'; }
+check_two_errors() {
+  if grep -qF "direct_commit must be true or false" "$log"; then
+    print_success "--check, two errors: the second message"
+  else
+    print_error "--check, two errors: the output lacks the second message"
+    sed 's/^/    /' "$log" >&2
+    failures=$((failures + 1))
+  fi
+  lacks_env_rule
+}
+check_no_clone() {
+  check_log_lacks "--check, no clone" 'using bootstrap at'
+  check_log_lacks "--check, no clone: no bootstrap_commit" 'bootstrap_commit'
+  if grep -q '^bootstrap_commit' "$values"; then
+    print_error "--check, no clone: the values file has bootstrap_commit"
+    failures=$((failures + 1))
+  fi
+}
+
+run_check "--check, a valid file" 0 'environments = [ "dev" ]' '' "$check_valid"
+run_check "--check, the rules of the clone are skipped" 0 'environments = [ "dev" ]
+[tools.nope]
+[packs.nope]
+[overrides.mise.tools.nope]
+version = "1"
+[overrides.gitignore]
+remove = [ "/nope/" ]
+[overrides.graphifyignore]
+add = [ "fixtures/" ]' '' "$check_valid"
+CASE_REPO_SYNC_URL="$tmp/no-such-repo" run_check "--check, no clone" 0 'environments = [ "dev" ]' '' \
+  "$check_valid" check_no_clone
+case_args='--check --dry-run' run_case "--check with --dry-run" 2 'environments = [ "dev" ]' '' \
+  'usage: repo_sync [--dry-run | --check]'
+run_check "--check, no environments" 0 '' '' 'lists no environments - using dev only'
+run_check "--check, environments with prod" 2 'environments = [ "dev", "prod" ]' '' \
+  "environment 'prod' in"
+run_check "--check, environments without dev" 2 'environments = [ "ci" ]' '' 'must include dev'
+run_check "--check, tools = [\"node\"], the old list" 2 'environments = [ "dev" ]
+tools = [ "node" ]' '' 'is a list, the old format'
+run_check "--check, an entry that is not a table" 2 'environments = [ "dev" ]
+[tools]
+node = "x"' '' 'must be a table'
+run_check "--check, a key other than env" 2 'environments = [ "dev" ]
+[tools.node]
+version = "1"' '' "'version' is not a key of an entry"
+run_check "--check, env not a list" 2 'environments = [ "dev" ]
+[tools.node]
+env = "dev"' '' 'env must be a list'
+run_check "--check, env empty" 2 'environments = [ "dev" ]
+[tools.node]
+env = []' '' 'is empty - name an environment'
+run_check "--check, env with prod" 2 'environments = [ "dev" ]
+[packs.security]
+env = [ "dev", "prod" ]' '' "'prod' is not one of dev, ci"
+run_check "--check, env ci not in environments dev" 2 'environments = [ "dev" ]
+[tools.node]
+env = [ "dev", "ci" ]' '' 'is not in environments: dev'
+run_check "--check, env ci without dev" 2 'environments = [ "dev", "ci" ]
+[tools.node]
+env = [ "ci" ]' '' 'has no dev - each tool must be in dev'
+run_check "--check, neither main nor develop" 2 'environments = [ "dev" ]' consumer_no_core_branch \
+  "the repo has neither 'main' nor 'develop'"
+run_check "--check, core_tools" 0 'environments = [ "dev" ]
+core_tools = [ "node" ]' '' 'core_tools in'
+run_check "--check, the old .config/repo-sync/gitignore" 2 'environments = [ "dev" ]' old_gitignore_file \
+  '.config/repo-sync/gitignore is no longer used'
+run_check "--check, overrides not a table" 2 'environments = [ "dev" ]
+overrides = 1' '' 'overrides in'
+run_check "--check, [overrides.tools.java]" 2 'environments = [ "dev" ]
+[overrides.tools.java]
+version = "21"' '' 'the only keys of [overrides] are mise, mise_env, gitignore and graphifyignore'
+run_check "--check, [overrides.gitignore] append" 2 'environments = [ "dev" ]
+[overrides.gitignore]
+append = [ "/build/" ]' '' 'the only keys of [overrides.gitignore] are add and remove'
+run_check "--check, [overrides.gitignore] add, not a list" 2 'environments = [ "dev" ]
+[overrides.gitignore]
+add = "/build/"' '' 'must be a list of one-line strings'
+run_check "--check, [overrides.gitignore] add, an empty line" 2 'environments = [ "dev" ]
+[overrides.gitignore]
+add = [ " " ]' '' 'has an empty line'
+run_check "--check, [overrides.mise_env.prod]" 2 'environments = [ "dev" ]
+[overrides.mise_env.prod.tools.java]
+version = "21"' '' "'prod' is not one of dev, ci"
+run_check "--check, [overrides.mise_env.ci] without ci in environments" 2 'environments = [ "dev" ]
+[overrides.mise_env.ci.tools.java]
+version = "21"' '' "'ci' is not in environments: dev"
+run_check "--check, [overrides.mise.tools.java] envs" 2 'environments = [ "dev" ]
+[overrides.mise.tools.java]
+envs = [ "dev" ]' '' 'the envs, the depends, the requires and the files of a mise tool cannot be overridden'
+run_check "--check, [overrides.gitignore], a line in add and in remove" 2 'environments = [ "dev" ]
+[overrides.gitignore]
+add = [ "*.log" ]
+remove = [ "*.log" ]' '' "'*.log' is in add and in remove"
+run_check "--check, direct_commit, not a boolean" 2 'environments = [ "dev" ]
+[branch.main]
+direct_commit = "yes"' '' 'direct_commit must be true or false'
+run_check "--check, direct_commit in [branch.feature]" 2 'environments = [ "dev" ]
+[branch.feature]
+direct_commit = false' '' 'direct_commit is a key of [branch.main] and [branch.develop] only'
+run_check "--check, direct_commit of a branch that does not exist" 2 'environments = [ "dev" ]
+[branch.develop]
+direct_commit = true' '' "the branch 'develop' does not exist"
+run_check "--check, direct_commit, both branches, main true only" 2 'environments = [ "dev" ]
+[branch.main]
+direct_commit = true' precommit_both_branches 'has direct_commit = true, but [branch.develop] does not'
+run_check "--check, [member.self], the folder of the repo itself" 2 'environments = [ "dev" ]
+[member.self]
+folder = "."' '' '.config/bootstrap.toml: [member.self] in'
+run_check "--check, [member.web], an unknown type" 2 'environments = [ "dev" ]
+[member.web]
+folder = "projects/web"
+type = "repo"' member_folder "has the type 'repo'"
+run_check "--check, [member.sub], type folder on a submodule" 2 'environments = [ "dev" ]
+[member.sub]
+type = "folder"' consumer_with_submodule 'has type folder, but sub is a submodule'
+run_check "--check, [member.web], type submodule without a submodule" 2 'environments = [ "dev" ]
+[member.web]
+folder = "projects/web"
+type = "submodule"' member_folder 'has type submodule, but projects/web is not in .gitmodules'
+run_check "--check, [member.nope], not a submodule or a folder" 2 'environments = [ "dev" ]
+[member.nope]' '' 'is not a submodule or a folder of the repo'
+run_check "--check, two errors in two checks" 2 'environments = [ "dev", "prod" ]
+[tools.node]
+env = [ "ci" ]
+[branch.main]
+direct_commit = "yes"' '' "environment 'prod' in" check_two_errors
 
 while ((${#case_pids[@]})); do
   collect_case

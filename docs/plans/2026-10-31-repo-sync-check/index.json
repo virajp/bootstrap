@@ -12,8 +12,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-10-31 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-10-31T22:09 in .worktrees/repo-sync-check"
   },
   "consent": {
     "merge": true,
@@ -79,11 +79,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-10-31T16:39:42.118Z",
+      "ended": "2026-10-31T16:47:08.098Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -97,11 +97,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-10-31T16:39:42.191Z",
+      "ended": "2026-10-31T16:41:05.910Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -177,8 +177,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-10-31T16:39:42.084Z",
       "ended": ""
     },
     {
@@ -366,7 +366,29 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2: the plan does not say what the gate does when a file list names .config/bootstrap.toml and the file is gone (a staged delete) · the exact-match rule is taken as written, so the check runs and repo_sync reports the missing values file (code 2)",
+      "state": "open"
+    },
+    {
+      "id": "G2",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the plan says _rs_members gets the relative path of the values file but not relative to what · relative to MISE_PROJECT_ROOT, as _RS_VALUES_NOTE does, so messages start with .config/bootstrap.toml: [member.x] in ...",
+      "state": "open"
+    },
+    {
+      "id": "G3",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the gomplate-missing message of repo_sync still says to add #MISE tools.gomplate=\"latest\" to the calling task; the plan did not ask to change it · left as is, because under D12 the gate exits 0 before repo_sync when gomplate is missing",
+      "state": "open"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".worktrees/repo-sync-check",
