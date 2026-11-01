@@ -21,6 +21,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | `@askviraj/linter` in a file of the repository                  | M21, before the next sync.                                                                                                                                                                                                                                          |
 | A core branch that must allow direct commits                    | M22. Optional.                                                                                                                                                                                                                                                      |
 | A sync that adds `code:lint:repo-sync`                          | M23, after the sync.                                                                                                                                                                                                                                                |
+| `[overrides.graphifyignore]`, `.graphifyignore` or `code:graph` | M24, before the next sync.                                                                                                                                                                                                                                          |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -128,7 +129,7 @@ the `tools/` layout. Before the first sync, move its content:
 | python, uv, `UV_*`                                               | the `python` tool         |
 | pre-commit, `PRE_COMMIT_HOME`                                    | the `pre-commit` tool     |
 | `MEMBERS`, `REPO_NAME`                                           | the values file           |
-| `MEMPALACE_*` and other repository variables                     | `zz-repo/mise.<env>.toml` |
+| Other repository variables                                       | `zz-repo/mise.<env>.toml` |
 | `min_version`, `task.run_auto_install`, other repository content | step M5                   |
 
 Then delete the old files `mise.toml`, `mise.dev.toml` and `mise.ci.toml` of
@@ -173,8 +174,8 @@ repository.
    `mise run setup:configs --dry-run`.
 2. Move each hook that no tool ships to `.config/repo-sync/pre-commit.yaml`.
    Prefix each `entry` that calls a tool with `mise x --`.
-3. Remove each hook that a tool now ships, for example `graphify-refresh`,
-   `gitleaks` and `conventional-commits`.
+3. Remove each hook that a tool now ships, for example `gitleaks` and
+   `conventional-commits`.
 
 ## M13: The forge files
 
@@ -440,7 +441,7 @@ have the bootstrap header, so the sync does not remove them.
    | `.config/mise/tasks/code/check/uv`            | Delete it. `code:lint:uv` of the `python` tool does the same check. If `code/check/all` runs only this task, delete `code/check/all` too.                                    |
    | `.config/mise/tasks/code/count`               | Delete it, unless the user wants to keep it. bootstrap does not ship it.                                                                                                     |
    | A ruff or pyrefly pin in `pyproject.toml`     | Tell the user. The gates of the `python` tool use the mise version.                                                                                                          |
-   | `.graphifyignore`                             | Put each line that is not in the shared file or in `.gitignore` in `add` of `[overrides.graphifyignore]`. The sync replaces the file. The `claude` tool is necessary.        |
+   | `.graphifyignore`                             | Keep it. bootstrap does not ship it, and the sync does not change it.                                                                                                        |
    | `.gitattributes` with lines of the repository | Tell the user. The sync replaces the file, and it has no overrides.                                                                                                          |
 
 2. Keep these files. The sync writes the same path, but only when it is
@@ -513,3 +514,25 @@ the check uses the same rules.
 2. If `code:lint:repo-sync` reports an error, correct the values file. See
    step 3 of `index.md`.
 3. A repository with a valid values file does nothing.
+
+## M24: The `claude` tool no longer ships graphify and mempalace
+
+The `claude` tool now ships only `setup:ai`. It no longer ships
+`.graphifyignore`, `code:graph`, the `graphify-refresh` hook and the mise tools
+`pipx:graphifyy` and `pipx:mempalace`. `[overrides.graphifyignore]` of the
+values file stops the sync with code 2. The shared `.gitignore` still ignores
+`graphify-out/` and `/entities.json`.
+
+1. Remove the `[overrides.graphifyignore]` table from `.config/bootstrap.toml`.
+2. Run `mise run setup:configs`. The sync removes
+   `.config/mise/conf.d/claude/mise.<env>.toml`, and the pre-commit config
+   loses the `graphify-refresh` hook.
+3. Ask the user whether to delete `.graphifyignore` and
+   `.config/mise/tasks/code/graph`. The user can still use graphify without
+   bootstrap. If the user keeps a file, remove its bootstrap header, because
+   no sync replaces it now.
+4. Remove the `post-commit` and `post-merge` hooks of pre-commit:
+
+   ```bash
+   mise x -- pre-commit uninstall --hook-type post-commit --hook-type post-merge
+   ```

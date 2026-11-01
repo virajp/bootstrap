@@ -345,7 +345,7 @@ envs = [ "dev" ]' '' 'the envs, the depends, the requires and the files of a mis
 run_case "[overrides.tools.java], not mise, mise_env or gitignore" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.tools.java]
-version = "21"' '' 'the only keys of [overrides] are mise, mise_env, gitignore and graphifyignore'
+version = "21"' '' 'the only keys of [overrides] are mise, mise_env and gitignore'
 run_case "[overrides.mise_env.ci] without ci in environments" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.mise_env.ci.tools.java]
@@ -524,31 +524,10 @@ run_case "[overrides.gitignore] add, an empty line" 2 'environments = [ "dev" ]
 [overrides.gitignore]
 add = [ " " ]' '' 'has an empty line'
 
-# The consumer already has a .graphifyignore, so the dry run shows its diff.
-graphifyignore_file() {
-  printf '%s\n' x > "$consumer/.graphifyignore"
-}
-
-run_case "[overrides.graphifyignore] remove" 0 'environments = [ "dev" ]
+run_case "the old [overrides.graphifyignore]" 2 'environments = [ "dev" ]
 [tools.claude]
 [overrides.graphifyignore]
-remove = [ "docs/prompts/" ]
-add = [ "fixtures/" ]' graphifyignore_file '+# docs/prompts/  # override: removed by .config/bootstrap.toml'
-run_case "[overrides.graphifyignore] add" 0 'environments = [ "dev" ]
-[tools.claude]
-[overrides.graphifyignore]
-add = [ "fixtures/" ]' graphifyignore_file '+fixtures/'
-run_case "[overrides.graphifyignore] without the claude tool" 2 'environments = [ "dev" ]
-[overrides.graphifyignore]
-add = [ "fixtures/" ]' '' '.graphifyignore comes from the claude tool, which is not selected'
-run_case "[overrides.graphifyignore] remove, a line that is not shipped" 2 'environments = [ "dev" ]
-[tools.claude]
-[overrides.graphifyignore]
-remove = [ "/nope/" ]' '' "'/nope/' is not a line of the shipped .graphifyignore"
-run_case "[overrides.graphifyignore], a key other than add and remove" 2 'environments = [ "dev" ]
-[tools.claude]
-[overrides.graphifyignore]
-append = [ "fixtures/" ]' '' 'the only keys of [overrides.graphifyignore] are add and remove'
+add = [ "fixtures/" ]' '' 'is no longer used: bootstrap does not ship .graphifyignore'
 run_case "the old .config/repo-sync/gitignore" 2 'environments = [ "dev" ]' old_gitignore_file \
   '.config/repo-sync/gitignore is no longer used'
 
@@ -658,9 +637,7 @@ run_check "--check, the rules of the clone are skipped" 0 'environments = [ "dev
 [overrides.mise.tools.nope]
 version = "1"
 [overrides.gitignore]
-remove = [ "/nope/" ]
-[overrides.graphifyignore]
-add = [ "fixtures/" ]' '' "$check_valid"
+remove = [ "/nope/" ]' '' "$check_valid"
 CASE_REPO_SYNC_URL="$tmp/no-such-repo" run_check "--check, no clone" 0 'environments = [ "dev" ]' '' \
   "$check_valid" check_no_clone
 case_args='--check --dry-run' run_case "--check with --dry-run" 2 'environments = [ "dev" ]' '' \
@@ -702,7 +679,10 @@ run_check "--check, overrides not a table" 2 'environments = [ "dev" ]
 overrides = 1' '' 'overrides in'
 run_check "--check, [overrides.tools.java]" 2 'environments = [ "dev" ]
 [overrides.tools.java]
-version = "21"' '' 'the only keys of [overrides] are mise, mise_env, gitignore and graphifyignore'
+version = "21"' '' 'the only keys of [overrides] are mise, mise_env and gitignore'
+run_check "--check, the old [overrides.graphifyignore]" 2 'environments = [ "dev" ]
+[overrides.graphifyignore]
+add = [ "fixtures/" ]' '' 'is no longer used: bootstrap does not ship .graphifyignore'
 run_check "--check, [overrides.gitignore] append" 2 'environments = [ "dev" ]
 [overrides.gitignore]
 append = [ "/build/" ]' '' 'the only keys of [overrides.gitignore] are add and remove'

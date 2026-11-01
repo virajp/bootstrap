@@ -166,10 +166,7 @@ removes its hook, and no hook calls a task that is missing.
 
 ### Changes to other tools
 
-- `claude` has `code:graph` and the `graphify-refresh` hook, because they are
-  for graphify.
-- `claude` has `root_only = false`, so that a submodule also gets
-  `code:graph`. `setup:ai` skips in a git submodule.
+- `claude` has `root_only = false`. `setup:ai` skips in a git submodule.
 
 ## Open points
 

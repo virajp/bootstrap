@@ -280,8 +280,6 @@ Flutter packs add `android` or `swift`, so the mise tool `flutter` has no mise
 | `pre-commit`  | `pre-commit`             | `latest` | dev     | `python`, `uv` | `env` (`PRE_COMMIT_HOME`), `shell_alias`            |
 | `repo-sync`   | `gomplate`               | `latest` | dev     |                |                                                     |
 | `bun`         | `bun`                    | `latest` | dev, ci |                |                                                     |
-| `claude`      | `pipx:graphifyy`         | `latest` | dev     | `python`, `uv` |                                                     |
-| `claude`      | `pipx:mempalace`         | `latest` | dev     | `python`, `uv` |                                                     |
 | `cloudflare`  | `npm:cf`                 | `latest` | dev, ci | `node`, `pnpm` |                                                     |
 | `doppler`     | `doppler`                | `latest` | dev     |                |                                                     |
 | `flutter`     | `flutter`                | `3`      | dev, ci |                |                                                     |

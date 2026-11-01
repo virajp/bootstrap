@@ -1,29 +1,6 @@
-# AI tools: graphify, mempalace, .graphifyignore, setup:ai and code:graph. In a git submodule,
-# setup:ai skips itself; code:graph refreshes the graphify graph of each repository.
+# AI tools: setup:ai. In a git submodule, setup:ai skips itself.
 default_envs = [ "dev" ]
 depends = []
 extensions = []
 root_only = false
 seed = []
-
-[[precommit]]
-repo = "local"
-
-[[precommit.hooks]]
-always_run = true
-description = "Refreshes the graphify graph after each commit and merge, instead of the raw git hook of graphify."
-entry = "mise x -- mise run code:graph"
-id = "graphify-refresh"
-language = "system"
-name = "Refresh the graphify graph (mise run code:graph)"
-pass_filenames = false
-stages = [ "post-commit", "post-merge" ]
-
-# The mise config, generated into .config/mise/conf.d/claude/mise.<env>.toml.
-[mise.tools."pipx:graphifyy"]
-depends = [ "python", "uv" ]
-version = "latest"
-
-[mise.tools."pipx:mempalace"]
-depends = [ "python", "uv" ]
-version = "latest"

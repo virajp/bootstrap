@@ -72,9 +72,8 @@ message, and returns the highest code. `--check` with `--dry-run` is a usage
 error, code 2. These rules need the clone, so only `setup:configs` examines
 them: a tool or a pack that is not in `bootstrap`, a pack loop or a pack named
 like a tool, an environment that a mise tool does not allow, an
-`[overrides.mise*]` path that no selected tool has,
-`[overrides.graphifyignore]` without the `claude` tool, a `remove` line that
-the shared file does not have, and a `root_only` tool in a submodule.
+`[overrides.mise*]` path that no selected tool has, a `remove` line that the
+shared file does not have, and a `root_only` tool in a submodule.
 
 Besides the copy of the files, `repo_sync` does these steps:
 
