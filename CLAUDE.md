@@ -157,7 +157,8 @@ Some files refer to files that are not in `tools/`, for example
 - `repo_sync --check` examines only the local rules of the values file: the
   rules that need the values file and the local git repository, for example
   `env`, `environments`, `[member.*]`, the structure of `[overrides]`,
-  `direct_commit`, and a missing `main` and `develop`. It runs after the
+  `direct_commit`, a missing `main` and `develop`, and the profiles of
+  `.config/fnox.toml`. It runs after the
   checks of the values file and of gomplate, and before the clone. It makes
   no clone, reads no `REPO_SYNC_URL` or `REPO_SYNC_CLONE`, writes no file and
   does not set `bootstrap_commit`. It runs each local check and prints each
@@ -175,8 +176,14 @@ Some files refer to files that are not in `tools/`, for example
   `REPO_SYNC_CLONE` and loads the local `_scripts/repo-sync`.
 - The sync formats each rendered template and each generated mise file with
   the dprint config of the consumer before it compares the file.
-- gomplate reads the TOML files: the values file, `tools/packs.toml` and each
-  `tools.toml`.
+- gomplate reads the TOML files: the values file, `tools/packs.toml`, each
+  `tools.toml` and the consumer file `.config/fnox.toml`.
+- A repository does not use the fnox `default` profile, which is only for the
+  user-level fnox settings. When `.config/fnox.toml` exists, the sync and
+  `repo_sync --check` stop with code 2 on a top-level `[secrets]` table (the
+  `default` profile, also when empty), a `[profiles.default]` table, or no
+  `[profiles.<name>]` table. A repository with one profile uses its
+  `repo_name`. Each `fnox` call passes `-P <name>`.
 - The sync never deletes a file, except the merge tasks of the other branch
   model (see "Branch model in the merge tasks"), the stale generated mise
   files (see "mise config"), a synced file of a `files` list whose
