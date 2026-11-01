@@ -20,7 +20,7 @@ file.
 | Path in the repository                        | Kind      | Use                                                                 |
 | --------------------------------------------- | --------- | ------------------------------------------------------------------- |
 | `.config/mise/tasks/_scripts/repo-sync`       | Synced    | The library with the sync function `repo_sync`.                     |
-| `.config/mise/tasks/setup/configs/_default`   | Synced    | The task `setup:configs`. It fetches `bootstrap` into the cache.    |
+| `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`. It fetches `bootstrap` into the cache.    |
 | `.config/mise/tasks/setup/configs/sync`       | Synced    | The task `setup:configs:sync`. It loads `repo-sync` from the clone. |
 | `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `repo_sync --check`.        |
 | `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                       |
@@ -33,11 +33,11 @@ file.
 
 ## Tasks
 
-| Task                  | Use                                                                     |
-| --------------------- | ----------------------------------------------------------------------- |
-| `setup:configs`       | Sync the shared files from `bootstrap`. `--dry-run` shows the diff.     |
-| `setup:configs:sync`  | Run `repo_sync` from the clone of `setup:configs`. Do not run it alone. |
-| `code:lint:repo-sync` | Validate `.config/bootstrap.toml` with `repo_sync --check`. Hidden.     |
+| Task                  | Use                                                                                                                      |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `setup:configs`       | Sync the shared files from `bootstrap`. `--dry-run` shows the diff. `--all` and `--<name>` also sync the git submodules. |
+| `setup:configs:sync`  | Run `repo_sync` from the clone of `setup:configs`. Do not run it alone.                                                  |
+| `code:lint:repo-sync` | Validate `.config/bootstrap.toml` with `repo_sync --check`. Hidden.                                                      |
 
 `setup:configs` keeps a shallow clone of `bootstrap` in
 `${XDG_CACHE_HOME:-~/.cache}/bootstrap`, for each consumer of the machine:
@@ -51,6 +51,21 @@ file.
   `REPO_SYNC_URL`, is cloned again.
 - If the fetch or the clone fails, `setup:configs` stops with code 5. It
   never uses an old clone.
+
+The member flags of `setup:configs` are the same as the flags of `setup`.
+They are only for the git submodules, nested submodules included. A folder
+member is part of the root tree, so it gets no flag.
+
+- `--all` syncs the root, then each submodule. `--<name>` syncs the root,
+  then the submodule `<name>`. Without a flag, only the root syncs.
+- The task fetches one time. The root and each submodule sync from the same
+  copy, so all get the same `bootstrap_commit`. `--dry-run` applies to each.
+- Before each submodule, the task prints a header with the `label` of the
+  member, for example "Syncing Backend ...".
+- The first failure stops the task with its code. The submodules after it
+  get no sync.
+- A selected submodule without its own `setup/configs/sync` stops the task
+  with code 2. Without that file, mise runs the task of the root in the root.
 
 `code:lint:repo-sync` is a gate of `code:lint`. It accepts `--debug` and
 `--fix`, and ignores them, because the check has no fixes. It prints nothing

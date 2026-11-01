@@ -252,8 +252,9 @@ Some files refer to files that are not in `tools/`, for example
   name to its folder (`folder`, default the name), and `.member_types` to
   `submodule` or `folder` (`type`, default from the folder). A task that runs in
   a member uses its folder. The
-  member flags (`--all`, `--<name>`) of `setup`, `code:format` and `code:lint`
-  are only for the submodules: a folder member is part of the root tree.
+  member flags (`--all`, `--<name>`) of `setup`, `setup:configs`, `code:format`
+  and `code:lint` are only for the submodules: a folder member is part of the
+  root tree.
 - `.submodules` is the list of the git submodules only, nested ones included.
   It is empty in a repository without submodules.
 - `.tools` is the list of the selected tools, with the packs expanded and the

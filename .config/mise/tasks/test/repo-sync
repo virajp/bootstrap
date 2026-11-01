@@ -785,13 +785,21 @@ done
 # The cache and the lock of setup:configs. A fake `mise` replaces
 # `mise run setup:configs:sync`: it records the commit of the copy that it
 # gets, when the copy is a clone outside the cache and the lock is released.
-task="$root/tools/repo-sync/.config/mise/tasks/setup/configs/_default"
+# It adds one line for each call, with the folder of `--cd` after the commit.
+# The task is rendered with one submodule `sub`.
+task="$tmp/setup-configs"
+printf '%s\n' '{"members":["sub"],"member_types":{"sub":"submodule"},"member_folders":{"sub":"sub"}}' > "$tmp/ctx.json"
+gomplate --left-delim '<%' --right-delim '%>' -c ".=$tmp/ctx.json" \
+  -f "$root/tools/repo-sync/.config/mise/tasks/setup/configs/_default.tmpl" -o "$task"
 cache="$tmp/cache/bootstrap"
 mkdir -p -- "$tmp/bin"
 cat > "$tmp/bin/mise" << 'EOF'
 #!/usr/bin/env bash
 [[ -e $REPO_SYNC_CLONE/.git && $REPO_SYNC_CLONE != "$XDG_CACHE_HOME"/* && ! -e $XDG_CACHE_HOME/bootstrap.lock ]] || exit 1
-git -C "$REPO_SYNC_CLONE" rev-parse HEAD > "$SYNC_OUT"
+cd=''
+[[ ${2:-} == --cd ]] && cd=${3#"$MISE_PROJECT_ROOT"/}
+printf '%s\n' "$(git -C "$REPO_SYNC_CLONE" rev-parse HEAD)${cd:+ $cd}" >> "$SYNC_OUT"
+[[ -z ${SYNC_FAIL:-} ]] || exit "$SYNC_FAIL"
 EOF
 chmod +x "$tmp/bin/mise"
 
@@ -805,15 +813,15 @@ new_remote "$tmp/remote2"
 
 run_configs() {
   rm -f -- "$tmp/synced"
-  env MISE_PROJECT_ROOT="$root" PATH="$tmp/bin:$PATH" XDG_CACHE_HOME="$tmp/cache" \
+  env MISE_PROJECT_ROOT="${CONFIGS_ROOT:-$root}" PATH="$tmp/bin:$PATH" XDG_CACHE_HOME="$tmp/cache" \
     REPO_SYNC_URL="$1" SYNC_OUT="$tmp/synced" bash "$task" > "$log" 2>&1
 }
 
 # check_configs <name> <want> <got> [<commit>]: the exit code, the commit that
-# the sync got, and no lock left.
+# the first sync got, and no lock left.
 check_configs() {
   local name=$1 want=$2 got=$3 commit=${4:-} synced=''
-  synced=$(cat -- "$tmp/synced" 2> /dev/null) || synced=''
+  synced=$(head -n 1 -- "$tmp/synced" 2> /dev/null) || synced=''
   if [[ $got != "$want" ]]; then
     print_error "$name: exit $got, expected $want"
   elif [[ -n $commit && $synced != "$commit" ]]; then
@@ -880,6 +888,61 @@ if [[ ! -e $cache/.git ]]; then
   print_error "setup:configs, a fetch that fails: the cache is gone"
   failures=$((failures + 1))
 fi
+
+# The member flags. The member `sub` of a scratch root has its own sync task,
+# except in the case without it.
+commit=$(git -C "$tmp/remote" rev-parse HEAD)
+members_root="$tmp/members"
+mkdir -p -- "$members_root/.config/mise/tasks/_scripts" "$members_root/sub/.config/mise/tasks/setup/configs"
+cp -- "$root/.config/mise/tasks/_scripts/helpers" "$members_root/.config/mise/tasks/_scripts/helpers"
+printf '%s\n' '#!/usr/bin/env bash' > "$members_root/sub/.config/mise/tasks/setup/configs/sync"
+chmod +x "$members_root/sub/.config/mise/tasks/setup/configs/sync"
+
+# check_synced <name> <lines>: the lines that the fake mise recorded.
+check_synced() {
+  local got=''
+  got=$(cat -- "$tmp/synced" 2> /dev/null) || got=''
+  if [[ $got == "$2" ]]; then
+    print_success "$1: the synced repositories"
+  else
+    print_error "$1: synced '${got}', expected '$2'"
+    failures=$((failures + 1))
+  fi
+}
+
+got=0
+CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
+check_configs "setup:configs without a member flag" 0 "$got" "$commit"
+check_synced "setup:configs without a member flag" "$commit"
+
+got=0
+usage_sub=true CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
+check_configs "setup:configs --sub" 0 "$got" "$commit"
+check_synced "setup:configs --sub" "$commit"$'\n'"$commit sub"
+grep -qF "Syncing sub ..." "$log" || {
+  print_error "setup:configs --sub: no header for sub"
+  failures=$((failures + 1))
+}
+
+got=0
+usage_all=true CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
+check_configs "setup:configs --all" 0 "$got" "$commit"
+check_synced "setup:configs --all" "$commit"$'\n'"$commit sub"
+
+got=0
+SYNC_FAIL=2 usage_all=true CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
+check_configs "setup:configs --all, the root fails" 2 "$got" "$commit"
+check_synced "setup:configs --all, the root fails" "$commit"
+
+rm -f -- "$members_root/sub/.config/mise/tasks/setup/configs/sync"
+got=0
+usage_all=true CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
+check_configs "setup:configs --all, a member without the sync task" 2 "$got" "$commit"
+check_synced "setup:configs --all, a member without the sync task" "$commit"
+grep -qF "sub has no setup:configs:sync task" "$log" || {
+  print_error "setup:configs --all, a member without the sync task: no error message"
+  failures=$((failures + 1))
+}
 
 if ((failures)); then
   print_error "$failures check(s) failed"
