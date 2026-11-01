@@ -7,7 +7,7 @@ git-config check, the merge tasks and worktrunk.
 | ------------ | ----------------- |
 | Root only    | No                |
 | Depends      | None              |
-| Default envs | dev, ci           |
+| Default envs | dev               |
 | Seeds        | `.config/wt.toml` |
 
 ## When the tool is relevant
@@ -29,12 +29,12 @@ file.
 
 ## mise tools
 
-| mise tool   | Version  | Environments | Note                                                      |
-| ----------- | -------- | ------------ | --------------------------------------------------------- |
-| `worktrunk` | `latest` | dev          | The git worktree manager `wt`. In `[mise_env.dev.tools]`. |
+| mise tool   | Version  | Environments | Note                           |
+| ----------- | -------- | ------------ | ------------------------------ |
+| `worktrunk` | `latest` | dev          | The git worktree manager `wt`. |
 
-`worktrunk` is in `[mise_env.dev.tools]`, not in `[mise.tools]`, because it is
-for interactive work. Thus it does not stop the `git` tool in `ci`.
+The tool is in `dev` only. Its files and hooks do not depend on an
+environment, so a CI job still gets the merge tasks and the hooks.
 
 ## worktrunk
 
