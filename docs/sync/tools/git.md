@@ -1,14 +1,14 @@
 # The `git` tool
 
 The shared `.gitignore` and `.gitattributes`, the commit convention, the
-git-config check and the merge tasks.
+git-config check, the merge tasks and worktrunk.
 
-| Property     | Value   |
-| ------------ | ------- |
-| Root only    | No      |
-| Depends      | None    |
-| Default envs | dev, ci |
-| Seeds        | None    |
+| Property     | Value             |
+| ------------ | ----------------- |
+| Root only    | No                |
+| Depends      | None              |
+| Default envs | dev, ci           |
+| Seeds        | `.config/wt.toml` |
 
 ## When the tool is relevant
 
@@ -25,10 +25,37 @@ file.
 | `.config/mise/tasks/_scripts/merge`     | Synced   | The library `merge`, with `merge_to_destination_branch`.                                   |
 | `.config/mise/tasks/code/git-config`    | Synced   | The task `code:git-config`.                                                                |
 | `.config/mise/tasks/code/merge/`        | Synced   | The merge tasks of the branch model (see "Tasks").                                         |
+| `.config/wt.toml`                       | Seed     | The worktrunk config: the `pre-start` hooks and the commit convention (see "worktrunk").   |
 
 ## mise tools
 
-None.
+| mise tool   | Version  | Environments | Note                                                      |
+| ----------- | -------- | ------------ | --------------------------------------------------------- |
+| `worktrunk` | `latest` | dev          | The git worktree manager `wt`. In `[mise_env.dev.tools]`. |
+
+`worktrunk` is in `[mise_env.dev.tools]`, not in `[mise.tools]`, because it is
+for interactive work. Thus it does not stop the `git` tool in `ci`.
+
+## worktrunk
+
+The seed `.config/wt.toml` is the project config of worktrunk. A new worktree
+of `wt switch --create` runs its `pre-start` steps in sequence:
+
+1. `mise trust`.
+2. `wt step copy-ignored --require-include`. It copies the gitignored files
+   of the main worktree that `.worktreeinclude` lists, for example build
+   caches. Without `.worktreeinclude`, it copies nothing.
+3. `mise run setup:worktree`.
+
+Its `template-append` tells the LLM commit messages of `wt` to use the
+commit types of `.config/git-conventional-commits.yaml`. wt asks the user to
+approve each project command the first time that it runs.
+
+Land a branch with the merge tasks, not with `wt merge`. By default,
+`wt merge` squashes, rebases and fast-forwards, and the project config cannot
+change that. The user config `~/.config/worktrunk/config.toml` and the shell
+integration (`wt config shell install`) belong to the user, and the sync does
+not write them.
 
 ## Tasks
 
