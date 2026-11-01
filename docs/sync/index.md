@@ -84,7 +84,6 @@ The pack files in `packs/` are `base.md` and `security.md`.
     the config of each tool.
   - shell functions: `.config/mise/tasks/_scripts/local`.
   - ignore lines: `[overrides.gitignore]` of the values file (see step 3).
-    For graphify, `[overrides.graphifyignore]`.
   - pre-commit hooks: `.config/repo-sync/pre-commit.yaml`, a YAML list of
     `repos:` entries.
   - tasks: any task name that no tool ships.
@@ -169,8 +168,8 @@ The base repository has the members as git submodules, for example
 A tool with `root_only = true` is for the base repository only. The sync
 refuses it in a submodule. A `root_only` tool of a pack, for example `vscode`
 of `base`, is skipped in a submodule. When a submodule is in its root
-checkout, mise also loads the tools of the root. Thus a nested submodule still
-finds, for example, graphify.
+checkout, mise also loads the tools of the root. Thus a nested submodule also
+finds the tools of the root.
 
 ### Siblings
 
@@ -402,8 +401,6 @@ The keys:
 | `[overrides.mise_env.<env>.<section>]` | `repo_sync`                                                        | Optional. New values for one environment only. They win over `[overrides.mise]`. See "Overrides".                                                                                                                                                                                      |
 | `[overrides.gitignore].remove`         | `repo_sync`                                                        | Optional. The lines of the shared `.gitignore` to comment out, for example `["*.log"]`. See "Overrides".                                                                                                                                                                               |
 | `[overrides.gitignore].add`            | `repo_sync`                                                        | Optional. The repository's own lines, added at the end of `.gitignore`, for example `["/build/"]`. See "Overrides".                                                                                                                                                                    |
-| `[overrides.graphifyignore].remove`    | `repo_sync`                                                        | Optional. The lines of the shared `.graphifyignore` to comment out, for example `["docs/prompts/"]`. Only with the `claude` tool. See "Overrides".                                                                                                                                     |
-| `[overrides.graphifyignore].add`       | `repo_sync`                                                        | Optional. The repository's own lines, added at the end of `.graphifyignore`, for example `["fixtures/"]`. Only with the `claude` tool. See "Overrides".                                                                                                                                |
 | `environments`                         | `repo_sync`                                                        | The environments from step 1, for example `["dev", "ci"]`. The default is `["dev"]`.                                                                                                                                                                                                   |
 | `repo_name`                            | `.config/mise.toml`, `gitleaks.toml`, `fnox.toml`                  | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree.                                                                                                                                                                                        |
 | `product_name`                         | `fnox.toml`                                                        | The product name, for example `acme`. Set it in each repository of a product with members, the root included. Then the fnox keychain uses it as `service`, and `<repo_name>/` as `prefix`. Without it, `service` is `repo_name` and there is no prefix.                                |
@@ -491,8 +488,7 @@ UV_NO_CACHE = false
   `# override: .config/bootstrap.toml` in
   `.config/mise/conf.d/<tool>/mise.<env>.toml`.
 - These stop the sync with code 2: a key of `[overrides]` other than `mise`,
-  `mise_env`, `gitignore` and `graphifyignore`, a path that no selected tool
-  has, and the
+  `mise_env` and `gitignore`, a path that no selected tool has, and the
   `envs`, the `depends`, the `requires` or the `files` of a mise tool. An
   override cannot
   add a key. Put a
@@ -518,12 +514,8 @@ remove = [ ".env", "*.log" ]
   lists, and a line of `remove` that the shared `.gitignore` does not have.
 - The old file `.config/repo-sync/gitignore` also stops the sync with code 2.
   See M18 of `migrate.md`.
-
-`[overrides.graphifyignore]` changes the `.graphifyignore` of the `claude`
-tool with the same rules. graphify also reads `.gitignore`, so add only the
-committed files that are not code, for example test fixtures.
-`[overrides.graphifyignore]` without the `claude` tool stops the sync with
-code 2.
+- The old table `[overrides.graphifyignore]` also stops the sync with code 2.
+  See M24 of `migrate.md`.
 
 ## Step 4: Select the branch model
 

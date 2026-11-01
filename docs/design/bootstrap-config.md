@@ -70,9 +70,8 @@ need only the values file and the local git repository, and it shows each
 error at once. The rules that need the `bootstrap` clone stop only
 `setup:configs`: a tool or a pack that is not in `bootstrap`, a pack loop or a
 pack named like a tool, an environment that a mise tool does not allow, an
-`[overrides.mise*]` path that no selected tool has,
-`[overrides.graphifyignore]` without the `claude` tool, a `remove` line that
-the shared file does not have, and a `root_only` tool in a submodule.
+`[overrides.mise*]` path that no selected tool has, a `remove` line that the
+shared file does not have, and a `root_only` tool in a submodule.
 
 All the paths in this document are relative to the root of the consumer
 repository.

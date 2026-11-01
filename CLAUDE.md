@@ -67,7 +67,7 @@ the adoption. After the adoption, `repo-sync` keeps the consumer in sync.
 This repository is also a consumer of its own `base` pack and of the `claude`
 tool. Its values file is `.config/bootstrap.toml`, and `setup:configs` writes
 the synced copies at the root (`.config/`, `.vscode/`, `.gitignore`,
-`.gitattributes`, `.graphifyignore`). Do not edit a synced copy. Change the
+`.gitattributes`). Do not edit a synced copy. Change the
 file in `tools/<tool>/`, push it, then run `mise run setup:configs` here too.
 
 Each file in `tools/<tool>/` is at the path that it gets in a consumer
@@ -136,8 +136,8 @@ Some files refer to files that are not in `tools/`, for example
 - The lock folder `bootstrap.lock` next to the cache makes a second
   `setup:configs` wait until the first has copied the cache. A waiter removes
   the lock of a dead holder, and a lock without a holder that is older than one
-  minute. A failed fetch or clone stops the task with code
-  5. A cache with another `origin`, for example after a test with
+  minute. A failed fetch or clone stops the task with code 5. A cache with
+  another `origin`, for example after a test with
   `REPO_SYNC_URL`, is cloned again.
 - `repo_sync` reads the `[tools.<folder>]` and `[packs.<name>]` tables of the
   consumer file `.config/bootstrap.toml`. The only key of an entry is `env`.
@@ -164,9 +164,8 @@ Some files refer to files that are not in `tools/`, for example
   message, so every error shows at once. The rules that need the clone stay
   with the sync: a tool or a pack that is not in bootstrap, a pack loop or a
   pack named like a tool, an environment that a mise tool does not allow, an
-  `[overrides.mise*]` path that no selected tool has,
-  `[overrides.graphifyignore]` without the `claude` tool, a `remove` line
-  that the shared file does not have, and a `root_only` tool in a submodule.
+  `[overrides.mise*]` path that no selected tool has, a `remove` line that
+  the shared file does not have, and a `root_only` tool in a submodule.
 - The gate `code:lint:repo-sync` of the `repo-sync` tool runs
   `repo_sync --check`. The `lint` hook runs `code:lint`, which runs the gate
   with the staged files, so the tool adds no hook. The gate is hidden, and it
@@ -199,10 +198,6 @@ Some files refer to files that are not in `tools/`, for example
   lines of `add` at the end. A line of `remove` that the shared `.gitignore`
   does not have, a line in both lists, and the old consumer file
   `.config/repo-sync/gitignore` stop the sync with code 2.
-- The `claude` tool ships `.graphifyignore`. The sync applies
-  `[overrides.graphifyignore]` to it with the same rules.
-  `[overrides.graphifyignore]` without the `claude` tool stops the sync with
-  code 2.
 - The sync does not read `[claude.plugins.user]` and
   `[claude.plugins.project]` of the values file. `setup:ai` of the `claude`
   tool reads them when it runs, as the merge tasks read `[branch.*]`. Each key
@@ -372,8 +367,8 @@ task that runs only commands.
    `print_success "<Done message>"`, not with a header.
 8. Header and subheader text is an "-ing" verb phrase with " ..." at the end,
    for example "Installing pre-commit hooks ...".
-9. A task that runs only inside a git hook (`code:graph`, `code:git-config`)
-   prints status lines only, no header.
+9. A task that runs only inside a git hook (`code:git-config`) prints status
+   lines only, no header.
 10. Exception to rules 2 and 5: `code:sec` prints a `print_header` before it
     runs its `code:sec:<scanner>` tasks. Each scanner task prints only a
     `print_subheader` under that header. With `--staged`, a scanner task
@@ -504,12 +499,12 @@ that it finds, and removes the others. It stops if neither branch exists.
   tool with a value at that path. A table merges key by key; any other value
   replaces the default. An override replaces only a key that a selected tool
   has: it cannot add a key. A path that no selected tool has, a key of
-  `[overrides]` other than `mise`, `mise_env`, `gitignore` and
-  `graphifyignore`, an environment
-  outside `environments`, and the `envs`, the `depends`, the `requires` or the
+  `[overrides]` other than `mise`, `mise_env` and `gitignore`, an
+  environment outside `environments`, and the `envs`, the `depends`, the
+  `requires` or the
   `files` of a mise tool stop the sync with code 2. Each overridden line gets an
-  `# override: .config/bootstrap.toml` comment. `[overrides.gitignore]` and
-  `[overrides.graphifyignore]` are different: see "How the sync operates".
+  `# override: .config/bootstrap.toml` comment. `[overrides.gitignore]` is
+  different: see "How the sync operates".
 - `conf.d/zz-repo/` is the folder that each repository owns and customizes.
   `mise` ships the seeds `zz-repo/mise.<env>.toml`, for example for the
   repository's own `[env]` values. The sync writes a seed only when it is

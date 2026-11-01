@@ -17,9 +17,8 @@
 # file and does not set `bootstrap_commit`. It runs each of these checks,
 # prints each message, and returns the highest code. The rules that need the
 # clone (an unknown tool or pack, a pack loop, the `envs` of a mise tool, an
-# `[overrides]` path, `[overrides.graphifyignore]` without `claude`, a
-# `remove` line that is not shipped, a root-only tool in a submodule) are for
-# the sync only.
+# `[overrides]` path, a `remove` line that is not shipped, a root-only tool in
+# a submodule) are for the sync only.
 #
 # The values file selects tools and packs with one table each; the only key of
 # an entry is `env`, a list of environments:
@@ -160,13 +159,12 @@
 # merge tasks of the other model: they are not seeds, so the repo does not own
 # them. With neither branch, the sync stops.
 #
-# .gitignore and .graphifyignore: the shared ignore set, with
-# `[overrides.gitignore]` or `[overrides.graphifyignore]` of the values file
-# applied. Each line of `remove` is commented out, then the lines of `add` go
-# at the end. A later line wins, so `add` can also negate a shared pattern
-# with `!`. A line of `remove` that the shared set does not have, a line in
-# both lists, `[overrides.graphifyignore]` without the `claude` tool, and the
-# old `.config/repo-sync/gitignore` stop the sync.
+# .gitignore: the shared ignore set, with `[overrides.gitignore]` of the
+# values file applied. Each line of `remove` is commented out, then the lines
+# of `add` go at the end. A later line wins, so `add` can also negate a shared
+# pattern with `!`. A line of `remove` that the shared set does not have, a
+# line in both lists, the old `[overrides.graphifyignore]` and the old
+# `.config/repo-sync/gitignore` stop the sync.
 #
 # Failure handling
 #   * A file takes the mode of its source, also when it exists already. To
@@ -1004,9 +1002,8 @@ _RS_DEFINES='<% define "rs_leaves" %><% range $k, $x := .v %><% $p := coll.Appen
 # REPO_SYNC_TOOLS). It prints one `<problem> <path> <arg>` line, tab
 # separated, for each problem:
 #   table    a key of [overrides] that must be a table and is not
-#   key      a key of [overrides] other than mise, mise_env, gitignore and
-#            graphifyignore
-#   gikey    a key of [overrides.<ignore>] other than add and remove
+#   key      a key of [overrides] other than mise, mise_env and gitignore
+#   gikey    a key of [overrides.gitignore] other than add and remove
 #   gilist   an add or a remove that is not a list of one-line strings
 #   giempty  an empty line in add or remove
 #   envname  an environment of [overrides.mise_env] that is not dev or ci
@@ -1014,8 +1011,8 @@ _RS_DEFINES='<% define "rs_leaves" %><% range $k, $x := .v %><% $p := coll.Appen
 #   lock     an `envs`, a `depends`, a `requires` or a `files` of a mise tool
 #   none     a value that no selected tool has; <arg> is the path in tools.toml
 # It also prints an `add <path> <line>` or a `remove <path> <line>` line for
-# each line of [overrides.gitignore] and [overrides.graphifyignore], without
-# the spaces at the start and the end. <path> is overrides.<ignore>.<list>.
+# each line of [overrides.gitignore], without the spaces at the start and the
+# end. <path> is overrides.gitignore.<list>.
 _RS_OVERRIDES_TEMPLATE="$_RS_DEFINES"'<% if has .o "overrides" -%>
 <% $ov := .o.overrides -%>
 <% $envs := env.Getenv "REPO_SYNC_ENVS" -%>
@@ -1023,9 +1020,9 @@ _RS_OVERRIDES_TEMPLATE="$_RS_DEFINES"'<% if has .o "overrides" -%>
 <% if not (test.IsKind "map" $ov) %>table	overrides	-
 <% else -%>
 <% range $k, $x := $ov -%>
-<% if not (has (coll.Slice "mise" "mise_env" "gitignore" "graphifyignore") $k) %>key	overrides.<% $k %>	-
+<% if not (has (coll.Slice "mise" "mise_env" "gitignore") $k) %>key	overrides.<% $k %>	-
 <% else if not (test.IsKind "map" $x) %>table	overrides.<% $k %>	-
-<% else if has (coll.Slice "gitignore" "graphifyignore") $k -%>
+<% else if eq $k "gitignore" -%>
 <% range $gk, $gv := $x -%>
 <% if not (has (coll.Slice "add" "remove") $gk) %>gikey	overrides.<% $k %>.<% $gk %>	-
 <% else if not (test.IsKind "slice" $gv) %>gilist	overrides.<% $k %>.<% $gk %>	-
@@ -1088,20 +1085,18 @@ none	overrides.<% join $p "." %>	<% if $only %>mise_env.<% $only %>.<% join $res
 # at the same path below `[mise]` or `[mise_env.<env>]`. The `envs`, the
 # `depends`, the `requires` and the `files` of a mise tool decide the tools,
 # the files and the environments, so they cannot be overridden. Each line of `remove` of
-# `[overrides.gitignore]` and `[overrides.graphifyignore]` must be a line of
-# the shipped file, and no line can be in `add` and in `remove`. Sets
-# _RS_GI_ADD and _RS_GI_REMOVE to the `<ignore><tab><line>` lines of `add`
-# and `remove`, where <ignore> is gitignore or graphifyignore, and
-# _RS_VALUES_NOTE to the values file for the override comments. Returns 2,
-# after a message for each problem, also when the old
-# `.config/repo-sync/gitignore` exists.
+# `[overrides.gitignore]` must be a line of the shipped file, and no line can
+# be in `add` and in `remove`. Sets _RS_GI_ADD and _RS_GI_REMOVE to the
+# `gitignore<tab><line>` lines of `add` and `remove`, and _RS_VALUES_NOTE to
+# the values file for the override comments. Returns 2, after a message for
+# each problem, also when the old `.config/repo-sync/gitignore` exists.
 # With a third argument `local`, for `repo_sync --check`, it reads no clone:
 # <dir> is not used, no tool is selected, and it skips the problems that need
-# the tools or the shipped files (`none`, `[overrides.graphifyignore]` without
-# claude, a `remove` line that is not shipped). When `_rs_envs` failed,
+# the tools or the shipped files (`none`, a `remove` line that is not
+# shipped). When `_rs_envs` failed,
 # _RS_ENVS is empty, and it also skips `env` and `envname`.
 _rs_overrides() {
-  local dir=$1 values=$2 only_local=0 out tool problem path arg rc=0 show no_claude=0
+  local dir=$1 values=$2 only_local=0 out tool problem path arg rc=0 show
   [[ ${3:-} == local ]] && only_local=1
   local tools=${_RS_TOOLS:-} envs=${_RS_ENVS:-}
   ((only_local)) && tools=''
@@ -1125,7 +1120,11 @@ _rs_overrides() {
         _rs_log "$path in $show must be a table"
         ;;
       key)
-        _rs_log "$path in $show: the only keys of [overrides] are mise, mise_env, gitignore and graphifyignore"
+        if [[ $path == overrides.graphifyignore ]]; then
+          _rs_log "$path in $show is no longer used: bootstrap does not ship .graphifyignore - remove the table (M24 of docs/sync/migrate.md)"
+        else
+          _rs_log "$path in $show: the only keys of [overrides] are mise, mise_env and gitignore"
+        fi
         ;;
       gikey)
         _rs_log "$path in $show: the only keys of [${path%.*}] are add and remove"
@@ -1140,11 +1139,6 @@ _rs_overrides() {
         # <path> is overrides.<ignore>.<list>.
         path=${path#overrides.}
         path=${path%.*}
-        if ((!only_local)) && [[ $path == graphifyignore && $tools != *" claude "* ]]; then
-          ((no_claude)) ||
-            _rs_log "overrides.graphifyignore in $show: .graphifyignore comes from the claude tool, which is not selected - add [tools.claude], or remove the table"
-          no_claude=1 rc=2
-        fi
         if [[ $problem == add ]]; then
           _RS_GI_ADD+="$path"$'\t'"$arg"$'\n'
         else
@@ -1178,7 +1172,6 @@ _rs_overrides() {
   while IFS=$'\t' read -r ignore line; do
     [[ -n $line ]] || continue
     shipped=tools/git/.gitignore
-    [[ $ignore == graphifyignore ]] && shipped=tools/claude/.graphifyignore
     if [[ $'\n'$_RS_GI_ADD == *$'\n'"$ignore"$'\t'"$line"$'\n'* ]]; then
       _rs_log "overrides.$ignore in $show: '$line' is in add and in remove - keep one"
       rc=2
@@ -1580,9 +1573,9 @@ _rs_file_finish() {
     cp -- "$_RS_STAGE/$out" "$tmp" || true
   fi
 
-  # [overrides.gitignore] and [overrides.graphifyignore]: comment out each
-  # line of `remove`, then add the lines of `add` at the end, so they win.
-  if ((rc == 0)) && [[ ($path == .gitignore || $path == .graphifyignore) && -n $_RS_GI_REMOVE$_RS_GI_ADD ]]; then
+  # [overrides.gitignore]: comment out each line of `remove`, then add the
+  # lines of `add` at the end, so they win.
+  if ((rc == 0)) && [[ $path == .gitignore && -n $_RS_GI_REMOVE$_RS_GI_ADD ]]; then
     local gi_add gi_remove
     gi_add=$(printf '%s' "$_RS_GI_ADD" | sed -n "s/^${path#.}"$'\t'"//p")
     gi_remove=$(printf '%s' "$_RS_GI_REMOVE" | sed -n "s/^${path#.}"$'\t'"//p")

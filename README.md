@@ -273,9 +273,6 @@ values file applied. It comments out each line of `remove`, then it adds the
 lines of `add` at the end. A later line wins, so a line of `add` can also
 negate a shared pattern with `!`. `docs/sync/index.md` has the rules.
 
-The `claude` tool ships `.graphifyignore`. The sync applies
-`[overrides.graphifyignore]` to it in the same way.
-
 ## `.config/pre-commit-config.yaml`
 
 The `pre-commit` tool renders this file from the `[[precommit]]` entries of the
