@@ -23,6 +23,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | A sync that adds `code:lint:repo-sync`                          | M23, after the sync.                                                                                                                                                                                                                                                |
 | `[overrides.graphifyignore]`, `.graphifyignore` or `code:graph` | M24, before the next sync.                                                                                                                                                                                                                                          |
 | `.config/fnox.toml` with a top-level `[secrets]` or no profile  | M25, before the next sync.                                                                                                                                                                                                                                          |
+| A git submodule without a `[member.<name>]` table               | M26, before the next sync.                                                                                                                                                                                                                                          |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -566,3 +567,32 @@ The old seed ends with an empty `[secrets]` table, so each repository with
 6. The keychain values do not move: a profile secret uses the same provider
    and the same key. Run `mise run setup:secrets:fnox` to make sure that each
    profile has its secrets.
+
+## M26: A submodule without a table gets its `repo_name` as its name
+
+A member name is now a flag (`--<name>`) and a part of a shell variable.
+Thus a git submodule without a `[member.<name>]` table no longer gets its path
+as its name. It gets the `repo_name` of its own `.config/bootstrap.toml`. A
+submodule without that value gets its path with each `/` changed to `_`. A
+name has only letters, digits, `-` and `_`, and two members never have the
+same name. If not, the sync and `repo_sync --check` stop with code 2.
+
+The name is in the flags of `setup`, `setup:configs`, `code:format` and
+`code:lint`, and in the default commit scopes. Thus a new name changes these
+flags and scopes.
+
+1. Get the submodules, nested submodules included:
+
+   ```bash
+   git submodule foreach --quiet --recursive 'echo $displaypath'
+   ```
+
+2. Find each submodule that has no `[member.<name>]` table, with its path as
+   `folder` or as the table name.
+3. If the repository has no such submodule, do nothing more.
+4. For each such submodule, show the user the old name (the path) and the new
+   name (its `repo_name`, else the path with `_`). Ask whether to keep the
+   new name, or to write a `[member.<name>]` table with `folder = "<path>"`
+   and another name.
+5. Run `mise run code:lint:repo-sync`. It must pass.
+6. Run `mise run setup:configs --dry-run`, and examine the new flags.

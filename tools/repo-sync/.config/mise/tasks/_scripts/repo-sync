@@ -229,11 +229,13 @@ trap '_rs_cleanup; exit 143' TERM
 
 # Print the repo's members, one per line as `<name> <folder> <type>` with a
 # tab between them: the git submodules first, then the other `[member.<name>]`
-# tables of <values>. A submodule without a table has its path as its name. A
-# table has an optional `folder` (the default is the name) and an optional
-# `type`, `submodule` or `folder`; without `type`, the folder decides it. A
-# folder member must exist, and no member is the repo itself (`.`). Returns 2,
-# after a message, when a table breaks one of these rules.
+# tables of <values>. A submodule without a table has the `repo_name` of its
+# own values file as its name, else its path with each `/` changed to `_`. A
+# name has only letters, digits, `-` and `_`, and two members never have the
+# same name. A table has an optional `folder` (the default is the name) and
+# an optional `type`, `submodule` or `folder`; without `type`, the folder
+# decides it. A folder member must exist, and no member is the repo itself
+# (`.`). Returns 2, after a message, when a member breaks one of these rules.
 _rs_members() {
   local values=$1 name=$2 path rows key folder type found submodules='' tab=$'\t'
   if [[ -f ${MISE_PROJECT_ROOT}/.gitmodules ]]; then
@@ -270,22 +272,44 @@ _rs_members() {
       return 2
     fi
   done <<< "$rows"
-  # The submodules, each with the name of its table, else its path.
+  # The submodules, each with the name of its table, else the `repo_name` of
+  # its own values file, else its path with each `/` changed to `_`.
+  local out='' sub_values
   while IFS= read -r path; do
     [[ -n $path ]] || continue
-    found=$path
+    found=''
     while IFS="$tab" read -r key folder type; do
       [[ -n $key && ${folder%/} == "$path" ]] && found=$key
     done <<< "$rows"
-    printf '%s\t%s\t%s\n' "$found" "$path" submodule
+    sub_values="${MISE_PROJECT_ROOT}/${path}/.config/bootstrap.toml"
+    if [[ -z $found && -f $sub_values ]]; then
+      found=$(_rs_gomplate -c "v=${sub_values}" -i '<% if has .v "repo_name" %><% .v.repo_name %><% end %>') || found=''
+    fi
+    [[ -n $found ]] || found=${path//\//_}
+    out+="${found}${tab}${path}${tab}submodule"$'\n'
   done <<< "$submodules"
   # Then the folder members.
   while IFS="$tab" read -r key folder type; do
     [[ -n $key ]] || continue
     folder=${folder%/}
     grep -qxF -- "$folder" <<< "$submodules" && continue
-    printf '%s\t%s\t%s\n' "$key" "$folder" folder
+    out+="${key}${tab}${folder}${tab}folder"$'\n'
   done <<< "$rows"
+  # A name is a flag (`--<name>`) and a part of a shell variable of the tasks.
+  local seen=''
+  while IFS="$tab" read -r key folder type; do
+    [[ -n $key ]] || continue
+    if [[ ! $key =~ ^[A-Za-z0-9_-]+$ ]]; then
+      _rs_log "$name: the member ${folder} has the name '${key}' - a member name has only letters, digits, - and _; use a [member.<name>] table with such a name in $(_rs_path "$values")"
+      return 2
+    fi
+    if grep -qxF -- "$key" <<< "$seen"; then
+      _rs_log "$name: two members have the name '${key}' - write a [member.<name>] table with another name for one of them in $(_rs_path "$values")"
+      return 2
+    fi
+    seen+="${key}"$'\n'
+  done <<< "$out"
+  printf '%s' "$out"
 }
 
 # gomplate with the template delimiters this repo uses. The calling task puts

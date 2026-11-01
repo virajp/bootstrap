@@ -639,6 +639,19 @@ consumer_no_core_branch() { _git -C "$consumer" branch -m main trunk; }
 consumer_with_submodule() {
   _git -C "$consumer" -c protocol.file.allow=always submodule --quiet add -- "$base_clone" sub
 }
+# The member names. A submodule without a table gets the repo_name of its own
+# values file, else its path with each `/` changed to `_`.
+sub_repo_name() {
+  consumer_with_submodule
+  mkdir -p -- "$consumer/sub/.config" "$consumer/projects/web"
+  printf '%s\n' "repo_name = \"$1\"" > "$consumer/sub/.config/bootstrap.toml"
+}
+sub_named_web() { sub_repo_name web; }
+sub_named_bad() { sub_repo_name bad.name; }
+nested_submodule() {
+  mkdir -p -- "$consumer/a" "$consumer/projects/web"
+  _git -C "$consumer" -c protocol.file.allow=always submodule --quiet add -- "$base_clone" a/sub
+}
 lacks_env_rule() { check_log_lacks "--check, two errors: the env rules are skipped" '[tools.node]'; }
 check_two_errors() {
   if grep -qF "direct_commit must be true or false" "$log"; then
@@ -772,6 +785,20 @@ folder = "projects/web"
 type = "submodule"' member_folder 'has type submodule, but projects/web is not in .gitmodules'
 run_check "--check, [member.nope], not a submodule or a folder" 2 'environments = [ "dev" ]
 [member.nope]' '' 'is not a submodule or a folder of the repo'
+run_check "--check, a submodule named by its repo_name" 2 'environments = [ "dev" ]
+[member.web]
+folder = "projects/web"' sub_named_web "two members have the name 'web'"
+run_check "--check, a nested submodule named by its path" 2 'environments = [ "dev" ]
+[member.a_sub]
+folder = "projects/web"' nested_submodule "two members have the name 'a_sub'"
+run_check "--check, a nested submodule with a table" 0 'environments = [ "dev" ]
+[member.lib]
+folder = "a/sub"' nested_submodule "$check_valid"
+run_check "--check, a repo_name that is not a member name" 2 'environments = [ "dev" ]' sub_named_bad \
+  "the member sub has the name 'bad.name'"
+run_check "--check, a [member.*] key that is not a member name" 2 'environments = [ "dev" ]
+[member."web.app"]
+folder = "projects/web"' member_folder "the member projects/web has the name 'web.app'"
 run_check "--check, two errors in two checks" 2 'environments = [ "dev", "prod" ]
 [tools.node]
 env = [ "ci" ]
