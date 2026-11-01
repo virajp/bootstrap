@@ -210,9 +210,14 @@ One table for each member folder of the repository. The member list is the
 git submodules (else the `MEMBERS` value), then each `[member.<name>]` key
 that is not a submodule.
 
-- A submodule without a table is a member. Its name and its folder are its
-  path. A table whose `folder` is a submodule path gives that submodule its
-  name.
+- A submodule without a table is a member. Its folder is its path. Its name
+  is the `repo_name` of its own `.config/bootstrap.toml`. Without that value,
+  its name is its path with each `/` changed to `_`, for example
+  `backend_lib`. A table whose `folder` is a submodule path gives that
+  submodule its name.
+- A member name is a flag and a part of a shell variable. Thus it has only
+  letters, digits, `-` and `_`. Two members never have the same name. If not,
+  the render stops with code 2.
 - A `[member.<name>]` table that is not a submodule must have its folder in
   the repository. If not, the render stops with code 2.
 - No member is the repository itself: a `folder` of `.` stops the render

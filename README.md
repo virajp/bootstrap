@@ -211,7 +211,9 @@ A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
   both reach the output unchanged.
 - The values come from the repository's `.config/bootstrap.toml`.
 - `.members` is the list of member names: the git submodules, then each other
-  `[member.<name>]` table, whose `folder` (default the name) must exist.
+  `[member.<name>]` table, whose `folder` (default the name) must exist. A
+  submodule without a table gets the `repo_name` of its own values file, else
+  its path with each `/` changed to `_`.
   `.member_folders` and `.member_types` give the folder and the type
   (`submodule` or `folder`) of each name.
 - `.submodules` is the list of the git submodules only. It is empty in a

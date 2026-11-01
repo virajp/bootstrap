@@ -248,7 +248,10 @@ Some files refer to files that are not in `tools/`, for example
   keys are in `docs/sync/index.md`, step 3.
 - `.members` is the list of member names: the git submodules (the key of the
   `[member.<name>]` table whose `folder` is the submodule path, else the
-  path), then each other `[member.<name>]` key. `.member_folders` maps each
+  `repo_name` of the values file of the submodule, else the path with each
+  `/` changed to `_`), then each other `[member.<name>]` key. A name has only
+  letters, digits, `-` and `_`, and two members never have the same name. If
+  not, the sync stops with code 2. `.member_folders` maps each
   name to its folder (`folder`, default the name), and `.member_types` to
   `submodule` or `folder` (`type`, default from the folder). A task that runs in
   a member uses its folder. The
