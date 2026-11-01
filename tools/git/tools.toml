@@ -1,9 +1,13 @@
-# git: the shared .gitignore and .gitattributes, the commit convention, the git-config check and the merge tasks.
+# git: the shared .gitignore and .gitattributes, the commit convention, the git-config check, the merge tasks and worktrunk.
 default_envs = [ "dev", "ci" ]
 depends = []
 extensions = []
 root_only = false
-seed = []
+seed = [ ".config/wt.toml" ]
+
+# Git worktree manager (wt). In [mise_env.dev], because the git tool is also in ci.
+[mise_env.dev.tools.worktrunk]
+version = "latest"
 
 # The gate hooks are tool-neutral: each names a task and nothing else.
 [[precommit]]
