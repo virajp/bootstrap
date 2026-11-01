@@ -75,8 +75,8 @@ Update each shell alias that calls an old name. Remove a repository-owned
 ## M4: Delete root-only items from submodules
 
 In a submodule, delete `setup/external/*`, `setup/vscode` and `.vscode/`.
-Keep `setup:ai` and `code:graph`: the `claude` tool ships them to a submodule
-too, and `setup:ai` skips there.
+Keep `setup:ai`: the `claude` tool ships it to a submodule too, and it skips
+there.
 
 ## M5: Move the content of `.config/mise.toml`
 
@@ -527,10 +527,9 @@ values file stops the sync with code 2. The shared `.gitignore` still ignores
 2. Run `mise run setup:configs`. The sync removes
    `.config/mise/conf.d/claude/mise.<env>.toml`, and the pre-commit config
    loses the `graphify-refresh` hook.
-3. Ask the user whether to delete `.graphifyignore` and
-   `.config/mise/tasks/code/graph`. The user can still use graphify without
-   bootstrap. If the user keeps a file, remove its bootstrap header, because
-   no sync replaces it now.
+3. Delete `.graphifyignore` and `.config/mise/tasks/code/graph` when they
+   start with the bootstrap header. A file without the header belongs to the
+   repository: keep it.
 4. Remove the `post-commit` and `post-merge` hooks of pre-commit:
 
    ```bash

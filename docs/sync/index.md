@@ -214,6 +214,7 @@ change a file.
    | -------------------------------------------------------------------------------------------------------------------------- | ---------- | ----------------------- |
    | The values file has no old format and no old key, for example `tools = [...]` or `.config/repo-sync/gitignore`.            | bootstrap  | Step 3 and `migrate.md` |
    | No item of `migrate.md` applies, and no "Migration" item of a selected tool applies.                                       | bootstrap  | Step 5                  |
+   | No path of "Files that bootstrap no longer ships" exists.                                                                  | bootstrap  | Step 5                  |
    | `mise run setup:configs --dry-run` shows no change.                                                                        | bootstrap  | Step 6                  |
    | If the repository has the task `code:lint:repo-sync`, `mise run code:lint:repo-sync` shows no error in the values file.    | repository | Step 3                  |
    | The selected tools agree with the signs of their tool files: no tool is missing, and no tool is selected without a reason. | repository | Step 1                  |
@@ -222,6 +223,32 @@ change a file.
 
 5. If all the checks pass, tell the user that the repository is up to date,
    and stop.
+
+### Files that bootstrap no longer ships
+
+An earlier sync wrote these paths, and the sync of today does not write them.
+The sync does not delete them, so step 5 deletes them with the item of
+`migrate.md`. Delete a file only when it starts with the bootstrap header. A
+file without the header belongs to the repository: keep it.
+
+| Path                                         | Do                                    |
+| -------------------------------------------- | ------------------------------------- |
+| `.graphifyignore`                            | Delete it (M24).                      |
+| `.config/mise/tasks/code/graph`              | Delete it (M24).                      |
+| The `post-commit` and `post-merge` git hooks | Uninstall them with pre-commit (M24). |
+| `.config/mise/conf.d/_repo/`                 | Rename it to `conf.d/zz-repo/` (M17). |
+
+The sync removes these old paths itself, so they need no step:
+
+- A `.config/mise/conf.d/*/mise*.toml` with the bootstrap header that the sync
+  did not write, for example `conf.d/_base/`, `conf.d/_env/` and
+  `conf.d/claude/`.
+- A synced file at a path where the sync now needs a folder, for example the
+  old `code/format`, `code/lint`, `code/sec` and `setup/configs` files.
+- The merge tasks of the other branch model.
+
+When a change removes a shipped file from `tools/`, add its path to this
+table and to an item of `migrate.md`.
 
 ## Step 1: Select the tools and the packs
 
