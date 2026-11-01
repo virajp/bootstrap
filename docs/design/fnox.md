@@ -4,6 +4,27 @@ This document records the design decisions for the `fnox` tool and for the
 tasks that use it. The decisions come from a design session on 2026-10-20.
 They are not implemented yet. See [Backlog](#backlog).
 
+The profile rule of 2026-11-01 replaces the profile decisions of 2026-10-20.
+It is implemented. See [The profile rule](#the-profile-rule).
+
+## The profile rule
+
+The user stated the rule on 2026-11-01: no repository uses the fnox `default`
+profile. The `default` profile is allowed only in the user-level fnox
+settings, so a repository never gets values from `default`.
+
+- Each repository has 1 or more named profiles. A repository with one profile
+  uses its `repo_name` as the profile name.
+- The profiles live only in `.config/fnox.toml`, as
+  `[profiles.<name>.secrets]` tables. The values file has no key for them.
+- The top-level `[secrets]` table is the `default` profile, so the file does
+  not have it, also not an empty one.
+- Each `fnox` call passes `-P <name>`. The `fnox` tool does not set
+  `FNOX_PROFILE`.
+- The sync and `repo_sync --check` stop with code 2 on a top-level
+  `[secrets]` table, a `[profiles.default]` table, or no named profile. The
+  message names M25 of `docs/sync/migrate.md`.
+
 ## The rule for run tasks
 
 Each task that runs the application uses fnox to supply the secrets, with a
@@ -12,16 +33,15 @@ profile. The user stated the rule as:
 > Every task that run the application must use `fnox` to provide secrets along
 > with the specific profile.
 
-The task runs the command through fnox:
+The task runs the command through fnox, with a named profile (see
+[The profile rule](#the-profile-rule)):
 
 ```bash
-mise x -- fnox exec --profile "${MISE_ENV%%,*}" -- <command>
+mise x -- fnox -P <profile> exec -- <command>
 ```
 
-- The profile is the mise environment: `dev` or `ci`. If `MISE_ENV` is a
-  list, for example `dev,ci`, the profile is the first name of the list.
-- The task runs `fnox exec` from the folder of its project. Thus fnox loads the
-  shared files of `.config/` and the files of that project folder.
+The task runs `fnox exec` from the folder of its project. Thus fnox loads the
+shared files of `.config/` and the files of that project folder.
 
 ## The secret helper
 
@@ -29,11 +49,11 @@ A run task does not call fnox directly. It calls a helper of
 `_scripts/helpers`, for example `run_with_secrets <command>`. The helper
 selects the secrets source:
 
-| Condition                                  | The helper runs                                                |
-| ------------------------------------------ | -------------------------------------------------------------- |
-| fnox is available (`mise x -- which fnox`) | `mise x -- fnox exec --profile "${MISE_ENV%%,*}" -- <command>` |
-| doppler is available                       | `doppler run -- <command>`                                     |
-| neither                                    | `<command>`                                                    |
+| Condition                                  | The helper runs                                 |
+| ------------------------------------------ | ----------------------------------------------- |
+| fnox is available (`mise x -- which fnox`) | `mise x -- fnox -P <profile> exec -- <command>` |
+| doppler is available                       | `doppler run -- <command>`                      |
+| neither                                    | `<command>`                                     |
 
 A values file that selects both `fnox` and `doppler` stops the sync with
 code 2. The helper and this check are not built yet.
@@ -52,9 +72,8 @@ in dev and ci.
 
 - fnox uses the `age` provider. The encrypted values are in the fnox config
   files, and git tracks them.
-- Profiles are mandatory in a repository that uses fnox.
-- A profile is a file, `fnox.<profile>.toml`, not a `[profiles.<name>]` table.
-  There is one file for each environment: `fnox.dev.toml` and `fnox.ci.toml`.
+- Profiles are mandatory in a repository that uses fnox. They are
+  `[profiles.<name>]` tables (see [The profile rule](#the-profile-rule)).
 - In dev, the `keychain` provider supplies the `age` key (the identity).
 - In ci, the secrets manager of the CI supplies the `age` key.
 
@@ -62,6 +81,11 @@ in dev and ci.
 
 Each project folder has its own profile files. A task of a project gets only
 the shared secrets and the secrets of that project.
+
+The files of one environment each (`fnox.dev.toml`, `fnox.ci.toml`) in this
+tree come from the superseded profile decision. The profile rule keeps the
+profiles in `[profiles.<name>]` tables. How a project folder keeps its own
+secrets under that rule is an open point.
 
 ```text
 repo/
@@ -99,9 +123,13 @@ create tasks for it. The user stated:
 
 These decisions came before the final design. They are not used.
 
+- The profile is the mise environment, `dev` or `ci`: the first name of
+  `MISE_ENV`. A profile is a file, `fnox.<profile>.toml`, not a
+  `[profiles.<name>]` table, with one file for each environment. The profile
+  rule of 2026-11-01 replaces this decision.
 - The profile is the project name: a name of `MEMBERS`, or `repo_name` in a
-  repository without members. The final design uses the environment as the
-  profile, and the folder as the project.
+  repository without members. The decision of 2026-10-20 used the
+  environment as the profile, and the folder as the project.
 - In `ci`, the task runs the command directly, because the CI supplies its own
   secrets as environment variables. The final design uses fnox in `ci` too.
 
@@ -122,6 +150,11 @@ this reason.
 
 ## Open points
 
+- Under the profile rule, how does a project folder keep its own secrets? Two
+  possible ways: a `fnox.toml` in the project folder with its own
+  `[profiles.<name>.secrets]` tables, or one named profile for each project in
+  `.config/fnox.toml`. This is not decided.
+
 - The docs say that fnox loads "discovered project directories". The project
   folders in the design have no `fnox.toml`. It is possible that fnox does not
   load `projects/service/fnox.dev.toml` without a `fnox.toml` in the same
@@ -132,7 +165,7 @@ this reason.
 
 ## Backlog
 
-- Change the `fnox` tool to this design: dev and ci, the `age` provider, one
-  file for each environment, the `age` key from the keychain in dev and from
-  the CI secrets in ci, and one folder for each project. Include the test of
-  the first open point.
+- Change the `fnox` tool to this design: dev and ci, the `age` provider, the
+  `age` key from the keychain in dev and from the CI secrets in ci, and the
+  secrets of each project apart from the others. Include the test of the open
+  point about the project folders.

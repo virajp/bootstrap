@@ -22,6 +22,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | A core branch that must allow direct commits                    | M22. Optional.                                                                                                                                                                                                                                                      |
 | A sync that adds `code:lint:repo-sync`                          | M23, after the sync.                                                                                                                                                                                                                                                |
 | `[overrides.graphifyignore]`, `.graphifyignore` or `code:graph` | M24, before the next sync.                                                                                                                                                                                                                                          |
+| `.config/fnox.toml` with a top-level `[secrets]` or no profile  | M25, before the next sync.                                                                                                                                                                                                                                          |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -535,3 +536,33 @@ values file stops the sync with code 2. The shared `.gitignore` still ignores
    ```bash
    mise x -- pre-commit uninstall --hook-type post-commit --hook-type post-merge
    ```
+
+## M25: A repository does not use the fnox `default` profile
+
+A repository keeps its fnox secrets only in named profiles,
+`[profiles.<name>.secrets]` of `.config/fnox.toml`. The top-level `[secrets]`
+table is the fnox `default` profile, and a repository does not use it.
+`default` is only for the user-level fnox settings. A repository with one
+profile uses its `repo_name` as the profile name. The sync and
+`repo_sync --check` stop with code 2 when `.config/fnox.toml` has a top-level
+`[secrets]` table (also an empty one), a `[profiles.default]` table, or no
+named profile. `setup:secrets:fnox` checks only the named profiles.
+
+The old seed ends with an empty `[secrets]` table, so each repository with
+`.config/fnox.toml` must do this item.
+
+1. In `.config/fnox.toml`, find each secret of the top-level `[secrets]`
+   table.
+2. Write a `[profiles.<repo_name>.secrets]` table, with the `repo_name` of
+   `.config/bootstrap.toml`. Move each secret into it. A repository with more
+   sets of secrets writes one `[profiles.<name>.secrets]` table for each set.
+3. Delete the top-level `[secrets]` table. Rename a `[profiles.default]`
+   table.
+4. Replace the comment above the table with the comment of the new seed
+   `tools/fnox/.config/fnox.toml.tmpl`.
+5. Add `-P <profile>` to each `fnox` call of the repository, for example
+   `mise x -- fnox -P <repo_name> exec -- <command>`. Without `-P`, fnox uses
+   the `default` profile, and the command gets no secret.
+6. The keychain values do not move: a profile secret uses the same provider
+   and the same key. Run `mise run setup:secrets:fnox` to make sure that each
+   profile has its secrets.

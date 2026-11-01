@@ -499,6 +499,29 @@ old_gitignore_file() {
   printf '%s\n' '/build/' > "$consumer/.config/repo-sync/gitignore"
 }
 
+# The consumer file .config/fnox.toml, with each line of the arguments.
+fnox_file() { printf '%s\n' 'root = true' "$@" > "$consumer/.config/fnox.toml"; }
+# The old seed: an empty top-level [secrets], the default profile.
+fnox_old_seed() { fnox_file '[secrets]'; }
+fnox_top_secret() { fnox_file '[profiles.test.secrets]' '' '[secrets]' 'A = { default = "a" }'; }
+fnox_no_profile() { fnox_file 'env = "exec"'; }
+fnox_profile_default() { fnox_file '[profiles.default.secrets]' 'A = { default = "a" }'; }
+fnox_profile_repo() { fnox_file '[profiles.test.secrets]' 'A = { default = "a" }'; }
+fnox_profiles_two() { fnox_file '[profiles.api.secrets]' '' '[profiles.web.secrets]'; }
+
+# The new seed of fnox has the profile of repo_name and no top-level
+# [secrets]. A dry run prints no content for a new file, so this case syncs
+# for real into its own scratch consumer.
+check_fnox_seed() {
+  local file="$consumer/.config/fnox.toml"
+  if grep -qxF '[profiles.test.secrets]' "$file" && ! grep -qx '\[secrets\]' "$file"; then
+    print_success "fnox: the seed has [profiles.test.secrets] only"
+  else
+    print_error "fnox: the seed lacks [profiles.test.secrets], or has [secrets]"
+    failures=$((failures + 1))
+  fi
+}
+
 run_case "[overrides.gitignore] remove" 0 'environments = [ "dev" ]
 [overrides.gitignore]
 remove = [ "*.log" ]
@@ -524,6 +547,12 @@ run_case "[overrides.gitignore] add, an empty line" 2 'environments = [ "dev" ]
 [overrides.gitignore]
 add = [ " " ]' '' 'has an empty line'
 
+case_args=' ' run_case "[tools.fnox], the seed has the profile of repo_name" 0 'environments = [ "dev" ]
+[tools.fnox]' '' '' check_fnox_seed
+run_case "fnox.toml, the old seed with [secrets]" 2 'environments = [ "dev" ]
+[tools.fnox]' fnox_old_seed 'has a top-level [secrets] table, the fnox default profile - move each secret to [profiles.test.secrets]'
+run_case "fnox.toml, a profile of repo_name" 0 'environments = [ "dev" ]
+[tools.fnox]' fnox_profile_repo
 run_case "the old [overrides.graphifyignore]" 2 'environments = [ "dev" ]
 [tools.claude]
 [overrides.graphifyignore]
@@ -675,6 +704,16 @@ run_check "--check, core_tools" 0 'environments = [ "dev" ]
 core_tools = [ "node" ]' '' 'core_tools in'
 run_check "--check, the old .config/repo-sync/gitignore" 2 'environments = [ "dev" ]' old_gitignore_file \
   '.config/repo-sync/gitignore is no longer used'
+run_check "--check, fnox.toml, the old seed with [secrets]" 2 'environments = [ "dev" ]' fnox_old_seed \
+  'M25 of docs/sync/migrate.md'
+run_check "--check, fnox.toml, [secrets] next to a profile" 2 'environments = [ "dev" ]' fnox_top_secret \
+  'has a top-level [secrets] table'
+run_check "--check, fnox.toml, no profile" 2 'environments = [ "dev" ]' fnox_no_profile \
+  'has no named profile - add [profiles.test.secrets]'
+run_check "--check, fnox.toml, [profiles.default]" 2 'environments = [ "dev" ]' fnox_profile_default \
+  '[profiles.default] in .config/fnox.toml'
+run_check "--check, fnox.toml, a profile of repo_name" 0 'environments = [ "dev" ]' fnox_profile_repo "$check_valid"
+run_check "--check, fnox.toml, two named profiles" 0 'environments = [ "dev" ]' fnox_profiles_two "$check_valid"
 run_check "--check, overrides not a table" 2 'environments = [ "dev" ]
 overrides = 1' '' 'overrides in'
 run_check "--check, [overrides.tools.java]" 2 'environments = [ "dev" ]
