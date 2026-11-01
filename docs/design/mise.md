@@ -270,6 +270,7 @@ Flutter packs add `android` or `swift`, so the mise tool `flutter` has no mise
 | ------------- | ------------------------ | -------- | ------- | -------------- | --------------------------------------------------- |
 | `android`     | `android-sdk`            | `23`     | dev, ci | `java`         |                                                     |
 | `dprint`      | `dprint`                 | `latest` | dev, ci |                |                                                     |
+| `git`         | `worktrunk`              | `latest` | dev     |                |                                                     |
 | `gitleaks`    | `gitleaks`               | `latest` | dev, ci |                |                                                     |
 | `grype`       | `grype`                  | `latest` | dev, ci |                |                                                     |
 | `linter`      | `npm:@virajp.dev/linter` | `latest` | dev, ci | `node`, `pnpm` |                                                     |
