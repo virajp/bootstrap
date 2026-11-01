@@ -25,9 +25,11 @@ if [[ "${usage_upgrade:-false}" == "true" ]]; then
 
   # The clean comes first, so that the upgrade leaves no dangling dependency.
   # The lockfiles go too: the upgrade then resolves every version again.
+  # ~/.dartServer stays: it holds no versions, and a running analysis server
+  # writes into it, so rm fails with "Directory not empty".
   print_subheader "Cleaning the Flutter build and the Dart caches ..."
   mise x -- flutter clean
-  rm -rf .dart_tool build pubspec.lock ~/.dartServer
+  rm -rf .dart_tool build pubspec.lock
   mise x -- dart pub cache clean --force
 
   if [[ "${HAS_PODS}" == "true" ]]; then
