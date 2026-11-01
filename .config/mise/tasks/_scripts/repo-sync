@@ -13,7 +13,8 @@
 #   repo_sync [--dry-run | --check]
 #
 # `--check` examines only the rules of the values file that need no clone:
-# the values file and the local git repository. It makes no clone, writes no
+# the values file, the local git repository and `.config/fnox.toml` (no fnox
+# `default` profile). It makes no clone, writes no
 # file and does not set `bootstrap_commit`. It runs each of these checks,
 # prints each message, and returns the highest code. The rules that need the
 # clone (an unknown tool or pack, a pack loop, the `envs` of a mise tool, an
@@ -791,6 +792,51 @@ _rs_direct_commit() {
   fi
   ((main)) || _RS_HOOK_DROP+="main "
   ((develop)) || _RS_HOOK_DROP+="develop "
+  return "$rc"
+}
+
+# Examine `.config/fnox.toml` of this repo, when it exists: a repository does
+# not use the fnox `default` profile. The top-level `[secrets]` table is that
+# profile, so the file must not have it, also empty. The file must have 1 or
+# more `[profiles.<name>]` tables, and no `[profiles.default]`. Returns 2,
+# after a message for each problem.
+_rs_fnox_profiles() {
+  local values=$1 file="${MISE_PROJECT_ROOT}/.config/fnox.toml" out kind name repo rc=0
+  [[ -f $file ]] || return 0
+  repo=$(_rs_gomplate -c "v=${values}" -i '<% if has .v "repo_name" %><% .v.repo_name %><% end %>') || repo=''
+  [[ -n $repo ]] || repo='<repo_name>'
+  out=$(_rs_gomplate -c "f=${file}" -i '<% if has .f "secrets" %>secrets
+<% end %><% if has .f "profiles" %><% if test.IsKind "map" .f.profiles %><% range $k, $p := .f.profiles %>profile <% $k %>
+<% end %><% else %>bad
+<% end %><% end %>') || {
+    _rs_log "cannot read .config/fnox.toml"
+    return 2
+  }
+  local count=0
+  while read -r kind name; do
+    case $kind in
+      secrets)
+        _rs_log ".config/fnox.toml has a top-level [secrets] table, the fnox default profile - move each secret to [profiles.${repo}.secrets], then delete the table (M25 of docs/sync/migrate.md)"
+        rc=2
+        ;;
+      bad)
+        _rs_log "profiles in .config/fnox.toml must be [profiles.<name>] tables (M25 of docs/sync/migrate.md)"
+        rc=2
+        ;;
+      profile)
+        if [[ $name == default ]]; then
+          _rs_log "[profiles.default] in .config/fnox.toml: a repository does not use the fnox default profile - rename it, for example to [profiles.${repo}] (M25 of docs/sync/migrate.md)"
+          rc=2
+        else
+          ((count += 1))
+        fi
+        ;;
+    esac
+  done <<< "$out"
+  if ((count == 0)); then
+    _rs_log ".config/fnox.toml has no named profile - add [profiles.${repo}.secrets]; a repository does not use the fnox default profile (M25 of docs/sync/migrate.md)"
+    rc=2
+  fi
   return "$rc"
 }
 
@@ -1736,6 +1782,10 @@ _rs_check() {
     r=$?
     ((r <= rc)) || rc=$r
   }
+  _rs_fnox_profiles "$values" || {
+    r=$?
+    ((r <= rc)) || rc=$r
+  }
   _rs_members "$values" "${values#"$MISE_PROJECT_ROOT"/}" > /dev/null || {
     r=$?
     ((r <= rc)) || rc=$r
@@ -1847,7 +1897,7 @@ repo_sync() {
   # loop. A tool that fails keeps its existing files and counts as failed.
   local tool worst=0 failed=()
   _RS_SEEN=' ' _RS_GENERATED=' '
-  { _rs_mise_env && _rs_overrides "$dir" "$values" && _rs_direct_commit "$values"; } || {
+  { _rs_mise_env && _rs_overrides "$dir" "$values" && _rs_direct_commit "$values" && _rs_fnox_profiles "$values"; } || {
     rc=$?
     rm -rf -- "$dir"
     return "$rc"
