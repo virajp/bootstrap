@@ -522,7 +522,9 @@ that it finds, and removes the others. It stops if neither branch exists.
    a seed or a value of the tool, change `docs/sync/tools/<tool>.md` too
    (`claude-tool.md` for `claude`). A
    new tool needs a new file in `docs/sync/tools/`, and a line in the list of
-   `docs/sync/index.md`. A change to `tools/packs.toml` changes
+   `docs/sync/index.md`. A removed file needs a row in "Files that bootstrap no
+   longer ships" of `docs/sync/index.md`, and a `migrate.md` item. A change to
+   `tools/packs.toml` changes
    `docs/sync/packs/<pack>.md` too, and a new pack needs a new file there.
 3. Commit on a local work branch. Land it on `main` with
    `mise run code:merge <branch>`, which merges and pushes.
