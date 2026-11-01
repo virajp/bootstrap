@@ -3,6 +3,7 @@
 # The next sync replaces it, and a manual change is lost.
 #MISE description="Install pre-commit hooks; --upgrade also updates them"
 #MISE hide=true
+#MISE tools.pre-commit="latest"
 
 #USAGE flag "--upgrade" help="also update the hook revisions"
 
@@ -13,9 +14,9 @@ print_header "Setting up pre-commit hooks ..."
 
 if [[ "${usage_upgrade:-false}" == "true" ]]; then
   print_subheader "Updating pre-commit hooks ..."
-  mise x -- pre-commit autoupdate --config .config/pre-commit-config.yaml
+  pre-commit autoupdate --config .config/pre-commit-config.yaml
 fi
 
 print_subheader "Installing pre-commit ..."
 git config --local --unset-all core.hooksPath || true
-mise x -- pre-commit install --config .config/pre-commit-config.yaml --all --install-hooks --overwrite
+pre-commit install --config .config/pre-commit-config.yaml --all --install-hooks --overwrite
