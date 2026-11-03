@@ -407,7 +407,9 @@ that it finds, and removes the others. It stops if neither branch exists.
   `.config/bootstrap.toml` when they run: the root and each submodule read
   their own file. `merge_model` selects
   `direct` (local merge and push, the default) or `pr` (push and open a pull
-  request with `gh` or `glab`). Any other value reads as `direct`. The `github`
+  request with `gh` or `glab`). Any other value reads as `direct`. Without an
+  `origin` remote, `direct` merges locally and skips the pull and the push,
+  and `pr` stops before the hook pass. The `github`
   and `gitlab` tools install these
   CLIs. `merge_from` lists the only source branches, and `merge_never` the
   forbidden ones. A table with both stops the merge. Without both, the
