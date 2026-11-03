@@ -72,3 +72,5 @@ tasks.
 
 - Remove `flutter` from the repository-owned mise files. For `android-sdk`
   and `java`, see `android.md` and `java.md`.
+- If the Gradle build uses the Groovy DSL (`*.gradle`), do the migration of
+  [`kotlin-dsl.md`](../kotlin-dsl.md) when the user agrees.

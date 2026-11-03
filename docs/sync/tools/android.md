@@ -124,3 +124,5 @@ None.
 ## Migration
 
 - Remove `android-sdk` from the repository-owned mise files.
+- If the Gradle build uses the Groovy DSL (`*.gradle`), do the migration of
+  [`kotlin-dsl.md`](../kotlin-dsl.md) when the user agrees.
