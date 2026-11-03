@@ -1,0 +1,340 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "Mac tools: shells and identity (8)",
+  "requires": [
+    "docs/plans/2026-11-04-macos-tools-base-core"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-04 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test"
+    ],
+    "keeps": []
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-04-macos-tools-base-shells",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "Eight new Mac tools in macos/tools/ (the shells, git, ssh, gh, network, macos-defaults) and new members of pack base are new behavior; no repo consumer changes anything."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The 8 shell and identity tool folders",
+      "wave": 1,
+      "file": "01-tools.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "macos/tools/bash/**",
+        "macos/tools/zsh/**",
+        "macos/tools/fish/**",
+        "macos/tools/git/**",
+        "macos/tools/ssh/**",
+        "macos/tools/gh/**",
+        "macos/tools/network/**",
+        "macos/tools/macos-defaults/**"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Packs and sample values for shells and identity",
+      "wave": 1,
+      "file": "02-packs-examples.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "macos/packs.toml",
+        "macos/examples/macos.toml"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Review: U1 and U2",
+      "wave": 2,
+      "file": "03-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U4",
+      "title": "Docs",
+      "wave": 3,
+      "file": "04-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "CLAUDE.md",
+        "README.md",
+        "docs/sync/**",
+        "docs/design/**"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Gates",
+      "wave": 4,
+      "file": "05-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "CLAUDE.md, README.md, docs/sync/**, docs/design/**",
+      "why": "every human-facing doc; the earlier units report DOCS FALSIFIED lines and never edit a doc",
+      "owner": "U4"
+    },
+    {
+      "id": "S2",
+      "file": "macos/packs.toml, macos/examples/macos.toml",
+      "why": "each new tool needs a pack entry and maybe an answer; one unit writes both files so U1 stays disjoint",
+      "owner": "U2"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "What does the fish value login_shell hold?",
+      "ruling": "The path of the login shell, default /opt/homebrew/bin/fish in [defaults]. [mise.bootstrap.user] login_shell = \"<% index .config `login_shell` | required `fish: set login_shell in [tools.fish] of macos.toml` %>\". A user who wants another login shell writes its path in [tools.fish]. The old bool and its conditional section go.",
+      "rejected": "Keep a bool: a [mise.*] table cannot be conditional.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "How does a <% %> expression sit inside a [mise.*] string?",
+      "ruling": "The expression sits inside a TOML basic string (\"...\"), and each string literal inside it is a Go raw string in backticks, never a double quote, so the TOML string needs no escape. The engine renders a tools.toml that holds <% before it generates (P08 D6), so the generated mise file holds the rendered value.",
+      "rejected": "Double quotes with TOML escapes inside the action; a TOML literal string.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Where does the dock_orientation check go?",
+      "ruling": "Inside the <% %> expression of [mise.bootstrap.macos.defaults.\"com.apple.dock\"] orientation: required with the message `macos-defaults: set dock_orientation in [tools.macos-defaults] of macos.toml`, then test.Fail when the value is not bottom, left or right, then the value. Each other domain of the old [defaults.domains] becomes [mise.bootstrap.macos.defaults.\"<domain>\"] with the same keys.",
+      "rejected": "A separate check file or an engine rule for one value.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "How does the import change a shipped file?",
+      "ruling": "Each shipped file keeps its content byte for byte. Only the old header line becomes the new two-line header, and each required message that named <tool>.toml now names [tools.<tool>] of macos.toml. Each old .config/mise/conf.d/* fragment is not shipped: its tables move into [mise.*] of tools.toml.",
+      "rejected": "Fix or reformat content during the import; the phase 4 comparison judges each difference.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "What happens to an empty [defaults] table?",
+      "ruling": "It goes. A tools.toml has [defaults] only when it holds a value.",
+      "rejected": "Keep the empty tables.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "Which header does the gh merge source carry?",
+      "ruling": "Its first line `# Merged by macos-setup: tools/gh/.config/gh/config.yml.tmpl` becomes `# Merged by bootstrap: macos/tools/gh/.config/gh/config.yml.tmpl`. It gets no sync header, because a merge target carries no header and the engine does not read this line.",
+      "rejected": "The two-line sync header on a merge source.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "Does the plan add test cases?",
+      "ruling": "No. test:macos-tools (P10) now meets the init stage (bash, zsh, fish), so its case 1 expects exit 4, then 0. U2 adds the answers of the questions of git, ssh, gh and macos-defaults to the example, from MS/tests/setup-sync/sample-config/.",
+      "rejected": "A test case for each tool.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "Yes. U1 lands the shell rc files, the ips:* task scripts and mise config that writes /etc/shells, the login shell and the macOS defaults on each Mac. One review unit in wave 2 covers U1 and U2.",
+      "rejected": "No review unit: the wave review alone does not run /security-review.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "Can this plan run in parallel with another plan of the chain?",
+      "ruling": "No. The 16 plans form one linear chain through requires, because most of them edit sync-engine/repo-sync or sync-engine/setup-sync, and parallel plans conflict there.",
+      "rejected": "Parallel branches.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "Does the plan run setup:configs or the Mac sync?",
+      "ruling": "No. mise run setup:configs in bootstrap and in consumers, and the first Mac run, stay hand steps (Out of scope).",
+      "rejected": "A unit or an after-landing step that runs them.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "How do the fish seeds move?",
+      "ruling": "The three [files] tables with mode = \"seed\" stay as they are. The three seed files are copied byte for byte with no header, because a seed has no header.",
+      "rejected": "Add the sync header to the seeds.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "Which comment edits does the import allow?",
+      "ruling": "The exception of P11 D4. A comment that names an old values file of the config folder (gh.toml, git.toml, ssh.toml) now names [tools.<name>] of macos.toml: gh config.yml.tmpl:7, git config.tmpl:3, git identity.tmpl:3 and ssh config.identity.tmpl:3. The unit reports each such edit as DECIDED. No other comment changes (D4).",
+      "rejected": "Keep the false comments until the phase 4 comparison.",
+      "units": [
+        "U1"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}

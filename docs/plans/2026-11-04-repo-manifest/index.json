@@ -1,0 +1,370 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "The manifest and the stale rule",
+  "requires": [
+    "docs/plans/2026-11-04-packs-merged"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-04 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test:repo-sync"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Make a scratch consumer repository with a main branch, a dprint.jsonc copied from this repository, and a .config/bootstrap.toml with environments = [\"dev\"], [tools.python] and a pyproject.toml at the root. Set SYNC_ENGINE_CACHE to a scratch folder, SYNC_ENGINE_URL to a local clone of the run's branch and REPO_SYNC_NO_AUTOUPDATE=1 for every step. Run mise run setup:configs in it (use MISE_TRUSTED_CONFIG_PATHS and symlinks of gomplate, dprint and pre-commit in a scratch bin folder on PATH, as the K1 run of the repo-sync-check plan did). Commit the result. Then remove [tools.python] and the pyproject.toml, and run mise run setup:configs again.",
+        "pass": "The first run exits 0 and writes .config/repo-generated.tsv: its first line is the comment line, its rows are sorted, it lists .config/mise/conf.d/python/mise.dev.toml and no seed. The second run exits 0, removes each python file that has the header (the conf.d/python folder goes too, when empty), keeps every file without the header, and writes a manifest without python rows."
+      }
+    ]
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-04-repo-manifest",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "The sync writes a new committed file .config/repo-generated.tsv and removes stale synced files from it. This is new behavior; a consumer changes nothing but a commit of the new file."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "Engine: the manifest library and the repo stale rule",
+      "wave": 1,
+      "file": "01-engine.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "sync-engine/manifest",
+        "sync-engine/repo-sync"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Tests: the manifest and the stale rule",
+      "wave": 2,
+      "file": "02-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo-sync"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "Its cases run the manifest code that U1 writes in sync-engine/manifest and sync-engine/repo-sync.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Review: U1 and U2",
+      "wave": 3,
+      "file": "03-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U4",
+      "title": "Docs",
+      "wave": 4,
+      "file": "04-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "CLAUDE.md",
+        "README.md",
+        "docs/sync/**",
+        "docs/design/**"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Gates",
+      "wave": 5,
+      "file": "05-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "CLAUDE.md, README.md, docs/sync/**, docs/design/**",
+      "why": "every human-facing doc; the earlier units report DOCS FALSIFIED lines and never edit a doc",
+      "owner": "U4"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "Yes. U1 changes sync-engine/repo-sync and adds sync-engine/manifest, and U2 changes a test task. Both are runnable bash, and the stale rule deletes files. One review unit in wave 3 covers U1 and U2.",
+      "rejected": "No review unit; the wave review alone does not run /security-review.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Why is this plan in one linear chain with the other plans of the merge?",
+      "ruling": "The 16 plans form one linear chain through requires. Most of them edit sync-engine/repo-sync or sync-engine/setup-sync, and parallel plans conflict there.",
+      "rejected": "Parallel branches of plans.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Where do the tests of the new rules go?",
+      "ruling": "This plan extends test:repo-sync with cases for its new rules. An existing case changes only where a ruling changes its expected result.",
+      "rejected": "A separate test plan.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "Who runs mise run setup:configs in bootstrap and in the consumers?",
+      "ruling": "The user, by hand, after the landing. It is out of scope, as in the earlier plans.",
+      "rejected": "A unit or an after-landing step runs setup:configs.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "What does the first sync with no manifest remove?",
+      "ruling": "Nothing. The first sync has no manifest and removes nothing. docs/sync/migrate.md lists the old leftovers, and the owner deletes them by hand as before.",
+      "rejected": "A one-time header scan of the repository, which needs a guard for the own sources of bootstrap.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "Does a run with a failure remove stale files?",
+      "ruling": "No. The stale removal and the manifest write run only after a run without a failure, in this order: stale removal, manifest write, bootstrap_commit. A failed removal is a failure, so the manifest is not written and the next clean run tries again.",
+      "rejected": "Remove stale files also after a failure, with the paths of the failed files as a guard (today _RS_SEEN); a failed file then looks stale.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "Which manifest rows does the stale rule refuse?",
+      "ruling": "The manifest is a committed file of the consumer, so the engine does not trust it. A row without a TAB, with an empty tool or path, with an absolute path, or with a .. segment is skipped with a log line and never removed. A listed path that is a symlink, or that has a symlinked folder between the target root and the file, is not removed (repo-sync never follows a link).",
+      "rejected": "Remove each listed path as it is.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "What does a dry run do with the manifest?",
+      "ruling": "A dry run prints would remove <path> for each stale file and would write .config/repo-generated.tsv when the new content differs from the file. It writes and removes nothing. A real run writes the manifest only when its content changes.",
+      "rejected": "A dry run prints nothing about the manifest.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "What happens to the removal of the merge tasks of the other branch model (_RS_SKIP and _rs_remove)?",
+      "ruling": "It stays as it is. It is a rule of the branch model and works also without a manifest. The stale rule replaces only _rs_stale and the removal in _rs_skip_required.",
+      "rejected": "Remove it and let the stale rule remove the merge tasks; a repository without a manifest then keeps both models.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "Which rows does a clean run write?",
+      "ruling": "One row <tool><TAB><path> for each file of mode generated that the run writes or finds unchanged, and for each generated conf.d mise file. A seed, a merge file, a skipped file (an environment that the repo does not use, a requires or requires_found file that is not present) and a removed merge task have no row. The path is relative to MISE_PROJECT_ROOT, without .tmpl.",
+      "rejected": "List every file that the tool ships, also the skipped ones.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "Which paths does the stale rule spare?",
+      "ruling": "Every path that this run handled: each generated, seed and merge file that the run wrote or kept. Only a listed path that the run did not handle is a candidate for removal.",
+      "rejected": "Spare only the paths of _RS_ROWS.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "What does the stale rule do with a merge task of the other branch model?",
+      "ruling": "The stale rule skips the paths in _RS_SKIP, because _rs_remove already removes them. A dry run logs one would remove line for each file.",
+      "rejected": "Accept the duplicate would remove line.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "What is the exact byte form of the manifest?",
+      "ruling": "LF line endings, no trailing blanks, and exactly one LF at the end, so the pre-commit hooks never rewrite it.",
+      "rejected": "Any line form that the reader accepts.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "How does the stale rule treat symlinks on the two sides?",
+      "ruling": "sync-engine/manifest takes a link mode. repo: a path that is a symlink, or under a symlinked folder, is never removed (D7). macos: the stale rule resolves links and removes the real file, then prunes empty parents up to the target root ($HOME), never past a symlinked folder (the rule of setup-sync), because on the Mac ~/.config/mise is a link into the dotfiles/ of the owner, and the mise config of a deselected tool must go.",
+      "rejected": "One link rule for both sides.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}

@@ -1,0 +1,330 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "[defaults], [questions], [contributes]",
+  "requires": [
+    "docs/plans/2026-11-04-repo-layout"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-04 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test:repo-sync"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Make two scratch consumer repositories, each with a main branch, a dprint.jsonc copied from this repository and the values file repo/examples/polyrepo/bootstrap.toml as .config/bootstrap.toml. Set a scratch SYNC_ENGINE_CACHE (one for each consumer) and REPO_SYNC_NO_AUTOUPDATE=1, and use MISE_TRUSTED_CONFIG_PATHS and symlinks of gomplate, dprint and pre-commit in a scratch bin folder on PATH, as the K1 run of the repo-sync-check plan did. Run mise run setup:configs in the first with SYNC_ENGINE_URL set to a local clone of main, and in the second with SYNC_ENGINE_URL set to a local clone of the run's branch. Then run diff -r on the two trees without .git.",
+        "pass": "Both runs exit 0. The only differences are the bootstrap_commit line of .config/bootstrap.toml: no tool of bootstrap uses the new tables yet, so every rendered file is the same."
+      }
+    ]
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-04-values-schema",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "A [tools.<name>] table accepts values, and the templates get .config and .all. This is new behavior; a values file that works today works unchanged."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "Engine: the values library and the repo context",
+      "wave": 1,
+      "file": "01-engine.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "sync-engine/values",
+        "sync-engine/repo-sync"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Tests: values, questions and contributions",
+      "wave": 2,
+      "file": "02-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo-sync"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "Its cases run the values code that U1 writes in sync-engine/values and sync-engine/repo-sync.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Review: U1 and U2",
+      "wave": 3,
+      "file": "03-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U4",
+      "title": "Docs",
+      "wave": 4,
+      "file": "04-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "CLAUDE.md",
+        "README.md",
+        "docs/sync/**",
+        "docs/design/**"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Gates",
+      "wave": 5,
+      "file": "05-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "CLAUDE.md, README.md, docs/sync/**, docs/design/**",
+      "why": "every human-facing doc; the earlier units report DOCS FALSIFIED lines and never edit a doc",
+      "owner": "U4"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "Yes. U1 adds sync-engine/values and changes sync-engine/repo-sync, and U2 changes a test task. Both are runnable bash. One review unit in wave 3 covers U1 and U2.",
+      "rejected": "No review unit; the wave review alone does not run /security-review.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Why is this plan in one linear chain with the other plans of the merge?",
+      "ruling": "The 16 plans form one linear chain through requires. Most of them edit sync-engine/repo-sync or sync-engine/setup-sync, and parallel plans conflict there.",
+      "rejected": "Parallel branches of plans.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Where do the tests of the new rules go?",
+      "ruling": "This plan extends test:repo-sync with cases for its new rules. An existing case changes only where a ruling changes its expected result.",
+      "rejected": "A separate test plan.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "Who runs mise run setup:configs in bootstrap and in the consumers?",
+      "ruling": "The user, by hand, after the landing. It is out of scope, as in the earlier plans.",
+      "rejected": "A unit or an after-landing step runs setup:configs.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "Which list rules apply to the [tools.<name>] values of a base or dependency tool?",
+      "ruling": "Port the rules of setup-sync as they are. A base or dependency tool is a tool that pack base adds, also through a nested default = true pack (\"pack:security\": gitleaks, grype, osv-scanner, and _security_base through depends), or a tool in the depends closure of a selected tool, a tool that a mise depends adds included; a <tool> = {} member that the pack does not add does not count. It is a base or dependency tool also when a [tools.<name>] table names it. For such a tool, a list in [tools.<name>] appends its new items, and a value whose type differs from the merged value stops the sync with code 2. For any other tool, a value of [tools.<name>] replaces the merged one, and tables merge key by key.",
+      "rejected": "A new list rule.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "Is the env key of a [tools.<name>] table a value?",
+      "ruling": "No. env stays the selection key of the repo side (a list, as today) and is not in .config. Every other key of [tools.<name>] is a value. A [packs.<name>] table keeps env as its only key.",
+      "rejected": "Put env into .config too.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "Does the repo side check that each question has an answer?",
+      "ruling": "No. The engine validates only the shape of [questions]. A template that needs an answer uses required and fails that file with its message. Exit 4 stays Mac-only.",
+      "rejected": "Exit 2 for a question with no value in [tools.<name>] and no default.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "How does each template get the .config of its own tool?",
+      "ruling": "_rs_context adds .all (each selected tool name to its values, an empty table for a tool without values) to the shared context. For each tool that has a .tmpl file, the engine writes one context file: the shared context plus config, the values of that tool. config and all are engine keys, so they win over a top-level key of the same name in the values file, as members and tools do today.",
+      "rejected": "One shared context without .config.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "Does repo_sync --check examine the new tables?",
+      "ruling": "No. [defaults], [questions] and [contributes] are in the tools.toml files of the clone, so they are clone rules, and only the sync examines them. --check keeps its local rule for [tools.<name>]: env, when present, is a list; any other key is now valid.",
+      "rejected": "--check reads the clone to examine them.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "How do the values messages and codes read on the repo side?",
+      "ruling": "A contribution to a tool that bootstrap does not have gives the message <tools root>/<tool>/tools.toml: [contributes.<x>] names a tool that bootstrap does not have, with the path from the tools root variable (repo/tools). The library logs every message and returns the highest code, as the sync does.",
+      "rejected": "Stop at the first message; keep the macos-setup wording.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}

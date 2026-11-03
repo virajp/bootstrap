@@ -1,0 +1,439 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "Shared cache and clone for the sync engine",
+  "requires": [],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-04 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test:repo-sync"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Make a scratch consumer repository with a main branch, a dprint.jsonc and a valid .config/bootstrap.toml with environments = [\"dev\"]. Set XDG_CACHE_HOME to a scratch folder for every step, so the real ~/.cache is not touched. Sync the consumer once from the current main of bootstrap, so it has the old stub and the old setup/configs/sync. Make a local clone of the run's branch in which that branch is checked out as main. Set REPO_SYNC_URL and SYNC_ENGINE_URL to that local clone and REPO_SYNC_NO_AUTOUPDATE=1, then run mise run setup:configs in the consumer two times. When mise trust or PATH blocks the scratch run, use the method of gap G4 of docs/plans/2026-10-31-repo-sync-check (MISE_TRUSTED_CONFIG_PATHS, symlinks of pre-commit, gomplate and dprint in a scratch bin folder, a copied dprint.jsonc).",
+        "pass": "The first run exits 0. After it, .config/mise/tasks/setup/configs/_default has the _se_ clone functions and the URL https://github.com/virajp/bootstrap.git as its default, and .config/mise/tasks/setup/configs/sync sources ${SYNC_ENGINE_CLONE}/sync-engine/repo-sync. The second run exits 0, writes its clone to <scratch>/sync-engine/repo/, and after it <scratch>/bootstrap/ and <scratch>/bootstrap.lock do not exist."
+      }
+    ]
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-04-sync-engine-cache",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "A new cache folder, the HTTPS clone URL and the removal of the old cache folders are new behavior; consumers change nothing."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The clone library and the repo-sync tasks",
+      "wave": 1,
+      "file": "01-clone.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "sync-engine/clone",
+        "tools/repo-sync/.config/mise/tasks/setup/configs/_default.tmpl",
+        "tools/repo-sync/.config/mise/tasks/setup/configs/sync",
+        "tools/repo-sync/.config/mise/tasks/code/lint/repo-sync"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Move the repo-sync library to sync-engine and add the forwarding file",
+      "wave": 1,
+      "file": "02-engine-move.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "sync-engine/repo-sync",
+        "tools/repo-sync/.config/mise/tasks/_scripts/repo-sync",
+        "tools/repo-sync/tools.toml"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Tests for the new cache and the moved library",
+      "wave": 2,
+      "file": "03-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo-sync"
+      ],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "Its cases run the output of U1 (sync-engine/clone, the stub template, the sync task, the gate) and of U2 (sync-engine/repo-sync, the forwarding file).",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Review: U1 to U3",
+      "wave": 3,
+      "file": "04-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U5",
+      "title": "Docs",
+      "wave": 4,
+      "file": "05-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "CLAUDE.md",
+        "README.md",
+        "docs/sync/**",
+        "docs/design/**"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U6",
+      "title": "Gates",
+      "wave": 5,
+      "file": "06-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "CLAUDE.md, README.md, docs/sync/**, docs/design/**",
+      "why": "every human-facing doc; the earlier units report DOCS FALSIFIED lines and never edit a doc",
+      "owner": "U5"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "Yes. U1 and U2 change bash code that each consumer runs, and U3 changes the test task. The plan lands runnable code, so one review unit in wave 3 covers U1, U2 and U3.",
+      "rejected": "No review unit (the wave review alone does not run /security-review).",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Do the 16 plans of the macos-setup merge run in parallel?",
+      "ruling": "No. The 16 plans form one linear chain through requires, because most of them edit sync-engine/repo-sync or sync-engine/setup-sync, and parallel plans conflict there. This plan is the first of the chain.",
+      "rejected": "Parallel branches.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Where do the tests of this plan go?",
+      "ruling": "This plan extends test:repo-sync with cases for its new rules. A current case changes only where a ruling changes its expected result.",
+      "rejected": "A separate test plan.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "Does the run sync bootstrap and its consumers?",
+      "ruling": "No. mise run setup:configs in bootstrap and in each consumer stays a hand step (Out of scope), as in earlier plans.",
+      "rejected": "A sync in an after-landing step.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "What becomes of tools/repo-sync/.config/mise/tasks/_scripts/repo-sync?",
+      "ruling": "It becomes the forwarding file and stays until the parked cleanup plan, because the old consumer stubs and the old setup/configs/sync tasks source it.",
+      "rejected": "Remove it in the layout plan.",
+      "units": [
+        "U2",
+        "U5"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "How does the stub get the clone code before the clone exists?",
+      "ruling": "The stub template embeds sync-engine/clone at render time with the gomplate function file.Read. The repo front-end adds the absolute path of the sync-engine/ folder of its clone copy to the template context as .sync_engine. One source, no copy in tools/.",
+      "rejected": "A copy of the clone code in each stub (it drifts); a shipped _scripts/sync-clone (two tools ship one file).",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "Which REPO_SYNC_* variables change their name?",
+      "ruling": "REPO_SYNC_CLONE becomes SYNC_ENGINE_CLONE and REPO_SYNC_URL becomes SYNC_ENGINE_URL. REPO_SYNC_VALUES and REPO_SYNC_NO_AUTOUPDATE stay, because they are variables of the repo front-end. The internal gomplate variables of the library (REPO_SYNC_TOOLS, REPO_SYNC_ENVS and the others) stay.",
+      "rejected": "Rename REPO_SYNC_VALUES and REPO_SYNC_NO_AUTOUPDATE too.",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "Does repo_sync still clone by itself?",
+      "ruling": "No. The self-clone path goes. repo_sync without SYNC_ENGINE_CLONE and without --check returns 2 with a message that names mise run setup:configs.",
+      "rejected": "Keep a clone in the library.",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "What names does the clone library use?",
+      "ruling": "Each function of sync-engine/clone starts with _se_ and each global variable with _SE_. The later shared libraries of sync-engine/ use the same prefix. The library defines only functions; _se_clone_init sets the paths from the environment when the caller calls it.",
+      "rejected": "The _rs_ prefix (the library is not repo-only); public names without a prefix.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "How does the clone library print its messages?",
+      "ruling": "Through _se_say <info|error> <text>. When the caller defined print_info and print_error (the helpers of the repo side), _se_say uses them. Else it prints 'sync-engine: <text>' on stderr. The Mac entry task of a later plan has no helpers.",
+      "rejected": "Always the helpers (the Mac side has none); always plain stderr (the repo task output loses its style).",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "Which clone variables does the new stub give the child task?",
+      "ruling": "Both SYNC_ENGINE_CLONE and REPO_SYNC_CLONE, set to the same copy, for the root and for each member, until the parked cleanup plan. A member that has not synced yet has the old setup/configs/sync, which reads only REPO_SYNC_CLONE and then sources the forwarding file.",
+      "rejected": "Only SYNC_ENGINE_CLONE (an old member task then runs its local library, which clones by itself over SSH).",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "How does a run remove the old cache folders without a race with an old stub?",
+      "ruling": "Each run, a dry run too, calls _se_legacy_cleanup while it holds the new lock. For ${XDG_CACHE_HOME:-$HOME/.cache}/bootstrap it first takes the old lock bootstrap.lock (mkdir, with the stale-lock rule of today for a dead holder); when a live pid holds it, the run skips the removal and says nothing. With the old lock taken, it removes bootstrap/ and then bootstrap.lock. Once the run holds the old lock, it releases it on success, on failure and on EXIT: _se_clone_cleanup, which the trap of the caller calls, releases it too. This plan does not touch ~/.cache/macos-setup/: the old Mac task can still run until plan 10, and the Mac entry task of plan 10 moves generated.txt to macos-generated.tsv and removes that folder.",
+      "rejected": "A removal without the old lock (an old stub that holds it loses its clone during its copy); no removal in a dry run (the old folders stay until a real run).",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Does the gate code:lint:repo-sync take the lock of the cache?",
+      "ruling": "No. The gate only reads <cache>/repo/sync-engine/repo-sync. A fetch at the same time is rare, and the next commit runs the gate again.",
+      "rejected": "Take the lock (a commit then waits for a sync).",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Do the files of sync-engine/ carry the bootstrap header?",
+      "ruling": "No. The sync never copies a file of sync-engine/ into a consumer, so the header rule of tools/ does not apply. Each file starts with the bash shebang, so shell_files_in_scope lints it, and a short comment that names its use.",
+      "rejected": "The bootstrap header (it says the file is synced, which is not true).",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "What does the forwarding file do when neither SYNC_ENGINE_CLONE nor REPO_SYNC_CLONE is set?",
+      "ruling": "It prints 'repo-sync: no clone - run mise run setup:configs' on stderr and returns 2. It never clones and never reads the cache.",
+      "rejected": "A fallback to the cache clone.",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "How does the docs unit make sure that the docs are correct, and which number does the migrate item get?",
+      "ruling": "The method of the repo-sync-check plan: the explicit list of passages in 05-docs.md, then vwf:docs-sync over the full branch delta, then grep checks. The new docs/sync/migrate.md item gets the next free number after the highest item (M27 when no other plan added one first).",
+      "rejected": "vwf:docs-sync only; a fixed number that another plan can also take.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Who sets the traps of the stub?",
+      "ruling": "The caller. sync-engine/clone defines _se_clone_cleanup (it releases a held new lock and a held old lock, and removes the copy) and sets no trap. The stub sets trap _se_clone_cleanup EXIT, trap 'exit 130' INT and trap 'exit 143' TERM, as the stub does today.",
+      "rejected": "The library sets the traps when it is sourced (a caller with its own cleanup loses it).",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "Which mode does a file of sync-engine/ get?",
+      "ruling": "Mode 755 for every file of sync-engine/ that has a shebang, clone included, because the check-shebang-scripts-are-executable hook refuses a file with a shebang and no execute bit.",
+      "rejected": "Mode 644 for a library that a caller only sources.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Who corrects the first-line comment of tools/repo-sync/tools.toml?",
+      "ruling": "U2. It owns tools/repo-sync/tools.toml and changes its first comment line: the tool ships the setup:configs tasks, the gate and the forwarding file, not the sync function, which is in sync-engine/repo-sync.",
+      "rejected": "Leave the comment (it is false after the move).",
+      "units": [
+        "U2"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}

@@ -1,0 +1,366 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "One packs model",
+  "requires": [
+    "docs/plans/2026-11-04-repo-files-table"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-04 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test:repo-sync"
+    ],
+    "keeps": []
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-04-packs-merged",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "The new packs.toml shape, the default flag of a member and a scanner that brings _security_base by itself are new behavior; values files do not change."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "Engine: the merged packs model",
+      "wave": 1,
+      "file": "01-engine.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "sync-engine/select",
+        "sync-engine/repo-sync"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "packs.toml in the new shape and the scanner dependencies",
+      "wave": 1,
+      "file": "02-packs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "tools/packs.toml",
+        "tools/gitleaks/tools.toml",
+        "tools/grype/tools.toml",
+        "tools/osv-scanner/tools.toml",
+        "dprint.jsonc"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Tests for the merged packs model",
+      "wave": 2,
+      "file": "03-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo-sync"
+      ],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "Its cases run the engine that U1 changes against the packs.toml and the scanner tools.toml files that U2 changes.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Review: U1 to U3",
+      "wave": 3,
+      "file": "04-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U5",
+      "title": "Docs",
+      "wave": 4,
+      "file": "05-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "CLAUDE.md",
+        "README.md",
+        "docs/sync/**",
+        "docs/design/**"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U6",
+      "title": "Gates",
+      "wave": 5,
+      "file": "06-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "CLAUDE.md, README.md, docs/sync/**, docs/design/**",
+      "why": "every human-facing doc (docs/design/packs.md and docs/sync/packs/*.md included); the earlier units report DOCS FALSIFIED lines and never edit a doc",
+      "owner": "U5"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "Yes. U1 changes the selection code that each consumer runs, U2 changes the data that it reads, and U3 changes the test task. The plan lands runnable code, so one review unit in wave 3 covers U1, U2 and U3.",
+      "rejected": "No review unit (the wave review alone does not run /security-review).",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Do the 16 plans of the macos-setup merge run in parallel?",
+      "ruling": "No. The 16 plans form one linear chain through requires, because most of them edit sync-engine/repo-sync or sync-engine/setup-sync, and parallel plans conflict there. This plan requires plan 3 only.",
+      "rejected": "Parallel branches.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Where do the tests of this plan go?",
+      "ruling": "This plan extends test:repo-sync with cases for its new rules. A current case changes only where a ruling changes its expected result: the cases that write a [pack.*] table in the old shape now write the new shape.",
+      "rejected": "A separate test plan.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "Does the run sync bootstrap and its consumers?",
+      "ruling": "No. mise run setup:configs in bootstrap and in each consumer stays a hand step (Out of scope), as in earlier plans.",
+      "rejected": "A sync in an after-landing step.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "Which packs does the engine validate on a run?",
+      "ruling": "Every [pack.*] table of packs.toml, expanded or not: the shape of each entry, the old keys, a pack named like a tool folder, a loop over every \"pack:<name>\" key (default true or not), and an unknown member (code 3). Thus the test of bootstrap finds an error in its own packs.toml before a consumer selects that pack.",
+      "rejected": "Validate only the packs that the run expands (an error then waits for the first consumer of that pack).",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "What do the messages for the old shape say?",
+      "ruling": "A key depends, required, tools or default whose value is a list: 'tools/packs.toml: [pack.<name>] <key> is the old format - write each member as <tool> = { default = true } or <tool> = {}' (code 2). A key that starts with p:: '... \"p:<x>\" is the old form - write \"pack:<x>\" = { default = true }' (code 2). Any other value that is not a table: '... <key> must be a table, { default = true } or {}' (code 2). An entry key other than default, or a default that is not a boolean: code 2 with the key in the message. The message of an unknown member names the pack (code 3).",
+      "rejected": "One generic message for every shape error.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "What does a nested pack member with {} do?",
+      "ruling": "\"pack:<x>\" = {} does not expand when [packs.<outer>] adds the outer pack; the nested pack arrives only through its own [packs.<x>] entry. The loop check still reads it (D5).",
+      "rejected": "Expand every nested pack (the default flag then has no meaning for a pack).",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "Which environments does a member of a selected pack get?",
+      "ruling": "As today: the env of the [packs.<name>] entry goes to each default member, also through a nested pack; without env, each member gets its own default_envs. The pack base gives each member its own default_envs. A dependency gets the environments of each tool that needs it.",
+      "rejected": "A new environment rule for packs.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "Where does _security_base appear after required goes?",
+      "ruling": "In no pack. gitleaks, grype and osv-scanner each get depends = [\"_security_base\"], so a pack selection and a single [tools.<scanner>] entry both bring it, with the environments of the scanners that need it.",
+      "rejected": "Keep _security_base as a {} member of the pack security (a member with {} adds nothing, so the entry is noise).",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "Which number does the docs/sync/migrate.md item get?",
+      "ruling": "The next free number after the highest item at the time of the run (plan 1 adds one before this plan).",
+      "rejected": "A fixed number that another plan can also take.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "In which order does the engine take the members of a pack?",
+      "ruling": "In file order, so the tool order and the pre-commit hook order of today stay. An awk scan of each [pack.<name>] section reads the keys in file order (one <key> = {...} line per member; a member that spans lines stops with code 2). gomplate still validates the shape. tools/packs.toml lists the base members in the order of today: mise, repo-sync, git, pre-commit, dprint, linter, vscode, then \"pack:security\"; security lists gitleaks, grype, osv-scanner. A test proves that the tool order and the pre-commit hook order do not change.",
+      "rejected": "The key order of gomplate (sorted), which changes the tool order and the hook order.",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "How does tools/packs.toml keep its member order under dprint?",
+      "ruling": "The dprint TOML plugin sorts keys (sortKeys: true in the global config), which breaks D11. The root dprint.jsonc of this repository adds tools/packs.toml to its excludes, and U2 owns dprint.jsonc. Plan 6 moves the exclude with the file to repo/packs.toml.",
+      "rejected": "Accept the sorted order (it changes the hook order); a dprint-ignore comment (not verified for the TOML plugin).",
+      "units": [
+        "U2"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}

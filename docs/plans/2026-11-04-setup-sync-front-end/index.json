@@ -1,0 +1,390 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "The Mac front-end on the shared engine",
+  "requires": [
+    "docs/plans/2026-11-04-mise-generation-shared"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-04 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test"
+    ],
+    "keeps": []
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-04-setup-sync-front-end",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "A new Mac front-end sync-engine/setup-sync, its test task and the new test orchestrator are new behavior; no consumer changes anything."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "setup-sync: the Mac front-end on the shared libraries",
+      "wave": 1,
+      "file": "01-setup-sync.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "sync-engine/setup-sync"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Tests: test:setup-sync, its fixtures and the test orchestrator",
+      "wave": 2,
+      "file": "02-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/setup-sync",
+        ".config/mise/tasks/test/_default",
+        "macos/fixtures/**"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "Its cases source sync-engine/setup-sync, which U1 creates, so its Verification needs the U1 output.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Review: U1 and U2",
+      "wave": 3,
+      "file": "03-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U4",
+      "title": "Docs",
+      "wave": 4,
+      "file": "04-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "CLAUDE.md",
+        "README.md",
+        "docs/sync/**",
+        "docs/design/**"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Gates",
+      "wave": 5,
+      "file": "05-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "CLAUDE.md, README.md, docs/sync/**, docs/design/**",
+      "why": "every human-facing doc; the earlier units report DOCS FALSIFIED lines and never edit a doc",
+      "owner": "U4"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Does MACOS_SETUP_CONFIG_PATH have a default path?",
+      "ruling": "No. When MACOS_SETUP_CONFIG_PATH is unset or empty, setup_sync stops with exit 2 and names the variable. When the folder does not exist, it also stops with exit 2. The macos-setup tool sets the variable in its generated mise config (P10).",
+      "rejected": "A default path, for example the iCloud folder of the old engine or ~/Projects/github.com/<user>/macos-setup.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Which keys does a Mac tools.toml accept?",
+      "ruling": "description, stage and depends (each optional; depends defaults to []), [defaults], [questions.<key>], [contributes.<tool>], [files.\"<target>\"] and [mise.*]. The repo-only keys default_envs, root_only, extensions, [[precommit]] and [mise_env.*], and requires_found in a [files] table, stop the run with exit 2 and a message that says the key is for repo tools only. Any other key also stops the run with exit 2.",
+      "rejected": "The five required keys of a repo tools.toml on the Mac side too.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Where does the [mise.*] config of macos.toml go?",
+      "ruling": "U1 calls the own-config entry of sync-engine/mise (P08 item 7), which generates the [mise.*] tables of macos.toml into ~/.config/mise/conf.d/zz-macos/mise.toml with the header `# Synced from bootstrap: macos.toml [mise]. Do not edit this file.` and `# The next sync replaces it, and a manual change is lost.` U1 does not build the file itself. setup-sync writes it in the main stage, and its manifest line is `zz-macos<TAB>.config/mise/conf.d/zz-macos/mise.toml`. A Mac tool folder named zz-macos, or one whose name sorts after zz-macos in byte order, stops the run with exit 2.",
+      "rejected": "The init stage (the user config starts no shell); a file without the header (the stale rule cannot remove it).",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "What is the template context on the Mac side?",
+      "ruling": ".config (the values of the tool), .all (the values of every selected tool, by name), .tools (the selected tool names), .env (HOME, USER and MACOS_SETUP_CONFIG_PATH) and .sync_engine (the absolute path of the sync-engine/ folder of SYNC_ENGINE_CLONE, as the repo front-end gives it since P01). The delimiters are <% %>.",
+      "rejected": "Keep MACOS_SETUP_REPO_PATH in .env: no Mac repo clone exists now, and no template reads it.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "What happens when the config folder has no macos.toml?",
+      "ruling": "Port the rule of the old engine: setup-sync selects pack base and its depends only. A clean real run then calls _se_record_commit (P02 item 9) with the new-file header `# The values of the Mac sync of bootstrap. See docs/setup/index.md.`, which creates macos.toml with that header and the bootstrap_commit line. A symlinked macos.toml is written through to its real file.",
+      "rejected": "Stop with exit 2.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "Can U1 change a shared library?",
+      "ruling": "No. U1 edits only sync-engine/setup-sync. Each Mac-only step (the symlink resolve, the stages, the login shell check, mise bootstrap, the mise path check) is a function in setup-sync that calls the shared libraries. When a library has no entry that a wrapper can use, U1 returns UNRESOLVED and names the missing entry.",
+      "rejected": "Edit sync-engine/common, write, select, values, merge, manifest or mise in this plan.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "Where does the ~/.local/bin/mise check run?",
+      "ruling": "In setup_sync, as its first check after the flags. The check and its message are the ones of the old entry task, so a ~/.local/bin/mise link into another folder also fails.",
+      "rejected": "Only in the entry task (P10): then a direct call of the engine skips the check.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "How does test:setup-sync run the engine?",
+      "ruling": "Each case makes a git copy of the fixture tree (sync-engine/ of the working tree, plus macos/fixtures/repo/ as macos/), sets SYNC_ENGINE_CLONE to it, sources its sync-engine/setup-sync and calls setup_sync. The clone, the lock and the temp copy belong to the entry task (P10), so the old clone and lock cases go to P10.",
+      "rejected": "Run the cases through an entry task, which does not exist before P10.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "Which macos-setup tool does the fixture tree use?",
+      "ruling": "A minimal fixture tool macos/fixtures/repo/tools/macos-setup/ with a tools.toml that has only a description. Pack base of the fixture packs.toml holds it with default = true.",
+      "rejected": "A copy of the real macos/tools/macos-setup/, which P10 creates.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "Which old cases go?",
+      "ruling": "Dropped: the iCloud cases (dataless, dataless timeout, bad timeout) with the stat stub; the clone cases, the lock cases and the cases that run the old _default, which P10 ports to the entry task; and the case \"a <tool>.toml of a tool that is not selected\", because its rule is gone. A case whose rule exists in a new form is rewritten to that form. 02-tests.md lists each old case and its fate in a table.",
+      "rejected": "Keep the stat stub and the iCloud cases.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "How do the messages name the values?",
+      "ruling": "Each message keeps the `setup-sync: ` prefix of the log function. A message that named <tool>.toml, [overrides.<tool>] or macos-setup.toml now names [tools.<tool>] of macos.toml, or macos.toml.",
+      "rejected": "Keep the old file names in the messages.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "Yes. U1 adds sync-engine/setup-sync and U2 adds two task scripts, and all of them run. One review unit in wave 3 covers U1 and U2.",
+      "rejected": "No review unit: the wave review alone does not run /security-review.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Can this plan run in parallel with another plan of the chain?",
+      "ruling": "No. The 16 plans form one linear chain through requires, because most of them edit sync-engine/repo-sync or sync-engine/setup-sync, and parallel plans conflict there.",
+      "rejected": "Parallel branches.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Where do the tests of this plan go?",
+      "ruling": "In this plan: U2 ports the old setup-sync test and adds cases for the new rules. No existing test of test:repo-sync changes.",
+      "rejected": "A separate test plan.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Does the plan run setup:configs or the Mac sync?",
+      "ruling": "No. mise run setup:configs in bootstrap and in consumers, and the first Mac run, stay hand steps (Out of scope).",
+      "rejected": "A unit or an after-landing step that runs them.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "Does the Mac stale rule follow symlinks?",
+      "ruling": "Yes. U1 calls sync-engine/manifest with the link mode macos (P05 item 5): the stale rule resolves links, removes the real file, then removes empty parents up to $HOME, never past a symlinked folder. On the Mac, ~/.config/mise is a link into dotfiles/, and the mise config of a deselected tool must go. The old case \"a stale file through a link\" stays. U1 passes the mode and edits no library (D6).",
+      "rejected": "The repo link mode, which never removes a path behind a link.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "What does a failed file in the init stage do?",
+      "ruling": "The rule of the old engine stays (B:1564-1580): a failure in the init stage stops the run before the main stage, with no mise bootstrap and no manifest write. Inside one stage, a failed file stops no other file.",
+      "rejected": "Go on with the main stage after a failed init stage.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
