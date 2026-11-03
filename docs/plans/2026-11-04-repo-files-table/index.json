@@ -1,0 +1,404 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "[files] tables and merge mode for repo tools",
+  "requires": [
+    "docs/plans/2026-11-04-sync-engine-core"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-04 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test:repo-sync"
+    ],
+    "keeps": []
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-04-repo-files-table",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "The [files] tables, requires_found and merge mode are new behavior of the tools.toml schema; the synced files of a consumer do not change."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "Engine: [files] tables, requires_found and merge mode",
+      "wave": 1,
+      "file": "01-engine.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "sync-engine/merge",
+        "sync-engine/write",
+        "sync-engine/repo-sync"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Move every tools.toml to the [files] tables",
+      "wave": 1,
+      "file": "02-tools-toml.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "tools/*/tools.toml"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Tests for the [files] tables, the old keys and merge mode",
+      "wave": 2,
+      "file": "03-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo-sync"
+      ],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "Its cases run the engine that U1 changes against the tools.toml files that U2 moves to the new keys.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Review: U1 to U3",
+      "wave": 3,
+      "file": "04-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U5",
+      "title": "Docs",
+      "wave": 4,
+      "file": "05-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "CLAUDE.md",
+        "README.md",
+        "docs/sync/**",
+        "docs/design/**"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U6",
+      "title": "Gates",
+      "wave": 5,
+      "file": "06-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "CLAUDE.md, README.md, docs/sync/**, docs/design/**",
+      "why": "every human-facing doc; the earlier units report DOCS FALSIFIED lines and never edit a doc",
+      "owner": "U5"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "Yes. U1 changes the engine that each consumer runs and adds sync-engine/merge, U2 changes the manifests that the engine reads, and U3 changes the test task. The plan lands runnable code, so one review unit in wave 3 covers U1, U2 and U3.",
+      "rejected": "No review unit (the wave review alone does not run /security-review).",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Do the 16 plans of the macos-setup merge run in parallel?",
+      "ruling": "No. The 16 plans form one linear chain through requires, because most of them edit sync-engine/repo-sync or sync-engine/setup-sync, and parallel plans conflict there. This plan requires plan 2 only.",
+      "rejected": "Parallel branches.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Where do the tests of this plan go?",
+      "ruling": "This plan extends test:repo-sync with cases for its new rules. A current case changes only where a ruling changes its expected result: the cases that write seed, [seed_requires] or a mise files list now write the new keys.",
+      "rejected": "A separate test plan.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "Does the run sync bootstrap and its consumers?",
+      "ruling": "No. mise run setup:configs in bootstrap and in each consumer stays a hand step (Out of scope), as in earlier plans.",
+      "rejected": "A sync in an after-landing step.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "What becomes of the empty seed = [] keys?",
+      "ruling": "The seed key goes from every tools.toml, the empty ones too. A seed key with any value stops the sync with code 2 and names [files.\"<target>\"] mode = \"seed\". A tools.toml now has four keys that the sync reads without a default: default_envs, depends, root_only and extensions.",
+      "rejected": "Keep the empty seed keys.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "Does the plan need a docs/sync/migrate.md item?",
+      "ruling": "No. tools.toml is internal to bootstrap; a consumer changes nothing, and its synced files stay the same.",
+      "rejected": "A migrate item.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "What does the sync do with a [files] target whose requires or requires_found condition fails?",
+      "ruling": "It does not write the target. A generated target keeps the behavior of the mise files list of today: a copy with the bootstrap header is removed (dry run: would remove <path> (no <file>)), else the log says skip file  <path> (no <file>). A seed logs skip seed  <path> (no <file>). A merge target logs skip merge <path> (no <file>) and stays as it is. <file> names the first entry that is not there, in the order of the lists: requires first, then requires_found. Plan 5 replaces the removal with the manifest.",
+      "rejected": "Remove nothing until plan 5 (a generated copy then stays after its condition goes).",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "Which tools does the engine validate for the [files] rules?",
+      "ruling": "Every tool of the clone, selected or not, in the same pass that reads all manifests today (_rs_mise_index). The rules: a known key in each [files] table, a known mode and format, a target that a file of the tool produces (<target> or <target>.tmpl), no tool folder with both <p> and <p>.tmpl, merge only with json, yaml or toml, remove and remove_items only with merge and of the right shape, the old keys. Thus the test of bootstrap finds an error before a consumer selects the tool.",
+      "rejected": "Validate only the selected tools.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "What do requires and requires_found accept on the repo side?",
+      "ruling": "requires: a list of exact paths relative to the repository root (MISE_PROJECT_ROOT); each must exist (-e); an absolute path or a .. part stops with code 2. requires_found: a list of file names; each must be found by the rule of _rs_has_file (git tracks it or does not ignore it, at the root or down to 4 folders below it, no submodule); a name with a / stops with code 2. Both lists must be non-empty when present. A target with both lists needs every entry of both.",
+      "rejected": "A string value (one meaning per key needs one shape); any of the names found.",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "How does merge mode act on the repo side?",
+      "ruling": "sync-engine/merge holds a port of _SS_MERGE_JQ and _ss_merge with the rules of the setup-sync header (Merge files). The repo order is render, parse check, merge with the live target, dprint, compare. The repo side follows no symlink: the target path is the path in the repository. A merge target has no header, is never removed by the sync, and keeps the mode of an existing target (a new one takes the mode of its source). The format of a merge target is its format key, else its extension; the JSONC rule of plan 2 does not apply to it.",
+      "rejected": "Merge after dprint (the compare then sees a file that dprint has not formatted).",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "What do the old keys of a mise entry say?",
+      "ruling": "One message, code 2, per old key per tools.toml (an entry with an old requires and an old files gives two): '<tools root>/<tool>/tools.toml: seed is not supported; use [files.\"<target>\"] with mode = \"seed\"'; '<tools root>/<tool>/tools.toml: [seed_requires] is not supported; use requires in [files.\"<target>\"]'; '<tools root>/<tool>/tools.toml: files in [mise.tools.<x>] is not supported; use requires_found in [files.\"<target>\"]'; and for requires = \"<name>\" in a [mise.tools.<x>] entry: '<tool>/tools.toml: requires of mise tool <x> is the old key - write requires_found = [\"<name>\"]'.",
+      "rejected": "Accept the old keys during a transition (no consumer writes tools.toml, so no transition is necessary).",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "What does the generated mise file and a [mise_env.<env>.tools] entry do with requires_found?",
+      "ruling": "The generated mise.<env>.toml drops requires_found, as it drops requires today. In a [mise_env.<env>.tools] entry, requires_found, requires and files stop the sync with code 2 and the message says that the key is valid only in [mise.tools].",
+      "rejected": "Copy requires_found into the generated file; accept it in [mise_env.<env>.tools].",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Can an override change requires_found?",
+      "ruling": "No. [overrides.mise.tools.<x>.requires_found] is locked like envs, depends and requires, and the lock message names requires_found.",
+      "rejected": "Allow the override.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Does a merge source carry the bootstrap header?",
+      "ruling": "No. A merge source carries no two-line bootstrap header, because the app owns the target. A YAML or TOML merge source may carry the comment # Merged by bootstrap: <path>; a JSON merge source carries no comment. The engine strips nothing. The test fixtures follow this. The docs unit rewrites the header rule of CLAUDE.md to: each file that is neither a seed nor a merge source.",
+      "rejected": "The two-line header on a merge source (it then lands in a file that the app owns).",
+      "units": [
+        "U1",
+        "U3",
+        "U5"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "How does the unblock spare the targets that the sync must not remove?",
+      "ruling": "_se_unblock of sync-engine/write gets a parameter: a list of paths to spare (the seeds and the merge targets). The repo side passes the list; it has no wrapper of its own.",
+      "rejected": "A repo-side wrapper around _se_unblock.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "Which mode does sync-engine/merge get?",
+      "ruling": "Mode 755, as every file of sync-engine/ that has a shebang (plan 1, D18).",
+      "rejected": "Mode 644.",
+      "units": [
+        "U1"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}

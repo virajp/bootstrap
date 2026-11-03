@@ -20,6 +20,276 @@
         "B14"
       ],
       "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-sync-engine-cache",
+      "folder": "docs/plans/2026-11-04-sync-engine-cache",
+      "kind": "change",
+      "title": "Shared cache and clone for the sync engine",
+      "target_repo": null,
+      "priority": 10,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-sync-engine-core",
+      "folder": "docs/plans/2026-11-04-sync-engine-core",
+      "kind": "change",
+      "title": "Shared engine library",
+      "target_repo": null,
+      "priority": 20,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-sync-engine-cache"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-repo-files-table",
+      "folder": "docs/plans/2026-11-04-repo-files-table",
+      "kind": "change",
+      "title": "[files] tables and merge mode for repo tools",
+      "target_repo": null,
+      "priority": 30,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-sync-engine-core"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-packs-merged",
+      "folder": "docs/plans/2026-11-04-packs-merged",
+      "kind": "change",
+      "title": "One packs model",
+      "target_repo": null,
+      "priority": 40,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-repo-files-table"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-repo-manifest",
+      "folder": "docs/plans/2026-11-04-repo-manifest",
+      "kind": "change",
+      "title": "The manifest and the stale rule",
+      "target_repo": null,
+      "priority": 50,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-packs-merged"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-repo-layout",
+      "folder": "docs/plans/2026-11-04-repo-layout",
+      "kind": "change",
+      "title": "Side folders: repo/tools",
+      "target_repo": null,
+      "priority": 60,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-repo-manifest"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-values-schema",
+      "folder": "docs/plans/2026-11-04-values-schema",
+      "kind": "change",
+      "title": "[defaults], [questions], [contributes]",
+      "target_repo": null,
+      "priority": 70,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-repo-layout"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-mise-generation-shared",
+      "folder": "docs/plans/2026-11-04-mise-generation-shared",
+      "kind": "change",
+      "title": "Shared mise generator",
+      "target_repo": null,
+      "priority": 80,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-values-schema"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-setup-sync-front-end",
+      "folder": "docs/plans/2026-11-04-setup-sync-front-end",
+      "kind": "change",
+      "title": "The Mac front-end on the shared engine",
+      "target_repo": null,
+      "priority": 90,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-mise-generation-shared"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-macos-entry-tool",
+      "folder": "docs/plans/2026-11-04-macos-entry-tool",
+      "kind": "change",
+      "title": "The macos-setup tool and the Mac packs file",
+      "target_repo": null,
+      "priority": 100,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-setup-sync-front-end"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-macos-tools-base-core",
+      "folder": "docs/plans/2026-11-04-macos-tools-base-core",
+      "kind": "change",
+      "title": "Mac tools: base core (11)",
+      "target_repo": null,
+      "priority": 110,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-macos-entry-tool"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-macos-tools-base-shells",
+      "folder": "docs/plans/2026-11-04-macos-tools-base-shells",
+      "kind": "change",
+      "title": "Mac tools: shells and identity (8)",
+      "target_repo": null,
+      "priority": 120,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-macos-tools-base-core"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-macos-tools-extras",
+      "folder": "docs/plans/2026-11-04-macos-tools-extras",
+      "kind": "change",
+      "title": "Mac tools: complex extras (20)",
+      "target_repo": null,
+      "priority": 130,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-macos-tools-base-shells"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-macos-tools-apps",
+      "folder": "docs/plans/2026-11-04-macos-tools-apps",
+      "kind": "change",
+      "title": "Mac tools: app-only (52)",
+      "target_repo": null,
+      "priority": 140,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-macos-tools-extras"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-docs-design-split",
+      "folder": "docs/plans/2026-11-04-docs-design-split",
+      "kind": "change",
+      "title": "Design docs and lazy-loaded CLAUDE.md",
+      "target_repo": null,
+      "priority": 150,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-macos-tools-apps"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-04-docs-setup",
+      "folder": "docs/plans/2026-11-04-docs-setup",
+      "kind": "change",
+      "title": "Mac adoption and migration docs",
+      "target_repo": null,
+      "priority": 160,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-04-docs-design-split"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
     }
   ]
 }

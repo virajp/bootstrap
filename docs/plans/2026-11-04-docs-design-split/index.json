@@ -1,0 +1,279 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "Design docs and lazy-loaded CLAUDE.md",
+  "requires": [
+    "docs/plans/2026-11-04-macos-tools-apps"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-04 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test"
+    ],
+    "keeps": []
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-04-docs-design-split",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "NONE",
+      "reason": "Docs and comments only; no behavior of the sync changes."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The design docs of the merged model",
+      "wave": 1,
+      "file": "01-design-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "docs/design/**"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Short script headers in sync-engine",
+      "wave": 2,
+      "file": "02-script-headers.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "sync-engine/**"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "Its Verification needs the output of U1: each rule that it removes from a script header must be in the docs/design file that U1 writes.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Docs",
+      "wave": 3,
+      "file": "03-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "CLAUDE.md",
+        "README.md",
+        "docs/sync/**",
+        "docs/design/**",
+        "repo/examples/last_sync.toml"
+      ],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Gates",
+      "wave": 4,
+      "file": "04-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "CLAUDE.md, README.md, docs/sync/**, repo/examples/last_sync.toml",
+      "why": "human-facing docs; U1 and U2 report DOCS FALSIFIED lines and never edit them",
+      "owner": "U3"
+    },
+    {
+      "id": "S2",
+      "file": "docs/design/**",
+      "why": "U1 writes the design docs; U3 changes them in a later wave only to add a rule that it moves out of CLAUDE.md or that docs-sync finds missing",
+      "owner": "U1"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "No. The plan changes docs and comments only; no runnable line changes. U2's Verification proves that the diff of sync-engine/ touches comment lines only.",
+      "rejected": "A review unit over a comment-only change.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Can the 16 plans of the merge run in parallel?",
+      "ruling": "No. The 16 plans form one linear chain through requires, because most of them edit sync-engine/repo-sync or sync-engine/setup-sync, and parallel plans conflict there. This plan requires 2026-11-04-macos-tools-apps.",
+      "rejected": "Parallel branches.",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Which design doc holds each rule?",
+      "ruling": "sync-engine.md: the rules that both sides share (cache, clone, lock, engine variables, tool calls, templates, the write order, the parse check, merge mode, the header and its detection, the manifest and the stale rule, the values merge, the shared exit codes 2, 3 and 5, bootstrap_commit). repo-sync.md: the repo front-end; it links to sync-engine.md for the exit codes. setup-sync.md: the Mac front-end; it describes exit 4 and links to sync-engine.md for the other codes. packs.md: the packs model. tools.md: the tools.toml schema, the [files] keys and the rule for the header of a source file. mise.md: the mise generator, environments, [overrides.mise*], zz-repo and zz-macos. bootstrap-config.md: the keys of .config/bootstrap.toml. fnox.md: no change. Each other doc links to the one place.",
+      "rejected": "One large design doc; the same rule in two docs.",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "Does repo-sync.md copy the keys of the repo values file?",
+      "ruling": "No. bootstrap-config.md stays the one place of the keys of .config/bootstrap.toml; repo-sync.md links to it. setup-sync.md holds the keys of macos.toml, because no other doc has them.",
+      "rejected": "Move the keys of bootstrap.toml into repo-sync.md.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "What stays in the header of a sync-engine script?",
+      "ruling": "The shebang when the file has one, one line on the job of the file, the usage (the functions that other files call, or the entry function with its flags), the environment variables that the file reads, and one pointer line \"Contract: docs/design/<file>.md\". A file outside the mapping points to docs/design/sync-engine.md. A file that is not bash skips the bash -n check and the pointer line. The return codes and the long contract text go to the design doc. Where the design doc lacks a rule, the long header lines stay in this plan, and U2 returns a GAP for each. Comments inside a function body stay.",
+      "rejected": "Keep the return codes in each header; remove the comments inside the functions too; give the docs unit sync-engine/** to add the missing rules.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "What does docs/sync/ keep?",
+      "ruling": "Every instruction that the adopting AI acts on stays in docs/sync/. A passage that only restates a rule of docs/design becomes a link to it. docs/sync/index.md gets a short list of pointers to docs/design, in the form that CLAUDE.md uses.",
+      "rejected": "Move the step-by-step instructions of docs/sync/ into docs/design.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "How does CLAUDE.md load the design docs?",
+      "ruling": "A section \"Where the rules are\" with one line for each area: \"Read <doc> before you change <path>.\" The sections How the sync operates, Templates, Branch model in the merge tasks and mise config go, after U3 confirms that docs/design holds each of their rules. Purpose, Layout rule (folders only), Task scripts, Task output, Change a shared file and the test rule stay. The rules for an edit in this repo also stay: the last_sync.toml and commit_id steps, the file conventions of docs/sync/ (claude-tool.md), and \"do not edit a synced copy\". The header authoring rule moves to docs/design/tools.md, with a pointer in CLAUDE.md.",
+      "rejected": "Keep the rule sections in CLAUDE.md as a second copy.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "Which paths does the example-review command name after this plan?",
+      "ruling": "git log <commit_id>..HEAD -- tools repo docs/sync docs/design CLAUDE.md, with tools kept in front of repo, because the rules moved into docs/design. U3 writes it in repo/examples/last_sync.toml and in CLAUDE.md, and owns repo/examples/last_sync.toml for that edit.",
+      "rejected": "Leave docs/design out of the command; a contract change there then goes unseen.",
+      "units": [
+        "U3"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}

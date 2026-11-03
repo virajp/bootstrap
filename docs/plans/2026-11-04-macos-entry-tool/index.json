@@ -1,0 +1,390 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "The macos-setup tool and the Mac packs file",
+  "requires": [
+    "docs/plans/2026-11-04-setup-sync-front-end"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-04 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test"
+    ],
+    "keeps": []
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-04-macos-entry-tool",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "The new Mac entry tool macos-setup, the Mac packs file, the sample values file and test:macos-tools are new behavior; no repo consumer changes anything."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "macos-setup tool: tools.toml and its tasks",
+      "wave": 1,
+      "file": "01-macos-setup.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "macos/tools/macos-setup/**"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Mac packs file and sample values file",
+      "wave": 1,
+      "file": "02-packs-examples.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "macos/packs.toml",
+        "macos/examples/macos.toml",
+        "dprint.jsonc"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Tests: test:macos-tools and the entry-task cases",
+      "wave": 2,
+      "file": "03-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/macos-tools",
+        ".config/mise/tasks/test/_default",
+        ".config/mise/tasks/test/setup-sync"
+      ],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "Its cases render macos/tools/macos-setup/ (U1) with macos/packs.toml and macos/examples/macos.toml (U2), so its Verification needs their output.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Review: U1, U2 and U3",
+      "wave": 3,
+      "file": "04-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U5",
+      "title": "Docs",
+      "wave": 4,
+      "file": "05-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "CLAUDE.md",
+        "README.md",
+        "docs/sync/**",
+        "docs/design/**"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U6",
+      "title": "Gates",
+      "wave": 5,
+      "file": "06-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "CLAUDE.md, README.md, docs/sync/**, docs/design/**",
+      "why": "every human-facing doc; the earlier units report DOCS FALSIFIED lines and never edit a doc",
+      "owner": "U5"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Does a Mac keep a local copy of the engine?",
+      "ruling": "No. The macos-setup tool no longer ships _scripts/setup-sync. updateall/configs/sync sources ${SYNC_ENGINE_CLONE}/sync-engine/setup-sync and stops with exit 2 when SYNC_ENGINE_CLONE is unset, as setup:configs:sync does on the repo side.",
+      "rejected": "Ship the engine as ~/.config/mise/tasks/_scripts/setup-sync, as the old tool did.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "How does the entry task get the clone code, and when does it release the lock?",
+      "ruling": "updateall/configs/_default.tmpl embeds sync-engine/clone at render time with gomplate file.Read and the .sync_engine path of the template context, as the repo stub does since P01. It parses the flags, refuses a nested run, and checks MACOS_SETUP_CONFIG_PATH (set, an existing folder) before any network use. Then, in the order of P01 D12, it takes the new lock, runs the legacy cleanup (D14), clones or refreshes the cache clone, and copies it to a temp folder. It runs macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync of the copy with SYNC_ENGINE_CLONE set to the copy. A real run holds the lock to the end of that child; a dry run releases it after the copy.",
+      "rejected": "A copy of the clone code in the template, which drifts from sync-engine/clone.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "What does the config_path question give?",
+      "ruling": "[questions.config_path] (question and example ~/Projects/github.com/janedoe/macos-setup) and [mise.env] MACOS_SETUP_CONFIG_PATH = \"<% index .config `config_path` | required `macos-setup: set config_path in [tools.macos-setup] of macos.toml` | regexp.Replace `^~` .env.HOME %>\". A ~ at the start becomes $HOME, because mise does not expand ~ in [env]. The first run needs the variable from the shell; each later shell gets it from mise.",
+      "rejected": "No question: the user exports the variable by hand in each shell.",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "How does a <% %> expression sit inside a [mise.*] string?",
+      "ruling": "The expression sits inside a TOML basic string (\"...\"), and each string literal inside it is a Go raw string in backticks, never a double quote, so the TOML string needs no escape. The engine renders a tools.toml that holds <% before it generates (P08 D6), so the generated conf.d/macos-setup/mise.toml holds the rendered value.",
+      "rejected": "Double quotes with TOML escapes inside the action; a TOML literal string.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "Where do the cases of the entry task go?",
+      "ruling": "U3 adds them to test:setup-sync. Each case renders updateall/configs/_default.tmpl with gomplate, as test:repo-sync renders the repo stub, and runs it with --no-bootstrap, SYNC_ENGINE_URL set to a local bare origin and SYNC_ENGINE_CACHE in the case folder. The origin is a git copy of the fixture tree with the real macos/tools/macos-setup/ in place of the fixture stub. Cases: the old clone cases on the new cache (a first clone, a refresh after a new origin commit, a clone with another origin, the SSH and HTTPS forms of one URL, a non-empty non-git folder gives 2, an origin that cannot be cloned gives 5, the running line); the old lock cases (a run waits for a live holder, a dead holder); the old flag cases (an unknown flag under bash gives 2, --dry-run under bash and under mise run); MACOS_SETUP_CONFIG_PATH unset gives 2 and no clone; a nested run gives 2; the legacy cleanup of D14; and the leftovers case: a real run gives 0, a dry run 0, a run with a bad macos.toml 2, and after each, no lock and no temp copy.",
+      "rejected": "No test of the entry task.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "What does test:macos-tools render?",
+      "ruling": "Every tool of macos/tools/. It copies macos/examples/macos.toml into a temp config folder and calls setup_sync of the working tree directly (as test:setup-sync does) with --no-bootstrap in a temp HOME. It fails when a tool folder of macos/tools/ is not in the selected tools that the run logs, so an import plan that does not select a new tool in the example fails.",
+      "rejected": "Render only what the example selects.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "How does test:macos-tools port the three old cases?",
+      "ruling": "Case 0: no [files] table gives mode = \"seed\" to a json, yaml or toml target. Case 1: the first real run exits 4 when an init-stage tool is selected, else 0; a second run exits 0; every .json, .yaml, .yml and .toml file in the temp HOME parses with jq or yq. Case 2: the example without the answer of one question (config_path of macos-setup) exits 2, and the message names the key.",
+      "rejected": "Keep the git name key of the old case 2: the git tool comes only in P12.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "Yes. U1 adds task scripts and a template that render into ~/.config/mise/tasks/, and U3 adds and changes test scripts; all of them run. One review unit in wave 3 covers U1, U2 and U3.",
+      "rejected": "No review unit: the wave review alone does not run /security-review.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "Can this plan run in parallel with another plan of the chain?",
+      "ruling": "No. The 16 plans form one linear chain through requires, because most of them edit sync-engine/repo-sync or sync-engine/setup-sync, and parallel plans conflict there.",
+      "rejected": "Parallel branches.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "Where do the tests of this plan go?",
+      "ruling": "In this plan: U3 adds test:macos-tools and the entry-task cases of test:setup-sync, and the test orchestrator runs test:macos-tools too. The cases of P09 do not change.",
+      "rejected": "A separate test plan.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "Does the plan run setup:configs or the Mac sync?",
+      "ruling": "No. mise run setup:configs in bootstrap and in consumers, and the first Mac run, stay hand steps (Out of scope).",
+      "rejected": "A unit or an after-landing step that runs them.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "Which old files of the macos-setup tool stay, and how?",
+      "ruling": "updateall/_default, upgrade/power, upgrade/macos/upgrade, upgrade/macos/download and _scripts/helpers stay byte for byte, with the new header in place of the old one. updateall/configs/_default becomes updateall/configs/_default.tmpl. updateall/configs/sync moves to the shared engine. _scripts/setup-sync goes (D1). The empty [defaults] table and the [files] tables with mode = \"generated\" go.",
+      "rejected": "Change their content during the import.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Does the entry task check where mise is?",
+      "ruling": "No. The ~/.local/bin/mise check runs in setup_sync (P09). Before the clone, the entry task checks only the flags, the nested run and MACOS_SETUP_CONFIG_PATH.",
+      "rejected": "The check in both the entry task and the engine.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Which legacy cleanup does the Mac entry task do?",
+      "ruling": "The cleanup of sync-engine/clone (the old ~/.cache/bootstrap/ and ~/.cache/bootstrap.lock), and the Mac part that P01 leaves alone: when <cache>/macos-generated.tsv is missing and ~/.cache/macos-setup/generated.txt exists, the task moves that file to <cache>/macos-generated.tsv; then it removes ~/.cache/macos-setup/, but not while a live pid holds ~/.cache/macos-setup/lock. It runs after the task takes the new lock.",
+      "rejected": "The Mac cleanup in P01, while the old Mac task can still run.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Does dprint format macos/packs.toml?",
+      "ruling": "No. U2 adds macos/packs.toml to the excludes of the root dprint.jsonc. The global dprint config sorts TOML keys, and the engine reads the members of a pack in file order, so the member order must stay as written (as P04 does for repo/packs.toml).",
+      "rejected": "Let dprint sort the members.",
+      "units": [
+        "U2"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}

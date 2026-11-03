@@ -1,0 +1,406 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "Shared engine library",
+  "requires": [
+    "docs/plans/2026-11-04-sync-engine-cache"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-04 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test:repo-sync"
+    ],
+    "keeps": []
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-04-sync-engine-core",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "The parse check of each JSON, YAML and TOML target is new behavior: a render that does not parse now stops with code 2 and the old file stays."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The shared libraries common, write and select",
+      "wave": 1,
+      "file": "01-engine.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "sync-engine/common",
+        "sync-engine/write",
+        "sync-engine/select",
+        "sync-engine/repo-sync",
+        "tools/repo-sync/.config/mise/tasks/setup/configs/sync"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Tests for the parse check and the header detection",
+      "wave": 2,
+      "file": "02-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo-sync"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "Its cases run the libraries that U1 creates and the repo-sync front-end that U1 changes.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Review: U1 and U2",
+      "wave": 3,
+      "file": "03-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U4",
+      "title": "Docs",
+      "wave": 4,
+      "file": "04-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "CLAUDE.md",
+        "README.md",
+        "docs/sync/**",
+        "docs/design/**"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Gates",
+      "wave": 5,
+      "file": "05-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "CLAUDE.md, README.md, docs/sync/**, docs/design/**",
+      "why": "every human-facing doc; the earlier units report DOCS FALSIFIED lines and never edit a doc",
+      "owner": "U4"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "Yes. U1 moves code of the sync into three new libraries that each consumer runs, and U2 changes the test task. The plan lands runnable code, so one review unit in wave 3 covers U1 and U2.",
+      "rejected": "No review unit (the wave review alone does not run /security-review).",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Do the 16 plans of the macos-setup merge run in parallel?",
+      "ruling": "No. The 16 plans form one linear chain through requires, because most of them edit sync-engine/repo-sync or sync-engine/setup-sync, and parallel plans conflict there. This plan requires plan 1 only.",
+      "rejected": "Parallel branches.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Where do the tests of this plan go?",
+      "ruling": "This plan extends test:repo-sync with cases for its new rules. A current case changes only where a ruling changes its expected result.",
+      "rejected": "A separate test plan.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "Does the run sync bootstrap and its consumers?",
+      "ruling": "No. mise run setup:configs in bootstrap and in each consumer stays a hand step (Out of scope), as in earlier plans.",
+      "rejected": "A sync in an after-landing step.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "How does the shared log function get the name of its front-end?",
+      "ruling": "_se_log prints '<prefix>: <text>' on stderr, with the prefix in the variable _SE_PREFIX. sync-engine/repo-sync sets _SE_PREFIX=repo-sync before its first call, so each message stays byte for byte as today.",
+      "rejected": "A prefix argument on each call (every call site changes and the risk of a typo grows).",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "Which format does a .json target with comments get?",
+      "ruling": "A target with the extension .json gets the format json, except when the rendered file has a line that starts with // after spaces: that file is JSONC (the bootstrap header of a JSON file is a comment inside {), so its format is text. .vscode/settings.json and .vscode/extensions.json are such files; jq cannot read them. A later format key of a [files] table wins over this default.",
+      "rejected": "jq on every .json target (it fails on .vscode/settings.json); a fixed list of JSONC paths in the engine.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "What becomes of the gomplate checks after the engine starts gomplate with mise x gomplate@latest?",
+      "ruling": "repo_sync no longer checks command -v gomplate; it checks command -v mise and returns 2 without it. The gate code:lint:repo-sync keeps its mise x -- which gomplate check, so a commit without gomplate stays silent, and the [mise.tools.gomplate] table of tools/repo-sync/tools.toml stays. The #MISE tools.pre-commit line of setup/configs/sync stays.",
+      "rejected": "Remove the gate check too (a commit can then need the network); keep the gomplate check of repo_sync (it refuses a run that the wrapper can serve).",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "How do the tool wrappers find their files when they run from /?",
+      "ruling": "Every path that the engine gives to gomplate, jq or yq is absolute. repo_sync makes the path of the values file absolute at its start; each other path of the engine is already under MISE_PROJECT_ROOT, the clone copy or a temp folder.",
+      "rejected": "Run the tools from the current folder (a mise config of the consumer then selects their versions).",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "Where does the parse check run on the repo side, and what does a failure do?",
+      "ruling": "In the first step of the write of each file (today _rs_file), after the render and after pre-commit autoupdate, before the dprint stage. It runs on every file that the sync writes or compares: a template render, a plain copy, a new seed and a generated mise file. A failure prints '<path>: the result does not parse as <format> - the current file stays', keeps the target as it is, and gives code 2; the other files go on. A dry run reports the same code.",
+      "rejected": "A check after dprint (dprint can change a broken file); a check on templates only.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "Which places use the shared header detection?",
+      "ruling": "Every place that reads the bootstrap header today: the unblock of a folder path, the removal of a file whose requires file is not there, and the stale removal of the generated mise files. Each reads the first 3 lines and accepts Synced from bootstrap, Synced from repo-config and Generated by macos-setup. The stale removal read only line 1 before; it now reads 3 lines.",
+      "rejected": "Keep a separate regex at each place.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "Which part of the selection moves to sync-engine/select?",
+      "ruling": "The pack expansion (_rs_pack, _rs_selected) with the packs file, the tool folder, the base pack, the selection and the shown name of the packs file as parameters (the shown name is the fifth argument of _se_selected), and the depth-first depends walk of _rs_resolve. sync-engine/select owns the walk state: _SE_WALK_VISITED (the finished tools in visit order) and the deps of each tool. _se_walk takes two callbacks: the deps callback receives a tool name and prints its dependency names, or returns 2 or 3 after its message; the done callback runs the field checks of a tool when the walk finishes that tool, so the codes and messages come in the order of today. After the walk, repo-sync reads _SE_WALK_VISITED in visit order. The repo-only rules (environments, root_only, seeds, mise owners, extensions) stay in sync-engine/repo-sync.",
+      "rejected": "Move all of _rs_resolve (it holds repo-only rules); leave the walk in repo-sync (the Mac front-end then copies it).",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "Do the old _rs_ names of the moved functions stay as aliases?",
+      "ruling": "No. Each call site in sync-engine/repo-sync calls the _se_ function. The repo-only functions keep their _rs_ names.",
+      "rejected": "_rs_ wrappers around the _se_ functions.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Does the plan need a docs/sync/migrate.md item?",
+      "ruling": "No. The parse check reads only the render of the files of bootstrap, and a consumer changes nothing. The docs unit still describes the new code 2.",
+      "rejected": "A migrate item.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Do the tool wrappers need the network when the tool is installed?",
+      "ruling": "No. U1 checks with Context7 how mise x <tool>@latest resolves latest. If it can fetch, each wrapper runs MISE_OFFLINE=1 mise x <tool>@latest -- when mise ls --installed <tool> lists a version, else mise x <tool>@latest --. The gate and the tests stay without network.",
+      "rejected": "Always mise x <tool>@latest -- (a commit or a test can then need the network).",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "What are the details of the parse check?",
+      "ruling": "On success, the check discards the stdout and the stderr of jq and yq, so the sync output stays byte equal. yq runs with -p <format> -o json, as B:1229 does. An empty render of a .json target fails with code 2, as B does.",
+      "rejected": "Print the tool output on success; accept an empty JSON file.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "Does _rs_file use the shared temp and seed helpers?",
+      "ruling": "Yes. _rs_file uses _se_tmp and _se_seed_kept. The temp prefix .sync-engine.XXXXXX replaces .repo-sync.XXXXXX.",
+      "rejected": "Keep the repo-only temp code.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "How does _se_record_commit act on a symlink or a file that is not there?",
+      "ruling": "_se_record_commit takes an optional new-file header as its last argument. It writes through a symlink to the real file. When the file is not there and a header is given, it creates the file with the header and the key; with no header, a file that is not there is an error (the repo case).",
+      "rejected": "A repo-only record function; replace a symlink with a plain file.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "How does a test case run a real write?",
+      "ruling": "With case_args=' ' (test line 550 already runs a real write this way). No new CASE_REAL variable.",
+      "rejected": "A new CASE_REAL variable.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Which mode does a new library of sync-engine/ get?",
+      "ruling": "Mode 755, as every file of sync-engine/ that has a shebang (plan 1, D18): the check-shebang-scripts-are-executable hook refuses a file with a shebang and no execute bit.",
+      "rejected": "Mode 644.",
+      "units": [
+        "U1"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}

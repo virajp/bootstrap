@@ -1,0 +1,334 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "Mac tools: base core (11)",
+  "requires": [
+    "docs/plans/2026-11-04-macos-entry-tool"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-04 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test"
+    ],
+    "keeps": []
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-04-macos-tools-base-core",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "Eleven new Mac tools in macos/tools/ and new members of the Mac packs are new behavior; no repo consumer changes anything."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The 11 base-core tool folders",
+      "wave": 1,
+      "file": "01-tools.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "macos/tools/mas/**",
+        "macos/tools/fnox/**",
+        "macos/tools/mise/**",
+        "macos/tools/homebrew/**",
+        "macos/tools/cli/**",
+        "macos/tools/diff-so-fancy/**",
+        "macos/tools/python/**",
+        "macos/tools/fonts/**",
+        "macos/tools/touchid-sudo/**",
+        "macos/tools/starship/**",
+        "macos/tools/node/**"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Packs and sample values for the base core",
+      "wave": 1,
+      "file": "02-packs-examples.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "macos/packs.toml",
+        "macos/examples/macos.toml"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Review: U1 and U2",
+      "wave": 2,
+      "file": "03-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U4",
+      "title": "Docs",
+      "wave": 3,
+      "file": "04-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "CLAUDE.md",
+        "README.md",
+        "docs/sync/**",
+        "docs/design/**"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Gates",
+      "wave": 4,
+      "file": "05-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "CLAUDE.md, README.md, docs/sync/**, docs/design/**",
+      "why": "every human-facing doc; the earlier units report DOCS FALSIFIED lines and never edit a doc",
+      "owner": "U4"
+    },
+    {
+      "id": "S2",
+      "file": "macos/packs.toml, macos/examples/macos.toml",
+      "why": "each new tool needs a pack entry and maybe a value; one unit writes both files so U1 stays disjoint",
+      "owner": "U2"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Does the mise tool declare its edge to cli?",
+      "ruling": "Yes. mise gets depends = [\"cli\"], because its three shell-init templates read projects_dir from .all.cli.",
+      "rejected": "Keep the edge undeclared.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "How does a <% %> expression sit inside a [mise.*] string?",
+      "ruling": "The expression sits inside a TOML basic string (\"...\"), and each string literal inside it is a Go raw string in backticks, never a double quote, so the TOML string needs no escape. The engine renders a tools.toml that holds <% before it generates (P08 D6), so the generated mise file holds the rendered value.",
+      "rejected": "Double quotes with TOML escapes inside the action; a TOML literal string.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Which mise files does the mise tool still ship?",
+      "ruling": "~/.config/mise/config.toml and ~/.config/mise/miserc.toml stay shipped files of the mise tool, byte for byte with the new header. They are the user-level mise config, the Mac twin of the repo exception .config/mise.toml.tmpl, and config.toml has the top-level key min_version that no [mise.*] section holds. Only the old conf.d fragment mise.toml becomes [mise.*] tables.",
+      "rejected": "Move config.toml into [mise.*] tables; drop miserc.toml (env_conf_d) now, before the phase 4 comparison judges it.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "How does the import change a shipped file?",
+      "ruling": "Each shipped file keeps its content byte for byte. Only the old header line becomes the new two-line header, and each required message that named <tool>.toml now names [tools.<tool>] of macos.toml. One kind of comment edit is allowed: a comment that the import makes false changes to the new fact. In homebrew, upgrade/brew:22 and brew/casks:8 say [bootstrap.packages] in conf.d/*.toml; they now say [mise.bootstrap.packages] in tools.toml (generated into conf.d/<tool>/mise.toml). The unit reports each such edit as DECIDED. Each old .config/mise/conf.d/* fragment is not shipped: its tables move into [mise.*] of tools.toml.",
+      "rejected": "Fix or reformat content during the import; the phase 4 comparison judges each difference.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "What happens to an empty [defaults] table?",
+      "ruling": "It goes. A tools.toml has [defaults] only when it holds a value.",
+      "rejected": "Keep the empty tables.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "How does cli write PROJECTS_DIR?",
+      "ruling": "[mise.env] PROJECTS_DIR = \"<% index .config `projects_dir` | required `cli: set projects_dir in [tools.cli] of macos.toml` | regexp.Replace `^~` .env.HOME %>\". The TOML string quotes the value, so the old printf %q goes. projects_dir stays in [defaults] with the default ~/Projects.",
+      "rejected": "A literal path that ignores the value.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "Does the plan add test cases?",
+      "ruling": "No. test:macos-tools (P10) renders each new tool through macos/examples/macos.toml, and it fails when a tool folder is not selected. U2 selects diff-so-fancy in the example, because no base tool depends on it before P12.",
+      "rejected": "A test case for each tool.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "Yes. U1 lands task scripts (cli, homebrew, node) and shell drop-ins that run on each Mac. One review unit in wave 2 covers U1 and U2.",
+      "rejected": "No review unit: the wave review alone does not run /security-review.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "Can this plan run in parallel with another plan of the chain?",
+      "ruling": "No. The 16 plans form one linear chain through requires, because most of them edit sync-engine/repo-sync or sync-engine/setup-sync, and parallel plans conflict there.",
+      "rejected": "Parallel branches.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "Does the plan run setup:configs or the Mac sync?",
+      "ruling": "No. mise run setup:configs in bootstrap and in consumers, and the first Mac run, stay hand steps (Out of scope).",
+      "rejected": "A unit or an after-landing step that runs them.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "Which pack holds diff-so-fancy?",
+      "ruling": "[pack.essentials], as diff-so-fancy = {}, because the old default list of essentials omits it. git brings it into each Mac through depends (P12).",
+      "rejected": "[pack.base], which the old packs.toml does not do.",
+      "units": [
+        "U2"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
