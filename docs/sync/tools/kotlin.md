@@ -139,3 +139,5 @@ None.
   the task `code:lint:ktlint` (M19 of `migrate.md`).
 - The old `.config/ktlint.editorconfig` and `.config/detekt.yml` of stackgen
   stay as they are: the sync does not write a seed that exists.
+- If the Gradle build uses the Groovy DSL (`*.gradle`), do the migration of
+  [`kotlin-dsl.md`](../kotlin-dsl.md) when the user agrees.

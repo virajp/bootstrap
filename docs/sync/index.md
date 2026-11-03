@@ -39,6 +39,7 @@ then keeps the repository equal to `bootstrap`, without an agent.
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `index.md`        | This file: the general steps of an adoption.                                                                                                 |
 | `migrate.md`      | The items for a repository that has older copies, or the old name.                                                                           |
+| `kotlin-dsl.md`   | A static prompt that migrates a Gradle build from the Groovy DSL to the Kotlin DSL.                                                          |
 | `tools/<tool>.md` | One file for each folder in `tools/`: when the tool is relevant, and usage.                                                                  |
 | `packs/<pack>.md` | One file for each pack of `tools/packs.toml`: the tools that it adds, and its questions.                                                     |
 | `vwf.md`          | The entry point for the vwf and stackgen plugins: the `adopt`, `add tools`, `remove tools`, `add plugins` and `remove plugins` instructions. |

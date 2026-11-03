@@ -53,6 +53,9 @@ the adoption. After the adoption, `repo-sync` keeps the consumer in sync.
 - `docs/sync/index.md`: the adoption prompt. It does the first adoption, and
   it brings an adopted repository up to date with `bootstrap_commit`.
 - `docs/sync/migrate.md`: the items for a repository with older copies.
+- `docs/sync/kotlin-dsl.md`: the static prompt that migrates a Gradle build
+  from the Groovy DSL to the Kotlin DSL. `vwf.md` and the "Migration"
+  sections of `kotlin.md`, `android.md` and `flutter.md` send an agent there.
 - `docs/sync/vwf.md`: the entry point for the vwf and stackgen plugins. It
   accepts the `adopt`, `add tools`, `remove tools`, `add plugins` and
   `remove plugins` instructions. A plugin names this path

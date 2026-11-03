@@ -272,6 +272,19 @@ tool needs cannot be removed alone.
    `claude plugin uninstall --scope <scope> <name>@<marketplace>`. `setup:ai`
    does not uninstall a plugin.
 
+## Gradle builds in the Groovy DSL
+
+`bootstrap` uses the Kotlin DSL for Gradle. [`kotlin-dsl.md`](kotlin-dsl.md)
+in the clone is a static prompt that migrates a Gradle build from the Groovy
+DSL (`*.gradle`) to the Kotlin DSL (`*.gradle.kts`).
+
+After an `adopt` or an `add tools` instruction, examine each repository that
+changed. Its first section, "When the migration applies", gives the condition:
+an executable `gradlew` at the root or in `android/`, and a `*.gradle` file
+that git tracks in that folder. If the condition is true, tell the caller, and
+do the steps of `kotlin-dsl.md` only when the user agrees. The instruction is
+not the consent for this migration.
+
 ## After the change
 
 If `mise run setup:configs` fails, read its exit code in "Step 6: Run the
