@@ -75,7 +75,9 @@ merge task). Its
 `merge_never` limits the source branches. Without both lists, only `develop`
 merges into `main` when `develop` exists, and nothing merges from `main`. A
 table with both lists stops the merge. The `pr` model needs the CLI of the
-forge, from the `github` or the `gitlab` tool. The merge tasks do not read
+forge, from the `github` or the `gitlab` tool. In a repository without an
+`origin` remote, `direct` merges locally without the pull and the push, and
+`pr` stops before the hooks run. The merge tasks do not read
 `direct_commit`: `repo-sync` reads it. Before a merge, the merge tasks run the
 hooks over all files as a safety net, with `SKIP=no-commit-to-branch`. The
 safety net makes no commit, so that hook does not apply to it.
