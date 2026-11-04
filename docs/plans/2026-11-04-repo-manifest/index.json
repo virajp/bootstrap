@@ -69,7 +69,7 @@
       "status": "green",
       "started": "2026-11-04T12:36:37.624Z",
       "ended": "2026-11-04T13:53:13.743Z",
-      "commit": "84f2e82",
+      "commit": "ed2fa55",
       "rounds": 2
     },
     {
@@ -137,7 +137,7 @@
       "status": "green",
       "started": "2026-11-04T14:17:27.848Z",
       "ended": "2026-11-04T14:21:43.110Z",
-      "commit": "",
+      "commit": "28a7e7b",
       "rounds": 2
     },
     {
@@ -455,6 +455,13 @@
       "stage": "edit",
       "text": "U4: the Verification line grep -n _rs_stale CLAUDE.md README.md docs is not recursive · closed: a recursive grep finds _rs_stale only under docs/plans, which U4 does not own",
       "state": "closed"
+    },
+    {
+      "id": "G14",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "Contested after the one late loop-back: the comment at sync-engine/repo-sync:2036 says the files of the selected tools that this run writes or keeps, and _RS_HANDLED covers every tool of _RS_TOOLS, dependencies included · comment only, the code is right; left as it is because the late contract review allows one loop-back",
+      "state": "open"
     }
   ],
   "overrides": [],

@@ -235,12 +235,14 @@ These rules apply to each file:
   tasks. With `main` and `develop`, the repository gets `code:merge:develop`
   and `code:merge:main`. With only one of them, it gets `code:merge`. The sync
   removes the merge tasks of the other model. The second is a file with the
-  bootstrap header at a path where the sync needs a folder. These two skip only
-  a seed and a merge target of a selected tool or of a tool in its `depends`.
-  The third is the stale rule: a file with the bootstrap header that
-  `.config/repo-generated.tsv` lists and this run does not write. The rule skips
-  a seed and a merge target of a selected tool, and it also removes the empty
-  parent folders. A seed, such as `zz-repo/mise.<env>.toml`, and a merge target
+  bootstrap header at a path where the sync needs a folder. The first skips a
+  seed and a merge target of a tool of this run (a selected tool or a
+  dependency, also through a mise `depends`). The second refuses to remove such
+  a path and
+  fails that file. The third is the stale rule: a file with the bootstrap header
+  that `.config/repo-generated.tsv` lists and this run does not write. The rule
+  skips the same paths as the first, and it also removes the empty parent
+  folders. A seed, such as `zz-repo/mise.<env>.toml`, and a merge target
   have no header, so the rule leaves them.
 - `.config/repo-generated.tsv` is the manifest of the generated files, with one
   `<tool><TAB><path>` row for each file. The repository commits it, and each git

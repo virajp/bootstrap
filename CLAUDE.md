@@ -307,11 +307,13 @@ Some files refer to files that are not in `tools/`, for example
 - The sync never deletes a file, except the merge tasks of the other branch
   model (see "Branch model in the merge tasks"), a synced file at a path where
   the sync needs a folder, and the stale rule: a file with the bootstrap header
-  that `.config/repo-generated.tsv` lists and this run does not write. The first
-  two skip only a seed and a merge target of a selected tool or of a tool in its
-  `depends`. The stale rule skips only a seed and a merge target of a selected
-  tool, so it removes a listed path with the header at a seed or a merge path of
-  a deselected tool. A merge target has no header, so the rule leaves it.
+  that `.config/repo-generated.tsv` lists and this run does not write. The merge
+  tasks and the stale rule skip only a seed and a merge target of a tool of this
+  run (a selected tool or a dependency, also through a mise `depends`). At a
+  folder path, the sync refuses to remove such a path and fails that file. Thus
+  the stale rule removes a listed path with the header at a seed or a merge path
+  of a tool that is not in the run. A merge target has no header, so the rule
+  leaves it.
   `docs/sync/migrate.md` tells consumers what to delete.
 - The manifest `.config/repo-generated.tsv` is committed, and each git submodule
   has its own. Its first line is
