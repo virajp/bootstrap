@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "BLOCKED",
-    "detail": "BLOCKED at land — every unit and gate is green, but code:merge cannot pull main: git@github.com: Permission denied (publickey); nothing merged; 4 gaps open (G4 G5 G9 G14); worktree .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-04 — e204613 defe4b0 178e309 9dadfed; 3 gaps open (G4 G5 G9); folder stays live"
   },
   "consent": {
     "merge": true,
@@ -456,8 +456,22 @@
       "id": "G14",
       "unit": "",
       "stage": "land",
-      "text": "The landing could not reach origin: mise run code:merge stopped at its pull of main with git@github.com: Permission denied (publickey), and git ls-remote origin failed the same way on each retry, through the 1Password SSH agent that served the claim push earlier in this run · no assumption taken: nothing merged and no credential route was tried; the person restores SSH access and re-runs /vwf:execute, and the resume closes this entry",
-      "state": "open"
+      "text": "The landing could not reach origin: mise run code:merge stopped at its pull of main with git@github.com: Permission denied (publickey), and git ls-remote origin failed the same way on each retry, through the 1Password SSH agent that served the claim push earlier in this run · no assumption taken: nothing merged and no credential route was tried; the person restores SSH access and re-runs /vwf:execute, and the resume closes this entry · closed: on the resume git ls-remote origin answers, the preflight and the plan gate ran green again, and the landing went on",
+      "state": "closed"
+    },
+    {
+      "id": "G15",
+      "unit": "U6",
+      "stage": "resume",
+      "text": "The resume check resets a green unit with no commit on the branch, but U6 has an empty commit · closed: 06-gates.md rules that U6 edits no file and has no commit, so the empty commit is by design and U6 stays green; the plan gate of this resume ran its gate lines again, all green",
+      "state": "closed"
+    },
+    {
+      "id": "G16",
+      "unit": "",
+      "stage": "land",
+      "text": "The landing option is merge, push and clean up, but the run works in the session worktree of G2, which the session itself still uses · closed: merged and pushed, and the worktree stays, as on 2026-11-04-repo-files-table; no worktree was removed",
+      "state": "closed"
     }
   ],
   "overrides": [],
