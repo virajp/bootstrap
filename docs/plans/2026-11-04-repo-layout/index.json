@@ -127,14 +127,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T15:29:54.468Z",
+      "ended": "2026-11-04T15:32:04.635Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "bcc03bb1d7a844607b0796da602f40c8393ecb20",
+        "to": "b7be57cd4d1c217cb7f5d0a99be0a5d3078441df"
       }
     },
     {
@@ -197,9 +197,9 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T15:29:54.429Z",
+      "ended": "2026-11-04T15:32:20.495Z"
     },
     {
       "id": "W4",
@@ -320,28 +320,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T15:32:20.814Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T15:32:20.577Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T15:32:20.697Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers and no code unit, so nothing reconciles or persists",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T15:32:20.931Z"
     }
   },
   "gaps": [
