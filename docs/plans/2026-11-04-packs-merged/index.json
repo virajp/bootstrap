@@ -153,11 +153,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T09:41:00.920Z",
+      "ended": "2026-11-04T09:44:35.537Z",
+      "commit": "9dadfed",
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -199,9 +199,9 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T09:41:00.886Z",
+      "ended": "2026-11-04T09:48:08.321Z"
     },
     {
       "id": "W5",
@@ -443,6 +443,13 @@
       "unit": "U3",
       "stage": "edit",
       "text": "U3: the plan does not say which message a member on two lines gives · closed: gomplate accepts the shape, the check of U1 stops it with code 2, which D11 rules, and the case asserts the message [pack.odd] node must be on one line",
+      "state": "closed"
+    },
+    {
+      "id": "G13",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "U5: the docs reconcile ran as a grep-and-edit pass over git diff 3b199d2..HEAD, as the dispatch said, not through vwf:docs-sync or its surveyor · closed: the wave review of wave 4 reads the same delta for falsified passages (rule 5)",
       "state": "closed"
     }
   ],
