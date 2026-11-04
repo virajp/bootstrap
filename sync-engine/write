@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+
+# write — the write of one target of the sync engine: the format, the parse
+# check, the temp file, the seed gate, the unblock of a folder path, and the
+# compare, the mode, the dry-run diff and the rename. A front-end sources it
+# after `common`.
+#
+# It gives _se_format, _se_parse_check, _SE_TMP, _se_tmp, _se_seed_kept,
+# _se_unblock and _se_finish.
+
+# Print the format of the target <target>, whose content is in <file>: json,
+# yaml, toml or text. A given <format> wins. Else the extension of <target>
+# without `.tmpl` decides it. A `.json` file with a line that starts with `//`
+# after spaces is JSONC (the header of a JSON file is a comment), which jq cannot
+# read, so its format is text.
+_se_format() {
+  local target=${1%.tmpl} file=$2 format=${3:-}
+  if [[ -n $format ]]; then
+    printf '%s\n' "$format"
+    return 0
+  fi
+  case $target in
+    *.json)
+      if grep -qE '^[[:space:]]*//' -- "$file"; then
+        printf 'text\n'
+      else
+        printf 'json\n'
+      fi
+      ;;
+    *.yaml | *.yml) printf 'yaml\n' ;;
+    *.toml) printf 'toml\n' ;;
+    *) printf 'text\n' ;;
+  esac
+}
+
+# Examine <file> as <format>. <show> names the target in the message. On success
+# it prints nothing. Returns 2, after a message and the output of the tool, when
+# the file does not parse. An empty or whitespace-only JSON file does not parse.
+_se_parse_check() {
+  local file=$1 format=$2 show=$3 err='' ok=1
+  case $format in
+    json)
+      if [[ -z $(tr -d '[:space:]' < "$file") ]]; then
+        ok=0
+      else
+        err=$(_se_jq empty "$file" 2>&1) || ok=0
+      fi
+      ;;
+    yaml | toml)
+      err=$(_se_yq -p "$format" -o json '.' "$file" 2>&1) || ok=0
+      ;;
+  esac
+  ((ok == 0)) || return 0
+  _se_log "$show: the result does not parse as $format - the current file stays"
+  [[ -z $err ]] || printf '%s\n' "$err" | sed 's/^/  /' >&2
+  return 2
+}
+
+# Create a temp file in <dir>, to remove if the task exits early, and print its
+# path. It also sets _SE_TMP to the path: a call in `$(...)` is a subshell, whose
+# change to _SE_TMPS is lost, so a caller uses `_se_tmp <dir> > /dev/null`, then
+# _SE_TMP.
+_se_tmp() {
+  _SE_TMP=$(mktemp "${1%/}/.sync-engine.XXXXXX") || return 1
+  _SE_TMPS+=("$_SE_TMP")
+  printf '%s\n' "$_SE_TMP"
+}
+
+# 0 when the seed <dest> exists: it stays as it is. The caller logs `kept seed`.
+_se_seed_kept() { [[ -e $1 ]]; }
+
+# Remove each synced file (with the header) that is at the place of a folder in
+# <dir> or above it, up to <root>. Returns 1, after a message, when such a file
+# is the repo's own.
+_se_unblock() {
+  local dir=$1 root=$2 dry_run=$3 show
+  while [[ $dir == "$root"/* ]]; do
+    if [[ -f $dir && ! -L $dir ]]; then
+      show=$(_se_path "$dir")
+      if ! _se_has_header "$dir"; then
+        _se_log "$show is a file of this repo, but the sync needs a folder there - move it"
+        return 1
+      fi
+      if ((dry_run)); then
+        _se_log "would remove $show (a folder replaces it)"
+      else
+        rm -f -- "$dir" || return 1
+        _se_log "removed    $show (a folder replaces it)"
+      fi
+      return 0
+    fi
+    dir=$(dirname -- "$dir")
+  done
+}
+
+# Compare the temp file <tmp> with <dest>, then write it with <mode>, or with
+# <dry_run> 1 print the change. <show> names <dest> in each message.
+_se_finish() {
+  local mode=$1 tmp=$2 dest=$3 show=$4 dry_run=$5
+  if [[ -f $dest ]] && cmp -s -- "$tmp" "$dest"; then
+    rm -f -- "$tmp"
+    if [[ $(_se_mode "$dest") == "$mode" ]]; then
+      _se_log "unchanged  $show"
+    elif ((dry_run)); then
+      _se_log "would chmod $mode $show"
+    else
+      chmod "$mode" "$dest" || {
+        _se_log "cannot chmod $show"
+        return 1
+      }
+      _se_log "chmod $mode  $show"
+    fi
+    return 0
+  fi
+
+  if ((dry_run)); then
+    _se_log "would update $show"
+    if [[ -f $dest ]]; then
+      diff -u --label "$show (current)" --label "$show (bootstrap)" -- "$dest" "$tmp" >&2 || true
+    fi
+    rm -f -- "$tmp"
+    return 0
+  fi
+
+  chmod "$mode" "$tmp"
+  mv -f -- "$tmp" "$dest" || {
+    rm -f -- "$tmp"
+    _se_log "cannot write $show"
+    return 1
+  }
+  _se_log "updated    $show"
+}

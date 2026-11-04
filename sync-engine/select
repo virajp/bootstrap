@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+
+# select — the selection of the sync engine: the pack expansion and the
+# depth-first walk of the depends of each tool. A front-end sources it after
+# `common`, and it gives the rules of its own side through the callbacks of the
+# walk.
+#
+# It gives _se_pack, _se_selected, _se_walk, _SE_WALK_VISITED and _SE_WALK_DEPS.
+
+# Print the tools of the pack <name> as `<tool> <env,...|-> <source>` lines,
+# packs in it expanded in turn. The `[pack.*]` lines are in <packs>
+# (`pack <name>` and `item <name> <entry>`); <chain> is the ` <pack> ` words of
+# the packs that include this one; <shown> is the name of the packs file in a
+# message. Returns 2 for a loop and 3 for an unknown pack, after a message.
+_se_pack() {
+  local packs=$1 name=$2 envs=$3 src=$4 chain=$5 shown=$6 kind pack item loop word
+  if [[ $chain == *" $name "* ]]; then
+    loop=$name
+    for word in ${chain#* "$name" }; do
+      loop+=" -> $word"
+    done
+    _se_log "$shown: a pack loop: $loop -> $name"
+    return 2
+  fi
+  if [[ $packs != *$'\n'"pack $name"$'\n'* ]]; then
+    word=${chain% }
+    _se_log "pack '$name' is not in bootstrap$([[ -n ${chain// /} ]] && printf ' (named in pack %s)' "${word##* }")"
+    return 3
+  fi
+  chain+="$name "
+  while read -r kind pack item; do
+    [[ $kind == item && $pack == "$name" ]] || continue
+    if [[ $item == p:* ]]; then
+      _se_pack "$packs" "${item#p:}" "$envs" "$src" "$chain" "$shown" || return
+    else
+      printf '%s %s %s\n' "$item" "$envs" "$src"
+    fi
+  done <<< "$packs"
+}
+
+# Print the selection for the lines <sel> (`tools|packs <name> <env,...|->`) as
+# `<tool> <env,...|-> <source>` lines: the pack <base>, each pack of <sel>, then
+# each tool of <sel>. <source> is `default` for the pack <base>, else the values
+# table, for example `packs.security`. <packs-file> is the file of the packs,
+# <tools-dir> the folder of the tools, and <shown> the name of the packs file in
+# a message. Returns 2 or 3, after a message, on a problem of the packs file or
+# of a pack.
+_se_selected() {
+  local file=$1 tools_dir=$2 base=$3 sel=$4 shown=$5 packs kind name envs
+  packs=$'\n'
+  if [[ -f $file ]]; then
+    packs+=$(_se_gomplate -c "p=${file}" -i '<% if has .p "pack" %><% range $k, $p := .p.pack %>pack <% $k %>
+<% range $key := coll.Slice "depends" "required" %><% if has $p $key %><% range index $p $key %>item <% $k %> <% . %>
+<% end %><% end %><% end %><% end %><% end %>') || {
+
+      _se_log "cannot read $shown"
+      return 2
+    }
+    packs+=$'\n'
+  fi
+  while read -r kind name; do
+    if [[ $kind == pack && -d $tools_dir/$name ]]; then
+      _se_log "$shown: pack '$name' is also a tool folder - rename one"
+      return 2
+    fi
+  done <<< "$packs"
+  _se_pack "$packs" "$base" - default ' ' "$shown" || return
+  while read -r kind name envs; do
+    [[ $kind == packs ]] || continue
+    _se_pack "$packs" "$name" "$envs" "packs.$name" ' ' "$shown" || return
+  done <<< "$sel"
+  while read -r kind name envs; do
+    [[ $kind == tools ]] && printf '%s %s %s\n' "$name" "$envs" "tools.$name"
+  done <<< "$sel"
+  return 0
+}
+
+# Walk the tools <start-tools> (space separated) depth-first, so each dependency
+# finishes before the tool that named it. A stack of words rather than recursion:
+# bash 3.2 has no local arrays worth passing around.
+#   <deps-callback> <tool>  prints the dependency names of <tool>, or returns 2
+#                           or 3 after its message. It runs in a subshell, each
+#                           time that the walk reaches <tool>.
+#   <done-callback> <tool>  runs when the walk finishes <tool>, and can return 2
+#                           after its message.
+# Sets _SE_WALK_VISITED to the finished tools as ` <tool> ` words, in visit order,
+# and _SE_WALK_DEPS to the `<tool> <dependency>...` lines of the tools that have
+# dependencies. Returns the first code that is not 0.
+_se_walk() {
+  local deps_cb=$1 done_cb=$2 pending="$3 " tool all deps word row visiting=' ' rc
+  _SE_WALK_VISITED=' ' _SE_WALK_DEPS=''
+  while [[ -n ${pending// /} ]]; do
+    tool=${pending%% *}
+    pending=${pending#* }
+    [[ -n $tool && $_SE_WALK_VISITED != *" $tool "* ]] || continue
+    rc=0
+    all=$("$deps_cb" "$tool") || rc=$?
+    ((rc == 0)) || return "$rc"
+    deps='' row=''
+    for word in $all; do
+      row+=" $word"
+      [[ $_SE_WALK_VISITED == *" $word "* ]] || deps+="$word "
+    done
+    if [[ -n $deps && $visiting != *" $tool "* ]]; then
+      # Come back to this tool after its dependencies.
+      visiting+="$tool "
+      pending="$deps$tool $pending"
+      continue
+    fi
+    [[ -z $row ]] || _SE_WALK_DEPS+="$tool$row"$'\n'
+    "$done_cb" "$tool" || return
+    _SE_WALK_VISITED+="$tool "
+  done
+}
