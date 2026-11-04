@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-04T08:18:52Z in .claude/worktrees/bootstrap-2-0-3ae4b9 — resumed at U4 with the D17 ruling"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-04 — fcf1960 79920b4 097c365 b47e12a 5cf1583 d4f59df 7b30e58 6bdec22 f4bb00e f0c888f; 6 gaps open (G6 G8 G9 G12 G15 G16); folder stays live"
   },
   "consent": {
     "merge": true,
@@ -168,11 +168,11 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T08:56:30.124Z",
+      "ended": "2026-11-04T09:02:59.822Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -202,9 +202,9 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T08:56:30.088Z",
+      "ended": "2026-11-04T09:03:13.955Z"
     }
   ],
   "shared_files": [
@@ -533,6 +533,13 @@
       "unit": "U5",
       "stage": "edit",
       "text": "U5: Edit 1 names no change for docs/sync/tools/repo-sync.md · closed: the docs-sync survey found it falsified, it is inside the Owns of U5, and U5 applied it",
+      "state": "closed"
+    },
+    {
+      "id": "G19",
+      "unit": "",
+      "stage": "land",
+      "text": "The landing option is merge, push and clean up, but the run works in the session worktree of G2, which the session itself still uses · closed: merged and pushed, and the worktree stays, as on 2026-11-04-sync-engine-core; no worktree was removed",
       "state": "closed"
     }
   ],
