@@ -103,11 +103,11 @@
         "U2"
       ],
       "waits": "Its cases run the engine that U1 changes against the packs.toml and the scanner tools.toml files that U2 changes.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T09:21:51.158Z",
+      "ended": "2026-11-04T09:37:01.862Z",
+      "commit": "178e309",
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -187,9 +187,9 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T09:21:51.127Z",
+      "ended": "2026-11-04T09:38:21.319Z"
     },
     {
       "id": "W3",
@@ -423,6 +423,27 @@
       "stage": "edit",
       "text": "D9 and D11 conflict: with scanner depends on _security_base and the depth-first walk, the tool order becomes ... vscode _security_base gitleaks grype osv-scanner, not the ... vscode gitleaks grype osv-scanner _security_base of today, while D11 says the tool order stays · assumed D9 stands and D11 holds for the order that has an effect: only _security_base of the four has [[precommit]], the pack base is always selected, so the hook order is unchanged, and 03-tests.md itself pins vscode, then the security tools; U3 pins the new inner order",
       "state": "open"
+    },
+    {
+      "id": "G10",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "U3: the extra case of 03-tests.md names node = {} and python = { default = true }, but mise depends puts both in the pack base, so does-not-select-node cannot hold · closed: the case uses java = {} and pulumi = { default = true }, neither in the base list; the ruling is the same",
+      "state": "closed"
+    },
+    {
+      "id": "G11",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "U3: the tool order handed to U3 omits python and node, which arrive through mise depends · closed: the case pins the real line mise repo-sync git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner, with the tools before the security tools as at 3b199d2",
+      "state": "closed"
+    },
+    {
+      "id": "G12",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "U3: the plan does not say which message a member on two lines gives · closed: gomplate accepts the shape, the check of U1 stops it with code 2, which D11 rules, and the case asserts the message [pack.odd] node must be on one line",
+      "state": "closed"
     }
   ],
   "overrides": [],
