@@ -6,7 +6,8 @@
 # Runs `repo_sync --dry-run` and `repo_sync --check` of sync-engine/repo-sync,
 # with the working tree's tools/ and sync-engine/, against scratch values files,
 # and checks the exit code and message of each case. Needs no
-# network: REPO_SYNC_NO_AUTOUPDATE=1 skips `pre-commit autoupdate`. Writes
+# network when gomplate, jq and yq are installed:
+# REPO_SYNC_NO_AUTOUPDATE=1 skips `pre-commit autoupdate`. Writes
 # nothing outside its temporary folder.
 
 set -euo pipefail
