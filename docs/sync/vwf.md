@@ -248,11 +248,15 @@ tool needs cannot be removed alone.
      `.tmpl` suffix.
    - Keep each file of kind `Seed` or `Seed, template`. Each of them is a
      seed, and the repository owns it.
-   - Do not delete a file of kind `Generated`. Step 4 removes it.
+   - Delete a file of kind `Generated` only when `.config/repo-generated.tsv`
+     does not list it and it has `Synced from bootstrap` in its first three
+     lines. Step 4 removes a listed copy.
    - Keep a file of kind `Template` without that header in its first three
      lines. Keep a file of any other kind.
-4. Run `mise run setup:configs`. The sync removes the generated mise files of
-   the tools of step 3.
+4. Run `mise run setup:configs`. After a sync without a failure, the sync
+   removes each file of the tools of step 3 that `.config/repo-generated.tsv`
+   lists and that has the bootstrap header. A sync with a failure runs no stale
+   rule and writes no manifest: correct the failure, and run it again.
 
 ## Add plugins
 

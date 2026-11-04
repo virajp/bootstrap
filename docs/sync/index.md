@@ -235,23 +235,22 @@ The sync does not delete them, so step 5 deletes them with the item of
 `migrate.md`. Delete a file only when it starts with the bootstrap header. A
 file without the header belongs to the repository: keep it.
 
-| Path                                         | Do                                    |
-| -------------------------------------------- | ------------------------------------- |
-| `.graphifyignore`                            | Delete it (M24).                      |
-| `.config/mise/tasks/code/graph`              | Delete it (M24).                      |
-| The `post-commit` and `post-merge` git hooks | Uninstall them with pre-commit (M24). |
-| `.config/mise/conf.d/_repo/`                 | Rename it to `conf.d/zz-repo/` (M17). |
+| Path                                                                                                                                                                                 | Do                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------- |
+| `.graphifyignore`                                                                                                                                                                    | Delete it (M24).                      |
+| `.config/mise/tasks/code/graph`                                                                                                                                                      | Delete it (M24).                      |
+| The `post-commit` and `post-merge` git hooks                                                                                                                                         | Uninstall them with pre-commit (M24). |
+| `.config/mise/conf.d/_repo/`                                                                                                                                                         | Rename it to `conf.d/zz-repo/` (M17). |
+| A `.config/mise/conf.d/*/mise*.toml` that `.config/repo-generated.tsv` does not list and the sync did not write, for example in `conf.d/_base/`, `conf.d/_env/` and `conf.d/claude/` | Delete it (M29).                      |
 
 The sync removes these old paths itself, so they need no step:
 
-- A `.config/mise/conf.d/*/mise*.toml` with the bootstrap header that the sync
-  did not write, for example `conf.d/_base/`, `conf.d/_env/` and
-  `conf.d/claude/`.
+- A file with the bootstrap header that `.config/repo-generated.tsv` lists and
+  the sync does not write. The first sync has no manifest, so it removes
+  nothing.
 - A synced file at a path where the sync now needs a folder, for example the
   old `code/format`, `code/lint`, `code/sec` and `setup/configs` files.
 - The merge tasks of the other branch model.
-- A synced file at a generated `[files]` target whose `requires` or
-  `requires_found` condition fails.
 
 When a change removes a shipped file from `tools/`, add its path to this
 table and to an item of `migrate.md`.
@@ -333,8 +332,9 @@ root or down to 4 folders below it, that git does not ignore. For example, the
 run `mise run setup:configs` again.
 
 Each file of a tool states its own condition in its `[files]` table, for example
-a task of a mise tool. Without the file, the sync removes a generated copy with
-the bootstrap header. A seed and a merge target stay. For
+a task of a mise tool. Without the file, the sync does not write the target, and
+the stale rule removes a generated copy with the bootstrap header that
+`.config/repo-generated.tsv` lists. A seed and a merge target stay. For
 example, the `python` tool writes `code:lint:ruff`, `code:format:ruff` and
 `code:lint:pyrefly` only in a repository with a `pyproject.toml`.
 
@@ -672,7 +672,8 @@ files, skip this step.
    question, ask whether to commit the changes at the end (step 9), or to
    leave them for review.
 7. If the user agrees, run `mise run setup:configs`. A sync without a failure
-   sets `bootstrap_commit` in the values file.
+   removes the stale files, writes `.config/repo-generated.tsv` and sets
+   `bootstrap_commit` in the values file.
 8. Run `mise run init`. This makes all the task scripts executable.
 
 **An old task file (item 5).** Run `mise run setup:configs` two times:
@@ -695,6 +696,7 @@ If `repo_sync` fails, read the exit code:
 | 2    | Two tools define the same mise tool, a mise `depends` that no tool defines, a tool that ships and generates the same `conf.d` file, an unsupported `[mise.*]` or `[mise_env.*]` section, an old key or a bad `[files]` table of a `tools.toml`, or a `default_envs` or `envs` name that is not dev or ci | Tell the `bootstrap` owner                                                                                                                                                                       |
 | 2    | A merge source or a live merge target cannot merge, or a merge target is a symlink or is below a symlinked folder. The existing file stays, and the other files continue                                                                                                                                 | Read the `repo-sync:` line. Correct the live file or the symlink, or tell the `bootstrap` owner                                                                                                  |
 | 2    | A JSON, YAML or TOML target does not parse. The existing file stays, and the other files continue                                                                                                                                                                                                        | Read the `repo-sync:` line. A mise failure indented under that line means that a tool could not start: examine mise and the network. Else correct the values file, or tell the `bootstrap` owner |
+| 2    | `.config/repo-generated.tsv` is a symlink, is below a symlinked folder or is not a regular file. The other files stay written. The sync runs no stale rule, writes no manifest and does not set `bootstrap_commit`                                                                                       | Replace it with a regular file, or delete it                                                                                                                                                     |
 | 2    | The values file is missing, or mise is not available                                                                                                                                                                                                                                                     | Correct the values file, or install mise                                                                                                                                                         |
 | 2    | Neither `main` nor `develop` exists                                                                                                                                                                                                                                                                      | Do step 4                                                                                                                                                                                        |
 | 2    | A git repository at the root of the cache with another `origin` or no `origin`, or a `repo/` of the cache that is not a clone and not empty                                                                                                                                                              | Move it, or set `SYNC_ENGINE_CACHE` to another folder                                                                                                                                            |
@@ -737,6 +739,7 @@ If the user chose to leave the changes for review in step 6, show
 
 - The synced files and the seed files.
 - `.config/bootstrap.toml` and `.config/repo-sync/pre-commit.yaml`.
+- `.config/repo-generated.tsv`.
 - The repository-owned files from step 5 and step 7.
 
 Commit in each submodule before you commit in the repository that contains

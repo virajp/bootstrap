@@ -74,9 +74,20 @@
 # `[seed_requires]`, and the `requires` and the `files` of a mise entry.
 #
 # A target whose `requires` or `requires_found` entry is not there is not
-# written. A generated target: a copy with the bootstrap header is removed, a
-# copy without it stays. A seed and a merge target stay as they are. Each
-# removal of the sync skips a seed and a merge target.
+# written, and the sync only logs it. A seed and a merge target stay as they
+# are. The stale rule and `_rs_remove` skip a seed and a merge target of a tool
+# of this run (a selected tool or a dependency, also through a mise `depends`),
+# and no others. `_se_unblock` refuses to remove such a path and fails that
+# file.
+#
+# Manifest: `.config/repo-generated.tsv`, committed, has one `<tool><TAB><path>`
+# row for each generated file (`sync-engine/manifest`). After a sync without a
+# failure, each listed file with the bootstrap header that this run did not
+# handle is removed, with its empty parent folders, then the manifest is
+# written. A file without the header stays. A first sync has no manifest, so the
+# stale rule removes nothing. A manifest that is a link, or that is not a
+# regular file, fails the sync with code 2. A row with an unclean path or a
+# `.git` segment is skipped, and a listed file of another repository stays.
 #
 # One call makes one private copy of the clone of `SYNC_ENGINE_CLONE`, which
 # `setup:configs` gives, and syncs every file of every selected tool from that
@@ -124,10 +135,8 @@
 #     `[mise.tools]`.
 #   * A shipped `conf.d/*/mise.<env>.toml` of an environment that is not
 #     selected is skipped.
-#   * Afterwards, a file in `conf.d/*/` with the bootstrap header that this
-#     run did not write is removed: it belongs to a tool, an environment or a
-#     layout that is gone. A file without the header, such as a seed, is never
-#     touched.
+#   * The manifest removes a file of a tool, an environment or a layout that is
+#     gone.
 #   * `[overrides.mise.<section>...]` and `[overrides.mise_env.<env>.<section>...]`
 #     of the values file replace the defaults of the tools. The path after
 #     `overrides.` is the path in a tools.toml, without the tool name: each
@@ -234,8 +243,10 @@
 #      target of format text), `requires_found`, `requires` or `files` in a
 #      `[mise_env.<env>.tools]` entry, a tool folder with both <p> and <p>.tmpl,
 #      a merge source or a live merge target that cannot merge, a merge target
-#      that is a symlink or is below a symlinked folder, no `mise`, or no
-#      `SYNC_ENGINE_CLONE` without `--check`
+#      that is a symlink or is below a symlinked folder, a
+#      `.config/repo-generated.tsv` that is a symlink, is below a symlinked
+#      folder or is not a regular file, no `mise`, or no `SYNC_ENGINE_CLONE`
+#      without `--check`
 #   3  a tool or a pack that is not in bootstrap (fix the values file), or a
 #      member of a pack that is not a tool folder or a pack (fix the packs file)
 #   5  the clone of `SYNC_ENGINE_CLONE` is not usable, or
@@ -263,6 +274,8 @@ source "${BASH_SOURCE[0]%/*}/write"
 source "${BASH_SOURCE[0]%/*}/merge"
 # shellcheck source=/dev/null
 source "${BASH_SOURCE[0]%/*}/select"
+# shellcheck source=/dev/null
+source "${BASH_SOURCE[0]%/*}/manifest"
 _SE_PREFIX='repo-sync'
 
 # The manifests of the clone, read once by `_rs_mise_index`.
@@ -1002,8 +1015,11 @@ _rs_fnox_profiles() {
   return "$rc"
 }
 
-# 0 when the path <path> of this repo is a seed or a merge target: no removal of
-# the sync touches it.
+# 0 when the path <path> of this repo is a seed or a merge target of a tool of
+# this run (a selected tool or a dependency, also through a mise `depends`).
+# `_rs_remove` skips such a path; `_se_unblock` refuses to remove it and fails
+# that file. The stale rule does not read this list, so it can remove a listed
+# path with the header that this run did not handle.
 _rs_spared() { [[ $'\n'$_RS_SPARE$'\n' == *$'\n'"$1"$'\n'* ]]; }
 
 # Remove the file <path> of <tool> from this repo, if it exists.
@@ -1060,18 +1076,18 @@ _rs_file_skips() {
 
 # Do not write the target of the file <path> of <tool>: an entry of its
 # `requires` or `requires_found` is not there. A seed that exists stays, as with
-# no condition. A seed or a merge target stays as it is. A generated target:
-# remove a copy with the bootstrap header, from a sync before the repo lost the
-# file or before the target had the condition. A copy without the header is the
-# repo's own, and it stays.
+# no condition. A seed or a merge target stays as it is. A generated target is
+# only logged: it gets no manifest row, so the stale rule removes a listed copy
+# with the bootstrap header.
 _rs_skip_required() {
-  local tool=$1 path=$2 dry_run=$3 out=${2%.tmpl} requires dest show
+  local tool=$1 path=$2 out=${2%.tmpl} requires dest show
   requires=${_RS_REQ_SKIP#*$'\n'"$tool/$out="}
   requires=${requires%%$'\n'*}
   dest="${MISE_PROJECT_ROOT}/${out}"
   show=$(_se_path "$dest")
   case $(_rs_file_mode "$tool/$out") in
     seed)
+      _RS_HANDLED+="$out"$'\n'
       if _se_seed_kept "$dest"; then
         _se_log "kept seed  $show"
       else
@@ -1080,22 +1096,11 @@ _rs_skip_required() {
       return 0
       ;;
     merge)
+      _RS_HANDLED+="$out"$'\n'
       _se_log "skip merge $show (no $requires)"
       return 0
       ;;
   esac
-  if _se_has_header "$dest"; then
-    if ((dry_run)); then
-      _se_log "would remove $show (no $requires)"
-      return 0
-    fi
-    rm -f -- "$dest" || {
-      _se_log "cannot remove $show"
-      return 1
-    }
-    _se_log "removed    $show (no $requires)"
-    return 0
-  fi
   _se_log "skip file  $show (no $requires)"
 }
 
@@ -1556,9 +1561,6 @@ _rs_mise_render() {
     if ! REPO_SYNC_ENV=$env REPO_SYNC_ENVS=$_RS_MISE_ENVS REPO_SYNC_IN=$in REPO_SYNC_DEV_ALIASES=$aliases \
       _se_gomplate -c "t=${dir}/tools/${tool}/tools.toml" -c "o=${values}" -i "$_RS_MISE_TEMPLATE" -o "$tmp" 2> "$err"; then
       _se_log "tools/$tool/tools.toml: cannot generate the mise config: $(sed -n 's/.*error calling Fail: template generation failed: //p' "$err" | sed 's/"}$//')"
-      for name in $_RS_ENVS; do
-        _RS_SEEN+="${rel%/*}/mise.${name}.toml "
-      done
       return 2
     fi
     [[ -e $tmp ]] || continue
@@ -1586,25 +1588,6 @@ _rs_mise_render() {
     _RS_GENERATED+="$tool/$rel "
   done
   rm -f -- "$tmp" "$err"
-}
-
-# Remove each `.config/mise/conf.d/*/mise*.toml` with the bootstrap header
-# that this run did not write or keep (_RS_SEEN): its tool or its layout is
-# gone. A file without the header belongs to the repo and stays.
-_rs_stale() {
-  local dry_run=$1 file rel rc=0
-  local root="${MISE_PROJECT_ROOT}/.config/mise/conf.d"
-  [[ -d $root ]] || return 0
-  while IFS= read -r file; do
-    rel=${file#"$MISE_PROJECT_ROOT"/}
-    [[ $_RS_SEEN != *" $rel "* ]] || continue
-    _rs_spared "$rel" && continue
-    # `repo-config` is the old name of this repository, in older copies.
-    _se_has_header "$file" || continue
-    _rs_remove '' "$rel" "$dry_run" || rc=$?
-    ((dry_run)) || rmdir -- "${file%/*}" 2> /dev/null || true
-  done < <(find "$root" -mindepth 2 -maxdepth 2 -type f -name 'mise*.toml' | sort)
-  return "$rc"
 }
 
 # Write the template context to <out>: the values of <values>, with
@@ -1688,20 +1671,21 @@ _rs_file() {
   format=$(_rs_file_format "$tool/$out")
   dest="${MISE_PROJECT_ROOT}/${out}"
   show=$(_se_path "$dest")
-  # A mise file of an environment that this repo does not use. Not recorded,
-  # so `_rs_stale` removes an old copy with the header.
+  # A mise file of an environment that this repo does not use. It gets no
+  # manifest row, so the stale rule removes a listed copy with the header. A
+  # seed stays.
   if [[ $out == .config/mise/conf.d/*/mise.*.toml ]]; then
     env=${out##*/mise.}
     env=${env%.toml}
     if [[ $_RS_ENVS != *" $env "* ]]; then
+      [[ $mode == generated ]] || _RS_HANDLED+="$out"$'\n'
       _se_log "skip env   $show"
       return 0
     fi
   fi
-  # Written or kept: `_rs_stale` must not remove it, also after a failure.
-  _RS_SEEN+="$out "
 
   if [[ $mode == seed ]] && _se_seed_kept "$dest"; then
+    _RS_HANDLED+="$out"$'\n'
     _se_log "kept seed  $show"
     return 0
   fi
@@ -1887,7 +1871,11 @@ _rs_file_finish() {
   else
     mode=$(_se_mode "$src")
   fi
-  _se_finish "$mode" "$tmp" "$dest" "$show" "$dry_run"
+  _se_finish "$mode" "$tmp" "$dest" "$show" "$dry_run" || return
+  _RS_HANDLED+="$out"$'\n'
+  if [[ $(_rs_file_mode "$tool/$out") == generated ]]; then
+    _RS_ROWS+="$tool"$'\t'"$out"$'\n'
+  fi
 }
 
 # Warn about `core_tools` of <values>, a key that is no longer used.
@@ -2044,7 +2032,15 @@ repo_sync() {
   # The mise config of each tool, generated into the clone before the file
   # loop. A tool that fails keeps its existing files and counts as failed.
   local tool worst=0 failed=()
-  _RS_SEEN=' ' _RS_GENERATED=' '
+  _RS_GENERATED=' '
+  # The rows of the manifest, and the paths that the stale rule must not remove:
+  # the files of the selected tools that this run writes or keeps, and the merge
+  # tasks of the other model, which `_rs_remove` handles.
+  local skipped
+  _RS_ROWS='' _RS_HANDLED=''
+  for skipped in $_RS_SKIP; do
+    _RS_HANDLED+="${skipped#*/}"$'\n'
+  done
   { _rs_mise_env && _rs_overrides "$dir" "$values" && _rs_direct_commit "$values" && _rs_fnox_profiles "$values"; } || {
     rc=$?
     rm -rf -- "$dir"
@@ -2098,7 +2094,7 @@ repo_sync() {
       if [[ $_RS_SKIP == *" $tool/$path "* ]]; then
         _rs_remove "$tool" "$path" "$dry_run" || rc=$?
       elif [[ $_RS_REQ_SKIP == *$'\n'"$tool/${path%.tmpl}="* ]]; then
-        _rs_skip_required "$tool" "$path" "$dry_run" || rc=$?
+        _rs_skip_required "$tool" "$path" || rc=$?
       else
         _rs_file "$dir" "$tool" "$path" "$dry_run" "$ctx" || rc=$?
       fi
@@ -2126,11 +2122,24 @@ repo_sync() {
   [[ -n $_RS_STAGE ]] && rm -rf -- "$_RS_STAGE"
   rm -rf -- "$dir"
 
-  rc=0
-  _rs_stale "$dry_run" || rc=$?
-  if ((rc != 0)); then
-    failed+=("stale files in .config/mise/conf.d")
-    ((rc > worst)) && worst=$rc
+  # Only a sync without a failure removes stale files and writes the manifest,
+  # so a failure here leaves the old manifest for the next clean run.
+  if ((${#failed[@]} == 0)); then
+    local manifest="${MISE_PROJECT_ROOT}/.config/repo-generated.tsv" old_rows step=.config/repo-generated.tsv
+    rc=0
+    old_rows=$(_se_manifest_read repo "$manifest" "$MISE_PROJECT_ROOT") || rc=$?
+    if ((rc == 0)); then
+      step="stale files"
+      _se_manifest_stale repo "$old_rows" "$_RS_HANDLED" "$MISE_PROJECT_ROOT" "$dry_run" || rc=$?
+    fi
+    if ((rc == 0)); then
+      step=.config/repo-generated.tsv
+      _se_manifest_write "$manifest" "$_RS_ROWS" "$dry_run" || rc=$?
+    fi
+    if ((rc != 0)); then
+      failed+=("$step")
+      ((rc > worst)) && worst=$rc
+    fi
   fi
 
   if ((${#failed[@]} == 0)); then

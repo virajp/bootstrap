@@ -47,8 +47,9 @@ sync installs `ruff` and `pyrefly` only when the repository has a
 ignore: each entry has `requires_found`. A `[files]` table with the same
 `requires_found` applies that condition to each task: `code:lint:ruff`,
 `code:format:ruff` and `code:lint:pyrefly`. Without
-a `pyproject.toml`, the sync does not write them, and it removes the copies
-of an earlier sync. If the repository adds its first `pyproject.toml` later,
+a `pyproject.toml`, the sync does not write them, and the stale rule removes
+the copies that `.config/repo-generated.tsv` lists. If the repository adds its
+first `pyproject.toml` later,
 run `mise run setup:configs` again.
 
 The tool also sets:

@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-04 — e2d080d 15dc67e 84f2e82 ed2fa55 b13a1f8 ab67789 28a7e7b d0db0b5; 11 gaps open (G4 G5 G6 G7 G8 G9 G10 G11 G14 G15 G17); folder stays live"
   },
   "consent": {
     "merge": true,
@@ -66,11 +66,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T12:36:37.624Z",
+      "ended": "2026-11-04T13:53:13.743Z",
+      "commit": "ed2fa55",
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -86,11 +86,11 @@
         "U1"
       ],
       "waits": "Its cases run the manifest code that U1 writes in sync-engine/manifest and sync-engine/repo-sync.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T13:09:54.229Z",
+      "ended": "2026-11-04T14:03:54.656Z",
+      "commit": "ab67789",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -105,14 +105,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T13:29:12.783Z",
+      "ended": "2026-11-04T14:16:36.761Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 2,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "933eef3",
+        "to": "ab67789"
       }
     },
     {
@@ -134,11 +134,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T14:17:27.848Z",
+      "ended": "2026-11-04T14:21:43.110Z",
+      "commit": "d0db0b5",
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -152,43 +152,43 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T14:39:20.516Z",
+      "ended": "2026-11-04T14:47:50.591Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T12:36:37.587Z",
+      "ended": "2026-11-04T13:09:46.415Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T13:09:54.196Z",
+      "ended": "2026-11-04T13:29:04.984Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T13:29:12.751Z",
+      "ended": "2026-11-04T14:17:18.692Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T14:17:27.812Z",
+      "ended": "2026-11-04T14:39:12.223Z"
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T14:39:20.483Z",
+      "ended": "2026-11-04T14:48:05.772Z"
     }
   ],
   "shared_files": [
@@ -340,31 +340,158 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T14:17:18.935Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T14:17:18.725Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T14:17:18.828Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T14:17:19.045Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "",
+      "stage": "claim",
+      "text": "The claim commit of the plan-index contract is a direct commit on main, and the no-commit-to-branch hook of this repository refuses it · closed: the claim landed from the local branch claim-repo-manifest through mise run code:merge, the route CLAUDE.md gives, with no hook skipped; the completion commit takes the same route. The first claim commit carried the row alone, because a plan.mjs set of run took the wrong argument order; a second claim commit carried run",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "",
+      "stage": "worktree",
+      "text": "Setup step 1 names a worktree .worktrees/repo-manifest, but this session already runs in a linked worktree · closed: per git-workflow Step 1 the run works in the session worktree .claude/worktrees/bootstrap-2-0-3ae4b9 on its branch claude/bootstrap-2-0-3ae4b9, brought to the tip of main after the claim; run.worktree names it",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "",
+      "stage": "doctor",
+      "text": "The repo has no .config/vwf.yaml, so it is not onboarded and doctor has nothing to check and no blocking finding can arise · closed: not a blocking finding; the plan has no code unit, no covers and names no project, and the review cap stays its default of 4",
+      "state": "closed"
+    },
+    {
+      "id": "G4",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1 and R1: the Verification allows test:repo-sync failures only for cases D5 changes, and 02-tests.md says no other existing case changes, but the check the gate with a cache also fails, because the test copies a fixed list of libraries into the gate cache without manifest · assumed U2 adds sync-engine/manifest to that cp",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the plan has no test run for the new paths in this unit · assumed U2 owns them; U1 ran scratch checks under bash 3.2, which passed",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2: 02-tests.md step 2 changes only the a synced gate is removed case and says no other existing case changes, but D5 also changes the block-header gate case, the three the header on line 2 cases and the two requires_found 5 folders down cases · assumed D3 is the rule (a case changes only where a ruling changes its expected result): each change function writes a manifest row, and the expected lines drop the (no <file>) suffix the engine no longer logs on a removal",
+      "state": "open"
+    },
+    {
+      "id": "G7",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "R2 rule 3 raised three additions 02-tests.md does not name: a real-run copy of case 6 (D7 no removal), a second-run check in case 7 (D8 writes only on a change), and a mise.ci.toml seed in case 10 (the kept seed of U1) · not looped back to U2, a departure from the wave loop: each traces to a ruling, and taking them out would remove coverage, so the orchestrator kept them; a person may rule them out",
+      "state": "open"
+    },
+    {
+      "id": "G8",
+      "unit": "U3",
+      "stage": "security",
+      "text": "D7 refuses only no-TAB, empty, absolute and .. rows, and D11 does not say how paths compare · the security loop rules that a manifest path is normalized (no . or empty segment) and that a candidate that is the same file as a handled path is spared, which covers case variants",
+      "state": "open"
+    },
+    {
+      "id": "G9",
+      "unit": "U3",
+      "stage": "security",
+      "text": "D7 covers listed paths but not the manifest file itself · the security loop rules that repo mode refuses a manifest that is a symlink or not a regular file",
+      "state": "open"
+    },
+    {
+      "id": "G10",
+      "unit": "U3",
+      "stage": "security",
+      "text": "D7 does not bound a row to its own repository · the security loop rules that a row with a .git segment, or below a folder with its own .git (a git submodule, or a nested clone), is refused, since each submodule has its own manifest; a folder member without .git is part of the root tree and is not refused",
+      "state": "open"
+    },
+    {
+      "id": "G11",
+      "unit": "U1",
+      "stage": "security",
+      "text": "U1: the plan does not name the label of a manifest read failure · assumed .config/repo-generated.tsv, not stale files, because the failure is in that file",
+      "state": "open"
+    },
+    {
+      "id": "G12",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "U4: vwf:docs-sync was not invoked as a skill · closed: U4 spawned its surveyor vwf:docs-sync-surveyor directly over fbc87fc..HEAD and applied its findings, plus a grep-and-edit pass; the wave review reads the same delta",
+      "state": "closed"
+    },
+    {
+      "id": "G13",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "U4: the Verification line grep -n _rs_stale CLAUDE.md README.md docs is not recursive · closed: a recursive grep finds _rs_stale only under docs/plans, which U4 does not own",
+      "state": "closed"
+    },
+    {
+      "id": "G14",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "Contested after the one late loop-back: the comment at sync-engine/repo-sync:2036 says the files of the selected tools that this run writes or keeps, and _RS_HANDLED covers every tool of _RS_TOOLS, dependencies included · comment only, the code is right; left as it is because the late contract review allows one loop-back",
+      "state": "open"
+    },
+    {
+      "id": "G15",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "Contested after the one late loop-back: CLAUDE.md:331 and :333 and docs/sync/tools/repo-sync.md:154 still say a selected tool for the handled and kept paths of the stale rule, and the rule also covers each dependency, also through a mise depends · prose only, the code is right; a second loop-back is recorded, not run",
+      "state": "open"
+    },
+    {
+      "id": "G16",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "Wave 5 has an empty diff, so no wave reviewer was dispatched for it · closed: U5 edits no file by its unit file, git status showed only the plan state, and the plan gate runs every line again over the same tree",
+      "state": "closed"
+    },
+    {
+      "id": "G17",
+      "unit": "",
+      "stage": "keeps",
+      "text": "K1 cannot hold as written: python is in the base through the mise depends of pre-commit, so after [tools.python] and pyproject.toml go, conf.d/python/mise.dev.toml, code/lint/uv and setup/deps/python are still written, and their rows stay; a pyproject.toml deleted but not committed also still counts for requires_found · assumed the keep holds if the rule holds on what K1 proves. Run with the K1 setup: the first run exits 0, first line and sorted rows, conf.d/python row, no seed row. After the deletion is committed the next run exits 0, removes the three gates that need pyproject.toml, drops their rows, keeps own.txt. A second round with [tools.pulumi], a tool outside the base, removed conf.d/pulumi/mise.dev.toml, the conf.d/pulumi folder and its row. A person may want K1 rewritten around a tool outside the base",
+      "state": "open"
+    },
+    {
+      "id": "G18",
+      "unit": "",
+      "stage": "land",
+      "text": "The landing option is merge, push and clean up, but the run works in the session worktree of G2, which the session itself still uses · closed: merged and pushed, and the worktree stays, as on the earlier plans of this chain; no worktree was removed",
+      "state": "closed"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",

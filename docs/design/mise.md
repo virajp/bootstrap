@@ -264,8 +264,10 @@ because `base` is a pack, not a tool. See [packs.md](packs.md#the-base-pack).
   sync stops for that tool.
 - The sync skips a shipped `conf.d/*/mise.<env>.toml` of an environment that
   the consumer does not select.
-- After the sync, it removes each `conf.d/*/mise*.toml` with the bootstrap
-  header that it did not write. A file without the header stays.
+- After a sync without a failure, the stale rule removes each file with the
+  bootstrap header that `.config/repo-generated.tsv` lists and the run does not
+  write. A file without the header stays. The first sync has no manifest, so the
+  stale rule removes nothing.
 
 ## The mise tools
 
