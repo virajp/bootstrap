@@ -86,11 +86,11 @@
         "U1"
       ],
       "waits": "Its cases run the generator that U1 moves into sync-engine/mise, and one case calls that library directly.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T19:24:15.556Z",
+      "ended": "2026-11-04T19:42:58.813Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -168,8 +168,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T19:24:15.521Z",
       "ended": ""
     },
     {
@@ -338,7 +338,21 @@
       "id": "G1",
       "unit": "U1",
       "stage": "edit",
-      "text": "test:repo-sync 'the gate with a cache' copies a fixed library list without sync-engine/mise, so it fails until the test file changes · U2, which owns the file, adds sync-engine/mise to the cp",
+      "text": "test:repo-sync 'the gate with a cache' copies a fixed library list without sync-engine/mise · U2 added sync-engine/mise to the cp; closed by that edit",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "macos cases 2.3 and 2.4 name no message and no write check · the unit took the engine's texts 'envs of mise tool fd is not valid on the macos side' and 'requires_found of mise tool fd is not valid on the macos side', and checks no file is written",
+      "state": "open"
+    },
+    {
+      "id": "G3",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "case 3, 'the existing conf.d file is not listed as updated', names no real run · checked on the dry-run log only; no real-run case proves the file stays on disk",
       "state": "open"
     }
   ],

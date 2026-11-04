@@ -7,7 +7,8 @@
 # a written file, `repo_sync` of sync-engine/repo-sync, with the working tree's
 # repo/, sync-engine/ and tools/ (the forwarding file), against scratch values
 # files and scratch consumers,
-# and checks the exit code and message of each case. Needs no
+# and checks the exit code and message of each case. The cases of the macos side
+# call sync-engine/mise directly. Needs no
 # network when gomplate, jq and yq are installed:
 # REPO_SYNC_NO_AUTOUPDATE=1 skips `pre-commit autoupdate`. Writes
 # nothing outside its temporary folder.
@@ -90,6 +91,7 @@ case_dirs=()
 # set, becomes SYNC_ENGINE_URL of the case. `CASE_LIB=forward` sources the
 # forwarding file at the old library path, with REPO_SYNC_CLONE only.
 # `CASE_CLONE=none` sets no clone variable.
+# `CASE_CALL` names a function that the case runs instead of the library.
 run_case() {
   local dir
   case_count=$((case_count + 1))
@@ -124,6 +126,10 @@ case_body() {
     unset SYNC_ENGINE_URL SYNC_ENGINE_CLONE REPO_SYNC_CLONE
     [[ -z ${CASE_SYNC_ENGINE_URL:-} ]] || export SYNC_ENGINE_URL=$CASE_SYNC_ENGINE_URL
     export REPO_SYNC_VALUES=$values MISE_PROJECT_ROOT=$consumer REPO_SYNC_NO_AUTOUPDATE=1
+    if [[ -n ${CASE_CALL:-} ]]; then
+      "$CASE_CALL"
+      exit
+    fi
     lib=$clone/sync-engine/repo-sync
     if [[ ${CASE_LIB:-} == forward ]]; then
       lib=$clone/tools/repo-sync/.config/mise/tasks/_scripts/repo-sync
@@ -2685,6 +2691,174 @@ items = [ \"b\" ]" values_security '+gitleaks config={"items":["a","b"]}' check_
 run_case "values: two errors in two tools" 3 "$vother_values" values_two_errors "$msg_unknown_contribution" \
   check_two_values_errors
 
+# The shared mise generator, side repo. mtest is a tool of the clone with only a
+# tools.toml, and the consumer has its generated dev file, so the dry run shows
+# the diff of that file.
+mtest_tool() {
+  mkdir -p -- "$clone/repo/tools/mtest"
+  printf '%s\n' 'default_envs = [ "dev" ]' 'depends = []' 'extensions = []' 'root_only = false' "$@" \
+    > "$clone/repo/tools/mtest/tools.toml"
+  conf_file mtest dev
+}
+mtest_bootstrap() {
+  mtest_tool '[mise.bootstrap.packages]' 'brew = "a"' '[mise.dotfiles]' 'src = "b"' '[mise.env]' 'A = "1"'
+  conf_file mtest ci
+}
+mtest_render() { mtest_tool '[defaults]' 'x = "a"' '[mise.env]' 'X = "<% .config.x %>"'; }
+mtest_required() {
+  # shellcheck disable=SC2016
+  mtest_tool '[mise.env]' 'X = "<% required `x is needed` .config.x %>"'
+}
+mtest_home() { mtest_tool '[mise.env]' 'H = "<% .env.HOME %>"'; }
+mtest_bad_toml() { mtest_tool '[defaults]' "q = 'a\"b'" '[mise.env]' 'X = "<% .config.q %>"'; }
+# A new file: a real run writes it, with no file of the consumer before it.
+mtest_new() {
+  mtest_render
+  rm -f -- "$consumer/.config/mise/conf.d/mtest/mise.dev.toml"
+}
+
+# mtest_diff <file>: the diff of the dry run for a generated file of mtest.
+mtest_diff() {
+  awk -v file="would update $consumer/.config/mise/conf.d/mtest/$1" \
+    'index($0, file) { on = 1; next } /^repo-sync: / { on = 0 } on' "$log"
+}
+diff_has() { [[ $(mtest_diff "$1") == *"$2"* ]]; }
+diff_lacks() { ! diff_has "$1" "$2"; }
+file_has() { grep -qF -- "$1" "$2"; }
+
+check_mtest_dev_only() {
+  local name="[mise.bootstrap.*], [mise.dotfiles]"
+  check_that "$name: the dev file has [bootstrap.packages]" diff_has mise.dev.toml '[bootstrap.packages]'
+  check_that "$name: the dev file has [dotfiles]" diff_has mise.dev.toml '[dotfiles]'
+  check_that "$name: the ci file has [env]" diff_has mise.ci.toml '+[env]'
+  check_that "$name: the ci file lacks bootstrap" diff_lacks mise.ci.toml '[bootstrap'
+  check_that "$name: the ci file lacks dotfiles" diff_lacks mise.ci.toml '[dotfiles'
+}
+check_mtest_kept() {
+  check_log_lacks "a required value that is missing: the file stays" \
+    "would update $consumer/.config/mise/conf.d/mtest/mise.dev.toml"
+}
+check_mtest_new() {
+  local file="$consumer/.config/mise/conf.d/mtest/mise.dev.toml"
+  check_that "a tool without a template: the value is rendered" file_has 'X = "a"' "$file"
+  check_that "a tool without a template: no <% in the file" lacks_in_file '<%' "$file"
+}
+
+mtest_values='environments = [ "dev" ]
+[tools.mtest]'
+run_case "[mise.bootstrap.*] and [mise.dotfiles] are only in dev" 0 'environments = [ "dev", "ci" ]
+[tools.mtest]
+env = [ "dev", "ci" ]' mtest_bootstrap 'conf.d/mtest/mise.ci.toml' check_mtest_dev_only
+run_case "<% %> in a tools.toml, the value of [defaults]" 0 "$mtest_values" mtest_render 'X = "a"'
+run_case "<% %> in a tools.toml, the value of [tools.mtest]" 0 "$mtest_values
+x = \"b\"" mtest_render 'X = "b"'
+run_case "<% %> in a tools.toml, a required value that is missing" 2 "$mtest_values" mtest_required \
+  'x is needed' check_mtest_kept
+run_case "[overrides.mise.env] over a <% %> value" 0 "$mtest_values
+[overrides.mise.env]
+X = \"c\"" mtest_render 'X = "c"  # override: .config/bootstrap.toml'
+run_case "<% %> in a tools.toml, .env.HOME" 0 "$mtest_values" mtest_home "H = \"$HOME\""
+run_case "<% %> in a tools.toml, a value that breaks the TOML" 2 "$mtest_values" mtest_bad_toml \
+  'repo/tools/mtest/tools.toml: not valid TOML after render'
+case_args=' ' run_case "<% %> in a tools.toml, a tool without a template" 0 "$mtest_values" mtest_new '' check_mtest_new
+
+# The shared mise generator, side macos: a direct call of the library, in the order
+# of a front-end, with the tools of $tmp/macos/tools. The value of a case is the
+# values file. `macos_tools` names the tools of the case.
+macos_tool() {
+  local tool=$1
+  shift
+  mkdir -p -- "$tmp/macos/tools/$tool"
+  printf '%s\n' "$@" > "$tmp/macos/tools/$tool/tools.toml"
+}
+macos_source() {
+  # shellcheck source=/dev/null
+  source "$clone/sync-engine/common"
+  # shellcheck source=/dev/null
+  source "$clone/sync-engine/values"
+  # shellcheck source=/dev/null
+  source "$clone/sync-engine/mise"
+}
+macos_sync() {
+  macos_source
+  local tools=${macos_tools:-mtest} dir="$tmp/macos/tools" all="$tmp/macos/all.json" out tool rc=0
+  out=$(_se_values "$tools" '' "$dir" '{}' macos/tools macos.toml) || return
+  printf '%s\n' "$out" | _se_jq -R -n 'reduce (inputs | split("\t")) as $l ({}; .[$l[1]] = ($l[2] | fromjson))' > "$all" || return
+  _se_mise_overrides macos "$values" "$dir" macos/tools "$tools" '' || return
+  for tool in $tools; do
+    _se_mise_render macos "$dir" macos/tools "$tool" "$values" "$tmp/macos/conf.d" '' "$all" || rc=$?
+  done
+  return "$rc"
+}
+macos_own() {
+  macos_source
+  _se_mise_own_config macos "$values" "$tmp/macos/conf.d" '' ''
+}
+run_macos() { CASE_CALL=${CASE_CALL:-macos_sync} run_case "$@"; }
+
+macos_all_sections() {
+  macos_tool mtest '[defaults]' 'x = "a"' '[mise.tools]' 'fd = "latest"' '[mise.env]' 'X = "<% .config.x %>"' \
+    '[mise.shell_alias]' 'll = "ls -l"' '[mise.bootstrap.packages]' 'brew = "a"'
+}
+macos_env_table() {
+  macos_tool bad '[mise.env]' 'A = "1"' '[mise_env.dev.env]' 'B = "2"'
+  macos_tool good '[mise.env]' 'A = "1"'
+}
+macos_envs_key() { macos_tool mtest '[mise.tools.fd]' 'version = "latest"' 'envs = [ "dev" ]'; }
+macos_found_key() { macos_tool mtest '[mise.tools.fd]' 'version = "latest"' 'requires_found = [ "x" ]'; }
+macos_two_tools() {
+  macos_tool mtest '[mise.env]' 'X = "a"'
+  macos_tool good '[mise.env]' 'A = "1"'
+}
+macos_env_x() { macos_tool mtest '[mise.env]' 'X = "a"'; }
+
+macos_file() { printf '%s' "$tmp/macos/conf.d/$1/mise.toml"; }
+check_macos_sections() {
+  local file name="the macos side: all the sections"
+  file=$(macos_file mtest)
+  check_that "$name: the header" file_has '# Synced from bootstrap: macos/tools/mtest/tools.toml. Do not edit this file.' "$file"
+  check_that "$name: [tools]" file_has 'fd = "latest"' "$file"
+  check_that "$name: [env], rendered" file_has 'X = "a"' "$file"
+  check_that "$name: [shell_alias]" file_has 'll = "ls -l"' "$file"
+  check_that "$name: [bootstrap.packages]" file_has '[bootstrap.packages]' "$file"
+  check_that "$name: no mise.dev.toml" no_file "$tmp/macos/conf.d/mtest/mise.dev.toml"
+}
+check_macos_one_bad() {
+  check_that "the macos side, [mise_env.*]: the tool writes nothing" no_file "$tmp/macos/conf.d/bad"
+  check_that "the macos side, [mise_env.*]: the other tool has its file" file_has 'A = "1"' "$(macos_file good)"
+}
+check_macos_no_write() { check_that "the macos side: no file is written" no_file "$tmp/macos/conf.d"; }
+check_macos_override() {
+  check_that "the macos side, [overrides.mise.env]: the comment" file_has 'X = "c"  # override: macos.toml' "$(macos_file mtest)"
+}
+check_macos_own() {
+  local file name="the macos side, the own config"
+  file=$(macos_file zz-macos)
+  check_that "$name: the header" file_has '# Synced from bootstrap: macos.toml [mise]. Do not edit this file.' "$file"
+  check_that "$name: the second line" file_has '# The next sync replaces it, and a manual change is lost.' "$file"
+  check_that "$name: [shell_alias]" file_has 'll = "ls -l"' "$file"
+  check_that "$name: [env], rendered" file_has "H = \"$HOME\"" "$file"
+}
+
+run_macos "the macos side: mise.toml with all the sections" 0 '' macos_all_sections '' check_macos_sections
+macos_tools='bad good' run_macos "the macos side: [mise_env.*] in one of two tools" 2 '' macos_env_table \
+  '[mise_env.*] is not valid on the macos side' check_macos_one_bad
+run_macos "the macos side: envs of a mise tool" 2 '' macos_envs_key \
+  'envs of mise tool fd is not valid on the macos side' check_macos_no_write
+run_macos "the macos side: requires_found of a mise tool" 2 '' macos_found_key \
+  'requires_found of mise tool fd is not valid on the macos side' check_macos_no_write
+macos_tools='mtest good' run_macos "the macos side: [overrides.mise_env.*]" 2 '[overrides.mise_env.dev.env]
+X = "c"' macos_two_tools 'overrides.mise_env' check_macos_no_write
+run_macos "the macos side: [overrides.mise.env]" 0 '[overrides.mise.env]
+X = "c"' macos_env_x '' check_macos_override
+run_macos "the macos side: an override of a key that the tool does not have" 2 '[overrides.mise.env]
+Y = "c"' macos_env_x 'no selected tool has mise.env.Y' check_macos_no_write
+CASE_CALL=macos_own run_macos "the macos side: the own config" 0 '[mise.shell_alias]
+ll = "ls -l"
+[mise.env]
+H = "<% .env.HOME %>"' '' '' check_macos_own
+CASE_CALL=macos_own run_macos "the macos side: a values file without [mise]" 0 '' '' '' check_macos_no_write
+
 while ((${#case_pids[@]})); do
   collect_case
 done
@@ -3042,7 +3216,7 @@ fi
 
 mkdir -p -- "$gate_cache/repo/sync-engine"
 cp -- "$root/sync-engine/repo-sync" "$root/sync-engine/common" "$root/sync-engine/write" "$root/sync-engine/merge" \
-  "$root/sync-engine/select" "$root/sync-engine/manifest" "$root/sync-engine/values" "$gate_cache/repo/sync-engine/"
+  "$root/sync-engine/select" "$root/sync-engine/manifest" "$root/sync-engine/values" "$root/sync-engine/mise" "$gate_cache/repo/sync-engine/"
 _git init --quiet "$gate_cache/repo"
 _git -C "$gate_cache/repo" remote add origin https://github.com/virajp/bootstrap.git
 got=0
