@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "COMPLETE",
-    "detail": "COMPLETE 2026-11-04 — e204613 defe4b0 178e309 9dadfed; 3 gaps open (G4 G5 G9); folder stays live"
+    "state": "BLOCKED",
+    "detail": "BLOCKED at land — every unit and gate is green, but code:merge cannot pull main: git@github.com: Permission denied (publickey); nothing merged; 4 gaps open (G4 G5 G9 G14); worktree .claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -451,6 +451,13 @@
       "stage": "edit",
       "text": "U5: the docs reconcile ran as a grep-and-edit pass over git diff 3b199d2..HEAD, as the dispatch said, not through vwf:docs-sync or its surveyor · closed: the wave review of wave 4 reads the same delta for falsified passages (rule 5)",
       "state": "closed"
+    },
+    {
+      "id": "G14",
+      "unit": "",
+      "stage": "land",
+      "text": "The landing could not reach origin: mise run code:merge stopped at its pull of main with git@github.com: Permission denied (publickey), and git ls-remote origin failed the same way on each retry, through the 1Password SSH agent that served the claim push earlier in this run · no assumption taken: nothing merged and no credential route was tried; the person restores SSH access and re-runs /vwf:execute, and the resume closes this entry",
+      "state": "open"
     }
   ],
   "overrides": [],
