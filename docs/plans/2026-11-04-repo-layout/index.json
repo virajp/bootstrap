@@ -160,7 +160,7 @@
       "status": "green",
       "started": "2026-11-04T15:32:29.943Z",
       "ended": "2026-11-04T15:37:46.207Z",
-      "commit": "",
+      "commit": "dc6086a",
       "rounds": 2
     },
     {
@@ -203,9 +203,9 @@
     },
     {
       "id": "W4",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-04T15:32:29.904Z",
-      "ended": ""
+      "ended": "2026-11-04T15:41:24.900Z"
     },
     {
       "id": "W5",
