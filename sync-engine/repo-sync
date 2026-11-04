@@ -257,6 +257,9 @@ _SE_PREFIX='repo-sync'
 
 # The manifests of the clone, read once by `_rs_mise_index`.
 _RS_MANIFESTS='' _RS_MANIFESTS_DIR=''
+# The regular files of the tool folders of the clone, as `./<tool>/<path>`
+# lines, listed once by `_rs_mise_index` for `_rs_target_ok`.
+_RS_TOOL_FILES=''
 
 # Print the repo's members, one per line as `<name> <folder> <type>` with a
 # tab between them: the git submodules first, then the other `[member.<name>]`
@@ -480,6 +483,11 @@ _rs_mise_index() {
   _RS_MANIFESTS+=$'\n'
   _RS_MANIFESTS_DIR=$dir
   _RS_MISE_DEFS=' '
+  _RS_TOOL_FILES=$(cd "$dir/tools" && find . -type f) || {
+    _se_log "cannot list the files of the tool folders of the clone"
+    return 2
+  }
+  _RS_TOOL_FILES=$'\n'$_RS_TOOL_FILES$'\n'
   for tool in $tools; do
     names=$(_rs_manifest "$dir" "$tool")
     # Each tool must be in dev, selected or not, so this repo's own test
@@ -556,7 +564,7 @@ _rs_manifest_rules() {
             _se_files_check_mode "$tool" "$target" "$mode" "$format" "$has_remove" "$has_items" || rc=2
           fi
           target=$a mode='' format='' has_remove=0 has_items=0
-          _rs_target_ok "$dir" "$tool" "$a" || rc=2
+          _rs_target_ok "$tool" "$a" || rc=2
           continue
         fi
         if ! _se_files_key_ok "$b"; then
@@ -618,15 +626,17 @@ _rs_manifest_rules() {
   return "$rc"
 }
 
-# 0 when a file of the folder of <tool> in the clone <dir> produces <target>:
-# the file <target> or <target>.tmpl. Else 2, after a message. `tools.toml` is
+# 0 when a file of the folder of <tool> produces <target>: <target> or
+# <target>.tmpl is the same string as a path of _RS_TOOL_FILES. Thus a case
+# variant fails on each file system, and a path through a symlink fails,
+# because find does not follow one. Else 2, after a message. `tools.toml` is
 # not a file that the sync copies, and a target has no `.tmpl`.
 _rs_target_ok() {
-  local dir=$1 tool=$2 target=$3
+  local tool=$1 target=$2
   case $target in
-    /* | ../* | */../* | ./* | */./* | *//* | */. | */ | tools.toml | */tools.toml | *.tmpl) ;;
+    tools.toml | */tools.toml | *.tmpl) ;;
     *)
-      [[ ! -f $dir/tools/$tool/$target && ! -f $dir/tools/$tool/$target.tmpl ]] || return 0
+      [[ $_RS_TOOL_FILES != *$'\n'"./$tool/$target"$'\n'* && $_RS_TOOL_FILES != *$'\n'"./$tool/$target.tmpl"$'\n'* ]] || return 0
       ;;
   esac
   _se_log "$tool/tools.toml: [files.\"$target\"] names a target that no file of the tool produces"

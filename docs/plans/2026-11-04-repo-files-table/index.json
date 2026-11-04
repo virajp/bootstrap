@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "BLOCKED",
-    "detail": "BLOCKED at wave 3 — UNRESOLVED: U4 security finding G13 did not converge (rounds 1 and 2 one finding each; closing fix d4f59df left it OPEN): a case variant or a symlinked-folder spelling of a [files] key passes _rs_target_ok (repo-sync:629), runs as generated and skips the merge guards. Ruling needed in D8: accept a target only on an exact match against find -type f (reviewer mitigation), or rule the finding out of scope since only a bootstrap tools.toml author can trigger it. Also owed: the round 2 engine skipped (G14), a person confirming the D10 parent-folder reading (G15). U5, U6 and the plan gate not run; nothing landed; work is on claude/bootstrap-2-0-3ae4b9 in .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-04T08:18:52Z in .claude/worktrees/bootstrap-2-0-3ae4b9 — resumed at U4 with the D17 ruling"
   },
   "consent": {
     "merge": true,
@@ -120,9 +120,9 @@
         "U3"
       ],
       "waits": "",
-      "status": "unresolved",
+      "status": "running",
       "started": "2026-11-04T07:07:47.756Z",
-      "ended": "2026-11-04T07:42:08.361Z",
+      "ended": "",
       "commit": "",
       "rounds": 2,
       "range": {
@@ -190,9 +190,9 @@
     },
     {
       "id": "W3",
-      "status": "failed",
+      "status": "running",
       "started": "2026-11-04T07:07:47.688Z",
-      "ended": "2026-11-04T07:42:08.396Z"
+      "ended": ""
     },
     {
       "id": "W4",
@@ -370,6 +370,16 @@
       "units": [
         "U1"
       ]
+    },
+    {
+      "id": "D17",
+      "decision": "How does the engine decide that a file of the tool produces a [files] target (security finding G13)?",
+      "ruling": "Ruled by the user on the blocked run: a target passes only on an exact match. The path of the target, or the target with .tmpl, must be the same string as a path relative to the tool folder from find -type f. find does not follow a symlink, so a path through a symlinked folder fails. A case variant fails on each file system. A target that fails stops the sync with code 2, with the existing message of _rs_target_ok. This replaces the -f test of D8. The test of the plan gets a case for a case variant and a case for a symlinked folder.",
+      "rejected": "Rule the finding out of scope because only an author of a bootstrap tools.toml can trigger it.",
+      "units": [
+        "U1",
+        "U3"
+      ]
     }
   ],
   "stages": {
@@ -502,6 +512,13 @@
       "unit": "U1",
       "stage": "security",
       "text": "U1 returned UNRESOLVED on a merge target below a symlinked parent folder inside the repository (the merge read and wrote the outside file) · the orchestrator read D10 (the repo side follows no symlink) as the ruling and had U1 refuse it with code 2 in b47e12a, message <show>: the folder <folder> is a symlink - kept it as it is; generated and seed files still write through a linked folder. A person confirms this reading",
+      "state": "open"
+    },
+    {
+      "id": "G16",
+      "unit": "U1",
+      "stage": "security",
+      "text": "A target that is itself a symlink to a file: D17 names only a symlinked folder · U1 took the exact wording, so such a target fails too, because find -type f skips it; tools/ has no symlinks today",
       "state": "open"
     }
   ],
