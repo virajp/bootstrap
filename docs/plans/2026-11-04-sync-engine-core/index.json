@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-04T04:57:03Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-04 — d1e3de8 be8267d dd24492 b573641 e67a4ad 33a740f; 2 open gaps (G4 D14 wrapper form departs from the ruling's words, G5 tool neither installed nor reachable), folder stays live, A1 archive not run; U3 security row fixed one low finding (header regex anchored against the literal in 01-engine.md, G9); ran in session worktree .claude/worktrees/bootstrap-2-0-3ae4b9 (G2), claim and completion landed through code:merge on main (G1)"
   },
   "consent": {
     "merge": true,
@@ -149,11 +149,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T06:07:05.605Z",
+      "ended": "2026-11-04T06:11:00.269Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -183,9 +183,9 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T06:07:05.540Z",
+      "ended": "2026-11-04T06:11:13.998Z"
     }
   ],
   "shared_files": [
@@ -462,6 +462,13 @@
       "unit": "U3",
       "stage": "security",
       "text": "01-engine.md line 125 and D10 give an unanchored header regex for the check that authorizes a deletion, and 02-tests.md has no case for a repo-owned file that only mentions the text · closed: U3 round 1 fix, the regex anchors the text to the start of a comment line and accepts a lone <!-- block, and U2 adds the cases",
+      "state": "closed"
+    },
+    {
+      "id": "G10",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "U4: code:format only checks without --fix, and it failed on a table row of docs/sync/index.md · closed: U4 ran mise x -- dprint fmt docs/sync/index.md on the file it owns, then code:format passed",
       "state": "closed"
     }
   ],
