@@ -152,11 +152,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T14:39:20.516Z",
+      "ended": "2026-11-04T14:47:50.591Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -186,9 +186,9 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T14:39:20.483Z",
+      "ended": "2026-11-04T14:48:05.772Z"
     }
   ],
   "shared_files": [
@@ -469,6 +469,13 @@
       "stage": "edit",
       "text": "Contested after the one late loop-back: CLAUDE.md:331 and :333 and docs/sync/tools/repo-sync.md:154 still say a selected tool for the handled and kept paths of the stale rule, and the rule also covers each dependency, also through a mise depends · prose only, the code is right; a second loop-back is recorded, not run",
       "state": "open"
+    },
+    {
+      "id": "G16",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "Wave 5 has an empty diff, so no wave reviewer was dispatched for it · closed: U5 edits no file by its unit file, git status showed only the plan state, and the plan gate runs every line again over the same tree",
+      "state": "closed"
     }
   ],
   "overrides": [],
