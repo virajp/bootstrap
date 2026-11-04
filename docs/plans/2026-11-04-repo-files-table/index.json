@@ -150,11 +150,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T08:43:43.532Z",
+      "ended": "2026-11-04T08:49:18.828Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -196,8 +196,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T08:43:43.497Z",
       "ended": ""
     },
     {
@@ -526,6 +526,13 @@
       "unit": "U5",
       "stage": "edit",
       "text": "R3 rule-5 finding CLAUDE.md:187: the exit-code list gives no case for a merge target that is a symlink or is below a symlinked folder, which now stops with code 2 (b47e12a) · closed: handed to U5, which owns this path under S1, as a DOCS FALSIFIED line",
+      "state": "closed"
+    },
+    {
+      "id": "G18",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "U5: Edit 1 names no change for docs/sync/tools/repo-sync.md · closed: the docs-sync survey found it falsified, it is inside the Owns of U5, and U5 applied it",
       "state": "closed"
     }
   ],

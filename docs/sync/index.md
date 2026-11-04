@@ -250,6 +250,8 @@ The sync removes these old paths itself, so they need no step:
 - A synced file at a path where the sync now needs a folder, for example the
   old `code/format`, `code/lint`, `code/sec` and `setup/configs` files.
 - The merge tasks of the other branch model.
+- A synced file at a generated `[files]` target whose `requires` or
+  `requires_found` condition fails.
 
 When a change removes a shipped file from `tools/`, add its path to this
 table and to an item of `migrate.md`.
@@ -293,12 +295,27 @@ Each `tools.toml` has these keys:
 | `depends`      | The sync adds these tools automatically.                                                     |
 | `root_only`    | If `true`, the sync refuses the tool in a submodule, and skips it there when a pack adds it. |
 | `extensions`   | The VS Code extensions of the tool, for `.vscode/extensions.json`.                           |
-| `seed`         | Files that the sync writes only if they are missing.                                         |
 
-A `tools.toml` can also have a `[seed_requires]` table. It is optional. Each
-key is a seed, and its value is a file of the repository. The sync writes the
-seed only if the repository has that file. For example, the `node` tool writes
-`pnpm-workspace.yaml` only if the repository has a `package.json`.
+A `tools.toml` can also have `[files."<target>"]` tables. They are optional.
+Each
+table gives the mode and the condition of one file of the tool. A file without a
+table is `generated`. The target is the path of the file without `.tmpl`. A
+target that ends in `.tmpl` stops the sync with code 2. The target must be the
+same string as a path of `find -type f` in the tool folder, with or without
+`.tmpl`. Else the sync stops with code 2.
+
+| Key              | Meaning                                                                                                                                 |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `mode`           | `generated` (the default): the sync writes it on each run. `seed`: only if it is missing. `merge`: the sync merges it into a live file. |
+| `requires`       | Exact paths, relative to the root of the repository. Each path must exist.                                                              |
+| `requires_found` | File names. The sync must find each name at the root or down to 4 folders below it, in a file that git does not ignore.                 |
+| `format`         | `text`, `json`, `yaml` or `toml`. The default comes from the extension.                                                                 |
+| `remove`         | Only with `merge`. Key paths to delete from the live file.                                                                              |
+| `remove_items`   | Only with `merge`. Items to delete from a list of the live file.                                                                        |
+
+For example, the `node` tool has `mode = "seed"` and
+`requires = ["package.json"]` for `pnpm-workspace.yaml`. Thus the sync writes it
+only if the repository has a `package.json`. No tool uses `merge` now.
 
 The `[mise.*]` tables of a `tools.toml` hold the mise config of the tool. The
 sync generates `.config/mise/conf.d/<tool>/mise.<env>.toml` from them, one
@@ -306,16 +323,16 @@ file for each environment. A mise `depends` adds the tool that defines the
 dependency. For example, the `pre-commit` tool adds `python`, and the
 `linter` tool adds `node`.
 
-A mise tool can have a `requires` key with a file name. The sync writes that
-mise tool only when the repository has a file with that name, at the root or
-down to 4 folders below it, that git does not ignore. For example, the
+A mise tool can have a `requires_found` key with a list of file names. The sync
+writes that mise tool only when the repository has a file with each name, at the
+root or down to 4 folders below it, that git does not ignore. For example, the
 `python` tool installs `ruff` and `pyrefly` only in a repository with a
 `pyproject.toml`. If the repository adds its first `pyproject.toml` later,
 run `mise run setup:configs` again.
 
-The `files` key of a mise tool with `requires` lists files of its tool, for
-example the tasks of that mise tool. The sync writes them under the same
-condition. Without the file, it removes a copy with the bootstrap header. For
+Each file of a tool states its own condition in its `[files]` table, for example
+a task of a mise tool. Without the file, the sync removes a generated copy with
+the bootstrap header. A seed and a merge target stay. For
 example, the `python` tool writes `code:lint:ruff`, `code:format:ruff` and
 `code:lint:pyrefly` only in a repository with a `pyproject.toml`.
 
@@ -534,8 +551,8 @@ UV_NO_CACHE = false
   `.config/mise/conf.d/<tool>/mise.<env>.toml`.
 - These stop the sync with code 2: a key of `[overrides]` other than `mise`,
   `mise_env` and `gitignore`, a path that no selected tool has, and the
-  `envs`, the `depends`, the `requires` or the `files` of a mise tool. An
-  override cannot
+  `envs`, the `depends`, the `requires`, the `requires_found` or the `files`
+  of a mise tool. An override cannot
   add a key. Put a
   new key in `conf.d/zz-repo/mise.<env>.toml`.
 
@@ -667,21 +684,22 @@ files, skip this step.
 
 If `repo_sync` fails, read the exit code:
 
-| Code | Cause                                                                                                                                                                                                                                             | Action                                                                                                                                                                                           |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2    | The old list format, a bad `[tools.*]` or `[packs.*]` entry, a bad `env` (also an `env` without `dev`) or `environments`, a bad `[overrides]`, a root-only tool in a submodule, or a template that cannot render                                  | Correct the values file                                                                                                                                                                          |
-| 2    | A tool in an environment that one of its mise tools does not allow                                                                                                                                                                                | Correct the `env`, or tell the `bootstrap` owner                                                                                                                                                 |
-| 2    | A pack loop, or a pack name that is also a tool folder                                                                                                                                                                                            | Tell the `bootstrap` owner                                                                                                                                                                       |
-| 2    | A `default_envs` without `dev`, or a tool folder that is `zz-repo` or that sorts after `zz-repo`                                                                                                                                                  | Tell the `bootstrap` owner                                                                                                                                                                       |
-| 2    | Two tools define the same mise tool, a mise `depends` that no tool defines, a tool that ships and generates the same `conf.d` file, an unsupported `[mise.*]` or `[mise_env.*]` section, or a `default_envs` or `envs` name that is not dev or ci | Tell the `bootstrap` owner                                                                                                                                                                       |
-| 2    | A JSON, YAML or TOML target does not parse. The existing file stays, and the other files continue                                                                                                                                                 | Read the `repo-sync:` line. A mise failure indented under that line means that a tool could not start: examine mise and the network. Else correct the values file, or tell the `bootstrap` owner |
-| 2    | The values file is missing, or mise is not available                                                                                                                                                                                              | Correct the values file, or install mise                                                                                                                                                         |
-| 2    | Neither `main` nor `develop` exists                                                                                                                                                                                                               | Do step 4                                                                                                                                                                                        |
-| 2    | A git repository at the root of the cache with another `origin` or no `origin`, or a `repo/` of the cache that is not a clone and not empty                                                                                                       | Move it, or set `SYNC_ENGINE_CACHE` to another folder                                                                                                                                            |
-| 2    | `setup:configs:sync` ran without `SYNC_ENGINE_CLONE`                                                                                                                                                                                              | Run `mise run setup:configs`                                                                                                                                                                     |
-| 3    | A tool or a pack that is not in `bootstrap`                                                                                                                                                                                                       | Correct the `[tools.*]` and `[packs.*]` entries                                                                                                                                                  |
-| 5    | The clone or the fetch failed, `SYNC_ENGINE_CLONE` is not usable, pre-commit is not available (see item 5 of step 6), or `pre-commit autoupdate` failed                                                                                           | Examine the network and the access                                                                                                                                                               |
-| 1    | A local file system error                                                                                                                                                                                                                         | Read the `repo-sync:` lines on stderr                                                                                                                                                            |
+| Code | Cause                                                                                                                                                                                                                                                                                                    | Action                                                                                                                                                                                           |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2    | The old list format, a bad `[tools.*]` or `[packs.*]` entry, a bad `env` (also an `env` without `dev`) or `environments`, a bad `[overrides]`, a root-only tool in a submodule, or a template that cannot render                                                                                         | Correct the values file                                                                                                                                                                          |
+| 2    | A tool in an environment that one of its mise tools does not allow                                                                                                                                                                                                                                       | Correct the `env`, or tell the `bootstrap` owner                                                                                                                                                 |
+| 2    | A pack loop, or a pack name that is also a tool folder                                                                                                                                                                                                                                                   | Tell the `bootstrap` owner                                                                                                                                                                       |
+| 2    | A `default_envs` without `dev`, or a tool folder that is `zz-repo` or that sorts after `zz-repo`                                                                                                                                                                                                         | Tell the `bootstrap` owner                                                                                                                                                                       |
+| 2    | Two tools define the same mise tool, a mise `depends` that no tool defines, a tool that ships and generates the same `conf.d` file, an unsupported `[mise.*]` or `[mise_env.*]` section, an old key or a bad `[files]` table of a `tools.toml`, or a `default_envs` or `envs` name that is not dev or ci | Tell the `bootstrap` owner                                                                                                                                                                       |
+| 2    | A merge source or a live merge target cannot merge, or a merge target is a symlink or is below a symlinked folder. The existing file stays, and the other files continue                                                                                                                                 | Read the `repo-sync:` line. Correct the live file or the symlink, or tell the `bootstrap` owner                                                                                                  |
+| 2    | A JSON, YAML or TOML target does not parse. The existing file stays, and the other files continue                                                                                                                                                                                                        | Read the `repo-sync:` line. A mise failure indented under that line means that a tool could not start: examine mise and the network. Else correct the values file, or tell the `bootstrap` owner |
+| 2    | The values file is missing, or mise is not available                                                                                                                                                                                                                                                     | Correct the values file, or install mise                                                                                                                                                         |
+| 2    | Neither `main` nor `develop` exists                                                                                                                                                                                                                                                                      | Do step 4                                                                                                                                                                                        |
+| 2    | A git repository at the root of the cache with another `origin` or no `origin`, or a `repo/` of the cache that is not a clone and not empty                                                                                                                                                              | Move it, or set `SYNC_ENGINE_CACHE` to another folder                                                                                                                                            |
+| 2    | `setup:configs:sync` ran without `SYNC_ENGINE_CLONE`                                                                                                                                                                                                                                                     | Run `mise run setup:configs`                                                                                                                                                                     |
+| 3    | A tool or a pack that is not in `bootstrap`                                                                                                                                                                                                                                                              | Correct the `[tools.*]` and `[packs.*]` entries                                                                                                                                                  |
+| 5    | The clone or the fetch failed, `SYNC_ENGINE_CLONE` is not usable, pre-commit is not available (see item 5 of step 6), or `pre-commit autoupdate` failed                                                                                                                                                  | Examine the network and the access                                                                                                                                                               |
+| 1    | A local file system error                                                                                                                                                                                                                                                                                | Read the `repo-sync:` lines on stderr                                                                                                                                                            |
 
 A failure does not change an existing file.
 

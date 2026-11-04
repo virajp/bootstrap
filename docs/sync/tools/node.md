@@ -21,11 +21,11 @@ environment of its `default_envs` that the repository selects.
 
 ## What the tool ships
 
-| Path in the repository                     | Kind      | Use                                                               |
-| ------------------------------------------ | --------- | ----------------------------------------------------------------- |
-| `pnpm-workspace.yaml`                      | Seed      | The pnpm settings. The sync writes it only with a `package.json`. |
-| `.config/mise/tasks/setup/deps/node`       | Synced    | The task `setup:deps:node`.                                       |
-| `.config/mise/conf.d/node/mise.<env>.toml` | Generated | The mise config of this tool.                                     |
+| Path in the repository                     | Kind      | Use                                                                            |
+| ------------------------------------------ | --------- | ------------------------------------------------------------------------------ |
+| `pnpm-workspace.yaml`                      | Seed      | The pnpm settings. The sync writes it only with a `package.json` (`requires`). |
+| `.config/mise/tasks/setup/deps/node`       | Synced    | The task `setup:deps:node`.                                                    |
+| `.config/mise/conf.d/node/mise.<env>.toml` | Generated | The mise config of this tool.                                                  |
 
 The seed has strict settings: `strictDepBuilds`, a minimum release age of 24
 hours, `blockExoticSubdeps`, `trustPolicy: no-downgrade` and

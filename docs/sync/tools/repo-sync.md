@@ -113,7 +113,8 @@ error, code 2. These rules need the clone, so only `setup:configs` examines
 them: a tool or a pack that is not in `bootstrap`, a pack loop or a pack named
 like a tool, an environment that a mise tool does not allow, an
 `[overrides.mise*]` path that no selected tool has, a `remove` line that the
-shared file does not have, and a `root_only` tool in a submodule.
+shared file does not have, a `root_only` tool in a submodule, and an old key or
+a bad `[files]` table of a `tools.toml`.
 
 Besides the copy of the files, `repo_sync` does these steps:
 
@@ -122,10 +123,24 @@ Besides the copy of the files, `repo_sync` does these steps:
   installed runs as `mise x <tool>@latest -- <tool>`. Each call runs from `/`,
   so no mise config of the repository selects a version.
 - It examines each JSON, YAML and TOML target after its render or copy, and
-  before dprint: jq for JSON, yq for YAML and TOML. A `.json` target with a line
-  that starts with `//` after spaces is JSONC, and it does not examine that
-  target. A target that does not parse keeps its existing file, the other files
-  continue, and the sync returns code 2 and does not set `bootstrap_commit`.
+  before dprint: jq for JSON, yq for YAML and TOML. The `format` key of its
+  `[files]` table selects the format, else the extension. A `.json` target
+  without a `format` key, with a line that starts with `//` after spaces, is
+  JSONC, and it does not examine that target. This JSONC rule does not apply to
+  a merge target. A target that does not parse keeps its existing file, the
+  other files continue, and the sync returns code 2 and does not set
+  `bootstrap_commit`.
+- It examines the `[files]` tables of each `tools.toml` of the clone. An old key
+  or a bad table stops the sync with code 2. A target passes only when it, or
+  the
+  target with `.tmpl`, is the same string as a path of `find -type f` in the
+  tool
+  folder.
+- It merges each `mode = "merge"` target with the live file, before dprint. A
+  merge source or a live target that cannot merge, and a merge target that is a
+  symlink or is below a symlinked folder, keep the existing file. The other
+  files
+  continue, and the sync returns code 2.
 - It writes the merge tasks of the branch model that it finds, and removes the
   others. If neither `main` nor `develop` exists, it stops with code 2.
 - It removes each `conf.d/*/mise*.toml` with the bootstrap header that it did

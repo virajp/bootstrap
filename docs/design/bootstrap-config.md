@@ -73,7 +73,8 @@ need the `bootstrap` clone stop only
 `setup:configs`: a tool or a pack that is not in `bootstrap`, a pack loop or a
 pack named like a tool, an environment that a mise tool does not allow, an
 `[overrides.mise*]` path that no selected tool has, a `remove` line that the
-shared file does not have, and a `root_only` tool in a submodule.
+shared file does not have, a `root_only` tool in a submodule, and an old key or
+a bad `[files]` table of a `tools.toml`.
 
 All the paths in this document are relative to the root of the consumer
 repository.
