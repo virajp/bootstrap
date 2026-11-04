@@ -2284,6 +2284,212 @@ check_stale_differs() {
 }
 run_case "a dry run, a manifest that differs" 0 "$no_tool_values" stale_differs '' check_stale_differs
 
+# A row with an empty, `.` or `..` segment is not a clean path, also when it names
+# a real file below the root.
+stale_unclean_rows() {
+  header_file a.txt
+  header_file d/a.txt
+  manifest_file "x${tab}./a.txt" "x${tab}.//a.txt" "x${tab}d//a.txt" "x${tab}d/./a.txt" "x${tab}d/"
+}
+check_stale_unclean_rows() {
+  local n
+  for n in 2 3 4 5 6; do
+    check_that "unclean rows: line $n is skipped" \
+      log_has "$consumer/.config/repo-generated.tsv: line $n is not <tool><TAB><path> - skipped"
+  done
+  check_that "unclean rows: no remove" log_lacks 'remove'
+  check_that "unclean rows: a.txt stays" test -f "$consumer/a.txt"
+  check_that "unclean rows: d/a.txt stays" test -f "$consumer/d/a.txt"
+}
+run_case "the stale rule, unclean rows, a dry run" 0 "$no_tool_values" stale_unclean_rows '' check_stale_unclean_rows
+case_args=' ' run_case "the stale rule, unclean rows, a real run" 0 "$no_tool_values" stale_unclean_rows '' \
+  check_stale_unclean_rows
+
+# A row with a case variant of a file that the run handles. A file system that
+# ignores case finds the same file, and on another one the row names no file.
+stale_case_variant() {
+  fixture_txt
+  copy_synced
+  manifest_file "fixture${tab}A.TXT"
+}
+check_stale_case_variant() {
+  check_that "a case variant: no remove" log_lacks 'remove'
+  check_that "a case variant: the file stays with its header" grep -qF 'Synced from bootstrap' "$consumer/a.txt"
+}
+run_case "the stale rule, a case variant of a handled file, a dry run" 0 "$fixture_values" stale_case_variant '' \
+  check_stale_case_variant
+case_args=' ' run_case "the stale rule, a case variant of a handled file, a real run" 0 "$fixture_values" \
+  stale_case_variant '' check_stale_case_variant
+
+# A manifest that is a link, that is below a link or that is not a regular file
+# is not read. The stale file is listed in the file behind the link.
+manifest_refused_stale() {
+  header_file stale.txt
+  mkdir -p -- "$tmp/outside"
+  printf '%s\n' "$manifest_first" "oldtool${tab}stale.txt" > "$tmp/outside/manifest.tsv"
+}
+manifest_is_link() {
+  manifest_refused_stale
+  ln -s -- "$tmp/outside/manifest.tsv" "$consumer/.config/repo-generated.tsv"
+}
+manifest_is_dangling() {
+  manifest_refused_stale
+  ln -s -- "$tmp/outside/none.tsv" "$consumer/.config/repo-generated.tsv"
+}
+manifest_below_link() {
+  manifest_refused_stale
+  mv -- "$tmp/outside/manifest.tsv" "$consumer/.config/repo-generated.tsv"
+  mv -- "$consumer/.config" "$tmp/outside/config"
+  ln -s -- "$tmp/outside/config" "$consumer/.config"
+}
+manifest_is_folder() {
+  manifest_refused_stale
+  mkdir -- "$consumer/.config/repo-generated.tsv"
+}
+manifest_is_fifo() {
+  manifest_refused_stale
+  mkfifo -- "$consumer/.config/repo-generated.tsv"
+}
+# check_manifest_refused <message>: the sync failed at the manifest, with its
+# message after the path of the manifest.
+check_manifest_refused() {
+  check_that "a refused manifest: the message" log_has "$consumer/.config/repo-generated.tsv: $1"
+  check_that "a refused manifest: FAILED" log_has 'FAILED: .config/repo-generated.tsv'
+  check_that "a refused manifest: no remove" log_lacks 'remove'
+  check_that "a refused manifest: no bootstrap_commit in the log" log_lacks 'bootstrap_commit'
+  check_that "a refused manifest: no bootstrap_commit" lacks_in_file 'bootstrap_commit' "$values"
+  check_that "a refused manifest: the stale file stays" test -f "$consumer/stale.txt"
+}
+manifest_link_message='the manifest is a link or is below a linked folder - not read'
+manifest_kind_message='the manifest is not a regular file - not read'
+check_manifest_link() { check_manifest_refused "$manifest_link_message"; }
+check_manifest_kind() { check_manifest_refused "$manifest_kind_message"; }
+run_case "the manifest is a symlink, a dry run" 2 "$no_tool_values" manifest_is_link "$manifest_link_message" \
+  check_manifest_link
+case_args=' ' run_case "the manifest is a symlink, a real run" 2 "$no_tool_values" manifest_is_link \
+  "$manifest_link_message" check_manifest_link
+case_args=' ' run_case "the manifest is a dangling symlink" 2 "$no_tool_values" manifest_is_dangling \
+  "$manifest_link_message" check_manifest_link
+case_args=' ' run_case "the manifest is below a symlinked .config" 2 "$no_tool_values" manifest_below_link \
+  "$manifest_link_message" check_manifest_link
+run_case "the manifest is a folder, a dry run" 2 "$no_tool_values" manifest_is_folder "$manifest_kind_message" \
+  check_manifest_kind
+case_args=' ' run_case "the manifest is a folder, a real run" 2 "$no_tool_values" manifest_is_folder \
+  "$manifest_kind_message" check_manifest_kind
+case_args=' ' run_case "the manifest is a FIFO" 2 "$no_tool_values" manifest_is_fifo "$manifest_kind_message" \
+  check_manifest_kind
+
+# A row with a `.git` segment, in any case and at any depth.
+stale_git_rows() {
+  header_file .git/hooks/h
+  header_file .GIT/hooks/h
+  header_file sub2/.git/h
+  manifest_file "x${tab}.git/hooks/h" "x${tab}.GIT/hooks/h" "x${tab}sub2/.git/h"
+}
+check_stale_git_rows() {
+  local n
+  for n in 2 3 4; do
+    check_that ".git rows: line $n is skipped" \
+      log_has "$consumer/.config/repo-generated.tsv: line $n is not <tool><TAB><path> - skipped"
+  done
+  check_that ".git rows: no remove" log_lacks 'remove'
+  check_that ".git rows: .git/hooks/h stays" test -f "$consumer/.git/hooks/h"
+  check_that ".git rows: .GIT/hooks/h stays" test -f "$consumer/.GIT/hooks/h"
+  check_that ".git rows: sub2/.git/h stays" test -f "$consumer/sub2/.git/h"
+}
+case_args=' ' run_case "the stale rule, rows with a .git segment" 0 "$no_tool_values" stale_git_rows '' check_stale_git_rows
+
+# A listed file of a git submodule: that repository has its own manifest. The row
+# with a case variant finds the submodule only on a file system that ignores case.
+stale_submodule() {
+  consumer_with_submodule
+  header_file sub/stale.txt
+  manifest_file "x${tab}sub/stale.txt" "x${tab}SUB/stale.txt"
+}
+check_stale_submodule() {
+  check_that "a submodule: the row is kept" log_has 'kept sub/stale.txt (another repository)'
+  if [[ -e $consumer/SUB ]]; then
+    check_that "a submodule: the case variant is kept" log_has 'kept SUB/stale.txt (another repository)'
+  fi
+  check_that "a submodule: no remove" log_lacks 'remove'
+  check_that "a submodule: the file stays" test -f "$consumer/sub/stale.txt"
+}
+case_args=' ' run_case "the stale rule, a listed file of a submodule" 0 "$no_tool_values" stale_submodule '' \
+  check_stale_submodule
+
+# A folder member is part of the root tree, but a nested clone is not, also when
+# the values file names it as a folder member.
+member_mem_values='environments = [ "dev" ]
+[member.mem]
+type = "folder"'
+stale_folder_member() {
+  header_file mem/stale.txt
+  manifest_file "x${tab}mem/stale.txt"
+}
+check_stale_folder_member() {
+  check_that "a folder member: removed" log_has "removed    $consumer/mem/stale.txt"
+  check_that "a folder member: the file is gone" no_file "$consumer/mem/stale.txt"
+}
+case_args=' ' run_case "the stale rule, a listed file of a folder member" 0 "$member_mem_values" stale_folder_member '' \
+  check_stale_folder_member
+stale_nested_clone() {
+  stale_folder_member
+  _git -C "$consumer/mem" init --quiet
+}
+check_stale_nested_clone() {
+  check_that "a nested clone: the row is kept" log_has 'kept mem/stale.txt (another repository)'
+  check_that "a nested clone: no remove" log_lacks 'remove'
+  check_that "a nested clone: the file stays" test -f "$consumer/mem/stale.txt"
+}
+case_args=' ' run_case "the stale rule, a listed file of a nested clone that is a folder member" 0 "$member_mem_values" \
+  stale_nested_clone '' check_stale_nested_clone
+
+# The macos link mode reads the rows too: a clean row behind a linked folder goes,
+# and a bad row is refused. `repo_sync --check` only sets up the case.
+manifest_macos_rows_call() {
+  (
+    local rows
+    # shellcheck source=/dev/null
+    source "$clone/sync-engine/common"
+    # shellcheck source=/dev/null
+    source "$clone/sync-engine/manifest"
+    rows=$(_se_manifest_read macos "$consumer/.config/repo-generated.tsv") || exit $?
+    _se_manifest_stale macos "$rows" '' "$tmp/home" 0
+  ) >> "$log" 2>&1
+}
+check_manifest_macos_rows() {
+  mkdir -p -- "$tmp/home/.config" "$tmp/dotfiles/mise/conf.d/old"
+  ln -s -- "$tmp/dotfiles/mise" "$tmp/home/.config/mise"
+  printf '%s\n' '# Synced from bootstrap: x. Do not edit this file.' \
+    | tee "$tmp/dotfiles/mise/conf.d/old/mise.toml" "$tmp/outside.txt" > /dev/null
+  manifest_file "old${tab}.config/mise/conf.d/old/mise.toml" "x${tab}../outside.txt"
+  check_that "the macos rows: the calls exit 0" manifest_macos_rows_call
+  check_that "the macos rows: the real file is gone" no_file "$tmp/dotfiles/mise/conf.d/old/mise.toml"
+  check_that "the macos rows: the link stays" link_is "$tmp/home/.config/mise" "$tmp/dotfiles/mise"
+  check_that "the macos rows: a bad row is skipped" \
+    log_has "$consumer/.config/repo-generated.tsv: line 3 is not <tool><TAB><path> - skipped"
+  check_that "the macos rows: the file of the bad row stays" test -f "$tmp/outside.txt"
+}
+run_check "the stale rule, the macos link mode reads the rows" 0 "$no_tool_values" '' '' check_manifest_macos_rows
+
+# Another link mode is a usage error. `repo_sync --check` only sets up the case.
+manifest_bad_mode_call() {
+  (
+    # shellcheck source=/dev/null
+    source "$clone/sync-engine/common"
+    # shellcheck source=/dev/null
+    source "$clone/sync-engine/manifest"
+    _se_manifest_read nope "$consumer/.config/repo-generated.tsv"
+  ) >> "$log" 2>&1
+}
+check_manifest_bad_mode() {
+  local got=0
+  manifest_bad_mode_call || got=$?
+  check_that "a bad link mode: the call returns 2" test "$got" = 2
+  check_that "a bad link mode: the usage" log_has 'usage: _se_manifest_read repo|macos <file> [<root>]'
+}
+run_check "_se_manifest_read, a bad link mode" 0 "$no_tool_values" '' '' check_manifest_bad_mode
+
 while ((${#case_pids[@]})); do
   collect_case
 done

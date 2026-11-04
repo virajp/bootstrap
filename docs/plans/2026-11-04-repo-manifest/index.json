@@ -66,10 +66,10 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-04T12:36:37.624Z",
-      "ended": "",
-      "commit": "e2d080d",
+      "ended": "2026-11-04T13:53:13.743Z",
+      "commit": "15dc67e",
       "rounds": 2
     },
     {
@@ -86,9 +86,9 @@
         "U1"
       ],
       "waits": "Its cases run the manifest code that U1 writes in sync-engine/manifest and sync-engine/repo-sync.",
-      "status": "green",
+      "status": "running",
       "started": "2026-11-04T13:09:54.229Z",
-      "ended": "2026-11-04T13:26:45.404Z",
+      "ended": "",
       "commit": "b13a1f8",
       "rounds": 1
     },
