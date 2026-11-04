@@ -1181,6 +1181,16 @@ files_merge_key() {
 }
 files_dot_target() { files_merge_key ./sub/m.json; }
 files_double_slash_target() { files_merge_key sub//m.json; }
+# A file system that ignores case finds A.TXT, and only the exact match refuses it.
+files_case_variant() {
+  fixture_txt
+  fixture_toml '[files."A.TXT"]' 'mode = "seed"'
+}
+# The file exists through the link, and only the exact match refuses it.
+files_symlink_folder() {
+  files_merge_key link/m.json
+  ln -s sub "$clone/tools/fixture/link"
+}
 files_both_sources() {
   fixture_txt
   fixture_file a.txt.tmpl 'a'
@@ -1211,6 +1221,10 @@ run_case "[files], a merge target with ./ at the start" 2 "$no_tool_values" file
   'fixture/tools.toml: [files."./sub/m.json"] names a target that no file of the tool produces'
 run_case "[files], a merge target with // inside" 2 "$no_tool_values" files_double_slash_target \
   'fixture/tools.toml: [files."sub//m.json"] names a target that no file of the tool produces'
+run_case "[files], a case variant of a target" 2 "$no_tool_values" files_case_variant \
+  'fixture/tools.toml: [files."A.TXT"] names a target that no file of the tool produces'
+run_case "[files], a target through a symlinked folder" 2 "$no_tool_values" files_symlink_folder \
+  'fixture/tools.toml: [files."link/m.json"] names a target that no file of the tool produces'
 run_case "<p> and <p>.tmpl in one tool folder" 2 "$no_tool_values" files_both_sources \
   'fixture: a.txt and a.txt.tmpl both exist - keep one'
 run_case "[files], a target that is not a table" 2 "$no_tool_values" files_not_table \
