@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-04 — d1e3de8 be8267d dd24492 b573641 e67a4ad 33a740f; 2 open gaps (G4 D14 wrapper form departs from the ruling's words, G5 tool neither installed nor reachable), folder stays live, A1 archive not run; U3 security row fixed one low finding (header regex anchored against the literal in 01-engine.md, G9); ran in session worktree .claude/worktrees/bootstrap-2-0-3ae4b9 (G2), claim and completion landed through code:merge on main (G1)"
   },
   "consent": {
     "merge": true,
@@ -63,11 +63,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T04:57:29.540Z",
+      "ended": "2026-11-04T05:20:08.383Z",
+      "commit": "dd24492",
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -83,11 +83,11 @@
         "U1"
       ],
       "waits": "Its cases run the libraries that U1 creates and the repo-sync front-end that U1 changes.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T05:20:51.248Z",
+      "ended": "2026-11-04T05:49:03.960Z",
+      "commit": "33a740f",
+      "rounds": 2
     },
     {
       "id": "U3",
@@ -102,14 +102,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T05:32:39.100Z",
+      "ended": "2026-11-04T05:57:36.095Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 2,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "51bb003",
+        "to": "b573641"
       }
     },
     {
@@ -131,11 +131,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T05:57:58.131Z",
+      "ended": "2026-11-04T06:05:42.145Z",
+      "commit": "e67a4ad",
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -149,43 +149,43 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T06:07:05.605Z",
+      "ended": "2026-11-04T06:11:00.269Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T04:57:29.477Z",
+      "ended": "2026-11-04T05:20:43.087Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T05:20:51.183Z",
+      "ended": "2026-11-04T05:32:31.043Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T05:32:39.036Z",
+      "ended": "2026-11-04T05:57:49.658Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T05:57:58.067Z",
+      "ended": "2026-11-04T06:06:57.612Z"
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T06:07:05.540Z",
+      "ended": "2026-11-04T06:11:13.998Z"
     }
   ],
   "shared_files": [
@@ -376,31 +376,102 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T05:57:49.909Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T05:57:49.721Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T05:57:49.814Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T05:57:50.005Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "",
+      "stage": "claim",
+      "text": "The claim commit of the plan-index contract is a direct commit on main, and the no-commit-to-branch hook of this repository refuses it · closed: the claim landed from the local branch claim-sync-engine-core through mise run code:merge, the route CLAUDE.md gives, with no hook skipped; the completion commit takes the same route",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "",
+      "stage": "worktree",
+      "text": "Setup step 1 names a worktree .worktrees/sync-engine-core, but this session already runs in a linked worktree and a PreToolUse hook confines its Edit and Write to it (G2 of 2026-11-04-sync-engine-cache) · closed: per git-workflow Step 1 the run works in the session worktree .claude/worktrees/bootstrap-2-0-3ae4b9 on its branch claude/bootstrap-2-0-3ae4b9, brought to the tip of main after the claim; run.worktree names it",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "",
+      "stage": "doctor",
+      "text": "Doctor reports one thing here: the repo has no .config/vwf.yaml, so it is not onboarded and no blocking finding can arise · closed: not a blocking finding; the plan has no code unit, no covers and names no project, and the review cap stays its default of 4",
+      "state": "closed"
+    },
+    {
+      "id": "G4",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: D14 literal form MISE_OFFLINE=1 mise x <tool>@latest -- fails with no versions found even for an installed gomplate (probe on mise 2026.10.25, confirmed by wave reviewer R1) · an installed tool runs as MISE_OFFLINE=1 mise x <tool> -- <tool>, a tool that is not installed as mise x <tool>@latest -- <tool>; this departs from the words of D14 and of the index.md Goal, and keeps its question: no network when installed. R1 returned it as a RULINGS line; the run did not loop it back, since the literal form cannot run gomplate. The online @latest branch was not probed. A person rules on it",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the plan does not say what happens when a tool is neither installed nor reachable · _se_parse_check reports the mise failure as does not parse, with the mise output indented under it",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the fixture gate-cache of test:repo-sync holds only sync-engine/repo-sync, so the case the gate with a cache goes red without common, and U2 says every current case passes unchanged · U2 copies common, write and select into the fixture · closed: U2 copied the three libraries into the fixture, the one change to an existing case",
+      "state": "closed"
+    },
+    {
+      "id": "G7",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "R1 finding sync-engine/write:64: the global _SE_TMP is not named in 01-engine.md · closed: U1 reported it as a DECIDED line (a $(_se_tmp) subshell loses the _SE_TMPS entry, so the exit clean-up would miss the file), and the orchestrator had not passed that line to R1; it stays",
+      "state": "closed"
+    },
+    {
+      "id": "G8",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "R1 finding README.md:47: the list of the sync code in sync-engine/ is falsified by the three new libraries, and U1 did not report it · closed: handed to U4, which owns README.md under S1, as a DOCS FALSIFIED line",
+      "state": "closed"
+    },
+    {
+      "id": "G9",
+      "unit": "U3",
+      "stage": "security",
+      "text": "01-engine.md line 125 and D10 give an unanchored header regex for the check that authorizes a deletion, and 02-tests.md has no case for a repo-owned file that only mentions the text · closed: U3 round 1 fix, the regex anchors the text to the start of a comment line and accepts a lone <!-- block, and U2 adds the cases",
+      "state": "closed"
+    },
+    {
+      "id": "G10",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "U4: code:format only checks without --fix, and it failed on a table row of docs/sync/index.md · closed: U4 ran mise x -- dprint fmt docs/sync/index.md on the file it owns, then code:format passed",
+      "state": "closed"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",

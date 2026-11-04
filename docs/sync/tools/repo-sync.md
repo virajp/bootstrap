@@ -27,9 +27,12 @@ file.
 
 ## mise tools
 
-| mise tool  | Version  | Environments | Note                  |
-| ---------- | -------- | ------------ | --------------------- |
-| `gomplate` | `latest` | dev          | Renders the templates |
+| mise tool  | Version  | Environments | Note                               |
+| ---------- | -------- | ------------ | ---------------------------------- |
+| `gomplate` | `latest` | dev          | For the gate `code:lint:repo-sync` |
+
+The sync does not use this entry. It starts gomplate, jq and yq itself through
+mise, from `/`.
 
 ## Tasks
 
@@ -103,7 +106,7 @@ Else it unsets `SYNC_ENGINE_CLONE` and `REPO_SYNC_CLONE`, loads
 
 `repo_sync --check` examines only the rules that need the values file and the
 local git repository. It runs after the checks of the values file and of
-gomplate, and it stops before the clone. It makes no clone, writes no file and
+`mise`, and it stops before the clone. It makes no clone, writes no file and
 does not set `bootstrap_commit`. It runs each local check, prints each
 message, and returns the highest code. `--check` with `--dry-run` is a usage
 error, code 2. These rules need the clone, so only `setup:configs` examines
@@ -114,6 +117,15 @@ shared file does not have, and a `root_only` tool in a submodule.
 
 Besides the copy of the files, `repo_sync` does these steps:
 
+- It stops with code 2 without `mise`. An installed gomplate, jq or yq runs as
+  `MISE_OFFLINE=1 mise x <tool> -- <tool>`, with no network. A tool that is not
+  installed runs as `mise x <tool>@latest -- <tool>`. Each call runs from `/`,
+  so no mise config of the repository selects a version.
+- It examines each JSON, YAML and TOML target after its render or copy, and
+  before dprint: jq for JSON, yq for YAML and TOML. A `.json` target with a line
+  that starts with `//` after spaces is JSONC, and it does not examine that
+  target. A target that does not parse keeps its existing file, the other files
+  continue, and the sync returns code 2 and does not set `bootstrap_commit`.
 - It writes the merge tasks of the branch model that it finds, and removes the
   others. If neither `main` nor `develop` exists, it stops with code 2.
 - It removes each `conf.d/*/mise*.toml` with the bootstrap header that it did

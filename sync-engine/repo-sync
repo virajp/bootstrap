@@ -145,11 +145,14 @@
 #                no pair left goes, and an entry with no hook left goes
 # The delimiters are `<% %>`, because `{{ }}` belongs to mise and `[[ ]]` to
 # bash, and both must reach the output unchanged. gomplate reads the TOML too.
-# The calling task provides gomplate and pre-commit with
-# `#MISE tools.<tool>="latest"`, and this script calls them without `mise x --`:
-# `mise x` finds only the tools of a config file, and a repo before its first
-# sync, or a shell without MISE_ENV=dev, has no config that names them.
-# The gate `code:lint:repo-sync` has no such directive: it runs only when
+# The engine starts gomplate, jq and yq through the wrappers of `common`, from
+# `/`, so no mise config of a repo selects them, and no task needs a `#MISE`
+# line for them: this works before a first sync and in a shell without
+# MISE_ENV=dev. Each path that they get is absolute. An installed tool runs with
+# no network, and repo_sync stops without mise.
+# The calling task provides pre-commit with `#MISE tools.pre-commit="latest"`,
+# and this script calls it without `mise x --`.
+# The gate `code:lint:repo-sync` still runs only when
 # `mise x -- which gomplate` finds gomplate in the config of the repo.
 #
 # Merge tasks: the branch model follows the branches that exist, here or on
@@ -173,6 +176,10 @@
 #   * A bad file does not stop the others; a clone that is not usable, an
 #     unknown tool or pack, a bad environment or a root-only tool in a submodule
 #     stops the whole run.
+#   * A JSON, YAML or TOML target must parse, after its render or copy and
+#     before dprint. A target that does not parse keeps its existing file, the
+#     other files go on, and the code is 2. A `.json` file with a `//` line is
+#     JSONC, which is not examined.
 #
 # Return codes
 #   0  success (or nothing to change)
@@ -185,8 +192,8 @@
 #      `direct_commit` that is not a boolean, that is in a `[branch.*]` table
 #      other than main and develop or of a branch that does not exist, or that
 #      is true for main but not for develop when both exist, or a `[mise]`
-#      config that cannot be generated, or no `SYNC_ENGINE_CLONE` without
-#      `--check`
+#      config that cannot be generated, a target that does not parse as JSON,
+#      YAML or TOML, no `mise`, or no `SYNC_ENGINE_CLONE` without `--check`
 #   3  a tool or a pack that is not in bootstrap (fix the values file)
 #   5  the clone of `SYNC_ENGINE_CLONE` is not usable, or
 #      `pre-commit autoupdate` could not resolve the hook revisions
@@ -204,25 +211,17 @@
 #                     revisions stay as the tools.toml files have them and no
 #                     network is needed (for tests)
 
-_rs_log() { printf '%s\n' "repo-sync: $*" >&2; }
+# The shared libraries, from the folder of this file.
+# shellcheck source=/dev/null
+source "${BASH_SOURCE[0]%/*}/common"
+# shellcheck source=/dev/null
+source "${BASH_SOURCE[0]%/*}/write"
+# shellcheck source=/dev/null
+source "${BASH_SOURCE[0]%/*}/select"
+_SE_PREFIX='repo-sync'
 
-# Print the permission bits of <path>, for example 755.
-_rs_mode() { stat -c %a -- "$1" 2> /dev/null || stat -f %Lp -- "$1"; }
-
-# Show <path> relative to the current directory when it is under it.
-_rs_path() { [[ $1 == "$PWD"/* ]] && printf '%s' "${1#"$PWD"/}" || printf '%s' "$1"; }
-
-# Temp files and directories still on disk; removed if the task exits early.
-_RS_TMPS=()
 # The manifests of the clone, read once by `_rs_mise_index`.
 _RS_MANIFESTS='' _RS_MANIFESTS_DIR=''
-_rs_cleanup() {
-  ((${#_RS_TMPS[@]})) && rm -rf -- "${_RS_TMPS[@]}"
-  return 0
-}
-trap _rs_cleanup EXIT
-trap '_rs_cleanup; exit 130' INT
-trap '_rs_cleanup; exit 143' TERM
 
 # Print the repo's members, one per line as `<name> <folder> <type>` with a
 # tab between them: the git submodules first, then the other `[member.<name>]`
@@ -239,33 +238,33 @@ _rs_members() {
     # shellcheck disable=SC2016
     submodules=$(git -C "$MISE_PROJECT_ROOT" submodule --quiet foreach --recursive 'echo $displaypath' 2> /dev/null) || submodules=''
   fi
-  rows=$(_rs_gomplate -c "v=${values}" \
+  rows=$(_se_gomplate -c "v=${values}" \
   -i '<% if has .v "member" %><% range $k, $x := .v.member %><% $k %>	<% if has $x "folder" %><% $x.folder %><% else %><% $k %><% end %>	<% if has $x "type" %><% $x.type %><% end %>
 <% end %><% end %>') || return 2
   while IFS="$tab" read -r key folder type; do
     [[ -n $key ]] || continue
     folder=${folder%/}
     if [[ $folder == "." || -z $folder ]]; then
-      _rs_log "$name: [member.${key}] in $(_rs_path "$values") has the folder of the repo itself - a member is a submodule or a folder below the root"
+      _se_log "$name: [member.${key}] in $(_se_path "$values") has the folder of the repo itself - a member is a submodule or a folder below the root"
       return 2
     fi
     case $type in
       '' | submodule | folder) ;;
       *)
-        _rs_log "$name: [member.${key}] in $(_rs_path "$values") has the type '${type}' - use submodule or folder"
+        _se_log "$name: [member.${key}] in $(_se_path "$values") has the type '${type}' - use submodule or folder"
         return 2
         ;;
     esac
     if grep -qxF -- "$folder" <<< "$submodules"; then
       if [[ $type == folder ]]; then
-        _rs_log "$name: [member.${key}] in $(_rs_path "$values") has type folder, but ${folder} is a submodule"
+        _se_log "$name: [member.${key}] in $(_se_path "$values") has type folder, but ${folder} is a submodule"
         return 2
       fi
     elif [[ $type == submodule ]]; then
-      _rs_log "$name: [member.${key}] in $(_rs_path "$values") has type submodule, but ${folder} is not in .gitmodules"
+      _se_log "$name: [member.${key}] in $(_se_path "$values") has type submodule, but ${folder} is not in .gitmodules"
       return 2
     elif [[ ! -d ${MISE_PROJECT_ROOT}/${folder} ]]; then
-      _rs_log "$name: [member.${key}] in $(_rs_path "$values") is not a submodule or a folder of the repo"
+      _se_log "$name: [member.${key}] in $(_se_path "$values") is not a submodule or a folder of the repo"
       return 2
     fi
   done <<< "$rows"
@@ -280,7 +279,7 @@ _rs_members() {
     done <<< "$rows"
     sub_values="${MISE_PROJECT_ROOT}/${path}/.config/bootstrap.toml"
     if [[ -z $found && -f $sub_values ]]; then
-      found=$(_rs_gomplate -c "v=${sub_values}" -i '<% if has .v "repo_name" %><% .v.repo_name %><% end %>') || found=''
+      found=$(_se_gomplate -c "v=${sub_values}" -i '<% if has .v "repo_name" %><% .v.repo_name %><% end %>') || found=''
     fi
     [[ -n $found ]] || found=${path//\//_}
     out+="${found}${tab}${path}${tab}submodule"$'\n'
@@ -297,11 +296,11 @@ _rs_members() {
   while IFS="$tab" read -r key folder type; do
     [[ -n $key ]] || continue
     if [[ ! $key =~ ^[A-Za-z0-9_-]+$ ]]; then
-      _rs_log "$name: the member ${folder} has the name '${key}' - a member name has only letters, digits, - and _; use a [member.<name>] table with such a name in $(_rs_path "$values")"
+      _se_log "$name: the member ${folder} has the name '${key}' - a member name has only letters, digits, - and _; use a [member.<name>] table with such a name in $(_se_path "$values")"
       return 2
     fi
     if grep -qxF -- "$key" <<< "$seen"; then
-      _rs_log "$name: two members have the name '${key}' - write a [member.<name>] table with another name for one of them in $(_rs_path "$values")"
+      _se_log "$name: two members have the name '${key}' - write a [member.<name>] table with another name for one of them in $(_se_path "$values")"
       return 2
     fi
     seen+="${key}"$'\n'
@@ -309,15 +308,11 @@ _rs_members() {
   printf '%s' "$out"
 }
 
-# gomplate with the template delimiters this repo uses. The calling task puts
-# gomplate on PATH with its tools directive.
-_rs_gomplate() { gomplate --left-delim '<%' --right-delim '%>' "$@"; }
-
 # Print the items of the list <key> in the TOML file <file>, one per line;
 # nothing when the key is absent.
 _rs_list() {
   local file=$1 key=$2
-  _rs_gomplate -c "v=${file}" -i "<% if has .v \"${key}\" %><% range (index .v \"${key}\") %><% . %>
+  _se_gomplate -c "v=${file}" -i "<% if has .v \"${key}\" %><% range (index .v \"${key}\") %><% . %>
 <% end %><% end %>"
 }
 
@@ -329,7 +324,7 @@ _RS_BASE_PACK=base
 # message, for the old list format or an entry with another key than `env`.
 _rs_values_sel() {
   local values=$1 out kind table name key
-  out=$(_rs_gomplate -c "v=${values}" -i '<% range $t := coll.Slice "tools" "packs" %><% if has $.v $t %><% $x := index $.v $t %><% if not (test.IsKind "map" $x) %>list <% $t %>
+  out=$(_se_gomplate -c "v=${values}" -i '<% range $t := coll.Slice "tools" "packs" %><% if has $.v $t %><% $x := index $.v $t %><% if not (test.IsKind "map" $x) %>list <% $t %>
 <% else %><% range $k, $e := $x %><% if not (test.IsKind "map" $e) %>bad <% $t %> <% $k %> -
 <% else %><% range $ek, $ev := $e %><% if ne $ek "env" %>bad <% $t %> <% $k %> <% $ek %>
 <% end %><% end %><% if has $e "env" %><% if not (test.IsKind "slice" $e.env) %>bad <% $t %> <% $k %> env
@@ -337,14 +332,14 @@ _rs_values_sel() {
 <% end %><% else %><% $t %> <% $k %> -
 <% end %><% end %><% end %><% end %><% end %><% end %>') || {
 
-    _rs_log "cannot read $(_rs_path "$values")"
+    _se_log "cannot read $(_se_path "$values")"
     return 2
   }
   while read -r kind table name key; do
     if [[ $kind == list ]]; then
       name=security
       [[ $table == tools ]] && name=node
-      _rs_log "$table in $(_rs_path "$values") is a list, the old format - write one table for each entry, for example [$table.$name] env = [\"dev\"]; the pack $_RS_BASE_PACK is always added"
+      _se_log "$table in $(_se_path "$values") is a list, the old format - write one table for each entry, for example [$table.$name] env = [\"dev\"]; the pack $_RS_BASE_PACK is always added"
       return 2
     fi
     [[ $kind == bad ]] || continue
@@ -355,76 +350,10 @@ _rs_values_sel() {
     else
       key="'$key' is not a key of an entry; the only key is env, a list"
     fi
-    _rs_log "[$table.$name] in $(_rs_path "$values"): $key"
+    _se_log "[$table.$name] in $(_se_path "$values"): $key"
     return 2
   done <<< "$out"
   printf '%s\n' "$out"
-}
-
-# Print the tools of the pack <name> as `<tool> <env,...|-> <source>` lines,
-# packs in it expanded in turn. The tools.toml `[pack.*]` lines are in <packs>
-# (`pack <name>` and `item <name> <entry>`); <chain> is the ` <pack> ` words of
-# the packs that include this one. Returns 2 for a loop and 3 for an unknown
-# pack, after a message.
-_rs_pack() {
-  local packs=$1 name=$2 envs=$3 src=$4 chain=$5 kind pack item loop word
-  if [[ $chain == *" $name "* ]]; then
-    loop=$name
-    for word in ${chain#* "$name" }; do
-      loop+=" -> $word"
-    done
-    _rs_log "tools/packs.toml: a pack loop: $loop -> $name"
-    return 2
-  fi
-  if [[ $packs != *$'\n'"pack $name"$'\n'* ]]; then
-    word=${chain% }
-    _rs_log "pack '$name' is not in bootstrap$([[ -n ${chain// /} ]] && printf ' (named in pack %s)' "${word##* }")"
-    return 3
-  fi
-  chain+="$name "
-  while read -r kind pack item; do
-    [[ $kind == item && $pack == "$name" ]] || continue
-    if [[ $item == p:* ]]; then
-      _rs_pack "$packs" "${item#p:}" "$envs" "$src" "$chain" || return
-    else
-      printf '%s %s %s\n' "$item" "$envs" "$src"
-    fi
-  done <<< "$packs"
-}
-
-# Print the selection of the clone <dir> for the values lines <sel> of
-# `_rs_values_sel` as `<tool> <env,...|-> <source>` lines: the pack base, each
-# `[packs.*]`, then each `[tools.*]`. <source> is `default` for the pack base,
-# else the values table, for example `packs.security`. Returns 2 or 3, after a
-# message, on a problem of tools/packs.toml or of a pack.
-_rs_selected() {
-  local dir=$1 sel=$2 packs kind name envs
-  packs=$'\n'
-  if [[ -f $dir/tools/packs.toml ]]; then
-    packs+=$(_rs_gomplate -c "p=${dir}/tools/packs.toml" -i '<% if has .p "pack" %><% range $k, $p := .p.pack %>pack <% $k %>
-<% range $key := coll.Slice "depends" "required" %><% if has $p $key %><% range index $p $key %>item <% $k %> <% . %>
-<% end %><% end %><% end %><% end %><% end %>') || {
-
-      _rs_log "cannot read tools/packs.toml"
-      return 2
-    }
-    packs+=$'\n'
-  fi
-  while read -r kind name; do
-    if [[ $kind == pack && -d $dir/tools/$name ]]; then
-      _rs_log "tools/packs.toml: pack '$name' is also a tool folder - rename one"
-      return 2
-    fi
-  done <<< "$packs"
-  _rs_pack "$packs" "$_RS_BASE_PACK" - default ' ' || return
-  while read -r kind name envs; do
-    [[ $kind == packs ]] || continue
-    _rs_pack "$packs" "$name" "$envs" "packs.$name" ' ' || return
-  done <<< "$sel"
-  while read -r kind name envs; do
-    [[ $kind == tools ]] && printf '%s %s %s\n' "$name" "$envs" "tools.$name"
-  done <<< "$sel"
-  return 0
 }
 
 # The fields of the manifest `$t` as `<field> <value>` lines, for gomplate.
@@ -454,7 +383,7 @@ _rs_manifest() {
     awk -v t="$tool" '$1 == t { sub(/^[^ ]* /, ""); print }' <<< "$_RS_MANIFESTS"
     return 0
   fi
-  _rs_gomplate -c "t=${dir}/tools/${tool}/tools.toml" -i "<% \$t := .t %>${_RS_MANIFEST_TEMPLATE//@P@/}"
+  _se_gomplate -c "t=${dir}/tools/${tool}/tools.toml" -i "<% \$t := .t %>${_RS_MANIFEST_TEMPLATE//@P@/}"
 }
 
 # Set _RS_MISE_DEFS to the ` <mise-tool>=<tool> ` words of every tool in the
@@ -471,11 +400,11 @@ _rs_manifest() {
 _rs_mise_index() {
   local dir=$1 manifest tool name names path late tools='' args=()
   late=$(cd "$dir/tools" && printf '%s\n' */ | sed 's#/$##' | LC_ALL=C awk '$0 >= "zz-repo" { print; exit }') || {
-    _rs_log "cannot list the tool folders of the clone"
+    _se_log "cannot list the tool folders of the clone"
     return 2
   }
   if [[ -n $late ]]; then
-    _rs_log "tool folder tools/$late sorts after zz-repo or is named zz-repo - rename it, because conf.d/zz-repo/ must load last"
+    _se_log "tool folder tools/$late sorts after zz-repo or is named zz-repo - rename it, because conf.d/zz-repo/ must load last"
     return 2
   fi
   for manifest in "$dir"/tools/*/tools.toml; do
@@ -485,16 +414,16 @@ _rs_mise_index() {
     args+=(-c "tool_${tool}=${manifest}")
   done
   _RS_MANIFESTS_DIR='' _RS_MANIFESTS=$'\n'
-  _RS_MANIFESTS+=$(REPO_SYNC_TOOLS=$tools _rs_gomplate "${args[@]}" \
+  _RS_MANIFESTS+=$(REPO_SYNC_TOOLS=$tools _se_gomplate "${args[@]}" \
     -i "<% range (env.Getenv \"REPO_SYNC_TOOLS\" | strings.TrimSpace | strings.Split \" \") %><% \$n := . %><% \$t := index \$ (printf \"tool_%s\" .) %>${_RS_MANIFEST_TEMPLATE//@P@/<% \$n %> }<% end %>" 2> /dev/null) || {
     # Read each file alone, to name the one that fails.
     for tool in $tools; do
       if ! _rs_manifest "$dir" "$tool" > /dev/null 2>&1; then
-        _rs_log "cannot read tools/$tool/tools.toml"
+        _se_log "cannot read tools/$tool/tools.toml"
         return 2
       fi
     done
-    _rs_log "cannot read the tools.toml files of the clone"
+    _se_log "cannot read the tools.toml files of the clone"
     return 2
   }
   _RS_MANIFESTS+=$'\n'
@@ -505,12 +434,12 @@ _rs_mise_index() {
     # Each tool must be in dev, selected or not, so this repo's own test
     # finds a tool without dev before a consumer selects it.
     if [[ $'\n'$names$'\n' != *$'\n'"default_env dev"$'\n'* ]]; then
-      _rs_log "default_envs of tools/$tool/tools.toml has no dev - each tool must be in dev, for example default_envs = [\"dev\", \"ci\"]"
+      _se_log "default_envs of tools/$tool/tools.toml has no dev - each tool must be in dev, for example default_envs = [\"dev\", \"ci\"]"
       return 2
     fi
     for name in $(printf '%s\n' "$names" | awk '$1 == "mise" { print $2 }'); do
       if [[ $_RS_MISE_DEFS == *" $name="* ]]; then
-        _rs_log "mise tool '$name' is defined in tools/$tool and in another tool - keep one"
+        _se_log "mise tool '$name' is defined in tools/$tool and in another tool - keep one"
         return 2
       fi
       _RS_MISE_DEFS+="$name=$tool "
@@ -518,11 +447,11 @@ _rs_mise_index() {
     while read -r name path; do
       [[ -n $name ]] || continue
       if [[ $'\n'$names$'\n' != *$'\n'"mise_requires $name "* ]]; then
-        _rs_log "files of mise tool '$name' in tools/$tool/tools.toml: the entry has no requires - add requires, or remove files"
+        _se_log "files of mise tool '$name' in tools/$tool/tools.toml: the entry has no requires - add requires, or remove files"
         return 2
       fi
       if [[ $path == /* || $path == ../* || $path == */../* || $path == tools.toml || ! -f $dir/tools/$tool/$path ]]; then
-        _rs_log "files of mise tool '$name' in tools/$tool/tools.toml: '$path' is not a file of tools/$tool"
+        _se_log "files of mise tool '$name' in tools/$tool/tools.toml: '$path' is not a file of tools/$tool"
         return 2
       fi
     done < <(printf '%s\n' "$names" | awk '$1 == "mise_files" { print $2, $3 }')
@@ -547,7 +476,7 @@ _rs_env_rules() {
   while read -r kind name envs; do
     [[ -n $kind && $envs != - ]] || continue
     if [[ -z $envs ]]; then
-      _rs_log "env of [$kind.$name] in $(_rs_path "$values") is empty - name an environment, or remove env to use default_envs"
+      _se_log "env of [$kind.$name] in $(_se_path "$values") is empty - name an environment, or remove env to use default_envs"
       return 2
     fi
     has_dev=0
@@ -557,26 +486,114 @@ _rs_env_rules() {
     while [[ -n $envs ]]; do
       env=${envs%%,*} envs=${envs#*,}
       if ! _rs_env_name "$env"; then
-        _rs_log "env of [$kind.$name] in $(_rs_path "$values"): '$env' is not one of ${_RS_ENV_NAMES// /, }"
+        _se_log "env of [$kind.$name] in $(_se_path "$values"): '$env' is not one of ${_RS_ENV_NAMES// /, }"
         return 2
       fi
       if [[ $_RS_ENVS != *" $env "* ]]; then
-        _rs_log "env '$env' of [$kind.$name] in $(_rs_path "$values") is not in environments:${_RS_ENVS% }"
+        _se_log "env '$env' of [$kind.$name] in $(_se_path "$values") is not in environments:${_RS_ENVS% }"
         return 2
       fi
     done
     if ((!has_dev)); then
-      _rs_log "env of [$kind.$name] in $(_rs_path "$values") has no dev - each tool must be in dev, for example env = [\"dev\", \"ci\"]"
+      _se_log "env of [$kind.$name] in $(_se_path "$values") has no dev - each tool must be in dev, for example env = [\"dev\", \"ci\"]"
       return 2
     fi
   done <<< "$sel"
   return 0
 }
 
+# The deps callback of `_rs_resolve`: print the dependencies of the tool <tool>,
+# its `depends` and the tool that defines each mise `depends`. It reads `dir` of
+# `_rs_resolve`. Returns 3 for a tool that is not in bootstrap, and 2 for a
+# manifest that it cannot read or a mise `depends` that no tool defines, after a
+# message.
+_rs_walk_deps() {
+  local tool=$1 manifest field value entry name owner
+  if [[ ! -f $dir/tools/$tool/tools.toml ]]; then
+    _se_log "tool '$tool' is not in bootstrap"
+    return 3
+  fi
+  manifest=$(_rs_manifest "$dir" "$tool") || {
+    _se_log "cannot read tools/$tool/tools.toml"
+    return 2
+  }
+  while read -r field value; do
+    case $field in
+      depends)
+        printf '%s\n' "$value"
+        ;;
+      mise)
+        read -r entry _ value <<< "$value"
+        for name in $value; do
+          owner=$(_rs_mise_owner "$name") || owner=''
+          if [[ -z $owner ]]; then
+            _se_log "mise tool '$entry' of tools/$tool depends on '$name', which no tool defines"
+            return 2
+          fi
+          [[ $owner == "$tool" ]] || printf '%s\n' "$owner"
+        done
+        ;;
+    esac
+  done <<< "$manifest"
+  return 0
+}
+
+# The done callback of `_rs_resolve`: add the fields of the tool <tool> to the
+# results. It reads `dir` and `in_submodule` of
+# `_rs_resolve`. Returns 2, after a message, for a bad `default_envs` or a
+# root-only tool in a submodule.
+_rs_walk_done() {
+  local tool=$1 manifest field value name
+  manifest=$(_rs_manifest "$dir" "$tool") || {
+    _se_log "cannot read tools/$tool/tools.toml"
+    return 2
+  }
+  while read -r field value; do
+    case $field in
+      default_env)
+        if ! _rs_env_name "$value"; then
+          _se_log "default_envs of tools/$tool/tools.toml: '$value' is not one of ${_RS_ENV_NAMES// /, }"
+          return 2
+        fi
+        _RS_DEFAULT_ENVS+="$tool:$value "
+        ;;
+      extension)
+        _RS_EXTENSIONS+="$value"$'\n'
+        ;;
+      seed)
+        _RS_SEEDS+="$tool/$value "
+        ;;
+      seed_requires)
+        # `<seed> <file>`: neither path has a space.
+        _RS_SEED_REQUIRES+="$tool/${value% *}=${value#* } "
+        ;;
+      mise)
+        _RS_MISE_ENTRIES+="$tool $value"$'\n'
+        ;;
+      mise_requires)
+        # `<mise-tool> <file>`: neither has a space.
+        _RS_MISE_REQUIRES+="${value% *}=${value#* } "
+        ;;
+      mise_files)
+        # `<mise-tool> <path>`. The `mise_requires` line of the entry came
+        # first, and `_rs_mise_index` made sure that it exists.
+        name=${_RS_MISE_REQUIRES#* "${value% *}="}
+        _RS_FILE_REQUIRES+="$tool/${value#* }=${name%% *} "
+        ;;
+      root_only)
+        if [[ $value == true && -n $in_submodule ]]; then
+          _se_log "tool '$tool' is for the root repository only - remove it from the tools of this submodule"
+          return 2
+        fi
+        ;;
+    esac
+  done <<< "$manifest"
+}
+
 # Resolve the tools and packs of <values> against the clone <dir>, packs
 # expanded and dependencies included, into _RS_TOOLS (space separated, a
 # dependency before the tool that needs it), _RS_SEL (the
-# `<tool> <env,...|-> <source>` lines of `_rs_selected`), _RS_DEPS
+# `<tool> <env,...|-> <source>` lines of `_se_selected`), _RS_DEPS
 # (`<tool> <dependency>...` lines), _RS_DEFAULT_ENVS (` <tool>:<env> ` words),
 # _RS_EXTENSIONS (one per line, sorted, unique), _RS_SEEDS
 # (` <tool>/<path> ` words), _RS_SEED_REQUIRES (` <tool>/<path>=<file> `
@@ -586,10 +603,10 @@ _rs_env_rules() {
 # `depends` adds the tool that defines it. Returns 2 or 3,
 # after a message, on any problem.
 _rs_resolve() {
-  local dir=$1 values=$2 sel tool field value pending in_submodule name envs
+  local dir=$1 values=$2 sel pending in_submodule name envs
   sel=$(_rs_values_sel "$values") || return 2
   _rs_env_rules "$values" "$sel" || return 2
-  _RS_SEL=$(_rs_selected "$dir" "$sel") || return
+  _RS_SEL=$(_se_selected "$dir/tools/packs.toml" "$dir/tools" "$_RS_BASE_PACK" "$sel" tools/packs.toml) || return
   in_submodule=$(git -C "$MISE_PROJECT_ROOT" rev-parse --show-superproject-working-tree 2> /dev/null) || in_submodule=''
   # In a submodule, a root_only tool of a pack is skipped: the pack base adds
   # vscode to each repository. A [tools.*] entry of it still stops the sync.
@@ -605,96 +622,14 @@ _rs_resolve() {
     _RS_SEL=${kept%$'\n'}
   fi
 
-  _RS_TOOLS=' ' _RS_SEEDS=' ' _RS_SEED_REQUIRES=' ' _RS_EXTENSIONS='' _RS_MISE_ENTRIES=''
+  _RS_SEEDS=' ' _RS_SEED_REQUIRES=' ' _RS_EXTENSIONS='' _RS_MISE_ENTRIES=''
   _RS_MISE_REQUIRES=' ' _RS_FILE_REQUIRES=' '
   _RS_DEPS='' _RS_DEFAULT_ENVS=' '
-  # Depth-first, so each dependency lands before the tool that named it. A
-  # stack of words rather than recursion: bash 3.2 has no local arrays worth
-  # passing around, and the manifests are tiny.
+  # Depth-first, so each dependency lands before the tool that named it.
   pending=$(printf '%s\n' "$_RS_SEL" | awk '{ print $1 }' | tr '\n' ' ')
-  local visiting=' '
-  while [[ -n ${pending// /} ]]; do
-    tool=${pending%% *}
-    pending=${pending#* }
-    [[ -n $tool && $_RS_TOOLS != *" $tool "* ]] || continue
-    if [[ ! -f $dir/tools/$tool/tools.toml ]]; then
-      _rs_log "tool '$tool' is not in bootstrap"
-      return 3
-    fi
-    local deps='' all='' manifest entry owner
-    manifest=$(_rs_manifest "$dir" "$tool") || {
-      _rs_log "cannot read tools/$tool/tools.toml"
-      return 2
-    }
-    while read -r field value; do
-      case $field in
-        depends)
-          all+=" $value"
-          [[ $_RS_TOOLS != *" $value "* ]] && deps+="$value "
-          ;;
-        mise)
-          read -r entry _ value <<< "$value"
-          for name in $value; do
-            owner=$(_rs_mise_owner "$name") || owner=''
-            if [[ -z $owner ]]; then
-              _rs_log "mise tool '$entry' of tools/$tool depends on '$name', which no tool defines"
-              return 2
-            fi
-            [[ $owner != "$tool" ]] && all+=" $owner"
-            [[ $owner != "$tool" && $_RS_TOOLS != *" $owner "* ]] && deps+="$owner "
-          done
-          ;;
-      esac
-    done <<< "$manifest"
-    if [[ -n $deps && $visiting != *" $tool "* ]]; then
-      # Come back to this tool after its dependencies.
-      visiting+="$tool "
-      pending="$deps$tool $pending"
-      continue
-    fi
-    [[ -n $all ]] && _RS_DEPS+="$tool$all"$'\n'
-    while read -r field value; do
-      case $field in
-        default_env)
-          if ! _rs_env_name "$value"; then
-            _rs_log "default_envs of tools/$tool/tools.toml: '$value' is not one of ${_RS_ENV_NAMES// /, }"
-            return 2
-          fi
-          _RS_DEFAULT_ENVS+="$tool:$value "
-          ;;
-        extension)
-          _RS_EXTENSIONS+="$value"$'\n'
-          ;;
-        seed)
-          _RS_SEEDS+="$tool/$value "
-          ;;
-        seed_requires)
-          # `<seed> <file>`: neither path has a space.
-          _RS_SEED_REQUIRES+="$tool/${value% *}=${value#* } "
-          ;;
-        mise)
-          _RS_MISE_ENTRIES+="$tool $value"$'\n'
-          ;;
-        mise_requires)
-          # `<mise-tool> <file>`: neither has a space.
-          _RS_MISE_REQUIRES+="${value% *}=${value#* } "
-          ;;
-        mise_files)
-          # `<mise-tool> <path>`. The `mise_requires` line of the entry came
-          # first, and `_rs_mise_index` made sure that it exists.
-          name=${_RS_MISE_REQUIRES#* "${value% *}="}
-          _RS_FILE_REQUIRES+="$tool/${value#* }=${name%% *} "
-          ;;
-        root_only)
-          if [[ $value == true && -n $in_submodule ]]; then
-            _rs_log "tool '$tool' is for the root repository only - remove it from the tools of this submodule"
-            return 2
-          fi
-          ;;
-      esac
-    done <<< "$manifest"
-    _RS_TOOLS+="$tool "
-  done
+  _se_walk _rs_walk_deps _rs_walk_done "$pending" || return
+  _RS_TOOLS=$_SE_WALK_VISITED
+  _RS_DEPS=$_SE_WALK_DEPS
   _RS_EXTENSIONS=$(printf '%s' "$_RS_EXTENSIONS" | sort -u)
 }
 
@@ -705,7 +640,7 @@ _rs_resolve() {
 _rs_tool_extensions() {
   local dir=$1 values=$2 pending tool field value seen=' ' entry name owner sel
   sel=$(_rs_values_sel "$values" 2> /dev/null) || sel=''
-  pending=$(_rs_selected "$dir" "$sel" 2> /dev/null | awk '{ print $1 }' | tr '\n' ' ') || pending=''
+  pending=$(_se_selected "$dir/tools/packs.toml" "$dir/tools" "$_RS_BASE_PACK" "$sel" tools/packs.toml 2> /dev/null | awk '{ print $1 }' | tr '\n' ' ') || pending=''
   while [[ -n ${pending// /} ]]; do
     tool=${pending%% *}
     pending=${pending#* }
@@ -769,7 +704,7 @@ _rs_merge_model() {
   elif ((main || develop)); then
     _RS_SKIP=" $tasks/develop $tasks/main "
   else
-    _rs_log "the repo has neither 'main' nor 'develop' - create one, then sync again"
+    _se_log "the repo has neither 'main' nor 'develop' - create one, then sync again"
     return 2
   fi
 }
@@ -783,11 +718,11 @@ _rs_merge_model() {
 # exist. Returns 2, after a message for each problem.
 _rs_direct_commit() {
   local values=$1 out name value show rc=0 main=0 develop=0 tab=$'\t'
-  show=$(_rs_path "$values")
+  show=$(_se_path "$values")
   _RS_HOOK_DROP=' '
-  out=$(_rs_gomplate -c "v=${values}" -i '<% if and (has .v "branch") (test.IsKind "map" .v.branch) %><% range $k, $b := .v.branch %><% if and (test.IsKind "map" $b) (has $b "direct_commit") %><% $k %>	<% if test.IsKind "bool" $b.direct_commit %><% $b.direct_commit %><% else %>bad<% end %>
+  out=$(_se_gomplate -c "v=${values}" -i '<% if and (has .v "branch") (test.IsKind "map" .v.branch) %><% range $k, $b := .v.branch %><% if and (test.IsKind "map" $b) (has $b "direct_commit") %><% $k %>	<% if test.IsKind "bool" $b.direct_commit %><% $b.direct_commit %><% else %>bad<% end %>
 <% end %><% end %><% end %>') || {
-    _rs_log "cannot read [branch] of $show"
+    _se_log "cannot read [branch] of $show"
     return 2
   }
   _rs_branch_exists main && main=1
@@ -795,20 +730,20 @@ _rs_direct_commit() {
   while IFS="$tab" read -r name value; do
     [[ -n $name ]] || continue
     if [[ $name != main && $name != develop ]]; then
-      _rs_log "[branch.${name}] in $show: direct_commit is a key of [branch.main] and [branch.develop] only"
+      _se_log "[branch.${name}] in $show: direct_commit is a key of [branch.main] and [branch.develop] only"
       rc=2
     elif [[ $value == bad ]]; then
-      _rs_log "[branch.${name}] in $show: direct_commit must be true or false"
+      _se_log "[branch.${name}] in $show: direct_commit must be true or false"
       rc=2
     elif ! _rs_branch_exists "$name"; then
-      _rs_log "[branch.${name}] in $show has direct_commit, but the branch '${name}' does not exist - create it, or remove the key"
+      _se_log "[branch.${name}] in $show has direct_commit, but the branch '${name}' does not exist - create it, or remove the key"
       rc=2
     elif [[ $value == true ]]; then
       _RS_HOOK_DROP+="$name "
     fi
   done <<< "$out"
   if ((main && develop)) && [[ $_RS_HOOK_DROP == *" main "* && $_RS_HOOK_DROP != *" develop "* ]]; then
-    _rs_log "[branch.main] in $show has direct_commit = true, but [branch.develop] does not - with main and develop, set direct_commit = true for develop too, or remove it from main"
+    _se_log "[branch.main] in $show has direct_commit = true, but [branch.develop] does not - with main and develop, set direct_commit = true for develop too, or remove it from main"
     rc=2
   fi
   ((main)) || _RS_HOOK_DROP+="main "
@@ -824,29 +759,29 @@ _rs_direct_commit() {
 _rs_fnox_profiles() {
   local values=$1 file="${MISE_PROJECT_ROOT}/.config/fnox.toml" out kind name repo rc=0
   [[ -f $file ]] || return 0
-  repo=$(_rs_gomplate -c "v=${values}" -i '<% if has .v "repo_name" %><% .v.repo_name %><% end %>') || repo=''
+  repo=$(_se_gomplate -c "v=${values}" -i '<% if has .v "repo_name" %><% .v.repo_name %><% end %>') || repo=''
   [[ -n $repo ]] || repo='<repo_name>'
-  out=$(_rs_gomplate -c "f=${file}" -i '<% if has .f "secrets" %>secrets
+  out=$(_se_gomplate -c "f=${file}" -i '<% if has .f "secrets" %>secrets
 <% end %><% if has .f "profiles" %><% if test.IsKind "map" .f.profiles %><% range $k, $p := .f.profiles %>profile <% $k %>
 <% end %><% else %>bad
 <% end %><% end %>') || {
-    _rs_log "cannot read .config/fnox.toml"
+    _se_log "cannot read .config/fnox.toml"
     return 2
   }
   local count=0
   while read -r kind name; do
     case $kind in
       secrets)
-        _rs_log ".config/fnox.toml has a top-level [secrets] table, the fnox default profile - move each secret to [profiles.${repo}.secrets], then delete the table (M25 of docs/sync/migrate.md)"
+        _se_log ".config/fnox.toml has a top-level [secrets] table, the fnox default profile - move each secret to [profiles.${repo}.secrets], then delete the table (M25 of docs/sync/migrate.md)"
         rc=2
         ;;
       bad)
-        _rs_log "profiles in .config/fnox.toml must be [profiles.<name>] tables (M25 of docs/sync/migrate.md)"
+        _se_log "profiles in .config/fnox.toml must be [profiles.<name>] tables (M25 of docs/sync/migrate.md)"
         rc=2
         ;;
       profile)
         if [[ $name == default ]]; then
-          _rs_log "[profiles.default] in .config/fnox.toml: a repository does not use the fnox default profile - rename it, for example to [profiles.${repo}] (M25 of docs/sync/migrate.md)"
+          _se_log "[profiles.default] in .config/fnox.toml: a repository does not use the fnox default profile - rename it, for example to [profiles.${repo}] (M25 of docs/sync/migrate.md)"
           rc=2
         else
           ((count += 1))
@@ -855,7 +790,7 @@ _rs_fnox_profiles() {
     esac
   done <<< "$out"
   if ((count == 0)); then
-    _rs_log ".config/fnox.toml has no named profile - add [profiles.${repo}.secrets]; a repository does not use the fnox default profile (M25 of docs/sync/migrate.md)"
+    _se_log ".config/fnox.toml has no named profile - add [profiles.${repo}.secrets]; a repository does not use the fnox default profile (M25 of docs/sync/migrate.md)"
     rc=2
   fi
   return "$rc"
@@ -865,17 +800,17 @@ _rs_fnox_profiles() {
 _rs_remove() {
   local tool=$1 path=$2 dry_run=$3 dest show
   dest="${MISE_PROJECT_ROOT}/${path}"
-  show=$(_rs_path "$dest")
+  show=$(_se_path "$dest")
   [[ -e $dest ]] || return 0
   if ((dry_run)); then
-    _rs_log "would remove $show"
+    _se_log "would remove $show"
     return 0
   fi
   rm -f -- "$dest" || {
-    _rs_log "cannot remove $show"
+    _se_log "cannot remove $show"
     return 1
   }
-  _rs_log "removed    $show"
+  _se_log "removed    $show"
 }
 
 # Set _RS_REQ_SKIP to the ` <tool>/<path>=<file> ` words of _RS_FILE_REQUIRES
@@ -900,20 +835,20 @@ _rs_skip_required() {
   requires=${_RS_REQ_SKIP#* "$tool/$path="}
   requires=${requires%% *}
   dest="${MISE_PROJECT_ROOT}/${path%.tmpl}"
-  show=$(_rs_path "$dest")
-  if [[ -f $dest ]] && head -n 3 -- "$dest" | grep -qE 'Synced from (bootstrap|repo-config): '; then
+  show=$(_se_path "$dest")
+  if _se_has_header "$dest"; then
     if ((dry_run)); then
-      _rs_log "would remove $show (no $requires)"
+      _se_log "would remove $show (no $requires)"
       return 0
     fi
     rm -f -- "$dest" || {
-      _rs_log "cannot remove $show"
+      _se_log "cannot remove $show"
       return 1
     }
-    _rs_log "removed    $show (no $requires)"
+    _se_log "removed    $show (no $requires)"
     return 0
   fi
-  _rs_log "skip file  $show (no $requires)"
+  _se_log "skip file  $show (no $requires)"
 }
 
 # The environment names that a tools.toml can use in `default_envs` and
@@ -930,21 +865,21 @@ _rs_env_name() {
 _rs_envs() {
   local values=$1 list name
   list=$(_rs_list "$values" environments) || {
-    _rs_log "cannot read $(_rs_path "$values")"
+    _se_log "cannot read $(_se_path "$values")"
     return 2
   }
   if [[ -z ${list//[$'\n ']/} ]]; then
-    _rs_log "$(_rs_path "$values") lists no environments - using dev only; add environments = [\"dev\", ...]"
+    _se_log "$(_se_path "$values") lists no environments - using dev only; add environments = [\"dev\", ...]"
     list=dev
   fi
   for name in $list; do
     [[ $name == dev || $name == ci ]] && continue
-    _rs_log "environment '$name' in $(_rs_path "$values") is not one of dev, ci"
+    _se_log "environment '$name' in $(_se_path "$values") is not one of dev, ci"
     return 2
   done
   list=" $(printf '%s ' $list)"
   if [[ $list != *" dev "* ]]; then
-    _rs_log "environments in $(_rs_path "$values") must include dev"
+    _se_log "environments in $(_se_path "$values") must include dev"
     return 2
   fi
   _RS_ENVS=' '
@@ -1026,7 +961,7 @@ _rs_mise_env() {
     fi
     for name in ${allowed//,/ }; do
       if ! _rs_env_name "$name"; then
-        _rs_log "envs of mise tool '$entry' in tools/$tool/tools.toml: '$name' is not one of ${_RS_ENV_NAMES// /, }"
+        _se_log "envs of mise tool '$entry' in tools/$tool/tools.toml: '$name' is not one of ${_RS_ENV_NAMES// /, }"
         return 2
       fi
     done
@@ -1037,13 +972,13 @@ _rs_mise_env() {
         from=${from%% *}
         case $from in
           default)
-            _rs_log "tools/$tool/tools.toml: default_envs has '$env', but its mise tool '$entry' allows only ${allowed//,/, }"
+            _se_log "tools/$tool/tools.toml: default_envs has '$env', but its mise tool '$entry' allows only ${allowed//,/, }"
             ;;
           tools.* | packs.*)
-            _rs_log "env '$env' of [$from] in the values file: mise tool '$entry' of tools/$tool allows only ${allowed//,/, }"
+            _se_log "env '$env' of [$from] in the values file: mise tool '$entry' of tools/$tool allows only ${allowed//,/, }"
             ;;
           *)
-            _rs_log "tools/$from needs tools/$tool in '$env', but its mise tool '$entry' allows only ${allowed//,/, }"
+            _se_log "tools/$from needs tools/$tool in '$env', but its mise tool '$entry' allows only ${allowed//,/, }"
             ;;
         esac
         return 2
@@ -1167,40 +1102,40 @@ _rs_overrides() {
   [[ ${3:-} == local ]] && only_local=1
   local tools=${_RS_TOOLS:-} envs=${_RS_ENVS:-}
   ((only_local)) && tools=''
-  show=$(_rs_path "$values")
+  show=$(_se_path "$values")
   _RS_GI_ADD='' _RS_GI_REMOVE='' _RS_VALUES_NOTE=${values#"$MISE_PROJECT_ROOT"/}
   if [[ -f ${MISE_PROJECT_ROOT}/.config/repo-sync/gitignore ]]; then
-    _rs_log ".config/repo-sync/gitignore is no longer used - move its lines to add of [overrides.gitignore] in $show, then delete it (M18 of docs/sync/migrate.md)"
+    _se_log ".config/repo-sync/gitignore is no longer used - move its lines to add of [overrides.gitignore] in $show, then delete it (M18 of docs/sync/migrate.md)"
     rc=2
   fi
   local args=(-c "o=${values}")
   for tool in $tools; do
     args+=(-c "tool_${tool}=${dir}/tools/${tool}/tools.toml")
   done
-  out=$(REPO_SYNC_ENVS=$envs REPO_SYNC_TOOLS=$tools _rs_gomplate "${args[@]}" -i "$_RS_OVERRIDES_TEMPLATE") || {
-    _rs_log "cannot read [overrides] of $show"
+  out=$(REPO_SYNC_ENVS=$envs REPO_SYNC_TOOLS=$tools _se_gomplate "${args[@]}" -i "$_RS_OVERRIDES_TEMPLATE") || {
+    _se_log "cannot read [overrides] of $show"
     return 2
   }
   while IFS=$'\t' read -r problem path arg; do
     case $problem in
       table)
-        _rs_log "$path in $show must be a table"
+        _se_log "$path in $show must be a table"
         ;;
       key)
         if [[ $path == overrides.graphifyignore ]]; then
-          _rs_log "$path in $show is no longer used: bootstrap does not ship .graphifyignore - remove the table (M24 of docs/sync/migrate.md)"
+          _se_log "$path in $show is no longer used: bootstrap does not ship .graphifyignore - remove the table (M24 of docs/sync/migrate.md)"
         else
-          _rs_log "$path in $show: the only keys of [overrides] are mise, mise_env and gitignore"
+          _se_log "$path in $show: the only keys of [overrides] are mise, mise_env and gitignore"
         fi
         ;;
       gikey)
-        _rs_log "$path in $show: the only keys of [${path%.*}] are add and remove"
+        _se_log "$path in $show: the only keys of [${path%.*}] are add and remove"
         ;;
       gilist)
-        _rs_log "$path in $show must be a list of one-line strings, for example [\"/build/\"]"
+        _se_log "$path in $show must be a list of one-line strings, for example [\"/build/\"]"
         ;;
       giempty)
-        _rs_log "$path in $show has an empty line"
+        _se_log "$path in $show has an empty line"
         ;;
       add | remove)
         # <path> is overrides.<ignore>.<list>.
@@ -1217,17 +1152,17 @@ _rs_overrides() {
         # Without environments, `_rs_envs` already reported the cause.
         [[ -n ${envs// /} ]] || continue
         if [[ $problem == envname ]]; then
-          _rs_log "$path in $show: '$arg' is not one of ${_RS_ENV_NAMES// /, }"
+          _se_log "$path in $show: '$arg' is not one of ${_RS_ENV_NAMES// /, }"
         else
-          _rs_log "$path in $show: '$arg' is not in environments:${envs% }"
+          _se_log "$path in $show: '$arg' is not in environments:${envs% }"
         fi
         ;;
       lock)
-        _rs_log "$path in $show: the envs, the depends, the requires and the files of a mise tool cannot be overridden - use env of [tools.<tool>]"
+        _se_log "$path in $show: the envs, the depends, the requires and the files of a mise tool cannot be overridden - use env of [tools.<tool>]"
         ;;
       none)
         ((only_local)) && continue
-        _rs_log "$path in $show: no selected tool has $arg - the path after overrides. is the path in tools/<tool>/tools.toml"
+        _se_log "$path in $show: no selected tool has $arg - the path after overrides. is the path in tools/<tool>/tools.toml"
         ;;
       *)
         continue
@@ -1240,12 +1175,12 @@ _rs_overrides() {
     [[ -n $line ]] || continue
     shipped=tools/git/.gitignore
     if [[ $'\n'$_RS_GI_ADD == *$'\n'"$ignore"$'\t'"$line"$'\n'* ]]; then
-      _rs_log "overrides.$ignore in $show: '$line' is in add and in remove - keep one"
+      _se_log "overrides.$ignore in $show: '$line' is in add and in remove - keep one"
       rc=2
     elif ((only_local)); then
       continue
     elif ! RS_LINE=$line awk '{ gsub(/^[ \t]+|[ \t]+$/, "") } $0 == ENVIRON["RS_LINE"] { found = 1 } END { exit !found }' "$dir/$shipped" 2> /dev/null; then
-      _rs_log "overrides.$ignore.remove in $show: '$line' is not a line of the shipped .$ignore ($shipped)"
+      _se_log "overrides.$ignore.remove in $show: '$line' is not a line of the shipped .$ignore ($shipped)"
       rc=2
     fi
   done <<< "$_RS_GI_REMOVE"
@@ -1340,8 +1275,11 @@ _rs_mise_render() {
   local dir=$1 tool=$2 values=$3 folder=$2 env name rel tmp err
   local note="# override: ${values#"$MISE_PROJECT_ROOT"/}"
   local out="${dir}/tools/${tool}/.config/mise/conf.d/${folder}"
-  local header="# Synced from bootstrap: tools/${tool}/tools.toml. Do not edit this file.
-# The next sync replaces it, and a manual change is lost.
+  local line1
+  # shellcheck disable=SC2059
+  printf -v line1 "$_SE_HEADER_LINE1" "tools/${tool}/tools.toml"
+  local header="# ${line1}
+# ${_SE_HEADER_LINE2}
 "
   tmp="${dir}/.repo-sync-mise" err="${dir}/.repo-sync-mise-err"
   # `setup-all` and `setup-<submodule>` exist only in a repo with git
@@ -1366,8 +1304,8 @@ _rs_mise_render() {
     # gomplate writes no file for an empty output, so the previous one must go.
     rm -f -- "$tmp"
     if ! REPO_SYNC_ENV=$env REPO_SYNC_ENVS=$_RS_MISE_ENVS REPO_SYNC_IN=$in REPO_SYNC_DEV_ALIASES=$aliases \
-      _rs_gomplate -c "t=${dir}/tools/${tool}/tools.toml" -c "o=${values}" -i "$_RS_MISE_TEMPLATE" -o "$tmp" 2> "$err"; then
-      _rs_log "tools/$tool/tools.toml: cannot generate the mise config: $(sed -n 's/.*error calling Fail: template generation failed: //p' "$err" | sed 's/"}$//')"
+      _se_gomplate -c "t=${dir}/tools/${tool}/tools.toml" -c "o=${values}" -i "$_RS_MISE_TEMPLATE" -o "$tmp" 2> "$err"; then
+      _se_log "tools/$tool/tools.toml: cannot generate the mise config: $(sed -n 's/.*error calling Fail: template generation failed: //p' "$err" | sed 's/"}$//')"
       for name in $_RS_ENVS; do
         _RS_SEEN+="${rel%/*}/mise.${name}.toml "
       done
@@ -1389,7 +1327,7 @@ _rs_mise_render() {
     ' "$tmp" "$tmp" > "$tmp.marked" && mv -f -- "$tmp.marked" "$tmp" || return 1
     [[ -s $tmp && -n $(tr -d ' \n' < "$tmp") ]] || continue
     if [[ -e $out/$name ]]; then
-      _rs_log "tools/$tool ships $rel and also generates it from [mise] - remove one"
+      _se_log "tools/$tool ships $rel and also generates it from [mise] - remove one"
       return 2
     fi
     mkdir -p -- "$out" &&
@@ -1411,7 +1349,7 @@ _rs_stale() {
     rel=${file#"$MISE_PROJECT_ROOT"/}
     [[ $_RS_SEEN != *" $rel "* ]] || continue
     # `repo-config` is the old name of this repository, in older copies.
-    head -n 1 -- "$file" | grep -qE '^# Synced from (bootstrap|repo-config): ' || continue
+    _se_has_header "$file" || continue
     _rs_remove '' "$rel" "$dry_run" || rc=$?
     ((dry_run)) || rmdir -- "${file%/*}" 2> /dev/null || true
   done < <(find "$root" -mindepth 2 -maxdepth 2 -type f -name 'mise*.toml' | sort)
@@ -1452,7 +1390,7 @@ _rs_context() {
   # `--branch`, the hook protects main and master. An entry with no hook left
   # goes too.
   REPO_SYNC_SYNC_ENGINE=${dir}/sync-engine REPO_SYNC_HOOK_DROP=$_RS_HOOK_DROP REPO_SYNC_OWN_PRECOMMIT=$has_own REPO_SYNC_MEMBERS=$members REPO_SYNC_MEMBER_FOLDERS=$folders REPO_SYNC_MEMBER_TYPES=$types REPO_SYNC_SUBMODULES=$submodules REPO_SYNC_TOOLS=$(printf '%s\n' $_RS_TOOLS) REPO_SYNC_EXTENSIONS=$_RS_EXTENSIONS \
-    _rs_gomplate "${args[@]}" -o "$out" \
+    _se_gomplate "${args[@]}" -o "$out" \
     -i '<% $ctx := dict %><% range (coll.Slice "members" "submodules" "tools" "extensions") %><% $l := coll.Slice %><% range (env.Getenv (printf "REPO_SYNC_%s" (strings.ToUpper .)) | strings.Split "\n") %><% if . %><% $l = coll.Append . $l %><% end %><% end %><% $ctx = coll.Merge $ctx (dict . $l) %><% end %><% $mf := dict %><% $mt := dict %><% $fl := env.Getenv "REPO_SYNC_MEMBER_FOLDERS" | strings.Split "\n" %><% $tl := env.Getenv "REPO_SYNC_MEMBER_TYPES" | strings.Split "\n" %><% range $i, $n := $ctx.members %><% $mf = coll.Merge (dict $n (index $fl $i)) $mf %><% $mt = coll.Merge (dict $n (index $tl $i)) $mt %><% end %><% $ctx = coll.Merge $ctx (dict "member_folders" $mf "member_types" $mt "sync_engine" (env.Getenv "REPO_SYNC_SYNC_ENGINE")) %><% $pc := coll.Slice %><% range $ctx.tools %><% $t := index $ (printf "tool_%s" .) %><% if has $t "precommit" %><% range $t.precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% end %><% if env.Getenv "REPO_SYNC_OWN_PRECOMMIT" %><% range $.repo_precommit %><% $pc = coll.Append . $pc %><% end %><% end %><% $drop := strings.Split " " (strings.TrimSpace (env.Getenv "REPO_SYNC_HOOK_DROP")) -%>
 <% $npc := coll.Slice -%>
 <% range $e := $pc -%>
@@ -1484,30 +1422,6 @@ _rs_context() {
 <% $ctx = coll.Merge $ctx (dict "precommit" $npc) %><% coll.Merge $ctx .v | data.ToJSON %>' >&2
 }
 
-# Remove each synced file (with the bootstrap header) that is at the place
-# of a folder in <dir> or above it, up to the repo root. Returns 1, after a
-# message, when such a file is the repo's own.
-_rs_unblock() {
-  local dir=$1 dry_run=$2 show
-  while [[ $dir == "$MISE_PROJECT_ROOT"/* ]]; do
-    if [[ -f $dir && ! -L $dir ]]; then
-      show=$(_rs_path "$dir")
-      if ! head -n 3 -- "$dir" | grep -qE 'Synced from (bootstrap|repo-config): '; then
-        _rs_log "$show is a file of this repo, but the sync needs a folder there - move it"
-        return 1
-      fi
-      if ((dry_run)); then
-        _rs_log "would remove $show (a folder replaces it)"
-      else
-        rm -f -- "$dir" || return 1
-        _rs_log "removed    $show (a folder replaces it)"
-      fi
-      return 0
-    fi
-    dir=$(dirname -- "$dir")
-  done
-}
-
 # Sync the file <path> of <tool> from the clone in <dir>, first step: render
 # the file into a temp file. Leaves the destination untouched when it is a
 # seed that exists, when it is a seed whose `seed_requires` file is missing,
@@ -1520,22 +1434,22 @@ _rs_file() {
   local dest destdir tmp show rc=0 env
   _RS_DEFERRED=''
   dest="${MISE_PROJECT_ROOT}/${out}"
-  show=$(_rs_path "$dest")
+  show=$(_se_path "$dest")
   # A mise file of an environment that this repo does not use. Not recorded,
   # so `_rs_stale` removes an old copy with the header.
   if [[ $out == .config/mise/conf.d/*/mise.*.toml ]]; then
     env=${out##*/mise.}
     env=${env%.toml}
     if [[ $_RS_ENVS != *" $env "* ]]; then
-      _rs_log "skip env   $show"
+      _se_log "skip env   $show"
       return 0
     fi
   fi
   # Written or kept: `_rs_stale` must not remove it, also after a failure.
   _RS_SEEN+="$out "
 
-  if [[ $_RS_SEEDS == *" $tool/$path "* && -e $dest ]]; then
-    _rs_log "kept seed  $show"
+  if [[ $_RS_SEEDS == *" $tool/$path "* ]] && _se_seed_kept "$dest"; then
+    _se_log "kept seed  $show"
     return 0
   fi
   # A seed with `seed_requires` is only for a repo that has the named file.
@@ -1543,7 +1457,7 @@ _rs_file() {
   if [[ $requires != "$_RS_SEED_REQUIRES" ]]; then
     requires=${requires%% *}
     if [[ ! -e ${MISE_PROJECT_ROOT}/${requires} ]]; then
-      _rs_log "skip seed  $show (no $requires)"
+      _se_log "skip seed  $show (no $requires)"
       return 0
     fi
   fi
@@ -1551,29 +1465,29 @@ _rs_file() {
   # A synced file can become a folder in a later layout, for example
   # code/format -> code/format/_default. Remove the old synced file that is in
   # the way. A file without the header is the repo's, so the sync stops there.
-  _rs_unblock "$(dirname -- "$dest")" "$dry_run" || return 1
+  _se_unblock "$(dirname -- "$dest")" "$MISE_PROJECT_ROOT" "$dry_run" || return 1
 
   if ((dry_run)); then
     destdir=${TMPDIR:-/tmp}
   else
     destdir=$(dirname -- "$dest")
     mkdir -p -- "$destdir" || {
-      _rs_log "cannot create $(_rs_path "$destdir")"
+      _se_log "cannot create $(_se_path "$destdir")"
       return 1
     }
   fi
   # Temp file in the destination directory so the final mv is atomic.
-  tmp=$(mktemp "${destdir%/}/.repo-sync.XXXXXX") || {
-    _rs_log "cannot create a temp file in $(_rs_path "$destdir")"
+  _se_tmp "$destdir" > /dev/null || {
+    _se_log "cannot create a temp file in $(_se_path "$destdir")"
     return 1
   }
-  _RS_TMPS+=("$tmp")
+  tmp=$_SE_TMP
 
   if [[ $path == *.tmpl ]]; then
     if [[ -z $ctx ]]; then
       rc=2
-    elif ! _rs_gomplate -c ".=${ctx}?type=application/json" -f "$src" -o "$tmp" >&2; then
-      _rs_log "$tool/$path: gomplate failed to render the template"
+    elif ! _se_gomplate -c ".=${ctx}?type=application/json" -f "$src" -o "$tmp" >&2; then
+      _se_log "$tool/$path: gomplate failed to render the template"
       rc=2
     fi
   else
@@ -1587,19 +1501,24 @@ _rs_file() {
   # REPO_SYNC_NO_AUTOUPDATE=1 skips it, for the tests.
   if ((rc == 0)) && [[ $out == .config/pre-commit-config.yaml ]]; then
     if [[ ${REPO_SYNC_NO_AUTOUPDATE:-} == 1 ]]; then
-      _rs_log "$tool/$path: REPO_SYNC_NO_AUTOUPDATE=1 - pre-commit autoupdate skipped"
+      _se_log "$tool/$path: REPO_SYNC_NO_AUTOUPDATE=1 - pre-commit autoupdate skipped"
     elif ! command -v pre-commit > /dev/null 2>&1; then
-      _rs_log "$tool/$path: pre-commit is not available to resolve the hook revisions"
+      _se_log "$tool/$path: pre-commit is not available to resolve the hook revisions"
       rc=5
     elif ! (cd "$MISE_PROJECT_ROOT" && pre-commit autoupdate --config "$tmp" > /dev/null 2>&1); then
-      _rs_log "$tool/$path: pre-commit autoupdate failed - examine the network and the hook repositories"
+      _se_log "$tool/$path: pre-commit autoupdate failed - examine the network and the hook repositories"
       rc=5
     fi
   fi
 
+  # A JSON, YAML or TOML target must parse, before dprint can change it.
+  if ((rc == 0)); then
+    _se_parse_check "$tmp" "$(_se_format "$out" "$tmp")" "$show" || rc=$?
+  fi
+
   if ((rc != 0)); then
     rm -f -- "$tmp"
-    [[ -e $dest ]] && _rs_log "kept existing $show"
+    [[ -e $dest ]] && _se_log "kept existing $show"
     return "$rc"
   fi
 
@@ -1636,7 +1555,7 @@ _rs_file_finish() {
   local src="${dir}/tools/${tool}/${path}" out=${path%.tmpl}
   local dest show rc=0
   dest="${MISE_PROJECT_ROOT}/${out}"
-  show=$(_rs_path "$dest")
+  show=$(_se_path "$dest")
   if [[ -n $_RS_STAGE && -f $_RS_STAGE/$out ]]; then
     cp -- "$_RS_STAGE/$out" "$tmp" || true
   fi
@@ -1663,101 +1582,13 @@ _rs_file_finish() {
   fi
   if ((rc != 0)); then
     rm -f -- "$tmp"
-    [[ -e $dest ]] && _rs_log "kept existing $show"
+    [[ -e $dest ]] && _se_log "kept existing $show"
     return "$rc"
   fi
 
   # The file takes the mode of its source in bootstrap, also when it exists:
   # a template task is executable because its `.tmpl` is. mktemp creates 0600.
-  local mode
-  mode=$(_rs_mode "$src")
-  if [[ -f $dest ]] && cmp -s -- "$tmp" "$dest"; then
-    rm -f -- "$tmp"
-    if [[ $(_rs_mode "$dest") == "$mode" ]]; then
-      _rs_log "unchanged  $show"
-    elif ((dry_run)); then
-      _rs_log "would chmod $mode $show"
-    else
-      chmod "$mode" "$dest" || {
-        _rs_log "cannot chmod $show"
-        return 1
-      }
-      _rs_log "chmod $mode  $show"
-    fi
-    return 0
-  fi
-
-  if ((dry_run)); then
-    _rs_log "would update $show"
-    if [[ -f $dest ]]; then
-      diff -u --label "$show (current)" --label "$show (bootstrap)" -- "$dest" "$tmp" >&2 || true
-    fi
-    rm -f -- "$tmp"
-    return 0
-  fi
-
-  chmod "$mode" "$tmp"
-  mv -f -- "$tmp" "$dest" || {
-    rm -f -- "$tmp"
-    _rs_log "cannot write $show"
-    return 1
-  }
-  _rs_log "updated    $show"
-}
-
-# Set the top-level `bootstrap_commit` of <values> to <commit>, the bootstrap
-# commit of this sync. A line that has the key before the first table is
-# replaced. Else the key and its comment go after the header comments, when a
-# blank line ends them, or else on the first line: a comment just above a key
-# belongs to that key. Each other line stays as it is. With <dry_run> 1, only
-# print the change.
-_rs_record_commit() {
-  local values=$1 commit=$2 dry_run=$3 show tmp line
-  show=$(_rs_path "$values")
-  line="bootstrap_commit = \"${commit}\""
-  # Before the first table only: a key in a table is a different key.
-  # An `exit` in a rule also runs END, so END gives the result.
-  if awk -v line="$line" '/^[ \t]*\[/ { exit } $0 == line { found = 1; exit } END { exit !found }' "$values"; then
-    return 0
-  fi
-  if ((dry_run)); then
-    _rs_log "would set bootstrap_commit ${commit} in $show"
-    return 0
-  fi
-  tmp=$(mktemp "${values}.XXXXXX") || {
-    _rs_log "cannot write $show"
-    return 1
-  }
-  _RS_TMPS+=("$tmp")
-  awk -v line="$line" '
-    # The first pass finds the key, and the line to insert before: after the
-    # first blank line that ends the header comments, else the first line.
-    FNR == NR {
-      if (/^[ \t]*\[/) tables = 1
-      if (!tables && /^bootstrap_commit[ \t]*=/) has = 1
-      if (FNR == 1) { header = /^[ \t]*#/; at = 1 }
-      if (header && !found && /^[ \t]*$/) { at = FNR + 1; found = 1 }
-      if (header && !found && !/^[ \t]*#/) header = 0
-      next
-    }
-    has && !done && /^bootstrap_commit[ \t]*=/ { print line; done = 1; next }
-    !has && !done && FNR == at {
-      print "# The bootstrap commit of the last sync. repo-sync writes it."
-      print line
-      done = 1
-    }
-    { print }
-    END {
-      if (!done) {
-        print "# The bootstrap commit of the last sync. repo-sync writes it."
-        print line
-      }
-    }
-  ' "$values" "$values" > "$tmp" && chmod "$(_rs_mode "$values")" "$tmp" && mv -f -- "$tmp" "$values" || {
-    _rs_log "cannot write $show"
-    return 1
-  }
-  _rs_log "set bootstrap_commit ${commit} in $show"
+  _se_finish "$(_se_mode "$src")" "$tmp" "$dest" "$show" "$dry_run"
 }
 
 # Warn about `core_tools` of <values>, a key that is no longer used.
@@ -1765,7 +1596,7 @@ _rs_core_tools() {
   local values=$1 old_core
   old_core=$(_rs_list "$values" core_tools) || old_core=''
   if [[ -n ${old_core//[$'\n ']/} ]]; then
-    _rs_log "core_tools in $(_rs_path "$values") is no longer used - delete it; the env of each [tools.*] entry, else default_envs, decides its environments"
+    _se_log "core_tools in $(_se_path "$values") is no longer used - delete it; the env of each [tools.*] entry, else default_envs, decides its environments"
   fi
   return 0
 }
@@ -1812,7 +1643,7 @@ _rs_check() {
     r=$?
     ((r <= rc)) || rc=$r
   }
-  ((rc == 0)) && _rs_log "$(_rs_path "$values"): valid (local rules)"
+  ((rc == 0)) && _se_log "$(_se_path "$values"): valid (local rules)"
   return "$rc"
 }
 
@@ -1834,13 +1665,13 @@ repo_sync() {
         shift
         ;;
       *)
-        _rs_log "usage: repo_sync [--dry-run | --check]"
+        _se_log "usage: repo_sync [--dry-run | --check]"
         return 2
         ;;
     esac
   done
   if ((dry_run && check)); then
-    _rs_log "usage: repo_sync [--dry-run | --check]"
+    _se_log "usage: repo_sync [--dry-run | --check]"
     return 2
   fi
 
@@ -1849,41 +1680,43 @@ repo_sync() {
   # was renamed to bootstrap.
   local old_values="${MISE_PROJECT_ROOT:-$PWD}/.config/repo-config.toml"
   if [[ -z ${REPO_SYNC_VALUES:-} && ! -f $values && -f $old_values ]]; then
-    _rs_log "$(_rs_path "$old_values") is the old name of the values file - rename it to .config/bootstrap.toml"
+    _se_log "$(_se_path "$old_values") is the old name of the values file - rename it to .config/bootstrap.toml"
     values=$old_values
   fi
   if [[ ! -f $values ]]; then
-    _rs_log "values file $(_rs_path "$values") not found - it lists the tools to sync"
+    _se_log "values file $(_se_path "$values") not found - it lists the tools to sync"
     return 2
   fi
-  if ! command -v gomplate > /dev/null 2>&1; then
-    _rs_log "gomplate is not available - add #MISE tools.gomplate=\"latest\" to the calling task"
+  if ! command -v mise > /dev/null 2>&1; then
+    _se_log "mise is not available - install it from https://mise.run"
     return 2
   fi
+  # The tool wrappers run from `/`, so each path that they get is absolute.
+  [[ $values == /* ]] || values="$PWD/$values"
   if ((check)); then
     _rs_check "$values" || return
     return 0
   fi
 
   if [[ -z ${SYNC_ENGINE_CLONE:-} ]]; then
-    _rs_log "SYNC_ENGINE_CLONE is not set - run mise run setup:configs, which clones bootstrap"
+    _se_log "SYNC_ENGINE_CLONE is not set - run mise run setup:configs, which clones bootstrap"
     return 2
   fi
   local dir rev
   dir=$(mktemp -d "${TMPDIR:-/tmp}/repo-sync.XXXXXX") || {
-    _rs_log "cannot create a temp directory"
+    _se_log "cannot create a temp directory"
     return 1
   }
-  _RS_TMPS+=("$dir")
+  _SE_TMPS+=("$dir")
   # A clone that `setup:configs` already made, so that this code and the
   # files come from the same commit. A private copy, because the sync writes
   # the generated mise config into its clone.
   if [[ ! -e $SYNC_ENGINE_CLONE/.git ]] || ! cp -R -- "$SYNC_ENGINE_CLONE/." "$dir"; then
-    _rs_log "cannot use the clone $SYNC_ENGINE_CLONE - nothing synced; existing files were left untouched"
+    _se_log "cannot use the clone $SYNC_ENGINE_CLONE - nothing synced; existing files were left untouched"
     return 5
   fi
   rev=$(git -C "$dir" rev-parse --short HEAD)
-  _rs_log "using bootstrap at ${rev}"
+  _se_log "using bootstrap at ${rev}"
   # The full id, for `bootstrap_commit` after a sync without a failure.
   local commit
   commit=$(git -C "$dir" rev-parse HEAD) || commit=''
@@ -1898,8 +1731,8 @@ repo_sync() {
     rm -rf -- "$dir"
     return "$rc"
   }
-  _rs_log "tools:${_RS_TOOLS% }"
-  _rs_log "environments:${_RS_ENVS% }"
+  _se_log "tools:${_RS_TOOLS% }"
+  _se_log "environments:${_RS_ENVS% }"
   _rs_merge_model || {
     rc=$?
     rm -rf -- "$dir"
@@ -1936,9 +1769,9 @@ repo_sync() {
       rm -rf -- "$dir"
       return 1
     }
-    _RS_TMPS+=("$ctx")
+    _SE_TMPS+=("$ctx")
     _rs_context "$dir" "$values" "$ctx" || {
-      _rs_log "cannot build the template context"
+      _se_log "cannot build the template context"
       ctx=''
     }
   fi
@@ -1947,7 +1780,7 @@ repo_sync() {
   _RS_STAGE='' _RS_PENDING=''
   local name
   if [[ -n $_RS_DPRINT ]] && _RS_STAGE=$(mktemp -d "${TMPDIR:-/tmp}/repo-sync-stage.XXXXXX"); then
-    _RS_TMPS+=("$_RS_STAGE")
+    _SE_TMPS+=("$_RS_STAGE")
     for name in dprint.json dprint.jsonc .dprint.json .dprint.jsonc .config/dprint.json .config/dprint.jsonc; do
       if [[ -f $MISE_PROJECT_ROOT/$name ]]; then
         mkdir -p -- "$(dirname -- "$_RS_STAGE/$name")" && cp -- "$MISE_PROJECT_ROOT/$name" "$_RS_STAGE/$name"
@@ -2005,12 +1838,12 @@ repo_sync() {
     # Only a sync without a failure records its commit: then each file is
     # at that commit, and an agent can compare it with main of bootstrap.
     if [[ -n $commit ]]; then
-      _rs_record_commit "$values" "$commit" "$dry_run" || return 1
+      _se_record_commit "$values" bootstrap_commit "$commit" "$dry_run" "# The bootstrap commit of the last sync. repo-sync writes it." || return 1
     fi
-    _rs_log "done: $ok/$total files in sync"
+    _se_log "done: $ok/$total files in sync"
     return 0
   fi
-  _rs_log "FAILED: ${failed[*]}"
-  _rs_log "$ok/$total files in sync; existing copies of the rest were left untouched"
+  _se_log "FAILED: ${failed[*]}"
+  _se_log "$ok/$total files in sync; existing copies of the rest were left untouched"
   return "$worst"
 }

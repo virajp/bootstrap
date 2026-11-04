@@ -45,6 +45,8 @@ The shared files are in `tools/`, one folder for each tool. Each file in
 pack.
 
 The sync code is in `sync-engine/`: `clone` for the shared cache and the clone,
+`common` for the log, the header detection and the wrappers of gomplate, jq and
+yq, `write` for the write of one file, `select` for the packs and the `depends`,
 and `repo-sync` for the function `repo_sync`. This folder is not a tool, so the
 sync does not copy it to a repository.
 
@@ -157,6 +159,9 @@ has that file:
    file. An agent compares the value with `main` to find what changed since
    the last sync.
 
+The sync needs `mise`. It starts gomplate, jq and yq through mise, from `/`, so
+these tools need no entry in the mise config of the repository.
+
 Between two syncs, the gate `code:lint:repo-sync` runs `repo_sync --check` at
 each commit that changes `.config/bootstrap.toml`. It examines the rules that
 need no clone, and it shows each error at once. The rules that need the clone,
@@ -168,6 +173,10 @@ These rules apply to each file:
 
 - A file is only replaced when its content changes. Use `--dry-run` to see the
   changes without writing them.
+- A JSON, YAML or TOML file must parse before the sync writes it (jq for JSON,
+  yq for YAML and TOML). A `.json` file with a `//` line is JSONC, and the sync
+  does not examine it. A file that does not parse keeps the existing copy, the
+  other files continue, and the sync returns code 2.
 - A file takes the mode of its source, also when the file exists already. A
   template keeps the mode of its `.tmpl`, so an executable `.tmpl` gives an
   executable file.
@@ -310,9 +319,9 @@ protected branch, the sync removes the hook.
 
 `mise run test:repo-sync` runs `repo_sync --dry-run` and `repo_sync --check`
 of the working tree's `tools/` and `sync-engine/` against scratch values files,
-and checks the exit code and the message of each case. It needs no network. No
-hook runs it: run it by hand
-before you commit a change to `tools/` or `sync-engine/`.
+and checks the exit code and the message of each case. It needs no network when
+gomplate, jq and yq are installed. No hook runs it: run it by hand before you
+commit a change to `tools/` or `sync-engine/`.
 
 ## Change a shared file
 
