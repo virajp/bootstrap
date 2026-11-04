@@ -1726,6 +1726,84 @@ check_merge_required() {
 }'
 }
 
+# A merge target that is a symlink, or is below a symlinked folder: the repo
+# side follows no symlink. The file outside the repository is a secret, which
+# must not land in the repository. The tool has no generated file in the folder
+# of the target, so the sync writes nothing else through a link.
+outside_json='{"secret": "outside-value"}
+'
+merge_link_tool() {
+  fixture_tool
+  mkdir -p -- "$clone/tools/fixture/.config/merger" "$tmp/outside"
+  fixture_file .config/merger/m.json '{"a": 1}'
+  fixture_toml '[files.".config/merger/m.json"]' 'mode = "merge"'
+  printf '%s' "$outside_json" > "$tmp/outside/m.json"
+}
+link_is() { [[ -L $1 && $(readlink -- "$1") == "$2" ]]; }
+# find -type f: a symlink is not a file of the repository.
+repo_lacks() { [[ -z $(find "$consumer" -type f -exec grep -lF -- "$1" {} +) ]]; }
+outside_only_file() { [[ $(find "$tmp/outside" ! -type d) == "$tmp/outside/m.json" ]]; }
+# check_link_kept <name> <link> <its target>: the link, the outside file and the
+# repository are as they were.
+check_link_kept() {
+  check_that "$1: the link stays" link_is "$2" "$3"
+  check_exact "$1: the outside file stays" "$tmp/outside/m.json" "$outside_json"
+  check_that "$1: nothing new outside" outside_only_file
+  check_that "$1: the secret is not in the repository" repo_lacks outside-value
+  check_that "$1: the secret is not in the output" log_lacks outside-value
+}
+no_commit_set() { lacks_in_file bootstrap_commit "$values"; }
+
+merge_link_live() {
+  merge_link_tool
+  mkdir -p -- "$consumer/.config/merger"
+  ln -s -- "$tmp/outside/m.json" "$(m_file json)"
+}
+check_merge_link() {
+  check_that "merge link: the message" log_has "$(m_file json) is a symlink - kept it as it is"
+  check_link_kept "merge link" "$(m_file json)" "$tmp/outside/m.json"
+  check_that "merge link: no bootstrap_commit" no_commit_set
+}
+check_merge_link_dry() {
+  check_that "merge link, dry run: the message" log_has "$(m_file json) is a symlink - kept it as it is"
+  check_link_kept "merge link, dry run" "$(m_file json)" "$tmp/outside/m.json"
+  check_that "merge link, dry run: no bootstrap_commit" no_commit_set
+  check_that "merge link, dry run: would set nothing" log_lacks 'would set bootstrap_commit'
+}
+merge_link_dangling() {
+  merge_link_tool
+  mkdir -p -- "$consumer/.config/merger"
+  ln -s -- "$tmp/outside/absent.json" "$(m_file json)"
+}
+check_merge_link_dangling() {
+  check_that "merge dangling link: the message" log_has "$(m_file json) is a symlink - kept it as it is"
+  check_link_kept "merge dangling link" "$(m_file json)" "$tmp/outside/absent.json"
+  check_that "merge dangling link: no bootstrap_commit" no_commit_set
+}
+
+merge_link_folder() {
+  merge_link_tool
+  ln -s -- "$tmp/outside" "$consumer/.config/merger"
+}
+# The sync runs in the repository, so `_se_path` shows both paths as relative.
+# `cd` tidies PWD (a TMPDIR that ends in / gives //): the root takes its form.
+merge_link_folder_here() {
+  merge_link_folder
+  cd -- "$consumer"
+  consumer=$PWD
+}
+check_merge_link_folder() {
+  check_link_kept "merge linked folder" "$consumer/.config/merger" "$tmp/outside"
+  check_that "merge linked folder: no bootstrap_commit" no_commit_set
+}
+check_merge_link_folder_dry() {
+  check_that "merge linked folder, dry run: the message" log_has \
+    "$(m_file json): the folder $consumer/.config/merger is a symlink - kept it as it is"
+  check_link_kept "merge linked folder, dry run" "$consumer/.config/merger" "$tmp/outside"
+  check_that "merge linked folder, dry run: no bootstrap_commit" no_commit_set
+  check_that "merge linked folder, dry run: would set nothing" log_lacks 'would set bootstrap_commit'
+}
+
 # The config errors. The tool `fixture` is not selected.
 merge_format_text() {
   merge_tool
@@ -1775,6 +1853,16 @@ case_args=' ' run_case "merge: an existing target keeps its mode" 0 "$fixture_va
 case_args=' ' run_case "merge: the format key" 0 "$fixture_values" merge_format_key '' check_merge_format_key
 case_args=' ' run_case "merge: its requires absent" 0 "$fixture_values" merge_required '' check_merge_skip
 case_args=' ' run_case "merge: its requires present" 0 "$fixture_values" merge_required_present '' check_merge_required
+case_args=' ' run_case "merge: a target that is a symlink" 2 "$fixture_values" merge_link_live \
+  'm.json is a symlink - kept it as it is' check_merge_link
+run_case "merge: a dry run, a target that is a symlink" 2 "$fixture_values" merge_link_live \
+  'm.json is a symlink - kept it as it is' check_merge_link_dry
+case_args=' ' run_case "merge: a target that is a dangling symlink" 2 "$fixture_values" merge_link_dangling \
+  'm.json is a symlink - kept it as it is' check_merge_link_dangling
+case_args=' ' run_case "merge: a target below a symlinked folder" 2 "$fixture_values" merge_link_folder_here \
+  '.config/merger/m.json: the folder .config/merger is a symlink - kept it as it is' check_merge_link_folder
+run_case "merge: a dry run, a target below a symlinked folder" 2 "$fixture_values" merge_link_folder \
+  'm.json: the folder' check_merge_link_folder_dry
 run_case "merge: a merge target of format text" 2 "$no_tool_values" merge_format_text \
   'fixture/tools.toml: [files.".config/merger/plain.txt"] mode = "merge" needs a json, yaml or toml target'
 run_case "merge: a merge target with format = text" 2 "$no_tool_values" merge_format_key_text \
