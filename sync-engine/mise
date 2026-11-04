@@ -61,6 +61,7 @@
 # copy, and the generator reads the copy. The context has .config (the values of
 # the tool), .all (the values of every selected tool) and .env (HOME, USER). A key
 # that is missing reaches `required` as a nil; any other use of it fails the render.
+# A rendered value cannot change the key paths of the file, so it cannot add a table.
 # The overrides of the values file are not rendered.
 
 _SE_MISE_MACOS_VALUES=macos.toml
@@ -409,9 +410,11 @@ _SE_MISE_TEMPLATE="$_SE_MISE_DEFINES"'<% $m := dict %><% if has .t "mise" %><% $
 # in a message, and <name> names the temp files. The jq <filter> builds the context
 # from the JSON file <all> (empty: no values), with $t, the name, and $tools; .env
 # is added to it. The context file goes after the render. Returns 2, after a
-# message, for a render that fails or a copy that is not valid TOML.
+# message, for a render that fails, a copy that is not valid TOML, or a copy with
+# other key paths than <file>: each `<% %>` sits inside a TOML string, so <file>
+# parses as TOML, and a value cannot close its string to add its own tables.
 _se_mise_read() {
-  local side=$1 file=$2 shown=$3 name=$4 all=$5 filter=$6 tools=${7:-} ctx copy err msg
+  local side=$1 file=$2 shown=$3 name=$4 all=$5 filter=$6 tools=${7:-} ctx copy err msg raw_json copy_json
   _se_mise_side "$side" || return
   _SE_MISE_READ=$file
   grep -qF -- '<%' "$file" || return 0
@@ -439,8 +442,19 @@ _se_mise_read() {
     _se_log "$shown: cannot render: an expression has no value - a key is missing"
     return 2
   fi
-  if ! msg=$(_se_yq -p toml -o json '.' "$copy" 2>&1 > /dev/null); then
+  raw_json="$_SE_MISE_WORK/$name.raw.json" copy_json="$_SE_MISE_WORK/$name.copy.json"
+  if ! msg=$(_se_yq -p toml -o json '.' "$copy" 2>&1 > "$copy_json"); then
     _se_log "$shown: not valid TOML after render: ${msg%%$'\n'*}"
+    return 2
+  fi
+  if ! msg=$(_se_yq -p toml -o json '.' "$file" 2>&1 > "$raw_json"); then
+    _se_log "$shown: not valid TOML before render: ${msg%%$'\n'*}"
+    return 2
+  fi
+  # shellcheck disable=SC2016
+  if ! _se_jq -en --slurpfile raw "$raw_json" --slurpfile copy "$copy_json" \
+    '($raw[0] | [paths] | sort) == ($copy[0] | [paths] | sort)' > /dev/null; then
+    _se_log "$shown: a rendered value changes the keys of the file"
     return 2
   fi
   _SE_MISE_READ=$copy
