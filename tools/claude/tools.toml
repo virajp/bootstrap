@@ -3,4 +3,3 @@ default_envs = [ "dev" ]
 depends = []
 extensions = []
 root_only = false
-seed = []

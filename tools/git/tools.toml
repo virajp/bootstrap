@@ -3,7 +3,9 @@ default_envs = [ "dev" ]
 depends = []
 extensions = []
 root_only = false
-seed = [ ".config/wt.toml" ]
+
+[files.".config/wt.toml"]
+mode = "seed"
 
 # Git worktree manager (wt).
 [mise.tools.worktrunk]

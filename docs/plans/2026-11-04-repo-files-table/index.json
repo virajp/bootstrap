@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-04 — fcf1960 79920b4 097c365 b47e12a 5cf1583 d4f59df 7b30e58 6bdec22 f4bb00e f0c888f; 6 gaps open (G6 G8 G9 G12 G15 G16); folder stays live"
   },
   "consent": {
     "merge": true,
@@ -61,11 +61,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T06:18:42.436Z",
+      "ended": "2026-11-04T06:34:26.521Z",
+      "commit": "6bdec22",
+      "rounds": 4
     },
     {
       "id": "U2",
@@ -79,11 +79,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T06:18:42.500Z",
+      "ended": "2026-11-04T06:34:26.619Z",
+      "commit": "79920b4",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -100,11 +100,11 @@
         "U2"
       ],
       "waits": "Its cases run the engine that U1 changes against the tools.toml files that U2 moves to the new keys.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T06:42:05.763Z",
+      "ended": "2026-11-04T07:33:42.035Z",
+      "commit": "f4bb00e",
+      "rounds": 4
     },
     {
       "id": "U4",
@@ -120,14 +120,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T07:07:47.756Z",
+      "ended": "2026-11-04T08:42:01.890Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 3,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "7ca899d",
+        "to": "f4bb00e"
       }
     },
     {
@@ -150,11 +150,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T08:43:43.532Z",
+      "ended": "2026-11-04T08:49:18.828Z",
+      "commit": "f0c888f",
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -168,43 +168,43 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T08:56:30.124Z",
+      "ended": "2026-11-04T09:02:59.822Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T06:18:42.374Z",
+      "ended": "2026-11-04T06:41:57.837Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T06:42:05.700Z",
+      "ended": "2026-11-04T07:07:39.854Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T07:07:47.688Z",
+      "ended": "2026-11-04T08:43:35.246Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T08:43:43.497Z",
+      "ended": "2026-11-04T08:56:22.219Z"
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T08:56:30.088Z",
+      "ended": "2026-11-04T09:03:13.955Z"
     }
   ],
   "shared_files": [
@@ -370,35 +370,179 @@
       "units": [
         "U1"
       ]
+    },
+    {
+      "id": "D17",
+      "decision": "How does the engine decide that a file of the tool produces a [files] target (security finding G13)?",
+      "ruling": "Ruled by the user on the blocked run: a target passes only on an exact match. The path of the target, or the target with .tmpl, must be the same string as a path relative to the tool folder from find -type f. find does not follow a symlink, so a path through a symlinked folder fails. A case variant fails on each file system. A target that fails stops the sync with code 2, with the existing message of _rs_target_ok. This replaces the -f test of D8. The test of the plan gets a case for a case variant and a case for a symlinked folder.",
+      "rejected": "Rule the finding out of scope because only an author of a bootstrap tools.toml can trigger it.",
+      "units": [
+        "U1",
+        "U3"
+      ]
     }
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "No covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T08:43:35.521Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "No covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T08:43:35.315Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "No covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T08:43:35.419Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "No covers and no code unit: nothing to stamp or persist",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T08:43:35.656Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "",
+      "stage": "claim",
+      "text": "The claim commit of the plan-index contract is a direct commit on main, and the no-commit-to-branch hook of this repository refuses it · closed: the claim landed from the local branch claim-repo-files-table through mise run code:merge, the route CLAUDE.md gives, with no hook skipped; the completion commit takes the same route",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "",
+      "stage": "worktree",
+      "text": "Setup step 1 names a worktree .worktrees/repo-files-table, but this session already runs in a linked worktree and a PreToolUse hook confines its Edit and Write to it (G2 of 2026-11-04-sync-engine-cache) · closed: per git-workflow Step 1 the run works in the session worktree .claude/worktrees/bootstrap-2-0-3ae4b9 on its branch claude/bootstrap-2-0-3ae4b9, brought to the tip of main after the claim; run.worktree names it",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "",
+      "stage": "doctor",
+      "text": "Doctor reports one thing here: the repo has no .config/vwf.yaml, so it is not onboarded and no blocking finding can arise · closed: not a blocking finding; the plan has no code unit, no covers and names no project, and the review cap stays its default of 4",
+      "state": "closed"
+    },
+    {
+      "id": "G4",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: 03-tests.md does not list the gate-cache copy at .config/mise/tasks/test/repo-sync:1344, which must also copy sync-engine/merge · closed: U3 added sync-engine/merge to the copy, and the case passes",
+      "state": "closed"
+    },
+    {
+      "id": "G5",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: 03-tests.md does not say that the lock message changed · closed: U3 updated the 4 lock-message cases to the new text",
+      "state": "closed"
+    },
+    {
+      "id": "G6",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the plan gives no exact text for a bad requires or requires_found · each prefixed <tool>/tools.toml: [files.\"<target>\"], requires: <p> must be a path relative to the repository root, with no .. part; requires_found: <n> must be a file name, with no /; <key> must be a non-empty list of paths|file names",
+      "state": "open"
+    },
+    {
+      "id": "G7",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "R1 rule-5 findings not reported by U1: README.md:86 (seed = [] sample), :196 (requires and files of a mise tool), :214 (fourth deletion exception); docs/sync/index.md:296 (seed key row), :309 (requires of a mise tool), :316 (files of a mise tool), :537 (override lock list lacks requires_found) · closed: handed to U5, which owns these paths under S1, as DOCS FALSIFIED lines",
+      "state": "closed"
+    },
+    {
+      "id": "G8",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "U3: the unit file and the index.md Tests fact name node seed_requires cases, and test:repo-sync had no such case · U3 added new node cases for absent, exists and present",
+      "state": "open"
+    },
+    {
+      "id": "G9",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "U3: 03-tests.md lists no case for the sparing of a seed or merge target by _se_unblock and _rs_stale (D15), and no case that a merge runs before dprint in the compare (D10 order; checked by hand only) · left to the review unit U4",
+      "state": "open"
+    },
+    {
+      "id": "G10",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "R2 rule-5 finding README.md:320 and U3 DOCS FALSIFIED CLAUDE.md:287: the test-task passage says the task runs repo_sync --dry-run and --check only, and it now also runs real repo_sync in scratch consumers · closed: handed to U5, which owns these paths under S1, as DOCS FALSIFIED lines",
+      "state": "closed"
+    },
+    {
+      "id": "G11",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "R2 rule-3 findings .config/mise/tasks/test/repo-sync:1112 (seed and [seed_requires]) and :1222 ([files], two errors in one table): two cases that neither the unit list nor the DECIDED lines name · closed: they stay, the first checks the D11 one message per old key, the second the U1 DECIDED line that the [files] checks collect every message before they return 2",
+      "state": "closed"
+    },
+    {
+      "id": "G12",
+      "unit": "U4",
+      "stage": "security",
+      "text": "D10 says the repo side follows no symlink but not what happens when the target is a symlink, and 03-tests.md:138 excludes symlink cases from the port · the U4 round 1 finding requires a refusal with code 2; U1 adds it and U3 adds the case",
+      "state": "open"
+    },
+    {
+      "id": "G13",
+      "unit": "U4",
+      "stage": "security",
+      "text": "Round 2 security finding [low] sync-engine/repo-sync:624: D8 and D10 require a target that a file of the tool produces, not its exact form, so a mis-spelled key passes _rs_target_ok, misses the mode lookup and runs as generated, which skips both merge guards · the round count did not decrease (1 then 1), so the guard ended the loop; the closing pass d4f59df and 7b30e58 refused ./x, a//b, */./*, */. and */, and the closing check answered OPEN: a case variant on a case-insensitive filesystem and a path through a symlinked folder of the tool still pass the -f test (repo-sync:629). Cap-exempt, so not contested: the run pauses for a ruling · closed: ruled by the user in D17; U1 made the exact match in 6bdec22 and U3 added the two cases in f4bb00e; round 3 reviewed it clean",
+      "state": "closed"
+    },
+    {
+      "id": "G14",
+      "unit": "U4",
+      "stage": "security",
+      "text": "Round 2 of U4 ran no /security-review engine: the orchestrator chose to skip it and handed the reviewer ENGINE: unavailable, though the engine was not unavailable; review-unit.md requires engines first on each round · the reviewer alone judged the fix delta 7ca899d..5cf1583. A resumed run owes the engine over 7ca899d..HEAD · closed: round 3 ran the security engine and the reviewer over 7ca899d..f4bb00e, both with no finding",
+      "state": "closed"
+    },
+    {
+      "id": "G15",
+      "unit": "U1",
+      "stage": "security",
+      "text": "U1 returned UNRESOLVED on a merge target below a symlinked parent folder inside the repository (the merge read and wrote the outside file) · the orchestrator read D10 (the repo side follows no symlink) as the ruling and had U1 refuse it with code 2 in b47e12a, message <show>: the folder <folder> is a symlink - kept it as it is; generated and seed files still write through a linked folder. A person confirms this reading",
+      "state": "open"
+    },
+    {
+      "id": "G16",
+      "unit": "U1",
+      "stage": "security",
+      "text": "A target that is itself a symlink to a file: D17 names only a symlinked folder · U1 took the exact wording, so such a target fails too, because find -type f skips it; tools/ has no symlinks today",
+      "state": "open"
+    },
+    {
+      "id": "G17",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "R3 rule-5 finding CLAUDE.md:187: the exit-code list gives no case for a merge target that is a symlink or is below a symlinked folder, which now stops with code 2 (b47e12a) · closed: handed to U5, which owns this path under S1, as a DOCS FALSIFIED line",
+      "state": "closed"
+    },
+    {
+      "id": "G18",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "U5: Edit 1 names no change for docs/sync/tools/repo-sync.md · closed: the docs-sync survey found it falsified, it is inside the Owns of U5, and U5 applied it",
+      "state": "closed"
+    },
+    {
+      "id": "G19",
+      "unit": "",
+      "stage": "land",
+      "text": "The landing option is merge, push and clean up, but the run works in the session worktree of G2, which the session itself still uses · closed: merged and pushed, and the worktree stays, as on 2026-11-04-sync-engine-core; no worktree was removed",
+      "state": "closed"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",

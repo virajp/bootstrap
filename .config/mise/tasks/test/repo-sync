@@ -3,8 +3,9 @@
 #MISE description="Test repo-sync against scratch values files"
 #MISE tools.gomplate="latest"
 
-# Runs `repo_sync --dry-run` and `repo_sync --check` of sync-engine/repo-sync,
-# with the working tree's tools/ and sync-engine/, against scratch values files,
+# Runs `repo_sync --dry-run`, `repo_sync --check` and, for a case that compares
+# a written file, `repo_sync` of sync-engine/repo-sync, with the working tree's
+# tools/ and sync-engine/, against scratch values files and scratch consumers,
 # and checks the exit code and message of each case. Needs no
 # network when gomplate, jq and yq are installed:
 # REPO_SYNC_NO_AUTOUPDATE=1 skips `pre-commit autoupdate`. Writes
@@ -222,7 +223,7 @@ node_ci_only() {
 tool_folder_zz_repo() {
   mkdir -p -- "$clone/tools/zz-repo"
   printf '%s\n' 'default_envs = [ "dev" ]' 'depends = []' 'extensions = []' \
-    'root_only = false' 'seed = []' > "$clone/tools/zz-repo/tools.toml"
+    'root_only = false' > "$clone/tools/zz-repo/tools.toml"
 }
 
 node_no_envs() {
@@ -238,7 +239,7 @@ member_folder() {
 late_tool_folder() {
   mkdir -p -- "$clone/tools/zzz-late"
   printf '%s\n' 'default_envs = [ "dev" ]' 'depends = []' 'extensions = []' \
-    'root_only = false' 'seed = []' > "$clone/tools/zzz-late/tools.toml"
+    'root_only = false' > "$clone/tools/zzz-late/tools.toml"
 }
 
 run_case "no [tools], environments dev" 0 'environments = [ "dev" ]' '' '' check_base_files
@@ -352,7 +353,7 @@ NEW_VAR = "1"' '' 'no selected tool has mise.env.NEW_VAR'
 run_case "[overrides.mise.tools.java] envs" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.mise.tools.java]
-envs = [ "dev" ]' '' 'the envs, the depends, the requires and the files of a mise tool cannot be overridden'
+envs = [ "dev" ]' '' 'the envs, the depends, the requires, the requires_found and the files of a mise tool cannot be overridden'
 run_case "[overrides.tools.java], not mise, mise_env or gitignore" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.tools.java]
@@ -362,8 +363,8 @@ run_case "[overrides.mise_env.ci] without ci in environments" 2 'environments = 
 [overrides.mise_env.ci.tools.java]
 version = "21"' '' ".config/bootstrap.toml: 'ci' is not in environments: dev"
 
-# The `requires` of a mise tool: ruff and pyrefly of the python tool need a
-# pyproject.toml. The generated python config already exists in the
+# The `requires_found` of a mise tool: ruff and pyrefly of the python tool need
+# a pyproject.toml. The generated python config already exists in the
 # consumer, so the dry run shows its diff.
 python_conf() {
   mkdir -p -- "$consumer/.config/mise/conf.d/python"
@@ -395,25 +396,28 @@ check_log_lacks() {
   fi
 }
 
-lacks_requires() { check_log_lacks "requires, a pyproject.toml at the root" 'requires ='; }
-lacks_ruff_depth5() { check_log_lacks "requires, a pyproject.toml 5 folders down" '[tools.ruff]'; }
-lacks_ruff_ignored() { check_log_lacks "requires, a pyproject.toml in an ignored folder" '[tools.ruff]'; }
+lacks_requires() { check_log_lacks "requires_found, a pyproject.toml at the root" 'requires_found'; }
+lacks_ruff_depth5() { check_log_lacks "requires_found, a pyproject.toml 5 folders down" '[tools.ruff]'; }
+lacks_ruff_ignored() { check_log_lacks "requires_found, a pyproject.toml in an ignored folder" '[tools.ruff]'; }
 
 python_values='environments = [ "dev" ]
 [tools.python]'
-run_case "requires, a pyproject.toml at the root" 0 "$python_values" pyproject_root '[tools.ruff]' lacks_requires
-run_case "requires, a pyproject.toml 4 folders down" 0 "$python_values" pyproject_depth4 \
+run_case "requires_found, a pyproject.toml at the root" 0 "$python_values" pyproject_root '[tools.ruff]' lacks_requires
+run_case "requires_found, a pyproject.toml 4 folders down" 0 "$python_values" pyproject_depth4 \
   '[tools."pipx:pyrefly"]'
-run_case "requires, a pyproject.toml 5 folders down" 0 "$python_values" pyproject_depth5 '[tools.uv]' \
+run_case "requires_found, a pyproject.toml 5 folders down" 0 "$python_values" pyproject_depth5 '[tools.uv]' \
   lacks_ruff_depth5
-run_case "requires, a pyproject.toml in an ignored folder" 0 "$python_values" pyproject_ignored '[tools.uv]' \
+run_case "requires_found, a pyproject.toml in an ignored folder" 0 "$python_values" pyproject_ignored '[tools.uv]' \
   lacks_ruff_ignored
 run_case "[overrides.mise.tools.ruff] requires" 2 "$python_values
 [overrides.mise.tools.ruff]
-requires = \"setup.py\"" '' 'the envs, the depends, the requires and the files of a mise tool cannot be overridden'
+requires = \"setup.py\"" '' 'the envs, the depends, the requires, the requires_found and the files of a mise tool cannot be overridden'
+run_case "[overrides.mise.tools.ruff] requires_found" 2 "$python_values
+[overrides.mise.tools.ruff]
+requires_found = [ \"setup.py\" ]" '' 'the envs, the depends, the requires, the requires_found and the files of a mise tool cannot be overridden'
 
-# The `files` of a mise tool: the ruff and pyrefly tasks follow the
-# `requires` of their mise tool.
+# The `[files]` tables of the python tool: the ruff and pyrefly tasks have the
+# `requires_found` of their mise tool.
 gate=.config/mise/tasks/code/lint/pyrefly
 gate_synced() {
   python_conf
@@ -437,56 +441,49 @@ python_files_edit() {
   awk -v old="$1" -v new="$2" '$0 == old { $0 = new } { print }' "$clone/tools/python/tools.toml" > "$tmp/python.toml"
   cp -- "$tmp/python.toml" "$clone/tools/python/tools.toml"
 }
-ruff_no_requires() {
-  awk '/^\[mise.tools.ruff\]$/ { r = 1 } r && /^requires = / { r = 0; next } { print }' \
-    "$clone/tools/python/tools.toml" > "$tmp/python.toml"
-  cp -- "$tmp/python.toml" "$clone/tools/python/tools.toml"
-}
 pyrefly_missing_file() {
-  python_files_edit 'files = [ ".config/mise/tasks/code/lint/pyrefly" ]' 'files = [ ".config/mise/tasks/code/lint/nope" ]'
+  python_files_edit '[files.".config/mise/tasks/code/lint/pyrefly"]' '[files.".config/mise/tasks/code/lint/nope"]'
 }
 pyrefly_parent_path() {
-  python_files_edit 'files = [ ".config/mise/tasks/code/lint/pyrefly" ]' 'files = [ "../python/tools.toml" ]'
+  python_files_edit '[files.".config/mise/tasks/code/lint/pyrefly"]' '[files."../python/tools.toml"]'
 }
 
 lacks_gate_update() {
-  check_log_lacks "files, no pyproject.toml: the gates are skipped" "would update $consumer/$gate"
-  check_log_lacks "files, no pyproject.toml: code:lint:uv stays" "skip file  $consumer/.config/mise/tasks/code/lint/uv"
+  check_log_lacks "[files], no pyproject.toml: the gates are skipped" "would update $consumer/$gate"
+  check_log_lacks "[files], no pyproject.toml: code:lint:uv stays" "skip file  $consumer/.config/mise/tasks/code/lint/uv"
 }
 lacks_gate_skip() {
-  check_log_lacks "files, a pyproject.toml: the gates are written" '(no pyproject.toml)'
-  check_log_lacks "files, a pyproject.toml: no files in the mise config" 'files ='
+  check_log_lacks "[files], a pyproject.toml: the gates are written" '(no pyproject.toml)'
+  check_log_lacks "[files], a pyproject.toml: no files in the mise config" 'files ='
 }
-lacks_gate_remove() { check_log_lacks "files, a gate of the repo without the header" 'would remove'; }
+lacks_gate_remove() { check_log_lacks "[files], a gate of the repo without the header" 'would remove'; }
 has_gate_remove() {
   if grep -qF -- "would remove $consumer/$gate (no pyproject.toml)" "$log"; then
-    print_success "files, a synced gate: would remove"
+    print_success "[files], a synced gate: would remove"
   else
-    print_error "files, a synced gate: the output lacks would remove"
+    print_error "[files], a synced gate: the output lacks would remove"
     sed 's/^/    /' "$log" >&2
     failures=$((failures + 1))
   fi
 }
 
-run_case "files, no pyproject.toml: the gates are skipped" 0 "$python_values" python_conf \
+run_case "[files], no pyproject.toml: the gates are skipped" 0 "$python_values" python_conf \
   'skip file  ' lacks_gate_update
-run_case "files, a pyproject.toml at the root: the gates are written" 0 "$python_values" pyproject_root \
+run_case "[files], a pyproject.toml at the root: the gates are written" 0 "$python_values" pyproject_root \
   "$gate" lacks_gate_skip
-run_case "files, no pyproject.toml: a synced gate is removed" 0 "$python_values" gate_synced \
+run_case "[files], no pyproject.toml: a synced gate is removed" 0 "$python_values" gate_synced \
   "$gate (no pyproject.toml)" has_gate_remove
-run_case "files, no pyproject.toml: a synced gate with a block header is removed" 0 "$python_values" gate_block_header \
+run_case "[files], no pyproject.toml: a synced gate with a block header is removed" 0 "$python_values" gate_block_header \
   "$gate (no pyproject.toml)" has_gate_remove
-run_case "files, no pyproject.toml: a gate of the repo without the header stays" 0 "$python_values" gate_own \
+run_case "[files], no pyproject.toml: a gate of the repo without the header stays" 0 "$python_values" gate_own \
   "$gate (no pyproject.toml)" lacks_gate_remove
-run_case "files without requires" 2 "$python_values" ruff_no_requires \
-  "files of mise tool 'ruff' in tools/python/tools.toml: the entry has no requires"
-run_case "files, a path that is not a file of the tool folder" 2 "$python_values" pyrefly_missing_file \
-  "'.config/mise/tasks/code/lint/nope' is not a file of tools/python"
-run_case "files, a path outside the tool folder" 2 "$python_values" pyrefly_parent_path \
-  "'../python/tools.toml' is not a file of tools/python"
+run_case "[files], a target that is not a file of the tool folder" 2 "$python_values" pyrefly_missing_file \
+  'python/tools.toml: [files.".config/mise/tasks/code/lint/nope"] names a target that no file of the tool produces'
+run_case "[files], a target outside the tool folder" 2 "$python_values" pyrefly_parent_path \
+  'python/tools.toml: [files."../python/tools.toml"] names a target that no file of the tool produces'
 run_case "[overrides.mise.tools.ruff] files" 2 "$python_values
 [overrides.mise.tools.ruff]
-files = []" '' 'the envs, the depends, the requires and the files of a mise tool cannot be overridden'
+files = []" '' 'the envs, the depends, the requires, the requires_found and the files of a mise tool cannot be overridden'
 
 # kotlin and swift in ci. A dry run shows the diff of an existing file only,
 # so each case makes one generated file of the consumer.
@@ -772,7 +769,7 @@ run_check "--check, [overrides.mise_env.ci] without ci in environments" 2 'envir
 version = "21"' '' "'ci' is not in environments: dev"
 run_check "--check, [overrides.mise.tools.java] envs" 2 'environments = [ "dev" ]
 [overrides.mise.tools.java]
-envs = [ "dev" ]' '' 'the envs, the depends, the requires and the files of a mise tool cannot be overridden'
+envs = [ "dev" ]' '' 'the envs, the depends, the requires, the requires_found and the files of a mise tool cannot be overridden'
 run_check "--check, [overrides.gitignore], a line in add and in remove" 2 'environments = [ "dev" ]
 [overrides.gitignore]
 add = [ "*.log" ]
@@ -861,7 +858,7 @@ fixture_values='environments = [ "dev" ]
 fixture_tool() {
   mkdir -p -- "$clone/tools/fixture"
   printf '%s\n' 'default_envs = [ "dev" ]' 'depends = []' 'extensions = []' \
-    'root_only = false' 'seed = []' > "$clone/tools/fixture/tools.toml"
+    'root_only = false' > "$clone/tools/fixture/tools.toml"
 }
 # fixture_file <path> [<line>...]: a file of the tool, with these lines.
 fixture_file() {
@@ -984,6 +981,928 @@ run_case "the header on line 2: Generated by macos-setup" 0 'environments = [ "d
 run_case "a file without the header stays" 0 'environments = [ "dev" ]' old_conf_own '' lacks_old_conf_remove
 run_case "a comment that only mentions a header text stays" 0 'environments = [ "dev" ]' old_conf_mention '' \
   lacks_old_conf_remove_mention
+
+# The helpers of the cases of the [files] tables and of merge mode.
+# check_that <name> <command>...: the command must pass.
+check_that() {
+  local name=$1
+  shift
+  if "$@"; then
+    print_success "$name"
+  else
+    print_error "$name"
+    sed 's/^/    /' "$log" >&2
+    failures=$((failures + 1))
+  fi
+}
+log_has() { grep -qF -- "$1" "$log"; }
+log_lacks() { ! grep -qF -- "$1" "$log"; }
+# log_count <text> <n>: the output has <n> lines with the fixed string <text>.
+log_count() { [[ $(grep -cF -- "$1" "$log") == "$2" ]]; }
+lacks_in_file() { ! grep -qF -- "$1" "$2"; }
+no_file() { [[ ! -e $1 ]]; }
+mode_is() { [[ $(stat -c %a -- "$2" 2> /dev/null || stat -f %Lp -- "$2") == "$1" ]]; }
+# check_file <name> <path> <content>: the file holds <content>, without the
+# newlines at the end.
+check_file() {
+  if [[ -f $2 && $(cat -- "$2") == "$3" ]]; then
+    print_success "$1"
+  else
+    print_error "$1: $2 is not the expected file"
+    sed 's/^/    /' "$2" >&2
+    failures=$((failures + 1))
+  fi
+}
+# check_exact <name> <path> <content>: the file holds <content>, byte for byte.
+check_exact() {
+  local got
+  got=$(
+    cat -- "$2"
+    printf x
+  ) || got=''
+  if [[ $got == "$3x" ]]; then
+    print_success "$1"
+  else
+    print_error "$1: $2 changed"
+    sed 's/^/    /' "$2" >&2
+    failures=$((failures + 1))
+  fi
+}
+# case_rerun [<arg>]: run repo_sync again in the case. The log gets its output.
+case_rerun() {
+  (
+    unset FORCE_COLOR SYNC_ENGINE_URL REPO_SYNC_CLONE
+    export REPO_SYNC_VALUES=$values MISE_PROJECT_ROOT=$consumer REPO_SYNC_NO_AUTOUPDATE=1 SYNC_ENGINE_CLONE=$clone
+    # shellcheck source=/dev/null
+    source "$clone/sync-engine/repo-sync" || exit $?
+    repo_sync "$@"
+  ) > "$log" 2>&1
+}
+
+no_tool_values='environments = [ "dev" ]'
+fixture_toml() { printf '%s\n' "$@" >> "$clone/tools/fixture/tools.toml"; }
+# The tool `fixture` with the file a.txt, which has the header.
+fixture_txt() {
+  local header
+  fixture_tool
+  fixture_header a.txt '#'
+  fixture_file a.txt "${header[@]}" 'a'
+}
+# A copy of a.txt in the consumer: a synced copy, or a copy of the repo.
+copy_synced() { printf '%s\n' '# Synced from bootstrap: tools/fixture/a.txt. Do not edit this file.' > "$consumer/a.txt"; }
+copy_own='my own a.txt'
+copy_mine() { printf '%s\n' "$copy_own" > "$consumer/a.txt"; }
+# marker_at <folder>: the file marker.toml in that folder of the consumer.
+marker_at() {
+  mkdir -p -- "$consumer/$1"
+  : > "$consumer/$1/marker.toml"
+}
+
+# The old keys. The tool `fixture` is not selected: the sync examines each tool
+# of the clone.
+old_seed_key() {
+  fixture_tool
+  fixture_toml 'seed = [ "a.txt" ]'
+}
+old_seed_table() {
+  fixture_tool
+  fixture_toml '[seed_requires]' '"a.txt" = "package.json"'
+}
+old_mise_requires() {
+  fixture_tool
+  fixture_toml '[mise.tools.fixture-x]' 'requires = "x.toml"' 'version = "latest"'
+}
+old_mise_files() {
+  fixture_tool
+  fixture_toml '[mise.tools.fixture-x]' 'files = [ "a.txt" ]' 'version = "latest"'
+}
+old_mise_both() {
+  fixture_tool
+  fixture_toml '[mise.tools.fixture-x]' 'files = [ "a.txt" ]' 'requires = "x.toml"' 'version = "latest"'
+}
+old_mise_two_entries() {
+  fixture_tool
+  fixture_toml '[mise.tools.fixture-a]' 'files = [ "a.txt" ]' 'version = "latest"' \
+    '[mise.tools.fixture-b]' 'files = [ "a.txt" ]' 'version = "latest"'
+}
+old_seed_and_table() {
+  fixture_tool
+  fixture_toml 'seed = [ "a.txt" ]' '[seed_requires]' '"a.txt" = "package.json"'
+}
+msg_old_seed='tools/fixture/tools.toml: seed is not supported; use [files."<target>"] with mode = "seed"'
+msg_old_table='tools/fixture/tools.toml: [seed_requires] is not supported; use requires in [files."<target>"]'
+msg_old_requires='fixture/tools.toml: requires of mise tool fixture-x is the old key - write requires_found = ["x.toml"]'
+msg_old_files='tools/fixture/tools.toml: files in [mise.tools.fixture-x] is not supported; use requires_found in [files."<target>"]'
+check_old_both() {
+  check_that "an old requires and an old files: the requires message" log_has "$msg_old_requires"
+  check_that "an old requires and an old files: the files message" log_has "$msg_old_files"
+}
+check_old_two_entries() {
+  check_that "an old files in two entries: one message" log_count 'files in [mise.tools.' 1
+  check_that "an old files in two entries: the first entry" log_has 'files in [mise.tools.fixture-a] is not supported'
+}
+check_old_seed_and_table() { check_that "seed and [seed_requires]: the second message" log_has "$msg_old_table"; }
+
+run_case "the old seed key, a tool that is not selected" 2 "$no_tool_values" old_seed_key "$msg_old_seed"
+run_case "the old [seed_requires], a tool that is not selected" 2 "$no_tool_values" old_seed_table "$msg_old_table"
+run_case "the old requires of a mise entry" 2 "$no_tool_values" old_mise_requires "$msg_old_requires"
+run_case "the old files of a mise entry" 2 "$no_tool_values" old_mise_files "$msg_old_files"
+run_case "an old requires and an old files in one entry" 2 "$no_tool_values" old_mise_both '' check_old_both
+run_case "an old files in two entries" 2 "$no_tool_values" old_mise_two_entries '' check_old_two_entries
+run_case "seed and [seed_requires]" 2 "$no_tool_values" old_seed_and_table "$msg_old_seed" check_old_seed_and_table
+
+# The keys that are valid only in [mise.tools], and requires_found of a mise
+# entry. The generated config already exists in the consumer, so the dry run
+# shows its diff.
+mise_env_keys() {
+  fixture_tool
+  fixture_toml '[mise_env.dev.tools.fixture-x]' 'files = [ "a.txt" ]' 'requires = "x.toml"' \
+    'requires_found = [ "x.toml" ]' 'version = "latest"'
+}
+check_mise_env_keys() {
+  check_that "[mise_env.dev.tools]: requires" log_has 'fixture/tools.toml: requires of mise tool fixture-x in [mise_env.dev.tools] is valid only in [mise.tools]'
+  check_that "[mise_env.dev.tools]: files" log_has 'fixture/tools.toml: files of mise tool fixture-x in [mise_env.dev.tools] is valid only in [mise.tools]'
+}
+mise_found_slash() {
+  fixture_tool
+  fixture_toml '[mise.tools.fixture-x]' 'requires_found = [ "a/x.toml" ]' 'version = "latest"'
+}
+mise_found_empty() {
+  fixture_tool
+  fixture_toml '[mise.tools.fixture-x]' 'requires_found = []' 'version = "latest"'
+}
+mise_found_two() {
+  fixture_tool
+  fixture_toml '[mise.tools.fixture-x]' 'requires_found = [ "marker.toml", "other.toml" ]' 'version = "latest"'
+  mkdir -p -- "$consumer/.config/mise/conf.d/fixture"
+  printf '%s\n' x > "$consumer/.config/mise/conf.d/fixture/mise.dev.toml"
+  marker_at .
+}
+mise_found_two_both() {
+  mise_found_two
+  : > "$consumer/other.toml"
+}
+lacks_fixture_x() { check_log_lacks "requires_found of a mise entry, one of two names found" '[tools.fixture-x]'; }
+lacks_found_line() { check_log_lacks "requires_found of a mise entry, both names found" 'requires_found'; }
+
+run_case "[mise_env.dev.tools] requires_found, requires and files" 2 "$no_tool_values" mise_env_keys \
+  'fixture/tools.toml: requires_found of mise tool fixture-x in [mise_env.dev.tools] is valid only in [mise.tools]' \
+  check_mise_env_keys
+run_case "requires_found of a mise entry, a name with a /" 2 "$no_tool_values" mise_found_slash \
+  "fixture/tools.toml: requires_found of mise tool fixture-x: 'a/x.toml' must be a file name, with no /"
+run_case "requires_found of a mise entry, an empty list" 2 "$no_tool_values" mise_found_empty \
+  'fixture/tools.toml: requires_found of mise tool fixture-x must be a non-empty list of file names'
+run_case "requires_found of a mise entry, one of two names found" 0 "$fixture_values" mise_found_two '' lacks_fixture_x
+run_case "requires_found of a mise entry, both names found" 0 "$fixture_values" mise_found_two_both \
+  '[tools.fixture-x]' lacks_found_line
+
+# The rules of a [files] table. The tool `fixture` is not selected.
+files_table() {
+  fixture_txt
+  fixture_toml '[files."a.txt"]' "$@"
+}
+files_unknown_key() { files_table 'owner = "me"'; }
+files_no_source() {
+  fixture_txt
+  fixture_toml '[files."nope.txt"]' 'mode = "seed"'
+}
+files_tmpl_target() {
+  fixture_txt
+  fixture_file b.txt.tmpl 'b'
+  fixture_toml '[files."b.txt.tmpl"]' 'mode = "seed"'
+}
+# files_merge_key <key>: a merge target spelled <key>. The file sub/m.json
+# exists, so only the spelling of the key breaks the rule.
+files_merge_key() {
+  fixture_tool
+  mkdir -p -- "$clone/tools/fixture/sub"
+  fixture_file sub/m.json '{"a": 1}'
+  fixture_toml "[files.\"$1\"]" 'mode = "merge"'
+}
+files_dot_target() { files_merge_key ./sub/m.json; }
+files_double_slash_target() { files_merge_key sub//m.json; }
+# A file system that ignores case finds A.TXT, and only the exact match refuses it.
+files_case_variant() {
+  fixture_txt
+  fixture_toml '[files."A.TXT"]' 'mode = "seed"'
+}
+# The file exists through the link, and only the exact match refuses it.
+files_symlink_folder() {
+  files_merge_key link/m.json
+  ln -s sub "$clone/tools/fixture/link"
+}
+files_both_sources() {
+  fixture_txt
+  fixture_file a.txt.tmpl 'a'
+}
+files_not_table() {
+  fixture_txt
+  fixture_toml '[files]' '"a.txt" = 1'
+}
+files_bad_mode() { files_table 'mode = "copy"'; }
+files_bad_format() { files_table 'format = "ini"'; }
+files_requires_parent() { files_table 'requires = [ "../a" ]'; }
+files_requires_inner() { files_table 'requires = [ "x/../a" ]'; }
+files_requires_absolute() { files_table 'requires = [ "/a" ]'; }
+files_requires_empty() { files_table 'requires = []'; }
+files_requires_number() { files_table 'requires = 1'; }
+files_found_slash() { files_table 'requires_found = [ "a/b" ]'; }
+files_found_empty() { files_table 'requires_found = []'; }
+files_two_errors() { files_table 'format = "ini"' 'mode = "copy"'; }
+check_files_two_errors() { check_that "two errors in a [files] table: the second message" log_has '[files."a.txt"] mode must be'; }
+
+run_case "[files], an unknown key" 2 "$no_tool_values" files_unknown_key \
+  'fixture/tools.toml: [files."a.txt"] owner is not a key of a file'
+run_case "[files], a target that no file of the tool produces" 2 "$no_tool_values" files_no_source \
+  'fixture/tools.toml: [files."nope.txt"] names a target that no file of the tool produces'
+run_case "[files], a target with .tmpl" 2 "$no_tool_values" files_tmpl_target \
+  'fixture/tools.toml: [files."b.txt.tmpl"] names a target that no file of the tool produces'
+run_case "[files], a merge target with ./ at the start" 2 "$no_tool_values" files_dot_target \
+  'fixture/tools.toml: [files."./sub/m.json"] names a target that no file of the tool produces'
+run_case "[files], a merge target with // inside" 2 "$no_tool_values" files_double_slash_target \
+  'fixture/tools.toml: [files."sub//m.json"] names a target that no file of the tool produces'
+run_case "[files], a case variant of a target" 2 "$no_tool_values" files_case_variant \
+  'fixture/tools.toml: [files."A.TXT"] names a target that no file of the tool produces'
+run_case "[files], a target through a symlinked folder" 2 "$no_tool_values" files_symlink_folder \
+  'fixture/tools.toml: [files."link/m.json"] names a target that no file of the tool produces'
+run_case "<p> and <p>.tmpl in one tool folder" 2 "$no_tool_values" files_both_sources \
+  'fixture: a.txt and a.txt.tmpl both exist - keep one'
+run_case "[files], a target that is not a table" 2 "$no_tool_values" files_not_table \
+  'fixture/tools.toml: [files."a.txt"] must be a table'
+run_case "[files], an unknown mode" 2 "$no_tool_values" files_bad_mode \
+  'fixture/tools.toml: [files."a.txt"] mode must be "generated", "seed" or "merge"'
+run_case "[files], an unknown format" 2 "$no_tool_values" files_bad_format \
+  'fixture/tools.toml: [files."a.txt"] format must be "text", "json", "yaml" or "toml"'
+run_case "[files], requires with a .. part at the start" 2 "$no_tool_values" files_requires_parent \
+  "fixture/tools.toml: [files.\"a.txt\"] requires: '../a' must be a path relative to the repository root, with no .. part"
+run_case "[files], requires with a .. part inside" 2 "$no_tool_values" files_requires_inner \
+  "fixture/tools.toml: [files.\"a.txt\"] requires: 'x/../a' must be a path relative to the repository root, with no .. part"
+run_case "[files], requires with an absolute path" 2 "$no_tool_values" files_requires_absolute \
+  "fixture/tools.toml: [files.\"a.txt\"] requires: '/a' must be a path relative to the repository root, with no .. part"
+run_case "[files], requires an empty list" 2 "$no_tool_values" files_requires_empty \
+  'fixture/tools.toml: [files."a.txt"] requires must be a non-empty list of paths'
+run_case "[files], requires not a list" 2 "$no_tool_values" files_requires_number \
+  'fixture/tools.toml: [files."a.txt"] requires must be a non-empty list of paths'
+run_case "[files], requires_found with a /" 2 "$no_tool_values" files_found_slash \
+  "fixture/tools.toml: [files.\"a.txt\"] requires_found: 'a/b' must be a file name, with no /"
+run_case "[files], requires_found an empty list" 2 "$no_tool_values" files_found_empty \
+  'fixture/tools.toml: [files."a.txt"] requires_found must be a non-empty list of file names'
+run_case "[files], two errors in one table" 2 "$no_tool_values" files_two_errors \
+  '[files."a.txt"] format must be' check_files_two_errors
+
+# A seed: the pnpm-workspace.yaml of the node tool, with
+# requires = package.json.
+node_values='environments = [ "dev" ]
+[tools.node]'
+node_own_seed='# my own settings'
+node_package() { : > "$consumer/package.json"; }
+node_seed_exists() { printf '%s\n' "$node_own_seed" > "$consumer/pnpm-workspace.yaml"; }
+node_seed_exists_package() {
+  node_package
+  node_seed_exists
+}
+check_seed_skip() {
+  check_that "a seed, its requires absent: skip seed" log_has "skip seed  $consumer/pnpm-workspace.yaml (no package.json)"
+  check_that "a seed, its requires absent: not written" log_lacks "would update $consumer/pnpm-workspace.yaml"
+}
+check_seed_kept() {
+  check_that "a seed that exists: kept seed" log_has "kept seed  $consumer/pnpm-workspace.yaml"
+  check_that "a seed that exists: no skip seed" log_lacks 'skip seed'
+  check_exact "a seed that exists: not changed" "$consumer/pnpm-workspace.yaml" "$node_own_seed"$'\n'
+}
+check_seed_written() {
+  check_that "a seed, its requires present: written" test -s "$consumer/pnpm-workspace.yaml"
+}
+fixture_seed_found() {
+  fixture_txt
+  fixture_toml '[files."a.txt"]' 'mode = "seed"' 'requires_found = [ "marker.toml" ]'
+}
+check_seed_found_skip() {
+  check_that "a seed, its requires_found absent: skip seed" log_has "skip seed  $consumer/a.txt (no marker.toml)"
+}
+
+run_case "a seed, its requires absent" 0 "$node_values" '' '' check_seed_skip
+run_case "a seed that exists, its requires absent" 0 "$node_values" node_seed_exists '' check_seed_kept
+run_case "a seed that exists, its requires present" 0 "$node_values" node_seed_exists_package '' check_seed_kept
+case_args=' ' run_case "a seed, its requires present" 0 "$node_values" node_package '' check_seed_written
+run_case "a seed, its requires_found absent" 0 "$fixture_values" fixture_seed_found '' check_seed_found_skip
+
+# A generated target with requires_found: found 3 folders down, not found 5
+# folders down.
+gen_found() {
+  fixture_txt
+  fixture_toml '[files."a.txt"]' 'requires_found = [ "marker.toml" ]'
+}
+gen_found_3() {
+  gen_found
+  marker_at a/b/c
+}
+gen_found_5() {
+  gen_found
+  marker_at a/b/c/d/e
+}
+gen_found_5_synced() {
+  gen_found_5
+  copy_synced
+}
+gen_found_5_mine() {
+  gen_found_5
+  copy_mine
+}
+check_gen_written() {
+  check_that "requires_found 3 folders down: written" grep -qxF a "$consumer/a.txt"
+  check_that "requires_found 3 folders down: no skip" log_lacks '(no marker.toml)'
+}
+check_gen_skip() {
+  check_that "requires_found 5 folders down: skip file" log_has "skip file  $consumer/a.txt (no marker.toml)"
+  check_that "requires_found 5 folders down: not written" log_lacks "would update $consumer/a.txt"
+}
+check_gen_would_remove() {
+  check_that "requires_found 5 folders down, a synced copy: would remove" log_has "would remove $consumer/a.txt (no marker.toml)"
+  check_that "requires_found 5 folders down, a synced copy: the dry run keeps it" test -f "$consumer/a.txt"
+}
+check_gen_removed() {
+  check_that "requires_found 5 folders down, a synced copy: removed" log_has "removed    $consumer/a.txt (no marker.toml)"
+  check_that "requires_found 5 folders down, a synced copy: gone" no_file "$consumer/a.txt"
+}
+check_gen_mine() {
+  check_that "requires_found 5 folders down, a copy of the repo: skip file" log_has "skip file  $consumer/a.txt (no marker.toml)"
+  check_exact "requires_found 5 folders down, a copy of the repo: stays" "$consumer/a.txt" "$copy_own"$'\n'
+}
+
+case_args=' ' run_case "a generated target, requires_found 3 folders down" 0 "$fixture_values" gen_found_3 '' check_gen_written
+run_case "a generated target, requires_found 5 folders down" 0 "$fixture_values" gen_found_5 '' check_gen_skip
+run_case "a generated target, requires_found 5 folders down, a synced copy" 0 "$fixture_values" gen_found_5_synced '' \
+  check_gen_would_remove
+case_args=' ' run_case "a generated target, requires_found 5 folders down, a synced copy, a real run" 0 "$fixture_values" \
+  gen_found_5_synced '' check_gen_removed
+case_args=' ' run_case "a generated target, requires_found 5 folders down, a copy of the repo" 0 "$fixture_values" \
+  gen_found_5_mine '' check_gen_mine
+
+# A target with requires and requires_found: it needs every entry of both, and
+# the message names the first entry that is not there.
+both_lists() {
+  fixture_txt
+  fixture_toml '[files."a.txt"]' 'requires = [ "need.txt" ]' 'requires_found = [ "marker.toml" ]'
+}
+both_need() {
+  both_lists
+  : > "$consumer/need.txt"
+}
+both_marker() {
+  both_lists
+  marker_at .
+}
+both_present() {
+  both_need
+  marker_at .
+}
+both_need_in_folder() {
+  both_marker
+  mkdir -p -- "$consumer/a"
+  : > "$consumer/a/need.txt"
+}
+check_both_need() {
+  check_that "requires present, requires_found absent" log_has "skip file  $consumer/a.txt (no marker.toml)"
+  check_that "requires present, requires_found absent: not written" log_lacks "would update $consumer/a.txt"
+}
+check_both_marker() {
+  check_that "requires absent, requires_found present" log_has "skip file  $consumer/a.txt (no need.txt)"
+  check_that "requires absent, requires_found present: not written" log_lacks "would update $consumer/a.txt"
+}
+check_both_absent() {
+  check_that "both absent: the requires entry" log_has "skip file  $consumer/a.txt (no need.txt)"
+  check_that "both absent: not the requires_found entry" log_lacks '(no marker.toml)'
+}
+check_both_present() { check_that "both present: written" grep -qxF a "$consumer/a.txt"; }
+check_both_folder() { check_that "requires is an exact path" log_has "skip file  $consumer/a.txt (no need.txt)"; }
+
+run_case "requires present, requires_found absent" 0 "$fixture_values" both_need '' check_both_need
+run_case "requires absent, requires_found present" 0 "$fixture_values" both_marker '' check_both_marker
+run_case "requires and requires_found absent" 0 "$fixture_values" both_lists '' check_both_absent
+case_args=' ' run_case "requires and requires_found present" 0 "$fixture_values" both_present '' check_both_present
+run_case "requires, the file only in a folder" 0 "$fixture_values" both_need_in_folder '' check_both_folder
+
+# Merge mode, from the merge cases of test:setup-sync. The tool has a merge
+# target of each format. A source has no bootstrap header.
+merge_tool() {
+  local header
+  fixture_tool
+  mkdir -p -- "$clone/tools/fixture/.config/merger"
+  fixture_header .config/merger/plain.txt '#'
+  fixture_file .config/merger/plain.txt "${header[@]}" 'plain=1'
+  fixture_file .config/merger/m.json.tmpl '{' '  "scalar": "src",' \
+    '  "nested": { "set": 1, "deeper": { "x": true } },' '  "kind": [1],' \
+    '  "list": ["b", "c", "c", { "j": 2, "k": 1 }],' '  "maps": [{ "b": 2, "a": 1 }],' \
+    '  "items": ["a"]' '}'
+  fixture_file .config/merger/m.yaml.tmpl '# Merged by bootstrap: .config/merger/m.yaml' 'scalar: src' 'nested:' \
+    '  set: 1' 'list:' '  - x' '  - drop' '  - b' 'kind:' '  - 1'
+  fixture_file .config/merger/m.toml.tmpl '# Merged by bootstrap: .config/merger/m.toml' 'scalar = "src"' '' \
+    '[nested]' 'set = 1' 'list = ["x", "y"]'
+  fixture_toml '[files.".config/merger/m.json"]' 'mode = "merge"' \
+    'remove = [ [ "gone" ], [ "nested", "old" ], [ "absent", "path" ] ]' \
+    'remove_items = [ { items = [ "drop", { j = 2, k = 1 } ], path = [ "list" ] }, { items = [ "app" ], path = [ "keep" ] } ]' \
+    '[files.".config/merger/m.yaml"]' 'mode = "merge"' 'remove = [ [ "gone" ] ]' \
+    'remove_items = [ { items = [ "drop" ], path = [ "list" ] } ]' \
+    '[files.".config/merger/m.toml"]' 'mode = "merge"' 'remove = [ [ "gone" ] ]' \
+    'remove_items = [ { items = [ "s" ], path = [ "notlist" ] } ]'
+}
+# live <ext> <content>: a live merge target.
+live() {
+  mkdir -p -- "$consumer/.config/merger"
+  printf '%s' "$2" > "$consumer/.config/merger/m.$1"
+}
+m_file() { printf '%s' "$consumer/.config/merger/m.$1"; }
+
+# A 4-space JSON target: keys kept, scalars, nested tables, a kind change, lists
+# as a union with deep equality, remove and remove_items, the source wins over
+# a remove, a remove_items item stays out though the source has it, 2-space
+# output in the live key order, the permissions kept, no header, a second run
+# unchanged, a dry run that writes nothing.
+merge_json_live() {
+  merge_tool
+  live json '{
+    "keep": "app",
+    "scalar": "app",
+    "nested": {"set": 0, "old": 1, "other": 2},
+    "kind": {"was": "table"},
+    "list": ["x", "drop", "b", {"k": 1, "j": 2}, "drop"],
+    "maps": [{"a": 1, "b": 2}],
+    "gone": true
+}
+'
+  chmod 600 "$(m_file json)"
+}
+check_merge_json() {
+  local f before got=0
+  f=$(m_file json)
+  check_that "merge json: updated" log_has "updated    $f"
+  check_file "merge json: the result" "$f" '{
+  "keep": "app",
+  "scalar": "src",
+  "nested": {
+    "set": 1,
+    "other": 2,
+    "deeper": {
+      "x": true
+    }
+  },
+  "kind": [
+    1
+  ],
+  "list": [
+    "x",
+    "b",
+    "c"
+  ],
+  "maps": [
+    {
+      "a": 1,
+      "b": 2
+    }
+  ],
+  "items": [
+    "a"
+  ]
+}'
+  check_that "merge json: the permissions are kept" mode_is 600 "$f"
+  check_that "merge json: no header" lacks_in_file 'Synced from bootstrap' "$f"
+  case_rerun || got=$?
+  check_that "merge json: a second run exits 0" test "$got" = 0
+  check_that "merge json: a second run, unchanged" log_has "unchanged  $f"
+  printf '%s\n' '{"keep": "edited", "scalar": "app"}' > "$f"
+  before=$(cat -- "$f")
+  got=0
+  case_rerun --dry-run || got=$?
+  check_that "merge json: a dry run exits 0" test "$got" = 0
+  check_that "merge json: a dry run, would update" log_has "would update $f"
+  check_that "merge json: a dry run, the diff" log_has '+  "scalar": "src",'
+  check_file "merge json: a dry run writes nothing" "$f" "$before"
+}
+
+# A YAML target: the comments of the live file stay; an absent remove path is
+# not an error; remove_items deletes every equal item.
+merge_yaml_live() {
+  merge_tool
+  live yaml '# top comment
+keep: app # after keep
+scalar: app
+nested:
+  # own line
+  set: 0
+list:
+  - x
+  - drop
+  - drop
+kind:
+  was: table
+'
+}
+check_merge_yaml() {
+  check_file "merge yaml: the result" "$(m_file yaml)" '# top comment
+keep: app # after keep
+scalar: src
+nested:
+  # own line
+  set: 1
+list:
+  - x
+  - b
+kind:
+  - 1'
+}
+
+# A TOML target: own-line and after-key comments stay; a remove_items path that
+# is not a list is not an error.
+merge_toml_live() {
+  merge_tool
+  live toml '# head comment
+keep = "app" # after keep
+scalar = "app"
+notlist = "s"
+gone = 1
+
+# own line
+[nested]
+set = 0
+list = ["x"]
+'
+}
+# The list of the TOML target. dprint, when `mise x` finds it, writes its own
+# spaces and sorts the keys, and the case has no dprint config of its own.
+merge_toml_list='^list = \[ ?"x", "y" ?\]$'
+check_merge_toml() {
+  local f
+  f=$(m_file toml)
+  check_that "merge toml: the head comment stays" grep -qxF '# head comment' "$f"
+  check_that "merge toml: the own-line comment stays" grep -qxF '# own line' "$f"
+  check_that "merge toml: the after-key comment stays" grep -qE '^keep = "app" +# after keep$' "$f"
+  check_that "merge toml: the source scalar wins" grep -qxF 'scalar = "src"' "$f"
+  check_that "merge toml: a nested scalar" grep -qxF 'set = 1' "$f"
+  check_that "merge toml: a list union" grep -qE "$merge_toml_list" "$f"
+  check_that "merge toml: a non-list remove_items path is kept" grep -qxF 'notlist = "s"' "$f"
+  check_that "merge toml: a removed key" lacks_in_file 'gone' "$f"
+}
+
+# Absent targets get the source, with the mode of the source; a remove_items
+# item of the source is left out; the comment of the source stays.
+merge_absent_src() {
+  merge_tool
+  chmod 755 "$clone/tools/fixture/.config/merger/m.json.tmpl"
+}
+merge_yaml_absent='# Merged by bootstrap: .config/merger/m.yaml
+scalar: src
+nested:
+  set: 1
+list:
+  - x
+  - b
+kind:
+  - 1'
+merge_json_absent='{
+  "scalar": "src",
+  "nested": {
+    "set": 1,
+    "deeper": {
+      "x": true
+    }
+  },
+  "kind": [
+    1
+  ],
+  "list": [
+    "b",
+    "c"
+  ],
+  "maps": [
+    {
+      "b": 2,
+      "a": 1
+    }
+  ],
+  "items": [
+    "a"
+  ]
+}'
+check_merge_absent() {
+  check_file "merge absent: json" "$(m_file json)" "$merge_json_absent"
+  check_file "merge absent: yaml" "$(m_file yaml)" "$merge_yaml_absent"
+  check_that "merge absent: toml" grep -qE "$merge_toml_list" "$(m_file toml)"
+  check_that "merge absent: a new target takes the mode of its source" mode_is 755 "$(m_file json)"
+}
+
+# Empty, whitespace-only and comments-only targets count as absent; an existing
+# one keeps its permissions.
+merge_empty_live() {
+  merge_tool
+  live json ''
+  live yaml $'  \n# only a comment\n\n'
+  live toml $'\n\t \n'
+  chmod 600 "$(m_file json)"
+}
+check_merge_empty() {
+  check_file "merge empty: json" "$(m_file json)" "$merge_json_absent"
+  check_that "merge empty: the permissions are kept" mode_is 600 "$(m_file json)"
+  check_file "merge empty: yaml" "$(m_file yaml)" "$merge_yaml_absent"
+  check_that "merge empty: toml" grep -qxF 'scalar = "src"' "$(m_file toml)"
+}
+
+# Live targets that cannot merge stay byte-equal and fail with exit 2.
+bad_live_json='{"a": '
+bad_live_yaml='a: [1
+'
+bad_live_toml='a = [
+'
+merge_bad_live() {
+  merge_tool
+  live json "$bad_live_json"
+  live yaml "$bad_live_yaml"
+  live toml "$bad_live_toml"
+}
+check_merge_bad_live() {
+  check_that "merge live bad: yaml" log_has "$(m_file yaml) is not valid yaml - kept it as it is"
+  check_that "merge live bad: toml" log_has "$(m_file toml) is not valid toml - kept it as it is"
+  check_exact "merge live bad: json stays" "$(m_file json)" "$bad_live_json"
+  check_exact "merge live bad: yaml stays" "$(m_file yaml)" "$bad_live_yaml"
+  check_exact "merge live bad: toml stays" "$(m_file toml)" "$bad_live_toml"
+  check_that "merge live bad: no temp file" test -z "$(find "$consumer/.config/merger" -name '.sync-engine.*')"
+}
+kind_live_json='[1]
+'
+kind_live_yaml='~
+'
+merge_kind_live() {
+  merge_tool
+  live json "$kind_live_json"
+  live yaml "$kind_live_yaml"
+}
+check_merge_kind_live() {
+  check_that "merge live kind: yaml" log_has "$(m_file yaml) holds null, not a table - kept it as it is"
+  check_exact "merge live kind: json stays" "$(m_file json)" "$kind_live_json"
+  check_exact "merge live kind: yaml stays" "$(m_file yaml)" "$kind_live_yaml"
+}
+docs_live_yaml='a: 1
+---
+b: 2
+'
+merge_docs_live() {
+  merge_tool
+  live yaml "$docs_live_yaml"
+}
+check_merge_docs_live() { check_exact "merge live docs: yaml stays" "$(m_file yaml)" "$docs_live_yaml"; }
+
+# Sources that cannot merge: a list, two YAML documents, a source that does not
+# parse.
+src_live_json='{"keep": 1}
+'
+src_live_yaml='keep: 1
+'
+merge_bad_src() {
+  merge_tool
+  printf '%s\n' '[1]' > "$clone/tools/fixture/.config/merger/m.json.tmpl"
+  printf '%s\n' 'a: 1' '---' 'b: 2' > "$clone/tools/fixture/.config/merger/m.yaml.tmpl"
+  live json "$src_live_json"
+  live yaml "$src_live_yaml"
+}
+check_merge_bad_src() {
+  check_that "merge source bad: yaml" log_has "the merge source of $(m_file yaml) has more than one YAML document"
+  check_exact "merge source bad: json stays" "$(m_file json)" "$src_live_json"
+  check_exact "merge source bad: yaml stays" "$(m_file yaml)" "$src_live_yaml"
+}
+merge_src_no_parse() {
+  merge_tool
+  printf '%s\n' '{"a": }' > "$clone/tools/fixture/.config/merger/m.json.tmpl"
+  live json "$src_live_json"
+}
+check_merge_src_no_parse() { check_exact "merge source that does not parse: json stays" "$(m_file json)" "$src_live_json"; }
+# A JSON merge source with a // line is not JSONC: its format is its extension.
+merge_src_jsonc() {
+  merge_tool
+  printf '%s\n' '{' '  // a comment' '  "a": 1' '}' > "$clone/tools/fixture/.config/merger/m.json.tmpl"
+}
+
+# An empty source enforces nothing: only the removals act; an absent target gets
+# an empty table.
+merge_empty_src() {
+  merge_tool
+  printf '%s\n' '{}' > "$clone/tools/fixture/.config/merger/m.json.tmpl"
+  printf '%s\n' '# Merged by bootstrap: .config/merger/m.yaml' > "$clone/tools/fixture/.config/merger/m.yaml.tmpl"
+  live json '{"keep": 1, "gone": 2, "list": ["drop", "x"]}'
+}
+check_merge_empty_src() {
+  check_file "merge source empty: the removals act" "$(m_file json)" '{
+  "keep": 1,
+  "list": [
+    "x"
+  ]
+}'
+  check_file "merge source empty: an absent target gets an empty table" "$(m_file yaml)" '{}'
+}
+
+# An existing merge target keeps its mode, also when its source has another one
+# and on a run that changes nothing.
+merge_keep_mode() {
+  merge_tool
+  chmod 755 "$clone/tools/fixture/.config/merger/m.json.tmpl"
+  live json '{"keep": 1}'
+  chmod 600 "$(m_file json)"
+}
+check_merge_keep_mode() {
+  local f got=0
+  f=$(m_file json)
+  check_that "merge mode: updated" log_has "updated    $f"
+  check_that "merge mode: 600 stays" mode_is 600 "$f"
+  case_rerun || got=$?
+  check_that "merge mode: a second run exits 0" test "$got" = 0
+  check_that "merge mode: a second run, no chmod" log_lacks "chmod 755  $f"
+  check_that "merge mode: a second run, 600 stays" mode_is 600 "$f"
+}
+
+# The format of a merge target is its format key, else its extension.
+merge_format_key() {
+  fixture_tool
+  fixture_file app.conf '{"a": 1}'
+  fixture_toml '[files."app.conf"]' 'format = "json"' 'mode = "merge"'
+  printf '%s\n' '{"keep": 1}' > "$consumer/app.conf"
+}
+check_merge_format_key() {
+  check_file "merge format key: the result" "$consumer/app.conf" '{
+  "keep": 1,
+  "a": 1
+}'
+}
+
+# A merge target with a condition.
+merge_required() {
+  fixture_tool
+  fixture_file m.json '{"a": 1}'
+  fixture_toml '[files."m.json"]' 'mode = "merge"' 'requires = [ "need.txt" ]'
+  printf '%s\n' '{"keep": 1}' > "$consumer/m.json"
+}
+merge_required_present() {
+  merge_required
+  : > "$consumer/need.txt"
+}
+check_merge_skip() {
+  check_that "merge, its requires absent: skip merge" log_has "skip merge $consumer/m.json (no need.txt)"
+  check_exact "merge, its requires absent: stays" "$consumer/m.json" '{"keep": 1}'$'\n'
+}
+check_merge_required() {
+  check_file "merge, its requires present: merged" "$consumer/m.json" '{
+  "keep": 1,
+  "a": 1
+}'
+}
+
+# A merge target that is a symlink, or is below a symlinked folder: the repo
+# side follows no symlink. The file outside the repository is a secret, which
+# must not land in the repository. The tool has no generated file in the folder
+# of the target, so the sync writes nothing else through a link.
+outside_json='{"secret": "outside-value"}
+'
+merge_link_tool() {
+  fixture_tool
+  mkdir -p -- "$clone/tools/fixture/.config/merger" "$tmp/outside"
+  fixture_file .config/merger/m.json '{"a": 1}'
+  fixture_toml '[files.".config/merger/m.json"]' 'mode = "merge"'
+  printf '%s' "$outside_json" > "$tmp/outside/m.json"
+}
+link_is() { [[ -L $1 && $(readlink -- "$1") == "$2" ]]; }
+# find -type f: a symlink is not a file of the repository.
+repo_lacks() { [[ -z $(find "$consumer" -type f -exec grep -lF -- "$1" {} +) ]]; }
+outside_only_file() { [[ $(find "$tmp/outside" ! -type d) == "$tmp/outside/m.json" ]]; }
+# check_link_kept <name> <link> <its target>: the link, the outside file and the
+# repository are as they were.
+check_link_kept() {
+  check_that "$1: the link stays" link_is "$2" "$3"
+  check_exact "$1: the outside file stays" "$tmp/outside/m.json" "$outside_json"
+  check_that "$1: nothing new outside" outside_only_file
+  check_that "$1: the secret is not in the repository" repo_lacks outside-value
+  check_that "$1: the secret is not in the output" log_lacks outside-value
+}
+no_commit_set() { lacks_in_file bootstrap_commit "$values"; }
+
+merge_link_live() {
+  merge_link_tool
+  mkdir -p -- "$consumer/.config/merger"
+  ln -s -- "$tmp/outside/m.json" "$(m_file json)"
+}
+check_merge_link() {
+  check_that "merge link: the message" log_has "$(m_file json) is a symlink - kept it as it is"
+  check_link_kept "merge link" "$(m_file json)" "$tmp/outside/m.json"
+  check_that "merge link: no bootstrap_commit" no_commit_set
+}
+check_merge_link_dry() {
+  check_that "merge link, dry run: the message" log_has "$(m_file json) is a symlink - kept it as it is"
+  check_link_kept "merge link, dry run" "$(m_file json)" "$tmp/outside/m.json"
+  check_that "merge link, dry run: no bootstrap_commit" no_commit_set
+  check_that "merge link, dry run: would set nothing" log_lacks 'would set bootstrap_commit'
+}
+merge_link_dangling() {
+  merge_link_tool
+  mkdir -p -- "$consumer/.config/merger"
+  ln -s -- "$tmp/outside/absent.json" "$(m_file json)"
+}
+check_merge_link_dangling() {
+  check_that "merge dangling link: the message" log_has "$(m_file json) is a symlink - kept it as it is"
+  check_link_kept "merge dangling link" "$(m_file json)" "$tmp/outside/absent.json"
+  check_that "merge dangling link: no bootstrap_commit" no_commit_set
+}
+
+merge_link_folder() {
+  merge_link_tool
+  ln -s -- "$tmp/outside" "$consumer/.config/merger"
+}
+# The sync runs in the repository, so `_se_path` shows both paths as relative.
+# `cd` tidies PWD (a TMPDIR that ends in / gives //): the root takes its form.
+merge_link_folder_here() {
+  merge_link_folder
+  cd -- "$consumer"
+  consumer=$PWD
+}
+check_merge_link_folder() {
+  check_link_kept "merge linked folder" "$consumer/.config/merger" "$tmp/outside"
+  check_that "merge linked folder: no bootstrap_commit" no_commit_set
+}
+check_merge_link_folder_dry() {
+  check_that "merge linked folder, dry run: the message" log_has \
+    "$(m_file json): the folder $consumer/.config/merger is a symlink - kept it as it is"
+  check_link_kept "merge linked folder, dry run" "$consumer/.config/merger" "$tmp/outside"
+  check_that "merge linked folder, dry run: no bootstrap_commit" no_commit_set
+  check_that "merge linked folder, dry run: would set nothing" log_lacks 'would set bootstrap_commit'
+}
+
+# The config errors. The tool `fixture` is not selected.
+merge_format_text() {
+  merge_tool
+  fixture_toml '[files.".config/merger/plain.txt"]' 'mode = "merge"'
+}
+merge_format_key_text() {
+  fixture_tool
+  fixture_file m.json '{"a": 1}'
+  fixture_toml '[files."m.json"]' 'format = "text"' 'mode = "merge"'
+}
+remove_generated() {
+  merge_tool
+  fixture_toml '[files.".config/merger/plain.txt"]' 'remove = [ [ "a" ] ]'
+}
+remove_items_generated() {
+  merge_tool
+  fixture_toml '[files.".config/merger/plain.txt"]' 'remove_items = [ { items = [ "a" ], path = [ "a" ] } ]'
+}
+remove_bad_shape() {
+  merge_tool
+  fixture_toml '[files.".config/merger/plain.txt"]' 'format = "json"' 'mode = "merge"' 'remove = [ "a" ]'
+}
+remove_items_no_items() {
+  merge_tool
+  fixture_toml '[files.".config/merger/plain.txt"]' 'format = "json"' 'mode = "merge"' 'remove_items = [ { path = [ "a" ] } ]'
+}
+
+case_args=' ' run_case "merge: a JSON target" 0 "$fixture_values" merge_json_live '' check_merge_json
+case_args=' ' run_case "merge: a YAML target keeps its comments" 0 "$fixture_values" merge_yaml_live '' check_merge_yaml
+case_args=' ' run_case "merge: a TOML target keeps its comments" 0 "$fixture_values" merge_toml_live '' check_merge_toml
+case_args=' ' run_case "merge: absent targets get the source" 0 "$fixture_values" merge_absent_src '' check_merge_absent
+case_args=' ' run_case "merge: empty targets count as absent" 0 "$fixture_values" merge_empty_live '' check_merge_empty
+case_args=' ' run_case "merge: live targets that do not parse" 2 "$fixture_values" merge_bad_live \
+  'm.json is not valid json - kept it as it is' check_merge_bad_live
+case_args=' ' run_case "merge: live targets that are not a table" 2 "$fixture_values" merge_kind_live \
+  'm.json holds a list, not a table - kept it as it is' check_merge_kind_live
+case_args=' ' run_case "merge: a live YAML target with two documents" 2 "$fixture_values" merge_docs_live \
+  'm.yaml has more than one YAML document - kept it as it is' check_merge_docs_live
+case_args=' ' run_case "merge: sources that are not a table" 2 "$fixture_values" merge_bad_src \
+  'm.json is a list, not a table' check_merge_bad_src
+case_args=' ' run_case "merge: a source that does not parse" 2 "$fixture_values" merge_src_no_parse \
+  'm.json: the result does not parse as json - the current file stays' check_merge_src_no_parse
+case_args=' ' run_case "merge: a JSON source with a // line is not text" 2 "$fixture_values" merge_src_jsonc \
+  'm.json: the result does not parse as json'
+case_args=' ' run_case "merge: an empty source" 0 "$fixture_values" merge_empty_src '' check_merge_empty_src
+case_args=' ' run_case "merge: an existing target keeps its mode" 0 "$fixture_values" merge_keep_mode '' check_merge_keep_mode
+case_args=' ' run_case "merge: the format key" 0 "$fixture_values" merge_format_key '' check_merge_format_key
+case_args=' ' run_case "merge: its requires absent" 0 "$fixture_values" merge_required '' check_merge_skip
+case_args=' ' run_case "merge: its requires present" 0 "$fixture_values" merge_required_present '' check_merge_required
+case_args=' ' run_case "merge: a target that is a symlink" 2 "$fixture_values" merge_link_live \
+  'm.json is a symlink - kept it as it is' check_merge_link
+run_case "merge: a dry run, a target that is a symlink" 2 "$fixture_values" merge_link_live \
+  'm.json is a symlink - kept it as it is' check_merge_link_dry
+case_args=' ' run_case "merge: a target that is a dangling symlink" 2 "$fixture_values" merge_link_dangling \
+  'm.json is a symlink - kept it as it is' check_merge_link_dangling
+case_args=' ' run_case "merge: a target below a symlinked folder" 2 "$fixture_values" merge_link_folder_here \
+  '.config/merger/m.json: the folder .config/merger is a symlink - kept it as it is' check_merge_link_folder
+run_case "merge: a dry run, a target below a symlinked folder" 2 "$fixture_values" merge_link_folder \
+  'm.json: the folder' check_merge_link_folder_dry
+run_case "merge: a merge target of format text" 2 "$no_tool_values" merge_format_text \
+  'fixture/tools.toml: [files.".config/merger/plain.txt"] mode = "merge" needs a json, yaml or toml target'
+run_case "merge: a merge target with format = text" 2 "$no_tool_values" merge_format_key_text \
+  'fixture/tools.toml: [files."m.json"] mode = "merge" needs a json, yaml or toml target'
+run_case "merge: remove on a generated file" 2 "$no_tool_values" remove_generated \
+  'fixture/tools.toml: [files.".config/merger/plain.txt"] remove works only with mode = "merge"'
+run_case "merge: remove_items on a generated file" 2 "$no_tool_values" remove_items_generated \
+  'fixture/tools.toml: [files.".config/merger/plain.txt"] remove_items works only with mode = "merge"'
+run_case "merge: a remove of a bad shape" 2 "$no_tool_values" remove_bad_shape \
+  'fixture/tools.toml: [files.".config/merger/plain.txt"] remove must be a list of key paths, each a non-empty list of strings'
+run_case "merge: a remove_items without items" 2 "$no_tool_values" remove_items_no_items \
+  'fixture/tools.toml: [files.".config/merger/plain.txt"] remove_items must be a list of tables, each with exactly path (a non-empty list of strings) and items (a list)'
 
 while ((${#case_pids[@]})); do
   collect_case
@@ -1341,8 +2260,8 @@ else
 fi
 
 mkdir -p -- "$gate_cache/repo/sync-engine"
-cp -- "$root/sync-engine/repo-sync" "$root/sync-engine/common" "$root/sync-engine/write" "$root/sync-engine/select" \
-  "$gate_cache/repo/sync-engine/"
+cp -- "$root/sync-engine/repo-sync" "$root/sync-engine/common" "$root/sync-engine/write" "$root/sync-engine/merge" \
+  "$root/sync-engine/select" "$gate_cache/repo/sync-engine/"
 _git init --quiet "$gate_cache/repo"
 _git -C "$gate_cache/repo" remote add origin https://github.com/virajp/bootstrap.git
 got=0

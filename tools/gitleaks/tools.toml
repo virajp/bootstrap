@@ -3,7 +3,9 @@ default_envs = [ "dev", "ci" ]
 depends = []
 extensions = []
 root_only = false
-seed = [ ".config/gitleaks.toml.tmpl" ]
+
+[files.".config/gitleaks.toml"]
+mode = "seed"
 
 # The mise config, generated into .config/mise/conf.d/gitleaks/mise.<env>.toml.
 # In dev and ci, because CI runs `code:sec` too.

@@ -46,8 +46,9 @@ pack.
 
 The sync code is in `sync-engine/`: `clone` for the shared cache and the clone,
 `common` for the log, the header detection and the wrappers of gomplate, jq and
-yq, `write` for the write of one file, `select` for the packs and the `depends`,
-and `repo-sync` for the function `repo_sync`. This folder is not a tool, so the
+yq, `write` for the write of one file, `merge` for merge mode, `select` for the
+packs and the `depends`, and `repo-sync` for the function `repo_sync`. This
+folder is not a tool, so the
 sync does not copy it to a repository.
 
 A pack is a named list of tools in `tools/packs.toml`. It has no files of its
@@ -83,7 +84,6 @@ default_envs = [
 depends = [] # tools added with this one
 extensions = [] # VS Code extensions
 root_only = false # true: refused in a submodule; skipped there from a pack
-seed = [] # written only when missing
 
 # The mise config, in mise syntax. The sync generates
 # .config/mise/conf.d/android/mise.<env>.toml.
@@ -124,14 +124,27 @@ language = "system"
 name = "Format (mise run code:format)"
 ```
 
-A tool can also make a seed depend on a file of the repository with a
-`[seed_requires]` table. The sync then writes the seed only if the repository
-has that file:
+A tool can also give one of its files a `[files."<target>"]` table. The target
+is the path of the file without `.tmpl`. A target that ends in `.tmpl` stops the
+sync with code 2. The target must be the same string as a path of `find -type f`
+in the tool folder, with or without `.tmpl`. Else the sync stops with code 2. A
+file without a table is `generated`: the sync writes it on each run.
 
 ```toml
-[seed_requires]
-"pnpm-workspace.yaml" = "package.json"
+[files."pnpm-workspace.yaml"]
+mode = "seed" # generated, seed or merge
+requires = [ "package.json" ] # exact paths; each must exist
 ```
+
+The other keys of the table are `requires_found`, `format`, `remove` and
+`remove_items`:
+
+- `requires_found` is a list of file names. The sync must find each name at the
+  root or down to 4 folders below it, in a file that git does not ignore.
+- `format` is `text`, `json`, `yaml` or `toml`. The default comes from the
+  extension.
+- `remove` and `remove_items` are only for `mode = "merge"`. They delete key
+  paths and list items from the live target.
 
 ## How a repository syncs
 
@@ -174,15 +187,20 @@ These rules apply to each file:
 - A file is only replaced when its content changes. Use `--dry-run` to see the
   changes without writing them.
 - A JSON, YAML or TOML file must parse before the sync writes it (jq for JSON,
-  yq for YAML and TOML). A `.json` file with a `//` line is JSONC, and the sync
-  does not examine it. A file that does not parse keeps the existing copy, the
-  other files continue, and the sync returns code 2.
+  yq for YAML and TOML). A `.json` file without a `format` key, with a `//`
+  line, is JSONC, and the sync does not examine it. This JSONC rule does not
+  apply to a merge target. A file that does not parse keeps the existing copy,
+  the other files continue, and the sync returns code 2.
 - A file takes the mode of its source, also when the file exists already. A
   template keeps the mode of its `.tmpl`, so an executable `.tmpl` gives an
-  executable file.
+  executable file. A merge target keeps the mode of an existing target.
 - A seed file is written only when it is missing. After that, the repository
-  owns it. A seed in `seed_requires` is written only if the repository has the
-  named file.
+  owns it. A seed with `requires` is written only if each named path exists.
+- A merge target (`mode = "merge"`) is a file that an app owns. Its source holds
+  only the keys that the tool enforces, and the sync merges them into the live
+  target. The other keys stay. It has no header, and the sync never removes it.
+  A merge target that is a symlink or is below a symlinked folder stays as it
+  is, and the sync returns code 2. No tool uses merge mode now.
 - In `.config/pre-commit-config.yaml`, each hook `rev` becomes the newest tag:
   the sync runs `pre-commit autoupdate` on it. This needs the network.
 - The repository selects its environments in `environments`: `dev`
@@ -193,9 +211,9 @@ These rules apply to each file:
   its `env`, else of its `default_envs`. A dependency goes to each environment
   of the tools that need it. The `envs` of a mise tool lists the environments
   that it allows; a tool in a different environment stops the sync. The
-  `requires` of a mise tool names a file: the sync writes the mise tool only
-  when the repository has that file. Its `files` lists the files of the tool,
-  for example its tasks, that follow the same condition. Each tool
+  `requires_found` of a mise tool lists file names: the sync writes the mise
+  tool only when it finds a file of each name. Each file of the tool, for
+  example a task, states its own condition in its `[files]` table. Each tool
   must be in dev: an `env` or a `default_envs` without dev stops the sync.
   Aliases, hooks, vars and tasks go only to dev. `.config/mise.toml` is the
   only file for every environment. `CLAUDE.md` has the full rules.
@@ -211,8 +229,8 @@ These rules apply to each file:
   sync did not write. A seed, such as `zz-repo/mise.<env>.toml`, has no header,
   so the sync keeps it. The third is a file with the bootstrap header at a path
   where the sync needs a folder. The fourth is a file with the bootstrap header
-  of a `files` list of a mise tool, when the `requires` file of that mise tool
-  is missing.
+  at a generated `[files]` target whose `requires` or `requires_found` condition
+  fails. A removal skips a seed and a merge target.
 
 A repository synced before the split of the base tool (`c95e4ff`) cannot sync.
 Its
@@ -317,8 +335,9 @@ protected branch, the sync removes the hook.
 
 ## Tests
 
-`mise run test:repo-sync` runs `repo_sync --dry-run` and `repo_sync --check`
-of the working tree's `tools/` and `sync-engine/` against scratch values files,
+`mise run test:repo-sync` runs `repo_sync --dry-run`, `repo_sync --check` and,
+for a case that compares a written file, `repo_sync` of the working tree's
+`tools/` and `sync-engine/` against scratch values files and scratch consumers,
 and checks the exit code and the message of each case. It needs no network when
 gomplate, jq and yq are installed. No hook runs it: run it by hand before you
 commit a change to `tools/` or `sync-engine/`.

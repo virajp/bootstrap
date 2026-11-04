@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+
+# merge — the merge mode of the sync engine: a file of `mode = "merge"`, whose
+# source holds only the keys that the tool enforces, merged into the live
+# target that an app owns. A front-end sources it after `common`.
+#
+# It gives _SE_MERGE_JQ and
+#   _se_merge <src> <live> <format> <remove-json> <remove-items-json> <out>
+#     <show>
+#
+# <format> is json, yaml or toml. <remove-json> is `remove`, a list of key
+# paths, and <remove-items-json> is `remove_items`, a list of `{path, items}`
+# tables. <src> and <out> can be the same file. <show> names <live> in each
+# message. The caller gives the real paths: this file resolves no symlink. Each
+# path is absolute, because the tool wrappers run from `/`.
+#
+# `remove` deletes key paths of the live target, and `remove_items` deletes from
+# the list at each `path` every item equal to a listed one. Then the source is
+# merged over the result, so the source wins over `remove`, but `remove_items`
+# wins over the source: a listed item also leaves the source list, so it is
+# never added back (on an absent target too). The merge: tables merge key by
+# key, deeply; a source scalar replaces the live value; a source value of
+# another kind (table, list, scalar) than the live one replaces it; a list is
+# the live list in its order, then each source item that is not equal to an item
+# already in it, once. A key that is not in the source stays as the app wrote
+# it. A path or item that is not in the live file is not an error, nor a
+# `remove_items` path whose live value is not a list. JSON is merged and written
+# with jq; YAML and TOML with yq in their own format, so the comments of the
+# live file stay.
+#
+# A target that is missing, 0 bytes or only whitespace (or, for YAML, only
+# comments) is absent: it gets the source without the `remove_items` items. A
+# live target that does not parse, whose top level is not a table, or a YAML
+# target with more than one document fails with 2 and stays as it is; so does a
+# source whose top level is not a table, or a YAML source with more than one
+# document. An empty source (null or an empty table) enforces nothing: only the
+# removals act, and an absent target gets an empty table.
+
+# The jq of a merge. Input, as jq variables: the parsed live target ($live, a
+# table), the rendered source ($src, a table) and the removals ($ops: {remove,
+# remove_items}). Output: {del, replace, drop, add}. `del` holds the paths of
+# the live target to delete: each `remove` path that is there and each list item
+# equal to an item of `remove_items`. `replace` holds each key whose value is of
+# another kind (table, list, scalar) than the source value; `drop` is both.
+# `add` is the source with each list cut to the items that the live list lacks
+# after `del`, once each. Writing `add` over the live target without `del`, with
+# tables merged key by key, lists appended and any other value replaced, is the
+# merge: `append_merge` for JSON, which keeps the place of a replaced key; yq's
+# `*+` for YAML and TOML, which cannot append a list to a value of another kind,
+# so it deletes the `drop` paths first. Paths under another path of the list are
+# left out.
+_SE_MERGE_JQ='
+def kind: if type == "object" then "table" elif type == "array" then "list" else "scalar" end;
+# True when $p is a key path of .: each step is a table that has the key.
+def has_path($p):
+  if ($p | length) == 0 then true
+  else type == "object" and has($p[0]) and (.[$p[0]] | has_path($p[1:])) end;
+# The items of $s that are not equal to an item of $l or to an earlier item.
+def new_items($l; $s):
+  reduce $s[] as $x ([]; if any($l[]; . == $x) or any(.[]; . == $x) then . else . + [$x] end);
+def additions($l; $s):
+  if ($s | type) == "object" then
+    reduce ($s | keys_unsorted[]) as $k ({};
+      .[$k] = additions(if ($l | type) == "object" then $l[$k] else null end; $s[$k]))
+  elif ($s | type) == "array" then new_items(if ($l | type) == "array" then $l else [] end; $s)
+  else $s end;
+# The paths under $p of . (a live value) whose kind differs from $s.
+def conflicts($s; $p):
+  if type == "object" and ($s | type) == "object" then
+    . as $l | $s | keys_unsorted[] | select(. as $k | $l | has($k)) as $k
+    | $l[$k] | conflicts($s[$k]; $p + [$k])
+  elif kind != ($s | kind) then $p
+  else empty end;
+def append_merge($a; $b):
+  if ($a | type) == "object" and ($b | type) == "object" then
+    reduce ($b | keys_unsorted[]) as $k ($a; .[$k] = append_merge($a[$k]; $b[$k]))
+  elif ($a | type) == "array" and ($b | type) == "array" then $a + $b
+  else $b end;
+# The paths of the list that are not under another one, the last first.
+def outer:
+  unique | . as $all
+  | [$all[] as $p | select(any($all[]; length < ($p | length) and . == $p[0:length]) | not) | $p]
+  | sort | reverse;
+# The paths in $v of each list item equal to an item of a `remove_items` rule.
+def item_paths($v; $rules):
+  [$rules[] as $r
+    | select($v | has_path($r.path))
+    | ($v | getpath($r.path)) as $list
+    | select(($list | type) == "array")
+    | range(0; $list | length) as $i
+    | select(any($r.items[]; . == $list[$i]))
+    | $r.path + [$i]];
+# `remove_items` wins over the source: its items leave the source lists too.
+def merge_plan($live; $src; $ops):
+  [$ops.remove[] | select(. as $p | $live | has_path($p))] as $removes
+  | item_paths($live; $ops.remove_items) as $items
+  | ($src | delpaths(item_paths($src; $ops.remove_items))) as $src
+  | ($live | delpaths($removes + $items)) as $kept
+  | [$kept | conflicts($src; [])] as $conflicts
+  | {del: (($removes + $items) | outer), replace: ($conflicts | outer),
+     drop: (($removes + $items + $conflicts) | outer), add: additions($kept; $src)};
+'
+
+
+# A jq type as words: `a list`, `null`, `a string`, ...
+_se_kind_word() {
+  case $1 in
+    array)
+      printf 'a list'
+      ;;
+    null)
+      printf 'null'
+      ;;
+    *)
+      printf 'a %s' "$1"
+      ;;
+  esac
+}
+
+# The merge, with the scratch folder <dir> first. See `_se_merge`.
+_se_merge_run() {
+  local dir=$1 src=$2 live=$3 format=$4 remove=$5 remove_items=$6 out=$7 show=$8 n kind empty=0
+  cp -- "$src" "$dir/src" || return 1
+  printf '{"remove":%s,"remove_items":%s}\n' "$remove" "$remove_items" > "$dir/ops.json" || return 1
+
+  # The source: one table; null is an empty source.
+  if [[ $format == json ]]; then
+    _se_jq -cs 'if length == 1 then .[0] else error("more than one JSON value") end' "$dir/src" > "$dir/src.json" || {
+      _se_log "the merge source of $show is not one JSON value"
+      return 2
+    }
+  else
+    if [[ $format == yaml ]]; then
+      n=$(_se_yq -p yaml -o json ea '[.] | length' "$dir/src") || return 2
+      if [[ $n != 1 ]]; then
+        _se_log "the merge source of $show has more than one YAML document"
+        return 2
+      fi
+    fi
+    _se_yq -p "$format" -o json . "$dir/src" > "$dir/src.json" || return 2
+  fi
+  kind=$(_se_jq -r type "$dir/src.json") || return 2
+  if [[ $kind == null ]]; then
+    printf '{}\n' > "$dir/src.json" || return 1
+    empty=1
+  elif [[ $kind != object ]]; then
+    _se_log "the merge source of $show is $(_se_kind_word "$kind"), not a table"
+    return 2
+  fi
+
+  # The live target: absent, or one table.
+  if [[ -f $live ]] && grep -q '[^[:space:]]' "$live"; then
+    case $format in
+      json)
+        _se_jq -cs 'if length == 1 then .[0] else error("more than one JSON value") end' "$live" > "$dir/live.json" || {
+          _se_log "$show is not valid json - kept it as it is"
+          return 2
+        }
+        ;;
+      yaml)
+        n=$(_se_yq -p yaml -o json ea '[.] | length' "$live") || {
+          _se_log "$show is not valid yaml - kept it as it is"
+          return 2
+        }
+        if [[ $n != 1 ]]; then
+          _se_log "$show has more than one YAML document - kept it as it is"
+          return 2
+        fi
+        _se_yq -p yaml -o json . "$live" > "$dir/live.json" || return 2
+        ;;
+      toml)
+        _se_yq -p toml -o json . "$live" > "$dir/live.json" || {
+          _se_log "$show is not valid toml - kept it as it is"
+          return 2
+        }
+        ;;
+    esac
+    kind=$(_se_jq -r type "$dir/live.json") || return 2
+    # A TOML file of comments only is an empty table; a YAML one is absent.
+    if [[ $kind == null && $format == toml ]]; then
+      printf '{}\n' > "$dir/live.json" || return 1
+      kind=object
+    elif [[ $kind == null && $format == yaml ]] && ! grep -vqE '^[[:space:]]*(#.*)?$|^(---|\.\.\.)[[:space:]]*$' "$live"; then
+      kind=absent
+    fi
+    if [[ $kind != object && $kind != absent ]]; then
+      _se_log "$show holds $(_se_kind_word "$kind"), not a table - kept it as it is"
+      return 2
+    fi
+  else
+    kind=absent
+  fi
+
+  # An absent target gets the source without the `remove_items` items: JSON
+  # through the jq merge (a repeated list item dropped), YAML and TOML through
+  # yq as rendered (its comments kept); an empty table for an empty source.
+  if [[ $kind == absent ]]; then
+    if [[ $format == json ]]; then
+      _se_jq -n --slurpfile s "$dir/src.json" --slurpfile ops "$dir/ops.json" \
+        "$_SE_MERGE_JQ"'merge_plan({}; $s[0]; {remove: [], remove_items: $ops[0].remove_items}).add' > "$out"
+    elif ((empty)) && [[ $format == yaml ]]; then
+      printf '{}\n' > "$out"
+    elif ((empty)); then
+      : > "$out"
+    else
+      _se_jq -n --slurpfile s "$dir/src.json" --slurpfile ops "$dir/ops.json" \
+        "$_SE_MERGE_JQ"'item_paths($s[0]; $ops[0].remove_items) | sort | reverse' > "$dir/src-drop.json" || return 2
+      SE_MERGE_DROP="$dir/src-drop.json" _se_yq -p "$format" -o "$format" \
+        'load(strenv(SE_MERGE_DROP)) as $d | delpaths($d)' "$dir/src" > "$out"
+    fi
+    return
+  fi
+
+  _se_jq -n --slurpfile live "$dir/live.json" --slurpfile src "$dir/src.json" --slurpfile ops "$dir/ops.json" \
+    "$_SE_MERGE_JQ"'merge_plan($live[0]; $src[0]; $ops[0])' > "$dir/plan.json" || return 2
+  if [[ $format == json ]]; then
+    _se_jq -n --slurpfile live "$dir/live.json" --slurpfile m "$dir/plan.json" \
+      "$_SE_MERGE_JQ"'$live[0] | delpaths($m[0].del) | append_merge(.; $m[0].add)' > "$out"
+  else
+    SE_MERGE_PLAN="$dir/plan.json" _se_yq -p "$format" -o "$format" \
+      'load(strenv(SE_MERGE_PLAN)) as $m | delpaths($m.drop) *+ ($m.add | ((.. | (., key)) style = ""))' "$live" > "$out"
+  fi
+}
+
+# Merge <src> over <live> into <out>; see the top of this file. Returns 2, after
+# a message, for a source or a live target that cannot merge. <live> is never
+# written here.
+_se_merge() {
+  local dir rc=0
+  dir=$(mktemp -d "${TMPDIR:-/tmp}/sync-engine-merge.XXXXXX") || {
+    _se_log "cannot create a temp directory"
+    return 1
+  }
+  _SE_TMPS+=("$dir")
+  _se_merge_run "$dir" "$@" || rc=$?
+  rm -rf -- "$dir"
+  return "$rc"
+}

@@ -19,8 +19,8 @@ it. These files are for this repository only:
 - At the root: `README.md`, `CLAUDE.md`, `LICENSE`, `dprint.jsonc` (with the
   excludes of this repository) and `eslint.config.mjs`.
 - `sync-engine/`: the shared library folder of the sync, with `clone`,
-  `common`, `write`, `select` and `repo-sync`. It is not a tool, so the sync
-  never copies it to a consumer.
+  `common`, `write`, `merge`, `select` and `repo-sync`. It is not a tool, so the
+  sync never copies it to a consumer.
 - `docs/design/`: the design notes of the sync (packs, tools, mise, fnox and
   the values file). `docs/plans/`: the vwf plan index.
 - `.config/mise/tasks/test/repo-sync`: the `test:repo-sync` task. It is not in
@@ -81,8 +81,8 @@ repository, without the `.tmpl` suffix of a template. For example,
 `tools/git/.config/mise/tasks/code/merge/develop` becomes
 `.config/mise/tasks/code/merge/develop` in a consumer.
 
-- Each tool folder has a `tools.toml` with five keys: `default_envs`,
-  `depends`, `root_only`, `extensions` and `seed`. All five keys are
+- Each tool folder has a `tools.toml` with four keys: `default_envs`,
+  `depends`, `root_only` and `extensions`. All four keys are
   necessary, because the sync reads them without defaults. `default_envs` is
   the list of the environments of the tool when the values file gives it no
   `env`. It must include `dev`. A `root_only` tool is not for a git
@@ -101,12 +101,47 @@ repository, without the `.tmpl` suffix of a template. For example,
   example `_security_base`.
 - Two tools must not ship the same path. The sync does not examine this rule,
   so examine it yourself when you add a file.
-- A file that the consumer owns after the first write is a seed. List it in
-  `seed`. A config file that a project tunes, for example the rules of a
+- A file that the consumer owns after the first write is a seed. Give it a
+  `[files."<target>"]` table with `mode = "seed"`. A config file that a project
+  tunes, for example the rules of a
   linter (`.config/swiftlint.yml`, `.config/detekt.yml`), is a seed.
-- A seed that applies only when the consumer has a specific file goes in the
-  optional `[seed_requires]` table: `"<seed>" = "<file>"`.
-- Each file that is not a seed starts with this header, in the comment syntax
+- A seed that applies only when the consumer has a specific file also gets
+  `requires` in that table, for example `requires = ["package.json"]`.
+- An optional `[files."<target>"]` table gives the mode and the condition of
+  one file of the tool. Without a table, the file is `generated`. The target
+  is the path of the file without `.tmpl`. The target, or the target with
+  `.tmpl`, must be the same string as a path of `find -type f` in the tool
+  folder. Thus a case variant and a path through a symlinked folder fail. A
+  target that fails stops the sync with code 2. The keys of the table are:
+  - `mode`: `generated` (the default), `seed` or `merge`.
+  - `requires`: a list of exact paths, relative to the root of the repository.
+    Each path must exist.
+  - `requires_found`: a list of file names. The sync must find each name at the
+    root or down to 4 folders below it, in a file that git tracks or does not
+    ignore.
+  - `format`: `text`, `json`, `yaml` or `toml`. It selects the parse check. The
+    default comes from the extension of the target.
+  - `remove`: only with `mode = "merge"`. A list of key paths to delete from
+    the live target.
+  - `remove_items`: only with `mode = "merge"`. A list of tables with `path`
+    and `items`. It deletes each listed item from the list at `path`, in the
+    live target and in the source.
+- When a `requires` or `requires_found` entry is not there, the sync does not
+  write the target. It removes a generated copy with the bootstrap header. A
+  copy without the header, a seed and a merge target stay.
+- Merge mode is for a target that an app owns. The source holds only the keys
+  that the tool enforces. The sync merges it into the live target, and the
+  other keys stay. The format is `json`, `yaml` or `toml`. The order is render,
+  parse check, merge, dprint, compare. A merge target has no header, follows no
+  symlink, is never removed, and keeps the mode of an existing target. A new
+  target takes the mode of its source. `sync-engine/merge` has the merge rules.
+  The JSONC rule does not apply to a merge target. No tool uses merge mode now.
+- These keys are gone, and each stops the sync with code 2 and a message that
+  names the new key: the top-level `seed` key, the old table of seed conditions,
+  and the `requires` and the `files` of a mise entry.
+- A tool folder with both `<path>` and `<path>.tmpl` stops the sync with code 2.
+- Each file that is neither a seed nor a merge source starts with this header,
+  in the comment syntax
   of the file (after the shebang in a script, after `---` in YAML when the
   file has it, inside `{` in JSONC, as an HTML comment in Markdown). In a
   template, `<path>` keeps the `.tmpl` suffix:
@@ -115,6 +150,10 @@ repository, without the `.tmpl` suffix of a template. For example,
   # Synced from bootstrap: tools/<tool>/<path>. Do not edit this file.
   # The next sync replaces it, and a manual change is lost.
   ```
+
+  A YAML or TOML merge source can have the comment
+  `# Merged by bootstrap: <path>`. A JSON merge source has no comment. The sync
+  strips nothing from a merge source.
 - A tool can add `[[precommit]]` tables to its `tools.toml`. Each table is one
   `repos:` entry of `.config/pre-commit-config.yaml`, with its
   `[[precommit.hooks]]`. This key is optional.
@@ -144,12 +183,13 @@ Some files refer to files that are not in `tools/`, for example
   member that still has the old sync task. `setup:configs:sync` loads
   `sync-engine/repo-sync` from the copy, so a change to the sync code applies
   in the same run. Without `SYNC_ENGINE_CLONE`, it stops with code 2.
-- `sync-engine/repo-sync` sources three libraries from its own folder.
+- `sync-engine/repo-sync` sources four libraries from its own folder.
   `common` holds the log, the file mode, the clean-up and its traps, the header
   detection, the record of the commit and the tool wrappers. `write` holds the
   write of one target: the format, the parse check, the temp file, the seed
-  gate, the unblock of a folder path, and the compare, the mode, the dry-run
-  diff and the rename. `select` holds the pack expansion and the depends walk.
+  gate, the unblock of a folder path, the checks of a `[files]` table, and the
+  compare, the mode, the dry-run diff and the rename. `merge` holds merge mode.
+  `select` holds the pack expansion and the depends walk.
 - The sync needs `mise`. Without it, `repo_sync` stops with code 2. The
   wrappers `_se_gomplate`, `_se_jq` and `_se_yq` of `common` start gomplate, jq
   and yq from `/`, so no mise config of the repository selects a version. An
@@ -186,7 +226,9 @@ Some files refer to files that are not in `tools/`, for example
   the `depends` of each tool, and copies each file of each tool.
 - Exit codes: 2 for a values file or a `tools.toml` that breaks a rule (also a
   missing values file, a missing `mise`, a target that does not parse, or a bad
-  `direct_commit`: see "Branch model in the merge tasks"), for a repository at
+  `direct_commit`: see "Branch model in the merge tasks"), for a merge source
+  or a live merge target that cannot merge, for a merge target that is a symlink
+  or is below a symlinked folder, for a repository at
   the cache root with
   another `origin` or no `origin`, for a `repo/` of the cache that is not a
   clone and not empty, and for a sync without `SYNC_ENGINE_CLONE`. 3 for a tool
@@ -209,7 +251,8 @@ Some files refer to files that are not in `tools/`, for example
   with the sync: a tool or a pack that is not in bootstrap, a pack loop or a
   pack named like a tool, an environment that a mise tool does not allow, an
   `[overrides.mise*]` path that no selected tool has, a `remove` line that
-  the shared file does not have, and a `root_only` tool in a submodule.
+  the shared file does not have, a `root_only` tool in a submodule, and an old
+  key or a bad `[files]` table of a `tools.toml`.
 - The gate `code:lint:repo-sync` of the `repo-sync` tool runs
   `repo_sync --check`. The `lint` hook runs `code:lint`, which runs the gate
   with the staged files, so the tool adds no hook. The gate is hidden, and it
@@ -223,15 +266,17 @@ Some files refer to files that are not in `tools/`, for example
   and `REPO_SYNC_CLONE`, and loads `sync-engine/repo-sync` of the cache. It
   takes no lock and never clones.
 - Each JSON, YAML or TOML target must parse, after its render or copy and
-  before dprint. jq reads JSON, and yq reads YAML and TOML. The extension of the
-  target without `.tmpl` selects the format. A `.json` target with a line that
+  before dprint. jq reads JSON, and yq reads YAML and TOML. The `format` key of
+  its `[files]` table selects the format, else the extension of the target
+  without `.tmpl`. A `.json` target without a `format` key with a line that
   starts with `//` after spaces is JSONC, which jq cannot read, so the sync does
   not examine it. An empty JSON target does not parse. A target that does not
   parse keeps its existing file, the other files continue, and the sync returns
   code 2 and does not set `bootstrap_commit`. A dry run examines each target
   too. An existing seed gets no examination, because the sync does not write it.
-- The sync formats each rendered template and each generated mise file with
-  the dprint config of the consumer before it compares the file.
+- The sync formats each rendered template, each generated mise file and each
+  merge target with the dprint config of the consumer before it compares the
+  file.
 - gomplate reads the TOML files: the values file, `tools/packs.toml`, each
   `tools.toml` and the consumer file `.config/fnox.toml`.
 - A repository does not use the fnox `default` profile, which is only for the
@@ -242,9 +287,10 @@ Some files refer to files that are not in `tools/`, for example
   `repo_name`. Each `fnox` call passes `-P <name>`.
 - The sync never deletes a file, except the merge tasks of the other branch
   model (see "Branch model in the merge tasks"), the stale generated mise
-  files (see "mise config"), a synced file of a `files` list whose
-  `requires` file is missing (see "mise config"), and a synced file at a path
-  where the sync needs a folder. `docs/sync/migrate.md` tells consumers what to
+  files (see "mise config"), a synced file at a generated `[files]` target whose
+  `requires` or `requires_found` condition fails (see "Layout rule"), and a
+  synced file at a path where the sync needs a folder. A removal skips a seed
+  and a merge target. `docs/sync/migrate.md` tells consumers what to
   delete.
 - After a sync without a failure, `repo_sync` sets the top-level
   `bootstrap_commit` of the values file to the full commit of its clone. It
@@ -284,9 +330,10 @@ Some files refer to files that are not in `tools/`, for example
   If `pre-commit` is missing or `autoupdate` fails, the sync keeps the
   existing file and returns code 5.
 - `test:repo-sync` is the task of this repository in
-  `.config/mise/tasks/test/repo-sync`. It runs `repo_sync --dry-run` and
-  `repo_sync --check` of the working tree's `tools/` and `sync-engine/` against
-  scratch values files, and it compares the
+  `.config/mise/tasks/test/repo-sync`. It runs `repo_sync --dry-run`,
+  `repo_sync --check` and, for a case that compares a written file, `repo_sync`
+  of the working tree's `tools/` and `sync-engine/` against scratch values files
+  and scratch consumers, and it compares the
   exit code and the message of each case. It needs no network when gomplate,
   jq and yq are installed. Before its
   first `git` call, it unsets the `GIT_*` variables of a git hook, so its
@@ -539,27 +586,25 @@ that it finds, and removes the others. It stops if neither branch exists.
     a dev-only section. `mise`
     uses it for `os = "macos"` in `dev` and `os = "linux"` in `ci`. A mise
     tool in `[mise_env.<env>.tools]` is only in that environment, and its tool
-    gets no `envs` check for it. The sync reads `envs`, `requires` and `files`
-    only in `[mise.tools]`. For example, `kotlin-lsp` of `kotlin` is in
+    gets no `envs` check for it. The sync reads `envs` and `requires_found` only
+    in `[mise.tools]`, and `requires_found`, `requires` or `files` in a
+    `[mise_env.<env>.tools]` entry stops the sync with code 2. For example,
+    `kotlin-lsp` of `kotlin` is in
     `[mise_env.dev.tools]`, so `kotlin` can be in `ci`.
   - The mise `depends` of an entry adds the tool that defines that mise tool.
     Do not repeat it in the `depends` key. Two tools must not define the same
     mise tool.
-  - The optional `requires` of an entry is a file name. The sync writes the
-    entry only when the repository has a file with that name, at the root or
-    down to 4 folders below it, that git tracks or does not ignore. The sync
-    does not look in git submodules. The generated file
-    has no `requires`. For example, `python` installs `ruff` only with a
+  - The optional `requires_found` of an entry is a list of file names. The
+    sync writes the entry only when the repository has a file with each name,
+    at the root or down to 4 folders below it, that git tracks or does not
+    ignore. The sync does not look in git submodules. The generated file has
+    no `requires_found`. For example, `python` installs `ruff` only with a
     `pyproject.toml`.
-  - The optional `files` of an entry with `requires` lists paths in the tool
-    folder, for example the tasks of that mise tool. Without the `requires`
-    file, the sync does not write them, and it removes a copy with the
-    bootstrap header. A copy without the header stays. A file that two
-    entries list needs both files. A file that no `files` lists is always
-    written. `files` without `requires`, and a path that is not a file of the
-    tool folder, stop the sync with code 2. The generated file has no
-    `files`. For example, `python` writes `code:lint:ruff` only with a
-    `pyproject.toml`.
+  - Each file states its condition in its own `[files]` table (see "Layout
+    rule"), for example the tasks of a mise tool. A mise entry has no list of
+    files. For example, `python` writes `code:lint:ruff` only with a
+    `pyproject.toml`, because the table of that task has
+    `requires_found = ["pyproject.toml"]`.
 - The sync skips a shipped `conf.d/*/mise.<env>.toml` of an environment that
   the consumer did not select.
 - The sync removes a `conf.d/*/mise*.toml` with the bootstrap header that
@@ -579,8 +624,8 @@ that it finds, and removes the others. It stops if neither branch exists.
   has: it cannot add a key. A path that no selected tool has, a key of
   `[overrides]` other than `mise`, `mise_env` and `gitignore`, an
   environment outside `environments`, and the `envs`, the `depends`, the
-  `requires` or the
-  `files` of a mise tool stop the sync with code 2. Each overridden line gets an
+  `requires`, the `requires_found` or the `files` of a mise tool stop the sync
+  with code 2. Each overridden line gets an
   `# override: .config/bootstrap.toml` comment. `[overrides.gitignore]` is
   different: see "How the sync operates".
 - `conf.d/zz-repo/` is the folder that each repository owns and customizes.

@@ -196,12 +196,19 @@ the value of each tool.
 ### The keys of a mise tool
 
 A `[mise.tools.<name>]` table has the mise keys of the tool, for example
-`version`, and two keys for the sync:
+`version`, and three keys for the sync:
 
-| Key       | Meaning                                                                            |
-| --------- | ---------------------------------------------------------------------------------- |
-| `envs`    | The environments that the mise tool allows. The default is `["dev"]`. Not written. |
-| `depends` | The mise tools that this mise tool needs. mise reads it too, so it stays.          |
+| Key              | Meaning                                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `envs`           | The environments that the mise tool allows. The default is `["dev"]`. Not written.                                                   |
+| `depends`        | The mise tools that this mise tool needs. mise reads it too, so it stays.                                                            |
+| `requires_found` | A list of file names. The sync writes the entry only when it finds each name at the root or down to 4 folders below it. Not written. |
+
+A file that follows the same condition, for example the task of that mise tool,
+states it in its own `[files]` table. See [tools.md](tools.md#the-files-table).
+`requires_found` is only for `[mise.tools]`. In a `[mise_env.<env>.tools]`
+entry,
+it stops the sync with code 2.
 
 ### The environments of a mise tool
 

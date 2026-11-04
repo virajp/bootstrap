@@ -34,7 +34,7 @@ The VS Code extension is `meta.pyrefly`.
 
 ## mise tools
 
-| mise tool      | Version  | Environments | Requires         |
+| mise tool      | Version  | Environments | `requires_found` |
 | -------------- | -------- | ------------ | ---------------- |
 | `python`       | `3.14`   | dev, ci      |                  |
 | `uv`           | `latest` | dev, ci      |                  |
@@ -44,8 +44,9 @@ The VS Code extension is `meta.pyrefly`.
 Many repositories get `python` only as a dependency of other tools. Thus the
 sync installs `ruff` and `pyrefly` only when the repository has a
 `pyproject.toml`, at the root or down to 4 folders below it, that git does not
-ignore. The `files` of the two entries apply the same condition to their
-tasks: `code:lint:ruff`, `code:format:ruff` and `code:lint:pyrefly`. Without
+ignore: each entry has `requires_found`. A `[files]` table with the same
+`requires_found` applies that condition to each task: `code:lint:ruff`,
+`code:format:ruff` and `code:lint:pyrefly`. Without
 a `pyproject.toml`, the sync does not write them, and it removes the copies
 of an earlier sync. If the repository adds its first `pyproject.toml` later,
 run `mise run setup:configs` again.

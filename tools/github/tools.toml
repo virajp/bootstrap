@@ -3,7 +3,6 @@ default_envs = [ "dev", "ci" ]
 depends = []
 extensions = [ "github.vscode-github-actions" ]
 root_only = false
-seed = []
 
 [[precommit]]
 repo = "local"
