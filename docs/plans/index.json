@@ -106,8 +106,8 @@
       "title": "The manifest and the stale rule",
       "target_repo": null,
       "priority": 50,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-04T12:34:49.429Z",
       "ended": "",
       "gaps": null,
       "requires": [
