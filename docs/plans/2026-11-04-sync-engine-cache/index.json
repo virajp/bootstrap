@@ -157,11 +157,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T04:37:24.808Z",
+      "ended": "2026-11-04T04:42:34.987Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -203,8 +203,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T04:37:24.772Z",
       "ended": ""
     },
     {
@@ -409,28 +409,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T04:37:24.483Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T04:37:24.260Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T04:37:24.373Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T04:37:24.590Z"
     }
   },
   "gaps": [
@@ -530,6 +530,27 @@
       "unit": "U1",
       "stage": "edit",
       "text": "U1: the gate accepts five literal forms of the default URL, fewer than _se_normalize_url accepts (a trailing slash, ssh:// without git@) · such a cache clone makes the gate exit 0 silently; the copy of the normalizer that D6 rejects stays out of tools/",
+      "state": "open"
+    },
+    {
+      "id": "G15",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "U5: the plan moves only the sync to HTTPS, and the adoption clones of README.md, docs/sync/index.md, docs/sync/vwf.md and migrate.md M15 stay on SSH · they keep git@github.com:virajp/bootstrap.git, and index.md Requirements states the SSH need for that temporary clone only",
+      "state": "open"
+    },
+    {
+      "id": "G16",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2 and U5: the header comment of sync-engine/repo-sync still says the private bootstrap repo, and the plan clones it over HTTPS with no credentials · left as is, outside the comment classes that 02-engine-move.md lists",
+      "state": "open"
+    },
+    {
+      "id": "G17",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "U5: migrate.md M23 still says the gate runs repo_sync --check at each commit, without the no-cache-clone condition · M27 covers the condition, so M23 stays",
       "state": "open"
     }
   ],

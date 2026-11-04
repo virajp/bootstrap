@@ -24,6 +24,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | `[overrides.graphifyignore]`, `.graphifyignore` or `code:graph` | M24, before the next sync.                                                                                                                                                                                                                                          |
 | `.config/fnox.toml` with a top-level `[secrets]` or no profile  | M25, before the next sync.                                                                                                                                                                                                                                          |
 | A git submodule without a `[member.<name>]` table               | M26, before the next sync.                                                                                                                                                                                                                                          |
+| A sync that adds `sync-engine/`                                 | M27, after the sync.                                                                                                                                                                                                                                                |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -596,3 +597,25 @@ flags and scopes.
    and another name.
 5. Run `mise run code:lint:repo-sync`. It must pass.
 6. Run `mise run setup:configs --dry-run`, and examine the new flags.
+
+## M27: The cache moved to `~/.cache/sync-engine/`
+
+The sync code moved to `sync-engine/` of `bootstrap`, and the cache of the
+sync moved from `~/.cache/bootstrap/` to `~/.cache/sync-engine/`. The sync now
+clones `https://github.com/virajp/bootstrap.git`, so it needs no SSH key. The
+synced `.config/mise/tasks/_scripts/repo-sync` is now only a forwarding file.
+
+The first sync after the update runs the old `setup:configs` one time. It
+writes the new task. The second run uses the new task, and it removes
+`~/.cache/bootstrap/` and `~/.cache/bootstrap.lock` by itself. Delete nothing
+by hand.
+
+1. Run `mise run setup:configs` two times. Commit the result of the first run.
+   Without a new commit in `bootstrap`, the second run changes no file of the
+   repository.
+2. Before the second run, `code:lint:repo-sync` prints nothing and does not
+   validate, because the new cache has no clone yet.
+3. If the second run stops with code 2 and names `~/.cache/sync-engine`, that
+   folder holds another repository or a `repo/` that is not a clone. Move it,
+   or set `SYNC_ENGINE_CACHE` to another folder. In `~/.cache/sync-engine`, the
+   sync did not delete the other repository or the `repo/`.

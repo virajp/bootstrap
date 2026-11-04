@@ -373,7 +373,7 @@ not the tasks of a parent repository.
 | `checks`      | git predicates. They return an exit status only.                                    |
 | `merge`       | `merge_to_destination_branch`, for the `code:merge` tasks                           |
 | `placeholder` | For a task that no stack fills yet. It always exits 0.                              |
-| `repo-sync`   | The sync function `repo_sync`                                                       |
+| `repo-sync`   | The forwarding file to `sync-engine/repo-sync` of the clone, which has `repo_sync`  |
 
 ### The rules for task scripts
 

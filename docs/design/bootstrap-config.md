@@ -67,7 +67,9 @@ merge_never = [ "main" ]
 The gate `code:lint:repo-sync` runs `repo_sync --check` at each commit that
 changes `.config/bootstrap.toml`. It examines the rules of `repo-sync` that
 need only the values file and the local git repository, and it shows each
-error at once. The rules that need the `bootstrap` clone stop only
+error at once. Without a clone of `bootstrap` in the shared cache, or with
+another `origin` there, it prints nothing and does not validate. The rules that
+need the `bootstrap` clone stop only
 `setup:configs`: a tool or a pack that is not in `bootstrap`, a pack loop or a
 pack named like a tool, an environment that a mise tool does not allow, an
 `[overrides.mise*]` path that no selected tool has, a `remove` line that the
@@ -347,7 +349,8 @@ goes, also when it has other args: without `--branch`, the hook protects
 ## Reserved names
 
 The sync merges these keys into the template context before the values file:
-`members`, `submodules`, `tools`, `extensions` and `precommit`. Thus a key of
+`members`, `submodules`, `tools`, `extensions`, `sync_engine` and `precommit`.
+Thus a key of
 the same name in the values file does not replace the value of the sync.
 `tools` and `extensions` of the values file are the input of the sync, not the
 values that the templates get.

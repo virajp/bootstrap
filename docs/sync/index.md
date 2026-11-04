@@ -101,8 +101,10 @@ The pack files in `packs/` are `base.md` and `security.md`.
 
 ## Requirements
 
-- The machine has SSH access to `git@github.com:virajp/bootstrap.git`. The
-  sync uses `BatchMode=yes`, so it does not ask for a password.
+- The machine can reach `https://github.com/virajp/bootstrap.git`. The sync
+  uses this URL and needs no SSH key. It does not ask for a password.
+- The temporary clone of this prompt (step 1) uses
+  `git@github.com:virajp/bootstrap.git`, which needs SSH access.
 - mise is installed. The `setup:configs:sync` task gets gomplate through mise.
 
 ## An empty repository
@@ -369,9 +371,10 @@ For an update, skip this step when `.config/mise/tasks/setup/configs/_default`
 and `.config/mise/tasks/setup/configs/sync` exist and have the bootstrap
 header. Then `setup:configs` loads the sync code from its own clone.
 
-Copy these four files from the clone into the repository: `repo-sync` and the
-`setup:configs` tasks of the `repo-sync` tool, and `helpers` of the `mise`
-tool. An old `.config/mise/tasks/setup/configs` is a file, and
+Copy these four files from the clone into the repository: the forwarding file
+`repo-sync` and the `setup:configs` tasks of the `repo-sync` tool, and
+`helpers` of the `mise` tool. An old `.config/mise/tasks/setup/configs` is a
+file, and
 `setup/configs/` is now a folder: delete the old file first.
 
 ```bash
@@ -381,22 +384,27 @@ rm -f .config/mise/tasks/setup/configs
 mkdir -p .config/mise/tasks/_scripts .config/mise/tasks/setup/configs
 cp "$sync/_scripts/repo-sync" "$lib/_scripts/helpers" .config/mise/tasks/_scripts/
 cp "$sync/setup/configs/sync" .config/mise/tasks/setup/configs/
-printf '%s\n' '{"members":[]}' > "$tmp/members.json"
+printf '{"members":[],"sync_engine":"%s/sync-engine"}\n' "$tmp" > "$tmp/context.json"
 mise x gomplate@latest -- gomplate --left-delim '<%' --right-delim '%>' \
-  -c ".=$tmp/members.json" -f "$sync/setup/configs/_default.tmpl" \
+  -c ".=$tmp/context.json" -f "$sync/setup/configs/_default.tmpl" \
   -o .config/mise/tasks/setup/configs/_default
 chmod 755 .config/mise/tasks/setup/configs/_default
 ```
 
 `setup:configs/_default` is a template. The command above renders it without
-the member flags. The first sync writes it again with the member flags.
+the member flags. The first sync writes it again with the member flags. The
+template embeds `sync-engine/clone`, so its context needs `sync_engine`, the
+absolute path of the `sync-engine` folder of the clone.
 
 Do not run the sync, `mise run setup:configs` without `--dry-run`, before
 step 6. You can run a dry run. When the repository already has the task
 `code:lint:repo-sync`, for example at an update, you can also run
 `mise run code:lint:repo-sync`. It validates the values file with
 `repo_sync --check`, without a clone and without a sync, and it shows each
-error at once.
+error at once. The task loads the sync code from the clone of the shared cache.
+Without that clone, or when the clone has another `origin`, the task prints
+nothing, exits 0 and does not validate the values file. Thus no output does not
+show that the values file is correct. A dry run makes the clone.
 
 ## Step 3: Write the values file
 
@@ -627,7 +635,9 @@ files, skip this step.
 2. Run `mise run setup:configs --dry-run`. To validate only the values file,
    without a sync, run `mise run code:lint:repo-sync` when the repository has
    that task. It does not examine the rules that need the `bootstrap` clone,
-   for example a tool that is not in `bootstrap`.
+   for example a tool that is not in `bootstrap`. Without a clone in the shared
+   cache, or with another `origin` there, it prints nothing and does not
+   validate. Thus do the dry run first.
 3. Examine the diff for each file that already exists in the repository.
 4. If the dry run replaces repository-owned content, stop. Move that content
    to a repository-owned place (see "Rules"), then do the dry run again.
@@ -656,18 +666,20 @@ files, skip this step.
 
 If `repo_sync` fails, read the exit code:
 
-| Code | Cause                                                                                                                                                                                                                                             | Action                                           |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| 2    | The old list format, a bad `[tools.*]` or `[packs.*]` entry, a bad `env` (also an `env` without `dev`) or `environments`, a bad `[overrides]`, a root-only tool in a submodule, or a template that cannot render                                  | Correct the values file                          |
-| 2    | A tool in an environment that one of its mise tools does not allow                                                                                                                                                                                | Correct the `env`, or tell the `bootstrap` owner |
-| 2    | A pack loop, or a pack name that is also a tool folder                                                                                                                                                                                            | Tell the `bootstrap` owner                       |
-| 2    | A `default_envs` without `dev`, or a tool folder that is `zz-repo` or that sorts after `zz-repo`                                                                                                                                                  | Tell the `bootstrap` owner                       |
-| 2    | Two tools define the same mise tool, a mise `depends` that no tool defines, a tool that ships and generates the same `conf.d` file, an unsupported `[mise.*]` or `[mise_env.*]` section, or a `default_envs` or `envs` name that is not dev or ci | Tell the `bootstrap` owner                       |
-| 2    | The values file is missing, or gomplate is not available (see item 5 of step 6)                                                                                                                                                                   | Correct the values file, or run `mise install`   |
-| 2    | Neither `main` nor `develop` exists                                                                                                                                                                                                               | Do step 4                                        |
-| 3    | A tool or a pack that is not in `bootstrap`                                                                                                                                                                                                       | Correct the `[tools.*]` and `[packs.*]` entries  |
-| 5    | The clone failed, `REPO_SYNC_CLONE` is not usable, pre-commit is not available (see item 5 of step 6), or `pre-commit autoupdate` failed                                                                                                          | Examine the network, the SSH key and the access  |
-| 1    | A local file system error                                                                                                                                                                                                                         | Read the `repo-sync:` lines on stderr            |
+| Code | Cause                                                                                                                                                                                                                                             | Action                                                |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| 2    | The old list format, a bad `[tools.*]` or `[packs.*]` entry, a bad `env` (also an `env` without `dev`) or `environments`, a bad `[overrides]`, a root-only tool in a submodule, or a template that cannot render                                  | Correct the values file                               |
+| 2    | A tool in an environment that one of its mise tools does not allow                                                                                                                                                                                | Correct the `env`, or tell the `bootstrap` owner      |
+| 2    | A pack loop, or a pack name that is also a tool folder                                                                                                                                                                                            | Tell the `bootstrap` owner                            |
+| 2    | A `default_envs` without `dev`, or a tool folder that is `zz-repo` or that sorts after `zz-repo`                                                                                                                                                  | Tell the `bootstrap` owner                            |
+| 2    | Two tools define the same mise tool, a mise `depends` that no tool defines, a tool that ships and generates the same `conf.d` file, an unsupported `[mise.*]` or `[mise_env.*]` section, or a `default_envs` or `envs` name that is not dev or ci | Tell the `bootstrap` owner                            |
+| 2    | The values file is missing, or gomplate is not available (see item 5 of step 6)                                                                                                                                                                   | Correct the values file, or run `mise install`        |
+| 2    | Neither `main` nor `develop` exists                                                                                                                                                                                                               | Do step 4                                             |
+| 2    | A git repository at the root of the cache with another `origin` or no `origin`, or a `repo/` of the cache that is not a clone and not empty                                                                                                       | Move it, or set `SYNC_ENGINE_CACHE` to another folder |
+| 2    | `setup:configs:sync` ran without `SYNC_ENGINE_CLONE`                                                                                                                                                                                              | Run `mise run setup:configs`                          |
+| 3    | A tool or a pack that is not in `bootstrap`                                                                                                                                                                                                       | Correct the `[tools.*]` and `[packs.*]` entries       |
+| 5    | The clone or the fetch failed, `SYNC_ENGINE_CLONE` is not usable, pre-commit is not available (see item 5 of step 6), or `pre-commit autoupdate` failed                                                                                           | Examine the network and the access                    |
+| 1    | A local file system error                                                                                                                                                                                                                         | Read the `repo-sync:` lines on stderr                 |
 
 A failure does not change an existing file.
 

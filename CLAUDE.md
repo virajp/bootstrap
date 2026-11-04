@@ -18,6 +18,8 @@ it. These files are for this repository only:
 
 - At the root: `README.md`, `CLAUDE.md`, `LICENSE`, `dprint.jsonc` (with the
   excludes of this repository) and `eslint.config.mjs`.
+- `sync-engine/`: the shared library folder of the sync, with `clone` and
+  `repo-sync`. It is not a tool, so the sync never copies it to a consumer.
 - `docs/design/`: the design notes of the sync (packs, tools, mise, fnox and
   the values file). `docs/plans/`: the vwf plan index.
 - `.config/mise/tasks/test/repo-sync`: the `test:repo-sync` task. It is not in
@@ -127,32 +129,48 @@ Some files refer to files that are not in `tools/`, for example
 
 ## How the sync operates
 
-- `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync` defines `repo_sync`.
-  The consumer task `setup:configs` (`setup/configs/_default`) keeps one
-  shallow clone of this repository in `${XDG_CACHE_HOME:-~/.cache}/bootstrap`.
-  All the consumers of the machine share it. It fetches the default branch
-  into it, and copies it to a temporary folder. Then it runs
-  `setup:configs:sync` in a
-  new process with `REPO_SYNC_CLONE` set to the copy. That task loads
-  `repo-sync` from the copy, so a change to the sync code applies in the same
-  run.
-- The lock folder `bootstrap.lock` next to the cache makes a second
-  `setup:configs` wait until the first has copied the cache. A waiter removes
-  the lock of a dead holder, and a lock without a holder that is older than one
-  minute. A failed fetch or clone stops the task with code 5. A cache with
-  another `origin`, for example after a test with
-  `REPO_SYNC_URL`, is cloned again.
+- `sync-engine/repo-sync` defines `repo_sync`. `sync-engine/clone` holds the
+  functions of the cache and the clone. The sync embeds that file in the
+  consumer task `setup:configs` (`setup/configs/_default`) when it renders the
+  template of the task. The task keeps one shallow clone of this repository in
+  `repo/` of the cache `${XDG_CACHE_HOME:-~/.cache}/sync-engine/`
+  (`SYNC_ENGINE_CACHE` changes the cache folder). All the consumers of the
+  machine share it. The URL is `https://github.com/virajp/bootstrap.git`
+  (`SYNC_ENGINE_URL` changes it). The task fetches the branch `main` from the
+  URL, not from `origin`, into the clone, and copies the clone to a temporary
+  folder. Then it runs `setup:configs:sync` in a new process with
+  `SYNC_ENGINE_CLONE` set to the copy. It also sets `REPO_SYNC_CLONE` for a
+  member that still has the old sync task. `setup:configs:sync` loads
+  `sync-engine/repo-sync` from the copy, so a change to the sync code applies
+  in the same run. Without `SYNC_ENGINE_CLONE`, it stops with code 2.
+- The lock folder `lock/` of the cache makes a second `setup:configs` wait
+  until the first has copied the clone. A waiter removes the lock of a dead
+  holder, and a lock without a holder that is older than one minute. A failed
+  fetch or clone stops the task with code 5. The origin compare is normalized,
+  so the SSH and the HTTPS URL of one repository match. A clone with another
+  `origin`, for example after a test with `SYNC_ENGINE_URL`, is cloned again.
+  A `repo/` that is not a git clone and not empty stops the task with code 2.
+- The old stubs used `bootstrap/` and `bootstrap.lock` in
+  `${XDG_CACHE_HOME:-~/.cache}`. Each run removes these two while it holds the
+  old lock. When a live old stub holds that lock, the run skips the removal,
+  and a later run does it. A failed removal does not fail the sync.
+- A git repository at the cache root is the old layout. When its raw `origin`
+  normalizes to the URL, the run removes each entry of the cache root, except
+  `repo/`, the lock and `macos-generated.tsv`. Another `origin` or no `origin`
+  stops the task with code 2 and deletes nothing in the cache root.
 - `repo_sync` reads the `[tools.<folder>]` and `[packs.<name>]` tables of the
   consumer file `.config/bootstrap.toml`. The only key of an entry is `env`.
   A list (`tools = [...]`, `packs = [...]`) is the old format and stops the
-  sync with code 2. It copies the clone of `REPO_SYNC_CLONE`, else it does a
-  shallow clone of the default branch of this repository over SSH. Then it
-  adds the `base` pack, expands each pack, adds
+  sync with code 2. It copies the clone of `SYNC_ENGINE_CLONE` and never clones.
+  Then it adds the `base` pack, expands each pack, adds
   the `depends` of each tool, and copies each file of each tool.
 - Exit codes: 2 for a values file or a `tools.toml` that breaks a rule (also a
   missing values file, a missing gomplate, or a bad `direct_commit`: see
-  "Branch model in the merge tasks"), 3 for a tool or a pack that is
-  not in bootstrap, 5 for a clone, a fetch or an `autoupdate` that fails. A
+  "Branch model in the merge tasks"), for a repository at the cache root with
+  another `origin` or no `origin`, for a `repo/` of the cache that is not a
+  clone and not empty, and for a sync without `SYNC_ENGINE_CLONE`. 3 for a tool
+  or a pack that is not in bootstrap. 5 for a clone, a fetch or an `autoupdate`
+  that fails, and for a `SYNC_ENGINE_CLONE` that is not usable. A
   failure of one file does not stop the other files. The sync returns the
   highest code of all its failures. `repo_sync --check` returns the highest
   code of its checks, at most 2. `--check` with `--dry-run` is a usage error,
@@ -163,7 +181,8 @@ Some files refer to files that are not in `tools/`, for example
   `direct_commit`, a missing `main` and `develop`, and the profiles of
   `.config/fnox.toml`. It runs after the
   checks of the values file and of gomplate, and before the clone. It makes
-  no clone, reads no `REPO_SYNC_URL` or `REPO_SYNC_CLONE`, writes no file and
+  no clone, reads no `SYNC_ENGINE_URL` or `SYNC_ENGINE_CLONE`, writes no file
+  and
   does not set `bootstrap_commit`. It runs each local check and prints each
   message, so every error shows at once. The rules that need the clone stay
   with the sync: a tool or a pack that is not in bootstrap, a pack loop or a
@@ -175,8 +194,13 @@ Some files refer to files that are not in `tools/`, for example
   with the staged files, so the tool adds no hook. The gate is hidden, and it
   ignores `--fix`. It prints nothing and exits 0 without gomplate
   (`mise x -- which gomplate`), with a list of files that does not include
-  `.config/bootstrap.toml`, or with no list and no values file. It unsets
-  `REPO_SYNC_CLONE` and loads the local `_scripts/repo-sync`.
+  `.config/bootstrap.toml`, or with no list and no values file. It also prints
+  nothing and exits 0, without a validation, in two cases: the cache has no
+  clone with `sync-engine/repo-sync`, or the raw `origin` of `<cache>/repo` is
+  not one of five literal forms of the default URL. Thus it never sources code
+  from another repository at commit time. Else it unsets `SYNC_ENGINE_CLONE`
+  and `REPO_SYNC_CLONE`, and loads `sync-engine/repo-sync` of the cache. It
+  takes no lock and never clones.
 - The sync formats each rendered template and each generated mise file with
   the dprint config of the consumer before it compares the file.
 - gomplate reads the TOML files: the values file, `tools/packs.toml`, each
@@ -201,8 +225,10 @@ Some files refer to files that are not in `tools/`, for example
   `would set bootstrap_commit <commit>`.
 - The sync uses the pushed `main` branch. Local changes have no effect on
   consumers until you push them.
-- To test a change before you push it, set `REPO_SYNC_URL` to a local clone
-  with a commit of the change. Use `repo_sync --dry-run` to show a diff.
+- To test a change before you push it, set `SYNC_ENGINE_URL` to a local clone
+  with a commit of the change on `main` of that clone. Use
+  `mise run setup:configs --dry-run` to show a diff. The next run without that
+  variable clones the default URL again.
 - The sync writes the shared `.gitignore` with `[overrides.gitignore]` of the
   values file applied: it comments out each line of `remove`, then adds the
   lines of `add` at the end. A line of `remove` that the shared `.gitignore`
@@ -230,14 +256,14 @@ Some files refer to files that are not in `tools/`, for example
   existing file and returns code 5.
 - `test:repo-sync` is the task of this repository in
   `.config/mise/tasks/test/repo-sync`. It runs `repo_sync --dry-run` and
-  `repo_sync --check` of the working tree's `tools/` against scratch values
-  files, and it compares the
+  `repo_sync --check` of the working tree's `tools/` and `sync-engine/` against
+  scratch values files, and it compares the
   exit code and the message of each case. It needs no network. Before its
   first `git` call, it unsets the `GIT_*` variables of a git hook, so its
   scratch repositories never write to this repository. It runs the cases in
   parallel, one job for each CPU, and each case in its own folder. No hook runs
   it, because it is slow. Run `mise run test:repo-sync` by hand before you
-  commit a change to `tools/`.
+  commit a change to `tools/` or `sync-engine/`.
 
 ## Templates (`*.tmpl`)
 
@@ -271,6 +297,8 @@ Some files refer to files that are not in `tools/`, for example
   `.config/repo-sync/pre-commit.yaml`, with the `--branch` pairs of
   `no-commit-to-branch` filtered by `direct_commit` (see "How the sync
   operates").
+- `.sync_engine` is the absolute path of the `sync-engine/` folder of the clone
+  copy of the run. The template of `setup:configs` reads `clone` from it.
 
 ## Task scripts
 
@@ -294,7 +322,10 @@ path as the task name, for example `code/merge/develop` is
     uses it now.
   - `xcode`: `require_xcode`, `find_xcodeproj` and the simulator functions for
     the Apple tasks.
-  - `repo-sync`: the sync function.
+  - `repo-sync`: the forwarding file. An old `setup/configs/sync` loads it from
+    the clone with `REPO_SYNC_CLONE`, and it loads `sync-engine/repo-sync` of
+    the same clone. The sync code is in `sync-engine/repo-sync`, not in a tool.
+    The cleanup plan removes the forwarding file.
 
   The `mise` tool ships `helpers`, `checks` and `placeholder`, the `git` tool
   ships `merge`, the `swift` tool ships `xcode`, and the `repo-sync` tool
