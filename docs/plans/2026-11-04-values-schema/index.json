@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-04T16:05:20Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-04 — be4e3e0 41579df 52e408a ; 5 gaps open (G5 G8 G9 G10 G11); folder stays live"
   },
   "consent": {
     "merge": true,
@@ -152,11 +152,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T18:05:20.911Z",
+      "ended": "2026-11-04T18:07:27.484Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -186,9 +186,9 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T18:05:20.839Z",
+      "ended": "2026-11-04T18:18:00.346Z"
     }
   ],
   "shared_files": [
@@ -350,8 +350,8 @@
       "id": "G4",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: test:repo-sync case 'the gate with a cache' copies a fixed list of engine libraries that lacks values (test lines 2872-2873), and 02-tests.md says no other existing case changes · assumed a test fixture, not an engine bug; the engine source line stays unguarded and U2 adds sync-engine/values to that cp",
-      "state": "open"
+      "text": "U1: test:repo-sync case 'the gate with a cache' copies a fixed list of engine libraries that lacks values (test lines 2872-2873), and 02-tests.md says no other existing case changes · assumed a test fixture, not an engine bug; the engine source line stays unguarded and U2 adds sync-engine/values to that cp · closed: U2 added sync-engine/values to that cp, and test:repo-sync passes",
+      "state": "closed"
     },
     {
       "id": "G5",
