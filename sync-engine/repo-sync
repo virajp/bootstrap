@@ -624,7 +624,7 @@ _rs_manifest_rules() {
 _rs_target_ok() {
   local dir=$1 tool=$2 target=$3
   case $target in
-    /* | ../* | */../* | tools.toml | */tools.toml | *.tmpl) ;;
+    /* | ../* | */../* | ./* | */./* | *//* | */. | */ | tools.toml | */tools.toml | *.tmpl) ;;
     *)
       [[ ! -f $dir/tools/$tool/$target && ! -f $dir/tools/$tool/$target.tmpl ]] || return 0
       ;;
