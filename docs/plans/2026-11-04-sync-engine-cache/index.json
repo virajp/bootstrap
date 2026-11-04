@@ -107,11 +107,11 @@
         "U2"
       ],
       "waits": "Its cases run the output of U1 (sync-engine/clone, the stub template, the sync task, the gate) and of U2 (sync-engine/repo-sync, the forwarding file).",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T03:50:30.627Z",
+      "ended": "2026-11-04T03:57:36.100Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -191,8 +191,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T03:50:30.586Z",
       "ended": ""
     },
     {
