@@ -1171,6 +1171,16 @@ files_tmpl_target() {
   fixture_file b.txt.tmpl 'b'
   fixture_toml '[files."b.txt.tmpl"]' 'mode = "seed"'
 }
+# files_merge_key <key>: a merge target spelled <key>. The file sub/m.json
+# exists, so only the spelling of the key breaks the rule.
+files_merge_key() {
+  fixture_tool
+  mkdir -p -- "$clone/tools/fixture/sub"
+  fixture_file sub/m.json '{"a": 1}'
+  fixture_toml "[files.\"$1\"]" 'mode = "merge"'
+}
+files_dot_target() { files_merge_key ./sub/m.json; }
+files_double_slash_target() { files_merge_key sub//m.json; }
 files_both_sources() {
   fixture_txt
   fixture_file a.txt.tmpl 'a'
@@ -1197,6 +1207,10 @@ run_case "[files], a target that no file of the tool produces" 2 "$no_tool_value
   'fixture/tools.toml: [files."nope.txt"] names a target that no file of the tool produces'
 run_case "[files], a target with .tmpl" 2 "$no_tool_values" files_tmpl_target \
   'fixture/tools.toml: [files."b.txt.tmpl"] names a target that no file of the tool produces'
+run_case "[files], a merge target with ./ at the start" 2 "$no_tool_values" files_dot_target \
+  'fixture/tools.toml: [files."./sub/m.json"] names a target that no file of the tool produces'
+run_case "[files], a merge target with // inside" 2 "$no_tool_values" files_double_slash_target \
+  'fixture/tools.toml: [files."sub//m.json"] names a target that no file of the tool produces'
 run_case "<p> and <p>.tmpl in one tool folder" 2 "$no_tool_values" files_both_sources \
   'fixture: a.txt and a.txt.tmpl both exist - keep one'
 run_case "[files], a target that is not a table" 2 "$no_tool_values" files_not_table \
