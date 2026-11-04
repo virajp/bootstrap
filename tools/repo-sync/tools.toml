@@ -1,4 +1,4 @@
-# repo-sync: the sync function and the setup:configs tasks that copy these tools.
+# repo-sync: the setup:configs tasks, the gate code:lint:repo-sync and the forwarding file of the sync.
 default_envs = [ "dev" ]
 depends = []
 extensions = []
