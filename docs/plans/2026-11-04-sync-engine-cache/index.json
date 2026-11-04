@@ -435,5 +435,8 @@
   },
   "gaps": [],
   "overrides": [],
-  "run": {}
+  "run": {
+    "worktree": ".worktrees/sync-engine-cache",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-04-sync-engine-cache.jsonl"
+  }
 }
