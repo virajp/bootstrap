@@ -86,10 +86,10 @@
         "U1"
       ],
       "waits": "Its cases run the manifest code that U1 writes in sync-engine/manifest and sync-engine/repo-sync.",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-04T13:09:54.229Z",
-      "ended": "",
-      "commit": "b13a1f8",
+      "ended": "2026-11-04T14:03:54.656Z",
+      "commit": "ab67789",
       "rounds": 1
     },
     {
@@ -105,14 +105,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-04T13:29:12.783Z",
-      "ended": "",
+      "ended": "2026-11-04T14:16:36.761Z",
       "commit": "",
-      "rounds": 1,
+      "rounds": 2,
       "range": {
-        "from": "fbc87fc",
-        "to": "933eef3"
+        "from": "933eef3",
+        "to": "ab67789"
       }
     },
     {
@@ -174,9 +174,9 @@
     },
     {
       "id": "W3",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-04T13:29:12.751Z",
-      "ended": ""
+      "ended": "2026-11-04T14:17:18.692Z"
     },
     {
       "id": "W4",
@@ -340,28 +340,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T14:17:18.935Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T14:17:18.725Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T14:17:18.828Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T14:17:19.045Z"
     }
   },
   "gaps": [
@@ -432,7 +432,7 @@
       "id": "G10",
       "unit": "U3",
       "stage": "security",
-      "text": "D7 does not bound a row to its own repository · the security loop rules that a row with a .git segment or below a git submodule or member folder of the run is refused, since each submodule has its own manifest",
+      "text": "D7 does not bound a row to its own repository · the security loop rules that a row with a .git segment, or below a folder with its own .git (a git submodule, or a nested clone), is refused, since each submodule has its own manifest; a folder member without .git is part of the root tree and is not refused",
       "state": "open"
     },
     {
