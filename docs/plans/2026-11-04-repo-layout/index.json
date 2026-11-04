@@ -107,11 +107,11 @@
         "U2"
       ],
       "waits": "Its cases copy the repo/ folder that U1 makes and run the engine paths that U2 changes.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T15:09:53.385Z",
+      "ended": "2026-11-04T15:27:27.228Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -191,8 +191,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T15:09:53.344Z",
       "ended": ""
     },
     {
@@ -370,15 +370,29 @@
       "id": "G4",
       "unit": "U2",
       "stage": "edit",
-      "text": "U2: the Verification lists no test:repo-sync, and it needs the edits of U3 · assumed a scratch smoke test is enough for this unit: a scratch clone of repo/ with this engine gave rc 0 on dry run and real run, with the repo/tools headers",
-      "state": "open"
+      "text": "U2: the Verification lists no test:repo-sync, and it needs the edits of U3 · assumed a scratch smoke test is enough for this unit: a scratch clone of repo/ with this engine gave rc 0 on dry run and real run, with the repo/tools headers · closed: U3 landed and test:repo-sync ran over the moved tree: 638 OK, 0 ERROR",
+      "state": "closed"
     },
     {
       "id": "G5",
       "unit": "U2",
       "stage": "edit",
-      "text": "U2: until U3 lands, the expected texts of test:repo-sync that name tools/<tool>/... or tools/packs.toml do not match · assumed U3 changes them, including tools/node needs tools/pulumi, which becomes repo/tools/node needs repo/tools/pulumi",
+      "text": "U2: until U3 lands, the expected texts of test:repo-sync that name tools/<tool>/... or tools/packs.toml do not match · assumed U3 changes them, including tools/node needs tools/pulumi, which becomes repo/tools/node needs repo/tools/pulumi · closed: U3 changed the expected texts, and test:repo-sync passes",
+      "state": "closed"
+    },
+    {
+      "id": "G6",
+      "unit": "",
+      "stage": "edit",
+      "text": "R2: the K1 pass of Part B needs would update lines with the repo/tools header paths, but a dry run prints a diff only for an existing target, so an empty consumer shows no header · the check is run with a second scratch consumer that already holds synced files with the old header, which K1 does not exclude",
       "state": "open"
+    },
+    {
+      "id": "G7",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "R2: README.md:359 says the working tree's tools/ and sync-engine/, falsified by the new copy of repo/, sync-engine/ and tools/ of U3; U3 reported only the CLAUDE.md bullet · handed to U5 as a DOCS FALSIFIED line; README.md is already in the Owns of U5 · closed: goes with the U5 dispatch",
+      "state": "closed"
     }
   ],
   "overrides": [],

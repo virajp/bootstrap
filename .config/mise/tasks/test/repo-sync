@@ -5,7 +5,8 @@
 
 # Runs `repo_sync --dry-run`, `repo_sync --check` and, for a case that compares
 # a written file, `repo_sync` of sync-engine/repo-sync, with the working tree's
-# tools/ and sync-engine/, against scratch values files and scratch consumers,
+# repo/, sync-engine/ and tools/ (the forwarding file), against scratch values
+# files and scratch consumers,
 # and checks the exit code and message of each case. Needs no
 # network when gomplate, jq and yq are installed:
 # REPO_SYNC_NO_AUTOUPDATE=1 skips `pre-commit autoupdate`. Writes
@@ -44,12 +45,14 @@ _git() {
 
 print_header "Testing repo-sync against scratch values files ..."
 
-# The bootstrap copy: the working tree's tools/ and sync-engine/, uncommitted
-# work included, committed in a temporary repository.
+# The bootstrap copy: the working tree's repo/, sync-engine/ and tools/ (the
+# forwarding file), uncommitted work included, committed in a temporary
+# repository.
 clone="$tmp/bootstrap"
 mkdir -p -- "$clone"
-cp -R -- "$root/tools" "$clone/tools"
+cp -R -- "$root/repo" "$clone/repo"
 cp -R -- "$root/sync-engine" "$clone/sync-engine"
+cp -R -- "$root/tools" "$clone/tools"
 _git -C "$clone" init --quiet
 _git -C "$clone" add -A
 _git -C "$clone" commit --quiet --no-verify -m "test copy"
@@ -199,7 +202,7 @@ check_base_files() {
         found=1
         break
       fi
-    done < <(cd "$clone/tools/$tool" && find . -type f ! -name tools.toml | sed 's#^\./##')
+    done < <(cd "$clone/repo/tools/$tool" && find . -type f ! -name tools.toml | sed 's#^\./##')
     ((found)) || missing+=" $tool"
   done
   if [[ -n $missing ]]; then
@@ -218,37 +221,37 @@ check_base_files() {
 
 pack_loop() {
   printf '%s\n' '' '[pack.a]' '"pack:b" = { default = true }' '' '[pack.b]' '"pack:a" = { default = true }' \
-    >> "$clone/tools/packs.toml"
+    >> "$clone/repo/packs.toml"
 }
 
 pack_named_like_tool() {
-  printf '%s\n' '' '[pack.node]' 'node = { default = true }' >> "$clone/tools/packs.toml"
+  printf '%s\n' '' '[pack.node]' 'node = { default = true }' >> "$clone/repo/packs.toml"
 }
 
 node_needs_pulumi() {
-  sed 's/^depends = \[\]$/depends = [ "pulumi" ]/' "$clone/tools/node/tools.toml" > "$tmp/node.toml"
-  cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
+  sed 's/^depends = \[\]$/depends = [ "pulumi" ]/' "$clone/repo/tools/node/tools.toml" > "$tmp/node.toml"
+  cp -- "$tmp/node.toml" "$clone/repo/tools/node/tools.toml"
 }
 
 node_prod() {
-  sed 's/^default_envs = .*$/default_envs = [ "dev", "prod" ]/' "$clone/tools/node/tools.toml" > "$tmp/node.toml"
-  cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
+  sed 's/^default_envs = .*$/default_envs = [ "dev", "prod" ]/' "$clone/repo/tools/node/tools.toml" > "$tmp/node.toml"
+  cp -- "$tmp/node.toml" "$clone/repo/tools/node/tools.toml"
 }
 
 node_ci_only() {
-  sed 's/^default_envs = .*$/default_envs = [ "ci" ]/' "$clone/tools/node/tools.toml" > "$tmp/node.toml"
-  cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
+  sed 's/^default_envs = .*$/default_envs = [ "ci" ]/' "$clone/repo/tools/node/tools.toml" > "$tmp/node.toml"
+  cp -- "$tmp/node.toml" "$clone/repo/tools/node/tools.toml"
 }
 
 tool_folder_zz_repo() {
-  mkdir -p -- "$clone/tools/zz-repo"
+  mkdir -p -- "$clone/repo/tools/zz-repo"
   printf '%s\n' 'default_envs = [ "dev" ]' 'depends = []' 'extensions = []' \
-    'root_only = false' > "$clone/tools/zz-repo/tools.toml"
+    'root_only = false' > "$clone/repo/tools/zz-repo/tools.toml"
 }
 
 node_no_envs() {
-  sed 's/^default_envs = .*$/default_envs = []/' "$clone/tools/node/tools.toml" > "$tmp/node.toml"
-  cp -- "$tmp/node.toml" "$clone/tools/node/tools.toml"
+  sed 's/^default_envs = .*$/default_envs = []/' "$clone/repo/tools/node/tools.toml" > "$tmp/node.toml"
+  cp -- "$tmp/node.toml" "$clone/repo/tools/node/tools.toml"
 }
 
 # A folder member below the root of the consumer.
@@ -257,9 +260,9 @@ member_folder() {
 }
 
 late_tool_folder() {
-  mkdir -p -- "$clone/tools/zzz-late"
+  mkdir -p -- "$clone/repo/tools/zzz-late"
   printf '%s\n' 'default_envs = [ "dev" ]' 'depends = []' 'extensions = []' \
-    'root_only = false' > "$clone/tools/zzz-late/tools.toml"
+    'root_only = false' > "$clone/repo/tools/zzz-late/tools.toml"
 }
 
 run_case "no [tools], environments dev" 0 'environments = [ "dev" ]' '' '' check_base_files
@@ -298,27 +301,27 @@ run_case "[packs.nope], an unknown pack" 3 'environments = [ "dev" ]
 [packs.nope]' '' "pack 'nope' is not in bootstrap"
 run_case "env ci on a tool whose mise tool allows dev only" 2 'environments = [ "dev", "ci" ]
 [tools.pulumi]
-env = [ "dev", "ci" ]' '' "mise tool 'pulumi' of tools/pulumi allows only dev"
+env = [ "dev", "ci" ]' '' "mise tool 'pulumi' of repo/tools/pulumi allows only dev"
 run_case "env ci not in environments dev" 2 'environments = [ "dev" ]
 [tools.node]
 env = [ "ci" ]' '' 'is not in environments: dev'
 run_case "a dependency without the environment of its parent" 2 'environments = [ "dev", "ci" ]
 [tools.node]
 env = [ "dev", "ci" ]' node_needs_pulumi \
-  "tools/node needs tools/pulumi in 'ci', but its mise tool 'pulumi' allows only dev"
+  "repo/tools/node needs repo/tools/pulumi in 'ci', but its mise tool 'pulumi' allows only dev"
 run_case "env ci without dev" 2 'environments = [ "dev", "ci" ]
 [tools.node]
 env = [ "ci" ]' '' 'has no dev - each tool must be in dev, for example env = '
 run_case "default_envs ci without dev" 2 'environments = [ "dev", "ci" ]
-[tools.node]' node_ci_only 'default_envs of tools/node/tools.toml has no dev'
+[tools.node]' node_ci_only 'default_envs of repo/tools/node/tools.toml has no dev'
 run_case "default_envs with prod, outside dev and ci" 2 'environments = [ "dev" ]
-[tools.node]' node_prod "default_envs of tools/node/tools.toml: 'prod' is not one of dev, ci"
+[tools.node]' node_prod "default_envs of repo/tools/node/tools.toml: 'prod' is not one of dev, ci"
 run_case "a tool folder that sorts after zz-repo" 2 'environments = [ "dev" ]' late_tool_folder \
-  'tool folder tools/zzz-late sorts after zz-repo'
+  'tool folder repo/tools/zzz-late sorts after zz-repo'
 run_case "a tool folder named zz-repo" 2 'environments = [ "dev" ]' tool_folder_zz_repo \
-  'tool folder tools/zz-repo sorts after zz-repo or is named zz-repo'
+  'tool folder repo/tools/zz-repo sorts after zz-repo or is named zz-repo'
 run_case "default_envs empty" 2 'environments = [ "dev" ]' node_no_envs \
-  'default_envs of tools/node/tools.toml has no dev'
+  'default_envs of repo/tools/node/tools.toml has no dev'
 
 # The consumer as a git submodule: a gitlink at its path in a superproject
 # at the folder of the case.
@@ -464,8 +467,8 @@ gate_block_header() {
   manifest_file "python${tab}$gate"
 }
 python_files_edit() {
-  awk -v old="$1" -v new="$2" '$0 == old { $0 = new } { print }' "$clone/tools/python/tools.toml" > "$tmp/python.toml"
-  cp -- "$tmp/python.toml" "$clone/tools/python/tools.toml"
+  awk -v old="$1" -v new="$2" '$0 == old { $0 = new } { print }' "$clone/repo/tools/python/tools.toml" > "$tmp/python.toml"
+  cp -- "$tmp/python.toml" "$clone/repo/tools/python/tools.toml"
 }
 pyrefly_missing_file() {
   python_files_edit '[files.".config/mise/tasks/code/lint/pyrefly"]' '[files.".config/mise/tasks/code/lint/nope"]'
@@ -860,10 +863,10 @@ CASE_CLONE=none run_case "repo_sync without SYNC_ENGINE_CLONE" 2 'environments =
 sync_engine_template() {
   local path=.config/sync-engine-path
   {
-    printf '%s\n' "# Synced from bootstrap: tools/repo-sync/$path.tmpl. Do not edit this file."
+    printf '%s\n' "# Synced from bootstrap: repo/tools/repo-sync/$path.tmpl. Do not edit this file."
     printf '%s\n' '# The next sync replaces it, and a manual change is lost.'
     printf '%s\n' '<% .sync_engine %>'
-  } > "$clone/tools/repo-sync/$path.tmpl"
+  } > "$clone/repo/tools/repo-sync/$path.tmpl"
   printf '%s\n' x > "$consumer/$path"
 }
 check_sync_engine() {
@@ -882,19 +885,19 @@ run_case "the template context has sync_engine" 0 'environments = [ "dev" ]' syn
 fixture_values='environments = [ "dev" ]
 [tools.fixture]'
 fixture_tool() {
-  mkdir -p -- "$clone/tools/fixture"
+  mkdir -p -- "$clone/repo/tools/fixture"
   printf '%s\n' 'default_envs = [ "dev" ]' 'depends = []' 'extensions = []' \
-    'root_only = false' > "$clone/tools/fixture/tools.toml"
+    'root_only = false' > "$clone/repo/tools/fixture/tools.toml"
 }
 # fixture_file <path> [<line>...]: a file of the tool, with these lines.
 fixture_file() {
   local path=$1
   shift
-  printf '%s\n' "$@" > "$clone/tools/fixture/$path"
+  printf '%s\n' "$@" > "$clone/repo/tools/fixture/$path"
 }
 # The bootstrap header of <path> with the comment marker <marker>, in `header`.
 fixture_header() {
-  header=("$2 Synced from bootstrap: tools/fixture/$1. Do not edit this file."
+  header=("$2 Synced from bootstrap: repo/tools/fixture/$1. Do not edit this file."
     "$2 The next sync replaces it, and a manual change is lost.")
 }
 
@@ -919,7 +922,7 @@ fixture_bad_toml() {
 }
 fixture_empty_json() {
   fixture_tool
-  : > "$clone/tools/fixture/empty.json.tmpl"
+  : > "$clone/repo/tools/fixture/empty.json.tmpl"
 }
 fixture_jsonc() {
   local header
@@ -1069,7 +1072,7 @@ case_rerun() {
 }
 
 no_tool_values='environments = [ "dev" ]'
-fixture_toml() { printf '%s\n' "$@" >> "$clone/tools/fixture/tools.toml"; }
+fixture_toml() { printf '%s\n' "$@" >> "$clone/repo/tools/fixture/tools.toml"; }
 # The tool `fixture` with the file a.txt, which has the header.
 fixture_txt() {
   local header
@@ -1118,10 +1121,10 @@ old_seed_and_table() {
   fixture_tool
   fixture_toml 'seed = [ "a.txt" ]' '[seed_requires]' '"a.txt" = "package.json"'
 }
-msg_old_seed='tools/fixture/tools.toml: seed is not supported; use [files."<target>"] with mode = "seed"'
-msg_old_table='tools/fixture/tools.toml: [seed_requires] is not supported; use requires in [files."<target>"]'
+msg_old_seed='repo/tools/fixture/tools.toml: seed is not supported; use [files."<target>"] with mode = "seed"'
+msg_old_table='repo/tools/fixture/tools.toml: [seed_requires] is not supported; use requires in [files."<target>"]'
 msg_old_requires='fixture/tools.toml: requires of mise tool fixture-x is the old key - write requires_found = ["x.toml"]'
-msg_old_files='tools/fixture/tools.toml: files in [mise.tools.fixture-x] is not supported; use requires_found in [files."<target>"]'
+msg_old_files='repo/tools/fixture/tools.toml: files in [mise.tools.fixture-x] is not supported; use requires_found in [files."<target>"]'
 check_old_both() {
   check_that "an old requires and an old files: the requires message" log_has "$msg_old_requires"
   check_that "an old requires and an old files: the files message" log_has "$msg_old_files"
@@ -1204,7 +1207,7 @@ files_tmpl_target() {
 # exists, so only the spelling of the key breaks the rule.
 files_merge_key() {
   fixture_tool
-  mkdir -p -- "$clone/tools/fixture/sub"
+  mkdir -p -- "$clone/repo/tools/fixture/sub"
   fixture_file sub/m.json '{"a": 1}'
   fixture_toml "[files.\"$1\"]" 'mode = "merge"'
 }
@@ -1218,7 +1221,7 @@ files_case_variant() {
 # The file exists through the link, and only the exact match refuses it.
 files_symlink_folder() {
   files_merge_key link/m.json
-  ln -s sub "$clone/tools/fixture/link"
+  ln -s sub "$clone/repo/tools/fixture/link"
 }
 files_both_sources() {
   fixture_txt
@@ -1419,7 +1422,7 @@ run_case "requires, the file only in a folder" 0 "$fixture_values" both_need_in_
 merge_tool() {
   local header
   fixture_tool
-  mkdir -p -- "$clone/tools/fixture/.config/merger"
+  mkdir -p -- "$clone/repo/tools/fixture/.config/merger"
   fixture_header .config/merger/plain.txt '#'
   fixture_file .config/merger/plain.txt "${header[@]}" 'plain=1'
   fixture_file .config/merger/m.json.tmpl '{' '  "scalar": "src",' \
@@ -1579,7 +1582,7 @@ check_merge_toml() {
 # item of the source is left out; the comment of the source stays.
 merge_absent_src() {
   merge_tool
-  chmod 755 "$clone/tools/fixture/.config/merger/m.json.tmpl"
+  chmod 755 "$clone/repo/tools/fixture/.config/merger/m.json.tmpl"
 }
 merge_yaml_absent='# Merged by bootstrap: .config/merger/m.yaml
 scalar: src
@@ -1690,8 +1693,8 @@ src_live_yaml='keep: 1
 '
 merge_bad_src() {
   merge_tool
-  printf '%s\n' '[1]' > "$clone/tools/fixture/.config/merger/m.json.tmpl"
-  printf '%s\n' 'a: 1' '---' 'b: 2' > "$clone/tools/fixture/.config/merger/m.yaml.tmpl"
+  printf '%s\n' '[1]' > "$clone/repo/tools/fixture/.config/merger/m.json.tmpl"
+  printf '%s\n' 'a: 1' '---' 'b: 2' > "$clone/repo/tools/fixture/.config/merger/m.yaml.tmpl"
   live json "$src_live_json"
   live yaml "$src_live_yaml"
 }
@@ -1702,22 +1705,22 @@ check_merge_bad_src() {
 }
 merge_src_no_parse() {
   merge_tool
-  printf '%s\n' '{"a": }' > "$clone/tools/fixture/.config/merger/m.json.tmpl"
+  printf '%s\n' '{"a": }' > "$clone/repo/tools/fixture/.config/merger/m.json.tmpl"
   live json "$src_live_json"
 }
 check_merge_src_no_parse() { check_exact "merge source that does not parse: json stays" "$(m_file json)" "$src_live_json"; }
 # A JSON merge source with a // line is not JSONC: its format is its extension.
 merge_src_jsonc() {
   merge_tool
-  printf '%s\n' '{' '  // a comment' '  "a": 1' '}' > "$clone/tools/fixture/.config/merger/m.json.tmpl"
+  printf '%s\n' '{' '  // a comment' '  "a": 1' '}' > "$clone/repo/tools/fixture/.config/merger/m.json.tmpl"
 }
 
 # An empty source enforces nothing: only the removals act; an absent target gets
 # an empty table.
 merge_empty_src() {
   merge_tool
-  printf '%s\n' '{}' > "$clone/tools/fixture/.config/merger/m.json.tmpl"
-  printf '%s\n' '# Merged by bootstrap: .config/merger/m.yaml' > "$clone/tools/fixture/.config/merger/m.yaml.tmpl"
+  printf '%s\n' '{}' > "$clone/repo/tools/fixture/.config/merger/m.json.tmpl"
+  printf '%s\n' '# Merged by bootstrap: .config/merger/m.yaml' > "$clone/repo/tools/fixture/.config/merger/m.yaml.tmpl"
   live json '{"keep": 1, "gone": 2, "list": ["drop", "x"]}'
 }
 check_merge_empty_src() {
@@ -1734,7 +1737,7 @@ check_merge_empty_src() {
 # and on a run that changes nothing.
 merge_keep_mode() {
   merge_tool
-  chmod 755 "$clone/tools/fixture/.config/merger/m.json.tmpl"
+  chmod 755 "$clone/repo/tools/fixture/.config/merger/m.json.tmpl"
   live json '{"keep": 1}'
   chmod 600 "$(m_file json)"
 }
@@ -1793,7 +1796,7 @@ outside_json='{"secret": "outside-value"}
 '
 merge_link_tool() {
   fixture_tool
-  mkdir -p -- "$clone/tools/fixture/.config/merger" "$tmp/outside"
+  mkdir -p -- "$clone/repo/tools/fixture/.config/merger" "$tmp/outside"
   fixture_file .config/merger/m.json '{"a": 1}'
   fixture_toml '[files.".config/merger/m.json"]' 'mode = "merge"'
   printf '%s' "$outside_json" > "$tmp/outside/m.json"
@@ -1938,7 +1941,7 @@ run_case "merge: a remove_items without items" 2 "$no_tool_values" remove_items_
 # The merged packs model. A change function appends to, or rewrites, the packs
 # of the scratch clone. The values file does not select the pack of a shape
 # case: the sync examines each pack of the file.
-packs_lines() { printf '%s\n' '' "$@" >> "$clone/tools/packs.toml"; }
+packs_lines() { printf '%s\n' '' "$@" >> "$clone/repo/packs.toml"; }
 packs_old_depends() { packs_lines '[pack.odd]' 'depends = [ "p:security" ]'; }
 packs_old_required() { packs_lines '[pack.odd]' 'required = [ "_security_base" ]'; }
 packs_old_tools() { packs_lines '[pack.odd]' 'tools = [ "node" ]'; }
@@ -1955,31 +1958,31 @@ packs_subtable() { packs_lines '[pack.odd.node]' 'default = true'; }
 
 old_format='is the old format - write each member as <tool> = { default = true } or <tool> = {}'
 run_case "[pack.*], the old depends in a pack that is not selected" 2 "$no_tool_values" packs_old_depends \
-  "tools/packs.toml: [pack.odd] depends $old_format"
+  "repo/packs.toml: [pack.odd] depends $old_format"
 run_case "[pack.*], the old required in a pack that is not selected" 2 "$no_tool_values" packs_old_required \
-  "tools/packs.toml: [pack.odd] required $old_format"
+  "repo/packs.toml: [pack.odd] required $old_format"
 run_case "[pack.*], the old tools in a pack that is not selected" 2 "$no_tool_values" packs_old_tools \
-  "tools/packs.toml: [pack.odd] tools $old_format"
+  "repo/packs.toml: [pack.odd] tools $old_format"
 run_case "[pack.*], the old default list in a pack that is not selected" 2 "$no_tool_values" packs_old_default \
-  "tools/packs.toml: [pack.odd] default $old_format"
+  "repo/packs.toml: [pack.odd] default $old_format"
 run_case "[pack.*], a key with the old prefix p:" 2 "$no_tool_values" packs_old_prefix \
-  'tools/packs.toml: [pack.odd] "p:x" is the old form - write "pack:x" = { default = true }'
+  'repo/packs.toml: [pack.odd] "p:x" is the old form - write "pack:x" = { default = true }'
 run_case "[pack.*], an entry key other than default" 2 "$no_tool_values" packs_entry_key \
-  "tools/packs.toml: [pack.odd] node has the entry key 'version' - the only entry key is default"
+  "repo/packs.toml: [pack.odd] node has the entry key 'version' - the only entry key is default"
 run_case "[pack.*], default that is not a boolean" 2 "$no_tool_values" packs_default_string \
-  'tools/packs.toml: [pack.odd] node: default must be true or false, not string'
+  'repo/packs.toml: [pack.odd] node: default must be true or false, not string'
 run_case "[pack.*], a member that is a string" 2 "$no_tool_values" packs_member_string \
-  'tools/packs.toml: [pack.odd] node must be a table, { default = true } or {}'
+  'repo/packs.toml: [pack.odd] node must be a table, { default = true } or {}'
 run_case "[pack.*], a loop through {} members in packs that are not selected" 2 "$no_tool_values" packs_empty_loop \
-  'tools/packs.toml: a pack loop: x -> y -> x'
+  'repo/packs.toml: a pack loop: x -> y -> x'
 run_case "[pack.*], an unknown tool in a pack that is not selected" 3 "$no_tool_values" packs_unknown_tool \
   "tool 'nope' is not in bootstrap (named in pack odd)"
 run_case "[pack.*], an unknown pack in a pack that is not selected" 3 "$no_tool_values" packs_unknown_pack \
   "pack 'nope' is not in bootstrap (named in pack odd)"
 run_case "[pack.*], a member on two lines" 2 "$no_tool_values" packs_two_lines \
-  'tools/packs.toml: [pack.odd] node must be on one line'
+  'repo/packs.toml: [pack.odd] node must be on one line'
 run_case "[pack.*], a member as its own table" 2 "$no_tool_values" packs_subtable \
-  'tools/packs.toml: [pack.odd] node must be on one line'
+  'repo/packs.toml: [pack.odd] node must be on one line'
 
 # tools_has <tool>: the `tools:` line of the output has the tool.
 tools_has() { grep -F 'repo-sync: tools:' "$log" | grep -qw -- "$1"; }
@@ -2004,8 +2007,8 @@ run_case "[packs.extra] and [tools.java], the {} member" 0 'environments = [ "de
 # The scratch pack base without "pack:security", so a scanner comes only from
 # the case.
 base_lacks_security() {
-  grep -vF '"pack:security"' "$clone/tools/packs.toml" > "$tmp/packs.toml"
-  cp -- "$tmp/packs.toml" "$clone/tools/packs.toml"
+  grep -vF '"pack:security"' "$clone/repo/packs.toml" > "$tmp/packs.toml"
+  cp -- "$tmp/packs.toml" "$clone/repo/packs.toml"
 }
 packs_outer_empty() {
   base_lacks_security
@@ -2113,6 +2116,26 @@ stale_listed() {
 }
 check_stale_listed() { check_that "a listed header file: would remove" log_has "would remove $consumer/$old_conf"; }
 run_case "the stale rule, a listed header file" 0 "$no_tool_values" stale_listed '' check_stale_listed
+
+# The header of a real run names repo/tools, in a file and in a generated conf.d
+# file.
+check_header_paths() {
+  check_that "a real run: line 2 of a script has the repo/tools header" grep -qF \
+    'Synced from bootstrap: repo/tools/mise/.config/mise/tasks/_scripts/helpers.' \
+    <(sed -n 2p "$consumer/.config/mise/tasks/_scripts/helpers")
+  check_that "a real run: a generated conf.d file has the repo/tools header" grep -qF \
+    'Synced from bootstrap: repo/tools/mise/tools.toml' "$consumer/.config/mise/conf.d/mise/mise.dev.toml"
+}
+case_args=' ' run_case "a real run: the header paths" 0 "$no_tool_values" '' '' check_header_paths
+
+# A consumer file with the header of the old path still counts as synced.
+old_header_listed() {
+  printf '%s\n' '# Synced from bootstrap: tools/git/gone.txt. Do not edit this file.' \
+    '# The next sync replaces it, and a manual change is lost.' > "$consumer/gone.txt"
+  manifest_file "git${tab}gone.txt"
+}
+check_old_header_listed() { check_that "the old header path: would remove" log_has "would remove $consumer/gone.txt"; }
+run_case "the old header path counts as synced" 0 "$no_tool_values" old_header_listed '' check_old_header_listed
 
 stale_no_header() {
   printf '%s\n' 'my own file' > "$consumer/own.txt"
@@ -2502,7 +2525,7 @@ done
 task="$tmp/setup-configs"
 printf '{"members":["sub"],"member_types":{"sub":"submodule"},"member_folders":{"sub":"sub"},"sync_engine":"%s/sync-engine"}\n' "$root" > "$tmp/ctx.json"
 gomplate --left-delim '<%' --right-delim '%>' -c ".=$tmp/ctx.json" \
-  -f "$root/tools/repo-sync/.config/mise/tasks/setup/configs/_default.tmpl" -o "$task"
+  -f "$root/repo/tools/repo-sync/.config/mise/tasks/setup/configs/_default.tmpl" -o "$task"
 cache="$tmp/cache/sync-engine"
 mkdir -p -- "$tmp/bin"
 cat > "$tmp/bin/mise" << 'EOF'
@@ -2818,7 +2841,7 @@ check_configs_log "$name" -l 'Cloning into'
 
 # The gate code:lint:repo-sync. It finds gomplate with `mise x`, so it starts in
 # this repository, and then it does a cd to its own MISE_PROJECT_ROOT.
-lint_task="$root/tools/repo-sync/.config/mise/tasks/code/lint/repo-sync"
+lint_task="$root/repo/tools/repo-sync/.config/mise/tasks/code/lint/repo-sync"
 gate_root="$tmp/gate-consumer"
 gate_cache="$tmp/gate-cache"
 cp -R -- "$base_consumer" "$gate_root"
