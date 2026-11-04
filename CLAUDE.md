@@ -23,7 +23,8 @@ repository only:
 - At the root: `README.md`, `CLAUDE.md`, `LICENSE`, `dprint.jsonc` (with the
   excludes of this repository) and `eslint.config.mjs`.
 - `sync-engine/`: the shared library folder of the sync, with `clone`,
-  `common`, `write`, `merge`, `select`, `manifest` and `repo-sync`. It is not a
+  `common`, `write`, `merge`, `select`, `manifest`, `values` and `repo-sync`. It
+  is not a
   tool, so the sync never copies it to a consumer.
 - `docs/design/`: the design notes of the sync (packs, tools, mise, fnox and
   the values file). `docs/plans/`: the vwf plan index.
@@ -94,7 +95,9 @@ repository, without the `.tmpl` suffix of a template. For example,
   the list of the environments of the tool when the values file gives it no
   `env`. It must include `dev`. A `root_only` tool is not for a git
   submodule: in a submodule, the sync skips it when a pack adds it, and stops
-  with code 2 when a `[tools.*]` entry names it.
+  with code 2 when a `[tools.*]` entry names it. The tables `[defaults]`,
+  `[questions.<key>]` and `[contributes.<tool>]` are optional (see "Templates"
+  and `docs/design/tools.md`).
 - A tool folder must not be `zz-repo`, and its name must not sort after
   `zz-repo` in byte order. If it does, the sync stops with code 2. The folder
   `conf.d/zz-repo/` of the repository must load last (see "mise config").
@@ -206,7 +209,7 @@ Some files refer to files that are not in `repo/tools/`, for example
   member that still has the old sync task. `setup:configs:sync` loads
   `sync-engine/repo-sync` from the copy, so a change to the sync code applies
   in the same run. Without `SYNC_ENGINE_CLONE`, it stops with code 2.
-- `sync-engine/repo-sync` sources five libraries from its own folder.
+- `sync-engine/repo-sync` sources six libraries from its own folder.
   `common` holds the log, the file mode, the clean-up and its traps, the header
   detection, the record of the commit and the tool wrappers. `write` holds the
   write of one target: the format, the parse check, the temp file, the seed
@@ -215,7 +218,8 @@ Some files refer to files that are not in `repo/tools/`, for example
   `select` holds the pack expansion and the depends walk. `manifest` holds the
   read and the write of the manifest and the stale rule. Its `macos` link mode
   is for the Mac front-end, which is not in this repository yet: it resolves
-  each link, removes the real file and prunes up to the target root.
+  each link, removes the real file and prunes up to the target root. `values`
+  holds the merge of the values of the tools (see "Templates").
 - The sync needs `mise`. Without it, `repo_sync` stops with code 2. The
   wrappers `_se_gomplate`, `_se_jq` and `_se_yq` of `common` start gomplate, jq
   and yq from `/`, so no mise config of the repository selects a version. An
@@ -245,8 +249,11 @@ Some files refer to files that are not in `repo/tools/`, for example
   `repo/`, the lock and `macos-generated.tsv`. Another `origin` or no `origin`
   stops the task with code 2 and deletes nothing in the cache root.
 - `repo_sync` reads the `[tools.<folder>]` and `[packs.<name>]` tables of the
-  consumer file `.config/bootstrap.toml`. The only key of an entry is `env`.
-  A list (`tools = [...]`, `packs = [...]`) is the old format and stops the
+  consumer file `.config/bootstrap.toml`. `env` selects the environments, and
+  each other key of a `[tools.<name>]` table is a value of that tool (see
+  "Templates"). A `[packs.<name>]` entry has only `env`: another key stops the
+  sync with code 2. A list (`tools = [...]`, `packs = [...]`) is the old format
+  and stops the
   sync with code 2. It copies the clone of `SYNC_ENGINE_CLONE` and never clones.
   Then it adds the `base` pack, expands each pack to its default members, adds
   the `depends` of each tool, and copies each file of each tool.
@@ -258,13 +265,20 @@ Some files refer to files that are not in `repo/tools/`, for example
   or is below a symlinked folder, for a `.config/repo-generated.tsv` that is a
   symlink, is below a symlinked folder or is not a regular file, for a
   repository at the cache root with another `origin` or no `origin`, for a
-  `repo/` of the cache that is not a clone and not empty, and for a sync without
-  `SYNC_ENGINE_CLONE`. 3 for a tool or a pack that is not in bootstrap, also a
-  member of a pack. 5 for a clone, a fetch or an `autoupdate` that fails, and
+  `repo/` of the cache that is not a clone and not empty, for a sync without
+  `SYNC_ENGINE_CLONE`, for a bad `[defaults]`, `[questions]` or `[contributes]`
+  table of a selected tool, and for two contributions or a user value that
+  conflict. 3 for a tool or a pack that is not in bootstrap, also a member of a
+  pack, and for a contribution of a selected tool to a tool that is not in
+  bootstrap. 5 for a clone, a fetch or an `autoupdate` that fails, and
   for a `SYNC_ENGINE_CLONE` that is not usable. A failure of one file does not
   stop the other files. The sync returns the highest code of all its failures.
   `repo_sync --check` returns the highest code of its checks, at most 2.
-  `--check` with `--dry-run` is a usage error, code 2.
+  `--check` with `--dry-run` is a usage error, code 2. The merge of the values
+  runs before the mise config and the file loop, so a failure there stops the
+  sync before it writes a file of a tool. Each message of each tool logs, and
+  the highest code returns, but inside one target tool the merge stops at the
+  first contribution conflict or type change of that tool.
 - `repo_sync --check` examines only the local rules of the values file: the
   rules that need the values file and the local git repository, for example
   `env`, `environments`, `[member.*]`, the structure of `[overrides]`,
@@ -279,8 +293,10 @@ Some files refer to files that are not in `repo/tools/`, for example
   pack named like a tool or another bad `[pack.*]` table, an environment that a
   mise tool does not allow, an
   `[overrides.mise*]` path that no selected tool has, a `remove` line that
-  the shared file does not have, a `root_only` tool in a submodule, and an old
-  key or a bad `[files]` table of a `tools.toml`.
+  the shared file does not have, a `root_only` tool in a submodule, an old key
+  or a bad `[files]` table of a `tools.toml`, and a bad `[defaults]`,
+  `[questions]` or `[contributes]` table or a conflict of the values of the
+  tools.
 - The gate `code:lint:repo-sync` of the `repo-sync` tool runs
   `repo_sync --check`. The `lint` hook runs `code:lint`, which runs the gate
   with the staged files, so the tool adds no hook. The gate is hidden, and it
@@ -442,6 +458,32 @@ Some files refer to files that are not in `repo/tools/`, for example
   operates").
 - `.sync_engine` is the absolute path of the `sync-engine/` folder of the clone
   copy of the run. The template of `setup:configs` reads `clone` from it.
+- `.config` is the values of the tool of the template, and `.all` is the values
+  of each selected tool, by tool name. A tool without values has an empty table.
+  A top-level key `all` or `config` of the values file does not reach a
+  template. `sync-engine/values` merges the values of each selected tool in this
+  order: `[defaults]` of the tool, then `[contributes.<tool>]` of each selected
+  tool in tool-name order, then `[tools.<name>]` without `env`.
+- A contribution merges over `[defaults]`: tables merge key by key, a list
+  appends its new items, and any other value replaces the default. Two
+  contributions that set one key to different values stop the sync with code 2,
+  unless both values are tables or both are lists. A contribution to a tool of
+  `repo/tools/` that is not selected is ignored. A contribution of a selected
+  tool to a tool that is not in `repo/tools/` stops the sync with code 3.
+- A value of `[tools.<name>]` depends on the tool. A base or dependency tool is
+  a
+  tool that pack `base` adds, also through a nested `default = true` pack, or a
+  tool in the depends closure of a selected tool, a tool that a mise `depends`
+  adds included. A `<tool> = {}` member that the pack does not add does not
+  count. It is a base or dependency tool also when a `[tools.<name>]` table
+  names
+  it. For such a tool, a list appends its new items, and a value whose type
+  differs from the merged value stops the sync with code 2. For any other tool,
+  a value replaces the merged one. For both, tables merge key by key.
+- A missing answer is not an error of the engine. The sync examines only the
+  shape of `[questions]`, and it asks nothing. A template that needs an answer
+  uses `required`, which fails that file with its message. Exit code 4 is only
+  for the Mac front-end.
 
 ## Task scripts
 

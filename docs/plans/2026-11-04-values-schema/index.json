@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-04 — be4e3e0 41579df 52e408a ; 5 gaps open (G5 G8 G9 G10 G11); folder stays live"
   },
   "consent": {
     "merge": true,
@@ -66,11 +66,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T16:05:54.354Z",
+      "ended": "2026-11-04T16:22:09.008Z",
+      "commit": "be4e3e0",
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -86,11 +86,11 @@
         "U1"
       ],
       "waits": "Its cases run the values code that U1 writes in sync-engine/values and sync-engine/repo-sync.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T17:05:13.259Z",
+      "ended": "2026-11-04T17:17:18.504Z",
+      "commit": "41579df",
+      "rounds": 2
     },
     {
       "id": "U3",
@@ -105,14 +105,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T17:49:00.471Z",
+      "ended": "2026-11-04T17:51:14.609Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "6770249",
+        "to": "93785b9"
       }
     },
     {
@@ -134,11 +134,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T17:51:44.987Z",
+      "ended": "2026-11-04T17:55:44.205Z",
+      "commit": "52e408a",
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -152,43 +152,43 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T18:05:20.911Z",
+      "ended": "2026-11-04T18:07:27.484Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T16:05:54.283Z",
+      "ended": "2026-11-04T17:05:04.632Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T17:05:13.186Z",
+      "ended": "2026-11-04T17:48:34.077Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T17:49:00.388Z",
+      "ended": "2026-11-04T17:51:30.818Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T17:51:44.856Z",
+      "ended": "2026-11-04T18:05:12.247Z"
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T18:05:20.839Z",
+      "ended": "2026-11-04T18:18:00.346Z"
     }
   ],
   "shared_files": [
@@ -300,31 +300,109 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T17:51:44.594Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T17:51:44.338Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T17:51:44.457Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers, no code unit: nothing to reconcile or persist; no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T17:51:44.725Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "",
+      "stage": "claim",
+      "text": "The claim commit of the plan-index contract is a direct commit on main, and the no-commit-to-branch hook of this repository refuses it · closed: the claim landed from the local branch claim-values-schema through mise run code:merge, the route CLAUDE.md gives, with no hook skipped; the completion commit takes the same route",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "",
+      "stage": "worktree",
+      "text": "Setup step 1 names a worktree .worktrees/values-schema, but this session already runs in a linked worktree · closed: per git-workflow Step 1 the run works in the session worktree .claude/worktrees/bootstrap-2-0-3ae4b9 on its branch claude/bootstrap-2-0-3ae4b9, brought to the tip of main after the claim; run.worktree names it",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "",
+      "stage": "doctor",
+      "text": "The repo has no .config/vwf.yaml, so doctor reports only that it is not onboarded and no blocking finding can arise · closed: not a blocking finding; the plan has no code unit, no covers and names no project, and the review cap stays its default of 4",
+      "state": "closed"
+    },
+    {
+      "id": "G4",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: test:repo-sync case 'the gate with a cache' copies a fixed list of engine libraries that lacks values (test lines 2872-2873), and 02-tests.md says no other existing case changes · assumed a test fixture, not an engine bug; the engine source line stays unguarded and U2 adds sync-engine/values to that cp · closed: U2 added sync-engine/values to that cp, and test:repo-sync passes",
+      "state": "closed"
+    },
+    {
+      "id": "G5",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: inside one target tool, the ported jq error stops at the first conflict, so a second contribution conflict or a type change stays hidden until the first is fixed, against D10's logs every message · assumed the port's first-message-per-tool behaviour is acceptable, since the unit says to port the functions as they are",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "R1: docs/design/packs.md:85, CLAUDE.md:262 and docs/sync/index.md:703 are falsified by U1 and were not reported · closed: handed to U4 as DOCS FALSIFIED lines; each path is in U4's Owns, so no Owns widened",
+      "state": "closed"
+    },
+    {
+      "id": "G7",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2: the plan places the changed --check case at lines 696-698; it was at 742-744 after P01-P06 · closed: the same case, found by its name, and changed as ruled",
+      "state": "closed"
+    },
+    {
+      "id": "G8",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "U4: sync-engine/values:133, ported from setup-sync:803, tells the user to remove one contribution or set the value in [tools.<name>], but a user value does not clear a contribution conflict, since contributions merge first and any conflict returns code 2 · assumed the engine is the source of truth and the plan's port-its-messages ruling stands, so docs/design/tools.md says a [tools.<name>] value does not clear the conflict; the engine message needs a ruling and a fix",
+      "state": "open"
+    },
+    {
+      "id": "G9",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "U4: the plan does not say whether the adopting AI asks a tool's [questions] · assumed per D7 that the docs say only that the sync examines the shape and asks nothing; docs/sync/index.md gets no instruction to ask, and no tool uses the table now",
+      "state": "open"
+    },
+    {
+      "id": "G10",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "U4: the docs say a [tools.<name>] table for a base tool only gives values, while CLAUDE.md mise config and step 3 say a tool selected more than once gets each environment, so env in a [tools.dprint] table may still add environments; not tested in the engine · assumed the docs follow the ruling's wording, with no env exception added",
+      "state": "open"
+    },
+    {
+      "id": "G11",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "R4: the ruling and D5 say a table for a base tool or a dependency only gives values, but the engine (_rs_resolve) also selects a dependency through its [tools.<dep>] table, and docs/sync/tools/node.md, java.md and kotlin.md rely on that · assumed the engine stands and the docs describe it: the table of a base tool only gives values, and the table of a dependency also selects it; the ruling's wording needs a person's confirmation",
+      "state": "open"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",

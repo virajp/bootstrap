@@ -82,8 +82,11 @@ env = [ "dev" ]
 [tools.github]
 ```
 
-The only key of an entry is `env`. A list (`packs = [...]` or
-`tools = [...]`) is the old format, and it stops the sync with code 2.
+The only key of a `[packs.<name>]` entry is `env`. In a `[tools.<name>]` entry,
+each other key is a value of the tool. See
+[bootstrap-config.md](bootstrap-config.md#toolsfolderkey). A list
+(`packs = [...]` or `tools = [...]`) is the old format, and it stops the sync
+with code 2.
 
 On each sync, `repo-sync` reads `repo/packs.toml`. It adds the default members
 of the `base` pack, then the default members of each selected pack, then the
@@ -128,7 +131,8 @@ consumer cannot remove a tool of it. Only `bootstrap` changes the tools of the
 `base` pack, in `repo/packs.toml`.
 
 - `repo-sync` always adds the `base` pack. Its name is fixed in `repo-sync`,
-  so the values file does not list it.
+  so the values file does not select it. A `[tools.<name>]` table for one of its
+  tools only gives values.
 - Its members are in `repo/packs.toml`, as for each other pack. Thus a change
   to the pack is a change to `repo/packs.toml` only.
 
@@ -169,7 +173,8 @@ member tool. For example, `gitleaks`, `grype` and `osv-scanner` each have
 
 - A pack selection and a single `[tools.<member>]` entry both bring the common
   tool, with the environments of the member tools that need it.
-- The values file does not list it.
+- The values file does not select it. A `[tools.<name>]` table for it only gives
+  values.
 - The sync adds a dependency before the tool that needs it. Thus the tool order
   of the `base` pack ends `... vscode _security_base gitleaks grype
   osv-scanner`.

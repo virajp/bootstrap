@@ -51,8 +51,10 @@ it.
 The sync code is in `sync-engine/`: `clone` for the shared cache and the clone,
 `common` for the log, the header detection and the wrappers of gomplate, jq and
 yq, `write` for the write of one file, `merge` for merge mode, `select` for the
-packs and the `depends`, `manifest` for the manifest and the stale rule, and
-`repo-sync` for the function `repo_sync`. This
+packs and the `depends`, `manifest` for the manifest and the stale rule,
+`values`
+for the merge of the values of the tools, and `repo-sync` for the function
+`repo_sync`. This
 folder is not a tool, so the
 sync does not copy it to a repository.
 
@@ -113,6 +115,11 @@ tool. `shell_alias`, `tasks` and the other dev-only sections go only to `dev`.
 `docs/design/mise.md` ("The `[mise.*]` sections") has the full list and an
 example.
 
+A tool can also have the optional tables `[defaults]` (its values),
+`[questions.<key>]` (the question for one value) and `[contributes.<tool>]`
+(values for another selected tool). `docs/design/tools.md` has their keys and
+their checks.
+
 A `[mise_env.<env>.<section>]` table adds content to one environment only.
 For example, the `mise` tool sets the mise `os` setting in `ci`:
 
@@ -170,7 +177,9 @@ The other keys of the table are `requires_found`, `format`, `remove` and
    copy and calls `repo_sync`. Thus a change to the sync code applies in the
    same run.
 3. `repo_sync` reads the `[tools.*]` and `[packs.*]` tables of the
-   repository's `.config/bootstrap.toml`, and it adds the `base` pack.
+   repository's `.config/bootstrap.toml`, and it adds the `base` pack. `env`
+   selects the environments, and each other key of a `[tools.*]` table is a
+   value of that tool. A `[packs.*]` table has only `env`.
 4. It expands each pack to its default members, and it adds the `depends` of
    each tool. It refuses a
    `root_only` tool in a git submodule. It skips a `root_only` tool that only
@@ -287,6 +296,9 @@ A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
   `extensions` list of its values file.
 - `.sync_engine` is the absolute path of the `sync-engine/` folder of the
   clone copy of the run.
+- `.config` is the values of the tool of the template: `[defaults]`, then the
+  contributions of the selected tools, then `[tools.<name>]` without `env`.
+  `.all` is the values of each selected tool, by tool name.
 - `.precommit` is the list of the `[[precommit]]` entries of those tools, in
   tool order, then the entries of the repository's
   `.config/repo-sync/pre-commit.yaml`. A `no-commit-to-branch` hook in it

@@ -739,9 +739,9 @@ tools = [ "node" ]' '' 'is a list, the old format'
 run_check "--check, an entry that is not a table" 2 'environments = [ "dev" ]
 [tools]
 node = "x"' '' 'must be a table'
-run_check "--check, a key other than env" 2 'environments = [ "dev" ]
+run_check "--check, a key other than env" 0 'environments = [ "dev" ]
 [tools.node]
-version = "1"' '' "'version' is not a key of an entry"
+version = "1"' '' "$check_valid"
 run_check "--check, env not a list" 2 'environments = [ "dev" ]
 [tools.node]
 env = "dev"' '' 'env must be a list'
@@ -2513,6 +2513,178 @@ check_manifest_bad_mode() {
 }
 run_check "_se_manifest_read, a bad link mode" 0 "$no_tool_values" '' '' check_manifest_bad_mode
 
+# The values of the tools. A template prints `.config` and `.all` with the name of
+# its tool. The consumer already has its output file, so the dry run shows its diff.
+value_template() {
+  printf '%s\n' "$1 config=<% .config | data.ToJSON %>" "$1 all=<% .all | data.ToJSON %>" \
+    > "$clone/repo/tools/$1/$1.txt.tmpl"
+  printf '%s\n' x > "$consumer/$1.txt"
+}
+# value_tool <tool> [<line>...]: a new tool with the template, and these lines at
+# the end of its tools.toml.
+value_tool() {
+  local tool=$1
+  shift
+  mkdir -p -- "$clone/repo/tools/$tool"
+  printf '%s\n' 'default_envs = [ "dev" ]' 'depends = []' 'extensions = []' 'root_only = false' "$@" \
+    > "$clone/repo/tools/$tool/tools.toml"
+  value_template "$tool"
+}
+# value_list <tool>: a tool of the clone with the template and a default list.
+value_list() {
+  printf '%s\n' '' '[defaults]' 'items = [ "a" ]' >> "$clone/repo/tools/$1/tools.toml"
+  value_template "$1"
+}
+value_needs_vdep() {
+  sed 's/^depends = \[\]$/depends = [ "vdep" ]/' "$clone/repo/tools/vtest/tools.toml" > "$tmp/vtest.toml"
+  cp -- "$tmp/vtest.toml" "$clone/repo/tools/vtest/tools.toml"
+}
+
+values_defaults() { value_tool vtest '[defaults]' 'key = "default"'; }
+values_contribution() {
+  value_tool vtest '[defaults]' 'items = [ "a" ]' 'key = "default"'
+  value_tool vother '[contributes.vtest]' 'items = [ "b" ]' 'key = "other"'
+}
+values_conflict() {
+  values_contribution
+  value_tool vthird '[contributes.vtest]' 'key = "third"'
+}
+values_unknown() { value_tool vother '[contributes.nope]' 'key = "x"'; }
+values_linter() { value_list linter; }
+values_vdep() {
+  value_tool vtest
+  value_needs_vdep
+  value_tool vdep '[defaults]' 'items = [ "a" ]'
+}
+values_mise_vdep() {
+  value_tool vtest '[mise.tools.vtest-x]' 'depends = [ "vdep-x" ]' 'version = "latest"'
+  value_tool vdep '[defaults]' 'items = [ "a" ]' '[mise.tools.vdep-x]' 'version = "latest"'
+}
+values_replace() {
+  value_tool vtest '[defaults]' 'items = [ "a" ]' '[defaults.t]' 'a = "1"' 'b = "2"'
+}
+# value_empty_member <pack>: the tool vtest with a default list, and a {} member of <pack>.
+value_empty_member() {
+  value_tool vtest '[defaults]' 'items = [ "a" ]'
+  awk -v table="[pack.$1]" '{ print } $0 == table { print "vtest = {}" }' "$clone/repo/packs.toml" > "$tmp/packs.toml"
+  cp -- "$tmp/packs.toml" "$clone/repo/packs.toml"
+}
+values_empty_base_member() { value_empty_member base; }
+values_empty_nested_member() { value_empty_member security; }
+values_question_none() { value_tool vtest '[questions.q]' 'example = "x"'; }
+values_question_key() { value_tool vtest '[questions.q]' 'foo = "x"' 'question = "Which?"'; }
+values_question_detect() { value_tool vtest '[questions.q]' 'detect = 1' 'question = "Which?"'; }
+values_question_valid() {
+  value_tool vtest '[questions.q]' 'detect = "echo x"' 'example = "x"' 'question = "Which?"'
+}
+values_other() {
+  values_defaults
+  value_tool vother
+}
+values_security() {
+  value_list gitleaks
+  value_list _security_base
+}
+values_two_errors() {
+  value_tool vtest '[questions.q]' 'foo = "x"' 'question = "Which?"'
+  values_unknown
+}
+
+# all_has <tool> <text>: the `.all` line of <tool> has the fixed string <text>.
+all_has() { grep '^+'"$1"' all=' "$log" | grep -qF -- "$2"; }
+check_not_selected() {
+  check_log_lacks "a contribution to a tool that is not selected: no effect" '"vtest"'
+}
+check_all() {
+  check_that ".all: the values of another tool" all_has vother '"vtest":{"key":"default"}'
+  check_that ".all: an empty table for a tool without values" all_has vtest '"vother":{}'
+}
+check_security() {
+  check_that "the nested pack: _security_base through depends" log_has '+_security_base config={"items":["a","b"]}'
+}
+check_engine_keys() {
+  check_that "all of the values file does not replace .all" all_has vtest '"vtest":{"key":"default"}'
+  check_that "[all] of the values file does not reach .all" log_lacks '"leak"'
+}
+check_two_values_errors() {
+  check_that "two errors in two tools: the question" log_has \
+    'repo/tools/vtest/tools.toml: [questions.q] foo is not a key of a question - the keys are question, detect and example'
+}
+
+vtest_values='environments = [ "dev" ]
+[tools.vtest]'
+vother_values="$vtest_values
+[tools.vother]"
+msg_unknown_contribution='repo/tools/vother/tools.toml: [contributes.nope] names a tool that bootstrap does not have'
+
+run_case "values: [defaults] only" 0 "$vtest_values" values_defaults '+vtest config={"key":"default"}'
+run_case "values: [tools.vtest] wins over [defaults], and env is not a value" 0 "$vtest_values
+env = [ \"dev\" ]
+key = \"x\"" values_defaults '+vtest config={"key":"x"}'
+run_case "values: a contribution adds a list item, and its scalar wins over the default" 0 "$vother_values" \
+  values_contribution '+vtest config={"items":["a","b"],"key":"other"}'
+run_case "values: [tools.vtest] wins over a contribution" 0 'environments = [ "dev" ]
+[tools.vother]
+[tools.vtest]
+key = "mine"' values_contribution '+vtest config={"items":["a","b"],"key":"mine"}'
+run_case "values: two tools contribute different scalars" 2 "$vother_values
+[tools.vthird]" values_conflict \
+  'repo/tools/vother/tools.toml and repo/tools/vthird/tools.toml set [contributes.vtest] key to different values - remove one, or set it in [tools.vtest] of'
+run_case "values: a contribution to a tool that is not selected" 0 'environments = [ "dev" ]
+[tools.vother]' values_contribution '+vother config={}' check_not_selected
+run_case "values: a contribution to a tool that bootstrap does not have" 3 'environments = [ "dev" ]
+[tools.vother]' values_unknown "$msg_unknown_contribution"
+run_case "values: a base tool, a list appends" 0 'environments = [ "dev" ]
+[tools.linter]
+items = [ "b" ]' values_linter '+linter config={"items":["a","b"]}'
+run_case "values: a base tool, a scalar over a list" 2 'environments = [ "dev" ]
+[tools.linter]
+items = "b"' values_linter 'sets items to a string, but it is a list in the base or dependency tool linter'
+run_case "values: a dependency tool, a list appends" 0 "$vtest_values
+[tools.vdep]
+items = [ \"b\" ]" values_vdep '+vdep config={"items":["a","b"]}'
+run_case "values: a dependency tool, a scalar over a list" 2 "$vtest_values
+[tools.vdep]
+items = \"b\"" values_vdep 'sets items to a string, but it is a list in the base or dependency tool vdep'
+run_case "values: a tool of a mise depends, a list appends" 0 "$vtest_values
+[tools.vdep]
+items = [ \"b\" ]" values_mise_vdep '+vdep config={"items":["a","b"]}'
+run_case "values: another tool, a list replaces and a table merges" 0 "$vtest_values
+items = [ \"b\" ]
+[tools.vtest.t]
+b = \"3\"" values_replace '+vtest config={"items":["b"],"t":{"a":"1","b":"3"}}'
+run_case "values: a {} member of pack base, a list replaces" 0 "$vtest_values
+items = [ \"b\" ]" values_empty_base_member '+vtest config={"items":["b"]}'
+run_case "values: a {} member of a nested default pack, a list replaces" 0 "$vtest_values
+items = [ \"b\" ]" values_empty_nested_member '+vtest config={"items":["b"]}'
+run_case "questions: no question" 2 "$vtest_values" values_question_none \
+  'repo/tools/vtest/tools.toml: [questions.q] needs a question string'
+run_case "questions: the key foo" 2 "$vtest_values" values_question_key \
+  'repo/tools/vtest/tools.toml: [questions.q] foo is not a key of a question - the keys are question, detect and example'
+run_case "questions: detect = 1" 2 "$vtest_values" values_question_detect \
+  'repo/tools/vtest/tools.toml: [questions.q] detect must be a string (a shell command)'
+run_case "questions: a valid question" 0 "$vtest_values" values_question_valid
+run_case "values: .all holds the values of another selected tool" 0 "$vother_values" values_other \
+  '+vtest config={"key":"default"}' check_all
+run_case "values: config and all of the values file do not replace the engine keys" 0 'environments = [ "dev" ]
+config = "mine"
+[all]
+leak = "mine"
+[tools.vtest]' values_defaults '+vtest config={"key":"default"}' check_engine_keys
+run_case "values: [packs.security] with a key other than env" 2 "$no_tool_values
+[packs.security]
+foo = 1" '' "'foo' is not a key of a pack entry; the only key of a pack entry is env, a list"
+run_case "values: [tools.node] with a key other than env" 0 "$no_tool_values
+[tools.node]
+version = \"1\""
+run_case "values: tools of the nested pack and of its depends, a list appends" 0 "$no_tool_values
+[tools.gitleaks]
+items = [ \"b\" ]
+[tools._security_base]
+items = [ \"b\" ]" values_security '+gitleaks config={"items":["a","b"]}' check_security
+run_case "values: two errors in two tools" 3 "$vother_values" values_two_errors "$msg_unknown_contribution" \
+  check_two_values_errors
+
 while ((${#case_pids[@]})); do
   collect_case
 done
@@ -2870,7 +3042,7 @@ fi
 
 mkdir -p -- "$gate_cache/repo/sync-engine"
 cp -- "$root/sync-engine/repo-sync" "$root/sync-engine/common" "$root/sync-engine/write" "$root/sync-engine/merge" \
-  "$root/sync-engine/select" "$root/sync-engine/manifest" "$gate_cache/repo/sync-engine/"
+  "$root/sync-engine/select" "$root/sync-engine/manifest" "$root/sync-engine/values" "$gate_cache/repo/sync-engine/"
 _git init --quiet "$gate_cache/repo"
 _git -C "$gate_cache/repo" remote add origin https://github.com/virajp/bootstrap.git
 got=0

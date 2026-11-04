@@ -46,6 +46,7 @@ merge_never = [ "main" ]
 | ---------------------------------- | --------------- | --------- | -------------------------------------- |
 | `[tools.<folder>]`                 | Table           | No        | `repo-sync`                            |
 | `[tools.<folder>].env`             | List of strings | No        | `repo-sync`                            |
+| `[tools.<folder>].<key>`           | Any             | No        | The templates of the tools             |
 | `[packs.<name>]`                   | Table           | No        | `repo-sync`                            |
 | `[packs.<name>].env`               | List of strings | No        | `repo-sync`                            |
 | `environments`                     | List of strings | No        | `repo-sync`                            |
@@ -74,8 +75,9 @@ need the `bootstrap` clone stop only
 pack named like a tool or another bad `[pack.*]` table (an old key or a bad
 member), an environment that a mise tool does not allow, an
 `[overrides.mise*]` path that no selected tool has, a `remove` line that the
-shared file does not have, a `root_only` tool in a submodule, and an old key or
-a bad `[files]` table of a `tools.toml`.
+shared file does not have, a `root_only` tool in a submodule, an old key or a
+bad `[files]` table of a `tools.toml`, and a bad `[defaults]`, `[questions]` or
+`[contributes]` table or a conflict of the values of the tools.
 
 All the paths in this document are relative to the root of the consumer
 repository.
@@ -85,11 +87,15 @@ repository.
 ### `[tools.<folder>]`
 
 One table for each tool of the repository. Each key is a folder
-`repo/tools/<folder>/` of `bootstrap`. Do not write the tools of the `base`
-pack: `repo-sync` always adds the `base` pack. See
-[packs.md](packs.md#the-base-pack)
+`repo/tools/<folder>/` of `bootstrap`. Do not select the tools of the `base`
+pack: `repo-sync` always adds the `base` pack. A table for a base tool only
+gives values. See
+[packs.md](packs.md#the-base-pack).
+A table for a dependency also selects the tool, and its values follow the rule
+of a base or dependency tool in `[tools.<folder>].<key>`.
 
-- The only key of an entry is `env`. Another key stops the sync with code 2
+- `env` selects the environments, and each other key is a value of the tool. See
+  `[tools.<folder>].<key>`
 - `repo-sync` adds the `depends` of each tool, and the tool of each mise
   `depends`, depth first
 - All dependencies are configured for same environment as parent
@@ -123,6 +129,25 @@ also for a tool that the values file does not select.
   not, the sync stops with code 2
 - A tool that is selected more than once, for example also by a pack, gets
   each of these environments
+
+### `[tools.<folder>].<key>`
+
+A value of the tool, for its templates. The top-level keys of this file, for
+example `commit_scopes` and `extensions`, stay at the top level.
+
+```toml
+[tools.node]
+env = [ "dev", "ci" ]
+registry = "https://registry.example.com"
+```
+
+The sync merges the value over the `[defaults]` of the tool and the
+contributions of the selected tools, and a template reads the result as
+`.config`
+or `.all`. For a base or dependency tool, a list appends its new items, and a
+value whose type differs from the merged value stops the sync with code 2. For
+any other tool, a value replaces the merged one. For both, tables merge key by
+key. See [tools.md](tools.md#the-merge).
 
 ### `[packs.<name>]`
 
@@ -351,7 +376,8 @@ goes, also when it has other args: without `--branch`, the hook protects
 ## Reserved names
 
 The sync merges these keys into the template context before the values file:
-`members`, `submodules`, `tools`, `extensions`, `sync_engine` and `precommit`.
+`members`, `submodules`, `tools`, `extensions`, `sync_engine`, `precommit`,
+`config` and `all`.
 Thus a key of
 the same name in the values file does not replace the value of the sync.
 `tools` and `extensions` of the values file are the input of the sync, not the

@@ -12,7 +12,7 @@ grype: the dependency scanner, and `code:sec:grype`.
 ## When the tool is relevant
 
 Always. The `base` pack always adds this tool, through the `security` pack.
-Do not list it in the values file.
+Do not select it in the values file. A `[tools.grype]` table only gives values.
 
 ## What the tool ships
 

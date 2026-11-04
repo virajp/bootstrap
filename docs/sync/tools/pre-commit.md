@@ -12,8 +12,8 @@ pre-commit: the rendered pre-commit config, its setup task and
 
 ## When the tool is relevant
 
-Always. The `base` pack always adds this tool. Do not list it in the values
-file.
+Always. The `base` pack always adds this tool. Do not select it in the values
+file. A `[tools.pre-commit]` table only gives values.
 
 ## What the tool ships
 

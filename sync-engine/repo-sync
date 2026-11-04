@@ -16,14 +16,17 @@
 # `[overrides]` path, a `remove` line that is not shipped, a root-only tool in
 # a submodule) are for the sync only.
 #
-# The values file selects tools and packs with one table each; the only key of
-# an entry is `env`, a list of environments:
+# The values file selects tools and packs with one table each. `env` is a list
+# of environments:
 #
 #   [tools.node]                a tool folder `$_RS_TOOLS_DIR/node/`
 #   env = ["dev", "ci"]         optional: without it, the tool's `default_envs`
+#   key = "value"               each other key is a value of the tool, for its
+#                               templates (`sync-engine/values`)
 #   [packs.security]            a pack of `$_RS_PACKS_FILE`, without `pack:`
-#   env = ["dev"]               optional: each tool of the pack gets it; without
-#                               it, each tool gets its own `default_envs`
+#   env = ["dev"]               optional, and the only key of a pack entry: each
+#                               tool of the pack gets it; without it, each tool
+#                               gets its own `default_envs`
 #
 # The pack `base` is always added, and each of its tools gets its own
 # `default_envs`. No `[tools]` and no `[packs]` is valid: then only `base`.
@@ -63,6 +66,10 @@
 #                               extension. `remove` and `remove_items`: only
 #                               with mode "merge"
 #   [[precommit]]               `repos:` entries of `.config/pre-commit-config.yaml`
+#   [defaults]                  optional: the values of the tool
+#   [questions.<key>]           optional: `question`, `detect` and `example`; the
+#                               sync examines only their shape
+#   [contributes.<tool>]        optional: values for another selected tool
 #   [mise.<section>]            the mise config of the tool, in mise syntax; an
 #                               entry of `[mise.tools]` can also have `envs` and
 #                               `requires_found` (see "mise config")
@@ -163,6 +170,9 @@
 #   .member_folders  a map from each member name to its folder
 #   .member_types    a map from each member name to `submodule` or `folder`
 #   .tools       the selected tools, packs expanded, dependencies included
+#   .config      the values of the tool of the template: `[defaults]`, then the
+#                contributions, then `[tools.<name>]` without `env`
+#   .all         the values of each selected tool, by tool name
 #   .extensions  the VS Code extensions of those tools and of the `extensions`
 #                list of the values file, sorted, no duplicates. In the root
 #                repository, also those of each git submodule (the tools and
@@ -242,13 +252,15 @@
 #      a bad `requires`, `requires_found`, `remove` or `remove_items`, a merge
 #      target of format text), `requires_found`, `requires` or `files` in a
 #      `[mise_env.<env>.tools]` entry, a tool folder with both <p> and <p>.tmpl,
-#      a merge source or a live merge target that cannot merge, a merge target
+#      a bad `[defaults]`, `[questions]` or `[contributes]`, two contributions or
+#      a user value that conflict (`sync-engine/values`), a merge source or a live merge target that cannot merge, a merge target
 #      that is a symlink or is below a symlinked folder, a
 #      `.config/repo-generated.tsv` that is a symlink, is below a symlinked
 #      folder or is not a regular file, no `mise`, or no `SYNC_ENGINE_CLONE`
 #      without `--check`
-#   3  a tool or a pack that is not in bootstrap (fix the values file), or a
-#      member of a pack that is not a tool folder or a pack (fix the packs file)
+#   3  a tool or a pack that is not in bootstrap (fix the values file), a
+#      member of a pack that is not a tool folder or a pack (fix the packs file),
+#      or a contribution of a selected tool to a tool that is not in bootstrap
 #   5  the clone of `SYNC_ENGINE_CLONE` is not usable, or
 #      `pre-commit autoupdate` could not resolve the hook revisions
 #   1  anything else (local filesystem errors, ...)
@@ -276,6 +288,8 @@ source "${BASH_SOURCE[0]%/*}/merge"
 source "${BASH_SOURCE[0]%/*}/select"
 # shellcheck source=/dev/null
 source "${BASH_SOURCE[0]%/*}/manifest"
+# shellcheck source=/dev/null
+source "${BASH_SOURCE[0]%/*}/values"
 _SE_PREFIX='repo-sync'
 
 # The repo side of the clone: the folder of the tools and the file of the packs,
@@ -387,13 +401,14 @@ _RS_BASE_PACK=base
 
 # Print the `[tools.<name>]` and `[packs.<name>]` entries of <values> as
 # `tools|packs <name> <env,...|->` lines (`-`: no `env`). Returns 2, after a
-# message, for the old list format or an entry with another key than `env`.
+# message, for the old list format, an `env` that is not a list, or a pack entry
+# with another key than `env`. Each other key of a `[tools.*]` entry is a value.
 _rs_values_sel() {
   local values=$1 out kind table name key
   out=$(_se_gomplate -c "v=${values}" -i '<% range $t := coll.Slice "tools" "packs" %><% if has $.v $t %><% $x := index $.v $t %><% if not (test.IsKind "map" $x) %>list <% $t %>
 <% else %><% range $k, $e := $x %><% if not (test.IsKind "map" $e) %>bad <% $t %> <% $k %> -
-<% else %><% range $ek, $ev := $e %><% if ne $ek "env" %>bad <% $t %> <% $k %> <% $ek %>
-<% end %><% end %><% if has $e "env" %><% if not (test.IsKind "slice" $e.env) %>bad <% $t %> <% $k %> env
+<% else %><% if eq $t "packs" %><% range $ek, $ev := $e %><% if ne $ek "env" %>bad <% $t %> <% $k %> <% $ek %>
+<% end %><% end %><% end %><% if has $e "env" %><% if not (test.IsKind "slice" $e.env) %>bad <% $t %> <% $k %> env
 <% else %><% $t %> <% $k %> <% join $e.env "," %>
 <% end %><% else %><% $t %> <% $k %> -
 <% end %><% end %><% end %><% end %><% end %><% end %>') || {
@@ -414,7 +429,7 @@ _rs_values_sel() {
     elif [[ $key == env ]]; then
       key='env must be a list, for example env = ["dev"]'
     else
-      key="'$key' is not a key of an entry; the only key is env, a list"
+      key="'$key' is not a key of a pack entry; the only key of a pack entry is env, a list"
     fi
     _se_log "[$table.$name] in $(_se_path "$values"): $key"
     return 2
@@ -1595,10 +1610,35 @@ _rs_mise_render() {
   rm -f -- "$tmp" "$err"
 }
 
+# Merge the values of the selected tools with `_se_values`, and write them as
+# one JSON object, tool name to values, to _RS_VALUES_FILE in the clone <dir>.
+# The user values are each `[tools.<name>]` table of <values> without `env`. The
+# base and dependency tools are the tools that the pack base adds (source
+# `default` of _RS_SEL) and each dependency of _RS_DEPS. Returns the code of
+# `_se_values`, after its messages.
+_rs_tool_values() {
+  local dir=$1 values=$2 user keep out
+  user=$(_se_gomplate -c "v=${values}" -i '<% $u := dict %><% if has .v "tools" %><% range $k, $e := .v.tools %><% $u = coll.Merge (dict $k (coll.Omit "env" $e)) $u %><% end %><% end %><% $u | data.ToJSON %>') || {
+    _se_log "cannot read [tools] of $(_se_path "$values")"
+    return 2
+  }
+  keep=$(
+    awk '$3 == "default" { print $1 }' <<< "$_RS_SEL"
+    awk '{ for (i = 2; i <= NF; i++) print $i }' <<< "$_RS_DEPS"
+  ) || keep=''
+  out=$(_se_values "$_RS_TOOLS" "$keep" "$dir/$_RS_TOOLS_DIR" "$user" "$_RS_TOOLS_DIR" "$(_se_path "$values")") || return
+  _RS_VALUES_FILE="$dir/.repo-sync-values.json"
+  printf '%s\n' "$out" | _se_jq -R -n 'reduce (inputs | split("\t")) as $l ({}; .[$l[1]] = ($l[2] | fromjson))' > "$_RS_VALUES_FILE" || {
+    _se_log "cannot write the values of the tools"
+    return 2
+  }
+}
+
 # Write the template context to <out>: the values of <values>, with
-# `members`, `submodules`, `tools`, `extensions`, `sync_engine` and `precommit`
-# merged in first, so a key of the same name in the values file cannot replace
-# them.
+# `members`, `submodules`, `tools`, `extensions`, `sync_engine`, `precommit` and
+# `all` (_RS_VALUES_FILE of `_rs_tool_values`) merged in first, so a key of the
+# same name in the values file cannot replace them. The keys `all` and `config`
+# of the values file do not go in: a table of that name would merge key by key.
 # <dir> is the clone.
 _rs_context() {
   local dir=$1 values=$2 out=$3 rows members folders types tool
@@ -1613,7 +1653,7 @@ _rs_context() {
   fi
   # One context per tool manifest, `tool_<name>`, for the `[[precommit]]`
   # entries; `repo_precommit` for the repo's own entries.
-  local args=(-c "v=${values}")
+  local args=(-c "v=${values}" -c "all_values=${_RS_VALUES_FILE}?type=application/json")
   for tool in $_RS_TOOLS; do
     args+=(-c "tool_${tool}=${dir}/${_RS_TOOLS_DIR}/${tool}/tools.toml")
   done
@@ -1658,7 +1698,28 @@ _rs_context() {
 <% end -%>
 <% if $keep %><% $npc = coll.Append $ne $npc %><% end -%>
 <% end -%>
-<% $ctx = coll.Merge $ctx (dict "precommit" $npc) %><% coll.Merge $ctx .v | data.ToJSON %>' >&2
+<% $ctx = coll.Merge $ctx (dict "precommit" $npc "all" .all_values) %><% coll.Merge $ctx (coll.Omit "all" "config" .v) | data.ToJSON %>' >&2
+}
+
+# Write <folder>/<tool>.json for each selected tool with a `.tmpl` file: the
+# shared context of the file <shared> plus `config`, the values of that tool.
+# <dir> is the clone. Returns 1, after a message, when a file cannot be written.
+_rs_tool_contexts() {
+  local dir=$1 shared=$2 folder=$3 tool tools='' rows json
+  for tool in $_RS_TOOLS; do
+    [[ -z $(find "$dir/$_RS_TOOLS_DIR/$tool" -name '*.tmpl' -type f -print -quit) ]] || tools+="$tool "
+  done
+  [[ -n $tools ]] || return 0
+  rows=$(_se_jq -r --arg tools "$tools" '. as $c | $tools | split(" ")[] | select(. != "") | "\(.)\t\($c + {config: $c.all[.]} | tojson)"' "$shared") || {
+    _se_log "cannot build the context of the tools"
+    return 1
+  }
+  while IFS=$'\t' read -r tool json; do
+    printf '%s\n' "$json" > "$folder/$tool.json" || {
+      _se_log "cannot write the context of $tool"
+      return 1
+    }
+  done <<< "$rows"
 }
 
 # Sync the file <path> of <tool> from the clone in <dir>, first step: render
@@ -2046,7 +2107,7 @@ repo_sync() {
   for skipped in $_RS_SKIP; do
     _RS_HANDLED+="${skipped#*/}"$'\n'
   done
-  { _rs_mise_env && _rs_overrides "$dir" "$values" && _rs_direct_commit "$values" && _rs_fnox_profiles "$values"; } || {
+  { _rs_mise_env && _rs_overrides "$dir" "$values" && _rs_direct_commit "$values" && _rs_fnox_profiles "$values" && _rs_tool_values "$dir" "$values"; } || {
     rc=$?
     rm -rf -- "$dir"
     return "$rc"
@@ -2060,17 +2121,22 @@ repo_sync() {
     fi
   done
 
-  # The context is built once, and only when a template needs it. An empty
-  # path tells `_rs_file` that it could not be built, so each template fails
-  # and every plain file still syncs.
-  local ctx=''
+  # The context is built once, and only when a template needs it, then one
+  # file for each tool with a template. An empty path tells `_rs_file` that it
+  # could not be built, so each template fails and every plain file still syncs.
+  local ctx='' ctx_dir=''
   if [[ -n $(find "$dir/$_RS_TOOLS_DIR" -name '*.tmpl' -type f -print -quit) ]]; then
     ctx=$(mktemp "${TMPDIR:-/tmp}/repo-sync-ctx.XXXXXX") || {
       rm -rf -- "$dir"
       return 1
     }
     _SE_TMPS+=("$ctx")
-    _rs_context "$dir" "$values" "$ctx" || {
+    ctx_dir=$(mktemp -d "${TMPDIR:-/tmp}/repo-sync-ctx.XXXXXX") || {
+      rm -rf -- "$dir"
+      return 1
+    }
+    _SE_TMPS+=("$ctx_dir")
+    { _rs_context "$dir" "$values" "$ctx" && _rs_tool_contexts "$dir" "$ctx" "$ctx_dir"; } || {
       _se_log "cannot build the template context"
       ctx=''
     }
@@ -2101,7 +2167,7 @@ repo_sync() {
       elif [[ $_RS_REQ_SKIP == *$'\n'"$tool/${path%.tmpl}="* ]]; then
         _rs_skip_required "$tool" "$path" || rc=$?
       else
-        _rs_file "$dir" "$tool" "$path" "$dry_run" "$ctx" || rc=$?
+        _rs_file "$dir" "$tool" "$path" "$dry_run" "${ctx:+$ctx_dir/$tool.json}" || rc=$?
       fi
       if ((rc != 0)); then
         failed+=("$_RS_TOOLS_DIR/$tool/$path")
