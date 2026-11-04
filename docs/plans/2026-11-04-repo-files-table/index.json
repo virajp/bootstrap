@@ -103,8 +103,8 @@
       "status": "green",
       "started": "2026-11-04T06:42:05.763Z",
       "ended": "2026-11-04T07:33:42.035Z",
-      "commit": "7b30e58",
-      "rounds": 3
+      "commit": "f4bb00e",
+      "rounds": 4
     },
     {
       "id": "U4",
@@ -120,14 +120,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-04T07:07:47.756Z",
-      "ended": "",
+      "ended": "2026-11-04T08:42:01.890Z",
       "commit": "",
-      "rounds": 2,
+      "rounds": 3,
       "range": {
         "from": "7ca899d",
-        "to": "5cf1583"
+        "to": "f4bb00e"
       }
     },
     {
@@ -190,9 +190,9 @@
     },
     {
       "id": "W3",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-04T07:07:47.688Z",
-      "ended": ""
+      "ended": "2026-11-04T08:43:35.246Z"
     },
     {
       "id": "W4",
@@ -384,28 +384,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "No covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T08:43:35.521Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "No covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T08:43:35.315Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "No covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T08:43:35.419Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "No covers and no code unit: nothing to stamp or persist",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T08:43:35.656Z"
     }
   },
   "gaps": [
@@ -497,15 +497,15 @@
       "id": "G13",
       "unit": "U4",
       "stage": "security",
-      "text": "Round 2 security finding [low] sync-engine/repo-sync:624: D8 and D10 require a target that a file of the tool produces, not its exact form, so a mis-spelled key passes _rs_target_ok, misses the mode lookup and runs as generated, which skips both merge guards · the round count did not decrease (1 then 1), so the guard ended the loop; the closing pass d4f59df and 7b30e58 refused ./x, a//b, */./*, */. and */, and the closing check answered OPEN: a case variant on a case-insensitive filesystem and a path through a symlinked folder of the tool still pass the -f test (repo-sync:629). Cap-exempt, so not contested: the run pauses for a ruling",
-      "state": "open"
+      "text": "Round 2 security finding [low] sync-engine/repo-sync:624: D8 and D10 require a target that a file of the tool produces, not its exact form, so a mis-spelled key passes _rs_target_ok, misses the mode lookup and runs as generated, which skips both merge guards · the round count did not decrease (1 then 1), so the guard ended the loop; the closing pass d4f59df and 7b30e58 refused ./x, a//b, */./*, */. and */, and the closing check answered OPEN: a case variant on a case-insensitive filesystem and a path through a symlinked folder of the tool still pass the -f test (repo-sync:629). Cap-exempt, so not contested: the run pauses for a ruling · closed: ruled by the user in D17; U1 made the exact match in 6bdec22 and U3 added the two cases in f4bb00e; round 3 reviewed it clean",
+      "state": "closed"
     },
     {
       "id": "G14",
       "unit": "U4",
       "stage": "security",
-      "text": "Round 2 of U4 ran no /security-review engine: the orchestrator chose to skip it and handed the reviewer ENGINE: unavailable, though the engine was not unavailable; review-unit.md requires engines first on each round · the reviewer alone judged the fix delta 7ca899d..5cf1583. A resumed run owes the engine over 7ca899d..HEAD",
-      "state": "open"
+      "text": "Round 2 of U4 ran no /security-review engine: the orchestrator chose to skip it and handed the reviewer ENGINE: unavailable, though the engine was not unavailable; review-unit.md requires engines first on each round · the reviewer alone judged the fix delta 7ca899d..5cf1583. A resumed run owes the engine over 7ca899d..HEAD · closed: round 3 ran the security engine and the reviewer over 7ca899d..f4bb00e, both with no finding",
+      "state": "closed"
     },
     {
       "id": "G15",
@@ -520,6 +520,13 @@
       "stage": "security",
       "text": "A target that is itself a symlink to a file: D17 names only a symlinked folder · U1 took the exact wording, so such a target fails too, because find -type f skips it; tools/ has no symlinks today",
       "state": "open"
+    },
+    {
+      "id": "G17",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "R3 rule-5 finding CLAUDE.md:187: the exit-code list gives no case for a merge target that is a symlink or is below a symlinked folder, which now stops with code 2 (b47e12a) · closed: handed to U5, which owns this path under S1, as a DOCS FALSIFIED line",
+      "state": "closed"
     }
   ],
   "overrides": [],
