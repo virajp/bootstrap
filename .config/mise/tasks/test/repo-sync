@@ -166,8 +166,8 @@ collect_case() {
   case_dirs=("${case_dirs[@]:1}")
 }
 
-# The tools of the pack base, the required tool of the pack security
-# included. The first case checks that each one syncs a file.
+# The tools of the pack base. _security_base arrives through the depends of the
+# scanners. The first case checks that each one syncs a file.
 base_tools="mise repo-sync git pre-commit dprint linter vscode _security_base gitleaks grype osv-scanner"
 
 check_base_files() {
@@ -197,12 +197,12 @@ check_base_files() {
 }
 
 pack_loop() {
-  printf '%s\n' '' '[pack.a]' 'depends = [ "p:b" ]' '' '[pack.b]' 'depends = [ "p:a" ]' \
+  printf '%s\n' '' '[pack.a]' '"pack:b" = { default = true }' '' '[pack.b]' '"pack:a" = { default = true }' \
     >> "$clone/tools/packs.toml"
 }
 
 pack_named_like_tool() {
-  printf '%s\n' '' '[pack.node]' 'depends = [ "node" ]' >> "$clone/tools/packs.toml"
+  printf '%s\n' '' '[pack.node]' 'node = { default = true }' >> "$clone/tools/packs.toml"
 }
 
 node_needs_pulumi() {
@@ -1903,6 +1903,160 @@ run_case "merge: a remove of a bad shape" 2 "$no_tool_values" remove_bad_shape \
   'fixture/tools.toml: [files.".config/merger/plain.txt"] remove must be a list of key paths, each a non-empty list of strings'
 run_case "merge: a remove_items without items" 2 "$no_tool_values" remove_items_no_items \
   'fixture/tools.toml: [files.".config/merger/plain.txt"] remove_items must be a list of tables, each with exactly path (a non-empty list of strings) and items (a list)'
+
+# The merged packs model. A change function appends to, or rewrites, the packs
+# of the scratch clone. The values file does not select the pack of a shape
+# case: the sync examines each pack of the file.
+packs_lines() { printf '%s\n' '' "$@" >> "$clone/tools/packs.toml"; }
+packs_old_depends() { packs_lines '[pack.odd]' 'depends = [ "p:security" ]'; }
+packs_old_required() { packs_lines '[pack.odd]' 'required = [ "_security_base" ]'; }
+packs_old_tools() { packs_lines '[pack.odd]' 'tools = [ "node" ]'; }
+packs_old_default() { packs_lines '[pack.odd]' 'default = [ "node" ]'; }
+packs_old_prefix() { packs_lines '[pack.odd]' '"p:x" = { default = true }'; }
+packs_entry_key() { packs_lines '[pack.odd]' 'node = { version = "1" }'; }
+packs_default_string() { packs_lines '[pack.odd]' 'node = { default = "yes" }'; }
+packs_member_string() { packs_lines '[pack.odd]' 'node = "x"'; }
+packs_empty_loop() { packs_lines '[pack.x]' '"pack:y" = {}' '' '[pack.y]' '"pack:x" = {}'; }
+packs_unknown_tool() { packs_lines '[pack.odd]' 'nope = {}'; }
+packs_unknown_pack() { packs_lines '[pack.odd]' '"pack:nope" = {}'; }
+packs_two_lines() { packs_lines '[pack.odd]' 'node = {' '  default = true' '}'; }
+packs_subtable() { packs_lines '[pack.odd.node]' 'default = true'; }
+
+old_format='is the old format - write each member as <tool> = { default = true } or <tool> = {}'
+run_case "[pack.*], the old depends in a pack that is not selected" 2 "$no_tool_values" packs_old_depends \
+  "tools/packs.toml: [pack.odd] depends $old_format"
+run_case "[pack.*], the old required in a pack that is not selected" 2 "$no_tool_values" packs_old_required \
+  "tools/packs.toml: [pack.odd] required $old_format"
+run_case "[pack.*], the old tools in a pack that is not selected" 2 "$no_tool_values" packs_old_tools \
+  "tools/packs.toml: [pack.odd] tools $old_format"
+run_case "[pack.*], the old default list in a pack that is not selected" 2 "$no_tool_values" packs_old_default \
+  "tools/packs.toml: [pack.odd] default $old_format"
+run_case "[pack.*], a key with the old prefix p:" 2 "$no_tool_values" packs_old_prefix \
+  'tools/packs.toml: [pack.odd] "p:x" is the old form - write "pack:x" = { default = true }'
+run_case "[pack.*], an entry key other than default" 2 "$no_tool_values" packs_entry_key \
+  "tools/packs.toml: [pack.odd] node has the entry key 'version' - the only entry key is default"
+run_case "[pack.*], default that is not a boolean" 2 "$no_tool_values" packs_default_string \
+  'tools/packs.toml: [pack.odd] node: default must be true or false, not string'
+run_case "[pack.*], a member that is a string" 2 "$no_tool_values" packs_member_string \
+  'tools/packs.toml: [pack.odd] node must be a table, { default = true } or {}'
+run_case "[pack.*], a loop through {} members in packs that are not selected" 2 "$no_tool_values" packs_empty_loop \
+  'tools/packs.toml: a pack loop: x -> y -> x'
+run_case "[pack.*], an unknown tool in a pack that is not selected" 3 "$no_tool_values" packs_unknown_tool \
+  "tool 'nope' is not in bootstrap (named in pack odd)"
+run_case "[pack.*], an unknown pack in a pack that is not selected" 3 "$no_tool_values" packs_unknown_pack \
+  "pack 'nope' is not in bootstrap (named in pack odd)"
+run_case "[pack.*], a member on two lines" 2 "$no_tool_values" packs_two_lines \
+  'tools/packs.toml: [pack.odd] node must be on one line'
+run_case "[pack.*], a member as its own table" 2 "$no_tool_values" packs_subtable \
+  'tools/packs.toml: [pack.odd] node must be on one line'
+
+# tools_has <tool>: the `tools:` line of the output has the tool.
+tools_has() { grep -F 'repo-sync: tools:' "$log" | grep -qw -- "$1"; }
+tools_lacks() { ! tools_has "$1"; }
+
+# The members of the pack `extra` are outside the pack base and its depends.
+packs_extra() { packs_lines '[pack.extra]' 'java = {}' 'pulumi = { default = true }'; }
+check_extra() {
+  check_that "[packs.extra]: a default member is selected" tools_has pulumi
+  check_that "[packs.extra]: a {} member is not selected" tools_lacks java
+}
+check_extra_tool() {
+  check_that "[packs.extra], [tools.java]: a default member is selected" tools_has pulumi
+  check_that "[packs.extra], [tools.java]: the {} member is selected" tools_has java
+}
+run_case "[packs.extra], a default member and a {} member" 0 'environments = [ "dev" ]
+[packs.extra]' packs_extra '' check_extra
+run_case "[packs.extra] and [tools.java], the {} member" 0 'environments = [ "dev" ]
+[packs.extra]
+[tools.java]' packs_extra '' check_extra_tool
+
+# The scratch pack base without "pack:security", so a scanner comes only from
+# the case.
+base_lacks_security() {
+  grep -vF '"pack:security"' "$clone/tools/packs.toml" > "$tmp/packs.toml"
+  cp -- "$tmp/packs.toml" "$clone/tools/packs.toml"
+}
+packs_outer_empty() {
+  base_lacks_security
+  packs_lines '[pack.outer]' '"pack:security" = {}'
+}
+packs_outer_default() {
+  base_lacks_security
+  packs_lines '[pack.outer]' '"pack:security" = { default = true }'
+}
+check_outer_empty() { check_that "a nested {} pack: its tools are not selected" tools_lacks gitleaks; }
+check_outer_default() { check_that "a nested default pack: its tools are selected" tools_has gitleaks; }
+run_case "a nested pack with {} does not expand" 0 'environments = [ "dev" ]
+[packs.outer]' packs_outer_empty '' check_outer_empty
+run_case "a nested pack with default = true expands" 0 'environments = [ "dev" ]
+[packs.outer]' packs_outer_default '' check_outer_default
+
+# A tool in two selected packs.
+packs_two_with_fixture() {
+  fixture_txt
+  packs_lines '[pack.one]' 'fixture = { default = true }' '' '[pack.two]' 'fixture = { default = true }'
+}
+tools_once() { [[ $(grep -F 'repo-sync: tools:' "$log" | grep -ow -- "$1" | wc -l | tr -d ' ') == 1 ]]; }
+check_two_packs() {
+  check_that "a tool in two selected packs: its file once" log_count "would update $consumer/a.txt" 1
+  check_that "a tool in two selected packs: the tool once" tools_once fixture
+}
+run_case "a tool in two selected packs" 0 'environments = [ "dev" ]
+[packs.one]
+[packs.two]' packs_two_with_fixture '' check_two_packs
+
+# One scanner brings _security_base through its depends, without a pack.
+check_one_scanner() {
+  check_that "[tools.gitleaks], no pack security: a file of _security_base" \
+    log_has "would update $consumer/.config/mise/tasks/code/sec/_default"
+  check_that "[tools.gitleaks], no pack security: no other scanner" tools_lacks grype
+}
+check_no_scanner() { check_that "no scanner, no pack security: no _security_base" tools_lacks _security_base; }
+run_case "[tools.gitleaks], a pack base without the pack security" 0 'environments = [ "dev" ]
+[tools.gitleaks]' base_lacks_security '' check_one_scanner
+run_case "no scanner, a pack base without the pack security" 0 "$no_tool_values" base_lacks_security '' check_no_scanner
+
+# The tool order and the hook order, as at 3b199d2, the commit before the merged
+# packs model. The tools before the security tools and the hooks stay. At that
+# commit _security_base came after the scanners; it now comes before them, as a
+# dependency of each one. It is the only one of the four with [[precommit]], so
+# the hook order does not move.
+order_tools='mise repo-sync git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner'
+order_hooks='repo local
+id git-config
+repo https://github.com/pre-commit/pre-commit-hooks
+id no-commit-to-branch
+repo https://github.com/qoomon/git-conventional-commits
+id conventional-commits
+repo https://github.com/pre-commit/pre-commit-hooks
+id check-added-large-files
+id check-case-conflict
+id check-illegal-windows-names
+id check-executables-have-shebangs
+id check-shebang-scripts-are-executable
+id check-merge-conflict
+id check-symlinks
+id destroyed-symlinks
+id check-json
+id check-toml
+id check-yaml
+id detect-private-key
+id end-of-file-fixer
+id trailing-whitespace
+id mixed-line-ending
+repo local
+id format
+repo local
+id lint
+repo local
+id sec'
+tool_order_is() { grep -qxF "repo-sync: tools: $order_tools" "$log"; }
+hook_order_is() { [[ $(sed -nE 's/^\+ *- (repo|id): /\1 /p' "$log") == "$order_hooks" ]]; }
+check_order() {
+  check_that "the order of the pack base: the tools" tool_order_is
+  check_that "the order of the pack base: the pre-commit hooks" hook_order_is
+}
+run_case "the tool order and the hook order do not change" 0 "$no_tool_values" precommit_file '' check_order
 
 while ((${#case_pids[@]})); do
   collect_case
