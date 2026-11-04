@@ -83,7 +83,9 @@
 # failure, each listed file with the bootstrap header that this run did not
 # handle is removed, with its empty parent folders, then the manifest is
 # written. A file without the header stays. A first sync has no manifest and
-# removes nothing.
+# removes nothing. A manifest that is a link, or that is not a regular file,
+# fails the sync with code 2. A row with an unclean path or a `.git` segment is
+# skipped, and a listed file of another repository stays.
 #
 # One call makes one private copy of the clone of `SYNC_ENGINE_CLONE`, which
 # `setup:configs` gives, and syncs every file of every selected tool from that
@@ -239,8 +241,10 @@
 #      target of format text), `requires_found`, `requires` or `files` in a
 #      `[mise_env.<env>.tools]` entry, a tool folder with both <p> and <p>.tmpl,
 #      a merge source or a live merge target that cannot merge, a merge target
-#      that is a symlink or is below a symlinked folder, no `mise`, or no
-#      `SYNC_ENGINE_CLONE` without `--check`
+#      that is a symlink or is below a symlinked folder, a
+#      `.config/repo-generated.tsv` that is a symlink, is below a symlinked
+#      folder or is not a regular file, no `mise`, or no `SYNC_ENGINE_CLONE`
+#      without `--check`
 #   3  a tool or a pack that is not in bootstrap (fix the values file), or a
 #      member of a pack that is not a tool folder or a pack (fix the packs file)
 #   5  the clone of `SYNC_ENGINE_CLONE` is not usable, or
@@ -2117,21 +2121,20 @@ repo_sync() {
   # Only a sync without a failure removes stale files and writes the manifest,
   # so a failure here leaves the old manifest for the next clean run.
   if ((${#failed[@]} == 0)); then
-    local manifest="${MISE_PROJECT_ROOT}/.config/repo-generated.tsv" old_rows
+    local manifest="${MISE_PROJECT_ROOT}/.config/repo-generated.tsv" old_rows step=.config/repo-generated.tsv
     rc=0
-    old_rows=$(_se_manifest_read "$manifest") || rc=$?
+    old_rows=$(_se_manifest_read repo "$manifest" "$MISE_PROJECT_ROOT") || rc=$?
     if ((rc == 0)); then
+      step="stale files"
       _se_manifest_stale repo "$old_rows" "$_RS_HANDLED" "$MISE_PROJECT_ROOT" "$dry_run" || rc=$?
     fi
-    if ((rc != 0)); then
-      failed+=("stale files")
-      ((rc > worst)) && worst=$rc
-    else
+    if ((rc == 0)); then
+      step=.config/repo-generated.tsv
       _se_manifest_write "$manifest" "$_RS_ROWS" "$dry_run" || rc=$?
-      if ((rc != 0)); then
-        failed+=(".config/repo-generated.tsv")
-        ((rc > worst)) && worst=$rc
-      fi
+    fi
+    if ((rc != 0)); then
+      failed+=("$step")
+      ((rc > worst)) && worst=$rc
     fi
   fi
 

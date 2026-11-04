@@ -66,9 +66,9 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "green",
+      "status": "running",
       "started": "2026-11-04T12:36:37.624Z",
-      "ended": "2026-11-04T12:54:43.917Z",
+      "ended": "",
       "commit": "e2d080d",
       "rounds": 2
     },
@@ -105,14 +105,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T13:29:12.783Z",
       "ended": "",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "fbc87fc",
+        "to": "933eef3"
       }
     },
     {
@@ -174,8 +174,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T13:29:12.751Z",
       "ended": ""
     },
     {
@@ -412,6 +412,34 @@
       "unit": "U2",
       "stage": "edit",
       "text": "R2 rule 3 raised three additions 02-tests.md does not name: a real-run copy of case 6 (D7 no removal), a second-run check in case 7 (D8 writes only on a change), and a mise.ci.toml seed in case 10 (the kept seed of U1) · not looped back to U2, a departure from the wave loop: each traces to a ruling, and taking them out would remove coverage, so the orchestrator kept them; a person may rule them out",
+      "state": "open"
+    },
+    {
+      "id": "G8",
+      "unit": "U3",
+      "stage": "security",
+      "text": "D7 refuses only no-TAB, empty, absolute and .. rows, and D11 does not say how paths compare · the security loop rules that a manifest path is normalized (no . or empty segment) and that a candidate that is the same file as a handled path is spared, which covers case variants",
+      "state": "open"
+    },
+    {
+      "id": "G9",
+      "unit": "U3",
+      "stage": "security",
+      "text": "D7 covers listed paths but not the manifest file itself · the security loop rules that repo mode refuses a manifest that is a symlink or not a regular file",
+      "state": "open"
+    },
+    {
+      "id": "G10",
+      "unit": "U3",
+      "stage": "security",
+      "text": "D7 does not bound a row to its own repository · the security loop rules that a row with a .git segment or below a git submodule or member folder of the run is refused, since each submodule has its own manifest",
+      "state": "open"
+    },
+    {
+      "id": "G11",
+      "unit": "U1",
+      "stage": "security",
+      "text": "U1: the plan does not name the label of a manifest read failure · assumed .config/repo-generated.tsv, not stale files, because the failure is in that file",
       "state": "open"
     }
   ],
