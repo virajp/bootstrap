@@ -144,8 +144,24 @@ Besides the copy of the files, `repo_sync` does these steps:
   continue, and the sync returns code 2.
 - It writes the merge tasks of the branch model that it finds, and removes the
   others. If neither `main` nor `develop` exists, it stops with code 2.
-- It removes each `conf.d/*/mise*.toml` with the bootstrap header that it did
-  not write.
+- After a sync without a failure, it runs the stale rule, then it writes the
+  manifest `.config/repo-generated.tsv`, then it sets `bootstrap_commit`. A sync
+  with a failure runs no stale rule and writes no manifest. A failed stale
+  removal is a failure, and the other rows still run.
+  - The stale rule removes each file with the bootstrap header that the old
+    manifest lists and this run does not write, then its empty parent folders. A
+    file without the header stays. It skips a seed and a merge target of a
+    selected tool. The first sync has no manifest, so it removes nothing.
+  - The manifest has one `<tool><TAB><path>` row for each generated file. The
+    sync skips a row with no TAB, an empty tool or path, an absolute path, or an
+    empty, `.`, `..` or `.git` segment. It does not remove a listed path that is
+    a symlink or is below a symlinked folder, or a listed file of another
+    repository.
+  - A manifest that is a symlink, is below a symlinked folder or is not a
+    regular file is not read. The sync returns code 2 after its other work, and
+    it skips the stale rule, the write of the manifest and `bootstrap_commit`.
+  - A dry run prints `would remove <path>` for each stale file, and
+    `would write .config/repo-generated.tsv` when the content differs.
 - It applies `[overrides]` of the values file to the generated mise config
   and to `.gitignore`. Each overridden line gets an `# override:` comment.
   A bad `[overrides]` stops the sync with code 2. See "Overrides" in step 3
@@ -191,6 +207,7 @@ runs `code:lint:repo-sync` with the staged files.
 | ----------------------------------- | ------------------------------------------------------------------------------------------------ |
 | `.config/bootstrap.toml`            | `repo_sync`. The values file of step 3 of `index.md`. `repo_sync` writes its `bootstrap_commit`. |
 | `.config/repo-sync/pre-commit.yaml` | `.config/pre-commit-config.yaml`. Optional: its own hooks.                                       |
+| `.config/repo-generated.tsv`        | `repo_sync` writes and reads it. Commit it. Do not edit it.                                      |
 
 ## Adapt to the repository
 
@@ -199,5 +216,5 @@ runs `code:lint:repo-sync` with the staged files.
 ## Migration
 
 - Remove `gomplate` from the repository-owned mise files.
-- The general items M1, M15, M23 and M27 of `migrate.md` are about the files
-  of this tool.
+- The general items M1, M15, M23, M27 and M29 of `migrate.md` are about the
+  files of this tool.

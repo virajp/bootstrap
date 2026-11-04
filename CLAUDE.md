@@ -19,8 +19,8 @@ it. These files are for this repository only:
 - At the root: `README.md`, `CLAUDE.md`, `LICENSE`, `dprint.jsonc` (with the
   excludes of this repository) and `eslint.config.mjs`.
 - `sync-engine/`: the shared library folder of the sync, with `clone`,
-  `common`, `write`, `merge`, `select` and `repo-sync`. It is not a tool, so the
-  sync never copies it to a consumer.
+  `common`, `write`, `merge`, `select`, `manifest` and `repo-sync`. It is not a
+  tool, so the sync never copies it to a consumer.
 - `docs/design/`: the design notes of the sync (packs, tools, mise, fnox and
   the values file). `docs/plans/`: the vwf plan index.
 - `.config/mise/tasks/test/repo-sync`: the `test:repo-sync` task. It is not in
@@ -137,15 +137,18 @@ repository, without the `.tmpl` suffix of a template. For example,
     and `items`. It deletes each listed item from the list at `path`, in the
     live target and in the source.
 - When a `requires` or `requires_found` entry is not there, the sync does not
-  write the target. It removes a generated copy with the bootstrap header. A
-  copy without the header, a seed and a merge target stay.
+  write the target, and it logs the skip. A generated target gets no row in
+  `.config/repo-generated.tsv`, so the stale rule removes a listed copy with the
+  bootstrap header (see "How the sync operates"). A copy without the header, a
+  seed and a merge target stay.
 - Merge mode is for a target that an app owns. The source holds only the keys
   that the tool enforces. The sync merges it into the live target, and the
   other keys stay. The format is `json`, `yaml` or `toml`. The order is render,
-  parse check, merge, dprint, compare. A merge target has no header, follows no
-  symlink, is never removed, and keeps the mode of an existing target. A new
-  target takes the mode of its source. `sync-engine/merge` has the merge rules.
-  The JSONC rule does not apply to a merge target. No tool uses merge mode now.
+  parse check, merge, dprint, compare. A merge target has no header, so the
+  stale rule leaves it (see "How the sync operates"). It follows no symlink and
+  keeps the mode of an existing target. A new target takes the mode of its
+  source. `sync-engine/merge` has the merge rules. The JSONC rule does not apply
+  to a merge target. No tool uses merge mode now.
 - These keys are gone, and each stops the sync with code 2 and a message that
   names the new key: the top-level `seed` key, the old table of seed conditions,
   and the `requires` and the `files` of a mise entry.
@@ -193,13 +196,16 @@ Some files refer to files that are not in `tools/`, for example
   member that still has the old sync task. `setup:configs:sync` loads
   `sync-engine/repo-sync` from the copy, so a change to the sync code applies
   in the same run. Without `SYNC_ENGINE_CLONE`, it stops with code 2.
-- `sync-engine/repo-sync` sources four libraries from its own folder.
+- `sync-engine/repo-sync` sources five libraries from its own folder.
   `common` holds the log, the file mode, the clean-up and its traps, the header
   detection, the record of the commit and the tool wrappers. `write` holds the
   write of one target: the format, the parse check, the temp file, the seed
   gate, the unblock of a folder path, the checks of a `[files]` table, and the
   compare, the mode, the dry-run diff and the rename. `merge` holds merge mode.
-  `select` holds the pack expansion and the depends walk.
+  `select` holds the pack expansion and the depends walk. `manifest` holds the
+  read and the write of the manifest and the stale rule. Its `macos` link mode
+  is for the Mac front-end, which is not in this repository yet: it resolves
+  each link, removes the real file and prunes up to the target root.
 - The sync needs `mise`. Without it, `repo_sync` stops with code 2. The
   wrappers `_se_gomplate`, `_se_jq` and `_se_yq` of `common` start gomplate, jq
   and yq from `/`, so no mise config of the repository selects a version. An
@@ -239,17 +245,16 @@ Some files refer to files that are not in `tools/`, for example
   missing values file, a missing `mise`, a target that does not parse, or a bad
   `direct_commit`: see "Branch model in the merge tasks"), for a merge source
   or a live merge target that cannot merge, for a merge target that is a symlink
-  or is below a symlinked folder, for a repository at
-  the cache root with
-  another `origin` or no `origin`, for a `repo/` of the cache that is not a
-  clone and not empty, and for a sync without `SYNC_ENGINE_CLONE`. 3 for a tool
-  or a pack that is not in bootstrap, also a member of a pack. 5 for a clone, a
-  fetch or an `autoupdate`
-  that fails, and for a `SYNC_ENGINE_CLONE` that is not usable. A
-  failure of one file does not stop the other files. The sync returns the
-  highest code of all its failures. `repo_sync --check` returns the highest
-  code of its checks, at most 2. `--check` with `--dry-run` is a usage error,
-  code 2.
+  or is below a symlinked folder, for a `.config/repo-generated.tsv` that is a
+  symlink, is below a symlinked folder or is not a regular file, for a
+  repository at the cache root with another `origin` or no `origin`, for a
+  `repo/` of the cache that is not a clone and not empty, and for a sync without
+  `SYNC_ENGINE_CLONE`. 3 for a tool or a pack that is not in bootstrap, also a
+  member of a pack. 5 for a clone, a fetch or an `autoupdate` that fails, and
+  for a `SYNC_ENGINE_CLONE` that is not usable. A failure of one file does not
+  stop the other files. The sync returns the highest code of all its failures.
+  `repo_sync --check` returns the highest code of its checks, at most 2.
+  `--check` with `--dry-run` is a usage error, code 2.
 - `repo_sync --check` examines only the local rules of the values file: the
   rules that need the values file and the local git repository, for example
   `env`, `environments`, `[member.*]`, the structure of `[overrides]`,
@@ -300,12 +305,46 @@ Some files refer to files that are not in `tools/`, for example
   `[profiles.<name>]` table. A repository with one profile uses its
   `repo_name`. Each `fnox` call passes `-P <name>`.
 - The sync never deletes a file, except the merge tasks of the other branch
-  model (see "Branch model in the merge tasks"), the stale generated mise
-  files (see "mise config"), a synced file at a generated `[files]` target whose
-  `requires` or `requires_found` condition fails (see "Layout rule"), and a
-  synced file at a path where the sync needs a folder. A removal skips a seed
-  and a merge target. `docs/sync/migrate.md` tells consumers what to
-  delete.
+  model (see "Branch model in the merge tasks"), a synced file at a path where
+  the sync needs a folder, and the stale rule: a file with the bootstrap header
+  that `.config/repo-generated.tsv` lists and this run does not write. The first
+  two skip only a seed and a merge target of a selected tool or of a tool in its
+  `depends`. The stale rule skips only a seed and a merge target of a selected
+  tool, so it removes a listed path with the header at a seed or a merge path of
+  a deselected tool. A merge target has no header, so the rule leaves it.
+  `docs/sync/migrate.md` tells consumers what to delete.
+- The manifest `.config/repo-generated.tsv` is committed, and each git submodule
+  has its own. Its first line is
+  `# Written by bootstrap. Do not edit this file.`. Each other line is
+  `<tool><TAB><path>`, sorted, one for each generated file of the run. A seed
+  and a merge target get no row. After a clean run, the order is the stale rule,
+  the write of the manifest, then `bootstrap_commit`. A run with a failure runs
+  no stale rule and writes no manifest. A failed stale removal is a failure, and
+  the other rows still run. The first sync has no manifest, so the stale rule
+  removes nothing. A real run writes the manifest only when its content changes.
+  A dry run prints
+  `would remove <path>` for each stale file, and
+  `would write .config/repo-generated.tsv` when the content differs.
+- The stale rule examines each row of the old manifest whose path this run did
+  not handle. Handled paths are the files of the selected tools that this run
+  wrote or kept (generated, seed or merge), and the merge tasks of the other
+  branch model. A seed or a merge target of a selected tool that the run left in
+  place counts as kept, also one that `requires` or its environment skips. A
+  generated file that `requires` or its environment skips is not handled. The
+  rule removes such a file when it has the bootstrap header, then its empty
+  parent folders. A file without the header always stays.
+- The sync does not trust the manifest. A row with no TAB, an empty tool or
+  path, an absolute path, or an empty, `.`, `..` or `.git` segment is skipped
+  with a log line. A listed path that is a symlink or is below a symlinked
+  folder is not removed. A listed file below a folder with its own `.git` (a git
+  submodule or a nested clone) stays and logs
+  `kept <path> (another repository)`. A folder member without its own `.git` is
+  part of the root tree. A listed path that is the same file as a handled path
+  stays, which covers a case variant. A manifest that is a symlink, is below a
+  symlinked folder or is not a regular file is not read. The sync reads it after
+  the file loop, so the run keeps its writes and its removals of the merge
+  tasks. It logs `FAILED: .config/repo-generated.tsv`, returns code 2, and skips
+  the stale rule, the write of the manifest and `bootstrap_commit`.
 - After a sync without a failure, `repo_sync` sets the top-level
   `bootstrap_commit` of the values file to the full commit of its clone. It
   replaces only that line, or adds it after the header comments. This is the
@@ -347,7 +386,8 @@ Some files refer to files that are not in `tools/`, for example
   `.config/mise/tasks/test/repo-sync`. It runs `repo_sync --dry-run`,
   `repo_sync --check` and, for a case that compares a written file, `repo_sync`
   of the working tree's `tools/` and `sync-engine/` against scratch values files
-  and scratch consumers, and it compares the
+  and scratch consumers. Some cases of the manifest also call
+  `_se_manifest_stale` and `_se_manifest_read` directly. It compares the
   exit code and the message of each case. It needs no network when gomplate,
   jq and yq are installed. Before its
   first `git` call, it unsets the `GIT_*` variables of a git hook, so its
@@ -621,8 +661,9 @@ that it finds, and removes the others. It stops if neither branch exists.
     `requires_found = ["pyproject.toml"]`.
 - The sync skips a shipped `conf.d/*/mise.<env>.toml` of an environment that
   the consumer did not select.
-- The sync removes a `conf.d/*/mise*.toml` with the bootstrap header that
-  it did not write. Thus a removed tool, environment or folder disappears from
+- The stale rule removes a `conf.d/*/mise*.toml` with the bootstrap header that
+  `.config/repo-generated.tsv` lists and this run does not write (see "How the
+  sync operates"). Thus a removed tool, environment or folder disappears from
   consumers.
 - The shell aliases `setup`, `precommit` and `worktrees` come from
   `tools/mise/tools.toml`, and the sync writes them in the generated

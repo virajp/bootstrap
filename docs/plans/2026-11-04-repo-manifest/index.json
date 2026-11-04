@@ -69,7 +69,7 @@
       "status": "green",
       "started": "2026-11-04T12:36:37.624Z",
       "ended": "2026-11-04T13:53:13.743Z",
-      "commit": "15dc67e",
+      "commit": "84f2e82",
       "rounds": 2
     },
     {
@@ -134,11 +134,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T14:17:27.848Z",
+      "ended": "2026-11-04T14:21:43.110Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -180,8 +180,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T14:17:27.812Z",
       "ended": ""
     },
     {
@@ -441,6 +441,20 @@
       "stage": "security",
       "text": "U1: the plan does not name the label of a manifest read failure · assumed .config/repo-generated.tsv, not stale files, because the failure is in that file",
       "state": "open"
+    },
+    {
+      "id": "G12",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "U4: vwf:docs-sync was not invoked as a skill · closed: U4 spawned its surveyor vwf:docs-sync-surveyor directly over fbc87fc..HEAD and applied its findings, plus a grep-and-edit pass; the wave review reads the same delta",
+      "state": "closed"
+    },
+    {
+      "id": "G13",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "U4: the Verification line grep -n _rs_stale CLAUDE.md README.md docs is not recursive · closed: a recursive grep finds _rs_stale only under docs/plans, which U4 does not own",
+      "state": "closed"
     }
   ],
   "overrides": [],

@@ -47,7 +47,8 @@ pack.
 The sync code is in `sync-engine/`: `clone` for the shared cache and the clone,
 `common` for the log, the header detection and the wrappers of gomplate, jq and
 yq, `write` for the write of one file, `merge` for merge mode, `select` for the
-packs and the `depends`, and `repo-sync` for the function `repo_sync`. This
+packs and the `depends`, `manifest` for the manifest and the stale rule, and
+`repo-sync` for the function `repo_sync`. This
 folder is not a tool, so the
 sync does not copy it to a repository.
 
@@ -175,7 +176,8 @@ The other keys of the table are `requires_found`, `format`, `remove` and
    of `[branch.main]` and `[branch.develop]`, and stops with code 2 for a bad
    value.
 6. It copies each file of each tool.
-7. After a sync without a failure, it sets `bootstrap_commit` of the values
+7. After a sync without a failure, it removes each stale file, it writes
+   `.config/repo-generated.tsv`, and it sets `bootstrap_commit` of the values
    file to the commit of its clone. This is its only write to the values
    file. An agent compares the value with `main` to find what changed since
    the last sync.
@@ -206,7 +208,7 @@ These rules apply to each file:
   owns it. A seed with `requires` is written only if each named path exists.
 - A merge target (`mode = "merge"`) is a file that an app owns. Its source holds
   only the keys that the tool enforces, and the sync merges them into the live
-  target. The other keys stay. It has no header, and the sync never removes it.
+  target. The other keys stay. It has no header, so the stale rule leaves it.
   A merge target that is a symlink or is below a symlinked folder stays as it
   is, and the sync returns code 2. No tool uses merge mode now.
 - In `.config/pre-commit-config.yaml`, each hook `rev` becomes the newest tag:
@@ -229,16 +231,25 @@ These rules apply to each file:
   `[overrides.mise.tools.java]` with `version = "21"`. Each overridden line
   gets an `# override: .config/bootstrap.toml` comment.
   `docs/sync/index.md` has the rules.
-- The sync never deletes a file, with four exceptions. The first is the merge
+- The sync never deletes a file, with three exceptions. The first is the merge
   tasks. With `main` and `develop`, the repository gets `code:merge:develop`
   and `code:merge:main`. With only one of them, it gets `code:merge`. The sync
-  removes the merge tasks of the other model. The second is a
-  `.config/mise/conf.d/*/mise*.toml` file with the bootstrap header that the
-  sync did not write. A seed, such as `zz-repo/mise.<env>.toml`, has no header,
-  so the sync keeps it. The third is a file with the bootstrap header at a path
-  where the sync needs a folder. The fourth is a file with the bootstrap header
-  at a generated `[files]` target whose `requires` or `requires_found` condition
-  fails. A removal skips a seed and a merge target.
+  removes the merge tasks of the other model. The second is a file with the
+  bootstrap header at a path where the sync needs a folder. These two skip only
+  a seed and a merge target of a selected tool or of a tool in its `depends`.
+  The third is the stale rule: a file with the bootstrap header that
+  `.config/repo-generated.tsv` lists and this run does not write. The rule skips
+  a seed and a merge target of a selected tool, and it also removes the empty
+  parent folders. A seed, such as `zz-repo/mise.<env>.toml`, and a merge target
+  have no header, so the rule leaves them.
+- `.config/repo-generated.tsv` is the manifest of the generated files, with one
+  `<tool><TAB><path>` row for each file. The repository commits it, and each git
+  submodule has its own. A sync with a failure runs no stale rule and writes no
+  manifest. The first sync has no manifest, so the stale rule removes nothing. A
+  manifest that is a symlink, is below a symlinked folder or is not a regular
+  file is not read. The sync returns code 2 after its other work, and it skips
+  the stale rule, the write of the manifest and `bootstrap_commit`. A dry run
+  prints `would remove <path>` for each stale file.
 
 A repository synced before the split of the base tool (`c95e4ff`) cannot sync.
 Its
@@ -345,10 +356,11 @@ protected branch, the sync removes the hook.
 
 `mise run test:repo-sync` runs `repo_sync --dry-run`, `repo_sync --check` and,
 for a case that compares a written file, `repo_sync` of the working tree's
-`tools/` and `sync-engine/` against scratch values files and scratch consumers,
-and checks the exit code and the message of each case. It needs no network when
-gomplate, jq and yq are installed. No hook runs it: run it by hand before you
-commit a change to `tools/` or `sync-engine/`.
+`tools/` and `sync-engine/` against scratch values files and scratch consumers.
+Some cases of the manifest also call `_se_manifest_stale` and
+`_se_manifest_read` directly. It checks the exit code and the message of each
+case. It needs no network when gomplate, jq and yq are installed. No hook runs
+it: run it by hand before you commit a change to `tools/` or `sync-engine/`.
 
 ## Change a shared file
 

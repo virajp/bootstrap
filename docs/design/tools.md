@@ -48,10 +48,10 @@ symlinked folder fails. A target that fails stops the sync with code 2.
 | `remove_items`   | Only with `merge`. A list of tables with `path` and `items`. It deletes each listed item from that list, in the live target and source. |
 
 When a `requires` or `requires_found` entry is not there, the sync does not
-write
-the target. It removes a generated copy with the bootstrap header. A copy
-without
-the header, a seed and a merge target stay.
+write the target. A generated target gets no row in
+`.config/repo-generated.tsv`, so after a sync without a failure, the stale rule
+removes a listed copy with the bootstrap header. A copy without the header, a
+seed and a merge target stay.
 
 The top-level `seed` key, the old table of seed conditions, and the `requires`
 and the `files` of a mise entry are gone. Each stops the sync with code 2, and
@@ -76,8 +76,8 @@ comment `# Merged by bootstrap: <path>`, and the sync strips nothing.
 - The target path is the path in the repository. A target that is a symlink or
   is
   below a symlinked folder stays as it is, and the sync returns code 2.
-- The sync never removes a merge target. A merge target keeps the mode of an
-  existing target, and a new one takes the mode of its source.
+- A merge target has no header, so the stale rule leaves it. It keeps the mode
+  of an existing target, and a new one takes the mode of its source.
 
 No tool uses merge mode now.
 

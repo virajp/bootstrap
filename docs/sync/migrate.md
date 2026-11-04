@@ -26,14 +26,16 @@ This file is temporary. Remove an item when all repositories have done it.
 | A git submodule without a `[member.<name>]` table                            | M26, before the next sync.                                                                                                                                                                                                                                          |
 | A sync that adds `sync-engine/`                                              | M27, after the sync.                                                                                                                                                                                                                                                |
 | A values file that selects one scanner, or a repository that read `required` | M28. Nothing to do.                                                                                                                                                                                                                                                 |
+| A sync that writes the first `.config/repo-generated.tsv`                    | M29, after the sync.                                                                                                                                                                                                                                                |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
 
 The sync deletes only three kinds of files: the merge tasks of the other
-branch model, a `.config/mise/conf.d/*/mise*.toml` with the bootstrap header
-that it did not write, and a file with the bootstrap header at a path where
-the sync needs a folder. Thus you must delete each other obsolete file and
+branch model, a file with the bootstrap header that
+`.config/repo-generated.tsv` lists and the sync does not write (M29), and a file
+with the bootstrap header at a path where the sync needs a folder. Thus you must
+delete each other obsolete file and
 rename each old task by hand. Do the items that apply to the repository, in
 this sequence. Show the user the list of changes before you make them.
 
@@ -198,10 +200,11 @@ See "Migration" in [`tools/github.md`](tools/github.md) or
 3. Move the seeds of an old `conf.d/_env/` folder to `conf.d/zz-repo/`. The sync
    does not remove them, because a seed has no header.
 
-The next sync removes the old `conf.d/*/mise.toml`, `_env/mise.toml` and
+Delete the old `conf.d/*/mise.toml`, `_env/mise.toml` and
 `_alias/mise.dev.toml` files, and the old `mise*.toml` files of
 `conf.d/_task/`, that have the header of this repository
-(`Synced from repo-config:` or `Synced from bootstrap:`). Delete each other
+(`Synced from repo-config:` or `Synced from bootstrap:`). The sync does not
+remove them, because no manifest lists them (M29). Delete each other
 file of `conf.d/_task/` by hand. `conf.d/pre-commit/` is now the generated
 folder of the `pre-commit` tool, and the sync writes its `mise.dev.toml`.
 
@@ -529,8 +532,10 @@ values file stops the sync with code 2. The shared `.gitignore` still ignores
 
 1. Remove the `[overrides.graphifyignore]` table from `.config/bootstrap.toml`.
 2. Run `mise run setup:configs`. The sync removes
-   `.config/mise/conf.d/claude/mise.<env>.toml`, and the pre-commit config
-   loses the `graphify-refresh` hook.
+   `.config/mise/conf.d/claude/mise.<env>.toml` when
+   `.config/repo-generated.tsv` lists it. Else delete it by hand when it starts
+   with the bootstrap header (M29). The pre-commit config loses the
+   `graphify-refresh` hook.
 3. Delete `.graphifyignore` and `.config/mise/tasks/code/graph` when they
    start with the bootstrap header. A file without the header belongs to the
    repository: keep it.
@@ -630,3 +635,30 @@ the key `required` is gone. `gitleaks`, `grype` and `osv-scanner` now have
 
 Values files do not change. `[packs.<name>]` and `[tools.<name>]` have the same
 form. The consumer does nothing.
+
+## M29: The sync writes `.config/repo-generated.tsv`
+
+The sync now writes a manifest, `.config/repo-generated.tsv`, with one
+`<tool><TAB><path>` row for each generated file. From then on, after a sync
+without a failure, the sync removes each listed file with the bootstrap header
+that it does not write again, then the empty parent folders. A file without the
+header stays.
+
+The first sync has no manifest, so the stale rule removes nothing. A file that
+no manifest lists stays also after that sync. Thus delete the old leftovers by
+hand, as before.
+
+1. Run `mise run setup:configs`. Commit `.config/repo-generated.tsv` with the
+   other files. Each git submodule has its own manifest: commit it in the
+   submodule.
+2. Delete each of these files that starts with the bootstrap header and that the
+   manifest does not list. A file without the header belongs to the repository:
+   keep it.
+   - A `.config/mise/conf.d/*/mise*.toml`.
+   - A generated `[files]` target whose `requires` or `requires_found` condition
+     fails.
+3. If the sync returns code 2 and names `.config/repo-generated.tsv`, that path
+   is a symlink, is below a symlinked folder or is not a regular file. The sync
+   wrote the other files, and it skipped the stale rule, the manifest and
+   `bootstrap_commit`. Replace the path with a regular file, or delete it. Then
+   run the sync again.
