@@ -86,9 +86,9 @@
       "title": "One packs model",
       "target_repo": null,
       "priority": 40,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-04T09:12:24.393Z",
-      "ended": "",
+      "ended": "2026-11-04T12:31:36.880Z",
       "gaps": null,
       "requires": [
         "2026-11-04-repo-files-table"
