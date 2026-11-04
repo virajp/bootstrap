@@ -66,8 +66,8 @@
       "title": "[files] tables and merge mode for repo tools",
       "target_repo": null,
       "priority": 30,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-04T06:17:19.956Z",
       "ended": "",
       "gaps": null,
       "requires": [
