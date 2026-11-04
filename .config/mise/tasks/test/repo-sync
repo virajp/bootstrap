@@ -1124,10 +1124,51 @@ name="setup:configs, an old clone at the cache root"
 new_cache old-layout
 mkdir -p -- "$cache"
 _git init --quiet "$cache"
+_git -C "$cache" remote add origin "file://$tmp/remote"
 got=0
 run_configs "file://$tmp/remote" || got=$?
 check_configs "$name" 0 "$got" "$commit"
 check_paths "$name" -n "$cache/.git" -e "$cache/repo/.git"
+
+# Any other repository at the cache root stays.
+name="setup:configs, another origin at the cache root stops with 2"
+new_cache other-root-origin
+mkdir -p -- "$cache"
+_git init --quiet "$cache"
+_git -C "$cache" remote add origin "file://$tmp/remote2"
+: > "$cache/file"
+got=0
+run_configs "file://$tmp/remote" || got=$?
+check_configs "$name" 2 "$got"
+check_paths "$name" -e "$cache/.git" -e "$cache/file" -n "$cache/repo" -n "$tmp/synced"
+check_configs_log "$name" -h 'is a git repository with the origin'
+
+name="setup:configs, no origin at the cache root stops with 2"
+new_cache no-root-origin
+mkdir -p -- "$cache"
+_git init --quiet "$cache"
+: > "$cache/file"
+got=0
+run_configs "file://$tmp/remote" || got=$?
+check_configs "$name" 2 "$got"
+check_paths "$name" -e "$cache/.git" -e "$cache/file" -n "$cache/repo" -n "$tmp/synced"
+check_configs_log "$name" -h 'is a git repository with the origin'
+
+# The compare of the origins drops the scheme, so the fetch must use the URL: a
+# fetch from this origin fails.
+name="setup:configs, another scheme of the origin fetches from the URL"
+new_cache other-scheme
+new_remote "$tmp/remote3"
+got=0
+run_configs "file://$tmp/remote3" || got=$?
+check_configs "$name, the first run" 0 "$got" "$(git -C "$tmp/remote3" rev-parse HEAD)"
+_git -C "$cache/repo" remote set-url origin "bogus://$tmp/remote3"
+_git -C "$tmp/remote3" commit --quiet --no-verify --allow-empty -m "second"
+got=0
+run_configs "file://$tmp/remote3" || got=$?
+check_configs "$name, the second run" 0 "$got" "$(git -C "$tmp/remote3" rev-parse HEAD)"
+check_configs_log "$name" -h 'Updating the clone'
+check_configs_log "$name" -l 'Cloning into'
 
 # The gate code:lint:repo-sync. It finds gomplate with `mise x`, so it starts in
 # this repository, and then it does a cd to its own MISE_PROJECT_ROOT.
@@ -1160,12 +1201,30 @@ fi
 
 mkdir -p -- "$gate_cache/repo/sync-engine"
 cp -- "$root/sync-engine/repo-sync" "$gate_cache/repo/sync-engine/repo-sync"
+_git init --quiet "$gate_cache/repo"
+_git -C "$gate_cache/repo" remote add origin https://github.com/virajp/bootstrap.git
 got=0
 run_gate || got=$?
 if [[ $got == 0 ]] && grep -qF 'valid (local rules)' "$log"; then
   print_success "the gate with a cache: exit 0, valid"
 else
   print_error "the gate with a cache: exit $got, or no valid line"
+  sed 's/^/    /' "$log" >&2
+  failures=$((failures + 1))
+fi
+
+# A library that leaves a mark when the gate sources it.
+gate_cache="$tmp/gate-cache-other"
+mkdir -p -- "$gate_cache/repo/sync-engine"
+printf ': > %q\n' "$tmp/gate-sourced" > "$gate_cache/repo/sync-engine/repo-sync"
+_git init --quiet "$gate_cache/repo"
+_git -C "$gate_cache/repo" remote add origin https://github.com/virajp/other.git
+got=0
+run_gate || got=$?
+if [[ $got == 0 && ! -s $log && ! -e $tmp/gate-sourced ]]; then
+  print_success "the gate with another origin: exit 0, no output, not sourced"
+else
+  print_error "the gate with another origin: exit $got, or an output, or the library was sourced"
   sed 's/^/    /' "$log" >&2
   failures=$((failures + 1))
 fi

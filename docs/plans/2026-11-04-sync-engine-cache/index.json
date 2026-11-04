@@ -66,10 +66,10 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-04T03:41:51.427Z",
-      "ended": "",
-      "commit": "4bfc4ef",
+      "ended": "2026-11-04T04:24:25.629Z",
+      "commit": "dae9d8c",
       "rounds": 2
     },
     {
@@ -109,9 +109,9 @@
       "waits": "Its cases run the output of U1 (sync-engine/clone, the stub template, the sync task, the gate) and of U2 (sync-engine/repo-sync, the forwarding file).",
       "status": "green",
       "started": "2026-11-04T03:50:30.627Z",
-      "ended": "2026-11-04T03:57:36.100Z",
+      "ended": "2026-11-04T04:27:36.354Z",
       "commit": "d2cbc57",
-      "rounds": 1
+      "rounds": 2
     },
     {
       "id": "U4",
@@ -516,6 +516,13 @@
       "unit": "U1",
       "stage": "security",
       "text": "U1: in an unrelated repository used as SYNC_ENGINE_CACHE, the lock step can remove an existing lock/ folder older than one minute with no pid, and a repo/ subfolder with another origin is deleted and cloned again · left as the plan rules",
+      "state": "open"
+    },
+    {
+      "id": "G13",
+      "unit": "U3",
+      "stage": "security",
+      "text": "U3: the gate's rule for a cache with no .git, and a .git file at the cache root, have no case of their own · left without a case; they were checked by hand in the U1 fix",
       "state": "open"
     }
   ],
