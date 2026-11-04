@@ -6,7 +6,8 @@
 # after `common`.
 #
 # It gives _se_format, _se_parse_check, _SE_TMP, _se_tmp, _se_seed_kept,
-# _se_unblock and _se_finish.
+# _se_unblock, _se_finish, and the checks of a `[files]` table of a tools.toml:
+# _se_files_key_ok, _se_files_check_shape and _se_files_check_mode.
 
 # Print the format of the target <target>, whose content is in <file>: json,
 # yaml, toml or text. A given <format> wins. Else the extension of <target>
@@ -70,14 +71,16 @@ _se_tmp() {
 _se_seed_kept() { [[ -e $1 ]]; }
 
 # Remove each synced file (with the header) that is at the place of a folder in
-# <dir> or above it, up to <root>. Returns 1, after a message, when such a file
-# is the repo's own.
+# <dir> or above it, up to <root>. <spare> lists the paths, relative to <root>,
+# one per line, that the sync must not remove: the seeds and the merge targets.
+# Returns 1, after a message, when such a file is the repo's own or is in
+# <spare>.
 _se_unblock() {
-  local dir=$1 root=$2 dry_run=$3 show
+  local dir=$1 root=$2 dry_run=$3 spare=${4:-} show
   while [[ $dir == "$root"/* ]]; do
     if [[ -f $dir && ! -L $dir ]]; then
       show=$(_se_path "$dir")
-      if ! _se_has_header "$dir"; then
+      if ! _se_has_header "$dir" || [[ $'\n'$spare$'\n' == *$'\n'"${dir#"$root"/}"$'\n'* ]]; then
         _se_log "$show is a file of this repo, but the sync needs a folder there - move it"
         return 1
       fi
@@ -129,4 +132,61 @@ _se_finish() {
     return 1
   }
   _se_log "updated    $show"
+}
+
+# 0 when <key> is a key of a `[files."<target>"]` table.
+_se_files_key_ok() {
+  case $1 in
+    mode | requires | requires_found | format | remove | remove_items) return 0 ;;
+  esac
+  return 1
+}
+
+# Examine the JSON value <json> of the key <key>, `remove` or `remove_items`, of
+# the `[files."<target>"]` table of <tool>. Returns 2, after a message, for a
+# bad shape: `remove` is a list of non-empty lists of strings, and
+# `remove_items` a list of tables, each with exactly `path`, a non-empty list of
+# strings, and `items`, a list.
+_se_files_check_shape() {
+  local tool=$1 target=$2 key=$3 json=$4 filter text
+  if [[ $key == remove ]]; then
+    filter='type == "array" and all(.[]; type == "array" and length > 0 and all(.[]; type == "string"))'
+    text='remove must be a list of key paths, each a non-empty list of strings'
+  else
+    filter='def path_ok: type == "array" and length > 0 and all(.[]; type == "string");
+      type == "array" and all(.[]; type == "object" and length == 2 and (.path | path_ok) and (.items | type == "array"))'
+    text='remove_items must be a list of tables, each with exactly path (a non-empty list of strings) and items (a list)'
+  fi
+  _se_jq -ne --argjson v "$json" "\$v | $filter" > /dev/null 2>&1 && return 0
+  _se_log "$tool/tools.toml: [files.\"$target\"] $text"
+  return 2
+}
+
+# Examine the mode <mode> (empty: generated) of the `[files."<target>"]` table
+# of <tool>, with the key `format` <format> (can be empty), and whether the
+# table has `remove` <has_remove> and `remove_items` <has_items> (1 or 0).
+# Returns 2, after a message for each problem. The format of a merge target is
+# its `format` key, else its extension.
+_se_files_check_mode() {
+  local tool=$1 target=$2 mode=$3 format=$4 has_remove=$5 has_items=$6 rc=0
+  local prefix="$tool/tools.toml: [files.\"$target\"]"
+  if [[ $mode == merge ]]; then
+    case $(_se_format "$target" /dev/null "$format") in
+      json | yaml | toml) ;;
+      *)
+        _se_log "$prefix mode = \"merge\" needs a json, yaml or toml target"
+        rc=2
+        ;;
+    esac
+    return "$rc"
+  fi
+  if ((has_remove)); then
+    _se_log "$prefix remove works only with mode = \"merge\""
+    rc=2
+  fi
+  if ((has_items)); then
+    _se_log "$prefix remove_items works only with mode = \"merge\""
+    rc=2
+  fi
+  return "$rc"
 }
