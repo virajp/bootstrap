@@ -34,11 +34,17 @@ else
   [[ -f .config/bootstrap.toml ]] || exit 0
 fi
 
+# Without the shared cache, the gate does not apply and prints nothing.
+lib="${SYNC_ENGINE_CACHE:-${XDG_CACHE_HOME:-${HOME}/.cache}/sync-engine}/repo/sync-engine/repo-sync"
+[[ -f ${lib} ]] || exit 0
+
 print_header "Validating .config/bootstrap.toml ..."
 
-# The check needs no clone: it reads only the values file and the local git
-# repository, so the local copy of the sync code runs.
-unset REPO_SYNC_CLONE
+# The check needs no clone of its own: it reads only the values file and the
+# local git repository. The gate reads the sync code of the shared cache without
+# its lock, and it never clones. A fetch at the same time is rare, and the next
+# commit runs the gate again.
+unset SYNC_ENGINE_CLONE REPO_SYNC_CLONE
 # shellcheck source=/dev/null
-source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/repo-sync"
+source "${lib}"
 repo_sync --check

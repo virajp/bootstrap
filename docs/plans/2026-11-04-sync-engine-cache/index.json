@@ -8,8 +8,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-04T03:41Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -66,11 +66,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T03:41:51.427Z",
+      "ended": "2026-11-04T03:46:11.867Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -86,11 +86,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T03:41:51.468Z",
+      "ended": "2026-11-04T03:46:11.985Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -185,8 +185,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T03:41:51.386Z",
       "ended": ""
     },
     {
@@ -433,7 +433,57 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "",
+      "stage": "claim",
+      "text": "The claim commit of the plan-index contract is a direct commit on main, and the no-commit-to-branch hook of this repository refuses it · closed: the claim landed from a local branch through mise run code:merge, the route CLAUDE.md gives, with no hook skipped; the completion commit takes the same route",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "",
+      "stage": "worktree",
+      "text": "Setup step 1 cuts .worktrees/sync-engine-cache, but a PreToolUse hook confines Edit and Write of this session to its own worktree, and both units stopped at it · closed: the cut worktree held no work and was removed; the run works in the session worktree .claude/worktrees/bootstrap-2-0-3ae4b9 on its branch claude/bootstrap-2-0-3ae4b9 (git-workflow Step 1: already in a linked worktree), with run.worktree updated; the hook was not bypassed",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the unit file has no message for a failed reset or clean in _se_fetch · exit 5 with Cannot update the clone in <repo> - nothing synced",
+      "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the unit file does not say what to do when the rm of the old cache fails · the run says nothing and goes on, because the ruling says only that it is not an error",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: Verification says the rendered stub has _se_fetch once, and it has one definition and one call · read as one definition",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the unit file does not say what _se_legacy_cleanup says when only the old lock existed · the same Removed the old cache <base>/bootstrap line",
+      "state": "open"
+    },
+    {
+      "id": "G7",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2: Verification says grep -c Synced from bootstrap sync-engine/repo-sync is 0, and it is 1 because of the code string that writes the header of generated mise files · read as the file's own header, which is gone; the string stays",
+      "state": "open"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",
