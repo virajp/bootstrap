@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-04T15:01:50Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -68,11 +68,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T15:02:12.676Z",
+      "ended": "2026-11-04T15:06:05.954Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -86,11 +86,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T15:02:12.753Z",
+      "ended": "2026-11-04T15:06:06.063Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -185,8 +185,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T15:02:12.640Z",
       "ended": ""
     },
     {
@@ -344,7 +344,43 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "",
+      "stage": "claim",
+      "text": "The claim commit of the plan-index contract is a direct commit on main, and the no-commit-to-branch hook of this repository refuses it · closed: the claim landed from the local branch claim-repo-layout through mise run code:merge, the route CLAUDE.md gives, with no hook skipped; the completion commit takes the same route. The first claim commit carried the row alone, because a plan.mjs set of run took the wrong argument order; a second claim commit carried run",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "",
+      "stage": "worktree",
+      "text": "Setup step 1 names a worktree .worktrees/repo-layout, but this session already runs in a linked worktree · closed: per git-workflow Step 1 the run works in the session worktree .claude/worktrees/bootstrap-2-0-3ae4b9 on its branch claude/bootstrap-2-0-3ae4b9, brought to the tip of main after the claim; run.worktree names it",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "",
+      "stage": "doctor",
+      "text": "The repo has no .config/vwf.yaml, so it is not onboarded, doctor has nothing to check and no blocking finding can arise · closed: not a blocking finding; the plan has no code unit, no covers and names no project, and the review cap stays its default of 4",
+      "state": "closed"
+    },
+    {
+      "id": "G4",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2: the Verification lists no test:repo-sync, and it needs the edits of U3 · assumed a scratch smoke test is enough for this unit: a scratch clone of repo/ with this engine gave rc 0 on dry run and real run, with the repo/tools headers",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2: until U3 lands, the expected texts of test:repo-sync that name tools/<tool>/... or tools/packs.toml do not match · assumed U3 changes them, including tools/node needs tools/pulumi, which becomes repo/tools/node needs repo/tools/pulumi",
+      "state": "open"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",
