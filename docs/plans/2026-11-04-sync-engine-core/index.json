@@ -66,7 +66,7 @@
       "status": "green",
       "started": "2026-11-04T04:57:29.540Z",
       "ended": "2026-11-04T05:20:08.383Z",
-      "commit": "d1e3de8",
+      "commit": "dd24492",
       "rounds": 2
     },
     {
@@ -85,9 +85,9 @@
       "waits": "Its cases run the libraries that U1 creates and the repo-sync front-end that U1 changes.",
       "status": "green",
       "started": "2026-11-04T05:20:51.248Z",
-      "ended": "2026-11-04T05:28:24.801Z",
-      "commit": "be8267d",
-      "rounds": 1
+      "ended": "2026-11-04T05:49:03.960Z",
+      "commit": "b573641",
+      "rounds": 2
     },
     {
       "id": "U3",
@@ -102,14 +102,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T05:32:39.100Z",
+      "ended": "2026-11-04T05:57:36.095Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 2,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "51bb003",
+        "to": "b573641"
       }
     },
     {
@@ -171,9 +171,9 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T05:32:39.036Z",
+      "ended": "2026-11-04T05:57:49.658Z"
     },
     {
       "id": "W4",
@@ -376,28 +376,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T05:57:49.909Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T05:57:49.721Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T05:57:49.814Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T05:57:50.005Z"
     }
   },
   "gaps": [
@@ -455,6 +455,13 @@
       "unit": "U4",
       "stage": "edit",
       "text": "R1 finding README.md:47: the list of the sync code in sync-engine/ is falsified by the three new libraries, and U1 did not report it · closed: handed to U4, which owns README.md under S1, as a DOCS FALSIFIED line",
+      "state": "closed"
+    },
+    {
+      "id": "G9",
+      "unit": "U3",
+      "stage": "security",
+      "text": "01-engine.md line 125 and D10 give an unanchored header regex for the check that authorizes a deletion, and 02-tests.md has no case for a repo-owned file that only mentions the text · closed: U3 round 1 fix, the regex anchors the text to the start of a comment line and accepts a lone <!-- block, and U2 adds the cases",
       "state": "closed"
     }
   ],
