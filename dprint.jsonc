@@ -5,6 +5,6 @@
   "excludes": [
     // The member order of the packs is the sync order, and the TOML plugin
     // sorts keys.
-    "tools/packs.toml",
+    "repo/packs.toml",
   ],
 }

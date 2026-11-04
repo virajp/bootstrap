@@ -35,14 +35,14 @@ then keeps the repository equal to `bootstrap`, without an agent.
 
 ## Files in this folder
 
-| File              | Use                                                                                                                                          |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `index.md`        | This file: the general steps of an adoption.                                                                                                 |
-| `migrate.md`      | The items for a repository that has older copies, or the old name.                                                                           |
-| `kotlin-dsl.md`   | A static prompt that migrates a Gradle build from the Groovy DSL to the Kotlin DSL.                                                          |
-| `tools/<tool>.md` | One file for each folder in `tools/`: when the tool is relevant, and usage.                                                                  |
-| `packs/<pack>.md` | One file for each pack of `tools/packs.toml`: the tools that it adds, and its questions.                                                     |
-| `vwf.md`          | The entry point for the vwf and stackgen plugins: the `adopt`, `add tools`, `remove tools`, `add plugins` and `remove plugins` instructions. |
+| File                | Use                                                                                                                                          |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.md`          | This file: the general steps of an adoption.                                                                                                 |
+| `migrate.md`        | The items for a repository that has older copies, or the old name.                                                                           |
+| `kotlin-dsl.md`     | A static prompt that migrates a Gradle build from the Groovy DSL to the Kotlin DSL.                                                          |
+| `./tools/<tool>.md` | One file for each folder in `repo/tools/`: when the tool is relevant, and usage.                                                             |
+| `packs/<pack>.md`   | One file for each pack of `repo/packs.toml`: the tools that it adds, and its questions.                                                      |
+| `vwf.md`            | The entry point for the vwf and stackgen plugins: the `adopt`, `add tools`, `remove tools`, `add plugins` and `remove plugins` instructions. |
 
 The tool files in `tools/` are `_security_base.md`, `android.md`, `bun.md`,
 `claude-tool.md`, `cloudflare.md`, `docker.md`, `doppler.md`, `dprint.md`,
@@ -67,8 +67,8 @@ The pack files in `packs/` are `base.md` and `security.md`.
   read its tool file. Examine the repository for the signs in "When the tool
   is relevant", then show the user the result.
 - The shared files are grouped by tool. Each tool is a folder
-  `tools/<tool>/` in `bootstrap`. A file at `tools/<tool>/<path>` goes to
-  `<path>` in the consumer repository.
+  `repo/tools/<tool>/` in `bootstrap`. A file at `repo/tools/<tool>/<path>` goes
+  to `<path>` in the consumer repository.
   A tool folder must not be `zz-repo`, and its name must not sort after
   `zz-repo` in byte order. If it does, the sync stops with code 2.
 - The values file `.config/bootstrap.toml` lists the tools and the packs of
@@ -138,17 +138,17 @@ The tools and the values of each repository can be different. For each
 repository, show the answers of the repositories before it as the defaults.
 Each repository of a product has the same `product_name`.
 
-`examples/` of `bootstrap` has one folder for each shape. Use the folder of
+`repo/examples/` of `bootstrap` has one folder for each shape. Use the folder of
 the shape of the product as the model of each values file:
 
-| Shape                                                  | Example                      |
-| ------------------------------------------------------ | ---------------------------- |
-| One repository, with `main` and `develop`              | `examples/polyrepo/`         |
-| One repository, with `main` only                       | `examples/polyrepo-main/`    |
-| One repository, with `develop` only                    | `examples/polyrepo-develop/` |
-| One repository, with member folders                    | `examples/monorepo/`         |
-| A base repository with git submodules                  | `examples/repo-submodules/`  |
-| A base repository with sibling repositories next to it | `examples/repo-siblings/`    |
+| Shape                                                  | Example                           |
+| ------------------------------------------------------ | --------------------------------- |
+| One repository, with `main` and `develop`              | `repo/examples/polyrepo/`         |
+| One repository, with `main` only                       | `repo/examples/polyrepo-main/`    |
+| One repository, with `develop` only                    | `repo/examples/polyrepo-develop/` |
+| One repository, with member folders                    | `repo/examples/monorepo/`         |
+| A base repository with git submodules                  | `repo/examples/repo-submodules/`  |
+| A base repository with sibling repositories next to it | `repo/examples/repo-siblings/`    |
 
 ### Git submodules
 
@@ -202,11 +202,11 @@ change a file.
    each sync without a failure.
 3. Use `bootstrap_commit` to select the checks of step 4:
 
-   | `bootstrap_commit` | The checks of the kind `bootstrap`                                                                                              | The checks of the kind `repository` |
-   | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-   | The same as `main` | Skip them. The shared files are current.                                                                                        | Do them.                            |
-   | Older than `main`  | Do them only for the tools and the migrate items that changed: `git -C "$tmp" log --oneline <commit>..HEAD -- tools docs/sync`. | Do them.                            |
-   | Missing or empty   | Do them all.                                                                                                                    | Do them.                            |
+   | `bootstrap_commit` | The checks of the kind `bootstrap`                                                                                                   | The checks of the kind `repository` |
+   | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
+   | The same as `main` | Skip them. The shared files are current.                                                                                             | Do them.                            |
+   | Older than `main`  | Do them only for the tools and the migrate items that changed: `git -C "$tmp" log --oneline <commit>..HEAD -- tools repo docs/sync`. | Do them.                            |
+   | Missing or empty   | Do them all.                                                                                                                         | Do them.                            |
 
    The checks of the kind `repository` are always necessary: the repository
    can change also when `bootstrap` does not, for example with a new
@@ -252,7 +252,7 @@ The sync removes these old paths itself, so they need no step:
   old `code/format`, `code/lint`, `code/sec` and `setup/configs` files.
 - The merge tasks of the other branch model.
 
-When a change removes a shipped file from `tools/`, add its path to this
+When a change removes a shipped file from `repo/tools/`, add its path to this
 table and to an item of `migrate.md`.
 
 ## Step 1: Select the tools and the packs
@@ -266,7 +266,7 @@ tmp=$(mktemp -d)
 git clone --quiet --filter=blob:none git@github.com:virajp/bootstrap.git "$tmp"
 ```
 
-Read `"$tmp"/tools/*/tools.toml`, `"$tmp"/tools/packs.toml`,
+Read `"$tmp"/repo/tools/*/tools.toml`, `"$tmp"/repo/packs.toml`,
 `"$tmp"/docs/sync/tools/<tool>.md` and `"$tmp"/docs/sync/packs/<pack>.md`.
 Examine the repository for the signs in "When the tool is relevant" of each
 tool file. Show the user each tool and each pack with its description and the
@@ -281,7 +281,7 @@ not list it. Its tools are `mise`, `repo-sync`, `git`, `pre-commit`, `dprint`,
 For each selected tool, and each tool of the `base` pack, do the items in
 "Adapt to the repository" of its tool file.
 
-A pack is a `[pack.<name>]` table of `tools/packs.toml`. Each key is a member:
+A pack is a `[pack.<name>]` table of `repo/packs.toml`. Each key is a member:
 `<tool> = { default = true }` or `<tool> = {}`, or a pack with the prefix
 `pack:`, for example `"pack:security" = { default = true }`. `[packs.<name>]`
 adds each `default = true` member. A member with `{}` arrives only with
@@ -391,18 +391,17 @@ For an update, skip this step when `.config/mise/tasks/setup/configs/_default`
 and `.config/mise/tasks/setup/configs/sync` exist and have the bootstrap
 header. Then `setup:configs` loads the sync code from its own clone.
 
-Copy these four files from the clone into the repository: the forwarding file
-`repo-sync` and the `setup:configs` tasks of the `repo-sync` tool, and
-`helpers` of the `mise` tool. An old `.config/mise/tasks/setup/configs` is a
-file, and
+Copy these three files from the clone into the repository: the `setup:configs`
+tasks of the `repo-sync` tool, and `helpers` of the `mise` tool. An old
+`.config/mise/tasks/setup/configs` is a file, and
 `setup/configs/` is now a folder: delete the old file first.
 
 ```bash
-sync="$tmp/tools/repo-sync/.config/mise/tasks"
-lib="$tmp/tools/mise/.config/mise/tasks"
+sync="$tmp/repo/tools/repo-sync/.config/mise/tasks"
+lib="$tmp/repo/tools/mise/.config/mise/tasks"
 rm -f .config/mise/tasks/setup/configs
 mkdir -p .config/mise/tasks/_scripts .config/mise/tasks/setup/configs
-cp "$sync/_scripts/repo-sync" "$lib/_scripts/helpers" .config/mise/tasks/_scripts/
+cp "$lib/_scripts/helpers" .config/mise/tasks/_scripts/
 cp "$sync/setup/configs/sync" .config/mise/tasks/setup/configs/
 printf '{"members":[],"sync_engine":"%s/sync-engine"}\n' "$tmp" > "$tmp/context.json"
 mise x gomplate@latest -- gomplate --left-delim '<%' --right-delim '%>' \
@@ -446,7 +445,7 @@ show that the values file is correct. A dry run makes the clone.
    | `[overrides.gitignore]`  | The lines of the existing `.gitignore` that the shared one does not have.                                           |
    | `[claude.plugins.*]`     | The plugins of `.claude/settings.json` (project scope).                                                             |
 
-2. Use the example of `examples/` with the shape of the repository as the
+2. Use the example of `repo/examples/` with the shape of the repository as the
    model (see "A product with more than one repository").
 3. Show the user the full draft of `.config/bootstrap.toml`. Ask whether the
    user wants to change a value.
@@ -524,8 +523,8 @@ name in the repository. If not, the render fails.
 ### Overrides
 
 `[overrides]` replaces a default of a tool. The path after `overrides.` is the
-path in `tools/<tool>/tools.toml`, without the tool name. The sync applies the
-override to each selected tool that has a value at that path.
+path in `repo/tools/<tool>/tools.toml`, without the tool name. The sync applies
+the override to each selected tool that has a value at that path.
 
 ```toml
 # Java 21, not lts, in all environments.
@@ -691,7 +690,7 @@ If `repo_sync` fails, read the exit code:
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 2    | The old list format, a bad `[tools.*]` or `[packs.*]` entry, a bad `env` (also an `env` without `dev`) or `environments`, a bad `[overrides]`, a root-only tool in a submodule, or a template that cannot render                                                                                         | Correct the values file                                                                                                                                                                          |
 | 2    | A tool in an environment that one of its mise tools does not allow                                                                                                                                                                                                                                       | Correct the `env`, or tell the `bootstrap` owner                                                                                                                                                 |
-| 2    | A pack loop, a pack name that is also a tool folder, or an old key or a bad member of `tools/packs.toml`                                                                                                                                                                                                 | Tell the `bootstrap` owner                                                                                                                                                                       |
+| 2    | A pack loop, a pack name that is also a tool folder, or an old key or a bad member of `repo/packs.toml`                                                                                                                                                                                                  | Tell the `bootstrap` owner                                                                                                                                                                       |
 | 2    | A `default_envs` without `dev`, or a tool folder that is `zz-repo` or that sorts after `zz-repo`                                                                                                                                                                                                         | Tell the `bootstrap` owner                                                                                                                                                                       |
 | 2    | Two tools define the same mise tool, a mise `depends` that no tool defines, a tool that ships and generates the same `conf.d` file, an unsupported `[mise.*]` or `[mise_env.*]` section, an old key or a bad `[files]` table of a `tools.toml`, or a `default_envs` or `envs` name that is not dev or ci | Tell the `bootstrap` owner                                                                                                                                                                       |
 | 2    | A merge source or a live merge target cannot merge, or a merge target is a symlink or is below a symlinked folder. The existing file stays, and the other files continue                                                                                                                                 | Read the `repo-sync:` line. Correct the live file or the symlink, or tell the `bootstrap` owner                                                                                                  |

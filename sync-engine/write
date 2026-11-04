@@ -143,12 +143,12 @@ _se_files_key_ok() {
 }
 
 # Examine the JSON value <json> of the key <key>, `remove` or `remove_items`, of
-# the `[files."<target>"]` table of <tool>. Returns 2, after a message, for a
-# bad shape: `remove` is a list of non-empty lists of strings, and
-# `remove_items` a list of tables, each with exactly `path`, a non-empty list of
-# strings, and `items`, a list.
+# the `[files."<target>"]` table of the tools.toml <manifest>, the path that the
+# message names. Returns 2, after a message, for a bad shape: `remove` is a list
+# of non-empty lists of strings, and `remove_items` a list of tables, each with
+# exactly `path`, a non-empty list of strings, and `items`, a list.
 _se_files_check_shape() {
-  local tool=$1 target=$2 key=$3 json=$4 filter text
+  local manifest=$1 target=$2 key=$3 json=$4 filter text
   if [[ $key == remove ]]; then
     filter='type == "array" and all(.[]; type == "array" and length > 0 and all(.[]; type == "string"))'
     text='remove must be a list of key paths, each a non-empty list of strings'
@@ -158,18 +158,19 @@ _se_files_check_shape() {
     text='remove_items must be a list of tables, each with exactly path (a non-empty list of strings) and items (a list)'
   fi
   _se_jq -ne --argjson v "$json" "\$v | $filter" > /dev/null 2>&1 && return 0
-  _se_log "$tool/tools.toml: [files.\"$target\"] $text"
+  _se_log "$manifest: [files.\"$target\"] $text"
   return 2
 }
 
 # Examine the mode <mode> (empty: generated) of the `[files."<target>"]` table
-# of <tool>, with the key `format` <format> (can be empty), and whether the
-# table has `remove` <has_remove> and `remove_items` <has_items> (1 or 0).
+# of the tools.toml <manifest>, the path that the message names, with the key
+# `format` <format> (can be empty), and whether the table has `remove`
+# <has_remove> and `remove_items` <has_items> (1 or 0).
 # Returns 2, after a message for each problem. The format of a merge target is
 # its `format` key, else its extension.
 _se_files_check_mode() {
-  local tool=$1 target=$2 mode=$3 format=$4 has_remove=$5 has_items=$6 rc=0
-  local prefix="$tool/tools.toml: [files.\"$target\"]"
+  local manifest=$1 target=$2 mode=$3 format=$4 has_remove=$5 has_items=$6 rc=0
+  local prefix="$manifest: [files.\"$target\"]"
   if [[ $mode == merge ]]; then
     case $(_se_format "$target" /dev/null "$format") in
       json | yaml | toml) ;;

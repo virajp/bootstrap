@@ -25,14 +25,14 @@ The plugin never edits `.config/bootstrap.toml` itself. The agent that reads
 this file does.
 
 In this file, "the clone" is that temporary directory. Each path in
-`docs/sync/` and `tools/` is a path in the clone.
+`docs/sync/` and `repo/` is a path in the clone.
 
 ## Instructions
 
 An instruction adopts `bootstrap` in a product, adds tools or removes tools,
 or adds or removes Claude Code plugins. In a tools instruction, a name in the
 list is a tool folder of
-`tools/`, or a pack of `tools/packs.toml`. It has this format:
+`repo/tools/`, or a pack of `repo/packs.toml`. It has this format:
 
 ```text
 bootstrap: add tools [<tool>, …]
@@ -79,8 +79,8 @@ product. A `repository:` line before the block gives the path of the
 repository from the root of the base repository: `.` for the base, the path
 of a git submodule, or the path of a sibling, for example `../acme-api`. The
 block is the draft of the `.config/bootstrap.toml` of that repository, in the
-format of `examples/` of the clone. It also holds the tools, the packs and the
-plugins, as `[tools.*]`, `[packs.*]` and `[claude.plugins.*]` tables. It has
+format of `repo/examples/` of the clone. It also holds the tools, the packs and
+the plugins, as `[tools.*]`, `[packs.*]` and `[claude.plugins.*]` tables. It has
 no `bootstrap_commit`: `repo_sync` writes it:
 
 ````text
@@ -140,16 +140,17 @@ file. If a check stops, change nothing, and give its message to the caller.
 | Condition                                                                                      | Message                                                                                                   |
 | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | A tools or a plugins instruction, and the repository has no `.config/bootstrap.toml`.          | The repository did not adopt `bootstrap`. Send `bootstrap: adopt` first.                                  |
-| A name is not a folder in `tools/` of the clone, and not a pack of `tools/packs.toml`.         | `<name>` is not a tool or a pack of `bootstrap`.                                                          |
+| A name is not a folder in `repo/tools/` of the clone, and not a pack of `repo/packs.toml`.     | `<name>` is not a tool or a pack of `bootstrap`.                                                          |
 | `remove` names a tool that another selected tool needs, through `depends` or a mise `depends`. | `<tool>` cannot be removed alone: `<other tool>` needs it. Remove `<other tool>` in the same instruction. |
 | A name is `base`, or a tool or a pack that the `base` pack adds.                               | `<tool>` is in the `base` pack. The sync always adds it.                                                  |
 
-To find whether a selected tool needs a tool, read `tools/<selected>/tools.toml`
-in the clone:
+To find whether a selected tool needs a tool, read
+`repo/tools/<selected>/tools.toml` in the clone:
 
 - Its `depends` key names the tool.
 - A mise `depends` of one of its `[mise.tools.<name>]` entries names a mise
-  tool that a `[mise.tools.<name>]` entry of `tools/<tool>/tools.toml` defines.
+  tool that a `[mise.tools.<name>]` entry of `repo/tools/<tool>/tools.toml`
+  defines.
 
 A tool that the same instruction also removes does not count.
 
@@ -208,8 +209,8 @@ These cases are not a stop:
    then gets its `default_envs`. Keep the tables sorted.
 2. Find the tools that each added tool adds, then the tools that these tools
    add in turn. For a pack, start with its `default = true` members in
-   `tools/packs.toml`, and expand each `"pack:<pack>"` of them in turn. Read
-   `tools/<tool>/tools.toml` in the clone. A tool adds:
+   `repo/packs.toml`, and expand each `"pack:<pack>"` of them in turn. Read
+   `repo/tools/<tool>/tools.toml` in the clone. A tool adds:
    - each tool of its `depends` key;
    - for each mise `depends` of one of its `[mise.tools.<name>]` entries, the
      tool whose `tools.toml` has the `[mise.tools.<name>]` entry of that mise

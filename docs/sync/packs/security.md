@@ -14,7 +14,7 @@ Always. The `base` pack includes it as `"pack:security"`. Do not write
 
 ## What the pack adds
 
-Each member is `default = true` in `tools/packs.toml`, for example
+Each member is `default = true` in `repo/packs.toml`, for example
 `gitleaks = { default = true }`.
 
 | Member        | Default | Tool file                                         |

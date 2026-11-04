@@ -567,7 +567,7 @@ The old seed ends with an empty `[secrets]` table, so each repository with
 3. Delete the top-level `[secrets]` table. Rename a `[profiles.default]`
    table.
 4. Replace the comment above the table with the comment of the new seed
-   `tools/fnox/.config/fnox.toml.tmpl`.
+   `repo/tools/fnox/.config/fnox.toml.tmpl`.
 5. Add `-P <profile>` to each `fnox` call of the repository, for example
    `mise x -- fnox -P <repo_name> exec -- <command>`. Without `-P`, fnox uses
    the `default` profile, and the command gets no secret.

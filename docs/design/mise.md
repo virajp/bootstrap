@@ -65,7 +65,7 @@ mise files from these tables.
 ├── mise.toml                       # synced; the only file for every environment
 └── mise/
     ├── conf.d/
-    │   ├── <tool>/mise.<env>.toml  # generated from tools/<tool>/tools.toml
+    │   ├── <tool>/mise.<env>.toml  # generated from repo/tools/<tool>/tools.toml
     │   └── zz-repo/mise.<env>.toml # seeds; the repository owns them; loads last
     └── tasks/
         ├── _scripts/               # libraries, not tasks
@@ -103,7 +103,7 @@ The consumer selects its environments with `environments` in the values file.
 consumer repository. It is not set now. When it is set, it must be continously
 upgraded as new versions of the mise configuration are released.
 
-The template is `tools/mise/.config/mise.toml.tmpl`. It holds the shared
+The template is `repo/tools/mise/.config/mise.toml.tmpl`. It holds the shared
 `[settings]` and the `[env]` values from the values file.
 
 | `[settings]` key                     | Value          |
@@ -326,8 +326,8 @@ its folder. A `.tmpl` task is rendered by the sync, and the output keeps the
 git mode of the template.
 
 Only the `init` task is in mise config, in `[mise.tasks.init]` of
-`tools/mise/tools.toml`. It makes the task scripts executable. The task files
-load in each environment.
+`repo/tools/mise/tools.toml`. It makes the task scripts executable. The task
+files load in each environment.
 
 ### Orchestrators and groups
 
@@ -382,7 +382,6 @@ not the tasks of a parent repository.
 | `checks`      | git predicates. They return an exit status only.                                    |
 | `merge`       | `merge_to_destination_branch`, for the `code:merge` tasks                           |
 | `placeholder` | For a task that no stack fills yet. It always exits 0.                              |
-| `repo-sync`   | The forwarding file to `sync-engine/repo-sync` of the clone, which has `repo_sync`  |
 
 ### The rules for task scripts
 
@@ -399,11 +398,11 @@ not the tasks of a parent repository.
 
 | Alias               | Command                        | Source                                                |
 | ------------------- | ------------------------------ | ----------------------------------------------------- |
-| `setup`             | `mise run setup`               | `tools/mise/tools.toml`                               |
-| `precommit`         | `mise run code:precommit`      | `tools/pre-commit/tools.toml`                         |
+| `setup`             | `mise run setup`               | `repo/tools/mise/tools.toml`                          |
+| `precommit`         | `mise run code:precommit`      | `repo/tools/pre-commit/tools.toml`                    |
 | `setup-all`         | `mise run setup --all`         | The sync, only with git submodules, in `conf.d/mise/` |
 | `setup-<submodule>` | `mise run setup --<submodule>` | The sync, one for each git submodule                  |
-| `npx`               | `pnpm dlx`                     | `tools/node/tools.toml`                               |
+| `npx`               | `pnpm dlx`                     | `repo/tools/node/tools.toml`                          |
 
 All aliases are in `dev` only, because `shell_alias` is a dev-only section.
 
@@ -418,8 +417,8 @@ These facts came from the examination. They are not decisions.
   of the project.
 - `fnox` and `doppler` install their CLI in `dev` only. See
   [fnox.md](fnox.md) for the new fnox design.
-- `tools/mise/.config/mise/tasks/code/_default` has the shebang
+- `repo/tools/mise/.config/mise/tasks/code/_default` has the shebang
   `#!/usr/bin/env zsh`. The other task scripts use bash.
-- No file of `tools/` sets `MISE_ENV`. The session of this examination had
+- No file of `repo/tools/` sets `MISE_ENV`. The session of this examination had
   `MISE_ENV=dev`, but its source is not known. It is not in
   `~/.config/mise/` or in `~/.config/fish/`.

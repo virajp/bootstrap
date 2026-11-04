@@ -37,12 +37,16 @@ this repository. Ask me before each choice that docs/sync/ does not decide.
 
 ## Layout
 
-The shared files are in `tools/`, one folder for each tool. Each file in
-`tools/<tool>/` is at the path that it gets in a repository. For example,
-`tools/git/.config/mise/tasks/code/merge/develop` here is
+The shared files are in `repo/tools/`, one folder for each tool. Each file in
+`repo/tools/<tool>/` is at the path that it gets in a repository. For example,
+`repo/tools/git/.config/mise/tasks/code/merge/develop` here is
 `.config/mise/tasks/code/merge/develop` in every repository, because the
 `base` pack adds the `git` tool. This repository also syncs its own `base`
 pack.
+
+The sample values files are in `repo/examples/`. `tools/` holds only a
+forwarding file, for an old sync task of a repository. The sync does not copy
+it.
 
 The sync code is in `sync-engine/`: `clone` for the shared cache and the clone,
 `common` for the log, the header detection and the wrappers of gomplate, jq and
@@ -52,7 +56,7 @@ packs and the `depends`, `manifest` for the manifest and the stale rule, and
 folder is not a tool, so the
 sync does not copy it to a repository.
 
-A pack is a named group of tools in `tools/packs.toml`. It has no files of its
+A pack is a named group of tools in `repo/packs.toml`. It has no files of its
 own. The sync always adds the `base` pack:
 
 <!-- dprint-ignore -->
@@ -358,13 +362,14 @@ protected branch, the sync removes the hook.
 
 `mise run test:repo-sync` runs `repo_sync --dry-run`, `repo_sync --check` and,
 for a case that compares a written file, `repo_sync` of the working tree's
-`tools/` and `sync-engine/` against scratch values files and scratch consumers.
+`repo/`, `sync-engine/` and `tools/` (the forwarding file) against scratch
+values files and scratch consumers.
 Some cases of the manifest also call `_se_manifest_stale` and
 `_se_manifest_read` directly. It checks the exit code and the message of each
 case. It needs no network when gomplate, jq and yq are installed. No hook runs
-it: run it by hand before you commit a change to `tools/` or `sync-engine/`.
+it: run it by hand before you commit a change to `repo/` or `sync-engine/`.
 
 ## Change a shared file
 
-1. Change the file in `tools/<tool>/`, and push to `main`.
+1. Change the file in `repo/tools/<tool>/`, and push to `main`.
 2. In each repository, run `mise run setup:configs`, then commit the result.
