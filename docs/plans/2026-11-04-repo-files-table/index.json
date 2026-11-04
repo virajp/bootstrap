@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-04T06:18:11Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "BLOCKED",
+    "detail": "BLOCKED at wave 3 — UNRESOLVED: U4 security finding G13 did not converge (rounds 1 and 2 one finding each; closing fix d4f59df left it OPEN): a case variant or a symlinked-folder spelling of a [files] key passes _rs_target_ok (repo-sync:629), runs as generated and skips the merge guards. Ruling needed in D8: accept a target only on an exact match against find -type f (reviewer mitigation), or rule the finding out of scope since only a bootstrap tools.toml author can trigger it. Also owed: the round 2 engine skipped (G14), a person confirming the D10 parent-folder reading (G15). U5, U6 and the plan gate not run; nothing landed; work is on claude/bootstrap-2-0-3ae4b9 in .claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -64,8 +64,8 @@
       "status": "green",
       "started": "2026-11-04T06:18:42.436Z",
       "ended": "2026-11-04T06:34:26.521Z",
-      "commit": "fcf1960",
-      "rounds": 1
+      "commit": "d4f59df",
+      "rounds": 3
     },
     {
       "id": "U2",
@@ -102,9 +102,9 @@
       "waits": "Its cases run the engine that U1 changes against the tools.toml files that U2 moves to the new keys.",
       "status": "green",
       "started": "2026-11-04T06:42:05.763Z",
-      "ended": "2026-11-04T07:03:16.347Z",
-      "commit": "097c365",
-      "rounds": 1
+      "ended": "2026-11-04T07:33:42.035Z",
+      "commit": "7b30e58",
+      "rounds": 3
     },
     {
       "id": "U4",
@@ -120,14 +120,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "unresolved",
+      "started": "2026-11-04T07:07:47.756Z",
+      "ended": "2026-11-04T07:42:08.361Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 2,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "7ca899d",
+        "to": "5cf1583"
       }
     },
     {
@@ -190,9 +190,9 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "failed",
+      "started": "2026-11-04T07:07:47.688Z",
+      "ended": "2026-11-04T07:42:08.396Z"
     },
     {
       "id": "W4",
@@ -475,6 +475,34 @@
       "stage": "edit",
       "text": "R2 rule-3 findings .config/mise/tasks/test/repo-sync:1112 (seed and [seed_requires]) and :1222 ([files], two errors in one table): two cases that neither the unit list nor the DECIDED lines name · closed: they stay, the first checks the D11 one message per old key, the second the U1 DECIDED line that the [files] checks collect every message before they return 2",
       "state": "closed"
+    },
+    {
+      "id": "G12",
+      "unit": "U4",
+      "stage": "security",
+      "text": "D10 says the repo side follows no symlink but not what happens when the target is a symlink, and 03-tests.md:138 excludes symlink cases from the port · the U4 round 1 finding requires a refusal with code 2; U1 adds it and U3 adds the case",
+      "state": "open"
+    },
+    {
+      "id": "G13",
+      "unit": "U4",
+      "stage": "security",
+      "text": "Round 2 security finding [low] sync-engine/repo-sync:624: D8 and D10 require a target that a file of the tool produces, not its exact form, so a mis-spelled key passes _rs_target_ok, misses the mode lookup and runs as generated, which skips both merge guards · the round count did not decrease (1 then 1), so the guard ended the loop; the closing pass d4f59df and 7b30e58 refused ./x, a//b, */./*, */. and */, and the closing check answered OPEN: a case variant on a case-insensitive filesystem and a path through a symlinked folder of the tool still pass the -f test (repo-sync:629). Cap-exempt, so not contested: the run pauses for a ruling",
+      "state": "open"
+    },
+    {
+      "id": "G14",
+      "unit": "U4",
+      "stage": "security",
+      "text": "Round 2 of U4 ran no /security-review engine: the orchestrator chose to skip it and handed the reviewer ENGINE: unavailable, though the engine was not unavailable; review-unit.md requires engines first on each round · the reviewer alone judged the fix delta 7ca899d..5cf1583. A resumed run owes the engine over 7ca899d..HEAD",
+      "state": "open"
+    },
+    {
+      "id": "G15",
+      "unit": "U1",
+      "stage": "security",
+      "text": "U1 returned UNRESOLVED on a merge target below a symlinked parent folder inside the repository (the merge read and wrote the outside file) · the orchestrator read D10 (the repo side follows no symlink) as the ruling and had U1 refuse it with code 2 in b47e12a, message <show>: the folder <folder> is a symlink - kept it as it is; generated and seed files still write through a linked folder. A person confirms this reading",
+      "state": "open"
     }
   ],
   "overrides": [],
