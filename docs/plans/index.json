@@ -126,10 +126,13 @@
       "title": "Side folders: repo/tools",
       "target_repo": null,
       "priority": 60,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-04T15:00:22.950Z",
-      "ended": "",
-      "gaps": null,
+      "ended": "2026-11-04T16:02:20.323Z",
+      "gaps": {
+        "open": 1,
+        "moved_to": []
+      },
       "requires": [
         "2026-11-04-repo-manifest"
       ],
