@@ -1,7 +1,7 @@
 # The `repo-sync` tool
 
-The sync function `repo_sync` and the `setup:configs` tasks that copy the
-tools from `bootstrap`.
+The `setup:configs` tasks that copy the tools from `bootstrap`, with the sync
+function `repo_sync` of `sync-engine/repo-sync` in the clone.
 
 | Property     | Value |
 | ------------ | ----- |
@@ -17,13 +17,13 @@ file.
 
 ## What the tool ships
 
-| Path in the repository                        | Kind      | Use                                                                 |
-| --------------------------------------------- | --------- | ------------------------------------------------------------------- |
-| `.config/mise/tasks/_scripts/repo-sync`       | Synced    | The library with the sync function `repo_sync`.                     |
-| `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`. It fetches `bootstrap` into the cache.    |
-| `.config/mise/tasks/setup/configs/sync`       | Synced    | The task `setup:configs:sync`. It loads `repo-sync` from the clone. |
-| `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `repo_sync --check`.        |
-| `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                       |
+| Path in the repository                        | Kind      | Use                                                                                                                                |
+| --------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `.config/mise/tasks/_scripts/repo-sync`       | Synced    | The forwarding file. An old `setup/configs/sync` loads it from the clone, and it loads `sync-engine/repo-sync` of the same clone.  |
+| `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`. It fetches `bootstrap` into the cache. The sync embeds `sync-engine/clone` in it.                        |
+| `.config/mise/tasks/setup/configs/sync`       | Synced    | The task `setup:configs:sync`. It loads `sync-engine/repo-sync` from the clone, and stops with code 2 without `SYNC_ENGINE_CLONE`. |
+| `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `repo_sync --check`.                                                                       |
+| `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                                                                                      |
 
 ## mise tools
 
@@ -39,16 +39,28 @@ file.
 | `setup:configs:sync`  | Run `repo_sync` from the clone of `setup:configs`. Do not run it alone.                                                  |
 | `code:lint:repo-sync` | Validate `.config/bootstrap.toml` with `repo_sync --check`. Hidden.                                                      |
 
-`setup:configs` keeps a shallow clone of `bootstrap` in
-`${XDG_CACHE_HOME:-~/.cache}/bootstrap`, for each consumer of the machine:
+`setup:configs` keeps a shallow clone of `bootstrap` in `repo/` of the cache
+`${XDG_CACHE_HOME:-~/.cache}/sync-engine/`, for each consumer of the machine:
 
-- Each run fetches the default branch into the clone, and gives a copy of it
-  to `setup:configs:sync`.
-- The lock folder `bootstrap.lock` next to the clone makes a second run wait
-  until the first has made its copy. A waiter removes the lock of a dead
-  holder.
-- A clone with another `origin`, for example after a test with
-  `REPO_SYNC_URL`, is cloned again.
+- Each run fetches the branch `main` of
+  `https://github.com/virajp/bootstrap.git` into the clone, and gives a copy
+  of it to `setup:configs:sync`. The fetch uses the URL, not `origin`. It needs
+  no SSH key.
+- The lock folder `lock/` of the cache makes a second run wait until the first
+  has made its copy. A waiter removes the lock of a dead holder.
+- The origin compare is normalized, so the SSH and the HTTPS URL of one
+  repository match. A clone with another `origin`, for example after a test
+  with `SYNC_ENGINE_URL`, is cloned again.
+- A `repo/` that is not a git clone and not empty stops `setup:configs` with
+  code 2. The task does not delete it.
+- A git repository at the cache root is the old layout. When its raw `origin`
+  normalizes to the URL, the run removes it and keeps `repo/`, the lock and
+  `macos-generated.tsv`. Another `origin` or no `origin` stops `setup:configs`
+  with code 2, and the task deletes nothing in the cache root.
+- Each run removes the old cache `bootstrap/` and `bootstrap.lock` of
+  `${XDG_CACHE_HOME:-~/.cache}` while it holds the old lock. When a live old
+  stub holds that lock, a later run does the removal. A failed removal does
+  not fail the sync.
 - If the fetch or the clone fails, `setup:configs` stops with code 5. It
   never uses an old clone.
 
@@ -75,9 +87,19 @@ and exits 0 in these conditions:
   install it, so a commit never needs the network.
 - A list of files does not include `.config/bootstrap.toml`.
 - No list of files is given, and `.config/bootstrap.toml` does not exist.
+- The cache has no clone with `sync-engine/repo-sync`. The gate never clones.
+- The raw `origin` of `<cache>/repo` is not one of five literal forms of the
+  default URL: the HTTPS URL and the `git@github.com:` URL, each with and
+  without `.git`, and the `ssh://git@github.com/` URL with `.git`. The gate
+  sources no code from another repository at commit time.
 
-Else it unsets `REPO_SYNC_CLONE`, loads the local `_scripts/repo-sync`, and
-runs `repo_sync --check`.
+In the last two conditions, the gate does not validate the values file. Thus
+no output does not show that the values file is correct. A run of
+`setup:configs` makes the clone.
+
+Else it unsets `SYNC_ENGINE_CLONE` and `REPO_SYNC_CLONE`, loads
+`sync-engine/repo-sync` of the cache without its lock, and runs
+`repo_sync --check`.
 
 `repo_sync --check` examines only the rules that need the values file and the
 local git repository. It runs after the checks of the values file and of
@@ -119,15 +141,16 @@ Besides the copy of the files, `repo_sync` does these steps:
   `.config/bootstrap.toml`" of `index.md`.
 
 These environment variables change the sync. `--check` does not read
-`REPO_SYNC_URL` and `REPO_SYNC_CLONE`, because it makes no clone:
+`SYNC_ENGINE_URL` and `SYNC_ENGINE_CLONE`, because it makes no clone:
 
-| Variable                  | Use                                                                    |
-| ------------------------- | ---------------------------------------------------------------------- |
-| `REPO_SYNC_URL`           | The repository to clone. The default is the `bootstrap` repository.    |
-| `XDG_CACHE_HOME`          | The folder of the clone of `setup:configs`. The default is `~/.cache`. |
-| `REPO_SYNC_CLONE`         | An existing clone. `setup:configs` sets it.                            |
-| `REPO_SYNC_VALUES`        | The values file. The default is `.config/bootstrap.toml`.              |
-| `REPO_SYNC_NO_AUTOUPDATE` | `1` skips `pre-commit autoupdate`, so no network is necessary.         |
+| Variable                  | Use                                                                                                                                    |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `SYNC_ENGINE_URL`         | The repository to clone. The default is `https://github.com/virajp/bootstrap.git`.                                                     |
+| `SYNC_ENGINE_CACHE`       | The cache folder. The default is `sync-engine` in the base of the cache.                                                               |
+| `XDG_CACHE_HOME`          | The base of the cache, and of the old cache that each run removes. The default is `~/.cache`.                                          |
+| `SYNC_ENGINE_CLONE`       | The copy of the clone. `setup:configs` sets it. An old `setup/configs/sync` reads `REPO_SYNC_CLONE`, so `setup:configs` sets that too. |
+| `REPO_SYNC_VALUES`        | The values file. The default is `.config/bootstrap.toml`.                                                                              |
+| `REPO_SYNC_NO_AUTOUPDATE` | `1` skips `pre-commit autoupdate`, so no network is necessary.                                                                         |
 
 ## Pre-commit hooks
 
@@ -148,5 +171,5 @@ runs `code:lint:repo-sync` with the staged files.
 ## Migration
 
 - Remove `gomplate` from the repository-owned mise files.
-- The general items M1, M15 and M23 of `migrate.md` are about the files of
-  this tool.
+- The general items M1, M15, M23 and M27 of `migrate.md` are about the files
+  of this tool.

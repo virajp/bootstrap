@@ -8,8 +8,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-04 — db0cfd6 366af4e 6924bb6 132d9d1; 12 open gaps, folder stays live, A1 archive not run; ran in session worktree .claude/worktrees/bootstrap-2-0-3ae4b9 (G2), claim and completion landed through code:merge on main (G1); U1 ran pkill -f 'sleep 300' in a test, which could have killed another session's sleep"
   },
   "consent": {
     "merge": true,
@@ -66,11 +66,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T03:41:51.427Z",
+      "ended": "2026-11-04T04:24:25.629Z",
+      "commit": "db0cfd6",
+      "rounds": 3
     },
     {
       "id": "U2",
@@ -86,11 +86,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T03:41:51.468Z",
+      "ended": "2026-11-04T03:46:11.985Z",
+      "commit": "366af4e",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -107,11 +107,11 @@
         "U2"
       ],
       "waits": "Its cases run the output of U1 (sync-engine/clone, the stub template, the sync task, the gate) and of U2 (sync-engine/repo-sync, the forwarding file).",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T03:50:30.627Z",
+      "ended": "2026-11-04T04:27:36.354Z",
+      "commit": "6924bb6",
+      "rounds": 2
     },
     {
       "id": "U4",
@@ -127,14 +127,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T04:02:36.547Z",
+      "ended": "2026-11-04T04:29:30.455Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 2,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "7fec0b4b5bc7eaf164110d459cb4aa53236bcd0e",
+        "to": "6924bb6a00ed27a812876d32116cc57fa90eceab"
       }
     },
     {
@@ -157,11 +157,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T04:37:24.808Z",
+      "ended": "2026-11-04T04:42:34.987Z",
+      "commit": "132d9d1",
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -175,43 +175,43 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T04:48:44.241Z",
+      "ended": "2026-11-04T04:51:25.998Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T03:41:51.386Z",
+      "ended": "2026-11-04T03:50:21.628Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T03:50:30.586Z",
+      "ended": "2026-11-04T04:02:26.756Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T04:02:36.503Z",
+      "ended": "2026-11-04T04:35:15.732Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T04:37:24.772Z",
+      "ended": "2026-11-04T04:48:36.326Z"
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T04:48:44.207Z",
+      "ended": "2026-11-04T04:51:39.501Z"
     }
   ],
   "shared_files": [
@@ -409,31 +409,151 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T04:37:24.483Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T04:37:24.260Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T04:37:24.373Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers list",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T04:37:24.590Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "",
+      "stage": "claim",
+      "text": "The claim commit of the plan-index contract is a direct commit on main, and the no-commit-to-branch hook of this repository refuses it · closed: the claim landed from a local branch through mise run code:merge, the route CLAUDE.md gives, with no hook skipped; the completion commit takes the same route",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "",
+      "stage": "worktree",
+      "text": "Setup step 1 cuts .worktrees/sync-engine-cache, but a PreToolUse hook confines Edit and Write of this session to its own worktree, and both units stopped at it · closed: the cut worktree held no work and was removed; the run works in the session worktree .claude/worktrees/bootstrap-2-0-3ae4b9 on its branch claude/bootstrap-2-0-3ae4b9 (git-workflow Step 1: already in a linked worktree), with run.worktree updated; the hook was not bypassed",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the unit file has no message for a failed reset or clean in _se_fetch · exit 5 with Cannot update the clone in <repo> - nothing synced",
+      "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the unit file does not say what to do when the rm of the old cache fails · the run says nothing and goes on, because the ruling says only that it is not an error",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: Verification says the rendered stub has _se_fetch once, and it has one definition and one call · read as one definition",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the unit file does not say what _se_legacy_cleanup says when only the old lock existed · the same Removed the old cache <base>/bootstrap line",
+      "state": "open"
+    },
+    {
+      "id": "G7",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2: Verification says grep -c Synced from bootstrap sync-engine/repo-sync is 0, and it is 1 because of the code string that writes the header of generated mise files · read as the file's own header, which is gone; the string stays",
+      "state": "open"
+    },
+    {
+      "id": "G8",
+      "unit": "U4",
+      "stage": "security",
+      "text": "01-clone.md and the old-layout ruling state .git presence as the only condition for the removal · closed: round 1 fix, the removal now requires the root's raw origin to normalize to the URL, else exit 2 with nothing deleted",
+      "state": "closed"
+    },
+    {
+      "id": "G9",
+      "unit": "U4",
+      "stage": "security",
+      "text": "D13 and 01-clone.md edit 4 do not require a check of the origin of the cache clone before the gate sources it · closed: round 1 fix, the gate compares the normalized origin with the default URL and exits 0 silently on a mismatch",
+      "state": "closed"
+    },
+    {
+      "id": "G10",
+      "unit": "U4",
+      "stage": "security",
+      "text": "The normalized-origin ruling fetches from origin, so a scheme-insensitive match can keep a weaker transport · closed: round 1 fix, the fetch uses the current URL",
+      "state": "closed"
+    },
+    {
+      "id": "G11",
+      "unit": "U1",
+      "stage": "security",
+      "text": "U1: a checkout of bootstrap itself used as SYNC_ENGINE_CACHE has a real .git and a matching origin, so it still reads as an old clone and is removed · accepted as an old clone of bootstrap, as the finding words it",
+      "state": "open"
+    },
+    {
+      "id": "G12",
+      "unit": "U1",
+      "stage": "security",
+      "text": "U1: in an unrelated repository used as SYNC_ENGINE_CACHE, the lock step can remove an existing lock/ folder older than one minute with no pid, and a repo/ subfolder with another origin is deleted and cloned again · left as the plan rules",
+      "state": "open"
+    },
+    {
+      "id": "G13",
+      "unit": "U3",
+      "stage": "security",
+      "text": "U3: the gate's rule for a cache with no .git, and a .git file at the cache root, have no case of their own · left without a case; they were checked by hand in the U1 fix",
+      "state": "open"
+    },
+    {
+      "id": "G14",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the gate accepts five literal forms of the default URL, fewer than _se_normalize_url accepts (a trailing slash, ssh:// without git@) · such a cache clone makes the gate exit 0 silently; the copy of the normalizer that D6 rejects stays out of tools/",
+      "state": "open"
+    },
+    {
+      "id": "G15",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "U5: the plan moves only the sync to HTTPS, and the adoption clones of README.md, docs/sync/index.md, docs/sync/vwf.md and migrate.md M15 stay on SSH · they keep git@github.com:virajp/bootstrap.git, and index.md Requirements states the SSH need for that temporary clone only",
+      "state": "open"
+    },
+    {
+      "id": "G16",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2 and U5: the header comment of sync-engine/repo-sync still says the private bootstrap repo, and the plan clones it over HTTPS with no credentials · left as is, outside the comment classes that 02-engine-move.md lists",
+      "state": "open"
+    },
+    {
+      "id": "G17",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "U5: migrate.md M23 still says the gate runs repo_sync --check at each commit, without the no-cache-clone condition · M27 covers the condition, so M23 stays",
+      "state": "open"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",

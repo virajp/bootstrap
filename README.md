@@ -44,6 +44,10 @@ The shared files are in `tools/`, one folder for each tool. Each file in
 `base` pack adds the `git` tool. This repository also syncs its own `base`
 pack.
 
+The sync code is in `sync-engine/`: `clone` for the shared cache and the clone,
+and `repo-sync` for the function `repo_sync`. This folder is not a tool, so the
+sync does not copy it to a repository.
+
 A pack is a named list of tools in `tools/packs.toml`. It has no files of its
 own. The sync always adds the `base` pack:
 
@@ -129,12 +133,15 @@ has that file:
 
 ## How a repository syncs
 
-1. `setup:configs` fetches the default branch of this repository (shallow,
-   over SSH) into a clone in `${XDG_CACHE_HOME:-~/.cache}/bootstrap`. Each
-   consumer of the machine uses that clone. A lock makes a second sync wait
+1. `setup:configs` fetches the branch `main` of
+   `https://github.com/virajp/bootstrap.git` (shallow, no SSH key necessary)
+   into a clone in `repo/` of the cache
+   `${XDG_CACHE_HOME:-~/.cache}/sync-engine/`. Each consumer of the machine
+   uses that clone. The lock `lock/` of the cache makes a second sync wait
    until the first has copied the clone.
-2. It runs `setup:configs:sync`, which loads `repo-sync` from that copy and
-   calls `repo_sync`. Thus a change to the sync code applies in the same run.
+2. It runs `setup:configs:sync`, which loads `sync-engine/repo-sync` from that
+   copy and calls `repo_sync`. Thus a change to the sync code applies in the
+   same run.
 3. `repo_sync` reads the `[tools.*]` and `[packs.*]` tables of the
    repository's `.config/bootstrap.toml`, and it adds the `base` pack.
 4. It expands each pack, and it adds the `depends` of each tool. It refuses a
@@ -153,7 +160,9 @@ has that file:
 Between two syncs, the gate `code:lint:repo-sync` runs `repo_sync --check` at
 each commit that changes `.config/bootstrap.toml`. It examines the rules that
 need no clone, and it shows each error at once. The rules that need the clone,
-for example a tool that is not in `bootstrap`, stay with `setup:configs`.
+for example a tool that is not in `bootstrap`, stay with `setup:configs`. The
+gate loads the sync code from the shared cache. Without a clone of `bootstrap`
+there, or with another `origin`, it prints nothing and does not validate.
 
 These rules apply to each file:
 
@@ -224,6 +233,8 @@ A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
   plus the `extensions` list of the values file. In the root repository, it
   also has the extensions of each git submodule: the tools and the
   `extensions` list of its values file.
+- `.sync_engine` is the absolute path of the `sync-engine/` folder of the
+  clone copy of the run.
 - `.precommit` is the list of the `[[precommit]]` entries of those tools, in
   tool order, then the entries of the repository's
   `.config/repo-sync/pre-commit.yaml`. A `no-commit-to-branch` hook in it
@@ -298,10 +309,10 @@ protected branch, the sync removes the hook.
 ## Tests
 
 `mise run test:repo-sync` runs `repo_sync --dry-run` and `repo_sync --check`
-of the working tree's `tools/` against scratch values files, and checks the
-exit code and the message of each case. It needs no network. No hook runs it:
-run it by hand
-before you commit a change to `tools/`.
+of the working tree's `tools/` and `sync-engine/` against scratch values files,
+and checks the exit code and the message of each case. It needs no network. No
+hook runs it: run it by hand
+before you commit a change to `tools/` or `sync-engine/`.
 
 ## Change a shared file
 
