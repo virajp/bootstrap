@@ -146,10 +146,13 @@
       "title": "[defaults], [questions], [contributes]",
       "target_repo": null,
       "priority": 70,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-04T16:04:29.035Z",
-      "ended": "",
-      "gaps": null,
+      "ended": "2026-11-04T18:18:51.587Z",
+      "gaps": {
+        "open": 5,
+        "moved_to": []
+      },
       "requires": [
         "2026-11-04-repo-layout"
       ],
