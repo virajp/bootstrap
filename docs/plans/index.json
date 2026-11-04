@@ -28,10 +28,13 @@
       "title": "Shared cache and clone for the sync engine",
       "target_repo": null,
       "priority": 10,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-04T03:32:26.489Z",
-      "ended": "",
-      "gaps": null,
+      "ended": "2026-11-04T04:53:44.883Z",
+      "gaps": {
+        "open": 12,
+        "moved_to": []
+      },
       "requires": [],
       "backlog": [],
       "backlog_pieces": []
