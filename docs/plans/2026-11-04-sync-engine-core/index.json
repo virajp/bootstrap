@@ -83,11 +83,11 @@
         "U1"
       ],
       "waits": "Its cases run the libraries that U1 creates and the repo-sync front-end that U1 changes.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T05:20:51.248Z",
+      "ended": "2026-11-04T05:28:24.801Z",
+      "commit": "be8267d",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -165,9 +165,9 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T05:20:51.183Z",
+      "ended": "2026-11-04T05:32:31.043Z"
     },
     {
       "id": "W3",
@@ -440,8 +440,8 @@
       "id": "G6",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: the fixture gate-cache of test:repo-sync holds only sync-engine/repo-sync, so the case the gate with a cache goes red without common, and U2 says every current case passes unchanged · U2 copies common, write and select into the fixture",
-      "state": "open"
+      "text": "U1: the fixture gate-cache of test:repo-sync holds only sync-engine/repo-sync, so the case the gate with a cache goes red without common, and U2 says every current case passes unchanged · U2 copies common, write and select into the fixture · closed: U2 copied the three libraries into the fixture, the one change to an existing case",
+      "state": "closed"
     },
     {
       "id": "G7",
