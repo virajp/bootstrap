@@ -224,7 +224,8 @@
 #      a bad `requires`, `requires_found`, `remove` or `remove_items`, a merge
 #      target of format text), `requires_found`, `requires` or `files` in a
 #      `[mise_env.<env>.tools]` entry, a tool folder with both <p> and <p>.tmpl,
-#      a merge source or a live merge target that cannot merge, no `mise`, or no
+#      a merge source or a live merge target that cannot merge, a merge target
+#      that is a symlink or is below a symlinked folder, no `mise`, or no
 #      `SYNC_ENGINE_CLONE` without `--check`
 #   3  a tool or a pack that is not in bootstrap (fix the values file)
 #   5  the clone of `SYNC_ENGINE_CLONE` is not usable, or
@@ -1685,6 +1686,23 @@ _rs_file() {
     return 0
   fi
 
+  # A merge target below a symlinked folder: the repo side follows no symlink,
+  # and that folder can point outside this repo. It comes before `_se_unblock`,
+  # `mkdir` and the temp file, so nothing is written through the link. The walk
+  # goes from the repo root down, and does not test the root itself.
+  if [[ $mode == merge ]]; then
+    local folder=$MISE_PROJECT_ROOT rest=$out
+    while [[ $rest == */* ]]; do
+      folder+="/${rest%%/*}"
+      rest=${rest#*/}
+      if [[ -L $folder ]]; then
+        _se_log "$show: the folder $(_se_path "$folder") is a symlink - kept it as it is"
+        [[ -e $dest ]] && _se_log "kept existing $show"
+        return 2
+      fi
+    done
+  fi
+
   # A synced file can become a folder in a later layout, for example
   # code/format -> code/format/_default. Remove the old synced file that is in
   # the way. A file without the header is the repo's, and a seed and a merge
@@ -1745,6 +1763,13 @@ _rs_file() {
       target_format=$(_se_format "$out" "$tmp" "$format")
     fi
     _se_parse_check "$tmp" "$target_format" "$show" || rc=$?
+  fi
+
+  # A merge target that is a symlink, also a dangling one: the merge reads the
+  # live target, and a symlink can point outside this repo. The link stays.
+  if ((rc == 0)) && [[ $mode == merge && -L $dest ]]; then
+    _se_log "$show is a symlink - kept it as it is"
+    rc=2
   fi
 
   # A merge target: merge with the live target, before dprint. The merge source
