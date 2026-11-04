@@ -137,7 +137,7 @@
       "status": "green",
       "started": "2026-11-04T14:17:27.848Z",
       "ended": "2026-11-04T14:21:43.110Z",
-      "commit": "28a7e7b",
+      "commit": "d0db0b5",
       "rounds": 2
     },
     {
@@ -180,9 +180,9 @@
     },
     {
       "id": "W4",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-04T14:17:27.812Z",
-      "ended": ""
+      "ended": "2026-11-04T14:39:12.223Z"
     },
     {
       "id": "W5",
@@ -461,6 +461,13 @@
       "unit": "U1",
       "stage": "edit",
       "text": "Contested after the one late loop-back: the comment at sync-engine/repo-sync:2036 says the files of the selected tools that this run writes or keeps, and _RS_HANDLED covers every tool of _RS_TOOLS, dependencies included · comment only, the code is right; left as it is because the late contract review allows one loop-back",
+      "state": "open"
+    },
+    {
+      "id": "G15",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "Contested after the one late loop-back: CLAUDE.md:331 and :333 and docs/sync/tools/repo-sync.md:154 still say a selected tool for the handled and kept paths of the stale rule, and the rule also covers each dependency, also through a mise depends · prose only, the code is right; a second loop-back is recorded, not run",
       "state": "open"
     }
   ],
