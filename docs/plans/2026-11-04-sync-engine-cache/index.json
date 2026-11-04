@@ -70,7 +70,7 @@
       "started": "2026-11-04T03:41:51.427Z",
       "ended": "2026-11-04T04:24:25.629Z",
       "commit": "dae9d8c",
-      "rounds": 2
+      "rounds": 3
     },
     {
       "id": "U2",
@@ -110,7 +110,7 @@
       "status": "green",
       "started": "2026-11-04T03:50:30.627Z",
       "ended": "2026-11-04T04:27:36.354Z",
-      "commit": "d2cbc57",
+      "commit": "6924bb6",
       "rounds": 2
     },
     {
@@ -127,14 +127,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-04T04:02:36.547Z",
-      "ended": "",
+      "ended": "2026-11-04T04:29:30.455Z",
       "commit": "",
-      "rounds": 1,
+      "rounds": 2,
       "range": {
-        "from": "2e73f6aa41315ad04203e7375bc829df1a6a4f5a",
-        "to": "7fec0b4b5bc7eaf164110d459cb4aa53236bcd0e"
+        "from": "7fec0b4b5bc7eaf164110d459cb4aa53236bcd0e",
+        "to": "6924bb6a00ed27a812876d32116cc57fa90eceab"
       }
     },
     {
@@ -523,6 +523,13 @@
       "unit": "U3",
       "stage": "security",
       "text": "U3: the gate's rule for a cache with no .git, and a .git file at the cache root, have no case of their own · left without a case; they were checked by hand in the U1 fix",
+      "state": "open"
+    },
+    {
+      "id": "G14",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the gate accepts five literal forms of the default URL, fewer than _se_normalize_url accepts (a trailing slash, ssh:// without git@) · such a cache clone makes the gate exit 0 silently; the copy of the normalizer that D6 rejects stays out of tools/",
       "state": "open"
     }
   ],
