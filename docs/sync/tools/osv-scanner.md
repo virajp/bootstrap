@@ -5,7 +5,7 @@ osv-scanner: the dependency scanner, and `code:sec:osv-scanner`.
 | Property     | Value                      |
 | ------------ | -------------------------- |
 | Root only    | No                         |
-| Depends      | None                       |
+| Depends      | `_security_base`           |
 | Default envs | dev, ci                    |
 | Seeds        | `.config/osv-scanner.toml` |
 

@@ -91,14 +91,24 @@ repository, without the `.tmpl` suffix of a template. For example,
 - A tool folder must not be `zz-repo`, and its name must not sort after
   `zz-repo` in byte order. If it does, the sync stops with code 2. The folder
   `conf.d/zz-repo/` of the repository must load last (see "mise config").
-- A pack is a `[pack.<name>]` table of `tools/packs.toml`. Its `depends` lists
-  tool folders, or `p:<name>` for a pack. Its optional `required` lists the
-  tools that the pack always adds. A pack name must not be a tool folder, and
-  a pack must not include itself. The sync always adds the `base` pack; its
-  name is fixed in `repo-sync`.
+- A pack is a `[pack.<name>]` table of `tools/packs.toml`. Each key is a
+  member, on one line: `<tool> = { default = true }` or `<tool> = {}`, and
+  `"pack:<name>" = { default = true }` for a nested pack. `[packs.<name>]` of
+  a values file adds each `default = true` member. A member with `{}` arrives
+  only with `[tools.<name>]`, and a nested pack with `{}` only with its own
+  `[packs.<name>]`. A tool in several packs is added once. The old keys
+  `depends`, `required`, `tools` and `default` with a list, and the prefix
+  `p:`, stop the sync with code 2. A member that is not a tool folder or a
+  pack stops it with code 3. A pack name must not be a tool folder, and a pack
+  must not include itself. Each sync examines every `[pack.*]` table. The sync
+  always adds the `base` pack; its name is fixed in `repo-sync`.
+- The member order of a pack is the sync order. The TOML plugin of dprint sorts
+  keys, so the root `dprint.jsonc` excludes `tools/packs.toml`. Keep the order
+  by hand.
 - A common tool of a pack holds the items that the other tools of the pack
   use, for example an orchestrator and its hook. Its name starts with `_`, for
-  example `_security_base`.
+  example `_security_base`. It is not a member: each member tool has it in its
+  `depends`, so one member tool alone brings it.
 - Two tools must not ship the same path. The sync does not examine this rule,
   so examine it yourself when you add a file.
 - A file that the consumer owns after the first write is a seed. Give it a
@@ -222,9 +232,10 @@ Some files refer to files that are not in `tools/`, for example
   consumer file `.config/bootstrap.toml`. The only key of an entry is `env`.
   A list (`tools = [...]`, `packs = [...]`) is the old format and stops the
   sync with code 2. It copies the clone of `SYNC_ENGINE_CLONE` and never clones.
-  Then it adds the `base` pack, expands each pack, adds
+  Then it adds the `base` pack, expands each pack to its default members, adds
   the `depends` of each tool, and copies each file of each tool.
-- Exit codes: 2 for a values file or a `tools.toml` that breaks a rule (also a
+- Exit codes: 2 for a values file, a `tools.toml` or a `[pack.*]` table that
+  breaks a rule (also a
   missing values file, a missing `mise`, a target that does not parse, or a bad
   `direct_commit`: see "Branch model in the merge tasks"), for a merge source
   or a live merge target that cannot merge, for a merge target that is a symlink
@@ -232,7 +243,8 @@ Some files refer to files that are not in `tools/`, for example
   the cache root with
   another `origin` or no `origin`, for a `repo/` of the cache that is not a
   clone and not empty, and for a sync without `SYNC_ENGINE_CLONE`. 3 for a tool
-  or a pack that is not in bootstrap. 5 for a clone, a fetch or an `autoupdate`
+  or a pack that is not in bootstrap, also a member of a pack. 5 for a clone, a
+  fetch or an `autoupdate`
   that fails, and for a `SYNC_ENGINE_CLONE` that is not usable. A
   failure of one file does not stop the other files. The sync returns the
   highest code of all its failures. `repo_sync --check` returns the highest
@@ -248,8 +260,9 @@ Some files refer to files that are not in `tools/`, for example
   and
   does not set `bootstrap_commit`. It runs each local check and prints each
   message, so every error shows at once. The rules that need the clone stay
-  with the sync: a tool or a pack that is not in bootstrap, a pack loop or a
-  pack named like a tool, an environment that a mise tool does not allow, an
+  with the sync: a tool or a pack that is not in bootstrap, a pack loop, a
+  pack named like a tool or another bad `[pack.*]` table, an environment that a
+  mise tool does not allow, an
   `[overrides.mise*]` path that no selected tool has, a `remove` line that
   the shared file does not have, a `root_only` tool in a submodule, and an old
   key or a bad `[files]` table of a `tools.toml`.
@@ -277,7 +290,8 @@ Some files refer to files that are not in `tools/`, for example
 - The sync formats each rendered template, each generated mise file and each
   merge target with the dprint config of the consumer before it compares the
   file.
-- gomplate reads the TOML files: the values file, `tools/packs.toml`, each
+- gomplate reads the TOML files: the values file, `tools/packs.toml` (an awk
+  scan also gives the file order of its members), each
   `tools.toml` and the consumer file `.config/fnox.toml`.
 - A repository does not use the fnox `default` profile, which is only for the
   user-level fnox settings. When `.config/fnox.toml` exists, the sync and

@@ -5,30 +5,33 @@ dependencies, and the `code:sec` task that runs them.
 
 | Property | Value                              |
 | -------- | ---------------------------------- |
-| Depends  | `gitleaks`, `grype`, `osv-scanner` |
-| Required | `_security_base`                   |
+| Members  | `gitleaks`, `grype`, `osv-scanner` |
 
 ## When the pack is relevant
 
-Always. The `base` pack includes it as `p:security`. Do not write
+Always. The `base` pack includes it as `"pack:security"`. Do not write
 `[packs.security]` in the values file.
 
 ## What the pack adds
 
-| Tool             | Tool file                                               |
-| ---------------- | ------------------------------------------------------- |
-| `gitleaks`       | [`tools/gitleaks.md`](../tools/gitleaks.md)             |
-| `grype`          | [`tools/grype.md`](../tools/grype.md)                   |
-| `osv-scanner`    | [`tools/osv-scanner.md`](../tools/osv-scanner.md)       |
-| `_security_base` | [`tools/_security_base.md`](../tools/_security_base.md) |
+Each member is `default = true` in `tools/packs.toml`, for example
+`gitleaks = { default = true }`.
 
-`_security_base` is the common tool of the pack. It is in `required`, not in
-`depends`: the sync always adds it with the pack.
+| Member        | Default | Tool file                                         |
+| ------------- | ------- | ------------------------------------------------- |
+| `gitleaks`    | Yes     | [`tools/gitleaks.md`](../tools/gitleaks.md)       |
+| `grype`       | Yes     | [`tools/grype.md`](../tools/grype.md)             |
+| `osv-scanner` | Yes     | [`tools/osv-scanner.md`](../tools/osv-scanner.md) |
+
+[`_security_base`](../tools/_security_base.md) is the common tool of the pack.
+It is not a member. Each scanner has it in its `depends`, so each scanner
+brings it, also a single scanner without the pack.
 
 ## Environments
 
 Each tool of the pack gets its own `default_envs` (dev and ci), limited by
-`environments` of the values file.
+`environments` of the values file. `_security_base` gets the environments of
+the scanners that need it.
 
 ## Questions
 
