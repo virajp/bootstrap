@@ -19,9 +19,9 @@
 # The values file selects tools and packs with one table each; the only key of
 # an entry is `env`, a list of environments:
 #
-#   [tools.node]                a tool folder `tools/node/` of bootstrap
+#   [tools.node]                a tool folder `$_RS_TOOLS_DIR/node/`
 #   env = ["dev", "ci"]         optional: without it, the tool's `default_envs`
-#   [packs.security]            a pack of `tools/packs.toml`, without `pack:`
+#   [packs.security]            a pack of `$_RS_PACKS_FILE`, without `pack:`
 #   env = ["dev"]               optional: each tool of the pack gets it; without
 #                               it, each tool gets its own `default_envs`
 #
@@ -30,7 +30,7 @@
 # A list (`tools = [...]`, `packs = [...]`) is the old format and stops the
 # sync.
 #
-# `tools/packs.toml` holds the packs. Each key of `[pack.<name>]` is a member,
+# `$_RS_PACKS_FILE` holds the packs. Each key of `[pack.<name>]` is a member,
 # on one line: `<tool> = { default = true }` or `<tool> = {}`, for a tool
 # folder, and `"pack:<x>" = { default = true }` for a pack that is expanded in
 # turn. The only entry key is `default`. `[packs.<name>]` adds each
@@ -39,8 +39,8 @@
 # own `[packs.<x>]`. A pack name must not be a tool folder. Each sync examines
 # every `[pack.*]` table, selected or not.
 #
-# Each tool is a folder `tools/<tool>/` in `bootstrap`, which holds its files
-# at the path they get here, and a `tools.toml` manifest:
+# Each tool is a folder `$_RS_TOOLS_DIR/<tool>/` in `bootstrap`, which holds its
+# files at the path they get here, and a `tools.toml` manifest:
 #
 #   default_envs = ["dev"]      the environments of the tool when no `env` names
 #                               them
@@ -224,7 +224,7 @@
 #   0  success (or nothing to change)
 #   2  usage error, a values file in the old list format, a pack loop over any
 #      `pack:<x>` member, a pack name that is also a tool folder, an old key of
-#      `tools/packs.toml` (`depends`, `required`, `tools` or `default` with a
+#      `$_RS_PACKS_FILE` (`depends`, `required`, `tools` or `default` with a
 #      list, or a `p:<x>` member), a pack member that is not a table, that has
 #      an entry key other than `default` or a `default` that is not a boolean,
 #      or that is not on one line, an environment that is not in
@@ -277,6 +277,11 @@ source "${BASH_SOURCE[0]%/*}/select"
 # shellcheck source=/dev/null
 source "${BASH_SOURCE[0]%/*}/manifest"
 _SE_PREFIX='repo-sync'
+
+# The repo side of the clone: the folder of the tools and the file of the packs,
+# relative to the clone. No other line of this file names them.
+_RS_TOOLS_DIR=repo/tools
+_RS_PACKS_FILE=repo/packs.toml
 
 # The manifests of the clone, read once by `_rs_mise_index`.
 _RS_MANIFESTS='' _RS_MANIFESTS_DIR=''
@@ -460,7 +465,7 @@ _rs_manifest() {
     awk -v t="$tool" '$1 == t { sub(/^[^ ]* /, ""); print }' <<< "$_RS_MANIFESTS"
     return 0
   fi
-  _se_gomplate -c "t=${dir}/tools/${tool}/tools.toml" -i "<% \$t := .t %>${_RS_MANIFEST_TEMPLATE//@P@/}"
+  _se_gomplate -c "t=${dir}/${_RS_TOOLS_DIR}/${tool}/tools.toml" -i "<% \$t := .t %>${_RS_MANIFEST_TEMPLATE//@P@/}"
 }
 
 # Set _RS_MISE_DEFS to the ` <mise-tool>=<tool> ` words of every tool in the
@@ -476,15 +481,15 @@ _rs_manifest() {
 # `<tool> <field> <value>` lines from one gomplate call, for `_rs_manifest`.
 _rs_mise_index() {
   local dir=$1 manifest tool name names path late tools='' args=() rc=0
-  late=$(cd "$dir/tools" && printf '%s\n' */ | sed 's#/$##' | LC_ALL=C awk '$0 >= "zz-repo" { print; exit }') || {
+  late=$(cd "$dir/$_RS_TOOLS_DIR" && printf '%s\n' */ | sed 's#/$##' | LC_ALL=C awk '$0 >= "zz-repo" { print; exit }') || {
     _se_log "cannot list the tool folders of the clone"
     return 2
   }
   if [[ -n $late ]]; then
-    _se_log "tool folder tools/$late sorts after zz-repo or is named zz-repo - rename it, because conf.d/zz-repo/ must load last"
+    _se_log "tool folder $_RS_TOOLS_DIR/$late sorts after zz-repo or is named zz-repo - rename it, because conf.d/zz-repo/ must load last"
     return 2
   fi
-  for manifest in "$dir"/tools/*/tools.toml; do
+  for manifest in "$dir"/"$_RS_TOOLS_DIR"/*/tools.toml; do
     tool=${manifest%/tools.toml}
     tool=${tool##*/}
     tools+="$tool "
@@ -496,7 +501,7 @@ _rs_mise_index() {
     # Read each file alone, to name the one that fails.
     for tool in $tools; do
       if ! _rs_manifest "$dir" "$tool" > /dev/null 2>&1; then
-        _se_log "cannot read tools/$tool/tools.toml"
+        _se_log "cannot read $_RS_TOOLS_DIR/$tool/tools.toml"
         return 2
       fi
     done
@@ -506,7 +511,7 @@ _rs_mise_index() {
   _RS_MANIFESTS+=$'\n'
   _RS_MANIFESTS_DIR=$dir
   _RS_MISE_DEFS=' '
-  _RS_TOOL_FILES=$(cd "$dir/tools" && find . -type f) || {
+  _RS_TOOL_FILES=$(cd "$dir/$_RS_TOOLS_DIR" && find . -type f) || {
     _se_log "cannot list the files of the tool folders of the clone"
     return 2
   }
@@ -516,12 +521,12 @@ _rs_mise_index() {
     # Each tool must be in dev, selected or not, so this repo's own test
     # finds a tool without dev before a consumer selects it.
     if [[ $'\n'$names$'\n' != *$'\n'"default_env dev"$'\n'* ]]; then
-      _se_log "default_envs of tools/$tool/tools.toml has no dev - each tool must be in dev, for example default_envs = [\"dev\", \"ci\"]"
+      _se_log "default_envs of $_RS_TOOLS_DIR/$tool/tools.toml has no dev - each tool must be in dev, for example default_envs = [\"dev\", \"ci\"]"
       return 2
     fi
     for name in $(printf '%s\n' "$names" | awk '$1 == "mise" { print $2 }'); do
       if [[ $_RS_MISE_DEFS == *" $name="* ]]; then
-        _se_log "mise tool '$name' is defined in tools/$tool and in another tool - keep one"
+        _se_log "mise tool '$name' is defined in $_RS_TOOLS_DIR/$tool and in another tool - keep one"
         return 2
       fi
       _RS_MISE_DEFS+="$name=$tool "
@@ -530,11 +535,11 @@ _rs_mise_index() {
   done
   while IFS= read -r path; do
     [[ -n $path && -f ${path%.tmpl} ]] || continue
-    path=${path#"$dir"/tools/}
+    path=${path#"$dir"/"$_RS_TOOLS_DIR"/}
     path=${path%.tmpl}
-    _se_log "${path%%/*}: ${path#*/} and ${path#*/}.tmpl both exist - keep one"
+    _se_log "$_RS_TOOLS_DIR/${path%%/*}: ${path#*/} and ${path#*/}.tmpl both exist - keep one"
     rc=2
-  done < <(find "$dir/tools" -type f -name '*.tmpl')
+  done < <(find "$dir/$_RS_TOOLS_DIR" -type f -name '*.tmpl')
   return "$rc"
 }
 
@@ -549,7 +554,7 @@ _rs_manifest_rules() {
     read -r a b c <<< "$value"
     case $field in
       bad)
-        _se_log "$tool/tools.toml: $value"
+        _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: $value"
         rc=2
         ;;
       old)
@@ -558,40 +563,40 @@ _rs_manifest_rules() {
         rc=2
         case $a in
           seed)
-            _se_log "tools/$tool/tools.toml: seed is not supported; use [files.\"<target>\"] with mode = \"seed\""
+            _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: seed is not supported; use [files.\"<target>\"] with mode = \"seed\""
             ;;
           seed_requires)
-            _se_log "tools/$tool/tools.toml: [seed_requires] is not supported; use requires in [files.\"<target>\"]"
+            _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: [seed_requires] is not supported; use requires in [files.\"<target>\"]"
             ;;
           files)
-            _se_log "tools/$tool/tools.toml: files in [mise.tools.$b] is not supported; use requires_found in [files.\"<target>\"]"
+            _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: files in [mise.tools.$b] is not supported; use requires_found in [files.\"<target>\"]"
             ;;
           requires)
-            _se_log "$tool/tools.toml: requires of mise tool $b is the old key - write requires_found = [\"$c\"]"
+            _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: requires of mise tool $b is the old key - write requires_found = [\"$c\"]"
             ;;
         esac
         ;;
       mise_env_key)
-        _se_log "$tool/tools.toml: $a of mise tool $b in [mise_env.$c.tools] is valid only in [mise.tools]"
+        _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: $a of mise tool $b in [mise_env.$c.tools] is valid only in [mise.tools]"
         rc=2
         ;;
       mise_found)
         if [[ -z $b || $b == */* ]]; then
-          _se_log "$tool/tools.toml: requires_found of mise tool $a: '$b' must be a file name, with no /"
+          _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: requires_found of mise tool $a: '$b' must be a file name, with no /"
           rc=2
         fi
         ;;
       files)
         if [[ $b == - ]]; then
           if [[ -n $target ]]; then
-            _se_files_check_mode "$tool" "$target" "$mode" "$format" "$has_remove" "$has_items" || rc=2
+            _se_files_check_mode "$_RS_TOOLS_DIR/$tool/tools.toml" "$target" "$mode" "$format" "$has_remove" "$has_items" || rc=2
           fi
           target=$a mode='' format='' has_remove=0 has_items=0
           _rs_target_ok "$tool" "$a" || rc=2
           continue
         fi
         if ! _se_files_key_ok "$b"; then
-          _se_log "$tool/tools.toml: [files.\"$a\"] $b is not a key of a file - the keys are mode, requires, requires_found, format, remove and remove_items"
+          _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: [files.\"$a\"] $b is not a key of a file - the keys are mode, requires, requires_found, format, remove and remove_items"
           rc=2
           continue
         fi
@@ -602,7 +607,7 @@ _rs_manifest_rules() {
                 mode=${c//\"/}
                 ;;
               *)
-                _se_log "$tool/tools.toml: [files.\"$a\"] mode must be \"generated\", \"seed\" or \"merge\""
+                _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: [files.\"$a\"] mode must be \"generated\", \"seed\" or \"merge\""
                 rc=2
                 ;;
             esac
@@ -613,18 +618,18 @@ _rs_manifest_rules() {
                 format=${c//\"/}
                 ;;
               *)
-                _se_log "$tool/tools.toml: [files.\"$a\"] format must be \"text\", \"json\", \"yaml\" or \"toml\""
+                _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: [files.\"$a\"] format must be \"text\", \"json\", \"yaml\" or \"toml\""
                 rc=2
                 ;;
             esac
             ;;
           remove)
             has_remove=1
-            _se_files_check_shape "$tool" "$a" "$b" "$c" || rc=2
+            _se_files_check_shape "$_RS_TOOLS_DIR/$tool/tools.toml" "$a" "$b" "$c" || rc=2
             ;;
           remove_items)
             has_items=1
-            _se_files_check_shape "$tool" "$a" "$b" "$c" || rc=2
+            _se_files_check_shape "$_RS_TOOLS_DIR/$tool/tools.toml" "$a" "$b" "$c" || rc=2
             ;;
         esac
         ;;
@@ -632,19 +637,19 @@ _rs_manifest_rules() {
         if [[ $b == requires ]]; then
           case $c in
             '' | /* | .. | ../* | */../* | */..)
-              _se_log "$tool/tools.toml: [files.\"$a\"] requires: '$c' must be a path relative to the repository root, with no .. part"
+              _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: [files.\"$a\"] requires: '$c' must be a path relative to the repository root, with no .. part"
               rc=2
               ;;
           esac
         elif [[ -z $c || $c == */* ]]; then
-          _se_log "$tool/tools.toml: [files.\"$a\"] requires_found: '$c' must be a file name, with no /"
+          _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: [files.\"$a\"] requires_found: '$c' must be a file name, with no /"
           rc=2
         fi
         ;;
     esac
   done <<< "$names"
   if [[ -n $target ]]; then
-    _se_files_check_mode "$tool" "$target" "$mode" "$format" "$has_remove" "$has_items" || rc=2
+    _se_files_check_mode "$_RS_TOOLS_DIR/$tool/tools.toml" "$target" "$mode" "$format" "$has_remove" "$has_items" || rc=2
   fi
   return "$rc"
 }
@@ -662,7 +667,7 @@ _rs_target_ok() {
       [[ $_RS_TOOL_FILES != *$'\n'"./$tool/$target"$'\n'* && $_RS_TOOL_FILES != *$'\n'"./$tool/$target.tmpl"$'\n'* ]] || return 0
       ;;
   esac
-  _se_log "$tool/tools.toml: [files.\"$target\"] names a target that no file of the tool produces"
+  _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: [files.\"$target\"] names a target that no file of the tool produces"
   return 2
 }
 
@@ -717,12 +722,12 @@ _rs_env_rules() {
 # message.
 _rs_walk_deps() {
   local tool=$1 manifest field value entry name owner
-  if [[ ! -f $dir/tools/$tool/tools.toml ]]; then
+  if [[ ! -f $dir/$_RS_TOOLS_DIR/$tool/tools.toml ]]; then
     _se_log "tool '$tool' is not in bootstrap"
     return 3
   fi
   manifest=$(_rs_manifest "$dir" "$tool") || {
-    _se_log "cannot read tools/$tool/tools.toml"
+    _se_log "cannot read $_RS_TOOLS_DIR/$tool/tools.toml"
     return 2
   }
   while read -r field value; do
@@ -735,7 +740,7 @@ _rs_walk_deps() {
         for name in $value; do
           owner=$(_rs_mise_owner "$name") || owner=''
           if [[ -z $owner ]]; then
-            _se_log "mise tool '$entry' of tools/$tool depends on '$name', which no tool defines"
+            _se_log "mise tool '$entry' of $_RS_TOOLS_DIR/$tool depends on '$name', which no tool defines"
             return 2
           fi
           [[ $owner == "$tool" ]] || printf '%s\n' "$owner"
@@ -753,14 +758,14 @@ _rs_walk_deps() {
 _rs_walk_done() {
   local tool=$1 manifest field value target key item
   manifest=$(_rs_manifest "$dir" "$tool") || {
-    _se_log "cannot read tools/$tool/tools.toml"
+    _se_log "cannot read $_RS_TOOLS_DIR/$tool/tools.toml"
     return 2
   }
   while read -r field value; do
     case $field in
       default_env)
         if ! _rs_env_name "$value"; then
-          _se_log "default_envs of tools/$tool/tools.toml: '$value' is not one of ${_RS_ENV_NAMES// /, }"
+          _se_log "default_envs of $_RS_TOOLS_DIR/$tool/tools.toml: '$value' is not one of ${_RS_ENV_NAMES// /, }"
           return 2
         fi
         _RS_DEFAULT_ENVS+="$tool:$value "
@@ -825,7 +830,7 @@ _rs_resolve() {
   local dir=$1 values=$2 sel pending in_submodule name envs
   sel=$(_rs_values_sel "$values") || return 2
   _rs_env_rules "$values" "$sel" || return 2
-  _RS_SEL=$(_se_selected "$dir/tools/packs.toml" "$dir/tools" "$_RS_BASE_PACK" "$sel" tools/packs.toml) || return
+  _RS_SEL=$(_se_selected "$dir/$_RS_PACKS_FILE" "$dir/$_RS_TOOLS_DIR" "$_RS_BASE_PACK" "$sel" "$_RS_PACKS_FILE") || return
   in_submodule=$(git -C "$MISE_PROJECT_ROOT" rev-parse --show-superproject-working-tree 2> /dev/null) || in_submodule=''
   # In a submodule, a root_only tool of a pack is skipped: the pack base adds
   # vscode to each repository. A [tools.*] entry of it still stops the sync.
@@ -859,11 +864,11 @@ _rs_resolve() {
 _rs_tool_extensions() {
   local dir=$1 values=$2 pending tool field value seen=' ' entry name owner sel
   sel=$(_rs_values_sel "$values" 2> /dev/null) || sel=''
-  pending=$(_se_selected "$dir/tools/packs.toml" "$dir/tools" "$_RS_BASE_PACK" "$sel" tools/packs.toml 2> /dev/null | awk '{ print $1 }' | tr '\n' ' ') || pending=''
+  pending=$(_se_selected "$dir/$_RS_PACKS_FILE" "$dir/$_RS_TOOLS_DIR" "$_RS_BASE_PACK" "$sel" "$_RS_PACKS_FILE" 2> /dev/null | awk '{ print $1 }' | tr '\n' ' ') || pending=''
   while [[ -n ${pending// /} ]]; do
     tool=${pending%% *}
     pending=${pending#* }
-    [[ -n $tool && $seen != *" $tool "* && -f $dir/tools/$tool/tools.toml ]] || continue
+    [[ -n $tool && $seen != *" $tool "* && -f $dir/$_RS_TOOLS_DIR/$tool/tools.toml ]] || continue
     seen+="$tool "
     while read -r field value; do
       case $field in
@@ -1214,7 +1219,7 @@ _rs_mise_env() {
     done <<< "$_RS_MISE_FOUND"
     for name in ${allowed//,/ }; do
       if ! _rs_env_name "$name"; then
-        _se_log "envs of mise tool '$entry' in tools/$tool/tools.toml: '$name' is not one of ${_RS_ENV_NAMES// /, }"
+        _se_log "envs of mise tool '$entry' in $_RS_TOOLS_DIR/$tool/tools.toml: '$name' is not one of ${_RS_ENV_NAMES// /, }"
         return 2
       fi
     done
@@ -1225,13 +1230,13 @@ _rs_mise_env() {
         from=${from%% *}
         case $from in
           default)
-            _se_log "tools/$tool/tools.toml: default_envs has '$env', but its mise tool '$entry' allows only ${allowed//,/, }"
+            _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: default_envs has '$env', but its mise tool '$entry' allows only ${allowed//,/, }"
             ;;
           tools.* | packs.*)
-            _se_log "env '$env' of [$from] in the values file: mise tool '$entry' of tools/$tool allows only ${allowed//,/, }"
+            _se_log "env '$env' of [$from] in the values file: mise tool '$entry' of $_RS_TOOLS_DIR/$tool allows only ${allowed//,/, }"
             ;;
           *)
-            _se_log "tools/$from needs tools/$tool in '$env', but its mise tool '$entry' allows only ${allowed//,/, }"
+            _se_log "$_RS_TOOLS_DIR/$from needs $_RS_TOOLS_DIR/$tool in '$env', but its mise tool '$entry' allows only ${allowed//,/, }"
             ;;
         esac
         return 2
@@ -1365,7 +1370,7 @@ _rs_overrides() {
   fi
   local args=(-c "o=${values}")
   for tool in $tools; do
-    args+=(-c "tool_${tool}=${dir}/tools/${tool}/tools.toml")
+    args+=(-c "tool_${tool}=${dir}/${_RS_TOOLS_DIR}/${tool}/tools.toml")
   done
   out=$(REPO_SYNC_ENVS=$envs REPO_SYNC_TOOLS=$tools _se_gomplate "${args[@]}" -i "$_RS_OVERRIDES_TEMPLATE") || {
     _se_log "cannot read [overrides] of $show"
@@ -1417,7 +1422,7 @@ _rs_overrides() {
         ;;
       none)
         ((only_local)) && continue
-        _se_log "$path in $show: no selected tool has $arg - the path after overrides. is the path in tools/<tool>/tools.toml"
+        _se_log "$path in $show: no selected tool has $arg - the path after overrides. is the path in $_RS_TOOLS_DIR/<tool>/tools.toml"
         ;;
       *)
         continue
@@ -1428,7 +1433,7 @@ _rs_overrides() {
   local ignore line shipped
   while IFS=$'\t' read -r ignore line; do
     [[ -n $line ]] || continue
-    shipped=tools/git/.gitignore
+    shipped=$_RS_TOOLS_DIR/git/.gitignore
     if [[ $'\n'$_RS_GI_ADD == *$'\n'"$ignore"$'\t'"$line"$'\n'* ]]; then
       _se_log "overrides.$ignore in $show: '$line' is in add and in remove - keep one"
       rc=2
@@ -1521,18 +1526,18 @@ _RS_MISE_TEMPLATE="$_RS_DEFINES"'<% $m := dict %><% if has .t "mise" %><% $m = .
 # Generate the mise config of <tool> from the `[mise]` and `[mise_env]` tables
 # of its tools.toml in the clone <dir>, with `[overrides]` of <values> applied:
 # one `mise.<env>.toml` for each selected environment with content, into
-# tools/<tool>/.config/mise/conf.d/<tool>/ of the clone. Each line that an
-# override changed gets an `# override: <values>` comment. The file loop then
+# $_RS_TOOLS_DIR/<tool>/.config/mise/conf.d/<tool>/ of the clone. Each line that
+# an override changed gets an `# override: <values>` comment. The file loop then
 # syncs it like a shipped file. Records each file in _RS_GENERATED. Returns 2,
 # after a message, when the config cannot be generated; the existing files of
 # the folder are then kept.
 _rs_mise_render() {
   local dir=$1 tool=$2 values=$3 folder=$2 env name rel tmp err
   local note="# override: ${values#"$MISE_PROJECT_ROOT"/}"
-  local out="${dir}/tools/${tool}/.config/mise/conf.d/${folder}"
+  local out="${dir}/${_RS_TOOLS_DIR}/${tool}/.config/mise/conf.d/${folder}"
   local line1
   # shellcheck disable=SC2059
-  printf -v line1 "$_SE_HEADER_LINE1" "tools/${tool}/tools.toml"
+  printf -v line1 "$_SE_HEADER_LINE1" "${_RS_TOOLS_DIR}/${tool}/tools.toml"
   local header="# ${line1}
 # ${_SE_HEADER_LINE2}
 "
@@ -1559,8 +1564,8 @@ _rs_mise_render() {
     # gomplate writes no file for an empty output, so the previous one must go.
     rm -f -- "$tmp"
     if ! REPO_SYNC_ENV=$env REPO_SYNC_ENVS=$_RS_MISE_ENVS REPO_SYNC_IN=$in REPO_SYNC_DEV_ALIASES=$aliases \
-      _se_gomplate -c "t=${dir}/tools/${tool}/tools.toml" -c "o=${values}" -i "$_RS_MISE_TEMPLATE" -o "$tmp" 2> "$err"; then
-      _se_log "tools/$tool/tools.toml: cannot generate the mise config: $(sed -n 's/.*error calling Fail: template generation failed: //p' "$err" | sed 's/"}$//')"
+      _se_gomplate -c "t=${dir}/${_RS_TOOLS_DIR}/${tool}/tools.toml" -c "o=${values}" -i "$_RS_MISE_TEMPLATE" -o "$tmp" 2> "$err"; then
+      _se_log "$_RS_TOOLS_DIR/$tool/tools.toml: cannot generate the mise config: $(sed -n 's/.*error calling Fail: template generation failed: //p' "$err" | sed 's/"}$//')"
       return 2
     fi
     [[ -e $tmp ]] || continue
@@ -1579,7 +1584,7 @@ _rs_mise_render() {
     ' "$tmp" "$tmp" > "$tmp.marked" && mv -f -- "$tmp.marked" "$tmp" || return 1
     [[ -s $tmp && -n $(tr -d ' \n' < "$tmp") ]] || continue
     if [[ -e $out/$name ]]; then
-      _se_log "tools/$tool ships $rel and also generates it from [mise] - remove one"
+      _se_log "$_RS_TOOLS_DIR/$tool ships $rel and also generates it from [mise] - remove one"
       return 2
     fi
     mkdir -p -- "$out" &&
@@ -1610,7 +1615,7 @@ _rs_context() {
   # entries; `repo_precommit` for the repo's own entries.
   local args=(-c "v=${values}")
   for tool in $_RS_TOOLS; do
-    args+=(-c "tool_${tool}=${dir}/tools/${tool}/tools.toml")
+    args+=(-c "tool_${tool}=${dir}/${_RS_TOOLS_DIR}/${tool}/tools.toml")
   done
   local own="${MISE_PROJECT_ROOT}/.config/repo-sync/pre-commit.yaml"
   local has_own=''
@@ -1664,7 +1669,7 @@ _rs_context() {
 # `_rs_format`.
 _rs_file() {
   local dir=$1 tool=$2 path=$3 dry_run=$4 ctx=$5
-  local src="${dir}/tools/${tool}/${path}" out=${path%.tmpl}
+  local src="${dir}/${_RS_TOOLS_DIR}/${tool}/${path}" out=${path%.tmpl}
   local dest destdir tmp show rc=0 env mode format target_format
   _RS_DEFERRED=''
   mode=$(_rs_file_mode "$tool/$out")
@@ -1733,7 +1738,7 @@ _rs_file() {
     if [[ -z $ctx ]]; then
       rc=2
     elif ! _se_gomplate -c ".=${ctx}?type=application/json" -f "$src" -o "$tmp" >&2; then
-      _se_log "$tool/$path: gomplate failed to render the template"
+      _se_log "$_RS_TOOLS_DIR/$tool/$path: gomplate failed to render the template"
       rc=2
     fi
   else
@@ -1747,12 +1752,12 @@ _rs_file() {
   # REPO_SYNC_NO_AUTOUPDATE=1 skips it, for the tests.
   if ((rc == 0)) && [[ $out == .config/pre-commit-config.yaml ]]; then
     if [[ ${REPO_SYNC_NO_AUTOUPDATE:-} == 1 ]]; then
-      _se_log "$tool/$path: REPO_SYNC_NO_AUTOUPDATE=1 - pre-commit autoupdate skipped"
+      _se_log "$_RS_TOOLS_DIR/$tool/$path: REPO_SYNC_NO_AUTOUPDATE=1 - pre-commit autoupdate skipped"
     elif ! command -v pre-commit > /dev/null 2>&1; then
-      _se_log "$tool/$path: pre-commit is not available to resolve the hook revisions"
+      _se_log "$_RS_TOOLS_DIR/$tool/$path: pre-commit is not available to resolve the hook revisions"
       rc=5
     elif ! (cd "$MISE_PROJECT_ROOT" && pre-commit autoupdate --config "$tmp" > /dev/null 2>&1); then
-      _se_log "$tool/$path: pre-commit autoupdate failed - examine the network and the hook repositories"
+      _se_log "$_RS_TOOLS_DIR/$tool/$path: pre-commit autoupdate failed - examine the network and the hook repositories"
       rc=5
     fi
   fi
@@ -1828,7 +1833,7 @@ _rs_format() {
 # `_rs_file`.
 _rs_file_finish() {
   local dir=$1 tool=$2 path=$3 dry_run=$4 tmp=$5
-  local src="${dir}/tools/${tool}/${path}" out=${path%.tmpl}
+  local src="${dir}/${_RS_TOOLS_DIR}/${tool}/${path}" out=${path%.tmpl}
   local dest show rc=0
   dest="${MISE_PROJECT_ROOT}/${out}"
   show=$(_se_path "$dest")
@@ -2050,7 +2055,7 @@ repo_sync() {
     rc=0
     _rs_mise_render "$dir" "$tool" "$values" || rc=$?
     if ((rc != 0)); then
-      failed+=("$tool/tools.toml [mise]")
+      failed+=("$_RS_TOOLS_DIR/$tool/tools.toml [mise]")
       ((rc > worst)) && worst=$rc
     fi
   done
@@ -2059,7 +2064,7 @@ repo_sync() {
   # path tells `_rs_file` that it could not be built, so each template fails
   # and every plain file still syncs.
   local ctx=''
-  if [[ -n $(find "$dir/tools" -name '*.tmpl' -type f -print -quit) ]]; then
+  if [[ -n $(find "$dir/$_RS_TOOLS_DIR" -name '*.tmpl' -type f -print -quit) ]]; then
     ctx=$(mktemp "${TMPDIR:-/tmp}/repo-sync-ctx.XXXXXX") || {
       rm -rf -- "$dir"
       return 1
@@ -2099,12 +2104,12 @@ repo_sync() {
         _rs_file "$dir" "$tool" "$path" "$dry_run" "$ctx" || rc=$?
       fi
       if ((rc != 0)); then
-        failed+=("$tool/$path")
+        failed+=("$_RS_TOOLS_DIR/$tool/$path")
         ((rc > worst)) && worst=$rc
       elif [[ -z $_RS_DEFERRED ]]; then
         ((ok += 1))
       fi
-    done < <(cd "$dir/tools/$tool" && find . -type f ! -name tools.toml | sed 's#^\./##' | sort)
+    done < <(cd "$dir/$_RS_TOOLS_DIR/$tool" && find . -type f ! -name tools.toml | sed 's#^\./##' | sort)
   done
 
   _rs_format
@@ -2115,7 +2120,7 @@ repo_sync() {
     if ((rc == 0)); then
       ((ok += 1))
     else
-      failed+=("$tool/$path")
+      failed+=("$_RS_TOOLS_DIR/$tool/$path")
       ((rc > worst)) && worst=$rc
     fi
   done <<< "$_RS_PENDING"
