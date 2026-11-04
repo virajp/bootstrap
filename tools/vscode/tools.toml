@@ -5,7 +5,6 @@ default_envs = [ "dev" ]
 depends = []
 extensions = [ "gruntfuggly.todo-tree", "oderwat.indent-rainbow", "pkief.material-icon-theme", "usernamehw.errorlens" ]
 root_only = true
-seed = []
 
 # The mise config, generated into .config/mise/conf.d/vscode/mise.dev.toml.
 

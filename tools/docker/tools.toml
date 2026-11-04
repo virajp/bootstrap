@@ -3,4 +3,6 @@ default_envs = [ "dev" ]
 depends = []
 extensions = []
 root_only = true
-seed = [ ".tools/docker-compose.yaml" ]
+
+[files.".tools/docker-compose.yaml"]
+mode = "seed"

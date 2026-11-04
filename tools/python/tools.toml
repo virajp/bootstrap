@@ -4,7 +4,15 @@ default_envs = [ "dev", "ci" ]
 depends = []
 extensions = [ "meta.pyrefly" ]
 root_only = false
-seed = []
+
+[files.".config/mise/tasks/code/format/ruff"]
+requires_found = [ "pyproject.toml" ]
+
+[files.".config/mise/tasks/code/lint/ruff"]
+requires_found = [ "pyproject.toml" ]
+
+[files.".config/mise/tasks/code/lint/pyrefly"]
+requires_found = [ "pyproject.toml" ]
 
 # The mise config, generated into .config/mise/conf.d/python/mise.<env>.toml.
 [mise.settings]
@@ -24,18 +32,16 @@ version = "latest"
 
 # The gates of a Python project. Many repositories have python only for the
 # tools of other bootstrap tools, so the sync installs these two, and writes
-# their tasks, only when the repository has a pyproject.toml.
+# their tasks, only when requires_found finds a pyproject.toml.
 [mise.tools.ruff]
 envs = [ "dev", "ci" ]
-files = [ ".config/mise/tasks/code/format/ruff", ".config/mise/tasks/code/lint/ruff" ]
-requires = "pyproject.toml"
+requires_found = [ "pyproject.toml" ]
 version = "latest"
 
 [mise.tools."pipx:pyrefly"]
 depends = [ "python", "uv" ]
 envs = [ "dev", "ci" ]
-files = [ ".config/mise/tasks/code/lint/pyrefly" ]
-requires = "pyproject.toml"
+requires_found = [ "pyproject.toml" ]
 version = "latest"
 
 [mise.env]

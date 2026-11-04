@@ -3,7 +3,6 @@ default_envs = [ "dev", "ci" ]
 depends = []
 extensions = [ "gitlab.gitlab-workflow" ]
 root_only = false
-seed = []
 
 # `glab ci lint` asks the GitLab API, so it needs the network and `glab auth`.
 [[precommit]]

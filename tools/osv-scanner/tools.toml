@@ -3,7 +3,9 @@ default_envs = [ "dev", "ci" ]
 depends = []
 extensions = []
 root_only = false
-seed = [ ".config/osv-scanner.toml" ]
+
+[files.".config/osv-scanner.toml"]
+mode = "seed"
 
 # The mise config, generated into .config/mise/conf.d/osv-scanner/mise.<env>.toml.
 # In dev and ci, because CI runs `code:sec` too.

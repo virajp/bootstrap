@@ -3,7 +3,6 @@ default_envs = [ "dev", "ci" ]
 depends = []
 extensions = [ "dbaeumer.vscode-eslint", "foxundermoon.shell-format" ]
 root_only = false
-seed = []
 
 # The gate hooks are tool-neutral: each names a task and nothing else. Which
 # linters run is decided inside the task, so a hook and CI cannot drift apart.

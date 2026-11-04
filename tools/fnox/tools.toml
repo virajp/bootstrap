@@ -3,7 +3,9 @@ default_envs = [ "dev" ]
 depends = []
 extensions = []
 root_only = false
-seed = [ ".config/fnox.toml.tmpl" ]
+
+[files.".config/fnox.toml"]
+mode = "seed"
 
 # The mise config, generated into .config/mise/conf.d/fnox/mise.<env>.toml.
 # Fnox resolves the repo's secrets from the providers in .config/fnox.toml.

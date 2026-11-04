@@ -3,7 +3,6 @@ default_envs = [ "dev" ]
 depends = []
 extensions = []
 root_only = false
-seed = []
 
 [[precommit]]
 repo = "https://github.com/pre-commit/pre-commit-hooks"

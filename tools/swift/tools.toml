@@ -5,7 +5,12 @@ default_envs = [ "dev" ]
 depends = []
 extensions = [ "swiftlang.swift-vscode" ]
 root_only = false
-seed = [ ".config/swift-format.json", ".config/swiftlint.yml" ]
+
+[files.".config/swift-format.json"]
+mode = "seed"
+
+[files.".config/swiftlint.yml"]
+mode = "seed"
 
 # The mise config, generated into .config/mise/conf.d/swift/mise.<env>.toml.
 # SwiftLint is the correctness gate. swift-format comes with the Swift

@@ -3,7 +3,12 @@ default_envs = [ "dev" ]
 depends = [ "java" ]
 extensions = []
 root_only = false
-seed = [ ".config/detekt.yml", ".config/ktlint.editorconfig" ]
+
+[files.".config/detekt.yml"]
+mode = "seed"
+
+[files.".config/ktlint.editorconfig"]
+mode = "seed"
 
 # The mise config, generated into .config/mise/conf.d/kotlin/mise.<env>.toml.
 # ktlint is the layout gate, and detekt the correctness gate. detekt-cli runs
