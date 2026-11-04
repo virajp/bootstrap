@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-04T12:36:15Z in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-04 — e2d080d 15dc67e 84f2e82 ed2fa55 b13a1f8 ab67789 28a7e7b d0db0b5; 11 gaps open (G4 G5 G6 G7 G8 G9 G10 G11 G14 G15 G17); folder stays live"
   },
   "consent": {
     "merge": true,
@@ -475,6 +475,20 @@
       "unit": "U5",
       "stage": "edit",
       "text": "Wave 5 has an empty diff, so no wave reviewer was dispatched for it · closed: U5 edits no file by its unit file, git status showed only the plan state, and the plan gate runs every line again over the same tree",
+      "state": "closed"
+    },
+    {
+      "id": "G17",
+      "unit": "",
+      "stage": "keeps",
+      "text": "K1 cannot hold as written: python is in the base through the mise depends of pre-commit, so after [tools.python] and pyproject.toml go, conf.d/python/mise.dev.toml, code/lint/uv and setup/deps/python are still written, and their rows stay; a pyproject.toml deleted but not committed also still counts for requires_found · assumed the keep holds if the rule holds on what K1 proves. Run with the K1 setup: the first run exits 0, first line and sorted rows, conf.d/python row, no seed row. After the deletion is committed the next run exits 0, removes the three gates that need pyproject.toml, drops their rows, keeps own.txt. A second round with [tools.pulumi], a tool outside the base, removed conf.d/pulumi/mise.dev.toml, the conf.d/pulumi folder and its row. A person may want K1 rewritten around a tool outside the base",
+      "state": "open"
+    },
+    {
+      "id": "G18",
+      "unit": "",
+      "stage": "land",
+      "text": "The landing option is merge, push and clean up, but the run works in the session worktree of G2, which the session itself still uses · closed: merged and pushed, and the worktree stays, as on the earlier plans of this chain; no worktree was removed",
       "state": "closed"
     }
   ],
