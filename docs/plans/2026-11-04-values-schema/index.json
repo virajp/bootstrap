@@ -86,11 +86,11 @@
         "U1"
       ],
       "waits": "Its cases run the values code that U1 writes in sync-engine/values and sync-engine/repo-sync.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T17:05:13.259Z",
+      "ended": "2026-11-04T17:17:18.504Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U3",
@@ -168,8 +168,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T17:05:13.186Z",
       "ended": ""
     },
     {
@@ -365,6 +365,13 @@
       "unit": "U1",
       "stage": "edit",
       "text": "R1: docs/design/packs.md:85, CLAUDE.md:262 and docs/sync/index.md:703 are falsified by U1 and were not reported · closed: handed to U4 as DOCS FALSIFIED lines; each path is in U4's Owns, so no Owns widened",
+      "state": "closed"
+    },
+    {
+      "id": "G7",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2: the plan places the changed --check case at lines 696-698; it was at 742-744 after P01-P06 · closed: the same case, found by its name, and changed as ruled",
       "state": "closed"
     }
   ],
