@@ -17,7 +17,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | `.config/mise/conf.d/_repo/`, or an `env` without `dev`                      | M17, before the first sync.                                                                                                                                                                                                                                         |
 | `.config/repo-sync/gitignore`                                                | M18, before the next sync.                                                                                                                                                                                                                                          |
 | Files from the stackgen `tool-config` skill or packs                         | M19, before the next sync.                                                                                                                                                                                                                                          |
-| `[tools.vscode]` in the values file, or no `vscode` in the root              | M20.                                                                                                                                                                                                                                                                |
+| `[tools.vscode]` without values, or no `vscode` in the root                  | M20.                                                                                                                                                                                                                                                                |
 | `@askviraj/linter` in a file of the repository                               | M21, before the next sync.                                                                                                                                                                                                                                          |
 | A core branch that must allow direct commits                                 | M22. Optional.                                                                                                                                                                                                                                                      |
 | A sync that adds `code:lint:repo-sync`                                       | M23, after the sync.                                                                                                                                                                                                                                                |
@@ -468,8 +468,9 @@ have the bootstrap header, so the sync does not remove them.
 The sync adds `vscode` to each root repository, and it skips the tool in a
 git submodule.
 
-1. If the values file has `[tools.vscode]`, remove the table. The entry does
-   nothing in a root repository, and a submodule refuses it with code 2.
+1. If the values file has a `[tools.vscode]` table without values, remove the
+   table. The entry does nothing in a root repository, and a submodule refuses
+   it with code 2.
 2. If a root repository did not select `vscode` before, do "Adapt to the
    repository" of [`tools/vscode.md`](tools/vscode.md) before the next sync.
    The sync replaces `.vscode/settings.json`.

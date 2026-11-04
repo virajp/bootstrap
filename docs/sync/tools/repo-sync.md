@@ -12,8 +12,8 @@ function `repo_sync` of `sync-engine/repo-sync` in the clone.
 
 ## When the tool is relevant
 
-Always. The `base` pack always adds this tool. Do not list it in the values
-file.
+Always. The `base` pack always adds this tool. Do not select it in the values
+file. A `[tools.repo-sync]` table only gives values.
 
 ## What the tool ships
 
@@ -121,8 +121,9 @@ them: a tool or a pack that is not in `bootstrap`, a pack loop, a pack named
 like a tool or another bad `[pack.*]` table (an old key or a bad member), an
 environment that a mise tool does not allow, an
 `[overrides.mise*]` path that no selected tool has, a `remove` line that the
-shared file does not have, a `root_only` tool in a submodule, and an old key or
-a bad `[files]` table of a `tools.toml`.
+shared file does not have, a `root_only` tool in a submodule, an old key or a
+bad `[files]` table of a `tools.toml`, and a bad `[defaults]`, `[questions]` or
+`[contributes]` table or a conflict of the values of the tools.
 
 Besides the copy of the files, `repo_sync` does these steps:
 
@@ -169,6 +170,11 @@ Besides the copy of the files, `repo_sync` does these steps:
     it skips the stale rule, the write of the manifest and `bootstrap_commit`.
   - A dry run prints `would remove <path>` for each stale file, and
     `would write .config/repo-generated.tsv` when the content differs.
+- It merges the values of each selected tool (`sync-engine/values`): the
+  `[defaults]` of the tool, the contributions of the selected tools, then
+  `[tools.<name>]` without `env`. A template reads them as `.config` and `.all`.
+  A failure stops the sync with code 2 or 3 before it writes a file of a tool.
+  See `docs/design/tools.md`.
 - It applies `[overrides]` of the values file to the generated mise config
   and to `.gitignore`. Each overridden line gets an `# override:` comment.
   A bad `[overrides]` stops the sync with code 2. See "Overrides" in step 3

@@ -11,8 +11,8 @@ The house linter and ShellCheck, `code:lint` and `setup:linter`.
 
 ## When the tool is relevant
 
-Always. The `base` pack always adds this tool. Do not list it in the values
-file.
+Always. The `base` pack always adds this tool. Do not select it in the values
+file. A `[tools.linter]` table only gives values.
 
 ## What the tool ships
 

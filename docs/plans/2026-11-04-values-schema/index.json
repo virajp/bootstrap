@@ -134,11 +134,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T17:51:44.987Z",
+      "ended": "2026-11-04T17:55:44.205Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -180,8 +180,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T17:51:44.856Z",
       "ended": ""
     },
     {
@@ -300,28 +300,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T17:51:44.594Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T17:51:44.338Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T17:51:44.457Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers, no code unit: nothing to reconcile or persist; no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T17:51:44.725Z"
     }
   },
   "gaps": [
@@ -373,6 +373,34 @@
       "stage": "edit",
       "text": "U2: the plan places the changed --check case at lines 696-698; it was at 742-744 after P01-P06 · closed: the same case, found by its name, and changed as ruled",
       "state": "closed"
+    },
+    {
+      "id": "G8",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "U4: sync-engine/values:133, ported from setup-sync:803, tells the user to remove one contribution or set the value in [tools.<name>], but a user value does not clear a contribution conflict, since contributions merge first and any conflict returns code 2 · assumed the engine is the source of truth and the plan's port-its-messages ruling stands, so docs/design/tools.md says a [tools.<name>] value does not clear the conflict; the engine message needs a ruling and a fix",
+      "state": "open"
+    },
+    {
+      "id": "G9",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "U4: the plan does not say whether the adopting AI asks a tool's [questions] · assumed per D7 that the docs say only that the sync examines the shape and asks nothing; docs/sync/index.md gets no instruction to ask, and no tool uses the table now",
+      "state": "open"
+    },
+    {
+      "id": "G10",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "U4: the docs say a [tools.<name>] table for a base tool only gives values, while CLAUDE.md mise config and step 3 say a tool selected more than once gets each environment, so env in a [tools.dprint] table may still add environments; not tested in the engine · assumed the docs follow the ruling's wording, with no env exception added",
+      "state": "open"
+    },
+    {
+      "id": "G11",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "R4: the ruling and D5 say a table for a base tool or a dependency only gives values, but the engine (_rs_resolve) also selects a dependency through its [tools.<dep>] table, and docs/sync/tools/node.md, java.md and kotlin.md rely on that · assumed the engine stands and the docs describe it: the table of a base tool only gives values, and the table of a dependency also selects it; the ruling's wording needs a person's confirmation",
+      "state": "open"
     }
   ],
   "overrides": [],

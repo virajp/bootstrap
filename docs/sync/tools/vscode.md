@@ -12,8 +12,9 @@ selected tools.
 
 ## When the tool is relevant
 
-Always in a root repository: the `base` pack adds it. Do not write
-`[tools.vscode]` in the values file. VS Code opens the root repository, and
+Always in a root repository: the `base` pack adds it. Do not select
+it in the values file. A `[tools.vscode]` table only gives values. VS Code
+opens the root repository, and
 its `extensions.json` also has the extensions of each git submodule. In a
 submodule, the sync skips the tool. A `[tools.vscode]` entry in a submodule
 stops the sync with code 2.
@@ -70,7 +71,8 @@ None.
 
 ## Migration
 
-- Remove `[tools.vscode]` from the values file (M20 of `migrate.md`).
+- Remove a `[tools.vscode]` table without values from the values file (M20 of
+  `migrate.md`).
 - Delete `.config/vscode.d/`. Remove the `// >>> vscode.d` blocks from
   `.vscode/settings.json` and `.config/pre-commit-config.yaml`. This tool
   writes `.vscode/extensions.json` from the tools.

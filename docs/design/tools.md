@@ -8,7 +8,7 @@ the tool they are installing
 ## The `tools.toml` file
 
 Each tool folder has a `tools.toml` with four necessary keys. The sync reads
-them without defaults.
+them without defaults. The other tables of the file are optional.
 
 | Key            | Meaning                                                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -80,6 +80,94 @@ comment `# Merged by bootstrap: <path>`, and the sync strips nothing.
   of an existing target, and a new one takes the mode of its source.
 
 No tool uses merge mode now.
+
+## The `[defaults]`, `[questions]` and `[contributes]` tables
+
+A `tools.toml` can have three optional tables for the values of a tool. A
+template reads the values as `.config` (the values of its tool) and `.all` (the
+values of each selected tool, by tool name). No tool uses these tables now.
+
+```toml
+[defaults]
+registry = "https://registry.example.com"
+
+[questions.team]
+detect = "git config user.email"
+example = "platform"
+question = "Which team owns this repository?"
+
+[contributes.vscode]
+settings = [ "editor.formatOnSave" ]
+```
+
+| Table                  | Keys                                                                              | Meaning                           |
+| ---------------------- | --------------------------------------------------------------------------------- | --------------------------------- |
+| `[defaults]`           | Any key                                                                           | The values of the tool.           |
+| `[questions.<key>]`    | `question` (necessary, a string), `detect` (a string, a shell command), `example` | The question for one value.       |
+| `[contributes.<tool>]` | Any key                                                                           | Values for another selected tool. |
+
+The sync examines these tables for each selected tool, not for each tool of the
+clone. `repo_sync --check` does not examine them, because they need the clone.
+These stop the sync with code 2:
+
+- `[defaults]` is not a table.
+- `[questions]` or `[contributes]` is not a table, or one of its entries is not
+  a
+  table.
+- A `[questions.<key>]` has another key, has no `question`, or has a `question`
+  or
+  a `detect` that is not a string.
+
+The sync does not ask a question and does not run `detect`. A missing answer is
+not an error of the engine: a template that needs an answer uses `required`,
+which fails that file with its message. Exit code 4 is only for the Mac
+front-end.
+
+### The merge
+
+`sync-engine/values` merges the values of each selected tool in this order:
+
+1. `[defaults]` of the tool.
+2. `[contributes.<tool>]` of each selected tool, in tool-name order.
+3. `[tools.<name>]` of the values file, without `env`.
+
+A contribution merges over `[defaults]`: tables merge key by key, a list appends
+its new items, and any other value replaces the default.
+
+Two contributions that set one key to different values stop the sync with code
+2,
+unless both values are tables or both are lists. A value in `[tools.<name>]`
+does
+not clear this conflict, because the sync merges the contributions first. Remove
+one of the two.
+
+A contribution to a tool of `repo/tools/` that is not selected is ignored. A
+contribution of a selected tool to a tool that is not in `repo/tools/` stops the
+sync with code 3.
+
+A value of `[tools.<name>]` depends on the tool:
+
+- A base or dependency tool is a tool that the pack `base` adds, also through a
+  nested `default = true` pack (`"pack:security"`: `gitleaks`, `grype`,
+  `osv-scanner`, and `_security_base` through `depends`), or a tool in the
+  depends
+  closure of a selected tool, a tool that a mise `depends` adds included. A
+  `<tool> = {}` member that the pack does not add does not count. It is a base
+  or
+  dependency tool also when a `[tools.<name>]` table names it. For such a tool,
+  a
+  list appends its new items, tables merge key by key, and a value whose type
+  differs from the merged value stops the sync with code 2.
+- For any other tool, a value replaces the merged one, and tables merge key by
+  key.
+
+The merge runs before the mise config and the file loop, so a failure stops the
+sync before it writes a file of a tool, and `bootstrap_commit` stays. A dry run
+merges too. Across tools, each message logs and the highest code returns. Inside
+one target tool, the merge stops at the first contribution conflict or type
+change of that tool, so a second conflict of that tool shows only after the
+first
+is fixed.
 
 ## Tools and packs
 
