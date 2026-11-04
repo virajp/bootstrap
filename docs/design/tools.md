@@ -87,9 +87,10 @@ A tool, for example `claude`, is a set of config for mise and for other CLIs.
 
 A pack groups tools, for example the pack `security`. A tool never selects a
 group of tools: a pack does. The config, the tasks and the files that all the
-packs of one kind use are in one tool that each of these packs names in
-`depends`, for example `flutter` for the Flutter packs, or in a common tool
-`_<name>`, for example `_security_base`. See [packs.md](packs.md).
+packs of one kind use are in one tool that each of these packs names as a
+member, for example `flutter` for the Flutter packs, or in a common tool
+`_<name>` that each member tool names in `depends`, for example
+`_security_base`. See [packs.md](packs.md).
 
 ## The Flutter example
 

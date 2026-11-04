@@ -3,10 +3,9 @@
 The tools that each repository gets: mise, the sync, git, pre-commit, the
 formatter, the linters, VS Code and the scanners.
 
-| Property | Value                                                                                |
-| -------- | ------------------------------------------------------------------------------------ |
-| Depends  | `mise`, `repo-sync`, `git`, `pre-commit`, `dprint`, `linter`, `vscode`, `p:security` |
-| Required | None                                                                                 |
+| Property | Value                                                                                     |
+| -------- | ----------------------------------------------------------------------------------------- |
+| Members  | `mise`, `repo-sync`, `git`, `pre-commit`, `dprint`, `linter`, `vscode`, `"pack:security"` |
 
 ## When the pack is relevant
 
@@ -15,16 +14,19 @@ Always. `repo-sync` always adds the `base` pack. Its name is fixed in
 
 ## What the pack adds
 
-| Tool         | Tool file                                         |
-| ------------ | ------------------------------------------------- |
-| `mise`       | [`tools/mise.md`](../tools/mise.md)               |
-| `repo-sync`  | [`tools/repo-sync.md`](../tools/repo-sync.md)     |
-| `git`        | [`tools/git.md`](../tools/git.md)                 |
-| `pre-commit` | [`tools/pre-commit.md`](../tools/pre-commit.md)   |
-| `dprint`     | [`tools/dprint.md`](../tools/dprint.md)           |
-| `linter`     | [`tools/linter.md`](../tools/linter.md)           |
-| `vscode`     | [`tools/vscode.md`](../tools/vscode.md)           |
-| `p:security` | The `security` pack, [`security.md`](security.md) |
+Each member is `default = true` in `tools/packs.toml`, for example
+`mise = { default = true }`.
+
+| Member            | Default | Tool file                                         |
+| ----------------- | ------- | ------------------------------------------------- |
+| `mise`            | Yes     | [`tools/mise.md`](../tools/mise.md)               |
+| `repo-sync`       | Yes     | [`tools/repo-sync.md`](../tools/repo-sync.md)     |
+| `git`             | Yes     | [`tools/git.md`](../tools/git.md)                 |
+| `pre-commit`      | Yes     | [`tools/pre-commit.md`](../tools/pre-commit.md)   |
+| `dprint`          | Yes     | [`tools/dprint.md`](../tools/dprint.md)           |
+| `linter`          | Yes     | [`tools/linter.md`](../tools/linter.md)           |
+| `vscode`          | Yes     | [`tools/vscode.md`](../tools/vscode.md)           |
+| `"pack:security"` | Yes     | The `security` pack, [`security.md`](security.md) |
 
 The mise `depends` of `pre-commit` and `linter` add the `python` and `node`
 tools too.

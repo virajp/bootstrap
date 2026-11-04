@@ -207,8 +207,8 @@ These cases are not a stop:
    and a `[packs.<pack>]` table for each pack. Write no `env` key: the tool
    then gets its `default_envs`. Keep the tables sorted.
 2. Find the tools that each added tool adds, then the tools that these tools
-   add in turn. For a pack, start with the tools of its `depends` and its
-   `required` in `tools/packs.toml`, and expand each `p:<pack>` in turn. Read
+   add in turn. For a pack, start with its `default = true` members in
+   `tools/packs.toml`, and expand each `"pack:<pack>"` of them in turn. Read
    `tools/<tool>/tools.toml` in the clone. A tool adds:
    - each tool of its `depends` key;
    - for each mise `depends` of one of its `[mise.tools.<name>]` entries, the

@@ -4,12 +4,12 @@ This document describes the packs of `bootstrap`. A pack is outside
 `tools.toml`, so it has its own document. See [tools.md](tools.md) for the
 tools.
 
-A pack is a named list of tools. It is only a pointer: it has `depends` and
-an optional `required`, and nothing else. The config, the tasks and the files
-are in the tools that the pack selects. The pack is the group: no tool selects
-other tools. If several packs share config, tasks or files, they are in one
-tool that each of these packs names in `depends`, for example `flutter`, or in
-a common tool `_<name>`.
+A pack is a named group of members. It is only a pointer: each key of its
+table is a member, and it has no other keys. The config, the tasks and the
+files are in the tools that the pack selects. The pack is the group: a tool
+adds only the tools that it needs, with its `depends`. If several packs share
+config, tasks or files, they are in one tool that each of these packs names as
+a member, for example `flutter`, or in a common tool `_<name>`.
 
 ## `tools/packs.toml`
 
@@ -20,24 +20,45 @@ table:
 ```toml
 # tools/packs.toml
 [pack.flutter-android]
-depends = [ "flutter", "android" ]
+android = { default = true }
+flutter = { default = true }
 
 [pack.flutter-ios]
-depends = [ "flutter", "swift" ]
+flutter = { default = true }
+swift = { default = true }
 
 [pack.flutter-web]
-depends = [ "flutter" ]
+flutter = { default = true }
 ```
 
-- A pack names all its tools in `depends`, the shared tool included.
-- A name in `depends` is a tool folder in `tools/`, or a pack with the prefix
-  `p:`, for example `p:security`.
+- Each key of the table is a member. The member forms are
+  `<tool> = { default = true }` and `<tool> = {}`.
+- `[packs.<name>]` of a values file adds each `default = true` member. A member
+  with `{}` adds nothing: it arrives only with `[tools.<name>]`.
+- A member is a tool folder in `tools/`, or a nested pack with the prefix
+  `pack:`, in quotes, for example `"pack:security" = { default = true }`. The
+  sync expands it in turn. `"pack:<name>" = {}` does not expand: that pack
+  arrives only through its own `[packs.<name>]`.
+- A tool can be in several packs. The sync adds it once.
+- A pack has no pack-level keys, and the only key of a member is `default`, a
+  boolean. Each member is on one line.
+- The sync takes the members in file order. The TOML plugin of dprint sorts
+  keys, so the root `dprint.jsonc` excludes `tools/packs.toml`. Keep the order
+  by hand.
+- The old keys stop the sync with code 2: `depends`, `required`, `tools` or
+  `default` with a list, and a member with the prefix `p:`. A member that is
+  not a table or is not on one line, another key in a member, and a `default`
+  that is not a boolean also stop the sync with code 2.
+- A member that is not a tool folder or a pack stops the sync with code 3. The
+  message names the pack.
 - A pack name must not be the name of a tool folder. The sync reads all the
   packs and all the tool folders, and it stops with code 2 for a duplicate.
-- A pack must not include itself, directly or through other packs. The sync
-  stops with code 2 for a loop, and it shows the packs of the loop, for example
-  `a -> b -> a`.
-- The `depends` lists of this document are examples. The Flutter packs are
+- A pack must not include itself, directly or through other packs, with any
+  `default`. The sync stops with code 2 for a loop, and it shows the packs of
+  the loop, for example `a -> b -> a`.
+- Each sync examines every `[pack.*]` table, selected or not. Thus a problem
+  shows before a consumer selects that pack.
+- The Flutter tables of this document are examples. The Flutter packs are
   decided when they are designed.
 
 ## The questions are in `docs/sync/`
@@ -64,22 +85,24 @@ env = [ "dev" ]
 The only key of an entry is `env`. A list (`packs = [...]` or
 `tools = [...]`) is the old format, and it stops the sync with code 2.
 
-On each sync, `repo-sync` reads `tools/packs.toml`. It adds the tools of the
-`base` pack, then the tools of each selected pack, then the tools of
-`[tools.*]`. Then it resolves the dependencies of each tool. Thus, if
-`bootstrap` later adds a tool to a pack, each consumer gets it with no AI
-step.
+On each sync, `repo-sync` reads `tools/packs.toml`. It adds the default members
+of the `base` pack, then the default members of each selected pack, then the
+tools of `[tools.*]`. Then it resolves the dependencies of each tool. Thus, if
+`bootstrap` later adds a `default = true` member to a pack, each consumer of
+the pack gets it with no AI step. A member with `{}` arrives only in a consumer
+with a `[tools.<name>]` entry.
 
 A pack name that is not in `tools/packs.toml` stops the sync with code 3, as
 an unknown tool does.
 
-The `[packs.*]` keys have the names without the prefix `p:`, because each
+The `[packs.*]` keys have the names without the prefix `pack:`, because each
 name in it is a pack.
 
 ## Environments
 
-A tool that a pack adds gets the `env` of the `[packs.<name>]` entry, else
-its own `default_envs`. Each tool of the `base` pack gets its own
+A tool that a pack adds gets the `env` of the `[packs.<name>]` entry, also
+through a nested pack, else its own `default_envs`. Each tool of the `base` pack
+gets its own
 `default_envs`. A tool that is selected more than once gets each of these
 environments. Each dependency gets the environments of the tool that needs it.
 `[shell_alias]` is only in `dev`. See
@@ -106,45 +129,52 @@ consumer cannot remove a tool of it. Only `bootstrap` changes the tools of the
 
 - `repo-sync` always adds the `base` pack. Its name is fixed in `repo-sync`,
   so the values file does not list it.
-- Its `depends` are in `tools/packs.toml`, as for each other pack. Thus a
-  change to the pack is a change to `tools/packs.toml` only.
+- Its members are in `tools/packs.toml`, as for each other pack. Thus a change
+  to the pack is a change to `tools/packs.toml` only.
 
 The old `base` tool is now independent tools. Thus a change adds or removes
 one tool of the pack, and does not change one large tool.
 
+<!-- dprint-ignore -->
 ```toml
 # tools/packs.toml
 [pack.base]
-depends = [
-  "mise",
-  "repo-sync",
-  "git",
-  "pre-commit",
-  "dprint",
-  "linter",
-  "p:security",
-]
+mise = { default = true }
+repo-sync = { default = true }
+git = { default = true }
+pre-commit = { default = true }
+dprint = { default = true }
+linter = { default = true }
+vscode = { default = true }
+"pack:security" = { default = true }
 
 [pack.security]
-depends = [ "gitleaks", "grype", "osv-scanner" ]
-required = [ "_security_base" ]
+gitleaks = { default = true }
+grype = { default = true }
+osv-scanner = { default = true }
 ```
 
-`p:security` adds the pack `security` to the `base` pack.
+`"pack:security"` adds the default members of the pack `security` to the `base`
+pack.
 
-### Common tools and required tools
+### Common tools
 
 A pack can have a common tool. It holds the items that all the other tools of
 the pack use, for example an orchestrator task and its hook. The name of a
 common tool starts with `_`, for example `_security_base`.
 
-`required` lists the tools of a pack that a consumer cannot remove.
+A common tool is not a member of the pack. It is in the `depends` of each
+member tool. For example, `gitleaks`, `grype` and `osv-scanner` each have
+`depends = [ "_security_base" ]`.
 
-- A name in `required` is not in `depends`.
-- When a pack is selected, `repo-sync` always installs the tools of its
-  `required`. The values file does not list them.
-- `bootstrap` gives a consumer no way to remove a tool of a pack, also not by
-  hand (see "Open points"). It never removes a tool of `required`.
+- A pack selection and a single `[tools.<member>]` entry both bring the common
+  tool, with the environments of the member tools that need it.
+- The values file does not list it.
+- The sync adds a dependency before the tool that needs it. Thus the tool order
+  of the `base` pack ends `... vscode _security_base gitleaks grype
+  osv-scanner`.
+  The hook order does not change, because of these four tools only
+  `_security_base` has hooks.
 
 ### The tools of the `base` pack
 
@@ -170,9 +200,9 @@ removes its hook, and no hook calls a task that is missing.
 
 ## Open points
 
-- Later, not now: a key of `.config/bootstrap.toml` that removes a tool of a
-  pack, for example `grype` of the `security` pack. Until then, a user cannot
-  remove a tool of a pack, also not by hand.
+- Later, not now: a key of `.config/bootstrap.toml` that removes one default
+  member of a pack, for example `grype` of the `security` pack. Until then, a
+  user cannot remove a default member of a selected pack, also not by hand.
 
 ## Generated folders
 

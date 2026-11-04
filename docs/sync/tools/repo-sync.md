@@ -110,8 +110,9 @@ local git repository. It runs after the checks of the values file and of
 does not set `bootstrap_commit`. It runs each local check, prints each
 message, and returns the highest code. `--check` with `--dry-run` is a usage
 error, code 2. These rules need the clone, so only `setup:configs` examines
-them: a tool or a pack that is not in `bootstrap`, a pack loop or a pack named
-like a tool, an environment that a mise tool does not allow, an
+them: a tool or a pack that is not in `bootstrap`, a pack loop, a pack named
+like a tool or another bad `[pack.*]` table (an old key or a bad member), an
+environment that a mise tool does not allow, an
 `[overrides.mise*]` path that no selected tool has, a `remove` line that the
 shared file does not have, a `root_only` tool in a submodule, and an old key or
 a bad `[files]` table of a `tools.toml`.

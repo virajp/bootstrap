@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-04 — e204613 defe4b0 178e309 9dadfed; 3 gaps open (G4 G5 G9); folder stays live"
   },
   "consent": {
     "merge": true,
@@ -60,11 +60,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T09:13:51.827Z",
+      "ended": "2026-11-04T09:18:00.300Z",
+      "commit": "e204613",
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -82,11 +82,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T09:13:51.889Z",
+      "ended": "2026-11-04T09:18:00.394Z",
+      "commit": "defe4b0",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -103,11 +103,11 @@
         "U2"
       ],
       "waits": "Its cases run the engine that U1 changes against the packs.toml and the scanner tools.toml files that U2 changes.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T09:21:51.158Z",
+      "ended": "2026-11-04T09:37:01.862Z",
+      "commit": "178e309",
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -123,14 +123,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T09:38:29.221Z",
+      "ended": "2026-11-04T09:40:38.375Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "3b199d2",
+        "to": "7c0ac3b"
       }
     },
     {
@@ -153,11 +153,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-04T09:41:00.920Z",
+      "ended": "2026-11-04T09:44:35.537Z",
+      "commit": "9dadfed",
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -171,43 +171,43 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T09:48:16.154Z",
+      "ended": "2026-11-04T09:54:36.377Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T09:13:51.796Z",
+      "ended": "2026-11-04T09:21:43.399Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T09:21:51.127Z",
+      "ended": "2026-11-04T09:38:21.319Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T09:38:29.189Z",
+      "ended": "2026-11-04T09:40:52.633Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T09:41:00.886Z",
+      "ended": "2026-11-04T09:48:08.321Z"
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T09:48:16.123Z",
+      "ended": "2026-11-04T09:54:50.532Z"
     }
   ],
   "shared_files": [
@@ -336,31 +336,144 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T09:40:52.893Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T09:40:52.698Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T09:40:52.797Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "the plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-04T09:40:52.990Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "",
+      "stage": "claim",
+      "text": "The claim commit of the plan-index contract is a direct commit on main, and the no-commit-to-branch hook of this repository refuses it · closed: the claim landed from the local branch claim-packs-merged through mise run code:merge, the route CLAUDE.md gives, with no hook skipped; the completion commit takes the same route",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "",
+      "stage": "worktree",
+      "text": "Setup step 1 names a worktree .worktrees/packs-merged, but this session already runs in a linked worktree (G2 of 2026-11-04-repo-files-table) · closed: per git-workflow Step 1 the run works in the session worktree .claude/worktrees/bootstrap-2-0-3ae4b9 on its branch claude/bootstrap-2-0-3ae4b9, brought to the tip of main after the claim; run.worktree names it",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "",
+      "stage": "doctor",
+      "text": "Doctor reports one thing here: the repo has no .config/vwf.yaml, so it is not onboarded and no blocking finding can arise · closed: not a blocking finding; the plan has no code unit, no covers and names no project, and the review cap stays its default of 4",
+      "state": "closed"
+    },
+    {
+      "id": "G4",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the plan does not place the one-line check in the validation order · assumed right after the entry-key check and before the pack-named-like-a-tool check, as all three are code 2 shape errors",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the awk scan recognises only [pack.<name>] headers without inner spaces or dots · assumed fine: a [ pack . a ] or [pack.\"a.b\"] header stops with code 2 and a misleading must-be-on-one-line message, never a wrong selection",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: test:repo-sync was not run at U1 · closed: it is the plan gate, and U3 extends it; 19 scratch cases passed and the real tools/packs.toml gives the tool order of today",
+      "state": "closed"
+    },
+    {
+      "id": "G7",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2: the sorted-key TOML snippet of 02-packs.md Edit 1 contradicts D11 and its own keep-it-exactly · closed: D11, the Facts and the Verification line all name the order mise, repo-sync, git, pre-commit, dprint, linter, vscode, pack:security; the file follows D11",
+      "state": "closed"
+    },
+    {
+      "id": "G8",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2: the new packs.toml shape could not run through the engine until U1 landed · closed: U1 ran the real tools/packs.toml through _se_selected with rc 0",
+      "state": "closed"
+    },
+    {
+      "id": "G9",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "D9 and D11 conflict: with scanner depends on _security_base and the depth-first walk, the tool order becomes ... vscode _security_base gitleaks grype osv-scanner, not the ... vscode gitleaks grype osv-scanner _security_base of today, while D11 says the tool order stays · assumed D9 stands and D11 holds for the order that has an effect: only _security_base of the four has [[precommit]], the pack base is always selected, so the hook order is unchanged, and 03-tests.md itself pins vscode, then the security tools; U3 pins the new inner order",
+      "state": "open"
+    },
+    {
+      "id": "G10",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "U3: the extra case of 03-tests.md names node = {} and python = { default = true }, but mise depends puts both in the pack base, so does-not-select-node cannot hold · closed: the case uses java = {} and pulumi = { default = true }, neither in the base list; the ruling is the same",
+      "state": "closed"
+    },
+    {
+      "id": "G11",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "U3: the tool order handed to U3 omits python and node, which arrive through mise depends · closed: the case pins the real line mise repo-sync git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner, with the tools before the security tools as at 3b199d2",
+      "state": "closed"
+    },
+    {
+      "id": "G12",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "U3: the plan does not say which message a member on two lines gives · closed: gomplate accepts the shape, the check of U1 stops it with code 2, which D11 rules, and the case asserts the message [pack.odd] node must be on one line",
+      "state": "closed"
+    },
+    {
+      "id": "G13",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "U5: the docs reconcile ran as a grep-and-edit pass over git diff 3b199d2..HEAD, as the dispatch said, not through vwf:docs-sync or its surveyor · closed: the wave review of wave 4 reads the same delta for falsified passages (rule 5)",
+      "state": "closed"
+    },
+    {
+      "id": "G14",
+      "unit": "",
+      "stage": "land",
+      "text": "The landing could not reach origin: mise run code:merge stopped at its pull of main with git@github.com: Permission denied (publickey), and git ls-remote origin failed the same way on each retry, through the 1Password SSH agent that served the claim push earlier in this run · no assumption taken: nothing merged and no credential route was tried; the person restores SSH access and re-runs /vwf:execute, and the resume closes this entry · closed: on the resume git ls-remote origin answers, the preflight and the plan gate ran green again, and the landing went on",
+      "state": "closed"
+    },
+    {
+      "id": "G15",
+      "unit": "U6",
+      "stage": "resume",
+      "text": "The resume check resets a green unit with no commit on the branch, but U6 has an empty commit · closed: 06-gates.md rules that U6 edits no file and has no commit, so the empty commit is by design and U6 stays green; the plan gate of this resume ran its gate lines again, all green",
+      "state": "closed"
+    },
+    {
+      "id": "G16",
+      "unit": "",
+      "stage": "land",
+      "text": "The landing option is merge, push and clean up, but the run works in the session worktree of G2, which the session itself still uses · closed: merged and pushed, and the worktree stays, as on 2026-11-04-repo-files-table; no worktree was removed",
+      "state": "closed"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",

@@ -21,7 +21,7 @@
 #
 #   [tools.node]                a tool folder `tools/node/` of bootstrap
 #   env = ["dev", "ci"]         optional: without it, the tool's `default_envs`
-#   [packs.security]            a pack of `tools/packs.toml`, without `p:`
+#   [packs.security]            a pack of `tools/packs.toml`, without `pack:`
 #   env = ["dev"]               optional: each tool of the pack gets it; without
 #                               it, each tool gets its own `default_envs`
 #
@@ -30,9 +30,14 @@
 # A list (`tools = [...]`, `packs = [...]`) is the old format and stops the
 # sync.
 #
-# `tools/packs.toml` holds the packs: `[pack.<name>]` with `depends` and an
-# optional `required`, each a list of tool folders, or `p:<name>` for a pack
-# that is expanded in turn. A pack name must not be a tool folder.
+# `tools/packs.toml` holds the packs. Each key of `[pack.<name>]` is a member,
+# on one line: `<tool> = { default = true }` or `<tool> = {}`, for a tool
+# folder, and `"pack:<x>" = { default = true }` for a pack that is expanded in
+# turn. The only entry key is `default`. `[packs.<name>]` adds each
+# `default = true` member, in file order; a tool in several packs is added
+# once. A `"pack:<x>" = {}` does not expand: that pack arrives only through its
+# own `[packs.<x>]`. A pack name must not be a tool folder. Each sync examines
+# every `[pack.*]` table, selected or not.
 #
 # Each tool is a folder `tools/<tool>/` in `bootstrap`, which holds its files
 # at the path they get here, and a `tools.toml` manifest:
@@ -208,8 +213,12 @@
 #
 # Return codes
 #   0  success (or nothing to change)
-#   2  usage error, a values file in the old list format, a pack loop, a pack
-#      name that is also a tool folder, an environment that is not in
+#   2  usage error, a values file in the old list format, a pack loop over any
+#      `pack:<x>` member, a pack name that is also a tool folder, an old key of
+#      `tools/packs.toml` (`depends`, `required`, `tools` or `default` with a
+#      list, or a `p:<x>` member), a pack member that is not a table, that has
+#      an entry key other than `default` or a `default` that is not a boolean,
+#      or that is not on one line, an environment that is not in
 #      `environments` or that a mise tool does not allow, an `env` or a
 #      `default_envs` without dev, a tool folder that sorts after `zz-repo`,
 #      a root-only tool in a submodule, a repo with neither `main` nor
@@ -227,7 +236,8 @@
 #      a merge source or a live merge target that cannot merge, a merge target
 #      that is a symlink or is below a symlinked folder, no `mise`, or no
 #      `SYNC_ENGINE_CLONE` without `--check`
-#   3  a tool or a pack that is not in bootstrap (fix the values file)
+#   3  a tool or a pack that is not in bootstrap (fix the values file), or a
+#      member of a pack that is not a tool folder or a pack (fix the packs file)
 #   5  the clone of `SYNC_ENGINE_CLONE` is not usable, or
 #      `pre-commit autoupdate` could not resolve the hook revisions
 #   1  anything else (local filesystem errors, ...)

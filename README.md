@@ -51,27 +51,34 @@ packs and the `depends`, and `repo-sync` for the function `repo_sync`. This
 folder is not a tool, so the
 sync does not copy it to a repository.
 
-A pack is a named list of tools in `tools/packs.toml`. It has no files of its
+A pack is a named group of tools in `tools/packs.toml`. It has no files of its
 own. The sync always adds the `base` pack:
 
+<!-- dprint-ignore -->
 ```toml
 [pack.base]
-depends = [
-  "mise",
-  "repo-sync",
-  "git",
-  "pre-commit",
-  "dprint",
-  "linter",
-  "p:security",
-]
+mise = { default = true }
+repo-sync = { default = true }
+git = { default = true }
+pre-commit = { default = true }
+dprint = { default = true }
+linter = { default = true }
+vscode = { default = true }
+"pack:security" = { default = true }
 
 [pack.security]
-depends = [ "gitleaks", "grype", "osv-scanner" ]
-required = [ "_security_base" ] # always added with the pack
+gitleaks = { default = true }
+grype = { default = true }
+osv-scanner = { default = true }
 ```
 
-A name with the prefix `p:` is a pack.
+Each key is a member, on one line. `[packs.<name>]` of a values file adds each
+`default = true` member, in file order. A member with `{}` arrives only with
+`[tools.<name>]`. A key with the prefix `pack:` is a nested pack, and a nested
+pack with `{}` arrives only with its own `[packs.<name>]`. Each scanner
+has `_security_base` in its `depends`, so one scanner alone brings it. The old
+keys `depends`, `required`, `tools` and `default` with a list, and the prefix
+`p:`, stop the sync with code 2.
 
 Each tool folder has a `tools.toml` manifest:
 
@@ -159,7 +166,8 @@ The other keys of the table are `requires_found`, `format`, `remove` and
    same run.
 3. `repo_sync` reads the `[tools.*]` and `[packs.*]` tables of the
    repository's `.config/bootstrap.toml`, and it adds the `base` pack.
-4. It expands each pack, and it adds the `depends` of each tool. It refuses a
+4. It expands each pack to its default members, and it adds the `depends` of
+   each tool. It refuses a
    `root_only` tool in a git submodule. It skips a `root_only` tool that only
    a pack adds.
 5. It finds the branch model from the branches `main` and `develop`, local or

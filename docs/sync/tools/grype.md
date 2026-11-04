@@ -5,7 +5,7 @@ grype: the dependency scanner, and `code:sec:grype`.
 | Property     | Value                |
 | ------------ | -------------------- |
 | Root only    | No                   |
-| Depends      | None                 |
+| Depends      | `_security_base`     |
 | Default envs | dev, ci              |
 | Seeds        | `.config/grype.yaml` |
 

@@ -1,6 +1,6 @@
 # osv-scanner: the dependency scanner, and code:sec:osv-scanner.
 default_envs = [ "dev", "ci" ]
-depends = []
+depends = [ "_security_base" ]
 extensions = []
 root_only = false
 

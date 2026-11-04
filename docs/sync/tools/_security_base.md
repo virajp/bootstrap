@@ -12,8 +12,8 @@ The common tool of the `security` pack: the `code:sec` orchestrator and the
 
 ## When the tool is relevant
 
-Always. The `base` pack always adds this tool, through the `required` of the
-`security` pack. Do not list it in the values file.
+Always. The `base` pack always adds this tool: each scanner of the `security`
+pack has it in its `depends`. Do not list it in the values file.
 
 ## What the tool ships
 

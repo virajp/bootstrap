@@ -1,8 +1,18 @@
-# The packs. A pack is a named list of tools; it has no files of its own.
+# The packs. A pack has no files of its own; each key of its table is a member:
+# `<tool> = { default = true }` or `<tool> = {}`, and a nested pack is
+# `"pack:<name>"`. The member order is the sync order, so keep it.
 # repo-sync always adds the pack `base`. See docs/design/packs.md.
 [pack.base]
-depends = [ "mise", "repo-sync", "git", "pre-commit", "dprint", "linter", "vscode", "p:security" ]
+mise = { default = true }
+repo-sync = { default = true }
+git = { default = true }
+pre-commit = { default = true }
+dprint = { default = true }
+linter = { default = true }
+vscode = { default = true }
+"pack:security" = { default = true }
 
 [pack.security]
-depends = [ "gitleaks", "grype", "osv-scanner" ]
-required = [ "_security_base" ]
+gitleaks = { default = true }
+grype = { default = true }
+osv-scanner = { default = true }

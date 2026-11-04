@@ -70,8 +70,9 @@ need only the values file and the local git repository, and it shows each
 error at once. Without a clone of `bootstrap` in the shared cache, or with
 another `origin` there, it prints nothing and does not validate. The rules that
 need the `bootstrap` clone stop only
-`setup:configs`: a tool or a pack that is not in `bootstrap`, a pack loop or a
-pack named like a tool, an environment that a mise tool does not allow, an
+`setup:configs`: a tool or a pack that is not in `bootstrap`, a pack loop, a
+pack named like a tool or another bad `[pack.*]` table (an old key or a bad
+member), an environment that a mise tool does not allow, an
 `[overrides.mise*]` path that no selected tool has, a `remove` line that the
 shared file does not have, a `root_only` tool in a submodule, and an old key or
 a bad `[files]` table of a `tools.toml`.
@@ -126,7 +127,7 @@ also for a tool that the values file does not select.
 ### `[packs.<name>]`
 
 One table for each pack of the repository. Each key is a pack of
-`tools/packs.toml`, without the prefix `p:`. Do not write `base`. See
+`tools/packs.toml`, without the prefix `pack:`. Do not write `base`. See
 [packs.md](packs.md)
 
 - The only key of an entry is `env`. Another key stops the sync with code 2

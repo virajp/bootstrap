@@ -5,7 +5,7 @@ gitleaks: the secret scanner, and `code:sec:gitleaks`.
 | Property     | Value                   |
 | ------------ | ----------------------- |
 | Root only    | No                      |
-| Depends      | None                    |
+| Depends      | `_security_base`        |
 | Default envs | dev, ci                 |
 | Seeds        | `.config/gitleaks.toml` |
 
