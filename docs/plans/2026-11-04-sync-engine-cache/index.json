@@ -8,8 +8,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-04T03:41Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-04 — db0cfd6 366af4e 6924bb6 132d9d1; 12 open gaps, folder stays live, A1 archive not run; ran in session worktree .claude/worktrees/bootstrap-2-0-3ae4b9 (G2), claim and completion landed through code:merge on main (G1); U1 ran pkill -f 'sleep 300' in a test, which could have killed another session's sleep"
   },
   "consent": {
     "merge": true,
@@ -175,11 +175,11 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T04:48:44.241Z",
+      "ended": "2026-11-04T04:51:25.998Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -209,9 +209,9 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-04T04:48:44.207Z",
+      "ended": "2026-11-04T04:51:39.501Z"
     }
   ],
   "shared_files": [
