@@ -166,8 +166,8 @@
       "title": "Shared mise generator",
       "target_repo": null,
       "priority": 80,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-04T18:22:04.132Z",
       "ended": "",
       "gaps": null,
       "requires": [
