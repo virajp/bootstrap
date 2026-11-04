@@ -35,8 +35,32 @@ else
 fi
 
 # Without the shared cache, the gate does not apply and prints nothing.
-lib="${SYNC_ENGINE_CACHE:-${XDG_CACHE_HOME:-${HOME}/.cache}/sync-engine}/repo/sync-engine/repo-sync"
+repo="${SYNC_ENGINE_CACHE:-${XDG_CACHE_HOME:-${HOME}/.cache}/sync-engine}/repo"
+lib="${repo}/sync-engine/repo-sync"
 [[ -f ${lib} ]] || exit 0
+
+# A copy of _se_normalize_url of sync-engine/clone: a consumer has no local copy,
+# and the code of the cache must not run before this compare.
+normalize_url() {
+  local u=$1
+  if [[ ${u} == *://* ]]; then
+    u=${u#*://}
+    [[ ${u%%/*} == *@* ]] && u=${u#*@}
+  elif [[ ${u} == *:* && ${u%%:*} != */* ]]; then
+    u=${u#*@}
+    u=${u/:/\/}
+  fi
+  u=${u%/}
+  u=${u%.git}
+  u=${u%/}
+  printf '%s' "${u}"
+}
+
+# This task sources code at commit time, so only from a clone of bootstrap. The
+# config file itself, because a git hook sets GIT_DIR to the consumer. Any other
+# origin: the gate does not apply and prints nothing.
+origin=$(git config --file "${repo}/.git/config" --get remote.origin.url 2> /dev/null) || origin=''
+[[ -n ${origin} && $(normalize_url "${origin}") == "$(normalize_url "https://github.com/virajp/bootstrap.git")" ]] || exit 0
 
 print_header "Validating .config/bootstrap.toml ..."
 

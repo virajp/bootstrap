@@ -66,11 +66,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "green",
+      "status": "running",
       "started": "2026-11-04T03:41:51.427Z",
-      "ended": "2026-11-04T03:46:11.867Z",
+      "ended": "",
       "commit": "4bfc4ef",
-      "rounds": 1
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -127,14 +127,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T04:02:36.547Z",
       "ended": "",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "2e73f6aa41315ad04203e7375bc829df1a6a4f5a",
+        "to": "7fec0b4b5bc7eaf164110d459cb4aa53236bcd0e"
       }
     },
     {
@@ -197,8 +197,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T04:02:36.503Z",
       "ended": ""
     },
     {
@@ -481,6 +481,41 @@
       "unit": "U2",
       "stage": "edit",
       "text": "U2: Verification says grep -c Synced from bootstrap sync-engine/repo-sync is 0, and it is 1 because of the code string that writes the header of generated mise files · read as the file's own header, which is gone; the string stays",
+      "state": "open"
+    },
+    {
+      "id": "G8",
+      "unit": "U4",
+      "stage": "security",
+      "text": "01-clone.md and the old-layout ruling state .git presence as the only condition for the removal · closed: round 1 fix, the removal now requires the root's raw origin to normalize to the URL, else exit 2 with nothing deleted",
+      "state": "closed"
+    },
+    {
+      "id": "G9",
+      "unit": "U4",
+      "stage": "security",
+      "text": "D13 and 01-clone.md edit 4 do not require a check of the origin of the cache clone before the gate sources it · closed: round 1 fix, the gate compares the normalized origin with the default URL and exits 0 silently on a mismatch",
+      "state": "closed"
+    },
+    {
+      "id": "G10",
+      "unit": "U4",
+      "stage": "security",
+      "text": "The normalized-origin ruling fetches from origin, so a scheme-insensitive match can keep a weaker transport · closed: round 1 fix, the fetch uses the current URL",
+      "state": "closed"
+    },
+    {
+      "id": "G11",
+      "unit": "U1",
+      "stage": "security",
+      "text": "U1: a checkout of bootstrap itself used as SYNC_ENGINE_CACHE has a real .git and a matching origin, so it still reads as an old clone and is removed · accepted as an old clone of bootstrap, as the finding words it",
+      "state": "open"
+    },
+    {
+      "id": "G12",
+      "unit": "U1",
+      "stage": "security",
+      "text": "U1: in an unrelated repository used as SYNC_ENGINE_CACHE, the lock step can remove an existing lock/ folder older than one minute with no pid, and a repo/ subfolder with another origin is deleted and cloned again · left as the plan rules",
       "state": "open"
     }
   ],

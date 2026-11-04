@@ -136,8 +136,16 @@ _se_fetch() {
   local entry origin clone=''
   unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 
-  # A clone at the cache root is the old layout.
+  # A clone of the URL at the cache root is the old layout. Any other repository
+  # there stays: SYNC_ENGINE_CACHE can name a checkout of another project. The
+  # config file itself, so no other repository's config answers: a `.git` file
+  # (a worktree, a submodule) has none, and it stops here too.
   if [[ -e ${_SE_CACHE}/.git ]]; then
+    origin=$(git config --file "${_SE_CACHE}/.git/config" --get remote.origin.url 2> /dev/null) || origin=''
+    if [[ -z ${origin} || $(_se_normalize_url "${origin}") != "$(_se_normalize_url "${_SE_URL}")" ]]; then
+      _se_say error "${_SE_CACHE} is a git repository with the origin '${origin}', not an old clone of ${_SE_URL} - move it, or set SYNC_ENGINE_CACHE to another folder"
+      return 2
+    fi
     for entry in "${_SE_CACHE}"/* "${_SE_CACHE}"/.[!.]* "${_SE_CACHE}"/..?*; do
       [[ -e ${entry} || -L ${entry} ]] || continue
       case ${entry##*/} in
@@ -154,7 +162,9 @@ _se_fetch() {
     origin=$(git -C "${_SE_REPO}" config --get remote.origin.url 2> /dev/null) || origin=''
     if [[ -n ${origin} && $(_se_normalize_url "${origin}") == "$(_se_normalize_url "${_SE_URL}")" ]]; then
       _se_say info "Updating the clone in ${_SE_REPO}"
-      if ! _se_git_remote -C "${_SE_REPO}" fetch --quiet --depth 1 origin "${_SE_BRANCH}"; then
+      # From the URL, not from origin: the compare drops the scheme, and the
+      # transport must not come from the cached origin.
+      if ! _se_git_remote -C "${_SE_REPO}" fetch --quiet --depth 1 -- "${_SE_URL}" "${_SE_BRANCH}"; then
         _se_say error "Cannot fetch ${_SE_URL} - nothing synced"
         return 5
       fi
