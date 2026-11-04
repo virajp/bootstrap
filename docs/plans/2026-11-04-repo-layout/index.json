@@ -157,11 +157,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T15:32:29.943Z",
+      "ended": "2026-11-04T15:37:46.207Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -203,8 +203,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T15:32:29.904Z",
       "ended": ""
     },
     {
@@ -393,6 +393,13 @@
       "stage": "edit",
       "text": "R2: README.md:359 says the working tree's tools/ and sync-engine/, falsified by the new copy of repo/, sync-engine/ and tools/ of U3; U3 reported only the CLAUDE.md bullet · handed to U5 as a DOCS FALSIFIED line; README.md is already in the Owns of U5 · closed: goes with the U5 dispatch",
       "state": "closed"
+    },
+    {
+      "id": "G8",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "U5: CLAUDE.md Change a shared file and docs/sync/index.md Files that bootstrap no longer ships ask for a table row and a migrate.md item for a file no longer shipped, and D6 rules out a migrate.md item in P06 · assumed the row waits for the same parked cleanup, so no row was added",
+      "state": "open"
     }
   ],
   "overrides": [],

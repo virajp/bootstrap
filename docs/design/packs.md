@@ -11,14 +11,14 @@ adds only the tools that it needs, with its `depends`. If several packs share
 config, tasks or files, they are in one tool that each of these packs names as
 a member, for example `flutter`, or in a common tool `_<name>`.
 
-## `tools/packs.toml`
+## `repo/packs.toml`
 
-All the packs are in one file, `tools/packs.toml`. It is not in a tool folder,
+All the packs are in one file, `repo/packs.toml`. It is not in a tool folder,
 so the sync does not copy it to a consumer. Each pack is a `[pack.<name>]`
 table:
 
 ```toml
-# tools/packs.toml
+# repo/packs.toml
 [pack.flutter-android]
 android = { default = true }
 flutter = { default = true }
@@ -35,7 +35,7 @@ flutter = { default = true }
   `<tool> = { default = true }` and `<tool> = {}`.
 - `[packs.<name>]` of a values file adds each `default = true` member. A member
   with `{}` adds nothing: it arrives only with `[tools.<name>]`.
-- A member is a tool folder in `tools/`, or a nested pack with the prefix
+- A member is a tool folder in `repo/tools/`, or a nested pack with the prefix
   `pack:`, in quotes, for example `"pack:security" = { default = true }`. The
   sync expands it in turn. `"pack:<name>" = {}` does not expand: that pack
   arrives only through its own `[packs.<name>]`.
@@ -43,7 +43,7 @@ flutter = { default = true }
 - A pack has no pack-level keys, and the only key of a member is `default`, a
   boolean. Each member is on one line.
 - The sync takes the members in file order. The TOML plugin of dprint sorts
-  keys, so the root `dprint.jsonc` excludes `tools/packs.toml`. Keep the order
+  keys, so the root `dprint.jsonc` excludes `repo/packs.toml`. Keep the order
   by hand.
 - The old keys stop the sync with code 2: `depends`, `required`, `tools` or
   `default` with a list, and a member with the prefix `p:`. A member that is
@@ -63,7 +63,7 @@ flutter = { default = true }
 
 ## The questions are in `docs/sync/`
 
-`tools.toml` and `tools/packs.toml` hold only the relationships. The
+`tools.toml` and `repo/packs.toml` hold only the relationships. The
 questions are in `docs/sync/packs/<pack>.md` of each pack, and in
 `docs/sync/tools/<tool>.md` of the shared tool. The adopting AI asks them, and
 it does not ask a question that the prompt of the user already answers.
@@ -85,14 +85,14 @@ env = [ "dev" ]
 The only key of an entry is `env`. A list (`packs = [...]` or
 `tools = [...]`) is the old format, and it stops the sync with code 2.
 
-On each sync, `repo-sync` reads `tools/packs.toml`. It adds the default members
+On each sync, `repo-sync` reads `repo/packs.toml`. It adds the default members
 of the `base` pack, then the default members of each selected pack, then the
 tools of `[tools.*]`. Then it resolves the dependencies of each tool. Thus, if
 `bootstrap` later adds a `default = true` member to a pack, each consumer of
 the pack gets it with no AI step. A member with `{}` arrives only in a consumer
 with a `[tools.<name>]` entry.
 
-A pack name that is not in `tools/packs.toml` stops the sync with code 3, as
+A pack name that is not in `repo/packs.toml` stops the sync with code 3, as
 an unknown tool does.
 
 The `[packs.*]` keys have the names without the prefix `pack:`, because each
@@ -125,19 +125,19 @@ The tools of each Flutter pack are not decided.
 
 `base` is a pack, not a tool. It is mandatory: each consumer gets it, and a
 consumer cannot remove a tool of it. Only `bootstrap` changes the tools of the
-`base` pack, in `tools/packs.toml`.
+`base` pack, in `repo/packs.toml`.
 
 - `repo-sync` always adds the `base` pack. Its name is fixed in `repo-sync`,
   so the values file does not list it.
-- Its members are in `tools/packs.toml`, as for each other pack. Thus a change
-  to the pack is a change to `tools/packs.toml` only.
+- Its members are in `repo/packs.toml`, as for each other pack. Thus a change
+  to the pack is a change to `repo/packs.toml` only.
 
 The old `base` tool is now independent tools. Thus a change adds or removes
 one tool of the pack, and does not change one large tool.
 
 <!-- dprint-ignore -->
 ```toml
-# tools/packs.toml
+# repo/packs.toml
 [pack.base]
 mise = { default = true }
 repo-sync = { default = true }
@@ -181,7 +181,7 @@ member tool. For example, `gitleaks`, `grype` and `osv-scanner` each have
 | Tool             | Files and config                                                                                                                                                                                                                                                                                            |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `mise`           | `.config/mise.toml.tmpl`, the `zz-repo` seeds, `_scripts/helpers`, `_scripts/checks`, `_scripts/placeholder`, `setup`, `setup:mise`, `setup:worktree`, `code`, `code:worktrees`, the `init` task, the `setup` alias, the `os` settings of each environment. The mise tools `jq` and `yq`, in `dev` and `ci` |
-| `repo-sync`      | `_scripts/repo-sync`, `setup:configs`, `setup:configs:sync`, `code:lint:repo-sync`, the mise tool `gomplate`                                                                                                                                                                                                |
+| `repo-sync`      | `setup:configs`, `setup:configs:sync`, `code:lint:repo-sync`, the mise tool `gomplate`                                                                                                                                                                                                                      |
 | `git`            | `.gitignore`, `git-conventional-commits.yaml.tmpl`, `_scripts/merge`, `code:merge` and `code:merge:*`, `code:git-config`. The hooks `git-config`, `no-commit-to-branch` (its args follow `direct_commit`) and `conventional-commits`                                                                        |
 | `pre-commit`     | `pre-commit-config.yaml.tmpl`, `setup:precommit`, `code:precommit`, the mise tool `pre-commit`, `PRE_COMMIT_HOME`, the `precommit` alias. The file-check hooks from `pre-commit/pre-commit-hooks`                                                                                                           |
 | `dprint`         | The mise tool `dprint`, `code:format`, `setup:dprint`, the `format` hook                                                                                                                                                                                                                                    |

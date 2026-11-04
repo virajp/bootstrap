@@ -19,11 +19,18 @@ file.
 
 | Path in the repository                        | Kind      | Use                                                                                                                                |
 | --------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `.config/mise/tasks/_scripts/repo-sync`       | Synced    | The forwarding file. An old `setup/configs/sync` loads it from the clone, and it loads `sync-engine/repo-sync` of the same clone.  |
 | `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`. It fetches `bootstrap` into the cache. The sync embeds `sync-engine/clone` in it.                        |
 | `.config/mise/tasks/setup/configs/sync`       | Synced    | The task `setup:configs:sync`. It loads `sync-engine/repo-sync` from the clone, and stops with code 2 without `SYNC_ENGINE_CLONE`. |
 | `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `repo_sync --check`.                                                                       |
 | `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                                                                                      |
+
+The sync no longer ships the forwarding file. It stays in `bootstrap` at
+`tools/repo-sync/.config/mise/tasks/_scripts/repo-sync`, because an old
+`setup/configs/sync` loads it from the clone. Nothing in a repository sources
+the synced copy `.config/mise/tasks/_scripts/repo-sync`. With a manifest
+`.config/repo-generated.tsv` that lists the copy, the stale rule removes it.
+Without such a manifest, the copy stays until the cleanup of the forwarding
+file, whose `migrate.md` item covers it.
 
 ## mise tools
 

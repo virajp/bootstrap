@@ -120,13 +120,13 @@ The user gave these dependencies for a Flutter app for Android:
 
 ### The core of Flutter
 
-`tools/flutter/tools.toml` has the mise tool `flutter`, which is the Flutter
-SDK. `flutter` is its name in the mise registry. `flutter-sdk` is not a name in
-the registry.
+`repo/tools/flutter/tools.toml` has the mise tool `flutter`, which is the
+Flutter SDK. `flutter` is its name in the mise registry. `flutter-sdk` is not a
+name in the registry.
 
 ### The current state
 
-- `tools/flutter/tools.toml` gives the mise tool `flutter` the static mise
+- `repo/tools/flutter/tools.toml` gives the mise tool `flutter` the static mise
   `depends` `android-sdk`. Thus each Flutter consumer gets `android` and
   `java`, also a web-only or a desktop-only app.
 - Gradle does not come from mise. The Android tasks use the `gradlew` wrapper
@@ -136,7 +136,7 @@ the registry.
 
 A task that is for Flutter on one platform goes in the `flutter` tool, not in
 the platform tool. For example, a task that runs `flutter build apk` is in
-`tools/flutter/`, not in `tools/android/`.
+`repo/tools/flutter/`, not in `repo/tools/android/`.
 
 - Each Flutter consumer gets the task, also without an Android target.
 - If the project has no `android/` folder, the task prints nothing and exits 0.

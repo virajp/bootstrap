@@ -12,9 +12,13 @@ the sync operates"). Other repositories copy files from it with their own
 
 ## Layout rule
 
-All shared files are in `tools/<tool>/`, one folder for each tool. The packs
-are in `tools/packs.toml`, outside each tool folder, so the sync never copies
-it. These files are for this repository only:
+All shared files are in `repo/tools/<tool>/`, one folder for each tool. The
+packs are in `repo/packs.toml`, outside each tool folder, so the sync never
+copies it. The examples are in `repo/examples/`, with `last_sync.toml`. `tools/`
+holds only the forwarding file
+`tools/repo-sync/.config/mise/tasks/_scripts/repo-sync`, which the sync does not
+ship: an old consumer stub sources it from the clone. These files are for this
+repository only:
 
 - At the root: `README.md`, `CLAUDE.md`, `LICENSE`, `dprint.jsonc` (with the
   excludes of this repository) and `eslint.config.mjs`.
@@ -24,9 +28,9 @@ it. These files are for this repository only:
 - `docs/design/`: the design notes of the sync (packs, tools, mise, fnox and
   the values file). `docs/plans/`: the vwf plan index.
 - `.config/mise/tasks/test/repo-sync`: the `test:repo-sync` task. It is not in
-  `tools/`, so no consumer gets it.
+  `repo/tools/`, so no consumer gets it.
 
-`examples/<example>/` holds sample values files (`bootstrap.toml`), one
+`repo/examples/<example>/` holds sample values files (`bootstrap.toml`), one
 folder for each repository shape: `polyrepo`, `polyrepo-main`,
 `polyrepo-develop`, `monorepo`, `repo-submodules` and `repo-siblings`.
 `repo-submodules` also has one file in each submodule folder, and
@@ -35,16 +39,18 @@ copies or generates them. `docs/sync/index.md` and `docs/sync/vwf.md`
 use them as the model of a values file, so a change to the contract of the
 values file changes the examples in the same commit.
 
-`examples/last_sync.toml` holds `commit_id`, the `bootstrap` commit that the
-examples agree with. This id tracks the examples only. It is not for
+`repo/examples/last_sync.toml` holds `commit_id`, the `bootstrap` commit that
+the examples agree with. This id tracks the examples only. It is not for
 consumers, and no consumer reads it. Each example has an empty
 `bootstrap_commit`, so a consumer that copies an example gets no wrong
 value: `repo_sync` replaces the empty line with the commit of its sync. A
 consumer value is newer than `commit_id`, and that is correct.
 
 - To find whether the examples can be out of date, run
-  `git log <commit_id>..HEAD -- tools docs/sync CLAUDE.md`. A contract change
-  in that log needs a review of the examples.
+  `git log <commit_id>..HEAD -- tools repo docs/sync CLAUDE.md`. A contract
+  change in that log needs a review of the examples. The command keeps `tools`
+  until `commit_id` is set again, because the contract changes before the move
+  to `repo/` are under `tools/`.
 - All the examples change together. After a review, set `commit_id` to
   `git rev-parse HEAD`. The value is always older than `main`, because a
   commit cannot contain its own id.
@@ -63,22 +69,23 @@ the adoption. After the adoption, `repo-sync` keeps the consumer in sync.
   accepts the `adopt`, `add tools`, `remove tools`, `add plugins` and
   `remove plugins` instructions. A plugin names this path
   and no other bootstrap path.
-- `docs/sync/tools/<tool>.md`: one file for each folder in `tools/`, with the
-  same sections in each file. The file of the `claude` tool is
+- `docs/sync/tools/<tool>.md`: one file for each folder in `repo/tools/`, with
+  the same sections in each file. The file of the `claude` tool is
   `claude-tool.md`, because a file system that ignores case reads `claude.md`
   as `CLAUDE.md`.
-- `docs/sync/packs/<pack>.md`: one file for each pack of `tools/packs.toml`,
+- `docs/sync/packs/<pack>.md`: one file for each pack of `repo/packs.toml`,
   with the tools that it adds and the questions of the adopting AI.
 
 This repository is also a consumer of its own `base` pack and of the `claude`
 tool. Its values file is `.config/bootstrap.toml`, and `setup:configs` writes
 the synced copies at the root (`.config/`, `.vscode/`, `.gitignore`,
 `.gitattributes`). Do not edit a synced copy. Change the
-file in `tools/<tool>/`, push it, then run `mise run setup:configs` here too.
+file in `repo/tools/<tool>/`, push it, then run `mise run setup:configs` here
+too.
 
-Each file in `tools/<tool>/` is at the path that it gets in a consumer
+Each file in `repo/tools/<tool>/` is at the path that it gets in a consumer
 repository, without the `.tmpl` suffix of a template. For example,
-`tools/git/.config/mise/tasks/code/merge/develop` becomes
+`repo/tools/git/.config/mise/tasks/code/merge/develop` becomes
 `.config/mise/tasks/code/merge/develop` in a consumer.
 
 - Each tool folder has a `tools.toml` with four keys: `default_envs`,
@@ -91,7 +98,7 @@ repository, without the `.tmpl` suffix of a template. For example,
 - A tool folder must not be `zz-repo`, and its name must not sort after
   `zz-repo` in byte order. If it does, the sync stops with code 2. The folder
   `conf.d/zz-repo/` of the repository must load last (see "mise config").
-- A pack is a `[pack.<name>]` table of `tools/packs.toml`. Each key is a
+- A pack is a `[pack.<name>]` table of `repo/packs.toml`. Each key is a
   member, on one line: `<tool> = { default = true }` or `<tool> = {}`, and
   `"pack:<name>" = { default = true }` for a nested pack. `[packs.<name>]` of
   a values file adds each `default = true` member. A member with `{}` arrives
@@ -103,7 +110,7 @@ repository, without the `.tmpl` suffix of a template. For example,
   must not include itself. Each sync examines every `[pack.*]` table. The sync
   always adds the `base` pack; its name is fixed in `repo-sync`.
 - The member order of a pack is the sync order. The TOML plugin of dprint sorts
-  keys, so the root `dprint.jsonc` excludes `tools/packs.toml`. Keep the order
+  keys, so the root `dprint.jsonc` excludes `repo/packs.toml`. Keep the order
   by hand.
 - A common tool of a pack holds the items that the other tools of the pack
   use, for example an orchestrator and its hook. Its name starts with `_`, for
@@ -160,9 +167,12 @@ repository, without the `.tmpl` suffix of a template. For example,
   template, `<path>` keeps the `.tmpl` suffix:
 
   ```text
-  # Synced from bootstrap: tools/<tool>/<path>. Do not edit this file.
+  # Synced from bootstrap: repo/tools/<tool>/<path>. Do not edit this file.
   # The next sync replaces it, and a manual change is lost.
   ```
+
+  The forwarding file keeps its old header with `tools/repo-sync/...`, because
+  the sync does not ship it.
 
   A YAML or TOML merge source can have the comment
   `# Merged by bootstrap: <path>`. A JSON merge source has no comment. The sync
@@ -177,7 +187,7 @@ repository, without the `.tmpl` suffix of a template. For example,
   one file for each environment of the consumer. A tool that ships a file that
   the sync also generates stops the sync with code 2. See "mise config".
 
-Some files refer to files that are not in `tools/`, for example
+Some files refer to files that are not in `repo/tools/`, for example
 `dprint.jsonc`. The consumer repository supplies them.
 
 ## How the sync operates
@@ -295,7 +305,7 @@ Some files refer to files that are not in `tools/`, for example
 - The sync formats each rendered template, each generated mise file and each
   merge target with the dprint config of the consumer before it compares the
   file.
-- gomplate reads the TOML files: the values file, `tools/packs.toml` (an awk
+- gomplate reads the TOML files: the values file, `repo/packs.toml` (an awk
   scan also gives the file order of its members), each
   `tools.toml` and the consumer file `.config/fnox.toml`.
 - A repository does not use the fnox `default` profile, which is only for the
@@ -387,16 +397,16 @@ Some files refer to files that are not in `tools/`, for example
 - `test:repo-sync` is the task of this repository in
   `.config/mise/tasks/test/repo-sync`. It runs `repo_sync --dry-run`,
   `repo_sync --check` and, for a case that compares a written file, `repo_sync`
-  of the working tree's `tools/` and `sync-engine/` against scratch values files
-  and scratch consumers. Some cases of the manifest also call
-  `_se_manifest_stale` and `_se_manifest_read` directly. It compares the
-  exit code and the message of each case. It needs no network when gomplate,
-  jq and yq are installed. Before its
+  of the working tree's `repo/`, `sync-engine/` and `tools/` (the forwarding
+  file) against scratch values files and scratch consumers. Some cases of the
+  manifest also call `_se_manifest_stale` and `_se_manifest_read` directly. It
+  compares the exit code and the message of each case. It needs no network when
+  gomplate, jq and yq are installed. Before its
   first `git` call, it unsets the `GIT_*` variables of a git hook, so its
   scratch repositories never write to this repository. It runs the cases in
   parallel, one job for each CPU, and each case in its own folder. No hook runs
   it, because it is slow. Run `mise run test:repo-sync` by hand before you
-  commit a change to `tools/` or `sync-engine/`.
+  commit a change to `repo/` or `sync-engine/`.
 
 ## Templates (`*.tmpl`)
 
@@ -435,8 +445,8 @@ Some files refer to files that are not in `tools/`, for example
 
 ## Task scripts
 
-Task scripts are in `tools/<tool>/.config/mise/tasks/`. mise uses the directory
-path as the task name, for example `code/merge/develop` is
+Task scripts are in `repo/tools/<tool>/.config/mise/tasks/`. mise uses the
+directory path as the task name, for example `code/merge/develop` is
 `code:merge:develop`. A `_default` file is the task for the directory name.
 
 - `_scripts/` contains libraries, not tasks. Each task sources them through
@@ -451,18 +461,19 @@ path as the task name, for example `code/merge/develop` is
     use.
   - `placeholder`: for a task that no stack fills yet. A placeholder task
     contains the `#PLACEHOLDER` marker and always exits 0. A stack overlay
-    replaces the file. Do not edit a placeholder in place. No task in `tools/`
-    uses it now.
+    replaces the file. Do not edit a placeholder in place. No task in
+    `repo/tools/` uses it now.
   - `xcode`: `require_xcode`, `find_xcodeproj` and the simulator functions for
     the Apple tasks.
-  - `repo-sync`: the forwarding file. An old `setup/configs/sync` loads it from
-    the clone with `REPO_SYNC_CLONE`, and it loads `sync-engine/repo-sync` of
-    the same clone. The sync code is in `sync-engine/`, not in a tool.
-    The cleanup plan removes the forwarding file.
+  - `repo-sync`: the forwarding file, at
+    `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync` of this repository.
+    The sync does not ship it. An old `setup/configs/sync` loads it from the
+    clone with `REPO_SYNC_CLONE`, and it loads `sync-engine/repo-sync` of the
+    same clone. The sync code is in `sync-engine/`, not in a tool. The cleanup
+    plan removes the forwarding file.
 
   The `mise` tool ships `helpers`, `checks` and `placeholder`, the `git` tool
-  ships `merge`, the `swift` tool ships `xcode`, and the `repo-sync` tool
-  ships `repo-sync`.
+  ships `merge`, and the `swift` tool ships `xcode`.
 - Prefix each tool call with `mise x --`, for example `mise x -- dprint check`.
   To find whether a tool is available, use `mise x -- which <tool>`, not
   `command -v`. System commands (`git`, `awk`, `sed`) and `mise` itself do not
@@ -489,8 +500,8 @@ path as the task name, for example `code/merge/develop` is
 - Under `set -e`, write a command substitution that can fail as
   `VAR=$(cmd) || VAR=''`. The existing scripts explain this in comments.
 - Only the `init` task is in mise config (`[mise.tasks.init]` of
-  `tools/mise/tools.toml`, always dev). It makes the task scripts executable.
-  The task files load in every environment.
+  `repo/tools/mise/tools.toml`, always dev). It makes the task scripts
+  executable. The task files load in every environment.
 - A gate of a language is a `code:lint:<gate>` or `code:format:<gate>` task
   in the tool of that language, for example `code:lint:ruff` in `python`.
   `code:lint:repo-sync` of `repo-sync` follows the same rules for the values
@@ -601,10 +612,10 @@ that it finds, and removes the others. It stops if neither branch exists.
   `default_envs` and `envs`, and any other name stops the sync with code 2.
   The sync ignores each environment that `environments` does not select.
   Without `environments`, the sync uses `dev` only and logs a warning.
-- `.config/mise.toml` (`tools/mise/.config/mise.toml.tmpl`) is the only file for
-  every environment. It holds the shared `[settings]` and the `[env]` values
-  `REPO_NAME` and `MEMBERS` (the folders of the members, see "Templates"). It
-  does not set
+- `.config/mise.toml` (`repo/tools/mise/.config/mise.toml.tmpl`) is the only
+  file for every environment. It holds the shared `[settings]` and the `[env]`
+  values `REPO_NAME` and `MEMBERS` (the folders of the members, see
+  "Templates"). It does not set
   `min_version`. `monorepo_root` and `[monorepo]` are not supported.
 - Each file in `.config/mise/conf.d/` is for one environment:
   `mise.<env>.toml`. mise loads it only when `MISE_ENV` includes that
@@ -668,7 +679,7 @@ that it finds, and removes the others. It stops if neither branch exists.
   sync operates"). Thus a removed tool, environment or folder disappears from
   consumers.
 - The shell aliases `setup`, `precommit` and `worktrees` come from
-  `tools/mise/tools.toml`, and the sync writes them in the generated
+  `repo/tools/mise/tools.toml`, and the sync writes them in the generated
   `mise/mise.dev.toml`. For a repository with git submodules, the sync adds
   `setup-all` and `setup-<submodule>` there, also for nested submodules.
 - `[overrides]` of the values file replaces the defaults of the tools.
@@ -692,19 +703,19 @@ that it finds, and removes the others. It stops if neither branch exists.
   folder wins. `zz-repo` sorts after each tool folder, so the config of the
   repository wins over the config of each tool.
 - Each mise tool comes from a bootstrap tool. A tool that a repository needs
-  gets added to a tool in `tools/`, or becomes a new tool, for example
+  gets added to a tool in `repo/tools/`, or becomes a new tool, for example
   `doppler`.
 
 ## Change a shared file
 
-1. Change the file in `tools/<tool>/`.
+1. Change the file in `repo/tools/<tool>/`.
 2. If the change adds, removes or changes a file, a mise tool, a task, a hook,
    a seed or a value of the tool, change `docs/sync/tools/<tool>.md` too
    (`claude-tool.md` for `claude`). A
    new tool needs a new file in `docs/sync/tools/`, and a line in the list of
    `docs/sync/index.md`. A removed file needs a row in "Files that bootstrap no
    longer ships" of `docs/sync/index.md`, and a `migrate.md` item. A change to
-   `tools/packs.toml` changes
+   `repo/packs.toml` changes
    `docs/sync/packs/<pack>.md` too, and a new pack needs a new file there.
 3. Commit on a local work branch. Land it on `main` with
    `mise run code:merge <branch>`, which merges and pushes.

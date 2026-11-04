@@ -14,7 +14,7 @@ Always. `repo-sync` always adds the `base` pack. Its name is fixed in
 
 ## What the pack adds
 
-Each member is `default = true` in `tools/packs.toml`, for example
+Each member is `default = true` in `repo/packs.toml`, for example
 `mise = { default = true }`.
 
 | Member            | Default | Tool file                                         |

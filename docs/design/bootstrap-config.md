@@ -2,7 +2,7 @@
 
 This document describes each key of the values file `.config/bootstrap.toml`.
 The adopting AI writes the file in a consumer repository (step 3 of
-`docs/sync/index.md`). `repo-sync` and the templates of `tools/` read it
+`docs/sync/index.md`). `repo-sync` and the templates of `repo/tools/` read it
 
 ## Example
 
@@ -85,8 +85,8 @@ repository.
 ### `[tools.<folder>]`
 
 One table for each tool of the repository. Each key is a folder
-`tools/<folder>/` of `bootstrap`. Do not write the tools of the `base` pack:
-`repo-sync` always adds the `base` pack. See
+`repo/tools/<folder>/` of `bootstrap`. Do not write the tools of the `base`
+pack: `repo-sync` always adds the `base` pack. See
 [packs.md](packs.md#the-base-pack)
 
 - The only key of an entry is `env`. Another key stops the sync with code 2
@@ -127,12 +127,12 @@ also for a tool that the values file does not select.
 ### `[packs.<name>]`
 
 One table for each pack of the repository. Each key is a pack of
-`tools/packs.toml`, without the prefix `pack:`. Do not write `base`. See
+`repo/packs.toml`, without the prefix `pack:`. Do not write `base`. See
 [packs.md](packs.md)
 
 - The only key of an entry is `env`. Another key stops the sync with code 2
 - A list, `packs = [...]`, is the old format. It stops the sync with code 2
-- A pack that is not in `tools/packs.toml` stops the sync with code 3
+- A pack that is not in `repo/packs.toml` stops the sync with code 3
 
 ### `[packs.<name>].env`
 
