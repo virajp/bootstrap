@@ -146,8 +146,8 @@
       "title": "[defaults], [questions], [contributes]",
       "target_repo": null,
       "priority": 70,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-04T16:04:29.035Z",
       "ended": "",
       "gaps": null,
       "requires": [
