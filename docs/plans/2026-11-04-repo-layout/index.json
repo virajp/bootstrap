@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-04T15:01:50Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-04 — 97c9982 d521126 015ec6a dc6086a ; 1 gap open (G8); folder stays live"
   },
   "consent": {
     "merge": true,
@@ -384,8 +384,8 @@
       "id": "G6",
       "unit": "",
       "stage": "edit",
-      "text": "R2: the K1 pass of Part B needs would update lines with the repo/tools header paths, but a dry run prints a diff only for an existing target, so an empty consumer shows no header · the check is run with a second scratch consumer that already holds synced files with the old header, which K1 does not exclude",
-      "state": "open"
+      "text": "R2: the K1 pass of Part B needs would update lines with the repo/tools header paths, but a dry run prints a diff only for an existing target, so an empty consumer shows no header · the check is run with a second scratch consumer that already holds synced files with the old header, which K1 does not exclude · closed: K1 ran on such a consumer: exit 0, 47 would update lines and 47 repo/tools headers in the log; an empty consumer also exits 0",
+      "state": "closed"
     },
     {
       "id": "G7",
@@ -400,6 +400,13 @@
       "stage": "edit",
       "text": "U5: CLAUDE.md Change a shared file and docs/sync/index.md Files that bootstrap no longer ships ask for a table row and a migrate.md item for a file no longer shipped, and D6 rules out a migrate.md item in P06 · assumed the row waits for the same parked cleanup, so no row was added",
       "state": "open"
+    },
+    {
+      "id": "G9",
+      "unit": "U6",
+      "stage": "edit",
+      "text": "U6: its Verification line git status --short is empty cannot hold literally, because the plan record of the orchestrator shows as modified at that point · closed: the run reads it as no file changed but the plan record, and the tree held only that entry",
+      "state": "closed"
     }
   ],
   "overrides": [],
