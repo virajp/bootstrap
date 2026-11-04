@@ -86,11 +86,11 @@
         "U1"
       ],
       "waits": "Its cases run the manifest code that U1 writes in sync-engine/manifest and sync-engine/repo-sync.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T13:09:54.229Z",
+      "ended": "2026-11-04T13:26:45.404Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -168,8 +168,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T13:09:54.196Z",
       "ended": ""
     },
     {
@@ -398,6 +398,20 @@
       "unit": "U1",
       "stage": "edit",
       "text": "U1: the plan has no test run for the new paths in this unit · assumed U2 owns them; U1 ran scratch checks under bash 3.2, which passed",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2: 02-tests.md step 2 changes only the a synced gate is removed case and says no other existing case changes, but D5 also changes the block-header gate case, the three the header on line 2 cases and the two requires_found 5 folders down cases · assumed D3 is the rule (a case changes only where a ruling changes its expected result): each change function writes a manifest row, and the expected lines drop the (no <file>) suffix the engine no longer logs on a removal",
+      "state": "open"
+    },
+    {
+      "id": "G7",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "R2 rule 3 raised three additions 02-tests.md does not name: a real-run copy of case 6 (D7 no removal), a second-run check in case 7 (D8 writes only on a change), and a mise.ci.toml seed in case 10 (the kept seed of U1) · not looped back to U2, a departure from the wave loop: each traces to a ruling, and taking them out would remove coverage, so the orchestrator kept them; a person may rule them out",
       "state": "open"
     }
   ],
