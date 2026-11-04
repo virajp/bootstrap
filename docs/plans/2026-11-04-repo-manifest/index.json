@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-04T12:36:15Z in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -66,11 +66,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-04T12:36:37.624Z",
+      "ended": "2026-11-04T12:54:43.917Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -162,8 +162,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-04T12:36:37.587Z",
       "ended": ""
     },
     {
@@ -364,7 +364,43 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "",
+      "stage": "claim",
+      "text": "The claim commit of the plan-index contract is a direct commit on main, and the no-commit-to-branch hook of this repository refuses it · closed: the claim landed from the local branch claim-repo-manifest through mise run code:merge, the route CLAUDE.md gives, with no hook skipped; the completion commit takes the same route. The first claim commit carried the row alone, because a plan.mjs set of run took the wrong argument order; a second claim commit carried run",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "",
+      "stage": "worktree",
+      "text": "Setup step 1 names a worktree .worktrees/repo-manifest, but this session already runs in a linked worktree · closed: per git-workflow Step 1 the run works in the session worktree .claude/worktrees/bootstrap-2-0-3ae4b9 on its branch claude/bootstrap-2-0-3ae4b9, brought to the tip of main after the claim; run.worktree names it",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "",
+      "stage": "doctor",
+      "text": "The repo has no .config/vwf.yaml, so it is not onboarded and doctor has nothing to check and no blocking finding can arise · closed: not a blocking finding; the plan has no code unit, no covers and names no project, and the review cap stays its default of 4",
+      "state": "closed"
+    },
+    {
+      "id": "G4",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1 and R1: the Verification allows test:repo-sync failures only for cases D5 changes, and 02-tests.md says no other existing case changes, but the check the gate with a cache also fails, because the test copies a fixed list of libraries into the gate cache without manifest · assumed U2 adds sync-engine/manifest to that cp",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1: the plan has no test run for the new paths in this unit · assumed U2 owns them; U1 ran scratch checks under bash 3.2, which passed",
+      "state": "open"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",
