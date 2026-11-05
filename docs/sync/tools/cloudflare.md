@@ -22,9 +22,9 @@ The Cloudflare CLI (`npm:cf`).
 
 ## mise tools
 
-| mise tool | Version  | Environments | Note                                                   |
-| --------- | -------- | ------------ | ------------------------------------------------------ |
-| `npm:cf`  | `latest` | dev, ci      | Needs node and pnpm. The `workerd` build is permitted. |
+| mise tool | Version  | Environments | Note                                                                                                   |
+| --------- | -------- | ------------ | ------------------------------------------------------------------------------------------------------ |
+| `npm:cf`  | `latest` | dev, ci      | Needs node and pnpm. The `workerd` build is permitted. `minimum_release_age` is `0h`: no release wait. |
 
 ## Tasks
 
