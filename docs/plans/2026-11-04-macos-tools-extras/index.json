@@ -145,11 +145,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-05T12:05:13.121Z",
+      "ended": "2026-11-05T12:10:20.250Z",
+      "commit": "57d41a0",
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -185,9 +185,9 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T12:05:13.087Z",
+      "ended": "2026-11-05T12:10:48.763Z"
     },
     {
       "id": "W4",
