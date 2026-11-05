@@ -147,11 +147,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T06:19:40.457Z",
+      "ended": "2026-11-05T06:28:34.704Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -181,9 +181,9 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T06:19:40.421Z",
+      "ended": "2026-11-05T06:29:12.226Z"
     }
   ],
   "shared_files": [
@@ -447,6 +447,13 @@
       "stage": "edit",
       "text": "the U4 Verification does not run test or test:setup-sync · assumed the plan gate covers them",
       "state": "open"
+    },
+    {
+      "id": "G10",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "the U5 Verification wants git status --short empty, and the run record index.json is uncommitted while the unit runs · assumed the run record does not count; closed: no other path was listed",
+      "state": "closed"
     }
   ],
   "overrides": [],
