@@ -1,0 +1,4 @@
+# Contributes an item to the merge target of merger.
+
+[contributes.merger]
+items = [ "z" ]

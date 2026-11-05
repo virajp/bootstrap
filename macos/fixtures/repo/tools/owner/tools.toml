@@ -1,0 +1,27 @@
+# A tool that other tools contribute to, with files of every format; only the
+# contrib and conflict configs select it.
+description = "The owner of the contributions of the fixture repo"
+
+[defaults]
+agent = "default-agent"
+includes = [ "~/a" ]
+
+[defaults.nested]
+key = "default"
+
+[questions.token]
+detect = "printf token"
+example = "token-1"
+question = "Which token does the owner use?"
+
+[files.".config/owner/seed.txt"]
+mode = "seed"
+
+[files.".config/owner/needs.txt"]
+requires = [ ".config/owner-needed" ]
+
+[files.".config/owner/lenient.json"]
+format = "text"
+
+[files.".config/owner/settings.conf"]
+format = "toml"

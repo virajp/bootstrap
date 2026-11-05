@@ -1,0 +1,4 @@
+# Sets the scalar that contrib-a sets, to another value.
+
+[contributes.owner]
+agent = "agent-c"

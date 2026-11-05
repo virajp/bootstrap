@@ -54,7 +54,8 @@ yq, `write` for the write of one file, `merge` for merge mode, `select` for the
 packs and the `depends`, `manifest` for the manifest and the stale rule,
 `values`
 for the merge of the values of the tools, `mise` for the mise config generator,
-and `repo-sync` for the function `repo_sync`. This
+`repo-sync` for the function `repo_sync`, and `setup-sync` for the function
+`setup_sync`, the Mac front-end. This
 folder is not a tool, so the
 sync does not copy it to a repository.
 
@@ -381,8 +382,17 @@ values files and scratch consumers.
 Some cases of the manifest also call `_se_manifest_stale` and
 `_se_manifest_read` directly, and the cases of the `macos` side call
 `sync-engine/mise` directly. It checks the exit code and the message of each
-case. It needs no network when gomplate, jq and yq are installed. No hook runs
-it: run it by hand before you commit a change to `repo/` or `sync-engine/`.
+case. It needs no network when gomplate, jq and yq are installed.
+
+`mise run test:setup-sync` runs `setup_sync` of the working tree's
+`sync-engine/` against the fixtures in `macos/fixtures/`. It checks the exit
+code, the output and the files of each case, and it needs no network when
+gomplate, jq and yq are installed.
+
+`mise run test` runs each test task in parallel. No hook runs a test. Run the
+tests by hand before you commit: `test` for a change to `sync-engine/`,
+`test:repo-sync` for a change to `repo/`, and `test:setup-sync` for a change to
+`macos/`.
 
 ## Change a shared file
 

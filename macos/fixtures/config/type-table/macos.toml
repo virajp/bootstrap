@@ -1,0 +1,3 @@
+# A scalar over the table of the base tool core.
+[tools.core]
+table = "x"

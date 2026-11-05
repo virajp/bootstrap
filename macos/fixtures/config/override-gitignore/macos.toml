@@ -1,0 +1,2 @@
+[overrides.gitignore]
+add = [ "x" ]

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#MISE description="Run every test task"
+#MISE depends=["test:repo-sync", "test:setup-sync"]
+
+# mise runs the depends in parallel. Each test task prints its own results.
+
+set -euo pipefail
+
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+line_sep1
+print_success "All tests passed"

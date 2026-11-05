@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-05 — 40c1fdc ec2bccd 2067c6c 433503f; 7 open gaps (G1 to G5, G7, G8) kept the folder live; G5, G7 and G8 reach the templates of P11 to P14 and the repo templates"
   },
   "consent": {
     "merge": true,
@@ -59,11 +59,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-05T05:06:09.438Z",
+      "ended": "2026-11-05T05:18:18.302Z",
+      "commit": "40c1fdc",
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -81,11 +81,11 @@
         "U1"
       ],
       "waits": "Its cases source sync-engine/setup-sync, which U1 creates, so its Verification needs the U1 output.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-05T05:27:01.777Z",
+      "ended": "2026-11-05T05:43:57.415Z",
+      "commit": "2067c6c",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -100,14 +100,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T05:49:36.029Z",
+      "ended": "2026-11-05T06:03:20.338Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 2,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "f6c7eca",
+        "to": "2067c6c"
       }
     },
     {
@@ -129,11 +129,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-05T06:11:07.616Z",
+      "ended": "2026-11-05T06:18:09.730Z",
+      "commit": "433503f",
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -147,43 +147,43 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T06:19:40.457Z",
+      "ended": "2026-11-05T06:28:34.704Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T05:06:09.373Z",
+      "ended": "2026-11-05T05:45:01.277Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T05:27:01.711Z",
+      "ended": "2026-11-05T05:49:21.237Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T05:49:35.962Z",
+      "ended": "2026-11-05T06:04:04.717Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T06:11:07.582Z",
+      "ended": "2026-11-05T06:19:21.103Z"
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T06:19:40.421Z",
+      "ended": "2026-11-05T06:29:12.226Z"
     }
   ],
   "shared_files": [
@@ -360,31 +360,102 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T06:11:07.338Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T06:11:07.135Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T06:11:07.237Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers and no code unit: nothing to reconcile or persist",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T06:11:07.440Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "Edit 1.6 validates tools.toml for every folder, but the [questions] rules in sync-engine/values reach selected tools only · assumed the manifest template of the old engine stays and checks [defaults], [questions] and [contributes] shapes for every tool, so a bad table in an unselected tool still returns 2",
+      "state": "open"
+    },
+    {
+      "id": "G2",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "the plan does not say whether a mise depends of a Mac [mise.tools] entry adds the tool that defines it, or whether two Mac tools may define one mise tool · assumed the Mac closure follows only the tools.toml depends key, with no duplicate check",
+      "state": "open"
+    },
+    {
+      "id": "G3",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "the table says the merge cases are fourteen, but the old test has 16 (12 behaviour, 4 config errors) · assumed all were meant, and all 16 are ported",
+      "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "the table and edit 4 both list an override path that no selected tool has · assumed two cases are wanted, the second uses its own folder override-none",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U3",
+      "stage": "security",
+      "text": "Edit 1.11 and D4 never require a rendered value to be encoded in a .tmpl target, so a string with a quote and a newline in [tools.<name>] of macos.toml can add tables or keys to a rendered TOML, JSON or YAML target (setup-sync:601; no privilege gain, the same author can write [mise.*]) · the run encoded the strings of the fixture templates; the rule goes into CLAUDE.md through U4, and the real Mac templates of P11 to P14 must follow it; those approved plans were not edited by this run",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "handed to the docs unit U4, whose file does not name them: CLAUDE.md:115 the member order of a pack is the sync order holds only for repo-sync; CLAUDE.md:220 the Mac front-end is not in this repository yet; the CLAUDE.md sync-engine/ list and README.md:51 lack setup-sync; CLAUDE.md its only test is test:repo-sync, and the Layout list lacks macos/fixtures/ and the two test tasks; add the rule that a TOML, JSON or YAML template encodes a string value with data.ToJSON · open until U4 lands them · closed: U4 landed each line in 433503f",
+      "state": "closed"
+    },
+    {
+      "id": "G7",
+      "unit": "U3",
+      "stage": "security",
+      "text": "P11 to P14 render raw values into plain-text targets with no parse check (macos-tools-base-shells/01-tools.md:206 and :211-214), so a newline in a value can add a directive such as ProxyCommand in .ssh/config; those plans need a ruling · no assumption taken; the user approved this record on 2026-11-05 after the permission system refused the runner",
+      "state": "open"
+    },
+    {
+      "id": "G8",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "the new data.ToJSON rule is not yet true of existing templates outside the owned files: repo/tools/fnox/.config/fnox.toml.tmpl:27,40, repo/tools/gitleaks/.config/gitleaks.toml.tmpl:2, repo/tools/github/.github/ISSUE_TEMPLATE/config.yml.tmpl:7,11 and repo/tools/mise/.config/mise.toml.tmpl:21 insert values without it · assumed the rule applies to new and changed templates, and these stay as they are in this plan",
+      "state": "open"
+    },
+    {
+      "id": "G9",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "the U4 Verification does not run test or test:setup-sync · assumed the plan gate covers them; closed: mise run test passed in the plan gate",
+      "state": "closed"
+    },
+    {
+      "id": "G10",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "the U5 Verification wants git status --short empty, and the run record index.json is uncommitted while the unit runs · assumed the run record does not count; closed: no other path was listed",
+      "state": "closed"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",

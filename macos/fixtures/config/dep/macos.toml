@@ -1,0 +1,7 @@
+# A list for the dependency tool initdep appends its new items, also when a
+# [tools.initdep] table selects initdep too.
+
+[tools.init]
+
+[tools.initdep]
+items = [ "y", "x", "a" ]

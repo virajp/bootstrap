@@ -1,0 +1,9 @@
+# Contributes to owner, and to opt, a tool of the repo that the contrib
+# configs do not select (ignored).
+
+[contributes.owner]
+agent = "agent-a"
+includes = [ "~/b", "~/a" ]
+
+[contributes.opt]
+level = "from-contrib-a"

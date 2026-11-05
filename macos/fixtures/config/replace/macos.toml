@@ -1,0 +1,4 @@
+[tools.contrib-a]
+# The opt-in tool owner: its list replaces the merged one.
+[tools.owner]
+includes = [ "~/z" ]

@@ -1,0 +1,5 @@
+# The opt tool of the fixture repo, in pack extra.
+depends = [ "core" ]
+
+[defaults]
+level = "default-level"

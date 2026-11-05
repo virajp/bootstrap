@@ -1,0 +1,11 @@
+# The init-stage tool of the fixture repo; only config/init/ selects it. Its
+# dependency initdep is in the init stage too.
+
+depends = [ "initdep" ]
+stage = "init"
+
+[defaults]
+greeting = "hello"
+
+[mise.env]
+INIT_FIXTURE = "1"

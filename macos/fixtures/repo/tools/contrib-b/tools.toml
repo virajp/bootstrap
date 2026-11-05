@@ -1,0 +1,7 @@
+# Contributes a list that overlaps the one of contrib-a, and a nested key.
+
+[contributes.owner]
+includes = [ "~/c", "~/b" ]
+
+[contributes.owner.nested]
+extra = "from-b"

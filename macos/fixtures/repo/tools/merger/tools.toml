@@ -1,0 +1,20 @@
+# A tool with a merge target of each format; only the merge config selects it.
+description = "The merge targets of the fixture repo"
+
+[defaults]
+items = [ "a" ]
+
+[files.".config/merger/m.json"]
+mode = "merge"
+remove = [ [ "gone" ], [ "nested", "old" ], [ "absent", "path" ] ]
+remove_items = [ { items = [ "drop", { j = 2, k = 1 } ], path = [ "list" ] }, { items = [ "app" ], path = [ "keep" ] } ]
+
+[files.".config/merger/m.yaml"]
+mode = "merge"
+remove = [ [ "gone" ] ]
+remove_items = [ { items = [ "drop" ], path = [ "list" ] } ]
+
+[files.".config/merger/m.toml"]
+mode = "merge"
+remove = [ [ "gone" ] ]
+remove_items = [ { items = [ "s" ], path = [ "notlist" ] } ]

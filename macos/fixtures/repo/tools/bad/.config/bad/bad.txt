@@ -1,0 +1,1 @@
+# A file of a tool folder with no tools.toml; one case copies it in.

@@ -1,0 +1,5 @@
+# A tool with no stage of its own; it is in the init stage because the init
+# tool depends on it.
+
+[defaults]
+items = [ "a", "b" ]

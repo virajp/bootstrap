@@ -1,0 +1,3 @@
+# A scalar over the list items of the base tool core.
+[tools.core]
+items = "x"
