@@ -6,5 +6,6 @@
     // The member order of the packs is the sync order, and the TOML plugin
     // sorts keys.
     "repo/packs.toml",
+    "macos/packs.toml",
   ],
 }

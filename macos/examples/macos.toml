@@ -1,0 +1,12 @@
+# Example: the values file of the Mac side.
+# This file is at the root of the private macos-setup clone.
+# MACOS_SETUP_CONFIG_PATH names the folder of that clone.
+# Each [tools.<name>] table selects a tool and gives its values.
+# Each [packs.<name>] table adds the default = true members of the pack.
+
+# The bootstrap commit of the last sync. The sync writes it.
+bootstrap_commit = ""
+
+[tools.macos-setup]
+# The answer to the question config_path of macos-setup.
+config_path = "~/Projects/github.com/janedoe/macos-setup"
