@@ -44,6 +44,11 @@ The shared files are in `repo/tools/`, one folder for each tool. Each file in
 `base` pack adds the `git` tool. This repository also syncs its own `base`
 pack.
 
+The Mac tools are in `macos/tools/`, one folder for each tool, and their packs
+are in `macos/packs.toml`. `macos/examples/macos.toml` is the sample values
+file of the Mac side. The task `updateall:configs` of the tool `macos-setup`
+is the entry of the Mac sync.
+
 The sample values files are in `repo/examples/`. `tools/` holds only a
 forwarding file, for an old sync task of a repository. The sync does not copy
 it.
@@ -387,12 +392,18 @@ case. It needs no network when gomplate, jq and yq are installed.
 `mise run test:setup-sync` runs `setup_sync` of the working tree's
 `sync-engine/` against the fixtures in `macos/fixtures/`. It checks the exit
 code, the output and the files of each case, and it needs no network when
-gomplate, jq and yq are installed.
+gomplate, jq and yq are installed. The entry cases run the rendered task
+`updateall:configs` against a local bare origin.
+
+`mise run test:macos-tools` runs `setup_sync` with each tool of `macos/tools/`
+and a copy of `macos/examples/macos.toml`, in a temporary `HOME`. It checks that
+the example selects each tool and that each rendered file parses, and it needs
+no network when gomplate, jq and yq are installed.
 
 `mise run test` runs each test task in parallel. No hook runs a test. Run the
 tests by hand before you commit: `test` for a change to `sync-engine/`,
-`test:repo-sync` for a change to `repo/`, and `test:setup-sync` for a change to
-`macos/`.
+`test:repo-sync` for a change to `repo/`, and `test:setup-sync` and
+`test:macos-tools` for a change to `macos/`.
 
 ## Change a shared file
 

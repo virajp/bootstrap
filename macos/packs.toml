@@ -1,0 +1,7 @@
+# The packs of the Mac tools in macos/tools/. A pack has no files of its own;
+# each key of its table is a member: `<tool> = { default = true }` or
+# `<tool> = {}`, and a nested pack is `"pack:<name>"`. The member order is the
+# sync order, so keep it. The sync always adds the pack `base`, and `base` must
+# hold `macos-setup`. The import plans add the other members.
+[pack.base]
+macos-setup = { default = true }

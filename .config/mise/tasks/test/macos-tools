@@ -1,0 +1,234 @@
+#!/usr/bin/env bash
+#MISE description="Render every Mac tool with the sample values file, with no network"
+
+# Calls `setup_sync` of the working tree's sync-engine/ directly, with every
+# tool of macos/tools/ and a copy of macos/examples/macos.toml, into a temp HOME.
+# The tree is a git copy of the working tree, so the test never touches the real
+# $HOME.
+#
+# Case 0: no [files] table of a tools.toml gives `mode = "seed"` to a target of
+# format json, yaml or toml (the `format` key, else the extension): such a file
+# takes `mode = "merge"`. Case 1: the first real run exits 4 when a tool has
+# `stage = "init"`, else 0, the second run exits 0, the example selects every
+# tool of macos/tools/, and every .json, .yaml/.yml and .toml file in the temp
+# HOME parses (jq or yq). Case 2: the example without the answer `config_path`
+# of macos-setup exits 2, and the message names the key.
+
+set -euo pipefail
+
+# A git hook that runs this task inside `git commit` exports these variables;
+# with them set, the git commands of the tree write to the real repo.
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_OBJECT_DIRECTORY \
+  GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_PREFIX GIT_EXEC_PATH \
+  GIT_CONFIG GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT \
+  "${!GIT_CONFIG_KEY_@}" "${!GIT_CONFIG_VALUE_@}"
+git_vars=$(git rev-parse --local-env-vars 2> /dev/null) || git_vars=''
+# shellcheck disable=SC2086
+unset $git_vars
+unset git_vars
+
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+root=${MISE_PROJECT_ROOT}
+example="$root/macos/examples/macos.toml"
+
+# The real mise folders, found before a case changes HOME and XDG_*, so
+# `mise x <tool>@latest` resolves from the mise cache with no download.
+export MISE_DATA_DIR="${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise}"
+export MISE_CACHE_DIR="${MISE_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/mise}"
+unset MISE_ENV SYNC_ENGINE_URL SYNC_ENGINE_CLONE REPO_SYNC_CLONE
+
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-macos-tools.XXXXXX")
+tmp=$(cd "$tmp" && pwd -P)
+trap 'rm -rf -- "$tmp"' EXIT
+
+# git without the user's config, hooks, signing or identity.
+_git() {
+  GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -c user.name=test -c user.email=test@example.com \
+    -c commit.gpgsign=false -c core.hooksPath=/dev/null -c init.defaultBranch=main "$@"
+}
+
+# From `/`: a case changes XDG_STATE_HOME, so mise does not trust the config of
+# this repository there. Each path is absolute.
+_jq() {
+  (cd / && mise x jq@latest -- jq "$@")
+}
+_yq() {
+  (cd / && mise x yq@latest -- yq "$@")
+}
+
+print_header "Rendering every Mac tool with the sample values file ..."
+
+# The tree: sync-engine/ and macos/ of the working tree, uncommitted work
+# included, in a git repository, so a run can record its commit.
+tree="$tmp/tree"
+mkdir -p -- "$tree"
+cp -R -- "$root/sync-engine" "$tree/sync-engine"
+cp -R -- "$root/macos" "$tree/macos"
+_git -C "$tree" init --quiet -b main
+_git -C "$tree" add -A
+_git -C "$tree" commit --quiet --no-verify -m "tree"
+
+failures=0
+pass() { print_success "$name: $1"; }
+fail() {
+  print_error "$name: $1"
+  failures=$((failures + 1))
+  [[ -f $log ]] && sed 's/^/    /' "$log" >&2
+}
+check_exit() {
+  if [[ $rc == "$1" ]]; then pass "exit $rc"; else fail "exit $rc, expected $1"; fi
+}
+
+# setup_case <name> <folder>: a fresh isolated environment with a copy of the
+# example; the runs that follow use it.
+setup_case() {
+  name=$1
+  dir="$tmp/$2"
+  log=/dev/null
+  runs=0
+  home="$dir/home"
+  mkdir -p -- "$home" "$dir/xdg/cache" "$dir/xdg/config" "$dir/xdg/state" "$dir/xdg/data" \
+    "$dir/tmp" "$dir/config"
+  export HOME=$home
+  export XDG_CACHE_HOME="$dir/xdg/cache" XDG_CONFIG_HOME="$dir/xdg/config"
+  export XDG_STATE_HOME="$dir/xdg/state" XDG_DATA_HOME="$dir/xdg/data"
+  export SYNC_ENGINE_CACHE="$XDG_CACHE_HOME/sync-engine"
+  export MACOS_SETUP_CONFIG_PATH="$dir/config"
+  export GIT_CONFIG_GLOBAL="$dir/gitconfig" GIT_CONFIG_NOSYSTEM=1
+  : > "$GIT_CONFIG_GLOBAL"
+  export TMPDIR="$dir/tmp"
+  cp -- "$example" "$MACOS_SETUP_CONFIG_PATH/macos.toml"
+}
+
+# A real run of setup_sync, as its entry task does.
+run_real() {
+  runs=$((runs + 1))
+  log="$dir/run-$runs.txt"
+  rc=0
+  # shellcheck disable=SC2016
+  (cd "$dir" && SYNC_ENGINE_CLONE=$tree bash -c 'source "$SYNC_ENGINE_CLONE/sync-engine/setup-sync" && setup_sync "$@"' setup-sync --no-bootstrap) > "$log" 2>&1 || rc=$?
+}
+
+# ---- case 0: no JSON, YAML or TOML file is a seed ------------------------------
+
+name="seed format"
+log=/dev/null
+seeds=0
+for t in "$root"/macos/tools/*/tools.toml; do
+  rows=$(_yq -p toml -o tsv \
+    '.files // {} | to_entries | map(select(.value.mode == "seed")) | .[] | [.key, (.value.format // "")]' "$t")
+  while IFS=$'\t' read -r target format; do
+    [[ -n $target ]] || continue
+    if [[ -z $format ]]; then
+      case $target in
+        *.json)
+          format=json
+          ;;
+        *.yaml | *.yml)
+          format=yaml
+          ;;
+        *.toml)
+          format=toml
+          ;;
+        *)
+          format=text
+          ;;
+      esac
+    fi
+    seeds=$((seeds + 1))
+    if [[ $format != text ]]; then
+      fail "${t#"$root"/}: $target is a seed of format $format; use mode = \"merge\""
+    fi
+  done <<< "$rows"
+done
+if ((failures == 0)); then pass "no seed of format json, yaml or toml ($seeds seed files)"; fi
+
+# ---- case 1: every tool renders, and every structured file parses -------------
+
+first_exit=0
+for t in "$root"/macos/tools/*/tools.toml; do
+  if grep -qE '^stage *= *"init"' "$t"; then first_exit=4; fi
+done
+
+setup_case "render" render
+run_real
+check_exit "$first_exit"
+
+# The selection check: the example must select each tool of macos/tools/.
+selected=$(sed -n 's/^setup-sync: tools://p' "$log" | head -n 1)
+missing=''
+for t in "$root"/macos/tools/*/; do
+  t=${t%/}
+  t=${t##*/}
+  case " $selected " in
+    *" $t "*) ;;
+    *)
+      missing+=" $t"
+      ;;
+  esac
+done
+if [[ -z $missing ]]; then
+  pass "macos/examples/macos.toml selects every tool of macos/tools/"
+else
+  fail "macos/examples/macos.toml does not select:$missing"
+fi
+
+run_real
+check_exit 0
+
+# mise does not expand ~ in [env], so the answer of the example reaches it with
+# $HOME in its place.
+mise_config="$home/.config/mise/conf.d/macos-setup/mise.toml"
+if grep -qF "MACOS_SETUP_CONFIG_PATH = \"$home/Projects/github.com/janedoe/macos-setup\"" "$mise_config"; then
+  pass "a ~ at the start of config_path becomes \$HOME"
+else
+  fail "$mise_config does not have config_path with \$HOME in place of ~"
+fi
+
+bad=0
+count=0
+while IFS= read -r -d '' f; do
+  count=$((count + 1))
+  case $f in
+    *.json)
+      parser=(_jq -e . "$f")
+      ;;
+    *.yaml | *.yml)
+      parser=(_yq -p yaml -e . "$f")
+      ;;
+    *.toml)
+      parser=(_yq -p toml -o json . "$f")
+      ;;
+  esac
+  if ! out=$("${parser[@]}" 2>&1 > /dev/null); then
+    bad=$((bad + 1))
+    print_error "render: ${f#"$home"/} does not parse"
+    printf '    %s\n' "$out" >&2
+  fi
+done < <(find "$home" -type f \( -name '*.json' -o -name '*.yaml' -o -name '*.yml' -o -name '*.toml' \) -print0)
+if ((bad)); then
+  failures=$((failures + bad))
+else
+  pass "all $count .json, .yaml/.yml and .toml files parse"
+fi
+if ((count == 0)); then fail "no .json, .yaml/.yml or .toml file was rendered"; fi
+
+# ---- case 2: a missing answer --------------------------------------------------
+
+setup_case "missing question" missing
+grep -v '^config_path = ' "$example" > "$MACOS_SETUP_CONFIG_PATH/macos.toml"
+run_real
+check_exit 2
+if grep -qF 'macos-setup: set config_path in [tools.macos-setup] of macos.toml' "$log"; then
+  pass "the message names the key"
+else
+  fail "the message does not name the key 'config_path'"
+fi
+
+if ((failures)); then
+  print_error "$failures check(s) failed"
+  exit 1
+fi
+print_success "Every Mac tool renders with the sample values file"
