@@ -286,8 +286,8 @@
       "title": "Mac tools: app-only (52)",
       "target_repo": null,
       "priority": 140,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-05T12:34:09.389Z",
       "ended": "",
       "gaps": null,
       "requires": [
