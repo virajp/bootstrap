@@ -538,9 +538,12 @@ directory path as the task name, for example `code/merge/develop` is
     clone with `REPO_SYNC_CLONE`, and it loads `sync-engine/repo-sync` of the
     same clone. The sync code is in `sync-engine/`, not in a tool. The cleanup
     plan removes the forwarding file.
+  - `worktrees-page`: `write_worktrees_page`, which writes the HTML page of
+    `code:worktrees`. It holds a small font with the glyphs of that task.
 
-  The `mise` tool ships `helpers`, `checks` and `placeholder`, the `git` tool
-  ships `merge`, and the `swift` tool ships `xcode`.
+  The `mise` tool ships `helpers`, `checks`, `placeholder` and
+  `worktrees-page`, the `git` tool ships `merge`, and the `swift` tool ships
+  `xcode`.
 - Prefix each tool call with `mise x --`, for example `mise x -- dprint check`.
   To find whether a tool is available, use `mise x -- which <tool>`, not
   `command -v`. System commands (`git`, `awk`, `sed`) and `mise` itself do not
@@ -554,7 +557,8 @@ directory path as the task name, for example `code/merge/develop` is
   repository before its first sync, or a shell without `MISE_ENV=dev`, has no
   config that names them. The tools are `pre-commit` in
   `setup:configs:sync`, `setup:precommit` and `code:precommit`, and
-  `pre-commit` and `yq` in the `code:merge` tasks. The engine in `sync-engine/`
+  `pre-commit` and `yq` in the `code:merge` tasks, and `yq` in
+  `code:worktrees`. The engine in `sync-engine/`
   calls gomplate, jq and yq only through its three wrappers.
 - To find whether the repository has an optional task, use `has_own_task` and
   `own_tasks` from `helpers`. Do not use `mise tasks info` or a wildcard
@@ -630,6 +634,8 @@ task that runs only commands.
     runs its `code:sec:<scanner>` tasks. Each scanner task prints only a
     `print_subheader` under that header. With `--staged`, a scanner task
     without a staged mode prints nothing.
+11. Exception to rule 2: when its output is not a terminal, `code:worktrees`
+    prints only JSON Lines, because an agent reads each line.
 
 ## Branch model in the merge tasks
 
