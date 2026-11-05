@@ -1,0 +1,13 @@
+# The superfile tool.
+
+description = "superfile, the terminal file manager, and its config"
+
+# superfile rewrites its config, so the source holds only the keys that
+# bootstrap enforces. sidebar_sections is in remove, so the source list
+# replaces the live list and its order holds.
+[files."Library/Application Support/superfile/config.toml"]
+mode = "merge"
+remove = [ [ "sidebar_sections" ] ]
+
+[mise.bootstrap.packages]
+"brew:superfile" = "latest" # File management utility

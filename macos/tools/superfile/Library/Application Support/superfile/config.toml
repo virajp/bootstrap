@@ -1,0 +1,19 @@
+# Merged by bootstrap: macos/tools/superfile/Library/Application Support/superfile/config.toml
+# Only these keys are enforced; superfile owns every other key. All keys:
+# https://superfile.dev/configure/superfile-config/
+
+# A partial config is valid: superfile uses its default for a missing key.
+ignore_missing_fields = true
+
+case_sensitive_sort = true
+# "" for builtin chroma, "bat" for bat.
+code_previewer = "bat"
+default_open_file_preview = false
+# (0: Name, 1: Size, 2: Date Modified, 3: Type, 4: Natural).
+default_sort_type = 4
+# true: SI decimal units of 1000 (kB, MB, GB).
+file_size_use_si = true
+sidebar_sections = [ "pinned", "disks", "home" ]
+transparent_background = true
+# Requires: zoxide
+zoxide_support = true

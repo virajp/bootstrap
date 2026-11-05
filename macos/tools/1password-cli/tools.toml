@@ -1,0 +1,8 @@
+# The 1password-cli tool: the 1Password CLI (op); it depends on the 1Password
+# app.
+
+depends = [ "1password" ]
+description = "The 1Password CLI (op)"
+
+[mise.tools.1password]
+version = "latest"

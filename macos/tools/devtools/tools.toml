@@ -1,0 +1,12 @@
+# The devtools tool: the development env. lcov is the tool lcov, and the edit
+# alias is in the tool sublime-text.
+
+description = "The development env (browser for tests, telemetry opt-out, pre-commit cache, runtime env)"
+
+# The devtools tool: the development env.
+[mise.env]
+# Development tools
+CHROME_EXECUTABLE = "${HOME}/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+DOTNET_CLI_TELEMETRY_OPTOUT = "true"
+PRE_COMMIT_HOME = "${HOME}/.cache/pre-commit"
+RUNTIME_ENV = "development"

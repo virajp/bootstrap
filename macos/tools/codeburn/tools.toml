@@ -1,0 +1,13 @@
+# The codeburn tool: codeburn (tracks the usage of the AI tools) and its aistats
+# alias.
+
+depends = [ "claude-cli" ]
+description = "codeburn, the usage and cost report of the AI tools, and its aistats alias"
+
+# Tracking usage and performance of AI tools
+[mise.tools."npm:codeburn"]
+depends = [ "node", "pnpm" ]
+version = "latest"
+
+[mise.shell_alias]
+aistats = "mise x -- codeburn report --period 30days --format tui"

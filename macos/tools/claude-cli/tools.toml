@@ -1,0 +1,28 @@
+# The claude-cli tool: Claude Code, its ~/.claude files (settings, CLAUDE.md,
+# output styles), the func:claude and upgrade:ai tasks and the cc* aliases.
+
+depends = [ "cli" ]
+description = "Claude Code: its settings, CLAUDE.md, output styles, the func:claude and upgrade:ai tasks and the cc* aliases"
+
+# Claude Code rewrites CLAUDE.md, so it is a seed: written once and then owned
+# by the user. settings.json is a merge file: bootstrap enforces only the
+# keys of its source and Claude Code owns the rest. When a list item of the
+# source changes, put the old item in `remove_items`, or the live file keeps it.
+[files.".claude/CLAUDE.md"]
+mode = "seed"
+
+[files.".claude/settings.json"]
+mode = "merge"
+remove = [ [ "deniedMcpServers" ] ]
+
+# The claude-cli tool: Claude Code and its aliases.
+[mise.bootstrap.packages]
+"brew-cask:claude-code@latest" = "latest" # Claude Code latest version
+
+[mise.shell_alias]
+# Claude Code shortcuts
+cc = "mise run --silent func:claude"
+ccf = "mise run --silent func:claude --model 'fable[1m]'"
+cch = "mise run --silent func:claude --model 'haiku[1m]'"
+cco = "mise run --silent func:claude --model 'opus[1m]'"
+ccs = "mise run --silent func:claude --model 'sonnet[1m]'"

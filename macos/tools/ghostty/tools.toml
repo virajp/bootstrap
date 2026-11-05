@@ -1,0 +1,6 @@
+# The ghostty tool.
+
+description = "Ghostty, the terminal emulator, and its config"
+
+[mise.bootstrap.packages]
+"brew-cask:ghostty" = "latest" # Terminal emulator

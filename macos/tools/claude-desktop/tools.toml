@@ -1,0 +1,6 @@
+# The claude-desktop tool: Claude Desktop, the desktop app.
+
+description = "Claude Desktop"
+
+[mise.bootstrap.packages]
+"brew-cask:claude" = "latest" # Claude Desktop app

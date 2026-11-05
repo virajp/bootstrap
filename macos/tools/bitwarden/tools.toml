@@ -1,0 +1,6 @@
+# The bitwarden tool: Bitwarden, the password manager.
+
+description = "Bitwarden, the password manager"
+
+[mise.bootstrap.packages]
+"brew-cask:bitwarden" = "latest" # Password manager
