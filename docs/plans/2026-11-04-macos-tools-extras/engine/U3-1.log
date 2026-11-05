@@ -1,0 +1,13 @@
+security-review, loop U3, round 1, range 8c2e288..e19f444
+
+No vulnerabilities at confidence 8 or above.
+
+One candidate fell below the filter (identifier 8, filter 6):
+macos/tools/tailscale/.config/mise/tasks/tailscale/daemon:22, also
+macos/tools/tailscale/.config/mise/tasks/upgrade/tailscale:32 and :55.
+sudo brew services start tailscale installs a root LaunchDaemon that runs
+/opt/homebrew/opt/tailscale/bin/tailscaled. /opt/homebrew/opt is user-writable
+with no sticky bit, so code that runs as the user can replace the opt symlink,
+and launchd runs the payload as root at the next restart. The filter: the task
+body is a byte copy of the old file apart from the header lines, and the cause
+is the root-service design of Homebrew. Same-user code already controls brew.

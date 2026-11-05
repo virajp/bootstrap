@@ -116,14 +116,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T11:58:03.418Z",
+      "ended": "2026-11-05T12:04:44.682Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "8c2e288",
+        "to": "e19f444"
       }
     },
     {
@@ -179,9 +179,9 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T11:58:03.379Z",
+      "ended": "2026-11-05T12:05:06.585Z"
     },
     {
       "id": "W3",
@@ -297,28 +297,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T12:05:06.863Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T12:05:06.653Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T12:05:06.754Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T12:05:06.970Z"
     }
   },
   "gaps": [
@@ -363,6 +363,62 @@
       "stage": "edit",
       "text": "DOCS FALSIFIED lines from wave review R1, for the docs unit U4 that owns these files: CLAUDE.md:171, README.md:233, docs/sync/index.md:326 and docs/design/tools.md:90 (only gh uses merge mode; claude-cli, superfile and gem now do); docs/design/tools.md:98 (no tool uses [contributes]; 1password and orbstack do); CLAUDE.md:527 (two Mac templates do not follow the data.ToJSON rule; 1password agent.toml.tmpl and claude-cli settings.json.tmpl also write a raw string value) · handed to U4. closed: U4 owns these passages, so no widening is needed",
       "state": "closed"
+    },
+    {
+      "id": "G7",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[high] macos/tools/claude-cli/.config/mise/tasks/func/claude:51-53 (U1): cc, ccf, cch, cco and ccs start Claude Code with --remote-control and --dangerously-skip-permissions, and skipDangerousModePermissionPrompt = true is enforced by merge at each sync, so prompt injection from a repo file or fetched page needs no approval. Imported unchanged from macos-setup · D10 applies: imported content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G8",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[medium] macos/tools/tailscale/.config/mise/tasks/upgrade/tailscale:32, also :55 and tailscale/daemon:22 (U1): sudo brew services start tailscale runs tailscaled as root from a path under the user-writable /opt/homebrew/opt with no sticky bit, so same-user code can replace the symlink and get root at the next daemon start. Two read-only checks disagree on whether the plist exists on this Mac. Imported unchanged from macos-setup · D10 applies: imported content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G9",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[medium] macos/tools/claude-cli/.claude/settings.json.tmpl:71-74 (U1): permissions.allow holds bare WebFetch, Bash(pnpm:*), Bash(mise:*) and Bash(git:*), so mise x and pnpm dlx run any program with no prompt and route around the deny rules. Imported unchanged from macos-setup · D10 applies: imported content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G10",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[medium] macos/tools/claude-cli/.claude/settings.json.tmpl:55 (U1): MISE_TRUSTED_CONFIG_PATHS trusts all of projects_dir, so the mise config of a cloned repo under it runs with no trust prompt. Imported unchanged from macos-setup · D10 applies: imported content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G11",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[low] macos/tools/tailscale/.config/mise/tasks/upgrade/tailscale:44, chown at :46 (U1): readlink -l fails on this Mac and does not trip set -e, so keg becomes /opt/homebrew/bin/ and each upgrade runs a recursive root chown on all of it. Imported unchanged from macos-setup · D10 applies: imported content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G12",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[low] macos/tools/1password/.config/1Password/ssh/agent.toml.tmpl:13 (U1): ssh_vault goes into a TOML string without data.ToJSON, so a vault name with a quote and a newline can add tables. Only the required message changed on this line; the raw value is imported · D10 applies: imported content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G13",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[low] macos/tools/claude-cli/.claude/settings.json.tmpl:1-2 and :55 (U1): projects_dir and HOME go into a JSON string with no encoding. Only the required message changed; the raw value is imported · D10 applies: imported content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G14",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[low] macos/tools/claude-cli/tools.toml:16 (U1): merge remove = [[\"deniedMcpServers\"]] deletes the key from the live settings.json at each sync, so an MCP server the user denied becomes usable again. The entry is unchanged from the old tools.toml · D10 applies: imported content unchanged, open for one security plan after the run",
+      "state": "open"
     }
   ],
   "overrides": [],
