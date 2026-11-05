@@ -1,0 +1,2 @@
+[overrides.mise.shell_alias]
+fixture = "echo fixture"

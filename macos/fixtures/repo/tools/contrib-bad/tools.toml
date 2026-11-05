@@ -1,0 +1,4 @@
+# Contributes to a name that is not a tool of the repo.
+
+[contributes.nope]
+x = 1

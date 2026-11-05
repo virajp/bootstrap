@@ -1,0 +1,9 @@
+# The packs of the test:setup-sync fixture repo.
+
+[pack.base]
+core = { default = true }
+macos-setup = { default = true }
+
+[pack.extra]
+merger = {}
+opt = { default = true }

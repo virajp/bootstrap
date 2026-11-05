@@ -1,0 +1,2 @@
+[overrides.mise.env]
+NOPE = "1"

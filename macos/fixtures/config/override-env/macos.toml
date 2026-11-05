@@ -1,0 +1,2 @@
+[overrides.mise_env.dev.env]
+CORE_NAME = "x"

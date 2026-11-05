@@ -1,0 +1,1313 @@
+#!/usr/bin/env bash
+#MISE description="Test setup-sync against fixtures, with no network"
+
+# Runs `setup_sync` of the working tree's sync-engine/ against the fixture repo
+# in macos/fixtures/repo/ and the fixture config folders in
+# macos/fixtures/config/, and checks the exit code, the output and the files of
+# each case. Every case has its own temp HOME, XDG_* folders, cache, TMPDIR and
+# git config, so it needs no network and never touches the real $HOME. Every real
+# run passes --no-bootstrap. The clone, the lock and the temp copy belong to the
+# entry task, which has its own test.
+
+set -euo pipefail
+
+# A git hook that runs this task inside `git commit` exports these variables;
+# with them set, the git commands of the fixture tree write to the real repo.
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_OBJECT_DIRECTORY \
+  GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_PREFIX GIT_EXEC_PATH \
+  GIT_CONFIG GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT \
+  "${!GIT_CONFIG_KEY_@}" "${!GIT_CONFIG_VALUE_@}"
+git_vars=$(git rev-parse --local-env-vars 2> /dev/null) || git_vars=''
+# shellcheck disable=SC2086
+unset $git_vars
+unset git_vars
+
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+root=${MISE_PROJECT_ROOT}
+fixtures="$root/macos/fixtures"
+# The tilde at the start of a target in a message.
+tilde='~'
+
+# The real mise folders, found before a case changes HOME and XDG_*, so
+# `mise x gomplate` resolves from the mise cache with no download.
+export MISE_DATA_DIR="${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise}"
+export MISE_CACHE_DIR="${MISE_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/mise}"
+unset MISE_ENV SYNC_ENGINE_URL SYNC_ENGINE_CLONE REPO_SYNC_CLONE
+
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-setup-sync.XXXXXX")
+# The real path: setup-sync logs the real path of a target behind a symlink.
+tmp=$(cd "$tmp" && pwd -P)
+# shellcheck disable=SC2046
+trap 'kill $(jobs -p) 2> /dev/null || true; rm -rf -- "$tmp"' EXIT
+
+# git without the user's config, hooks, signing or identity.
+_git() {
+  GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -c user.name=test -c user.email=test@example.com \
+    -c commit.gpgsign=false -c core.hooksPath=/dev/null -c init.defaultBranch=main "$@"
+}
+
+print_header "Testing setup-sync against fixtures ..."
+
+# No fixture file may be one that git ignores: it would be missing from a
+# fresh checkout.
+ignored=$(cd "$root" && find macos/fixtures -type f -print0 | xargs -0 git check-ignore --no-index 2> /dev/null) || true
+if [[ -n $ignored ]]; then
+  print_error "fixture files that .gitignore matches:"
+  printf '    %s\n' "$ignored" >&2
+  exit 1
+fi
+
+# The tree: sync-engine/ of the working tree, uncommitted work included, and the
+# fixture repo as macos/, without tools/bad/ (one case adds it), in a git
+# repository, so a run can record its commit.
+tree="$tmp/tree"
+mkdir -p -- "$tree/macos"
+cp -R -- "$root/sync-engine" "$tree/sync-engine"
+cp -R -- "$fixtures/repo/." "$tree/macos"
+rm -rf -- "$tree/macos/tools/bad"
+_git -C "$tree" init --quiet -b main
+_git -C "$tree" add -A
+_git -C "$tree" commit --quiet --no-verify -m "fixture"
+tree_commit=$(_git -C "$tree" rev-parse HEAD)
+
+failures=0
+max_jobs=$(getconf _NPROCESSORS_ONLN 2> /dev/null) || max_jobs=4
+case_count=0
+case_pids=()
+case_dirs=()
+
+# run_case <name> <function> [<arg>...]
+# Runs <function> in its own folder and environment, in the background. The
+# output of each case is printed in the order of the cases.
+run_case() {
+  local dir
+  case_count=$((case_count + 1))
+  dir="$tmp/case-$case_count"
+  mkdir -p -- "$dir"
+  (
+    trap - EXIT
+    case_body "$dir" "$@" > "$dir/out" 2>&1
+  ) &
+  case_pids+=("$!")
+  case_dirs+=("$dir")
+  if ((${#case_pids[@]} >= max_jobs)); then
+    collect_case
+  fi
+}
+
+# Wait for the oldest case, print its output and add its failures. A case
+# without a failures file stopped before its end, which is a failure.
+collect_case() {
+  local dir=${case_dirs[0]} n=1
+  wait "${case_pids[0]}" || true
+  cat -- "$dir/out"
+  [[ -f $dir/failures ]] && n=$(cat -- "$dir/failures")
+  failures=$((failures + n))
+  rm -rf -- "$dir"
+  case_pids=("${case_pids[@]:1}")
+  case_dirs=("${case_dirs[@]:1}")
+}
+
+# The isolated environment of a case, then the case function.
+case_body() {
+  dir=$1 name=$2
+  shift 2
+  set +e
+  failures=0 runs=0 rc=0 log=/dev/null
+  home="$dir/home"
+  clone=$tree
+  mkdir -p -- "$home" "$dir/xdg/cache" "$dir/xdg/config" "$dir/xdg/state" "$dir/xdg/data" \
+    "$dir/tmp" "$dir/user"
+  export HOME=$home
+  export XDG_CACHE_HOME="$dir/xdg/cache" XDG_CONFIG_HOME="$dir/xdg/config"
+  export XDG_STATE_HOME="$dir/xdg/state" XDG_DATA_HOME="$dir/xdg/data"
+  export SYNC_ENGINE_CACHE="$XDG_CACHE_HOME/sync-engine"
+  export MACOS_SETUP_CONFIG_PATH="$dir/config"
+  export GIT_CONFIG_GLOBAL="$dir/gitconfig" GIT_CONFIG_NOSYSTEM=1
+  : > "$GIT_CONFIG_GLOBAL"
+  export TMPDIR="$dir/tmp"
+  unset SYNC_ENGINE_URL
+  manifest="$SYNC_ENGINE_CACHE/macos-generated.tsv"
+  values="$MACOS_SETUP_CONFIG_PATH/macos.toml"
+  user="$dir/user"
+  "$@"
+  printf '%s\n' "$failures" > "$dir/failures"
+}
+
+pass() { print_success "$name: $1"; }
+fail() {
+  print_error "$name: $1"
+  failures=$((failures + 1))
+  [[ -f $log ]] && sed 's/^/    /' "$log" >&2
+}
+
+# check <what> <command> [<arg>...]: passes when the command succeeds.
+check() {
+  local what=$1
+  shift
+  if "$@"; then pass "$what"; else fail "$what"; fi
+}
+check_exit() {
+  if [[ $rc == "$1" ]]; then pass "exit $rc"; else fail "exit $rc, expected $1"; fi
+}
+check_output() { check "the output has: $1" grep -qF -- "$1" "$log"; }
+check_no_output() { check "the output lacks: $1" not grep -qF -- "$1" "$log"; }
+# check_file <path> <content>: the file exists with exactly <content>.
+check_file() { check "${1#"$dir"/} has the expected content" file_is "$1" "$2"; }
+file_is() { [[ -f $1 && $(cat -- "$1") == "$2" ]]; }
+not() { ! "$@"; }
+
+# Run setup_sync as its entry task does, from the case folder.
+sync_run() {
+  runs=$((runs + 1))
+  log="$dir/run-$runs.txt"
+  rc=0
+  # shellcheck disable=SC2016
+  (cd "$dir" && SYNC_ENGINE_CLONE=$clone bash -c 'source "$SYNC_ENGINE_CLONE/sync-engine/setup-sync" && setup_sync "$@"' setup-sync "$@") > "$log" 2>&1 || rc=$?
+}
+run_real() { sync_run --no-bootstrap; }
+run_dry() { sync_run --dry-run; }
+
+# use_config <name>: a copy of a fixture config folder; `-` is an empty one.
+use_config() {
+  rm -rf -- "$MACOS_SETUP_CONFIG_PATH"
+  if [[ $1 == - ]]; then
+    mkdir -p -- "$MACOS_SETUP_CONFIG_PATH"
+  else
+    cp -R -- "$fixtures/config/$1" "$MACOS_SETUP_CONFIG_PATH"
+  fi
+}
+
+# case_tree <function>: a copy of the tree for this case only, after <function>
+# changed its macos/ folder, "$work".
+case_tree() {
+  cp -R -- "$tree" "$dir/tree"
+  clone="$dir/tree"
+  work="$clone/macos"
+  "$1"
+}
+
+# seed_manifest <row>...: a manifest from an earlier run.
+seed_manifest() {
+  mkdir -p -- "$SYNC_ENGINE_CACHE"
+  printf '%s\n' "$@" > "$manifest"
+}
+
+header_file() { printf '%s\n' "# Generated by macos-setup: test" "$2" > "$1"; }
+new_header_file() { printf '%s\n' "# Synced from bootstrap: test. Do not edit this file." "$2" > "$1"; }
+
+# ---- config ----------------------------------------------------------------
+
+case_config_missing() {
+  run_real
+  check_exit 2
+  check_output "the config folder $MACOS_SETUP_CONFIG_PATH does not exist"
+  check_output MACOS_SETUP_CONFIG_PATH
+  check "nothing written" not test -e "$home/.config"
+}
+
+case_config_unset() {
+  unset MACOS_SETUP_CONFIG_PATH
+  run_real
+  check_exit 2
+  check_output "MACOS_SETUP_CONFIG_PATH is not set"
+  check "nothing written" not test -e "$home/.config"
+}
+
+# expect <config> <code> <message> [<tree change>]: a dry run that stops.
+expect() {
+  use_config "$1"
+  [[ -z ${4:-} ]] || case_tree "$4"
+  run_dry
+  check_exit "$2"
+  check_output "$3"
+}
+
+add_bad_tool() { cp -R -- "$fixtures/repo/tools/bad" "$work/tools/bad"; }
+no_packs() { rm -- "$work/packs.toml"; }
+no_base() { printf '%s\n' '[pack.extra]' 'opt = { default = true }' > "$work/packs.toml"; }
+base_no_engine() { printf '%s\n' '[pack.base]' 'core = { default = true }' > "$work/packs.toml"; }
+pack_is_tool() { printf '\n%s\n%s\n' '[pack.core]' 'init = { default = true }' >> "$work/packs.toml"; }
+pack_unknown() { printf '\n%s\n%s\n' '[pack.more]' 'nope = { default = true }' >> "$work/packs.toml"; }
+pack_old_key() { printf '\n%s\n%s\n' '[pack.more]' 'depends = [ "opt" ]' >> "$work/packs.toml"; }
+pack_entry_key() { printf '\n%s\n%s\n' '[pack.more]' 'opt = { tag = true }' >> "$work/packs.toml"; }
+pack_not_table() { printf '\n%s\n%s\n' '[pack.more]' 'tools = "init"' >> "$work/packs.toml"; }
+pack_two() { printf '\n%s\n%s\n' '[pack.more]' 'opt = { default = true }' >> "$work/packs.toml"; }
+# prepend_key <tool> <line>: a top-level line before the tables of a tools.toml.
+prepend_key() {
+  printf '%s\n' "$2" "$(cat -- "$work/tools/$1/tools.toml")" > "$work/$1.toml"
+  mv -- "$work/$1.toml" "$work/tools/$1/tools.toml"
+}
+# append_lines <tool> <line>...: lines at the end of a tools.toml.
+append_lines() {
+  local t=$1
+  shift
+  printf '\n' >> "$work/tools/$t/tools.toml"
+  printf '%s\n' "$@" >> "$work/tools/$t/tools.toml"
+}
+bad_manifest_key() { prepend_key opt 'depend = [ "core" ]'; }
+bad_stage() { prepend_key opt 'stage = "login"'; }
+old_stage() { prepend_key opt 'stage = "shell"'; }
+old_seed_key() { prepend_key core 'seed = [ ".config/core/seeded.toml" ]'; }
+old_seed_requires() { append_lines core '[seed_requires]' '".config/core/seeded.toml" = [ ".config/core-needed" ]'; }
+files_no_source() { append_lines core '[files.".config/core/nothing"]' 'mode = "seed"'; }
+bad_files_key() { append_lines opt '[files.".config/opt/opt.txt"]' 'owner = "core"'; }
+bad_question() { append_lines opt '[questions.level]' 'ask = "Which level?"'; }
+repo_default_envs() { prepend_key opt 'default_envs = [ "dev" ]'; }
+repo_mise_env() { append_lines opt '[mise_env.dev.tools]' 'jq = "latest"'; }
+repo_requires_found() { append_lines opt '[files.".config/opt/opt.txt"]' 'requires_found = [ "x" ]'; }
+tool_zz_macos() {
+  mkdir -p -- "$work/tools/zz-macos"
+  printf '%s\n' 'description = "x"' > "$work/tools/zz-macos/tools.toml"
+}
+tool_after_zz_macos() {
+  mkdir -p -- "$work/tools/zzz"
+  printf '%s\n' 'description = "x"' > "$work/tools/zzz/tools.toml"
+}
+ships_conf_d() {
+  mkdir -p -- "$work/tools/core/.config/mise/conf.d"
+  printf '%s\n' '[env]' > "$work/tools/core/.config/mise/conf.d/x.toml"
+}
+file_and_tmpl() {
+  printf '%s\n' 'a' > "$work/tools/core/.config/core/foo"
+  printf '%s\n' 'b' > "$work/tools/core/.config/core/foo.tmpl"
+}
+
+case_unknown_flag() {
+  use_config ok
+  sync_run --bogus
+  check_exit 2
+  check_output "unknown flag '--bogus'"
+  check_output "usage: setup_sync"
+}
+
+# ---- packs and selection ------------------------------------------------------
+
+# A [tools.<name>] table selects a tool of pack extra; its other members stay out.
+case_tools_list() {
+  use_config ok
+  run_real
+  check_exit 0
+  check_output "tools: core macos-setup opt"
+  check "merger (pack extra, not listed) is not rendered" not test -e "$home/.config/merger"
+}
+
+# A [packs.<name>] table adds only its default = true members.
+case_packs_table() {
+  use_config packs-table
+  run_real
+  check_exit 0
+  check_output "tools: core macos-setup opt"
+  check "opt (default = true) is rendered" test -f "$home/.config/opt/opt.txt"
+  check "merger (default = false) is not rendered" not test -e "$home/.config/merger"
+}
+
+# A default = false member arrives only with [tools.<name>].
+case_packs_member() {
+  use_config packs-member
+  run_real
+  check_exit 0
+  check_output "tools: core macos-setup merger opt"
+  check "merger is rendered" test -f "$home/.config/merger/plain.txt"
+}
+
+# A tool in two packs is selected once.
+case_packs_two() {
+  use_config packs-two
+  case_tree pack_two
+  run_real
+  check_exit 0
+  check_output "tools: core macos-setup opt"
+  check "the manifest has the file once" test "$(grep -cF .config/opt/opt.txt "$manifest")" = 1
+}
+
+# ---- mise (the check of the install) ------------------------------------------
+
+# fake_mise <folder>: a mise in <folder> that is not ~/.local/bin/mise.
+fake_mise() {
+  mkdir -p -- "$1"
+  printf '%s\n' '#!/bin/sh' 'exit 0' > "$1/mise"
+  chmod +x "$1/mise"
+}
+
+case_mise_elsewhere() {
+  use_config ok
+  fake_mise "$dir/homebrew/bin"
+  export PATH="$dir/homebrew/bin:$PATH"
+  run_real
+  check_exit 2
+  check_output "mise must be installed with \`curl https://mise.run | sh\` at ~/.local/bin/mise, not from a package manager (found: $dir/homebrew/bin/mise)"
+  check "nothing written" not test -e "$home/.config"
+}
+
+# A ~/.local/bin/mise that is a link into a package manager's folder.
+case_mise_link() {
+  use_config ok
+  fake_mise "$dir/homebrew/bin"
+  mkdir -p -- "$dir/link/.local/bin"
+  ln -s -- "$dir/homebrew/bin/mise" "$dir/link/.local/bin/mise"
+  export PATH="$dir/link/.local/bin:$PATH"
+  run_real
+  check_exit 2
+  check_output "(found: $dir/homebrew/bin/mise)"
+}
+
+# ---- the generated mise config ------------------------------------------------
+
+mise_core_header='# Synced from bootstrap: macos/tools/core/tools.toml. Do not edit this file.
+# The next sync replaces it, and a manual change is lost.'
+
+case_mise_tool() {
+  local file="$home/.config/mise/conf.d/core/mise.toml"
+  use_config ok
+  run_real
+  check_exit 0
+  check_file "$file" "$mise_core_header
+
+[env]
+  CORE_HOME = \"{{ env.HOME }}\"
+  CORE_NAME = \"override-name\""
+  check "the manifest has its line" grep -qxF "core	.config/mise/conf.d/core/mise.toml" "$manifest"
+  check "a tool with no [mise.*] gets no file" not test -e "$home/.config/mise/conf.d/opt"
+}
+
+case_mise_user() {
+  local file="$home/.config/mise/conf.d/zz-macos/mise.toml"
+  use_config mise-user
+  run_real
+  check_exit 0
+  check_file "$file" '# Synced from bootstrap: macos.toml [mise]. Do not edit this file.
+# The next sync replaces it, and a manual change is lost.
+
+[shell_alias]
+  fixture = "echo fixture"'
+  check "the manifest has its line" grep -qxF "zz-macos	.config/mise/conf.d/zz-macos/mise.toml" "$manifest"
+}
+
+case_mise_override() {
+  local file="$home/.config/mise/conf.d/core/mise.toml"
+  use_config override-mise
+  run_real
+  check_exit 0
+  check "the key changes, with the comment" grep -qE '^ *CORE_NAME = "from-override"  # override: macos\.toml$' "$file"
+  check "the other key has no comment" grep -qE '^ *CORE_HOME = "\{\{ env\.HOME }}"$' "$file"
+}
+
+case_mise_deselected() {
+  local file="$home/.config/mise/conf.d/init/mise.toml"
+  use_config init
+  run_real
+  check_exit 4
+  check "the mise config is written" test -f "$file"
+  use_config -
+  run_real
+  check_exit 0
+  check "the mise config of the tool is removed" not test -e "$file"
+  check "and its folder" not test -e "${file%/*}"
+  check "the mise config of core stays" test -f "$home/.config/mise/conf.d/core/mise.toml"
+}
+
+# ---- blockers -----------------------------------------------------------------
+
+case_blocker_header() {
+  use_config ok
+  mkdir -p -- "$home/.config"
+  header_file "$home/.config/core" "old"
+  run_real
+  check_exit 0
+  check_output "removed    home/.config/core (a folder replaces it)"
+  check "values.txt written" test -f "$home/.config/core/values.txt"
+}
+
+case_blocker_plain() {
+  use_config ok
+  mkdir -p -- "$home/.config"
+  printf '%s\n' "mine" > "$home/.config/opt"
+  run_real
+  check_exit 1
+  check_output "home/.config/opt is a file of this repo, but the sync needs a folder there - move it"
+  check_file "$home/.config/opt" "mine"
+  check "the other targets written" test -f "$home/.config/core/values.txt"
+}
+
+# ---- values -------------------------------------------------------------------
+
+synced() {
+  printf '%s\n' "# Synced from bootstrap: macos/tools/$1. Do not edit this file." \
+    '# The next sync replaces it, and a manual change is lost.'
+}
+
+case_values() {
+  use_config ok
+  run_real
+  check_exit 0
+  check_file "$home/.config/core/values.txt" "$(synced core/.config/core/values.txt.tmpl)
+name=override-name
+items=a,b,x,
+left=file-left
+right=default-right
+tools=core,macos-setup,opt,
+opt_extra=extra-value
+home=$home
+passthrough={{ mise }} [[ bash ]]"
+  check_file "$home/.config/opt/opt.txt" "$(synced opt/.config/opt/opt.txt.tmpl)
+level=default-level
+extra=extra-value"
+}
+
+# A dependency tool: a list in [tools.<name>] appends, also when that table
+# selects the tool too.
+case_values_dependency() {
+  local items="$home/.config/initdep/items.txt" head
+  head=$(synced initdep/.config/initdep/items.txt.tmpl)
+  use_config dep
+  run_real
+  check_exit 4
+  check_file "$items" "$head
+items=a,b,y,x,"
+  printf '%s\n' '[tools.init]' '[tools.initdep]' 'items = [ "x", "a" ]' > "$values"
+  run_real
+  check_exit 4
+  check_file "$items" "$head
+items=a,b,x,"
+}
+
+# An opt-in tool: a list in [tools.<name>] replaces the defaults and the
+# contributions.
+case_values_opt_in() {
+  use_config replace
+  run_real
+  check_exit 0
+  check_file "$home/.config/owner/config" "$(owner_config "Include ~/z" "" "Host *" \
+    "  IdentityAgent agent-a" "nested=default," "# again: agent-a")"
+}
+
+# An opt-in tool: a value of another type replaces the merged one.
+case_values_opt_in_type() {
+  use_config type-opt
+  run_real
+  check_exit 0
+  check "the number replaces the string" grep -qxF "level=3" "$home/.config/opt/opt.txt"
+}
+
+# ---- render -------------------------------------------------------------------
+
+# The class of a target: 1 init ~/.config/mise, 2 init rest, 3 main
+# ~/.config/mise, 4 main rest.
+case_render_order() {
+  local path class last=0 ok=1 n=0 t='~'
+  use_config init
+  run_dry
+  check_exit 0
+  while read -r path; do
+    case $path in
+      "$t/.config/init/"* | "$t/.config/initdep/"*)
+        class=2
+        ;;
+      "$t/.config/mise/conf.d/init/mise.toml")
+        class=1
+        ;;
+      "$t/.config/mise/"*)
+        class=3
+        ;;
+      *)
+        class=4
+        ;;
+    esac
+    ((class >= last)) || ok=0
+    last=$class
+    n=$((n + 1))
+  done < <(sed -n 's/^setup-sync: would update \([^ ]*\).*/\1/p' "$log")
+  check "$t/.config/mise/** first in each stage, the init stage first ($n files)" test "$ok" = 1 -a "$n" -gt 5
+}
+
+add_executables() {
+  printf '%s\n' '#!/bin/sh' > "$work/tools/core/.config/core/run"
+  printf '%s\n' '#!/bin/sh' '# <% .config.name %>' > "$work/tools/core/.config/core/rendered.tmpl"
+  chmod 755 "$work/tools/core/.config/core/run" "$work/tools/core/.config/core/rendered.tmpl"
+}
+
+case_render_exact() {
+  use_config ok
+  case_tree add_executables
+  run_real
+  check_exit 0
+  check "plain.txt equals its source" cmp -s "$fixtures/repo/tools/core/.config/core/plain.txt" "$home/.config/core/plain.txt"
+  check_file "$home/.config/core/settings.json" '{"name":"override-name","list":[1,2]}'
+  check "a file keeps its mode" test "$(mode_of "$home/.config/core/plain.txt")" = 644
+  check "an executable keeps its mode" test "$(mode_of "$home/.config/core/run")" = 755
+  check "a rendered file takes the mode of its template" test "$(mode_of "$home/.config/core/rendered")" = 755
+}
+
+case_seed() {
+  local seed="$home/.config/core/seeded.toml"
+  use_config ok
+  run_real
+  check_exit 0
+  check_output "skip seed  ~/.config/core/seeded.toml (no ~/.config/core-needed)"
+  check "no seed while a requires target is missing" not test -e "$seed"
+  : > "$home/.config/core-needed"
+  run_real
+  check_exit 0
+  check_file "$seed" 'name = "override-name"'
+  printf '%s\n' "mine" > "$seed"
+  run_real
+  check_exit 0
+  check_output "kept seed  ~/.config/core/seeded.toml"
+  check_file "$seed" "mine"
+  check "no seed in the manifest" not grep -qF seeded.toml "$manifest"
+}
+
+case_overwrite() {
+  use_config ok
+  run_real
+  check_exit 0
+  printf '%s\n' "edited" > "$home/.config/core/values.txt"
+  run_real
+  check_exit 0
+  check_output "updated    ~/.config/core/values.txt"
+  check "the edit is overwritten" grep -qxF "name=override-name" "$home/.config/core/values.txt"
+}
+
+# The context of a template: .sync_engine and .env.
+case_context() {
+  use_config context
+  run_real
+  check_exit 0
+  check_file "$home/.config/context/context.txt" "$(synced context/.config/context/context.txt.tmpl)
+sync_engine=$tree/sync-engine
+config=$MACOS_SETUP_CONFIG_PATH"
+}
+
+# ---- symlinks -----------------------------------------------------------------
+
+case_link_file() {
+  use_config ok
+  mkdir -p -- "$home/.config/core"
+  printf '%s\n' "old" > "$user/values.txt"
+  ln -s -- "$user/values.txt" "$home/.config/core/values.txt"
+  ln -s -- "$user/missing/plain.txt" "$home/.config/core/plain.txt"
+  run_real
+  check_exit 0
+  check "the link stays" test -L "$home/.config/core/values.txt"
+  check "its source changes" grep -qxF "name=override-name" "$user/values.txt"
+  check "a link with a missing source writes the source" test -f "$user/missing/plain.txt" -a -L "$home/.config/core/plain.txt"
+}
+
+case_link_folder() {
+  use_config ok
+  mkdir -p -- "$home/.config" "$user/opt"
+  ln -s -- "$user/opt" "$home/.config/opt"
+  run_real
+  check_exit 0
+  check "the folder link stays" test -L "$home/.config/opt"
+  check "the file is written in the linked folder" grep -qxF "level=default-level" "$user/opt/opt.txt"
+}
+
+case_link_stale() {
+  use_config ok
+  mkdir -p -- "$home/.config" "$user/linked"
+  ln -s -- "$user/linked" "$home/.config/linked"
+  header_file "$user/linked/stale.txt" "stale"
+  seed_manifest "core	.config/linked/stale.txt"
+  run_real
+  check_exit 0
+  check "the source of the stale file is removed" not test -e "$user/linked/stale.txt"
+  check "the link stays" test -L "$home/.config/linked" -a -d "$user/linked"
+}
+
+# ---- stale --------------------------------------------------------------------
+
+case_stale() {
+  use_config ok
+  mkdir -p -- "$home/.config/old/deep" "$home/.config/nohead"
+  new_header_file "$home/.config/old/deep/stale.txt" "stale"
+  printf '%s\n' "no header" > "$home/.config/nohead/kept.txt"
+  seed_manifest "core	.config/old/deep/stale.txt" "core	.config/nohead/kept.txt"
+  run_real
+  check_exit 0
+  check_output "removed    home/.config/old/deep/stale.txt"
+  check "the stale file is removed" not test -e "$home/.config/old/deep/stale.txt"
+  check "its empty parent folders are removed" not test -e "$home/.config/old"
+  check "a file without the header is kept" test -f "$home/.config/nohead/kept.txt"
+}
+
+case_stale_old_header() {
+  use_config ok
+  mkdir -p -- "$home/.config/old"
+  header_file "$home/.config/old/stale.txt" "stale"
+  seed_manifest "core	.config/old/stale.txt"
+  run_real
+  check_exit 0
+  check "the file with the old header is removed" not test -e "$home/.config/old/stale.txt"
+}
+
+case_stale_deselected() {
+  use_config ok
+  run_real
+  check_exit 0
+  check "opt is in the manifest" grep -qxF "opt	.config/opt/opt.txt" "$manifest"
+  use_config -
+  run_real
+  check_exit 0
+  check "the files of opt are removed" not test -e "$home/.config/opt"
+  check "core stays" test -f "$home/.config/core/values.txt"
+}
+
+case_generated() {
+  local before
+  use_config ok
+  mkdir -p -- "$home/.config"
+  : > "$home/.config/core-needed"
+  run_real
+  check_exit 0
+  check "the manifest is in the cache folder" test -f "$manifest"
+  check "its first line is the header" test "$(head -n 1 "$manifest")" = "# Written by bootstrap. Do not edit this file."
+  check "each other line is <tool><TAB><path relative to HOME>" \
+    not grep -qvE '^[a-z][a-z0-9-]*	[^/	~][^	]*$' <(sed 1d "$manifest")
+  check "the other lines are sorted" sorted_rows
+  check "no path names HOME" not grep -qF -- "$home" "$manifest"
+  check "core values.txt is listed" grep -qxF "core	.config/core/values.txt" "$manifest"
+  check "no seed in the manifest" not grep -qF seeded.toml "$manifest"
+  before=$(cat -- "$manifest")
+  run_real
+  check_exit 0
+  check "the manifest is the same after a second run" test "$(cat -- "$manifest" 2> /dev/null)" = "$before"
+}
+sorted_rows() { sed 1d "$manifest" | LC_ALL=C sort -c 2> /dev/null; }
+
+# ---- init stage ---------------------------------------------------------------
+
+case_init_stage() {
+  seed_manifest "opt	.config/opt/opt.txt"
+  use_config init
+  run_real
+  check_exit 4
+  check_output "open a new terminal, then run: mise run updateall:configs"
+  check "the init files are written" test -f "$home/.config/init/initrc"
+  check "the init stage mise file is written" test -f "$home/.config/mise/conf.d/init/mise.toml"
+  check "a dependency of the init tool renders in the init stage" test -f "$home/.config/initdep/dep.txt"
+  check "the core targets are not written" not test -e "$home/.config/core/values.txt"
+  check "the lines of other tools stay" grep -qxF "opt	.config/opt/opt.txt" "$manifest"
+  check "the init lines are written" grep -qxF "init	.config/init/initrc" "$manifest"
+  check "the dependency lines are written" grep -qxF "initdep	.config/initdep/dep.txt" "$manifest"
+  check "no commit after a stop" not grep -qF bootstrap_commit "$values"
+  run_real
+  check_exit 0
+  check_no_output "setup-sync: open a new terminal"
+  check "the second run writes the core targets" test -f "$home/.config/core/values.txt"
+}
+
+case_init_chmod() {
+  use_config init
+  run_real
+  check_exit 4
+  run_real
+  check_exit 0
+  chmod 600 "$home/.config/init/initrc"
+  run_real
+  check_exit 4
+  check_output "chmod 644  ~/.config/init/initrc"
+  check_output "open a new terminal, then run: mise run updateall:configs"
+}
+
+case_init_fail() {
+  use_config init
+  mkdir -p -- "$home/.config/init/initrc"
+  run_real
+  check_exit 1
+  check_no_output "setup-sync: open a new terminal"
+  check "no later stage" not test -e "$home/.config/core/values.txt"
+  check "no manifest write" not test -e "$manifest"
+}
+
+# ---- macos.toml and bootstrap_commit ------------------------------------------
+
+case_values_missing() {
+  use_config -
+  run_real
+  check_exit 0
+  check "macos.toml starts with the header" test "$(head -n 1 "$values")" = "# The values of the Mac sync of bootstrap. See docs/setup/index.md."
+  check "it has the commit line" grep -qxF "bootstrap_commit = \"$tree_commit\"" "$values"
+}
+
+case_commit() {
+  local at table after
+  use_config ok
+  run_real
+  check_exit 0
+  at=$(grep -nxF "bootstrap_commit = \"$tree_commit\"" "$values" | cut -d: -f1)
+  table=$(grep -n '^\[' "$values" | head -n 1 | cut -d: -f1)
+  check "the commit line is after the header comments ($at)" test -n "$at" -a "${at:-0}" -gt 2
+  check "and before the first table ($table)" test "${at:-99}" -lt "${table:-0}"
+  check "no other line changed" cmp -s "$fixtures/config/ok/macos.toml" \
+    <(grep -vxF -e "bootstrap_commit = \"$tree_commit\"" "$values")
+  after=$(cat -- "$values")
+  run_real
+  check_exit 0
+  check_output "unchanged  ~/.config/core/values.txt"
+  check "a second run reports only unchanged" not grep -qE '^setup-sync: (updated|chmod|removed|wrote|set |would)' "$log"
+  check "macos.toml is unchanged" test "$(cat -- "$values")" = "$after"
+}
+
+case_commit_link() {
+  use_config -
+  printf '%s\n' '[tools.opt]' > "$user/real.toml"
+  ln -s -- "$user/real.toml" "$values"
+  run_real
+  check_exit 0
+  check "the link stays" test -L "$values"
+  check "the real file has the commit line" grep -qxF "bootstrap_commit = \"$tree_commit\"" "$user/real.toml"
+}
+
+case_commit_dry() {
+  local before
+  use_config ok
+  before=$(cat -- "$values")
+  run_dry
+  check_exit 0
+  check_output "would set bootstrap_commit $tree_commit"
+  check "macos.toml is unchanged" test "$(cat -- "$values")" = "$before"
+}
+
+# ---- --dry-run ----------------------------------------------------------------
+
+snapshot() {
+  local p
+  find "$@" -print 2> /dev/null | LC_ALL=C sort | while IFS= read -r p; do
+    /usr/bin/stat -f '%N %Sp %z %m' -- "$p"
+    [[ -f $p && ! -L $p ]] && shasum -- "$p"
+  done
+}
+
+case_dry_run() {
+  local before after
+  use_config init
+  mkdir -p -- "$home/.config/core" "$home/.config/old"
+  printf '%s\n' "old" > "$user/values.txt"
+  ln -s -- "$user/values.txt" "$home/.config/core/values.txt"
+  header_file "$home/.config/old/stale.txt" "stale"
+  seed_manifest "core	.config/old/stale.txt"
+  before=$(snapshot "$home" "$user" "$MACOS_SETUP_CONFIG_PATH" "$manifest")
+  run_dry
+  check_exit 0
+  check_output "would update ~/.config/core/values.txt (-> $user/values.txt)"
+  check_output "would remove home/.config/old/stale.txt"
+  check_output "would update ~/.config/core/settings.json"
+  check_no_output "setup-sync: open a new terminal"
+  after=$(snapshot "$home" "$user" "$MACOS_SETUP_CONFIG_PATH" "$manifest")
+  check "nothing written in HOME, a link source, the config folder or the manifest" test "$before" = "$after"
+}
+
+# ---- contributions ------------------------------------------------------------
+
+owner_config() {
+  synced owner/.config/owner/config.tmpl
+  printf '%s\n' "$@"
+}
+
+case_contrib() {
+  use_config contrib
+  run_real
+  check_exit 0
+  check_file "$home/.config/owner/config" "$(owner_config "Include ~/a" "Include ~/b" "Include ~/c" "" "Host *" \
+    "  IdentityAgent agent-a" "nested=default,from-b" "# again: agent-a")"
+  check_file "$home/.config/owner/data.json" '{"agent": "agent-a", "includes": ["~/a","~/b","~/c"]}'
+  check_file "$home/.config/owner/data.toml" "$(synced owner/.config/owner/data.toml.tmpl)
+agent = \"agent-a\"
+includes = [\"~/a\",\"~/b\",\"~/c\"]"
+  check "the yaml target is written" grep -qxF '  - "~/c"' "$home/.config/owner/data.yaml"
+  check "a format = toml target with another extension is written" test -f "$home/.config/owner/settings.conf"
+  check "a format = text .json target is copied unparsed" \
+    cmp -s "$fixtures/repo/tools/owner/.config/owner/lenient.json.tmpl" "$home/.config/owner/lenient.json"
+  check "the contribution to a tool that is not selected is ignored" not test -e "$home/.config/opt"
+  check_output "skip file  ~/.config/owner/needs.txt (no ~/.config/owner-needed)"
+  check "a generated file waits for its requires" not test -e "$home/.config/owner/needs.txt"
+  : > "$home/.config/owner-needed"
+  : > "$home/.config/core-needed"
+  run_real
+  check_exit 0
+  check "a generated file is written once its requires exist" test -f "$home/.config/owner/needs.txt"
+  check "needs.txt is in the manifest" grep -qxF "owner	.config/owner/needs.txt" "$manifest"
+  run_real
+  check_exit 0
+  check_output "unchanged  ~/.config/owner/config"
+  check "a run with unchanged inputs reports only unchanged" \
+    not grep -qE '^setup-sync: (updated|chmod|removed|wrote|set |skip|would)' "$log"
+}
+
+case_contrib_deselect() {
+  use_config contrib
+  run_real
+  check_exit 0
+  check_file "$home/.config/owner/seed.txt" "agent=agent-a"
+  printf '%s\n' '[tools.contrib-b]' '[tools.owner]' > "$values"
+  run_real
+  check_exit 0
+  check_file "$home/.config/owner/config" "$(owner_config "Include ~/a" "Include ~/c" "Include ~/b" "" "Host *" \
+    "  IdentityAgent default-agent" "nested=default,from-b" "# again: default-agent")"
+  check_output "kept seed  ~/.config/owner/seed.txt"
+  check "the seed keeps the contribution of its first write" file_is "$home/.config/owner/seed.txt" "agent=agent-a"
+}
+
+# ---- parse checks -------------------------------------------------------------
+
+case_parse_bad() {
+  local f
+  use_config badparse
+  mkdir -p -- "$home/.config/badparse"
+  for f in json yaml toml; do
+    printf '%s\n' "old $f" > "$home/.config/badparse/bad.$f"
+  done
+  run_real
+  check_exit 2
+  for f in json yaml toml; do
+    check_output "$tilde/.config/badparse/bad.$f: the result does not parse as $f - the current file stays"
+    check_file "$home/.config/badparse/bad.$f" "old $f"
+  done
+  check "no temp file is left" not test -n "$(find "$home/.config/badparse" -name '.sync-engine.*')"
+}
+
+# ---- merge files (mode = "merge") ---------------------------------------------
+
+m_dir() { printf '%s' "$home/.config/merger"; }
+# live <ext> <content>: a live merge target, written at test time.
+live() {
+  mkdir -p -- "$(m_dir)"
+  printf '%s' "$2" > "$(m_dir)/m.$1"
+}
+# same_as <path> <content>: the file holds exactly <content>, byte for byte.
+same_as() { [[ -f $1 && $(
+  cat -- "$1"
+  printf x
+) == "$2x" ]]; }
+check_same() { check "${1#"$dir"/} is kept byte-equal" same_as "$1" "$2"; }
+mode_of() { /usr/bin/stat -f %Lp -- "$1"; }
+
+# A 4-space JSON target: keys kept, scalars, nested tables, a kind change,
+# lists as a union with deep equality, remove and remove_items, the source
+# wins over a remove, a remove_items item stays out though the source has it,
+# 2-space output in the live key order, the permissions
+# kept, a second run unchanged, a dry run that writes nothing.
+case_merge_json() {
+  local f before
+  use_config merge
+  f="$(m_dir)/m.json"
+  live json '{
+    "keep": "app",
+    "scalar": "app",
+    "nested": {"set": 0, "old": 1, "other": 2},
+    "kind": {"was": "table"},
+    "list": ["x", "drop", "b", {"k": 1, "j": 2}, "drop"],
+    "maps": [{"a": 1, "b": 2}],
+    "gone": true
+}
+'
+  chmod 600 "$f"
+  run_real
+  check_exit 0
+  check_output "updated    ~/.config/merger/m.json"
+  check_file "$f" '{
+  "keep": "app",
+  "scalar": "src",
+  "nested": {
+    "set": 1,
+    "other": 2,
+    "deeper": {
+      "x": true
+    }
+  },
+  "kind": [
+    1
+  ],
+  "list": [
+    "x",
+    "b",
+    "c"
+  ],
+  "maps": [
+    {
+      "a": 1,
+      "b": 2
+    }
+  ],
+  "items": [
+    "a"
+  ]
+}'
+  check "the permissions are kept" test "$(mode_of "$f")" = 600
+  check "no merge target in the manifest" not grep -qF merger/m. "$manifest"
+  run_real
+  check_exit 0
+  check_output "unchanged  ~/.config/merger/m.json"
+  check "a second run writes nothing" not grep -qE '^setup-sync: (updated|chmod).*merger/m\.' "$log"
+  printf '%s\n' '{"keep": "edited", "scalar": "app"}' > "$f"
+  before=$(cat -- "$f")
+  run_dry
+  check_exit 0
+  check_output "would update ~/.config/merger/m.json"
+  check_output '+  "scalar": "src",'
+  check_file "$f" "$before"
+}
+
+# A YAML target: the comments of the live file stay; an absent remove path is
+# not an error; remove_items deletes every equal item.
+case_merge_yaml() {
+  use_config merge
+  live yaml '# top comment
+keep: app # after keep
+scalar: app
+nested:
+  # own line
+  set: 0
+list:
+  - x
+  - drop
+  - drop
+kind:
+  was: table
+'
+  run_real
+  check_exit 0
+  check_file "$(m_dir)/m.yaml" '# top comment
+keep: app # after keep
+scalar: src
+nested:
+  # own line
+  set: 1
+list:
+  - x
+  - b
+kind:
+  - 1'
+}
+
+# A TOML target: own-line and after-key comments stay (table-header comments
+# and inline spacing are not asserted); a remove_items path that is not a
+# list is not an error.
+case_merge_toml() {
+  local f
+  use_config merge
+  f="$(m_dir)/m.toml"
+  live toml '# head comment
+keep = "app" # after keep
+scalar = "app"
+notlist = "s"
+gone = 1
+
+# own line
+[nested]
+set = 0
+list = ["x"]
+'
+  run_real
+  check_exit 0
+  check "the head comment stays" grep -qxF '# head comment' "$f"
+  check "the own-line comment stays" grep -qxF '# own line' "$f"
+  check "the after-key comment stays" grep -qE '^keep = "app" +# after keep$' "$f"
+  check "the source scalar wins" grep -qxF 'scalar = "src"' "$f"
+  check "a nested scalar" grep -qxF 'set = 1' "$f"
+  check "a list union" grep -qxF 'list = ["x", "y"]' "$f"
+  check "a non-list remove_items path is kept" grep -qxF 'notlist = "s"' "$f"
+  check "a removed key" not grep -q '^gone' "$f"
+}
+
+# Absent targets: the rendered source is written, with the mode of its source;
+# a remove_items item of the source is left out.
+case_merge_absent() {
+  use_config merge
+  run_real
+  check_exit 0
+  check_output "updated    ~/.config/merger/m.json"
+  check_file "$(m_dir)/m.json" '{
+  "scalar": "src",
+  "nested": {
+    "set": 1,
+    "deeper": {
+      "x": true
+    }
+  },
+  "kind": [
+    1
+  ],
+  "list": [
+    "b",
+    "c"
+  ],
+  "maps": [
+    {
+      "b": 2,
+      "a": 1
+    }
+  ],
+  "items": [
+    "a"
+  ]
+}'
+  check_file "$(m_dir)/m.yaml" "$(grep -vxF '  - drop' -- "$fixtures/repo/tools/merger/.config/merger/m.yaml.tmpl")"
+  check "the toml source is written" grep -qxF 'list = ["x", "y"]' "$(m_dir)/m.toml"
+  check "a new target takes the mode of its source" test "$(mode_of "$(m_dir)/m.json")" = 644
+}
+
+# Empty, whitespace-only and comments-only targets count as absent; an
+# existing one keeps its permissions and is reported as updated.
+case_merge_empty() {
+  use_config merge
+  live json ''
+  live yaml $'  \n# only a comment\n\n'
+  live toml $'\n\t \n'
+  chmod 600 "$(m_dir)/m.json"
+  run_real
+  check_exit 0
+  check_output "updated    ~/.config/merger/m.json"
+  check_output "updated    ~/.config/merger/m.yaml"
+  check_output "updated    ~/.config/merger/m.toml"
+  check "the json source is written" grep -qF '"scalar": "src"' "$(m_dir)/m.json"
+  check "the permissions of the empty file are kept" test "$(mode_of "$(m_dir)/m.json")" = 600
+  check_file "$(m_dir)/m.yaml" "$(grep -vxF '  - drop' -- "$fixtures/repo/tools/merger/.config/merger/m.yaml.tmpl")"
+  check "the toml source is written" grep -qxF 'scalar = "src"' "$(m_dir)/m.toml"
+}
+
+# Live targets that cannot merge are kept byte-equal and fail with exit 2.
+case_merge_live_bad() {
+  local j='{"a": ' y='a: [1
+' t='a = [
+'
+  use_config merge
+  live json "$j"
+  live yaml "$y"
+  live toml "$t"
+  run_real
+  check_exit 2
+  check_output '/.config/merger/m.json is not valid json - kept it as it is'
+  check_output '/.config/merger/m.yaml is not valid yaml - kept it as it is'
+  check_output '/.config/merger/m.toml is not valid toml - kept it as it is'
+  check_same "$(m_dir)/m.json" "$j"
+  check_same "$(m_dir)/m.yaml" "$y"
+  check_same "$(m_dir)/m.toml" "$t"
+  check "no temp file is left" not test -n "$(find "$(m_dir)" -name '.sync-engine.*')"
+}
+
+case_merge_live_kind() {
+  local j='[1]
+' y='~
+'
+  use_config merge
+  live json "$j"
+  live yaml "$y"
+  run_real
+  check_exit 2
+  check_output '/.config/merger/m.json holds a list, not a table - kept it as it is'
+  check_output '/.config/merger/m.yaml holds null, not a table - kept it as it is'
+  check_same "$(m_dir)/m.json" "$j"
+  check_same "$(m_dir)/m.yaml" "$y"
+}
+
+case_merge_live_docs() {
+  local y='a: 1
+---
+b: 2
+'
+  use_config merge
+  live yaml "$y"
+  run_real
+  check_exit 2
+  check_output '/.config/merger/m.yaml has more than one YAML document - kept it as it is'
+  check_same "$(m_dir)/m.yaml" "$y"
+}
+
+# Sources that cannot merge: a list, two YAML documents.
+src_unusable() {
+  printf '%s\n' '[1]' > "$work/tools/merger/.config/merger/m.json.tmpl"
+  printf '%s\n' 'a: 1' '---' 'b: 2' > "$work/tools/merger/.config/merger/m.yaml.tmpl"
+}
+case_merge_src_bad() {
+  local j='{"keep": 1}
+' y='keep: 1
+'
+  use_config merge
+  case_tree src_unusable
+  live json "$j"
+  live yaml "$y"
+  run_real
+  check_exit 2
+  check_output "the merge source of ~/.config/merger/m.json is a list, not a table"
+  check_output "the merge source of ~/.config/merger/m.yaml has more than one YAML document"
+  check_same "$(m_dir)/m.json" "$j"
+  check_same "$(m_dir)/m.yaml" "$y"
+}
+
+# An empty source enforces nothing: only the removals act; an absent target
+# gets an empty table.
+src_empty() {
+  printf '%s\n' '{}' > "$work/tools/merger/.config/merger/m.json.tmpl"
+  printf '%s\n' '# nothing' > "$work/tools/merger/.config/merger/m.yaml.tmpl"
+}
+case_merge_src_empty() {
+  use_config merge
+  case_tree src_empty
+  live json '{"keep": 1, "gone": 2, "list": ["drop", "x"]}'
+  run_real
+  check_exit 0
+  check_file "$(m_dir)/m.json" '{
+  "keep": 1,
+  "list": [
+    "x"
+  ]
+}'
+  check_file "$(m_dir)/m.yaml" '{}'
+}
+
+# Symlinks: the link stays and its source gets the merge; a link whose source
+# is missing gets the source written at the source path.
+case_merge_link() {
+  use_config merge
+  mkdir -p -- "$(m_dir)"
+  printf '%s\n' '{"keep": "app"}' > "$user/m.json"
+  ln -s -- "$user/m.json" "$(m_dir)/m.json"
+  ln -s -- "$user/missing/m.yaml" "$(m_dir)/m.yaml"
+  run_real
+  check_exit 0
+  check "the link stays" test -L "$(m_dir)/m.json"
+  check "its source keeps the app key" grep -qF '"keep": "app"' "$user/m.json"
+  check "its source gets the source keys" grep -qF '"scalar": "src"' "$user/m.json"
+  check "a link with a missing source writes the source" test -f "$user/missing/m.yaml" -a -L "$(m_dir)/m.yaml"
+}
+
+# A contribution reaches a merge target on a later run; a deselected tool
+# leaves its merge targets in place.
+case_merge_contrib() {
+  use_config merge
+  run_real
+  check_exit 0
+  printf '%s\n' '[tools.merger]' '[tools.merge-contrib]' > "$values"
+  run_real
+  check_exit 0
+  check "the contribution reaches the merge target" \
+    test "$(tr -d ' \n' < "$(m_dir)/m.json" | sed 's/.*"items":\(\[[^]]*\]\).*/\1/')" = '["a","z"]'
+  use_config -
+  run_real
+  check_exit 0
+  check "the merge targets of a deselected tool stay" test -f "$(m_dir)/m.json" -a -f "$(m_dir)/m.yaml"
+}
+
+# Config errors: merge with format text, remove on a generated file, a bad
+# remove, a remove_items without items.
+merge_text() { append_lines merger '[files.".config/merger/plain.txt"]' 'mode = "merge"'; }
+remove_generated() { append_lines merger '[files.".config/merger/plain.txt"]' 'remove = [ [ "a" ] ]'; }
+remove_bad() { append_lines merger '[files.".config/merger/plain.txt"]' 'remove = [ "a" ]'; }
+remove_items_bad() { append_lines merger '[files.".config/merger/plain.txt"]' 'mode = "merge"' 'format = "json"' 'remove_items = [ { path = [ "a" ] } ]'; }
+
+# ---- the cases ----------------------------------------------------------------
+
+run_case "config: a missing config folder" case_config_missing
+run_case "config: MACOS_SETUP_CONFIG_PATH unset" case_config_unset
+run_case "config: an unknown flag, with the usage" case_unknown_flag
+run_case "config: an unknown tool in a [tools.<name>] table" expect unknown-tool 3 "tool 'nope' is not in bootstrap"
+run_case "config: an [overrides.mise.<path>] that no selected tool has" expect unknown-override 2 "no selected tool has"
+run_case "config: a packs list, the old format" expect old-packs-list 2 "packs in config/macos.toml must be [packs.<name>] tables - the top-level keys are"
+run_case "config: a tools key that is a string, the old format" expect tools-string 2 "tools = [...] is the old format"
+run_case "config: a tools item that is not a name, the old format" expect tools-number 2 "tools = [...] is the old format"
+run_case "config: a tools list, the old format" expect tools-list 2 "tools = [...] is the old format"
+run_case "config: an unknown top-level key" expect bad-key 2 "colour is not a key of config/macos.toml"
+run_case "config: an [overrides.<tool>] table" expect bad-override 2 "[overrides.opt] in config/macos.toml is not valid - write [tools.<name>] for template values and [overrides.mise.<path>] for mise config"
+run_case "config: a [tools.<name>] table with env" expect env-opt 2 "[tools.opt] env is for repo tools only"
+run_case "config: an [overrides.mise_env.<env>.<path>] table" expect override-env 2 "[overrides.mise_env] in config/macos.toml: the Mac side has no environments"
+run_case "config: a tool folder with no tools.toml" expect ok 2 "macos/tools/bad has no tools.toml" add_bad_tool
+run_case "config: a repo with no macos/packs.toml" expect ok 2 "pack base does not have the tool macos-setup" no_packs
+run_case "config: a packs.toml with no [pack.base]" expect ok 2 "pack base does not have the tool macos-setup" no_base
+run_case "config: a pack base without macos-setup" expect ok 2 "pack base does not have the tool macos-setup" base_no_engine
+run_case "config: an unknown key in a tools.toml" expect ok 2 "macos/tools/opt/tools.toml: depend is not a key of tools.toml" bad_manifest_key
+run_case "config: a stage that is not init" expect ok 2 'macos/tools/opt/tools.toml: stage = "login" - the only stage is "init"' bad_stage
+run_case "config: the old stage = shell" expect ok 2 'macos/tools/opt/tools.toml: stage = "shell" is the old name - write stage = "init"' old_stage
+run_case "config: the old seed key" expect ok 2 'macos/tools/core/tools.toml: seed is the old key - write a [files."<target>"] table with mode = "seed"' old_seed_key
+run_case "config: the old [seed_requires] table" expect ok 2 'macos/tools/core/tools.toml: [seed_requires] is the old table - write requires = [...]' old_seed_requires
+run_case "config: a [files] table with no source" expect ok 2 'macos/tools/core/tools.toml: [files.".config/core/nothing"] names a target that no file of the tool produces' files_no_source
+run_case "config: an unknown key in a [files] table" expect ok 2 'macos/tools/opt/tools.toml: [files.".config/opt/opt.txt"] owner is not a key of a file' bad_files_key
+run_case "config: an unknown key in a [questions] table" expect ok 2 'macos/tools/opt/tools.toml: [questions.level] ask is not a key of a question' bad_question
+run_case "config: a [questions] table with no question" expect ok 2 'macos/tools/opt/tools.toml: [questions.level] needs a question string' bad_question
+run_case "config: a tool with default_envs" expect ok 2 "macos/tools/opt/tools.toml: default_envs is for repo tools only" repo_default_envs
+run_case "config: a tool with [mise_env.dev.tools]" expect ok 2 "macos/tools/opt/tools.toml: mise_env is for repo tools only" repo_mise_env
+run_case "config: a [files] table with requires_found" expect ok 2 'macos/tools/opt/tools.toml: [files.".config/opt/opt.txt"] requires_found is for repo tools only' repo_requires_found
+run_case "config: a tool folder zz-macos" expect ok 2 "tool folder macos/tools/zz-macos sorts after zz-macos or is named zz-macos" tool_zz_macos
+run_case "config: a tool folder that sorts after zz-macos" expect ok 2 "tool folder macos/tools/zzz sorts after zz-macos or is named zz-macos" tool_after_zz_macos
+run_case "config: a tool that ships a file in conf.d" expect ok 2 "macos/tools/core/.config/mise/conf.d/x.toml: the sync generates .config/mise/conf.d/ from [mise.*] of tools.toml" ships_conf_d
+run_case "config: foo and foo.tmpl in one tool" expect ok 2 "$tilde/.config/core/foo comes from more than one source" file_and_tmpl
+run_case "config: a pack name that is a tool folder" expect ok 2 "macos/packs.toml: pack 'core' is also a tool folder" pack_is_tool
+run_case "config: a pack member that is not a tool" expect ok 3 "tool 'nope' is not in bootstrap (named in pack more)" pack_unknown
+run_case "config: a pack-level key" expect ok 2 "macos/packs.toml: [pack.more] depends is the old format" pack_old_key
+run_case "config: a pack entry key other than default" expect ok 2 "macos/packs.toml: [pack.more] opt has the entry key 'tag'" pack_entry_key
+run_case "config: a pack entry that is not a table" expect ok 2 "macos/packs.toml: [pack.more] tools must be a table" pack_not_table
+run_case "config: a contribution to a name that is not a tool" expect contrib-bad 3 "macos/tools/contrib-bad/tools.toml: [contributes.nope] names a tool that bootstrap does not have"
+run_case "config: two contributors that set one scalar" expect conflict 2 "macos/tools/contrib-a/tools.toml and macos/tools/contrib-c/tools.toml set [contributes.owner] agent to different values"
+run_case "config: a scalar over a list of a base tool" expect type-list 2 "[tools.core] of macos.toml sets items to a string, but it is a list in the base or dependency tool core"
+run_case "config: a scalar over a table of a base tool" expect type-table 2 "[tools.core] of macos.toml sets table to a string, but it is a table in the base or dependency tool core"
+run_case "selection: a [tools.<name>] table selects one tool of a pack" case_tools_list
+run_case "packs: a [packs.<name>] table adds its default = true members" case_packs_table
+run_case "packs: a default = false member arrives only with [tools.<name>]" case_packs_member
+run_case "packs: a tool in two packs is selected once" case_packs_two
+run_case "mise check: a mise that is not ~/.local/bin/mise" case_mise_elsewhere
+run_case "mise check: a ~/.local/bin/mise link into another folder" case_mise_link
+run_case "mise: the [mise.env] of a tool, rendered" case_mise_tool
+run_case "mise: the [mise.shell_alias] of macos.toml" case_mise_user
+run_case "mise: an [overrides.mise.<path>] changes a key" case_mise_override
+run_case "mise: an override path that no selected tool has" expect override-none 2 "no selected tool has"
+run_case "mise: an [overrides.gitignore] table" expect override-gitignore 2 "[overrides.gitignore] in config/macos.toml is not valid"
+run_case "mise: a tool no longer selected loses its mise config" case_mise_deselected
+run_case "blockers: a file with the header where a folder must be" case_blocker_header
+run_case "blockers: a file without the header where a folder must be" case_blocker_plain
+run_case "values: the merge order, a base tool list appends" case_values
+run_case "values: a dependency tool list appends" case_values_dependency
+run_case "values: an opt-in tool list replaces" case_values_opt_in
+run_case "values: an opt-in tool value of another type replaces" case_values_opt_in_type
+run_case "render: ~/.config/mise/** first" case_render_order
+run_case "render: the output equals the source" case_render_exact
+run_case "render: a seed" case_seed
+run_case "render: a generated file overwritten" case_overwrite
+run_case "context: .sync_engine and .env" case_context
+run_case "symlinks: a link to a file" case_link_file
+run_case "symlinks: a symlinked folder" case_link_folder
+run_case "symlinks: a stale file through a link" case_link_stale
+run_case "stale: removed with its empty parents, kept without the header" case_stale
+run_case "stale: a listed file with the old header" case_stale_old_header
+run_case "stale: a tool no longer selected" case_stale_deselected
+run_case "manifest: its first line, the sorted rows, a second run" case_generated
+run_case "init stage: a stop with exit 4, then a pass" case_init_stage
+run_case "init stage: a chmod-only change" case_init_chmod
+run_case "init stage: a failed file" case_init_fail
+run_case "contributions: merged, placed twice, lists without duplicates, requires" case_contrib
+run_case "contributions: a contributor deselected, a seed written once" case_contrib_deselect
+run_case "parse: a JSON, a YAML and a TOML target that do not parse" case_parse_bad
+run_case "macos.toml missing" case_values_missing
+run_case "bootstrap_commit: after the header comments, a second run" case_commit
+run_case "bootstrap_commit: a symlinked macos.toml" case_commit_link
+run_case "bootstrap_commit: a dry run" case_commit_dry
+run_case "--dry-run writes nothing" case_dry_run
+run_case "merge: a JSON target" case_merge_json
+run_case "merge: a YAML target keeps its comments" case_merge_yaml
+run_case "merge: a TOML target keeps its comments" case_merge_toml
+run_case "merge: absent targets get the source" case_merge_absent
+run_case "merge: empty targets count as absent" case_merge_empty
+run_case "merge: live targets that do not parse" case_merge_live_bad
+run_case "merge: live targets that are not a table" case_merge_live_kind
+run_case "merge: a live YAML target with two documents" case_merge_live_docs
+run_case "merge: sources that are not a table" case_merge_src_bad
+run_case "merge: an empty source" case_merge_src_empty
+run_case "merge: targets behind symlinks" case_merge_link
+run_case "merge: a contribution, then a deselected tool" case_merge_contrib
+run_case "merge: a merge target of format text" expect merge 2 'macos/tools/merger/tools.toml: [files.".config/merger/plain.txt"] mode = "merge" needs a json, yaml or toml target' merge_text
+run_case "merge: remove on a generated file" expect merge 2 'macos/tools/merger/tools.toml: [files.".config/merger/plain.txt"] remove works only with mode = "merge"' remove_generated
+run_case "merge: a remove of a bad shape" expect merge 2 'macos/tools/merger/tools.toml: [files.".config/merger/plain.txt"] remove must be a list of key paths' remove_bad
+run_case "merge: a remove_items without items" expect merge 2 'macos/tools/merger/tools.toml: [files.".config/merger/plain.txt"] remove_items must be a list of tables' remove_items_bad
+
+while ((${#case_pids[@]})); do
+  collect_case
+done
+
+if ((failures)); then
+  print_error "$failures check(s) failed in $case_count cases"
+  exit 1
+fi
+print_success "All $case_count setup-sync cases passed"

@@ -1,0 +1,17 @@
+# The core tool of the fixture repo, in pack base.
+
+[defaults]
+items = [ "a", "b" ]
+name = "default-name"
+
+[defaults.table]
+left = "default-left"
+right = "default-right"
+
+[files.".config/core/seeded.toml"]
+mode = "seed"
+requires = [ ".config/core-needed" ]
+
+[mise.env]
+CORE_HOME = "{{ env.HOME }}"
+CORE_NAME = "<% .config.name %>"
