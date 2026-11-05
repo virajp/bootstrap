@@ -1,0 +1,36 @@
+# Vuln 1: Code execution: `macos/tools/starship/.config/starship.toml:147`
+
+Severity: HIGH
+
+Description: The `when` command of `custom.submodule_status` runs on every prompt in the current directory. It calls `git -C "$top" status` with no override of `core.fsmonitor`. `git status` runs the hook form of `core.fsmonitor` from the repository's own `.git/config` through a shell. The Starship binary carries `core.fsmonitor=` strings in its git wrapper, and from what I remember of its source that wrapper disables the setting. I did not read the source, and this custom command does not go through that wrapper. The module's only gate is a `.gitmodules` file at the top of the tree, and the attacker supplies that file. `${custom.submodule_status}` is in the prompt `format`, so the command runs by default.
+
+Exploit Scenario: An attacker ships a tar or zip that holds a project with a `.git/` folder, a `.gitmodules` file and `core.fsmonitor` set to a shell command in `.git/config`. The owner extracts it, so the owner owns the files and `safe.directory` does not block it. Then the owner runs `cd` into the folder. The next prompt runs the command as the owner, with no further action. This works outside `projects_dir`, so it does not depend on decision D13. I confirmed this from git's documentation, the Starship docs and the Starship binary strings. The read-only rule meant I did not run it.
+
+Recommendation: Pass `-c core.fsmonitor=` on the `git status` call in `when`, and test the submodule recursion as well. That closes only this path, because a filter driver in `.git/config` is a separate way to run code through `git status`. The stronger fix is to skip the `status` call when the repository is not under `projects_dir`, or to remove the module.
+
+Confidence: 8
+
+# Vuln 2: Code execution: `macos/tools/homebrew/tools.toml:25`
+
+Severity: MEDIUM
+
+Description: The `brew` shell alias expands to `fnox exec -P brew -- brew`. It uses no explicit config path, so fnox merges `fnox.toml`, `fnox.<profile>.toml` and `fnox.local.toml` from the current directory and every parent over the global config. The closer file wins. Those files can define providers, and the Vault provider's `credential_command` runs through the shell. The fnox docs and the `fnox --help` output show no trust gate for project config. Owners expect `brew` to be global and do not expect it to read the current directory.
+
+Exploit Scenario: A downloaded or cloned folder holds a `fnox.toml` that defines a Vault provider with a malicious `credential_command`, plus a `[profiles.brew.secrets.*]` entry that uses that provider. The owner runs any `brew` command from that folder. fnox resolves the secret and runs the command as the owner before brew starts. The command can then try to read the keychain items that the profiles name. If `VAULT_TOKEN` or `FNOX_VAULT_TOKEN` is set, the command does not run. I confirmed the behaviour from the fnox docs and did not run it. The same line came over unchanged from `macos-setup` (`dotfiles/.config/mise/conf.d/homebrew.toml:21`), so it is new to this repo but not a new behaviour on the Mac.
+
+Recommendation: Pin the config, for example `fnox -c "$HOME/.config/fnox/config.toml" exec -P brew -- brew`. The fnox docs say an explicit path turns off the hierarchical search. Confirm that the alias expands `$HOME`, and that a `fnox.toml` in the current directory is then ignored. The `context7` profile has the same exposure if a command runs it the same way.
+
+Confidence: 8
+
+Dropped:
+- `macos/tools/python/tools.toml:10`: `uv_venv_auto = "create|source"`, ruled on by the user (D12).
+- `macos/tools/mise/.config/{bash/01b-mise.bash.tmpl,fish/conf.d/06-mise.fish.tmpl,zsh/01b-mise.zsh.tmpl}`: `MISE_TRUSTED_CONFIG_PATHS` holds all of `projects_dir`, ruled on by the user (D13).
+- `macos/tools/mise/tools.toml:13` and `macos/tools/cli/tools.toml:335-337`: a project task could replace `mise run updateall` or `cleanupDS` by name. Inside `projects_dir` this adds nothing beyond D13, and outside it is too speculative. Confidence 5.
+- `macos/tools/node/tools.toml:25`: relative `node_modules/.bin` on PATH looks like a current-directory hijack. mise resolves it against the config root, which is the `conf.d/node` folder, so a project cannot plant binaries there. Confidence 2.
+- `macos/tools/touchid-sudo/tools.toml:5`: writes root-owned `/etc/pam.d/sudo_local` with `pam_tid.so`. This is intended, mode 0444 is fine, and the mise docs say project `[bootstrap]` tables are ignored, so a repository cannot use this write. Confidence 2.
+- `macos/tools/cli/.config/mise/tasks/keychain/delete`: all values are quoted, the secret is never read, and there is a confirmation prompt. Confidence 1.
+- `macos/tools/cli/.config/mise/tasks/{cleanupDS,func/backup,func/zip,func/code}`: the arguments come only from the owner's own CLI use, with no path for untrusted input. Confidence 2.
+- `macos/tools/mise/.config/mise/config.toml`: `lockfile = false` and the `minimum_release_age_excludes` entries for `fnox` and `age` are hardening choices, with no concrete vulnerability. `use_git_credentials` has no concrete exposure either. Confidence 2.
+- `macos/tools/fnox/.config/fnox/config.toml`: holds keychain references only, with no secret values. Confidence 1.
+- `macos/tools/homebrew/.config/mise/tasks/upgrade/brew` and `macos/tools/node/.config/mise/tasks/upgrade/{npm,pnpm}`: these run with `dir="~"`, so project config does not reach them, and `--yes` on the owner's own package list is not a vulnerability. Confidence 2.
+- `macos/tools/node/Library/Preferences/pnpm/config.yaml.tmpl` and the `projects_dir` rendering in the mise and cli templates: values come from the owner's own values file, which is trusted input. Confidence 2.

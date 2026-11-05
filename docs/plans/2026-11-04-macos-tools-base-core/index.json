@@ -11,7 +11,7 @@
   "gaps_of": [],
   "status": {
     "state": "BLOCKED",
-    "detail": "BLOCKED at wave 2 — U3 UNRESOLVED: two high security findings need rulings past D4 and R2: G5 python.uv_venv_auto = create|source in macos/tools/python/tools.toml:10, G6 MISE_TRUSTED_CONFIG_PATHS holds all of projects_dir in the three mise shell templates; U4, U5 skipped (depend on U3); open gaps also G1, G3 (U1 worked around a Bash permission denial with Write and a scratchpad script; a person should judge), G4, G7; worktree .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "detail": "BLOCKED at wave 2 — U3 UNRESOLVED: round 2 raised two new high security findings that need rulings past D4 and R2: G8 custom.submodule_status when command in macos/tools/starship/.config/starship.toml:147, G9 unpinned fnox config in the brew alias in macos/tools/homebrew/tools.toml:25; D12 and D13 applied, G5 and G6 not reported again; U4, U5 skipped (depend on U3); wave 2 review not run, no unit diff; open gaps also G1, G3, G4, G5, G6, G7, G10; worktree .claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -109,12 +109,12 @@
       "waits": "",
       "status": "unresolved",
       "started": "2026-11-05T09:07:28.309Z",
-      "ended": "2026-11-05T09:11:35.964Z",
+      "ended": "2026-11-05T09:30:05.244Z",
       "commit": "",
-      "rounds": 1,
+      "rounds": 2,
       "range": {
         "from": "5961aaf416b7f49a9559ff2351b2e02c5d6be5c7",
-        "to": "2f65b129f9e3ba504fcd7d002214988cb3e1a77b"
+        "to": "67e8a1efb830c310b9a322c1d78fb5eae30a2dc6"
       }
     },
     {
@@ -138,7 +138,7 @@
       "waits": "",
       "status": "skipped",
       "started": "",
-      "ended": "2026-11-05T09:11:36.033Z",
+      "ended": "2026-11-05T09:30:05.315Z",
       "commit": "",
       "rounds": 0
     },
@@ -156,7 +156,7 @@
       "waits": "",
       "status": "skipped",
       "started": "",
-      "ended": "2026-11-05T09:11:36.102Z",
+      "ended": "2026-11-05T09:30:05.390Z",
       "commit": "",
       "rounds": 0
     }
@@ -172,19 +172,19 @@
       "id": "W2",
       "status": "failed",
       "started": "2026-11-05T09:07:28.242Z",
-      "ended": "2026-11-05T09:11:58.259Z"
+      "ended": "2026-11-05T09:30:26.600Z"
     },
     {
       "id": "W3",
       "status": "failed",
       "started": "",
-      "ended": "2026-11-05T09:11:58.295Z"
+      "ended": "2026-11-05T09:30:26.636Z"
     },
     {
       "id": "W4",
       "status": "failed",
       "started": "",
-      "ended": "2026-11-05T09:11:58.332Z"
+      "ended": "2026-11-05T09:30:26.675Z"
     }
   ],
   "shared_files": [
@@ -300,6 +300,26 @@
       "units": [
         "U2"
       ]
+    },
+    {
+      "id": "D12",
+      "decision": "Does python.uv_venv_auto = \"create|source\" stay in macos/tools/python/tools.toml for this import (G5)?",
+      "ruling": "User ruling 2026-11-05: yes, for this import only. D4 and R2 stand, and the value stays byte for byte, because the live Mac already has it. The risk stays until a separate plan after this run changes the value. A security review of this plan does not report this case again.",
+      "rejected": "Remove source and create from the Mac default in this import.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Does MISE_TRUSTED_CONFIG_PATHS keep all of projects_dir in the three mise shell templates for this import (G6)?",
+      "ruling": "User ruling 2026-11-05: yes, for this import only. D4 stands, and the content stays byte for byte, because the live Mac already has it. The risk stays until a separate plan after this run changes the value. A security review of this plan does not report this case again.",
+      "rejected": "Narrow the path to the owner folders in this import.",
+      "units": [
+        "U1",
+        "U3"
+      ]
     }
   ],
   "stages": {
@@ -376,6 +396,27 @@
       "unit": "U3",
       "stage": "security",
       "text": "SPEC/PLAN GAP: D4, R2 and R3 copy every value byte for byte and name no security requirement for the mise trust boundary; both values are unchanged from macos-setup, so the live Mac already has this exposure and the import carries it forward; index.json has no ruling on either · no assumption taken; G5 and G6 hold the rulings",
+      "state": "open"
+    },
+    {
+      "id": "G8",
+      "unit": "U3",
+      "stage": "security",
+      "text": "UNRESOLVED security finding [high] macos/tools/starship/.config/starship.toml:147 (U1): the when command of custom.submodule_status runs git status on every prompt, gated only by a .gitmodules file, so an extracted tar or zip with core.fsmonitor in .git/config runs code as the owner on cd, also outside projects_dir (tested: starship prompt ran the planted hook on git 2.56; -c core.fsmonitor= stops that hook, but a filter clean driver from the repo config still ran). A plain git clone does not carry .git/config. Byte for byte from macos-setup, so the live Mac already has it. A fix changes content that D4 keeps byte for byte · ruling needed: remove the module, run the status call only for an owner allowlist, or accept the risk for this import as D12 and D13 did",
+      "state": "open"
+    },
+    {
+      "id": "G9",
+      "unit": "U3",
+      "stage": "security",
+      "text": "UNRESOLVED security finding [high] macos/tools/homebrew/tools.toml:25 (U1): the brew alias fnox exec -P brew -- brew pins no config, so fnox merges a fnox.toml from the current folder and its parents with no trust gate; a committed fnox.toml with a profiles.brew PATH secret makes any brew command there run a planted binary as the owner (tested on fnox 1.47.0), and that binary receives the profile token value (tested with a scratch default value; a Keychain token is inferred). The engine rated this medium on a credential_command route that did not fire in the test; the reviewer rated it high on the PATH route. With fnox -c \"$HOME/.config/fnox/config.toml\" the project file did not load (tested; not tested through the generated mise alias). The value is byte for byte from macos-setup, so the live Mac already has it. A fix changes a value that R2 keeps byte for byte · ruling needed: pin the config with -c, or accept the risk for this import as D12 and D13 did",
+      "state": "open"
+    },
+    {
+      "id": "G10",
+      "unit": "U3",
+      "stage": "security",
+      "text": "SPEC/PLAN GAP: D4, R2 and R3 copy every value and file byte for byte and name no security requirement for prompt commands that run on cd or aliases that read current-folder config; G7 records this only for the mise trust boundary · no assumption taken; G8 and G9 hold the rulings",
       "state": "open"
     }
   ],
