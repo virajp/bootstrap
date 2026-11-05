@@ -14,27 +14,9 @@
 # message. The caller gives the real paths: this file resolves no symlink. Each
 # path is absolute, because the tool wrappers run from `/`.
 #
-# `remove` deletes key paths of the live target, and `remove_items` deletes from
-# the list at each `path` every item equal to a listed one. Then the source is
-# merged over the result, so the source wins over `remove`, but `remove_items`
-# wins over the source: a listed item also leaves the source list, so it is
-# never added back (on an absent target too). The merge: tables merge key by
-# key, deeply; a source scalar replaces the live value; a source value of
-# another kind (table, list, scalar) than the live one replaces it; a list is
-# the live list in its order, then each source item that is not equal to an item
-# already in it, once. A key that is not in the source stays as the app wrote
-# it. A path or item that is not in the live file is not an error, nor a
-# `remove_items` path whose live value is not a list. JSON is merged and written
-# with jq; YAML and TOML with yq in their own format, so the comments of the
-# live file stay.
+# It reads TMPDIR for its temporary files.
 #
-# A target that is missing, 0 bytes or only whitespace (or, for YAML, only
-# comments) is absent: it gets the source without the `remove_items` items. A
-# live target that does not parse, whose top level is not a table, or a YAML
-# target with more than one document fails with 2 and stays as it is; so does a
-# source whose top level is not a table, or a YAML source with more than one
-# document. An empty source (null or an empty table) enforces nothing: only the
-# removals act, and an absent target gets an empty table.
+# Contract: docs/design/sync-engine.md
 
 # The jq of a merge. Input, as jq variables: the parsed live target ($live, a
 # table), the rendered source ($src, a table) and the removals ($ops: {remove,

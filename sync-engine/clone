@@ -3,10 +3,15 @@
 # calls _se_clone_init, and sets its own traps with _se_clone_cleanup. The
 # cache is ~/.cache/sync-engine/: the clone in repo/, the lock in lock/.
 #
+# An entry task calls _se_clone_init, _se_lock, _se_legacy_cleanup, _se_fetch,
+# _se_copy, _se_unlock and _se_clone_cleanup.
+#
 # Variables, internal only:
 #   SYNC_ENGINE_CACHE  the cache folder; tests use it
 #   SYNC_ENGINE_URL    the clone URL; tests use it for an unpushed change
-#   SYNC_ENGINE_CLONE  the temporary copy that a caller gives its child task
+#   XDG_CACHE_HOME, HOME, TMPDIR  the default cache and the temporary copy
+#
+# Contract: docs/design/sync-engine.md
 
 # Sets the paths from the environment.
 _se_clone_init() {

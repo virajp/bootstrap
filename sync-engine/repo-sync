@@ -7,243 +7,16 @@
 #   source "${SYNC_ENGINE_CLONE}/sync-engine/repo-sync"
 #   repo_sync [--dry-run | --check]
 #
-# `--check` examines only the rules of the values file that need no clone:
-# the values file, the local git repository and `.config/fnox.toml` (no fnox
-# `default` profile). It makes no clone, writes no
-# file and does not set `bootstrap_commit`. It runs each of these checks,
-# prints each message, and returns the highest code. The rules that need the
-# clone (an unknown tool or pack, a pack loop, the `envs` of a mise tool, an
-# `[overrides]` path, a `remove` line that is not shipped, a root-only tool in
-# a submodule) are for the sync only.
+# Flags:
+#   --dry-run  show each change and write no file
+#   --check    examine only the rules of the values file that need no clone
 #
-# The values file selects tools and packs with one table each. `env` is a list
-# of environments:
-#
-#   [tools.node]                a tool folder `$_RS_TOOLS_DIR/node/`
-#   env = ["dev", "ci"]         optional: without it, the tool's `default_envs`
-#   key = "value"               each other key is a value of the tool, for its
-#                               templates (`sync-engine/values`)
-#   [packs.security]            a pack of `$_RS_PACKS_FILE`, without `pack:`
-#   env = ["dev"]               optional, and the only key of a pack entry: each
-#                               tool of the pack gets it; without it, each tool
-#                               gets its own `default_envs`
-#
-# The pack `base` is always added, and each of its tools gets its own
-# `default_envs`. No `[tools]` and no `[packs]` is valid: then only `base`.
-# A list (`tools = [...]`, `packs = [...]`) is the old format and stops the
-# sync.
-#
-# `$_RS_PACKS_FILE` holds the packs. Each key of `[pack.<name>]` is a member,
-# on one line: `<tool> = { default = true }` or `<tool> = {}`, for a tool
-# folder, and `"pack:<x>" = { default = true }` for a pack that is expanded in
-# turn. The only entry key is `default`. `[packs.<name>]` adds each
-# `default = true` member, in file order; a tool in several packs is added
-# once. A `"pack:<x>" = {}` does not expand: that pack arrives only through its
-# own `[packs.<x>]`. A pack name must not be a tool folder. Each sync examines
-# every `[pack.*]` table, selected or not.
-#
-# Each tool is a folder `$_RS_TOOLS_DIR/<tool>/` in `bootstrap`, which holds its
-# files at the path they get here, and a `tools.toml` manifest:
-#
-#   default_envs = ["dev"]      the environments of the tool when no `env` names
-#                               them
-#   depends    = ["python"]     tools added with this one
-#   root_only  = false          true: refused in a git submodule; a pack
-#                               tool is skipped there
-#   extensions = ["a.b"]        VS Code extensions, for `.vscode/extensions.json`
-#   [files."<target>"]          optional: one table per target (a path of the
-#     mode     = "seed"         tool folder, without `.tmpl`). `mode`:
-#     requires = ["package.json"] "generated" (the default, also without a
-#     requires_found = ["a.toml"] table: written on each run), "seed" (written
-#     format   = "json"         only when missing; the repo owns it after that)
-#     remove   = [["a", "b"]]   or "merge" (see "Merge files"). `requires`:
-#     remove_items = [          exact paths relative to the repo root; each must
-#       { path = ["a"],         exist. `requires_found`: file names; each must
-#         items = [...] } ]     be found at the root or down to 4 folders below
-#                               it, and not ignored by git. A target with both
-#                               lists needs every entry of both. `format`: text,
-#                               json, yaml or toml; the default comes from the
-#                               extension. `remove` and `remove_items`: only
-#                               with mode "merge"
-#   [[precommit]]               `repos:` entries of `.config/pre-commit-config.yaml`
-#   [defaults]                  optional: the values of the tool
-#   [questions.<key>]           optional: `question`, `detect` and `example`; the
-#                               sync examines only their shape
-#   [contributes.<tool>]        optional: values for another selected tool
-#   [mise.<section>]            the mise config of the tool, in mise syntax; an
-#                               entry of `[mise.tools]` can also have `envs` and
-#                               `requires_found` (see "mise config")
-#   [mise_env.<env>.<section>]  optional: more mise config for one environment
-#
-# The sync reads `default_envs`, `depends`, `root_only` and `extensions` without
-# a default. It examines the manifest of each tool of the clone, selected or
-# not. The old keys stop the sync and name the new key: `seed`,
-# `[seed_requires]`, and the `requires` and the `files` of a mise entry.
-#
-# A target whose `requires` or `requires_found` entry is not there is not
-# written, and the sync only logs it. A seed and a merge target stay as they
-# are. The stale rule and `_rs_remove` skip a seed and a merge target of a tool
-# of this run (a selected tool or a dependency, also through a mise `depends`),
-# and no others. `_se_unblock` refuses to remove such a path and fails that
-# file.
-#
-# Manifest: `.config/repo-generated.tsv`, committed, has one `<tool><TAB><path>`
-# row for each generated file (`sync-engine/manifest`). After a sync without a
-# failure, each listed file with the bootstrap header that this run did not
-# handle is removed, with its empty parent folders, then the manifest is
-# written. A file without the header stays. A first sync has no manifest, so the
-# stale rule removes nothing. A manifest that is a link, or that is not a
-# regular file, fails the sync with code 2. A row with an unclean path or a
-# `.git` segment is skipped, and a listed file of another repository stays.
-#
-# One call makes one private copy of the clone of `SYNC_ENGINE_CLONE`, which
-# `setup:configs` gives, and syncs every file of every selected tool from that
-# one copy.
-#
-# After a sync without a failure, the sync sets the top-level
-# `bootstrap_commit` of the values file to the full commit of that clone. It
-# replaces only that line, or it adds the line after the header comments.
-# This is the only change that the sync makes to the values file. An agent
-# compares the value with main of bootstrap to find what changed since.
-#
-# Environments: `environments` of the values file, from dev (necessary) and
-# ci. Without the key, only dev. The environments of each tool:
-#   * A tool of `[tools.*]` or of a pack gets its `env`, else its
-#     `default_envs`. A tool that is selected more than once gets each of them.
-#   * A dependency of a tool (its `depends`, and the tool that defines each
-#     mise `depends`) gets each environment of each tool that needs it.
-#   * `environments` limits every result.
-#   * The `envs` of a mise tool (default dev) lists the environments that it
-#     allows. A tool in an environment that one of its mise tools does not
-#     allow stops the sync, as does an `env` name that is not in
-#     `environments`.
-#   * Each tool must be in dev: an `env` of the values file or a
-#     `default_envs` without dev stops the sync.
-#
-# mise config: `sync-engine/mise` generates
-# `.config/mise/conf.d/<tool>/mise.<env>.toml` for each selected environment and
-# each tool with `[mise]` tables, and it holds the rules of the sections, of the
-# environments of a tool and of `[overrides.mise*]`. `.config/mise.toml` is the
-# only file for every environment; no `mise.toml` is generated.
-#   * The `mise` tool also gets `setup-all` and `setup-<submodule>` in dev, from
-#     the git submodules of this repo.
-#   * The mise `depends` of an entry adds the tool that defines that mise tool.
-#   * A shipped `conf.d/*/mise.<env>.toml` of an environment that is not
-#     selected is skipped.
-#   * The manifest removes a file of a tool, an environment or a layout that is
-#     gone.
-#   * `conf.d/zz-repo/` is the repo's own folder, and it must load last: mise
-#     loads the folders in name order and a later one wins. A tool folder
-#     whose name sorts after `zz-repo` in byte order stops the sync.
-#
-# Templates: a file that ends in `.tmpl` is rendered with gomplate, formatted
-# with this repo's dprint config when dprint is available, and written without
-# the suffix. The context is the values file (`<% .repo_name %>`,
-# `<% .member.<name>.label %>`) plus:
-#   .submodules  the git submodules only, nested ones included
-#   .members     the member names: the git submodules (the name of their
-#                `[member.<name>]` table, else their path), then each other
-#                `[member.<name>]` of the values file — a folder of a monorepo,
-#                which must exist
-#   .member_folders  a map from each member name to its folder
-#   .member_types    a map from each member name to `submodule` or `folder`
-#   .tools       the selected tools, packs expanded, dependencies included
-#   .config      the values of the tool of the template: `[defaults]`, then the
-#                contributions, then `[tools.<name>]` without `env`
-#   .all         the values of each selected tool, by tool name
-#   .extensions  the VS Code extensions of those tools and of the `extensions`
-#                list of the values file, sorted, no duplicates. In the root
-#                repository, also those of each git submodule (the tools and
-#                the `extensions` list of its values file)
-#   .sync_engine the absolute path of the `sync-engine/` folder of the clone
-#                copy of this run
-#   .precommit   the `[[precommit]]` entries of those tools, in tool order, then
-#                the entries of this repo's `.config/repo-sync/pre-commit.yaml`.
-#                A `no-commit-to-branch` hook loses each `"--branch", "<b>"`
-#                pair of a core branch (main, develop) that does not exist or
-#                that has `direct_commit = true` in `[branch.<b>]`. A hook with
-#                no pair left goes, and an entry with no hook left goes
-# The delimiters are `<% %>`, because `{{ }}` belongs to mise and `[[ ]]` to
-# bash, and both must reach the output unchanged. gomplate reads the TOML too.
 # The engine starts gomplate, jq and yq through the wrappers of `common`, from
 # `/`, so no mise config of a repo selects them, and no task needs a `#MISE`
 # line for them: this works before a first sync and in a shell without
-# MISE_ENV=dev. Each path that they get is absolute. An installed tool runs with
-# no network, and repo_sync stops without mise.
+# MISE_ENV=dev.
 # The calling task provides pre-commit with `#MISE tools.pre-commit="latest"`,
 # and this script calls it without `mise x --`.
-# The gate `code:lint:repo-sync` still runs only when
-# `mise x -- which gomplate` finds gomplate in the config of the repo.
-#
-# Merge files (`mode = "merge"`, format json, yaml or toml): the source holds
-# only the keys that the tool enforces. The order is render, parse check, merge
-# with the live target at its path in this repo (`sync-engine/merge`, which has
-# the rules), dprint, compare. A merge target has no header, follows no symlink,
-# is never removed, and keeps the mode of an existing target; a new one takes
-# the mode of its source. The sync strips nothing from a merge source.
-#
-# Merge tasks: the branch model follows the branches that exist, here or on
-# origin. With `main` and `develop`, the sync writes `code/merge/develop` and
-# `code/merge/main`; with only one of them, `code/merge/_default`. It removes the
-# merge tasks of the other model: they are not seeds, so the repo does not own
-# them. With neither branch, the sync stops.
-#
-# .gitignore: the shared ignore set, with `[overrides.gitignore]` of the
-# values file applied. Each line of `remove` is commented out, then the lines
-# of `add` go at the end. A later line wins, so `add` can also negate a shared
-# pattern with `!`. A line of `remove` that the shared set does not have, a
-# line in both lists, the old `[overrides.graphifyignore]` and the old
-# `.config/repo-sync/gitignore` stop the sync.
-#
-# Failure handling
-#   * A file takes the mode of its source, also when it exists already. To
-#     make a template executable, make its `.tmpl` executable.
-#   * A destination is only replaced after a complete copy or render, so a
-#     failure always leaves the existing file as it was.
-#   * A bad file does not stop the others; a clone that is not usable, an
-#     unknown tool or pack, a bad environment or a root-only tool in a submodule
-#     stops the whole run.
-#   * A JSON, YAML or TOML target must parse, after its render or copy and
-#     before dprint. A target that does not parse keeps its existing file, the
-#     other files go on, and the code is 2. A `.json` file with a `//` line is
-#     JSONC, which is not examined.
-#
-# Return codes
-#   0  success (or nothing to change)
-#   2  usage error, a values file in the old list format, a pack loop over any
-#      `pack:<x>` member, a pack name that is also a tool folder, an old key of
-#      `$_RS_PACKS_FILE` (`depends`, `required`, `tools` or `default` with a
-#      list, or a `p:<x>` member), a pack member that is not a table, that has
-#      an entry key other than `default` or a `default` that is not a boolean,
-#      or that is not on one line, an environment that is not in
-#      `environments` or that a mise tool does not allow, an `env` or a
-#      `default_envs` without dev, a tool folder that sorts after `zz-repo`,
-#      a root-only tool in a submodule, a repo with neither `main` nor
-#      `develop`, a template that cannot render, a bad `[overrides]`, a
-#      `direct_commit` that is not a boolean, that is in a `[branch.*]` table
-#      other than main and develop or of a branch that does not exist, or that
-#      is true for main but not for develop when both exist, or a `[mise]`
-#      config that cannot be generated, a target that does not parse as JSON,
-#      YAML or TOML, an old key of a tools.toml (`seed`, `[seed_requires]`, the
-#      `requires` or the `files` of a mise entry), a bad `[files]` table (an
-#      unknown key, mode or format, a target that no file of the tool produces,
-#      a bad `requires`, `requires_found`, `remove` or `remove_items`, a merge
-#      target of format text), `requires_found`, `requires` or `files` in a
-#      `[mise_env.<env>.tools]` entry, a tool folder with both <p> and <p>.tmpl,
-#      a bad `[defaults]`, `[questions]` or `[contributes]`, two contributions or
-#      a user value that conflict (`sync-engine/values`), a merge source or a live merge target that cannot merge, a merge target
-#      that is a symlink or is below a symlinked folder, a
-#      `.config/repo-generated.tsv` that is a symlink, is below a symlinked
-#      folder or is not a regular file, no `mise`, or no `SYNC_ENGINE_CLONE`
-#      without `--check`
-#   3  a tool or a pack that is not in bootstrap (fix the values file), a
-#      member of a pack that is not a tool folder or a pack (fix the packs file),
-#      or a contribution of a selected tool to a tool that is not in bootstrap
-#   5  the clone of `SYNC_ENGINE_CLONE` is not usable, or
-#      `pre-commit autoupdate` could not resolve the hook revisions
-#   1  anything else (local filesystem errors, ...)
-# With `--check`, 0 when each local rule passes, else the highest code of its
-# checks; `--check` with `--dry-run` is a usage error, 2.
 #
 # Environment:
 #   SYNC_ENGINE_CLONE  the clone copy that `setup:configs` gives; this file
@@ -254,6 +27,9 @@
 #   REPO_SYNC_NO_AUTOUPDATE  1: skip `pre-commit autoupdate`, so the hook
 #                     revisions stay as the tools.toml files have them and no
 #                     network is needed (for tests)
+#   MISE_PROJECT_ROOT, TMPDIR  the repository root and the temporary files
+#
+# Contract: docs/design/repo-sync.md
 
 # The shared libraries, from the folder of this file.
 # shellcheck source=/dev/null

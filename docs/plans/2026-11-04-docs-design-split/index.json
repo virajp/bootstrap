@@ -79,11 +79,11 @@
         "U1"
       ],
       "waits": "Its Verification needs the output of U1: each rule that it removes from a script header must be in the docs/design file that U1 writes.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T13:48:45.612Z",
+      "ended": "2026-11-05T14:01:10.266Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -138,8 +138,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T13:48:45.578Z",
       "ended": ""
     },
     {
@@ -301,6 +301,20 @@
       "stage": "edit",
       "text": "docs/design/packs.md, tools.md, mise.md: the plan does not say where the Flutter sections go · U1 kept them, marked as not in repo/packs.toml, and corrected the facts that the code falsified. Settled with no ruling owed: the plan moves text and changes no rule, so the sections stay, and the mark matches repo/packs.toml; R1 confirmed. Dropping them would be a later ruling.",
       "state": "closed"
+    },
+    {
+      "id": "G5",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "sync-engine/repo-sync header rule 'no task needs a #MISE line for gomplate, jq and yq, and this works in a shell without MISE_ENV=dev': docs/design/sync-engine.md 'The tool calls' lacks it · Under D5 the header line stays in this plan.",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "sync-engine/repo-sync header rule 'this script calls pre-commit without mise x --': docs/design/repo-sync.md lacks it · Under D5 the header line stays in this plan.",
+      "state": "open"
     }
   ],
   "overrides": [],
