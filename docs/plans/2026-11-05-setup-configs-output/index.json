@@ -1,0 +1,431 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "Changed-only output and a count table for the sync",
+  "requires": [],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-05 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run test"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Make a local clone with the finished branch as its main. In a repository that has adopted bootstrap, run FORCE_COLOR=1 SYNC_ENGINE_URL=<the clone> mise run setup:configs -- --dry-run.",
+        "pass": "The output shows the list of changes and the table, with colors. It shows no unchanged file, and git status of that repository does not change."
+      }
+    ]
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-05-setup-configs-output",
+      "mode": "run",
+      "notes": "Archives the plan folder only when its gaps list has no open entry; with an open gap, skip this step and leave the folder live."
+    },
+    {
+      "id": "A2",
+      "step": "On a local branch sync-setup-configs-output, run mise run setup:configs, commit the result as ops: sync bootstrap with the new sync output, and land it with mise run code:merge sync-setup-configs-output.",
+      "mode": "run",
+      "notes": "Syncs the copies of this repository, as CLAUDE.md 'Change a shared file' step 4 tells. The other consumer repositories stay a hand step."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "New output and a new --verbose flag for setup:configs and updateall:configs; no consumer contract changes."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "Engine output",
+      "wave": 1,
+      "file": "01-engine-output.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "sync-engine/common",
+        "sync-engine/write",
+        "sync-engine/merge",
+        "sync-engine/manifest",
+        "sync-engine/repo-sync",
+        "sync-engine/setup-sync"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Clone and entry tasks",
+      "wave": 1,
+      "file": "02-clone-and-entry-tasks.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "sync-engine/clone",
+        "repo/tools/repo-sync/.config/mise/tasks/setup/configs/_default.tmpl",
+        "macos/tools/macos-setup/.config/mise/tasks/updateall/configs/_default.tmpl",
+        "macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Tests",
+      "wave": 2,
+      "file": "03-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo-sync",
+        ".config/mise/tasks/test/setup-sync",
+        ".config/mise/tasks/test/macos-tools"
+      ],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "Its Verification runs the tests against the output of U1 and U2.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Review: the engine, the entry tasks and the tests",
+      "wave": 3,
+      "file": "04-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U5",
+      "title": "Docs",
+      "wave": 4,
+      "file": "05-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/sync/**",
+        "docs/design/**"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U6",
+      "title": "Gates",
+      "wave": 5,
+      "file": "06-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "CLAUDE.md, README.md, docs/sync/**, docs/design/**",
+      "why": "every human-facing doc; the earlier units report DOCS FALSIFIED lines and never edit a doc",
+      "owner": "U5"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Which front-ends get the new output?",
+      "ruling": "Both front-ends: repo_sync and setup_sync get the list of changes and the table. The user chose this.",
+      "rejected": "Only repo-sync, with the Mac work parked.",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "How does the plan keep the full list of files?",
+      "ruling": "A verbose flag. --verbose of setup:configs and updateall:configs sets SYNC_ENGINE_VERBOSE=1. The variable also works when a user sets it, and only the value 1 turns it on. With it, the engine prints each current per-file line in its current format, then the table. The test tasks set the variable. Each entry task consumes the flag and does not pass it to the engine. Both tasks add it to #USAGE, and the Mac task also adds it to usage(). The user chose this.",
+      "rejected": "A log file in the cache, which changes all test lines; removing the old lines, which leaves no way to see the full list.",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Where does the output code live?",
+      "ruling": "The list, the table and the color rule are in sync-engine/common. The color rule is the same as style_enabled of helpers: FORCE_COLOR turns it on, NO_COLOR turns it off, otherwise it needs a terminal and TERM not dumb. The engine does not call helpers.",
+      "rejected": "Calling helpers: setup-sync does not have them, and the local copy can be stale during a run.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "How does the engine count the outcomes?",
+      "ruling": "One function, _se_outcome <kind> <path> [text], replaces each per-file log line. It increments the count of the kind and prints the correct line. The kinds are changed, new, seeded, removed, unchanged, kept, skipped and failed. In Bash 3.2, each count is a plain variable.",
+      "rejected": "Counting from the log lines.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "How does the local sync task stop being stale?",
+      "ruling": "Before each run of setup:configs:sync, for the root and for each member, setup:configs compares the local setup/configs/sync and _scripts/helpers with the same files in the clone copy, and copies a file that differs, with its mode. It copies only over a file that exists. Then it prints the info line 'Updated the local sync task to <short commit>' or 'The local sync task is up to date', below the line 'Updating the clone'. A dry run copies nothing and prints 'Would update the local sync task to <short commit>'. If the copy fails, the task prints a warning and continues with the local files. D14 gives the edge cases.",
+      "rejected": "Rendering _default too, which needs the full sync. Thus _default stays stale for one run, and the file loop writes it.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "When does the old-cache line print?",
+      "ruling": "'Removed the old cache <path>' prints only if the old folder existed before the removal and does not exist after it. A run with only the old lock prints nothing.",
+      "rejected": "Removing the line.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "What does the Mac entry task change?",
+      "ruling": "It gets no local-task line, because updateall:configs already runs sync from the clone copy. On a terminal, its own log lines and the fallback of _se_say show the info glyph or the error glyph and no prefix. Otherwise they keep the prefix. 'setup-sync: running ...' prints only with verbose.",
+      "rejected": "Adding the same copy step to the Mac task.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "What is the form of the list and the table?",
+      "ruling": "The list shows only changed, new, seeded, removed and failed, each with its glyph and color: changed ✎ yellow, new ✚ green, seeded ❋ blue, removed ✖ red, failed ✗ red. The table has the rows Changed, New, Seeded, Removed, Unchanged (=), Kept seeds (◦), Skipped (⊘), Failed and Total, in that order, and always shows all rows. A row with a zero count is dim. Total is the sum of the rows. Each run prints one table, so --all prints one table per member. The line 'using bootstrap', the line 'tools:' and the line 'environments:' become one info line by default. The other messages of _se_log stay. Manifest lines 'kept <path> (link)' and 'kept <path> (another repository)' have no count and print only with verbose. A manifest write counts as changed or new. 'set bootstrap_commit' becomes an info line. D12 gives the last line and when the table prints. D13 gives the forms of each line.",
+      "rejected": "One total table across the members.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "What does a dry run show?",
+      "ruling": "The list has 'would change', 'would add', 'would seed' and 'would remove' lines. The diff of a change stays. The table counts what the run would do.",
+      "rejected": "Hiding the diffs.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "Does the plan need a review unit?",
+      "ruling": "Yes. The plan lands shell code that runs in each consumer, so U4 reviews U1, U2 and U3.",
+      "rejected": "The wave review only.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "Which kind does each current line get?",
+      "ruling": "A line on a failure path, which includes the symlink lines, kept existing and cannot remove, is failed, with its current message as the text. The kind kept holds only kept seed, and the row Kept seeds counts only that kind. A failure of the mise config of a tool or of the manifest file has no count, and its message stays.",
+      "rejected": "Counting a kept copy on a failure path as kept, which hides the failure in the table.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "When does the table print, and what is the last line?",
+      "ruling": "_se_summary <rc> prints the table and the last line once, as the last output of the run: after the stale rule, the manifest write and bootstrap_commit. Each return after the file loop calls it, also on a failure. A run that stops before the file loop has no table. On the Mac side, it prints after mise bootstrap, with one table across the init and main stages, and return 4 after the init stage has no table. n is the sum of Changed, New, Seeded and Removed. With rc 0: ✅ Synced: <n> files changed, or ✅ Synced: no file changed. In a dry run with rc 0: ✅ Dry run: <n> files would change, or ✅ Dry run: no file would change. With another rc: a red ❌ The sync failed with code <rc>: <failed count> files failed.",
+      "rejected": "A last line from the failed count alone, which shows success on a failure with no per-file line.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "What are the forms of the lines?",
+      "ruling": "One rule turns glyphs and colors on and off together: the rule of D3, so NO_COLOR on a terminal also removes the glyphs. Style on: an info line is ℹ️ <text> with no color, and the table has the box characters of the sample in index.md, with a left label column and a right count column. Style off: a list line is <word> <path>, an info line is [INFO] <text>, a last line is [OK] <text> or [ERROR] <text>, and the table has ASCII borders (+, -, |). The new lines have no sync-engine: or setup-sync: prefix.",
+      "rejected": "Separate rules for glyphs and colors.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "What are the edge cases of the copy of the local sync task?",
+      "ruling": "A file that does not exist locally is skipped. A difference in mode counts as a difference. If a file was copied, the line is Updated. If no file was copied, the line is up to date. If neither file exists locally, no line prints. A copied file counts as unchanged in the file loop, so the last line can read no file changed. The Updated line in the same output reports the copy: accepted. The copy runs before the sync validates anything, so a run that then stops leaves the two fresh files: accepted.",
+      "rejected": "Passing the copied paths to the engine to count them as changed; moving the copy after the validation, which leaves the stale task running.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "What do the Mac lines become?",
+      "ruling": "sync-engine/setup-sync:822-823 (using bootstrap, tools:) become one info line: bootstrap <short commit> · <n> tools. Each call of log() in the Mac entry task is an info line, and a call that reports a failure is an error line. The printf lines at configs/sync:19 and :24 follow D7 too.",
+      "rejected": "Leaving the Mac lines with the prefix.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "What are the edge cases of a failed file and of the copy?",
+      "ruling": "Failed counts files. Each failed target gets exactly one failed outcome and one list line, from its first failure message; this covers each failure message of repo-sync and setup-sync, also where no existing file stays. A target that fails with no message today (repo-sync:1467, :1473, :1589, write:90) also gets a failed outcome, with the text cannot write the target. A later kept existing line for the same target prints only with verbose. A failed list line is ✗ failed <path>: <text> with style on, and failed <path>: <text> with style off. <path> is the target path, and the text does not repeat it. The line FAILED: <list> stays by default in both front-ends, before the table, and the line <ok>/<total> files in sync goes. The last line uses 1 file changed and 1 file failed for one file, and it omits the count with no failed file: The sync failed with code <rc>. With an empty commit, the Mac info line reads bootstrap an unknown commit · <n> tools. With verbose, setup-sync keeps its lines using bootstrap and tools:. The copy step skips a file that the clone copy does not have, and skips a local symlink. A failed copy prints a warning. It prints Updated if another file was copied, and otherwise no second line. Up to date prints if no file was copied and no copy failed. By default the bootstrap_commit line is Set bootstrap_commit to <short commit>, or Would set bootstrap_commit to <short commit> in a dry run, as an info line before the table. A dry run copies nothing, so a stale sync or helpers shows as would change: accepted.",
+      "rejected": "Counting lines in Failed.",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "What are the last edge cases of the dry run, the table colors and the Mac lines?",
+      "ruling": "In a dry run, Would update the local sync task prints only if a file differs. Otherwise the line is The local sync task is up to date. A file skipped as a symlink does not count as a difference. A non-zero table row takes the color of its kind in the list. Unchanged, Kept seeds and Skipped have no color, and Total has no color. A row with a zero count is dim. log() and the two printf lines of the Mac entry use the same style rule as the engine, not a plain terminal test. The user accepted this.",
+      "rejected": "A terminal test for the Mac lines; colors on all table rows.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}

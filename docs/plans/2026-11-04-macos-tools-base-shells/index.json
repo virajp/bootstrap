@@ -343,5 +343,8 @@
   },
   "gaps": [],
   "overrides": [],
-  "run": {}
+  "run": {
+    "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-04-macos-tools-base-shells.jsonl"
+  }
 }
