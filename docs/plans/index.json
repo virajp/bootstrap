@@ -226,10 +226,13 @@
       "title": "Mac tools: base core (11)",
       "target_repo": null,
       "priority": 110,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-05T08:57:15.993Z",
-      "ended": "",
-      "gaps": null,
+      "ended": "2026-11-05T10:16:50.803Z",
+      "gaps": {
+        "open": 9,
+        "moved_to": []
+      },
       "requires": [
         "2026-11-04-macos-entry-tool"
       ],
