@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-05T12:35:57Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-05 — a1a8542 efc434a cbb9e61; 4 gaps open (G2 G3 G4 G5), folder stays live; worktree kept, as for the plans before it"
   },
   "consent": {
     "merge": true,
