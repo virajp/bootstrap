@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "BLOCKED",
-    "detail": "BLOCKED at wave 3 — U4 UNRESOLVED: rulings needed on two security findings, G5 (unverified code from the tip of main, D1/D2) and G6 (/tmp weekly stamp, D12); U5, U6 skipped (depend on U4); worktree .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-05T08:22:22Z in .claude/worktrees/bootstrap-2-0-3ae4b9 (resume at wave 3 after rulings D16 and D17)"
   },
   "consent": {
     "merge": true,
@@ -122,14 +122,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "unresolved",
+      "status": "green",
       "started": "2026-11-05T07:07:41.982Z",
-      "ended": "2026-11-05T07:12:04.732Z",
+      "ended": "2026-11-05T08:25:17.654Z",
       "commit": "",
-      "rounds": 1,
+      "rounds": 2,
       "range": {
         "from": "b8e7eea",
-        "to": "14d723e"
+        "to": "761eb20"
       }
     },
     {
@@ -152,7 +152,7 @@
         "U4"
       ],
       "waits": "",
-      "status": "skipped",
+      "status": "pending",
       "started": "",
       "ended": "2026-11-05T07:12:04.803Z",
       "commit": "",
@@ -170,7 +170,7 @@
         "U5"
       ],
       "waits": "",
-      "status": "skipped",
+      "status": "pending",
       "started": "",
       "ended": "2026-11-05T07:12:04.874Z",
       "commit": "",
@@ -192,9 +192,9 @@
     },
     {
       "id": "W3",
-      "status": "failed",
+      "status": "green",
       "started": "2026-11-05T07:07:41.948Z",
-      "ended": "2026-11-05T07:12:04.946Z"
+      "ended": "2026-11-05T08:26:05.170Z"
     },
     {
       "id": "W4",
@@ -356,32 +356,52 @@
       "units": [
         "U2"
       ]
+    },
+    {
+      "id": "D16",
+      "decision": "Must the entry task examine the integrity of the code that it fetches from the tip of main (G5)?",
+      "ruling": "User ruling 2026-11-05: no. The risk is accepted, and the code does not change. The attack needs push access to main or control of a GitHub account, and the sync of a repository uses the tip of main in the same way. A security review does not report this case again.",
+      "rejected": "git verify-commit against a shipped allowed-signers file, which needs signed commits on main.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Does the weekly stamp of updateall/_default stay at its predictable path in /tmp (G6)?",
+      "ruling": "User ruling 2026-11-05: yes. The risk is accepted, D12 stands, and the file stays byte for byte. The attack needs a second local account on the Mac, and /tmp is on purpose, because a reboot clears it. A security review does not report this case again.",
+      "rejected": "An exception to D12 with a user-owned stamp that keeps the reboot behavior.",
+      "units": [
+        "U1",
+        "U4"
+      ]
     }
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: a change plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T08:26:05.447Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: a change plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T08:26:05.241Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: a change plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T08:26:05.345Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list, and no code unit, so nothing to stamp or persist",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T08:26:05.550Z"
     }
   },
   "gaps": [
@@ -417,15 +437,15 @@
       "id": "G5",
       "unit": "U4",
       "stage": "security",
-      "text": "UNRESOLVED security finding [medium] macos/tools/macos-setup/.config/mise/tasks/updateall/configs/_default.tmpl:125 (U1): the task runs code from the unpinned tip of main of the public bootstrap repo with no signature or pin check (sync-engine/clone:167,188; updateall/configs/sync:28). D1, D2 and the clone-URL ruling state no integrity check on the fetched code. Needs push access to main or a GitHub account compromise. Ruling needed: add a check (the reviewer proposes git verify-commit against a shipped allowed-signers file, which needs signed commits on main) or record the accepted risk in decisions · no assumption taken; security findings are never deferred, so the run stopped",
-      "state": "open"
+      "text": "UNRESOLVED security finding [medium] macos/tools/macos-setup/.config/mise/tasks/updateall/configs/_default.tmpl:125 (U1): the task runs code from the unpinned tip of main of the public bootstrap repo with no signature or pin check (sync-engine/clone:167,188; updateall/configs/sync:28). D1, D2 and the clone-URL ruling state no integrity check on the fetched code. Needs push access to main or a GitHub account compromise. Ruling needed: add a check (the reviewer proposes git verify-commit against a shipped allowed-signers file, which needs signed commits on main) or record the accepted risk in decisions · no assumption taken; security findings are never deferred, so the run stopped · closed: user ruling D16, risk accepted, no code change",
+      "state": "closed"
     },
     {
       "id": "G6",
       "unit": "U4",
       "stage": "security",
-      "text": "UNRESOLVED security finding [low] macos/tools/macos-setup/.config/mise/tasks/updateall/_default:18 (U1): the weekly stamp has a predictable path in world-writable /tmp, so a second local account can suppress the weekly steps, and through a symlink touch at :103 can create or re-date a file the user can write. D12 keeps this file byte for byte, and the file says /tmp is on purpose (cleared on reboot). Ruling needed: an exception to D12 with a user-owned stamp that keeps the reboot behaviour, or record the accepted risk in decisions · no assumption taken; security findings are never deferred, so the run stopped",
-      "state": "open"
+      "text": "UNRESOLVED security finding [low] macos/tools/macos-setup/.config/mise/tasks/updateall/_default:18 (U1): the weekly stamp has a predictable path in world-writable /tmp, so a second local account can suppress the weekly steps, and through a symlink touch at :103 can create or re-date a file the user can write. D12 keeps this file byte for byte, and the file says /tmp is on purpose (cleared on reboot). Ruling needed: an exception to D12 with a user-owned stamp that keeps the reboot behaviour, or record the accepted risk in decisions · no assumption taken; security findings are never deferred, so the run stopped · closed: user ruling D17, risk accepted, no code change",
+      "state": "closed"
     },
     {
       "id": "G7",
