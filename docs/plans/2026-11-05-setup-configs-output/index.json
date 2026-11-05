@@ -8,8 +8,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-05T14:56:14Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-05 — e51d45d 809395f 23f87a3 49417bf; 3 gaps open (G1 G2 G3), folder stays live; worktree kept, as for the plans before it"
   },
   "consent": {
     "merge": true,
@@ -186,11 +186,11 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T16:15:15.239Z",
+      "ended": "2026-11-05T16:27:40.612Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -220,9 +220,9 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T16:15:15.207Z",
+      "ended": "2026-11-05T16:27:40.716Z"
     }
   ],
   "shared_files": [
@@ -473,6 +473,13 @@
       "unit": "U5",
       "stage": "edit",
       "text": "05-docs.md Edit 3 names the CLAUDE.md section How the sync operates, which docs-design-split removed · The output rules went to docs/design/ (sync-engine.md, repo-sync.md, setup-sync.md), and CLAUDE.md Tests states SYNC_ENGINE_VERBOSE=1. Settled with no ruling owed: docs/design/ is where each rule lives now.",
+      "state": "closed"
+    },
+    {
+      "id": "G8",
+      "unit": "U6",
+      "stage": "",
+      "text": "U6 was run by the orchestrator: its Verification is the plan gate, one long test task, and a subagent ended its turn twice while a test ran. W5 changed no file, so no reviewer ran over an empty diff · Plan gate: code:precommit 0, mise run test 0. K1 held: list and table with colors, no unchanged file, git status did not change. Settled with no ruling owed.",
       "state": "closed"
     }
   ],
