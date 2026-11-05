@@ -166,10 +166,13 @@
       "title": "Shared mise generator",
       "target_repo": null,
       "priority": 80,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-04T18:22:04.132Z",
-      "ended": "",
-      "gaps": null,
+      "ended": "2026-11-05T05:02:35.659Z",
+      "gaps": {
+        "open": 8,
+        "moved_to": []
+      },
       "requires": [
         "2026-11-04-values-schema"
       ],
