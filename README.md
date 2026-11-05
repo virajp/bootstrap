@@ -85,13 +85,9 @@ grype = { default = true }
 osv-scanner = { default = true }
 ```
 
-Each key is a member, on one line. `[packs.<name>]` of a values file adds each
-`default = true` member, in file order. A member with `{}` arrives only with
-`[tools.<name>]`. A key with the prefix `pack:` is a nested pack, and a nested
-pack with `{}` arrives only with its own `[packs.<name>]`. Each scanner
-has `_security_base` in its `depends`, so one scanner alone brings it. The old
-keys `depends`, `required`, `tools` and `default` with a list, and the prefix
-`p:`, stop the sync with code 2.
+`[packs.<name>]` of a values file adds each `default = true` member. A member
+with `{}` arrives only with `[tools.<name>]`. A key with the prefix `pack:` is a
+nested pack. [`docs/design/packs.md`](docs/design/packs.md) has the rules.
 
 Each tool folder has a `tools.toml` manifest:
 
@@ -115,12 +111,8 @@ version = "23"
 
 The sync removes the prefix `mise.` from each table: `[mise.settings]` becomes
 `[settings]` of the generated file. The section decides the environments that
-get it. `tools`, `tool_alias` and `plugins` follow the `envs` of each entry.
-`settings`, `env` and the other folder sections go to each environment of the
-tool. `shell_alias`, `tasks`, `bootstrap`, `dotfiles` and the other dev-only
-sections go only to `dev`. `docs/design/mise.md` ("The `[mise.*]` sections") has
-the full list and an example. A `[mise.*]` string can hold `<% %>`, rendered
-with the values of the tool.
+get it. [`docs/design/mise.md`](docs/design/mise.md) ("The `[mise.*]` sections")
+has the full list and an example.
 
 A tool can also have the optional tables `[defaults]` (its values),
 `[questions.<key>]` (the question for one value) and `[contributes.<tool>]`
@@ -150,11 +142,8 @@ language = "system"
 name = "Format (mise run code:format)"
 ```
 
-A tool can also give one of its files a `[files."<target>"]` table. The target
-is the path of the file without `.tmpl`. A target that ends in `.tmpl` stops the
-sync with code 2. The target must be the same string as a path of `find -type f`
-in the tool folder, with or without `.tmpl`. Else the sync stops with code 2. A
-file without a table is `generated`: the sync writes it on each run.
+A tool can also give one of its files a `[files."<target>"]` table. A file
+without a table is `generated`: the sync writes it on each run.
 
 ```toml
 [files."pnpm-workspace.yaml"]
@@ -162,118 +151,44 @@ mode = "seed" # generated, seed or merge
 requires = [ "package.json" ] # exact paths; each must exist
 ```
 
-The other keys of the table are `requires_found`, `format`, `remove` and
-`remove_items`:
-
-- `requires_found` is a list of file names. The sync must find each name at the
-  root or down to 4 folders below it, in a file that git does not ignore.
-- `format` is `text`, `json`, `yaml` or `toml`. The default comes from the
-  extension.
-- `remove` and `remove_items` are only for `mode = "merge"`. They delete key
-  paths and list items from the live target.
+[`docs/design/tools.md`](docs/design/tools.md) has each key of a `tools.toml`
+and
+of the `[files]` table.
 
 ## How a repository syncs
 
 1. `setup:configs` fetches the branch `main` of
-   `https://github.com/virajp/bootstrap.git` (shallow, no SSH key necessary)
-   into a clone in `repo/` of the cache
-   `${XDG_CACHE_HOME:-~/.cache}/sync-engine/`. Each consumer of the machine
-   uses that clone. The lock `lock/` of the cache makes a second sync wait
-   until the first has copied the clone.
+   `https://github.com/virajp/bootstrap.git` into a shared clone in the cache
+   `${XDG_CACHE_HOME:-~/.cache}/sync-engine/`, and it copies that clone.
 2. It runs `setup:configs:sync`, which loads `sync-engine/repo-sync` from that
    copy and calls `repo_sync`. Thus a change to the sync code applies in the
    same run.
-3. `repo_sync` reads the `[tools.*]` and `[packs.*]` tables of the
-   repository's `.config/bootstrap.toml`, and it adds the `base` pack. `env`
-   selects the environments, and each other key of a `[tools.*]` table is a
-   value of that tool. A `[packs.*]` table has only `env`.
-4. It expands each pack to its default members, and it adds the `depends` of
-   each tool. It refuses a
-   `root_only` tool in a git submodule. It skips a `root_only` tool that only
-   a pack adds.
-5. It finds the branch model from the branches `main` and `develop`, local or
-   on origin. It stops if neither branch exists. It validates `direct_commit`
-   of `[branch.main]` and `[branch.develop]`, and stops with code 2 for a bad
-   value.
-6. It copies each file of each tool.
-7. After a sync without a failure, it removes each stale file, it writes
+3. `repo_sync` reads the `[tools.*]` and `[packs.*]` tables of the repository's
+   `.config/bootstrap.toml`, adds the `base` pack and the `depends` of each
+   tool,
+   and finds the branch model from the branches `main` and `develop`.
+4. It generates the mise config of each tool, and it writes each file of each
+   tool. A generated file changes on each sync, and a seed is written only when
+   it is missing. A merge target gets only the keys that the tool enforces.
+5. After a sync without a failure, it removes each stale file, it writes
    `.config/repo-generated.tsv`, and it sets `bootstrap_commit` of the values
-   file to the commit of its clone. This is its only write to the values
-   file. An agent compares the value with `main` to find what changed since
-   the last sync.
-
-The sync needs `mise`. It starts gomplate, jq and yq through mise, from `/`, so
-these tools need no entry in the mise config of the repository.
+   file to the commit of its clone.
 
 Between two syncs, the gate `code:lint:repo-sync` runs `repo_sync --check` at
-each commit that changes `.config/bootstrap.toml`. It examines the rules that
-need no clone, and it shows each error at once. The rules that need the clone,
-for example a tool that is not in `bootstrap`, stay with `setup:configs`. The
-gate loads the sync code from the shared cache. Without a clone of `bootstrap`
-there, or with another `origin`, it prints nothing and does not validate.
+each commit that changes `.config/bootstrap.toml`.
 
-These rules apply to each file:
+The sync needs `mise`. Use `--dry-run` to see the changes without writing them.
+The rules are in `docs/design/`:
 
-- A file is only replaced when its content changes. Use `--dry-run` to see the
-  changes without writing them.
-- A JSON, YAML or TOML file must parse before the sync writes it (jq for JSON,
-  yq for YAML and TOML). A `.json` file without a `format` key, with a `//`
-  line, is JSONC, and the sync does not examine it. This JSONC rule does not
-  apply to a merge target. A file that does not parse keeps the existing copy,
-  the other files continue, and the sync returns code 2.
-- A file takes the mode of its source, also when the file exists already. A
-  template keeps the mode of its `.tmpl`, so an executable `.tmpl` gives an
-  executable file. A merge target keeps the mode of an existing target.
-- A seed file is written only when it is missing. After that, the repository
-  owns it. A seed with `requires` is written only if each named path exists.
-- A merge target (`mode = "merge"`) is a file that an app owns. Its source holds
-  only the keys that the tool enforces, and the sync merges them into the live
-  target. The other keys stay. It has no header, so the stale rule leaves it.
-  A merge target that is a symlink or is below a symlinked folder stays as it
-  is, and the sync returns code 2. The `claude-cli`, `gem`, `gh` and `superfile`
-  tools of `macos/tools/` use merge mode now.
-- In `.config/pre-commit-config.yaml`, each hook `rev` becomes the newest tag:
-  the sync runs `pre-commit autoupdate` on it. This needs the network.
-- The repository selects its environments in `environments`: `dev`
-  (necessary) and `ci`.
-- The mise config of each tool is generated from its `[mise.*]` tables into
-  `.config/mise/conf.d/<tool>/mise.<env>.toml`, one file for each environment.
-  A tool of a `[tools.*]` or a `[packs.*]` entry goes to the environments of
-  its `env`, else of its `default_envs`. A dependency goes to each environment
-  of the tools that need it. The `envs` of a mise tool lists the environments
-  that it allows; a tool in a different environment stops the sync. The
-  `requires_found` of a mise tool lists file names: the sync writes the mise
-  tool only when it finds a file of each name. Each file of the tool, for
-  example a task, states its own condition in its `[files]` table. Each tool
-  must be in dev: an `env` or a `default_envs` without dev stops the sync.
-  Aliases, hooks, vars, tasks, `bootstrap` and `dotfiles` go only to dev.
-  `.config/mise.toml` is the only file for every environment. `CLAUDE.md` has
-  the full rules.
-- `[overrides]` of the values file replaces a default of a tool, for example
-  `[overrides.mise.tools.java]` with `version = "21"`. Each overridden line
-  gets an `# override: .config/bootstrap.toml` comment.
-  `docs/sync/index.md` has the rules.
-- The sync never deletes a file, with three exceptions. The first is the merge
-  tasks. With `main` and `develop`, the repository gets `code:merge:develop`
-  and `code:merge:main`. With only one of them, it gets `code:merge`. The sync
-  removes the merge tasks of the other model. The second is a file with the
-  bootstrap header at a path where the sync needs a folder. The first skips a
-  seed and a merge target of a tool of this run (a selected tool or a
-  dependency, also through a mise `depends`). The second refuses to remove such
-  a path and
-  fails that file. The third is the stale rule: a file with the bootstrap header
-  that `.config/repo-generated.tsv` lists and this run does not write. The rule
-  skips the same paths as the first, and it also removes the empty parent
-  folders. A seed, such as `zz-repo/mise.<env>.toml`, and a merge target
-  have no header, so the rule leaves them.
-- `.config/repo-generated.tsv` is the manifest of the generated files, with one
-  `<tool><TAB><path>` row for each file. The repository commits it, and each git
-  submodule has its own. A sync with a failure runs no stale rule and writes no
-  manifest. The first sync has no manifest, so the stale rule removes nothing. A
-  manifest that is a symlink, is below a symlinked folder or is not a regular
-  file is not read. The sync returns code 2 after its other work, and it skips
-  the stale rule, the write of the manifest and `bootstrap_commit`. A dry run
-  prints `would remove <path>` for each stale file.
+- [`sync-engine.md`](docs/design/sync-engine.md): the clone, the write of one
+  file, merge mode, the header, the manifest and the stale rule, the values
+  merge, `bootstrap_commit` and the exit codes.
+- [`repo-sync.md`](docs/design/repo-sync.md): the entry tasks, members, the
+  branch model, `direct_commit`, the pre-commit config, `--check` and its gate.
+- [`mise.md`](docs/design/mise.md): the generated mise config, the environments
+  and `[overrides.mise*]`.
+- [`bootstrap-config.md`](docs/design/bootstrap-config.md): the keys of
+  `.config/bootstrap.toml`.
 
 A repository synced before the split of the base tool (`c95e4ff`) cannot sync.
 Its
@@ -285,35 +200,13 @@ by hand one time, as step 2 of `docs/sync/index.md` tells you.
 
 A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
 [gomplate](https://docs.gomplate.ca) and writes it without the `.tmpl` suffix.
-
-- The delimiters are `<% %>`. mise uses `{{ }}` and bash uses `[[ ]]`, so
-  both reach the output unchanged.
-- The values come from the repository's `.config/bootstrap.toml`.
-- `.members` is the list of member names: the git submodules, then each other
-  `[member.<name>]` table, whose `folder` (default the name) must exist. A
-  submodule without a table gets the `repo_name` of its own values file, else
-  its path with each `/` changed to `_`.
-  `.member_folders` and `.member_types` give the folder and the type
-  (`submodule` or `folder`) of each name.
-- `.submodules` is the list of the git submodules only. It is empty in a
-  repository without submodules.
-- `.tools` is the list of the selected tools, packs expanded and dependencies
-  included.
-- `.extensions` is the sorted list of the VS Code extensions of those tools,
-  plus the `extensions` list of the values file. In the root repository, it
-  also has the extensions of each git submodule: the tools and the
-  `extensions` list of its values file.
-- `.sync_engine` is the absolute path of the `sync-engine/` folder of the
-  clone copy of the run.
-- `.config` is the values of the tool of the template: `[defaults]`, then the
-  contributions of the selected tools, then `[tools.<name>]` without `env`.
-  `.all` is the values of each selected tool, by tool name.
-- `.precommit` is the list of the `[[precommit]]` entries of those tools, in
-  tool order, then the entries of the repository's
-  `.config/repo-sync/pre-commit.yaml`. A `no-commit-to-branch` hook in it
-  loses each `--branch` pair of a core branch that does not exist or that
-  has `direct_commit = true`. A hook with no pair left goes, and an entry with
-  no hook left goes too.
+The delimiters are `<% %>`. mise uses `{{ }}` and bash uses `[[ ]]`, so both
+reach the output unchanged. The values come from the repository's
+`.config/bootstrap.toml`.
+[`docs/design/sync-engine.md`](docs/design/sync-engine.md#templates)
+has the rules, and
+[`docs/design/repo-sync.md`](docs/design/repo-sync.md#the-template-context)
+has each value of the context.
 
 Example values file:
 
@@ -355,20 +248,19 @@ merge_model = "pr"
 ## `.gitignore`
 
 `repo_sync` writes the shared `.gitignore`, with `[overrides.gitignore]` of the
-values file applied. It comments out each line of `remove`, then it adds the
-lines of `add` at the end. A later line wins, so a line of `add` can also
-negate a shared pattern with `!`. `docs/sync/index.md` has the rules.
+values file applied.
+[`docs/design/repo-sync.md`](docs/design/repo-sync.md#overridesgitignore) has
+the
+rules.
 
 ## `.config/pre-commit-config.yaml`
 
 The `pre-commit` tool renders this file from the `[[precommit]]` entries of the
 selected tools. Then it adds the entries of the repository's
-`.config/repo-sync/pre-commit.yaml`, if that file exists. The args of the
-`no-commit-to-branch` hook follow the core branches (`main`, `develop`) that
-exist and `direct_commit` of their `[branch.*]` tables: the hook protects
-only the core branches that exist and do not allow direct commits. Without a
-protected branch, the sync removes the hook.
-`.config/repo-sync/pre-commit.yaml` is a YAML list of `repos:` entries:
+`.config/repo-sync/pre-commit.yaml`, if that file exists.
+[`docs/design/repo-sync.md`](docs/design/repo-sync.md#the-pre-commit-config) has
+the rules. `.config/repo-sync/pre-commit.yaml` is a YAML list of `repos:`
+entries:
 
 ```yaml
 - repo: local

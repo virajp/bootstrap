@@ -104,11 +104,11 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T14:12:55.561Z",
+      "ended": "2026-11-05T14:28:07.256Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U4",
@@ -144,8 +144,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T14:12:55.526Z",
       "ended": ""
     },
     {
@@ -315,6 +315,20 @@
       "stage": "edit",
       "text": "sync-engine/repo-sync header rule 'this script calls pre-commit without mise x --': docs/design/repo-sync.md lacks it · Under D5 the header line stays in this plan.",
       "state": "open"
+    },
+    {
+      "id": "G7",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "macos/packs.toml header comment \"The member order is the sync order\": setup-sync sorts the tools by name in each stage, so the comment is false; no unit owns the file, and U3 applies a DOCS FALSIFIED line only inside its owned files · The comment stays as it is; a later change corrects it. No behavior depends on it.",
+      "state": "open"
+    },
+    {
+      "id": "G8",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "The rule \"a [files] target that ends in .tmpl stops the sync\" is not in docs/design/tools.md, and the survey did not name it, so the U3 Guardrails forbid adding it · U3 kept it in docs/sync/index.md step 1 and removed the README copy. Settled with no ruling owed: the wave review found the guardrail would lose the rule, so U3 added it to docs/design/tools.md under the Goal and took the restatement out of docs/sync/index.md; R3 closing check confirmed.",
+      "state": "closed"
     }
   ],
   "overrides": [],

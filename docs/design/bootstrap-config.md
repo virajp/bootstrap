@@ -53,35 +53,35 @@ merge_never = [ "main" ]
 
 ## Summary of the keys
 
-| Key                                 | Type            | Necessary | Read by                                |
-| ----------------------------------- | --------------- | --------- | -------------------------------------- |
-| `[tools.<folder>]`                  | Table           | No        | `repo-sync`                            |
-| `[tools.<folder>].env`              | List of strings | No        | `repo-sync`                            |
-| `[tools.<folder>].<key>`            | Any             | No        | The templates of the tools             |
-| `[packs.<name>]`                    | Table           | No        | `repo-sync`                            |
-| `[packs.<name>].env`                | List of strings | No        | `repo-sync`                            |
-| `environments`                      | List of strings | No        | `repo-sync`                            |
-| `repo_name`                         | String          | Yes       | `mise.toml`, `gitleaks.toml`           |
-| `product_name`                      | String          | No        | `fnox.toml`                            |
-| `commit_scopes`                     | List of strings | No        | `git-conventional-commits.yaml`        |
-| `repo_url`                          | String          | No        | `github` tool                          |
-| `worktree_files`                    | List of strings | No        | `setup:worktree`                       |
-| `extensions`                        | List of strings | No        | `vscode` tool                          |
-| `[member.<name>]`                   | Table           | No        | `repo-sync`, `setup`, `setup:worktree` |
-| `[member.<name>].label`             | String          | No        | `setup`, `setup:worktree`              |
-| `[member.<name>].folder`            | String          | Yes       | `repo-sync`, `setup`, `setup:worktree` |
-| `[member.<name>].type`              | String          | No        | `repo-sync`                            |
-| `[member.<name>].worktree_install`  | String          | No        | `setup:worktree`                       |
-| `[branch.<branch>].merge_model`     | String          | No        | `code:merge:<branch>`                  |
-| `[branch.<branch>].merge_from`      | List of strings | No        | `code:merge:<branch>`                  |
-| `[branch.<branch>].merge_never`     | List of strings | No        | `code:merge:<branch>`                  |
-| `[branch.<branch>].direct_commit`   | Boolean         | No        | `repo-sync`                            |
-| `[overrides.mise.<path>]`           | Any             | No        | `repo-sync`                            |
-| `[overrides.mise_env.<env>.<path>]` | Any             | No        | `repo-sync`                            |
-| `[overrides.gitignore]`             | Table           | No        | `repo-sync`                            |
-| `[claude.plugins.user]`             | Table           | No        | `setup:ai`                             |
-| `[claude.plugins.project]`          | Table           | No        | `setup:ai`                             |
-| `bootstrap_commit`                  | String          | No        | `repo-sync` writes it                  |
+| Key                                 | Type            | Necessary | Read by                                                                             |
+| ----------------------------------- | --------------- | --------- | ----------------------------------------------------------------------------------- |
+| `[tools.<folder>]`                  | Table           | No        | `repo-sync`                                                                         |
+| `[tools.<folder>].env`              | List of strings | No        | `repo-sync`                                                                         |
+| `[tools.<folder>].<key>`            | Any             | No        | The templates of the tools                                                          |
+| `[packs.<name>]`                    | Table           | No        | `repo-sync`                                                                         |
+| `[packs.<name>].env`                | List of strings | No        | `repo-sync`                                                                         |
+| `environments`                      | List of strings | No        | `repo-sync`                                                                         |
+| `repo_name`                         | String          | Yes       | `mise.toml`, `gitleaks.toml`, `fnox.toml`                                           |
+| `product_name`                      | String          | No        | `fnox.toml`                                                                         |
+| `commit_scopes`                     | List of strings | No        | `git-conventional-commits.yaml`                                                     |
+| `repo_url`                          | String          | No        | `github` tool                                                                       |
+| `worktree_files`                    | List of strings | No        | `setup:worktree`                                                                    |
+| `extensions`                        | List of strings | No        | `vscode` tool                                                                       |
+| `[member.<name>]`                   | Table           | No        | `repo-sync`, `setup`, `setup:configs`, `setup:worktree`                             |
+| `[member.<name>].label`             | String          | No        | `setup`, `setup:configs`, `setup:worktree`                                          |
+| `[member.<name>].folder`            | String          | No        | `repo-sync`, `setup`, `setup:configs`, `setup:worktree`, `code:format`, `code:lint` |
+| `[member.<name>].type`              | String          | No        | `repo-sync`                                                                         |
+| `[member.<name>].worktree_install`  | String          | No        | `setup:worktree`                                                                    |
+| `[branch.<branch>].merge_model`     | String          | No        | `code:merge:<branch>`                                                               |
+| `[branch.<branch>].merge_from`      | List of strings | No        | `code:merge:<branch>`                                                               |
+| `[branch.<branch>].merge_never`     | List of strings | No        | `code:merge:<branch>`                                                               |
+| `[branch.<branch>].direct_commit`   | Boolean         | No        | `repo-sync`                                                                         |
+| `[overrides.mise.<path>]`           | Any             | No        | `repo-sync`                                                                         |
+| `[overrides.mise_env.<env>.<path>]` | Any             | No        | `repo-sync`                                                                         |
+| `[overrides.gitignore]`             | Table           | No        | `repo-sync`                                                                         |
+| `[claude.plugins.user]`             | Table           | No        | `setup:ai`                                                                          |
+| `[claude.plugins.project]`          | Table           | No        | `setup:ai`                                                                          |
+| `bootstrap_commit`                  | String          | No        | `repo-sync` writes it                                                               |
 
 The gate `code:lint:repo-sync` runs `repo_sync --check` at each commit that
 changes
@@ -175,10 +175,11 @@ The mise environments of the repository, from `dev` and `ci`
 The name of the repository, for example `my-repo`. It is a literal, not the
 folder name of a worktree.
 
-| Output                  | Use                                         |
-| ----------------------- | ------------------------------------------- |
-| `.config/mise.toml`     | `REPO_NAME` in `[env]`                      |
-| `.config/gitleaks.toml` | The `title` of the gitleaks config (a seed) |
+| Output                  | Use                                                         |
+| ----------------------- | ----------------------------------------------------------- |
+| `.config/mise.toml`     | `REPO_NAME` in `[env]`                                      |
+| `.config/gitleaks.toml` | The `title` of the gitleaks config (a seed)                 |
+| `.config/fnox.toml`     | The profile and the keychain `service` or `prefix` (a seed) |
 
 The `setup:vscode` task uses `REPO_NAME` as the name of the VS Code profile.
 
@@ -186,6 +187,9 @@ The `setup:vscode` task uses `REPO_NAME` as the name of the VS Code profile.
 
 The name of the product, for example `my-product`. Set it in each repository of
 a product with members, the root included.
+
+With this key, the fnox keychain uses it as `service`, and `<repo_name>/` as
+`prefix`. Without this key, `service` is `repo_name` and there is no prefix.
 
 ### `commit_scopes`
 
@@ -259,7 +263,7 @@ that is not a submodule.
 
 ### `[member.<name>].label`
 
-The display name of the member in the headers of `setup` and
+The display name of the member in the headers of `setup`, `setup:configs` and
 `setup:worktree`. The default is `<name>`.
 
 ### `[member.<name>].folder`
@@ -307,19 +311,17 @@ The merge script uses `direct` when the value is empty
 
 ### `[branch.<branch>].merge_from`
 
-List of branches the merge can be allowed from. Any branch can be merged from if
-the list is empty, except from the ones mentioned in
-`[branch.<branch>].merge_never`
+The only branches that can merge into the branch. An empty list gives no limit.
 
-- This can be set ONLY if `[branch.<branch>].merge_never` is empty
+- A table with both `merge_from` and `merge_never` stops the merge, also when a
+  list is empty.
+- The defaults without both keys are in
+  [repo-sync.md](repo-sync.md#the-branch-model-and-the-merge-tasks).
 
 ### `[branch.<branch>].merge_never`
 
-List of branches the merge can NEVER be allowed from. If the list is empty and
-`[branch.<branch>].merge_from` is set, only the branches of
-`merge_from` will be allowed
-
-- This can be set ONLY if `[branch.<branch>].merge_from` is empty
+The branches that must not merge into the branch. An empty list gives no limit.
+The rule for both keys and the defaults are in `[branch.<branch>].merge_from`.
 
 ### `[branch.<branch>].direct_commit`
 

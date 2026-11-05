@@ -158,7 +158,8 @@ same clone. It keeps its old header. The cleanup plan removes it.
 The wrappers `_se_gomplate`, `_se_jq` and `_se_yq` of `common` start gomplate,
 jq
 and yq from `/`, so no mise config of a repository selects a version. The engine
-has no pinned version.
+calls gomplate, jq and yq only through these wrappers, and it has no pinned
+version.
 
 | State of the tool | Call                                     |
 | ----------------- | ---------------------------------------- |
@@ -549,6 +550,7 @@ only for the Mac front-end: see
 - An environment that a mise tool does not allow in its `envs`, also of a
   dependency or through `default_envs`.
 - `requires_found`, `requires` or `files` in a `[mise_env.<env>.tools]` entry.
+- A `[files]` target that ends in `.tmpl`, with any file in the tool folder.
 - Two tools that define the same mise tool.
 - A `root_only` tool that a `[tools.*]` entry names in a submodule.
 - A repository with neither `main` nor `develop`, and a bad `direct_commit`.

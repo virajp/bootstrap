@@ -6,7 +6,7 @@
 # To find whether the examples can be out of date, read the contract changes
 # since this commit:
 #
-#   git log <commit_id>..HEAD -- tools repo docs/sync CLAUDE.md
+#   git log <commit_id>..HEAD -- tools repo docs/sync docs/design CLAUDE.md
 #
 # After a review of the examples, set it to `git rev-parse HEAD`. It is always
 # older than main, because a commit cannot contain its own id.

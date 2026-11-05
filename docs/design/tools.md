@@ -125,9 +125,11 @@ target, or the
 target with `.tmpl`, must be the same string as a path that `find -type f` gives
 in the
 tool folder. Thus a case variant fails on each file system, and a path through a
-symlinked folder fails. On the Mac side, the target is relative to `$HOME`, with
+symlinked folder fails. A target that ends in `.tmpl` also fails. On the Mac
+side, the target is relative to `$HOME`, with
 no
-`~/`, and a selected tool must have a file that produces it. A target that fails
+`~/`, and a selected tool must have a file that produces it. Thus the path of a
+template with its `.tmpl` also fails. A target that fails
 stops
 the sync.
 
