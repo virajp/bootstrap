@@ -343,10 +343,13 @@
       "title": "Changed-only output and a count table for the sync",
       "target_repo": null,
       "priority": 10,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-05T14:54:38.659Z",
-      "ended": "",
-      "gaps": null,
+      "ended": "2026-11-05T16:28:37.619Z",
+      "gaps": {
+        "open": 3,
+        "moved_to": []
+      },
       "requires": [],
       "backlog": [],
       "backlog_pieces": []
