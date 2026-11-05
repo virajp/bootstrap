@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-05T04:24:08Z in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-05 — 10038de 78669ea fa6f8ab a1fe97a a581a1c; 8 open gaps kept the folder live; K1 passed only with the member folders added (G12); the first K1 attempt removed ~/.cache/bootstrap (G13); print of a missing key writes <nil> into a value (G11)"
   },
   "consent": {
     "merge": true,
@@ -419,6 +419,20 @@
       "unit": "U1",
       "stage": "edit",
       "text": "Found by the wave 4 closing pass, outside U4 Owns and after the U3 row: the comment at sync-engine/mise:430-431 says any other use of a missing key is an error, which is false; print .config.x puts a literal <nil> into a generated value with exit 0, and printf with %s writes %!s(<nil>) the same way, because _se_mise_read rejects only a literal <no value>. D6 does not rule on this · no code changed; docs/design/mise.md states the real behaviour, and the owner of sync-engine rules whether the check must also catch these",
+      "state": "open"
+    },
+    {
+      "id": "G12",
+      "unit": "",
+      "stage": "plan-gate",
+      "text": "Keep K1 cannot pass as written: examples/monorepo/bootstrap.toml names the folder members packages/common, projects/service and projects/worker, which the check does not create, so setup:configs exits 2 on both main and the run branch · the run also created those three folders, each with a .gitkeep, in both scratch consumers and held that variant to the pass: both exit 0, conf.d trees byte-equal with the same override comments, the only other difference the bootstrap_commit line. The check text in gates.keeps still needs that fix",
+      "state": "open"
+    },
+    {
+      "id": "G13",
+      "unit": "",
+      "stage": "plan-gate",
+      "text": "The first K1 attempt set SYNC_ENGINE_CACHE but not XDG_CACHE_HOME, so the sync old-cache removal deleted the real ~/.cache/bootstrap, outside the scratch folder (~/.cache/bootstrap.lock is also absent; whether it existed before was not checked) · not restored: CLAUDE.md says each sync removes these two, and an old stub clones again. The K1 check text should set a scratch XDG_CACHE_HOME; the later attempt did",
       "state": "open"
     }
   ],
