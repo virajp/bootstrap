@@ -2,7 +2,7 @@
 # each key of its table is a member: `<tool> = { default = true }` or
 # `<tool> = {}`, and a nested pack is `"pack:<name>"`. The member order is the
 # sync order, so keep it. The sync always adds the pack `base`, and `base` must
-# hold `macos-setup`. The import plans add the other members.
+# hold `macos-setup`.
 [pack.base]
 macos-setup = { default = true }
 mise = { default = true }
@@ -29,9 +29,24 @@ claude-desktop = { default = true }
 claude-cli = {}
 claude-status = {}
 codeburn = {}
+opencode = {}
+orca = {}
+zed-delta = {}
 
 [pack.essentials]
+alfred = { default = true }
+vorssaint = { default = true }
+easyfind = { default = true }
+the-unarchiver = { default = true }
+brave-browser = { default = true }
+github-desktop = { default = true }
+google-chrome = {}
 tailscale = {}
+magnet = {}
+sill = {}
+taskexplorer = {}
+battery-health = {}
+setapp = {}
 diff-so-fancy = {}
 git-tools = {}
 glab = {}
@@ -45,16 +60,65 @@ bitwarden = {}
 [pack.dev]
 devtools = { default = true }
 dprint = { default = true }
+visual-studio-code = { default = true }
+lcov = {}
 orbstack = {}
+gcloud = {}
 gem = {}
 superfile = {}
+zed = {}
+sublime-text = {}
 
 [pack.terminal]
 ghostty = { default = true }
+warp = {}
+
+[pack.apple-dev]
+xcode = { default = true }
+developer = {}
+testflight = {}
+transporter = {}
+android-studio = {}
+
+[pack.iwork]
+keynote = { default = true }
+numbers = { default = true }
+pages = { default = true }
+
+[pack.ms-office]
+microsoft-excel = { default = true }
+microsoft-powerpoint = { default = true }
+microsoft-word = { default = true }
+
+[pack.disk]
+daisydisk = { default = true }
+disk-doctor = {}
+disk-map = {}
+duplicate-detective = {}
+
+[pack.media]
+vlc = { default = true }
+final-cut-pro = {}
+handbrake = {}
 
 [pack.chat]
 telegram = { default = true }
+whatsapp = { default = true }
+
+[pack.notes]
+notion = { default = true }
+obsidian = { default = true }
+kindle = {}
+cardhop = {}
+pdf-protector = {}
+pdf-squeezer = {}
 
 [pack.cli-extras]
+btop = { default = true }
 dasel = { default = true }
+imagemagick = { default = true }
 pstree = { default = true }
+tree = { default = true }
+watch = { default = true }
+wget = { default = true }
+yq = { default = true }

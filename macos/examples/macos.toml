@@ -15,7 +15,19 @@ ssh_vault = "Sample"
 
 [tools.1password-safari]
 
+[tools.alfred]
+
+[tools.android-studio]
+
+[tools.battery-health]
+
 [tools.bitwarden]
+
+[tools.brave-browser]
+
+[tools.btop]
+
+[tools.cardhop]
 
 [tools.claude-cli]
 
@@ -25,14 +37,30 @@ ssh_vault = "Sample"
 
 [tools.codeburn]
 
+[tools.daisydisk]
+
 [tools.dasel]
+
+[tools.developer]
 
 [tools.devtools]
 
 [tools.diff-so-fancy]
 # This table selects the tool, because it is not a base tool.
 
+[tools.disk-doctor]
+
+[tools.disk-map]
+
 [tools.dprint]
+
+[tools.duplicate-detective]
+
+[tools.easyfind]
+
+[tools.final-cut-pro]
+
+[tools.gcloud]
 
 [tools.gem]
 
@@ -54,7 +82,21 @@ signing_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAISampleKeyForTestsOnly sample
 
 [tools.git-tools]
 
+[tools.github-desktop]
+
 [tools.glab]
+
+[tools.google-chrome]
+
+[tools.handbrake]
+
+[tools.imagemagick]
+
+[tools.keynote]
+
+[tools.kindle]
+
+[tools.lcov]
 
 [tools.macos-defaults]
 # The answer to the question dock_orientation of macos-defaults.
@@ -64,16 +106,78 @@ dock_orientation = "right"
 # The answer to the question config_path of macos-setup.
 config_path = "~/Projects/github.com/janedoe/macos-setup"
 
+[tools.magnet]
+
+[tools.microsoft-excel]
+
+[tools.microsoft-powerpoint]
+
+[tools.microsoft-word]
+
+[tools.notion]
+
+[tools.numbers]
+
+[tools.obsidian]
+
+[tools.opencode]
+
 [tools.orbstack]
 
+[tools.orca]
+
+[tools.pages]
+
+[tools.pdf-protector]
+
+[tools.pdf-squeezer]
+
 [tools.pstree]
+
+[tools.setapp]
+
+[tools.sill]
 
 [tools.ssh]
 # The answer to the question user of ssh.
 user = "sampleuser"
 
+[tools.sublime-text]
+
 [tools.superfile]
 
 [tools.tailscale]
 
+[tools.taskexplorer]
+
 [tools.telegram]
+
+[tools.testflight]
+
+[tools.the-unarchiver]
+
+[tools.transporter]
+
+[tools.tree]
+
+[tools.visual-studio-code]
+
+[tools.vlc]
+
+[tools.vorssaint]
+
+[tools.warp]
+
+[tools.watch]
+
+[tools.wget]
+
+[tools.whatsapp]
+
+[tools.xcode]
+
+[tools.yq]
+
+[tools.zed]
+
+[tools.zed-delta]
