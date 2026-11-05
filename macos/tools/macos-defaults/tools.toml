@@ -1,0 +1,131 @@
+# The macos-defaults tool: the macOS settings (`defaults` domains), applied
+# with `mise bootstrap macos defaults apply`, and the post-defaults hook that
+# sets what `defaults` values cannot hold ($HOME) and restarts the apps that
+# read them. The [mise.*] tables become
+# ~/.config/mise/conf.d/macos-defaults/mise.toml. References:
+#   - https://www.defaults-write.com/
+#   - https://mac.install.guide/mac-setup/finder/
+# `defaults read <domain> [<key>]` shows the live value. pmset/nvram live in the
+# upgrade:power task of the macos-setup tool (run weekly by `updateall`).
+# The defaults of an app (for example com.vorssaint.utils) belong to its own
+# tool.
+
+description = "macOS settings: Finder, Dock, Mission Control, window management, menu bar clock and trackpad"
+
+# The position of the Dock is a question: the template writes it as
+# orientation of com.apple.dock.
+[questions.dock_orientation]
+detect = "defaults read com.apple.dock orientation 2>/dev/null || echo bottom"
+example = "bottom"
+question = "Where should the Dock sit on the screen: bottom, left or right?"
+
+# General & Appearance
+[mise.bootstrap.macos.defaults."NSGlobalDomain"]
+AppleInterfaceStyle = "Dark" # system-wide Dark appearance
+AppleMiniaturizeOnDoubleClick = false # no minimize on title-bar double-click
+AppleShowAllExtensions = true # show all file extensions
+NSAutomaticCapitalizationEnabled = false # disable automatic capitalization
+NSQuitAlwaysKeepsWindows = true # reopen windows after quit/restart
+"com.apple.mouse.tapBehavior" = 1 # tap-to-click
+"com.apple.trackpad.forceClick" = false # disable force click
+
+# Finder
+[mise.bootstrap.macos.defaults."com.apple.finder"]
+# Managed by Vorssaint's Quick Toggles (com.vorssaint.utils of the vorssaint tool)
+# AppleShowAllFiles = false # toggle with Cmd+Shift+.
+# CreateDesktop = false # hide desktop icons (pre-Sonoma key)
+FK_AppCentricShowSidebar = true # show sidebar in app-centric view
+FXArrangeGroupViewBy = "Name" # arrange groups by name
+FXDefaultSearchScope = "SCcf" # search the current folder
+FXEnableExtensionChangeWarning = false # disable the warning when changing file extensions
+FXICloudDriveDesktop = true # enable iCloud Drive for Desktop
+FXICloudDriveDocuments = true # enable iCloud Drive for Documents
+FXICloudDriveEnabled = true # enable iCloud Drive overall
+FXPreferredGroupBy = "Kind" # group files by kind in Finder
+FXPreferredSearchViewStyle = "Nlsv" # use list view for search results
+FXPreferredViewStyle = "Nlsv" # list view for Finder windows
+FXRemoveOldTrashItems = true # purge trash after 30 days
+FinderSpawnTab = false # folders open in windows, not tabs
+NewWindowTarget = "PfHm" # new windows open at $HOME (path set in post-defaults hook)
+QuitMenuItem = false # don't show the Quit option in Finder's menu
+ShowExternalHardDrivesOnDesktop = false # don't show external drives on the desktop
+ShowHardDrivesOnDesktop = false # don't show internal drives on the desktop
+ShowMountedServersOnDesktop = false # don't show mounted servers on the desktop
+ShowPathbar = true # show the path bar in Finder windows
+ShowRecentTags = false # don't show recent tags in Finder's sidebar
+ShowRemovableMediaOnDesktop = false # don't show removable media on the desktop
+ShowSidebar = true # show the sidebar in Finder windows
+ShowStatusBar = true # show the status bar in Finder windows
+ShowTabView = true # show the tab view in Finder windows
+WarnOnEmptyTrash = false # don't warn before emptying the trash
+_FXSortFoldersFirst = true # sort folders first in Finder windows
+_FXSortFoldersFirstOnDesktop = true # sort folders first on the desktop
+
+# No .DS_Store on network and USB volumes
+[mise.bootstrap.macos.defaults."com.apple.desktopservices"]
+DSDontWriteNetworkStores = true # don't create .DS_Store files on network volumes
+DSDontWriteUSBStores = true # don't create .DS_Store files on USB volumes
+
+# Dock & Mission Control
+[mise.bootstrap.macos.defaults."com.apple.dock"]
+autohide = true # automatically hide and show the Dock
+expose-group-apps = true # group windows by app in Mission Control
+largesize = 71 # size of the large Dock items
+magnification = true # enable Dock magnification
+minimize-to-application = true # minimize windows into their application's Dock icon
+mru-spaces = false # don't rearrange Spaces by recent use
+orientation = "<% $d := index .config `dock_orientation` | required `macos-defaults: set dock_orientation in [tools.macos-defaults] of macos.toml` %><% if not (coll.Has (coll.Slice `bottom` `left` `right`) $d) %><% test.Fail (printf `macos-defaults: dock_orientation is %q - set bottom, left or right in [tools.macos-defaults] of macos.toml` $d) %><% end %><% $d %>"
+show-process-indicators = true # show indicators for running applications in the Dock
+show-recents = false # don't show recent applications in the Dock
+tilesize = 38 # size of the Dock tiles
+windowtabbing = "always" # always show window tabs in the Dock
+
+# Hot corners: all four disabled (0 = no-op)
+wvous-bl-corner = 0
+wvous-bl-modifier = 0
+wvous-br-corner = 0
+wvous-br-modifier = 0
+wvous-tl-corner = 0
+wvous-tl-modifier = 0
+wvous-tr-corner = 0
+wvous-tr-modifier = 0
+
+# Window management
+[mise.bootstrap.macos.defaults."com.apple.WindowManager"]
+AppWindowGroupingBehavior = true # show all of an app's windows on switch
+ClickedWallpaperRevealsDesktop = 2 # only with Stage Manager
+EnableTiledWindowMargins = false # disable tiled window margins
+EnableTilingByEdgeDrag = false # disable tiling by edge drag
+EnableTopTilingByEdgeDrag = false # disable top tiling by edge drag
+HideDesktop = true # Sonoma+ equivalent of CreateDesktop=false
+
+# Menu bar clock: day of week and AM/PM, no date
+[mise.bootstrap.macos.defaults."com.apple.menuextra.clock"]
+ShowAMPM = true # show AM/PM in the menu bar clock
+ShowDate = 0 # don't show the date in the menu bar clock
+ShowDayOfWeek = true # show the day of the week in the menu bar clock
+
+# Trackpad: tap-to-click on, three-finger tap lookup off (internal + Bluetooth)
+[mise.bootstrap.macos.defaults."com.apple.AppleMultitouchTrackpad"]
+Clicking = true # enable tap-to-click
+TrackpadThreeFingerTapGesture = 0 # disable three-finger tap lookup
+
+[mise.bootstrap.macos.defaults."com.apple.driver.AppleBluetoothMultitouch.trackpad"]
+Clicking = true # enable tap-to-click
+TrackpadThreeFingerTapGesture = 0 # disable three-finger tap lookup
+
+# Clamp streaming quality on battery
+[mise.bootstrap.macos.defaults."com.apple.appleinterface"]
+videoStreamingOptimizeOnBattery = true # clamp streaming quality on battery
+
+[mise.bootstrap.hooks.post-defaults]
+run = """
+# defaults values are not templated, and $HOME must not be hardcoded
+defaults write com.apple.finder NewWindowTargetPath -string "file://$HOME/"
+chflags nohidden ~/Library
+killall cfprefsd || true
+killall Finder || true
+killall Dock || true
+killall SystemUIServer || true
+killall ControlCenter || true
+"""

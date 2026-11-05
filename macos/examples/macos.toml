@@ -7,9 +7,31 @@
 # The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
 
+[tools.diff-so-fancy]
+# This table selects the tool, because it is not a base tool.
+
+[tools.gh]
+# The answer to the question editor of gh.
+editor = "vim"
+
+[tools.git]
+# The answer to the question email_github of git.
+email_github = "1234567+sampleuser@users.noreply.github.com"
+# The answer to the question email_gitlab of git.
+email_gitlab = "12345-sampleuser@users.noreply.gitlab.com"
+# The answer to the question name of git.
+name = "Sample User"
+# The answer to the question signing_key of git.
+signing_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAISampleKeyForTestsOnly sample@example.com"
+
+[tools.macos-defaults]
+# The answer to the question dock_orientation of macos-defaults.
+dock_orientation = "right"
+
 [tools.macos-setup]
 # The answer to the question config_path of macos-setup.
 config_path = "~/Projects/github.com/janedoe/macos-setup"
 
-[tools.diff-so-fancy]
-# This table selects the tool, because it is not a base tool.
+[tools.ssh]
+# The answer to the question user of ssh.
+user = "sampleuser"

@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-05 — ceac2de 6385d47 ad6dee0; 12 gaps open, folder stays live; worktree kept, as for the plans before it"
   },
   "consent": {
     "merge": true,
@@ -66,11 +66,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-05T10:22:53.621Z",
+      "ended": "2026-11-05T10:30:28.023Z",
+      "commit": "ceac2de",
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -85,11 +85,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-05T10:22:53.691Z",
+      "ended": "2026-11-05T10:30:28.119Z",
+      "commit": "6385d47",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -104,14 +104,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T10:34:36.616Z",
+      "ended": "2026-11-05T11:17:57.741Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 2,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "cd18e805047cd7bc37151e7943ce96e6d874b161",
+        "to": "40fb036c5d08112d276301bded0589e02f40f92d"
       }
     },
     {
@@ -133,11 +133,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-05T11:18:53.466Z",
+      "ended": "2026-11-05T11:22:36.338Z",
+      "commit": "ad6dee0",
+      "rounds": 1
     },
     {
       "id": "U5",
@@ -151,37 +151,37 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T11:24:08.999Z",
+      "ended": "2026-11-05T11:33:38.884Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T10:22:53.587Z",
+      "ended": "2026-11-05T10:34:30.475Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T10:34:36.581Z",
+      "ended": "2026-11-05T11:18:47.057Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T11:18:53.431Z",
+      "ended": "2026-11-05T11:24:03.114Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T11:24:08.964Z",
+      "ended": "2026-11-05T11:34:13.667Z"
     }
   ],
   "shared_files": [
@@ -306,35 +306,178 @@
       "units": [
         "U1"
       ]
+    },
+    {
+      "id": "D13",
+      "decision": "Does a security finding in content that this plan imports unchanged from macos-setup stop the run?",
+      "ruling": "User ruling 2026-11-05, given at D14 of 2026-11-04-macos-tools-base-core for plans 11 to 14: no. A security finding in content that is byte for byte from macos-setup, apart from the changes that this plan names, is accepted for this import. It does not stop the run, and the content does not change. The run records each such finding as an open gap with its severity and location, for one security plan after the run. A finding in code that this plan writes or changes stops the run as before.",
+      "rejected": "Stop on each finding in imported content.",
+      "units": []
+    },
+    {
+      "id": "D14",
+      "decision": "Does the finding on the mode of ~/.ssh in sync-engine/setup-sync:589 stop this plan (G13, G14)?",
+      "ruling": "User ruling 2026-11-05: no. The finding stays open as G13 and G14 for one security plan after the run, and this plan does not change the engine. This ruling covers this finding only. A security review of this plan does not report this case again. Any other finding in engine code stops the run as before.",
+      "rejected": "Fix the folder mode in this plan, with a named owner and a test.",
+      "units": [
+        "U3"
+      ]
     }
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T11:18:53.792Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T11:18:53.573Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T11:18:53.682Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T11:18:53.900Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "",
+      "stage": "edit",
+      "text": "U1 and U2 each had one compound read-only Bash call denied by the permission system with no reason, and each stopped with no edit · the orchestrator tested one Read and one plain find on macos-setup, a working directory of this session, and both were allowed, so the units were re-dispatched once with plain single calls and no script; a further denial stops the unit. closed: no denial was retried in its denied form",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2 did not run test:macos-tools, the check that needs the U1 folders · assumed that U1 supplies them and that the U5 gates run the check. closed: U5 ran test:macos-tools over the U1 folders, and it passed",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "macos/tools/fish/tools.toml description still says optionally the login shell, and R1 keeps the old text · kept, although D1 now always sets a login shell",
+      "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "macos/tools/gh/tools.toml keeps the comment the keys that macos-setup enforces · kept, because R1 removes only decision citations",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "macos/tools/macos-defaults/tools.toml keeps the question comment the template writes it as orientation · kept under R1, although no template remains",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "The shipped 00-bootstrap.bash, 00-bootstrap.zsh and 01-env.fish keep comments that name tools/<tool>/.config/mise/conf.d/, a path that no longer ships · D4 and D12 allow no edit, left for the phase 4 comparison",
+      "state": "open"
+    },
+    {
+      "id": "G7",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "DOCS FALSIFIED lines from wave review R1, for the docs unit U4 that owns these files: CLAUDE.md:171, README.md:233, docs/design/tools.md:90 and docs/sync/index.md:325 (no tool uses merge mode now; macos/tools/gh/tools.toml:15 uses it); docs/design/tools.md:96 (no tool uses [defaults], [questions] or [contributes] now; fish, git, ssh, gh and macos-defaults do); CLAUDE.md:521 (the data.ToJSON rule names only the pnpm template as an exception; gh config.yml.tmpl:9 writes editor unencoded under D4) · U4 applies them. closed: U4 applied them; [contributes] stays false for macos/tools, so docs/design/tools.md keeps that clause",
+      "state": "closed"
+    },
+    {
+      "id": "G8",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[medium] macos/tools/ssh/.ssh/config.tmpl:19 (U1): StrictHostKeyChecking accept-new in Host * takes a first-time host key with no prompt, so an attacker on the path at a first connection can intercept the session and pin a spoofed key. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G9",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[medium] macos/tools/zsh/.config/zsh/98-zinit.zsh:8 (U1): lines 8-11 load four third-party plugins with zinit light and no commit pin, so an upstream compromise runs code in every interactive zsh. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G10",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[low] macos/tools/fish/.config/fish/conf.d/02-path.fish:30 (U1): fish_add_path puts the user-writable ~/.local/bin ahead of the system folders, unlike bash and zsh. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G11",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[low] macos/tools/ssh/.ssh/config.tmpl:22 (U1): AddKeysToAgent yes and UseKeychain yes apply to Host * with no confirm, so code in the user session can sign silently with a key. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G12",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[low] macos/tools/git/.config/git/config.tmpl:12 (U1): global core.filemode = false hides executable-bit changes from git status and git diff. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G13",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[low] sync-engine/setup-sync:589: when ~/.ssh is missing, the first ssh tool file reaches mkdir -p with no folder mode, so ~/.ssh takes the umask, normally 0755, not 0700. Not reproduced · user ruling D14: open for one security plan after the run; the user approved this record on 2026-11-05",
+      "state": "open"
+    },
+    {
+      "id": "G14",
+      "unit": "U3",
+      "stage": "security",
+      "text": "SPEC/PLAN GAP: U1 (01-tools.md, ssh entry) never required ~/.ssh to be mode 0700 when the sync creates it; the requirement belongs in the ssh tool plan or in the folder creation of setup-sync · user ruling D14: open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G15",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[low] macos/tools/fish/.config/fish/conf.d/02-path.fish:34 (U1): fish_add_path prepends the user-writable $PNPM_HOME/bin ahead of the system folders, so a global pnpm package bin can shadow a system command in each fish session; bash and zsh do not set this path. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G16",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "The vwf:docs-sync surveyor returned no findings beyond the supplied lines, and no owned doc counts the Mac tools, lists the members of pack base or describes login_shell · assumed those parts of U4 Edit 2 need no text, checked with grep",
+      "state": "open"
+    },
+    {
+      "id": "G17",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "The data.ToJSON rule of CLAUDE.md names only templates, and macos/tools/fish/tools.toml:32 writes login_shell unencoded in a [mise.*] string under D1 and D2 · assumed a [mise.*] string is outside that rule, text unchanged",
+      "state": "open"
+    },
+    {
+      "id": "G18",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "git diff --stat of U4 also names the plan index.json, outside its owns · that file is the plan state of the orchestrator, and U4 did not touch it. closed: not a change of U4",
+      "state": "closed"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",

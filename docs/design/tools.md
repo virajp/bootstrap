@@ -87,13 +87,15 @@ comment `# Merged by bootstrap: <path>`, and the sync strips nothing.
 - A merge target has no header, so the stale rule leaves it. It keeps the mode
   of an existing target, and a new one takes the mode of its source.
 
-No tool uses merge mode now.
+Only the `gh` tool of `macos/tools/` uses merge mode now.
 
 ## The `[defaults]`, `[questions]` and `[contributes]` tables
 
 A `tools.toml` can have three optional tables for the values of a tool. A
 template reads the values as `.config` (the values of its tool) and `.all` (the
-values of each selected tool, by tool name). No tool uses these tables now.
+values of each selected tool, by tool name). No tool of `repo/tools/` uses these
+tables now. Mac tools such as `fish`, `git`, `ssh`, `gh` and `macos-defaults`
+use `[defaults]` or `[questions]`. No tool uses `[contributes]` now.
 
 ```toml
 [defaults]

@@ -1,0 +1,32 @@
+# The fish tool: ~/.config/fish/config.fish and its own drop-ins in
+# ~/.config/fish/conf.d/ (01-env, 02-path). Other tools add their drop-ins to
+# conf.d/ (homebrew, mise, cli, starship, orbstack). The functions and the
+# fish_frozen_* files that fish writes itself are seeds. The [mise.*] tables
+# install Homebrew's fish, add it to /etc/shells and set the login shell. They
+# become ~/.config/mise/conf.d/fish/mise.toml.
+depends = [ "homebrew", "mise", "macos-setup" ]
+description = "fish from Homebrew, its config, drop-in folder conf.d/ and functions; optionally the login shell"
+stage = "init"
+
+[defaults]
+# The path of the login shell. Write the path of another shell to keep it.
+login_shell = "/opt/homebrew/bin/fish"
+
+[files.".config/fish/functions/fish_title.fish"]
+mode = "seed"
+
+[files.".config/fish/conf.d/fish_frozen_key_bindings.fish"]
+mode = "seed"
+
+[files.".config/fish/conf.d/fish_frozen_theme.fish"]
+mode = "seed"
+
+[mise.bootstrap.packages]
+"brew:fish" = "latest"
+
+# /etc/shells is outside $HOME, so it stays a mise declaration.
+[mise.dotfiles]
+"/etc/shells/brew-fish" = { line = "/opt/homebrew/bin/fish" }
+
+[mise.bootstrap.user]
+login_shell = "<% index .config `login_shell` | required `fish: set login_shell in [tools.fish] of macos.toml` %>"

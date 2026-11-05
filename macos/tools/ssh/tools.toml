@@ -1,0 +1,15 @@
+# The ssh tool: ~/.ssh/config and its identity include. Other tools contribute
+# to the config: `includes` (a list of paths, placed at the top before every
+# Host block, for example OrbStack's) and `identity_agent` (the agent socket,
+# placed inside `Host *`, for example 1Password's). The ssh user is a question.
+# This tool has no [mise.*] tables.
+
+description = "the ssh client config: Host * defaults, the default user, the includes and the agent that other tools contribute"
+
+[questions.user]
+detect = "id -un"
+example = "janedoe"
+question = "Which user name should ssh use by default for remote hosts (User inside Host *)?"
+
+[files.".ssh/config"]
+format = "text"
