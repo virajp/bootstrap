@@ -138,14 +138,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T16:03:22.814Z",
+      "ended": "2026-11-05T16:06:05.597Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "2a3b2de",
+        "to": "051694c"
       }
     },
     {
@@ -208,9 +208,9 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T16:03:22.741Z",
+      "ended": "2026-11-05T16:06:28.459Z"
     },
     {
       "id": "W4",
@@ -459,6 +459,13 @@
       "unit": "U3",
       "stage": "edit",
       "text": ".config/mise/tasks/test/repo-sync: the case \"a dry run with equal files\" tests D17, which U3 does not name in its Ruling list · The case stays: it asserts a ruling of this plan, and the file is in the Owns of U3. Settled with no ruling owed; R2 raised it.",
+      "state": "closed"
+    },
+    {
+      "id": "G6",
+      "unit": "",
+      "stage": "",
+      "text": "SKILL.md asks one wave reviewer for every wave; W3 holds only the review row and changed no file, so no reviewer ran over an empty diff · The diff was empty, and the row reviewed the tree. Settled with no ruling owed.",
       "state": "closed"
     }
   ],
