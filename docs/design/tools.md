@@ -28,6 +28,14 @@ that the values file does not select. A tool folder that is `zz-repo`, or
 whose name sorts after `zz-repo` in byte order, also stops the sync with
 code 2: the folder `conf.d/zz-repo/` of the repository must load last.
 
+The valid `[mise.*]` sections are `tools`, `tool_alias`, `plugins`, `settings`,
+`env`, `tool_config`, `task_config`, `task_templates`, `doctor`, `deps`, `oci`,
+`vars`, `secrets`, `redactions`, `shell_alias`, `hooks`, `watch_files`,
+`daemons`, `daemon_groups`, `daemons_settings`, `daemon_providers`, `tasks`,
+`bootstrap` and `dotfiles`. Any other section stops the mise config of the tool
+with code 2. See [mise.md](mise.md#the-mise-sections), which also has the rule
+for `<% %>` in a `[mise.*]` string.
+
 ## The `[files]` table
 
 An optional `[files."<target>"]` table of a `tools.toml` gives the mode and the

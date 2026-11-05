@@ -23,8 +23,8 @@ repository only:
 - At the root: `README.md`, `CLAUDE.md`, `LICENSE`, `dprint.jsonc` (with the
   excludes of this repository) and `eslint.config.mjs`.
 - `sync-engine/`: the shared library folder of the sync, with `clone`,
-  `common`, `write`, `merge`, `select`, `manifest`, `values` and `repo-sync`. It
-  is not a
+  `common`, `write`, `merge`, `select`, `manifest`, `values`, `mise` and
+  `repo-sync`. It is not a
   tool, so the sync never copies it to a consumer.
 - `docs/design/`: the design notes of the sync (packs, tools, mise, fnox and
   the values file). `docs/plans/`: the vwf plan index.
@@ -209,7 +209,7 @@ Some files refer to files that are not in `repo/tools/`, for example
   member that still has the old sync task. `setup:configs:sync` loads
   `sync-engine/repo-sync` from the copy, so a change to the sync code applies
   in the same run. Without `SYNC_ENGINE_CLONE`, it stops with code 2.
-- `sync-engine/repo-sync` sources six libraries from its own folder.
+- `sync-engine/repo-sync` sources seven libraries from its own folder.
   `common` holds the log, the file mode, the clean-up and its traps, the header
   detection, the record of the commit and the tool wrappers. `write` holds the
   write of one target: the format, the parse check, the temp file, the seed
@@ -219,7 +219,9 @@ Some files refer to files that are not in `repo/tools/`, for example
   read and the write of the manifest and the stale rule. Its `macos` link mode
   is for the Mac front-end, which is not in this repository yet: it resolves
   each link, removes the real file and prunes up to the target root. `values`
-  holds the merge of the values of the tools (see "Templates").
+  holds the merge of the values of the tools (see "Templates"). `mise` holds
+  the mise config generator, the environments of each tool and the checks of
+  `[overrides.mise*]` (see "mise config").
 - The sync needs `mise`. Without it, `repo_sync` stops with code 2. The
   wrappers `_se_gomplate`, `_se_jq` and `_se_yq` of `common` start gomplate, jq
   and yq from `/`, so no mise config of the repository selects a version. An
@@ -415,7 +417,8 @@ Some files refer to files that are not in `repo/tools/`, for example
   `repo_sync --check` and, for a case that compares a written file, `repo_sync`
   of the working tree's `repo/`, `sync-engine/` and `tools/` (the forwarding
   file) against scratch values files and scratch consumers. Some cases of the
-  manifest also call `_se_manifest_stale` and `_se_manifest_read` directly. It
+  manifest also call `_se_manifest_stale` and `_se_manifest_read` directly, and
+  the cases of the `macos` side call `sync-engine/mise` directly. It
   compares the exit code and the message of each case. It needs no network when
   gomplate, jq and yq are installed. Before its
   first `git` call, it unsets the `GIT_*` variables of a git hook, so its
@@ -661,7 +664,10 @@ that it finds, and removes the others. It stops if neither branch exists.
   `min_version`. `monorepo_root` and `[monorepo]` are not supported.
 - Each file in `.config/mise/conf.d/` is for one environment:
   `mise.<env>.toml`. mise loads it only when `MISE_ENV` includes that
-  environment. No tool ships or generates a `conf.d/*/mise.toml`.
+  environment. In a repository, no tool ships or generates a
+  `conf.d/*/mise.toml`.
+- The generator is `sync-engine/mise`, with the sides `repo` and `macos`, and
+  `docs/design/mise.md` has the rules of each side.
 - The sync finds the environments of each tool:
   - A tool of a `[tools.*]` entry gets its `env`, else its `default_envs`. A
     tool of a `[packs.*]` entry gets the `env` of that entry, else its own
@@ -686,11 +692,15 @@ that it finds, and removes the others. It stops if neither branch exists.
     `[env]`, `[tool_config]`, `[task_config]`, `[task_templates]`, `[doctor]`,
     `[deps]` and `[oci]` go to each environment of the tool.
   - `[vars]`, `[secrets]`, `redactions`, `[shell_alias]`, `[hooks]`,
-    `[[watch_files]]`, `[tasks]` and the daemon sections are only for dev,
-    when the tool is in dev.
+    `[[watch_files]]`, `[tasks]`, `[bootstrap.*]`, `[dotfiles]` and the daemon
+    sections are only for dev, when the tool is in dev.
   - Any other section stops the mise config of that tool with code 2. The
     sync keeps the existing `conf.d` files of that tool, and it still syncs
     the other files of the tool.
+  - A `[mise.*]` string can hold `<% %>`. It is rendered with `.config`, `.all`
+    and `.env` (`HOME`, `USER`), and each string literal inside the expression
+    is in backticks. A failed render stops the mise config of that tool with
+    code 2, as above. The overrides of the values file are not rendered.
   - `[mise_env.<env>.<section>]` adds content to one environment only, also
     a dev-only section. `mise`
     uses it for `os = "macos"` in `dev` and `os = "linux"` in `ci`. A mise

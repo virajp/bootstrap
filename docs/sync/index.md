@@ -328,7 +328,9 @@ The `[mise.*]` tables of a `tools.toml` hold the mise config of the tool. The
 sync generates `.config/mise/conf.d/<tool>/mise.<env>.toml` from them, one
 file for each environment. A mise `depends` adds the tool that defines the
 dependency. For example, the `pre-commit` tool adds `python`, and the
-`linter` tool adds `node`.
+`linter` tool adds `node`. `[mise.bootstrap.*]` and `[mise.dotfiles]` are valid
+sections too, only in `dev`. A `[mise.*]` string can hold `<% %>`, rendered with
+the values of the tool. `docs/design/mise.md` has the full list of the sections.
 
 A mise tool can have a `requires_found` key with a list of file names. The sync
 writes that mise tool only when the repository has a file with each name, at the

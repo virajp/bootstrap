@@ -134,11 +134,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "2026-11-04T20:25:43.308Z",
+      "status": "green",
+      "started": "2026-11-05T04:33:47.043Z",
+      "ended": "2026-11-05T04:37:00.235Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -180,9 +180,9 @@
     },
     {
       "id": "W4",
-      "status": "failed",
-      "started": "",
-      "ended": "2026-11-04T20:25:43.477Z"
+      "status": "running",
+      "started": "2026-11-05T04:33:47.008Z",
+      "ended": ""
     },
     {
       "id": "W5",
@@ -404,7 +404,21 @@
       "id": "G9",
       "unit": "U4",
       "stage": "edit",
-      "text": "Docs lines from the wave reviews for U4, held here because the run stopped before U4: README.md:52 (sync-engine library list omits mise), README.md:375 (Tests passage omits the macos cases that call sync-engine/mise directly), docs/design/mise.md:147 (Dev only row omits bootstrap and dotfiles), docs/design/mise.md (moved function names and REPO_SYNC_ENV* now SYNC_ENGINE_MISE_*), CLAUDE.md 'mise config' (dev-only list lacks bootstrap and dotfiles), CLAUDE.md 'How the sync operates' (four libraries; file list omits mise; test:repo-sync bullet) · U4 applies them on the resume",
+      "text": "Docs lines from the wave reviews for U4, held here because the run stopped before U4: README.md:52 (sync-engine library list omits mise), README.md:375 (Tests passage omits the macos cases that call sync-engine/mise directly), docs/design/mise.md:147 (Dev only row omits bootstrap and dotfiles), docs/design/mise.md (moved function names and REPO_SYNC_ENV* now SYNC_ENGINE_MISE_*), CLAUDE.md 'mise config' (dev-only list lacks bootstrap and dotfiles), CLAUDE.md 'How the sync operates' (four libraries; file list omits mise; test:repo-sync bullet) · U4 applies them on the resume · closed: U4 applied each line",
+      "state": "closed"
+    },
+    {
+      "id": "G10",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "Edit 1 says each list of the valid sections, but README.md and docs/sync/index.md hold no full list · the unit extended the partial passages and left the full list in docs/design/mise.md and docs/design/tools.md",
+      "state": "open"
+    },
+    {
+      "id": "G11",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "Found by the wave 4 closing pass, outside U4 Owns and after the U3 row: the comment at sync-engine/mise:430-431 says any other use of a missing key is an error, which is false; print .config.x puts a literal <nil> into a generated value with exit 0, and printf with %s writes %!s(<nil>) the same way, because _se_mise_read rejects only a literal <no value>. D6 does not rule on this · no code changed; docs/design/mise.md states the real behaviour, and the owner of sync-engine rules whether the check must also catch these",
       "state": "open"
     }
   ],
