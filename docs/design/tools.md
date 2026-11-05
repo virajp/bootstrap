@@ -148,7 +148,9 @@ non-empty lists.
 
 When a `requires` or `requires_found` entry is not there, the sync does not
 write the
-target, and it logs the skip. A generated target gets no row in the manifest, so
+target. It counts a seed that exists as kept, so that seed is in `Kept seeds`.
+It counts each other target as skipped. A generated target gets no row in
+the manifest, so
 after
 a run, the stale rule removes a listed copy with the bootstrap header. A copy
 without

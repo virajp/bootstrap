@@ -244,6 +244,10 @@ task that runs only commands.
 
 ## Tests
 
+Each test task sets `SYNC_ENGINE_VERBOSE=1`, so a case compares the per-file log
+lines of the sync. The cases of the default output unset it. See
+`docs/design/sync-engine.md` ("The output of a run").
+
 - `test:repo-sync` is the task of this repository in
   `.config/mise/tasks/test/repo-sync`. It runs `repo_sync --dry-run`,
   `repo_sync --check` and, for a case that compares a written file, `repo_sync`

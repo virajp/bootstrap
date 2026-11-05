@@ -160,9 +160,10 @@ of the `[files]` table.
 1. `setup:configs` fetches the branch `main` of
    `https://github.com/virajp/bootstrap.git` into a shared clone in the cache
    `${XDG_CACHE_HOME:-~/.cache}/sync-engine/`, and it copies that clone.
-2. It runs `setup:configs:sync`, which loads `sync-engine/repo-sync` from that
-   copy and calls `repo_sync`. Thus a change to the sync code applies in the
-   same run.
+2. It updates the local `setup/configs/sync` and `_scripts/helpers` from that
+   copy. Then it runs `setup:configs:sync`, which loads `sync-engine/repo-sync`
+   from that copy and calls `repo_sync`. Thus a change to the sync code applies
+   in the same run.
 3. `repo_sync` reads the `[tools.*]` and `[packs.*]` tables of the repository's
    `.config/bootstrap.toml`, adds the `base` pack and the `depends` of each
    tool,
@@ -177,7 +178,9 @@ of the `[files]` table.
 Between two syncs, the gate `code:lint:repo-sync` runs `repo_sync --check` at
 each commit that changes `.config/bootstrap.toml`.
 
-The sync needs `mise`. Use `--dry-run` to see the changes without writing them.
+The sync needs `mise`. It lists only the files that changed, and it ends with a
+table of counts. Use `--dry-run` to see the changes without writing them. Use
+`--verbose` to list each file, also an unchanged one.
 The rules are in `docs/design/`:
 
 - [`sync-engine.md`](docs/design/sync-engine.md): the clone, the write of one

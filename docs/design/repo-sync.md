@@ -18,11 +18,11 @@ codes,
 
 The `repo-sync` tool of `repo/tools/` ships the three tasks.
 
-| Task                  | Job                                                                                          |
-| --------------------- | -------------------------------------------------------------------------------------------- |
-| `setup:configs`       | Refreshes the cache clone and copies it. Then it runs `setup:configs:sync` in a new process. |
-| `setup:configs:sync`  | Hidden. It loads `sync-engine/repo-sync` from the copy and runs `repo_sync`.                 |
-| `code:lint:repo-sync` | Hidden. The gate of the values file. See [The gate](#the-gate-codelintrepo-sync).            |
+| Task                  | Job                                                                                                                          |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `setup:configs`       | Refreshes the cache clone and copies it. Then it updates the local sync task and runs `setup:configs:sync` in a new process. |
+| `setup:configs:sync`  | Hidden. It loads `sync-engine/repo-sync` from the copy and runs `repo_sync`.                                                 |
+| `code:lint:repo-sync` | Hidden. The gate of the values file. See [The gate](#the-gate-codelintrepo-sync).                                            |
 
 `setup:configs` (`setup/configs/_default`) embeds `sync-engine/clone`. See
 [sync-engine.md](sync-engine.md#how-an-entry-task-embeds-clone). It sets
@@ -37,6 +37,45 @@ get the same commit. The first failure stops the task. A member without a
 `setup:configs:sync` task stops the task: without that task, mise finds the task
 of
 the root and runs it in the root.
+
+`--verbose` sets `SYNC_ENGINE_VERBOSE=1`, and the task does not pass the flag to
+`setup:configs:sync`. A member gets the variable from the task. See
+[sync-engine.md](sync-engine.md#the-output-of-a-run). A repository with an old
+`_default` must run the task once without the flag, because mise refuses a flag
+that the old task does not define.
+
+By default, the sync starts with one info line:
+`bootstrap <short commit> · <n> tools · environments: <environments>`.
+
+### The copy of the local sync task
+
+The file loop replaces the local `setup/configs/sync` and `_scripts/helpers`
+with
+`mv -f`, so a running script keeps its old code. Thus, before each run of
+`setup:configs:sync`, for the root and for each member, `setup:configs` compares
+these two files with the same files in the clone copy. It copies a file that
+differs, with its mode. It prints the result below the line `Updating the
+clone`:
+
+| Result                                            | Info line                                            |
+| ------------------------------------------------- | ---------------------------------------------------- |
+| A file was copied                                 | `Updated the local sync task to <short commit>`      |
+| A dry run, and a file differs                     | `Would update the local sync task to <short commit>` |
+| No file was copied or differs, and no copy failed | `The local sync task is up to date`                  |
+| Neither file exists locally                       | None                                                 |
+
+- A difference in the mode is a difference.
+- The step copies only over a file that exists. It skips a file that the clone
+  copy does not have, and a local symlink. A skipped symlink is not a
+  difference.
+- A failed copy prints a warning, and the task continues with the local file.
+- A copied file counts as unchanged in the file loop, so the last line can read
+  `Synced: no file changed`. A dry run copies nothing, so a stale file shows as
+  `would change`.
+- The copy runs before the sync validates anything, so a run that then stops
+  leaves the two fresh files.
+- `_default` stays old for one run, because it needs the full render. The file
+  loop writes it for the next run.
 
 `repo_sync` makes its own private copy of the clone, because it writes the
 generated

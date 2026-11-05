@@ -17,12 +17,12 @@ file. A `[tools.repo-sync]` table only gives values.
 
 ## What the tool ships
 
-| Path in the repository                        | Kind      | Use                                                                                                                                |
-| --------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`. It fetches `bootstrap` into the cache. The sync embeds `sync-engine/clone` in it.                        |
-| `.config/mise/tasks/setup/configs/sync`       | Synced    | The task `setup:configs:sync`. It loads `sync-engine/repo-sync` from the clone, and stops with code 2 without `SYNC_ENGINE_CLONE`. |
-| `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `repo_sync --check`.                                                                       |
-| `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                                                                                      |
+| Path in the repository                        | Kind      | Use                                                                                                                                                                                                    |
+| --------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`. It fetches `bootstrap` into the cache. It updates the local sync task from the clone, then runs it. The sync embeds `sync-engine/clone` in it.                               |
+| `.config/mise/tasks/setup/configs/sync`       | Synced    | The task `setup:configs:sync`. It loads `sync-engine/repo-sync` from the clone, and stops with code 2 without `SYNC_ENGINE_CLONE`. `setup:configs` updates this file from the clone before it runs it. |
+| `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `repo_sync --check`.                                                                                                                                           |
+| `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                                                                                                                                                          |
 
 The sync no longer ships the forwarding file. It stays in `bootstrap` at
 `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync`, because an old
@@ -43,11 +43,11 @@ mise, from `/`.
 
 ## Tasks
 
-| Task                  | Use                                                                                                                      |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `setup:configs`       | Sync the shared files from `bootstrap`. `--dry-run` shows the diff. `--all` and `--<name>` also sync the git submodules. |
-| `setup:configs:sync`  | Run `repo_sync` from the clone of `setup:configs`. Do not run it alone.                                                  |
-| `code:lint:repo-sync` | Validate `.config/bootstrap.toml` with `repo_sync --check`. Hidden.                                                      |
+| Task                  | Use                                                                                                                                                                                                         |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:configs`       | Update the local sync task and sync the shared files from `bootstrap`. `--dry-run` shows the diff. `--verbose` lists each file, also an unchanged one. `--all` and `--<name>` also sync the git submodules. |
+| `setup:configs:sync`  | Run `repo_sync` from the clone of `setup:configs`. Do not run it alone.                                                                                                                                     |
+| `code:lint:repo-sync` | Validate `.config/bootstrap.toml` with `repo_sync --check`. Hidden.                                                                                                                                         |
 
 `setup:configs` keeps a shallow clone of `bootstrap` in `repo/` of the cache
 `${XDG_CACHE_HOME:-~/.cache}/sync-engine/`, for each consumer of the machine:
@@ -70,9 +70,71 @@ mise, from `/`.
 - Each run removes the old cache `bootstrap/` and `bootstrap.lock` of
   `${XDG_CACHE_HOME:-~/.cache}` while it holds the old lock. When a live old
   stub holds that lock, a later run does the removal. A failed removal does
-  not fail the sync.
+  not fail the sync. The line `Removed the old cache <path>` prints only when
+  the run removed the old folder.
 - If the fetch or the clone fails, `setup:configs` stops with code 5. It
   never uses an old clone.
+
+Before each run of `setup:configs:sync`, for the root and for each submodule,
+`setup:configs` updates the local sync task. A running task keeps its old code
+when the sync writes its file, so the task compares the local
+`setup/configs/sync` and `_scripts/helpers` with the same files in the copy of
+the clone:
+
+- It copies a file that differs, in its content or in its mode. It prints
+  `Updated the local sync task to <short commit>`, below the line
+  `Updating the clone`. If no file differs, it prints
+  `The local sync task is up to date`.
+- A dry run copies nothing. If a file differs, it prints
+  `Would update the local sync task to <short commit>`. The sync then shows the
+  file as `would change`.
+- It skips a file that does not exist locally, a file that the clone does not
+  have and a local symlink. If neither file exists locally, it prints no line.
+- A failed copy prints a warning, and the run continues with the local file.
+- A copied file counts as unchanged in the sync, so the last line can read
+  `Synced: no file changed`.
+- `_default` stays old for that run, because it needs the full render. The sync
+  writes it for the next run.
+
+The sync lists only what changed, then prints a table of counts and a last line:
+
+```text
+  ✎ changed   .gitignore
+  ✚ new       .config/mise/tasks/code/lint/repo-sync
+  ❋ seeded    .config/swiftlint.yml
+  ✖ removed   .config/mise/conf.d/old-tool/mise.dev.toml
+
+  ┌───────────────┬───────┐
+  │ ✎ Changed     │     1 │
+  │ ✚ New         │     1 │
+  │ ❋ Seeded      │     1 │
+  │ ✖ Removed     │     1 │
+  │ = Unchanged   │   143 │
+  │ ◦ Kept seeds  │     6 │
+  │ ⊘ Skipped     │    11 │
+  │ ✗ Failed      │     0 │
+  ├───────────────┼───────┤
+  │ Total         │   164 │
+  └───────────────┴───────┘
+✅ Synced: 4 files changed
+```
+
+- A failed file also has a list line, `✗ failed <path>: <reason>`. The line
+  `FAILED: <list>` prints before the table, and the last line gives the exit
+  code.
+- A dry run has the words `would change`, `would add`, `would seed` and
+  `would remove` in the list, with the diff of a change. The table counts what
+  the run would do.
+- A run that stops before it writes files has no table.
+- `NO_COLOR`, an output that is not a terminal, or `TERM=dumb` removes the
+  glyphs and the colors. `FORCE_COLOR` turns them on.
+- `--verbose`, or `SYNC_ENGINE_VERBOSE=1`, prints the log line of each file in
+  place of the list: `unchanged`, `updated`, `kept seed`, `skip seed`,
+  `skip env` and the others. The table and the last line stay.
+
+A repository with an old `_default` must run `mise run setup:configs` once
+without `--verbose`, because mise refuses a flag that the old task does not
+define. That run writes the new `_default`.
 
 The member flags of `setup:configs` are the same as the flags of `setup`.
 They are only for the git submodules, nested submodules included. A folder
@@ -81,7 +143,8 @@ member is part of the root tree, so it gets no flag.
 - `--all` syncs the root, then each submodule. `--<name>` syncs the root,
   then the submodule `<name>`. Without a flag, only the root syncs.
 - The task fetches one time. The root and each submodule sync from the same
-  copy, so all get the same `bootstrap_commit`. `--dry-run` applies to each.
+  copy, so all get the same `bootstrap_commit`. `--dry-run` and `--verbose`
+  apply to each. Each one prints its own list and table.
 - Before each submodule, the task prints a header with the `label` of the
   member, for example "Syncing Backend ...".
 - The first failure stops the task with its code. The submodules after it
@@ -168,8 +231,10 @@ Besides the copy of the files, `repo_sync` does these steps:
   - A manifest that is a symlink, is below a symlinked folder or is not a
     regular file is not read. The sync returns code 2 after its other work, and
     it skips the stale rule, the write of the manifest and `bootstrap_commit`.
-  - A dry run prints `would remove <path>` for each stale file, and
-    `would write .config/repo-generated.tsv` when the content differs.
+  - A dry run lists each stale file as `would remove`, and
+    `.config/repo-generated.tsv` as `would change` or `would add` when the
+    content differs. With `--verbose`, the lines are `would remove <path>` and
+    `would write .config/repo-generated.tsv`.
 - It merges the values of each selected tool (`sync-engine/values`): the
   `[defaults]` of the tool, the contributions of the selected tools, then
   `[tools.<name>]` without `env`. A template reads them as `.config` and `.all`.
@@ -193,9 +258,11 @@ Besides the copy of the files, `repo_sync` does these steps:
   `--branch <its branch>`.
 - After a sync without a failure, it sets the top-level `bootstrap_commit` of
   the values file to the full commit of its clone. It replaces only that
-  line, or adds it after the header comments. A dry run prints
-  `would set bootstrap_commit <commit>`. See "A repository that already has
-  `.config/bootstrap.toml`" of `index.md`.
+  line, or adds it after the header comments. It prints
+  `Set bootstrap_commit to <short commit>`, and a dry run prints
+  `Would set bootstrap_commit to <short commit>`. With `--verbose`, the lines
+  have the full commit and the path of the file. See "A repository that already
+  has `.config/bootstrap.toml`" of `index.md`.
 
 These environment variables change the sync. `--check` does not read
 `SYNC_ENGINE_URL` and `SYNC_ENGINE_CLONE`, because it makes no clone:
@@ -206,6 +273,7 @@ These environment variables change the sync. `--check` does not read
 | `SYNC_ENGINE_CACHE`       | The cache folder. The default is `sync-engine` in the base of the cache.                                                               |
 | `XDG_CACHE_HOME`          | The base of the cache, and of the old cache that each run removes. The default is `~/.cache`.                                          |
 | `SYNC_ENGINE_CLONE`       | The copy of the clone. `setup:configs` sets it. An old `setup/configs/sync` reads `REPO_SYNC_CLONE`, so `setup:configs` sets that too. |
+| `SYNC_ENGINE_VERBOSE`     | `1` prints the log line of each file in place of the list. `--verbose` sets it. Another value does nothing.                            |
 | `REPO_SYNC_VALUES`        | The values file. The default is `.config/bootstrap.toml`.                                                                              |
 | `REPO_SYNC_NO_AUTOUPDATE` | `1` skips `pre-commit autoupdate`, so no network is necessary.                                                                         |
 

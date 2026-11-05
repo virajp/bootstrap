@@ -168,11 +168,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T16:06:34.270Z",
+      "ended": "2026-11-05T16:10:33.369Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U6",
@@ -214,8 +214,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T16:06:34.237Z",
       "ended": ""
     },
     {
@@ -466,6 +466,13 @@
       "unit": "",
       "stage": "",
       "text": "SKILL.md asks one wave reviewer for every wave; W3 holds only the review row and changed no file, so no reviewer ran over an empty diff · The diff was empty, and the row reviewed the tree. Settled with no ruling owed.",
+      "state": "closed"
+    },
+    {
+      "id": "G7",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "05-docs.md Edit 3 names the CLAUDE.md section How the sync operates, which docs-design-split removed · The output rules went to docs/design/ (sync-engine.md, repo-sync.md, setup-sync.md), and CLAUDE.md Tests states SYNC_ENGINE_VERBOSE=1. Settled with no ruling owed: docs/design/ is where each rule lives now.",
       "state": "closed"
     }
   ],
