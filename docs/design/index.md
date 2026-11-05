@@ -3,7 +3,8 @@
 ## Overview
 
 `bootstrap` allows users to setup base configurations and keep those
-configuration in-sync and consistent across all their repositories
+configuration in-sync and consistent across all their repositories. It also
+keeps the configuration of a Mac in sync.
 
 It does not limit itself to the base configuration and can also setup the
 various tools that it supports
@@ -13,10 +14,13 @@ various tools that it supports
 - `bootstrap`: This repo
 - `consumer repo`: The repo which uses `bootstrap` to create base configuration
   and keep them in sync
-- `repo-sync`: Script which can be run regularly to keep the base configuration
-  in sync
+- `repo-sync`: The front-end of the sync for a repository. A consumer repo runs
+  it regularly to keep the base configuration in sync
+- `setup-sync`: The front-end of the sync for a Mac. It renders the Mac tools
+  into `$HOME`
+- `sync engine`: The shared libraries of both front-ends, in `sync-engine/`
 - `tools`: Tools that are supported by `bootstrap` and can be setup in consumer
-  repos
+  repos or on a Mac
 
 ## Requirements
 
@@ -45,15 +49,31 @@ The AI part is for a new repository, and after that only in rare situations.
 
 The consuming repo gets `.config/bootstrap.toml` file which contains all the
 selection made during onboarding. `repo-sync` script relies on this config to
-sync the updates from `bootstrap` repo to consumer repo
+sync the updates from `bootstrap` repo to consumer repo. The Mac has its own
+values file, `macos.toml`.
 
 ## References
 
-- [tools](./tools.md)
-- [packs](./packs.md)
-- [.config/bootstrap.toml](./bootstrap-config.md)
-
-## Tools
-
-- [mise](./mise.md)
-- [fnox](./fnox.md)
+- [sync-engine.md](./sync-engine.md): the rules that both front-ends share: the
+  cache and the clone, the tool calls, the templates, the write of one target,
+  merge mode, the header, the manifest and the stale rule, the values merge,
+  `bootstrap_commit` and the exit codes 2, 3 and 5.
+- [repo-sync.md](./repo-sync.md): the repo front-end: the entry tasks, members,
+  the template context, the branch model, `direct_commit`, the pre-commit
+  render,
+  `--check` and its gate.
+- [setup-sync.md](./setup-sync.md): the Mac front-end: `macos.toml` and its
+  keys,
+  the selection, the stages and exit 4, the login shell check and the symlink
+  resolve.
+- [packs.md](./packs.md): the packs model of both sides.
+- [tools.md](./tools.md): the `tools.toml` schema, the `[files]` keys and the
+  rule
+  for the header of a source file.
+- [mise.md](./mise.md): the mise generator, the environments,
+  `[overrides.mise*]`,
+  `zz-repo` and `zz-macos`, and the tasks.
+- [bootstrap-config.md](./bootstrap-config.md): the keys of
+  `.config/bootstrap.toml`.
+- [fnox.md](./fnox.md): the design of the `fnox` tool and of the tasks that use
+  it.

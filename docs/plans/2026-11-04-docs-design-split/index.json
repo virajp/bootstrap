@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-05T13:23:46Z in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -59,11 +59,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T13:24:13.669Z",
+      "ended": "2026-11-05T13:41:29.488Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -132,8 +132,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T13:24:13.636Z",
       "ended": ""
     },
     {
@@ -249,31 +249,60 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: change plan",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T13:24:08.578Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: change plan",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T13:24:08.369Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: change plan",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T13:24:08.472Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers and no code unit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T13:24:08.679Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "docs/design/sync-engine.md: the plan's tool call reads 'mise x <tool>@latest --', but the code runs an installed tool as 'MISE_OFFLINE=1 mise x <tool> -- <tool>' and uses @latest only when it is not installed · The doc states the code. Settled with no ruling owed: the unit file says the code wins; R1 confirmed.",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "docs/design/sync-engine.md: the plan says a dry run releases the lock early; that is true only for updateall:configs, and setup:configs always releases after the copy · The doc states both, as the code does. Settled with no ruling owed: the unit file says the code wins; R1 confirmed against _se_unlock in both templates.",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "docs/design/setup-sync.md: the old Mac doc checks mise before any network use; the code checks it first in setup_sync, after the entry task refreshes the clone · The doc states the code. Settled with no ruling owed: the unit file says the code wins; R1 confirmed _ss_check_mise is the first check in setup_sync.",
+      "state": "closed"
+    },
+    {
+      "id": "G4",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "docs/design/packs.md, tools.md, mise.md: the plan does not say where the Flutter sections go · U1 kept them, marked as not in repo/packs.toml, and corrected the facts that the code falsified. Settled with no ruling owed: the plan moves text and changes no rule, so the sections stay, and the mark matches repo/packs.toml; R1 confirmed. Dropping them would be a later ruling.",
+      "state": "closed"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",
