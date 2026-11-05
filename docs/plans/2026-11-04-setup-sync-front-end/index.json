@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-05T06:10:33Z in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-05 — 40c1fdc ec2bccd 2067c6c 433503f; 7 open gaps (G1 to G5, G7, G8) kept the folder live; G5, G7 and G8 reach the templates of P11 to P14 and the repo templates"
   },
   "consent": {
     "merge": true,
@@ -445,8 +445,8 @@
       "id": "G9",
       "unit": "U4",
       "stage": "edit",
-      "text": "the U4 Verification does not run test or test:setup-sync · assumed the plan gate covers them",
-      "state": "open"
+      "text": "the U4 Verification does not run test or test:setup-sync · assumed the plan gate covers them; closed: mise run test passed in the plan gate",
+      "state": "closed"
     },
     {
       "id": "G10",
