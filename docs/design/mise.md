@@ -499,7 +499,7 @@ This table has the mise tools of `repo/tools/` now.
 | `git`         | `worktrunk`              | `latest` | dev     |                |                                                     |
 | `gitleaks`    | `gitleaks`               | `latest` | dev, ci |                |                                                     |
 | `grype`       | `grype`                  | `latest` | dev, ci |                |                                                     |
-| `linter`      | `npm:@virajp.dev/linter` | `latest` | dev, ci | `node`, `pnpm` |                                                     |
+| `linter`      | `npm:@virajp.dev/linter` | `latest` | dev, ci | `node`         |                                                     |
 | `linter`      | `shellcheck`             | `latest` | dev, ci |                |                                                     |
 | `mise`        | `jq`                     | `latest` | dev, ci |                | `tasks` (`init`), `shell_alias`; `mise_env` (`os`)  |
 | `mise`        | `yq`                     | `latest` | dev, ci |                |                                                     |
@@ -507,7 +507,7 @@ This table has the mise tools of `repo/tools/` now.
 | `pre-commit`  | `pre-commit`             | `latest` | dev     | `python`, `uv` | `env` (`PRE_COMMIT_HOME`), `shell_alias`            |
 | `repo-sync`   | `gomplate`               | `latest` | dev     |                |                                                     |
 | `bun`         | `bun`                    | `latest` | dev, ci |                |                                                     |
-| `cloudflare`  | `npm:cf`                 | `latest` | dev, ci | `node`, `pnpm` |                                                     |
+| `cloudflare`  | `npm:cf`                 | `latest` | dev, ci | `node`         |                                                     |
 | `doppler`     | `doppler`                | `latest` | dev     |                |                                                     |
 | `flutter`     | `flutter`                | `3`      | dev, ci | `android-sdk`  |                                                     |
 | `fnox`        | `fnox`                   | `latest` | dev     |                | `env` (`FNOX_CONFIG_DIR`)                           |
@@ -534,10 +534,10 @@ These tools have no mise tools: `_security_base`, `claude`, `docker` and
 `vscode`.
 `kotlin` gets `java` through its `depends` key. `vscode` has a `code` alias.
 
-Because the `base` pack needs `node`, `pnpm`, `python` and `uv`, each consumer
-gets the `node` and `python` tools. They get the environments of the tools
-that need them: `dev` and `ci` for `node` and `pnpm` (the `linter` tool), and
-`dev` for `python` and `uv` (the `pre-commit` tool).
+Because the `base` pack needs `node`, `python` and `uv`, each consumer gets the
+`node` and `python` tools. They get the environments of the tools that need
+them: `dev` and `ci` for `node` (the `linter` tool), and `dev` for `python` and
+`uv` (the `pre-commit` tool). The `node` tool also brings `pnpm`.
 
 ## Tasks
 
