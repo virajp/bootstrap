@@ -81,7 +81,7 @@
       "status": "green",
       "started": "2026-11-05T16:34:41.522Z",
       "ended": "2026-11-05T16:46:43.476Z",
-      "commit": "",
+      "commit": "9852d5d",
       "rounds": 2
     },
     {
@@ -130,9 +130,9 @@
   "waves": [
     {
       "id": "W1",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-05T16:34:41.419Z",
-      "ended": ""
+      "ended": "2026-11-05T17:00:53.645Z"
     },
     {
       "id": "W2",
