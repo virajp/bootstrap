@@ -226,8 +226,8 @@
       "title": "Mac tools: base core (11)",
       "target_repo": null,
       "priority": 110,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-05T08:57:15.993Z",
       "ended": "",
       "gaps": null,
       "requires": [
