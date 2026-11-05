@@ -286,6 +286,13 @@
       "units": [
         "U1"
       ]
+    },
+    {
+      "id": "D10",
+      "decision": "Does a security finding in content that this plan imports unchanged from macos-setup stop the run?",
+      "ruling": "User ruling 2026-11-05, given at D14 of 2026-11-04-macos-tools-base-core for plans 11 to 14: no. A security finding in content that is byte for byte from macos-setup, apart from the changes that this plan names, is accepted for this import. It does not stop the run, and the content does not change. The run records each such finding as an open gap with its severity and location, for one security plan after the run. A finding in code that this plan writes or changes stops the run as before.",
+      "rejected": "Stop on each finding in imported content.",
+      "units": []
     }
   ],
   "stages": {
