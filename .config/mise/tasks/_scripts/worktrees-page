@@ -43,17 +43,20 @@ page_styles() {
   cat << 'STYLE'
 :root{color-scheme:light dark;--bg:#fff;--fg:#1f2328;--dim:#656d76;--line:#d0d7de;--band:#f6f8fa;--ok:#1a7f37;--warn:#9a6700;--bad:#cf222e}
 @media(prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--dim:#8b949e;--line:#30363d;--band:#161b22;--ok:#3fb950;--warn:#d29922;--bad:#f85149}}
-*{box-sizing:border-box}body{margin:0 auto;max-width:1240px;padding:24px 16px 48px;background:var(--bg);color:var(--fg);font:14px/1.5 -apple-system,system-ui,sans-serif}
-h1{font-size:20px;margin:0}h2{font-size:15px;margin:32px 0 8px}.sub{color:var(--dim);margin:2px 0 20px}
-code,td.m{font-family:ui-monospace,Menlo,Consolas,monospace}.g{font-family:Glyphs,ui-monospace,Menlo,monospace;font-size:14px;white-space:nowrap}
+*{box-sizing:border-box}body{margin:0 auto;max-width:1500px;padding:32px 24px 56px;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,system-ui,sans-serif}
+h1{font-size:28px;margin:0}h2{font-size:21px;margin:40px 0 12px}.sub{color:var(--dim);margin:4px 0 24px}
+code,td.m{font-family:ui-monospace,Menlo,Consolas,monospace}.g{font-family:Glyphs,ui-monospace,Menlo,monospace;font-size:17px;white-space:nowrap}
 .green{color:var(--ok)}.yellow{color:var(--warn)}.red{color:var(--bad)}.dim{color:var(--dim)}
-.tiles{display:flex;flex-wrap:wrap;gap:8px}.tile{border:1px solid var(--line);border-radius:8px;padding:8px 14px;min-width:120px}.tile b{display:block;font-size:20px}.tile span{color:var(--dim);font-size:12px}
-.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px}table{border-collapse:collapse;width:100%}th,td{padding:5px 10px;text-align:left;white-space:nowrap;font-size:13px}
-th{color:var(--dim);font-weight:600;border-bottom:1px solid var(--line)}td.m{font-size:12.5px}
-tr.repo td{background:var(--band);border-top:1px solid var(--line);font-weight:600}tr.repo .g{margin-right:6px}tr.repo span.i{font-weight:400;color:var(--dim);margin-left:8px}
-.ref{color:var(--dim);font-family:ui-monospace,Menlo,monospace;font-size:12px}
-dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}dd .g{margin-right:5px}dt{color:var(--dim)}dd{margin:0;display:flex;flex-wrap:wrap;gap:4px 14px}
-footer{color:var(--dim);font-size:12px;margin-top:24px}
+.tiles{display:flex;flex-wrap:wrap;gap:12px}.tile{border:1px solid var(--line);border-radius:8px;padding:12px 18px;min-width:150px}.tile b{display:block;font-size:28px;line-height:1.2}.tile span{color:var(--dim);font-size:15px}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px}table{border-collapse:collapse;width:100%}th,td{padding:8px 14px;text-align:left;white-space:nowrap;font-size:16px}
+th{color:var(--dim);font-weight:600;border-bottom:1px solid var(--line)}td.m{font-size:15px}
+tr.repo td{background:var(--band);border-top:1px solid var(--line);font-weight:600;font-size:17px}tr.repo .g{margin-right:8px}tr.repo span.i{font-weight:400;font-size:15px;color:var(--dim);margin-left:10px}
+.ref{color:var(--dim);font-family:ui-monospace,Menlo,monospace;font-size:14.5px}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}.legend section{border:1px solid var(--line);border-radius:8px;padding:14px 18px}.legend section.wide{grid-column:span 2}
+.legend h3{font-size:15px;font-weight:600;color:var(--dim);margin:0 0 10px}.legend ul{list-style:none;margin:0;padding:0;display:grid;gap:7px 20px}.legend .wide ul{grid-template-columns:1fr 1fr}
+.legend li{display:grid;grid-template-columns:30px 1fr;align-items:baseline}.legend li .g{font-size:19px}
+@media(max-width:640px){.legend section.wide{grid-column:auto}.legend .wide ul{grid-template-columns:1fr}}
+footer{color:var(--dim);font-size:15px;margin-top:32px}
 STYLE
 }
 
@@ -150,27 +153,53 @@ page_repo_row() {
   printf '<tr class="repo"><td colspan="11">%s%s<span class="i">%s</span></td></tr>' \
     "$(page_glyph "${R_GLYPH[i]}")" "$(html_escape "${REPO[i]}")" "$(html_escape "${info}")"
   if [[ -n "${R_NOTE[i]}" ]]; then
-    printf '<tr><td>%s</td><td colspan="10">%s.' "$(page_glyph "${G_FETCH}" yellow "${R_NOTE[i]}")" "$(html_escape "${R_NOTE[i]}")"
+    printf '<tr><td>%s</td><td colspan="10">%s.' "$(page_glyph "${G_FETCH}" yellow "${R_NOTE[i]}")" "$(printf '%s' "${R_NOTE[i]:0:1}" | tr '[:lower:]' '[:upper:]')$(html_escape "${R_NOTE[i]:1}")"
     if [[ -n "${R_FIX[i]}" ]]; then printf ' Run <code>%s</code>.' "$(html_escape "${R_FIX[i]}")"; fi
     printf '</td></tr>'
   fi
 }
 
+# The color of a legend glyph, the same as in the table.
+legend_color() {
+  case "$1" in
+    "${G_OK}" | "${G_SYNC}" | "${G_MERGED}")
+      printf 'green'
+      ;;
+    "${G_DRIFT}" | "${G_WARN}" | "${G_OP}" | "${G_GONE}" | "${G_NOFOLDER}")
+      printf 'red'
+      ;;
+    "${G_DOWN}" | "${G_DETACHED}" | "+" | "-" | "${G_MIX}" | "${G_LOCK}" | "${G_STASH}" | "${G_PIN}" | "${G_UNMERGED}" | "${G_FETCH}")
+      printf 'yellow'
+      ;;
+    "${G_LOCAL}" | "${G_NA}")
+      printf 'dim'
+      ;;
+  esac
+}
+
+# One card for each section, with one glyph and its text on each line. An entry
+# with no section name continues the section before it, in a card of two columns.
 page_legend() {
-  local entry section rest item
-  printf '<h2>Legend</h2><dl>'
-  for entry in "${LEGEND[@]}"; do
+  local i entry section rest item glyph class
+  printf '<h2>Legend</h2><div class="legend">'
+  for ((i = 0; i < ${#LEGEND[@]}; i++)); do
+    entry="${LEGEND[i]}"
     section="${entry%%|*}"
     rest="${entry#*|}|"
-    printf '<dt>%s</dt><dd>' "${section:-&nbsp;}"
+    if [[ -n "${section}" ]]; then
+      class=''
+      if ((i + 1 < ${#LEGEND[@]})) && [[ "${LEGEND[i+1]}" == "|"* ]]; then class=' class="wide"'; fi
+      printf '<section%s><h3>%s</h3><ul>' "${class}" "$(html_escape "${section}")"
+    fi
     while [[ -n "${rest}" ]]; do
       item="${rest%%|*}"
       rest="${rest#*|}"
-      printf '<span>%s %s</span>' "$(page_glyph "${item%% *}")" "$(html_escape "${item#* }")"
+      glyph="${item%% *}"
+      printf '<li>%s<span>%s</span></li>' "$(page_glyph "${glyph}" "$(legend_color "${glyph}")")" "$(html_escape "${item#* }")"
     done
-    printf '</dd>'
+    if ((i + 1 == ${#LEGEND[@]})) || [[ "${LEGEND[i+1]}" != "|"* ]]; then printf '</ul></section>'; fi
   done
-  printf '</dl>'
+  printf '</div>'
 }
 
 # Writes the page and prints its path. The folder and the page are only for this
