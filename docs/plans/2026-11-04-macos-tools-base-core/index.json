@@ -154,9 +154,9 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "2026-11-05T09:30:05.390Z",
+      "status": "running",
+      "started": "2026-11-05T09:55:57.362Z",
+      "ended": "",
       "commit": "",
       "rounds": 0
     }
@@ -182,9 +182,9 @@
     },
     {
       "id": "W4",
-      "status": "failed",
-      "started": "",
-      "ended": "2026-11-05T09:30:26.675Z"
+      "status": "running",
+      "started": "2026-11-05T09:55:57.291Z",
+      "ended": ""
     }
   ],
   "shared_files": [
