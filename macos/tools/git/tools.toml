@@ -1,0 +1,45 @@
+# The git tool: git, lazygit and worktrunk, the git aliases, the global git
+# config, the ignore file, the identity files and the commit guidelines.
+# The identity values are questions; the projects folder of the `gitdir:`
+# includes is `projects_dir` of the cli tool. The [mise.*] tables become
+# ~/.config/mise/conf.d/git/mise.toml.
+
+depends = [ "cli", "diff-so-fancy" ]
+description = "git, its global config, the commit identity per forge (GitHub, GitLab) and the git aliases"
+
+[defaults]
+core_editor = "$HOMEBREW_PREFIX/bin/code" # core.editor of .config/git/config
+
+[questions.name]
+detect = "id -F"
+example = "Jane Doe"
+question = "Which full name signs your git commits?"
+
+[questions.email_github]
+detect = "gh api user --jq '\"\\(.id)+\\(.login)@users.noreply.github.com\"'"
+example = "1234567+janedoe@users.noreply.github.com"
+question = "Which email do your GitHub commits use (your GitHub noreply address keeps your mail private)?"
+
+[questions.email_gitlab]
+example = "12345-janedoe@users.noreply.gitlab.com"
+question = "Which email do your GitLab commits use (your GitLab noreply address keeps your mail private)?"
+
+[questions.signing_key]
+detect = "ssh-add -L | head -n 1"
+example = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA..."
+question = "Which SSH public key signs your commits (the full line: type, key, optional comment)?"
+
+[mise.tools.worktrunk]
+version = "latest"
+
+[mise.bootstrap.packages]
+"brew:git" = "latest" # Distributed version control system
+"brew:lazygit" = "latest" # Simple terminal UI for git
+
+[mise.shell_alias]
+# Git Related Aliases (diff-so-fancy is the tool diff-so-fancy, a depends)
+diff = "diff-so-fancy"
+gc = "git commit -a -m"
+gp = "git push --verbose"
+gpull = "git pull --all --verbose --progress"
+gs = "git status -sb"

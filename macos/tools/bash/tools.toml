@@ -1,0 +1,14 @@
+# The bash tool: ~/.bash_profile, ~/.bashrc and its own drop-in
+# ~/.config/bash/00-bootstrap.bash. Other tools add their drop-ins to
+# ~/.config/bash/ (homebrew, mise). The [mise.*] tables install Homebrew's bash
+# and add it to /etc/shells. They become ~/.config/mise/conf.d/bash/mise.toml.
+depends = [ "homebrew", "mise", "macos-setup" ]
+description = "bash from Homebrew, its rc files and its drop-in folder ~/.config/bash/"
+stage = "init"
+
+[mise.bootstrap.packages]
+"brew:bash" = "latest"
+
+# /etc/shells is outside $HOME, so it stays a mise declaration.
+[mise.dotfiles]
+"/etc/shells/brew-bash" = { line = "/opt/homebrew/bin/bash" }
