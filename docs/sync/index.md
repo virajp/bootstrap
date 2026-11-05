@@ -322,7 +322,8 @@ same string as a path of `find -type f` in the tool folder, with or without
 
 For example, the `node` tool has `mode = "seed"` and
 `requires = ["package.json"]` for `pnpm-workspace.yaml`. Thus the sync writes it
-only if the repository has a `package.json`. No tool uses `merge` now.
+only if the repository has a `package.json`. No tool of `repo/tools/` uses
+`merge` now. Only the `gh` tool of `macos/tools/` uses it.
 
 The `[mise.*]` tables of a `tools.toml` hold the mise config of the tool. The
 sync generates `.config/mise/conf.d/<tool>/mise.<env>.toml` from them, one

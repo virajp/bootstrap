@@ -230,7 +230,8 @@ These rules apply to each file:
   only the keys that the tool enforces, and the sync merges them into the live
   target. The other keys stay. It has no header, so the stale rule leaves it.
   A merge target that is a symlink or is below a symlinked folder stays as it
-  is, and the sync returns code 2. No tool uses merge mode now.
+  is, and the sync returns code 2. Only the `gh` tool of `macos/tools/` uses
+  merge mode now.
 - In `.config/pre-commit-config.yaml`, each hook `rev` becomes the newest tag:
   the sync runs `pre-commit autoupdate` on it. This needs the network.
 - The repository selects its environments in `environments`: `dev`

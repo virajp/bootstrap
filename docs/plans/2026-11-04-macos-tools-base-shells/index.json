@@ -133,11 +133,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "2026-11-05T10:40:26.272Z",
+      "status": "green",
+      "started": "2026-11-05T11:18:53.466Z",
+      "ended": "2026-11-05T11:22:36.338Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U5",
@@ -173,8 +173,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T11:18:53.431Z",
       "ended": ""
     },
     {
@@ -326,28 +326,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T11:18:53.792Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T11:18:53.573Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T11:18:53.682Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T11:18:53.900Z"
     }
   },
   "gaps": [
@@ -397,8 +397,8 @@
       "id": "G7",
       "unit": "U4",
       "stage": "edit",
-      "text": "DOCS FALSIFIED lines from wave review R1, for the docs unit U4 that owns these files: CLAUDE.md:171, README.md:233, docs/design/tools.md:90 and docs/sync/index.md:325 (no tool uses merge mode now; macos/tools/gh/tools.toml:15 uses it); docs/design/tools.md:96 (no tool uses [defaults], [questions] or [contributes] now; fish, git, ssh, gh and macos-defaults do); CLAUDE.md:521 (the data.ToJSON rule names only the pnpm template as an exception; gh config.yml.tmpl:9 writes editor unencoded under D4) · U4 applies them",
-      "state": "open"
+      "text": "DOCS FALSIFIED lines from wave review R1, for the docs unit U4 that owns these files: CLAUDE.md:171, README.md:233, docs/design/tools.md:90 and docs/sync/index.md:325 (no tool uses merge mode now; macos/tools/gh/tools.toml:15 uses it); docs/design/tools.md:96 (no tool uses [defaults], [questions] or [contributes] now; fish, git, ssh, gh and macos-defaults do); CLAUDE.md:521 (the data.ToJSON rule names only the pnpm template as an exception; gh config.yml.tmpl:9 writes editor unencoded under D4) · U4 applies them. closed: U4 applied them; [contributes] stays false for macos/tools, so docs/design/tools.md keeps that clause",
+      "state": "closed"
     },
     {
       "id": "G8",
@@ -455,6 +455,27 @@
       "stage": "security",
       "text": "[low] macos/tools/fish/.config/fish/conf.d/02-path.fish:34 (U1): fish_add_path prepends the user-writable $PNPM_HOME/bin ahead of the system folders, so a global pnpm package bin can shadow a system command in each fish session; bash and zsh do not set this path. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
       "state": "open"
+    },
+    {
+      "id": "G16",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "The vwf:docs-sync surveyor returned no findings beyond the supplied lines, and no owned doc counts the Mac tools, lists the members of pack base or describes login_shell · assumed those parts of U4 Edit 2 need no text, checked with grep",
+      "state": "open"
+    },
+    {
+      "id": "G17",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "The data.ToJSON rule of CLAUDE.md names only templates, and macos/tools/fish/tools.toml:32 writes login_shell unencoded in a [mise.*] string under D1 and D2 · assumed a [mise.*] string is outside that rule, text unchanged",
+      "state": "open"
+    },
+    {
+      "id": "G18",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "git diff --stat of U4 also names the plan index.json, outside its owns · that file is the plan state of the orchestrator, and U4 did not touch it. closed: not a change of U4",
+      "state": "closed"
     }
   ],
   "overrides": [],
