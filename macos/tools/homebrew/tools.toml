@@ -1,0 +1,25 @@
+# The homebrew tool: the Brewfile of VS Code extensions, the tasks brew:casks
+# and upgrade:brew, and the `brew shellenv` files of bash, zsh and fish. The
+# `brew` alias runs brew through fnox, so this tool depends on fnox. The
+# [mise.*] tables (the HOMEBREW_* environment and the alias) become
+# ~/.config/mise/conf.d/homebrew/mise.toml.
+depends = [ "fnox" ]
+description = "Homebrew: its environment, the brew alias, the Brewfile, its upgrade task and its shellenv in bash, zsh and fish"
+
+[mise.env]
+# Homebrew behaviour (HOMEBREW_PREFIX stays in shell config: `brew shellenv`
+# needs it before mise activates)
+HOMEBREW_BUNDLE_FILE = "${HOME}/.config/brewfile"
+HOMEBREW_CASK_OPTS = "--appdir=~/Applications"
+HOMEBREW_CLEANUP_MAX_AGE_DAYS = "7"
+HOMEBREW_CLEANUP_PERIODIC_FULL_DAYS = "7"
+HOMEBREW_CURL_RETRIES = "2"
+HOMEBREW_DISPLAY_INSTALL_TIMES = "true"
+HOMEBREW_FAIL_LOG_LINES = "100"
+HOMEBREW_FORCE_BREWED_CURL = "true"
+HOMEBREW_FORCE_BREWED_GIT = "true"
+HOMEBREW_NO_ANALYTICS = "true"
+HOMEBREW_NO_ENV_HINTS = "1"
+
+[mise.shell_alias]
+brew = "fnox exec -P brew -- brew"
