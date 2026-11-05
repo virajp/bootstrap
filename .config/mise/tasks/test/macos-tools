@@ -30,6 +30,10 @@ unset git_vars
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
+# Each per-file line prints, so the cases compare the log format. A case of the
+# default output unsets the variable.
+export SYNC_ENGINE_VERBOSE=1
+
 root=${MISE_PROJECT_ROOT}
 example="$root/macos/examples/macos.toml"
 

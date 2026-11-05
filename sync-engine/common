@@ -4,7 +4,9 @@
 # record of the commit and the tool wrappers of the sync engine. A front-end
 # sources it, and it sets the clean-up traps when sourced.
 #
-# It gives _SE_PREFIX, _se_log, _se_mode, _se_path, _SE_TMPS, _se_cleanup,
+# It gives _SE_PREFIX, _se_log, _se_mode, _se_path, _se_verbose, _se_style,
+# _se_outcome_start, _se_info, _se_outcome, _se_summary, _se_count_words,
+# _SE_TMPS, _se_cleanup,
 # _SE_HEADER_RE, _se_has_header, _SE_HEADER_LINE1, _SE_HEADER_LINE2,
 # _se_record_commit, _se_gomplate, _se_jq and _se_yq.
 #
@@ -20,6 +22,214 @@ _se_mode() { stat -c %a -- "$1" 2> /dev/null || stat -f %Lp -- "$1"; }
 
 # Show <path> relative to the current directory when it is under it.
 _se_path() { [[ $1 == "$PWD"/* ]] && printf '%s' "${1#"$PWD"/}" || printf '%s' "$1"; }
+
+# 0 when the variable SYNC_ENGINE_VERBOSE is 1: each per-file line prints in its
+# log format, and no list line prints.
+_se_verbose() { [[ ${SYNC_ENGINE_VERBOSE:-} == 1 ]]; }
+
+# 0 when the output on stderr has glyphs and colors. The same rule as
+# `style_enabled` of `helpers`, which the engine does not call: the local copy
+# can be stale, and the Mac side does not have it.
+_se_style() {
+  if [[ -n ${FORCE_COLOR:-} && ${FORCE_COLOR} != 0 ]]; then
+    return 0
+  fi
+  if [[ -n ${NO_COLOR:-} ]]; then
+    return 1
+  fi
+  [[ -t 2 && ${TERM:-dumb} != dumb ]]
+}
+
+_SE_YELLOW=$'\033[0;33m'
+_SE_GREEN=$'\033[0;32m'
+_SE_BLUE=$'\033[0;34m'
+_SE_RED=$'\033[0;31m'
+_SE_DIM=$'\033[2m'
+_SE_RESET=$'\033[0m'
+
+# Start the counts of a run. <dry-run> 1 gives the words of a dry run.
+_se_outcome_start() {
+  _SE_DRY_RUN=$1
+  _SE_N_CHANGED=0 _SE_N_NEW=0 _SE_N_SEEDED=0 _SE_N_REMOVED=0
+  _SE_N_UNCHANGED=0 _SE_N_KEPT=0 _SE_N_SKIPPED=0 _SE_N_FAILED=0
+  _SE_SEEN=$'\n'
+  _SE_LISTED=''
+}
+_se_outcome_start 0
+
+# Print an info line.
+_se_info() {
+  if _se_style; then
+    printf 'ℹ️ %s\n' "$*" >&2
+  else
+    printf '[INFO] %s\n' "$*" >&2
+  fi
+}
+
+# Print the list line of <kind>, when the list has that kind.
+_se_list_line() {
+  local kind=$1 path=$2 text=$3 color glyph word width=9
+  case $kind in
+    changed) color=$_SE_YELLOW glyph='✎' word=changed ;;
+    new) color=$_SE_GREEN glyph='✚' word=new ;;
+    seeded) color=$_SE_BLUE glyph='❋' word=seeded ;;
+    removed) color=$_SE_RED glyph='✖' word=removed ;;
+    failed) color=$_SE_RED glyph='✗' word=failed ;;
+    *) return 0 ;;
+  esac
+  if [[ $kind != failed && $_SE_DRY_RUN == 1 ]]; then
+    width=12
+    case $kind in
+      changed) word='would change' ;;
+      new) word='would add' ;;
+      seeded) word='would seed' ;;
+      removed) word='would remove' ;;
+    esac
+  fi
+  if ! _se_style; then
+    if [[ $kind == failed ]]; then
+      printf '%s %s: %s\n' "$word" "$path" "$text" >&2
+    else
+      printf '%s %s\n' "$word" "$path" >&2
+    fi
+    return 0
+  fi
+  if [[ -z $_SE_LISTED ]]; then
+    _SE_LISTED=1
+    printf '\n' >&2
+  fi
+  if [[ $kind == failed ]]; then
+    printf '  %s%s %s %s: %s%s\n' "$color" "$glyph" "$word" "$path" "$text" "$_SE_RESET" >&2
+  else
+    printf '  %s%s %-*s %s%s\n' "$color" "$glyph" "$width" "$word" "$path" "$_SE_RESET" >&2
+  fi
+}
+
+# Report one target: count <kind> and print its line. The kinds are changed,
+# new, seeded, removed, unchanged, kept, skipped and failed. <text> is the
+# reason of a failed target, and it does not repeat <path>. <line> is the log
+# line that prints with verbose; without it, verbose prints nothing. A target
+# counts once as failed and once as removed: a later report of it prints only
+# its <line>.
+_se_outcome() {
+  local kind=$1 path=$2 text=${3:-} line=${4:-} seen=0
+  case $kind in
+    failed | removed)
+      if [[ $_SE_SEEN == *$'\n'"$kind $path"$'\n'* ]]; then
+        seen=1
+      else
+        _SE_SEEN+="$kind $path"$'\n'
+      fi
+      ;;
+  esac
+  if ((seen == 0)); then
+    case $kind in
+      changed) _SE_N_CHANGED=$((_SE_N_CHANGED + 1)) ;;
+      new) _SE_N_NEW=$((_SE_N_NEW + 1)) ;;
+      seeded) _SE_N_SEEDED=$((_SE_N_SEEDED + 1)) ;;
+      removed) _SE_N_REMOVED=$((_SE_N_REMOVED + 1)) ;;
+      unchanged) _SE_N_UNCHANGED=$((_SE_N_UNCHANGED + 1)) ;;
+      kept) _SE_N_KEPT=$((_SE_N_KEPT + 1)) ;;
+      skipped) _SE_N_SKIPPED=$((_SE_N_SKIPPED + 1)) ;;
+      failed) _SE_N_FAILED=$((_SE_N_FAILED + 1)) ;;
+    esac
+  fi
+  if _se_verbose; then
+    [[ -z $line ]] || _se_log "$line"
+  elif ((seen == 0)); then
+    _se_list_line "$kind" "$path" "$text"
+  fi
+  return 0
+}
+
+# Print one row of the table. <style> is 1 or 0. A row with a zero count is dim.
+_se_table_row() {
+  local style=$1 color=$2 glyph=$3 label=$4 count=$5 off=''
+  if ((style == 0)); then
+    printf '| %-13s | %5s |\n' "$label" "$count" >&2
+    return 0
+  fi
+  if ((count == 0)); then
+    color=$_SE_DIM
+  fi
+  [[ -z $color ]] || off=$_SE_RESET
+  printf '  │ %s%s %-11s%s │ %s%5s%s │\n' "$color" "$glyph" "$label" "$off" "$color" "$count" "$off" >&2
+}
+
+# Print the table of the counts and the last line of a run that ended with <rc>.
+_se_summary() {
+  local rc=$1 style=0
+  local top='+---------------+-------+' middle='+---------------+-------+' bottom='+---------------+-------+'
+  local n=$((_SE_N_CHANGED + _SE_N_NEW + _SE_N_SEEDED + _SE_N_REMOVED))
+  local total=$((n + _SE_N_UNCHANGED + _SE_N_KEPT + _SE_N_SKIPPED + _SE_N_FAILED))
+  local files=files text
+  if _se_style; then
+    style=1
+    top='  ┌───────────────┬───────┐'
+    middle='  ├───────────────┼───────┤'
+    bottom='  └───────────────┴───────┘'
+    printf '\n' >&2
+  fi
+  printf '%s\n' "$top" >&2
+  _se_table_row "$style" "$_SE_YELLOW" '✎' Changed "$_SE_N_CHANGED"
+  _se_table_row "$style" "$_SE_GREEN" '✚' New "$_SE_N_NEW"
+  _se_table_row "$style" "$_SE_BLUE" '❋' Seeded "$_SE_N_SEEDED"
+  _se_table_row "$style" "$_SE_RED" '✖' Removed "$_SE_N_REMOVED"
+  _se_table_row "$style" '' '=' Unchanged "$_SE_N_UNCHANGED"
+  _se_table_row "$style" '' '◦' 'Kept seeds' "$_SE_N_KEPT"
+  _se_table_row "$style" '' '⊘' Skipped "$_SE_N_SKIPPED"
+  _se_table_row "$style" "$_SE_RED" '✗' Failed "$_SE_N_FAILED"
+  printf '%s\n' "$middle" >&2
+  if ((style)); then
+    printf '  │ %-13s │ %5s │\n' Total "$total" >&2
+  else
+    printf '| %-13s | %5s |\n' Total "$total" >&2
+  fi
+  printf '%s\n' "$bottom" >&2
+
+  if ((rc != 0)); then
+    text="The sync failed with code $rc"
+    if ((_SE_N_FAILED == 1)); then
+      text+=": 1 file failed"
+    elif ((_SE_N_FAILED > 1)); then
+      text+=": $_SE_N_FAILED files failed"
+    fi
+    if ((style)); then
+      printf '%s❌ %s%s\n' "$_SE_RED" "$text" "$_SE_RESET" >&2
+    else
+      printf '[ERROR] %s\n' "$text" >&2
+    fi
+    return 0
+  fi
+  if ((n == 1)); then
+    files='file'
+  fi
+  if [[ $_SE_DRY_RUN == 1 ]]; then
+    if ((n == 0)); then
+      text='Dry run: no file would change'
+    else
+      text="Dry run: $n $files would change"
+    fi
+  elif ((n == 0)); then
+    text='Synced: no file changed'
+  else
+    text="Synced: $n $files changed"
+  fi
+  if ((style)); then
+    printf '✅ %s\n' "$text" >&2
+  else
+    printf '[OK] %s\n' "$text" >&2
+  fi
+}
+
+# Print the number of words of <list>.
+_se_count_words() {
+  local word n=0
+  for word in $1; do
+    n=$((n + 1))
+  done
+  printf '%s' "$n"
+}
 
 # Temp files and directories still on disk; removed if the task exits early.
 _SE_TMPS=()
@@ -92,7 +302,11 @@ _se_record_commit() {
     return 0
   fi
   if ((dry_run)); then
-    _se_log "would set ${key} ${commit} in $show"
+    if _se_verbose; then
+      _se_log "would set ${key} ${commit} in $show"
+    else
+      _se_info "Would set ${key} to ${commit:0:7}"
+    fi
     return 0
   fi
   tmp=$(mktemp "${real}.XXXXXX") || {
@@ -139,7 +353,11 @@ _se_record_commit() {
     _se_log "cannot write $show"
     return 1
   fi
-  _se_log "set ${key} ${commit} in $show"
+  if _se_verbose; then
+    _se_log "set ${key} ${commit} in $show"
+  else
+    _se_info "Set ${key} to ${commit:0:7}"
+  fi
 }
 
 # Run <tool> with <args> through mise, from `/`, so no mise config of the current

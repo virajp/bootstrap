@@ -5,6 +5,7 @@
 
 #USAGE flag "--dry-run" help="show the changes without writing them"
 #USAGE flag "--no-bootstrap" help="skip every mise bootstrap step"
+#USAGE flag "--verbose" help="list each file, also an unchanged one"
 
 set -euo pipefail
 
@@ -12,14 +13,33 @@ set -euo pipefail
 # process from a temp copy of that clone, so a change to the sync code applies
 # in the same run, and the render never reads the clone itself.
 
-log() { printf '%s\n' "setup-sync: $*" >&2; }
+# The code below is sync-engine/clone of the bootstrap clone: the sync embeds
+# it when it renders this template. It comes first, because log uses it.
+<% file.Read (print .sync_engine "/clone") | strings.TrimPrefix "#!/usr/bin/env bash\n" %>
+
+# An info line and an error line: a glyph when styled, else the prefix.
+log() {
+  if _se_clone_styled 2; then
+    printf 'ℹ️ %s\n' "$*" >&2
+  else
+    printf '%s\n' "setup-sync: $*" >&2
+  fi
+}
+log_error() {
+  if _se_clone_styled 2; then
+    printf '❌ %s\n' "$*" >&2
+  else
+    printf '%s\n' "setup-sync: $*" >&2
+  fi
+}
 
 usage() {
   cat << 'EOF'
-usage: mise run updateall:configs [--dry-run] [--no-bootstrap]
+usage: mise run updateall:configs [--dry-run] [--no-bootstrap] [--verbose]
 
   --dry-run       show the changes without writing them
   --no-bootstrap  skip every mise bootstrap step
+  --verbose       list each file, also an unchanged one
   -h, --help      show this help
 
 exit codes: 0 done, 1 other failure, 2 usage or config error, 3 a tool
@@ -29,28 +49,36 @@ EOF
 }
 
 # The flags come from "$@", never from mise's usage_* variables, so the task
-# works the same under `mise run` and under `bash`.
+# works the same under `mise run` and under `bash`. `for` expands its list once,
+# so each pass can move its argument to the end of "$@", and --verbose stays
+# out: setup_sync refuses an unknown flag.
 dry_run=''
 for arg in "$@"; do
+  shift
   case ${arg} in
     --dry-run)
       dry_run=1
       ;;
     --no-bootstrap) ;;
+    --verbose)
+      export SYNC_ENGINE_VERBOSE=1
+      continue
+      ;;
     -h | --help)
       usage
       exit 0
       ;;
     *)
-      log "unknown flag '${arg}'"
+      log_error "unknown flag '${arg}'"
       usage >&2
       exit 2
       ;;
   esac
+  set -- "$@" "${arg}"
 done
 
 if [[ -n ${_MACOS_SETUP_DEFAULT_RUNNING:-} ]]; then
-  log "updateall:configs is already running in this process tree - a nested run is refused"
+  log_error "updateall:configs is already running in this process tree - a nested run is refused"
   exit 2
 fi
 export _MACOS_SETUP_DEFAULT_RUNNING=1
@@ -61,17 +89,13 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 # Before any network use: without the config folder there is nothing to
 # render.
 if [[ -z ${MACOS_SETUP_CONFIG_PATH:-} ]]; then
-  log "MACOS_SETUP_CONFIG_PATH is not set - set it to the folder of macos.toml"
+  log_error "MACOS_SETUP_CONFIG_PATH is not set - set it to the folder of macos.toml"
   exit 2
 fi
 if [[ ! -d ${MACOS_SETUP_CONFIG_PATH} ]]; then
-  log "the config folder ${MACOS_SETUP_CONFIG_PATH} does not exist - set MACOS_SETUP_CONFIG_PATH to the folder of macos.toml"
+  log_error "the config folder ${MACOS_SETUP_CONFIG_PATH} does not exist - set MACOS_SETUP_CONFIG_PATH to the folder of macos.toml"
   exit 2
 fi
-
-# The code below is sync-engine/clone of the bootstrap clone: the sync embeds
-# it when it renders this template.
-<% file.Read (print .sync_engine "/clone") | strings.TrimPrefix "#!/usr/bin/env bash\n" %>
 
 # The cache of the old Mac task. Its list of generated files moves to the new
 # cache, when that cache has no list. The old folder then goes, but not while
@@ -84,7 +108,7 @@ mac_legacy_cleanup() {
   [[ -e ${old} ]] || return 0
   if [[ ! -e ${manifest} && -f ${old}/generated.txt ]]; then
     if ! mv -- "${old}/generated.txt" "${manifest}"; then
-      log "cannot move ${old}/generated.txt to ${manifest} - keeping ${old}"
+      log_error "cannot move ${old}/generated.txt to ${manifest} - keeping ${old}"
       return 0
     fi
   fi
@@ -116,7 +140,7 @@ fi
 
 sync="${_SE_COPY}/macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync"
 if [[ ! -f ${sync} ]]; then
-  log "the clone has no macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync - nothing synced"
+  log_error "the clone has no macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync - nothing synced"
   exit 1
 fi
 # The exit code of `sync` is the exit code of this task, exit 4 (the stop after

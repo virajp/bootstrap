@@ -25,6 +25,16 @@ _se_clone_init() {
   _SE_COPY=''
 }
 
+# _se_clone_styled <fd>: 0 when the output on that descriptor shows glyphs. The
+# rule of style_enabled of helpers: this file cannot use helpers or
+# sync-engine/common, because an entry task embeds it alone.
+_se_clone_styled() {
+  if [[ -n ${FORCE_COLOR:-} && ${FORCE_COLOR} != 0 ]]; then
+    return 0
+  fi
+  [[ -z ${NO_COLOR:-} && -t $1 && ${TERM:-dumb} != dumb ]]
+}
+
 # _se_say <info|error> <text>: through the helpers of the caller, else on
 # stderr. The Mac entry task has no helpers.
 _se_say() {
@@ -35,8 +45,12 @@ _se_say() {
     else
       print_info "${text}"
     fi
-  else
+  elif ! _se_clone_styled 2; then
     printf 'sync-engine: %s\n' "${text}" >&2
+  elif [[ ${level} == error ]]; then
+    printf '❌ %s\n' "${text}" >&2
+  else
+    printf 'ℹ️ %s\n' "${text}" >&2
   fi
 }
 
@@ -117,16 +131,22 @@ _se_legacy_cleanup() {
   local base=${XDG_CACHE_HOME:-$HOME/.cache}
   local old=$base/bootstrap
   local old_lock=$base/bootstrap.lock
+  local had_old=''
   [[ -e ${old} || -e ${old_lock} ]] || return 0
   if ! mkdir -- "${old_lock}" 2> /dev/null; then
     _se_stale_lock "${old_lock}" || true
     mkdir -- "${old_lock}" 2> /dev/null || return 0
   fi
   _SE_OLD_HELD=${old_lock}
+  if [[ -e ${old} ]]; then
+    had_old=1
+  fi
   rm -rf -- "${old}" 2> /dev/null || true
   rm -rf -- "${old_lock}" 2> /dev/null || true
   _SE_OLD_HELD=''
-  [[ -e ${old} ]] || _se_say info "Removed the old cache ${old}"
+  if [[ -n ${had_old} && ! -e ${old} ]]; then
+    _se_say info "Removed the old cache ${old}"
+  fi
   return 0
 }
 

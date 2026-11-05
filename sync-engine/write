@@ -54,7 +54,7 @@ _se_parse_check() {
       ;;
   esac
   ((ok == 0)) || return 0
-  _se_log "$show: the result does not parse as $format - the current file stays"
+  _se_outcome failed "$show" "the result does not parse as $format - the current file stays" "$show: the result does not parse as $format - the current file stays"
   [[ -z $err ]] || printf '%s\n' "$err" | sed 's/^/  /' >&2
   return 2
 }
@@ -69,28 +69,33 @@ _se_tmp() {
   printf '%s\n' "$_SE_TMP"
 }
 
-# 0 when the seed <dest> exists: it stays as it is. The caller logs `kept seed`.
+# 0 when the seed <dest> exists: it stays as it is. The caller reports
+# `kept seed`.
 _se_seed_kept() { [[ -e $1 ]]; }
 
 # Remove each synced file (with the header) that is at the place of a folder in
 # <dir> or above it, up to <root>. <spare> lists the paths, relative to <root>,
 # one per line, that the sync must not remove: the seeds and the merge targets.
+# <target> names the file that needs the folder, as a failure reports it.
 # Returns 1, after a message, when such a file is the repo's own or is in
 # <spare>.
 _se_unblock() {
-  local dir=$1 root=$2 dry_run=$3 spare=${4:-} show
+  local dir=$1 root=$2 dry_run=$3 spare=$4 target=$5 show
   while [[ $dir == "$root"/* ]]; do
     if [[ -f $dir && ! -L $dir ]]; then
       show=$(_se_path "$dir")
       if ! _se_has_header "$dir" || [[ $'\n'$spare$'\n' == *$'\n'"${dir#"$root"/}"$'\n'* ]]; then
-        _se_log "$show is a file of this repo, but the sync needs a folder there - move it"
+        _se_outcome failed "$target" "$show is a file of this repo, but the sync needs a folder there - move it" "$show is a file of this repo, but the sync needs a folder there - move it"
         return 1
       fi
       if ((dry_run)); then
-        _se_log "would remove $show (a folder replaces it)"
+        _se_outcome removed "$show" '' "would remove $show (a folder replaces it)"
       else
-        rm -f -- "$dir" || return 1
-        _se_log "removed    $show (a folder replaces it)"
+        rm -f -- "$dir" || {
+          _se_outcome failed "$target" 'cannot write the target'
+          return 1
+        }
+        _se_outcome removed "$show" '' "removed    $show (a folder replaces it)"
       fi
       return 0
     fi
@@ -99,27 +104,33 @@ _se_unblock() {
 }
 
 # Compare the temp file <tmp> with <dest>, then write it with <mode>, or with
-# <dry_run> 1 print the change. <show> names <dest> in each message.
+# <dry_run> 1 print the change. <show> names <dest> in each message. <file_mode>
+# is the mode of the `[files]` table: a written `seed` reports as seeded.
 _se_finish() {
-  local mode=$1 tmp=$2 dest=$3 show=$4 dry_run=$5
+  local mode=$1 tmp=$2 dest=$3 show=$4 dry_run=$5 file_mode=${6:-} kind=changed
+  if [[ $file_mode == seed ]]; then
+    kind=seeded
+  elif [[ ! -e $dest && ! -L $dest ]]; then
+    kind=new
+  fi
   if [[ -f $dest ]] && cmp -s -- "$tmp" "$dest"; then
     rm -f -- "$tmp"
     if [[ $(_se_mode "$dest") == "$mode" ]]; then
-      _se_log "unchanged  $show"
+      _se_outcome unchanged "$show" '' "unchanged  $show"
     elif ((dry_run)); then
-      _se_log "would chmod $mode $show"
+      _se_outcome changed "$show" '' "would chmod $mode $show"
     else
       chmod "$mode" "$dest" || {
-        _se_log "cannot chmod $show"
+        _se_outcome failed "$show" 'cannot chmod' "cannot chmod $show"
         return 1
       }
-      _se_log "chmod $mode  $show"
+      _se_outcome changed "$show" '' "chmod $mode  $show"
     fi
     return 0
   fi
 
   if ((dry_run)); then
-    _se_log "would update $show"
+    _se_outcome "$kind" "$show" '' "would update $show"
     if [[ -f $dest ]]; then
       diff -u --label "$show (current)" --label "$show (bootstrap)" -- "$dest" "$tmp" >&2 || true
     fi
@@ -130,10 +141,10 @@ _se_finish() {
   chmod "$mode" "$tmp"
   mv -f -- "$tmp" "$dest" || {
     rm -f -- "$tmp"
-    _se_log "cannot write $show"
+    _se_outcome failed "$show" 'cannot write' "cannot write $show"
     return 1
   }
-  _se_log "updated    $show"
+  _se_outcome "$kind" "$show" '' "updated    $show"
 }
 
 # 0 when <key> is a key of a `[files."<target>"]` table.

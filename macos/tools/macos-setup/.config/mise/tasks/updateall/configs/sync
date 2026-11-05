@@ -9,19 +9,32 @@
 
 set -uo pipefail
 
-printf '%s\n' "setup-sync: running ${BASH_SOURCE[0]}" >&2
+if [[ ${SYNC_ENGINE_VERBOSE:-} == 1 ]]; then
+  printf '%s\n' "setup-sync: running ${BASH_SOURCE[0]}" >&2
+fi
+
+# An error line: the glyph when styled, else the prefix. The rule of
+# _se_clone_styled of sync-engine/clone, which this file does not have yet.
+log_error() {
+  if [[ -n ${FORCE_COLOR:-} && ${FORCE_COLOR} != 0 ]] ||
+    [[ -z ${NO_COLOR:-} && -t 2 && ${TERM:-dumb} != dumb ]]; then
+    printf '❌ %s\n' "$*" >&2
+  else
+    printf '%s\n' "setup-sync: $*" >&2
+  fi
+}
 
 # `updateall:configs` passes its temp copy of the cache clone. The sync code
 # then comes from the commit that it renders, so a change to that code applies
 # in the same run. A Mac has no local copy of the sync code, so without a clone
 # this task stops.
 if [[ -z ${SYNC_ENGINE_CLONE:-} ]]; then
-  printf '%s\n' "setup-sync: SYNC_ENGINE_CLONE is not set - run mise run updateall:configs instead" >&2
+  log_error "SYNC_ENGINE_CLONE is not set - run mise run updateall:configs instead"
   exit 2
 fi
 lib="${SYNC_ENGINE_CLONE}/sync-engine/setup-sync"
 if [[ ! -f ${lib} ]]; then
-  printf '%s\n' "setup-sync: ${lib} not found - nothing synced" >&2
+  log_error "${lib} not found - nothing synced"
   exit 1
 fi
 # shellcheck source=/dev/null

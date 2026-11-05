@@ -610,7 +610,7 @@ for each selected tool.
    environment.
 2. Run `mise tasks`. Make sure that the synced tasks are in the list.
 3. Run `mise run setup`. Make sure that it completes.
-4. Run `mise run setup:configs` again. Each file must show `unchanged`,
+4. Run `mise run setup:configs --verbose`. Each file must show `unchanged`,
    `kept seed`, `skip seed` or `skip env`.
 
 mise always loads `.config/mise.toml`. It loads a `conf.d/*/mise.<env>.toml`

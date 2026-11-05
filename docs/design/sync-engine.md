@@ -17,7 +17,7 @@ folder.
 | File         | Job                                                                                                                                                                                                        |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `clone`      | The cache, the lock, the fetch and the copy of the clone. A template of an entry task embeds this file.                                                                                                    |
-| `common`     | The log, the file mode, the clean-up and its traps, the header detection, the record of the commit and the tool wrappers.                                                                                  |
+| `common`     | The log, the output of a run, the file mode, the clean-up and its traps, the header detection, the record of the commit and the tool wrappers.                                                             |
 | `write`      | The write of one target: the format, the parse check, the temp file, the seed gate, the unblock of a folder path, the checks of a `[files]` table, the compare, the mode, the dry-run diff and the rename. |
 | `merge`      | Merge mode.                                                                                                                                                                                                |
 | `select`     | The pack expansion and the depth-first walk of the `depends`.                                                                                                                                              |
@@ -100,7 +100,10 @@ The old stubs used `bootstrap/` and `bootstrap.lock` in
 `${XDG_CACHE_HOME:-~/.cache}`. Each run removes these two while it holds the old
 lock. When a live old stub holds that lock, the run skips the removal, and a
 later
-run does it. A failed removal does not fail the sync. The old Mac cache has its
+run does it. A failed removal does not fail the sync. The line
+`Removed the old cache <path>` prints only when the old folder existed before
+the removal and does not exist after it, so a run with only the old lock prints
+nothing. The old Mac cache has its
 own
 step. See [setup-sync.md](setup-sync.md#the-entry-task).
 
@@ -139,12 +142,13 @@ set to the copy. The child task loads the front-end from that copy.
 
 ## The engine variables
 
-| Variable            | Use                                                                                          |
-| ------------------- | -------------------------------------------------------------------------------------------- |
-| `SYNC_ENGINE_CLONE` | The clone copy of the run, which the entry task gives its child task.                        |
-| `SYNC_ENGINE_URL`   | The clone URL. A test uses it for a change that is not pushed.                               |
-| `SYNC_ENGINE_CACHE` | The cache folder. A test uses it.                                                            |
-| `REPO_SYNC_CLONE`   | The same copy, for a member that still has the old sync task. See the forwarding file below. |
+| Variable              | Use                                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `SYNC_ENGINE_CLONE`   | The clone copy of the run, which the entry task gives its child task.                                         |
+| `SYNC_ENGINE_URL`     | The clone URL. A test uses it for a change that is not pushed.                                                |
+| `SYNC_ENGINE_VERBOSE` | `1` prints the log line of each target in place of the list. See [The output of a run](#the-output-of-a-run). |
+| `SYNC_ENGINE_CACHE`   | The cache folder. A test uses it.                                                                             |
+| `REPO_SYNC_CLONE`     | The same copy, for a member that still has the old sync task. See the forwarding file below.                  |
 
 The forwarding file is `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync`
 of
@@ -222,7 +226,9 @@ The repo side has more steps for two targets. See
   merge target keeps its own mode, and a new one takes the mode of its source.
   When
   only the mode differs, the sync runs `chmod`.
-- A dry run prints `would update <path>` and a unified diff, or `would chmod`.
+- A dry run lists the target as `would change`, `would add` or `would seed`,
+  with a unified diff when the file exists. A change of the mode alone lists as
+  `would change`, with no diff. See [The output of a run](#the-output-of-a-run).
 - A file with the bootstrap header at a path where a target needs a folder is
   removed. A file without the header, or a seed or a merge target of a tool of
   the
@@ -370,8 +376,9 @@ each
 generated file of the run. A seed and a merge target get no row. A reader skips
 each
 `#` line. The sync writes the file only when its content changes, with an atomic
-`mv` and the mode `644`. On the repo side, a dry run prints `would write <path>`
-when the content differs. The dry run of the Mac side writes no manifest and
+`mv` and the mode `644`. A write counts as `changed` or `new`. On the repo side,
+a dry run lists the manifest as `would change` or `would add` when the content
+differs. The dry run of the Mac side writes no manifest and
 prints nothing for it.
 
 | Side    | Manifest                      | Target root    | Details                                     |
@@ -395,16 +402,16 @@ handle.
   variant.
 - Else the sync removes the file, then its empty parent folders, up to the
   target
-  root and never past a symlinked folder. A dry run prints `would remove
-  <path>`.
+  root and never past a symlinked folder. A dry run lists the file as
+  `would remove`.
 - A failed removal is a failure, and the other rows still run.
 - The first sync has no manifest, so the stale rule removes nothing.
 
-| Rule               | `repo` link mode                                                                                      | `macos` link mode                 |
-| ------------------ | ----------------------------------------------------------------------------------------------------- | --------------------------------- |
-| A link             | A listed path that is a symlink, or is below a symlinked folder, stays and logs `kept <path> (link)`. | The sync removes the real file.   |
-| Another repository | A file below a folder with its own `.git` stays and logs `kept <path> (another repository)`.          | Not examined.                     |
-| Manifest file      | A manifest that is a symlink, is below a symlinked folder or is not a regular file is not read.       | The sync reads the file as it is. |
+| Rule               | `repo` link mode                                                                                                    | `macos` link mode                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| A link             | A listed path that is a symlink, or is below a symlinked folder, stays. With verbose, it logs `kept <path> (link)`. | The sync removes the real file.   |
+| Another repository | A file below a folder with its own `.git` stays. With verbose, it logs `kept <path> (another repository)`.          | Not examined.                     |
+| Manifest file      | A manifest that is a symlink, is below a symlinked folder or is not a regular file is not read.                     | The sync reads the file as it is. |
 
 ## The values merge
 
@@ -486,11 +493,110 @@ to find what changed since the last sync.
   on the first line. A comment just above a key belongs to that key.
 - Each other line stays. This is the only write to the values file.
 - Through a symlink, the sync writes the real file, so the link stays.
-- A dry run prints `would set bootstrap_commit <commit> in <path>`.
+- A real run prints the info line `Set bootstrap_commit to <short commit>`, and
+  a dry run prints `Would set bootstrap_commit to <short commit>`. With verbose,
+  the lines are `set bootstrap_commit <commit> in <path>` and
+  `would set bootstrap_commit <commit> in <path>`.
 - A missing `macos.toml` is created. See
   [setup-sync.md](setup-sync.md#macostoml). On the repo side, a missing values
   file
   stops the sync before this step.
+
+## The output of a run
+
+The code of the output is in `common`, so both front-ends print the same lines.
+The sample is in
+[docs/sync/tools/repo-sync.md](../sync/tools/repo-sync.md#tasks).
+
+**The outcome of a target.** `_se_outcome <kind> <path> [text] [line]` replaces
+each per-file log line. It increments the count of the kind and prints the
+correct line. Each count is a plain variable, for bash 3.2.
+
+| Kind        | Lines of the log                                      | List                | Dry-run word   | Table row      |
+| ----------- | ----------------------------------------------------- | ------------------- | -------------- | -------------- |
+| `changed`   | `updated`, `chmod`, `wrote` of a manifest that exists | `✎ changed`, yellow | `would change` | `Changed`      |
+| `new`       | `updated`, `wrote` of a target that does not exist    | `✚ new`, green      | `would add`    | `New`          |
+| `seeded`    | `updated` of a seed                                   | `❋ seeded`, blue    | `would seed`   | `Seeded`       |
+| `removed`   | `removed`                                             | `✖ removed`, red    | `would remove` | `Removed`      |
+| `failed`    | Each failure message of a target                      | `✗ failed`, red     | `failed`       | `Failed`       |
+| `unchanged` | `unchanged`                                           | None                | None           | `= Unchanged`  |
+| `kept`      | `kept seed`                                           | None                | None           | `◦ Kept seeds` |
+| `skipped`   | `skip seed`, `skip merge`, `skip file`, `skip env`    | None                | None           | `⊘ Skipped`    |
+
+- **A failed target:** It counts once, and it has one list line, from its first
+  failure message: `failed <path>: <text>`. `<path>` is the target, and the text
+  does not repeat it. A target that fails with no message gets the text
+  `cannot write the target`. A later line for the same target, for example
+  `kept existing`, prints only with verbose.
+- **No count:** A failure of the mise config of a tool or of the manifest file
+  has no count, and its message stays. The line `FAILED: <list>` stays, before
+  the table. The other messages of `_se_log` stay too.
+
+**The table and the last line.** `_se_summary <rc>` prints them once, as the
+last
+output of the run: after the stale rule, the manifest write and
+`bootstrap_commit`. Each return after the file loop calls it, also on a failure.
+A run that stops before the file loop has no table. Each run prints one table,
+so
+`--all` prints one table for each member.
+
+- The table always has the rows `Changed`, `New`, `Seeded`, `Removed`,
+  `Unchanged`, `Kept seeds`, `Skipped`, `Failed` and `Total`, in that order.
+  `Total` is the sum of the rows.
+- A row with a zero count is dim. Another row takes the color of its kind in the
+  list. `Unchanged`, `Kept seeds`, `Skipped` and `Total` have no color.
+- `n` is the sum of `Changed`, `New`, `Seeded` and `Removed`.
+
+| Run              | Last line                                                                   |
+| ---------------- | --------------------------------------------------------------------------- |
+| Real run, code 0 | `✅ Synced: <n> files changed`, or `✅ Synced: no file changed`             |
+| Dry run, code 0  | `✅ Dry run: <n> files would change`, or `✅ Dry run: no file would change` |
+| Another code     | A red `❌ The sync failed with code <rc>: <failed count> files failed`      |
+
+The last line uses `1 file` for one file. With no failed file, the line with
+another code stops after `<rc>`.
+
+**The style rule.** One rule turns the glyphs and the colors on and off
+together:
+`FORCE_COLOR` (not `0`) turns them on, `NO_COLOR` turns them off, and otherwise
+they need a terminal on stderr and a `TERM` that is not `dumb`. This is the rule
+of `style_enabled` of `helpers`. The engine does not call `helpers`, because the
+local copy can be stale and the Mac side does not have it. `clone` has its own
+copy of the rule, `_se_clone_styled`, because an entry task embeds `clone`
+alone.
+
+| Line      | Style on                       | Style off                         |
+| --------- | ------------------------------ | --------------------------------- |
+| List      | `<glyph> <word> <path>`, color | `<word> <path>`                   |
+| Info      | `ℹ️ <text>`, no color          | `[INFO] <text>`                   |
+| Last line | `✅ <text>` or `❌ <text>`     | `[OK] <text>` or `[ERROR] <text>` |
+| Table     | Box characters                 | ASCII borders (`+`, `-`, `\|`)    |
+
+These lines have no `sync-engine:` or `setup-sync:` prefix. `_se_say` of `clone`
+uses `print_info` and `print_error` when they exist. Without them, it prints the
+info glyph or the error glyph, or the prefix `sync-engine: ` with style off.
+
+**Verbose.** `--verbose` of `setup:configs` and `updateall:configs` sets
+`SYNC_ENGINE_VERBOSE=1`. A user can also set the variable, and only the value
+`1`
+turns it on. Each entry task consumes the flag and does not pass it to the
+engine. Each target then prints its log line in place of its list line, for
+example `unchanged  <path>`, `updated    <path>`, `kept seed  <path>`,
+`skip env   <path>` or `would update <path>`. The table and the last line stay.
+These lines print only with verbose:
+
+- `using bootstrap at <commit>`, `tools:` and, on the repo side,
+  `environments:`.
+  By default, they are one info line. See
+  [repo-sync.md](repo-sync.md#the-entry-tasks) and
+  [setup-sync.md](setup-sync.md#the-output).
+- `kept <path> (link)` and `kept <path> (another repository)`.
+- `done: <ok>/<total> files in sync`, `<ok>/<total> files in sync; existing
+  copies of the rest were left untouched` and, on the Mac side, `dry run:
+  <ok>/<total> files checked, nothing written`.
+
+The test tasks set the variable, so a case compares the log lines. The cases of
+the default output unset it.
 
 ## The exit codes
 

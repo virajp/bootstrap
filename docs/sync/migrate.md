@@ -326,8 +326,8 @@ file with the old header that remains is from a tool or a path that
 1. Make sure that `.config/repo-config.toml` does not exist.
 2. Run `git grep -l 'Synced from repo-config:'`. The list must be empty,
    except for the files that the user decided to keep in M15.5.
-3. Run `mise run setup:configs` again. It must not show the notice about the
-   old values file. Each file must show `unchanged`, `kept seed`,
+3. Run `mise run setup:configs --verbose`. It must not show the notice about
+   the old values file. Each file must show `unchanged`, `kept seed`,
    `skip seed` or `skip env`.
 4. Run `mise tasks`. Make sure that the synced tasks are in the list.
 5. Run `mise run setup`. Make sure that it completes.

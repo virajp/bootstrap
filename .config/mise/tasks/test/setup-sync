@@ -26,6 +26,10 @@ unset git_vars
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
+# Each per-file line prints, so the cases compare the log format. A case of the
+# default output unsets the variable.
+export SYNC_ENGINE_VERBOSE=1
+
 root=${MISE_PROJECT_ROOT}
 fixtures="$root/macos/fixtures"
 # The tilde at the start of a target in a message.
@@ -802,6 +806,37 @@ case_dry_run() {
   check "nothing written in HOME, a link source, the config folder or the manifest" test "$before" = "$after"
 }
 
+# The default output of setup_sync, with no terminal.
+case_default_output() {
+  unset SYNC_ENGINE_VERBOSE FORCE_COLOR NO_COLOR
+  use_config ok
+  run_real
+  check_exit 0
+  check_output "new ~/.config/core/plain.txt"
+  check "the first run has the table" grep -qE '^\| Total +\| +[0-9]+ \|$' "$log"
+  printf '%s\n' "edited" > "$home/.config/core/values.txt"
+  rm -- "$home/.config/core/plain.txt"
+  run_real
+  check_exit 0
+  check_output "changed ~/.config/core/values.txt"
+  check_output "new ~/.config/core/plain.txt"
+  check_no_output "$tilde/.config/opt/opt.txt"
+  check_no_output "unchanged  "
+  check_no_output "using bootstrap"
+  check "the info line" grep -qE "^\[INFO\] bootstrap ${tree_commit:0:7} · [0-9]+ tools" "$log"
+  check_output "| Changed       |     1 |"
+  check_output "| New           |     1 |"
+  check_output "| Seeded        |     0 |"
+  check_output "| Removed       |     0 |"
+  check_output "| Failed        |     0 |"
+  check "one table" test "$(grep -c '^| Total ' "$log")" = 1
+  check "the last line" test "$(tail -n 1 -- "$log")" = "[OK] Synced: 2 files changed"
+  FORCE_COLOR=1 run_real
+  check_exit 0
+  check_output "┌───────────────┬───────┐"
+  check_output "✅ Synced: no file changed"
+}
+
 # ---- contributions ------------------------------------------------------------
 
 owner_config() {
@@ -1376,6 +1411,24 @@ case_entry_running_line() {
     grep -qE "^setup-sync: running $TMPDIR/macos-setup\.[^/]+/macos/tools/macos-setup/\.config/mise/tasks/updateall/configs/sync$" <<< "$lines"
 }
 
+# Without --verbose only the changes print. The entry task consumes the flag,
+# since setup_sync stops on a flag that it does not know.
+case_entry_verbose() {
+  entry_setup
+  unset SYNC_ENGINE_VERBOSE FORCE_COLOR NO_COLOR
+  entry_real
+  check_exit 0
+  check_output "new ~/.config/core/plain.txt"
+  check_no_output "setup-sync: running"
+  check_no_output "unchanged  "
+  entry_run --verbose --no-bootstrap
+  check_exit 0
+  check_output "setup-sync: running"
+  check_output "unchanged  ~/.config/core/plain.txt"
+  check_no_output "unknown"
+  check_output "| Total "
+}
+
 case_entry_lock_wait() {
   local holder runner line
   entry_setup
@@ -1640,6 +1693,7 @@ run_case "bootstrap_commit: after the header comments, a second run" case_commit
 run_case "bootstrap_commit: a symlinked macos.toml" case_commit_link
 run_case "bootstrap_commit: a dry run" case_commit_dry
 run_case "--dry-run writes nothing" case_dry_run
+run_case "the default output: the list and the table" case_default_output
 run_case "merge: a JSON target" case_merge_json
 run_case "merge: a YAML target keeps its comments" case_merge_yaml
 run_case "merge: a TOML target keeps its comments" case_merge_toml
@@ -1664,6 +1718,7 @@ run_case "entry clone: the SSH and https forms of one URL" case_entry_clone_ssh_
 run_case "entry clone: a non-empty non-git folder" case_entry_clone_not_git
 run_case "entry clone: an origin that cannot be cloned" case_entry_clone_fails
 run_case "entry clone: the running line" case_entry_running_line
+run_case "entry flags: --verbose" case_entry_verbose
 run_case "entry lock: a run waits for a live holder, then takes over" case_entry_lock_wait
 run_case "entry lock: a lock whose pid is dead" case_entry_lock_dead
 run_case "entry lock: a real run holds it, a dry run releases it" case_entry_lock_hold

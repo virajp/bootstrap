@@ -5,6 +5,7 @@
 #MISE description="Sync the shared files of this repository's tools from bootstrap"
 
 #USAGE flag "--dry-run" help="show the changes without writing them"
+#USAGE flag "--verbose" help="list each file, also an unchanged one"
 <%/* The member flags are only for the submodules: a folder of a monorepo is
    part of this tree. */ -%>
 <% $subs := coll.Slice %><% range .members %><% if eq (index $.member_types .) "submodule" %><% $subs = coll.Append . $subs %><% end %><% end -%>
@@ -43,6 +44,56 @@ _se_unlock
 
 # Unquoted on purpose: empty adds no argument.
 [[ "${usage_dry_run:-false}" == "true" ]] && DRY_RUN="--dry-run" || DRY_RUN=""
+if [[ "${usage_verbose:-false}" == "true" ]]; then
+  export SYNC_ENGINE_VERBOSE=1
+fi
+
+file_mode() { stat -c %a -- "$1" 2> /dev/null || stat -f %Lp -- "$1"; }
+
+# refresh_local_task <root>: the local sync task and its helpers run before the
+# file loop can write them, so they come from the copy here. Only a local file
+# is replaced, and a symlink stays. A dry run copies nothing. `_default` itself
+# stays old for this run: it needs the full render.
+refresh_local_task() {
+  local tasks=$1/.config/mise/tasks
+  local pair local_file clone_file tmp commit
+  local found='' differs='' failed=''
+  for pair in repo-sync:setup/configs/sync mise:_scripts/helpers; do
+    local_file=${tasks}/${pair#*:}
+    clone_file=${_SE_COPY}/repo/tools/${pair%%:*}/.config/mise/tasks/${pair#*:}
+    [[ -f ${local_file} || -L ${local_file} ]] || continue
+    found=1
+    [[ ! -L ${local_file} && -f ${clone_file} ]] || continue
+    if cmp -s -- "${local_file}" "${clone_file}" \
+      && [[ $(file_mode "${local_file}") == "$(file_mode "${clone_file}")" ]]; then
+      continue
+    fi
+    if [[ -n ${DRY_RUN} ]]; then
+      differs=1
+      continue
+    fi
+    # Next to the file, so the final mv is atomic.
+    tmp=${local_file}.tmp.$$
+    if cp -p -- "${clone_file}" "${tmp}" && mv -f -- "${tmp}" "${local_file}"; then
+      differs=1
+    else
+      rm -f -- "${tmp}"
+      failed=1
+      print_warn "Cannot update ${local_file} - using the local file"
+    fi
+  done
+  [[ -n ${found} ]] || return 0
+  commit=$(git -C "${_SE_COPY}" rev-parse --short HEAD) || commit=''
+  if [[ -n ${differs} && -n ${DRY_RUN} ]]; then
+    print_info "Would update the local sync task to ${commit}"
+  elif [[ -n ${differs} ]]; then
+    print_info "Updated the local sync task to ${commit}"
+  elif [[ -z ${failed} ]]; then
+    print_info "The local sync task is up to date"
+  fi
+}
+
+refresh_local_task "${MISE_PROJECT_ROOT}"
 SYNC_ENGINE_CLONE="${_SE_COPY}" REPO_SYNC_CLONE="${_SE_COPY}" mise run setup:configs:sync ${DRY_RUN}
 <% if $subs %>
 # Each member syncs from the same copy, so all get the same commit. The first
@@ -56,6 +107,7 @@ sync_member() {
     print_error "${folder} has no setup:configs:sync task - adopt bootstrap in it first"
     exit 2
   fi
+  refresh_local_task "${MISE_PROJECT_ROOT}/${folder}"
   SYNC_ENGINE_CLONE="${_SE_COPY}" REPO_SYNC_CLONE="${_SE_COPY}" mise run --cd "${MISE_PROJECT_ROOT}/${folder}" setup:configs:sync ${DRY_RUN}
 }
 <% end -%>

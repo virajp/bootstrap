@@ -18,13 +18,15 @@ codes, [packs.md](packs.md), [tools.md](tools.md) and [mise.md](mise.md).
 mise run updateall:configs                # render, then mise bootstrap
 mise run updateall:configs --dry-run      # show the changes, write nothing
 mise run updateall:configs --no-bootstrap # skip each mise bootstrap step
+mise run updateall:configs --verbose      # list each file
 ```
 
-| Flag             | Effect                             |
-| ---------------- | ---------------------------------- |
-| `--dry-run`      | Shows the changes. Writes nothing. |
-| `--no-bootstrap` | Skips each `mise bootstrap` step.  |
-| `-h`, `--help`   | Shows the usage.                   |
+| Flag             | Effect                                                                                                               |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `--dry-run`      | Shows the changes. Writes nothing.                                                                                   |
+| `--no-bootstrap` | Skips each `mise bootstrap` step.                                                                                    |
+| `--verbose`      | Lists each file, also an unchanged one. Sets `SYNC_ENGINE_VERBOSE=1`, and the task does not pass the flag to `sync`. |
+| `-h`, `--help`   | Shows the usage.                                                                                                     |
 
 An unknown flag, and a run inside a run, stop the task.
 
@@ -244,6 +246,29 @@ A dry run renders both stages at once, runs no `mise bootstrap` and never stops
 with exit 4.
 
 The other exit codes are in [sync-engine.md](sync-engine.md#the-exit-codes).
+
+## The output
+
+The list, the table, the last line and verbose are in
+[sync-engine.md](sync-engine.md#the-output-of-a-run). These rules are only for
+the Mac:
+
+- The first line is the info line `bootstrap <short commit> · <n> tools`. With
+  an
+  empty commit, it reads `bootstrap an unknown commit · <n> tools`.
+- The run has one table across the init and main stages, and it prints after
+  `mise bootstrap`. A return of exit 4 after the init stage has no table.
+- `FAILED: <list>` stays by default, before the table.
+- The entry task has no line for the local sync task, because it runs `sync`
+  from
+  the clone copy.
+- `log` of the entry task is an info line, and `log_error` is an error line.
+  With
+  the style rule on, they show the info glyph or the error glyph and no prefix.
+  Otherwise they keep the prefix `setup-sync: `. The two error lines of
+  `updateall/configs/sync` follow the same rule. That file has its own copy of
+  the rule, because it runs before it loads the engine.
+- `setup-sync: running <path>` prints only with verbose.
 
 ## The failures
 
