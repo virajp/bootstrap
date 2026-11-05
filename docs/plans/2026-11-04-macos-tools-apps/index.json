@@ -214,11 +214,11 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T12:57:58.897Z",
+      "ended": "2026-11-05T13:09:36.843Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     }
   ],
   "waves": [
@@ -242,9 +242,9 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T12:57:58.863Z",
+      "ended": "2026-11-05T13:10:00.283Z"
     }
   ],
   "shared_files": [
@@ -410,6 +410,13 @@
       "stage": "security",
       "text": "Security, medium, macos/tools/orca/tools.toml:6 (U2): third-party tap stablyai/orca on the vendor's organization account (created 2026-05-01, 2 stars), with a cask that auto-updates outside brew and puts a CLI on PATH; a compromised or malicious vendor gets code execution as the user; opt-in tool · Accepted under D10: imported byte for byte apart from the table prefix of D3; content unchanged, for the security plan after the run.",
       "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "",
+      "stage": "",
+      "text": "SKILL.md asks one wave reviewer for every wave; W2 (a review row) and W4 (gates) changed no file, so no reviewer ran over an empty diff · The diffs were empty, and the plan gate covers the tree. Settled with no ruling owed.",
+      "state": "closed"
     }
   ],
   "overrides": [],
