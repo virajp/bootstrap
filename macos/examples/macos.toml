@@ -7,12 +7,40 @@
 # The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
 
+[tools.1password]
+# The answer to the question ssh_vault of 1password.
+ssh_vault = "Sample"
+
+[tools.1password-cli]
+
+[tools.1password-safari]
+
+[tools.bitwarden]
+
+[tools.claude-cli]
+
+[tools.claude-desktop]
+
+[tools.claude-status]
+
+[tools.codeburn]
+
+[tools.dasel]
+
+[tools.devtools]
+
 [tools.diff-so-fancy]
 # This table selects the tool, because it is not a base tool.
+
+[tools.dprint]
+
+[tools.gem]
 
 [tools.gh]
 # The answer to the question editor of gh.
 editor = "vim"
+
+[tools.ghostty]
 
 [tools.git]
 # The answer to the question email_github of git.
@@ -24,6 +52,10 @@ name = "Sample User"
 # The answer to the question signing_key of git.
 signing_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAISampleKeyForTestsOnly sample@example.com"
 
+[tools.git-tools]
+
+[tools.glab]
+
 [tools.macos-defaults]
 # The answer to the question dock_orientation of macos-defaults.
 dock_orientation = "right"
@@ -32,6 +64,16 @@ dock_orientation = "right"
 # The answer to the question config_path of macos-setup.
 config_path = "~/Projects/github.com/janedoe/macos-setup"
 
+[tools.orbstack]
+
+[tools.pstree]
+
 [tools.ssh]
 # The answer to the question user of ssh.
 user = "sampleuser"
+
+[tools.superfile]
+
+[tools.tailscale]
+
+[tools.telegram]
