@@ -136,11 +136,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "2026-11-05T09:30:05.315Z",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-05T09:52:12.546Z",
+      "ended": "2026-11-05T09:54:35.392Z",
+      "commit": "361265a",
+      "rounds": 1
     },
     {
       "id": "U5",
@@ -176,9 +176,9 @@
     },
     {
       "id": "W3",
-      "status": "failed",
-      "started": "",
-      "ended": "2026-11-05T09:30:26.636Z"
+      "status": "green",
+      "started": "2026-11-05T09:52:12.479Z",
+      "ended": "2026-11-05T09:55:51.462Z"
     },
     {
       "id": "W4",
@@ -384,8 +384,8 @@
       "id": "G4",
       "unit": "U4",
       "stage": "edit",
-      "text": "DOCS FALSIFIED lines held for the docs unit U4, which owns these files: CLAUDE.md:197 and docs/design/mise.md:135 (a tool does not ship mise files; the Mac mise tool ships config.toml and miserc.toml, D3); CLAUDE.md:619 (miserc.toml with env_conf_d is listed as not shipped); CLAUDE.md:518 (Mac templates encode strings with data.ToJSON; node pnpm config.yaml.tmpl uses printf %q under D4); CLAUDE.md:177 (header placement list omits a header after a # :schema line) · U4 applies them",
-      "state": "open"
+      "text": "DOCS FALSIFIED lines held for the docs unit U4, which owns these files: CLAUDE.md:197 and docs/design/mise.md:135 (a tool does not ship mise files; the Mac mise tool ships config.toml and miserc.toml, D3); CLAUDE.md:619 (miserc.toml with env_conf_d is listed as not shipped); CLAUDE.md:518 (Mac templates encode strings with data.ToJSON; node pnpm config.yaml.tmpl uses printf %q under D4); CLAUDE.md:177 (header placement list omits a header after a # :schema line) · U4 applies them; closed: U4 applied each line, also mise.md:56",
+      "state": "closed"
     },
     {
       "id": "G5",
@@ -427,6 +427,13 @@
       "unit": "U3",
       "stage": "security",
       "text": "SPEC/PLAN GAP: D4, R2 and R3 copy every value and file byte for byte and name no security requirement for prompt commands that run on cd or aliases that read current-folder config; G7 records this only for the mise trust boundary · no assumption taken; G8 and G9 hold the rulings",
+      "state": "open"
+    },
+    {
+      "id": "G11",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "CLAUDE.md four-key tools.toml rule and docs/design/tools.md state a repo-tool rule without limiting it, while sync-engine/setup-sync rejects those keys in a Mac tool, and no owned doc describes the Mac description key · predates this delta; left unedited; a later docs plan should own it",
       "state": "open"
     }
   ],
