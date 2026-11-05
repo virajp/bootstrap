@@ -15,6 +15,8 @@ up to date with `bootstrap`. For a repository that already has
 `.config/bootstrap.toml`, start with
 "A repository that already has `.config/bootstrap.toml`".
 
+A Mac uses [`docs/setup/index.md`](../setup/index.md), not this prompt.
+
 ## Two ways to use bootstrap
 
 A repository uses `bootstrap` in two ways, in this sequence:
