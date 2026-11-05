@@ -171,7 +171,7 @@
       "status": "green",
       "started": "2026-11-05T16:06:34.270Z",
       "ended": "2026-11-05T16:10:33.369Z",
-      "commit": "",
+      "commit": "49417bf",
       "rounds": 1
     },
     {
@@ -214,9 +214,9 @@
     },
     {
       "id": "W4",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-05T16:06:34.237Z",
-      "ended": ""
+      "ended": "2026-11-05T16:15:09.400Z"
     },
     {
       "id": "W5",
