@@ -163,11 +163,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T12:10:54.858Z",
+      "ended": "2026-11-05T12:20:49.203Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -191,9 +191,9 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T12:10:54.819Z",
+      "ended": "2026-11-05T12:21:11.191Z"
     }
   ],
   "shared_files": [
@@ -354,8 +354,8 @@
       "id": "G5",
       "unit": "U2",
       "stage": "edit",
-      "text": "U2 could not check pack members against the tool folders or run test:macos-tools while U1 was writing · assumed U1 writes those exact names; the U5 gates run the check",
-      "state": "open"
+      "text": "U2 could not check pack members against the tool folders or run test:macos-tools while U1 was writing · assumed U1 writes those exact names. closed: U5 ran test:macos-tools over the U1 folders, and it passed",
+      "state": "closed"
     },
     {
       "id": "G6",
