@@ -186,10 +186,13 @@
       "title": "The Mac front-end on the shared engine",
       "target_repo": null,
       "priority": 90,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-05T05:04:56.276Z",
-      "ended": "",
-      "gaps": null,
+      "ended": "2026-11-05T06:38:50.907Z",
+      "gaps": {
+        "open": 7,
+        "moved_to": []
+      },
       "requires": [
         "2026-11-04-mise-generation-shared"
       ],
