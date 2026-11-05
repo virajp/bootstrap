@@ -6,8 +6,9 @@ code in this repository.
 ## Purpose
 
 This repository is the source of shared files for other repositories. It has
-no build and no application code. Its only test is `test:repo-sync` (see "How
-the sync operates"). Other repositories copy files from it with their own
+no build and no application code. Its tests are `test:repo-sync` and
+`test:setup-sync`, and the task `test` runs each test task (see "How the sync
+operates"). Other repositories copy files from it with their own
 `setup:configs` task. Read `README.md` for the sync contract.
 
 ## Layout rule
@@ -23,13 +24,15 @@ repository only:
 - At the root: `README.md`, `CLAUDE.md`, `LICENSE`, `dprint.jsonc` (with the
   excludes of this repository) and `eslint.config.mjs`.
 - `sync-engine/`: the shared library folder of the sync, with `clone`,
-  `common`, `write`, `merge`, `select`, `manifest`, `values`, `mise` and
-  `repo-sync`. It is not a
+  `common`, `write`, `merge`, `select`, `manifest`, `values`, `mise`,
+  `repo-sync` and `setup-sync`, the Mac front-end. It is not a
   tool, so the sync never copies it to a consumer.
 - `docs/design/`: the design notes of the sync (packs, tools, mise, fnox and
   the values file). `docs/plans/`: the vwf plan index.
-- `.config/mise/tasks/test/repo-sync`: the `test:repo-sync` task. It is not in
-  `repo/tools/`, so no consumer gets it.
+- `.config/mise/tasks/test/`: the tasks `test:repo-sync` (`repo-sync`),
+  `test:setup-sync` (`setup-sync`) and `test` (`_default`). They are not in
+  `repo/tools/`, so no consumer gets them.
+- `macos/fixtures/`: the fixtures of `test:setup-sync`.
 
 `repo/examples/<example>/` holds sample values files (`bootstrap.toml`), one
 folder for each repository shape: `polyrepo`, `polyrepo-main`,
@@ -112,7 +115,8 @@ repository, without the `.tmpl` suffix of a template. For example,
   pack stops it with code 3. A pack name must not be a tool folder, and a pack
   must not include itself. Each sync examines every `[pack.*]` table. The sync
   always adds the `base` pack; its name is fixed in `repo-sync`.
-- The member order of a pack is the sync order. The TOML plugin of dprint sorts
+- The member order of a pack is the sync order of `repo-sync`. `setup-sync`
+  sorts the tools by name in each stage. The TOML plugin of dprint sorts
   keys, so the root `dprint.jsonc` excludes `repo/packs.toml`. Keep the order
   by hand.
 - A common tool of a pack holds the items that the other tools of the pack
@@ -217,7 +221,7 @@ Some files refer to files that are not in `repo/tools/`, for example
   compare, the mode, the dry-run diff and the rename. `merge` holds merge mode.
   `select` holds the pack expansion and the depends walk. `manifest` holds the
   read and the write of the manifest and the stale rule. Its `macos` link mode
-  is for the Mac front-end, which is not in this repository yet: it resolves
+  is for the Mac front-end, `sync-engine/setup-sync`: it resolves
   each link, removes the real file and prunes up to the target root. `values`
   holds the merge of the values of the tools (see "Templates"). `mise` holds
   the mise config generator, the environments of each tool and the checks of
@@ -423,9 +427,20 @@ Some files refer to files that are not in `repo/tools/`, for example
   gomplate, jq and yq are installed. Before its
   first `git` call, it unsets the `GIT_*` variables of a git hook, so its
   scratch repositories never write to this repository. It runs the cases in
-  parallel, one job for each CPU, and each case in its own folder. No hook runs
-  it, because it is slow. Run `mise run test:repo-sync` by hand before you
-  commit a change to `repo/` or `sync-engine/`.
+  parallel, one job for each CPU, and each case in its own folder.
+- `test:setup-sync` is the task of this repository in
+  `.config/mise/tasks/test/setup-sync`. It runs `setup_sync` of the working
+  tree's `sync-engine/` against the fixtures in `macos/fixtures/`, and it
+  compares the exit code, the output and the files of each case. Each case has
+  its own temporary `HOME`, so it never changes the real `$HOME`. It needs no
+  network when gomplate, jq and yq are installed.
+- `test` (`test/_default`) runs each test task in parallel. No hook and no
+  `code:merge` task runs a test, because the tests are slow and a consumer does
+  not have them. Run the tests by hand before you commit:
+  - A change to `sync-engine/`: `mise run test`.
+  - A change to `repo/`: `mise run test:repo-sync`.
+  - A change to `macos/`: `mise run test:setup-sync` (and `test:macos-tools`
+    when that task exists).
 
 ## Templates (`*.tmpl`)
 
@@ -483,6 +498,13 @@ Some files refer to files that are not in `repo/tools/`, for example
   it. For such a tool, a list appends its new items, and a value whose type
   differs from the merged value stops the sync with code 2. For any other tool,
   a value replaces the merged one. For both, tables merge key by key.
+- A TOML, JSON or YAML template of a Mac tool (`macos/tools/`) encodes a string
+  value with `data.ToJSON`, for example
+  `name = <% .config.name | data.ToJSON %>`. Its value comes from
+  `[tools.<name>]` of `macos.toml`, and a string with a quote and a newline can
+  add tables or keys to the rendered target. The folder `macos/tools/` is not in
+  this repository yet. The templates of `repo/tools/` do not follow this rule
+  yet, for example `repo/tools/mise/.config/mise.toml.tmpl`.
 - A missing answer is not an error of the engine. The sync examines only the
   shape of `[questions]`, and it asks nothing. A template that needs an answer
   uses `required`, which fails that file with its message. Exit code 4 is only
