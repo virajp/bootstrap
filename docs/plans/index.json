@@ -306,8 +306,8 @@
       "title": "Design docs and lazy-loaded CLAUDE.md",
       "target_repo": null,
       "priority": 150,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-05T13:22:53.255Z",
       "ended": "",
       "gaps": null,
       "requires": [
