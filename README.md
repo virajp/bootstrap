@@ -53,8 +53,8 @@ The sync code is in `sync-engine/`: `clone` for the shared cache and the clone,
 yq, `write` for the write of one file, `merge` for merge mode, `select` for the
 packs and the `depends`, `manifest` for the manifest and the stale rule,
 `values`
-for the merge of the values of the tools, and `repo-sync` for the function
-`repo_sync`. This
+for the merge of the values of the tools, `mise` for the mise config generator,
+and `repo-sync` for the function `repo_sync`. This
 folder is not a tool, so the
 sync does not copy it to a repository.
 
@@ -111,9 +111,10 @@ The sync removes the prefix `mise.` from each table: `[mise.settings]` becomes
 `[settings]` of the generated file. The section decides the environments that
 get it. `tools`, `tool_alias` and `plugins` follow the `envs` of each entry.
 `settings`, `env` and the other folder sections go to each environment of the
-tool. `shell_alias`, `tasks` and the other dev-only sections go only to `dev`.
-`docs/design/mise.md` ("The `[mise.*]` sections") has the full list and an
-example.
+tool. `shell_alias`, `tasks`, `bootstrap`, `dotfiles` and the other dev-only
+sections go only to `dev`. `docs/design/mise.md` ("The `[mise.*]` sections") has
+the full list and an example. A `[mise.*]` string can hold `<% %>`, rendered
+with the values of the tool.
 
 A tool can also have the optional tables `[defaults]` (its values),
 `[questions.<key>]` (the question for one value) and `[contributes.<tool>]`
@@ -238,8 +239,9 @@ These rules apply to each file:
   tool only when it finds a file of each name. Each file of the tool, for
   example a task, states its own condition in its `[files]` table. Each tool
   must be in dev: an `env` or a `default_envs` without dev stops the sync.
-  Aliases, hooks, vars and tasks go only to dev. `.config/mise.toml` is the
-  only file for every environment. `CLAUDE.md` has the full rules.
+  Aliases, hooks, vars, tasks, `bootstrap` and `dotfiles` go only to dev.
+  `.config/mise.toml` is the only file for every environment. `CLAUDE.md` has
+  the full rules.
 - `[overrides]` of the values file replaces a default of a tool, for example
   `[overrides.mise.tools.java]` with `version = "21"`. Each overridden line
   gets an `# override: .config/bootstrap.toml` comment.
@@ -377,7 +379,8 @@ for a case that compares a written file, `repo_sync` of the working tree's
 `repo/`, `sync-engine/` and `tools/` (the forwarding file) against scratch
 values files and scratch consumers.
 Some cases of the manifest also call `_se_manifest_stale` and
-`_se_manifest_read` directly. It checks the exit code and the message of each
+`_se_manifest_read` directly, and the cases of the `macos` side call
+`sync-engine/mise` directly. It checks the exit code and the message of each
 case. It needs no network when gomplate, jq and yq are installed. No hook runs
 it: run it by hand before you commit a change to `repo/` or `sync-engine/`.
 

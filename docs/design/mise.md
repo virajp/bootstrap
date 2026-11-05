@@ -79,8 +79,9 @@ mise files from these tables.
 | `.config/mise/conf.d/<tool>/mise.<env>.toml`  | Generated | `<tool>`       | `MISE_ENV` includes `<env>` |
 | `.config/mise/conf.d/zz-repo/mise.<env>.toml` | Seed      | The repository | `MISE_ENV` includes `<env>` |
 
-Without `MISE_ENV`, no file in `conf.d/` loads. No tool ships or generates a
-`conf.d/*/mise.toml`.
+Without `MISE_ENV`, no file in `conf.d/` loads. In a repository, no tool ships
+or generates a `conf.d/*/mise.toml`. Only the `macos` side of the generator
+writes that name. See [The two sides](#the-two-sides-of-the-generator).
 
 mise loads the folders of `conf.d/` in name order, and a later folder wins.
 The name `zz-repo` sorts after each tool folder, so the config of the
@@ -136,17 +137,34 @@ tables of its `tools.toml`, in mise syntax. The sync removes the prefix
 `mise.` and writes each table into `.config/mise/conf.d/<tool>/mise.<env>.toml`
 as a normal mise section: `[mise.settings]` becomes `[settings]`, `[mise.env]`
 becomes `[env]`, and `[mise.shell_alias]` becomes `[shell_alias]`. The
-generator is `_RS_MISE_TEMPLATE` in `repo-sync`.
+generator is the library `sync-engine/mise`: `_SE_MISE_TEMPLATE` builds the
+output, and `_se_mise_render` writes it. `_se_mise_envs` finds the environments
+of each tool, and `_se_mise_overrides` examines `[overrides.mise*]`. The
+template reads the `SYNC_ENGINE_MISE_*` environment variables.
+
+These parts stay in `sync-engine/repo-sync`:
+
+- `[overrides.gitignore]` and its checks.
+- The `setup-all` and `setup-<submodule>` aliases.
+- The records of the generated files, for the file loop and the manifest.
+- `_rs_envs`, which reads `environments`, and `_rs_env_rules`, which examines
+  the `env` of each entry of the values file.
+- `_rs_mise_index`, which reads each `tools.toml` of the clone, and
+  `_rs_mise_owner`, which finds the tool that defines a mise tool.
+- The call of the library with the side `repo`.
 
 The sync sorts each `[mise.<section>]` table into one of three classes:
 
-| Class    | Sections                                                                                                                                            | Goes to                                      |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| Entry    | `tools`, `tool_alias`, `plugins`                                                                                                                    | The environments of each entry               |
-| Folder   | `settings`, `env`, `tool_config`, `task_config`, `task_templates`, `doctor`, `deps`, `oci`                                                          | Each environment where the folder has a tool |
-| Dev only | `vars`, `secrets`, `redactions`, `shell_alias`, `hooks`, `watch_files`, `daemons`, `daemon_groups`, `daemons_settings`, `daemon_providers`, `tasks` | `dev` only                                   |
+| Class    | Sections                                                                                                                                                                     | Goes to                                      |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| Entry    | `tools`, `tool_alias`, `plugins`                                                                                                                                             | The environments of each entry               |
+| Folder   | `settings`, `env`, `tool_config`, `task_config`, `task_templates`, `doctor`, `deps`, `oci`                                                                                   | Each environment where the folder has a tool |
+| Dev only | `vars`, `secrets`, `redactions`, `shell_alias`, `hooks`, `watch_files`, `daemons`, `daemon_groups`, `daemons_settings`, `daemon_providers`, `tasks`, `bootstrap`, `dotfiles` | `dev` only                                   |
 
 Any other section stops the sync for that tool, with code 2.
+
+`[mise.bootstrap.*]` and `[mise.dotfiles]` are dev only, like `[tasks]`, because
+CI is not a machine to provision.
 
 A `[mise_env.<env>.<section>]` table adds content to one environment only. Its
 section must be in one of the three classes. The sync writes it only when the
@@ -192,6 +210,100 @@ mise loads a `conf.d/*/mise.<env>.toml` only when `MISE_ENV` includes that
 environment. It loads the folders in name order, and `conf.d/zz-repo/` loads
 last. Thus a value in the repository's own `zz-repo/mise.<env>.toml` wins over
 the value of each tool.
+
+### `<% %>` in a `[mise.*]` string
+
+A `[mise.*]` string can hold `<% %>`. When the `tools.toml` of a tool contains
+`<%`, the engine renders that file as a gomplate template into a temp copy. The
+generator reads the copy, so the generated file holds the rendered value. The
+overrides of the values file are not rendered.
+
+The render context is the same on both sides:
+
+| Key       | Value                            |
+| --------- | -------------------------------- |
+| `.config` | The values of the tool           |
+| `.all`    | The values of each selected tool |
+| `.env`    | `HOME` and `USER`                |
+
+An expression sits inside a TOML basic string (`"..."`), and each string literal
+inside the expression is a Go raw string in backticks:
+
+```toml
+[mise.env]
+GIT_NAME = "<% required `git needs a name` .config.name %>"
+```
+
+A key that is missing reaches `required` as a nil, and `required` fails the
+render. A plain `.config.x` writes the text `<no value>`, and the engine rejects
+a copy that holds this text. A function that does not accept a nil, for example
+`len`, also fails the render. Each other use of the key renders without an
+error:
+``.config.x | default `d` `` gives `d`, `if .config.x` takes the false branch,
+and `print .config.x` writes `<nil>` in the value.
+
+Each of these failures stops the mise config of that tool with code 2. The
+existing `conf.d` files of the tool stay, and the other tools continue.
+`<shown>` is `<tools root>/<tool>/tools.toml`, for example
+`repo/tools/node/tools.toml`.
+
+| Failure                                  | Message                                                                 |
+| ---------------------------------------- | ----------------------------------------------------------------------- |
+| A `required` or `test.Fail` check        | `<shown>: cannot render: <message>`                                     |
+| An expression uses a key that is missing | `<shown>: cannot render: an expression has no value - a key is missing` |
+| The rendered copy is not valid TOML      | `<shown>: not valid TOML after render: <message>`                       |
+| The copy has other key paths             | `<shown>: a rendered value changes the keys of the file`                |
+
+A raw file that is not valid TOML does not follow this rule. On the `repo` side,
+`_rs_mise_index` reads each `tools.toml` of the clone before any render, so the
+whole sync stops with code 2 and `cannot read repo/tools/<tool>/tools.toml`. The
+message `<shown>: not valid TOML before render: <message>` comes only from a
+direct call of `_se_mise_render`.
+
+The rendered copy must have the same key paths as the raw file, so a rendered
+value cannot add a key or a table.
+
+The values file is trusted. Its writer can already add mise config directly, so
+the key-path check is the whole check. A rendered value that replaces a fixed
+value and keeps the key paths equal is not a defect. A key that yq and gomplate
+read differently is not a defect either.
+
+### The two sides of the generator
+
+Each function of `sync-engine/mise` takes a side as its first parameter: `repo`
+or `macos`. Any other value is a usage error, code 2. The `repo` side writes one
+file for each environment. The `macos` side writes one file for each tool and
+refuses environments.
+
+| Rule                            | `repo`                                                    | `macos`                                                   |
+| ------------------------------- | --------------------------------------------------------- | --------------------------------------------------------- |
+| Output                          | `conf.d/<tool>/mise.<env>.toml`, one for each environment | `conf.d/<tool>/mise.toml`, one for each tool with content |
+| Dev-only sections               | Only in `dev`                                             | Written, because the Mac uses no environments             |
+| `[mise_env.*]`                  | Valid                                                     | A tool error                                              |
+| `envs` of a mise tool           | Valid                                                     | A tool error                                              |
+| `requires_found` of a mise tool | Valid                                                     | A tool error                                              |
+| `[overrides.mise.*]`            | Valid                                                     | Valid. An override cannot add a key                       |
+| `[overrides.mise_env.*]`        | Valid                                                     | A values-file error                                       |
+| Override comment                | `# override: .config/bootstrap.toml`                      | `# override: macos.toml` (the file name only)             |
+
+After a tool error, the files of that tool stay, the other tools continue, and
+the run returns 2. A values-file error stops the whole run with code 2 before
+any write.
+
+### The own config of a values file
+
+`_se_mise_own_config`, only on the `macos` side, generates the `[mise.*]` tables
+of the values file into `conf.d/zz-macos/mise.toml`. It uses the same section
+list. The header is:
+
+```text
+# Synced from bootstrap: macos.toml [mise]. Do not edit this file.
+# The next sync replaces it, and a manual change is lost.
+```
+
+A `<% %>` string renders with `.all` and `.env`, and has no `.config`.
+`[overrides.mise.*]` does not apply to this file. A values file without a
+`[mise]` table gets no file.
 
 ### The keys of a mise tool
 
