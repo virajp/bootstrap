@@ -87,7 +87,8 @@ comment `# Merged by bootstrap: <path>`, and the sync strips nothing.
 - A merge target has no header, so the stale rule leaves it. It keeps the mode
   of an existing target, and a new one takes the mode of its source.
 
-Only the `gh` tool of `macos/tools/` uses merge mode now.
+The `claude-cli`, `gem`, `gh` and `superfile` tools of `macos/tools/` use merge
+mode now.
 
 ## The `[defaults]`, `[questions]` and `[contributes]` tables
 
@@ -95,7 +96,8 @@ A `tools.toml` can have three optional tables for the values of a tool. A
 template reads the values as `.config` (the values of its tool) and `.all` (the
 values of each selected tool, by tool name). No tool of `repo/tools/` uses these
 tables now. Mac tools such as `fish`, `git`, `ssh`, `gh` and `macos-defaults`
-use `[defaults]` or `[questions]`. No tool uses `[contributes]` now.
+use `[defaults]` or `[questions]`. The Mac tools `1password` and `orbstack` use
+`[contributes]`.
 
 ```toml
 [defaults]
@@ -151,9 +153,10 @@ does
 not clear this conflict, because the sync merges the contributions first. Remove
 one of the two.
 
-A contribution to a tool of `repo/tools/` that is not selected is ignored. A
-contribution of a selected tool to a tool that is not in `repo/tools/` stops the
-sync with code 3.
+The tools root of a front-end is `repo/tools/` for `repo-sync` and
+`macos/tools/` for `setup-sync`. A contribution to a tool of that tools root
+that is not selected is ignored. A contribution of a selected tool to a tool
+that is not in that tools root stops the sync with code 3.
 
 A value of `[tools.<name>]` depends on the tool:
 
