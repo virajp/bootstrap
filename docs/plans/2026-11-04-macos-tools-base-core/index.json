@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "BLOCKED",
-    "detail": "RESUME at wave 2 — U3: user ruled D14 (findings in unchanged imported content are recorded as open gaps and do not stop the run; G8, G9 accepted); U4, U5 not run; worktree .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-05 — 4259b04 c297d7d 361265a; 9 gaps open (G1 G3 G5 G6 G7 G8 G9 G10 G11); folder stays live; U3 closed under D14 with no round 3 because no fix delta; R4 not dispatched, empty diff"
   },
   "consent": {
     "merge": true,
