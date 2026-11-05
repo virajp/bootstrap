@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-05T06:42:39Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "BLOCKED",
+    "detail": "BLOCKED at wave 3 — U4 UNRESOLVED: rulings needed on two security findings, G5 (unverified code from the tip of main, D1/D2) and G6 (/tmp weekly stamp, D12); U5, U6 skipped (depend on U4); worktree .claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -122,14 +122,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "unresolved",
+      "started": "2026-11-05T07:07:41.982Z",
+      "ended": "2026-11-05T07:12:04.732Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "b8e7eea",
+        "to": "14d723e"
       }
     },
     {
@@ -152,9 +152,9 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
+      "status": "skipped",
       "started": "",
-      "ended": "",
+      "ended": "2026-11-05T07:12:04.803Z",
       "commit": "",
       "rounds": 0
     },
@@ -170,9 +170,9 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
+      "status": "skipped",
       "started": "",
-      "ended": "",
+      "ended": "2026-11-05T07:12:04.874Z",
       "commit": "",
       "rounds": 0
     }
@@ -192,21 +192,21 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "failed",
+      "started": "2026-11-05T07:07:41.948Z",
+      "ended": "2026-11-05T07:12:04.946Z"
     },
     {
       "id": "W4",
-      "status": "pending",
+      "status": "failed",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T07:12:04.982Z"
     },
     {
       "id": "W5",
-      "status": "pending",
+      "status": "failed",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T07:12:05.018Z"
     }
   ],
   "shared_files": [
@@ -411,6 +411,27 @@
       "unit": "U3",
       "stage": "edit",
       "text": "Verification ran test:setup-sync alone before the last two test fixes, and after them only inside mise run test · the run inside test stands for that line",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U4",
+      "stage": "security",
+      "text": "UNRESOLVED security finding [medium] macos/tools/macos-setup/.config/mise/tasks/updateall/configs/_default.tmpl:125 (U1): the task runs code from the unpinned tip of main of the public bootstrap repo with no signature or pin check (sync-engine/clone:167,188; updateall/configs/sync:28). D1, D2 and the clone-URL ruling state no integrity check on the fetched code. Needs push access to main or a GitHub account compromise. Ruling needed: add a check (the reviewer proposes git verify-commit against a shipped allowed-signers file, which needs signed commits on main) or record the accepted risk in decisions · no assumption taken; security findings are never deferred, so the run stopped",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U4",
+      "stage": "security",
+      "text": "UNRESOLVED security finding [low] macos/tools/macos-setup/.config/mise/tasks/updateall/_default:18 (U1): the weekly stamp has a predictable path in world-writable /tmp, so a second local account can suppress the weekly steps, and through a symlink touch at :103 can create or re-date a file the user can write. D12 keeps this file byte for byte, and the file says /tmp is on purpose (cleared on reboot). Ruling needed: an exception to D12 with a user-owned stamp that keeps the reboot behaviour, or record the accepted risk in decisions · no assumption taken; security findings are never deferred, so the run stopped",
+      "state": "open"
+    },
+    {
+      "id": "G7",
+      "unit": "U5",
+      "stage": "edit",
+      "text": "DOCS FALSIFIED lines held for the docs unit U5, which owns these files: CLAUDE.md:16-17 (shared files only in repo/tools/), CLAUDE.md:505 (macos/tools/ not in this repository yet), CLAUDE.md Purpose (only test is test:repo-sync), CLAUDE.md Layout rule test bullet, CLAUDE.md:431 (test:setup-sync omits the entry-task cases), CLAUDE.md:442 (test:macos-tools when that task exists), README.md:40 (shared files in repo/tools/), README.md:387 (test:setup-sync omits the entry-task cases), README.md:394 (test:setup-sync for macos/ omits test:macos-tools) · U5 applies them on the resume; close this entry when it has",
       "state": "open"
     }
   ],
