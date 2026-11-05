@@ -286,10 +286,13 @@
       "title": "Mac tools: app-only (52)",
       "target_repo": null,
       "priority": 140,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-05T12:34:09.389Z",
-      "ended": "",
-      "gaps": null,
+      "ended": "2026-11-05T13:20:54.025Z",
+      "gaps": {
+        "open": 4,
+        "moved_to": []
+      },
       "requires": [
         "2026-11-04-macos-tools-extras"
       ],
