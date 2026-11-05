@@ -9,4 +9,5 @@ root_only = false
 allow_builds = [ "workerd" ]
 depends = [ "node", "pnpm" ]
 envs = [ "dev", "ci" ]
+minimum_release_age = "0h"
 version = "latest"
