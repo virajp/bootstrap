@@ -206,8 +206,8 @@
       "title": "The macos-setup tool and the Mac packs file",
       "target_repo": null,
       "priority": 100,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-05T06:41:14.231Z",
       "ended": "",
       "gaps": null,
       "requires": [
