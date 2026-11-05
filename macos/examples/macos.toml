@@ -10,3 +10,6 @@ bootstrap_commit = ""
 [tools.macos-setup]
 # The answer to the question config_path of macos-setup.
 config_path = "~/Projects/github.com/janedoe/macos-setup"
+
+[tools.diff-so-fancy]
+# This table selects the tool, because it is not a base tool.

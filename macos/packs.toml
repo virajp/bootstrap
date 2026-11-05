@@ -5,3 +5,16 @@
 # hold `macos-setup`. The import plans add the other members.
 [pack.base]
 macos-setup = { default = true }
+mise = { default = true }
+homebrew = { default = true }
+cli = { default = true }
+fnox = { default = true }
+node = { default = true }
+touchid-sudo = { default = true }
+starship = { default = true }
+python = { default = true }
+fonts = { default = true }
+mas = { default = true }
+
+[pack.essentials]
+diff-so-fancy = {}
