@@ -220,7 +220,7 @@ The `node` tool is in `dev` and `ci`. Its `tools.toml` has:
 ```toml
 [mise.settings] # folder class: dev and ci
 node.compile = false
-npm.package_manager = "pnpm"
+npm.package_manager = "aube"
 
 [mise.env] # folder class: dev and ci
 _.path = { path = "node_modules/.bin", tools = true }
