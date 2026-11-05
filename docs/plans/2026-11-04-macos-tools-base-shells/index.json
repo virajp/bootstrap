@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "BLOCKED",
-    "detail": "BLOCKED at wave 2 — U3 UNRESOLVED: security finding at sync-engine/setup-sync:589 is engine code, outside D13 and outside every unit Owns; the permission system refused its gaps entry, so it is recorded here only. Ruling needed: fix it with a named owner, or extend D13 to it. U4, U5 skipped (depend on U3). Worktree /Users/virajpatel/Projects/github.com/virajp/bootstrap/.claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-05 resume at wave 2 in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -104,14 +104,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "unresolved",
+      "status": "green",
       "started": "2026-11-05T10:34:36.616Z",
-      "ended": "2026-11-05T10:40:26.165Z",
+      "ended": "2026-11-05T11:17:57.741Z",
       "commit": "",
-      "rounds": 1,
+      "rounds": 2,
       "range": {
         "from": "cd18e805047cd7bc37151e7943ce96e6d874b161",
-        "to": "44015caed74cd6ca72a4f8dc43eeb27a3abe66c0"
+        "to": "40fb036c5d08112d276301bded0589e02f40f92d"
       }
     },
     {
@@ -133,7 +133,7 @@
         "U3"
       ],
       "waits": "",
-      "status": "skipped",
+      "status": "pending",
       "started": "",
       "ended": "2026-11-05T10:40:26.272Z",
       "commit": "",
@@ -151,7 +151,7 @@
         "U4"
       ],
       "waits": "",
-      "status": "skipped",
+      "status": "pending",
       "started": "",
       "ended": "2026-11-05T10:40:26.346Z",
       "commit": "",
@@ -167,9 +167,9 @@
     },
     {
       "id": "W2",
-      "status": "failed",
+      "status": "green",
       "started": "2026-11-05T10:34:36.581Z",
-      "ended": "2026-11-05T10:40:26.419Z"
+      "ended": "2026-11-05T11:18:47.057Z"
     },
     {
       "id": "W3",
@@ -313,6 +313,15 @@
       "ruling": "User ruling 2026-11-05, given at D14 of 2026-11-04-macos-tools-base-core for plans 11 to 14: no. A security finding in content that is byte for byte from macos-setup, apart from the changes that this plan names, is accepted for this import. It does not stop the run, and the content does not change. The run records each such finding as an open gap with its severity and location, for one security plan after the run. A finding in code that this plan writes or changes stops the run as before.",
       "rejected": "Stop on each finding in imported content.",
       "units": []
+    },
+    {
+      "id": "D14",
+      "decision": "Does the finding on the mode of ~/.ssh in sync-engine/setup-sync:589 stop this plan (G13, G14)?",
+      "ruling": "User ruling 2026-11-05: no. The finding stays open as G13 and G14 for one security plan after the run, and this plan does not change the engine. This ruling covers this finding only. A security review of this plan does not report this case again. Any other finding in engine code stops the run as before.",
+      "rejected": "Fix the folder mode in this plan, with a named owner and a test.",
+      "units": [
+        "U3"
+      ]
     }
   ],
   "stages": {
@@ -424,6 +433,27 @@
       "unit": "U3",
       "stage": "security",
       "text": "[low] macos/tools/git/.config/git/config.tmpl:12 (U1): global core.filemode = false hides executable-bit changes from git status and git diff. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G13",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[low] sync-engine/setup-sync:589: when ~/.ssh is missing, the first ssh tool file reaches mkdir -p with no folder mode, so ~/.ssh takes the umask, normally 0755, not 0700. Not reproduced · user ruling D14: open for one security plan after the run; the user approved this record on 2026-11-05",
+      "state": "open"
+    },
+    {
+      "id": "G14",
+      "unit": "U3",
+      "stage": "security",
+      "text": "SPEC/PLAN GAP: U1 (01-tools.md, ssh entry) never required ~/.ssh to be mode 0700 when the sync creates it; the requirement belongs in the ssh tool plan or in the folder creation of setup-sync · user ruling D14: open for one security plan after the run",
+      "state": "open"
+    },
+    {
+      "id": "G15",
+      "unit": "U3",
+      "stage": "security",
+      "text": "[low] macos/tools/fish/.config/fish/conf.d/02-path.fish:34 (U1): fish_add_path prepends the user-writable $PNPM_HOME/bin ahead of the system folders, so a global pnpm package bin can shadow a system command in each fish session; bash and zsh do not set this path. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
       "state": "open"
     }
   ],
