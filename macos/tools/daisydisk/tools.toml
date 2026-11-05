@@ -1,0 +1,7 @@
+# The daisydisk tool: DaisyDisk, from the Mac App Store.
+
+depends = [ "mas" ]
+description = "DaisyDisk, from the Mac App Store"
+
+[mise.bootstrap.packages]
+"mas:411643860" = "latest" # DaisyDisk

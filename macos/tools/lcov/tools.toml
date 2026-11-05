@@ -1,0 +1,6 @@
+# The lcov tool: lcov, the code coverage tool for C/C++.
+
+description = "lcov, the code coverage tool"
+
+[mise.bootstrap.packages]
+"brew:lcov" = "latest" # Code coverage tool for C/C++

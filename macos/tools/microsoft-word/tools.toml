@@ -1,0 +1,7 @@
+# The microsoft-word tool: Microsoft Word, from the Mac App Store.
+
+depends = [ "mas" ]
+description = "Microsoft Word, from the Mac App Store"
+
+[mise.bootstrap.packages]
+"mas:462054704" = "latest" # Microsoft Word

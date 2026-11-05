@@ -1,0 +1,7 @@
+# The microsoft-powerpoint tool: Microsoft PowerPoint, from the Mac App Store.
+
+depends = [ "mas" ]
+description = "Microsoft PowerPoint, from the Mac App Store"
+
+[mise.bootstrap.packages]
+"mas:462062816" = "latest" # Microsoft PowerPoint

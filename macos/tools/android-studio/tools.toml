@@ -1,0 +1,6 @@
+# The android-studio tool: Tools for building Android applications.
+
+description = "Tools for building Android applications"
+
+[mise.bootstrap.packages]
+"brew-cask:android-studio" = "latest" # Tools for building Android applications

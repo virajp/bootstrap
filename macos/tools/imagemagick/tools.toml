@@ -1,0 +1,6 @@
+# The imagemagick tool: ImageMagick, the image manipulation tool.
+
+description = "ImageMagick, the image manipulation tool"
+
+[mise.bootstrap.packages]
+"brew:imagemagick" = "latest" # Image manipulation tool

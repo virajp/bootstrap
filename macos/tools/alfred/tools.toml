@@ -1,0 +1,6 @@
+# The alfred tool: Application launcher and productivity software.
+
+description = "Application launcher and productivity software"
+
+[mise.bootstrap.packages]
+"brew-cask:alfred" = "latest" # Application launcher and productivity software
