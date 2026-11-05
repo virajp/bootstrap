@@ -3,7 +3,9 @@
 
 [tools]
 [tools."npm:@virajp.dev/linter"]
+allow_low_downloads = true
 depends = [ "node", "pnpm" ]
+minimum_release_age = "0h"
 version = "latest"
 [tools.shellcheck]
 version = "latest"

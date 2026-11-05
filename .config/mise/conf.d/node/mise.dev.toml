@@ -11,7 +11,7 @@ tools = true
 [settings.node]
 compile = false
 [settings.npm]
-package_manager = "pnpm"
+package_manager = "aube"
 
 [shell_alias]
 npx = "pnpm dlx"
