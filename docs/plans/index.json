@@ -246,8 +246,8 @@
       "title": "Mac tools: shells and identity (8)",
       "target_repo": null,
       "priority": 120,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-05T10:20:37.765Z",
       "ended": "",
       "gaps": null,
       "requires": [
