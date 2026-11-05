@@ -1,0 +1,6 @@
+# The visual-studio-code tool: Open-source code editor.
+
+description = "Open-source code editor"
+
+[mise.bootstrap.packages]
+"brew-cask:visual-studio-code" = "latest" # Open-source code editor

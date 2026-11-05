@@ -1,0 +1,7 @@
+# The transporter tool: Transporter, from the Mac App Store.
+
+depends = [ "mas" ]
+description = "Transporter, from the Mac App Store"
+
+[mise.bootstrap.packages]
+"mas:1450874784" = "latest" # Transporter

@@ -1,0 +1,198 @@
+# The vorssaint tool: Menu bar toolkit with keep-awake, system monitor and
+# volume mixer.
+
+description = "Menu bar toolkit with keep-awake, system monitor and volume mixer"
+
+[mise.bootstrap.packages]
+"brew-cask:vorssaint" = "latest" # Menu bar toolkit with keep-awake, system monitor and volume mixer
+
+# Left out: audio device priorities, per-Mac state (mic mute devices, update
+# checks, window sizes), onboarding/migration markers, and binary values
+# (radialMenuProfiles, shelfItems) that mise cannot write. Restart the app after
+# applying.
+[mise.bootstrap.macos.defaults."com.vorssaint.utils"]
+launchAtLoginWanted = true
+
+# Features shown in the app (Settings > Features)
+"featureAvailable.appUpdates" = true
+"featureAvailable.autoQuit" = true
+"featureAvailable.bluetoothSleep" = true
+"featureAvailable.brightness" = false
+"featureAvailable.cameraPreview" = false
+"featureAvailable.cleaner" = true
+"featureAvailable.cleaningMode" = false
+"featureAvailable.clipboardHistory" = false
+"featureAvailable.colorPicker" = false
+"featureAvailable.commandBar" = false
+"featureAvailable.connectedDevices" = false
+"featureAvailable.diskImageInstaller" = false
+"featureAvailable.dockClick" = true
+"featureAvailable.dockPreview" = false
+"featureAvailable.extraBrightness" = false
+"featureAvailable.fanControl" = false
+"featureAvailable.finderCutPaste" = true
+"featureAvailable.finderRename" = false
+"featureAvailable.focusFollowsMouse" = false
+"featureAvailable.homebrew" = true
+"featureAvailable.keepAwake" = true
+"featureAvailable.keyboardDebounce" = false
+"featureAvailable.killProcess" = true
+"featureAvailable.linearScroll" = false
+"featureAvailable.mediaTools" = false
+"featureAvailable.micMute" = true
+"featureAvailable.middleClick" = false
+"featureAvailable.mixer" = false
+"featureAvailable.monitorCPU" = true
+"featureAvailable.monitorDisk" = true
+"featureAvailable.monitorGPU" = true
+"featureAvailable.monitorMemory" = true
+"featureAvailable.monitorNetwork" = true
+"featureAvailable.monitorPower" = true
+"featureAvailable.mouseAcceleration" = false
+"featureAvailable.mouseButtonShortcuts" = false
+"featureAvailable.mouseClickDebounce" = false
+"featureAvailable.mouseNavigation" = false
+"featureAvailable.musicBlock" = true
+"featureAvailable.notch" = false
+"featureAvailable.notchAccessories" = true
+"featureAvailable.notchAgents" = false
+"featureAvailable.notchCalendar" = false
+"featureAvailable.notchDownloads" = true
+"featureAvailable.notchGestures" = false
+"featureAvailable.notchLiveEqualizer" = false
+"featureAvailable.notchLyrics" = false
+"featureAvailable.notchMascot" = false
+"featureAvailable.notchNotifications" = false
+"featureAvailable.notchQueue" = false
+"featureAvailable.notchTimer" = false
+"featureAvailable.notchWatch" = false
+"featureAvailable.pastePlain" = false
+"featureAvailable.portManager" = true
+"featureAvailable.quickLauncher" = true
+"featureAvailable.quickToggles" = true
+"featureAvailable.quitWindowProtection" = false
+"featureAvailable.radialMenu" = true
+"featureAvailable.scratchpad" = true
+"featureAvailable.screenOCR" = false
+"featureAvailable.screenRecorder" = true
+"featureAvailable.screenshot" = true
+"featureAvailable.scrollHorizontal" = false
+"featureAvailable.scrollInverter" = false
+"featureAvailable.shelf" = false
+"featureAvailable.smoothScroll" = false
+"featureAvailable.soundOutputSwitcher" = false
+"featureAvailable.spacesOrder" = false # would manage com.apple.dock mru-spaces
+"featureAvailable.superKey" = false
+"featureAvailable.switcher" = false
+"featureAvailable.textSnippets" = false
+"featureAvailable.uninstaller" = true
+"featureAvailable.urlCleaner" = true
+"featureAvailable.wallpaper" = false
+"featureAvailable.windowLayout" = true
+"featureAvailable.windowMaximizer" = true
+
+# App updates, auto quit, Bluetooth sleep, cleaners
+appUpdatesCheckFrequency = "daily"
+autoQuitEnabled = true
+bluetoothSleepEnabled = true
+uninstallerCommandBarEnabled = true
+urlCleanerEnabled = true
+whatsAppDownloadsEnabled = false
+whatsAppDownloadsRetentionDays = 7
+whatsAppOrganizerDelayMinutes = 5
+
+# Keep awake
+clamshellPreferred = true # closed-lid mode for every session
+defaultDurationMinutes = 0 # indefinitely
+keepAwakeActiveIcon = "vorssaint"
+keepAwakeAllowDisplaySleep = false # keep the display on for remote Screen Sharing
+keepAwakeAutoStart = true # start keep-awake when the app launches
+keepAwakeIconTint = "pink"
+keepAwakeMouseJiggleIntervalMinutes = 5
+keepAwakeRightClickToggle = true
+keepAwakeSwitchUsesUntil = false
+
+# Clipboard
+clipboardAutoClearDelaySeconds = 20
+clipboardHistoryLimit = 50
+clipboardHistoryMenuBarPreviewLength = 20
+
+# Dock click, Finder cut/paste, music block
+dockClickHide = false
+dockClickMinimize = true
+finderCutPasteEnabled = true
+musicBlockEnabled = true
+
+# Menu bar metrics
+menuBarBattery = false
+menuBarBatteryTemperature = false
+menuBarCPU = false
+menuBarCPUTemperature = false
+menuBarGPU = false
+menuBarHideIconWithMetrics = false
+menuBarMetricAppearance = "values"
+menuBarNetwork = true
+menuBarPeripheralBattery = false
+menuBarSeparateMetrics = true
+menuBarUsageBarCriticalColor = "#FF453A"
+menuBarUsageBarElevatedColor = "#FFD60A"
+menuBarUsageBarHighThreshold = 90
+menuBarUsageBarMediumThreshold = 70
+menuBarUsageBarNormalColor = "#64D2FF"
+
+# System monitor alerts
+batteryLimitPercent = 20
+monitorAlertBattery = true
+monitorAlertBatteryPercent = 25
+monitorAlertBatteryTemperature = true
+monitorAlertBatteryTemperatureThreshold = 40
+monitorAlertCPU = true
+monitorAlertCPUTemperature = true
+monitorAlertCPUTemperatureThreshold = 90
+monitorAlertCPUThreshold = 90
+monitorAlertCooldownMinutes = 15
+monitorAlertDisk = true
+monitorAlertDiskFreePercent = 25
+monitorAlertMemory = true
+monitorIntervalSeconds = 5
+monitorMemoryMetric = "used"
+monitorPwrTemperature = true
+
+# Notch
+notchAccessoriesEnabled = true
+notchDownloadsEnabled = true
+notchHidesMenuBarIcon = false
+notchKeyboardLightControlHidden = true
+notchLiquidGlassEnabled = false
+notchScratchpadControlHidden = true
+notchSize = "spacious"
+
+# Panel, radial menu, switcher, scrolling
+panelControlFilesExpanded = false
+panelControlInputExpanded = false
+panelControlWindowsExpanded = false
+radialMenuActivationMode = "pressOrHold"
+radialMenuAtPointer = false
+radialMenuEnabled = true
+scrollInverterHorizontalEnabled = false
+switcherPreviewExcludedApps = []
+switcherPreviewSize = "normal"
+systemShortcutTakeOverKeys = []
+
+# Window layout shortcuts and maximizer
+windowLayoutShortcutBottomLeft = "none"
+windowLayoutShortcutBottomRight = "none"
+windowLayoutShortcutCenter = "none"
+windowLayoutShortcutCenterThird = "none"
+windowLayoutShortcutLeftThird = "none"
+windowLayoutShortcutLeftTwoThirds = "none"
+windowLayoutShortcutMaximize = "option+command:3"
+windowLayoutShortcutPreviousDisplay = "control+option+command:123"
+windowLayoutShortcutRestore = "none"
+windowLayoutShortcutRightThird = "none"
+windowLayoutShortcutRightTwoThirds = "none"
+windowLayoutShortcutTopLeft = "none"
+windowLayoutShortcutTopRight = "none"
+windowLayoutShortcutsEnabled = true
+windowMaximizeEnabled = true
+windowMaximizeExcludedApps = [ "com.stablyai.orca", "dev.warp.Warp-Stable" ]

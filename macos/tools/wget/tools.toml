@@ -1,0 +1,6 @@
+# The wget tool: wget, the network downloader.
+
+description = "wget, the network downloader"
+
+[mise.bootstrap.packages]
+"brew:wget" = "latest" # Network downloader

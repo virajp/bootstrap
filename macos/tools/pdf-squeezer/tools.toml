@@ -1,0 +1,7 @@
+# The pdf-squeezer tool: PDF Squeezer, from the Mac App Store.
+
+depends = [ "mas" ]
+description = "PDF Squeezer, from the Mac App Store"
+
+[mise.bootstrap.packages]
+"mas:1502111349" = "latest" # PDF Squeezer

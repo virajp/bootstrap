@@ -1,0 +1,9 @@
+# The sublime-text tool: Text editor for code, markup and prose.
+
+description = "Text editor for code, markup and prose, and the edit alias"
+
+[mise.bootstrap.packages]
+"brew-cask:sublime-text" = "latest" # Text editor for code, markup and prose
+
+[mise.shell_alias]
+edit = "subl"

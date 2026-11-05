@@ -1,0 +1,6 @@
+# The zed tool: Multiplayer code editor.
+
+description = "Multiplayer code editor"
+
+[mise.bootstrap.packages]
+"brew-cask:zed" = "latest" # Multiplayer code editor

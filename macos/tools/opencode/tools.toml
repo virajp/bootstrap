@@ -1,0 +1,9 @@
+# The opencode tool.
+
+description = "OpenCode, the AI coding agent, and its alias"
+
+[mise.bootstrap.packages]
+"brew:opencode" = "latest" # OpenCode
+
+[mise.shell_alias]
+oc = "opencode --auto"

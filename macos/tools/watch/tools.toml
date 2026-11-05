@@ -1,0 +1,6 @@
+# The watch tool: watch, which runs a command periodically and shows its output.
+
+description = "watch, which runs a command again and again"
+
+[mise.bootstrap.packages]
+"brew:watch" = "latest" # Execute a command periodically and show output

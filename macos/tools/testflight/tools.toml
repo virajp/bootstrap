@@ -1,0 +1,7 @@
+# The testflight tool: TestFlight, from the Mac App Store.
+
+depends = [ "mas" ]
+description = "TestFlight, from the Mac App Store"
+
+[mise.bootstrap.packages]
+"mas:899247664" = "latest" # TestFlight
