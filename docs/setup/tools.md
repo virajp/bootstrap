@@ -624,6 +624,7 @@ Node.js (LTS) and pnpm, the global pnpm config with its release-age cooldown.
 
 - **Packs:** `base` (default)
 - **Files:**
+  - `~/.config/aube/config.toml` — generated
   - `~/.config/mise/tasks/upgrade/npm` — generated
   - `~/.config/mise/tasks/upgrade/pnpm` — generated
   - `~/Library/Preferences/pnpm/config.yaml` — generated, template
