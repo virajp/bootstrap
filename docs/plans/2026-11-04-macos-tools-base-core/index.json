@@ -11,7 +11,7 @@
   "gaps_of": [],
   "status": {
     "state": "BLOCKED",
-    "detail": "BLOCKED at wave 2 — U3 UNRESOLVED: round 2 raised two new high security findings that need rulings past D4 and R2: G8 custom.submodule_status when command in macos/tools/starship/.config/starship.toml:147, G9 unpinned fnox config in the brew alias in macos/tools/homebrew/tools.toml:25; D12 and D13 applied, G5 and G6 not reported again; U4, U5 skipped (depend on U3); wave 2 review not run, no unit diff; open gaps also G1, G3, G4, G5, G6, G7, G10; worktree .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "detail": "RESUME at wave 2 — U3: user ruled D14 (findings in unchanged imported content are recorded as open gaps and do not stop the run; G8, G9 accepted); U4, U5 not run; worktree .claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -107,9 +107,9 @@
         "U2"
       ],
       "waits": "",
-      "status": "unresolved",
+      "status": "green",
       "started": "2026-11-05T09:07:28.309Z",
-      "ended": "2026-11-05T09:30:05.244Z",
+      "ended": "2026-11-05T09:50:58.211Z",
       "commit": "",
       "rounds": 2,
       "range": {
@@ -136,7 +136,7 @@
         "U3"
       ],
       "waits": "",
-      "status": "skipped",
+      "status": "pending",
       "started": "",
       "ended": "2026-11-05T09:30:05.315Z",
       "commit": "",
@@ -154,7 +154,7 @@
         "U4"
       ],
       "waits": "",
-      "status": "skipped",
+      "status": "pending",
       "started": "",
       "ended": "2026-11-05T09:30:05.390Z",
       "commit": "",
@@ -170,9 +170,9 @@
     },
     {
       "id": "W2",
-      "status": "failed",
+      "status": "green",
       "started": "2026-11-05T09:07:28.242Z",
-      "ended": "2026-11-05T09:30:26.600Z"
+      "ended": "2026-11-05T09:51:52.641Z"
     },
     {
       "id": "W3",
@@ -320,6 +320,16 @@
         "U1",
         "U3"
       ]
+    },
+    {
+      "id": "D14",
+      "decision": "Does a security finding in content that this plan imports unchanged from macos-setup stop the run (G8, G9, G10)?",
+      "ruling": "User ruling 2026-11-05: no. A security finding in content that is byte for byte from macos-setup, apart from the changes that D4 and R2 name, is accepted for this import. It does not stop the run, and the content does not change. The run records each such finding as an open gap with its severity and location, for one security plan after the run. G8 and G9 are accepted under this ruling. A finding in code that this plan writes or changes stops the run as before.",
+      "rejected": "Accept only G8 and G9, and stop on each new finding in imported content.",
+      "units": [
+        "U1",
+        "U3"
+      ]
     }
   ],
   "stages": {
@@ -402,14 +412,14 @@
       "id": "G8",
       "unit": "U3",
       "stage": "security",
-      "text": "UNRESOLVED security finding [high] macos/tools/starship/.config/starship.toml:147 (U1): the when command of custom.submodule_status runs git status on every prompt, gated only by a .gitmodules file, so an extracted tar or zip with core.fsmonitor in .git/config runs code as the owner on cd, also outside projects_dir (tested: starship prompt ran the planted hook on git 2.56; -c core.fsmonitor= stops that hook, but a filter clean driver from the repo config still ran). A plain git clone does not carry .git/config. Byte for byte from macos-setup, so the live Mac already has it. A fix changes content that D4 keeps byte for byte · ruling needed: remove the module, run the status call only for an owner allowlist, or accept the risk for this import as D12 and D13 did",
+      "text": "UNRESOLVED security finding [high] macos/tools/starship/.config/starship.toml:147 (U1): the when command of custom.submodule_status runs git status on every prompt, gated only by a .gitmodules file, so an extracted tar or zip with core.fsmonitor in .git/config runs code as the owner on cd, also outside projects_dir (tested: starship prompt ran the planted hook on git 2.56; -c core.fsmonitor= stops that hook, but a filter clean driver from the repo config still ran). A plain git clone does not carry .git/config. Byte for byte from macos-setup, so the live Mac already has it. A fix changes content that D4 keeps byte for byte · accepted for this import under D14; for one security plan after the run",
       "state": "open"
     },
     {
       "id": "G9",
       "unit": "U3",
       "stage": "security",
-      "text": "UNRESOLVED security finding [high] macos/tools/homebrew/tools.toml:25 (U1): the brew alias fnox exec -P brew -- brew pins no config, so fnox merges a fnox.toml from the current folder and its parents with no trust gate; a committed fnox.toml with a profiles.brew PATH secret makes any brew command there run a planted binary as the owner (tested on fnox 1.47.0), and that binary receives the profile token value (tested with a scratch default value; a Keychain token is inferred). The engine rated this medium on a credential_command route that did not fire in the test; the reviewer rated it high on the PATH route. With fnox -c \"$HOME/.config/fnox/config.toml\" the project file did not load (tested; not tested through the generated mise alias). The value is byte for byte from macos-setup, so the live Mac already has it. A fix changes a value that R2 keeps byte for byte · ruling needed: pin the config with -c, or accept the risk for this import as D12 and D13 did",
+      "text": "UNRESOLVED security finding [high] macos/tools/homebrew/tools.toml:25 (U1): the brew alias fnox exec -P brew -- brew pins no config, so fnox merges a fnox.toml from the current folder and its parents with no trust gate; a committed fnox.toml with a profiles.brew PATH secret makes any brew command there run a planted binary as the owner (tested on fnox 1.47.0), and that binary receives the profile token value (tested with a scratch default value; a Keychain token is inferred). The engine rated this medium on a credential_command route that did not fire in the test; the reviewer rated it high on the PATH route. With fnox -c \"$HOME/.config/fnox/config.toml\" the project file did not load (tested; not tested through the generated mise alias). The value is byte for byte from macos-setup, so the live Mac already has it. A fix changes a value that R2 keeps byte for byte · accepted for this import under D14; for one security plan after the run",
       "state": "open"
     },
     {
