@@ -7,6 +7,8 @@
 #
 # It gives _se_pack, _se_pack_loop, _se_pack_check, _se_selected, _se_walk,
 # _SE_WALK_VISITED and _SE_WALK_DEPS.
+#
+# Contract: docs/design/packs.md
 
 # Print the tools of the pack <name> as `<tool> <env,...|-> <source>` lines: its
 # `default = true` members in file order, a `pack:<x>` member expanded in turn

@@ -18,31 +18,10 @@
 #   SYNC_ENGINE_CACHE        the cache folder, which has `macos-generated.tsv`
 #                            (default ${XDG_CACHE_HOME:-$HOME/.cache}/sync-engine)
 #   MACOS_SETUP_CONFIG_PATH  the folder of the values file `macos.toml`
+#   HOME, USER, TMPDIR       the target root, the render context and the
+#                            temporary files
 #
-# `macos.toml` selects the tools: the pack `base`, the `default = true` members
-# of each `[packs.<name>]`, each `[tools.<name>]`, and their depends. The values
-# of a tool are the keys of its `[tools.<name>]` table. `[overrides.mise.<path>]`
-# changes the generated mise config, and `[mise.*]` goes to
-# `~/.config/mise/conf.d/zz-macos/mise.toml`. The Mac side has no environments:
-# each tool with `[mise.*]` gets `~/.config/mise/conf.d/<tool>/mise.toml`.
-#
-# The stages: the tools with `stage = "init"` and their depends go first, then
-# `mise bootstrap` and the login shell compare. A change there stops the run with
-# code 4, so a new terminal loads it. A failure in the init stage stops the run
-# before the main stage. Inside a stage, a failed file stops no other file. A
-# target that is a symlink, or is below one, is written at its real path.
-#
-# The stale rule runs after each render, also a failed one: a target that failed
-# but is still planned stays handled, so its existing copy stays. After a failure,
-# the run keeps the manifest, runs no `mise bootstrap` and writes no commit. After
-# a clean run, `bootstrap_commit` of `macos.toml` is the commit of the clone.
-#
-# Return codes
-#   0  done
-#   1  any other failure, also a failed `mise bootstrap`
-#   2  a usage or a config error
-#   3  a tool or a pack that `macos/` does not have
-#   4  the init stage changed: open a new terminal, then run the task again
+# Contract: docs/design/setup-sync.md
 
 # The shared libraries, from the folder of this file.
 # shellcheck source=/dev/null

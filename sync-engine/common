@@ -7,6 +7,8 @@
 # It gives _SE_PREFIX, _se_log, _se_mode, _se_path, _SE_TMPS, _se_cleanup,
 # _SE_HEADER_RE, _se_has_header, _SE_HEADER_LINE1, _SE_HEADER_LINE2,
 # _se_record_commit, _se_gomplate, _se_jq and _se_yq.
+#
+# Contract: docs/design/sync-engine.md
 
 # The name at the start of each message. A front-end sets it.
 _SE_PREFIX='sync-engine'

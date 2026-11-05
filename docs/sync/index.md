@@ -2,8 +2,8 @@
 
 These instructions are for an AI agent that works in a consumer repository.
 Do the steps in sequence to make the repository get its shared files from
-`bootstrap` (`git@github.com:virajp/bootstrap.git`). Read `README.md` in
-`bootstrap` for the sync contract.
+`bootstrap` (`git@github.com:virajp/bootstrap.git`). The contract of the sync is
+in `docs/design/` of `bootstrap` (see "Where the rules are").
 
 This file is a prompt. A user or an agent of a consumer repository can use it
 directly, for example: "Read `docs/sync/index.md` of bootstrap and do its
@@ -56,6 +56,25 @@ instructions.
 
 The pack files in `packs/` are `base.md` and `security.md`.
 
+## Where the rules are
+
+This file holds the instructions. Each rule of the sync has one place in
+`docs/design/` of the clone of step 1. Read the doc when a step needs the rule:
+
+- Read [`docs/design/bootstrap-config.md`](../design/bootstrap-config.md) before
+  you write a key of `.config/bootstrap.toml`.
+- Read [`docs/design/packs.md`](../design/packs.md) before you select a pack.
+- Read [`docs/design/tools.md`](../design/tools.md) before you read a
+  `tools.toml`: its keys, the `[files]` tables, the seeds and the header.
+- Read [`docs/design/mise.md`](../design/mise.md) before you select an
+  environment or write `[overrides.mise*]`.
+- Read [`docs/design/repo-sync.md`](../design/repo-sync.md) before you select
+  the
+  branch model or members, or write `[overrides.gitignore]`.
+- Read [`docs/design/sync-engine.md`](../design/sync-engine.md) when you examine
+  the clone, a parse failure, a stale file or an exit code.
+- Read [`docs/design/fnox.md`](../design/fnox.md) before you select `fnox`.
+
 ## Rules
 
 - Ask each question of this file. Do not skip a question: only the user can
@@ -69,8 +88,6 @@ The pack files in `packs/` are `base.md` and `security.md`.
 - The shared files are grouped by tool. Each tool is a folder
   `repo/tools/<tool>/` in `bootstrap`. A file at `repo/tools/<tool>/<path>` goes
   to `<path>` in the consumer repository.
-  A tool folder must not be `zz-repo`, and its name must not sort after
-  `zz-repo` in byte order. If it does, the sync stops with code 2.
 - The values file `.config/bootstrap.toml` lists the tools and the packs of
   the repository. `repo_sync` always adds the `base` pack, and it syncs all
   the files of these tools.
@@ -275,99 +292,31 @@ of each pack file.
 
 The `base` pack is always added: `repo_sync` adds it, and the values file does
 not list it. Its tools are `mise`, `repo-sync`, `git`, `pre-commit`, `dprint`,
-`linter`, and the tools of the `security` pack. Do not select a tool of the
+`linter`, `vscode`, and the tools of the `security` pack. Do not select a tool
+of the
 `base` pack: a `[tools.<name>]` table for it only gives values. See
 [`packs/base.md`](packs/base.md).
 
 For each selected tool, and each tool of the `base` pack, do the items in
 "Adapt to the repository" of its tool file.
 
-A pack is a `[pack.<name>]` table of `repo/packs.toml`. Each key is a member:
-`<tool> = { default = true }` or `<tool> = {}`, or a pack with the prefix
-`pack:`, for example `"pack:security" = { default = true }`. `[packs.<name>]`
-adds each `default = true` member. A member with `{}` arrives only with
-`[tools.<name>]`, and a nested pack with `{}` only with its own
-`[packs.<name>]`. A pack name is never a tool folder.
+The form of a pack is in [`docs/design/packs.md`](../design/packs.md). The keys
+of a `tools.toml` and its `[files]` tables are in
+[`docs/design/tools.md`](../design/tools.md). The `[mise.*]` tables and the
+environments of
+each tool are in [`docs/design/mise.md`](../design/mise.md).
 
-Each `tools.toml` has these keys:
-
-| Key            | Meaning                                                                                      |
-| -------------- | -------------------------------------------------------------------------------------------- |
-| `default_envs` | The environments of the tool when the values file gives it no `env`. It must include `dev`.  |
-| `depends`      | The sync adds these tools automatically.                                                     |
-| `root_only`    | If `true`, the sync refuses the tool in a submodule, and skips it there when a pack adds it. |
-| `extensions`   | The VS Code extensions of the tool, for `.vscode/extensions.json`.                           |
-
-A `tools.toml` can also have the optional tables `[defaults]`,
-`[questions.<key>]` and `[contributes.<tool>]`: the values of the tool, the
-question for one value, and the values for another selected tool. The sync
-examines only the shape of `[questions]`, and it asks nothing.
-
-A `tools.toml` can also have `[files."<target>"]` tables. They are optional.
-Each
-table gives the mode and the condition of one file of the tool. A file without a
-table is `generated`. The target is the path of the file without `.tmpl`. A
-target that ends in `.tmpl` stops the sync with code 2. The target must be the
-same string as a path of `find -type f` in the tool folder, with or without
-`.tmpl`. Else the sync stops with code 2.
-
-| Key              | Meaning                                                                                                                                 |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `mode`           | `generated` (the default): the sync writes it on each run. `seed`: only if it is missing. `merge`: the sync merges it into a live file. |
-| `requires`       | Exact paths, relative to the root of the repository. Each path must exist.                                                              |
-| `requires_found` | File names. The sync must find each name at the root or down to 4 folders below it, in a file that git does not ignore.                 |
-| `format`         | `text`, `json`, `yaml` or `toml`. The default comes from the extension.                                                                 |
-| `remove`         | Only with `merge`. Key paths to delete from the live file.                                                                              |
-| `remove_items`   | Only with `merge`. Items to delete from a list of the live file.                                                                        |
-
-For example, the `node` tool has `mode = "seed"` and
-`requires = ["package.json"]` for `pnpm-workspace.yaml`. Thus the sync writes it
-only if the repository has a `package.json`. No tool of `repo/tools/` uses
-`merge` now. The `claude-cli`, `gem`, `gh` and `superfile` tools of
-`macos/tools/` use it.
-
-The `[mise.*]` tables of a `tools.toml` hold the mise config of the tool. The
-sync generates `.config/mise/conf.d/<tool>/mise.<env>.toml` from them, one
-file for each environment. A mise `depends` adds the tool that defines the
-dependency. For example, the `pre-commit` tool adds `python`, and the
-`linter` tool adds `node`. `[mise.bootstrap.*]` and `[mise.dotfiles]` are valid
-sections too, only in `dev`. A `[mise.*]` string can hold `<% %>`, rendered with
-the values of the tool. `docs/design/mise.md` has the full list of the sections.
-
-A mise tool can have a `requires_found` key with a list of file names. The sync
-writes that mise tool only when the repository has a file with each name, at the
-root or down to 4 folders below it, that git does not ignore. For example, the
-`python` tool installs `ruff` and `pyrefly` only in a repository with a
+A mise tool with `requires_found`, and a file with `requires` or
+`requires_found`
+in its `[files]` table, need a file in the repository. For example, the `python`
+tool installs `ruff` and `pyrefly`, and writes `code:lint:ruff`,
+`code:format:ruff` and `code:lint:pyrefly`, only in a repository with a
 `pyproject.toml`. If the repository adds its first `pyproject.toml` later,
 run `mise run setup:configs` again.
 
-Each file of a tool states its own condition in its `[files]` table, for example
-a task of a mise tool. Without the file, the sync does not write the target, and
-the stale rule removes a generated copy with the bootstrap header that
-`.config/repo-generated.tsv` lists. A seed and a merge target stay. For
-example, the `python` tool writes `code:lint:ruff`, `code:format:ruff` and
-`code:lint:pyrefly` only in a repository with a `pyproject.toml`.
-
-The sync finds the environments of each tool in this sequence:
-
-1. A tool of a `[tools.<folder>]` entry gets its `env`, else its
-   `default_envs`. A tool of a `[packs.<name>]` entry gets the `env` of the
-   pack entry, else its own `default_envs`. Each tool of the `base` pack gets
-   its own `default_envs`. A tool that is selected more than once gets each of
-   these environments.
-2. A dependency gets each environment of each tool that needs it, through
-   `depends` or a mise `depends`. For example, `flutter` adds the `android` and
-   `java` tools in dev and ci.
-3. `environments` of the values file limits every result.
-4. Each tool must be in `dev`. An `env` without `dev` stops the sync with
-   code 2. A `default_envs` without `dev` in a `tools.toml` of `bootstrap`
-   also stops the sync with code 2, also for a tool that the repository does
-   not select.
-
-The `envs` of a mise tool (default `["dev"]`) lists the environments that the
-mise tool allows. In a tool file, the "Environments" column of "mise tools"
-shows them. If a tool gets an environment that one of its mise tools does not
-allow, the sync stops with code 2.
+In a tool file, the "Environments" column of "mise tools" shows the environments
+that each mise tool allows. If a tool gets an environment that one of its mise
+tools does not allow, the sync stops with code 2.
 
 A tool that only a dependency adds goes only to the environments of the tools
 that need it. Thus list the core language of the repository in `[tools.*]`. A
@@ -382,8 +331,6 @@ these:
 | ----------- | ------------------------------------------------------------ |
 | `dev`       | Local development. It usually has everything. Necessary.     |
 | `ci`        | The CI environment, to build and examine the code. Optional. |
-
-The sync stops with code 2 if `dev` is missing, or for a different name.
 
 Find the forge from the host of `origin`, `github.com` or `gitlab.com`. Show
 it, and ask whether the repository is on GitHub or on GitLab. Select `github`
@@ -461,79 +408,24 @@ show that the values file is correct. A dry run makes the clone.
    user wants to change a value.
 4. Write the file with the values of the user.
 
-The keys:
+The keys are in
+[`docs/design/bootstrap-config.md`](../design/bootstrap-config.md).
+Read it, and write the file with these instructions:
 
-| Key                                    | Used by                                                                             | Values                                                                                                                                                                                                                                                                                                                                            |
-| -------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bootstrap_commit`                     | `repo_sync`, this file                                                              | Do not write it, and do not copy it from an example: each example has an empty value. `repo_sync` writes the `bootstrap` commit of each sync without a failure. See "A repository that already has `.config/bootstrap.toml`".                                                                                                                     |
-| `[tools.<folder>]`                     | `repo_sync`                                                                         | One table for each tool from step 1. A table for a tool of the `base` pack only gives values. A table for a dependency also selects the tool, and a list in it appends its new items.                                                                                                                                                             |
-| `[tools.<folder>].env`                 | `repo_sync`                                                                         | Optional. The environments of the tool, for example `["dev", "ci"]`. Without it, the tool gets its `default_envs`.                                                                                                                                                                                                                                |
-| `[tools.<folder>].<key>`               | the templates of the tools                                                          | Optional. A value of the tool, for `.config` and `.all` of a template. See below.                                                                                                                                                                                                                                                                 |
-| `[packs.<name>]`                       | `repo_sync`                                                                         | One table for each pack from step 1, without the prefix `pack:`. Do not write `base`.                                                                                                                                                                                                                                                             |
-| `[packs.<name>].env`                   | `repo_sync`                                                                         | Optional. The environments of each tool of the pack. Without it, each tool gets its own `default_envs`.                                                                                                                                                                                                                                           |
-| `[overrides.mise.<section>]`           | `repo_sync`                                                                         | Optional. New values for the `[mise.<section>]` defaults of the selected tools, in all environments, for example `[overrides.mise.tools.java]` with `version = "21"`. See "Overrides".                                                                                                                                                            |
-| `[overrides.mise_env.<env>.<section>]` | `repo_sync`                                                                         | Optional. New values for one environment only. They win over `[overrides.mise]`. See "Overrides".                                                                                                                                                                                                                                                 |
-| `[overrides.gitignore].remove`         | `repo_sync`                                                                         | Optional. The lines of the shared `.gitignore` to comment out, for example `["*.log"]`. See "Overrides".                                                                                                                                                                                                                                          |
-| `[overrides.gitignore].add`            | `repo_sync`                                                                         | Optional. The repository's own lines, added at the end of `.gitignore`, for example `["/build/"]`. See "Overrides".                                                                                                                                                                                                                               |
-| `environments`                         | `repo_sync`                                                                         | The environments from step 1, for example `["dev", "ci"]`. The default is `["dev"]`.                                                                                                                                                                                                                                                              |
-| `repo_name`                            | `.config/mise.toml`, `gitleaks.toml`, `fnox.toml`                                   | The repository name, for example `my-repo`. It is a literal, not the folder name of a worktree. In `fnox.toml`, it is also the name of the profile of a repository with one profile.                                                                                                                                                              |
-| `product_name`                         | `fnox.toml`                                                                         | The product name, for example `acme`. Set it in each repository of a product with members, the root included. Then the fnox keychain uses it as `service`, and `<repo_name>/` as `prefix`. Without it, `service` is `repo_name` and there is no prefix.                                                                                           |
-| `[claude.plugins.user]`                | `setup:ai`                                                                          | Optional. The Claude Code plugins to install at user scope: `"<name>@<marketplace>" = "<source of the marketplace>"`, for example `"taste-skill@taste-skill" = "Leonxlnx/taste-skill"`. See `tools/claude-tool.md`.                                                                                                                               |
-| `[claude.plugins.project]`             | `setup:ai`                                                                          | Optional. The Claude Code plugins to install at project scope, in the same format.                                                                                                                                                                                                                                                                |
-| `[branch.<branch>].merge_model`        | `code:merge:*`                                                                      | The merge config of this repository, for the destination `<branch>`: `direct` (local merge, the default) or `pr` (pull request). Each repository has its own, also a submodule.                                                                                                                                                                   |
-| `[branch.<branch>].merge_from`         | `code:merge:*`                                                                      | Optional. The only branches that can merge into `<branch>`. Do not set it with `merge_never`.                                                                                                                                                                                                                                                     |
-| `[branch.<branch>].merge_never`        | `code:merge:*`                                                                      | Optional. The branches that never merge into `<branch>`. Without both lists: into `main` with `develop`, only from `develop`; into any other branch, never from `main`.                                                                                                                                                                           |
-| `[branch.<branch>].direct_commit`      | `repo_sync`                                                                         | Optional. `true` allows a direct commit to `<branch>`: the sync removes it from the `no-commit-to-branch` hook. Only in `[branch.main]` and `[branch.develop]`, and only for a branch that exists. With both branches, `main` can be `true` only when `develop` is `true`. See step 4.                                                            |
-| `commit_scopes`                        | `git-conventional-commits`                                                          | The commit scopes, for example `["backend", "web"]`. The default is the member list.                                                                                                                                                                                                                                                              |
-| `repo_url`                             | `github` tool                                                                       | The web URL of the repository, for the links of the GitHub issue form: the README and a new security advisory.                                                                                                                                                                                                                                    |
-| `worktree_files`                       | `setup:worktree`                                                                    | The gitignored files to copy from the main worktree into a new worktree, for example `[".config/mise.local.toml"]`                                                                                                                                                                                                                                |
-| `extensions`                           | `vscode` (in the root)                                                              | VS Code extensions that no tool has, for example `["astro-build.astro-vscode"]`. A submodule lists its own too.                                                                                                                                                                                                                                   |
-| `[member.<name>]`                      | `setup`, `setup:worktree`                                                           | One table for each member folder                                                                                                                                                                                                                                                                                                                  |
-| `[member.<name>].folder`               | `repo_sync`, `setup`, `setup:configs`, `setup:worktree`, `code:format`, `code:lint` | Optional. The folder of the member below the root, for example `projects/web`. The default is `<name>`. A table whose folder is a submodule path names that submodule. A submodule without a table has the `repo_name` of its own values file as its name, else its path with each `/` changed to `_`. The folder `.` stops the sync with code 2. |
-| `[member.<name>].type`                 | `repo_sync`                                                                         | Optional. `submodule` or `folder`. Without it, the sync finds the type. A type that is not correct stops the sync with code 2.                                                                                                                                                                                                                    |
-| `[member.<name>].label`                | `setup`, `setup:configs`, `setup:worktree`                                          | The display name. The default is `<name>`.                                                                                                                                                                                                                                                                                                        |
-| `[member.<name>].worktree_install`     | `setup:worktree`                                                                    | Only for a submodule member. The install command for a new worktree. If it is not set, the member's own `setup:worktree` runs. A folder member never has it.                                                                                                                                                                                      |
-
-Example:
-
-```toml
-commit_scopes = [ "backend", "web" ]
-environments = [ "dev", "ci" ]
-product_name = "my-product"
-repo_name = "my-repo"
-repo_url = "https://github.com/me/my-repo"
-worktree_files = [ ".config/mise.local.toml" ]
-
-[tools.claude]
-
-[tools.fnox]
-
-[tools.github]
-
-[tools.node]
-env = [ "dev", "ci" ]
-
-[branch.main]
-merge_from = [ "develop" ]
-merge_model = "pr"
-
-[branch.develop]
-merge_model = "direct"
-# direct_commit = true
-```
-
-A tool value goes into the `[tools.<name>]` table of that tool, next to `env`.
-Each key of the table other than `env` is a value. It merges over the
-`[defaults]` of the tool and the contributions of the selected tools. The
-top-level keys of the table above stay at the top level. The only key of a
-`[packs.*]` entry is `env`. Each name in
-`env` must be in `environments`, and `env` must include `dev`. A list
-(`tools = [...]` or `packs = [...]`) is the old format, and the sync stops
-with code 2.
-
-The member list is the git submodules, then each `[member.<name>]` table. A
-`[member.<name>]` table that is not a submodule must have a folder with that
-name in the repository. If not, the render fails.
+- Do not write `bootstrap_commit`, and do not copy it from an example: each
+  example has an empty value. `repo_sync` writes the `bootstrap` commit of each
+  sync without a failure. See "A repository that already has
+  `.config/bootstrap.toml`".
+- Write one `[tools.<folder>]` table for each tool from step 1, and one
+  `[packs.<name>]` table for each pack from step 1, without the prefix `pack:`.
+  Do not write `base`.
+- A tool value goes into the `[tools.<name>]` table of that tool, next to `env`.
+  The top-level keys of the values file stay at the top level.
+- Set `product_name` in each repository of a product with members, the root
+  included. See `tools/fnox.md`.
+- Write one `[member.<name>]` table for each member folder.
+- Do not set `merge_from` with `merge_never`. For `direct_commit`, see step 4.
+- For the format of `[claude.plugins.*]`, see `tools/claude-tool.md`.
 
 ### Overrides
 
@@ -558,19 +450,9 @@ python.compile = true
 UV_NO_CACHE = false
 ```
 
-- A table merges key by key. Any other value, also a list, replaces the
-  default.
-- `[overrides.mise_env.<env>]` matches a value in `[mise.*]` or in
-  `[mise_env.<env>.*]` of a tool. The environment must be in `environments`.
-- Each line that an override changes gets the comment
-  `# override: .config/bootstrap.toml` in
-  `.config/mise/conf.d/<tool>/mise.<env>.toml`.
-- These stop the sync with code 2: a key of `[overrides]` other than `mise`,
-  `mise_env` and `gitignore`, a path that no selected tool has, and the
-  `envs`, the `depends`, the `requires`, the `requires_found` or the `files`
-  of a mise tool. An override cannot
-  add a key. Put a
-  new key in `conf.d/zz-repo/mise.<env>.toml`.
+An override cannot add a key. Put a new key in
+`conf.d/zz-repo/mise.<env>.toml`. The other rules of `[overrides.mise*]` are in
+[`docs/design/mise.md`](../design/mise.md#the-overrides).
 
 `[overrides.gitignore]` changes the shared `.gitignore`. It has two lists of
 lines. The sync applies `remove` first, then `add`.
@@ -628,23 +510,9 @@ finds, and removes the merge tasks of the other model. If the branches change
 later, run `setup:configs` again.
 
 The `no-commit-to-branch` hook of the `git` tool protects only the core
-branches that exist and do not allow direct commits:
-
-| Branches             | `direct_commit = true` in | Hook                                |
-| -------------------- | ------------------------- | ----------------------------------- |
-| only one of them     | No table                  | `--branch <branch>` of that branch. |
-| only one of them     | The table of that branch  | No hook.                            |
-| `main` and `develop` | No table                  | `--branch main --branch develop`.   |
-| `main` and `develop` | `[branch.develop]` only   | `--branch main`.                    |
-| `main` and `develop` | Both tables               | No hook.                            |
-| `main` and `develop` | `[branch.main]` only      | The sync stops with code 2.         |
-
-The sync also stops with code 2 for a `direct_commit` that is not a boolean,
-for the key in a table other than `[branch.main]` and `[branch.develop]`, and
-for the key (also `false`) of a core branch that does not exist. The merge
-tasks do not read the key. Their safety net runs the hooks with
-`SKIP=no-commit-to-branch`, so `code:merge:main` also runs from a protected
-`develop`.
+branches that exist and do not allow direct commits. The effect of
+`direct_commit` on the hook and the checks of the key are in
+[`docs/design/repo-sync.md`](../design/repo-sync.md#direct_commit).
 
 ## Step 5: Migrate the existing files
 

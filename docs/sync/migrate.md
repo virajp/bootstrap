@@ -629,7 +629,7 @@ by hand.
 
 ## M28: The merged packs model, and `required` is gone
 
-Each key of a `[pack.<name>]` table of `tools/packs.toml` is now a member, and
+Each key of a `[pack.<name>]` table of `repo/packs.toml` is now a member, and
 the key `required` is gone. `gitleaks`, `grype` and `osv-scanner` now have
 `_security_base` in their `depends`, so a single scanner now brings
 `_security_base`.

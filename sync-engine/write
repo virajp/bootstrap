@@ -8,6 +8,8 @@
 # It gives _se_format, _se_parse_check, _SE_TMP, _se_tmp, _se_seed_kept,
 # _se_unblock, _se_finish, and the checks of a `[files]` table of a tools.toml:
 # _se_files_key_ok, _se_files_check_shape and _se_files_check_mode.
+#
+# Contract: docs/design/sync-engine.md
 
 # Print the format of the target <target>, whose content is in <file>: json,
 # yaml, toml or text. A given <format> wins. Else the extension of <target>

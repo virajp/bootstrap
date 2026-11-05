@@ -1,103 +1,225 @@
 # Tools design
 
-`Tools` are fundamental building block of `bootstrap`. They define `mise`
-configuration to install the required applications (also called as tools in
-mise), tasks, environment, dependencies, etc. They also contain configuration of
-the tool they are installing
+A tool is the building block of `bootstrap`. A tool folder holds the files of
+the
+tool at the path that they get in the target, and a `tools.toml`. This document
+holds the `tools.toml` schema of both sides, the `[files]` keys, the folder
+rules and
+the rule for the header of a source file.
+
+See also: [packs.md](packs.md), [mise.md](mise.md) for `[mise.*]`,
+[sync-engine.md](sync-engine.md) for merge mode and the values merge,
+[repo-sync.md](repo-sync.md) and [setup-sync.md](setup-sync.md). The exit code
+of each rule that stops the sync is in
+[sync-engine.md](sync-engine.md#the-exit-codes).
+
+## The two sides
+
+| Side    | Tools root     | A file goes to             | Reads the tools of       |
+| ------- | -------------- | -------------------------- | ------------------------ |
+| `repo`  | `repo/tools/`  | The path in the repository | `sync-engine/repo-sync`  |
+| `macos` | `macos/tools/` | The path below `$HOME`     | `sync-engine/setup-sync` |
+
+Each file in a tool folder is at the path that it gets in the target, without
+the
+`.tmpl` suffix of a template. For example,
+`repo/tools/git/.config/mise/tasks/code/merge/develop` becomes
+`.config/mise/tasks/code/merge/develop` in a consumer. Some files refer to files
+that
+are not in the tool folder, for example `dprint.jsonc`. The consumer supplies
+them.
 
 ## The `tools.toml` file
 
-Each tool folder has a `tools.toml` with four necessary keys. The sync reads
-them without defaults. The other tables of the file are optional.
+Each tool folder has a `tools.toml`. A Mac tool folder without it stops the
+sync.
 
-| Key            | Meaning                                                                                                                    |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `default_envs` | A list: the environments of the tool when the values file gives it no `env`, for example `["dev"]`. It must include `dev`. |
-| `depends`      | The tools that the sync adds with this one. Each gets the environments of this tool.                                       |
-| `root_only`    | `true`: the sync refuses the tool in a git submodule.                                                                      |
-| `extensions`   | The VS Code extensions of the tool.                                                                                        |
+| Key                    | `repo`    | `macos`  | Meaning                                                                                                                    |
+| ---------------------- | --------- | -------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `default_envs`         | Necessary | Refused  | A list: the environments of the tool when the values file gives it no `env`, for example `["dev"]`. It must include `dev`. |
+| `depends`              | Necessary | Optional | The tools that the sync adds with this one, transitively. On the repo side, each gets the environments of this tool.       |
+| `root_only`            | Necessary | Refused  | `true`: the tool is not for a git submodule. See [repo-sync.md](repo-sync.md#root_only).                                   |
+| `extensions`           | Necessary | Refused  | The VS Code extensions of the tool.                                                                                        |
+| `description`          | Not read  | Optional | A string: one line that tells the adopting AI what the tool is.                                                            |
+| `stage`                | Not read  | Optional | `"init"` puts the tool in the init stage. See [setup-sync.md](setup-sync.md#stages-and-exit-4).                            |
+| `[files."<target>"]`   | Optional  | Optional | The mode and the condition of one file. See [The `[files]` table](#the-files-table).                                       |
+| `[defaults]`           | Optional  | Optional | The values of the tool. See [below](#the-defaults-questions-and-contributes-tables).                                       |
+| `[questions.<key>]`    | Optional  | Optional | The question for one value.                                                                                                |
+| `[contributes.<tool>]` | Optional  | Optional | Values for another selected tool.                                                                                          |
+| `[[precommit]]`        | Optional  | Refused  | One `repos:` entry of `.config/pre-commit-config.yaml`, with its `[[precommit.hooks]]`.                                    |
+| `[mise.*]`             | Optional  | Optional | The mise config of the tool. See [mise.md](mise.md#the-mise-sections).                                                     |
+| `[mise_env.<env>.*]`   | Optional  | Refused  | More mise config for one environment. See [mise.md](mise.md#the-mise-sections).                                            |
+
+On the repo side, the four necessary keys are necessary because the sync reads
+them
+without defaults. The sync examines the manifest of each tool of the clone,
+selected
+or not.
+
+On the Mac side, "refused" means that the key stops the sync, with the message
+`is for
+repo tools only`. Any other top-level key also stops the sync, for example a
+typo such
+as `depend`. `depends` must be a list of tool names. The only value of `stage`
+is
+`"init"`.
 
 `default_envs` and the `envs` of a mise tool can name only `dev` and `ci`, the
-scope of `bootstrap`. Any other name stops the sync with code 2. A name of
-`default_envs` that the values file selects, and that a
-mise tool of the tool does not allow in its `envs`, stops the sync with
-code 2. See [mise.md](mise.md#the-environments-of-a-mise-tool).
+scope of
+`bootstrap`. Any other name stops the sync. A name of `default_envs`
+that
+the values file selects, and that a mise tool of the tool does not allow in its
+`envs`,
+stops the sync. See
+[mise.md](mise.md#the-environments-of-a-mise-tool). A
+`default_envs` without `dev` stops the sync, also for a tool that
+the values
+file does not select.
 
-A `default_envs` without `dev` stops the sync with code 2, also for a tool
-that the values file does not select. A tool folder that is `zz-repo`, or
-whose name sorts after `zz-repo` in byte order, also stops the sync with
-code 2: the folder `conf.d/zz-repo/` of the repository must load last.
+### The folder rules
 
-The valid `[mise.*]` sections are `tools`, `tool_alias`, `plugins`, `settings`,
-`env`, `tool_config`, `task_config`, `task_templates`, `doctor`, `deps`, `oci`,
-`vars`, `secrets`, `redactions`, `shell_alias`, `hooks`, `watch_files`,
-`daemons`, `daemon_groups`, `daemons_settings`, `daemon_providers`, `tasks`,
-`bootstrap` and `dotfiles`. Any other section stops the mise config of the tool
-with code 2. See [mise.md](mise.md#the-mise-sections), which also has the rule
-for `<% %>` in a `[mise.*]` string.
+- A repo tool folder must not be `zz-repo`, and its name must not sort after
+  `zz-repo`
+  in byte order. A Mac tool folder has the same rule for `zz-macos`. If not, the
+  sync
+  stops, because the folder of the owner in `conf.d/` must load
+  last. See
+  [mise.md](mise.md#zz-repo-and-zz-macos).
+- A Mac tool folder name has no whitespace and does not start with a dot.
+- A folder whose name starts with `_` is a common tool, for example
+  `_security_base`. It
+  is not a member of a pack. See [packs.md](packs.md#common-tools).
+- Two tools must not ship the same path. The repo side does not examine this
+  rule, so
+  examine it yourself when you add a file. On the Mac side, two selected tools
+  that ship
+  one target stop the sync.
+- A tool folder with both `<path>` and `<path>.tmpl` stops the sync.
+- A tool does not ship mise files, and a tool that ships a file that the sync
+  also
+  generates stops the sync. See [mise.md](mise.md#the-mise-sections)
+  for the
+  exceptions. A Mac tool that ships a file below `.config/mise/conf.d/` also
+  stops the
+  sync.
+
+A tool name is the name of its folder. A pack name must not be a tool folder.
+
+### The old keys
+
+These keys are gone. Each stops the sync with a message that names
+the new
+key: the top-level `seed` key, the old table of seed conditions
+`[seed_requires]`, and
+the `requires` and the `files` of a mise entry. On the Mac side, `stage =
+"shell"` also
+stops the sync and names `stage = "init"`.
 
 ## The `[files]` table
 
 An optional `[files."<target>"]` table of a `tools.toml` gives the mode and the
 condition of one file of the tool. A file without a table is `generated`.
 
-The target is the path of the file without `.tmpl`. The target, or the target
-with `.tmpl`, must be the same string as a path that `find -type f` gives in the
+The target is the path of the file without `.tmpl`. On the repo side, the
+target, or the
+target with `.tmpl`, must be the same string as a path that `find -type f` gives
+in the
 tool folder. Thus a case variant fails on each file system, and a path through a
-symlinked folder fails. A target that fails stops the sync with code 2.
+symlinked folder fails. A target that ends in `.tmpl` also fails. On the Mac
+side, the target is relative to `$HOME`, with
+no
+`~/`, and a selected tool must have a file that produces it. Thus the path of a
+template with its `.tmpl` also fails. A target that fails
+stops
+the sync.
 
-| Key              | Meaning                                                                                                                                 |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `mode`           | `generated` (the default): written on each run. `seed`: written only when it is missing. `merge`: merged into the live target.          |
-| `requires`       | A list of exact paths, relative to the root of the repository. Each path must exist.                                                    |
-| `requires_found` | A list of file names. The sync must find each name at the root or down to 4 folders below it, in a file that git does not ignore.       |
-| `format`         | `text`, `json`, `yaml` or `toml`. It selects the parse check. The default comes from the extension.                                     |
-| `remove`         | Only with `merge`. A list of key paths to delete from the live target.                                                                  |
-| `remove_items`   | Only with `merge`. A list of tables with `path` and `items`. It deletes each listed item from that list, in the live target and source. |
+| Key              | Side | Meaning                                                                                                                                         |
+| ---------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mode`           | Both | `generated` (the default): written on each run. `seed`: written only when it is missing. `merge`: merged into the live target.                  |
+| `requires`       | Both | A list of exact paths. Each path must exist. It is relative to the root of the repository, or to `$HOME` on the Mac side. It has no `..` part.  |
+| `requires_found` | Repo | A list of file names. See [repo-sync.md](repo-sync.md#requires_found). On the Mac side, it stops the sync.                                      |
+| `format`         | Both | `text`, `json`, `yaml` or `toml`. It selects the parse check. The default comes from the extension.                                             |
+| `remove`         | Both | Only with `merge`. A list of key paths, each a non-empty list of strings. It deletes each path from the live target.                            |
+| `remove_items`   | Both | Only with `merge`. A list of tables with exactly `path` and `items`. It deletes each listed item from that list, in the live target and source. |
+
+Any other key stops the sync. `requires` and `requires_found` must
+be
+non-empty lists.
 
 When a `requires` or `requires_found` entry is not there, the sync does not
-write the target. A generated target gets no row in
-`.config/repo-generated.tsv`, so after a sync without a failure, the stale rule
-removes a listed copy with the bootstrap header. A copy without the header, a
-seed and a merge target stay.
+write the
+target, and it logs the skip. A generated target gets no row in the manifest, so
+after
+a run, the stale rule removes a listed copy with the bootstrap header. A copy
+without
+the header, a seed and a merge target stay.
 
-The top-level `seed` key, the old table of seed conditions, and the `requires`
-and the `files` of a mise entry are gone. Each stops the sync with code 2, and
-the message names the new key.
+- A file that the consumer owns after the first write is a seed. A config file
+  that a
+  project tunes, for example the rules of a linter (`.config/swiftlint.yml`,
+  `.config/detekt.yml`), is a seed.
+- A seed that applies only when the consumer has a specific file also gets
+  `requires`,
+  for example `requires = ["package.json"]`.
+- Merge mode is in [sync-engine.md](sync-engine.md#merge-mode). The
+  `claude-cli`, `gem`,
+  `gh` and `superfile` tools of `macos/tools/` use merge mode now. No tool of
+  `repo/tools/` uses it.
+- `test:macos-tools` stops when a `[files]` table gives `mode = "seed"` to a
+  JSON, YAML
+  or TOML target of a Mac tool.
 
-### Merge mode
+## The header of a source file
 
-Merge mode is for a target that an app owns. The source holds only the keys that
-the tool enforces. It has no bootstrap header. A YAML or TOML source can have
-the
-comment `# Merged by bootstrap: <path>`, and the sync strips nothing.
+Each file that is neither a seed nor a merge source has this header in its
+source, in
+the comment syntax of the file. In a template, `<path>` keeps the `.tmpl`
+suffix:
 
-- The format is `json`, `yaml` or `toml`: the `format` key, else the extension.
-  The JSONC rule does not apply.
-- The order is render, parse check, merge with the live target, dprint, compare.
-- The sync applies `remove` and `remove_items` to the live target, then it
-  merges
-  the source over the result. Tables merge key by key. A list keeps its items
-  and
-  adds each new source item. Any other source value replaces the live value. A
-  key that is not in the source stays. `sync-engine/merge` has the full rules.
-- The target path is the path in the repository. A target that is a symlink or
-  is
-  below a symlinked folder stays as it is, and the sync returns code 2.
-- A merge target has no header, so the stale rule leaves it. It keeps the mode
-  of an existing target, and a new one takes the mode of its source.
+```text
+# Synced from bootstrap: repo/tools/<tool>/<path>. Do not edit this file.
+# The next sync replaces it, and a manual change is lost.
+```
 
-The `claude-cli`, `gem`, `gh` and `superfile` tools of `macos/tools/` use merge
-mode now.
+A file of a Mac tool has `macos/tools/<tool>/<path>` in the header.
+
+| Kind of file   | Place of the header                            |
+| -------------- | ---------------------------------------------- |
+| A script       | After the shebang.                             |
+| YAML           | After `---` when the file has it.              |
+| TOML           | After a `# :schema` line when the file has it. |
+| JSONC          | Inside `{`.                                    |
+| Markdown       | As an HTML comment.                            |
+| Any other file | On the first line.                             |
+
+The sync does not add this header to a shipped file. The generator of the mise
+config
+writes the same two lines in each generated mise file. See
+[mise.md](mise.md#the-generated-files). The detection of the header is in
+[sync-engine.md](sync-engine.md#the-header).
+
+A seed and a merge source have no header:
+
+- A YAML or TOML merge source can have the comment `# Merged by bootstrap:
+  <path>`. A
+  JSON merge source has no comment. The sync strips nothing from a merge source.
+- The forwarding file keeps its old header with `tools/repo-sync/...`, because
+  the sync
+  does not ship it.
 
 ## The `[defaults]`, `[questions]` and `[contributes]` tables
 
 A `tools.toml` can have three optional tables for the values of a tool. A
-template reads the values as `.config` (the values of its tool) and `.all` (the
-values of each selected tool, by tool name). No tool of `repo/tools/` uses these
-tables now. Mac tools such as `fish`, `git`, `ssh`, `gh` and `macos-defaults`
-use `[defaults]` or `[questions]`. The Mac tools `1password` and `orbstack` use
-`[contributes]`.
+template reads
+the values as `.config` (the values of its tool) and `.all` (the values of each
+selected
+tool, by tool name). No tool of `repo/tools/` uses these tables now. Mac tools
+such as
+`fish`, `git`, `ssh`, `gh` and `macos-defaults` use `[defaults]` or
+`[questions]`. The
+Mac tools `1password` and `orbstack` use `[contributes]`. The merge of these
+values is
+in [sync-engine.md](sync-engine.md#the-values-merge).
 
 ```toml
 [defaults]
@@ -118,69 +240,24 @@ settings = [ "editor.formatOnSave" ]
 | `[questions.<key>]`    | `question` (necessary, a string), `detect` (a string, a shell command), `example` | The question for one value.       |
 | `[contributes.<tool>]` | Any key                                                                           | Values for another selected tool. |
 
-The sync examines these tables for each selected tool, not for each tool of the
-clone. `repo_sync --check` does not examine them, because they need the clone.
-These stop the sync with code 2:
+The repo side examines these tables for each selected tool, and the Mac side for
+each
+tool of the clone. `repo_sync --check` does not examine them, because they need
+the
+clone. These stop the sync:
 
 - `[defaults]` is not a table.
 - `[questions]` or `[contributes]` is not a table, or one of its entries is not
-  a
-  table.
+  a table.
 - A `[questions.<key>]` has another key, has no `question`, or has a `question`
-  or
-  a `detect` that is not a string.
+  or a
+  `detect` that is not a string.
 
 The sync does not ask a question and does not run `detect`. A missing answer is
-not an error of the engine: a template that needs an answer uses `required`,
-which fails that file with its message. Exit code 4 is only for the Mac
-front-end.
-
-### The merge
-
-`sync-engine/values` merges the values of each selected tool in this order:
-
-1. `[defaults]` of the tool.
-2. `[contributes.<tool>]` of each selected tool, in tool-name order.
-3. `[tools.<name>]` of the values file, without `env`.
-
-A contribution merges over `[defaults]`: tables merge key by key, a list appends
-its new items, and any other value replaces the default.
-
-Two contributions that set one key to different values stop the sync with code
-2,
-unless both values are tables or both are lists. A value in `[tools.<name>]`
-does
-not clear this conflict, because the sync merges the contributions first. Remove
-one of the two.
-
-The tools root of a front-end is `repo/tools/` for `repo-sync` and
-`macos/tools/` for `setup-sync`. A contribution to a tool of that tools root
-that is not selected is ignored. A contribution of a selected tool to a tool
-that is not in that tools root stops the sync with code 3.
-
-A value of `[tools.<name>]` depends on the tool:
-
-- A base or dependency tool is a tool that the pack `base` adds, also through a
-  nested `default = true` pack (`"pack:security"`: `gitleaks`, `grype`,
-  `osv-scanner`, and `_security_base` through `depends`), or a tool in the
-  depends
-  closure of a selected tool, a tool that a mise `depends` adds included. A
-  `<tool> = {}` member that the pack does not add does not count. It is a base
-  or
-  dependency tool also when a `[tools.<name>]` table names it. For such a tool,
-  a
-  list appends its new items, tables merge key by key, and a value whose type
-  differs from the merged value stops the sync with code 2.
-- For any other tool, a value replaces the merged one, and tables merge key by
-  key.
-
-The merge runs before the mise config and the file loop, so a failure stops the
-sync before it writes a file of a tool, and `bootstrap_commit` stays. A dry run
-merges too. Across tools, each message logs and the highest code returns. Inside
-one target tool, the merge stops at the first contribution conflict or type
-change of that tool, so a second conflict of that tool shows only after the
-first
-is fixed.
+not an
+error of the engine: a template that needs an answer uses `required`, which
+fails that
+file with its message. Exit code 4 is only for the Mac front-end.
 
 ## Tools and packs
 
@@ -231,7 +308,7 @@ name in the registry.
   `depends` `android-sdk`. Thus each Flutter consumer gets `android` and
   `java`, also a web-only or a desktop-only app.
 - Gradle does not come from mise. The Android tasks use the `gradlew` wrapper
-  of the project. The `kotlin` tool ships only `kotlin-lsp`.
+  of the project. The `kotlin` tool ships `ktlint`, `detekt` and `kotlin-lsp`.
 
 ## Tasks of a shared tool for one platform
 
