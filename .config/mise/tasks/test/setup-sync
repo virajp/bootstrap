@@ -870,6 +870,29 @@ case_parse_bad() {
   check "no temp file is left" not test -n "$(find "$home/.config/badparse" -name '.sync-engine.*')"
 }
 
+# target_json <path> <format>: the parsed target as compact JSON, with sorted keys.
+target_json() (
+  # shellcheck source=/dev/null
+  source "$clone/sync-engine/common"
+  _se_yq -p "$2" -o=json -I=0 '.' "$1" | _se_jq -cS .
+)
+target_is() { [[ $(target_json "$1" "$2") == "$3" ]]; }
+
+# Each target parses to the same keys as with a plain value: the double quote and
+# the newlines of the value stay in the one string of its key.
+case_value_breakout() {
+  local f agent='"x\"\nadded = true\n[added_table]\nkey = \"1"'
+  use_config breakout
+  run_real
+  check_exit 0
+  for f in json yaml toml; do
+    check "data.$f holds the value as one string, with no added key or table" \
+      target_is "$home/.config/owner/data.$f" "$f" "{\"agent\":$agent,\"includes\":[\"~/a\"]}"
+  done
+  check "settings.conf holds the value as one string, with no added key or table" \
+    target_is "$home/.config/owner/settings.conf" toml "{\"owner\":{\"agent\":$agent}}"
+}
+
 # ---- merge files (mode = "merge") ---------------------------------------------
 
 m_dir() { printf '%s' "$home/.config/merger"; }
@@ -1280,6 +1303,7 @@ run_case "init stage: a failed file" case_init_fail
 run_case "contributions: merged, placed twice, lists without duplicates, requires" case_contrib
 run_case "contributions: a contributor deselected, a seed written once" case_contrib_deselect
 run_case "parse: a JSON, a YAML and a TOML target that do not parse" case_parse_bad
+run_case "parse: a value with a double quote and a newline stays one value" case_value_breakout
 run_case "macos.toml missing" case_values_missing
 run_case "bootstrap_commit: after the header comments, a second run" case_commit
 run_case "bootstrap_commit: a symlinked macos.toml" case_commit_link

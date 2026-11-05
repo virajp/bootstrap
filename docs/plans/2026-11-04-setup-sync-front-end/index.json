@@ -100,14 +100,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T05:49:36.029Z",
       "ended": "",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "75c78d6",
+        "to": "f6c7eca"
       }
     },
     {
@@ -169,8 +169,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T05:49:35.962Z",
       "ended": ""
     },
     {
@@ -411,6 +411,13 @@
       "unit": "U2",
       "stage": "edit",
       "text": "the table and edit 4 both list an override path that no selected tool has · assumed two cases are wanted, the second uses its own folder override-none",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U3",
+      "stage": "security",
+      "text": "Edit 1.11 and D4 never require a rendered value to be encoded in a .tmpl target, so a string with a quote and a newline in [tools.<name>] of macos.toml can add tables or keys to a rendered TOML, JSON or YAML target (setup-sync:601; no privilege gain, the same author can write [mise.*]) · the run encoded the strings of the fixture templates and put the rule in CLAUDE.md; the real Mac templates of P11 to P14 must follow it, and those approved plans were not edited by this run",
       "state": "open"
     }
   ],
