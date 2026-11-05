@@ -35,6 +35,9 @@ files of docs/sync/ when index.md tells you to. Apply only what is relevant to
 this repository. Ask me before each choice that docs/sync/ does not decide.
 ```
 
+The owner of a Mac uses [`docs/setup/index.md`](docs/setup/index.md), not this
+prompt.
+
 ## Layout
 
 The shared files are in `repo/tools/`, one folder for each tool. Each file in

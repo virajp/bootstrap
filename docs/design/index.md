@@ -40,10 +40,17 @@ various tools that it supports
   `repo-sync` which reads
   `.config/bootstrap.toml` and syncs the files of the selected tools.
 
+A Mac uses the same two parts. The AI reads `docs/setup/index.md`, asks the
+questions, and writes `macos.toml`. After that, the `updateall:configs` task
+calls `setup-sync`, which reads `macos.toml` and renders the selected tools into
+`$HOME`.
+
 The repository solves two problems: add tools and dependencies to many
 repositories without manual edits that drift, and keep the updates in sync.
 
-The AI part is for a new repository, and after that only in rare situations.
+The AI part is for a new repository, or for the first adoption or the migration
+of a Mac that has mise and the clone, and after that only in rare situations. A
+new Mac has neither, so it uses the parked `setup` script of `macos-setup`.
 
 ## Bootstrap config
 

@@ -102,11 +102,11 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T17:00:59.770Z",
+      "ended": "2026-11-05T17:02:44.280Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 3
     },
     {
       "id": "U4",
@@ -136,8 +136,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T17:00:59.737Z",
       "ended": ""
     },
     {
@@ -256,28 +256,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T17:02:43.908Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T17:02:43.705Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T17:02:43.809Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers and no code unit: nothing to reconcile or persist",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T17:02:44.009Z"
     }
   },
   "gaps": [
@@ -356,6 +356,20 @@
       "unit": "U2",
       "stage": "edit",
       "text": "U2 Edits name only the 19 fragments and the obsolete files for deletion, but a simulation showed the plain file dotfiles/.config/mise/tasks/updateall makes 3 targets fail, because the sync needs a folder at that path · Step 9 also deletes that file, and step 3 leaves it out of the classification of the owner.",
+      "state": "open"
+    },
+    {
+      "id": "G12",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "The plan says to run vwf:docs-sync over the full branch delta, but that skill ends at its step 1 for a scope of only human-doc edits · No surveyor ran; U3 applied the handed DOCS FALSIFIED lines and checked CLAUDE.md, README.md, docs/sync and docs/design with a grep.",
+      "state": "open"
+    },
+    {
+      "id": "G13",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "The lead of Where the rules are in CLAUDE.md still says each rule of the sync has one place in docs/design/, and the list now also names docs/setup/ files · The plan asks only for the lines, so the lead stays: the Mac docs are prompts and a reference, not sync rules.",
       "state": "open"
     }
   ],

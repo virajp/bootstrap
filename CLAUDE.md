@@ -86,6 +86,17 @@ the adoption. After the adoption, `repo-sync` keeps the consumer in sync.
 - `docs/sync/packs/<pack>.md`: one file for each pack of `repo/packs.toml`,
   with the tools that it adds and the questions of the adopting AI.
 
+`docs/setup/` tells an AI agent how to adopt `bootstrap` on a Mac, and how to
+bring the Mac up to date. After the adoption, the task `updateall:configs` keeps
+the Mac in sync. The sync never copies this folder.
+
+- `docs/setup/index.md`: the Mac adoption prompt. It does the first adoption,
+  and it brings a Mac up to date with `bootstrap_commit`.
+- `docs/setup/migrate-dotfiles.md`: the method that moves a Mac from the symlink
+  model of `macos-setup/dotfiles/` to `macos.toml` and the Mac sync.
+- `docs/setup/tools.md`: the reference of the Mac tools, with one section for
+  each folder in `macos/tools/`.
+
 This repository is also a consumer of its own `base` pack and of the `claude`
 tool. Its values file is `.config/bootstrap.toml`, and `setup:configs` writes
 the synced copies at the root (`.config/`, `.vscode/`, `.gitignore`,
@@ -111,6 +122,10 @@ change the path:
   `.config/bootstrap.toml`.
 - Read `docs/design/fnox.md` before you change fnox.
 - Read `docs/sync/index.md` before you change `docs/sync/`.
+- Read `docs/setup/index.md` before you change the Mac adoption.
+- Read `docs/setup/migrate-dotfiles.md` before you change the migration from
+  `dotfiles/`.
+- Read `docs/setup/tools.md` before you change a tool in `macos/tools/`.
 
 Each shipped file that is neither a seed nor a merge source starts with the
 `Synced from bootstrap` header: see `docs/design/tools.md` ("The header of a
@@ -294,7 +309,9 @@ lines of the sync. The cases of the default output unset it. See
    `docs/sync/index.md`. A removed file needs a row in "Files that bootstrap no
    longer ships" of `docs/sync/index.md`, and a `migrate.md` item. A change to
    `repo/packs.toml` changes
-   `docs/sync/packs/<pack>.md` too, and a new pack needs a new file there.
+   `docs/sync/packs/<pack>.md` too, and a new pack needs a new file there. A
+   change to a tool in `macos/tools/` changes its section in
+   `docs/setup/tools.md` too.
 3. Commit on a local work branch. Land it on `main` with
    `mise run code:merge <branch>`, which merges and pushes.
 4. In this repository and in each consumer repository, run
