@@ -151,11 +151,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "2026-11-05T10:40:26.346Z",
+      "status": "green",
+      "started": "2026-11-05T11:24:08.999Z",
+      "ended": "2026-11-05T11:33:38.884Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -179,9 +179,9 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T11:24:08.964Z",
+      "ended": "2026-11-05T11:34:13.667Z"
     }
   ],
   "shared_files": [
@@ -362,8 +362,8 @@
       "id": "G2",
       "unit": "U2",
       "stage": "edit",
-      "text": "U2 did not run test:macos-tools, the check that needs the U1 folders · assumed that U1 supplies them and that the U5 gates run the check",
-      "state": "open"
+      "text": "U2 did not run test:macos-tools, the check that needs the U1 folders · assumed that U1 supplies them and that the U5 gates run the check. closed: U5 ran test:macos-tools over the U1 folders, and it passed",
+      "state": "closed"
     },
     {
       "id": "G3",
