@@ -1,0 +1,887 @@
+#!/usr/bin/env bash
+
+# setup-sync — render the Mac tools of `macos/tools/` of a bootstrap clone into
+# $HOME, on the shared libraries of this folder. Meant to be *sourced* by a mise
+# task, not executed:
+#
+#   source "${SYNC_ENGINE_CLONE}/sync-engine/setup-sync"
+#   setup_sync [--dry-run] [--no-bootstrap]
+#
+# Flags:
+#   --dry-run       show the changes without writing them
+#   --no-bootstrap  skip every `mise bootstrap` step
+#   -h, --help      show the usage
+#
+# Variables:
+#   SYNC_ENGINE_CLONE        the clone copy of the run, with `sync-engine/` and
+#                            `macos/tools/`; this file is loaded from it
+#   SYNC_ENGINE_CACHE        the cache folder, which has `macos-generated.tsv`
+#                            (default ${XDG_CACHE_HOME:-$HOME/.cache}/sync-engine)
+#   MACOS_SETUP_CONFIG_PATH  the folder of the values file `macos.toml`
+#
+# `macos.toml` selects the tools: the pack `base`, the `default = true` members
+# of each `[packs.<name>]`, each `[tools.<name>]`, and their depends. The values
+# of a tool are the keys of its `[tools.<name>]` table. `[overrides.mise.<path>]`
+# changes the generated mise config, and `[mise.*]` goes to
+# `~/.config/mise/conf.d/zz-macos/mise.toml`. The Mac side has no environments:
+# each tool with `[mise.*]` gets `~/.config/mise/conf.d/<tool>/mise.toml`.
+#
+# The stages: the tools with `stage = "init"` and their depends go first, then
+# `mise bootstrap` and the login shell compare. A change there stops the run with
+# code 4, so a new terminal loads it. A failure in the init stage stops the run
+# before the main stage. Inside a stage, a failed file stops no other file. A
+# target that is a symlink, or is below one, is written at its real path.
+#
+# The stale rule runs after each render, also a failed one: a target that failed
+# but is still planned stays handled, so its existing copy stays. After a failure,
+# the run keeps the manifest, runs no `mise bootstrap` and writes no commit. After
+# a clean run, `bootstrap_commit` of `macos.toml` is the commit of the clone.
+#
+# Return codes
+#   0  done
+#   1  any other failure, also a failed `mise bootstrap`
+#   2  a usage or a config error
+#   3  a tool or a pack that `macos/` does not have
+#   4  the init stage changed: open a new terminal, then run the task again
+
+# The shared libraries, from the folder of this file.
+# shellcheck source=/dev/null
+source "${BASH_SOURCE[0]%/*}/common"
+# shellcheck source=/dev/null
+source "${BASH_SOURCE[0]%/*}/write"
+# shellcheck source=/dev/null
+source "${BASH_SOURCE[0]%/*}/merge"
+# shellcheck source=/dev/null
+source "${BASH_SOURCE[0]%/*}/select"
+# shellcheck source=/dev/null
+source "${BASH_SOURCE[0]%/*}/manifest"
+# shellcheck source=/dev/null
+source "${BASH_SOURCE[0]%/*}/values"
+# shellcheck source=/dev/null
+source "${BASH_SOURCE[0]%/*}/mise"
+_SE_PREFIX='setup-sync'
+
+# The Mac side of the clone, as a message names it.
+_SS_SHOWN=macos/tools
+_SS_PACKS_SHOWN=macos/packs.toml
+_SS_VALUES_NAME=macos.toml
+_SS_TILDE='~'
+_SS_TAB=$'\t'
+
+_ss_usage() {
+  cat << 'EOF'
+usage: setup_sync [--dry-run] [--no-bootstrap]
+
+  --dry-run       show the changes without writing them
+  --no-bootstrap  skip every mise bootstrap step
+  -h, --help      show this help
+
+exit codes: 0 done, 1 other failure, 2 usage or config error, 3 a tool or a
+pack that macos/ does not have, 4 the init stage changed (open a new terminal,
+then run mise run updateall:configs)
+EOF
+}
+
+# A tool or a pack name is one word, not a path.
+_ss_name_ok() { [[ -n $1 && $1 != */* && $1 != .* && $1 != *[[:space:]]* ]]; }
+
+# mise must be the standalone install at ~/.local/bin/mise (`mise self-update`
+# manages it), never a package manager's copy. Each link is followed, so a link
+# into another folder also fails. Returns 2, after a message.
+_ss_check_mise() {
+  local found real=''
+  found=$(command -v mise 2> /dev/null) || found=''
+  if [[ -n $found ]]; then
+    real=$found
+    [[ $real == /* ]] || real=$PWD/$real
+    _se_manifest_real "$real" && real=$_SE_MANIFEST_REAL
+  fi
+  if [[ $real != */.local/bin/mise ]]; then
+    _se_log "mise must be installed with \`curl https://mise.run | sh\` at ~/.local/bin/mise, not from a package manager (found: ${real:-no mise on PATH})"
+    return 2
+  fi
+}
+
+# The top-level keys of macos.toml, one line each: `type <key>`, `oldtools -`,
+# `tool <name>`, `toolbad <name>`, `toolenv <name>`, `pack <name>`,
+# `packbad <name>`, `packkey <name> <key>`, `ovenv -`, `ovkey <key>` or
+# `key <key>`.
+_SS_VALUES_TPL='<% range $k, $x := .v %><% if eq $k "bootstrap_commit" %><% if not (test.IsKind "string" $x) %><% printf "type\t%s\n" $k %><% end %>'
+_SS_VALUES_TPL+='<% else if eq $k "tools" %><% if test.IsKind "map" $x %><% range $n, $e := $x %><% if test.IsKind "map" $e %><% printf "tool\t%s\n" $n %><% if has $e "env" %><% printf "toolenv\t%s\n" $n %><% end %><% else %><% printf "toolbad\t%s\n" $n %><% end %><% end %><% else %><% printf "oldtools\t-\n" %><% end %>'
+_SS_VALUES_TPL+='<% else if eq $k "packs" %><% if test.IsKind "map" $x %><% range $n, $e := $x %><% if test.IsKind "map" $e %><% printf "pack\t%s\n" $n %><% range $ek, $ev := $e %><% printf "packkey\t%s\t%s\n" $n $ek %><% end %><% else %><% printf "packbad\t%s\n" $n %><% end %><% end %><% else %><% printf "type\t%s\n" $k %><% end %>'
+_SS_VALUES_TPL+='<% else if eq $k "overrides" %><% if test.IsKind "map" $x %><% range $ok, $ov := $x %><% if eq $ok "mise_env" %><% printf "ovenv\t-\n" %><% else if ne $ok "mise" %><% printf "ovkey\t%s\n" $ok %><% end %><% end %><% else %><% printf "type\t%s\n" $k %><% end %>'
+_SS_VALUES_TPL+='<% else if eq $k "mise" %><% if not (test.IsKind "map" $x) %><% printf "type\t%s\n" $k %><% end %>'
+_SS_VALUES_TPL+='<% else %><% printf "key\t%s\n" $k %><% end %><% end %>'
+
+# Read `macos.toml` of the config folder, when it exists. Sets _SS_VALUES to its
+# path (empty: no file, an empty selection), _SS_SEL to the
+# `tools|packs <name> -` lines of `_se_selected` and _SS_USER to the user values,
+# one JSON object. Returns 2 or 3, after a message for each problem.
+_ss_read_values() {
+  local file="$_SS_CONFIG/$_SS_VALUES_NAME" show out kind name key rc=0
+  local keys='bootstrap_commit, [tools.<name>], [packs.<name>], [overrides.mise.<path>] and [mise.*]'
+  show=$(_se_path "$file")
+  _SS_VALUES='' _SS_SEL='' _SS_USER='{}'
+  [[ -e $file ]] || return 0
+  if [[ ! -f $file ]]; then
+    _se_log "$show is not a file"
+    return 2
+  fi
+  out=$(_se_gomplate -c "v=${file}" -i "$_SS_VALUES_TPL") || {
+    _se_log "cannot read $show"
+    return 2
+  }
+  while IFS="$_SS_TAB" read -r kind name key; do
+    case $kind in
+      '') ;;
+      tool | pack)
+        if ! _ss_name_ok "$name"; then
+          _se_log "$kind '$name' is not in bootstrap (named in $show)"
+          ((rc >= 3)) || rc=3
+          continue
+        fi
+        _SS_SEL+="${kind}s $name -"$'\n'
+        ;;
+      type)
+        if [[ $name == packs ]]; then
+          _se_log "packs in $show must be [packs.<name>] tables - the top-level keys are $keys"
+        elif [[ $name == bootstrap_commit ]]; then
+          _se_log "bootstrap_commit in $show must be a string"
+        else
+          _se_log "$name in $show must be a table - the top-level keys are $keys"
+        fi
+        ((rc >= 2)) || rc=2
+        ;;
+      oldtools)
+        _se_log "tools = [...] is the old format - write a [tools.<name>] table for each tool"
+        ((rc >= 2)) || rc=2
+        ;;
+      toolbad)
+        _se_log "[tools.$name] in $show must be a table"
+        ((rc >= 2)) || rc=2
+        ;;
+      toolenv)
+        _se_log "[tools.$name] env is for repo tools only - the Mac side has no environments"
+        ((rc >= 2)) || rc=2
+        ;;
+      packbad)
+        _se_log "[packs.$name] in $show must be an empty table"
+        ((rc >= 2)) || rc=2
+        ;;
+      packkey)
+        _se_log "[packs.$name] in $show has the key '$key' - a pack entry is an empty table"
+        ((rc >= 2)) || rc=2
+        ;;
+      ovenv)
+        _se_log "[overrides.mise_env] in $show: the Mac side has no environments - use [overrides.mise.<path>]"
+        ((rc >= 2)) || rc=2
+        ;;
+      ovkey)
+        _se_log "[overrides.$name] in $show is not valid - write [tools.<name>] for template values and [overrides.mise.<path>] for mise config"
+        ((rc >= 2)) || rc=2
+        ;;
+      *)
+        _se_log "$name is not a key of $show - the top-level keys are $keys"
+        ((rc >= 2)) || rc=2
+        ;;
+    esac
+  done <<< "$out"
+  ((rc == 0)) || return "$rc"
+  _SS_USER=$(_se_gomplate -c "v=${file}" -i '<% if has .v "tools" %><% .v.tools | data.ToJSON %><% else %>{}<% end %>') || {
+    _se_log "cannot read [tools] of $show"
+    return 2
+  }
+  _SS_VALUES=$file
+}
+
+# The manifest fields of every tool folder, one `<tool><TAB><field><TAB>...` line
+# each: `depends <tool>`, `stage <value>`, `file <target> <mode|-> <format|->`,
+# `requires <target> <path>`, `merge <target> <remove|remove_items> <JSON>`,
+# `fkey <target> <key>` (any other key of a `[files]` table) and `bad <message>`.
+# A `file` line comes after the other lines of its table.
+_SS_MANIFEST_TPL='<% $qkeys := coll.Slice "question" "detect" "example" %>'
+_SS_MANIFEST_TPL+='<% range $i, $n := (env.Getenv "SS_NAMES" | strings.Split " ") %><% $t := index $ (printf "m_%d" $i) %><% range $k, $v := $t %>'
+_SS_MANIFEST_TPL+='<% if eq $k "depends" %><% if test.IsKind "slice" $v %><% range $v %><% if test.IsKind "string" . %><% printf "%s\tdepends\t%s\n" $n . %><% else %><% printf "%s\tbad\tdepends must be a list of tool names\n" $n %><% end %><% end %><% else %><% printf "%s\tbad\tdepends must be a list of tool names\n" $n %><% end %>'
+_SS_MANIFEST_TPL+='<% else if eq $k "stage" %><% if test.IsKind "string" $v %><% printf "%s\tstage\t%s\n" $n $v %><% else %><% printf "%s\tbad\tstage must be a string - the only stage is \"init\"\n" $n %><% end %>'
+_SS_MANIFEST_TPL+='<% else if eq $k "description" %><% if not (test.IsKind "string" $v) %><% printf "%s\tbad\tdescription must be a string\n" $n %><% end %>'
+_SS_MANIFEST_TPL+='<% else if eq $k "defaults" %><% if not (test.IsKind "map" $v) %><% printf "%s\tbad\t[defaults] must be a table\n" $n %><% end %>'
+_SS_MANIFEST_TPL+='<% else if eq $k "mise" %><% if not (test.IsKind "map" $v) %><% printf "%s\tbad\t[mise] must be a table\n" $n %><% end %>'
+_SS_MANIFEST_TPL+='<% else if eq $k "questions" %><% if test.IsKind "map" $v %><% range $q, $e := $v %><% if test.IsKind "map" $e %><% range $qk, $qv := $e %><% if not (has $qkeys $qk) %><% printf "%s\tbad\t[questions.%s] %s is not a key of a question - the keys are question, detect and example\n" $n $q $qk %><% end %><% end %><% if not (has $e "question") %><% printf "%s\tbad\t[questions.%s] needs a question string\n" $n $q %><% else if not (test.IsKind "string" (index $e "question")) %><% printf "%s\tbad\t[questions.%s] question must be a string\n" $n $q %><% end %><% if has $e "detect" %><% if not (test.IsKind "string" (index $e "detect")) %><% printf "%s\tbad\t[questions.%s] detect must be a string (a shell command)\n" $n $q %><% end %><% end %><% else %><% printf "%s\tbad\t[questions.%s] must be a table\n" $n $q %><% end %><% end %><% else %><% printf "%s\tbad\t[questions] must be a table of [questions.<key>] tables\n" $n %><% end %>'
+_SS_MANIFEST_TPL+='<% else if eq $k "contributes" %><% if test.IsKind "map" $v %><% range $o, $e := $v %><% if not (test.IsKind "map" $e) %><% printf "%s\tbad\t[contributes.%s] must be a table\n" $n $o %><% end %><% end %><% else %><% printf "%s\tbad\t[contributes] must be a table of [contributes.<tool>] tables\n" $n %><% end %>'
+_SS_MANIFEST_TPL+='<% else if eq $k "files" %><% if test.IsKind "map" $v %><% range $f, $e := $v %><% if test.IsKind "map" $e %><% $mode := "-" %><% $format := "-" %><% range $fk, $fv := $e %>'
+_SS_MANIFEST_TPL+='<% if eq $fk "mode" %><% if and (test.IsKind "string" $fv) (has (coll.Slice "generated" "seed" "merge") $fv) %><% $mode = $fv %><% else %><% printf "%s\tbad\t[files.\"%s\"] mode must be \"generated\", \"seed\" or \"merge\"\n" $n $f %><% end %>'
+_SS_MANIFEST_TPL+='<% else if or (eq $fk "remove") (eq $fk "remove_items") %><% printf "%s\tmerge\t%s\t%s\t%s\n" $n $f $fk (data.ToJSON $fv) %>'
+_SS_MANIFEST_TPL+='<% else if eq $fk "format" %><% if and (test.IsKind "string" $fv) (has (coll.Slice "text" "json" "yaml" "toml") $fv) %><% $format = $fv %><% else %><% printf "%s\tbad\t[files.\"%s\"] format must be \"text\", \"json\", \"yaml\" or \"toml\"\n" $n $f %><% end %>'
+_SS_MANIFEST_TPL+='<% else if eq $fk "requires" %><% $ok := test.IsKind "slice" $fv %><% if $ok %><% if not $fv %><% $ok = false %><% end %><% range $fv %><% if not (test.IsKind "string" .) %><% $ok = false %><% end %><% end %><% end %><% if $ok %><% range $fv %><% printf "%s\trequires\t%s\t%s\n" $n $f . %><% end %><% else %><% printf "%s\tbad\t[files.\"%s\"] requires must be a non-empty list of paths\n" $n $f %><% end %>'
+_SS_MANIFEST_TPL+='<% else %><% printf "%s\tfkey\t%s\t%s\n" $n $f $fk %><% end %><% end %><% printf "%s\tfile\t%s\t%s\t%s\n" $n $f $mode $format %><% else %><% printf "%s\tbad\t[files.\"%s\"] must be a table\n" $n $f %><% end %><% end %><% else %><% printf "%s\tbad\t[files] must be a table of [files.\"<target>\"] tables\n" $n %><% end %>'
+_SS_MANIFEST_TPL+='<% else if eq $k "seed" %><% printf "%s\tbad\tseed is the old key - write a [files.\"<target>\"] table with mode = \"seed\" for each seed\n" $n %>'
+_SS_MANIFEST_TPL+='<% else if eq $k "seed_requires" %><% printf "%s\tbad\t[seed_requires] is the old table - write requires = [...] in the [files.\"<target>\"] table of the seed\n" $n %>'
+_SS_MANIFEST_TPL+='<% else if has (coll.Slice "default_envs" "root_only" "extensions" "precommit" "mise_env") $k %><% printf "%s\tbad\t%s is for repo tools only\n" $n $k %>'
+_SS_MANIFEST_TPL+='<% else %><% printf "%s\tbad\t%s is not a key of tools.toml - the keys are description, stage, depends, [defaults], [questions], [contributes], [files] and [mise]\n" $n $k %><% end %><% end %><% end %>'
+
+# Read the manifest of every tool folder of the clone, selected or not. Sets
+# _SS_ALL (the ` <tool> ` words), _SS_DEPENDS (`<tool><TAB><dep>` lines),
+# _SS_FILES (`<tool><TAB><target><TAB><mode|-><TAB><format|->` lines),
+# _SS_REQUIRES (`<tool><TAB><target><TAB><path>` lines), _SS_MERGE_OPS
+# (`<tool><TAB><target><TAB><remove|remove_items><TAB><JSON>` lines) and
+# _SS_STAGE_INIT (the ` <tool> ` words of `stage = "init"`). Returns 2, after a
+# message for each problem.
+_ss_manifests() {
+  local d name names='' late args=() i=0 out tool field a b c rc=0 at
+  local has_remove=0 has_items=0
+  for d in "$_SS_TOOLS_DIR"/*/; do
+    [[ -d $d ]] || continue
+    d=${d%/}
+    name=${d##*/}
+    if ! _ss_name_ok "$name"; then
+      _se_log "$_SS_SHOWN/$name: a tool folder name has no whitespace and does not start with a dot"
+      return 2
+    fi
+    if [[ ! -f $d/tools.toml ]]; then
+      _se_log "$_SS_SHOWN/$name has no tools.toml - each tool folder needs its manifest"
+      return 2
+    fi
+    names+="$name"$'\n'
+  done
+  names=$(printf '%s' "$names" | LC_ALL=C sort)
+  if [[ -z $names ]]; then
+    _se_log "the clone has no tool in $_SS_SHOWN"
+    return 2
+  fi
+  # mise loads the folders of conf.d/ in name order and a later one wins, so the
+  # folder of the user config must load last.
+  late=$(printf '%s\n' "$names" | LC_ALL=C awk '$0 >= "zz-macos" { print; exit }') || late=''
+  if [[ -n $late ]]; then
+    _se_log "tool folder $_SS_SHOWN/$late sorts after zz-macos or is named zz-macos - rename it, because conf.d/zz-macos/ must load last"
+    return 2
+  fi
+  _SS_ALL=" $(printf '%s' "$names" | tr '\n' ' ') "
+  for name in $_SS_ALL; do
+    args+=(-c "m_${i}=${_SS_TOOLS_DIR}/${name}/tools.toml")
+    i=$((i + 1))
+  done
+  out=$(SS_NAMES=$(printf '%s' "$names" | tr '\n' ' ') _se_gomplate "${args[@]}" -i "$_SS_MANIFEST_TPL" 2> /dev/null) || {
+    # Read each file alone, to name the one that fails.
+    for name in $_SS_ALL; do
+      if ! _se_gomplate -c "m=${_SS_TOOLS_DIR}/${name}/tools.toml" -i '<% .m | data.ToJSON %>' > /dev/null 2>&1; then
+        _se_log "cannot read $_SS_SHOWN/$name/tools.toml"
+        return 2
+      fi
+    done
+    _se_log "cannot read the tools.toml files of the clone"
+    return 2
+  }
+  _SS_DEPENDS='' _SS_FILES='' _SS_REQUIRES='' _SS_MERGE_OPS='' _SS_STAGE_INIT=' '
+  while IFS="$_SS_TAB" read -r tool field a b c; do
+    [[ -n $tool ]] || continue
+    at="$_SS_SHOWN/$tool/tools.toml"
+    case $field in
+      depends)
+        _SS_DEPENDS+="$tool$_SS_TAB$a"$'\n'
+        ;;
+      file)
+        _se_files_check_mode "$at" "$a" "${b#-}" "${c#-}" "$has_remove" "$has_items" || rc=2
+        has_remove=0 has_items=0
+        _SS_FILES+="$tool$_SS_TAB$a$_SS_TAB$b$_SS_TAB$c"$'\n'
+        ;;
+      requires)
+        case $b in
+          '' | /* | .. | ../* | */../* | */..)
+            _se_log "$at: [files.\"$a\"] requires: '$b' must be a path relative to \$HOME, with no .. part"
+            rc=2
+            ;;
+        esac
+        _SS_REQUIRES+="$tool$_SS_TAB$a$_SS_TAB$b"$'\n'
+        ;;
+      merge)
+        if [[ $b == remove ]]; then has_remove=1; else has_items=1; fi
+        _se_files_check_shape "$at" "$a" "$b" "$c" || rc=2
+        _SS_MERGE_OPS+="$tool$_SS_TAB$a$_SS_TAB$b$_SS_TAB$c"$'\n'
+        ;;
+      fkey)
+        if [[ $b == requires_found ]]; then
+          _se_log "$at: [files.\"$a\"] requires_found is for repo tools only"
+        else
+          _se_log "$at: [files.\"$a\"] $b is not a key of a file - the keys are mode, requires, format, remove and remove_items"
+        fi
+        rc=2
+        ;;
+      stage)
+        if [[ $a == init ]]; then
+          _SS_STAGE_INIT+="$tool "
+        elif [[ $a == shell ]]; then
+          _se_log "$at: stage = \"shell\" is the old name - write stage = \"init\""
+          rc=2
+        else
+          _se_log "$at: stage = \"$a\" - the only stage is \"init\""
+          rc=2
+        fi
+        ;;
+      bad)
+        _se_log "$at: $a"
+        rc=2
+        ;;
+    esac
+  done <<< "$out"
+  return "$rc"
+}
+
+# The deps callback of `_se_walk`: print the dependencies of <tool>. Returns 3 for
+# a tool that the clone does not have, after a message.
+_ss_walk_deps() {
+  local from=$1 tool dep
+  if [[ $_SS_ALL != *" $from "* ]]; then
+    _se_log "tool '$from' is not in bootstrap"
+    return 3
+  fi
+  while IFS="$_SS_TAB" read -r tool dep; do
+    [[ $tool == "$from" ]] || continue
+    if ! _ss_name_ok "$dep" || [[ $_SS_ALL != *" $dep "* ]]; then
+      _se_log "$_SS_SHOWN/$from/tools.toml depends on the tool '$dep', which bootstrap does not have"
+      return 3
+    fi
+    printf '%s\n' "$dep"
+  done <<< "$_SS_DEPENDS"
+}
+_ss_walk_done() { :; }
+
+# The template of the check of the pack base: it prints 1 when the pack has the
+# member `macos-setup = { default = true }`.
+_SS_BASE_TPL='<% if has .p "pack" %><% if test.IsKind "map" .p.pack %><% if has .p.pack "base" %><% $b := index .p.pack "base" %><% if test.IsKind "map" $b %><% if has $b "macos-setup" %><% $m := index $b "macos-setup" %><% if test.IsKind "map" $m %><% if has $m "default" %><% if eq (printf "%v" (index $m "default")) "true" %>1<% end %><% end %><% end %><% end %><% end %><% end %><% end %><% end %>'
+
+# Resolve the selection against `macos/`, packs expanded and depends included.
+# Sets _SS_TOOLS (the ` <tool> ` words, sorted), _SS_KEEP (the base and dependency
+# tools, for `_se_values`) and _SS_INIT (the ` <tool> ` words of the init stage:
+# the selected `stage = "init"` tools and, transitively, their depends). Returns 2
+# or 3, after a message.
+_ss_select() {
+  local has='' selected pending tool dep from queue
+  if [[ -f $_SS_PACKS ]]; then
+    has=$(_se_gomplate -c "p=${_SS_PACKS}" -i "$_SS_BASE_TPL") || {
+      _se_log "cannot read $_SS_PACKS_SHOWN"
+      return 2
+    }
+  fi
+  if [[ -z $has ]]; then
+    _se_log "pack base does not have the tool macos-setup"
+    return 2
+  fi
+  selected=$(_se_selected "$_SS_PACKS" "$_SS_TOOLS_DIR" base "$_SS_SEL" "$_SS_PACKS_SHOWN") || return
+  pending=$(printf '%s\n' "$selected" | awk '{ print $1 }' | tr '\n' ' ')
+  _se_walk _ss_walk_deps _ss_walk_done "$pending" || return
+  # shellcheck disable=SC2086
+  _SS_TOOLS=" $(printf '%s\n' $_SE_WALK_VISITED | LC_ALL=C sort -u | tr '\n' ' ')"
+  _SS_KEEP=$(
+    awk '$3 == "default" { print $1 }' <<< "$selected"
+    awk '{ for (i = 2; i <= NF; i++) print $i }' <<< "$_SE_WALK_DEPS"
+  ) || _SS_KEEP=''
+  _SS_INIT=' '
+  for tool in $_SS_TOOLS; do
+    [[ $_SS_STAGE_INIT != *" $tool "* ]] || _SS_INIT+="$tool "
+  done
+  queue=$_SS_INIT
+  while [[ -n ${queue// /} ]]; do
+    from=${queue# }
+    from=${from%% *}
+    queue=${queue# "$from"}
+    while IFS="$_SS_TAB" read -r tool dep; do
+      [[ $tool == "$from" && $_SS_INIT != *" $dep "* ]] || continue
+      _SS_INIT+="$dep "
+      queue+="$dep "
+    done <<< "$_SS_DEPENDS"
+  done
+}
+
+# Merge the values of the selected tools with `_se_values`, into the JSON file
+# _SS_ALL_VALUES, tool name to values, then write ctx/<tool>.json of the work folder
+# for each selected tool: .config, .all, .tools, .env and .sync_engine. Returns the
+# code of `_se_values`, after its messages.
+_ss_tool_values() {
+  local out tool json
+  out=$(_se_values "$_SS_TOOLS" "$_SS_KEEP" "$_SS_TOOLS_DIR" "$_SS_USER" "$_SS_SHOWN" "$_SS_VALUES_NAME") || return
+  _SS_ALL_VALUES="$_SS_WORK/values.json"
+  # shellcheck disable=SC2016
+  printf '%s\n' "$out" | _se_jq -R -n 'reduce (inputs | split("\t")) as $l ({}; .[$l[1]] = ($l[2] | fromjson))' > "$_SS_ALL_VALUES" || {
+    _se_log "cannot write the values of the tools"
+    return 2
+  }
+  mkdir -p -- "$_SS_WORK/ctx" || return 1
+  # shellcheck disable=SC2016
+  out=$(_se_jq -r --arg tools "$_SS_TOOLS" --arg home "${HOME:-}" --arg user "${USER:-}" \
+    --arg config "$MACOS_SETUP_CONFIG_PATH" --arg engine "$_SS_DIR/sync-engine" '
+    . as $all
+    | ($tools | split(" ") | map(select(. != ""))) as $names
+    | $names[]
+    | "\(.)\t\({config: $all[.], all: $all, tools: $names, sync_engine: $engine,
+        env: {HOME: $home, USER: $user, MACOS_SETUP_CONFIG_PATH: $config}} | tojson)"
+  ' "$_SS_ALL_VALUES") || {
+    _se_log "cannot build the context of the tools"
+    return 2
+  }
+  while IFS="$_SS_TAB" read -r tool json; do
+    printf '%s\n' "$json" > "$_SS_WORK/ctx/$tool.json" || {
+      _se_log "cannot write the context of $tool"
+      return 1
+    }
+  done <<< "$out"
+}
+
+# Generate the mise config of each selected tool and the user config into the work
+# folder. Sets _SS_GEN (`<tool><TAB><file><TAB><target>` lines) and _SS_MISE_BAD
+# (`<tool><TAB><code>` lines of the tools that cannot generate; each keeps its
+# existing file, and it fails in its stage). The files go through the same write
+# step as the other files.
+_ss_mise_generate() {
+  local confd="$_SS_WORK/conf.d" tool written rc
+  local conf_target=.config/mise/conf.d
+  _SS_GEN='' _SS_MISE_BAD=''
+  for tool in $_SS_TOOLS; do
+    rc=0
+    _se_mise_render macos "$_SS_TOOLS_DIR" "$_SS_SHOWN" "$tool" "$_SS_VALUES" "$confd" '' "$_SS_ALL_VALUES" || rc=$?
+    for written in $_SE_MISE_WRITTEN; do
+      _SS_GEN+="$tool$_SS_TAB$confd/$written$_SS_TAB$conf_target/$written"$'\n'
+    done
+    ((rc == 0)) || _SS_MISE_BAD+="$tool$_SS_TAB$rc"$'\n'
+  done
+  [[ -n $_SS_VALUES ]] || return 0
+  rc=0
+  _se_mise_own_config macos "$_SS_VALUES" "$confd" "$_SS_TOOLS" "$_SS_ALL_VALUES" || rc=$?
+  for written in $_SE_MISE_WRITTEN; do
+    _SS_GEN+="zz-macos$_SS_TAB$confd/$written$_SS_TAB$conf_target/$written"$'\n'
+  done
+  ((rc == 0)) || _SS_MISE_BAD+="zz-macos$_SS_TAB$rc"$'\n'
+}
+
+# The file plan. Each file of a selected tool, except its tools.toml, gives a target
+# relative to $HOME, without `.tmpl`. Sets _SS_PLAN
+# (`<tool><TAB><path><TAB><target><TAB><mode><TAB><format|->` lines, in the order of
+# the run: each stage, its mise files first; a generated file has its absolute path
+# as <path>) and _SS_HANDLED (the targets, one per line, for the stale rule; also
+# the mise file of each entry of _SS_MISE_BAD, which is still planned, so the stale
+# rule keeps its existing copy). Returns 2, after a message for each problem.
+_ss_plan() {
+  local tool path target files='' dups stage pass t p fmode format file rc=0
+  for tool in $_SS_TOOLS; do
+    while IFS= read -r path; do
+      [[ -n $path ]] || continue
+      files+="$tool$_SS_TAB$path$_SS_TAB${path%.tmpl}"$'\n'
+    done < <(cd "$_SS_TOOLS_DIR/$tool" && find . -type f ! -path ./tools.toml | sed 's#^\./##' | LC_ALL=C sort)
+  done
+  dups=$(printf '%s' "$files" | cut -f3 | LC_ALL=C sort | uniq -d) || dups=''
+  if [[ -n $dups ]]; then
+    while IFS= read -r target; do
+      _se_log "$_SS_TILDE/$target comes from more than one source:$(printf '%s' "$files" | awk -F '\t' -v t="$target" -v s="$_SS_SHOWN" '$3 == t { printf " %s/%s/%s", s, $1, $2 }')"
+    done <<< "$dups"
+    rc=2
+  fi
+  while IFS="$_SS_TAB" read -r tool path target; do
+    [[ $target == .config/mise/conf.d/* ]] || continue
+    _se_log "$_SS_SHOWN/$tool/$path: the sync generates .config/mise/conf.d/ from [mise.*] of tools.toml - remove the file"
+    rc=2
+  done <<< "$files"
+  # Each [files] table of a selected tool names a target of its tool.
+  while IFS="$_SS_TAB" read -r t p _; do
+    [[ -n $t && $_SS_TOOLS == *" $t "* ]] || continue
+    if ! printf '%s' "$files" | awk -F '\t' -v t="$t" -v p="$p" '$1 == t && $3 == p { f = 1 } END { exit !f }'; then
+      _se_log "$_SS_SHOWN/$t/tools.toml: [files.\"$p\"] names a target that no file of the tool produces"
+      rc=2
+    fi
+  done <<< "$_SS_FILES"
+  ((rc == 0)) || return "$rc"
+  # The mode and the format of each file: its [files] table, else the defaults.
+  files=$(awk -F '\t' -v OFS='\t' '
+    FILENAME == ARGV[1] { mode[$1 FS $2] = $3; format[$1 FS $2] = $4; next }
+    $1 != "" {
+      k = $1 FS $3
+      m = (k in mode && mode[k] != "-") ? mode[k] : "generated"
+      f = (k in format) ? format[k] : "-"
+      print $1, $2, $3, m, f
+    }' <(printf '%s' "$_SS_FILES") <(printf '%s' "$files"))
+  files+=$'\n'
+  # The generated mise files come first in the mise files of their stage.
+  while IFS="$_SS_TAB" read -r tool file target; do
+    [[ -n $tool ]] || continue
+    files="$tool$_SS_TAB$file$_SS_TAB$target${_SS_TAB}generated${_SS_TAB}toml"$'\n'$files
+  done < <(printf '%s' "$_SS_GEN" | sed -n '1!G;h;$p')
+  _SS_PLAN='' _SS_HANDLED=$'\n'
+  while IFS="$_SS_TAB" read -r tool _; do
+    [[ -z $tool ]] || _SS_HANDLED+=".config/mise/conf.d/$tool/mise.toml"$'\n'
+  done <<< "$_SS_MISE_BAD"
+  for stage in init main; do
+    for pass in mise rest; do
+      while IFS="$_SS_TAB" read -r tool path target fmode format; do
+        [[ -n $tool ]] || continue
+        if [[ $_SS_INIT == *" $tool "* ]]; then
+          [[ $stage == init ]] || continue
+        else
+          [[ $stage == main ]] || continue
+        fi
+        if [[ $target == .config/mise/* ]]; then
+          [[ $pass == mise ]] || continue
+        else
+          [[ $pass == rest ]] || continue
+        fi
+        _SS_PLAN+="$tool$_SS_TAB$path$_SS_TAB$target$_SS_TAB$fmode$_SS_TAB$format"$'\n'
+        _SS_HANDLED+="$target"$'\n'
+      done <<< "$files"
+    done
+  done
+}
+
+# Sync one file of the plan: the real path of its target, the seed gate, the
+# `requires`, the unblock, then the render or the copy, the parse check, the merge,
+# and the compare and the write of `_se_finish`. A generated file with an entry of
+# `requires` that is not there leaves _SS_HANDLED, so the stale rule removes a listed
+# copy with the header. Sets _SS_CHANGED for a change on disk, and adds the manifest
+# row of a generated file to _SS_ROWS.
+_ss_file() {
+  local tool=$1 path=$2 target=$3 fmode=$4 format=$5 dry_run=$6
+  local src show real tmp destdir mode rc=0 t p req top target_format
+  if [[ $path == /* ]]; then
+    src=$path
+  else
+    src=$_SS_TOOLS_DIR/$tool/$path
+  fi
+  [[ $format != - ]] || format=''
+  show="$_SS_TILDE/$target"
+  if ! _se_manifest_real "$_SS_HOME/$target"; then
+    _se_log "cannot resolve $show - a symlink loop"
+    return 1
+  fi
+  real=$_SE_MANIFEST_REAL
+  [[ $real == "$_SS_HOME_REAL/$target" ]] || show+=" (-> $real)"
+
+  if [[ $fmode == seed ]] && _se_seed_kept "$real"; then
+    _se_log "kept seed  $show"
+    return 0
+  fi
+  while IFS="$_SS_TAB" read -r t p req; do
+    [[ $t == "$tool" && $p == "$target" ]] || continue
+    [[ ! -e $_SS_HOME/$req ]] || continue
+    case $fmode in
+      seed) _se_log "skip seed  $show (no $_SS_TILDE/$req)" ;;
+      merge) _se_log "skip merge $show (no $_SS_TILDE/$req)" ;;
+      *)
+        _se_log "skip file  $show (no $_SS_TILDE/$req)"
+        _SS_HANDLED=${_SS_HANDLED/$'\n'"$target"$'\n'/$'\n'}
+        ;;
+    esac
+    return 0
+  done <<< "$_SS_REQUIRES"
+  if [[ -d $real ]]; then
+    _se_log "$show is a folder, but a file goes there - move it"
+    return 1
+  fi
+  # A file with the header where a folder goes is removed. The real path can be
+  # outside $HOME, so the walk then stops at the first folder of that path.
+  if [[ $real == "$_SS_HOME_REAL"/* ]]; then
+    top=$_SS_HOME_REAL
+  else
+    top=${real#/}
+    top=/${top%%/*}
+  fi
+  _se_unblock "$(dirname -- "$real")" "$top" "$dry_run" || return 1
+
+  if ((dry_run)); then
+    destdir=${TMPDIR:-/tmp}
+  else
+    destdir=$(dirname -- "$real")
+    mkdir -p -- "$destdir" || {
+      _se_log "cannot create $destdir"
+      return 1
+    }
+  fi
+  # The temp file is next to the real path, so the final mv is atomic.
+  _se_tmp "$destdir" > /dev/null || {
+    _se_log "cannot create a temp file in $destdir"
+    return 1
+  }
+  tmp=$_SE_TMP
+  if [[ $path == *.tmpl ]]; then
+    if ! _se_gomplate -c ".=${_SS_WORK}/ctx/${tool}.json?type=application/json" -f "$src" -o "$tmp" >&2; then
+      _se_log "$_SS_SHOWN/$tool/$path: gomplate cannot render the template"
+      rc=2
+    fi
+  else
+    cp -- "$src" "$tmp" || rc=1
+  fi
+  # The format of a merge target is its `format` key, else its extension.
+  if ((rc == 0)); then
+    if [[ $fmode == merge ]]; then
+      target_format=$(_se_format "$target" /dev/null "$format")
+    else
+      target_format=$(_se_format "$target" "$tmp" "$format")
+    fi
+    _se_parse_check "$tmp" "$target_format" "$show" || rc=$?
+  fi
+  if ((rc == 0)) && [[ $fmode == merge ]]; then
+    local t2 p2 key json remove='[]' remove_items='[]'
+    while IFS="$_SS_TAB" read -r t2 p2 key json; do
+      [[ $t2 == "$tool" && $p2 == "$target" ]] || continue
+      if [[ $key == remove ]]; then
+        remove=$json
+      else
+        remove_items=$json
+      fi
+    done <<< "$_SS_MERGE_OPS"
+    _se_merge "$tmp" "$real" "$target_format" "$remove" "$remove_items" "$tmp" "$show" || rc=$?
+  fi
+  if ((rc != 0)); then
+    rm -f -- "$tmp"
+    [[ ! -e $real ]] || _se_log "kept existing $show"
+    return "$rc"
+  fi
+
+  # The target takes the mode of its source, also when it exists already; an
+  # existing merge target keeps its own.
+  if [[ $fmode == merge && -e $real ]]; then
+    mode=$(_se_mode "$real")
+  else
+    mode=$(_se_mode "$src")
+  fi
+  if [[ ! -f $real ]] || ! cmp -s -- "$tmp" "$real" || [[ $(_se_mode "$real") != "$mode" ]]; then
+    ((dry_run)) || _SS_CHANGED=1
+  fi
+  _se_finish "$mode" "$tmp" "$real" "$show" "$dry_run" || return
+  [[ $fmode != generated ]] || _SS_ROWS+="$tool$_SS_TAB$target"$'\n'
+}
+
+# 0 when <tool> is in the stage <stage>: `init`, `main` or `all`.
+_ss_in_stage() {
+  case $1 in
+    init) [[ $_SS_INIT == *" $2 "* ]] ;;
+    main) [[ $_SS_INIT != *" $2 "* ]] ;;
+    *) return 0 ;;
+  esac
+}
+
+# Sync each file of the stage <stage>. Counts into _SS_OK and _SS_TOTAL, and adds
+# each failure to _SS_FAILED. Returns the highest code.
+_ss_render() {
+  local stage=$1 dry_run=$2 tool path target fmode format rc worst=0
+  while IFS="$_SS_TAB" read -r tool rc; do
+    [[ -n $tool ]] || continue
+    _ss_in_stage "$stage" "$tool" || continue
+    if [[ $tool == zz-macos ]]; then
+      _SS_FAILED+=" ${_SS_VALUES_NAME}[mise]"
+    else
+      _SS_FAILED+=" $_SS_SHOWN/$tool/tools.toml[mise]"
+    fi
+    ((rc <= worst)) || worst=$rc
+  done <<< "$_SS_MISE_BAD"
+  while IFS="$_SS_TAB" read -r tool path target fmode format; do
+    [[ -n $tool ]] || continue
+    _ss_in_stage "$stage" "$tool" || continue
+    _SS_TOTAL=$((_SS_TOTAL + 1))
+    rc=0
+    _ss_file "$tool" "$path" "$target" "$fmode" "$format" "$dry_run" || rc=$?
+    if ((rc == 0)); then
+      _SS_OK=$((_SS_OK + 1))
+    else
+      if [[ $path == /* ]]; then
+        _SS_FAILED+=" $_SS_TILDE/$target"
+      else
+        _SS_FAILED+=" $_SS_SHOWN/$tool/$path"
+      fi
+      ((rc <= worst)) || worst=$rc
+    fi
+  done <<< "$_SS_PLAN"
+  return "$worst"
+}
+
+# Print the rows of _SS_OLD_ROWS whose tool is in the stage <stage>. A tool that is
+# not selected is not in the init stage.
+_ss_old_rows() {
+  local stage=$1 row
+  while IFS= read -r row; do
+    [[ -n $row ]] || continue
+    _ss_in_stage "$stage" "${row%%"$_SS_TAB"*}" || continue
+    printf '%s\n' "$row"
+  done <<< "$_SS_OLD_ROWS"
+}
+
+# The stale rule of `sync-engine/manifest` for the old rows of the stage <stage>. A
+# removed file sets _SS_CHANGED.
+_ss_stale() {
+  local stage=$1 dry_run=$2 rows row before='' file rc=0
+  rows=$(_ss_old_rows "$stage")
+  while IFS= read -r row; do
+    [[ -n $row ]] || continue
+    _se_manifest_real "$_SS_HOME/${row#*"$_SS_TAB"}" || continue
+    if _se_has_header "$_SE_MANIFEST_REAL"; then
+      before+="$_SE_MANIFEST_REAL"$'\n'
+    fi
+  done <<< "$rows"
+  _se_manifest_stale macos "$rows" "$_SS_HANDLED" "$_SS_HOME" "$dry_run" || rc=$?
+  while IFS= read -r file; do
+    [[ -z $file || -e $file ]] || _SS_CHANGED=1
+  done <<< "$before"
+  return "$rc"
+}
+
+# `mise bootstrap --yes`. Returns 1, after a message, when it fails.
+_ss_bootstrap() {
+  local rc=0
+  _se_log "running mise bootstrap --yes"
+  (cd "$HOME" && mise bootstrap --yes) || rc=$?
+  if ((rc != 0)); then
+    _se_log "mise bootstrap failed with exit code $rc"
+    return 1
+  fi
+}
+
+# The login shell, as dscl reports it; empty when dscl cannot tell.
+_ss_login_shell() { dscl . -read ~ UserShell 2> /dev/null || true; }
+
+# Set `bootstrap_commit` of macos.toml to <commit>. A missing file is created.
+_ss_record_commit() {
+  _se_record_commit "$_SS_CONFIG/$_SS_VALUES_NAME" bootstrap_commit "$1" "$2" '' \
+    '# The values of the Mac sync of bootstrap. See docs/setup/index.md.'
+}
+
+# The report of a failed run.
+_ss_report_failed() {
+  _se_log "FAILED:$_SS_FAILED"
+  _se_log "$_SS_OK/$_SS_TOTAL files in sync; existing copies of the rest were left untouched"
+}
+
+# setup_sync [--dry-run] [--no-bootstrap]
+#
+# See the top of this file. Returns the most severe failure code, 4 for the stop
+# after a changed init stage, or 0.
+setup_sync() {
+  local dry_run=0 bootstrap=1 arg
+  for arg in "$@"; do
+    case $arg in
+      --dry-run)
+        dry_run=1
+        ;;
+      --no-bootstrap)
+        bootstrap=0
+        ;;
+      -h | --help)
+        _ss_usage
+        return 0
+        ;;
+      *)
+        _se_log "unknown flag '$arg'"
+        _ss_usage >&2
+        return 2
+        ;;
+    esac
+  done
+
+  _ss_check_mise || return
+  if [[ -z ${SYNC_ENGINE_CLONE:-} || ! -d $SYNC_ENGINE_CLONE/sync-engine || ! -d $SYNC_ENGINE_CLONE/macos/tools ]]; then
+    _se_log "SYNC_ENGINE_CLONE is not a clone of bootstrap - run mise run updateall:configs"
+    return 2
+  fi
+  if [[ -z ${MACOS_SETUP_CONFIG_PATH:-} ]]; then
+    _se_log "MACOS_SETUP_CONFIG_PATH is not set - set it to the folder of macos.toml"
+    return 2
+  fi
+  if [[ ! -d $MACOS_SETUP_CONFIG_PATH ]]; then
+    _se_log "the config folder $MACOS_SETUP_CONFIG_PATH does not exist - set MACOS_SETUP_CONFIG_PATH to the folder of macos.toml"
+    return 2
+  fi
+
+  # The tool wrappers run from `/`, so each path that they get is absolute.
+  _SS_DIR=$SYNC_ENGINE_CLONE
+  [[ $_SS_DIR == /* ]] || _SS_DIR=$PWD/$_SS_DIR
+  _SS_DIR=${_SS_DIR%/}
+  _SS_TOOLS_DIR=$_SS_DIR/macos/tools
+  _SS_PACKS=$_SS_DIR/macos/packs.toml
+  _SS_CONFIG=$MACOS_SETUP_CONFIG_PATH
+  [[ $_SS_CONFIG == /* ]] || _SS_CONFIG=$PWD/$_SS_CONFIG
+  _SS_CONFIG=${_SS_CONFIG%/}
+  _SS_HOME=${HOME%/}
+  if ! _se_manifest_real "$_SS_HOME"; then
+    _se_log "cannot resolve $_SS_HOME - a symlink loop"
+    return 1
+  fi
+  _SS_HOME_REAL=$_SE_MANIFEST_REAL
+  local manifest="${SYNC_ENGINE_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/sync-engine}/macos-generated.tsv"
+  _SS_WORK=$(mktemp -d "${TMPDIR:-/tmp}/setup-sync.XXXXXX") || {
+    _se_log "cannot create a temp folder"
+    return 1
+  }
+  _SE_TMPS+=("$_SS_WORK")
+
+  _ss_read_values || return
+  _ss_manifests || return
+  _ss_select || return
+  _ss_tool_values || return
+  if [[ -n $_SS_VALUES ]]; then
+    _se_mise_overrides macos "$_SS_VALUES" "$_SS_TOOLS_DIR" "$_SS_SHOWN" "$_SS_TOOLS" '' || return
+  fi
+  _ss_mise_generate || return
+  _ss_plan || return
+
+  local commit rc worst=0
+  commit=$(git -C "$_SS_DIR" rev-parse HEAD 2> /dev/null) || commit=''
+  _se_log "using bootstrap at ${commit:-an unknown commit}"
+  _se_log "tools:${_SS_TOOLS% }"
+  _SS_OK=0 _SS_TOTAL=0 _SS_FAILED='' _SS_ROWS='' _SS_CHANGED=''
+  _SS_OLD_ROWS=$(_se_manifest_read macos "$manifest") || _SS_OLD_ROWS=''
+
+  if ((dry_run)); then
+    _ss_render all 1 || worst=$?
+    _ss_stale all 1 || true
+    if ((worst != 0)); then
+      _se_log "FAILED:$_SS_FAILED"
+      return "$worst"
+    fi
+    [[ -z $commit ]] || _ss_record_commit "$commit" 1 || true
+    _se_log "dry run: $_SS_OK/$_SS_TOTAL files checked, nothing written"
+    return 0
+  fi
+
+  # The init stage: skipped when no init-stage tool is selected.
+  if [[ -n ${_SS_INIT// /} ]]; then
+    local before after
+    before=$(_ss_login_shell)
+    _ss_render init 0 || worst=$?
+    rc=0
+    _ss_stale init 0 || rc=$?
+    if ((rc != 0)); then
+      _SS_FAILED+=" stale files"
+      ((rc <= worst)) || worst=$rc
+    fi
+    if ((worst != 0)); then
+      _ss_report_failed
+      return "$worst"
+    fi
+    if ((bootstrap)); then
+      _ss_bootstrap || return 1
+    fi
+    after=$(_ss_login_shell)
+    [[ $before == "$after" ]] || _SS_CHANGED=1
+    if [[ -n $_SS_CHANGED ]]; then
+      _se_manifest_write "$manifest" "$(_ss_old_rows main)"$'\n'"$_SS_ROWS" 0 || return 1
+      _se_log "the init stage changed"
+      _se_log "open a new terminal, then run: mise run updateall:configs"
+      return 4
+    fi
+  fi
+
+  _ss_render main 0 || worst=$?
+  rc=0
+  _ss_stale main 0 || rc=$?
+  if ((rc != 0)); then
+    _SS_FAILED+=" stale files"
+    ((rc <= worst)) || worst=$rc
+  fi
+  if ((worst != 0)); then
+    _ss_report_failed
+    return "$worst"
+  fi
+  _se_manifest_write "$manifest" "$_SS_ROWS" 0 || return 1
+  if ((bootstrap)); then
+    _ss_bootstrap || return 1
+  fi
+  if [[ -n $commit ]]; then
+    _ss_record_commit "$commit" 0 || return 1
+  fi
+  _se_log "done: $_SS_OK/$_SS_TOTAL files in sync"
+  return 0
+}

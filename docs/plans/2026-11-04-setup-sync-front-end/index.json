@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-05T05:05:42Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -59,11 +59,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T05:06:09.438Z",
+      "ended": "2026-11-05T05:18:18.302Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -81,11 +81,11 @@
         "U1"
       ],
       "waits": "Its cases source sync-engine/setup-sync, which U1 creates, so its Verification needs the U1 output.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T05:27:01.777Z",
+      "ended": "2026-11-05T05:43:57.415Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -157,14 +157,14 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T05:06:09.373Z",
       "ended": ""
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T05:27:01.711Z",
       "ended": ""
     },
     {
@@ -384,7 +384,36 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "Edit 1.6 validates tools.toml for every folder, but the [questions] rules in sync-engine/values reach selected tools only · assumed the manifest template of the old engine stays and checks [defaults], [questions] and [contributes] shapes for every tool, so a bad table in an unselected tool still returns 2",
+      "state": "open"
+    },
+    {
+      "id": "G2",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "the plan does not say whether a mise depends of a Mac [mise.tools] entry adds the tool that defines it, or whether two Mac tools may define one mise tool · assumed the Mac closure follows only the tools.toml depends key, with no duplicate check",
+      "state": "open"
+    },
+    {
+      "id": "G3",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "the table says the merge cases are fourteen, but the old test has 16 (12 behaviour, 4 config errors) · assumed all were meant, and all 16 are ported",
+      "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "the table and edit 4 both list an override path that no selected tool has · assumed two cases are wanted, the second uses its own folder override-none",
+      "state": "open"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",
