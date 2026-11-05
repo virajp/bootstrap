@@ -152,11 +152,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "2026-11-05T07:12:04.803Z",
+      "status": "green",
+      "started": "2026-11-05T08:26:11.694Z",
+      "ended": "2026-11-05T08:29:00.916Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -198,9 +198,9 @@
     },
     {
       "id": "W4",
-      "status": "failed",
-      "started": "",
-      "ended": "2026-11-05T07:12:04.982Z"
+      "status": "running",
+      "started": "2026-11-05T08:26:11.660Z",
+      "ended": ""
     },
     {
       "id": "W5",
@@ -451,8 +451,8 @@
       "id": "G7",
       "unit": "U5",
       "stage": "edit",
-      "text": "DOCS FALSIFIED lines held for the docs unit U5, which owns these files: CLAUDE.md:16-17 (shared files only in repo/tools/), CLAUDE.md:505 (macos/tools/ not in this repository yet), CLAUDE.md Purpose (only test is test:repo-sync), CLAUDE.md Layout rule test bullet, CLAUDE.md:431 (test:setup-sync omits the entry-task cases), CLAUDE.md:442 (test:macos-tools when that task exists), README.md:40 (shared files in repo/tools/), README.md:387 (test:setup-sync omits the entry-task cases), README.md:394 (test:setup-sync for macos/ omits test:macos-tools) · U5 applies them on the resume; close this entry when it has",
-      "state": "open"
+      "text": "DOCS FALSIFIED lines held for the docs unit U5, which owns these files: CLAUDE.md:16-17 (shared files only in repo/tools/), CLAUDE.md:505 (macos/tools/ not in this repository yet), CLAUDE.md Purpose (only test is test:repo-sync), CLAUDE.md Layout rule test bullet, CLAUDE.md:431 (test:setup-sync omits the entry-task cases), CLAUDE.md:442 (test:macos-tools when that task exists), README.md:40 (shared files in repo/tools/), README.md:387 (test:setup-sync omits the entry-task cases), README.md:394 (test:setup-sync for macos/ omits test:macos-tools) · U5 applies them on the resume; close this entry when it has · closed: U5 applied every listed passage, confirmed by wave review R4",
+      "state": "closed"
     }
   ],
   "overrides": [],
