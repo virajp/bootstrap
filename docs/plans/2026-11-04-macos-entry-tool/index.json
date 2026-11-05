@@ -170,11 +170,11 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "2026-11-05T07:12:04.874Z",
+      "status": "green",
+      "started": "2026-11-05T08:32:26.406Z",
+      "ended": "2026-11-05T08:42:28.073Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -204,9 +204,9 @@
     },
     {
       "id": "W5",
-      "status": "failed",
-      "started": "",
-      "ended": "2026-11-05T07:12:05.018Z"
+      "status": "green",
+      "started": "2026-11-05T08:32:26.373Z",
+      "ended": "2026-11-05T08:42:45.660Z"
     }
   ],
   "shared_files": [
@@ -452,6 +452,13 @@
       "unit": "U5",
       "stage": "edit",
       "text": "DOCS FALSIFIED lines held for the docs unit U5, which owns these files: CLAUDE.md:16-17 (shared files only in repo/tools/), CLAUDE.md:505 (macos/tools/ not in this repository yet), CLAUDE.md Purpose (only test is test:repo-sync), CLAUDE.md Layout rule test bullet, CLAUDE.md:431 (test:setup-sync omits the entry-task cases), CLAUDE.md:442 (test:macos-tools when that task exists), README.md:40 (shared files in repo/tools/), README.md:387 (test:setup-sync omits the entry-task cases), README.md:394 (test:setup-sync for macos/ omits test:macos-tools) · U5 applies them on the resume; close this entry when it has · closed: U5 applied every listed passage, confirmed by wave review R4",
+      "state": "closed"
+    },
+    {
+      "id": "G8",
+      "unit": "U6",
+      "stage": "edit",
+      "text": "06-gates.md requires an empty git status, but index.json holds the orchestrator run state during the unit · the one path is expected · closed: no other path appeared, and the wave commit clears it",
       "state": "closed"
     }
   ],
