@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-05T05:05:42Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "BLOCKED",
+    "detail": "BLOCKED at wave 3 — the permission system denied the write of one U3 round 2 plan gap, twice, with no reason given; units U1 to U3 are green and committed; the gap must be recorded in gaps before U4 runs"
   },
   "consent": {
     "merge": true,
@@ -84,7 +84,7 @@
       "status": "green",
       "started": "2026-11-05T05:27:01.777Z",
       "ended": "2026-11-05T05:43:57.415Z",
-      "commit": "ec2bccd",
+      "commit": "2067c6c",
       "rounds": 1
     },
     {
@@ -100,14 +100,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-05T05:49:36.029Z",
-      "ended": "",
+      "ended": "2026-11-05T06:03:20.338Z",
       "commit": "",
-      "rounds": 1,
+      "rounds": 2,
       "range": {
-        "from": "75c78d6",
-        "to": "f6c7eca"
+        "from": "f6c7eca",
+        "to": "2067c6c"
       }
     },
     {
@@ -169,9 +169,9 @@
     },
     {
       "id": "W3",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-05T05:49:35.962Z",
-      "ended": ""
+      "ended": "2026-11-05T06:04:04.717Z"
     },
     {
       "id": "W4",
@@ -417,7 +417,14 @@
       "id": "G5",
       "unit": "U3",
       "stage": "security",
-      "text": "Edit 1.11 and D4 never require a rendered value to be encoded in a .tmpl target, so a string with a quote and a newline in [tools.<name>] of macos.toml can add tables or keys to a rendered TOML, JSON or YAML target (setup-sync:601; no privilege gain, the same author can write [mise.*]) · the run encoded the strings of the fixture templates and put the rule in CLAUDE.md; the real Mac templates of P11 to P14 must follow it, and those approved plans were not edited by this run",
+      "text": "Edit 1.11 and D4 never require a rendered value to be encoded in a .tmpl target, so a string with a quote and a newline in [tools.<name>] of macos.toml can add tables or keys to a rendered TOML, JSON or YAML target (setup-sync:601; no privilege gain, the same author can write [mise.*]) · the run encoded the strings of the fixture templates; the rule goes into CLAUDE.md through U4, and the real Mac templates of P11 to P14 must follow it; those approved plans were not edited by this run",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "handed to the docs unit U4, whose file does not name them: CLAUDE.md:115 the member order of a pack is the sync order holds only for repo-sync; CLAUDE.md:220 the Mac front-end is not in this repository yet; the CLAUDE.md sync-engine/ list and README.md:51 lack setup-sync; CLAUDE.md its only test is test:repo-sync, and the Layout list lacks macos/fixtures/ and the two test tasks; add the rule that a TOML, JSON or YAML template encodes a string value with data.ToJSON · open until U4 lands them",
       "state": "open"
     }
   ],
