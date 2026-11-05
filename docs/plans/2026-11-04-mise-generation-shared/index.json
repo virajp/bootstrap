@@ -152,11 +152,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "2026-11-04T20:25:43.375Z",
+      "status": "green",
+      "started": "2026-11-05T04:44:19.873Z",
+      "ended": "2026-11-05T04:52:40.552Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -186,9 +186,9 @@
     },
     {
       "id": "W5",
-      "status": "failed",
-      "started": "",
-      "ended": "2026-11-04T20:25:43.514Z"
+      "status": "green",
+      "started": "2026-11-05T04:44:19.838Z",
+      "ended": "2026-11-05T04:53:01.836Z"
     }
   ],
   "shared_files": [
