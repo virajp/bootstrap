@@ -246,10 +246,13 @@
       "title": "Mac tools: shells and identity (8)",
       "target_repo": null,
       "priority": 120,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-05T10:20:37.765Z",
-      "ended": "",
-      "gaps": null,
+      "ended": "2026-11-05T11:44:59.268Z",
+      "gaps": {
+        "open": 14,
+        "moved_to": []
+      },
       "requires": [
         "2026-11-04-macos-tools-base-core"
       ],
