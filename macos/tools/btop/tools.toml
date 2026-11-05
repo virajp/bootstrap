@@ -1,0 +1,6 @@
+# The btop tool: btop, the resource monitor for the terminal.
+
+description = "btop, the resource monitor for the terminal"
+
+[mise.bootstrap.packages]
+"brew:btop" = "latest" # Resource monitor for the terminal

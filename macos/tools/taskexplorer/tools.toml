@@ -1,0 +1,6 @@
+# The taskexplorer tool: Explore running tasks (processes).
+
+description = "Explore running tasks (processes)"
+
+[mise.bootstrap.packages]
+"brew-cask:taskexplorer" = "latest" # Explore running tasks (processes)

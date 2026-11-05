@@ -1,0 +1,11 @@
+# The gcloud tool.
+
+description = "The Google Cloud CLI (gcloud) and its env"
+
+[mise.tools.gcloud]
+version = "latest"
+
+[mise.env]
+# GCP related
+CLOUDSDK_ACTIVE_CONFIG_NAME = "default"
+USE_GKE_GCLOUD_AUTH_PLUGIN = { tools = true, value = "true" }

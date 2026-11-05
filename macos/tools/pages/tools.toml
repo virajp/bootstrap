@@ -1,0 +1,7 @@
+# The pages tool: Pages, from the Mac App Store.
+
+depends = [ "mas" ]
+description = "Pages, from the Mac App Store"
+
+[mise.bootstrap.packages]
+"mas:361309726" = "latest" # Pages

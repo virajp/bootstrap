@@ -1,0 +1,9 @@
+# The orca tool: Orchestrating AI coding agents.
+
+description = "Orchestrating AI coding agents"
+
+[mise.bootstrap.brew.taps]
+"stablyai/orca" = "https://github.com/stablyai/homebrew-orca.git"
+
+[mise.bootstrap.packages]
+"brew-cask:stablyai/orca/orca" = "latest" # Orchestrating AI coding agents

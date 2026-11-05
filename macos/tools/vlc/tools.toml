@@ -1,0 +1,6 @@
+# The vlc tool: Multimedia player.
+
+description = "Multimedia player"
+
+[mise.bootstrap.packages]
+"brew-cask:vlc" = "latest" # Multimedia player

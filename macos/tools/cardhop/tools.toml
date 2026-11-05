@@ -1,0 +1,7 @@
+# The cardhop tool: Cardhop, from the Mac App Store.
+
+depends = [ "mas" ]
+description = "Cardhop, from the Mac App Store"
+
+[mise.bootstrap.packages]
+"mas:1290358394" = "latest" # Cardhop

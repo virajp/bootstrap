@@ -1,0 +1,6 @@
+# The obsidian tool: Knowledge base that works on top Markdown files.
+
+description = "Knowledge base that works on top Markdown files"
+
+[mise.bootstrap.packages]
+"brew-cask:obsidian" = "latest" # Knowledge base that works on top Markdown files

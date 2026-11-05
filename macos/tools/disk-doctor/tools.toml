@@ -1,0 +1,7 @@
+# The disk-doctor tool: Disk Doctor, from the Mac App Store.
+
+depends = [ "mas" ]
+description = "Disk Doctor, from the Mac App Store"
+
+[mise.bootstrap.packages]
+"mas:455970963" = "latest" # Disk Doctor

@@ -1,0 +1,6 @@
+# The warp tool: Rust-based terminal.
+
+description = "Rust-based terminal"
+
+[mise.bootstrap.packages]
+"brew-cask:warp" = "latest" # Rust-based terminal

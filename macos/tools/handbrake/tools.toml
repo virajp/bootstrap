@@ -1,0 +1,6 @@
+# The handbrake tool: Open-source video transcoder.
+
+description = "Open-source video transcoder"
+
+[mise.bootstrap.packages]
+"brew-cask:handbrake-app" = "latest" # Open-source video transcoder

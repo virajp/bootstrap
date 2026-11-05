@@ -1,0 +1,6 @@
+# The setapp tool: Collection of apps available by subscription.
+
+description = "Collection of apps available by subscription"
+
+[mise.bootstrap.packages]
+"brew-cask:setapp" = "latest" # Collection of apps available by subscription

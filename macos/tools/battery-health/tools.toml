@@ -1,0 +1,7 @@
+# The battery-health tool: Battery Health 2, from the Mac App Store.
+
+depends = [ "mas" ]
+description = "Battery Health 2, from the Mac App Store"
+
+[mise.bootstrap.packages]
+"mas:1120214373" = "latest" # Battery Health 2

@@ -1,0 +1,9 @@
+# The sill tool: Sill menu bar app.
+
+description = "Sill menu bar app"
+
+[mise.bootstrap.brew.taps]
+"saffsanity/sill" = "https://github.com/saffsanity/homebrew-sill.git"
+
+[mise.bootstrap.packages]
+"brew-cask:saffsanity/sill/sill" = "latest" # Sill menu bar app

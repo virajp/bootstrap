@@ -1,0 +1,7 @@
+# The the-unarchiver tool: The Unarchiver, from the Mac App Store.
+
+depends = [ "mas" ]
+description = "The Unarchiver, from the Mac App Store"
+
+[mise.bootstrap.packages]
+"mas:425424353" = "latest" # The Unarchiver

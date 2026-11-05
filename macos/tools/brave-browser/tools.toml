@@ -1,0 +1,6 @@
+# The brave-browser tool: Brave Browser.
+
+description = "Brave Browser"
+
+[mise.bootstrap.packages]
+"brew-cask:brave-browser" = "latest" # Brave Browser
