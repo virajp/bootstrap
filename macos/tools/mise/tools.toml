@@ -1,0 +1,24 @@
+# The mise tool: the user-level mise config (~/.config/mise/config.toml and
+# miserc.toml), the activation files of bash, zsh and fish, and ~/.zprofile,
+# which puts ~/.local/bin (the folder of mise) on PATH. The activation files
+# read `projects_dir` of the cli tool, so this tool depends on cli. The [mise.*]
+# tables (ruby, usage and the system aliases) become
+# ~/.config/mise/conf.d/mise/mise.toml.
+depends = [ "cli" ]
+description = "mise: its user-level config, its activation in bash, zsh and fish, and ~/.zprofile"
+
+# Required by mise to parse the brew-cask correctly
+[mise.tools.ruby]
+version = "latest"
+
+# MISE tools
+[mise.tools.usage]
+version = "latest"
+
+[mise.shell_alias]
+osx-upgrade = "mise run upgrade:macos:upgrade"
+updateall = "mise run updateall"
+
+# Startup, Services and Process related shortcuts
+cancelPrintJobs = "sudo cancel -a -x"
+listServices = "launchctl list | grep -v '^-' | sort -n | grep -v 'com.apple'"

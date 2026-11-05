@@ -1,0 +1,15 @@
+# The touchid-sudo tool: Touch ID for sudo through /etc/pam.d/sudo_local. The
+# target is outside $HOME, so it is a [bootstrap.files] entry. `mise bootstrap`
+# applies it. The [mise.*] tables become
+# ~/.config/mise/conf.d/touchid-sudo/mise.toml.
+description = "Touch ID for sudo (/etc/pam.d/sudo_local)"
+
+# Touch ID for sudo. /etc/pam.d/sudo is overwritten by every macOS update;
+# sudo_local is the drop-in it includes and survives them.
+[mise.bootstrap.files."/etc/pam.d/sudo_local"]
+content = """
+auth       sufficient     pam_tid.so
+"""
+group = "wheel"
+mode = "0444"
+owner = "root"

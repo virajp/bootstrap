@@ -53,7 +53,8 @@ mise has three jobs in a consumer repository:
 | Environments | `.config/mise.toml` and `.config/mise/conf.d/`         |
 | Tasks        | The task scripts in `.config/mise/tasks/` of each tool |
 
-A tool never ships a mise config file. It writes its mise config in the
+A tool never ships a mise config file, except the two `mise` tools (see
+[The `[mise.*]` sections](#the-mise-sections)). It writes its mise config in the
 `[mise.*]` tables of its `tools.toml`, in mise syntax. The sync generates the
 mise files from these tables.
 
@@ -132,7 +133,13 @@ The template is `repo/tools/mise/.config/mise.toml.tmpl`. It holds the shared
 
 ### The `[mise.*]` sections
 
-A tool does not ship mise files. It writes its mise config in `[mise.*]`
+A tool does not ship mise files. The exceptions are the `mise` tool of
+`repo/tools/`, with `.config/mise.toml.tmpl` and the `zz-repo` seeds, and the
+`mise` tool of `macos/tools/`, with the user-level
+`~/.config/mise/config.toml` and `~/.config/mise/miserc.toml`. `config.toml` has
+the top-level key `min_version`, which no `[mise.*]` section holds.
+
+A tool writes its mise config in `[mise.*]`
 tables of its `tools.toml`, in mise syntax. The sync removes the prefix
 `mise.` and writes each table into `.config/mise/conf.d/<tool>/mise.<env>.toml`
 as a normal mise section: `[mise.settings]` becomes `[settings]`, `[mise.env]`

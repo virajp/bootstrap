@@ -1,0 +1,56 @@
+# The cli tool: the tasks func:*, cleanupDS and keychain:delete, and the zoxide
+# shell init. The [mise.*] tables (the core command-line packages, the
+# CLOUD_PATH and PROJECTS_DIR environment, and the generic, ls and tree aliases)
+# become ~/.config/mise/conf.d/cli/mise.toml. `projects_dir` is the projects
+# folder that git and mise read too. The other command-line packages are tools
+# of their own (pack cli-extras).
+description = "command-line utilities (bat, eza, fzf, jq, ripgrep, zoxide, …), the projects folder and the generic aliases"
+
+[defaults]
+projects_dir = "~/Projects" # holds github.com/<user>/<repo>, gitlab.com/…
+
+[mise.bootstrap.packages]
+"brew:bat" = "latest" # Alternative to cat
+"brew:ca-certificates" = "latest" # Common CA certificates
+"brew:coreutils" = "latest" # GNU core utilities
+"brew:curl" = "latest" # Command line tool and library for transferring data with URLs
+"brew:eza" = "latest" # Modern replacement for 'ls'
+"brew:fzf" = "latest" # Command-line fuzzy finder
+"brew:jq" = "latest" # Command-line JSON processor
+"brew:ripgrep" = "latest" # Fast search tool
+"brew:zoxide" = "latest" # Fast directory jumper
+
+[mise.env]
+# iCloud Drive
+CLOUD_PATH = "${HOME}/Library/Mobile Documents/com~apple~CloudDocs"
+
+# Projects root, from projects_dir of the cli tool (`~` expanded: env values
+# don't expand it)
+PROJECTS_DIR = "<% index .config `projects_dir` | required `cli: set projects_dir in [tools.cli] of macos.toml` | regexp.Replace `^~` .env.HOME %>"
+
+[mise.shell_alias]
+# Generic Aliases
+bat = "bat --tabs 2"
+cd = "z"
+cdcd = "cd '$CLOUD_PATH'"
+cdgh = 'cd "$PROJECTS_DIR/github.com"'
+cls = "clear"
+findPid = "lsof -t -c"
+finder = "open -a Finder ./"
+plist = "plutil -p"
+
+# The tasks of this tool
+cleanupDS = "mise run cleanupDS"
+cleanupDS-Projects = 'mise run cleanupDS "$PROJECTS_DIR"'
+listStartupItems = "mise run func:listStartupItems"
+
+# ls & tree related aliases
+la = "ls -a"
+ld = "ls --only-dirs"
+lf = "ls --only-files"
+lg = "ls --git-ignore"
+ll = "ls"
+ls = "eza --icons --color=always --group-directories-first --classify=always --long --grid --all --modified --git --header --width=1 --links"
+td = "eza --tree --color=always --only-dirs --group-directories-first --sort name --long --header --icons --classify=always --modified --git --width=1"
+tg = "eza --tree --color=always --all --group-directories-first --sort name --long --header --icons --classify=always --modified --git --width=1 --git-ignore"
+tl = "eza --tree --color=always --all --group-directories-first --sort name --long --header --icons --classify=always --modified --git --width=1"

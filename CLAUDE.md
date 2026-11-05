@@ -176,7 +176,8 @@ repository, without the `.tmpl` suffix of a template. For example,
 - Each file that is neither a seed nor a merge source starts with this header,
   in the comment syntax
   of the file (after the shebang in a script, after `---` in YAML when the
-  file has it, inside `{` in JSONC, as an HTML comment in Markdown). In a
+  file has it, after a `# :schema` line when the file has it, inside `{` in
+  JSONC, as an HTML comment in Markdown). In a
   template, `<path>` keeps the `.tmpl` suffix:
 
   ```text
@@ -194,8 +195,10 @@ repository, without the `.tmpl` suffix of a template. For example,
 - A tool can add `[[precommit]]` tables to its `tools.toml`. Each table is one
   `repos:` entry of `.config/pre-commit-config.yaml`, with its
   `[[precommit.hooks]]`. This key is optional.
-- A tool does not ship mise files. The only exception is the `mise` tool, with
-  `.config/mise.toml.tmpl` and the `zz-repo` seeds. A tool writes its mise
+- A tool does not ship mise files. The exceptions are the `mise` tool of
+  `repo/tools/`, with `.config/mise.toml.tmpl` and the `zz-repo` seeds, and the
+  `mise` tool of `macos/tools/`, with the user-level `.config/mise/config.toml`
+  and `.config/mise/miserc.toml`. A tool writes its mise
   config in `[mise.*]` and `[mise_env.<env>.*]` tables of its `tools.toml`, in
   mise syntax. The sync generates `conf.d/<tool>/mise.<env>.toml` from them,
   one file for each environment of the consumer. A tool that ships a file that
@@ -521,7 +524,9 @@ Some files refer to files that are not in `repo/tools/`, for example
   `[tools.<name>]` of `macos.toml`, and a string with a quote and a newline can
   add tables or keys to the rendered target. The templates of `repo/tools/` do
   not follow this rule yet, for example
-  `repo/tools/mise/.config/mise.toml.tmpl`.
+  `repo/tools/mise/.config/mise.toml.tmpl`. The Mac template
+  `macos/tools/node/Library/Preferences/pnpm/config.yaml.tmpl` also does not
+  follow it: it keeps `printf "%q"` from its old copy in `macos-setup`.
 - A missing answer is not an error of the engine. The sync examines only the
   shape of `[questions]`, and it asks nothing. A template that needs an answer
   uses `required`, which fails that file with its message. Exit code 4 is only
@@ -616,9 +621,10 @@ without a new reason:
 - `.config/claude-status.json`: claude-status finds the name of the
   repository from `origin`. The file is plain JSON, so it cannot have the
   bootstrap header.
-- `.config/miserc.toml` with `env_conf_d`: the sync writes only folder
-  fragments `conf.d/<tool>/mise.<env>.toml`, and that setting does not apply
-  to them.
+- `.config/miserc.toml` with `env_conf_d` in a repository: the sync writes only
+  folder fragments `conf.d/<tool>/mise.<env>.toml`, and that setting does not
+  apply to them. The `mise` tool of `macos/tools/` ships the user-level
+  `.config/mise/miserc.toml` with that setting.
 - A `code:check` task group: a check of a language is a `code:lint:<name>`
   task, for example `code:lint:uv` for `uv lock --check`.
 

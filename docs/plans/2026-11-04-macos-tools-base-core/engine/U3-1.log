@@ -1,0 +1,10 @@
+No high-confidence vulnerabilities found.
+
+Dropped:
+- macos/tools/mise/.config/{bash,zsh,fish}/*mise*.tmpl:MISE_TRUSTED_CONFIG_PATHS includes the whole projects_dir, so mise auto-trusts the config of any repo cloned under ~/Projects. Copied unchanged from the old macos-setup tools. A deliberate owner setting, not a new boundary crossing; needs the user to clone a malicious repo. Confidence 4.
+- macos/tools/touchid-sudo/tools.toml (/etc/pam.d/sudo_local): pam_tid.so is sufficient, owner root, group wheel, mode 0444. The standard macOS drop-in. Confidence 2.
+- macos/tools/cli/.config/mise/tasks/keychain/delete: --service and --account always quoted; fixed grep pattern; needs a TTY and an explicit y. Confidence 2.
+- macos/tools/cli/.config/mise/tasks/func/backup, func/zip, cleanupDS: the user's own CLI input, always quoted. Confidence 1.
+- Template values (projects_dir, pnpm_release_age_exclude) rendered into the shell, YAML and TOML files come from macos.toml, which is trusted. printf %q is used for the YAML list. Confidence 2.
+- macos/tools/fnox/.config/fnox/config.toml holds only keychain references, no hardcoded secrets. Confidence 1.
+- eval "$(brew shellenv)" and the zoxide, starship and mise activation evals run only trusted local binaries and environment variables. Confidence 1.

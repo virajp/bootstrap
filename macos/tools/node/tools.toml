@@ -1,0 +1,26 @@
+# The node tool: the global pnpm config and the tasks upgrade:npm and
+# upgrade:pnpm. The [mise.*] tables (node LTS and pnpm through mise, their
+# settings and environment) become ~/.config/mise/conf.d/node/mise.toml.
+description = "Node.js (LTS) and pnpm, the global pnpm config with its release-age cooldown"
+
+[defaults]
+# Packages exempt from pnpm's release-age cooldown (your own scopes), for
+# example ["@me/*"]; an empty list renders no minimumReleaseAgeExclude
+pnpm_release_age_exclude = []
+
+[mise.settings]
+# NodeJS settings
+node.compile = false
+npm.package_manager = "pnpm"
+
+[mise.tools.node]
+version = "lts"
+
+[mise.tools.pnpm]
+depends = [ "node" ]
+version = "latest"
+
+[mise.env]
+NODE_ENV = "development"
+PNPM_HOME = "$HOME/Library/pnpm"
+_.path = [ { path = "node_modules/.bin", tools = true }, { path = "$PNPM_HOME/bin", tools = true } ]
