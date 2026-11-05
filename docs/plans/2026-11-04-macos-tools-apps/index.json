@@ -166,14 +166,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T12:42:28.729Z",
+      "ended": "2026-11-05T12:54:45.168Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "88afcd0",
+        "to": "ca41ba2"
       }
     },
     {
@@ -230,9 +230,9 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T12:42:28.694Z",
+      "ended": "2026-11-05T12:55:06.766Z"
     },
     {
       "id": "W3",
@@ -382,6 +382,34 @@
       "stage": "edit",
       "text": "macos/packs.toml:5 U3 removed the header sentence 'The import plans add the other members.', which 03-packs.md does not name · The wave review found the removal correct: this wave makes the sentence false, and no ruling protects it. Kept; settled with no ruling owed.",
       "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U4",
+      "stage": "security",
+      "text": "Security, medium, macos/tools/vorssaint/tools.toml:105-109 (U2): shared defaults hold a keep-awake assertion from launch with no time limit (keepAwakeAutoStart, defaultDurationMinutes=0, keepAwakeAllowDisplaySleep=false, launchAtLoginWanted at line 14) and clamshellPreferred applies closed-lid mode, so display-off and lid-close can stop acting as lock triggers on an unattended Mac; inferred from the app source, not tested on a Mac · Accepted under D10: imported byte for byte apart from the table prefix of D3; content unchanged, for the security plan after the run.",
+      "state": "open"
+    },
+    {
+      "id": "G3",
+      "unit": "U4",
+      "stage": "security",
+      "text": "Security, medium, macos/tools/opencode/tools.toml:9 (U2): alias oc = \"opencode --auto\" auto-approves permissions not explicitly denied, so prompt injection from repo files or fetched content needs no approval step and can run commands as the user · Accepted under D10: imported byte for byte apart from the table prefix of D3; content unchanged, for the security plan after the run.",
+      "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "U4",
+      "stage": "security",
+      "text": "Security, medium, macos/tools/sill/tools.toml:6 (U2): third-party tap saffsanity/sill on a personal account (created 2026-10-14, 1 star); the owner controls the cask, URL and sha256 together, so a malicious owner or compromised account gets code execution at install or upgrade; opt-in tool · Accepted under D10: imported byte for byte apart from the table prefix of D3; content unchanged, for the security plan after the run.",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U4",
+      "stage": "security",
+      "text": "Security, medium, macos/tools/orca/tools.toml:6 (U2): third-party tap stablyai/orca on the vendor's organization account (created 2026-05-01, 2 stars), with a cask that auto-updates outside brew and puts a CLI on PATH; a compromised or malicious vendor gets code execution as the user; opt-in tool · Accepted under D10: imported byte for byte apart from the table prefix of D3; content unchanged, for the security plan after the run.",
+      "state": "open"
     }
   ],
   "overrides": [],
