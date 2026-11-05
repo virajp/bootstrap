@@ -6,8 +6,9 @@
 # macos/fixtures/config/, and checks the exit code, the output and the files of
 # each case. Every case has its own temp HOME, XDG_* folders, cache, TMPDIR and
 # git config, so it needs no network and never touches the real $HOME. Every real
-# run passes --no-bootstrap. The clone, the lock and the temp copy belong to the
-# entry task, which has its own test.
+# run passes --no-bootstrap. The entry cases at the end run the rendered entry
+# task updateall:configs against a local bare origin with the real
+# macos/tools/macos-setup/: they cover the clone, the lock and the temp copy.
 
 set -euo pipefail
 
@@ -1223,6 +1224,336 @@ remove_generated() { append_lines merger '[files.".config/merger/plain.txt"]' 'r
 remove_bad() { append_lines merger '[files.".config/merger/plain.txt"]' 'remove = [ "a" ]'; }
 remove_items_bad() { append_lines merger '[files.".config/merger/plain.txt"]' 'mode = "merge"' 'format = "json"' 'remove_items = [ { path = [ "a" ] } ]'; }
 
+# ---- the entry task updateall:configs -----------------------------------------
+
+# The entry task, rendered once with the working tree's sync-engine/, as the
+# Mac sync renders it. It runs from the case folder, against this origin: the
+# fixture tree with the real macos/tools/macos-setup/.
+entry_tool="$root/macos/tools/macos-setup"
+entry_task="$tmp/updateall-configs"
+printf '{"sync_engine":"%s/sync-engine"}\n' "$root" > "$tmp/entry-ctx.json"
+mise x gomplate@latest -- gomplate --left-delim '<%' --right-delim '%>' -c ".=$tmp/entry-ctx.json" \
+  -f "$entry_tool/.config/mise/tasks/updateall/configs/_default.tmpl" -o "$entry_task"
+chmod +x "$entry_task"
+
+entry_src="$tmp/entry-src"
+cp -R -- "$tree" "$entry_src"
+rm -rf -- "$entry_src/macos/tools/macos-setup"
+cp -R -- "$entry_tool" "$entry_src/macos/tools/macos-setup"
+_git -C "$entry_src" add -A
+_git -C "$entry_src" commit --quiet --no-verify -m "the real entry tool"
+entry_url="file://$tmp/entry-origin.git"
+_git clone --quiet --bare -- "$entry_src" "$tmp/entry-origin.git"
+entry_head=$(_git -C "$entry_src" rev-parse HEAD)
+
+# The start of each entry case: the origin, and a macos.toml with the answer of
+# the real tool.
+entry_setup() {
+  export SYNC_ENGINE_URL=$entry_url
+  unset _MACOS_SETUP_DEFAULT_RUNNING
+  repo="$SYNC_ENGINE_CACHE/repo"
+  lock="$SYNC_ENGINE_CACHE/lock"
+  old_cache="$XDG_CACHE_HOME/macos-setup"
+  mkdir -p -- "$MACOS_SETUP_CONFIG_PATH"
+  printf '%s\n' '[tools.macos-setup]' "config_path = \"$MACOS_SETUP_CONFIG_PATH\"" > "$values"
+}
+
+entry_run() {
+  runs=$((runs + 1))
+  log="$dir/run-$runs.txt"
+  rc=0
+  (cd "$dir" && bash "$entry_task" "$@") > "$log" 2>&1 || rc=$?
+}
+entry_real() { entry_run --no-bootstrap; }
+entry_dry() { entry_run --dry-run --no-bootstrap; }
+
+# The same task under `mise run`, with the tasks of the tool in the temp
+# $XDG_CONFIG_HOME/mise/tasks/.
+entry_mise() {
+  runs=$((runs + 1))
+  log="$dir/run-$runs.txt"
+  rc=0
+  (cd "$dir" && mise run updateall:configs "$@") > "$log" 2>&1 || rc=$?
+}
+
+# entry_origin [<function>]: an origin of this case only, a commit of the entry
+# tree after <function> changed it in "$work".
+entry_origin() {
+  work="$dir/src"
+  _git clone --quiet -- "$entry_src" "$work"
+  [[ -z ${1:-} ]] || "$1"
+  _git -C "$work" add -A
+  _git -C "$work" commit --quiet --no-verify --allow-empty -m "case"
+  _git clone --quiet --bare -- "$work" "$dir/origin.git"
+  export SYNC_ENGINE_URL="file://$dir/origin.git"
+}
+
+no_leftovers() {
+  [[ ! -e $lock ]] && [[ -z $(find "$TMPDIR" -maxdepth 1 \( -name 'macos-setup.*' -o -name 'setup-sync.*' \) 2> /dev/null) ]]
+}
+
+case_entry_clone_first() {
+  entry_setup
+  entry_real
+  check_exit 0
+  check_output "Cloning into $repo"
+  check "the clone is at the origin commit" test "$(_git -C "$repo" rev-parse HEAD)" = "$entry_head"
+  check "the task is rendered with the clone code" grep -qE '^_se_fetch\(\)' "$home/.config/mise/tasks/updateall/configs/_default"
+  check "the mise config has the answer" grep -qF "MACOS_SETUP_CONFIG_PATH = \"$MACOS_SETUP_CONFIG_PATH\"" \
+    "$home/.config/mise/conf.d/macos-setup/mise.toml"
+}
+
+case_entry_clone_refresh() {
+  entry_setup
+  entry_origin
+  entry_real
+  check_exit 0
+  printf '%s\n' "# local edit" >> "$repo/macos/packs.toml"
+  printf '%s\n' "untracked" > "$repo/untracked.txt"
+  printf '%s\n' "new line" >> "$work/macos/tools/core/.config/core/plain.txt"
+  _git -C "$work" commit --quiet --no-verify -am "new origin commit"
+  _git -C "$dir/origin.git" fetch --quiet -- "$work" main:main
+  entry_real
+  check_exit 0
+  check_output "Updating the clone in $repo"
+  check "the clone is at the new commit" test "$(_git -C "$repo" rev-parse HEAD)" = "$(_git -C "$work" rev-parse HEAD)"
+  check "the local edit is reset" cmp -s "$repo/macos/packs.toml" "$work/macos/packs.toml"
+  check "the untracked file is removed" not test -e "$repo/untracked.txt"
+  check "the new commit is rendered" grep -qxF "new line" "$home/.config/core/plain.txt"
+}
+
+case_entry_clone_other_origin() {
+  entry_setup
+  _git clone --quiet -- "$entry_url" "$repo"
+  _git -C "$repo" config remote.origin.url "file://$dir/other.git"
+  entry_real
+  check_exit 0
+  check_output "has the origin 'file://$dir/other.git', not $entry_url - cloning again"
+  check "the origin is the URL" test "$(_git -C "$repo" config --get remote.origin.url)" = "$entry_url"
+}
+
+# insteadOf sends both forms to the local origin, so no case needs the network.
+case_entry_clone_ssh_https() {
+  entry_setup
+  _git clone --quiet -- "$entry_url" "$repo"
+  _git -C "$repo" config remote.origin.url "git@github.com:virajp/bootstrap.git"
+  git config --file "$GIT_CONFIG_GLOBAL" --add "url.$entry_url.insteadOf" "https://github.com/virajp/bootstrap.git"
+  git config --file "$GIT_CONFIG_GLOBAL" --add "url.$entry_url.insteadOf" "git@github.com:virajp/bootstrap.git"
+  export SYNC_ENGINE_URL="https://github.com/virajp/bootstrap.git"
+  entry_real
+  check_exit 0
+  check_output "Updating the clone in $repo"
+  check_no_output "cloning again"
+}
+
+case_entry_clone_not_git() {
+  entry_setup
+  mkdir -p -- "$repo"
+  printf '%s\n' "keep" > "$repo/keep.txt"
+  entry_real
+  check_exit 2
+  check_output "is not a git clone and not empty"
+  check "the folder is unchanged" test "$(ls -A -- "$repo")" = keep.txt
+  check_file "$repo/keep.txt" "keep"
+}
+
+case_entry_clone_fails() {
+  entry_setup
+  export SYNC_ENGINE_URL="file://$dir/missing.git"
+  entry_real
+  check_exit 5
+  check_output "Cannot clone"
+}
+
+case_entry_running_line() {
+  local lines
+  entry_setup
+  entry_real
+  check_exit 0
+  lines=$(grep '^setup-sync: running ' "$log")
+  check "one running line" test "$(printf '%s\n' "$lines" | grep -c .)" = 1
+  check "it names the sync of the temp copy" \
+    grep -qE "^setup-sync: running $TMPDIR/macos-setup\.[^/]+/macos/tools/macos-setup/\.config/mise/tasks/updateall/configs/sync$" <<< "$lines"
+}
+
+case_entry_lock_wait() {
+  local holder runner line
+  entry_setup
+  mkdir -p -- "$lock"
+  sleep 60 &
+  holder=$!
+  printf '%s\n' "$holder" > "$lock/pid"
+  line="Waiting for another sync (pid $holder)"
+  runs=$((runs + 1))
+  log="$dir/run-$runs.txt"
+  (cd "$dir" && bash "$entry_task" --no-bootstrap) > "$log" 2>&1 &
+  runner=$!
+  for _ in $(seq 1 30); do
+    grep -qF "$line" "$log" && break
+    sleep 1
+  done
+  check_output "$line"
+  check "the run waits while the holder lives" kill -0 "$runner"
+  check "nothing written while waiting" not test -e "$home/.config"
+  kill "$holder" 2> /dev/null
+  wait "$holder" 2> /dev/null
+  for _ in $(seq 1 60); do
+    kill -0 "$runner" 2> /dev/null || break
+    sleep 1
+  done
+  rc=0
+  kill -0 "$runner" 2> /dev/null && kill "$runner"
+  wait "$runner" || rc=$?
+  check_exit 0
+  check "values.txt written after the takeover" test -f "$home/.config/core/values.txt"
+}
+
+case_entry_lock_dead() {
+  local dead
+  entry_setup
+  true &
+  dead=$!
+  wait "$dead"
+  mkdir -p -- "$lock"
+  printf '%s\n' "$dead" > "$lock/pid"
+  entry_real
+  check_exit 0
+  check_no_output "Waiting for another sync"
+}
+
+# A `sync` that reports the lock and the clone that it sees. Its exit code is
+# the exit code of the task.
+entry_sync_probe() {
+  printf '%s\n' '#!/usr/bin/env bash' \
+    'if [[ -e $SYNC_ENGINE_CACHE/lock ]]; then echo "lock held"; else echo "lock released"; fi' \
+    'echo "clone $SYNC_ENGINE_CLONE"' 'exit 4' \
+    > "$work/macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync"
+}
+
+case_entry_lock_hold() {
+  entry_setup
+  entry_origin entry_sync_probe
+  entry_real
+  check_exit 4
+  check_output "lock held"
+  check_output "clone $TMPDIR/macos-setup."
+  entry_dry
+  check_exit 4
+  check_output "lock released"
+  check_output "clone $TMPDIR/macos-setup."
+  check "after each run: no lock, no temp copy" no_leftovers
+}
+
+case_entry_unknown_flag() {
+  entry_setup
+  entry_run --bogus
+  check_exit 2
+  check_output "unknown flag '--bogus'"
+  check "no clone made" not test -e "$repo"
+}
+
+# The same dry run under `bash _default` and under `mise run`. Only the
+# would-update lines: `mise run` starts the task in another folder, and the line
+# of bootstrap_commit shows macos.toml relative to the folder of the run.
+case_entry_mise_run() {
+  local a b tasks="$XDG_CONFIG_HOME/mise/tasks"
+  entry_setup
+  entry_dry
+  check_exit 0
+  a=$(grep '^setup-sync: would update ' "$log")
+  mkdir -p -- "$XDG_CONFIG_HOME/mise"
+  cp -R -- "$entry_tool/.config/mise/tasks" "$tasks"
+  rm -- "$tasks/updateall/configs/_default.tmpl"
+  cp -- "$entry_task" "$tasks/updateall/configs/_default"
+  entry_mise --dry-run --no-bootstrap
+  check_exit 0
+  b=$(grep '^setup-sync: would update ' "$log")
+  check "mise run prints the same would-update lines" test -n "$a" -a "$a" = "$b"
+  entry_mise --bogus
+  check "mise run rejects an unknown flag itself (exit $rc)" test "$rc" != 0
+}
+
+case_entry_config_unset() {
+  entry_setup
+  unset MACOS_SETUP_CONFIG_PATH
+  entry_real
+  check_exit 2
+  check_output "MACOS_SETUP_CONFIG_PATH is not set"
+  check "no clone made" not test -e "$repo"
+}
+
+case_entry_nested() {
+  entry_setup
+  export _MACOS_SETUP_DEFAULT_RUNNING=1
+  entry_real
+  check_exit 2
+  check_output "a nested run is refused"
+  check "no clone made" not test -e "$repo"
+}
+
+# The list of the old cache names a stale file, so its removal proves the move.
+case_entry_legacy_move() {
+  local dead
+  entry_setup
+  true &
+  dead=$!
+  wait "$dead"
+  mkdir -p -- "$old_cache" "$home/.config/old" "$XDG_CACHE_HOME/bootstrap" "$XDG_CACHE_HOME/bootstrap.lock"
+  printf '%s\n' "$dead" > "$XDG_CACHE_HOME/bootstrap.lock/pid"
+  new_header_file "$home/.config/old/stale.txt" "stale"
+  printf 'core\t.config/old/stale.txt\n' > "$old_cache/generated.txt"
+  entry_real
+  check_exit 0
+  check "the old Mac cache is removed" not test -e "$old_cache"
+  check "the moved list is the manifest: its stale file is removed" not test -e "$home/.config/old/stale.txt"
+  check "the manifest exists" test -f "$manifest"
+  check "the cache of the old stubs is removed" not test -e "$XDG_CACHE_HOME/bootstrap"
+  check "the lock of the old stubs is removed" not test -e "$XDG_CACHE_HOME/bootstrap.lock"
+}
+
+# A dry run does not write the manifest, so its content is the kept one.
+case_entry_legacy_keep_manifest() {
+  entry_setup
+  mkdir -p -- "$old_cache"
+  printf 'core\t.config/from-old\n' > "$old_cache/generated.txt"
+  seed_manifest "core	.config/core/values.txt"
+  entry_dry
+  check_exit 0
+  check_file "$manifest" "core	.config/core/values.txt"
+  check "the old Mac cache is removed" not test -e "$old_cache"
+}
+
+case_entry_legacy_live() {
+  local holder
+  entry_setup
+  mkdir -p -- "$old_cache/lock"
+  sleep 60 &
+  holder=$!
+  printf '%s\n' "$holder" > "$old_cache/lock/pid"
+  entry_real
+  check_exit 0
+  check_output "the old Mac sync runs (pid $holder) - keeping $old_cache"
+  check "the old Mac cache stays" test -f "$old_cache/lock/pid"
+  kill "$holder" 2> /dev/null
+  wait "$holder" 2> /dev/null
+}
+
+case_entry_leftovers() {
+  entry_setup
+  entry_real
+  check_exit 0
+  check "after a real run: no lock, no temp copy" no_leftovers
+  entry_dry
+  check_exit 0
+  check "after a dry run: no lock, no temp copy" no_leftovers
+  printf '%s\n' 'colour = "blue"' "$(cat -- "$values")" > "$values.new"
+  mv -- "$values.new" "$values"
+  entry_real
+  check_exit 2
+  check_output "colour is not a key of config/macos.toml"
+  check "after a bad macos.toml: no lock, no temp copy" no_leftovers
+}
+
 # ---- the cases ----------------------------------------------------------------
 
 run_case "config: a missing config folder" case_config_missing
@@ -1325,6 +1656,25 @@ run_case "merge: a merge target of format text" expect merge 2 'macos/tools/merg
 run_case "merge: remove on a generated file" expect merge 2 'macos/tools/merger/tools.toml: [files.".config/merger/plain.txt"] remove works only with mode = "merge"' remove_generated
 run_case "merge: a remove of a bad shape" expect merge 2 'macos/tools/merger/tools.toml: [files.".config/merger/plain.txt"] remove must be a list of key paths' remove_bad
 run_case "merge: a remove_items without items" expect merge 2 'macos/tools/merger/tools.toml: [files.".config/merger/plain.txt"] remove_items must be a list of tables' remove_items_bad
+
+run_case "entry clone: a first clone" case_entry_clone_first
+run_case "entry clone: a refresh after a new origin commit" case_entry_clone_refresh
+run_case "entry clone: a clone with another origin" case_entry_clone_other_origin
+run_case "entry clone: the SSH and https forms of one URL" case_entry_clone_ssh_https
+run_case "entry clone: a non-empty non-git folder" case_entry_clone_not_git
+run_case "entry clone: an origin that cannot be cloned" case_entry_clone_fails
+run_case "entry clone: the running line" case_entry_running_line
+run_case "entry lock: a run waits for a live holder, then takes over" case_entry_lock_wait
+run_case "entry lock: a lock whose pid is dead" case_entry_lock_dead
+run_case "entry lock: a real run holds it, a dry run releases it" case_entry_lock_hold
+run_case "entry flags: an unknown flag under bash" case_entry_unknown_flag
+run_case "entry flags: --dry-run under bash and under mise run" case_entry_mise_run
+run_case "entry config: MACOS_SETUP_CONFIG_PATH unset" case_entry_config_unset
+run_case "entry: a nested run" case_entry_nested
+run_case "entry legacy: the old list moves, the old caches go" case_entry_legacy_move
+run_case "entry legacy: an existing manifest stays" case_entry_legacy_keep_manifest
+run_case "entry legacy: a live old lock keeps the old cache" case_entry_legacy_live
+run_case "entry: no lock and no temp copy after each run" case_entry_leftovers
 
 while ((${#case_pids[@]})); do
   collect_case

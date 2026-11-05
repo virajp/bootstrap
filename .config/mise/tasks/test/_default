@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #MISE description="Run every test task"
-#MISE depends=["test:repo-sync", "test:setup-sync"]
+#MISE depends=["test:repo-sync", "test:setup-sync", "test:macos-tools"]
 
 # mise runs the depends in parallel. Each test task prints its own results.
 

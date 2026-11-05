@@ -102,11 +102,11 @@
         "U2"
       ],
       "waits": "Its cases render macos/tools/macos-setup/ (U1) with macos/packs.toml and macos/examples/macos.toml (U2), so its Verification needs their output.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T06:49:29.223Z",
+      "ended": "2026-11-05T07:04:57.473Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -186,8 +186,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T06:49:29.189Z",
       "ended": ""
     },
     {
@@ -396,7 +396,21 @@
       "id": "G2",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1 verification did not run a full sync through setup_sync · the assumption is that the cases of U3 cover it",
+      "text": "U1 verification did not run a full sync through setup_sync · the assumption is that the cases of U3 cover it · closed: the entry leftovers case of U3 runs a real sync to exit 0, confirmed by wave review R2, and mise run test passed",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "mise x <tool>@latest may look up the latest version remotely when the version cache of mise is stale, against the no-network guardrail of the tests; offline behaviour was not tested · the plan names this form, so it stays, on the assumption that the mise cache answers",
+      "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "U3",
+      "stage": "edit",
+      "text": "Verification ran test:setup-sync alone before the last two test fixes, and after them only inside mise run test · the run inside test stands for that line",
       "state": "open"
     }
   ],
