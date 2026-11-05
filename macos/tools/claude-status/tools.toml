@@ -1,0 +1,11 @@
+# The claude-status tool: the status line of Claude Code, from the virajp/tap
+# tap.
+
+depends = [ "claude-cli" ]
+description = "The status line of Claude Code (from the virajp/tap tap)"
+
+[mise.bootstrap.brew.taps]
+"virajp/tap" = "https://github.com/virajp/homebrew-tap.git"
+
+[mise.bootstrap.packages]
+"brew:virajp/tap/claude-status" = "latest" # Claude Code status line

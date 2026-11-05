@@ -168,7 +168,8 @@ repository, without the `.tmpl` suffix of a template. For example,
   stale rule leaves it (see "How the sync operates"). It follows no symlink and
   keeps the mode of an existing target. A new target takes the mode of its
   source. `sync-engine/merge` has the merge rules. The JSONC rule does not apply
-  to a merge target. Only the `gh` tool of `macos/tools/` uses merge mode now.
+  to a merge target. The `claude-cli`, `gem`, `gh` and `superfile` tools of
+  `macos/tools/` use merge mode now.
 - These keys are gone, and each stops the sync with code 2 and a message that
   names the new key: the top-level `seed` key, the old table of seed conditions,
   and the `requires` and the `files` of a mise entry.
@@ -505,9 +506,11 @@ Some files refer to files that are not in `repo/tools/`, for example
 - A contribution merges over `[defaults]`: tables merge key by key, a list
   appends its new items, and any other value replaces the default. Two
   contributions that set one key to different values stop the sync with code 2,
-  unless both values are tables or both are lists. A contribution to a tool of
-  `repo/tools/` that is not selected is ignored. A contribution of a selected
-  tool to a tool that is not in `repo/tools/` stops the sync with code 3.
+  unless both values are tables or both are lists. The tools root of a front-end
+  is `repo/tools/` for `repo-sync` and `macos/tools/` for `setup-sync`. A
+  contribution to a tool of that tools root that is not selected is ignored. A
+  contribution of a selected tool to a tool that is not in that tools root stops
+  the sync with code 3.
 - A value of `[tools.<name>]` depends on the tool. A base or dependency tool is
   a
   tool that pack `base` adds, also through a nested `default = true` pack, or a
@@ -524,11 +527,14 @@ Some files refer to files that are not in `repo/tools/`, for example
   `[tools.<name>]` of `macos.toml`, and a string with a quote and a newline can
   add tables or keys to the rendered target. The templates of `repo/tools/` do
   not follow this rule yet, for example
-  `repo/tools/mise/.config/mise.toml.tmpl`. Two Mac templates also do not follow
+  `repo/tools/mise/.config/mise.toml.tmpl`. Four Mac templates also do not
+  follow
   it. `macos/tools/node/Library/Preferences/pnpm/config.yaml.tmpl` keeps
-  `printf "%q"` from its old copy in `macos-setup`, and
-  `macos/tools/gh/.config/gh/config.yml.tmpl` keeps the plain value of `editor`
-  from its old copy.
+  `printf "%q"` from its old copy in `macos-setup`.
+  `macos/tools/gh/.config/gh/config.yml.tmpl` keeps the plain value of `editor`,
+  `macos/tools/1password/.config/1Password/ssh/agent.toml.tmpl` the quoted value
+  of `ssh_vault`, and `macos/tools/claude-cli/.claude/settings.json.tmpl` the
+  quoted path in `MISE_TRUSTED_CONFIG_PATHS`, each from its old copy.
 - A missing answer is not an error of the engine. The sync examines only the
   shape of `[questions]`, and it asks nothing. A template that needs an answer
   uses `required`, which fails that file with its message. Exit code 4 is only

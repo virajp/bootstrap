@@ -1,0 +1,6 @@
+# The tailscale tool.
+
+description = "Tailscale (the formula; tailscaled runs as a root brew service) and its daemon and upgrade tasks"
+
+[mise.bootstrap.packages]
+"brew:tailscale" = "latest" # tailscaled runs as a root brew service (tailscale:daemon task)

@@ -1,0 +1,21 @@
+# The 1password tool: the 1Password app and its SSH agent config. The CLI (op)
+# is the tool 1password-cli; only the detect of ssh_vault runs op. It
+# contributes its agent socket to the ssh config and its signing program to
+# the git config. The vault that holds the SSH keys is a question.
+
+depends = [ "ssh", "git" ]
+description = "1Password (the app) as SSH agent and git commit signer"
+
+[questions.ssh_vault]
+detect = "op vault list --format json | jq -r '.[0].name'"
+example = "Personal"
+question = "Which 1Password vault holds your SSH keys?"
+
+[contributes.ssh]
+identity_agent = "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+
+[contributes.git]
+gpg.ssh.program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+
+[mise.bootstrap.packages]
+"brew-cask:1password" = { appdir = "/Applications", version = "latest" }

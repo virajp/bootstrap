@@ -24,5 +24,37 @@ python = { default = true }
 fonts = { default = true }
 mas = { default = true }
 
+[pack.ai]
+claude-desktop = { default = true }
+claude-cli = {}
+claude-status = {}
+codeburn = {}
+
 [pack.essentials]
+tailscale = {}
 diff-so-fancy = {}
+git-tools = {}
+glab = {}
+
+[pack.security]
+1password = { default = true }
+1password-cli = {}
+1password-safari = {}
+bitwarden = {}
+
+[pack.dev]
+devtools = { default = true }
+dprint = { default = true }
+orbstack = {}
+gem = {}
+superfile = {}
+
+[pack.terminal]
+ghostty = { default = true }
+
+[pack.chat]
+telegram = { default = true }
+
+[pack.cli-extras]
+dasel = { default = true }
+pstree = { default = true }

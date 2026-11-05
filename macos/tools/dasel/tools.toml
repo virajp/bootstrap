@@ -1,0 +1,7 @@
+# The dasel tool: dasel (queries and changes JSON, YAML, TOML and more) and its
+# fish completion.
+
+description = "dasel, the query tool for JSON, YAML and TOML, and its fish completion"
+
+[mise.bootstrap.packages]
+"brew:dasel" = "latest" # Command-line tool for querying and modifying data structures like JSON, YAML, TOML, etc.

@@ -1,0 +1,10 @@
+# The telegram tool: Telegram, from the Mac App Store.
+
+depends = [ "mas" ]
+description = "Telegram, from the Mac App Store"
+
+[mise.bootstrap.packages]
+"mas:747648890" = "latest" # Telegram
+
+[mise.shell_alias]
+cleanupTelegram = "mise run cleanupTelegram"
