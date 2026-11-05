@@ -118,11 +118,11 @@
         "U2"
       ],
       "waits": "Its Verification runs the tests against the output of U1 and U2.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T15:31:04.587Z",
+      "ended": "2026-11-05T15:57:19.405Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U4",
@@ -202,8 +202,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T15:31:04.521Z",
       "ended": ""
     },
     {
@@ -451,8 +451,15 @@
       "id": "G4",
       "unit": "U2",
       "stage": "edit",
-      "text": "U2's Verification could not complete while U1 edited the engine: test:setup-sync failed on lines U3 owns, and test:repo-sync passed the 590s limit · The plan gate's mise run test settles it.",
-      "state": "open"
+      "text": "U2's Verification could not complete while U1 edited the engine: test:setup-sync failed on lines U3 owns, and test:repo-sync passed the 590s limit · The plan gate's mise run test settles it. Closed: mise run test over U1, U2 and U3 exited 0.",
+      "state": "closed"
+    },
+    {
+      "id": "G5",
+      "unit": "U3",
+      "stage": "edit",
+      "text": ".config/mise/tasks/test/repo-sync: the case \"a dry run with equal files\" tests D17, which U3 does not name in its Ruling list · The case stays: it asserts a ruling of this plan, and the file is in the Owns of U3. Settled with no ruling owed; R2 raised it.",
+      "state": "closed"
     }
   ],
   "overrides": [],
