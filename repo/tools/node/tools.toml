@@ -13,7 +13,7 @@ requires = [ "package.json" ]
 # The mise config, generated into .config/mise/conf.d/node/mise.<env>.toml.
 [mise.settings]
 node.compile = false
-npm.package_manager = "pnpm"
+npm.package_manager = "aube"
 
 [mise.tools.node]
 envs = [ "dev", "ci" ]

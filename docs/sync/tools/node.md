@@ -43,7 +43,7 @@ VS Code extensions: `christian-kohler.npm-intellisense`,
 
 The tool also sets:
 
-- `npm.package_manager = "pnpm"` and `node.compile = false`.
+- `npm.package_manager = "aube"` and `node.compile = false`.
 - `node_modules/.bin` in the `PATH`.
 - The shell alias `npx = "pnpm dlx"`.
 

@@ -11,7 +11,7 @@ pnpm_release_age_exclude = []
 [mise.settings]
 # NodeJS settings
 node.compile = false
-npm.package_manager = "pnpm"
+npm.package_manager = "aube"
 
 [mise.tools.node]
 version = "lts"
