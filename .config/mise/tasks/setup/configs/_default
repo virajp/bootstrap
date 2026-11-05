@@ -5,6 +5,7 @@
 #MISE description="Sync the shared files of this repository's tools from bootstrap"
 
 #USAGE flag "--dry-run" help="show the changes without writing them"
+#USAGE flag "--verbose" help="list each file, also an unchanged one"
 
 set -euo pipefail
 # shellcheck source=/dev/null
@@ -21,10 +22,15 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 # calls _se_clone_init, and sets its own traps with _se_clone_cleanup. The
 # cache is ~/.cache/sync-engine/: the clone in repo/, the lock in lock/.
 #
+# An entry task calls _se_clone_init, _se_lock, _se_legacy_cleanup, _se_fetch,
+# _se_copy, _se_unlock and _se_clone_cleanup.
+#
 # Variables, internal only:
 #   SYNC_ENGINE_CACHE  the cache folder; tests use it
 #   SYNC_ENGINE_URL    the clone URL; tests use it for an unpushed change
-#   SYNC_ENGINE_CLONE  the temporary copy that a caller gives its child task
+#   XDG_CACHE_HOME, HOME, TMPDIR  the default cache and the temporary copy
+#
+# Contract: docs/design/sync-engine.md
 
 # Sets the paths from the environment.
 _se_clone_init() {
@@ -38,6 +44,16 @@ _se_clone_init() {
   _SE_COPY=''
 }
 
+# _se_clone_styled <fd>: 0 when the output on that descriptor shows glyphs. The
+# rule of style_enabled of helpers: this file cannot use helpers or
+# sync-engine/common, because an entry task embeds it alone.
+_se_clone_styled() {
+  if [[ -n ${FORCE_COLOR:-} && ${FORCE_COLOR} != 0 ]]; then
+    return 0
+  fi
+  [[ -z ${NO_COLOR:-} && -t $1 && ${TERM:-dumb} != dumb ]]
+}
+
 # _se_say <info|error> <text>: through the helpers of the caller, else on
 # stderr. The Mac entry task has no helpers.
 _se_say() {
@@ -48,8 +64,12 @@ _se_say() {
     else
       print_info "${text}"
     fi
-  else
+  elif ! _se_clone_styled 2; then
     printf 'sync-engine: %s\n' "${text}" >&2
+  elif [[ ${level} == error ]]; then
+    printf '❌ %s\n' "${text}" >&2
+  else
+    printf 'ℹ️ %s\n' "${text}" >&2
   fi
 }
 
@@ -130,16 +150,22 @@ _se_legacy_cleanup() {
   local base=${XDG_CACHE_HOME:-$HOME/.cache}
   local old=$base/bootstrap
   local old_lock=$base/bootstrap.lock
+  local had_old=''
   [[ -e ${old} || -e ${old_lock} ]] || return 0
   if ! mkdir -- "${old_lock}" 2> /dev/null; then
     _se_stale_lock "${old_lock}" || true
     mkdir -- "${old_lock}" 2> /dev/null || return 0
   fi
   _SE_OLD_HELD=${old_lock}
+  if [[ -e ${old} ]]; then
+    had_old=1
+  fi
   rm -rf -- "${old}" 2> /dev/null || true
   rm -rf -- "${old_lock}" 2> /dev/null || true
   _SE_OLD_HELD=''
-  [[ -e ${old} ]] || _se_say info "Removed the old cache ${old}"
+  if [[ -n ${had_old} && ! -e ${old} ]]; then
+    _se_say info "Removed the old cache ${old}"
+  fi
   return 0
 }
 
@@ -253,4 +279,54 @@ _se_unlock
 
 # Unquoted on purpose: empty adds no argument.
 [[ "${usage_dry_run:-false}" == "true" ]] && DRY_RUN="--dry-run" || DRY_RUN=""
+if [[ "${usage_verbose:-false}" == "true" ]]; then
+  export SYNC_ENGINE_VERBOSE=1
+fi
+
+file_mode() { stat -c %a -- "$1" 2> /dev/null || stat -f %Lp -- "$1"; }
+
+# refresh_local_task <root>: the local sync task and its helpers run before the
+# file loop can write them, so they come from the copy here. Only a local file
+# is replaced, and a symlink stays. A dry run copies nothing. `_default` itself
+# stays old for this run: it needs the full render.
+refresh_local_task() {
+  local tasks=$1/.config/mise/tasks
+  local pair local_file clone_file tmp commit
+  local found='' differs='' failed=''
+  for pair in repo-sync:setup/configs/sync mise:_scripts/helpers; do
+    local_file=${tasks}/${pair#*:}
+    clone_file=${_SE_COPY}/repo/tools/${pair%%:*}/.config/mise/tasks/${pair#*:}
+    [[ -f ${local_file} || -L ${local_file} ]] || continue
+    found=1
+    [[ ! -L ${local_file} && -f ${clone_file} ]] || continue
+    if cmp -s -- "${local_file}" "${clone_file}" &&
+      [[ $(file_mode "${local_file}") == "$(file_mode "${clone_file}")" ]]; then
+      continue
+    fi
+    if [[ -n ${DRY_RUN} ]]; then
+      differs=1
+      continue
+    fi
+    # Next to the file, so the final mv is atomic.
+    tmp=${local_file}.tmp.$$
+    if cp -p -- "${clone_file}" "${tmp}" && mv -f -- "${tmp}" "${local_file}"; then
+      differs=1
+    else
+      rm -f -- "${tmp}"
+      failed=1
+      print_warn "Cannot update ${local_file} - using the local file"
+    fi
+  done
+  [[ -n ${found} ]] || return 0
+  commit=$(git -C "${_SE_COPY}" rev-parse --short HEAD) || commit=''
+  if [[ -n ${differs} && -n ${DRY_RUN} ]]; then
+    print_info "Would update the local sync task to ${commit}"
+  elif [[ -n ${differs} ]]; then
+    print_info "Updated the local sync task to ${commit}"
+  elif [[ -z ${failed} ]]; then
+    print_info "The local sync task is up to date"
+  fi
+}
+
+refresh_local_task "${MISE_PROJECT_ROOT}"
 SYNC_ENGINE_CLONE="${_SE_COPY}" REPO_SYNC_CLONE="${_SE_COPY}" mise run setup:configs:sync ${DRY_RUN}
