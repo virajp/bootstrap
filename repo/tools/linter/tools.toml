@@ -22,8 +22,12 @@ require_serial = true
 
 # Linter
 [mise.tools."npm:@virajp.dev/linter"]
+# The own package of bootstrap: a new release installs at once. Without
+# allow_low_downloads, aube refuses a package with few weekly downloads.
+allow_low_downloads = true
 depends = [ "node", "pnpm" ]
 envs = [ "dev", "ci" ]
+minimum_release_age = "0h"
 version = "latest"
 
 # Shell linter

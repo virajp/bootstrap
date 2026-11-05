@@ -26,10 +26,10 @@ VS Code extensions: `dbaeumer.vscode-eslint`, `foxundermoon.shell-format`.
 
 ## mise tools
 
-| mise tool                | Version  | Environments | Note                |
-| ------------------------ | -------- | ------------ | ------------------- |
-| `npm:@virajp.dev/linter` | `latest` | dev, ci      | Linter. Needs node. |
-| `shellcheck`             | `latest` | dev, ci      | Shell linter        |
+| mise tool                | Version  | Environments | Note                                                            |
+| ------------------------ | -------- | ------------ | --------------------------------------------------------------- |
+| `npm:@virajp.dev/linter` | `latest` | dev, ci      | Linter. Needs node. No release wait, and `allow_low_downloads`. |
+| `shellcheck`             | `latest` | dev, ci      | Shell linter                                                    |
 
 ## Tasks
 
