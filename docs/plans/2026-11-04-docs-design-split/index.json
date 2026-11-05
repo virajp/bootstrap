@@ -122,11 +122,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-05T14:28:51.994Z",
-      "ended": "",
+      "ended": "2026-11-05T14:40:00.094Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -150,9 +150,9 @@
     },
     {
       "id": "W4",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-05T14:28:51.961Z",
-      "ended": ""
+      "ended": "2026-11-05T14:40:22.539Z"
     }
   ],
   "shared_files": [
@@ -328,6 +328,20 @@
       "unit": "U3",
       "stage": "edit",
       "text": "The rule \"a [files] target that ends in .tmpl stops the sync\" is not in docs/design/tools.md, and the survey did not name it, so the U3 Guardrails forbid adding it · U3 kept it in docs/sync/index.md step 1 and removed the README copy. Settled with no ruling owed: the wave review found the guardrail would lose the rule, so U3 added it to docs/design/tools.md under the Goal and took the restatement out of docs/sync/index.md; R3 closing check confirmed.",
+      "state": "closed"
+    },
+    {
+      "id": "G9",
+      "unit": "",
+      "stage": "",
+      "text": "SKILL.md asks one wave reviewer for every wave; W4 (gates) changed no file, so no reviewer ran over an empty diff · The diff was empty, and the plan gate covers the tree. Settled with no ruling owed.",
+      "state": "closed"
+    },
+    {
+      "id": "G10",
+      "unit": "U3",
+      "stage": "edit",
+      "text": ".config/mise/tasks/_scripts/repo-sync:58, a tracked stale copy, says see \"mise config\", a CLAUDE.md section this plan removes; repo/tools/ ships no such line, and the file is absent from .config/repo-generated.tsv, so the sync does not rewrite it · Left as it is, per the wave review: no source to change, and a synced copy is not edited. Settled with no ruling owed.",
       "state": "closed"
     }
   ],
