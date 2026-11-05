@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-05T08:58:58Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
+    "state": "BLOCKED",
+    "detail": "BLOCKED at wave 2 — U3 UNRESOLVED: two high security findings need rulings past D4 and R2: G5 python.uv_venv_auto = create|source in macos/tools/python/tools.toml:10, G6 MISE_TRUSTED_CONFIG_PATHS holds all of projects_dir in the three mise shell templates; U4, U5 skipped (depend on U3); open gaps also G1, G3 (U1 worked around a Bash permission denial with Write and a scratchpad script; a person should judge), G4, G7; worktree .claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -107,14 +107,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "unresolved",
+      "started": "2026-11-05T09:07:28.309Z",
+      "ended": "2026-11-05T09:11:35.964Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "5961aaf416b7f49a9559ff2351b2e02c5d6be5c7",
+        "to": "2f65b129f9e3ba504fcd7d002214988cb3e1a77b"
       }
     },
     {
@@ -136,9 +136,9 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
+      "status": "skipped",
       "started": "",
-      "ended": "",
+      "ended": "2026-11-05T09:11:36.033Z",
       "commit": "",
       "rounds": 0
     },
@@ -154,9 +154,9 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
+      "status": "skipped",
       "started": "",
-      "ended": "",
+      "ended": "2026-11-05T09:11:36.102Z",
       "commit": "",
       "rounds": 0
     }
@@ -170,21 +170,21 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "failed",
+      "started": "2026-11-05T09:07:28.242Z",
+      "ended": "2026-11-05T09:11:58.259Z"
     },
     {
       "id": "W3",
-      "status": "pending",
+      "status": "failed",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T09:11:58.295Z"
     },
     {
       "id": "W4",
-      "status": "pending",
+      "status": "failed",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T09:11:58.332Z"
     }
   ],
   "shared_files": [
@@ -304,28 +304,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T09:11:36.390Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T09:11:36.176Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "plan has no covers",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T09:11:36.286Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "plan has no covers and no code unit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T09:11:36.499Z"
     }
   },
   "gaps": [
@@ -355,6 +355,27 @@
       "unit": "U4",
       "stage": "edit",
       "text": "DOCS FALSIFIED lines held for the docs unit U4, which owns these files: CLAUDE.md:197 and docs/design/mise.md:135 (a tool does not ship mise files; the Mac mise tool ships config.toml and miserc.toml, D3); CLAUDE.md:619 (miserc.toml with env_conf_d is listed as not shipped); CLAUDE.md:518 (Mac templates encode strings with data.ToJSON; node pnpm config.yaml.tmpl uses printf %q under D4); CLAUDE.md:177 (header placement list omits a header after a # :schema line) · U4 applies them",
+      "state": "open"
+    },
+    {
+      "id": "G5",
+      "unit": "U3",
+      "stage": "security",
+      "text": "UNRESOLVED security finding [high] macos/tools/python/tools.toml:10 (U1): python.uv_venv_auto = \"create|source\" puts the .venv/bin of a repo on PATH with no trust check, so cd into a hostile clone with uv.lock and a committed .venv runs a planted binary as the user (tested on mise 2026.11.1 with paranoid = true). A fix changes a value that D4 and R2 keep byte for byte · ruling needed: remove source and create from the Mac default, or accept the risk. The same line is at repo/tools/python/tools.toml:21, outside this range",
+      "state": "open"
+    },
+    {
+      "id": "G6",
+      "unit": "U3",
+      "stage": "security",
+      "text": "UNRESOLVED security finding [high] macos/tools/mise/.config/zsh/01b-mise.zsh.tmpl:6, bash/01b-mise.bash.tmpl:10, fish/conf.d/06-mise.fish.tmpl:9 (U1): MISE_TRUSTED_CONFIG_PATHS holds the whole projects_dir (default ~/Projects) and cancels paranoid = true of config.toml:16, so a repo cloned there loads its mise config with no trust prompt (tested: [env] loads silently; code execution through _.source or [hooks] not tested). A fix changes content that D4 keeps byte for byte · ruling needed: narrow the path to the owner namespaces, drop projects_dir and use mise trust per repo, or accept the risk",
+      "state": "open"
+    },
+    {
+      "id": "G7",
+      "unit": "U3",
+      "stage": "security",
+      "text": "SPEC/PLAN GAP: D4, R2 and R3 copy every value byte for byte and name no security requirement for the mise trust boundary; both values are unchanged from macos-setup, so the live Mac already has this exposure and the import carries it forward; index.json has no ruling on either · no assumption taken; G5 and G6 hold the rulings",
       "state": "open"
     }
   ],
