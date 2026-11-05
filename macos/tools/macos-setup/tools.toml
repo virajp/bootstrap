@@ -1,0 +1,11 @@
+# The macos-setup tool: it ships the entry task `updateall:configs`, the task
+# `updateall` and the upgrade tasks into `~/.config/mise/tasks/`. The engine
+# comes from the clone, not from a local copy.
+description = "The Mac sync entry: updateall:configs, updateall and the upgrade tasks"
+
+[questions.config_path]
+example = "~/Projects/github.com/janedoe/macos-setup"
+question = "Which folder holds your macos.toml (the root of your private macos-setup clone)?"
+
+[mise.env]
+MACOS_SETUP_CONFIG_PATH = "<% index .config `config_path` | required `macos-setup: set config_path in [tools.macos-setup] of macos.toml` | regexp.Replace `^~` .env.HOME %>"

@@ -10,8 +10,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-04 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-05T06:42:39Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -59,11 +59,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T06:43:17.181Z",
+      "ended": "2026-11-05T06:46:28.729Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -79,11 +79,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T06:43:17.216Z",
+      "ended": "2026-11-05T06:46:28.830Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -180,8 +180,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T06:43:17.146Z",
       "ended": ""
     },
     {
@@ -384,7 +384,22 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "D14 orders the move of generated.txt before the live-pid check, so the file moves even while an old Mac sync runs, and an old sync that writes generated.txt later leaves a list that a later run deletes without moving · implemented in the literal order of D14",
+      "state": "open"
+    },
+    {
+      "id": "G2",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "U1 verification did not run a full sync through setup_sync · the assumption is that the cases of U3 cover it",
+      "state": "open"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",
