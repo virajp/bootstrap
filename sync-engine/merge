@@ -108,14 +108,14 @@ _se_merge_run() {
   # The source: one table; null is an empty source.
   if [[ $format == json ]]; then
     _se_jq -cs 'if length == 1 then .[0] else error("more than one JSON value") end' "$dir/src" > "$dir/src.json" || {
-      _se_log "the merge source of $show is not one JSON value"
+      _se_outcome failed "$show" 'the merge source is not one JSON value' "the merge source of $show is not one JSON value"
       return 2
     }
   else
     if [[ $format == yaml ]]; then
       n=$(_se_yq -p yaml -o json ea '[.] | length' "$dir/src") || return 2
       if [[ $n != 1 ]]; then
-        _se_log "the merge source of $show has more than one YAML document"
+        _se_outcome failed "$show" 'the merge source has more than one YAML document' "the merge source of $show has more than one YAML document"
         return 2
       fi
     fi
@@ -126,7 +126,7 @@ _se_merge_run() {
     printf '{}\n' > "$dir/src.json" || return 1
     empty=1
   elif [[ $kind != object ]]; then
-    _se_log "the merge source of $show is $(_se_kind_word "$kind"), not a table"
+    _se_outcome failed "$show" "the merge source is $(_se_kind_word "$kind"), not a table" "the merge source of $show is $(_se_kind_word "$kind"), not a table"
     return 2
   fi
 
@@ -135,24 +135,24 @@ _se_merge_run() {
     case $format in
       json)
         _se_jq -cs 'if length == 1 then .[0] else error("more than one JSON value") end' "$live" > "$dir/live.json" || {
-          _se_log "$show is not valid json - kept it as it is"
+          _se_outcome failed "$show" 'is not valid json - kept it as it is' "$show is not valid json - kept it as it is"
           return 2
         }
         ;;
       yaml)
         n=$(_se_yq -p yaml -o json ea '[.] | length' "$live") || {
-          _se_log "$show is not valid yaml - kept it as it is"
+          _se_outcome failed "$show" 'is not valid yaml - kept it as it is' "$show is not valid yaml - kept it as it is"
           return 2
         }
         if [[ $n != 1 ]]; then
-          _se_log "$show has more than one YAML document - kept it as it is"
+          _se_outcome failed "$show" 'has more than one YAML document - kept it as it is' "$show has more than one YAML document - kept it as it is"
           return 2
         fi
         _se_yq -p yaml -o json . "$live" > "$dir/live.json" || return 2
         ;;
       toml)
         _se_yq -p toml -o json . "$live" > "$dir/live.json" || {
-          _se_log "$show is not valid toml - kept it as it is"
+          _se_outcome failed "$show" 'is not valid toml - kept it as it is' "$show is not valid toml - kept it as it is"
           return 2
         }
         ;;
@@ -166,7 +166,7 @@ _se_merge_run() {
       kind=absent
     fi
     if [[ $kind != object && $kind != absent ]]; then
-      _se_log "$show holds $(_se_kind_word "$kind"), not a table - kept it as it is"
+      _se_outcome failed "$show" "holds $(_se_kind_word "$kind"), not a table - kept it as it is" "$show holds $(_se_kind_word "$kind"), not a table - kept it as it is"
       return 2
     fi
   else
@@ -210,7 +210,7 @@ _se_merge_run() {
 _se_merge() {
   local dir rc=0
   dir=$(mktemp -d "${TMPDIR:-/tmp}/sync-engine-merge.XXXXXX") || {
-    _se_log "cannot create a temp directory"
+    _se_outcome failed "$7" 'cannot create a temp directory' 'cannot create a temp directory'
     return 1
   }
   _SE_TMPS+=("$dir")

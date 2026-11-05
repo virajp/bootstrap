@@ -24,6 +24,8 @@
 #                     clone. `--check` does not read it
 #   REPO_SYNC_VALUES  the values file
 #                     (default $MISE_PROJECT_ROOT/.config/bootstrap.toml)
+#   SYNC_ENGINE_VERBOSE      1: print each per-file line in its log format, not
+#                            the list of the changes
 #   REPO_SYNC_NO_AUTOUPDATE  1: skip `pre-commit autoupdate`, so the hook
 #                     revisions stay as the tools.toml files have them and no
 #                     network is needed (for tests)
@@ -806,14 +808,14 @@ _rs_remove() {
   show=$(_se_path "$dest")
   [[ -e $dest ]] || return 0
   if ((dry_run)); then
-    _se_log "would remove $show"
+    _se_outcome removed "$show" '' "would remove $show"
     return 0
   fi
   rm -f -- "$dest" || {
-    _se_log "cannot remove $show"
+    _se_outcome failed "$show" 'cannot remove' "cannot remove $show"
     return 1
   }
-  _se_log "removed    $show"
+  _se_outcome removed "$show" '' "removed    $show"
 }
 
 # Print the mode of the target <tool>/<target>: generated without a `mode` key.
@@ -865,19 +867,19 @@ _rs_skip_required() {
     seed)
       _RS_HANDLED+="$out"$'\n'
       if _se_seed_kept "$dest"; then
-        _se_log "kept seed  $show"
+        _se_outcome kept "$show" '' "kept seed  $show"
       else
-        _se_log "skip seed  $show (no $requires)"
+        _se_outcome skipped "$show" '' "skip seed  $show (no $requires)"
       fi
       return 0
       ;;
     merge)
       _RS_HANDLED+="$out"$'\n'
-      _se_log "skip merge $show (no $requires)"
+      _se_outcome skipped "$show" '' "skip merge $show (no $requires)"
       return 0
       ;;
   esac
-  _se_log "skip file  $show (no $requires)"
+  _se_outcome skipped "$show" '' "skip file  $show (no $requires)"
 }
 
 # Set _RS_ENVS to the ` <env> ` words of `environments` in <values>, in the
@@ -1188,14 +1190,14 @@ _rs_file() {
     env=${env%.toml}
     if [[ $_RS_ENVS != *" $env "* ]]; then
       [[ $mode == generated ]] || _RS_HANDLED+="$out"$'\n'
-      _se_log "skip env   $show"
+      _se_outcome skipped "$show" '' "skip env   $show"
       return 0
     fi
   fi
 
   if [[ $mode == seed ]] && _se_seed_kept "$dest"; then
     _RS_HANDLED+="$out"$'\n'
-    _se_log "kept seed  $show"
+    _se_outcome kept "$show" '' "kept seed  $show"
     return 0
   fi
 
@@ -1209,8 +1211,8 @@ _rs_file() {
       folder+="/${rest%%/*}"
       rest=${rest#*/}
       if [[ -L $folder ]]; then
-        _se_log "$show: the folder $(_se_path "$folder") is a symlink - kept it as it is"
-        [[ -e $dest ]] && _se_log "kept existing $show"
+        _se_outcome failed "$show" "the folder $(_se_path "$folder") is a symlink - kept it as it is" "$show: the folder $(_se_path "$folder") is a symlink - kept it as it is"
+        [[ -e $dest ]] && _se_outcome failed "$show" 'kept existing' "kept existing $show"
         return 2
       fi
     done
@@ -1220,20 +1222,20 @@ _rs_file() {
   # code/format -> code/format/_default. Remove the old synced file that is in
   # the way. A file without the header is the repo's, and a seed and a merge
   # target stay, so the sync stops there.
-  _se_unblock "$(dirname -- "$dest")" "$MISE_PROJECT_ROOT" "$dry_run" "$_RS_SPARE" || return 1
+  _se_unblock "$(dirname -- "$dest")" "$MISE_PROJECT_ROOT" "$dry_run" "$_RS_SPARE" "$show" || return 1
 
   if ((dry_run)); then
     destdir=${TMPDIR:-/tmp}
   else
     destdir=$(dirname -- "$dest")
     mkdir -p -- "$destdir" || {
-      _se_log "cannot create $(_se_path "$destdir")"
+      _se_outcome failed "$show" "cannot create $(_se_path "$destdir")" "cannot create $(_se_path "$destdir")"
       return 1
     }
   fi
   # Temp file in the destination directory so the final mv is atomic.
   _se_tmp "$destdir" > /dev/null || {
-    _se_log "cannot create a temp file in $(_se_path "$destdir")"
+    _se_outcome failed "$show" "cannot create a temp file in $(_se_path "$destdir")" "cannot create a temp file in $(_se_path "$destdir")"
     return 1
   }
   tmp=$_SE_TMP
@@ -1241,12 +1243,16 @@ _rs_file() {
   if [[ $path == *.tmpl ]]; then
     if [[ -z $ctx ]]; then
       rc=2
+      _se_outcome failed "$show" 'cannot write the target'
     elif ! _se_gomplate -c ".=${ctx}?type=application/json" -f "$src" -o "$tmp" >&2; then
-      _se_log "$_RS_TOOLS_DIR/$tool/$path: gomplate failed to render the template"
+      _se_outcome failed "$show" 'gomplate failed to render the template' "$_RS_TOOLS_DIR/$tool/$path: gomplate failed to render the template"
       rc=2
     fi
   else
-    cp -- "$src" "$tmp" || rc=1
+    cp -- "$src" "$tmp" || {
+      rc=1
+      _se_outcome failed "$show" 'cannot write the target'
+    }
   fi
   # The hook revisions: each one becomes the newest tag, chosen by
   # `pre-commit autoupdate` itself. The `rev` in a tools.toml is a real tag, so
@@ -1258,10 +1264,10 @@ _rs_file() {
     if [[ ${REPO_SYNC_NO_AUTOUPDATE:-} == 1 ]]; then
       _se_log "$_RS_TOOLS_DIR/$tool/$path: REPO_SYNC_NO_AUTOUPDATE=1 - pre-commit autoupdate skipped"
     elif ! command -v pre-commit > /dev/null 2>&1; then
-      _se_log "$_RS_TOOLS_DIR/$tool/$path: pre-commit is not available to resolve the hook revisions"
+      _se_outcome failed "$show" 'pre-commit is not available to resolve the hook revisions' "$_RS_TOOLS_DIR/$tool/$path: pre-commit is not available to resolve the hook revisions"
       rc=5
     elif ! (cd "$MISE_PROJECT_ROOT" && pre-commit autoupdate --config "$tmp" > /dev/null 2>&1); then
-      _se_log "$_RS_TOOLS_DIR/$tool/$path: pre-commit autoupdate failed - examine the network and the hook repositories"
+      _se_outcome failed "$show" 'pre-commit autoupdate failed - examine the network and the hook repositories' "$_RS_TOOLS_DIR/$tool/$path: pre-commit autoupdate failed - examine the network and the hook repositories"
       rc=5
     fi
   fi
@@ -1281,7 +1287,7 @@ _rs_file() {
   # A merge target that is a symlink, also a dangling one: the merge reads the
   # live target, and a symlink can point outside this repo. The link stays.
   if ((rc == 0)) && [[ $mode == merge && -L $dest ]]; then
-    _se_log "$show is a symlink - kept it as it is"
+    _se_outcome failed "$show" 'is a symlink - kept it as it is' "$show is a symlink - kept it as it is"
     rc=2
   fi
 
@@ -1302,7 +1308,7 @@ _rs_file() {
 
   if ((rc != 0)); then
     rm -f -- "$tmp"
-    [[ -e $dest ]] && _se_log "kept existing $show"
+    [[ -e $dest ]] && _se_outcome failed "$show" 'kept existing' "kept existing $show"
     return "$rc"
   fi
 
@@ -1362,12 +1368,15 @@ _rs_file_finish() {
           if [[ -n $gi_add ]]; then
             printf '\n# ==== Overrides from %s ====\n%s\n' "$_RS_VALUES_NOTE" "$gi_add"
           fi
-      } > "$tmp.gi" && mv -f -- "$tmp.gi" "$tmp" || rc=1
+      } > "$tmp.gi" && mv -f -- "$tmp.gi" "$tmp" || {
+        rc=1
+        _se_outcome failed "$show" 'cannot write the target'
+      }
     fi
   fi
   if ((rc != 0)); then
     rm -f -- "$tmp"
-    [[ -e $dest ]] && _se_log "kept existing $show"
+    [[ -e $dest ]] && _se_outcome failed "$show" 'kept existing' "kept existing $show"
     return "$rc"
   fi
 
@@ -1380,7 +1389,7 @@ _rs_file_finish() {
   else
     mode=$(_se_mode "$src")
   fi
-  _se_finish "$mode" "$tmp" "$dest" "$show" "$dry_run" || return
+  _se_finish "$mode" "$tmp" "$dest" "$show" "$dry_run" "$(_rs_file_mode "$tool/$out")" || return
   _RS_HANDLED+="$out"$'\n'
   if [[ $(_rs_file_mode "$tool/$out") == generated ]]; then
     _RS_ROWS+="$tool"$'\t'"$out"$'\n'
@@ -1512,7 +1521,10 @@ repo_sync() {
     return 5
   fi
   rev=$(git -C "$dir" rev-parse --short HEAD)
-  _se_log "using bootstrap at ${rev}"
+  _se_outcome_start "$dry_run"
+  if _se_verbose; then
+    _se_log "using bootstrap at ${rev}"
+  fi
   # The full id, for `bootstrap_commit` after a sync without a failure.
   local commit
   commit=$(git -C "$dir" rev-parse HEAD) || commit=''
@@ -1527,8 +1539,12 @@ repo_sync() {
     rm -rf -- "$dir"
     return "$rc"
   }
-  _se_log "tools:${_RS_TOOLS% }"
-  _se_log "environments:${_RS_ENVS% }"
+  if _se_verbose; then
+    _se_log "tools:${_RS_TOOLS% }"
+    _se_log "environments:${_RS_ENVS% }"
+  else
+    _se_info "bootstrap ${rev} · $(_se_count_words "$_RS_TOOLS") tools · environments:${_RS_ENVS% }"
+  fi
   _rs_merge_model || {
     rc=$?
     rm -rf -- "$dir"
@@ -1616,6 +1632,7 @@ repo_sync() {
         _rs_file "$dir" "$tool" "$path" "$dry_run" "${ctx:+$ctx_dir/$tool.json}" || rc=$?
       fi
       if ((rc != 0)); then
+        _se_outcome failed "$(_se_path "${MISE_PROJECT_ROOT}/${path%.tmpl}")" 'cannot write the target'
         failed+=("$_RS_TOOLS_DIR/$tool/$path")
         ((rc > worst)) && worst=$rc
       elif [[ -z $_RS_DEFERRED ]]; then
@@ -1632,6 +1649,7 @@ repo_sync() {
     if ((rc == 0)); then
       ((ok += 1))
     else
+      _se_outcome failed "$(_se_path "${MISE_PROJECT_ROOT}/${path%.tmpl}")" 'cannot write the target'
       failed+=("$_RS_TOOLS_DIR/$tool/$path")
       ((rc > worst)) && worst=$rc
     fi
@@ -1663,12 +1681,21 @@ repo_sync() {
     # Only a sync without a failure records its commit: then each file is
     # at that commit, and an agent can compare it with main of bootstrap.
     if [[ -n $commit ]]; then
-      _se_record_commit "$values" bootstrap_commit "$commit" "$dry_run" "# The bootstrap commit of the last sync. repo-sync writes it." || return 1
+      _se_record_commit "$values" bootstrap_commit "$commit" "$dry_run" "# The bootstrap commit of the last sync. repo-sync writes it." || {
+        _se_summary 1
+        return 1
+      }
     fi
-    _se_log "done: $ok/$total files in sync"
+    if _se_verbose; then
+      _se_log "done: $ok/$total files in sync"
+    fi
+    _se_summary 0
     return 0
   fi
   _se_log "FAILED: ${failed[*]}"
-  _se_log "$ok/$total files in sync; existing copies of the rest were left untouched"
+  if _se_verbose; then
+    _se_log "$ok/$total files in sync; existing copies of the rest were left untouched"
+  fi
+  _se_summary "$worst"
   return "$worst"
 }

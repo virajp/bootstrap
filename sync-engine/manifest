@@ -170,11 +170,15 @@ _se_manifest_stale() {
     target="$root/$path"
     if [[ $link_mode == repo ]]; then
       if _se_manifest_linked "$root" "$path"; then
-        _se_log "kept $path (link)"
+        if _se_verbose; then
+          _se_log "kept $path (link)"
+        fi
         continue
       fi
       if _se_manifest_foreign "$root" "$path"; then
-        _se_log "kept $path (another repository)"
+        if _se_verbose; then
+          _se_log "kept $path (another repository)"
+        fi
         continue
       fi
     else
@@ -187,14 +191,14 @@ _se_manifest_stale() {
     fi
     show=$(_se_path "$root/$path")
     if ((dry_run)); then
-      _se_log "would remove $show"
+      _se_outcome removed "$show" '' "would remove $show"
       continue
     fi
     if rm -f -- "$target"; then
-      _se_log "removed    $show"
+      _se_outcome removed "$show" '' "removed    $show"
       _se_manifest_prune "$root" "$path"
     else
-      _se_log "cannot remove $show"
+      _se_outcome failed "$show" 'cannot remove' "cannot remove $show"
       rc=1
     fi
   done <<< "$rows"
@@ -204,8 +208,9 @@ _se_manifest_stale() {
 # Write <file>: the first line, then <rows> sorted, with LF line endings and one
 # LF at the end. A <file> with the same content stays as it is.
 _se_manifest_write() {
-  local file=$1 rows=$2 dry_run=$3 show folder tmp sorted content
+  local file=$1 rows=$2 dry_run=$3 show folder tmp sorted content kind=changed
   show=$(_se_path "$file")
+  [[ -e $file ]] || kind=new
   sorted=$(printf '%s\n' "$rows" | LC_ALL=C sed '/^$/d' | LC_ALL=C sort -u) || {
     _se_log "cannot write $show"
     return 1
@@ -216,7 +221,7 @@ _se_manifest_write() {
     return 0
   fi
   if ((dry_run)); then
-    _se_log "would write $show"
+    _se_outcome "$kind" "$show" '' "would write $show"
     return 0
   fi
   folder=$(dirname -- "$file")
@@ -230,5 +235,5 @@ _se_manifest_write() {
     _se_log "cannot write $show"
     return 1
   fi
-  _se_log "wrote      $show"
+  _se_outcome "$kind" "$show" '' "wrote      $show"
 }

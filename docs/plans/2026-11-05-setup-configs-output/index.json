@@ -8,8 +8,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-05 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-05T14:56:14Z in .claude/worktrees/bootstrap-2-0-3ae4b9"
   },
   "consent": {
     "merge": true,
@@ -74,11 +74,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T14:56:43.864Z",
+      "ended": "2026-11-05T15:25:12.703Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -95,11 +95,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T14:56:43.940Z",
+      "ended": "2026-11-05T15:25:12.810Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -196,8 +196,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-05T14:56:43.830Z",
       "ended": ""
     },
     {
@@ -401,31 +401,60 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T14:56:37.390Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T14:56:37.251Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list: the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T14:56:37.320Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers list and no code unit: nothing to reconcile or persist",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-05T14:56:37.465Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "D12 says a manifest write counts, but the Mac dry run does not call _se_manifest_write · It stays uncounted on the Mac side, because Edit 6 and the guardrails add no call; the repo dry run counts it.",
+      "state": "open"
+    },
+    {
+      "id": "G2",
+      "unit": "U1",
+      "stage": "edit",
+      "text": "D16 says <path> is the target path, but on the Mac side show can carry ' (-> <real>)' for a symlinked target · The list line and the dedupe key use that show, so the line matches the verbose lines.",
+      "state": "open"
+    },
+    {
+      "id": "G3",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "The rulings give the Mac and _se_say error lines a glyph but no color · No red, although print_error in helpers may differ.",
+      "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "U2's Verification could not complete while U1 edited the engine: test:setup-sync failed on lines U3 owns, and test:repo-sync passed the 590s limit · The plan gate's mise run test settles it.",
+      "state": "open"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".claude/worktrees/bootstrap-2-0-3ae4b9",

@@ -18,6 +18,8 @@
 #   SYNC_ENGINE_CACHE        the cache folder, which has `macos-generated.tsv`
 #                            (default ${XDG_CACHE_HOME:-$HOME/.cache}/sync-engine)
 #   MACOS_SETUP_CONFIG_PATH  the folder of the values file `macos.toml`
+#   SYNC_ENGINE_VERBOSE      1: print each per-file line in its log format, not
+#                            the list of the changes
 #   HOME, USER, TMPDIR       the target root, the render context and the
 #                            temporary files
 #
@@ -523,32 +525,34 @@ _ss_file() {
   fi
   [[ $format != - ]] || format=''
   show="$_SS_TILDE/$target"
+  _SS_SHOW=$show
   if ! _se_manifest_real "$_SS_HOME/$target"; then
-    _se_log "cannot resolve $show - a symlink loop"
+    _se_outcome failed "$show" 'cannot resolve - a symlink loop' "cannot resolve $show - a symlink loop"
     return 1
   fi
   real=$_SE_MANIFEST_REAL
   [[ $real == "$_SS_HOME_REAL/$target" ]] || show+=" (-> $real)"
+  _SS_SHOW=$show
 
   if [[ $fmode == seed ]] && _se_seed_kept "$real"; then
-    _se_log "kept seed  $show"
+    _se_outcome kept "$show" '' "kept seed  $show"
     return 0
   fi
   while IFS="$_SS_TAB" read -r t p req; do
     [[ $t == "$tool" && $p == "$target" ]] || continue
     [[ ! -e $_SS_HOME/$req ]] || continue
     case $fmode in
-      seed) _se_log "skip seed  $show (no $_SS_TILDE/$req)" ;;
-      merge) _se_log "skip merge $show (no $_SS_TILDE/$req)" ;;
+      seed) _se_outcome skipped "$show" '' "skip seed  $show (no $_SS_TILDE/$req)" ;;
+      merge) _se_outcome skipped "$show" '' "skip merge $show (no $_SS_TILDE/$req)" ;;
       *)
-        _se_log "skip file  $show (no $_SS_TILDE/$req)"
+        _se_outcome skipped "$show" '' "skip file  $show (no $_SS_TILDE/$req)"
         _SS_HANDLED=${_SS_HANDLED/$'\n'"$target"$'\n'/$'\n'}
         ;;
     esac
     return 0
   done <<< "$_SS_REQUIRES"
   if [[ -d $real ]]; then
-    _se_log "$show is a folder, but a file goes there - move it"
+    _se_outcome failed "$show" 'is a folder, but a file goes there - move it' "$show is a folder, but a file goes there - move it"
     return 1
   fi
   # A file with the header where a folder goes is removed. The real path can be
@@ -559,30 +563,33 @@ _ss_file() {
     top=${real#/}
     top=/${top%%/*}
   fi
-  _se_unblock "$(dirname -- "$real")" "$top" "$dry_run" || return 1
+  _se_unblock "$(dirname -- "$real")" "$top" "$dry_run" '' "$show" || return 1
 
   if ((dry_run)); then
     destdir=${TMPDIR:-/tmp}
   else
     destdir=$(dirname -- "$real")
     mkdir -p -- "$destdir" || {
-      _se_log "cannot create $destdir"
+      _se_outcome failed "$show" "cannot create $destdir" "cannot create $destdir"
       return 1
     }
   fi
   # The temp file is next to the real path, so the final mv is atomic.
   _se_tmp "$destdir" > /dev/null || {
-    _se_log "cannot create a temp file in $destdir"
+    _se_outcome failed "$show" "cannot create a temp file in $destdir" "cannot create a temp file in $destdir"
     return 1
   }
   tmp=$_SE_TMP
   if [[ $path == *.tmpl ]]; then
     if ! _se_gomplate -c ".=${_SS_WORK}/ctx/${tool}.json?type=application/json" -f "$src" -o "$tmp" >&2; then
-      _se_log "$_SS_SHOWN/$tool/$path: gomplate cannot render the template"
+      _se_outcome failed "$show" 'gomplate cannot render the template' "$_SS_SHOWN/$tool/$path: gomplate cannot render the template"
       rc=2
     fi
   else
-    cp -- "$src" "$tmp" || rc=1
+    cp -- "$src" "$tmp" || {
+      rc=1
+      _se_outcome failed "$show" 'cannot write the target'
+    }
   fi
   # The format of a merge target is its `format` key, else its extension.
   if ((rc == 0)); then
@@ -607,7 +614,7 @@ _ss_file() {
   fi
   if ((rc != 0)); then
     rm -f -- "$tmp"
-    [[ ! -e $real ]] || _se_log "kept existing $show"
+    [[ ! -e $real ]] || _se_outcome failed "$show" 'kept existing' "kept existing $show"
     return "$rc"
   fi
 
@@ -621,7 +628,7 @@ _ss_file() {
   if [[ ! -f $real ]] || ! cmp -s -- "$tmp" "$real" || [[ $(_se_mode "$real") != "$mode" ]]; then
     ((dry_run)) || _SS_CHANGED=1
   fi
-  _se_finish "$mode" "$tmp" "$real" "$show" "$dry_run" || return
+  _se_finish "$mode" "$tmp" "$real" "$show" "$dry_run" "$fmode" || return
   [[ $fmode != generated ]] || _SS_ROWS+="$tool$_SS_TAB$target"$'\n'
 }
 
@@ -657,6 +664,7 @@ _ss_render() {
     if ((rc == 0)); then
       _SS_OK=$((_SS_OK + 1))
     else
+      _se_outcome failed "$_SS_SHOW" 'cannot write the target'
       if [[ $path == /* ]]; then
         _SS_FAILED+=" $_SS_TILDE/$target"
       else
@@ -721,7 +729,9 @@ _ss_record_commit() {
 # The report of a failed run.
 _ss_report_failed() {
   _se_log "FAILED:$_SS_FAILED"
-  _se_log "$_SS_OK/$_SS_TOTAL files in sync; existing copies of the rest were left untouched"
+  if _se_verbose; then
+    _se_log "$_SS_OK/$_SS_TOTAL files in sync; existing copies of the rest were left untouched"
+  fi
 }
 
 # setup_sync [--dry-run] [--no-bootstrap]
@@ -798,8 +808,14 @@ setup_sync() {
 
   local commit rc worst=0
   commit=$(git -C "$_SS_DIR" rev-parse HEAD 2> /dev/null) || commit=''
-  _se_log "using bootstrap at ${commit:-an unknown commit}"
-  _se_log "tools:${_SS_TOOLS% }"
+  _se_outcome_start "$dry_run"
+  if _se_verbose; then
+    _se_log "using bootstrap at ${commit:-an unknown commit}"
+    _se_log "tools:${_SS_TOOLS% }"
+  else
+    local short=${commit:0:7}
+    _se_info "bootstrap ${short:-an unknown commit} · $(_se_count_words "$_SS_TOOLS") tools"
+  fi
   _SS_OK=0 _SS_TOTAL=0 _SS_FAILED='' _SS_ROWS='' _SS_CHANGED=''
   _SS_OLD_ROWS=$(_se_manifest_read macos "$manifest") || _SS_OLD_ROWS=''
 
@@ -808,10 +824,14 @@ setup_sync() {
     _ss_stale all 1 || true
     if ((worst != 0)); then
       _se_log "FAILED:$_SS_FAILED"
+      _se_summary "$worst"
       return "$worst"
     fi
     [[ -z $commit ]] || _ss_record_commit "$commit" 1 || true
-    _se_log "dry run: $_SS_OK/$_SS_TOTAL files checked, nothing written"
+    if _se_verbose; then
+      _se_log "dry run: $_SS_OK/$_SS_TOTAL files checked, nothing written"
+    fi
+    _se_summary 0
     return 0
   fi
 
@@ -828,15 +848,22 @@ setup_sync() {
     fi
     if ((worst != 0)); then
       _ss_report_failed
+      _se_summary "$worst"
       return "$worst"
     fi
     if ((bootstrap)); then
-      _ss_bootstrap || return 1
+      _ss_bootstrap || {
+        _se_summary 1
+        return 1
+      }
     fi
     after=$(_ss_login_shell)
     [[ $before == "$after" ]] || _SS_CHANGED=1
     if [[ -n $_SS_CHANGED ]]; then
-      _se_manifest_write "$manifest" "$(_ss_old_rows main)"$'\n'"$_SS_ROWS" 0 || return 1
+      _se_manifest_write "$manifest" "$(_ss_old_rows main)"$'\n'"$_SS_ROWS" 0 || {
+        _se_summary 1
+        return 1
+      }
       _se_log "the init stage changed"
       _se_log "open a new terminal, then run: mise run updateall:configs"
       return 4
@@ -852,15 +879,28 @@ setup_sync() {
   fi
   if ((worst != 0)); then
     _ss_report_failed
+    _se_summary "$worst"
     return "$worst"
   fi
-  _se_manifest_write "$manifest" "$_SS_ROWS" 0 || return 1
+  _se_manifest_write "$manifest" "$_SS_ROWS" 0 || {
+    _se_summary 1
+    return 1
+  }
   if ((bootstrap)); then
-    _ss_bootstrap || return 1
+    _ss_bootstrap || {
+      _se_summary 1
+      return 1
+    }
   fi
   if [[ -n $commit ]]; then
-    _ss_record_commit "$commit" 0 || return 1
+    _ss_record_commit "$commit" 0 || {
+      _se_summary 1
+      return 1
+    }
   fi
-  _se_log "done: $_SS_OK/$_SS_TOTAL files in sync"
+  if _se_verbose; then
+    _se_log "done: $_SS_OK/$_SS_TOTAL files in sync"
+  fi
+  _se_summary 0
   return 0
 }
