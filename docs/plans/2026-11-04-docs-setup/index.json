@@ -120,11 +120,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-05T17:06:47.496Z",
+      "ended": "2026-11-05T17:08:10.723Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -142,9 +142,9 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-05T17:06:47.462Z",
+      "ended": "2026-11-05T17:08:35.397Z"
     }
   ],
   "shared_files": [
@@ -371,6 +371,13 @@
       "stage": "edit",
       "text": "The lead of Where the rules are in CLAUDE.md still says each rule of the sync has one place in docs/design/, and the list now also names docs/setup/ files · The plan asks only for the lines, so the lead stays: the Mac docs are prompts and a reference, not sync rules.",
       "state": "open"
+    },
+    {
+      "id": "G14",
+      "unit": "U4",
+      "stage": "edit",
+      "text": "04-gates.md lists mise run test in the Verification of U4, and one run takes about ten minutes, the limit of one foreground call · The line ran once as the plan gate over the same tree, by the orchestrator. W3 changed no file, so no wave reviewer ran over an empty diff. Settled with no ruling owed: the plan gate exit is in the action log.",
+      "state": "closed"
     }
   ],
   "overrides": [],
