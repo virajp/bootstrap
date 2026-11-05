@@ -6,7 +6,7 @@ description = "codeburn, the usage and cost report of the AI tools, and its aist
 
 # Tracking usage and performance of AI tools
 [mise.tools."npm:codeburn"]
-depends = [ "node", "pnpm" ]
+depends = [ "node" ]
 version = "latest"
 
 [mise.shell_alias]
