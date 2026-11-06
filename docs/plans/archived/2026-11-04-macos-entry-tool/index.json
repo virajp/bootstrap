@@ -409,8 +409,8 @@
       "id": "G1",
       "unit": "U1",
       "stage": "edit",
-      "text": "D14 orders the move of generated.txt before the live-pid check, so the file moves even while an old Mac sync runs, and an old sync that writes generated.txt later leaves a list that a later run deletes without moving · implemented in the literal order of D14",
-      "state": "open"
+      "text": "D14 orders the move of generated.txt before the live-pid check, so the file moves even while an old Mac sync runs, and an old sync that writes generated.txt later leaves a list that a later run deletes without moving · implemented in the literal order of D14 · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. Accepted with no code change: the old sync must run at the same time as the first new sync, and ~/.cache/macos-setup does not exist on this Mac.",
+      "state": "closed"
     },
     {
       "id": "G2",
@@ -423,15 +423,15 @@
       "id": "G3",
       "unit": "U3",
       "stage": "edit",
-      "text": "mise x <tool>@latest may look up the latest version remotely when the version cache of mise is stale, against the no-network guardrail of the tests; offline behaviour was not tested · the plan names this form, so it stays, on the assumption that the mise cache answers",
-      "state": "open"
+      "text": "mise x <tool>@latest may look up the latest version remotely when the version cache of mise is stale, against the no-network guardrail of the tests; offline behaviour was not tested · the plan names this form, so it stays, on the assumption that the mise cache answers · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. No code change: _se_tool in sync-engine/common now runs an installed tool with MISE_OFFLINE=1 by its name alone, and only a tool that is not installed uses @latest.",
+      "state": "closed"
     },
     {
       "id": "G4",
       "unit": "U3",
       "stage": "edit",
-      "text": "Verification ran test:setup-sync alone before the last two test fixes, and after them only inside mise run test · the run inside test stands for that line",
-      "state": "open"
+      "text": "Verification ran test:setup-sync alone before the last two test fixes, and after them only inside mise run test · the run inside test stands for that line · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. No code change: test:setup-sync ran alone on 2026-11-06 in the docs-design-split work, and its 125 cases passed.",
+      "state": "closed"
     },
     {
       "id": "G5",
