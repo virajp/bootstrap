@@ -42,9 +42,10 @@ None.
 ## Adapt to the repository
 
 1. If the repository has a `bunfig.toml`, the seed keeps it. Tell the user.
-2. If the repository uses both Bun and pnpm, ask the user which package
-   manager owns the dependencies. The `node` tool runs `pnpm install` when a
-   `package.json` exists.
+2. If the repository uses Bun and also pnpm or aube, ask the user which package
+   manager owns the dependencies. If the repository also selects `pnpm` or
+   `aube`, `setup:deps:node` runs it when a `package.json` exists. With only
+   `bun`, that task prints nothing.
 
 ## Migration
 

@@ -46,17 +46,19 @@ then keeps the repository equal to `bootstrap`, without an agent.
 | `packs/<pack>.md`   | One file for each pack of `repo/packs.toml`: the tools that it adds, and its questions.                                                      |
 | `vwf.md`            | The entry point for the vwf and stackgen plugins: the `adopt`, `add tools`, `remove tools`, `add plugins` and `remove plugins` instructions. |
 
-The tool files in `tools/` are `_security_base.md`, `android.md`, `bun.md`,
-`claude-tool.md`, `cloudflare.md`, `docker.md`, `doppler.md`, `dprint.md`,
-`flutter.md`, `fnox.md`, `gcloud.md`, `git.md`, `github.md`, `gitlab.md`,
-`gitleaks.md`, `grype.md`, `java.md`, `kotlin.md`, `linter.md`, `mise.md`,
-`node.md`, `osv-scanner.md`, `pre-commit.md`, `pulumi.md`, `python.md`,
+The tool files in `tools/` are `_security_base.md`, `android.md`, `apko.md`,
+`aube.md`, `bun.md`, `claude-tool.md`, `cloudflare.md`, `cosign.md`, `crane.md`,
+`docker.md`, `doppler.md`, `dprint.md`, `firebase.md`, `flutter.md`, `fnox.md`,
+`gcloud.md`, `git.md`, `github.md`, `gitlab.md`, `gitleaks.md`, `grype.md`,
+`java.md`, `kotlin.md`, `linter.md`, `melange.md`, `mise.md`, `node.md`,
+`osv-scanner.md`, `pnpm.md`, `pre-commit.md`, `pulumi.md`, `python.md`,
 `repo-sync.md`, `rust.md`, `swift.md` and `vscode.md`. The file of the
 `claude` tool is `claude-tool.md`, because a file system that ignores case
 reads `claude.md` as `CLAUDE.md`, and AI agents load that name as
 instructions.
 
-The pack files in `packs/` are `base.md` and `security.md`.
+The pack files in `packs/` are `base.md`, `container-build.md` and
+`security.md`.
 
 ## Where the rules are
 
@@ -298,6 +300,10 @@ not list it. Its tools are `mise`, `repo-sync`, `git`, `pre-commit`, `dprint`,
 of the
 `base` pack: a `[tools.<name>]` table for it only gives values. See
 [`packs/base.md`](packs/base.md).
+
+A repository with a `package.json` must select one package manager: `pnpm` or
+`aube`. If it selects none, or both, `setup:deps:node` stops the setup. See
+[`tools/node.md`](tools/node.md).
 
 For each selected tool, and each tool of the `base` pack, do the items in
 "Adapt to the repository" of its tool file.

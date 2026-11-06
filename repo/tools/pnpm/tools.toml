@@ -1,0 +1,20 @@
+# pnpm, the package manager of a repository that selects it. Select this tool or
+# the aube tool, not both.
+default_envs = [ "dev", "ci" ]
+depends = []
+extensions = []
+root_only = false
+
+# A repository without a package.json does not get the pnpm settings.
+[files."pnpm-workspace.yaml"]
+mode = "seed"
+requires = [ "package.json" ]
+
+# The mise config, generated into .config/mise/conf.d/pnpm/mise.<env>.toml.
+[mise.tools.pnpm]
+depends = [ "node" ]
+envs = [ "dev", "ci" ]
+version = "latest"
+
+[mise.shell_alias]
+npx = "pnpm dlx"

@@ -294,7 +294,7 @@ The user gave these dependencies for a Flutter app for Android:
 - `Dart`: the primary language of Flutter. It has its own package manager.
 - `Android-SDK`: necessary to build an Android app.
 - `Kotlin`: necessary for `Android-SDK`. `Gradle` is the package manager and
-  is part of `Kotlin`, as `pnpm` is part of `node`.
+  is part of `Kotlin`.
 - Kotlin DSL (`kotlin-dsl`) is the only supported build script language.
   Android and Flutter support it since 2025.
 

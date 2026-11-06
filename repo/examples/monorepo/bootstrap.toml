@@ -23,6 +23,9 @@ worktree_files = [ ".config/mise.local.toml", ".env" ]
 [tools.node]
 env = [ "dev", "ci" ]
 
+[tools.pnpm]
+env = [ "dev", "ci" ]
+
 # Override the defaults of the tools. The path after overrides is the path in
 # repo/tools/<tool>/tools.toml. Node 24 in dev, and Node 22 in CI.
 [overrides.mise.tools.node]

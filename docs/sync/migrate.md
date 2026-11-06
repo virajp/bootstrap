@@ -637,6 +637,25 @@ the key `required` is gone. `gitleaks`, `grype` and `osv-scanner` now have
 Values files do not change. `[packs.<name>]` and `[tools.<name>]` have the same
 form. The consumer does nothing.
 
+## M30: The `node` tool has no package manager
+
+The `node` tool no longer installs pnpm and no longer has the
+`pnpm-workspace.yaml` seed or the alias `npx`. The new `pnpm` and `aube` tools
+have them. A repository with a `package.json` selects one of them. Without a
+selection, `setup:deps:node` stops the setup. A repository without a
+`package.json` does nothing. A repository with only the `bun` tool does nothing.
+
+1. If the repository stays on pnpm, add `[tools.pnpm]` to
+   `.config/bootstrap.toml`. If it has `[tools.node]` with an `env` key, give
+   `[tools.pnpm]` the same `env`. The existing `pnpm-workspace.yaml` stays.
+2. If the repository moves to aube, add `[tools.aube]`. Then do "Adapt to the
+   repository" of `tools/aube.md`. Rename `pnpm-workspace.yaml` to
+   `aube-workspace.yaml` before the sync.
+3. Run `mise run setup:configs`, then `mise run setup`.
+
+No user-level config is necessary. The Mac tools no longer install pnpm, write
+`Library/Preferences/pnpm/config.yaml` or set `PNPM_HOME`.
+
 ## M29: The sync writes `.config/repo-generated.tsv`
 
 The sync now writes a manifest, `.config/repo-generated.tsv`, with one

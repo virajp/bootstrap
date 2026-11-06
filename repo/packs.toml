@@ -16,3 +16,9 @@ vscode = { default = true }
 gitleaks = { default = true }
 grype = { default = true }
 osv-scanner = { default = true }
+
+[pack.container-build]
+apko = { default = true }
+melange = { default = true }
+cosign = { default = true }
+crane = { default = true }

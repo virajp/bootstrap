@@ -1,14 +1,9 @@
-# Node and pnpm.
+# Node. A repository with a package.json also selects one package manager: the
+# pnpm or the aube tool.
 default_envs = [ "dev", "ci" ]
 depends = []
 extensions = [ "christian-kohler.npm-intellisense", "meganrogge.template-string-converter" ]
 root_only = false
-
-# A repository that uses node only as a dev tool has no package.json, and it
-# does not get the pnpm settings.
-[files."pnpm-workspace.yaml"]
-mode = "seed"
-requires = [ "package.json" ]
 
 # The mise config, generated into .config/mise/conf.d/node/mise.<env>.toml.
 [mise.settings]
@@ -19,13 +14,5 @@ npm.package_manager = "aube"
 envs = [ "dev", "ci" ]
 version = "lts"
 
-[mise.tools.pnpm]
-depends = [ "node" ]
-envs = [ "dev", "ci" ]
-version = "latest"
-
 [mise.env]
 _.path = { path = "node_modules/.bin", tools = true }
-
-[mise.shell_alias]
-npx = "pnpm dlx"
