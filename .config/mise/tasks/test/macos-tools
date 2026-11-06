@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#MISE description="Render every Mac tool with the sample values file, with no network"
+#MISE description="Render every Mac tool with the sample values file, and compare the shared mise values of both sides, with no network"
 
 # Calls `setup_sync` of the working tree's sync-engine/ directly, with every
 # tool of macos/tools/ and a copy of macos/examples/macos.toml, into a temp HOME.
@@ -12,7 +12,9 @@
 # `stage = "init"`, else 0, the second run exits 0, the example selects every
 # tool of macos/tools/, and every .json, .yaml/.yml and .toml file in the temp
 # HOME parses (jq or yq). Case 2: the example without the answer `config_path`
-# of macos-setup exits 2, and the message names the key.
+# of macos-setup exits 2, and the message names the key. Case 3: a mise tool or a
+# mise setting on both sides of repo/tools/ and macos/tools/ has one value, and a
+# fixture proves that the check finds a difference.
 
 set -euo pipefail
 
@@ -229,6 +231,66 @@ if grep -qF 'macos-setup: set config_path in [tools.macos-setup] of macos.toml' 
   pass "the message names the key"
 else
   fail "the message does not name the key 'config_path'"
+fi
+
+# ---- case 3: the two sides agree on a shared mise tool and setting --------------
+
+# The keys that can differ between the two sides, for example `tool:python`. Each
+# entry needs a reason in a comment here.
+drift_allowed=''
+
+# _mise_rows <root> <side>: one sorted row for each mise tool and mise setting of
+# the side: `tool:<name>=<version>` or `setting:<path>=<value>`.
+_mise_rows() {
+  local t
+  for t in "$1/$2"/tools/*/tools.toml; do
+    _yq -p toml -o yaml '(.mise.tools // {} | to_entries | .[] | "tool:" + .key + "=" + (.value.version // "")), (.mise.settings // {} | .. | select(kind == "scalar") | "setting:" + (path | .[2:] | join(".")) + "=" + (. | tostring))' "$t"
+  done | sort -u
+}
+
+# _mise_drift <root>: one line for each key that has two values. The count of the
+# shared keys goes to the file $drift_count.
+_mise_drift() {
+  _mise_rows "$1" repo > "$tmp/drift-repo.txt"
+  _mise_rows "$1" macos > "$tmp/drift-macos.txt"
+  awk -F= -v allowed=" $drift_allowed " -v count_file="$drift_count" '
+    FNR == NR { repo[$1] = $0; next }
+    $1 in repo {
+      shared++
+      if (repo[$1] != $0 && index(allowed, " " $1 " ") == 0) print "repo " repo[$1] ", macos " $0
+    }
+    END { print shared + 0 > count_file }
+  ' "$tmp/drift-repo.txt" "$tmp/drift-macos.txt"
+}
+
+name="drift"
+# A real file: with /dev/null, `fail` returns 1, and `set -e` stops at the first
+# difference.
+log="$tmp/drift-log.txt"
+: > "$log"
+drift_count="$tmp/drift-count.txt"
+drift=$(_mise_drift "$root")
+if [[ -z $drift ]]; then
+  pass "the two sides agree on $(cat "$drift_count") shared mise tools and settings"
+else
+  while IFS= read -r line; do
+    fail "two values: $line"
+  done <<< "$drift"
+fi
+
+# The check must find a difference, or the pass above proves nothing.
+name="drift fixture"
+fixture="$tmp/drift-fixture"
+mkdir -p -- "$fixture/repo/tools/a" "$fixture/macos/tools/a"
+printf '%s\n' '[mise.settings]' 'a.b = true' 'c = "same"' '[mise.tools.x]' 'version = "1"' '[mise.tools.y]' 'version = "2"' \
+  > "$fixture/repo/tools/a/tools.toml"
+printf '%s\n' '[mise.settings]' 'a.b = false' 'c = "same"' '[mise.tools.x]' 'version = "9"' '[mise.tools.y]' 'version = "2"' \
+  > "$fixture/macos/tools/a/tools.toml"
+drift=$(_mise_drift "$fixture")
+if [[ $drift == *'tool:x=1'*'tool:x=9'* && $drift == *'setting:a.b=true'*'setting:a.b=false'* && $drift != *'tool:y'* && $drift != *'setting:c'* ]]; then
+  pass "a different version and a different setting are found, and an equal one is not"
+else
+  fail "wrong result: $drift"
 fi
 
 if ((failures)); then
