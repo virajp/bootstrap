@@ -66,7 +66,7 @@ mise prune --yes
 if ! task_exists upgrade:brew; then
   print_warn "Skipping upgrade:brew: no such task (its tool is not selected)"
 elif command -v fnox > /dev/null 2>&1; then
-  fnox exec --profile brew -- mise run upgrade:brew
+  fnox -c "$HOME/.config/fnox/config.toml" exec --profile brew -- mise run upgrade:brew
 else
   print_warn "fnox is not on PATH: running upgrade:brew without its GitHub token"
   mise run upgrade:brew

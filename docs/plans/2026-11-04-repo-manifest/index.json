@@ -418,29 +418,29 @@
       "id": "G8",
       "unit": "U3",
       "stage": "security",
-      "text": "D7 refuses only no-TAB, empty, absolute and .. rows, and D11 does not say how paths compare · the security loop rules that a manifest path is normalized (no . or empty segment) and that a candidate that is the same file as a handled path is spared, which covers case variants",
-      "state": "open"
+      "text": "D7 refuses only no-TAB, empty, absolute and .. rows, and D11 does not say how paths compare · the security loop rules that a manifest path is normalized (no . or empty segment) and that a candidate that is the same file as a handled path is spared, which covers case variants RULING (2026-11-06-security-gaps D13): Accepted: the run already applied this rule. No code change.",
+      "state": "closed"
     },
     {
       "id": "G9",
       "unit": "U3",
       "stage": "security",
-      "text": "D7 covers listed paths but not the manifest file itself · the security loop rules that repo mode refuses a manifest that is a symlink or not a regular file",
-      "state": "open"
+      "text": "D7 covers listed paths but not the manifest file itself · the security loop rules that repo mode refuses a manifest that is a symlink or not a regular file RULING (2026-11-06-security-gaps D13): Accepted: the run already applied this rule. No code change.",
+      "state": "closed"
     },
     {
       "id": "G10",
       "unit": "U3",
       "stage": "security",
-      "text": "D7 does not bound a row to its own repository · the security loop rules that a row with a .git segment, or below a folder with its own .git (a git submodule, or a nested clone), is refused, since each submodule has its own manifest; a folder member without .git is part of the root tree and is not refused",
-      "state": "open"
+      "text": "D7 does not bound a row to its own repository · the security loop rules that a row with a .git segment, or below a folder with its own .git (a git submodule, or a nested clone), is refused, since each submodule has its own manifest; a folder member without .git is part of the root tree and is not refused RULING (2026-11-06-security-gaps D13): Accepted: the run already applied this rule. No code change.",
+      "state": "closed"
     },
     {
       "id": "G11",
       "unit": "U1",
       "stage": "security",
-      "text": "U1: the plan does not name the label of a manifest read failure · assumed .config/repo-generated.tsv, not stale files, because the failure is in that file",
-      "state": "open"
+      "text": "U1: the plan does not name the label of a manifest read failure · assumed .config/repo-generated.tsv, not stale files, because the failure is in that file RULING (2026-11-06-security-gaps D13): Accepted: the run already applied this label. No code change.",
+      "state": "closed"
     },
     {
       "id": "G12",

@@ -509,12 +509,44 @@ _ss_plan() {
   done
 }
 
+# Keep the folder `$_SS_HOME/.ssh` at mode 700, once in each run: a new `~/.ssh`
+# otherwise takes the mode of the umask. The check uses the path in the home folder,
+# not the real path of a linked file, and the `/.` makes `stat` read the target when
+# the folder is a link. After a failed `chmod` it stays not done, so each later
+# target below `.ssh/` also fails and is not written. Returns 1 for that failure.
+_ss_ssh_folder() {
+  local dry_run=$1 dir=$_SS_HOME/.ssh show=$_SS_TILDE/.ssh mode=''
+  [[ -z $_SS_SSH_DONE ]] || return 0
+  if [[ -d $dir ]]; then
+    mode=$(_se_mode "$dir/.") || mode=''
+    if [[ $mode == 700 ]]; then
+      _SS_SSH_DONE=1
+      return 0
+    fi
+  elif ((dry_run)); then
+    _SS_SSH_DONE=1
+    return 0
+  fi
+  if ((dry_run)); then
+    _SS_SSH_DONE=1
+    _se_outcome changed "$show" '' "would chmod 700 $show"
+    return 0
+  fi
+  if ! mkdir -p -- "$dir" || ! chmod -- 700 "$dir"; then
+    _se_outcome failed "$show" 'cannot chmod' "cannot chmod $show"
+    return 1
+  fi
+  _SS_SSH_DONE=1
+  _se_outcome changed "$show" '' "chmod 700  $show"
+  _SS_CHANGED=1
+}
+
 # Sync one file of the plan: the real path of its target, the seed gate, the
-# `requires`, the unblock, then the render or the copy, the parse check, the merge,
-# and the compare and the write of `_se_finish`. A generated file with an entry of
-# `requires` that is not there leaves _SS_HANDLED, so the stale rule removes a listed
-# copy with the header. Sets _SS_CHANGED for a change on disk, and adds the manifest
-# row of a generated file to _SS_ROWS.
+# `requires`, the unblock, the mode of the `.ssh` folder, then the render or the
+# copy, the parse check, the merge, and the compare and the write of `_se_finish`. A
+# generated file with an entry of `requires` that is not there leaves _SS_HANDLED,
+# so the stale rule removes a listed copy with the header. Sets _SS_CHANGED for a
+# change on disk, and adds the manifest row of a generated file to _SS_ROWS.
 _ss_file() {
   local tool=$1 path=$2 target=$3 fmode=$4 format=$5 dry_run=$6
   local src show real tmp destdir mode rc=0 t p req top target_format
@@ -574,6 +606,7 @@ _ss_file() {
       return 1
     }
   fi
+  [[ $target != .ssh/* ]] || _ss_ssh_folder "$dry_run" || return 1
   # The temp file is next to the real path, so the final mv is atomic.
   _se_tmp "$destdir" > /dev/null || {
     _se_outcome failed "$show" "cannot create a temp file in $destdir" "cannot create a temp file in $destdir"
@@ -816,7 +849,7 @@ setup_sync() {
     local short=${commit:0:7}
     _se_info "bootstrap ${short:-an unknown commit} · $(_se_count_words "$_SS_TOOLS") tools"
   fi
-  _SS_OK=0 _SS_TOTAL=0 _SS_FAILED='' _SS_ROWS='' _SS_CHANGED=''
+  _SS_OK=0 _SS_TOTAL=0 _SS_FAILED='' _SS_ROWS='' _SS_CHANGED='' _SS_SSH_DONE=''
   _SS_OLD_ROWS=$(_se_manifest_read macos "$manifest") || _SS_OLD_ROWS=''
 
   if ((dry_run)); then

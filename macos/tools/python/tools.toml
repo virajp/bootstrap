@@ -7,7 +7,6 @@ description = "Python and uv through mise, with uv as the pipx backend"
 # every pipx: tool installs through uv
 pipx.uvx = true
 python.compile = false
-python.uv_venv_auto = "create|source"
 
 [mise.tools.python]
 version = "3.14"

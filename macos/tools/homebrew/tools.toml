@@ -22,4 +22,4 @@ HOMEBREW_NO_ANALYTICS = "true"
 HOMEBREW_NO_ENV_HINTS = "1"
 
 [mise.shell_alias]
-brew = "fnox exec -P brew -- brew"
+brew = "fnox -c $HOME/.config/fnox/config.toml exec -P brew -- brew"
