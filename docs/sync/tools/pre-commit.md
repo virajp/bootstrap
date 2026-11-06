@@ -61,6 +61,27 @@ hook left goes too. Thus a repository with one core branch gets only
 `--branch <its branch>`. `repo-sync` validates `direct_commit` first: see
 `repo-sync.md`.
 
+## Excludes
+
+The rendered config has one top-level `exclude`. No hook reads a path that
+matches it. The sync merges the items of the `exclude` list from three sources,
+in this order, and the template joins them with `|`:
+
+1. `[defaults]` of this tool: the mise lock files.
+2. `[contributes.pre-commit]` of each selected tool.
+3. `[tools.pre-commit]` of the values file.
+
+A later source adds to the list. It does not replace the earlier items, and a
+repeated item stays once. Each item is a Python regular expression.
+
+```toml
+[tools.pre-commit]
+exclude = [ "(^|/)vendor/", '\.snap$' ]
+```
+
+Do not use an empty item. An empty pattern matches each path, so no hook reads
+a file.
+
 ## Files the repository supplies
 
 | File                                | Used by                                                                                                                             |
@@ -71,6 +92,8 @@ hook left goes too. Thus a repository with one core branch gets only
 
 1. Move each repository hook that no tool ships to
    `.config/repo-sync/pre-commit.yaml`.
+2. Move each repository `exclude` pattern to the `exclude` list of
+   `[tools.pre-commit]`.
 
 ## Migration
 

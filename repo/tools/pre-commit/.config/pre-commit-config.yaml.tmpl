@@ -19,8 +19,9 @@ default_install_hook_types:
 
 default_stages: [ pre-commit ]
 
-# Generated files. No hook may rewrite them.
-exclude: (^|/)\.config/mise/locks/
+# No hook reads these paths: the `exclude` values of this tool, the selected
+# tools and `[tools.pre-commit]` of `.config/bootstrap.toml`, merged.
+exclude: <% conv.Join .config.exclude "|" | strings.Quote %>
 
 <%- /* A YAML value in the style dprint writes: quoted strings, `[ a, b ]` lists. */ -%>
 <%- define "value" %><% if test.IsKind "slice" . %>[ <% range $i, $x := . %><% if $i %>, <% end %><% $x | strings.Quote %><% end %> ]<% else if test.IsKind "string" . %><% . | strings.Quote %><% else %><% . %><% end %><% end %>

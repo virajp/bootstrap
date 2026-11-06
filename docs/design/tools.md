@@ -215,8 +215,8 @@ A `tools.toml` can have three optional tables for the values of a tool. A
 template reads
 the values as `.config` (the values of its tool) and `.all` (the values of each
 selected
-tool, by tool name). No tool of `repo/tools/` uses these tables now. Mac tools
-such as
+tool, by tool name). The `pre-commit` tool of `repo/tools/` uses `[defaults]`,
+and no other tool of `repo/tools/` uses these tables now. Mac tools such as
 `fish`, `git`, `ssh`, `gh` and `macos-defaults` use `[defaults]` or
 `[questions]`. The
 Mac tools `1password` and `orbstack` use `[contributes]`. The merge of these

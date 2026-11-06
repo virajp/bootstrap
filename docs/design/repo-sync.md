@@ -239,6 +239,13 @@ The `pre-commit` tool renders `.config/pre-commit-config.yaml` from
 file
 `.config/repo-sync/pre-commit.yaml`.
 
+The top-level `exclude` of the config comes from `.config.exclude`, the list of
+the values of the tool. The list has the `[defaults]` of the tool, then
+`[contributes.pre-commit]` of each selected tool, then `[tools.pre-commit]` of
+the values file. `pre-commit` is a base tool, so each later source appends its
+new items. See [sync-engine.md](sync-engine.md#the-values-merge). pre-commit
+reads one regular expression, so the template joins the items with `|`.
+
 Before the render, the sync removes each `"--branch", "<b>"` pair of a
 `no-commit-to-branch` hook whose core branch does not exist or has
 `direct_commit = true`.

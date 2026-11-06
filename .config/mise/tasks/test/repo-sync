@@ -1329,6 +1329,31 @@ run_case "a seed that exists, its requires present" 0 "$node_values" node_seed_e
 case_args=' ' run_case "a seed, its requires present" 0 "$node_values" node_package '' check_seed_written
 run_case "a seed, its requires_found absent" 0 "$fixture_values" fixture_seed_found '' check_seed_found_skip
 
+# The top-level exclude of the pre-commit config: the default, then a
+# contribution of a selected tool, then the values file.
+precommit_exclude_tool() {
+  printf '%s\n' '[contributes.pre-commit]' "exclude = [ '(^|/)contributed/' ]" \
+    >> "$clone/repo/tools/dprint/tools.toml"
+}
+check_precommit_exclude_default() {
+  check_that "exclude, only the default" grep -qxF \
+    'exclude: "(^|/)\\.config/mise/locks/"' "$consumer/.config/pre-commit-config.yaml"
+}
+check_precommit_exclude_merged() {
+  check_that "exclude, all sources merged in order" grep -qxF \
+    'exclude: "(^|/)\\.config/mise/locks/|(^|/)contributed/|(^|/)vendor/|\\.snap$"' \
+    "$consumer/.config/pre-commit-config.yaml"
+}
+precommit_exclude_values="environments = [ \"dev\" ]
+[tools.pre-commit]
+exclude = [ '(^|/)vendor/', '\\.snap\$' ]"
+case_args=' ' run_case "pre-commit exclude, no values" 0 'environments = [ "dev" ]' '' '' check_precommit_exclude_default
+case_args=' ' run_case "pre-commit exclude, default, contribution and values" 0 "$precommit_exclude_values" \
+  precommit_exclude_tool '' check_precommit_exclude_merged
+run_case "pre-commit exclude, a string and not a list" 2 'environments = [ "dev" ]
+[tools.pre-commit]
+exclude = "vendor"' '' 'sets exclude to a string, but it is a list'
+
 # A generated target with requires_found: found 3 folders down, not found 5
 # folders down.
 gen_found() {

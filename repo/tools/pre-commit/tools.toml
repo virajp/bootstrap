@@ -4,6 +4,11 @@ depends = []
 extensions = []
 root_only = false
 
+# The first items of the top-level `exclude` of the rendered config.
+[defaults]
+# Generated files. No hook may rewrite them.
+exclude = [ '(^|/)\.config/mise/locks/' ]
+
 [[precommit]]
 repo = "https://github.com/pre-commit/pre-commit-hooks"
 rev = "v6.0.0"
