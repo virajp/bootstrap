@@ -20,8 +20,9 @@ fi
 print_subheader "Updating Homebrew ..."
 brew update --force # --verbose
 
-# Formulae, casks and mas apps are mise's ([mise.bootstrap.packages] in tools.toml (generated into conf.d/<tool>/mise.toml));
-# VS Code extensions are brew's (Brewfile, via brew:casks)
+# Formulae, casks and mas apps are mise's: [mise.bootstrap.packages] in
+# tools.toml, generated into conf.d/<tool>/mise.toml. VS Code extensions are
+# brew's (Brewfile, via brew:casks).
 
 # Tailscale runs as a root service and needs special handling before the
 # generic upgrade below would otherwise fail on its root-owned keg.

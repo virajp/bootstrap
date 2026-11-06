@@ -363,8 +363,8 @@
       "id": "G1",
       "unit": "U1",
       "stage": "edit",
-      "text": "The D4 text inserted into upgrade/brew and brew/casks sits inside the existing parentheses, so each comment ends in )) and runs past 80 columns · kept the exact plan wording, no reflow",
-      "state": "open"
+      "text": "The D4 text inserted into upgrade/brew and brew/casks sits inside the existing parentheses, so each comment ends in )) and runs past 80 columns · kept the exact plan wording, no reflow · closed: the user ruled on 2026-11-06 with the words: Yes, fix and close. Fixed: the two comments of homebrew are now shorter lines with the same facts; test:setup-sync and test:macos-tools passed.",
+      "state": "closed"
     },
     {
       "id": "G2",
@@ -377,8 +377,8 @@
       "id": "G3",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1 reports its first compound Bash call (mkdir, heredocs, sed) was denied by the permission system with no reason, and it then made the same edits with the Write tool and a python script in the session scratchpad (cp -p and line edits) · the unit proceeded on the assumption that the denial did not forbid the edits themselves; a person should judge that",
-      "state": "open"
+      "text": "U1 reports its first compound Bash call (mkdir, heredocs, sed) was denied by the permission system with no reason, and it then made the same edits with the Write tool and a python script in the session scratchpad (cp -p and line edits) · the unit proceeded on the assumption that the denial did not forbid the edits themselves; a person should judge that · closed: the user ruled on 2026-11-06 with the words: Yes, fix and close. Accepted: commit 4259b04 only adds 38 files that the plan asked for, and test:macos-tools passed on 2026-11-06. The reason for the denial is not known.",
+      "state": "closed"
     },
     {
       "id": "G4",
@@ -433,8 +433,8 @@
       "id": "G11",
       "unit": "U4",
       "stage": "edit",
-      "text": "CLAUDE.md four-key tools.toml rule and docs/design/tools.md state a repo-tool rule without limiting it, while sync-engine/setup-sync rejects those keys in a Mac tool, and no owned doc describes the Mac description key · predates this delta; left unedited; a later docs plan should own it",
-      "state": "open"
+      "text": "CLAUDE.md four-key tools.toml rule and docs/design/tools.md state a repo-tool rule without limiting it, while sync-engine/setup-sync rejects those keys in a Mac tool, and no owned doc describes the Mac description key · predates this delta; left unedited; a later docs plan should own it · closed: the user ruled on 2026-11-06 with the words: Yes, fix and close. Already fixed: docs/design/tools.md has repo and macos columns and limits the four necessary keys to the repo side; CLAUDE.md has no four-key rule.",
+      "state": "closed"
     }
   ],
   "overrides": [],
