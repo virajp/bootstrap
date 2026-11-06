@@ -306,22 +306,22 @@
       "id": "G5",
       "unit": "U2",
       "stage": "edit",
-      "text": "sync-engine/repo-sync header rule 'no task needs a #MISE line for gomplate, jq and yq, and this works in a shell without MISE_ENV=dev': docs/design/sync-engine.md 'The tool calls' lacks it · Under D5 the header line stays in this plan.",
-      "state": "open"
+      "text": "sync-engine/repo-sync header rule 'no task needs a #MISE line for gomplate, jq and yq, and this works in a shell without MISE_ENV=dev': docs/design/sync-engine.md 'The tool calls' lacks it · Under D5 the header line stays in this plan. · closed: the user ruled on 2026-11-06 with the words: Yes, apply them. f562333 adds the rule to docs/design/sync-engine.md, The tool calls",
+      "state": "closed"
     },
     {
       "id": "G6",
       "unit": "U2",
       "stage": "edit",
-      "text": "sync-engine/repo-sync header rule 'this script calls pre-commit without mise x --': docs/design/repo-sync.md lacks it · Under D5 the header line stays in this plan.",
-      "state": "open"
+      "text": "sync-engine/repo-sync header rule 'this script calls pre-commit without mise x --': docs/design/repo-sync.md lacks it · Under D5 the header line stays in this plan. · closed: the user ruled on 2026-11-06 with the words: Yes, apply them. f562333 adds the rule to docs/design/repo-sync.md, The pre-commit config",
+      "state": "closed"
     },
     {
       "id": "G7",
       "unit": "U1",
       "stage": "edit",
-      "text": "macos/packs.toml header comment \"The member order is the sync order\": setup-sync sorts the tools by name in each stage, so the comment is false; no unit owns the file, and U3 applies a DOCS FALSIFIED line only inside its owned files · The comment stays as it is; a later change corrects it. No behavior depends on it.",
-      "state": "open"
+      "text": "macos/packs.toml header comment \"The member order is the sync order\": setup-sync sorts the tools by name in each stage, so the comment is false; no unit owns the file, and U3 applies a DOCS FALSIFIED line only inside its owned files · The comment stays as it is; a later change corrects it. No behavior depends on it. · closed: the user ruled on 2026-11-06 with the words: Yes, apply them. f562333 corrects the comment in macos/packs.toml; test:setup-sync and test:macos-tools pass",
+      "state": "closed"
     },
     {
       "id": "G8",
