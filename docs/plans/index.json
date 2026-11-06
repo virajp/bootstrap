@@ -20,26 +20,6 @@
       "backlog_pieces": []
     },
     {
-      "id": "2026-11-04-repo-files-table",
-      "folder": "docs/plans/2026-11-04-repo-files-table",
-      "kind": "change",
-      "title": "[files] tables and merge mode for repo tools",
-      "target_repo": null,
-      "priority": 30,
-      "status": "COMPLETE",
-      "started": "2026-11-04T06:17:19.956Z",
-      "ended": "2026-11-04T09:10:04.874Z",
-      "gaps": {
-        "open": 3,
-        "moved_to": []
-      },
-      "requires": [
-        "2026-11-04-sync-engine-core"
-      ],
-      "backlog": [],
-      "backlog_pieces": []
-    },
-    {
       "id": "2026-11-04-repo-manifest",
       "folder": "docs/plans/2026-11-04-repo-manifest",
       "kind": "change",

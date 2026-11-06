@@ -448,8 +448,8 @@
       "id": "G6",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: the plan gives no exact text for a bad requires or requires_found · each prefixed <tool>/tools.toml: [files.\"<target>\"], requires: <p> must be a path relative to the repository root, with no .. part; requires_found: <n> must be a file name, with no /; <key> must be a non-empty list of paths|file names",
-      "state": "open"
+      "text": "U1: the plan gives no exact text for a bad requires or requires_found · each prefixed <tool>/tools.toml: [files.\"<target>\"], requires: <p> must be a path relative to the repository root, with no .. part; requires_found: <n> must be a file name, with no /; <key> must be a non-empty list of paths|file names · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. Accepted with no code change: the messages of U1 in sync-engine/repo-sync name the tool, the key and the rule.",
+      "state": "closed"
     },
     {
       "id": "G7",
@@ -462,15 +462,15 @@
       "id": "G8",
       "unit": "U3",
       "stage": "edit",
-      "text": "U3: the unit file and the index.md Tests fact name node seed_requires cases, and test:repo-sync had no such case · U3 added new node cases for absent, exists and present",
-      "state": "open"
+      "text": "U3: the unit file and the index.md Tests fact name node seed_requires cases, and test:repo-sync had no such case · U3 added new node cases for absent, exists and present · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. No code change: U3 added the node cases, at the seed cases of test:repo-sync.",
+      "state": "closed"
     },
     {
       "id": "G9",
       "unit": "U3",
       "stage": "edit",
-      "text": "U3: 03-tests.md lists no case for the sparing of a seed or merge target by _se_unblock and _rs_stale (D15), and no case that a merge runs before dprint in the compare (D10 order; checked by hand only) · left to the review unit U4",
-      "state": "open"
+      "text": "U3: 03-tests.md lists no case for the sparing of a seed or merge target by _se_unblock and _rs_stale (D15), and no case that a merge runs before dprint in the compare (D10 order; checked by hand only) · left to the review unit U4 · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. Accepted with no new test case: _se_unblock never removes a file with no bootstrap header, the spare list is a second protection, and _rs_stale no longer exists. The merge order before dprint stays without a case.",
+      "state": "closed"
     },
     {
       "id": "G10",
