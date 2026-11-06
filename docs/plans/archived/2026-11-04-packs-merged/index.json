@@ -386,15 +386,15 @@
       "id": "G4",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: the plan does not place the one-line check in the validation order · assumed right after the entry-key check and before the pack-named-like-a-tool check, as all three are code 2 shape errors",
-      "state": "open"
+      "text": "U1: the plan does not place the one-line check in the validation order · assumed right after the entry-key check and before the pack-named-like-a-tool check, as all three are code 2 shape errors · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. Accepted with no code change: all these checks stop with code 2, so the order changes only which message shows first.",
+      "state": "closed"
     },
     {
       "id": "G5",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: the awk scan recognises only [pack.<name>] headers without inner spaces or dots · assumed fine: a [ pack . a ] or [pack.\"a.b\"] header stops with code 2 and a misleading must-be-on-one-line message, never a wrong selection",
-      "state": "open"
+      "text": "U1: the awk scan recognises only [pack.<name>] headers without inner spaces or dots · assumed fine: a [ pack . a ] or [pack.\"a.b\"] header stops with code 2 and a misleading must-be-on-one-line message, never a wrong selection · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. Accepted with no code change: an unusual header stops with code 2 and never gives a wrong selection, and bootstrap owns both packs files, which have no such header.",
+      "state": "closed"
     },
     {
       "id": "G6",
@@ -421,8 +421,8 @@
       "id": "G9",
       "unit": "U2",
       "stage": "edit",
-      "text": "D9 and D11 conflict: with scanner depends on _security_base and the depth-first walk, the tool order becomes ... vscode _security_base gitleaks grype osv-scanner, not the ... vscode gitleaks grype osv-scanner _security_base of today, while D11 says the tool order stays · assumed D9 stands and D11 holds for the order that has an effect: only _security_base of the four has [[precommit]], the pack base is always selected, so the hook order is unchanged, and 03-tests.md itself pins vscode, then the security tools; U3 pins the new inner order",
-      "state": "open"
+      "text": "D9 and D11 conflict: with scanner depends on _security_base and the depth-first walk, the tool order becomes ... vscode _security_base gitleaks grype osv-scanner, not the ... vscode gitleaks grype osv-scanner _security_base of today, while D11 says the tool order stays · assumed D9 stands and D11 holds for the order that has an effect: only _security_base of the four has [[precommit]], the pack base is always selected, so the hook order is unchanged, and 03-tests.md itself pins vscode, then the security tools; U3 pins the new inner order · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. Accepted with no code change: D9 stands, the hook order stays because only _security_base of the four has [[precommit]], and base_tools of test:repo-sync holds the new order.",
+      "state": "closed"
     },
     {
       "id": "G10",
