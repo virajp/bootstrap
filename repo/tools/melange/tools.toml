@@ -1,0 +1,10 @@
+# melange, which builds apk packages from a declarative pipeline.
+default_envs = [ "dev", "ci" ]
+depends = []
+extensions = []
+root_only = false
+
+# The mise config, generated into .config/mise/conf.d/melange/mise.<env>.toml.
+[mise.tools.melange]
+envs = [ "dev", "ci" ]
+version = "latest"

@@ -84,7 +84,6 @@ print_subheader "Running mise doctor ..."
 mise doctor --quiet --silent > /dev/null
 
 run_task_if_exists upgrade:npm
-run_task_if_exists upgrade:pnpm
 
 run_task_if_exists upgrade:ai
 

@@ -1292,10 +1292,16 @@ run_case "[files], requires_found an empty list" 2 "$no_tool_values" files_found
 run_case "[files], two errors in one table" 2 "$no_tool_values" files_two_errors \
   '[files."a.txt"] format must be' check_files_two_errors
 
-# A seed: the pnpm-workspace.yaml of the node tool, with
+# A seed: the pnpm-workspace.yaml of the pnpm tool, with
 # requires = package.json.
 node_values='environments = [ "dev" ]
-[tools.node]'
+[tools.pnpm]'
+aube_values='environments = [ "dev" ]
+[tools.aube]'
+check_aube_seed_written() {
+  check_that "the aube seed: written" test -s "$consumer/aube-workspace.yaml"
+  check_that "the aube seed: no pnpm seed" test ! -e "$consumer/pnpm-workspace.yaml"
+}
 node_own_seed='# my own settings'
 node_package() { : > "$consumer/package.json"; }
 node_seed_exists() { printf '%s\n' "$node_own_seed" > "$consumer/pnpm-workspace.yaml"; }
@@ -1327,6 +1333,7 @@ run_case "a seed, its requires absent" 0 "$node_values" '' '' check_seed_skip
 run_case "a seed that exists, its requires absent" 0 "$node_values" node_seed_exists '' check_seed_kept
 run_case "a seed that exists, its requires present" 0 "$node_values" node_seed_exists_package '' check_seed_kept
 case_args=' ' run_case "a seed, its requires present" 0 "$node_values" node_package '' check_seed_written
+case_args=' ' run_case "the aube seed, its requires present" 0 "$aube_values" node_package '' check_aube_seed_written
 run_case "a seed, its requires_found absent" 0 "$fixture_values" fixture_seed_found '' check_seed_found_skip
 
 # The top-level exclude of the pre-commit config: the default, then a

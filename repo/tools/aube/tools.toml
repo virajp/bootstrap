@@ -1,0 +1,20 @@
+# aube, the package manager of a repository that selects it. Select this tool or
+# the pnpm tool, not both.
+default_envs = [ "dev", "ci" ]
+depends = []
+extensions = []
+root_only = false
+
+# A repository without a package.json does not get the aube settings.
+[files."aube-workspace.yaml"]
+mode = "seed"
+requires = [ "package.json" ]
+
+# The mise config, generated into .config/mise/conf.d/aube/mise.<env>.toml.
+[mise.tools.aube]
+depends = [ "node" ]
+envs = [ "dev", "ci" ]
+version = "latest"
+
+[mise.shell_alias]
+npx = "aubx"

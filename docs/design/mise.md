@@ -224,14 +224,18 @@ npm.package_manager = "aube"
 
 [mise.env] # folder class: dev and ci
 _.path = { path = "node_modules/.bin", tools = true }
+```
 
+The `pnpm` tool is also in `dev` and `ci`. Its `tools.toml` has:
+
+```toml
 [mise.shell_alias] # dev only: an alias is for a person at a terminal
 npx = "pnpm dlx"
 ```
 
-So `conf.d/node/mise.dev.toml` gets `[settings]`, `[env]` and
-`[shell_alias]`, and `conf.d/node/mise.ci.toml` gets only `[settings]` and
-`[env]`.
+So `conf.d/node/mise.dev.toml` and `conf.d/node/mise.ci.toml` each get
+`[settings]` and `[env]`. `conf.d/pnpm/mise.dev.toml` gets `[shell_alias]`, and
+`conf.d/pnpm/mise.ci.toml` does not get it.
 
 The `mise` tool selects the binaries of the host with one table for each
 environment:
@@ -492,43 +496,49 @@ stops the sync. The sync writes a seed only when it is missing.
 
 This table has the mise tools of `repo/tools/` now.
 
-| Tool          | mise tool                | Version  | `envs`  | mise `depends` | Other `[mise.*]` sections                           |
-| ------------- | ------------------------ | -------- | ------- | -------------- | --------------------------------------------------- |
-| `android`     | `android-sdk`            | `23`     | dev, ci | `java`         |                                                     |
-| `dprint`      | `dprint`                 | `latest` | dev, ci |                |                                                     |
-| `git`         | `worktrunk`              | `latest` | dev     |                |                                                     |
-| `gitleaks`    | `gitleaks`               | `latest` | dev, ci |                |                                                     |
-| `grype`       | `grype`                  | `latest` | dev, ci |                |                                                     |
-| `linter`      | `npm:@virajp.dev/linter` | `latest` | dev, ci | `node`         |                                                     |
-| `linter`      | `shellcheck`             | `latest` | dev, ci |                |                                                     |
-| `mise`        | `jq`                     | `latest` | dev, ci |                | `tasks` (`init`), `shell_alias`; `mise_env` (`os`)  |
-| `mise`        | `yq`                     | `latest` | dev, ci |                |                                                     |
-| `osv-scanner` | `osv-scanner`            | `latest` | dev, ci |                |                                                     |
-| `pre-commit`  | `pre-commit`             | `latest` | dev     | `python`, `uv` | `env` (`PRE_COMMIT_HOME`), `shell_alias`            |
-| `repo-sync`   | `gomplate`               | `latest` | dev     |                |                                                     |
-| `bun`         | `bun`                    | `latest` | dev, ci |                |                                                     |
-| `cloudflare`  | `npm:cf`                 | `latest` | dev, ci | `node`         |                                                     |
-| `doppler`     | `doppler`                | `latest` | dev     |                |                                                     |
-| `flutter`     | `flutter`                | `3`      | dev, ci | `android-sdk`  |                                                     |
-| `fnox`        | `fnox`                   | `latest` | dev     |                | `env` (`FNOX_CONFIG_DIR`)                           |
-| `gcloud`      | `gcloud`                 | `latest` | dev, ci | `python`, `uv` | `env` (`CLOUDSDK_PYTHON`)                           |
-| `github`      | `gh`                     | `latest` | dev, ci |                |                                                     |
-| `github`      | `actionlint`             | `latest` | dev, ci |                |                                                     |
-| `gitlab`      | `glab`                   | `latest` | dev, ci |                |                                                     |
-| `java`        | `java`                   | `lts`    | dev, ci |                | `settings`                                          |
-| `kotlin`      | `ktlint`                 | `latest` | dev, ci |                |                                                     |
-| `kotlin`      | `github:detekt/detekt`   | `latest` | dev, ci |                |                                                     |
-| `kotlin`      | `http:kotlin-lsp`        | `latest` | dev     |                | In `[mise_env.dev.tools]`. Platform URLs for macOS  |
-| `node`        | `node`                   | `lts`    | dev, ci |                | `settings`, `env` (`_.path`), `shell_alias` (`npx`) |
-| `node`        | `pnpm`                   | `latest` | dev, ci | `node`         |                                                     |
-| `pulumi`      | `pulumi`                 | `latest` | dev     |                |                                                     |
-| `python`      | `python`                 | `3.14`   | dev, ci |                | `settings`, `env` (`UV_*`)                          |
-| `python`      | `uv`                     | `latest` | dev, ci | `python`       |                                                     |
-| `python`      | `ruff`                   | `latest` | dev, ci |                | `requires_found` (`pyproject.toml`)                 |
-| `python`      | `pipx:pyrefly`           | `latest` | dev, ci | `python`, `uv` | `requires_found` (`pyproject.toml`)                 |
-| `rust`        | `core:rust`              | `latest` | dev, ci |                | `profile = "default"`                               |
-| `rust`        | `zola`                   | `latest` | dev, ci |                |                                                     |
-| `swift`       | `swiftlint`              | `latest` | dev, ci |                | `mise_env` (`os` in `ci`)                           |
+| Tool          | mise tool                | Version  | `envs`  | mise `depends` | Other `[mise.*]` sections                          |
+| ------------- | ------------------------ | -------- | ------- | -------------- | -------------------------------------------------- |
+| `android`     | `android-sdk`            | `23`     | dev, ci | `java`         |                                                    |
+| `dprint`      | `dprint`                 | `latest` | dev, ci |                |                                                    |
+| `git`         | `worktrunk`              | `latest` | dev     |                |                                                    |
+| `gitleaks`    | `gitleaks`               | `latest` | dev, ci |                |                                                    |
+| `grype`       | `grype`                  | `latest` | dev, ci |                |                                                    |
+| `linter`      | `npm:@virajp.dev/linter` | `latest` | dev, ci | `node`         |                                                    |
+| `linter`      | `shellcheck`             | `latest` | dev, ci |                |                                                    |
+| `mise`        | `jq`                     | `latest` | dev, ci |                | `tasks` (`init`), `shell_alias`; `mise_env` (`os`) |
+| `mise`        | `yq`                     | `latest` | dev, ci |                |                                                    |
+| `osv-scanner` | `osv-scanner`            | `latest` | dev, ci |                |                                                    |
+| `pre-commit`  | `pre-commit`             | `latest` | dev     | `python`, `uv` | `env` (`PRE_COMMIT_HOME`), `shell_alias`           |
+| `repo-sync`   | `gomplate`               | `latest` | dev     |                |                                                    |
+| `apko`        | `apko`                   | `latest` | dev, ci |                |                                                    |
+| `aube`        | `aube`                   | `latest` | dev, ci | `node`         | `shell_alias` (`npx`)                              |
+| `bun`         | `bun`                    | `latest` | dev, ci |                |                                                    |
+| `cloudflare`  | `npm:cf`                 | `latest` | dev, ci | `node`         |                                                    |
+| `cosign`      | `cosign`                 | `latest` | dev, ci |                |                                                    |
+| `crane`       | `crane`                  | `latest` | dev, ci |                |                                                    |
+| `doppler`     | `doppler`                | `latest` | dev     |                |                                                    |
+| `firebase`    | `npm:firebase-tools`     | `latest` | dev, ci | `node`         |                                                    |
+| `flutter`     | `flutter`                | `3`      | dev, ci | `android-sdk`  |                                                    |
+| `fnox`        | `fnox`                   | `latest` | dev     |                | `env` (`FNOX_CONFIG_DIR`)                          |
+| `gcloud`      | `gcloud`                 | `latest` | dev, ci | `python`, `uv` | `env` (`CLOUDSDK_PYTHON`)                          |
+| `github`      | `gh`                     | `latest` | dev, ci |                |                                                    |
+| `github`      | `actionlint`             | `latest` | dev, ci |                |                                                    |
+| `gitlab`      | `glab`                   | `latest` | dev, ci |                |                                                    |
+| `java`        | `java`                   | `lts`    | dev, ci |                | `settings`                                         |
+| `kotlin`      | `ktlint`                 | `latest` | dev, ci |                |                                                    |
+| `kotlin`      | `github:detekt/detekt`   | `latest` | dev, ci |                |                                                    |
+| `kotlin`      | `http:kotlin-lsp`        | `latest` | dev     |                | In `[mise_env.dev.tools]`. Platform URLs for macOS |
+| `melange`     | `melange`                | `latest` | dev, ci |                |                                                    |
+| `node`        | `node`                   | `lts`    | dev, ci |                | `settings`, `env` (`_.path`)                       |
+| `pnpm`        | `pnpm`                   | `latest` | dev, ci | `node`         | `shell_alias` (`npx`)                              |
+| `pulumi`      | `pulumi`                 | `latest` | dev     |                |                                                    |
+| `python`      | `python`                 | `3.14`   | dev, ci |                | `settings`, `env` (`UV_*`)                         |
+| `python`      | `uv`                     | `latest` | dev, ci | `python`       |                                                    |
+| `python`      | `ruff`                   | `latest` | dev, ci |                | `requires_found` (`pyproject.toml`)                |
+| `python`      | `pipx:pyrefly`           | `latest` | dev, ci | `python`, `uv` | `requires_found` (`pyproject.toml`)                |
+| `rust`        | `core:rust`              | `latest` | dev, ci |                | `profile = "default"`                              |
+| `rust`        | `zola`                   | `latest` | dev, ci |                |                                                    |
+| `swift`       | `swiftlint`              | `latest` | dev, ci |                | `mise_env` (`os` in `ci`)                          |
 
 These tools have no mise tools: `_security_base`, `claude`, `docker` and
 `vscode`.
@@ -537,7 +547,8 @@ These tools have no mise tools: `_security_base`, `claude`, `docker` and
 Because the `base` pack needs `node`, `python` and `uv`, each consumer gets the
 `node` and `python` tools. They get the environments of the tools that need
 them: `dev` and `ci` for `node` (the `linter` tool), and `dev` for `python` and
-`uv` (the `pre-commit` tool). The `node` tool also brings `pnpm`.
+`uv` (the `pre-commit` tool). The `node` tool brings no package manager: a
+repository with a `package.json` selects the `pnpm` or the `aube` tool.
 
 ## Tasks
 
@@ -628,7 +639,8 @@ not the tasks of a parent repository.
 | `worktrees`         | `mise run code:worktrees`      | `repo/tools/mise/tools.toml`                          |
 | `setup-all`         | `mise run setup --all`         | The sync, only with git submodules, in `conf.d/mise/` |
 | `setup-<submodule>` | `mise run setup --<submodule>` | The sync, one for each git submodule, also nested     |
-| `npx`               | `pnpm dlx`                     | `repo/tools/node/tools.toml`                          |
+| `npx`               | `pnpm dlx`                     | `repo/tools/pnpm/tools.toml`                          |
+| `npx`               | `aubx`                         | `repo/tools/aube/tools.toml`                          |
 | `code`              | `command code --profile ...`   | `repo/tools/vscode/tools.toml`                        |
 
 All aliases are in `dev` only, because `shell_alias` is a dev-only section. The

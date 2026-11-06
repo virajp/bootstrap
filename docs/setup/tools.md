@@ -628,14 +628,13 @@ and the DNS, ping and routing aliases.
 
 ### `node`
 
-Node.js (LTS) and pnpm, the global pnpm config with its release-age cooldown.
+Node.js (LTS), and the user config of the aube that mise embeds. The tool has no
+pnpm and no `PNPM_HOME`, because a repository selects its own package manager.
 
 - **Packs:** `base` (default)
 - **Files:**
   - `~/.config/aube/config.toml` — generated
   - `~/.config/mise/tasks/upgrade/npm` — generated
-  - `~/.config/mise/tasks/upgrade/pnpm` — generated
-  - `~/Library/Preferences/pnpm/config.yaml` — generated, template
 - **Mise sections:** `[mise.settings]`, `[mise.tools]`, `[mise.env]`
 
 ### `notion`

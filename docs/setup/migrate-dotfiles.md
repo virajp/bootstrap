@@ -178,17 +178,17 @@ Write `macos.toml` at the root of `<clone>`. Use `macos/examples/macos.toml` as
 the model. Use the answers of steps 2 and 3. Move the values of `[vars]` of
 `dotfiles/.config/mise/conf.d/identity.toml` to these keys:
 
-| `[vars]` key               | `macos.toml` key                                                     |
-| -------------------------- | -------------------------------------------------------------------- |
-| `name`                     | `name` of `[tools.git]`                                              |
-| `github_email`             | `email_github` of `[tools.git]`                                      |
-| `gitlab_email`             | `email_gitlab` of `[tools.git]`                                      |
-| `signing_key`              | `signing_key` of `[tools.git]`                                       |
-| `editor`                   | `editor` of `[tools.gh]`                                             |
-| `op_ssh_vault`             | `ssh_vault` of `[tools.1password]`                                   |
-| `ssh_user`                 | `user` of `[tools.ssh]`                                              |
-| `projects_dir`             | `projects_dir` of `[tools.cli]`. The default is `~/Projects`         |
-| `pnpm_release_age_exclude` | `pnpm_release_age_exclude` of `[tools.node]`, a list, not one string |
+| `[vars]` key               | `macos.toml` key                                             |
+| -------------------------- | ------------------------------------------------------------ |
+| `name`                     | `name` of `[tools.git]`                                      |
+| `github_email`             | `email_github` of `[tools.git]`                              |
+| `gitlab_email`             | `email_gitlab` of `[tools.git]`                              |
+| `signing_key`              | `signing_key` of `[tools.git]`                               |
+| `editor`                   | `editor` of `[tools.gh]`                                     |
+| `op_ssh_vault`             | `ssh_vault` of `[tools.1password]`                           |
+| `ssh_user`                 | `user` of `[tools.ssh]`                                      |
+| `projects_dir`             | `projects_dir` of `[tools.cli]`. The default is `~/Projects` |
+| `pnpm_release_age_exclude` | None. The Mac has no pnpm config. A repository sets it       |
 
 `identity.toml` has no value for two more answers:
 
@@ -283,8 +283,14 @@ done
 `dotfiles/`. With the same answers, these must be equal:
 `.config/git/identity`, `.config/git/github.config`,
 `.config/git/gitlab.config`, `.config/git/allowed_signers`,
-`.ssh/config.identity`, `.config/1Password/ssh/agent.toml`,
-`.config/gh/config.yml` and `Library/Preferences/pnpm/config.yaml`.
+`.ssh/config.identity`, `.config/1Password/ssh/agent.toml` and
+`.config/gh/config.yml`.
+
+The Mac sync does not write `Library/Preferences/pnpm/config.yaml`, does not set
+`PNPM_HOME` and does not install pnpm. A repository selects its own package
+manager, so this difference is intended. Without `PNPM_HOME`, the pnpm store
+moves from `~/Library/pnpm` to `~/.local/share/pnpm`, and each repository
+downloads its packages again. The sync does not delete `~/Library/pnpm`.
 
 **5. List each difference for the owner.** Show one list. Each row is a bug or
 an intended change, and the owner decides.

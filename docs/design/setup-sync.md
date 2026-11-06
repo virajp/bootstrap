@@ -159,11 +159,10 @@ example `name = <% .config.name | data.ToJSON %>`. Its value comes from
 the rendered
 target.
 
-Four Mac templates do not follow this rule, each from its old copy:
+Three Mac templates do not follow this rule, each from its old copy:
 
 | Template                                                      | Value                                            |
 | ------------------------------------------------------------- | ------------------------------------------------ |
-| `macos/tools/node/Library/Preferences/pnpm/config.yaml.tmpl`  | It keeps `printf "%q"`.                          |
 | `macos/tools/gh/.config/gh/config.yml.tmpl`                   | The plain value of `editor`.                     |
 | `macos/tools/1password/.config/1Password/ssh/agent.toml.tmpl` | The quoted value of `ssh_vault`.                 |
 | `macos/tools/claude-cli/.claude/settings.json.tmpl`           | The quoted paths in `MISE_TRUSTED_CONFIG_PATHS`. |

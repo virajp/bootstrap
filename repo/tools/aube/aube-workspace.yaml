@@ -1,0 +1,39 @@
+# aube settings: https://aube.sh/settings/
+# The sync writes this file only when it is missing and the repository has a
+# package.json. Edit it for this repository; the next sync keeps your version.
+# If both exist, this file takes precedence over pnpm-workspace.yaml.
+
+# For a workspace, list the folders of its packages:
+# packages:
+#   - packages/*
+
+# The packages that can run a build script (preinstall, install, postinstall),
+# for example `esbuild: true`. aube does not run the build script of a package
+# that is not in this list.
+allowBuilds: {}
+
+# Stop the install when a dependency has a build script that is not in
+# allowBuilds.
+strictDepBuilds: true
+
+# Do not resolve a version that was released less than 24 hours ago (in
+# minutes).
+minimumReleaseAge: 1440
+
+# A transitive dependency must come from the registry, not from git or a
+# tarball URL.
+blockExoticSubdeps: true
+
+# Stop the install when the trust level of a package is lower than in a
+# previous version. Versions older than 30 days (in minutes) are exempt.
+trustPolicy: no-downgrade
+trustPolicyIgnoreAfter: 43200
+
+# Stop `aube run` and `aube exec` when node_modules does not agree with the
+# lockfile.
+verifyDepsBeforeRun: error
+
+# The packages that `aube update` does not upgrade, for example `typescript` or
+# `"@babel/*"`. `aube outdated` does not show them either.
+update:
+  ignoreDeps: []
