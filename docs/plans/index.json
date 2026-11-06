@@ -32,7 +32,7 @@
       "started": "2026-11-04T03:32:26.489Z",
       "ended": "2026-11-04T04:53:44.883Z",
       "gaps": {
-        "open": 12,
+        "open": 9,
         "moved_to": []
       },
       "requires": [],
@@ -70,7 +70,7 @@
       "started": "2026-11-04T06:17:19.956Z",
       "ended": "2026-11-04T09:10:04.874Z",
       "gaps": {
-        "open": 6,
+        "open": 3,
         "moved_to": []
       },
       "requires": [
@@ -110,7 +110,7 @@
       "started": "2026-11-04T12:34:49.429Z",
       "ended": "2026-11-04T14:57:51.426Z",
       "gaps": {
-        "open": 11,
+        "open": 7,
         "moved_to": []
       },
       "requires": [
@@ -170,7 +170,7 @@
       "started": "2026-11-04T18:22:04.132Z",
       "ended": "2026-11-05T05:02:35.659Z",
       "gaps": {
-        "open": 8,
+        "open": 6,
         "moved_to": []
       },
       "requires": [
@@ -190,7 +190,7 @@
       "started": "2026-11-05T05:04:56.276Z",
       "ended": "2026-11-05T06:38:50.907Z",
       "gaps": {
-        "open": 7,
+        "open": 4,
         "moved_to": []
       },
       "requires": [
@@ -230,7 +230,7 @@
       "started": "2026-11-05T08:57:15.993Z",
       "ended": "2026-11-05T10:16:50.803Z",
       "gaps": {
-        "open": 9,
+        "open": 3,
         "moved_to": []
       },
       "requires": [
@@ -250,7 +250,7 @@
       "started": "2026-11-05T10:20:37.765Z",
       "ended": "2026-11-05T11:44:59.268Z",
       "gaps": {
-        "open": 14,
+        "open": 6,
         "moved_to": []
       },
       "requires": [
@@ -270,31 +270,11 @@
       "started": "2026-11-05T11:47:57.224Z",
       "ended": "2026-11-05T12:31:25.484Z",
       "gaps": {
-        "open": 9,
+        "open": 1,
         "moved_to": []
       },
       "requires": [
         "2026-11-04-macos-tools-base-shells"
-      ],
-      "backlog": [],
-      "backlog_pieces": []
-    },
-    {
-      "id": "2026-11-04-macos-tools-apps",
-      "folder": "docs/plans/2026-11-04-macos-tools-apps",
-      "kind": "change",
-      "title": "Mac tools: app-only (52)",
-      "target_repo": null,
-      "priority": 140,
-      "status": "COMPLETE",
-      "started": "2026-11-05T12:34:09.389Z",
-      "ended": "2026-11-05T13:20:54.025Z",
-      "gaps": {
-        "open": 4,
-        "moved_to": []
-      },
-      "requires": [
-        "2026-11-04-macos-tools-extras"
       ],
       "backlog": [],
       "backlog_pieces": []
