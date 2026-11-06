@@ -542,11 +542,11 @@ _ss_ssh_folder() {
 }
 
 # Sync one file of the plan: the real path of its target, the seed gate, the
-# `requires`, the unblock, then the render or the copy, the parse check, the merge,
-# and the compare and the write of `_se_finish`. A generated file with an entry of
-# `requires` that is not there leaves _SS_HANDLED, so the stale rule removes a listed
-# copy with the header. Sets _SS_CHANGED for a change on disk, and adds the manifest
-# row of a generated file to _SS_ROWS.
+# `requires`, the unblock, the mode of the `.ssh` folder, then the render or the
+# copy, the parse check, the merge, and the compare and the write of `_se_finish`. A
+# generated file with an entry of `requires` that is not there leaves _SS_HANDLED,
+# so the stale rule removes a listed copy with the header. Sets _SS_CHANGED for a
+# change on disk, and adds the manifest row of a generated file to _SS_ROWS.
 _ss_file() {
   local tool=$1 path=$2 target=$3 fmode=$4 format=$5 dry_run=$6
   local src show real tmp destdir mode rc=0 t p req top target_format
