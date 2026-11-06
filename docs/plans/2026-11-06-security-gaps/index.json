@@ -386,5 +386,8 @@
   },
   "gaps": [],
   "overrides": [],
-  "run": {}
+  "run": {
+    "worktree": ".worktrees/all-2026-11-06-0922",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-06-security-gaps.jsonl"
+  }
 }
