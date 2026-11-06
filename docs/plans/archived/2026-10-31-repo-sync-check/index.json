@@ -371,22 +371,22 @@
       "id": "G1",
       "unit": "U2",
       "stage": "edit",
-      "text": "U2: the plan does not say what the gate does when a file list names .config/bootstrap.toml and the file is gone (a staged delete) · the exact-match rule is taken as written, so the check runs and repo_sync reports the missing values file (code 2)",
-      "state": "open"
+      "text": "U2: the plan does not say what the gate does when a file list names .config/bootstrap.toml and the file is gone (a staged delete) · the exact-match rule is taken as written, so the check runs and repo_sync reports the missing values file (code 2) · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. The check runs and reports the missing values file with code 2, because a consumer must have that file",
+      "state": "closed"
     },
     {
       "id": "G2",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: the plan says _rs_members gets the relative path of the values file but not relative to what · relative to MISE_PROJECT_ROOT, as _RS_VALUES_NOTE does, so messages start with .config/bootstrap.toml: [member.x] in ...",
-      "state": "open"
+      "text": "U1: the plan says _rs_members gets the relative path of the values file but not relative to what · relative to MISE_PROJECT_ROOT, as _RS_VALUES_NOTE does, so messages start with .config/bootstrap.toml: [member.x] in ... · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. The path stays relative to MISE_PROJECT_ROOT, the base of _RS_VALUES_NOTE",
+      "state": "closed"
     },
     {
       "id": "G3",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: the gomplate-missing message of repo_sync still says to add #MISE tools.gomplate=\"latest\" to the calling task; the plan did not ask to change it · left as is, because under D12 the gate exits 0 before repo_sync when gomplate is missing",
-      "state": "open"
+      "text": "U1: the gomplate-missing message of repo_sync still says to add #MISE tools.gomplate=\"latest\" to the calling task; the plan did not ask to change it · left as is, because under D12 the gate exits 0 before repo_sync when gomplate is missing · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. Out of date: sync-engine/repo-sync no longer has the text, because the engine starts gomplate through the wrappers of common",
+      "state": "closed"
     },
     {
       "id": "G4",
