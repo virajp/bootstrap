@@ -175,7 +175,9 @@ versions, and with `MISE_OFFLINE=1` it finds no versions, so an installed tool
 runs
 by its name alone. Thus the sync operates before a first sync, on a new machine
 and
-in a scratch folder. Each path that a wrapper gets is absolute.
+in a scratch folder. No task needs a `#MISE` line for gomplate, jq and yq, and
+the sync operates in a shell without `MISE_ENV=dev`. Each path that a wrapper
+gets is absolute.
 
 gomplate reads the TOML files: the values file, the packs file (an awk scan also
 gives the file order of its members), each `tools.toml` and the consumer file
