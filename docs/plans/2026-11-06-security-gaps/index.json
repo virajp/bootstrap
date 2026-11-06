@@ -8,8 +8,8 @@
   "backlog_pieces": [],
   "gaps_of": [],
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING — resumed at wave 2 in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.worktrees/all-2026-11-06-0922"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-06 — 3c63770 98c8ffa 6d4a64f b080c4b"
   },
   "consent": {
     "merge": true,
@@ -191,11 +191,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "2026-11-06T05:06:36.449Z",
+      "status": "green",
+      "started": "2026-11-06T09:19:30.916Z",
+      "ended": "2026-11-06T09:30:54.580Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -219,9 +219,9 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": "2026-11-06T05:06:36.699Z"
+      "status": "green",
+      "started": "2026-11-06T09:19:30.879Z",
+      "ended": "2026-11-06T09:31:18.284Z"
     }
   ],
   "shared_files": [
