@@ -5,9 +5,10 @@
 #MISE hide=true
 #MISE dir="~"
 
-# Run by hand. Formulae and most casks are mise's ([mise.bootstrap.packages] in
-# tools.toml (generated into conf.d/<tool>/mise.toml)); the Brewfile only holds casks and VS Code extensions,
-# so cleanup is scoped to those types and never touches formulae.
+# Run by hand. Formulae and most casks are mise's: [mise.bootstrap.packages] in
+# tools.toml, generated into conf.d/<tool>/mise.toml. The Brewfile only holds
+# casks and VS Code extensions, so cleanup is scoped to those types and never
+# touches formulae.
 
 set -e
 source "${HOME}/.config/mise/tasks/_scripts/helpers"
