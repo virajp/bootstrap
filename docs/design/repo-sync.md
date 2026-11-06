@@ -262,7 +262,7 @@ older `repo-sync` copies it as it is. `REPO_SYNC_NO_AUTOUPDATE=1` skips
 `pre-commit` is missing or `autoupdate` fails, the sync keeps the existing file.
 The task
 `setup:configs:sync` provides `pre-commit` with `#MISE
-tools.pre-commit="latest"`.
+tools.pre-commit="latest"`, and `repo-sync` calls it without `mise x --`.
 
 ## `[overrides.gitignore]`
 
