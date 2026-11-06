@@ -426,15 +426,15 @@
       "id": "G4",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: D14 literal form MISE_OFFLINE=1 mise x <tool>@latest -- fails with no versions found even for an installed gomplate (probe on mise 2026.10.25, confirmed by wave reviewer R1) · an installed tool runs as MISE_OFFLINE=1 mise x <tool> -- <tool>, a tool that is not installed as mise x <tool>@latest -- <tool>; this departs from the words of D14 and of the index.md Goal, and keeps its question: no network when installed. R1 returned it as a RULINGS line; the run did not loop it back, since the literal form cannot run gomplate. The online @latest branch was not probed. A person rules on it",
-      "state": "open"
+      "text": "U1: D14 literal form MISE_OFFLINE=1 mise x <tool>@latest -- fails with no versions found even for an installed gomplate (probe on mise 2026.10.25, confirmed by wave reviewer R1) · an installed tool runs as MISE_OFFLINE=1 mise x <tool> -- <tool>, a tool that is not installed as mise x <tool>@latest -- <tool>; this departs from the words of D14 and of the index.md Goal, and keeps its question: no network when installed. R1 returned it as a RULINGS line; the run did not loop it back, since the literal form cannot run gomplate. The online @latest branch was not probed. A person rules on it · closed: the user ruled on 2026-11-06 with the words: Yes, close both. The code form stands, and docs/design/sync-engine.md (The tool calls) records it; both forms ran for gomplate on 2026-11-06, on a machine with gomplate installed",
+      "state": "closed"
     },
     {
       "id": "G5",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: the plan does not say what happens when a tool is neither installed nor reachable · _se_parse_check reports the mise failure as does not parse, with the mise output indented under it",
-      "state": "open"
+      "text": "U1: the plan does not say what happens when a tool is neither installed nor reachable · _se_parse_check reports the mise failure as does not parse, with the mise output indented under it · closed: the user ruled on 2026-11-06 with the words: Yes, close both. The message stays, because the mise output under it shows the cause and the current file does not change",
+      "state": "closed"
     },
     {
       "id": "G6",
