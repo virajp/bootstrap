@@ -41,9 +41,13 @@ sudo brew services stop tailscale
 # cannot remove it. Hand the keg back to the user before upgrading.
 # Resolve the versioned keg from the binary symlink, e.g.
 # /opt/homebrew/Cellar/tailscale/1.102.4/bin/tailscale -> .../tailscale/1.102.4
-keg="/opt/homebrew/bin/$(dirname "$(dirname "$(readlink -l "$(command -v tailscale)")")")"
-print_subheader "Restoring ownership of ${keg} ..."
-sudo chown -R "${USER}:staff" "${keg}"
+keg="$(dirname "$(dirname "$(readlink -f "$(command -v tailscale)")")")"
+if [[ $keg == */Cellar/tailscale/* ]]; then
+  print_subheader "Restoring ownership of ${keg} ..."
+  sudo chown -R "${USER}:staff" "${keg}"
+else
+  print_warn "Cannot find the Tailscale keg: skipping the ownership step"
+fi
 
 print_subheader "Upgrading Tailscale ..."
 mise bootstrap packages upgrade brew:tailscale --yes

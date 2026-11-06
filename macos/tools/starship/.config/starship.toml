@@ -144,7 +144,7 @@ format = "[$output](fg:color_white bg:color_aqua)"
 # multi-element shell array and strand the binary after its flags.
 shell = [ "sh" ]
 when = '''
-top=$(git rev-parse --show-toplevel 2>/dev/null) && [ -f "$top/.gitmodules" ] && git -C "$top" status --porcelain=v2 --ignore-submodules=none 2>/dev/null | awk '$1=="1" && $3 ~ /^S/{f=1} END{exit !f}'
+top=$(git rev-parse --show-toplevel 2>/dev/null) && [ -f "$top/.gitmodules" ] && case "$top/" in "$PROJECTS_DIR"/github.com/*|"$PROJECTS_DIR"/gitlab.com/*) ;; *) exit 1 ;; esac && git -C "$top" status --porcelain=v2 --ignore-submodules=none 2>/dev/null | awk '$1=="1" && $3 ~ /^S/{f=1} END{exit !f}'
 '''
 
 [nodejs]

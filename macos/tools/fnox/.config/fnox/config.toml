@@ -26,11 +26,6 @@ env = "exec"
 provider = "global"
 value = "GITHUB_API_TOKEN"
 
-[profiles.context7.secrets.CONTEXT7_API_KEY]
-env = "exec"
-provider = "global"
-value = "CONTEXT7_API_KEY"
-
 [profiles.fnox.secrets.AGE_KEY]
 env = "exec"
 provider = "global"

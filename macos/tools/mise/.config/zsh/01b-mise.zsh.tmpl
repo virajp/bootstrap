@@ -3,7 +3,7 @@
 <% $pd := index .all "cli" | required "mise: select the cli tool, which holds projects_dir" %><% $pd = index $pd "projects_dir" | required "mise: set projects_dir in [tools.cli] of macos.toml" | regexp.Replace "^~" .env.HOME -%>
 # mise activate
 # Setting up mise trusted paths
-export MISE_TRUSTED_CONFIG_PATHS="$HOME/.config/mise:<% $pd %>"
+export MISE_TRUSTED_CONFIG_PATHS="$HOME/.config/mise:<% $pd %>/github.com:<% $pd %>/gitlab.com"
 # MISE_ENV must be set as "dev"
 export MISE_ENV="dev"
 # Must run after `brew shellenv` and the PATH exports

@@ -13,7 +13,7 @@ mode = "seed"
 
 [files.".claude/settings.json"]
 mode = "merge"
-remove = [ [ "deniedMcpServers" ] ]
+remove = [ [ "deniedMcpServers" ], [ "env", "CONTEXT7_RUNNER" ] ]
 
 # The claude-cli tool: Claude Code and its aliases.
 [mise.bootstrap.packages]
