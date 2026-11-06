@@ -9,7 +9,7 @@
   "gaps_of": [],
   "status": {
     "state": "BLOCKED",
-    "detail": "BLOCKED at wave 1 — U1 ruling recorded: D14 answers G3, so U1 writes from a session whose folder is this worktree; U2 report green, written through Bash, and NOT committed because the permission system denied the commit call: its files and this folder state are uncommitted in the worktree (G4 is open for the person); U3, U4, U5 skipped (depend on U1); in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.worktrees/all-2026-11-06-0922"
+    "detail": "BLOCKED at wave 1 — U1 green at b080c4b; U2 green and UNCOMMITTED: the permission system denied its commit call with no reason (G9), and its files stay in the worktree; U3, U4, U5 skipped; wave 1 gates, test:setup-sync and test:macos-tools pass; G4 and G9 need the person; in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.worktrees/all-2026-11-06-0922"
   },
   "consent": {
     "merge": true,
@@ -98,7 +98,7 @@
       "status": "green",
       "started": "2026-11-06T03:56:23.771Z",
       "ended": "2026-11-06T04:46:04.856Z",
-      "commit": "",
+      "commit": "b080c4b",
       "rounds": 2
     },
     {
@@ -135,9 +135,9 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
+      "status": "skipped",
       "started": "",
-      "ended": "2026-11-06T04:24:43.264Z",
+      "ended": "2026-11-06T05:06:36.383Z",
       "commit": "",
       "rounds": 0,
       "range": {
@@ -173,9 +173,9 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
+      "status": "skipped",
       "started": "",
-      "ended": "2026-11-06T04:24:43.299Z",
+      "ended": "2026-11-06T05:06:36.415Z",
       "commit": "",
       "rounds": 0
     },
@@ -191,9 +191,9 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
+      "status": "skipped",
       "started": "",
-      "ended": "2026-11-06T04:24:43.332Z",
+      "ended": "2026-11-06T05:06:36.449Z",
       "commit": "",
       "rounds": 0
     }
@@ -201,27 +201,27 @@
   "waves": [
     {
       "id": "W1",
-      "status": "running",
+      "status": "failed",
       "started": "2026-11-06T03:56:23.736Z",
-      "ended": ""
+      "ended": "2026-11-06T05:06:36.590Z"
     },
     {
       "id": "W2",
       "status": "failed",
       "started": "",
-      "ended": "2026-11-06T04:24:43.399Z"
+      "ended": "2026-11-06T05:06:36.625Z"
     },
     {
       "id": "W3",
       "status": "failed",
       "started": "",
-      "ended": "2026-11-06T04:24:43.432Z"
+      "ended": "2026-11-06T05:06:36.664Z"
     },
     {
       "id": "W4",
       "status": "failed",
       "started": "",
-      "ended": "2026-11-06T04:24:43.465Z"
+      "ended": "2026-11-06T05:06:36.699Z"
     }
   ],
   "shared_files": [
@@ -448,6 +448,13 @@
       "unit": "U2",
       "stage": "edit",
       "text": "Edit 1 of 02-ssh-folder-mode.md names chmod 700 -- \"$dir\", which fails on BSD chmod of this Mac with chmod: --: No such file or directory · assumption: the -- is what the unit wants, so the code has chmod -- 700 \"$dir\"; test:setup-sync and test:macos-tools pass with it",
+      "state": "open"
+    },
+    {
+      "id": "G9",
+      "unit": "U2",
+      "stage": "edit",
+      "text": "UNRESOLVED: the permission system denied the call that commits U2, with no reason given, the second run in which a commit call of U2 met a denial; the U1 commit in the same worktree went through. Ruling needed: whether the U2 commit may land, which also answers G4 · no assumption taken: the run did not try the commit in another form",
       "state": "open"
     }
   ],

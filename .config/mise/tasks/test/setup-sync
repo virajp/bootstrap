@@ -728,6 +728,71 @@ case_init_fail() {
   check "no manifest write" not test -e "$manifest"
 }
 
+# ---- the mode of the ssh folder -----------------------------------------------
+
+case_ssh_new() {
+  use_config sshdir
+  run_real
+  check_exit 0
+  check "the folder has mode 700" test "$(mode_of "$home/.ssh")" = 700
+  check "the file is written in it" test -f "$home/.ssh/config"
+  run_real
+  check_exit 0
+  check_no_output "chmod 700"
+}
+
+case_ssh_existing() {
+  use_config sshdir
+  mkdir -p -- "$home/.ssh"
+  chmod 755 "$home/.ssh"
+  run_real
+  check_exit 0
+  check_output "chmod 700  ~/.ssh"
+  check "the folder has mode 700" test "$(mode_of "$home/.ssh")" = 700
+}
+
+case_ssh_link() {
+  use_config sshdir
+  mkdir -p -- "$home/.ssh"
+  chmod 755 "$home/.ssh"
+  : > "$user/ssh-config"
+  ln -s "$user/ssh-config" "$home/.ssh/config"
+  run_real
+  check_exit 0
+  check "the folder has mode 700" test "$(mode_of "$home/.ssh")" = 700
+  check "the link stays" test -L "$home/.ssh/config"
+}
+
+case_ssh_dry() {
+  use_config sshdir
+  mkdir -p -- "$home/.ssh"
+  chmod 755 "$home/.ssh"
+  run_dry
+  check_exit 0
+  check_output "would chmod 700 ~/.ssh"
+  check "one line for the two targets" test "$(grep -c 'would chmod 700 ~/\.ssh$' "$log")" = 1
+  check "the mode stays 755" test "$(mode_of "$home/.ssh")" = 755
+  rm -rf -- "$home/.ssh"
+  run_dry
+  check_exit 0
+  check "no folder is made" not test -e "$home/.ssh"
+  check_no_output "stat:"
+  check_no_output "chmod 700"
+}
+
+case_ssh_folder_link() {
+  use_config sshdir
+  mkdir -p -- "$user/ssh"
+  chmod 755 "$user/ssh"
+  ln -s "$user/ssh" "$home/.ssh"
+  run_real
+  check_exit 0
+  check "the target of the link has mode 700" test "$(mode_of "$user/ssh/.")" = 700
+  run_real
+  check_exit 0
+  check_no_output "chmod 700"
+}
+
 # ---- macos.toml and bootstrap_commit ------------------------------------------
 
 case_values_missing() {
@@ -1684,6 +1749,11 @@ run_case "manifest: its first line, the sorted rows, a second run" case_generate
 run_case "init stage: a stop with exit 4, then a pass" case_init_stage
 run_case "init stage: a chmod-only change" case_init_chmod
 run_case "init stage: a failed file" case_init_fail
+run_case "ssh folder: a new folder" case_ssh_new
+run_case "ssh folder: an existing folder with another mode" case_ssh_existing
+run_case "ssh folder: a linked file below the folder" case_ssh_link
+run_case "ssh folder: a dry run" case_ssh_dry
+run_case "ssh folder: the folder is a link" case_ssh_folder_link
 run_case "contributions: merged, placed twice, lists without duplicates, requires" case_contrib
 run_case "contributions: a contributor deselected, a seed written once" case_contrib_deselect
 run_case "parse: a JSON, a YAML and a TOML target that do not parse" case_parse_bad

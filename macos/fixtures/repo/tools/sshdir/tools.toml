@@ -1,0 +1,10 @@
+# The sshdir tool of the fixture repo: two targets below ~/.ssh, for the mode of
+# that folder.
+
+description = "two targets below the ssh folder"
+
+[files.".ssh/config"]
+format = "text"
+
+[files.".ssh/config.identity"]
+format = "text"
