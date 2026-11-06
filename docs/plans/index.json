@@ -2,26 +2,6 @@
   "format": 1,
   "plans": [
     {
-      "id": "2026-10-31-repo-sync-check",
-      "folder": "docs/plans/2026-10-31-repo-sync-check",
-      "kind": "change",
-      "title": "Validate bootstrap.toml at commit time with repo_sync --check",
-      "target_repo": null,
-      "priority": 10,
-      "status": "COMPLETE",
-      "started": "2026-10-31T16:37:40.629Z",
-      "ended": "2026-10-31T20:26:48.879Z",
-      "gaps": {
-        "open": 3,
-        "moved_to": []
-      },
-      "requires": [],
-      "backlog": [
-        "B14"
-      ],
-      "backlog_pieces": []
-    },
-    {
       "id": "2026-11-04-sync-engine-cache",
       "folder": "docs/plans/2026-11-04-sync-engine-cache",
       "kind": "change",
