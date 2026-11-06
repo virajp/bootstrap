@@ -30,10 +30,10 @@ Bias toward caution over speed — use judgment for trivial tasks.
 
 ## Shell Aliases
 
-Defined only in the `[shell_alias]` blocks of `~/.config/mise/conf.d/*.toml`
-(one per macos-setup tool, rendered from `tools/<tool>/` by
-`mise run updateall:configs`; the shadowing ones are in `cli.toml`,
-`network.toml`, `git.toml` and `devtools.toml`).
+Defined only in the `[shell_alias]` blocks of
+`~/.config/mise/conf.d/<tool>/mise.toml` (one for each Mac tool, rendered from
+`macos/tools/<tool>/` of bootstrap by `mise run updateall:configs`; the
+shadowing ones are in the folders `cli`, `network`, `git` and `devtools`).
 The fish and zsh configs define no aliases of their own. mise activates in
 non-interactive shells too, so these apply to tool-invoked commands — not just
 the interactive prompt.

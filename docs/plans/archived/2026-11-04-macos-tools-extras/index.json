@@ -333,8 +333,8 @@
       "id": "G2",
       "unit": "U1",
       "stage": "edit",
-      "text": "macos/tools/claude-cli/.claude/CLAUDE.md is a byte copy under D4, so its Shell Aliases section still names ~/.config/mise/conf.d/*.toml, one per macos-setup tool, tools/<tool>/ and cli.toml, network.toml, git.toml, devtools.toml, which the conf.d/<tool>/mise.toml layout makes stale · left unchanged",
-      "state": "open"
+      "text": "macos/tools/claude-cli/.claude/CLAUDE.md is a byte copy under D4, so its Shell Aliases section still names ~/.config/mise/conf.d/*.toml, one per macos-setup tool, tools/<tool>/ and cli.toml, network.toml, git.toml, devtools.toml, which the conf.d/<tool>/mise.toml layout makes stale · left unchanged · closed: 68a0798 changes the Shell Aliases section of the seed to conf.d/<tool>/mise.toml and macos/tools/<tool>/; test:setup-sync and test:macos-tools pass. The seed reaches a new Mac only; a live ~/.claude/CLAUDE.md does not change",
+      "state": "closed"
     },
     {
       "id": "G3",
