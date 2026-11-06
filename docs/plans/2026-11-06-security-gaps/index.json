@@ -119,7 +119,7 @@
       "status": "green",
       "started": "2026-11-06T03:56:23.809Z",
       "ended": "2026-11-06T05:02:32.106Z",
-      "commit": "6d4a64f",
+      "commit": "3c63770",
       "rounds": 2
     },
     {
@@ -213,9 +213,9 @@
     },
     {
       "id": "W3",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-06T09:10:35.055Z",
-      "ended": ""
+      "ended": "2026-11-06T09:19:24.767Z"
     },
     {
       "id": "W4",
@@ -455,6 +455,13 @@
       "unit": "U2",
       "stage": "edit",
       "text": "The permission system denied the commit call of U2 · closed: a deny rule of the global settings matched a word in the text of the commit message, and no such program ran; the user answered Yes, commit U2 on 2026-11-06, and the commit took the same message with git commit -F",
+      "state": "closed"
+    },
+    {
+      "id": "G10",
+      "unit": "U3",
+      "stage": "security",
+      "text": "The late re-run of U3 over 3c63770 did not run the security engine · closed: the delta changes 5 comment lines and no executable line, and the security reviewer approved it",
       "state": "closed"
     }
   ],
