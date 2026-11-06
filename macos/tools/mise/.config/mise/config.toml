@@ -15,6 +15,7 @@ not_found_auto_install = false
 os = "macos"
 paranoid = true
 raw = true
+self_update.auto = true
 self_update.minimum_release_age = "0h"
 skills.fetch = false
 skills.prune = true

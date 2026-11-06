@@ -606,6 +606,9 @@ mise: its user-level config, its activation in bash, zsh and fish, and
   `<projects_dir>/github.com` and `<projects_dir>/gitlab.com`. mise loads a
   config below these paths with no prompt, so do not clone an untrusted
   repository below the two project folders.
+- **Self-update:** `self_update.auto = true` lets mise install a new release
+  before an interactive command. `self_update.minimum_release_age = "0h"` means
+  that mise does not wait after a release.
 - **Mise sections:** `[mise.tools]`, `[mise.shell_alias]`
 
 ### `network`
