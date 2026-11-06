@@ -19,8 +19,9 @@ default_install_hook_types:
 
 default_stages: [ pre-commit ]
 
-# Generated files. No hook may rewrite them.
-exclude: (^|/)\.config/mise/locks/
+# No hook reads these paths: the `exclude` values of this tool, the selected
+# tools and `[tools.pre-commit]` of `.config/bootstrap.toml`, merged.
+exclude: "(^|/)\\.config/mise/locks/"
 repos:
   - repo: local
     hooks:
