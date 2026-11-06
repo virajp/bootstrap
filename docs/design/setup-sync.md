@@ -161,12 +161,26 @@ target.
 
 Four Mac templates do not follow this rule, each from its old copy:
 
-| Template                                                      | Value                                           |
-| ------------------------------------------------------------- | ----------------------------------------------- |
-| `macos/tools/node/Library/Preferences/pnpm/config.yaml.tmpl`  | It keeps `printf "%q"`.                         |
-| `macos/tools/gh/.config/gh/config.yml.tmpl`                   | The plain value of `editor`.                    |
-| `macos/tools/1password/.config/1Password/ssh/agent.toml.tmpl` | The quoted value of `ssh_vault`.                |
-| `macos/tools/claude-cli/.claude/settings.json.tmpl`           | The quoted path in `MISE_TRUSTED_CONFIG_PATHS`. |
+| Template                                                      | Value                                            |
+| ------------------------------------------------------------- | ------------------------------------------------ |
+| `macos/tools/node/Library/Preferences/pnpm/config.yaml.tmpl`  | It keeps `printf "%q"`.                          |
+| `macos/tools/gh/.config/gh/config.yml.tmpl`                   | The plain value of `editor`.                     |
+| `macos/tools/1password/.config/1Password/ssh/agent.toml.tmpl` | The quoted value of `ssh_vault`.                 |
+| `macos/tools/claude-cli/.claude/settings.json.tmpl`           | The quoted paths in `MISE_TRUSTED_CONFIG_PATHS`. |
+
+## The mode of `~/.ssh`
+
+When `setup_sync` handles a target below `.ssh/`, it makes sure once in each run
+that the folder `$_SS_HOME/.ssh` has mode 700, on a new folder and on an
+existing folder. The check uses the path in the home folder, not the real path
+of a linked file. If `~/.ssh` is itself a link, the check reads and sets the
+mode of the target of the link.
+
+- A real run sets the mode, reports it and sets `_SS_CHANGED`.
+- A dry run changes nothing. It reports the change only for an existing folder
+  with another mode, and it reports nothing for a missing folder.
+- When the mode is already 700, the sync prints nothing about the folder.
+- A failed `chmod` fails that target and each later target below `.ssh/`.
 
 ## The run order
 
@@ -190,7 +204,8 @@ The write of one file is in
 [sync-engine.md](sync-engine.md#the-write-of-one-target). A file
 takes this order: the real path of its target, the seed gate, `requires`, the
 unblock of a
-folder path, then the render or the copy, the parse check, the merge and the
+folder path, the mode of `~/.ssh` for a target below `.ssh/`, then the render or
+the copy, the parse check, the merge and the
 compare.
 
 `requires` holds paths relative to `$HOME`. A generated file with an entry that
@@ -226,7 +241,8 @@ steps:
 6. It reads the login shell again.
 7. It examines whether the stage changed: it created, updated or `chmod`-ed a
    file, wrote a
-   seed or a merge target, removed a stale file, or changed the login shell.
+   seed or a merge target, removed a stale file, changed the mode of `~/.ssh`,
+   or changed the login shell.
 8. If the stage changed, it writes the manifest with the rows of this stage and
    the old rows
    of the main stage. It prints `open a new terminal, then run: mise run

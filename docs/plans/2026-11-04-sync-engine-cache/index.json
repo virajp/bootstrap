@@ -508,22 +508,22 @@
       "id": "G11",
       "unit": "U1",
       "stage": "security",
-      "text": "U1: a checkout of bootstrap itself used as SYNC_ENGINE_CACHE has a real .git and a matching origin, so it still reads as an old clone and is removed · accepted as an old clone of bootstrap, as the finding words it",
-      "state": "open"
+      "text": "U1: a checkout of bootstrap itself used as SYNC_ENGINE_CACHE has a real .git and a matching origin, so it still reads as an old clone and is removed · accepted as an old clone of bootstrap, as the finding words it RULING (2026-11-06-security-gaps D13): Accepted: the user must point SYNC_ENGINE_CACHE at the wrong folder.",
+      "state": "closed"
     },
     {
       "id": "G12",
       "unit": "U1",
       "stage": "security",
-      "text": "U1: in an unrelated repository used as SYNC_ENGINE_CACHE, the lock step can remove an existing lock/ folder older than one minute with no pid, and a repo/ subfolder with another origin is deleted and cloned again · left as the plan rules",
-      "state": "open"
+      "text": "U1: in an unrelated repository used as SYNC_ENGINE_CACHE, the lock step can remove an existing lock/ folder older than one minute with no pid, and a repo/ subfolder with another origin is deleted and cloned again · left as the plan rules RULING (2026-11-06-security-gaps D13): Accepted: the user must point SYNC_ENGINE_CACHE at the wrong folder.",
+      "state": "closed"
     },
     {
       "id": "G13",
       "unit": "U3",
       "stage": "security",
-      "text": "U3: the gate's rule for a cache with no .git, and a .git file at the cache root, have no case of their own · left without a case; they were checked by hand in the U1 fix",
-      "state": "open"
+      "text": "U3: the gate's rule for a cache with no .git, and a .git file at the cache root, have no case of their own · left without a case; they were checked by hand in the U1 fix RULING (2026-11-06-security-gaps D13): Accepted: the user must point SYNC_ENGINE_CACHE at the wrong folder.",
+      "state": "closed"
     },
     {
       "id": "G14",

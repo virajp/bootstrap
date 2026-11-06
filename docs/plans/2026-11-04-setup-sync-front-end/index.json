@@ -417,8 +417,8 @@
       "id": "G5",
       "unit": "U3",
       "stage": "security",
-      "text": "Edit 1.11 and D4 never require a rendered value to be encoded in a .tmpl target, so a string with a quote and a newline in [tools.<name>] of macos.toml can add tables or keys to a rendered TOML, JSON or YAML target (setup-sync:601; no privilege gain, the same author can write [mise.*]) · the run encoded the strings of the fixture templates; the rule goes into CLAUDE.md through U4, and the real Mac templates of P11 to P14 must follow it; those approved plans were not edited by this run",
-      "state": "open"
+      "text": "Edit 1.11 and D4 never require a rendered value to be encoded in a .tmpl target, so a string with a quote and a newline in [tools.<name>] of macos.toml can add tables or keys to a rendered TOML, JSON or YAML target (setup-sync:601; no privilege gain, the same author can write [mise.*]) · the run encoded the strings of the fixture templates; the rule goes into CLAUDE.md through U4, and the real Mac templates of P11 to P14 must follow it; those approved plans were not edited by this run RULING (2026-11-06-security-gaps D8): Accepted: the values file is trusted, and there is no privilege gain.",
+      "state": "closed"
     },
     {
       "id": "G6",
@@ -431,15 +431,15 @@
       "id": "G7",
       "unit": "U3",
       "stage": "security",
-      "text": "P11 to P14 render raw values into plain-text targets with no parse check (macos-tools-base-shells/01-tools.md:206 and :211-214), so a newline in a value can add a directive such as ProxyCommand in .ssh/config; those plans need a ruling · no assumption taken; the user approved this record on 2026-11-05 after the permission system refused the runner",
-      "state": "open"
+      "text": "P11 to P14 render raw values into plain-text targets with no parse check (macos-tools-base-shells/01-tools.md:206 and :211-214), so a newline in a value can add a directive such as ProxyCommand in .ssh/config; those plans need a ruling · no assumption taken; the user approved this record on 2026-11-05 after the permission system refused the runner RULING (2026-11-06-security-gaps D8): Accepted: the values file is trusted, and there is no privilege gain.",
+      "state": "closed"
     },
     {
       "id": "G8",
       "unit": "U4",
       "stage": "edit",
-      "text": "the new data.ToJSON rule is not yet true of existing templates outside the owned files: repo/tools/fnox/.config/fnox.toml.tmpl:27,40, repo/tools/gitleaks/.config/gitleaks.toml.tmpl:2, repo/tools/github/.github/ISSUE_TEMPLATE/config.yml.tmpl:7,11 and repo/tools/mise/.config/mise.toml.tmpl:21 insert values without it · assumed the rule applies to new and changed templates, and these stay as they are in this plan",
-      "state": "open"
+      "text": "the new data.ToJSON rule is not yet true of existing templates outside the owned files: repo/tools/fnox/.config/fnox.toml.tmpl:27,40, repo/tools/gitleaks/.config/gitleaks.toml.tmpl:2, repo/tools/github/.github/ISSUE_TEMPLATE/config.yml.tmpl:7,11 and repo/tools/mise/.config/mise.toml.tmpl:21 insert values without it · assumed the rule applies to new and changed templates, and these stay as they are in this plan RULING (2026-11-06-security-gaps D8): Accepted: the values file is trusted, and docs/design/repo-sync.md holds the rule for these templates.",
+      "state": "closed"
     },
     {
       "id": "G9",

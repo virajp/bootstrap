@@ -173,11 +173,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "2026-11-06T05:06:36.415Z",
+      "status": "green",
+      "started": "2026-11-06T09:10:35.093Z",
+      "ended": "2026-11-06T09:13:37.413Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U5",
@@ -213,9 +213,9 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": "2026-11-06T05:06:36.664Z"
+      "status": "running",
+      "started": "2026-11-06T09:10:35.055Z",
+      "ended": ""
     },
     {
       "id": "W4",
@@ -433,8 +433,8 @@
       "id": "G6",
       "unit": "U2",
       "stage": "edit",
-      "text": "U2 DOCS FALSIFIED, for the docs unit U4, which did not run: docs/design/setup-sync.md, The run order, the sentence that lists the order of a file omits the .ssh folder step; docs/design/setup-sync.md:227, the stage-change list omits the chmod of the ~/.ssh folder, which now sets _SS_CHANGED and can give exit 4 for an init-stage tool · assumption: U4 applies both on the resume, then closes this entry",
-      "state": "open"
+      "text": "U2 DOCS FALSIFIED, for the docs unit U4, which did not run: docs/design/setup-sync.md, The run order, the sentence that lists the order of a file omits the .ssh folder step; docs/design/setup-sync.md:227, the stage-change list omits the chmod of the ~/.ssh folder, which now sets _SS_CHANGED and can give exit 4 for an init-stage tool · assumption: U4 applies both on the resume, then closes this entry · closed: U4 applied both passages",
+      "state": "closed"
     },
     {
       "id": "G7",

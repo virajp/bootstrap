@@ -391,43 +391,43 @@
       "id": "G5",
       "unit": "U3",
       "stage": "security",
-      "text": "UNRESOLVED security finding [high] macos/tools/python/tools.toml:10 (U1): python.uv_venv_auto = \"create|source\" puts the .venv/bin of a repo on PATH with no trust check, so cd into a hostile clone with uv.lock and a committed .venv runs a planted binary as the user (tested on mise 2026.11.1 with paranoid = true). A fix changes a value that D4 and R2 keep byte for byte · ruling needed: remove source and create from the Mac default, or accept the risk. The same line is at repo/tools/python/tools.toml:21, outside this range",
-      "state": "open"
+      "text": "UNRESOLVED security finding [high] macos/tools/python/tools.toml:10 (U1): python.uv_venv_auto = \"create|source\" puts the .venv/bin of a repo on PATH with no trust check, so cd into a hostile clone with uv.lock and a committed .venv runs a planted binary as the user (tested on mise 2026.11.1 with paranoid = true). A fix changes a value that D4 and R2 keep byte for byte · ruling needed: remove source and create from the Mac default, or accept the risk. The same line is at repo/tools/python/tools.toml:21, outside this range RULING (2026-11-06-security-gaps D2): Fixed: the Mac config no longer sets uv_venv_auto; uv creates the venv at uv run.",
+      "state": "closed"
     },
     {
       "id": "G6",
       "unit": "U3",
       "stage": "security",
-      "text": "UNRESOLVED security finding [high] macos/tools/mise/.config/zsh/01b-mise.zsh.tmpl:6, bash/01b-mise.bash.tmpl:10, fish/conf.d/06-mise.fish.tmpl:9 (U1): MISE_TRUSTED_CONFIG_PATHS holds the whole projects_dir (default ~/Projects) and cancels paranoid = true of config.toml:16, so a repo cloned there loads its mise config with no trust prompt (tested: [env] loads silently; code execution through _.source or [hooks] not tested). A fix changes content that D4 keeps byte for byte · ruling needed: narrow the path to the owner namespaces, drop projects_dir and use mise trust per repo, or accept the risk",
-      "state": "open"
+      "text": "UNRESOLVED security finding [high] macos/tools/mise/.config/zsh/01b-mise.zsh.tmpl:6, bash/01b-mise.bash.tmpl:10, fish/conf.d/06-mise.fish.tmpl:9 (U1): MISE_TRUSTED_CONFIG_PATHS holds the whole projects_dir (default ~/Projects) and cancels paranoid = true of config.toml:16, so a repo cloned there loads its mise config with no trust prompt (tested: [env] loads silently; code execution through _.source or [hooks] not tested). A fix changes content that D4 keeps byte for byte · ruling needed: narrow the path to the owner namespaces, drop projects_dir and use mise trust per repo, or accept the risk RULING (2026-11-06-security-gaps D1): Fixed: only ~/.config/mise and the github.com and gitlab.com folders are trusted.",
+      "state": "closed"
     },
     {
       "id": "G7",
       "unit": "U3",
       "stage": "security",
-      "text": "SPEC/PLAN GAP: D4, R2 and R3 copy every value byte for byte and name no security requirement for the mise trust boundary; both values are unchanged from macos-setup, so the live Mac already has this exposure and the import carries it forward; index.json has no ruling on either · no assumption taken; G5 and G6 hold the rulings",
-      "state": "open"
+      "text": "SPEC/PLAN GAP: D4, R2 and R3 copy every value byte for byte and name no security requirement for the mise trust boundary; both values are unchanged from macos-setup, so the live Mac already has this exposure and the import carries it forward; index.json has no ruling on either · no assumption taken; G5 and G6 hold the rulings RULING (2026-11-06-security-gaps D1): Accepted: a spec gap of the import; D1 now gives the requirement.",
+      "state": "closed"
     },
     {
       "id": "G8",
       "unit": "U3",
       "stage": "security",
-      "text": "UNRESOLVED security finding [high] macos/tools/starship/.config/starship.toml:147 (U1): the when command of custom.submodule_status runs git status on every prompt, gated only by a .gitmodules file, so an extracted tar or zip with core.fsmonitor in .git/config runs code as the owner on cd, also outside projects_dir (tested: starship prompt ran the planted hook on git 2.56; -c core.fsmonitor= stops that hook, but a filter clean driver from the repo config still ran). A plain git clone does not carry .git/config. Byte for byte from macos-setup, so the live Mac already has it. A fix changes content that D4 keeps byte for byte · accepted for this import under D14; for one security plan after the run",
-      "state": "open"
+      "text": "UNRESOLVED security finding [high] macos/tools/starship/.config/starship.toml:147 (U1): the when command of custom.submodule_status runs git status on every prompt, gated only by a .gitmodules file, so an extracted tar or zip with core.fsmonitor in .git/config runs code as the owner on cd, also outside projects_dir (tested: starship prompt ran the planted hook on git 2.56; -c core.fsmonitor= stops that hook, but a filter clean driver from the repo config still ran). A plain git clone does not carry .git/config. Byte for byte from macos-setup, so the live Mac already has it. A fix changes content that D4 keeps byte for byte · accepted for this import under D14; for one security plan after the run RULING (2026-11-06-security-gaps D3): Partly fixed: the custom command runs git status only below the two folders; git_status stays, accepted.",
+      "state": "closed"
     },
     {
       "id": "G9",
       "unit": "U3",
       "stage": "security",
-      "text": "UNRESOLVED security finding [high] macos/tools/homebrew/tools.toml:25 (U1): the brew alias fnox exec -P brew -- brew pins no config, so fnox merges a fnox.toml from the current folder and its parents with no trust gate; a committed fnox.toml with a profiles.brew PATH secret makes any brew command there run a planted binary as the owner (tested on fnox 1.47.0), and that binary receives the profile token value (tested with a scratch default value; a Keychain token is inferred). The engine rated this medium on a credential_command route that did not fire in the test; the reviewer rated it high on the PATH route. With fnox -c \"$HOME/.config/fnox/config.toml\" the project file did not load (tested; not tested through the generated mise alias). The value is byte for byte from macos-setup, so the live Mac already has it. A fix changes a value that R2 keeps byte for byte · accepted for this import under D14; for one security plan after the run",
-      "state": "open"
+      "text": "UNRESOLVED security finding [high] macos/tools/homebrew/tools.toml:25 (U1): the brew alias fnox exec -P brew -- brew pins no config, so fnox merges a fnox.toml from the current folder and its parents with no trust gate; a committed fnox.toml with a profiles.brew PATH secret makes any brew command there run a planted binary as the owner (tested on fnox 1.47.0), and that binary receives the profile token value (tested with a scratch default value; a Keychain token is inferred). The engine rated this medium on a credential_command route that did not fire in the test; the reviewer rated it high on the PATH route. With fnox -c \"$HOME/.config/fnox/config.toml\" the project file did not load (tested; not tested through the generated mise alias). The value is byte for byte from macos-setup, so the live Mac already has it. A fix changes a value that R2 keeps byte for byte · accepted for this import under D14; for one security plan after the run RULING (2026-11-06-security-gaps D4): Fixed: the brew alias and updateall pin the user fnox config; CONTEXT7_RUNNER is deleted (D5).",
+      "state": "closed"
     },
     {
       "id": "G10",
       "unit": "U3",
       "stage": "security",
-      "text": "SPEC/PLAN GAP: D4, R2 and R3 copy every value and file byte for byte and name no security requirement for prompt commands that run on cd or aliases that read current-folder config; G7 records this only for the mise trust boundary · no assumption taken; G8 and G9 hold the rulings",
-      "state": "open"
+      "text": "SPEC/PLAN GAP: D4, R2 and R3 copy every value and file byte for byte and name no security requirement for prompt commands that run on cd or aliases that read current-folder config; G7 records this only for the mise trust boundary · no assumption taken; G8 and G9 hold the rulings RULING (2026-11-06-security-gaps D3): Accepted: a spec gap of the import; D3 now gives the requirement.",
+      "state": "closed"
     },
     {
       "id": "G11",

@@ -490,8 +490,8 @@
       "id": "G12",
       "unit": "U4",
       "stage": "security",
-      "text": "D10 says the repo side follows no symlink but not what happens when the target is a symlink, and 03-tests.md:138 excludes symlink cases from the port · the U4 round 1 finding requires a refusal with code 2; U1 adds it and U3 adds the case",
-      "state": "open"
+      "text": "D10 says the repo side follows no symlink but not what happens when the target is a symlink, and 03-tests.md:138 excludes symlink cases from the port · the U4 round 1 finding requires a refusal with code 2; U1 adds it and U3 adds the case RULING (2026-11-06-security-gaps D13): Accepted: the run already applied this rule. No code change.",
+      "state": "closed"
     },
     {
       "id": "G13",
@@ -511,15 +511,15 @@
       "id": "G15",
       "unit": "U1",
       "stage": "security",
-      "text": "U1 returned UNRESOLVED on a merge target below a symlinked parent folder inside the repository (the merge read and wrote the outside file) · the orchestrator read D10 (the repo side follows no symlink) as the ruling and had U1 refuse it with code 2 in b47e12a, message <show>: the folder <folder> is a symlink - kept it as it is; generated and seed files still write through a linked folder. A person confirms this reading",
-      "state": "open"
+      "text": "U1 returned UNRESOLVED on a merge target below a symlinked parent folder inside the repository (the merge read and wrote the outside file) · the orchestrator read D10 (the repo side follows no symlink) as the ruling and had U1 refuse it with code 2 in b47e12a, message <show>: the folder <folder> is a symlink - kept it as it is; generated and seed files still write through a linked folder. A person confirms this reading RULING (2026-11-06-security-gaps D13): Accepted: the run already applied this rule. No code change.",
+      "state": "closed"
     },
     {
       "id": "G16",
       "unit": "U1",
       "stage": "security",
-      "text": "A target that is itself a symlink to a file: D17 names only a symlinked folder · U1 took the exact wording, so such a target fails too, because find -type f skips it; tools/ has no symlinks today",
-      "state": "open"
+      "text": "A target that is itself a symlink to a file: D17 names only a symlinked folder · U1 took the exact wording, so such a target fails too, because find -type f skips it; tools/ has no symlinks today RULING (2026-11-06-security-gaps D13): Accepted: the run already applied this rule. No code change.",
+      "state": "closed"
     },
     {
       "id": "G17",

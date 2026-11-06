@@ -180,7 +180,8 @@ upgrade:ai tasks and the cc* aliases.
   - `~/.claude/CLAUDE.md` — seed
   - `~/.claude/output-styles/ste100.md` — generated
   - `~/.claude/output-styles/terse.md` — generated
-  - `~/.claude/settings.json` — merge, template, remove `deniedMcpServers`
+  - `~/.claude/settings.json` — merge, template, remove `deniedMcpServers` and
+    `env.CONTEXT7_RUNNER`
   - `~/.config/mise/tasks/func/claude` — generated
   - `~/.config/mise/tasks/upgrade/ai` — generated
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
@@ -601,6 +602,10 @@ mise: its user-level config, its activation in bash, zsh and fish, and
   - `~/.config/mise/miserc.toml` — generated
   - `~/.config/zsh/01b-mise.zsh` — generated, template
   - `~/.zprofile` — generated
+- **Trust paths:** `MISE_TRUSTED_CONFIG_PATHS` holds `$HOME/.config/mise`,
+  `<projects_dir>/github.com` and `<projects_dir>/gitlab.com`. mise loads a
+  config below these paths with no prompt, so do not clone an untrusted
+  repository below the two project folders.
 - **Mise sections:** `[mise.tools]`, `[mise.shell_alias]`
 
 ### `network`
@@ -752,6 +757,7 @@ agent that other tools contribute.
 - **Files:**
   - `~/.ssh/config` — generated, template, format `text`
   - `~/.ssh/config.identity` — generated, template
+- **Folder mode:** the sync keeps `~/.ssh` at mode 700.
 - **Question `user`:**
   [`macos/tools/ssh/tools.toml`](../../macos/tools/ssh/tools.toml)
 

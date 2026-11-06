@@ -404,57 +404,57 @@
       "id": "G8",
       "unit": "U3",
       "stage": "security",
-      "text": "[medium] macos/tools/ssh/.ssh/config.tmpl:19 (U1): StrictHostKeyChecking accept-new in Host * takes a first-time host key with no prompt, so an attacker on the path at a first connection can intercept the session and pin a spoofed key. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
-      "state": "open"
+      "text": "[medium] macos/tools/ssh/.ssh/config.tmpl:19 (U1): StrictHostKeyChecking accept-new in Host * takes a first-time host key with no prompt, so an attacker on the path at a first connection can intercept the session and pin a spoofed key. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run RULING (2026-11-06-security-gaps D8): Accepted: accept-new is the normal tradeoff for a single user Mac.",
+      "state": "closed"
     },
     {
       "id": "G9",
       "unit": "U3",
       "stage": "security",
-      "text": "[medium] macos/tools/zsh/.config/zsh/98-zinit.zsh:8 (U1): lines 8-11 load four third-party plugins with zinit light and no commit pin, so an upstream compromise runs code in every interactive zsh. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
-      "state": "open"
+      "text": "[medium] macos/tools/zsh/.config/zsh/98-zinit.zsh:8 (U1): lines 8-11 load four third-party plugins with zinit light and no commit pin, so an upstream compromise runs code in every interactive zsh. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run RULING (2026-11-06-security-gaps D8): Accepted: the pin rule exempts dev tooling. The zinit ver ice stays available.",
+      "state": "closed"
     },
     {
       "id": "G10",
       "unit": "U3",
       "stage": "security",
-      "text": "[low] macos/tools/fish/.config/fish/conf.d/02-path.fish:30 (U1): fish_add_path puts the user-writable ~/.local/bin ahead of the system folders, unlike bash and zsh. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
-      "state": "open"
+      "text": "[low] macos/tools/fish/.config/fish/conf.d/02-path.fish:30 (U1): fish_add_path puts the user-writable ~/.local/bin ahead of the system folders, unlike bash and zsh. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run RULING (2026-11-06-security-gaps D8): Accepted: the attacker must already run as the user.",
+      "state": "closed"
     },
     {
       "id": "G11",
       "unit": "U3",
       "stage": "security",
-      "text": "[low] macos/tools/ssh/.ssh/config.tmpl:22 (U1): AddKeysToAgent yes and UseKeychain yes apply to Host * with no confirm, so code in the user session can sign silently with a key. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
-      "state": "open"
+      "text": "[low] macos/tools/ssh/.ssh/config.tmpl:22 (U1): AddKeysToAgent yes and UseKeychain yes apply to Host * with no confirm, so code in the user session can sign silently with a key. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run RULING (2026-11-06-security-gaps D8): Accepted: the attacker must already run as the user.",
+      "state": "closed"
     },
     {
       "id": "G12",
       "unit": "U3",
       "stage": "security",
-      "text": "[low] macos/tools/git/.config/git/config.tmpl:12 (U1): global core.filemode = false hides executable-bit changes from git status and git diff. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
-      "state": "open"
+      "text": "[low] macos/tools/git/.config/git/config.tmpl:12 (U1): global core.filemode = false hides executable-bit changes from git status and git diff. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run RULING (2026-11-06-security-gaps D8): Accepted: GitHub still shows the mode change, and a change shows mode differences in all repositories.",
+      "state": "closed"
     },
     {
       "id": "G13",
       "unit": "U3",
       "stage": "security",
-      "text": "[low] sync-engine/setup-sync:589: when ~/.ssh is missing, the first ssh tool file reaches mkdir -p with no folder mode, so ~/.ssh takes the umask, normally 0755, not 0700. Not reproduced · user ruling D14: open for one security plan after the run; the user approved this record on 2026-11-05",
-      "state": "open"
+      "text": "[low] sync-engine/setup-sync:589: when ~/.ssh is missing, the first ssh tool file reaches mkdir -p with no folder mode, so ~/.ssh takes the umask, normally 0755, not 0700. Not reproduced · user ruling D14: open for one security plan after the run; the user approved this record on 2026-11-05 RULING (2026-11-06-security-gaps D6): Fixed: the sync sets ~/.ssh to mode 700, on a new and on an existing folder.",
+      "state": "closed"
     },
     {
       "id": "G14",
       "unit": "U3",
       "stage": "security",
-      "text": "SPEC/PLAN GAP: U1 (01-tools.md, ssh entry) never required ~/.ssh to be mode 0700 when the sync creates it; the requirement belongs in the ssh tool plan or in the folder creation of setup-sync · user ruling D14: open for one security plan after the run",
-      "state": "open"
+      "text": "SPEC/PLAN GAP: U1 (01-tools.md, ssh entry) never required ~/.ssh to be mode 0700 when the sync creates it; the requirement belongs in the ssh tool plan or in the folder creation of setup-sync · user ruling D14: open for one security plan after the run RULING (2026-11-06-security-gaps D6): Fixed: D6 gives the requirement, and test:setup-sync covers it.",
+      "state": "closed"
     },
     {
       "id": "G15",
       "unit": "U3",
       "stage": "security",
-      "text": "[low] macos/tools/fish/.config/fish/conf.d/02-path.fish:34 (U1): fish_add_path prepends the user-writable $PNPM_HOME/bin ahead of the system folders, so a global pnpm package bin can shadow a system command in each fish session; bash and zsh do not set this path. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run",
-      "state": "open"
+      "text": "[low] macos/tools/fish/.config/fish/conf.d/02-path.fish:34 (U1): fish_add_path prepends the user-writable $PNPM_HOME/bin ahead of the system folders, so a global pnpm package bin can shadow a system command in each fish session; bash and zsh do not set this path. Imported unchanged from macos-setup · D13 applies: content unchanged, open for one security plan after the run RULING (2026-11-06-security-gaps D8): Accepted: the attacker must already run as the user.",
+      "state": "closed"
     },
     {
       "id": "G16",

@@ -376,15 +376,15 @@
       "id": "G5",
       "unit": "U1",
       "stage": "security",
-      "text": "the fix left open a raw file that holds <% and does not parse as TOML, against D6 · fail closed, code 2 on the render failure path, message '<shown>: not valid TOML before render: <message>'",
-      "state": "open"
+      "text": "the fix left open a raw file that holds <% and does not parse as TOML, against D6 · fail closed, code 2 on the render failure path, message '<shown>: not valid TOML before render: <message>' RULING (2026-11-06-security-gaps D13): Accepted: the run already applied this rule. No code change.",
+      "state": "closed"
     },
     {
       "id": "G6",
       "unit": "U2",
       "stage": "security",
-      "text": "'not valid TOML before render' cannot be reached through a full sync, because each side reads every tools.toml as TOML first and stops with code 2 on its own message · the case calls _se_mise_render directly; a raw non-TOML file is refused on every path",
-      "state": "open"
+      "text": "'not valid TOML before render' cannot be reached through a full sync, because each side reads every tools.toml as TOML first and stops with code 2 on its own message · the case calls _se_mise_render directly; a raw non-TOML file is refused on every path RULING (2026-11-06-security-gaps D13): Accepted: the run already applied this rule. No code change.",
+      "state": "closed"
     },
     {
       "id": "G7",
