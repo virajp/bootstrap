@@ -430,22 +430,22 @@
       "id": "G1",
       "unit": "U1",
       "stage": "edit",
-      "text": "D12 says a manifest write counts, but the Mac dry run does not call _se_manifest_write · It stays uncounted on the Mac side, because Edit 6 and the guardrails add no call; the repo dry run counts it.",
-      "state": "open"
+      "text": "D12 says a manifest write counts, but the Mac dry run does not call _se_manifest_write · It stays uncounted on the Mac side, because Edit 6 and the guardrails add no call; the repo dry run counts it. · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. Accepted with no code change: the Mac dry-run count can be one lower than the real run, and it is only a count.",
+      "state": "closed"
     },
     {
       "id": "G2",
       "unit": "U1",
       "stage": "edit",
-      "text": "D16 says <path> is the target path, but on the Mac side show can carry ' (-> <real>)' for a symlinked target · The list line and the dedupe key use that show, so the line matches the verbose lines.",
-      "state": "open"
+      "text": "D16 says <path> is the target path, but on the Mac side show can carry ' (-> <real>)' for a symlinked target · The list line and the dedupe key use that show, so the line matches the verbose lines. · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. Accepted with no code change: the extra text shows the real target, and the line matches the verbose lines.",
+      "state": "closed"
     },
     {
       "id": "G3",
       "unit": "U2",
       "stage": "edit",
-      "text": "The rulings give the Mac and _se_say error lines a glyph but no color · No red, although print_error in helpers may differ.",
-      "state": "open"
+      "text": "The rulings give the Mac and _se_say error lines a glyph but no color · No red, although print_error in helpers may differ. · closed: the user ruled on 2026-11-06 with the words: Yes, close all three. Accepted with no code change: the difference is cosmetic, and the last line of a failed run is still red under D12.",
+      "state": "closed"
     },
     {
       "id": "G4",
