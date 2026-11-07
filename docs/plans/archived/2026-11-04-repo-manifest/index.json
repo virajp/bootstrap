@@ -390,29 +390,29 @@
       "id": "G4",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1 and R1: the Verification allows test:repo-sync failures only for cases D5 changes, and 02-tests.md says no other existing case changes, but the check the gate with a cache also fails, because the test copies a fixed list of libraries into the gate cache without manifest · assumed U2 adds sync-engine/manifest to that cp",
-      "state": "open"
+      "text": "U1 and R1: the Verification allows test:repo-sync failures only for cases D5 changes, and 02-tests.md says no other existing case changes, but the check the gate with a cache also fails, because the test copies a fixed list of libraries into the gate cache without manifest · assumed U2 adds sync-engine/manifest to that cp · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: the test now copies all of sync-engine/, and the case passes.",
+      "state": "closed"
     },
     {
       "id": "G5",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: the plan has no test run for the new paths in this unit · assumed U2 owns them; U1 ran scratch checks under bash 3.2, which passed",
-      "state": "open"
+      "text": "U1: the plan has no test run for the new paths in this unit · assumed U2 owns them; U1 ran scratch checks under bash 3.2, which passed · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: U2 added the tests of the new paths, and they pass.",
+      "state": "closed"
     },
     {
       "id": "G6",
       "unit": "U2",
       "stage": "edit",
-      "text": "U2: 02-tests.md step 2 changes only the a synced gate is removed case and says no other existing case changes, but D5 also changes the block-header gate case, the three the header on line 2 cases and the two requires_found 5 folders down cases · assumed D3 is the rule (a case changes only where a ruling changes its expected result): each change function writes a manifest row, and the expected lines drop the (no <file>) suffix the engine no longer logs on a removal",
-      "state": "open"
+      "text": "U2: 02-tests.md step 2 changes only the a synced gate is removed case and says no other existing case changes, but D5 also changes the block-header gate case, the three the header on line 2 cases and the two requires_found 5 folders down cases · assumed D3 is the rule (a case changes only where a ruling changes its expected result): each change function writes a manifest row, and the expected lines drop the (no <file>) suffix the engine no longer logs on a removal · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: each changed case follows from D5.",
+      "state": "closed"
     },
     {
       "id": "G7",
       "unit": "U2",
       "stage": "edit",
-      "text": "R2 rule 3 raised three additions 02-tests.md does not name: a real-run copy of case 6 (D7 no removal), a second-run check in case 7 (D8 writes only on a change), and a mise.ci.toml seed in case 10 (the kept seed of U1) · not looped back to U2, a departure from the wave loop: each traces to a ruling, and taking them out would remove coverage, so the orchestrator kept them; a person may rule them out",
-      "state": "open"
+      "text": "R2 rule 3 raised three additions 02-tests.md does not name: a real-run copy of case 6 (D7 no removal), a second-run check in case 7 (D8 writes only on a change), and a mise.ci.toml seed in case 10 (the kept seed of U1) · not looped back to U2, a departure from the wave loop: each traces to a ruling, and taking them out would remove coverage, so the orchestrator kept them; a person may rule them out · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: the three checks stay, because each traces to a ruling.",
+      "state": "closed"
     },
     {
       "id": "G8",
@@ -460,15 +460,15 @@
       "id": "G14",
       "unit": "U1",
       "stage": "edit",
-      "text": "Contested after the one late loop-back: the comment at sync-engine/repo-sync:2036 says the files of the selected tools that this run writes or keeps, and _RS_HANDLED covers every tool of _RS_TOOLS, dependencies included · comment only, the code is right; left as it is because the late contract review allows one loop-back",
-      "state": "open"
+      "text": "Contested after the one late loop-back: the comment at sync-engine/repo-sync:2036 says the files of the selected tools that this run writes or keeps, and _RS_HANDLED covers every tool of _RS_TOOLS, dependencies included · comment only, the code is right; left as it is because the late contract review allows one loop-back · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Fixed: the comment now names the dependencies.",
+      "state": "closed"
     },
     {
       "id": "G15",
       "unit": "U4",
       "stage": "edit",
-      "text": "Contested after the one late loop-back: CLAUDE.md:331 and :333 and docs/sync/tools/repo-sync.md:154 still say a selected tool for the handled and kept paths of the stale rule, and the rule also covers each dependency, also through a mise depends · prose only, the code is right; a second loop-back is recorded, not run",
-      "state": "open"
+      "text": "Contested after the one late loop-back: CLAUDE.md:331 and :333 and docs/sync/tools/repo-sync.md:154 still say a selected tool for the handled and kept paths of the stale rule, and the rule also covers each dependency, also through a mise depends · prose only, the code is right; a second loop-back is recorded, not run · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Fixed: docs/design/repo-sync.md and docs/sync/tools/repo-sync.md now name the dependencies. CLAUDE.md no longer holds these words.",
+      "state": "closed"
     },
     {
       "id": "G16",
@@ -481,8 +481,8 @@
       "id": "G17",
       "unit": "",
       "stage": "keeps",
-      "text": "K1 cannot hold as written: python is in the base through the mise depends of pre-commit, so after [tools.python] and pyproject.toml go, conf.d/python/mise.dev.toml, code/lint/uv and setup/deps/python are still written, and their rows stay; a pyproject.toml deleted but not committed also still counts for requires_found · assumed the keep holds if the rule holds on what K1 proves. Run with the K1 setup: the first run exits 0, first line and sorted rows, conf.d/python row, no seed row. After the deletion is committed the next run exits 0, removes the three gates that need pyproject.toml, drops their rows, keeps own.txt. A second round with [tools.pulumi], a tool outside the base, removed conf.d/pulumi/mise.dev.toml, the conf.d/pulumi folder and its row. A person may want K1 rewritten around a tool outside the base",
-      "state": "open"
+      "text": "K1 cannot hold as written: python is in the base through the mise depends of pre-commit, so after [tools.python] and pyproject.toml go, conf.d/python/mise.dev.toml, code/lint/uv and setup/deps/python are still written, and their rows stay; a pyproject.toml deleted but not committed also still counts for requires_found · assumed the keep holds if the rule holds on what K1 proves. Run with the K1 setup: the first run exits 0, first line and sorted rows, conf.d/python row, no seed row. After the deletion is committed the next run exits 0, removes the three gates that need pyproject.toml, drops their rows, keeps own.txt. A second round with [tools.pulumi], a tool outside the base, removed conf.d/pulumi/mise.dev.toml, the conf.d/pulumi folder and its row. A person may want K1 rewritten around a tool outside the base · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: the plan is done, the run proved the rule with pulumi, and a deletion that is not committed counts until the next sync after the commit.",
+      "state": "closed"
     },
     {
       "id": "G18",
