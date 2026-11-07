@@ -298,7 +298,8 @@ The `base` pack is always added: `repo_sync` adds it, and the values file does
 not list it. Its tools are `mise`, `repo-sync`, `git`, `pre-commit`, `dprint`,
 `linter`, `vscode`, and the tools of the `security` pack. Do not select a tool
 of the
-`base` pack: a `[tools.<name>]` table for it only gives values. See
+`base` pack: a `[tools.<name>]` table for it gives values. An `env` in that
+table can only add environments, and the sync examines it. See
 [`packs/base.md`](packs/base.md).
 
 A repository with a `package.json` must select one package manager: `pnpm` or

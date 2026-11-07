@@ -145,7 +145,8 @@ the
   so
   the values file does not select it. A `[tools.<name>]` table for one of its
   tools
-  only gives values.
+  gives values. On the repo side, an `env` in that table can only add
+  environments, and the sync examines it.
 - Its members are in the packs file, as for each other pack. Thus a change to
   the
   pack is a change to the packs file only.
@@ -193,7 +194,7 @@ member tool. For example, `gitleaks`, `grype` and `osv-scanner` each have
 
 - A pack selection and a single `[tools.<member>]` entry both bring the common
   tool, with the environments of the member tools that need it.
-- The values file does not select it. A `[tools.<name>]` table for it only gives
+- The values file does not select it. A `[tools.<name>]` table for it gives
   values.
 - The sync adds a dependency before the tool that needs it. Thus the tool order
   of the `base` pack ends `... vscode _security_base gitleaks grype

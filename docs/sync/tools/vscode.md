@@ -13,7 +13,7 @@ selected tools.
 ## When the tool is relevant
 
 Always in a root repository: the `base` pack adds it. Do not select
-it in the values file. A `[tools.vscode]` table only gives values. VS Code
+it in the values file. A `[tools.vscode]` table gives values. VS Code
 opens the root repository, and
 its `extensions.json` also has the extensions of each git submodule. In a
 submodule, the sync skips the tool. A `[tools.vscode]` entry in a submodule

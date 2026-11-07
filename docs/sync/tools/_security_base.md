@@ -14,7 +14,7 @@ The common tool of the `security` pack: the `code:sec` orchestrator and the
 
 Always. The `base` pack always adds this tool: each scanner of the `security`
 pack has it in its `depends`. Do not select it in the values file. A
-`[tools._security_base]` table only gives values.
+`[tools._security_base]` table gives values.
 
 ## What the tool ships
 

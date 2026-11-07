@@ -12,7 +12,7 @@ gitleaks: the secret scanner, and `code:sec:gitleaks`.
 ## When the tool is relevant
 
 Always. The `base` pack always adds this tool, through the `security` pack.
-Do not select it in the values file. A `[tools.gitleaks]` table only gives
+Do not select it in the values file. A `[tools.gitleaks]` table gives
 values.
 
 ## What the tool ships

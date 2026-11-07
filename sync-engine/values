@@ -121,7 +121,7 @@ def shape_messages($t):
       catch (. as $e
         | ([$from[] | select(. < $e.tool)
             | select(($m[.].contributes[$n] | try getpath($e.path) catch null) != null)][0]) as $first
-        | {n: $n, bad: "\($shown)/\($first)/tools.toml and \($shown)/\($e.tool)/tools.toml set [contributes.\($n)] \($e.path | map(tostring) | join(".")) to different values - remove one, or set it in [tools.\($n)] of \($values)"})
+        | {n: $n, bad: "\($shown)/\($first)/tools.toml and \($shown)/\($e.tool)/tools.toml set [contributes.\($n)] \($e.path | map(tostring) | join(".")) to different values - remove one"})
   ] as $contributions
 | [($contributions[] | select(has("bad") | not)) as $x
     | ($in.keep | any(.[]; . == $x.n)) as $keep

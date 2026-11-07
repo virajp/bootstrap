@@ -2671,7 +2671,7 @@ run_case "values: [tools.vtest] wins over a contribution" 0 'environments = [ "d
 key = "mine"' values_contribution '+vtest config={"items":["a","b"],"key":"mine"}'
 run_case "values: two tools contribute different scalars" 2 "$vother_values
 [tools.vthird]" values_conflict \
-  'repo/tools/vother/tools.toml and repo/tools/vthird/tools.toml set [contributes.vtest] key to different values - remove one, or set it in [tools.vtest] of'
+  'repo/tools/vother/tools.toml and repo/tools/vthird/tools.toml set [contributes.vtest] key to different values - remove one'
 run_case "values: a contribution to a tool that is not selected" 0 'environments = [ "dev" ]
 [tools.vother]' values_contribution '+vother config={}' check_not_selected
 run_case "values: a contribution to a tool that bootstrap does not have" 3 'environments = [ "dev" ]

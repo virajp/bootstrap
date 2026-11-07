@@ -12,7 +12,7 @@ osv-scanner: the dependency scanner, and `code:sec:osv-scanner`.
 ## When the tool is relevant
 
 Always. The `base` pack always adds this tool, through the `security` pack.
-Do not select it in the values file. A `[tools.osv-scanner]` table only gives
+Do not select it in the values file. A `[tools.osv-scanner]` table gives
 values.
 
 ## What the tool ships

@@ -98,8 +98,9 @@ repository.
 
 One table for each tool of the repository. Each key is a folder
 `repo/tools/<folder>/` of `bootstrap`. Do not select the tools of the `base`
-pack: `repo-sync` always adds the `base` pack. A table for a base tool only
-gives values. See
+pack: `repo-sync` always adds the `base` pack. A table for a base tool gives
+values. An `env` in that table can only add environments, and the sync examines
+it. See
 [packs.md](packs.md#the-base-pack).
 A table for a dependency also selects the tool, and its values follow the rule
 of a base or dependency tool in `[tools.<folder>].<key>`.
