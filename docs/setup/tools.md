@@ -364,7 +364,8 @@ The Nerd Fonts casks (Fira Code, Hack, Iosevka, Iosevka Term, Meslo LG).
 
 ### `gcloud`
 
-The Google Cloud CLI (gcloud) and its env.
+The Google Cloud CLI (gcloud) and its env. Its mise entry depends on `python`
+and `uv`, and `CLOUDSDK_PYTHON` names the Python of the `python` tool.
 
 - **Packs:** `dev`
 - **Files:** none

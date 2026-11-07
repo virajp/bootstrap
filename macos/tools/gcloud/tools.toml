@@ -3,9 +3,17 @@
 description = "The Google Cloud CLI (gcloud) and its env"
 
 [mise.tools.gcloud]
+depends = [ "python", "uv" ]
 version = "latest"
 
 [mise.env]
 # GCP related
 CLOUDSDK_ACTIVE_CONFIG_NAME = "default"
+# gcloud wants the Python minor version of PYTHON_VERSION in its
+# lib/googlecloudsdk/core/updater/python_manager.py: 3.14 for gcloud 585. The
+# python tool pins the same version. Without this, gcloud uses the system
+# python3 (3.9 on macOS) and fails. Not `latest`: that link moves to each
+# newer Python, for example 3.15, and then the gcloud virtual environment in
+# ~/.config/gcloud/virtenv runs without its packages.
+CLOUDSDK_PYTHON = "{{ xdg_data_home }}/mise/installs/python/3.14/bin/python"
 USE_GKE_GCLOUD_AUTH_PLUGIN = { tools = true, value = "true" }

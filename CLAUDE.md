@@ -290,8 +290,9 @@ lines of the sync. The cases of the default output unset it. See
   no `[files]` table gives `mode = "seed"` to a JSON, YAML or TOML target, the
   example selects each tool and each rendered file parses, an example without
   the answer `config_path` of `macos-setup` stops the sync with code 2, and a
-  mise tool or a mise setting on both sides of `repo/tools/` and `macos/tools/`
-  has one value. To change such a value, change it on both sides. An intended
+  mise tool on both sides of `repo/tools/` and `macos/tools/` has one version
+  and one `depends`, and a mise setting on both sides has one value. To change
+  such a value, change it on both sides. An intended
   difference goes in `drift_allowed` of the task, with a reason. It needs no
   network when gomplate, jq and yq are installed.
 - `test` (`test/_default`) runs each test task in parallel. No hook and no
