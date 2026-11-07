@@ -285,92 +285,92 @@
       "id": "G1",
       "unit": "U1",
       "stage": "edit",
-      "text": "D4's first-run command assumes the task updateall:configs exists, but the task ships only through the sync, so a Mac with mise and the clone has no such task · docs/setup/index.md step 5 tests the task file for the Synced from bootstrap header: with it, the dry run; an old task or a plain file at tasks/updateall goes to migrate-dotfiles.md with no run; a missing task is rendered with gomplate into ~/.config/mise/tasks/updateall/configs/_default; then the D4 command runs. Not run against a real clone.",
-      "state": "open"
+      "text": "D4's first-run command assumes the task updateall:configs exists, but the task ships only through the sync, so a Mac with mise and the clone has no such task · docs/setup/index.md step 5 tests the task file for the Synced from bootstrap header: with it, the dry run; an old task or a plain file at tasks/updateall goes to migrate-dotfiles.md with no run; a missing task is rendered with gomplate into ~/.config/mise/tasks/updateall/configs/_default; then the D4 command runs. Not run against a real clone. · closed: the user ruled on 2026-11-07 with the words: Yes, close all 13. Accepted: step 5 of docs/setup/index.md renders the task. It did not run against a real clone.",
+      "state": "closed"
     },
     {
       "id": "G2",
       "unit": "U1",
       "stage": "edit",
-      "text": "The plan does not say what the agent does on a new Mac while the setup script of macos-setup is still the old one · The doc tells the agent not to run it, because it installs the dotfiles/ model, and to tell the owner the step is parked and stop.",
-      "state": "open"
+      "text": "The plan does not say what the agent does on a new Mac while the setup script of macos-setup is still the old one · The doc tells the agent not to run it, because it installs the dotfiles/ model, and to tell the owner the step is parked and stop. · closed: the user ruled on 2026-11-07 with the words: Yes, close all 13. Accepted: the setup script change for a new Mac stays parked.",
+      "state": "closed"
     },
     {
       "id": "G3",
       "unit": "U1",
       "stage": "edit",
-      "text": "The Notes part of macos-setup docs/tool-reference.md (packages, shells and init stage, secrets, identity, Claude Code, maintenance) is not in the plan's list for docs/setup/tools.md · Not carried over; that prose is in no bootstrap doc unless a later plan moves it.",
-      "state": "open"
+      "text": "The Notes part of macos-setup docs/tool-reference.md (packages, shells and init stage, secrets, identity, Claude Code, maintenance) is not in the plan's list for docs/setup/tools.md · Not carried over; that prose is in no bootstrap doc unless a later plan moves it. · closed: the user ruled on 2026-11-07 with the words: Yes, close all 13. Accepted: the Notes stay in docs/tool-reference.md of macos-setup, and a later cleanup must move them first.",
+      "state": "closed"
     },
     {
       "id": "G4",
       "unit": "U1",
       "stage": "edit",
-      "text": "The update path does not cover an empty bootstrap_commit · No sync completed, so the agent does steps 2 to 6 of the first adoption.",
-      "state": "open"
+      "text": "The update path does not cover an empty bootstrap_commit · No sync completed, so the agent does steps 2 to 6 of the first adoption. · closed: the user ruled on 2026-11-07 with the words: Yes, close all 13. Accepted: an empty bootstrap_commit goes to the first adoption steps.",
+      "state": "closed"
     },
     {
       "id": "G5",
       "unit": "U1",
       "stage": "edit",
-      "text": "The plan says nothing about whether macos.toml may hold a secret · A Rules line forbids secrets in it, because the owner commits the file.",
-      "state": "open"
+      "text": "The plan says nothing about whether macos.toml may hold a secret · A Rules line forbids secrets in it, because the owner commits the file. · closed: the user ruled on 2026-11-07 with the words: Yes, close all 13. Accepted: the Rules line stays.",
+      "state": "closed"
     },
     {
       "id": "G6",
       "unit": "U2",
       "stage": "edit",
-      "text": "D4 and the Facts assume mise run updateall:configs works on a Mac with mise and the clone, but the live model has no such task · The guide uses the direct form of the sync (bash <bootstrap>/macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync with SYNC_ENGINE_CLONE) only in steps 6 and 8, where the task cannot exist; the first real run, step 10, is the D4 command after the render in step 5 of docs/setup/index.md.",
-      "state": "open"
+      "text": "D4 and the Facts assume mise run updateall:configs works on a Mac with mise and the clone, but the live model has no such task · The guide uses the direct form of the sync (bash <bootstrap>/macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync with SYNC_ENGINE_CLONE) only in steps 6 and 8, where the task cannot exist; the first real run, step 10, is the D4 command after the render in step 5 of docs/setup/index.md. · closed: the user ruled on 2026-11-07 with the words: Yes, close all 13. Accepted: the direct form is only where the task cannot exist yet.",
+      "state": "closed"
     },
     {
       "id": "G7",
       "unit": "U2",
       "stage": "edit",
-      "text": "D6 says to keep dotfiles.root when a source path is relative to it, but the mise docs (Context7, v2026.11.0) say a relative source starts at the folder of the declaring config file, and dotfiles.root applies only when source is omitted · The note keeps dotfiles.root in [mise.settings] of macos.toml, and says how the path resolves; the owner ratifies the difference from D6.",
-      "state": "open"
+      "text": "D6 says to keep dotfiles.root when a source path is relative to it, but the mise docs (Context7, v2026.11.0) say a relative source starts at the folder of the declaring config file, and dotfiles.root applies only when source is omitted · The note keeps dotfiles.root in [mise.settings] of macos.toml, and says how the path resolves; the owner ratifies the difference from D6. · closed: the user ruled on 2026-11-07 with the words: Yes, close all 13. Accepted: the user approved the difference from D6. The mise docs of v2026.11.0 confirm the note.",
+      "state": "closed"
     },
     {
       "id": "G8",
       "unit": "U2",
       "stage": "edit",
-      "text": "The plan says 13 files belong to no tool, but today's tracked dotfiles/ has 4 against macos/tools/ · The count is out of date, so the guide gives a list command and no number.",
-      "state": "open"
+      "text": "The plan says 13 files belong to no tool, but today's tracked dotfiles/ has 4 against macos/tools/ · The count is out of date, so the guide gives a list command and no number. · closed: the user ruled on 2026-11-07 with the words: Yes, close all 13. Accepted: the guide gives a list command and no number.",
+      "state": "closed"
     },
     {
       "id": "G9",
       "unit": "U2",
       "stage": "edit",
-      "text": "The plan does not cover a friend's repo that is a fork, where GitHub can refuse the visibility change · The agent stops and shows the owner the message, and the owner decides.",
-      "state": "open"
+      "text": "The plan does not cover a friend's repo that is a fork, where GitHub can refuse the visibility change · The agent stops and shows the owner the message, and the owner decides. · closed: the user ruled on 2026-11-07 with the words: Yes, close all 13. Accepted: the agent stops and shows the owner the message.",
+      "state": "closed"
     },
     {
       "id": "G10",
       "unit": "U2",
       "stage": "edit",
-      "text": "These steps of the guide were not run: the gh commands of step 5, git push, a real mise bootstrap, and a real HOME · The D4 path was simulated in a scratch HOME with a link into a scratch clone, a local SYNC_ENGINE_URL and the sample macos.toml: render, dry run exit 0 with 0 failed, real run exit 4, then exit 0, bootstrap_commit written.",
-      "state": "open"
+      "text": "These steps of the guide were not run: the gh commands of step 5, git push, a real mise bootstrap, and a real HOME · The D4 path was simulated in a scratch HOME with a link into a scratch clone, a local SYNC_ENGINE_URL and the sample macos.toml: render, dry run exit 0 with 0 failed, real run exit 4, then exit 0, bootstrap_commit written. · closed: the user ruled on 2026-11-07 with the words: Yes, close all 13. Accepted: the real run happens at the migration of the Mac, which has not started.",
+      "state": "closed"
     },
     {
       "id": "G11",
       "unit": "U2",
       "stage": "edit",
-      "text": "U2 Edits name only the 19 fragments and the obsolete files for deletion, but a simulation showed the plain file dotfiles/.config/mise/tasks/updateall makes 3 targets fail, because the sync needs a folder at that path · Step 9 also deletes that file, and step 3 leaves it out of the classification of the owner.",
-      "state": "open"
+      "text": "U2 Edits name only the 19 fragments and the obsolete files for deletion, but a simulation showed the plain file dotfiles/.config/mise/tasks/updateall makes 3 targets fail, because the sync needs a folder at that path · Step 9 also deletes that file, and step 3 leaves it out of the classification of the owner. · closed: the user ruled on 2026-11-07 with the words: Yes, close all 13. Accepted: step 9 deletes the plain file.",
+      "state": "closed"
     },
     {
       "id": "G12",
       "unit": "U3",
       "stage": "edit",
-      "text": "The plan says to run vwf:docs-sync over the full branch delta, but that skill ends at its step 1 for a scope of only human-doc edits · No surveyor ran; U3 applied the handed DOCS FALSIFIED lines and checked CLAUDE.md, README.md, docs/sync and docs/design with a grep.",
-      "state": "open"
+      "text": "The plan says to run vwf:docs-sync over the full branch delta, but that skill ends at its step 1 for a scope of only human-doc edits · No surveyor ran; U3 applied the handed DOCS FALSIFIED lines and checked CLAUDE.md, README.md, docs/sync and docs/design with a grep. · closed: the user ruled on 2026-11-07 with the words: Yes, close all 13. Accepted: the grep stays the check of this scope.",
+      "state": "closed"
     },
     {
       "id": "G13",
       "unit": "U3",
       "stage": "edit",
-      "text": "The lead of Where the rules are in CLAUDE.md still says each rule of the sync has one place in docs/design/, and the list now also names docs/setup/ files · The plan asks only for the lines, so the lead stays: the Mac docs are prompts and a reference, not sync rules.",
-      "state": "open"
+      "text": "The lead of Where the rules are in CLAUDE.md still says each rule of the sync has one place in docs/design/, and the list now also names docs/setup/ files · The plan asks only for the lines, so the lead stays: the Mac docs are prompts and a reference, not sync rules. · closed: the user ruled on 2026-11-07 with the words: Yes, close all 13. Accepted: the lead stays, because the Mac docs are not sync rules.",
+      "state": "closed"
     },
     {
       "id": "G14",
