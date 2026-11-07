@@ -13,7 +13,7 @@ function `repo_sync` of `sync-engine/repo-sync` in the clone.
 ## When the tool is relevant
 
 Always. The `base` pack always adds this tool. Do not select it in the values
-file. A `[tools.repo-sync]` table only gives values.
+file. A `[tools.repo-sync]` table gives values.
 
 ## What the tool ships
 

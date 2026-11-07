@@ -13,7 +13,7 @@ orchestrators.
 ## When the tool is relevant
 
 Always. The `base` pack always adds this tool. Do not select it in the values
-file. A `[tools.mise]` table only gives values.
+file. A `[tools.mise]` table gives values.
 
 ## What the tool ships
 
