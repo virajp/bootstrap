@@ -416,6 +416,9 @@ Two tools must not define the same mise tool. The sync reads all the
 `tools.toml` files of `bootstrap`, also the files of the tools that are not
 selected, and stops for a duplicate.
 
+The mise `depends` link and the stop for a duplicate apply to the repo side
+only. The Mac side follows only the `depends` key of `tools.toml`.
+
 ### The generated files
 
 The sync writes one file for each selected environment that has content:
