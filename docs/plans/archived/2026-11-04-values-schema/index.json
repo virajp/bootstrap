@@ -357,8 +357,8 @@
       "id": "G5",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: inside one target tool, the ported jq error stops at the first conflict, so a second contribution conflict or a type change stays hidden until the first is fixed, against D10's logs every message · assumed the port's first-message-per-tool behaviour is acceptable, since the unit says to port the functions as they are",
-      "state": "open"
+      "text": "U1: inside one target tool, the ported jq error stops at the first conflict, so a second contribution conflict or a type change stays hidden until the first is fixed, against D10's logs every message · assumed the port's first-message-per-tool behaviour is acceptable, since the unit says to port the functions as they are · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: inside one target tool the sync shows the first conflict only, and docs/sync/index.md says this.",
+      "state": "closed"
     },
     {
       "id": "G6",
@@ -378,29 +378,29 @@
       "id": "G8",
       "unit": "U4",
       "stage": "edit",
-      "text": "U4: sync-engine/values:133, ported from setup-sync:803, tells the user to remove one contribution or set the value in [tools.<name>], but a user value does not clear a contribution conflict, since contributions merge first and any conflict returns code 2 · assumed the engine is the source of truth and the plan's port-its-messages ruling stands, so docs/design/tools.md says a [tools.<name>] value does not clear the conflict; the engine message needs a ruling and a fix",
-      "state": "open"
+      "text": "U4: sync-engine/values:133, ported from setup-sync:803, tells the user to remove one contribution or set the value in [tools.<name>], but a user value does not clear a contribution conflict, since contributions merge first and any conflict returns code 2 · assumed the engine is the source of truth and the plan's port-its-messages ruling stands, so docs/design/tools.md says a [tools.<name>] value does not clear the conflict; the engine message needs a ruling and a fix · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Fixed: the message of sync-engine/values now ends at remove one, and the test of test:repo-sync expects this.",
+      "state": "closed"
     },
     {
       "id": "G9",
       "unit": "U4",
       "stage": "edit",
-      "text": "U4: the plan does not say whether the adopting AI asks a tool's [questions] · assumed per D7 that the docs say only that the sync examines the shape and asks nothing; docs/sync/index.md gets no instruction to ask, and no tool uses the table now",
-      "state": "open"
+      "text": "U4: the plan does not say whether the adopting AI asks a tool's [questions] · assumed per D7 that the docs say only that the sync examines the shape and asks nothing; docs/sync/index.md gets no instruction to ask, and no tool uses the table now · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: no repo tool has a [questions] table, and docs/setup/index.md asks the questions of the Mac tools.",
+      "state": "closed"
     },
     {
       "id": "G10",
       "unit": "U4",
       "stage": "edit",
-      "text": "U4: the docs say a [tools.<name>] table for a base tool only gives values, while CLAUDE.md mise config and step 3 say a tool selected more than once gets each environment, so env in a [tools.dprint] table may still add environments; not tested in the engine · assumed the docs follow the ruling's wording, with no env exception added",
-      "state": "open"
+      "text": "U4: the docs say a [tools.<name>] table for a base tool only gives values, while CLAUDE.md mise config and step 3 say a tool selected more than once gets each environment, so env in a [tools.dprint] table may still add environments; not tested in the engine · assumed the docs follow the ruling's wording, with no env exception added · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Fixed: the docs now say that an env in the table can only add environments and that the sync examines it. Dry runs: ci stops git and repo-sync, and env dev does not remove ci from linter.",
+      "state": "closed"
     },
     {
       "id": "G11",
       "unit": "U4",
       "stage": "edit",
-      "text": "R4: the ruling and D5 say a table for a base tool or a dependency only gives values, but the engine (_rs_resolve) also selects a dependency through its [tools.<dep>] table, and docs/sync/tools/node.md, java.md and kotlin.md rely on that · assumed the engine stands and the docs describe it: the table of a base tool only gives values, and the table of a dependency also selects it; the ruling's wording needs a person's confirmation",
-      "state": "open"
+      "text": "R4: the ruling and D5 say a table for a base tool or a dependency only gives values, but the engine (_rs_resolve) also selects a dependency through its [tools.<dep>] table, and docs/sync/tools/node.md, java.md and kotlin.md rely on that · assumed the engine stands and the docs describe it: the table of a base tool only gives values, and the table of a dependency also selects it; the ruling's wording needs a person's confirmation · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: the engine selects a dependency through its table, and docs/design/bootstrap-config.md says this.",
+      "state": "closed"
     }
   ],
   "overrides": [],
