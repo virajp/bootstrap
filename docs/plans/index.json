@@ -20,26 +20,6 @@
       "backlog_pieces": []
     },
     {
-      "id": "2026-11-04-repo-manifest",
-      "folder": "docs/plans/2026-11-04-repo-manifest",
-      "kind": "change",
-      "title": "The manifest and the stale rule",
-      "target_repo": null,
-      "priority": 50,
-      "status": "COMPLETE",
-      "started": "2026-11-04T12:34:49.429Z",
-      "ended": "2026-11-04T14:57:51.426Z",
-      "gaps": {
-        "open": 7,
-        "moved_to": []
-      },
-      "requires": [
-        "2026-11-04-packs-merged"
-      ],
-      "backlog": [],
-      "backlog_pieces": []
-    },
-    {
       "id": "2026-11-04-docs-setup",
       "folder": "docs/plans/2026-11-04-docs-setup",
       "kind": "change",

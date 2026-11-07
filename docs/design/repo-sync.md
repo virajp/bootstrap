@@ -406,11 +406,12 @@ its writes and its removals of the merge tasks: it logs `FAILED:
 .config/repo-generated.tsv`,
 and it skips the stale rule, the write of the manifest and `bootstrap_commit`.
 
-Handled paths are the files of the selected tools that this run wrote or kept
+Handled paths are the files of the selected tools and their dependencies, also
+through a mise `depends`, that this run wrote or kept
 (generated,
 seed or merge), and the merge tasks of the other branch model. A seed or a merge
-target of a
-selected tool that the run left in place counts as kept, also one that
+target of such a
+tool that the run left in place counts as kept, also one that
 `requires` or its
 environment skips. A generated file that `requires` or its environment skips is
 not handled.

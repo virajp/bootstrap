@@ -1559,8 +1559,8 @@ repo_sync() {
   local tool written worst=0 failed=()
   _RS_GENERATED=' '
   # The rows of the manifest, and the paths that the stale rule must not remove:
-  # the files of the selected tools that this run writes or keeps, and the merge
-  # tasks of the other model, which `_rs_remove` handles.
+  # the files of the selected tools and their dependencies that this run writes
+  # or keeps, and the merge tasks of the other model, which `_rs_remove` handles.
   local skipped
   _RS_ROWS='' _RS_HANDLED=''
   for skipped in $_RS_SKIP; do
