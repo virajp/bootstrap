@@ -80,26 +80,6 @@
       "backlog_pieces": []
     },
     {
-      "id": "2026-11-04-setup-sync-front-end",
-      "folder": "docs/plans/2026-11-04-setup-sync-front-end",
-      "kind": "change",
-      "title": "The Mac front-end on the shared engine",
-      "target_repo": null,
-      "priority": 90,
-      "status": "COMPLETE",
-      "started": "2026-11-05T05:04:56.276Z",
-      "ended": "2026-11-05T06:38:50.907Z",
-      "gaps": {
-        "open": 4,
-        "moved_to": []
-      },
-      "requires": [
-        "2026-11-04-mise-generation-shared"
-      ],
-      "backlog": [],
-      "backlog_pieces": []
-    },
-    {
       "id": "2026-11-04-macos-tools-base-shells",
       "folder": "docs/plans/2026-11-04-macos-tools-base-shells",
       "kind": "change",
