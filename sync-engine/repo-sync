@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# repo-sync — copy the shared files of the selected tools from the private
+# repo-sync — copy the shared files of the selected tools from the
 # `bootstrap` repo into this repo. Meant to be *sourced* by a mise task, not
 # executed:
 #
