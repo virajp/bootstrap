@@ -2,24 +2,6 @@
   "format": 1,
   "plans": [
     {
-      "id": "2026-11-04-sync-engine-cache",
-      "folder": "docs/plans/2026-11-04-sync-engine-cache",
-      "kind": "change",
-      "title": "Shared cache and clone for the sync engine",
-      "target_repo": null,
-      "priority": 10,
-      "status": "COMPLETE",
-      "started": "2026-11-04T03:32:26.489Z",
-      "ended": "2026-11-04T04:53:44.883Z",
-      "gaps": {
-        "open": 9,
-        "moved_to": []
-      },
-      "requires": [],
-      "backlog": [],
-      "backlog_pieces": []
-    },
-    {
       "id": "2026-11-04-docs-setup",
       "folder": "docs/plans/2026-11-04-docs-setup",
       "kind": "change",
