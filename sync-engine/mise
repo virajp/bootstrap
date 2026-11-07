@@ -392,7 +392,7 @@ _se_mise_read() {
     return 2
   }
   # `--missing-key default`: `required` must see a key that is missing. The check
-  # of `<no value>` below keeps any other use of such a key an error.
+  # of `<no value>` below catches a plain use of such a key.
   if ! _se_gomplate --missing-key default -c ".=${ctx}?type=application/json" -f "$file" -o "$copy" 2> "$err"; then
     msg=$(sed -n 's/.*error calling [A-Za-z.]*: //p' "$err" | sed 's/"}$//')
     [[ -n $msg ]] || msg=$(sed -n 's/.*"err":"//p' "$err" | sed 's/"}$//')
