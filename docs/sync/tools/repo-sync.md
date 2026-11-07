@@ -222,7 +222,8 @@ Besides the copy of the files, `repo_sync` does these steps:
   - The stale rule removes each file with the bootstrap header that the old
     manifest lists and this run does not write, then its empty parent folders. A
     file without the header stays. It skips a seed and a merge target of a
-    selected tool. The first sync has no manifest, so it removes nothing.
+    selected tool or a dependency. The first sync has no manifest, so it removes
+    nothing.
   - The manifest has one `<tool><TAB><path>` row for each generated file. The
     sync skips a row with no TAB, an empty tool or path, an absolute path, or an
     empty, `.`, `..` or `.git` segment. It does not remove a listed path that is
