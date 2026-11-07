@@ -389,29 +389,29 @@
       "id": "G1",
       "unit": "U1",
       "stage": "edit",
-      "text": "Edit 1.6 validates tools.toml for every folder, but the [questions] rules in sync-engine/values reach selected tools only · assumed the manifest template of the old engine stays and checks [defaults], [questions] and [contributes] shapes for every tool, so a bad table in an unselected tool still returns 2",
-      "state": "open"
+      "text": "Edit 1.6 validates tools.toml for every folder, but the [questions] rules in sync-engine/values reach selected tools only · assumed the manifest template of the old engine stays and checks [defaults], [questions] and [contributes] shapes for every tool, so a bad table in an unselected tool still returns 2 · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. No code change: _SS_MANIFEST_TPL runs for every tool folder and examines these tables.",
+      "state": "closed"
     },
     {
       "id": "G2",
       "unit": "U1",
       "stage": "edit",
-      "text": "the plan does not say whether a mise depends of a Mac [mise.tools] entry adds the tool that defines it, or whether two Mac tools may define one mise tool · assumed the Mac closure follows only the tools.toml depends key, with no duplicate check",
-      "state": "open"
+      "text": "the plan does not say whether a mise depends of a Mac [mise.tools] entry adds the tool that defines it, or whether two Mac tools may define one mise tool · assumed the Mac closure follows only the tools.toml depends key, with no duplicate check · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Fixed: docs/design/mise.md now limits the mise depends link and the stop for a duplicate to the repo side. No Mac tool has a mise depends, and the Mac side has no duplicate, so no Mac check is added.",
+      "state": "closed"
     },
     {
       "id": "G3",
       "unit": "U2",
       "stage": "edit",
-      "text": "the table says the merge cases are fourteen, but the old test has 16 (12 behaviour, 4 config errors) · assumed all were meant, and all 16 are ported",
-      "state": "open"
+      "text": "the table says the merge cases are fourteen, but the old test has 16 (12 behaviour, 4 config errors) · assumed all were meant, and all 16 are ported · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. No code change: test:setup-sync has all 16 merge cases.",
+      "state": "closed"
     },
     {
       "id": "G4",
       "unit": "U2",
       "stage": "edit",
-      "text": "the table and edit 4 both list an override path that no selected tool has · assumed two cases are wanted, the second uses its own folder override-none",
-      "state": "open"
+      "text": "the table and edit 4 both list an override path that no selected tool has · assumed two cases are wanted, the second uses its own folder override-none · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. No code change: the override-none case is in test:setup-sync, and the next case tests [overrides.gitignore].",
+      "state": "closed"
     },
     {
       "id": "G5",
