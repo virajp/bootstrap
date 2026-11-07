@@ -12,8 +12,8 @@
 
 description = "macOS settings: Finder, Dock, Mission Control, window management, menu bar clock and trackpad"
 
-# The position of the Dock is a question: the template writes it as
-# orientation of com.apple.dock.
+# The position of the Dock is a question: the table of com.apple.dock below
+# writes it as orientation.
 [questions.dock_orientation]
 detect = "defaults read com.apple.dock orientation 2>/dev/null || echo bottom"
 example = "bottom"

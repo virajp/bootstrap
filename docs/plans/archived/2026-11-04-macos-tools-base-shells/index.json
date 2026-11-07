@@ -369,29 +369,29 @@
       "id": "G3",
       "unit": "U1",
       "stage": "edit",
-      "text": "macos/tools/fish/tools.toml description still says optionally the login shell, and R1 keeps the old text · kept, although D1 now always sets a login shell",
-      "state": "open"
+      "text": "macos/tools/fish/tools.toml description still says optionally the login shell, and R1 keeps the old text · kept, although D1 now always sets a login shell · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Fixed: the description in tools.toml and docs/setup/tools.md now says and the login shell.",
+      "state": "closed"
     },
     {
       "id": "G4",
       "unit": "U1",
       "stage": "edit",
-      "text": "macos/tools/gh/tools.toml keeps the comment the keys that macos-setup enforces · kept, because R1 removes only decision citations",
-      "state": "open"
+      "text": "macos/tools/gh/tools.toml keeps the comment the keys that macos-setup enforces · kept, because R1 removes only decision citations · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Fixed: the comment now says bootstrap enforces.",
+      "state": "closed"
     },
     {
       "id": "G5",
       "unit": "U1",
       "stage": "edit",
-      "text": "macos/tools/macos-defaults/tools.toml keeps the question comment the template writes it as orientation · kept under R1, although no template remains",
-      "state": "open"
+      "text": "macos/tools/macos-defaults/tools.toml keeps the question comment the template writes it as orientation · kept under R1, although no template remains · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Fixed: the comment now names the table of com.apple.dock.",
+      "state": "closed"
     },
     {
       "id": "G6",
       "unit": "U1",
       "stage": "edit",
-      "text": "The shipped 00-bootstrap.bash, 00-bootstrap.zsh and 01-env.fish keep comments that name tools/<tool>/.config/mise/conf.d/, a path that no longer ships · D4 and D12 allow no edit, left for the phase 4 comparison",
-      "state": "open"
+      "text": "The shipped 00-bootstrap.bash, 00-bootstrap.zsh and 01-env.fish keep comments that name tools/<tool>/.config/mise/conf.d/, a path that no longer ships · D4 and D12 allow no edit, left for the phase 4 comparison · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Fixed: the three comments now name .config/mise/conf.d/<tool>/, and the comparison gets a comment-only difference.",
+      "state": "closed"
     },
     {
       "id": "G7",
@@ -460,15 +460,15 @@
       "id": "G16",
       "unit": "U4",
       "stage": "edit",
-      "text": "The vwf:docs-sync surveyor returned no findings beyond the supplied lines, and no owned doc counts the Mac tools, lists the members of pack base or describes login_shell · assumed those parts of U4 Edit 2 need no text, checked with grep",
-      "state": "open"
+      "text": "The vwf:docs-sync surveyor returned no findings beyond the supplied lines, and no owned doc counts the Mac tools, lists the members of pack base or describes login_shell · assumed those parts of U4 Edit 2 need no text, checked with grep · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: grep found no doc that counts the Mac tools or lists the members of pack base.",
+      "state": "closed"
     },
     {
       "id": "G17",
       "unit": "U4",
       "stage": "edit",
-      "text": "The data.ToJSON rule of CLAUDE.md names only templates, and macos/tools/fish/tools.toml:32 writes login_shell unencoded in a [mise.*] string under D1 and D2 · assumed a [mise.*] string is outside that rule, text unchanged",
-      "state": "open"
+      "text": "The data.ToJSON rule of CLAUDE.md names only templates, and macos/tools/fish/tools.toml:32 writes login_shell unencoded in a [mise.*] string under D1 and D2 · assumed a [mise.*] string is outside that rule, text unchanged · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: the value comes from the macos.toml of the user, and macos-defaults has the same form.",
+      "state": "closed"
     },
     {
       "id": "G18",

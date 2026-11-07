@@ -5,7 +5,7 @@
 # install Homebrew's fish, add it to /etc/shells and set the login shell. They
 # become ~/.config/mise/conf.d/fish/mise.toml.
 depends = [ "homebrew", "mise", "macos-setup" ]
-description = "fish from Homebrew, its config, drop-in folder conf.d/ and functions; optionally the login shell"
+description = "fish from Homebrew, its config, drop-in folder conf.d/ and functions, and the login shell"
 stage = "init"
 
 [defaults]

@@ -329,7 +329,7 @@ Final Cut Pro, from the Mac App Store.
 
 ### `fish`
 
-fish from Homebrew, its config, drop-in folder conf.d/ and functions; optionally
+fish from Homebrew, its config, drop-in folder conf.d/ and functions, and
 the login shell.
 
 - **Packs:** `base` (default)
