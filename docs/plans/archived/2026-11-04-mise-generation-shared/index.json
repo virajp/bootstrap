@@ -355,15 +355,15 @@
       "id": "G2",
       "unit": "U2",
       "stage": "edit",
-      "text": "macos cases 2.3 and 2.4 name no message and no write check · the unit took the engine's texts 'envs of mise tool fd is not valid on the macos side' and 'requires_found of mise tool fd is not valid on the macos side', and checks no file is written",
-      "state": "open"
+      "text": "macos cases 2.3 and 2.4 name no message and no write check · the unit took the engine's texts 'envs of mise tool fd is not valid on the macos side' and 'requires_found of mise tool fd is not valid on the macos side', and checks no file is written · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: both messages and the no-write check are in test:repo-sync.",
+      "state": "closed"
     },
     {
       "id": "G3",
       "unit": "U2",
       "stage": "edit",
-      "text": "case 3, 'the existing conf.d file is not listed as updated', names no real run · checked on the dry-run log only; no real-run case proves the file stays on disk",
-      "state": "open"
+      "text": "case 3, 'the existing conf.d file is not listed as updated', names no real run · checked on the dry-run log only; no real-run case proves the file stays on disk · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: the dry-run log shows that the file is not listed as updated.",
+      "state": "closed"
     },
     {
       "id": "G4",
@@ -411,29 +411,29 @@
       "id": "G10",
       "unit": "U4",
       "stage": "edit",
-      "text": "Edit 1 says each list of the valid sections, but README.md and docs/sync/index.md hold no full list · the unit extended the partial passages and left the full list in docs/design/mise.md and docs/design/tools.md",
-      "state": "open"
+      "text": "Edit 1 says each list of the valid sections, but README.md and docs/sync/index.md hold no full list · the unit extended the partial passages and left the full list in docs/design/mise.md and docs/design/tools.md · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: README.md and docs/sync/index.md point to docs/design, which holds the full list.",
+      "state": "closed"
     },
     {
       "id": "G11",
       "unit": "U1",
       "stage": "edit",
-      "text": "Found by the wave 4 closing pass, outside U4 Owns and after the U3 row: the comment at sync-engine/mise:430-431 says any other use of a missing key is an error, which is false; print .config.x puts a literal <nil> into a generated value with exit 0, and printf with %s writes %!s(<nil>) the same way, because _se_mise_read rejects only a literal <no value>. D6 does not rule on this · no code changed; docs/design/mise.md states the real behaviour, and the owner of sync-engine rules whether the check must also catch these",
-      "state": "open"
+      "text": "Found by the wave 4 closing pass, outside U4 Owns and after the U3 row: the comment at sync-engine/mise:430-431 says any other use of a missing key is an error, which is false; print .config.x puts a literal <nil> into a generated value with exit 0, and printf with %s writes %!s(<nil>) the same way, because _se_mise_read rejects only a literal <no value>. D6 does not rule on this · no code changed; docs/design/mise.md states the real behaviour, and the owner of sync-engine rules whether the check must also catch these · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Fixed: the comment now says that the check catches a plain use of such a key. The engine stays, because no tools.toml uses print or printf with .config.",
+      "state": "closed"
     },
     {
       "id": "G12",
       "unit": "",
       "stage": "plan-gate",
-      "text": "Keep K1 cannot pass as written: examples/monorepo/bootstrap.toml names the folder members packages/common, projects/service and projects/worker, which the check does not create, so setup:configs exits 2 on both main and the run branch · the run also created those three folders, each with a .gitkeep, in both scratch consumers and held that variant to the pass: both exit 0, conf.d trees byte-equal with the same override comments, the only other difference the bootstrap_commit line. The check text in gates.keeps still needs that fix",
-      "state": "open"
+      "text": "Keep K1 cannot pass as written: examples/monorepo/bootstrap.toml names the folder members packages/common, projects/service and projects/worker, which the check does not create, so setup:configs exits 2 on both main and the run branch · the run also created those three folders, each with a .gitkeep, in both scratch consumers and held that variant to the pass: both exit 0, conf.d trees byte-equal with the same override comments, the only other difference the bootstrap_commit line. The check text in gates.keeps still needs that fix · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: the plan is done, so nothing runs that gate again.",
+      "state": "closed"
     },
     {
       "id": "G13",
       "unit": "",
       "stage": "plan-gate",
-      "text": "The first K1 attempt set SYNC_ENGINE_CACHE but not XDG_CACHE_HOME, so the sync old-cache removal deleted the real ~/.cache/bootstrap, outside the scratch folder (~/.cache/bootstrap.lock is also absent; whether it existed before was not checked) · not restored: CLAUDE.md says each sync removes these two, and an old stub clones again. The K1 check text should set a scratch XDG_CACHE_HOME; the later attempt did",
-      "state": "open"
+      "text": "The first K1 attempt set SYNC_ENGINE_CACHE but not XDG_CACHE_HOME, so the sync old-cache removal deleted the real ~/.cache/bootstrap, outside the scratch folder (~/.cache/bootstrap.lock is also absent; whether it existed before was not checked) · not restored: CLAUDE.md says each sync removes these two, and an old stub clones again. The K1 check text should set a scratch XDG_CACHE_HOME; the later attempt did · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: each sync removes these two paths, and an old stub clones again, so no restore is necessary.",
+      "state": "closed"
     }
   ],
   "overrides": [],
