@@ -452,36 +452,36 @@
       "id": "G3",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: the unit file has no message for a failed reset or clean in _se_fetch · exit 5 with Cannot update the clone in <repo> - nothing synced",
-      "state": "open"
+      "text": "U1: the unit file has no message for a failed reset or clean in _se_fetch · exit 5 with Cannot update the clone in <repo> - nothing synced · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: the run message stays.",
+      "state": "closed"
     },
     {
       "id": "G4",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: the unit file does not say what to do when the rm of the old cache fails · the run says nothing and goes on, because the ruling says only that it is not an error",
-      "state": "open"
+      "text": "U1: the unit file does not say what to do when the rm of the old cache fails · the run says nothing and goes on, because the ruling says only that it is not an error · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: the ruling says that a failed removal is not an error.",
+      "state": "closed"
     },
     {
       "id": "G5",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: Verification says the rendered stub has _se_fetch once, and it has one definition and one call · read as one definition",
-      "state": "open"
+      "text": "U1: Verification says the rendered stub has _se_fetch once, and it has one definition and one call · read as one definition · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: this was only the wording of a check.",
+      "state": "closed"
     },
     {
       "id": "G6",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: the unit file does not say what _se_legacy_cleanup says when only the old lock existed · the same Removed the old cache <base>/bootstrap line",
-      "state": "open"
+      "text": "U1: the unit file does not say what _se_legacy_cleanup says when only the old lock existed · the same Removed the old cache <base>/bootstrap line · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: the same line stays.",
+      "state": "closed"
     },
     {
       "id": "G7",
       "unit": "U2",
       "stage": "edit",
-      "text": "U2: Verification says grep -c Synced from bootstrap sync-engine/repo-sync is 0, and it is 1 because of the code string that writes the header of generated mise files · read as the file's own header, which is gone; the string stays",
-      "state": "open"
+      "text": "U2: Verification says grep -c Synced from bootstrap sync-engine/repo-sync is 0, and it is 1 because of the code string that writes the header of generated mise files · read as the file's own header, which is gone; the string stays · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: the code uses the string to write the header of generated files.",
+      "state": "closed"
     },
     {
       "id": "G8",
@@ -529,29 +529,29 @@
       "id": "G14",
       "unit": "U1",
       "stage": "edit",
-      "text": "U1: the gate accepts five literal forms of the default URL, fewer than _se_normalize_url accepts (a trailing slash, ssh:// without git@) · such a cache clone makes the gate exit 0 silently; the copy of the normalizer that D6 rejects stays out of tools/",
-      "state": "open"
+      "text": "U1: the gate accepts five literal forms of the default URL, fewer than _se_normalize_url accepts (a trailing slash, ssh:// without git@) · such a cache clone makes the gate exit 0 silently; the copy of the normalizer that D6 rejects stays out of tools/ · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: the sync still examines the values file, and D6 rejects a second copy of the normalizer.",
+      "state": "closed"
     },
     {
       "id": "G15",
       "unit": "U5",
       "stage": "edit",
-      "text": "U5: the plan moves only the sync to HTTPS, and the adoption clones of README.md, docs/sync/index.md, docs/sync/vwf.md and migrate.md M15 stay on SSH · they keep git@github.com:virajp/bootstrap.git, and index.md Requirements states the SSH need for that temporary clone only",
-      "state": "open"
+      "text": "U5: the plan moves only the sync to HTTPS, and the adoption clones of README.md, docs/sync/index.md, docs/sync/vwf.md and migrate.md M15 stay on SSH · they keep git@github.com:virajp/bootstrap.git, and index.md Requirements states the SSH need for that temporary clone only · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: the adoption clones stay on SSH, and docs/sync/index.md states the SSH need.",
+      "state": "closed"
     },
     {
       "id": "G16",
       "unit": "U2",
       "stage": "edit",
-      "text": "U2 and U5: the header comment of sync-engine/repo-sync still says the private bootstrap repo, and the plan clones it over HTTPS with no credentials · left as is, outside the comment classes that 02-engine-move.md lists",
-      "state": "open"
+      "text": "U2 and U5: the header comment of sync-engine/repo-sync still says the private bootstrap repo, and the plan clones it over HTTPS with no credentials · left as is, outside the comment classes that 02-engine-move.md lists · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Fixed: the header comment no longer says private, because the repository is public.",
+      "state": "closed"
     },
     {
       "id": "G17",
       "unit": "U5",
       "stage": "edit",
-      "text": "U5: migrate.md M23 still says the gate runs repo_sync --check at each commit, without the no-cache-clone condition · M27 covers the condition, so M23 stays",
-      "state": "open"
+      "text": "U5: migrate.md M23 still says the gate runs repo_sync --check at each commit, without the no-cache-clone condition · M27 covers the condition, so M23 stays · closed: the user ruled on 2026-11-07 with the words: Yes, fix and close. Accepted: M27 states the condition.",
+      "state": "closed"
     }
   ],
   "overrides": [],
