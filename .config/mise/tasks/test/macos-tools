@@ -12,9 +12,10 @@
 # `stage = "init"`, else 0, the second run exits 0, the example selects every
 # tool of macos/tools/, and every .json, .yaml/.yml and .toml file in the temp
 # HOME parses (jq or yq). Case 2: the example without the answer `config_path`
-# of macos-setup exits 2, and the message names the key. Case 3: a mise tool or a
-# mise setting on both sides of repo/tools/ and macos/tools/ has one value, and a
-# fixture proves that the check finds a difference.
+# of macos-setup exits 2, and the message names the key. Case 3: a mise tool on
+# both sides of repo/tools/ and macos/tools/ has one version and one `depends`, a
+# mise setting on both sides has one value, and a fixture proves that the check
+# finds a difference.
 
 set -euo pipefail
 
@@ -235,16 +236,18 @@ fi
 
 # ---- case 3: the two sides agree on a shared mise tool and setting --------------
 
-# The keys that can differ between the two sides, for example `tool:python`. Each
-# entry needs a reason in a comment here.
+# The keys that can differ between the two sides, for example `tool:python` or
+# `depends:python`. Each entry needs a reason in a comment here.
 drift_allowed=''
 
-# _mise_rows <root> <side>: one sorted row for each mise tool and mise setting of
-# the side: `tool:<name>=<version>` or `setting:<path>=<value>`.
+# _mise_rows <root> <side>: the sorted rows of the mise tools and mise settings of
+# the side: `tool:<name>=<version>`, `depends:<name>=<sorted list>` and
+# `setting:<path>=<value>`. A mise tool with no `depends` has a row with an empty
+# list, because the check compares only the keys of both sides.
 _mise_rows() {
   local t
   for t in "$1/$2"/tools/*/tools.toml; do
-    _yq -p toml -o yaml '(.mise.tools // {} | to_entries | .[] | "tool:" + .key + "=" + (.value.version // "")), (.mise.settings // {} | .. | select(kind == "scalar") | "setting:" + (path | .[2:] | join(".")) + "=" + (. | tostring))' "$t"
+    _yq -p toml -o yaml '(.mise.tools // {} | to_entries | .[] | "tool:" + .key + "=" + (.value.version // "")), (.mise.tools // {} | to_entries | .[] | "depends:" + .key + "=" + ((.value.depends // []) | sort | join(","))), (.mise.settings // {} | .. | select(kind == "scalar") | "setting:" + (path | .[2:] | join(".")) + "=" + (. | tostring))' "$t"
   done | sort -u
 }
 
@@ -271,7 +274,7 @@ log="$tmp/drift-log.txt"
 drift_count="$tmp/drift-count.txt"
 drift=$(_mise_drift "$root")
 if [[ -z $drift ]]; then
-  pass "the two sides agree on $(cat "$drift_count") shared mise tools and settings"
+  pass "the two sides agree on $(cat "$drift_count") shared mise versions, depends and settings"
 else
   while IFS= read -r line; do
     fail "two values: $line"
@@ -282,13 +285,13 @@ fi
 name="drift fixture"
 fixture="$tmp/drift-fixture"
 mkdir -p -- "$fixture/repo/tools/a" "$fixture/macos/tools/a"
-printf '%s\n' '[mise.settings]' 'a.b = true' 'c = "same"' '[mise.tools.x]' 'version = "1"' '[mise.tools.y]' 'version = "2"' \
+printf '%s\n' '[mise.settings]' 'a.b = true' 'c = "same"' '[mise.tools.x]' 'version = "1"' 'depends = ["p"]' '[mise.tools.y]' 'version = "2"' 'depends = ["p", "q"]' \
   > "$fixture/repo/tools/a/tools.toml"
-printf '%s\n' '[mise.settings]' 'a.b = false' 'c = "same"' '[mise.tools.x]' 'version = "9"' '[mise.tools.y]' 'version = "2"' \
+printf '%s\n' '[mise.settings]' 'a.b = false' 'c = "same"' '[mise.tools.x]' 'version = "9"' '[mise.tools.y]' 'version = "2"' 'depends = ["q", "p"]' \
   > "$fixture/macos/tools/a/tools.toml"
 drift=$(_mise_drift "$fixture")
-if [[ $drift == *'tool:x=1'*'tool:x=9'* && $drift == *'setting:a.b=true'*'setting:a.b=false'* && $drift != *'tool:y'* && $drift != *'setting:c'* ]]; then
-  pass "a different version and a different setting are found, and an equal one is not"
+if [[ $drift == *'depends:x=p'*'depends:x='* && $drift == *'tool:x=1'*'tool:x=9'* && $drift == *'setting:a.b=true'*'setting:a.b=false'* && $drift != *':y'* && $drift != *'setting:c'* ]]; then
+  pass "a different version, depends and setting are found, and an equal one is not"
 else
   fail "wrong result: $drift"
 fi
