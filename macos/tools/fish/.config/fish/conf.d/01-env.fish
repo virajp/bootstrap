@@ -8,7 +8,7 @@
 # Files in conf.d/ are automatically loaded in alphabetical order.
 #
 # Only bootstrap variables belong here. Everything else lives in mise's [env]
-# block (the conf.d file of each tool, tools/<tool>/.config/mise/conf.d/), which
+# block (the conf.d file of each tool, .config/mise/conf.d/<tool>/), which
 # both fish and zsh pick up on activation.
 #
 # - GPG_TTY: must be evaluated per-session against the live terminal, so mise

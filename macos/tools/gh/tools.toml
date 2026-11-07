@@ -10,7 +10,7 @@ example = "code"
 question = "Which editor command should gh run for issue and pull request text (for example code, zed, vim)?"
 
 # gh config set rewrites the file, so the source holds only the keys that
-# macos-setup enforces; gh owns every other key.
+# bootstrap enforces; gh owns every other key.
 [files.".config/gh/config.yml"]
 mode = "merge"
 
