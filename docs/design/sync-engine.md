@@ -45,10 +45,12 @@ line, file and exit code of the bash engine.
 | `cmd/sync-engine` | The command, with the subcommands `repo`, `macos` and `version`. `version` prints `main.version`, which the release build sets. A local build has `dev`. |
 | `internal/fail`   | The typed errors of the exit codes, and a collector where the highest code wins. See [The exit codes](#the-exit-codes).                                  |
 | `internal/report` | The output of a run, with the same bytes as `common`. See [The output of a run](#the-output-of-a-run).                                                   |
+| `internal/tmpl`   | `text/template` with the delimiters `<%` and `%>`, and our own copy of the gomplate functions that the templates use. It does not import gomplate.       |
 
 The task `test:go` of this repository runs `go vet`, a `gofmt` check and
 `go test` in the module. The golden files of `internal/report` hold the output
-of the bash functions of `common`.
+of the bash functions of `common`. The golden files of `internal/tmpl` hold the
+output of the gomplate CLI for each `.tmpl` file and each inline template.
 
 One difference from bash: to find a terminal on stderr, Go accepts any
 character device, and the bash test `-t 2` accepts only a terminal. The two
