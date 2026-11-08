@@ -32,6 +32,28 @@ Each front-end sources `common`, `write`, `merge`, `select`, `manifest`,
 `values`
 and `mise` from its own folder.
 
+### The Go module
+
+`sync-engine/` is also the Go module `github.com/virajp/bootstrap/sync-engine`
+of the new engine. The Go engine replaces the bash files phase by phase. The
+bash files stay until phase P7. Until then, the Go engine keeps each output
+line, file and exit code of the bash engine.
+
+| Path              | Job                                                                                                                                                      |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `go.mod`          | The module.                                                                                                                                              |
+| `cmd/sync-engine` | The command, with the subcommands `repo`, `macos` and `version`. `version` prints `main.version`, which the release build sets. A local build has `dev`. |
+| `internal/fail`   | The typed errors of the exit codes, and a collector where the highest code wins. See [The exit codes](#the-exit-codes).                                  |
+| `internal/report` | The output of a run, with the same bytes as `common`. See [The output of a run](#the-output-of-a-run).                                                   |
+
+The task `test:go` of this repository runs `go vet`, a `gofmt` check and
+`go test` in the module. The golden files of `internal/report` hold the output
+of the bash functions of `common`.
+
+One difference from bash: to find a terminal on stderr, Go accepts any
+character device, and the bash test `-t 2` accepts only a terminal. The two
+differ only for a device such as `/dev/null`, where no output can be seen.
+
 ## The cache and the clone
 
 The cache is `${XDG_CACHE_HOME:-~/.cache}/sync-engine/`. `SYNC_ENGINE_CACHE`

@@ -1,0 +1,16 @@
+changed a
+failed b: cannot write the target
+failed c: template does not render
++---------------+-------+
+| Changed       |     1 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     2 |
++---------------+-------+
+| Total         |     3 |
++---------------+-------+
+[ERROR] The sync failed with code 2: 2 files failed
