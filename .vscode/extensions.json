@@ -9,6 +9,7 @@
     "dbaeumer.vscode-eslint",
     "dprint.dprint",
     "foxundermoon.shell-format",
+    "golang.go",
     "gruntfuggly.todo-tree",
     "hverlin.mise-vscode",
     "meganrogge.template-string-converter",

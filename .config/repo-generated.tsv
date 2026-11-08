@@ -13,6 +13,9 @@ git	.gitattributes
 git	.gitignore
 gitleaks	.config/mise/conf.d/gitleaks/mise.dev.toml
 gitleaks	.config/mise/tasks/code/sec/gitleaks
+go	.config/mise/conf.d/go/mise.dev.toml
+go	.config/mise/tasks/code/format/gofmt
+go	.config/mise/tasks/code/lint/go
 grype	.config/mise/conf.d/grype/mise.dev.toml
 grype	.config/mise/tasks/code/sec/grype
 linter	.config/mise/conf.d/linter/mise.dev.toml
