@@ -1,0 +1,29 @@
+== stdout ==
+rc=0
+== stderr ==
+would change d/f.txt
+--- d/f.txt (current)
++++ d/f.txt (bootstrap)
+@@ -1,2 +1,2 @@
+ a
+-b
+\ No newline at end of file
++b
++---------------+-------+
+| Changed       |     1 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |     1 |
++---------------+-------+
+[OK] Dry run: 1 file would change
+== tree ==
+d 755 root
+d 755 root/d
+f 644 root/d/f.txt "a\nb"
+d 755 tmp

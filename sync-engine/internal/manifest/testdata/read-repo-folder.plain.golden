@@ -1,0 +1,25 @@
+== stdout ==
+rows=
+rc=2
+rows=
+rc=0
+== stderr ==
+sync-engine: .config/repo-generated.tsv: the manifest is not a regular file - not read
++---------------+-------+
+| Changed       |     0 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |     0 |
++---------------+-------+
+[OK] Synced: no file changed
+== tree ==
+d 755 root
+d 755 root/.config
+d 755 root/.config/repo-generated.tsv
+d 755 tmp
