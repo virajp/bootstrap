@@ -40,6 +40,10 @@ files are for this repository only:
   `test:setup-sync` (`setup-sync`), `test:macos-tools` (`macos-tools`),
   `test:go` (`go`) and `test` (`_default`). They are not in `repo/tools/` or
   `macos/tools/`, so no consumer gets them.
+- `.github/workflows/release-engine.yml` and `sync-engine/VERSION`: the release
+  of the Go engine and its pin. A signed tag `vX.Y.Z` on `main` starts the
+  release, and the workflow writes `VERSION`. Do not edit `VERSION` by hand. See
+  `docs/design/sync-engine.md` ("The release of the engine").
 - `.config/mise/tasks/vorssaint/diff`: the task `vorssaint:diff`. It compares
   a Vorssaint backup file with the defaults of `macos/tools/vorssaint/`, and
   exits 1 when a key differs or is missing.
