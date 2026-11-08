@@ -1,0 +1,7 @@
+fingerprint: 3e88d483684a5724850d9b7ad5ed4be2d490fe9fc2fec2d928cd0c8460a0582d
+pre: rc=0
+own: rc=2
+| mise: macos.toml: cannot generate the mise config: [mise.nope] is not supported in a tools.toml
+--- files
+
+--- end

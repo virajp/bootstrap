@@ -1,0 +1,11 @@
+fingerprint: a771419e916d31531118416f6004e688433c7aa0bffb1f46d779decf4d87bd32
+pre: rc=0
+envs: rc=0
+selected: dev $
+tool_envs: mise:dev repo-sync:dev git:dev pre-commit:dev dprint:dev linter:dev vscode:dev gitleaks:dev grype:dev osv-scanner:dev java:dev python:dev node:dev _security_base:dev $
+mise_envs: jq:dev yq:dev gomplate:dev worktrunk:dev python:dev uv:dev pre-commit:dev dprint:dev node:dev npm:@virajp.dev/linter:dev shellcheck:dev gitleaks:dev grype:dev osv-scanner:dev java:dev $
+overrides: rc=2
+| mise: overrides.mise_env.ci in .config/bootstrap.toml: 'ci' is not in environments: dev
+--- files
+
+--- end

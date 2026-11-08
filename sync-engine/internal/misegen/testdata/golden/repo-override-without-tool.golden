@@ -1,0 +1,11 @@
+fingerprint: a3f2a4d96ee3e4b6f31167fa3fd686fcf9be8358f1857fb492e7d2ef8d4ccf6c
+pre: rc=0
+envs: rc=0
+selected: dev $
+tool_envs: mise:dev repo-sync:dev git:dev pre-commit:dev dprint:dev linter:dev vscode:dev gitleaks:dev grype:dev osv-scanner:dev python:dev node:dev _security_base:dev $
+mise_envs: jq:dev yq:dev gomplate:dev worktrunk:dev python:dev uv:dev pre-commit:dev dprint:dev node:dev npm:@virajp.dev/linter:dev shellcheck:dev gitleaks:dev grype:dev osv-scanner:dev $
+overrides: rc=2
+| mise: overrides.mise.tools.java.version in .config/bootstrap.toml: no selected tool has mise.tools.java.version - the path after overrides. is the path in repo/tools/<tool>/tools.toml
+--- files
+
+--- end

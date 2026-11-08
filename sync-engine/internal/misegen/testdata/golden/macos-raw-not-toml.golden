@@ -1,0 +1,7 @@
+fingerprint: 118f18bce2228e74bf4b5c6ba34ed2dce2c5a4f48b74136f1bfb8967446506f7
+pre: rc=0
+render mtest: rc=2
+| mise: macos/tools/mtest/tools.toml: not valid TOML before render: Error: bad file '@CASE@/clone/macos/tools/mtest/tools.toml': invalid character at start of key: U+003C '<'
+--- files
+
+--- end
