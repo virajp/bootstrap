@@ -30,6 +30,7 @@ claude-cli = {}
 claude-status = {}
 codeburn = {}
 opencode = {}
+openwhispr = {}
 orca = {}
 zed-delta = {}
 
