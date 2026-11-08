@@ -527,6 +527,7 @@ This table has the mise tools of `repo/tools/` now.
 | `github`      | `gh`                     | `latest` | dev, ci |                |                                                    |
 | `github`      | `actionlint`             | `latest` | dev, ci |                |                                                    |
 | `gitlab`      | `glab`                   | `latest` | dev, ci |                |                                                    |
+| `go`          | `go`                     | `latest` | dev, ci |                | `env` (`GOTOOLCHAIN`)                              |
 | `java`        | `java`                   | `lts`    | dev, ci |                | `settings`                                         |
 | `kotlin`      | `ktlint`                 | `latest` | dev, ci |                |                                                    |
 | `kotlin`      | `github:detekt/detekt`   | `latest` | dev, ci |                |                                                    |
@@ -605,6 +606,7 @@ not the tasks of a parent repository.
 | `doppler`        | `setup:secrets:doppler`                                                                                               |
 | `flutter`        | `setup:deps:flutter`, `code:format:dart`, `code:lint:dart`                                                            |
 | `fnox`           | `setup:secrets:fnox`                                                                                                  |
+| `go`             | `code:format:gofmt`, `code:lint:go`                                                                                   |
 | `kotlin`         | `setup:deps:kotlin`, `code:format:ktlint`, `code:lint:detekt`                                                         |
 | `node`           | `setup:deps:node`                                                                                                     |
 | `python`         | `setup:deps:python`, `code:format:ruff`, `code:lint:ruff`, `code:lint:pyrefly`, `code:lint:uv`                        |

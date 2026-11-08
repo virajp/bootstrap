@@ -1,0 +1,15 @@
+# Go, with the gofmt and go vet gates.
+default_envs = [ "dev", "ci" ]
+depends = []
+extensions = [ "golang.go" ]
+root_only = false
+
+# The mise config, generated into .config/mise/conf.d/go/mise.<env>.toml.
+[mise.tools.go]
+envs = [ "dev", "ci" ]
+version = "latest"
+
+[mise.env]
+# The go command uses only the Go of mise, and never downloads a toolchain
+# for a newer go or toolchain line of go.mod. Module downloads do not change.
+GOTOOLCHAIN = "local"
