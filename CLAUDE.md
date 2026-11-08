@@ -5,9 +5,11 @@ code in this repository.
 
 ## Purpose
 
-This repository is the source of shared files for other repositories. It has no
-build and no application code. Its tests are `test:repo-sync`, `test:setup-sync`
-and `test:macos-tools`, and the task `test` runs each test task (see "Tests").
+This repository is the source of shared files for other repositories. Its only
+application code is the sync engine in `sync-engine/`: the bash files, and the
+Go module that replaces them. Its tests are `test:repo-sync`,
+`test:setup-sync`, `test:macos-tools` and `test:go`, and the task `test` runs
+each test task (see "Tests").
 Other repositories copy files from it with their own `setup:configs` task. Read
 `docs/design/index.md` for the contract of the sync.
 
@@ -27,13 +29,17 @@ files are for this repository only:
 - `sync-engine/`: the shared library folder of the sync, with `clone`,
   `common`, `write`, `merge`, `select`, `manifest`, `values`, `mise`,
   `repo-sync` and `setup-sync`, the Mac front-end. It is not a
-  tool, so the sync never copies it to a consumer.
+  tool, so the sync never copies it to a consumer. It is also the Go module
+  `github.com/virajp/bootstrap/sync-engine` of the new engine (`go.mod`,
+  `cmd/sync-engine/` and `internal/`). The Go engine replaces the bash files
+  phase by phase. Until the last phase, it keeps each output line, file and
+  exit code of the bash engine.
 - `docs/design/`: the contract of the sync, one place for each rule (see "Where
   the rules are"). `docs/plans/`: the vwf plan index.
 - `.config/mise/tasks/test/`: the tasks `test:repo-sync` (`repo-sync`),
-  `test:setup-sync` (`setup-sync`), `test:macos-tools` (`macos-tools`) and
-  `test` (`_default`). They are not in `repo/tools/` or `macos/tools/`, so no
-  consumer gets them.
+  `test:setup-sync` (`setup-sync`), `test:macos-tools` (`macos-tools`),
+  `test:go` (`go`) and `test` (`_default`). They are not in `repo/tools/` or
+  `macos/tools/`, so no consumer gets them.
 - `.config/mise/tasks/vorssaint/diff`: the task `vorssaint:diff`. It compares
   a Vorssaint backup file with the defaults of `macos/tools/vorssaint/`, and
   exits 1 when a key differs or is missing.
@@ -289,10 +295,19 @@ lines of the sync. The cases of the default output unset it. See
   such a value, change it on both sides. An intended
   difference goes in `drift_allowed` of the task, with a reason. It needs no
   network when gomplate, jq and yq are installed.
+- `test:go` is the task of this repository in `.config/mise/tasks/test/go`.
+  It runs `go vet`, a `gofmt` check and `go test` in the Go module of
+  `sync-engine/`. The golden files of `internal/report` hold the output of the
+  bash functions of `common`. While `common` exists, a test compares each
+  golden file with the output of `/bin/bash` and of the bash on `PATH`. To
+  write the golden files again from bash, run
+  `UPDATE_GOLDEN=1 go test ./internal/report`. Until this repository selects
+  the `go` tool, the task runs `go@latest`.
 - `test` (`test/_default`) runs each test task in parallel. No hook and no
   `code:merge` task runs a test, because the tests are slow and a consumer does
   not have them. Run the tests by hand before you commit:
   - A change to `sync-engine/`: `mise run test`.
+  - A change to the Go code only: `mise run test:go`.
   - A change to `repo/`: `mise run test:repo-sync`.
   - A change to `macos/`: `mise run test:setup-sync` and
     `mise run test:macos-tools`.

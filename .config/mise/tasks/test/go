@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#MISE description="Vet, format-check and test the Go module in sync-engine/"
+
+# Runs `go vet`, a `gofmt` check and `go test` in the Go module of
+# sync-engine/. The golden tests of internal/report also compare the bash
+# output of sync-engine/common, while that file exists. Until this repository
+# selects the `go` tool, the task runs Go as `go@latest`.
+
+set -euo pipefail
+
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+cd "${MISE_PROJECT_ROOT}/sync-engine"
+
+go() { mise x go@latest -- go "$@"; }
+
+print_header "Testing the Go module in sync-engine/ ..."
+
+print_subheader "Running go vet ..."
+go vet ./...
+
+print_subheader "Examining the format with gofmt ..."
+unformatted=$(mise x go@latest -- gofmt -l .)
+if [[ -n $unformatted ]]; then
+  print_error "files that gofmt changes:"
+  printf '%s\n' "$unformatted" >&2
+  exit 1
+fi
+
+print_subheader "Running go test ..."
+go test ./...
+
+print_success "All Go tests passed"
