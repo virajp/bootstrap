@@ -48,10 +48,12 @@ line, file and exit code of the bash engine.
 | `internal/source`    | The read of the clone: the packs file, the `tools.toml` of each tool, the files of a tool folder, and the checks of these files.                         |
 | `internal/values`    | The values files of a repo and of the Mac, and the values merge. See [The values merge](#the-values-merge).                                              |
 | `internal/selection` | The pack expansion, the checks of the packs, the depth-first walk of the `depends`, and the stages of the Mac.                                           |
+| `internal/tmpl`      | `text/template` with the delimiters `<%` and `%>`, and our own copy of the gomplate functions that the templates use. It does not import gomplate.       |
 
 The task `test:go` of this repository runs `go vet`, a `gofmt` check and
 `go test` in the module. The golden files of `internal/report` hold the output
-of the bash functions of `common`.
+of the bash functions of `common`. The golden files of `internal/tmpl` hold the
+output of the gomplate CLI for each `.tmpl` file and each inline template.
 
 One difference from bash: to find a terminal on stderr, Go accepts any
 character device, and the bash test `-t 2` accepts only a terminal. The two
