@@ -1,0 +1,6 @@
+fingerprint: 011f637f99b290cedd36b54576a7cfe9bbf3436d67a81613804caf28278dd8d9
+rc=2
+--- stderr
+setup-sync: macos/tools/m1/tools.toml: depends must be a list of tool names
+setup-sync: macos/tools/m2/tools.toml: depends must be a list of tool names
+--- stdout

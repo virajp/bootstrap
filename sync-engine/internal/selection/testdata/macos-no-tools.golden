@@ -1,0 +1,5 @@
+fingerprint: 05f80a7f05e24fed3acfe5ace464147fd38ac2524dbc7b6d4467f1369c10dc6a
+rc=2
+--- stderr
+setup-sync: the clone has no tool in macos/tools
+--- stdout

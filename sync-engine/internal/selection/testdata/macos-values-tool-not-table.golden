@@ -1,0 +1,5 @@
+fingerprint: adefa1f44be185480f00bd9811a0446f134dd5c3c7bbc072159bada32fcbeee9
+rc=2
+--- stderr
+setup-sync: [tools.m3] in macos.toml must be a table
+--- stdout

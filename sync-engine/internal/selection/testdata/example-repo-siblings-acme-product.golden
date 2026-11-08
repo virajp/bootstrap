@@ -1,0 +1,26 @@
+fingerprint: 4de4f0bb0c609c67b23821ebfa7c68a456ed4fe71ed1243719edf5678b994305
+rc=0
+--- stderr
+--- stdout
+tools: mise repo-sync git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner claude github
+sel:
+mise - default
+repo-sync - default
+git - default
+pre-commit - default
+dprint - default
+linter - default
+vscode - default
+gitleaks - default
+grype - default
+osv-scanner - default
+claude - tools.claude
+github - tools.github
+deps:
+pre-commit python python
+linter node
+gitleaks _security_base
+grype _security_base
+osv-scanner _security_base
+values:
+{"_security_base":{},"claude":{},"dprint":{},"git":{},"github":{},"gitleaks":{},"grype":{},"linter":{},"mise":{},"node":{},"osv-scanner":{},"pre-commit":{"exclude":["(^|/)\\.config/mise/locks/"]},"python":{},"repo-sync":{},"vscode":{}}

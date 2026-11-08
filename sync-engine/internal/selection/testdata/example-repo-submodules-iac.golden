@@ -1,0 +1,25 @@
+fingerprint: e5893686d49c2412b319d2331948e5bea269b66f4309df7d5412e7d36e42e4e1
+rc=0
+--- stderr
+--- stdout
+tools: mise repo-sync git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner pulumi
+sel:
+mise - default
+repo-sync - default
+git - default
+pre-commit - default
+dprint - default
+linter - default
+vscode - default
+gitleaks - default
+grype - default
+osv-scanner - default
+pulumi dev tools.pulumi
+deps:
+pre-commit python python
+linter node
+gitleaks _security_base
+grype _security_base
+osv-scanner _security_base
+values:
+{"_security_base":{},"dprint":{},"git":{},"gitleaks":{},"grype":{},"linter":{},"mise":{},"node":{},"osv-scanner":{},"pre-commit":{"exclude":["(^|/)\\.config/mise/locks/"]},"pulumi":{},"python":{},"repo-sync":{},"vscode":{}}

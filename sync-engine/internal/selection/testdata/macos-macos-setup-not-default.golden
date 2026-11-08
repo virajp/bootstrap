@@ -1,0 +1,5 @@
+fingerprint: e68fc263c49d87cbd717c79fc04af628755c26c3a34943eadf2f56c9d58c8c29
+rc=2
+--- stderr
+setup-sync: pack base does not have the tool macos-setup
+--- stdout

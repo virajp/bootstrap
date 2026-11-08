@@ -1,0 +1,13 @@
+fingerprint: 717f7bc5a7c1b508960d82c2babe2b54c92dfd4d87c4deb148ad372011adad35
+rc=0
+--- stderr
+--- stdout
+tools: m1 m3 m4 macos-setup
+init:
+keep:
+macos-setup
+m1
+m3
+m4
+values:
+{"m1":{},"m3":{},"m4":{},"macos-setup":{}}

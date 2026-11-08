@@ -1,0 +1,5 @@
+fingerprint: 8464c5c0c16f6e2d049144764a9136bae4184fbf4bf5f0a94295fe634fc26745
+rc=2
+--- stderr
+setup-sync: [tools.m1] of macos.toml sets k to a string, but it is a number in the base or dependency tool m1 - write a number there (a list adds its items)
+--- stdout

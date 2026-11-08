@@ -1,0 +1,5 @@
+fingerprint: 16deaf0f64cc6633ee75da3cb86f1eeea03929d043274394b14933588670891b
+rc=2
+--- stderr
+repo-sync: repo/tools/a: x.txt and x.txt.tmpl both exist - keep one
+--- stdout

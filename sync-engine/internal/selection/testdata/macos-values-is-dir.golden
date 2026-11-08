@@ -1,0 +1,5 @@
+fingerprint: 118f83d728f69c4757c0b9b11c1ba401f17d8573b3453a1936815e7af4a22962
+rc=2
+--- stderr
+setup-sync: macos.toml is not a file
+--- stdout

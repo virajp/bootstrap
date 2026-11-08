@@ -1,0 +1,10 @@
+fingerprint: 12b7064355d3d573081e8b75be927d1a45a81f7f648a6552db10dbc1a26b0c7b
+rc=2
+--- stderr
+repo-sync: repo/tools/a/tools.toml: [files."x.txt"] requires: '/abs' must be a path relative to the repository root, with no .. part
+repo-sync: repo/tools/a/tools.toml: [files."x.txt"] requires: '../up' must be a path relative to the repository root, with no .. part
+repo-sync: repo/tools/a/tools.toml: [files."x.txt"] requires: 'a/../b' must be a path relative to the repository root, with no .. part
+repo-sync: repo/tools/a/tools.toml: [files."x.txt"] requires: '' must be a path relative to the repository root, with no .. part
+repo-sync: repo/tools/a/tools.toml: [files."x.txt"] requires_found: 'a/b' must be a file name, with no /
+repo-sync: repo/tools/a/tools.toml: [files."x.txt"] requires_found: '' must be a file name, with no /
+--- stdout

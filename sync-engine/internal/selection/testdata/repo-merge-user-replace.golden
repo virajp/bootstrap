@@ -1,0 +1,11 @@
+fingerprint: 08174f0de0001855098c89ddc1b3f537ca4cd9cb25a8e455a99b17d8a680dc82
+rc=0
+--- stderr
+--- stdout
+tools: a d
+sel:
+a - default
+d dev tools.d
+deps:
+values:
+{"a":{},"d":{"list":"now a string","name":[1],"t":{"k":2,"m":3},"extra":2.5}}

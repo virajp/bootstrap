@@ -1,0 +1,5 @@
+fingerprint: 614e53a8379d589ad62753583290eb3691539709aa83fa18be94fb3163a47d35
+rc=2
+--- stderr
+repo-sync: [tools.a] in bootstrap.toml: must be a table
+--- stdout

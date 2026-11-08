@@ -1,0 +1,5 @@
+fingerprint: 62c4b9a46c3d048510714f12d0d63b59d344cf910e59bc6e4fad28dec0cbacd0
+rc=2
+--- stderr
+setup-sync: [tools.m3] env is for repo tools only - the Mac side has no environments
+--- stdout

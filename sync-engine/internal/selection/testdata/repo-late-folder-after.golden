@@ -1,0 +1,5 @@
+fingerprint: f33b6c6b40bc2f97bb2dc2d119d6a8295e4e8023cf359f4d60664f3c640039c4
+rc=2
+--- stderr
+repo-sync: tool folder repo/tools/zzz sorts after zz-repo or is named zz-repo - rename it, because conf.d/zz-repo/ must load last
+--- stdout

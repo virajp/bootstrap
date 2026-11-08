@@ -1,0 +1,12 @@
+fingerprint: 6e1112933466ec1fa71d29bb1e97eb61e4d5e5e4505cad1da7d7a1186f8f94f3
+rc=0
+--- stderr
+--- stdout
+tools: a b d
+sel:
+a - default
+b - packs.extra
+d - tools.d
+deps:
+values:
+{"a":{"flag":false,"list":[1,2],"t":{"k":1}},"b":{},"d":{"flag":true,"list":[0,2,3,4],"name":"x","t":{"j":2}}}

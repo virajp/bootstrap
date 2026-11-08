@@ -1,0 +1,11 @@
+fingerprint: 903a8a7d1f29766412778da953975a682f9b898c64551d8a121be3b9b089550d
+rc=2
+--- stderr
+repo-sync: repo/tools/a/tools.toml: seed is not supported; use [files."<target>"] with mode = "seed"
+repo-sync: repo/tools/a/tools.toml: [seed_requires] is not supported; use requires in [files."<target>"]
+repo-sync: repo/tools/a/tools.toml: requires_found of mise tool ta: 'a/b' must be a file name, with no /
+repo-sync: repo/tools/a/tools.toml: requires of mise tool ta is the old key - write requires_found = ["f"]
+repo-sync: repo/tools/a/tools.toml: files in [mise.tools.ta] is not supported; use requires_found in [files."<target>"]
+repo-sync: repo/tools/a/tools.toml: requires_found of mise tool tb must be a non-empty list of file names
+repo-sync: repo/tools/a/tools.toml: requires_found of mise tool ta in [mise_env.ci.tools] is valid only in [mise.tools]
+--- stdout

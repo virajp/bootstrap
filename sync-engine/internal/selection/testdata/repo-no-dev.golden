@@ -1,0 +1,5 @@
+fingerprint: e3785a4155b08ab2ca25018ca4e1845250e6435be6bf250e79e46910a973eeaf
+rc=2
+--- stderr
+repo-sync: default_envs of repo/tools/d/tools.toml has no dev - each tool must be in dev, for example default_envs = ["dev", "ci"]
+--- stdout
