@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+#MISE description="Compare a Vorssaint backup file with the defaults of the vorssaint tool"
+#USAGE arg "<file>" help="The Vorssaint backup file (Settings > Export), a plist"
+#USAGE flag "--all" help="Also show the keys that are only in the backup"
+
+# Reads the `settings` dictionary of a Vorssaint backup file and compares it
+# with the table [mise.bootstrap.macos.defaults."com.vorssaint.utils"] of
+# macos/tools/vorssaint/tools.toml. It prints Markdown tables: the keys with a
+# different value, the keys of bootstrap that the backup does not have, and,
+# with --all, the keys that only the backup has. It exits 1 when a key differs
+# or is missing, else 0.
+#
+# The task is Python, because plistlib reads the <data> values of the backup.
+# `plutil -convert json` fails on these values.
+
+set -euo pipefail
+
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+backup="${usage_file:?}"
+tools_toml="${MISE_PROJECT_ROOT}/macos/tools/vorssaint/tools.toml"
+
+print_header "Comparing the Vorssaint backup with the vorssaint tool ..."
+
+if [ ! -f "$backup" ]; then
+  print_error "No file at ${backup}."
+  exit 1
+fi
+
+mise x -- python3 -I - "$backup" "$tools_toml" "${usage_all:-false}" << 'EOF'
+import json
+import plistlib
+import sys
+import tomllib
+
+backup_path, toml_path, show_all = sys.argv[1], sys.argv[2], sys.argv[3] == "true"
+
+with open(backup_path, "rb") as f:
+    backup = plistlib.load(f)
+live = backup.get("settings", backup)
+
+with open(toml_path, "rb") as f:
+    tools = tomllib.load(f)
+wanted = tools["mise"]["bootstrap"]["macos"]["defaults"]["com.vorssaint.utils"]
+
+
+def fmt(value):
+    if isinstance(value, (bytes, bytearray)):
+        return f"<data {len(value)} B>"
+    if isinstance(value, bool):
+        return f"`{str(value).lower()}`"
+    text = json.dumps(value, default=str)
+    if len(text) > 80:
+        text = text[:77] + "..."
+    return f"`{text}`"
+
+
+def same(a, b):
+    # mise writes a TOML list as an array; the order of an exclusion list
+    # does not change the behavior of the app.
+    if isinstance(a, list) and isinstance(b, list):
+        return sorted(map(str, a)) == sorted(map(str, b))
+    return a == b
+
+
+differ = [(k, v, live[k]) for k, v in wanted.items() if k in live and not same(v, live[k])]
+missing = [(k, v) for k, v in wanted.items() if k not in live]
+extra = [(k, live[k]) for k in sorted(live) if k not in wanted]
+matched = len(wanted) - len(differ) - len(missing)
+
+print(f"{matched} of {len(wanted)} keys of bootstrap match the backup.")
+print(f"The backup has {len(extra)} keys that bootstrap does not set.")
+
+if differ:
+    print("\n## Keys with different values\n")
+    print("| Key | bootstrap | Backup |")
+    print("| --- | --- | --- |")
+    for k, v, b in differ:
+        print(f"| `{k}` | {fmt(v)} | {fmt(b)} |")
+
+if missing:
+    print("\n## Keys in bootstrap only\n")
+    print("| Key | bootstrap |")
+    print("| --- | --- |")
+    for k, v in missing:
+        print(f"| `{k}` | {fmt(v)} |")
+
+if show_all and extra:
+    print("\n## Keys in the backup only\n")
+    print("| Key | Backup |")
+    print("| --- | --- |")
+    for k, b in extra:
+        print(f"| `{k}` | {fmt(b)} |")
+
+sys.exit(1 if differ or missing else 0)
+EOF

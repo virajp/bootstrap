@@ -888,6 +888,9 @@ Menu bar toolkit with keep-awake, system monitor and volume mixer.
 - **Packs:** `essentials` (default)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.bootstrap.macos]`
+- **Compare:** `mise run vorssaint:diff <backup.plist>` compares a Vorssaint
+  backup (Settings > Export) with the defaults of this tool. Add `--all` to
+  also show the keys that only the backup has.
 
 ### `warp`
 
