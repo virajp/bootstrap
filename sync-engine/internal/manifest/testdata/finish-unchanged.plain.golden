@@ -1,0 +1,21 @@
+== stdout ==
+rc=0
+== stderr ==
++---------------+-------+
+| Changed       |     0 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |     1 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |     1 |
++---------------+-------+
+[OK] Synced: no file changed
+== tree ==
+d 755 root
+d 755 root/d
+f 644 root/d/f.txt "same\n"
+d 755 tmp

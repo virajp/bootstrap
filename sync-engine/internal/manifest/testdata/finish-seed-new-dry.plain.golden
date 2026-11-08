@@ -1,0 +1,20 @@
+== stdout ==
+rc=0
+== stderr ==
+would seed s/seed.yaml
++---------------+-------+
+| Changed       |     0 |
+| New           |     0 |
+| Seeded        |     1 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |     1 |
++---------------+-------+
+[OK] Dry run: 1 file would change
+== tree ==
+d 755 root
+d 755 tmp
