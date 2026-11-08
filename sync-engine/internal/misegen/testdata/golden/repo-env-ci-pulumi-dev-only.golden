@@ -1,0 +1,7 @@
+fingerprint: 4269e4f6868021596c8c5a05b1b2e98edae4c5021aa7397c028c003f107629af
+pre: rc=0
+envs: rc=2
+| mise: env 'ci' of [tools.pulumi] in the values file: mise tool 'pulumi' of repo/tools/pulumi allows only dev
+--- files
+
+--- end

@@ -1,0 +1,7 @@
+fingerprint: 57f4ef414e2d7808db33d4a1a0976607b396f7fcf7c9236183a1853277488bb7
+pre: rc=0
+envs: rc=2
+| mise: repo/tools/mtest/tools.toml: default_envs has 'ci', but its mise tool 'fd' allows only dev
+--- files
+
+--- end

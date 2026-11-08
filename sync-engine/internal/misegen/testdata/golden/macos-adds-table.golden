@@ -1,0 +1,8 @@
+fingerprint: cb970bd4768f6d9aacf54c99bb009ddeebcdcce1c395b4f48e89059abce9bec2
+pre: rc=0
+overrides: rc=0
+render mtest: rc=2
+| mise: macos/tools/mtest/tools.toml: a rendered value changes the keys of the file
+--- files
+
+--- end

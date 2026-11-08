@@ -1,0 +1,7 @@
+fingerprint: 7d80fa1eb52135f1b656cd3203246eb1041bff76692645694395920cb22ef527
+pre: rc=0
+overrides: rc=2
+| mise: overrides.mise_env in values.toml: the macos side has no environments - use [overrides.mise.<path>]
+--- files
+
+--- end

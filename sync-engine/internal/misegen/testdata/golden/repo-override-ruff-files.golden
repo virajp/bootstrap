@@ -1,0 +1,11 @@
+fingerprint: a4cea5b878ee176fc71efa2d4f5b5eb29279a970d421f41c34143fbb5622556d
+pre: rc=0
+envs: rc=0
+selected: dev $
+tool_envs: mise:dev repo-sync:dev git:dev pre-commit:dev dprint:dev linter:dev vscode:dev gitleaks:dev grype:dev osv-scanner:dev python:dev node:dev _security_base:dev $
+mise_envs: jq:dev yq:dev gomplate:dev worktrunk:dev python:dev uv:dev pre-commit:dev dprint:dev node:dev npm:@virajp.dev/linter:dev shellcheck:dev gitleaks:dev grype:dev osv-scanner:dev $
+overrides: rc=2
+| mise: overrides.mise.tools.ruff.files in .config/bootstrap.toml: the envs, the depends, the requires, the requires_found and the files of a mise tool cannot be overridden - use env of [tools.<tool>]
+--- files
+
+--- end

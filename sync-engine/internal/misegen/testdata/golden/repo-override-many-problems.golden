@@ -1,0 +1,14 @@
+fingerprint: 394a236e4a28db003c582927d46a0ff2dd8fa86df25703b46e5c3adb5906b7fc
+pre: rc=0
+envs: rc=0
+selected: dev $
+tool_envs: mise:dev repo-sync:dev git:dev pre-commit:dev dprint:dev linter:dev vscode:dev gitleaks:dev grype:dev osv-scanner:dev java:dev python:dev node:dev _security_base:dev $
+mise_envs: jq:dev yq:dev gomplate:dev worktrunk:dev python:dev uv:dev pre-commit:dev dprint:dev node:dev npm:@virajp.dev/linter:dev shellcheck:dev gitleaks:dev grype:dev osv-scanner:dev java:dev $
+overrides: rc=2
+| mise: overrides.mise_env.ci in .config/bootstrap.toml: 'ci' is not in environments: dev
+| mise: overrides.mise_env.prod in .config/bootstrap.toml: 'prod' is not one of dev, ci
+| mise: overrides.mise.tools.java.envs in .config/bootstrap.toml: the envs, the depends, the requires, the requires_found and the files of a mise tool cannot be overridden - use env of [tools.<tool>]
+| mise: overrides.mise.tools.java.nope in .config/bootstrap.toml: no selected tool has mise.tools.java.nope - the path after overrides. is the path in repo/tools/<tool>/tools.toml
+--- files
+
+--- end

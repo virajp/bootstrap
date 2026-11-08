@@ -1,0 +1,8 @@
+fingerprint: 32980b5297b84fd0d207cfe14a167752a899e94979232fd916946e9431046e41
+pre: rc=0
+overrides: rc=0
+render mtest: rc=2
+| mise: macos/tools/mtest/tools.toml: cannot generate the mise config: requires_found of mise tool fd is not valid on the macos side, which has no environments and no requires_found
+--- files
+
+--- end

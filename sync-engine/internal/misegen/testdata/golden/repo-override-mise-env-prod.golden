@@ -1,0 +1,11 @@
+fingerprint: 0e3039af9c28374761ad3ecf58982ca78acee3454244360b4db566c9d7601039
+pre: rc=0
+envs: rc=0
+selected: dev $
+tool_envs: mise:dev repo-sync:dev git:dev pre-commit:dev dprint:dev linter:dev vscode:dev gitleaks:dev grype:dev osv-scanner:dev python:dev node:dev _security_base:dev $
+mise_envs: jq:dev yq:dev gomplate:dev worktrunk:dev python:dev uv:dev pre-commit:dev dprint:dev node:dev npm:@virajp.dev/linter:dev shellcheck:dev gitleaks:dev grype:dev osv-scanner:dev $
+overrides: rc=2
+| mise: overrides.mise_env.prod in .config/bootstrap.toml: 'prod' is not one of dev, ci
+--- files
+
+--- end
