@@ -3079,6 +3079,27 @@ check_output_forced() {
 case_args=' ' run_case "the default output: not a terminal" 0 "$fixture_values" output_files '' check_output_plain
 case_args=' ' run_case "the default output: FORCE_COLOR" 0 "$fixture_values" output_forced '' check_output_forced
 
+# The examples of repo/examples/. Each values file must pass a dry run in a
+# consumer with its members: a folder for each folder member, and a git
+# submodule for each submodule member. The dry run refuses an unknown tool, a
+# wrong member and a wrong shape. It accepts an unknown key, so a key that the
+# contract no longer has can stay in an example.
+example_consumer() {
+  local name type folder
+  cp -- "$root/repo/examples/${case_example:?}" "$values"
+  while IFS=$'\t' read -r name type folder; do
+    folder=${folder:-$name}
+    if [[ $type == submodule ]]; then
+      _git -C "$consumer" -c protocol.file.allow=always submodule --quiet add -- "$base_clone" "$folder"
+    else
+      mkdir -p -- "$consumer/$folder"
+    fi
+  done < <(mise x -- yq -p toml -o tsv '.member // {} | to_entries | .[] | [.key, .value.type // "", .value.folder // ""]' "$values")
+}
+while IFS= read -r example; do
+  case_example=$example run_case "the example $example" 0 '' example_consumer
+done < <(cd -- "$root/repo/examples" && find . -name bootstrap.toml | sed 's#^\./##' | LC_ALL=C sort)
+
 while ((${#case_pids[@]})); do
   collect_case
 done
