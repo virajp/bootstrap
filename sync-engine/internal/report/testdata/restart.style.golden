@@ -1,0 +1,20 @@
+
+  [0;33m✎ changed   a[0m
+  [0;31m✗ failed f: x[0m
+
+  [0;31m✗ failed f: y[0m
+  [0;31m✖ would remove r[0m
+
+  ┌───────────────┬───────┐
+  │ [2m✎ Changed    [0m │ [2m    0[0m │
+  │ [2m✚ New        [0m │ [2m    0[0m │
+  │ [2m❋ Seeded     [0m │ [2m    0[0m │
+  │ [0;31m✖ Removed    [0m │ [0;31m    1[0m │
+  │ [2m= Unchanged  [0m │ [2m    0[0m │
+  │ [2m◦ Kept seeds [0m │ [2m    0[0m │
+  │ [2m⊘ Skipped    [0m │ [2m    0[0m │
+  │ [0;31m✗ Failed     [0m │ [0;31m    1[0m │
+  ├───────────────┼───────┤
+  │ Total         │     2 │
+  └───────────────┴───────┘
+✅ Dry run: 1 file would change
