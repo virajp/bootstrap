@@ -168,9 +168,12 @@ run_check() { case_args=--check run_case "$@"; }
 
 # Wait for the oldest case, print its output and add its failures. A case
 # without a failures file stopped before its end, which is a failure.
+# The files give the result, not the status of `wait`. When a fork of this
+# shell gets the pid of a case that ended, bash forgets the status of that
+# case, and `wait` fails with "is not a child of this shell".
 collect_case() {
   local dir=${case_dirs[0]} n=1
-  wait "${case_pids[0]}"
+  wait "${case_pids[0]}" 2> /dev/null || true
   cat -- "$dir/out"
   [[ -f $dir/failures ]] && n=$(cat -- "$dir/failures")
   failures=$((failures + n))
