@@ -3,8 +3,8 @@
 This document holds the rules that both front-ends of the sync share: the cache
 and the clone, the engine variables, the tool calls, the templates, the write of
 one target, merge mode, the header, the manifest and the stale rule, the values
-merge, `bootstrap_commit` and the exit codes. It is the one place of these
-rules.
+merge, `bootstrap_commit`, the exit codes and the release of the engine. It is
+the one place of these rules.
 
 See also: [packs.md](packs.md), [tools.md](tools.md), [mise.md](mise.md),
 [repo-sync.md](repo-sync.md), [setup-sync.md](setup-sync.md).
@@ -26,6 +26,7 @@ folder.
 | `mise`       | The mise config generator, the environments of each tool and the checks of `[overrides.mise*]`. See [mise.md](mise.md).                                                                                    |
 | `repo-sync`  | The repo front-end, the function `repo_sync`. See [repo-sync.md](repo-sync.md).                                                                                                                            |
 | `setup-sync` | The Mac front-end, the function `setup_sync`. See [setup-sync.md](setup-sync.md).                                                                                                                          |
+| `VERSION`    | The pin of the Go engine. See [The release of the engine](#the-release-of-the-engine).                                                                                                                     |
 
 Each front-end sources `common`, `write`, `merge`, `select`, `manifest`,
 `values`
@@ -708,3 +709,87 @@ is
 code 2. A child task that does not find its library in the clone returns code 1.
 
 `repo_sync --check` returns the highest code of its checks, at most 2.
+
+## The release of the engine
+
+The Go engine is a binary of a GitHub release of `virajp/bootstrap`. mise
+installs it with its `github:` backend. The workflow
+`.github/workflows/release-engine.yml` builds the binary and makes the release.
+
+### The pin
+
+`sync-engine/VERSION` is the pin: the version of the engine that a clone of
+`main` uses.
+
+- It has one line, `MAJOR.MINOR.PATCH`, with no `v` and no comment.
+- The tag `vX.Y.Z` is the source of the version. The binary gets `X.Y.Z` from
+  the build, and the release workflow writes `X.Y.Z` to `VERSION`.
+- Nobody edits `VERSION` by hand. A manual change can name a version that has no
+  release.
+
+### The rule
+
+The release exists before the pin moves. The workflow commits `VERSION` only as
+its last step, after a successful build and release. If a step fails before it,
+`VERSION` does not change, so no consumer gets a version without a release.
+
+A tool change that needs a new feature of the engine lands after the pin commit.
+Before that commit, consumers run the old engine with the new clone.
+
+### Release a version
+
+**CAUTION:** Do not tag a commit that is not on `main`. The workflow stops, and
+the ruleset `all-tags` does not let you move or delete the tag.
+
+1. Land the engine change on `main` with `mise run code:merge <branch>`.
+2. Pull `main`.
+3. Select the next version `X.Y.Z`.
+4. Make a signed tag on the commit of `main`: `git tag -s vX.Y.Z -m "vX.Y.Z"`.
+5. Push the tag: `git push origin vX.Y.Z`.
+6. Monitor the run of `release-engine` in GitHub Actions.
+7. When the run is done, pull `main`. Its last commit is
+   `ops: pin sync-engine X.Y.Z`.
+
+The ruleset `all-tags` requires a signed tag. The tag must be
+`vMAJOR.MINOR.PATCH`, with no leading zero and no suffix.
+
+### What the workflow does
+
+The workflow starts on a push of a tag `v*.*.*`. Its one job runs on `macos-15`,
+an arm64 runner, with the permission `contents: write` only.
+
+1. It examines the tag. The tag must be `vMAJOR.MINOR.PATCH`, and its commit
+   must be on `main`. Else the run stops.
+2. It installs the Go version of `sync-engine/go.mod`.
+3. It builds `./cmd/sync-engine` in `sync-engine/` for `darwin/arm64`, with
+   `CGO_ENABLED=0` and `-ldflags "-X main.version=X.Y.Z"`.
+4. It runs `sync-engine version`. The output must be `X.Y.Z`.
+5. It writes the SHA-256 checksum of the binary.
+6. It creates the GitHub release `vX.Y.Z` with two assets:
+   `sync-engine-darwin-arm64` and `sync-engine-darwin-arm64.sha256`.
+7. It commits `sync-engine/VERSION` = `X.Y.Z` on `main`.
+
+The build is for macOS arm64 only. No Linux build and no Intel build exist.
+
+mise reads release assets, not workflow artifacts. It selects the asset of the
+OS and the CPU, and it removes the OS and CPU suffix from a single-file binary.
+Thus `sync-engine-darwin-arm64` installs as `sync-engine`. mise also checks the
+download against the digest of the asset or the checksum file.
+
+### The pin commit
+
+The ruleset `all-branches` requires signed commits. A `git push` from the runner
+is not signed, so the ruleset refuses it. Thus the last step uses the GraphQL
+mutation `createCommitOnBranch`, and GitHub signs that commit.
+
+- The step reads the head of `main`, and gives it to the mutation as
+  `expectedHeadOid`.
+- If `main` moves before the mutation, the mutation fails. The step reads the
+  head again and tries again, up to five times.
+- If `VERSION` on `main` is already `X.Y.Z`, the step does nothing.
+- The commit is from `github-actions[bot]`. A commit of the workflow token
+  starts no other workflow.
+
+If the last step fails, the release exists and the pin does not move. Run the
+failed job again in GitHub Actions. The release step finds the release and does
+not change it, and the last step tries the pin commit again.
