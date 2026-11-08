@@ -305,8 +305,8 @@ lines of the sync. The cases of the default output unset it. See
   bash functions of `common`. While `common` exists, a test compares each
   golden file with the output of `/bin/bash` and of the bash on `PATH`. To
   write the golden files again from bash, run
-  `UPDATE_GOLDEN=1 go test ./internal/report`. Until this repository selects
-  the `go` tool, the task runs `go@latest`.
+  `UPDATE_GOLDEN=1 go test ./internal/report`. The task runs the Go of the
+  `go` tool, which this repository selects.
 - `test` (`test/_default`) runs each test task in parallel. No hook and no
   `code:merge` task runs a test, because the tests are slow and a consumer does
   not have them. Run the tests by hand before you commit:
