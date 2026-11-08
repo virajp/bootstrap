@@ -1,0 +1,143 @@
+# The release of the Go sync engine. See docs/design/sync-engine.md ("The
+# release of the engine").
+#
+# A signed tag vX.Y.Z on main starts the workflow. It builds the engine for
+# macOS arm64, attaches the binary and its checksum to the GitHub release
+# vX.Y.Z, and as the last step commits sync-engine/VERSION = X.Y.Z on main.
+# Thus the pin moves only after a successful release.
+
+name: release-engine
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions: {}
+
+concurrency:
+  group: release-engine
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # macos-15 is an arm64 runner, so the job can run the binary that it builds.
+    runs-on: macos-15
+    permissions:
+      # The release and the pin commit on main.
+      contents: write
+    env:
+      ASSET: sync-engine-darwin-arm64
+    steps:
+      - name: Check out the tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # All history and branches, so the next step can find the tag commit
+          # on main.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Examine the tag
+        id: tag
+        run: |
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::The tag ${GITHUB_REF_NAME} is not vMAJOR.MINOR.PATCH."
+            exit 1
+          fi
+          commit=$(git rev-parse "${GITHUB_REF}^{commit}")
+          if ! git merge-base --is-ancestor "${commit}" origin/main; then
+            echo "::error::The commit ${commit} of the tag ${GITHUB_REF_NAME} is not on main."
+            exit 1
+          fi
+          echo "version=${GITHUB_REF_NAME#v}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: sync-engine/go.mod
+          cache: false
+
+      - name: Build the engine
+        working-directory: sync-engine
+        env:
+          CGO_ENABLED: "0"
+          GOOS: darwin
+          GOARCH: arm64
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          mkdir -p ../dist
+          go build -trimpath -ldflags "-X main.version=${VERSION}" \
+            -o "../dist/${ASSET}" ./cmd/sync-engine
+
+      - name: Examine the version of the binary
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          got=$("dist/${ASSET}" version)
+          if [ "${got}" != "${VERSION}" ]; then
+            echo "::error::The binary reports '${got}', not '${VERSION}'."
+            exit 1
+          fi
+
+      - name: Write the checksum
+        working-directory: dist
+        run: shasum -a 256 "${ASSET}" > "${ASSET}.sha256"
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A run again after a failed pin commit finds the release, and keeps it.
+          if gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "The release ${GITHUB_REF_NAME} exists. It does not change."
+            exit 0
+          fi
+          gh release create "${GITHUB_REF_NAME}" \
+            "dist/${ASSET}" "dist/${ASSET}.sha256" \
+            --repo "${GITHUB_REPOSITORY}" --verify-tag \
+            --title "${GITHUB_REF_NAME}" \
+            --notes "The sync engine ${GITHUB_REF_NAME} for macOS arm64."
+
+      # The last step. The ruleset all-branches requires signed commits, and
+      # GitHub signs a commit of createCommitOnBranch. A git push from the
+      # runner is not signed. The mutation refuses the commit when main is not
+      # at the expected head, so the step reads the head again and retries.
+      - name: Commit the pin on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          # The $ words in single quotes are GraphQL and jq variables.
+          # shellcheck disable=SC2016
+          query='mutation($input: CreateCommitOnBranchInput!) {
+            createCommitOnBranch(input: $input) { commit { oid } }
+          }'
+          contents=$(printf '%s\n' "${VERSION}" | base64)
+          for attempt in 1 2 3 4 5; do
+            head=$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)
+            current=$(gh api -H "Accept: application/vnd.github.raw" \
+              "repos/${GITHUB_REPOSITORY}/contents/sync-engine/VERSION?ref=${head}") || current=''
+            if [ "${current}" = "${VERSION}" ]; then
+              echo "sync-engine/VERSION on main is already ${VERSION}."
+              exit 0
+            fi
+            if jq -n \
+              --arg query "${query}" \
+              --arg repo "${GITHUB_REPOSITORY}" \
+              --arg head "${head}" \
+              --arg headline "ops: pin sync-engine ${VERSION}" \
+              --arg contents "${contents}" \
+              '{query: $query, variables: {input: {
+                branch: {repositoryNameWithOwner: $repo, branchName: "main"},
+                expectedHeadOid: $head,
+                message: {headline: $headline},
+                fileChanges: {additions: [{path: "sync-engine/VERSION", contents: $contents}]}
+              }}}' | gh api graphql --input -; then
+              echo "Committed sync-engine/VERSION = ${VERSION} on main."
+              exit 0
+            fi
+            echo "::warning::Attempt ${attempt} failed. main can have moved. Retry."
+            sleep $((attempt * 5))
+          done
+          echo "::error::Cannot commit sync-engine/VERSION on main. The release ${GITHUB_REF_NAME} exists."
+          exit 1
