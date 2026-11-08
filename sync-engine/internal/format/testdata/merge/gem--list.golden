@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/.gemrc",
+  "src": "# Merged by bootstrap: macos/tools/gem/.gemrc (only these keys are enforced)\n:verbose: false\n:backtrace: true\nupdate: --no-document\ninstall: --no-document\n",
+  "live": "- a\n- b\n",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 2,
+  "stderr": "x: ~/.gemrc holds a list, not a table - kept it as it is\n",
+  "out": null
+}

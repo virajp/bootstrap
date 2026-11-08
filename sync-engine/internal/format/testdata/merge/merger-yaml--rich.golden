@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/.config/merger/m.yaml",
+  "src": "scalar: src\nnested:\n  set: 1\nlist:\n  - x\n  - drop\n  - b\nkind:\n  - 1\n",
+  "live": "# head\nanchors: \u0026a\n  k: 1\nuse: *a\nflow: {x: 1, y: [1, 2]}\nnum: 1.0\nbig: 1e2\nhex: 0x1F\nflag: yes\nlist:\n  - a\n  - b\ntext: |\n  one\n  two\n\n# tail\n",
+  "remove": "[[\"gone\"]]",
+  "remove_items": "[{\"path\":[\"list\"],\"items\":[\"drop\"]}]",
+  "rc": 0,
+  "stderr": "",
+  "out": "# head\nanchors: \u0026a\n  k: 1\nuse: *a\nflow: {x: 1, y: [1, 2]}\nnum: 1.0\nbig: 1e2\nhex: 0x1F\nflag: yes\nlist:\n  - a\n  - b\n  - x\ntext: |\n  one\n  two\nscalar: src\nnested:\n  set: 1\nkind:\n  - 1\n# tail\n"
+}

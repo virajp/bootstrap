@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/x.yaml",
+  "src": "a: [1\n",
+  "live": "  \n# only a comment\n\n",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 2,
+  "stderr": "Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T//sync-engine-merge.73rc8W/src': yaml: line 2: did not find expected ',' or ']'\n",
+  "out": null
+}

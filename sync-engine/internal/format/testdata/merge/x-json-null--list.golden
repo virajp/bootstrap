@@ -1,0 +1,11 @@
+{
+  "format": "json",
+  "show": "~/x.json",
+  "src": "null\n",
+  "live": "[1]\n",
+  "remove": "[[\"a\"]]",
+  "remove_items": "[{\"path\":[\"l\"],\"items\":[1]}]",
+  "rc": 2,
+  "stderr": "x: ~/x.json holds a list, not a table - kept it as it is\n",
+  "out": null
+}

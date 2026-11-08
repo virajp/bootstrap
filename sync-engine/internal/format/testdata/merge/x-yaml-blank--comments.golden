@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/x.yaml",
+  "src": "",
+  "live": "  \n# only a comment\n\n",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 0,
+  "stderr": "",
+  "out": "{}\n"
+}

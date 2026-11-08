@@ -1,0 +1,6 @@
+{
+  "format": "json",
+  "content": "\"a\tb\"",
+  "rc": 2,
+  "stderr": "x: show: the result does not parse as json - the current file stays\n  jq: parse error: Invalid string: control characters from U+0000 through U+001F must be escaped at line 1, column 5\n"
+}

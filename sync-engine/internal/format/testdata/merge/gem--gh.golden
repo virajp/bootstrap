@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/.gemrc",
+  "src": "# Merged by bootstrap: macos/tools/gem/.gemrc (only these keys are enforced)\n:verbose: false\n:backtrace: true\nupdate: --no-document\ninstall: --no-document\n",
+  "live": "# gh config\nversion: \"1\"\ngit_protocol: https # old\neditor: nano\naliases:\n  co: pr checkout\n  mine: pr list --author @me\nhttp_unix_socket:\nbrowser:\n",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 0,
+  "stderr": "",
+  "out": "# gh config\nversion: \"1\"\ngit_protocol: https # old\neditor: nano\naliases:\n  co: pr checkout\n  mine: pr list --author @me\nhttp_unix_socket:\nbrowser:\n:verbose: false\n:backtrace: true\nupdate: --no-document\ninstall: --no-document\n"
+}

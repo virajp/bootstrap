@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/x.yaml",
+  "src": "just a string\n",
+  "live": "  \n# only a comment\n\n",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 2,
+  "stderr": "x: the merge source of ~/x.yaml is a string, not a table\n",
+  "out": null
+}

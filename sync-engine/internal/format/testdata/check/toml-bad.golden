@@ -1,0 +1,6 @@
+{
+  "format": "toml",
+  "content": "a = [\n",
+  "rc": 2,
+  "stderr": "x: show: the result does not parse as toml - the current file stays\n  Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestParseCheckGolden1607332746/033/file': array is incomplete\n"
+}

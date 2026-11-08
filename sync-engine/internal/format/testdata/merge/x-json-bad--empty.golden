@@ -1,0 +1,11 @@
+{
+  "format": "json",
+  "show": "~/x.json",
+  "src": "{\"a\": ",
+  "live": "",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 2,
+  "stderr": "jq: parse error: Unfinished JSON term at EOF at line 1, column 6\nx: the merge source of ~/x.json is not one JSON value\n",
+  "out": null
+}

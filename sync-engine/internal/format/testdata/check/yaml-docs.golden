@@ -1,0 +1,6 @@
+{
+  "format": "yaml",
+  "content": "a: 1\n---\nb: 2\n",
+  "rc": 0,
+  "stderr": ""
+}

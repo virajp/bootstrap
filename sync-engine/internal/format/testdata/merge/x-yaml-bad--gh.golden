@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/x.yaml",
+  "src": "a: [1\n",
+  "live": "# gh config\nversion: \"1\"\ngit_protocol: https # old\neditor: nano\naliases:\n  co: pr checkout\n  mine: pr list --author @me\nhttp_unix_socket:\nbrowser:\n",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 2,
+  "stderr": "Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T//sync-engine-merge.4v0Jxu/src': yaml: line 2: did not find expected ',' or ']'\n",
+  "out": null
+}

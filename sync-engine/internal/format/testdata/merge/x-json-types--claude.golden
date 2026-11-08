@@ -1,0 +1,11 @@
+{
+  "format": "json",
+  "show": "~/x.json",
+  "src": "{\"n\":1.0,\"e\":1e2,\"big\":100000000000000000000,\"s\":\"é\\u0001\\u007f\u003c\u003e\u0026\\/ \\ud83d\\ude00\",\"t\":true,\"z\":null,\"o\":{\"b\":1,\"a\":[]},\"l\":[1,1.0,2,{\"a\":1,\"b\":2},{\"b\":2,\"a\":1}],\"d\":{}}",
+  "live": "{\n  \"model\": \"sonnet\",\n  \"env\": {\"CONTEXT7_RUNNER\": \"x\", \"MY\": \"1\", \"MISE_ENV\": \"prod\"},\n  \"deniedMcpServers\": [{\"serverName\": \"a\"}],\n  \"permissions\": {\"allow\": [\"Read\", \"Bash(ls:*)\", \"Edit\"], \"deny\": [\"Bash(rm:*)\"], \"ask\": []},\n  \"autoMode\": {\"environment\": [\"old\"], \"soft_deny\": [\"$defaults\", \"mine\"]},\n  \"attribution\": \"legacy\",\n  \"numbers\": [1.0, 1e2, 0.10, 100000000000000000000],\n  \"text\": \"é\\u0001 \\ud83d\\ude00 \u003c\u0026\u003e\",\n  \"skillOverrides\": {\"b\": \"on\", \"a\": \"off\"}\n}\n",
+  "remove": "[]",
+  "remove_items": "[{\"path\":[\"l\"],\"items\":[2]}]",
+  "rc": 0,
+  "stderr": "",
+  "out": "{\n  \"model\": \"sonnet\",\n  \"env\": {\n    \"CONTEXT7_RUNNER\": \"x\",\n    \"MY\": \"1\",\n    \"MISE_ENV\": \"prod\"\n  },\n  \"deniedMcpServers\": [\n    {\n      \"serverName\": \"a\"\n    }\n  ],\n  \"permissions\": {\n    \"allow\": [\n      \"Read\",\n      \"Bash(ls:*)\",\n      \"Edit\"\n    ],\n    \"deny\": [\n      \"Bash(rm:*)\"\n    ],\n    \"ask\": []\n  },\n  \"autoMode\": {\n    \"environment\": [\n      \"old\"\n    ],\n    \"soft_deny\": [\n      \"$defaults\",\n      \"mine\"\n    ]\n  },\n  \"attribution\": \"legacy\",\n  \"numbers\": [\n    1.0,\n    1E+2,\n    0.10,\n    100000000000000000000\n  ],\n  \"text\": \"é\\u0001 😀 \u003c\u0026\u003e\",\n  \"skillOverrides\": {\n    \"b\": \"on\",\n    \"a\": \"off\"\n  },\n  \"n\": 1.0,\n  \"e\": 1E+2,\n  \"big\": 100000000000000000000,\n  \"s\": \"é\\u0001\\u007f\u003c\u003e\u0026/ 😀\",\n  \"t\": true,\n  \"z\": null,\n  \"o\": {\n    \"b\": 1,\n    \"a\": []\n  },\n  \"l\": [\n    1,\n    {\n      \"a\": 1,\n      \"b\": 2\n    }\n  ],\n  \"d\": {}\n}\n"
+}

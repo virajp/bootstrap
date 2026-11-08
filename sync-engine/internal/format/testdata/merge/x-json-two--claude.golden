@@ -1,0 +1,11 @@
+{
+  "format": "json",
+  "show": "~/x.json",
+  "src": "{} {}\n",
+  "live": "{\n  \"model\": \"sonnet\",\n  \"env\": {\"CONTEXT7_RUNNER\": \"x\", \"MY\": \"1\", \"MISE_ENV\": \"prod\"},\n  \"deniedMcpServers\": [{\"serverName\": \"a\"}],\n  \"permissions\": {\"allow\": [\"Read\", \"Bash(ls:*)\", \"Edit\"], \"deny\": [\"Bash(rm:*)\"], \"ask\": []},\n  \"autoMode\": {\"environment\": [\"old\"], \"soft_deny\": [\"$defaults\", \"mine\"]},\n  \"attribution\": \"legacy\",\n  \"numbers\": [1.0, 1e2, 0.10, 100000000000000000000],\n  \"text\": \"é\\u0001 \\ud83d\\ude00 \u003c\u0026\u003e\",\n  \"skillOverrides\": {\"b\": \"on\", \"a\": \"off\"}\n}\n",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 2,
+  "stderr": "jq: error (at /var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T//sync-engine-merge.5aUPj1/src:1): more than one JSON value\nx: the merge source of ~/x.json is not one JSON value\n",
+  "out": null
+}

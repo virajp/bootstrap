@@ -1,0 +1,11 @@
+{
+  "format": "json",
+  "show": "~/.config/merger/m.json",
+  "src": "{\n  \"scalar\": \"src\",\n  \"nested\": { \"set\": 1, \"deeper\": { \"x\": true } },\n  \"kind\": [1],\n  \"list\": [\"b\", \"c\", \"c\", { \"j\": 2, \"k\": 1 }],\n  \"maps\": [{ \"b\": 2, \"a\": 1 }],\n  \"items\": [\"a\"]\n}\n",
+  "live": "{\"a\": 1, \"b\": 2, \"a\": 3}",
+  "remove": "[[\"gone\"],[\"nested\",\"old\"],[\"absent\",\"path\"]]",
+  "remove_items": "[{\"path\":[\"list\"],\"items\":[\"drop\",{\"j\":2,\"k\":1}]},{\"path\":[\"keep\"],\"items\":[\"app\"]}]",
+  "rc": 0,
+  "stderr": "",
+  "out": "{\n  \"a\": 3,\n  \"b\": 2,\n  \"scalar\": \"src\",\n  \"nested\": {\n    \"set\": 1,\n    \"deeper\": {\n      \"x\": true\n    }\n  },\n  \"kind\": [\n    1\n  ],\n  \"list\": [\n    \"b\",\n    \"c\"\n  ],\n  \"maps\": [\n    {\n      \"b\": 2,\n      \"a\": 1\n    }\n  ],\n  \"items\": [\n    \"a\"\n  ]\n}\n"
+}
