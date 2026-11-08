@@ -527,6 +527,7 @@ This table has the mise tools of `repo/tools/` now.
 | `github`      | `gh`                     | `latest` | dev, ci |                |                                                    |
 | `github`      | `actionlint`             | `latest` | dev, ci |                |                                                    |
 | `gitlab`      | `glab`                   | `latest` | dev, ci |                |                                                    |
+| `go`          | `go`                     | `latest` | dev, ci |                |                                                    |
 | `java`        | `java`                   | `lts`    | dev, ci |                | `settings`                                         |
 | `kotlin`      | `ktlint`                 | `latest` | dev, ci |                |                                                    |
 | `kotlin`      | `github:detekt/detekt`   | `latest` | dev, ci |                |                                                    |

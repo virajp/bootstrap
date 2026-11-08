@@ -49,12 +49,12 @@ then keeps the repository equal to `bootstrap`, without an agent.
 The tool files in `tools/` are `_security_base.md`, `android.md`, `apko.md`,
 `aube.md`, `bun.md`, `claude-tool.md`, `cloudflare.md`, `cosign.md`, `crane.md`,
 `docker.md`, `doppler.md`, `dprint.md`, `firebase.md`, `flutter.md`, `fnox.md`,
-`gcloud.md`, `git.md`, `github.md`, `gitlab.md`, `gitleaks.md`, `grype.md`,
-`java.md`, `kotlin.md`, `linter.md`, `melange.md`, `mise.md`, `node.md`,
-`osv-scanner.md`, `pnpm.md`, `pre-commit.md`, `pulumi.md`, `python.md`,
-`repo-sync.md`, `rust.md`, `swift.md` and `vscode.md`. The file of the
-`claude` tool is `claude-tool.md`, because a file system that ignores case
-reads `claude.md` as `CLAUDE.md`, and AI agents load that name as
+`gcloud.md`, `git.md`, `github.md`, `gitlab.md`, `gitleaks.md`, `go.md`,
+`grype.md`, `java.md`, `kotlin.md`, `linter.md`, `melange.md`, `mise.md`,
+`node.md`, `osv-scanner.md`, `pnpm.md`, `pre-commit.md`, `pulumi.md`,
+`python.md`, `repo-sync.md`, `rust.md`, `swift.md` and `vscode.md`. The file of
+the `claude` tool is `claude-tool.md`, because a file system that ignores
+case reads `claude.md` as `CLAUDE.md`, and AI agents load that name as
 instructions.
 
 The pack files in `packs/` are `base.md`, `container-build.md` and
