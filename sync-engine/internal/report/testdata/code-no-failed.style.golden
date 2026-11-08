@@ -1,0 +1,14 @@
+
+  ┌───────────────┬───────┐
+  │ [2m✎ Changed    [0m │ [2m    0[0m │
+  │ [2m✚ New        [0m │ [2m    0[0m │
+  │ [2m❋ Seeded     [0m │ [2m    0[0m │
+  │ [2m✖ Removed    [0m │ [2m    0[0m │
+  │ = Unchanged   │     1 │
+  │ [2m◦ Kept seeds [0m │ [2m    0[0m │
+  │ [2m⊘ Skipped    [0m │ [2m    0[0m │
+  │ [2m✗ Failed     [0m │ [2m    0[0m │
+  ├───────────────┼───────┤
+  │ Total         │     1 │
+  └───────────────┴───────┘
+[0;31m❌ The sync failed with code 5[0m

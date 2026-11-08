@@ -1,0 +1,20 @@
+
+  [0;33m✎ would change .config/mise/tasks/code/lint[0m
+  [0;32m✚ would add    .gitignore[0m
+  [0;32m✚ would add    dir with space/a'b.toml[0m
+  [0;34m❋ would seed   .config/linter.yaml[0m
+  [0;31m✖ would remove old/file[0m
+
+  ┌───────────────┬───────┐
+  │ [0;33m✎ Changed    [0m │ [0;33m    1[0m │
+  │ [0;32m✚ New        [0m │ [0;32m    2[0m │
+  │ [0;34m❋ Seeded     [0m │ [0;34m    1[0m │
+  │ [0;31m✖ Removed    [0m │ [0;31m    1[0m │
+  │ = Unchanged   │     1 │
+  │ ◦ Kept seeds  │     1 │
+  │ ⊘ Skipped     │     2 │
+  │ [2m✗ Failed     [0m │ [2m    0[0m │
+  ├───────────────┼───────┤
+  │ Total         │     9 │
+  └───────────────┴───────┘
+✅ Dry run: 5 files would change

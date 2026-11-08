@@ -1,0 +1,18 @@
+
+  [0;33m✎ changed   a[0m
+  [0;31m✗ failed b: cannot write the target[0m
+  [0;31m✗ failed c: template does not render[0m
+
+  ┌───────────────┬───────┐
+  │ [0;33m✎ Changed    [0m │ [0;33m    1[0m │
+  │ [2m✚ New        [0m │ [2m    0[0m │
+  │ [2m❋ Seeded     [0m │ [2m    0[0m │
+  │ [2m✖ Removed    [0m │ [2m    0[0m │
+  │ [2m= Unchanged  [0m │ [2m    0[0m │
+  │ [2m◦ Kept seeds [0m │ [2m    0[0m │
+  │ [2m⊘ Skipped    [0m │ [2m    0[0m │
+  │ [0;31m✗ Failed     [0m │ [0;31m    2[0m │
+  ├───────────────┼───────┤
+  │ Total         │     3 │
+  └───────────────┴───────┘
+[0;31m❌ The sync failed with code 2: 2 files failed[0m
