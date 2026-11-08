@@ -1,0 +1,11 @@
+{
+  "format": "toml",
+  "show": "~/x.toml",
+  "src": "a = [\n",
+  "live": "",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 2,
+  "stderr": "Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T//sync-engine-merge.d8BJUF/src': array is incomplete\n",
+  "out": null
+}

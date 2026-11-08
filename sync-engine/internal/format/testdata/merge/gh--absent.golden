@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/.config/gh/config.yml",
+  "src": "# Merged by bootstrap: macos/tools/gh/.config/gh/config.yml.tmpl\n# Only these keys are enforced; gh owns every other key.\nversion: \"1\"\n# WHY: Use SSH for git operations instead of HTTPS for better security with keys\n# What protocol to use when performing git operations. Supported values: ssh, https\ngit_protocol: ssh\n# WHY: the editor comes from editor in [tools.gh] of macos.toml\n# What editor gh should run when creating issues, pull requests, etc. If blank, will refer to environment.\neditor: vim\n# A pager program to send command output to, e.g. \"less\". Set the value to \"cat\" to disable the pager.\npager: less\n# WHY: Aliases for commonly used commands to speed up workflow\n# Aliases allow you to create nicknames for gh commands\naliases:\n  co: pr checkout\n",
+  "live": null,
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 0,
+  "stderr": "",
+  "out": "# Merged by bootstrap: macos/tools/gh/.config/gh/config.yml.tmpl\n# Only these keys are enforced; gh owns every other key.\nversion: \"1\"\n# WHY: Use SSH for git operations instead of HTTPS for better security with keys\n# What protocol to use when performing git operations. Supported values: ssh, https\ngit_protocol: ssh\n# WHY: the editor comes from editor in [tools.gh] of macos.toml\n# What editor gh should run when creating issues, pull requests, etc. If blank, will refer to environment.\neditor: vim\n# A pager program to send command output to, e.g. \"less\". Set the value to \"cat\" to disable the pager.\npager: less\n# WHY: Aliases for commonly used commands to speed up workflow\n# Aliases allow you to create nicknames for gh commands\naliases:\n  co: pr checkout\n"
+}

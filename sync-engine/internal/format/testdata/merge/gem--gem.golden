@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/.gemrc",
+  "src": "# Merged by bootstrap: macos/tools/gem/.gemrc (only these keys are enforced)\n:verbose: false\n:backtrace: true\nupdate: --no-document\ninstall: --no-document\n",
+  "live": "# my gemrc\n:verbose: true # loud\n:backtrace: false\ngem: --no-document\nupdate: --user-install\n:sources:\n  - https://rubygems.org/\n",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 0,
+  "stderr": "",
+  "out": "# my gemrc\n:verbose: false # loud\n:backtrace: true\ngem: --no-document\nupdate: --no-document\n:sources:\n  - https://rubygems.org/\ninstall: --no-document\n"
+}

@@ -1,0 +1,6 @@
+{
+  "format": "json",
+  "content": "\u000b{}",
+  "rc": 2,
+  "stderr": "x: show: the result does not parse as json - the current file stays\n  jq: parse error: Invalid numeric literal at line 1, column 2\n"
+}

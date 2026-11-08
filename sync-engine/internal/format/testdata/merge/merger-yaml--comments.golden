@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/.config/merger/m.yaml",
+  "src": "scalar: src\nnested:\n  set: 1\nlist:\n  - x\n  - drop\n  - b\nkind:\n  - 1\n",
+  "live": "  \n# only a comment\n\n",
+  "remove": "[[\"gone\"]]",
+  "remove_items": "[{\"path\":[\"list\"],\"items\":[\"drop\"]}]",
+  "rc": 0,
+  "stderr": "",
+  "out": "scalar: src\nnested:\n  set: 1\nlist:\n  - x\n  - b\nkind:\n  - 1\n"
+}

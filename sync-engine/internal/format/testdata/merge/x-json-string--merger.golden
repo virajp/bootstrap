@@ -1,0 +1,11 @@
+{
+  "format": "json",
+  "show": "~/x.json",
+  "src": "\"s\"",
+  "live": "{\n    \"keep\": \"app\",\n    \"scalar\": \"app\",\n    \"nested\": {\"set\": 0, \"old\": 1, \"other\": 2},\n    \"kind\": {\"was\": \"table\"},\n    \"list\": [\"x\", \"drop\", \"b\", {\"k\": 1, \"j\": 2}, \"drop\"],\n    \"maps\": [{\"a\": 1, \"b\": 2}],\n    \"gone\": true\n}\n",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 2,
+  "stderr": "x: the merge source of ~/x.json is a string, not a table\n",
+  "out": null
+}

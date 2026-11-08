@@ -1,0 +1,11 @@
+{
+  "format": "toml",
+  "show": "~/.config/merger/m.toml",
+  "src": "scalar = \"src\"\n\n[nested]\nset = 1\nlist = [\"x\", \"y\"]\n",
+  "live": "# head\ninline = {a = 1, b = \"x\"}\nnum = 1.0\nbig = 1e2\nlist = [\"a\", \"drop\", \"b\"]\n\n[[items]]\nname = \"one\"\n\n[[items]]\nname = \"two\"\n\n[nested.deep]\ny = 1 # inline\n",
+  "remove": "[[\"gone\"]]",
+  "remove_items": "[{\"path\":[\"notlist\"],\"items\":[\"s\"]}]",
+  "rc": 0,
+  "stderr": "",
+  "out": "# head\nnum = 1.0\nbig = 1e2\nlist = [\"a\", \"drop\", \"b\"]\nscalar = \"src\"\ninline = { a = 1, b = \"x\" }\n\n[[items]]\nname = \"one\"\n[[items]]\nname = \"two\"\n\n[nested]\nset = 1\nlist = [\"x\", \"y\"]\n\n[nested.deep]\ny = 1  # inline\n"
+}

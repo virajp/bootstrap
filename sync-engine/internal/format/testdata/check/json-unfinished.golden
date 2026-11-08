@@ -1,0 +1,6 @@
+{
+  "format": "json",
+  "content": "{\"a\": ",
+  "rc": 2,
+  "stderr": "x: show: the result does not parse as json - the current file stays\n  jq: parse error: Unfinished JSON term at EOF at line 1, column 6\n"
+}

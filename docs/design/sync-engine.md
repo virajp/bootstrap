@@ -45,6 +45,7 @@ line, file and exit code of the bash engine.
 | `cmd/sync-engine` | The command, with the subcommands `repo`, `macos` and `version`. `version` prints `main.version`, which the release build sets. A local build has `dev`. |
 | `internal/fail`   | The typed errors of the exit codes, and a collector where the highest code wins. See [The exit codes](#the-exit-codes).                                  |
 | `internal/report` | The output of a run, with the same bytes as `common`. See [The output of a run](#the-output-of-a-run).                                                   |
+| `internal/format` | The parse check and merge mode: JSON in the form of jq, YAML and TOML through the yq command in-process. See [Merge mode](#merge-mode).                  |
 
 The task `test:go` of this repository runs `go vet`, a `gofmt` check and
 `go test` in the module. The golden files of `internal/report` hold the output

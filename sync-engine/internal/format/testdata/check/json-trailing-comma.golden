@@ -1,0 +1,6 @@
+{
+  "format": "json",
+  "content": "[1,]",
+  "rc": 2,
+  "stderr": "x: show: the result does not parse as json - the current file stays\n  jq: parse error: Expected another array element at line 1, column 4\n"
+}

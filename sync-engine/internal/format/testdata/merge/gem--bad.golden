@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/.gemrc",
+  "src": "# Merged by bootstrap: macos/tools/gem/.gemrc (only these keys are enforced)\n:verbose: false\n:backtrace: true\nupdate: --no-document\ninstall: --no-document\n",
+  "live": "a: [1\n",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 2,
+  "stderr": "Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestMergeGolden2088049536/014/live': yaml: line 2: did not find expected ',' or ']'\nx: ~/.gemrc is not valid yaml - kept it as it is\n",
+  "out": null
+}

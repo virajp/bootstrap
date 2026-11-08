@@ -1,0 +1,11 @@
+{
+  "format": "toml",
+  "show": "~/x.toml",
+  "src": "# nothing\n",
+  "live": "# only a comment\n\n# another\n",
+  "remove": "[[\"gone\"]]",
+  "remove_items": "[]",
+  "rc": 0,
+  "stderr": "",
+  "out": ""
+}
