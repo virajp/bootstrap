@@ -1,0 +1,6 @@
+{
+  "format": "json",
+  "content": "tru",
+  "rc": 2,
+  "stderr": "x: show: the result does not parse as json - the current file stays\n  jq: parse error: Invalid literal at EOF at line 1, column 3\n"
+}

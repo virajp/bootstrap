@@ -1,0 +1,11 @@
+fingerprint: 6feed41534ce862d59f5ff1f228e3315cbd68965ace73d60b938c18628924bad
+rc=0
+--- stderr
+--- stdout
+tools: a b
+sel:
+a - default
+b - packs.extra
+deps:
+values:
+{"a":{},"b":{}}

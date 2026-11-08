@@ -1,0 +1,11 @@
+{
+  "format": "toml",
+  "show": "~/x.toml",
+  "src": "",
+  "live": "# head comment\nkeep = \"app\" # after keep\nscalar = \"app\"\nnotlist = \"s\"\ngone = 1\n\n# own line\n[nested]\nset = 0\nlist = [\"x\"]\n",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 0,
+  "stderr": "",
+  "out": "# head comment\nkeep = \"app\"  # after keep\nscalar = \"app\"\nnotlist = \"s\"\ngone = 1\n\n# own line\n[nested]\nset = 0\nlist = [\"x\"]\n"
+}

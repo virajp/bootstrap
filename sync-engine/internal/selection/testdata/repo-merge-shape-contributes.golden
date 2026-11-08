@@ -1,0 +1,5 @@
+fingerprint: 62513d20c985d0a8669ded533340f97a44f6d5047ccdc14f7174edf5e9ae96ae
+rc=2
+--- stderr
+repo-sync: repo/tools/a/tools.toml: [contributes.b] must be a table
+--- stdout

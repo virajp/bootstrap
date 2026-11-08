@@ -1,0 +1,6 @@
+{
+  "format": "toml",
+  "content": "a = 1\n[t]\nb = \"x\"\n",
+  "rc": 0,
+  "stderr": ""
+}

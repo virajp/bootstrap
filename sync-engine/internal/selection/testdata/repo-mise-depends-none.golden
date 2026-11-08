@@ -1,0 +1,5 @@
+fingerprint: 70dca58ddee2341ab946721ea473e3c447f41cdd32e3d73ee7318abafd49ad50
+rc=2
+--- stderr
+repo-sync: mise tool 'ta' of repo/tools/a depends on 'zz', which no tool defines
+--- stdout

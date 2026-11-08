@@ -1,0 +1,5 @@
+fingerprint: 9d89c871073a9d5baf913ac06b3538a184c6cc51ade348cabd10ead716d586a6
+rc=3
+--- stderr
+repo-sync: tool 'zzz' is not in bootstrap
+--- stdout

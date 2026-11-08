@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/x.yaml",
+  "src": "a: 1\n---\nb: 2\n",
+  "live": null,
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 2,
+  "stderr": "x: the merge source of ~/x.yaml has more than one YAML document\n",
+  "out": null
+}

@@ -1,0 +1,11 @@
+{
+  "format": "json",
+  "show": "~/.config/merger/m.json",
+  "src": "{\n  \"scalar\": \"src\",\n  \"nested\": { \"set\": 1, \"deeper\": { \"x\": true } },\n  \"kind\": [1],\n  \"list\": [\"b\", \"c\", \"c\", { \"j\": 2, \"k\": 1 }],\n  \"maps\": [{ \"b\": 2, \"a\": 1 }],\n  \"items\": [\"a\"]\n}\n",
+  "live": "{\"a\": ",
+  "remove": "[[\"gone\"],[\"nested\",\"old\"],[\"absent\",\"path\"]]",
+  "remove_items": "[{\"path\":[\"list\"],\"items\":[\"drop\",{\"j\":2,\"k\":1}]},{\"path\":[\"keep\"],\"items\":[\"app\"]}]",
+  "rc": 2,
+  "stderr": "jq: parse error: Unfinished JSON term at EOF at line 1, column 6\nx: ~/.config/merger/m.json is not valid json - kept it as it is\n",
+  "out": null
+}

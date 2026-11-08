@@ -1,0 +1,11 @@
+fingerprint: b196eb7a0a9b773bea498e0d6b9f95b7539290c40ab99c0ad58557e49b645696
+rc=0
+--- stderr
+--- stdout
+tools: a c
+sel:
+a - default
+c - tools.c
+deps:
+values:
+{"a":{},"c":{"n":"s"}}

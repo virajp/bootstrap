@@ -1,0 +1,6 @@
+{
+  "format": "text",
+  "content": "{{ not ( parsed",
+  "rc": 0,
+  "stderr": ""
+}

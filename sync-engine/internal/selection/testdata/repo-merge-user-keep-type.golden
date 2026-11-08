@@ -1,0 +1,5 @@
+fingerprint: 20e85333a90dedd8bade297b4af27b56a3ccc30729e46067e620983c387ffd7e
+rc=2
+--- stderr
+repo-sync: [tools.a] of bootstrap.toml sets list to a string, but it is a list in the base or dependency tool a - write a list there (a list adds its items)
+--- stdout

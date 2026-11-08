@@ -1,0 +1,5 @@
+fingerprint: 4898dcefcbbdfeb8a65dbbbbd8cc16fcd48b0f3d1e2e3a00dafbfc7cf157bf63
+rc=3
+--- stderr
+repo-sync: tool 'nope' is not in bootstrap
+--- stdout

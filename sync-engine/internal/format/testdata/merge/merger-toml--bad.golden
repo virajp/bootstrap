@@ -1,0 +1,11 @@
+{
+  "format": "toml",
+  "show": "~/.config/merger/m.toml",
+  "src": "scalar = \"src\"\n\n[nested]\nset = 1\nlist = [\"x\", \"y\"]\n",
+  "live": "a = [\n",
+  "remove": "[[\"gone\"]]",
+  "remove_items": "[{\"path\":[\"notlist\"],\"items\":[\"s\"]}]",
+  "rc": 2,
+  "stderr": "Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestMergeGolden2088049536/097/live': array is incomplete\nx: ~/.config/merger/m.toml is not valid toml - kept it as it is\n",
+  "out": null
+}

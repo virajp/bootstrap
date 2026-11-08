@@ -1,0 +1,5 @@
+fingerprint: 84b1df532af53e1256514e7d484e1f12cc92e378013c1efe1f13f4043ae2b799
+rc=2
+--- stderr
+repo-sync: repo/tools/a/tools.toml and repo/tools/b/tools.toml set [contributes.d] x to different values - remove one
+--- stdout

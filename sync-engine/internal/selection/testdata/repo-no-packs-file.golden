@@ -1,0 +1,5 @@
+fingerprint: 6bb2ae75574f8be6b65391d3a812b233b5cf499c996374065ffd37d708dd11ec
+rc=3
+--- stderr
+repo-sync: pack 'base' is not in bootstrap
+--- stdout

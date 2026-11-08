@@ -1,0 +1,6 @@
+{
+  "format": "json",
+  "content": "{'a': 1}",
+  "rc": 2,
+  "stderr": "x: show: the result does not parse as json - the current file stays\n  jq: parse error: Invalid string literal; expected \", but got ' at line 1, column 5\n"
+}

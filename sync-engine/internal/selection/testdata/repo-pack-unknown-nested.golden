@@ -1,0 +1,5 @@
+fingerprint: 0e924aef507f1476ce6ee11e8c9ca2765b4de8052b68b4faf830f8fbb25b7bb9
+rc=3
+--- stderr
+repo-sync: pack 'zzz' is not in bootstrap (named in pack base)
+--- stdout

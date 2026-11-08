@@ -1,0 +1,5 @@
+fingerprint: d8078d1aa81de635954cbd55dacd1437cdf640e4c86a713883d741ebe9488227
+rc=3
+--- stderr
+repo-sync: repo/tools/a/tools.toml: [contributes.zzz] names a tool that bootstrap does not have
+--- stdout

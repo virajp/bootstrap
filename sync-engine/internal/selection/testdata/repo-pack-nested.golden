@@ -1,0 +1,11 @@
+fingerprint: b8776174374e65e42d41596e0940a8c43b4aa903cfb5656710caf98f7dfe1807
+rc=0
+--- stderr
+--- stdout
+tools: a b
+sel:
+a - default
+b dev packs.nested
+deps:
+values:
+{"a":{},"b":{}}

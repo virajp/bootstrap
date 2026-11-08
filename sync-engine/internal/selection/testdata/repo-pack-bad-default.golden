@@ -1,0 +1,5 @@
+fingerprint: 2a6f580aa9accd2826e70ba70d8a1878a6ccb96bff6b03f5cf8a2f8156985a04
+rc=2
+--- stderr
+repo-sync: repo/packs.toml: [pack.base] a: default must be true or false, not string
+--- stdout

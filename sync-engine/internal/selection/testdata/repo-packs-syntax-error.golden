@@ -1,0 +1,5 @@
+fingerprint: b978b4574f8f9d96073d69be172e96207118d5481932360714c46f6dea01b98c
+rc=2
+--- stderr
+repo-sync: cannot read repo/packs.toml
+--- stdout

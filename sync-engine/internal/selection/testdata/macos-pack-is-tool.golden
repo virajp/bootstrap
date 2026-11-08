@@ -1,0 +1,5 @@
+fingerprint: 27e7e012371cedd4720da42fd8ef6a4ce4dc67f854f6e5d7071f0b1639225447
+rc=2
+--- stderr
+setup-sync: macos/packs.toml: pack 'm2' is also a tool folder - rename one
+--- stdout

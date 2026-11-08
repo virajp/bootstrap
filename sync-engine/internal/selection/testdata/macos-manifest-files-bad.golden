@@ -1,0 +1,18 @@
+fingerprint: 1ee10d7a6a9495cab157d5193ccbc159c6d64344b4aa4ac27fac8a7fe9c5304b
+rc=2
+--- stderr
+setup-sync: macos/tools/m1/tools.toml: [files."a.txt"] format must be "text", "json", "yaml" or "toml"
+setup-sync: macos/tools/m1/tools.toml: [files."a.txt"] mode must be "generated", "seed" or "merge"
+setup-sync: macos/tools/m1/tools.toml: [files."a.txt"] remove must be a list of key paths, each a non-empty list of strings
+setup-sync: macos/tools/m1/tools.toml: [files."a.txt"] remove_items must be a list of tables, each with exactly path (a non-empty list of strings) and items (a list)
+setup-sync: macos/tools/m1/tools.toml: [files."a.txt"] requires: '/a' must be a path relative to $HOME, with no .. part
+setup-sync: macos/tools/m1/tools.toml: [files."a.txt"] requires: 'b/..' must be a path relative to $HOME, with no .. part
+setup-sync: macos/tools/m1/tools.toml: [files."a.txt"] requires: '' must be a path relative to $HOME, with no .. part
+setup-sync: macos/tools/m1/tools.toml: [files."a.txt"] requires_found is for repo tools only
+setup-sync: macos/tools/m1/tools.toml: [files."a.txt"] zzz is not a key of a file - the keys are mode, requires, format, remove and remove_items
+setup-sync: macos/tools/m1/tools.toml: [files."a.txt"] remove works only with mode = "merge"
+setup-sync: macos/tools/m1/tools.toml: [files."a.txt"] remove_items works only with mode = "merge"
+setup-sync: macos/tools/m1/tools.toml: [files."b.txt"] mode = "merge" needs a json, yaml or toml target
+setup-sync: macos/tools/m1/tools.toml: [files."c"] requires must be a non-empty list of paths
+setup-sync: macos/tools/m1/tools.toml: [files."d"] must be a table
+--- stdout

@@ -1,0 +1,6 @@
+fingerprint: 70dd7f2c7ccba10d1702a5794e40dccf70f19b2ca3119a71e0bb1c0b123c66ec
+rc=2
+--- stderr
+setup-sync: macos/tools/m1/tools.toml: [contributes] must be a table of [contributes.<tool>] tables
+setup-sync: macos/tools/m1/tools.toml: [questions] must be a table of [questions.<key>] tables
+--- stdout

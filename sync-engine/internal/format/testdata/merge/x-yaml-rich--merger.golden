@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/x.yaml",
+  "src": "# head\nname: bootstrap # inline\nnum: 1.0\nbig: 1e2\nflag: yes\nlist:\n  - a\n  - b # item\n  - drop\n  - {k: 1, j: 2}\nnested:\n  deep:\n    x: 1\ntext: |\n  line one\n  line two\nnull_key: ~\n",
+  "live": "# top comment\nkeep: app # after keep\nscalar: app\nnested:\n  # own line\n  set: 0\nlist:\n  - x\n  - drop\n  - drop\nkind:\n  was: table\n",
+  "remove": "[[\"gone\"]]",
+  "remove_items": "[{\"path\":[\"list\"],\"items\":[\"drop\"]}]",
+  "rc": 0,
+  "stderr": "",
+  "out": "# top comment\nkeep: app # after keep\nscalar: app\nnested:\n  # own line\n  set: 0\n  deep:\n    x: 1\nlist:\n  - x\n  - a\n  - b\n  - k: 1\n    j: 2\nkind:\n  was: table\nname: bootstrap\nnum: 1.0\nbig: 1E+2\nflag: yes\ntext: |\n  line one\n  line two\nnull_key: null\n"
+}

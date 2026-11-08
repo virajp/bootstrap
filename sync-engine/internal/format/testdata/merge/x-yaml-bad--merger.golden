@@ -1,0 +1,11 @@
+{
+  "format": "yaml",
+  "show": "~/x.yaml",
+  "src": "a: [1\n",
+  "live": "# top comment\nkeep: app # after keep\nscalar: app\nnested:\n  # own line\n  set: 0\nlist:\n  - x\n  - drop\n  - drop\nkind:\n  was: table\n",
+  "remove": "[]",
+  "remove_items": "[]",
+  "rc": 2,
+  "stderr": "Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T//sync-engine-merge.flksym/src': yaml: line 2: did not find expected ',' or ']'\n",
+  "out": null
+}

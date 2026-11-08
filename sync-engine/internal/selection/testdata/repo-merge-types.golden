@@ -1,0 +1,11 @@
+fingerprint: edd2fd53f80846887b716d3a5a3692285a7e5ea14c0f91b610c26326b82376d8
+rc=0
+--- stderr
+--- stdout
+tools: a d
+sel:
+a - default
+d - tools.d
+deps:
+values:
+{"a":{},"d":{"b":true,"f":1.5,"i":1,"l":[1,"a",[2],{"x":1}],"s":"q\"\\\n\t<>&é"}}

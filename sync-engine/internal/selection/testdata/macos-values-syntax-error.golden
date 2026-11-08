@@ -1,0 +1,5 @@
+fingerprint: d71727db28df2026d9c2f48d574be3a2c6721a5d046dd84f26cb0f0667c066db
+rc=2
+--- stderr
+setup-sync: cannot read macos.toml
+--- stdout

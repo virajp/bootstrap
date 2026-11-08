@@ -1,0 +1,5 @@
+fingerprint: 11f3a030a4eafd5fa1811af9a0dc299585ddea7d437246e060fa4640ee713fe2
+rc=2
+--- stderr
+setup-sync: macos/tools/m1/tools.toml: stage = "shell" is the old name - write stage = "init"
+--- stdout
