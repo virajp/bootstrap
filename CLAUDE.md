@@ -15,8 +15,8 @@ Other repositories copy files from it with their own `setup:configs` task. Read
 
 The shared files of a repository are in `repo/tools/<tool>/`, one folder for
 each tool. The packs are in `repo/packs.toml`, outside each tool folder, so the
-sync never copies it. The examples are in `repo/examples/`, with
-`last_sync.toml`. The Mac tools are in `macos/tools/<tool>/`, one folder for
+sync never copies it. The examples are in `repo/examples/`. The Mac tools are in
+`macos/tools/<tool>/`, one folder for
 each tool, and their packs are in `macos/packs.toml`. `tools/` holds only the
 forwarding file `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync`, which
 the sync does not ship: an old consumer stub sources it from the clone. These
@@ -52,21 +52,12 @@ copies or generates them. `docs/sync/index.md` and `docs/sync/vwf.md`
 use them as the model of a values file, so a change to the contract of the
 values file changes the examples in the same commit.
 
-`repo/examples/last_sync.toml` holds `commit_id`, the `bootstrap` commit that
-the examples agree with. This id tracks the examples only. It is not for
-consumers, and no consumer reads it. Each example has an empty
-`bootstrap_commit`, so a consumer that copies an example gets no wrong
-value: `repo_sync` replaces the empty line with the commit of its sync. A
-consumer value is newer than `commit_id`, and that is correct.
-
-- To find whether the examples can be out of date, run
-  `git log <commit_id>..HEAD -- tools repo docs/sync docs/design CLAUDE.md`. A
-  contract change in that log needs a review of the examples. The command keeps
-  `tools` until `commit_id` is set again, because the contract changes before
-  the move to `repo/` are under `tools/`.
-- All the examples change together. After a review, set `commit_id` to
-  `git rev-parse HEAD`. The value is always older than `main`, because a
-  commit cannot contain its own id.
+Each example has an empty `bootstrap_commit`, so a consumer that copies an
+example gets no wrong value: `repo_sync` replaces the empty line with the
+commit of its sync. `test:repo-sync` runs `repo_sync --dry-run` with each
+example, in a consumer with its members. That case finds an unknown tool, a
+wrong member and a wrong shape. It does not find an unknown key, because
+`repo_sync` accepts one.
 
 `docs/sync/` tells an AI agent how to adopt `bootstrap` in a consumer
 repository, how to bring it up to date, and how to add and remove tools after
