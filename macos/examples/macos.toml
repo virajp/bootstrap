@@ -122,6 +122,8 @@ config_path = "~/Projects/github.com/janedoe/macos-setup"
 
 [tools.opencode]
 
+[tools.openwhispr]
+
 [tools.orbstack]
 
 [tools.orca]

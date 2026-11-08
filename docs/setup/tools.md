@@ -50,7 +50,7 @@ can be in more than one pack.
 | Pack         | Default members                                                                                                                                                                        | Other members                                                                                                                    |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `base`       | `macos-setup`, `mise`, `homebrew`, `bash`, `zsh`, `fish`, `git`, `ssh`, `cli`, `fnox`, `node`, `touchid-sudo`, `starship`, `network`, `macos-defaults`, `gh`, `python`, `fonts`, `mas` | —                                                                                                                                |
-| `ai`         | `claude-desktop`                                                                                                                                                                       | `claude-cli`, `claude-status`, `codeburn`, `opencode`, `orca`, `zed-delta`                                                       |
+| `ai`         | `claude-desktop`                                                                                                                                                                       | `claude-cli`, `claude-status`, `codeburn`, `opencode`, `openwhispr`, `orca`, `zed-delta`                                         |
 | `essentials` | `alfred`, `vorssaint`, `easyfind`, `the-unarchiver`, `brave-browser`, `github-desktop`                                                                                                 | `google-chrome`, `tailscale`, `magnet`, `sill`, `taskexplorer`, `battery-health`, `setapp`, `diff-so-fancy`, `git-tools`, `glab` |
 | `security`   | `1password`                                                                                                                                                                            | `1password-cli`, `1password-safari`, `bitwarden`                                                                                 |
 | `dev`        | `devtools`, `dprint`, `visual-studio-code`                                                                                                                                             | `lcov`, `orbstack`, `gcloud`, `gem`, `superfile`, `zed`, `sublime-text`                                                          |
@@ -670,6 +670,20 @@ OpenCode, the AI coding agent, and its alias.
 - **Packs:** `ai`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
+
+### `openwhispr`
+
+Voice-to-text dictation with AI agents, and its hotkey.
+
+- **Packs:** `ai`
+- **Files:**
+  - `~/Library/Application Support/open-whispr/.env` — seed, with the hotkey
+    `Alt+S` and the `push` activation mode
+- **Mise sections:** `[mise.bootstrap.packages]`
+- **Manual step:** OpenWhispr keeps the transcription mode and the model in its
+  own storage, not in a file. On the first start, select **Local**, then
+  **Whisper** with the **turbo** model. The app downloads the model to
+  `~/.cache/openwhispr/`.
 
 ### `orbstack`
 
