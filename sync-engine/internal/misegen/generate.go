@@ -14,6 +14,7 @@ import (
 
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
 	"github.com/virajp/bootstrap/sync-engine/internal/format"
+	"github.com/virajp/bootstrap/sync-engine/internal/header"
 	"github.com/virajp/bootstrap/sync-engine/internal/source"
 	"github.com/virajp/bootstrap/sync-engine/internal/tmpl"
 )
@@ -614,7 +615,7 @@ func markOverrides(out []byte, note string) []byte {
 // header that names <source>, with mode 644. It gives `<folder name>/<name>`.
 func put(sourceName, folder, name string, body []byte) (string, error) {
 	path := filepath.Join(folder, name)
-	data := "# " + fmt.Sprintf(headerLine1, sourceName) + "\n# " + headerLine2 + "\n\n" + string(body)
+	data := "# " + header.Line1(sourceName) + "\n# " + header.Line2 + "\n\n" + string(body)
 	if err := os.MkdirAll(folder, 0o777); err != nil {
 		return "", &fail.Error{Code: fail.Other, Err: err}
 	}
