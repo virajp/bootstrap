@@ -1,0 +1,11 @@
+fingerprint: 0863d82631dd8140af2516d8c2d57524e0af24b933e7e6be8aeae6d6e94de8ba
+rc=0
+--- stderr
+--- stdout
+tools: a
+sel:
+a - default
+a - tools.a
+deps:
+values:
+{"a":{"list":[1,2],"name":"b","t":{"k":2,"m":3},"new":true}}

@@ -1,0 +1,5 @@
+fingerprint: 9b808d86574b9a8927a58e41fb7a10cf045b662ae2c3d69af1a5c464f5dd8fc0
+rc=2
+--- stderr
+setup-sync: cannot read macos/packs.toml
+--- stdout

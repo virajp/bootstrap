@@ -1,0 +1,6 @@
+fingerprint: 5c486ff4fc5dbf581272fbf0955434eb41bc675e939d4e64f45d87fc07db906b
+rc=2
+--- stderr
+setup-sync: [packs.p] in macos.toml has the key 'x' - a pack entry is an empty table
+setup-sync: [packs.p] in macos.toml has the key 'y' - a pack entry is an empty table
+--- stdout

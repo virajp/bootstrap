@@ -1,0 +1,5 @@
+fingerprint: 569bf44a9a3e7381f28dbbb5a7a655709a3cb4e074d31b9fdee2157b4a834a67
+rc=2
+--- stderr
+repo-sync: cannot read repo/tools/d/tools.toml
+--- stdout

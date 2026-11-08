@@ -1,0 +1,5 @@
+fingerprint: 20624331a79043d2085b3913fba0401a63cd47a54edda41c8b59ed8ef0be335e
+rc=2
+--- stderr
+repo-sync: repo/packs.toml: [pack.base] b must be a table, { default = true } or {}
+--- stdout

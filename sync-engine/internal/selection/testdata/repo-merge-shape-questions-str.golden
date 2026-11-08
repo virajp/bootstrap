@@ -1,0 +1,6 @@
+fingerprint: 901cf03fd3cf24e13a562cc0ed78bd635ff530fe90a924e2ae14b2e4be4480a9
+rc=2
+--- stderr
+repo-sync: repo/tools/a/tools.toml: [questions] must be a table of [questions.<key>] tables
+repo-sync: repo/tools/a/tools.toml: [contributes] must be a table of [contributes.<tool>] tables
+--- stdout

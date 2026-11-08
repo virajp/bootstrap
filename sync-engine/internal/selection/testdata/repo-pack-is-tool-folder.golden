@@ -1,0 +1,5 @@
+fingerprint: f92455b78bfa25fc73cd57be3a9f5c6bb5b3e801cf670b45e11761b2551ab567
+rc=2
+--- stderr
+repo-sync: repo/packs.toml: pack 'd' is also a tool folder - rename one
+--- stdout

@@ -1,0 +1,5 @@
+fingerprint: 3d483bff672c9bf3dede38e1448dfb87b32e91125ad330c400b00ed1084f658f
+rc=2
+--- stderr
+repo-sync: [tools.c] in bootstrap.toml: env must be a list, for example env = ["dev"]
+--- stdout

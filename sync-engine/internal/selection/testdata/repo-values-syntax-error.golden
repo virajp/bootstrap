@@ -1,0 +1,5 @@
+fingerprint: 6d0428906bfaa6e4e630e1468b228c0b05853b512fbd91d9f3d04f94cff8bd8e
+rc=2
+--- stderr
+repo-sync: cannot read bootstrap.toml
+--- stdout

@@ -1,0 +1,5 @@
+fingerprint: 7a2430a94b5b47a9ecd99cb2c3b8312a0cf297c39b238c52dc7fd50afc22df40
+rc=3
+--- stderr
+setup-sync: tool 'nope' is not in bootstrap
+--- stdout

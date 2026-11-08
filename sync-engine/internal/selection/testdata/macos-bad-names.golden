@@ -1,0 +1,7 @@
+fingerprint: 4fee2437e999451281ebae35b9effb76c6c0ea1020f9f7a3d939dec42aa92089
+rc=3
+--- stderr
+setup-sync: pack '.x' is not in bootstrap (named in macos.toml)
+setup-sync: tool 'a b' is not in bootstrap (named in macos.toml)
+setup-sync: tool 'a/b' is not in bootstrap (named in macos.toml)
+--- stdout

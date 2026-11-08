@@ -1,0 +1,5 @@
+fingerprint: e99843c616cadf3fbb231ffa6c7059aff85fe10a9272b80b0d39044119a8b86d
+rc=2
+--- stderr
+repo-sync: repo/tools/a/tools.toml: [files."x.txt"] mode = "merge" needs a json, yaml or toml target
+--- stdout

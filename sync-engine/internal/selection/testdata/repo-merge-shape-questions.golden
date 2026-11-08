@@ -1,0 +1,9 @@
+fingerprint: 6abd33c9ec8841d81b2b2fb2311d0d5b31371b7d1045660e5683d494157214de
+rc=2
+--- stderr
+repo-sync: repo/tools/a/tools.toml: [questions.q1] foo is not a key of a question - the keys are question, detect and example
+repo-sync: repo/tools/a/tools.toml: [questions.q1] question must be a string
+repo-sync: repo/tools/a/tools.toml: [questions.q1] detect must be a string (a shell command)
+repo-sync: repo/tools/a/tools.toml: [questions.q2] needs a question string
+repo-sync: repo/tools/a/tools.toml: [questions.q3] must be a table
+--- stdout

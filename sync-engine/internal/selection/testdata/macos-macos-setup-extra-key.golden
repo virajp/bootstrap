@@ -1,0 +1,5 @@
+fingerprint: 39fdacdda16c39fc7e6560aa241cacdf57c41c7e8f639f44078a624252ff9706
+rc=2
+--- stderr
+setup-sync: macos/packs.toml: [pack.base] macos-setup has the entry key 'x' - the only entry key is default
+--- stdout

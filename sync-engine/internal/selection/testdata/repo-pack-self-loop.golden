@@ -1,0 +1,5 @@
+fingerprint: 68559c6a62983f6f964553385b21feb06e124c0d7d7e5d418aaef41f305b0af0
+rc=2
+--- stderr
+repo-sync: repo/packs.toml: a pack loop: base -> base
+--- stdout

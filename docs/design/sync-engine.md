@@ -39,12 +39,15 @@ of the new engine. The Go engine replaces the bash files phase by phase. The
 bash files stay until phase P7. Until then, the Go engine keeps each output
 line, file and exit code of the bash engine.
 
-| Path              | Job                                                                                                                                                      |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `go.mod`          | The module.                                                                                                                                              |
-| `cmd/sync-engine` | The command, with the subcommands `repo`, `macos` and `version`. `version` prints `main.version`, which the release build sets. A local build has `dev`. |
-| `internal/fail`   | The typed errors of the exit codes, and a collector where the highest code wins. See [The exit codes](#the-exit-codes).                                  |
-| `internal/report` | The output of a run, with the same bytes as `common`. See [The output of a run](#the-output-of-a-run).                                                   |
+| Path                 | Job                                                                                                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `go.mod`             | The module.                                                                                                                                              |
+| `cmd/sync-engine`    | The command, with the subcommands `repo`, `macos` and `version`. `version` prints `main.version`, which the release build sets. A local build has `dev`. |
+| `internal/fail`      | The typed errors of the exit codes, and a collector where the highest code wins. See [The exit codes](#the-exit-codes).                                  |
+| `internal/report`    | The output of a run, with the same bytes as `common`. See [The output of a run](#the-output-of-a-run).                                                   |
+| `internal/source`    | The read of the clone: the packs file, the `tools.toml` of each tool, the files of a tool folder, and the checks of these files.                         |
+| `internal/values`    | The values files of a repo and of the Mac, and the values merge. See [The values merge](#the-values-merge).                                              |
+| `internal/selection` | The pack expansion, the checks of the packs, the depth-first walk of the `depends`, and the stages of the Mac.                                           |
 
 The task `test:go` of this repository runs `go vet`, a `gofmt` check and
 `go test` in the module. The golden files of `internal/report` hold the output

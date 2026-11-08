@@ -1,0 +1,5 @@
+fingerprint: 8659b34f808b3a9468cacc11499a1a5b3f451915817cd43bc652fdef89bf9fd5
+rc=2
+--- stderr
+repo-sync: repo/tools/a/tools.toml: [files."x.txt"] must be a table
+--- stdout

@@ -1,0 +1,5 @@
+fingerprint: dee378cccd6090185ac3430b6a804cb2383cdab9b2784e0c03fb2d283f8cfef6
+rc=2
+--- stderr
+repo-sync: repo/tools/a/tools.toml: [files."x.txt.tmpl"] names a target that no file of the tool produces
+--- stdout

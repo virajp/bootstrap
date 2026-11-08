@@ -1,0 +1,6 @@
+fingerprint: a607be906fa9e8a3e136c3e64202510c42d190b6517c0ce8c17e58c1357ee5d8
+rc=2
+--- stderr
+setup-sync: macos/tools/m1/tools.toml: stage = "late" - the only stage is "init"
+setup-sync: macos/tools/m2/tools.toml: stage must be a string - the only stage is "init"
+--- stdout

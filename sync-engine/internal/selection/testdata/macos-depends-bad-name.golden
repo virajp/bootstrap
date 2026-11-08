@@ -1,0 +1,5 @@
+fingerprint: 7f683eb9217d0071f589bee4d85f9a1d6ef07af4d7fac3bbde21eea98e05e5fc
+rc=3
+--- stderr
+setup-sync: macos/tools/m1/tools.toml depends on the tool 'a/b', which bootstrap does not have
+--- stdout

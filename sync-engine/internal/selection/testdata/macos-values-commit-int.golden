@@ -1,0 +1,5 @@
+fingerprint: 71ffe9ab150d1c78246f14a5a62bca2b13d411094ee4fa5312bf80cbb3d42b88
+rc=2
+--- stderr
+setup-sync: bootstrap_commit in macos.toml must be a string
+--- stdout
