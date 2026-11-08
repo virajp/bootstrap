@@ -34,6 +34,9 @@ files are for this repository only:
   `test:setup-sync` (`setup-sync`), `test:macos-tools` (`macos-tools`) and
   `test` (`_default`). They are not in `repo/tools/` or `macos/tools/`, so no
   consumer gets them.
+- `.config/mise/tasks/vorssaint/diff`: the task `vorssaint:diff`. It compares
+  a Vorssaint backup file with the defaults of `macos/tools/vorssaint/`, and
+  exits 1 when a key differs or is missing.
 - `macos/fixtures/`: the fixtures of `test:setup-sync`.
 - `macos/examples/macos.toml`: the sample values file of the Mac side, and the
   model of `test:macos-tools`. A change to a Mac tool also changes this file
