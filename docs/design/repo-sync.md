@@ -190,6 +190,10 @@ removes the others. It stops if neither branch exists.
   `.config/bootstrap.toml` when they run, with `yq`: the root and each submodule
   read
   their own file.
+- A merge task stops before it touches a branch when the git top level of
+  `MISE_ORIGINAL_CWD` is not the git top level of `MISE_PROJECT_ROOT`. In a
+  submodule without that task, mise runs the root's task in the root folder,
+  and the task would land a branch of the root.
 - `merge_model` selects `direct` (local merge and push, the default) or `pr`
   (push and
   open a pull request with `gh` or `glab`). Any other value reads as `direct`.
