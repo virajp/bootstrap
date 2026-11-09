@@ -50,6 +50,10 @@ line, file and exit code of the bash engine.
 | `internal/selection` | The pack expansion, the checks of the packs, the depth-first walk of the `depends`, and the stages of the Mac.                                           |
 | `internal/tmpl`      | `text/template` with the delimiters `<%` and `%>`, and our own copy of the gomplate functions that the templates use. It does not import gomplate.       |
 | `internal/format`    | The parse check and merge mode: JSON in the form of jq, YAML and TOML through the yq command in-process. See [Merge mode](#merge-mode).                  |
+| `internal/header`    | The header of a synced file: its two lines, and its detection. See [The header](#the-header).                                                            |
+| `internal/target`    | The write of one target, and `bootstrap_commit`. See [The write of one target](#the-write-of-one-target).                                                |
+| `internal/manifest`  | The manifest and the stale rule, in the link modes `repo` and `macos`. See [The manifest](#the-manifest-and-the-stale-rule).                             |
+| `internal/misegen`   | The mise config generator of both sides: the environments, the checks of `[overrides.mise*]`, and the `conf.d` files. See [mise.md](mise.md).            |
 
 The task `test:go` of this repository runs `go vet`, a `gofmt` check and
 `go test` in the module. The golden files of `internal/report` hold the output

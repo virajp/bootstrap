@@ -1,0 +1,21 @@
+== stdout ==
+rc=2
+== stderr ==
+failed d/f.json: the result does not parse as json - the current file stays
+  jq: parse error: Invalid numeric literal at line 1, column 3
++---------------+-------+
+| Changed       |     0 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     1 |
++---------------+-------+
+| Total         |     1 |
++---------------+-------+
+[OK] Dry run: no file would change
+== tree ==
+d 755 root
+d 755 tmp

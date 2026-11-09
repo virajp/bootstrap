@@ -127,6 +127,9 @@ func (r *Report) Start(dryRun bool) {
 // Count gives the count of <kind>.
 func (r *Report) Count(kind Kind) int { return r.counts[kind] }
 
+// Verbose is true when the report prints the log line of each target.
+func (r *Report) Verbose() bool { return r.opt.Verbose }
+
 // Log prints a log line with the prefix.
 func (r *Report) Log(msg string) {
 	fmt.Fprintf(r.w, "%s: %s\n", r.opt.Prefix, msg)
