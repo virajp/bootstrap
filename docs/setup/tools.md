@@ -537,7 +537,6 @@ The Mac sync entry: updateall:configs, updateall and the upgrade tasks.
   - `~/.config/mise/tasks/_scripts/helpers` — generated
   - `~/.config/mise/tasks/updateall/_default` — generated
   - `~/.config/mise/tasks/updateall/configs/_default` — generated, template
-  - `~/.config/mise/tasks/updateall/configs/sync` — generated
   - `~/.config/mise/tasks/upgrade/macos/download` — generated
   - `~/.config/mise/tasks/upgrade/macos/upgrade` — generated
   - `~/.config/mise/tasks/upgrade/power` — generated
