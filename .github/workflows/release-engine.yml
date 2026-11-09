@@ -27,7 +27,7 @@ jobs:
       # The release and the pin commit on main.
       contents: write
     env:
-      ASSET: sync-engine-darwin-arm64
+      ASSET: bootstrap-darwin-arm64
     steps:
       - name: Check out the tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -67,7 +67,7 @@ jobs:
         run: |
           mkdir -p ../dist
           go build -trimpath -ldflags "-X main.version=${VERSION}" \
-            -o "../dist/${ASSET}" ./cmd/sync-engine
+            -o "../dist/${ASSET}" ./cmd/bootstrap
 
       - name: Examine the version of the binary
         env:
@@ -125,7 +125,7 @@ jobs:
               --arg query "${query}" \
               --arg repo "${GITHUB_REPOSITORY}" \
               --arg head "${head}" \
-              --arg headline "ops: pin sync-engine ${VERSION}" \
+              --arg headline "ops: pin bootstrap ${VERSION}" \
               --arg contents "${contents}" \
               '{query: $query, variables: {input: {
                 branch: {repositoryNameWithOwner: $repo, branchName: "main"},

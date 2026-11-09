@@ -111,9 +111,9 @@ func IsTerminal(f *os.File) bool {
 	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }
 
-// VerboseFromEnv is true when SYNC_ENGINE_VERBOSE is "1".
+// VerboseFromEnv is true when BOOTSTRAP_VERBOSE is "1".
 func VerboseFromEnv(getenv func(string) string) bool {
-	return getenv("SYNC_ENGINE_VERBOSE") == "1"
+	return getenv("BOOTSTRAP_VERBOSE") == "1"
 }
 
 // Start starts the counts of a run. <dryRun> gives the words of a dry run.

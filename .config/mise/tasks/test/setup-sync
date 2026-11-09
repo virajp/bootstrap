@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #MISE description="Test setup-sync against fixtures, with no network"
 
-# Runs `sync-engine macos`, built from the working tree's sync-engine/, against
+# Runs `bootstrap mac sync`, built from the working tree's sync-engine/, against
 # the fixture repo in macos/fixtures/repo/ and the fixture config folders in
 # macos/fixtures/config/, and checks the exit code, the output and the files of
 # each case. Every case has its own temp HOME, XDG_* folders, cache, TMPDIR and
@@ -9,7 +9,7 @@
 # run passes --no-bootstrap. The entry cases at the end run the rendered entry
 # task updateall:configs against a local bare origin with the real
 # macos/tools/macos-setup/: they cover the clone, the lock, the temp copy and
-# the engine pin. SYNC_ENGINE_BIN, when set, is the engine to test (an absolute
+# the engine pin. BOOTSTRAP_BIN, when set, is the engine to test (an absolute
 # path); else the task builds it once from the copy of sync-engine/.
 
 set -euo pipefail
@@ -30,7 +30,7 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
 # Each per-file line prints, so the cases compare the log format. A case of the
 # default output unsets the variable.
-export SYNC_ENGINE_VERBOSE=1
+export BOOTSTRAP_VERBOSE=1
 
 root=${MISE_PROJECT_ROOT}
 fixtures="$root/macos/fixtures"
@@ -43,7 +43,7 @@ export MISE_DATA_DIR="${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise
 export MISE_CACHE_DIR="${MISE_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/mise}"
 # The build of the engine below needs the Go of the `go` tool of this repository.
 mise_env=${MISE_ENV:-}
-unset MISE_ENV SYNC_ENGINE_URL SYNC_ENGINE_CLONE REPO_SYNC_CLONE
+unset MISE_ENV BOOTSTRAP_URL BOOTSTRAP_CLONE REPO_SYNC_CLONE
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-setup-sync.XXXXXX")
 # The real path: setup-sync logs the real path of a target behind a symlink.
@@ -81,14 +81,14 @@ _git -C "$tree" add -A
 _git -C "$tree" commit --quiet --no-verify -m "fixture"
 tree_commit=$(_git -C "$tree" rev-parse HEAD)
 
-# The engine: SYNC_ENGINE_BIN, else one build from the copy of sync-engine/. The
+# The engine: BOOTSTRAP_BIN, else one build from the copy of sync-engine/. The
 # entry task runs it too.
-if [[ -z ${SYNC_ENGINE_BIN:-} ]]; then
+if [[ -z ${BOOTSTRAP_BIN:-} ]]; then
   (cd "$root" && MISE_ENV=$mise_env mise x -- go build -C "$tree/sync-engine" -buildvcs=false \
-    -o "$tmp/sync-engine" ./cmd/sync-engine)
-  export SYNC_ENGINE_BIN="$tmp/sync-engine"
+    -o "$tmp/bootstrap" ./cmd/bootstrap)
+  export BOOTSTRAP_BIN="$tmp/bootstrap"
 fi
-bin=$SYNC_ENGINE_BIN
+bin=$BOOTSTRAP_BIN
 
 failures=0
 max_jobs=$(getconf _NPROCESSORS_ONLN 2> /dev/null) || max_jobs=4
@@ -141,13 +141,13 @@ case_body() {
   export HOME=$home
   export XDG_CACHE_HOME="$dir/xdg/cache" XDG_CONFIG_HOME="$dir/xdg/config"
   export XDG_STATE_HOME="$dir/xdg/state" XDG_DATA_HOME="$dir/xdg/data"
-  export SYNC_ENGINE_CACHE="$XDG_CACHE_HOME/sync-engine"
+  export BOOTSTRAP_CACHE="$XDG_CACHE_HOME/bootstrap"
   export MACOS_SETUP_CONFIG_PATH="$dir/config"
   export GIT_CONFIG_GLOBAL="$dir/gitconfig" GIT_CONFIG_NOSYSTEM=1
   : > "$GIT_CONFIG_GLOBAL"
   export TMPDIR="$dir/tmp"
-  unset SYNC_ENGINE_URL
-  manifest="$SYNC_ENGINE_CACHE/macos-generated.tsv"
+  unset BOOTSTRAP_URL
+  manifest="$BOOTSTRAP_CACHE/macos-generated.tsv"
   values="$MACOS_SETUP_CONFIG_PATH/macos.toml"
   user="$dir/user"
   "$@"
@@ -182,7 +182,7 @@ sync_run() {
   runs=$((runs + 1))
   log="$dir/run-$runs.txt"
   rc=0
-  (cd "$dir" && SYNC_ENGINE_CLONE=$clone "$bin" macos "$@") > "$log" 2>&1 || rc=$?
+  (cd "$dir" && BOOTSTRAP_CLONE=$clone "$bin" mac sync "$@") > "$log" 2>&1 || rc=$?
 }
 run_real() { sync_run --no-bootstrap; }
 run_dry() { sync_run --dry-run; }
@@ -208,7 +208,7 @@ case_tree() {
 
 # seed_manifest <row>...: a manifest from an earlier run.
 seed_manifest() {
-  mkdir -p -- "$SYNC_ENGINE_CACHE"
+  mkdir -p -- "$BOOTSTRAP_CACHE"
   printf '%s\n' "$@" > "$manifest"
 }
 
@@ -885,7 +885,7 @@ case_dry_run() {
 
 # The default output of the engine, with no terminal.
 case_default_output() {
-  unset SYNC_ENGINE_VERBOSE FORCE_COLOR NO_COLOR
+  unset BOOTSTRAP_VERBOSE FORCE_COLOR NO_COLOR
   use_config ok
   run_real
   check_exit 0
@@ -1367,10 +1367,10 @@ entry_head=$(_git -C "$entry_src" rev-parse HEAD)
 # The start of each entry case: the origin, and a macos.toml with the answer of
 # the real tool.
 entry_setup() {
-  export SYNC_ENGINE_URL=$entry_url
+  export BOOTSTRAP_URL=$entry_url
   unset _MACOS_SETUP_DEFAULT_RUNNING
-  repo="$SYNC_ENGINE_CACHE/repo"
-  lock="$SYNC_ENGINE_CACHE/lock"
+  repo="$BOOTSTRAP_CACHE/repo"
+  lock="$BOOTSTRAP_CACHE/lock"
   old_cache="$XDG_CACHE_HOME/macos-setup"
   mkdir -p -- "$MACOS_SETUP_CONFIG_PATH"
   printf '%s\n' '[tools.macos-setup]' "config_path = \"$MACOS_SETUP_CONFIG_PATH\"" > "$values"
@@ -1403,7 +1403,7 @@ entry_origin() {
   _git -C "$work" add -A
   _git -C "$work" commit --quiet --no-verify --allow-empty -m "case"
   _git clone --quiet --bare -- "$work" "$dir/origin.git"
-  export SYNC_ENGINE_URL="file://$dir/origin.git"
+  export BOOTSTRAP_URL="file://$dir/origin.git"
 }
 
 no_leftovers() {
@@ -1457,7 +1457,7 @@ case_entry_clone_ssh_https() {
   _git -C "$repo" config remote.origin.url "git@github.com:virajp/bootstrap.git"
   git config --file "$GIT_CONFIG_GLOBAL" --add "url.$entry_url.insteadOf" "https://github.com/virajp/bootstrap.git"
   git config --file "$GIT_CONFIG_GLOBAL" --add "url.$entry_url.insteadOf" "git@github.com:virajp/bootstrap.git"
-  export SYNC_ENGINE_URL="https://github.com/virajp/bootstrap.git"
+  export BOOTSTRAP_URL="https://github.com/virajp/bootstrap.git"
   entry_real
   check_exit 0
   check_output "Updating the clone in $repo"
@@ -1477,7 +1477,7 @@ case_entry_clone_not_git() {
 
 case_entry_clone_fails() {
   entry_setup
-  export SYNC_ENGINE_URL="file://$dir/missing.git"
+  export BOOTSTRAP_URL="file://$dir/missing.git"
   entry_real
   check_exit 5
   check_output "Cannot clone"
@@ -1490,14 +1490,14 @@ case_entry_running_line() {
   check_exit 0
   lines=$(grep '^setup-sync: running ' "$log")
   check "one running line" test "$(printf '%s\n' "$lines" | grep -c .)" = 1
-  check "it names the engine" test "$lines" = "setup-sync: running $bin macos"
+  check "it names the engine" test "$lines" = "setup-sync: running $bin mac sync"
 }
 
 # Without --verbose only the changes print. The entry task consumes the flag,
 # since the engine stops on a flag that it does not know.
 case_entry_verbose() {
   entry_setup
-  unset SYNC_ENGINE_VERBOSE FORCE_COLOR NO_COLOR
+  unset BOOTSTRAP_VERBOSE FORCE_COLOR NO_COLOR
   entry_real
   check_exit 0
   check_output "new ~/.config/core/plain.txt"
@@ -1560,11 +1560,11 @@ case_entry_lock_dead() {
 # Its exit code is the exit code of the task.
 entry_engine_probe() {
   printf '%s\n' '#!/usr/bin/env bash' \
-    'if [[ -e $SYNC_ENGINE_CACHE/lock ]]; then echo "lock held"; else echo "lock released"; fi' \
-    'echo "clone $SYNC_ENGINE_CLONE"' 'echo "args $*"' 'exit 4' \
+    'if [[ -e $BOOTSTRAP_CACHE/lock ]]; then echo "lock held"; else echo "lock released"; fi' \
+    'echo "clone $BOOTSTRAP_CLONE"' 'echo "args $*"' 'exit 4' \
     > "$dir/probe"
   chmod +x "$dir/probe"
-  export SYNC_ENGINE_BIN="$dir/probe"
+  export BOOTSTRAP_BIN="$dir/probe"
 }
 
 case_entry_lock_hold() {
@@ -1574,7 +1574,7 @@ case_entry_lock_hold() {
   check_exit 4
   check_output "lock held"
   check_output "clone $TMPDIR/macos-setup."
-  check_output "args macos --no-bootstrap"
+  check_output "args mac sync --no-bootstrap"
   entry_dry
   check_exit 4
   check_output "lock released"
@@ -1582,14 +1582,14 @@ case_entry_lock_hold() {
   check "after each run: no lock, no temp copy" no_leftovers
 }
 
-# Without SYNC_ENGINE_BIN, the task reads sync-engine/VERSION of the copy. A
+# Without BOOTSTRAP_BIN, the task reads sync-engine/VERSION of the copy. A
 # value that is not MAJOR.MINOR.PATCH stops it before any mise install.
 bad_version() { printf '%s\n' "v1.2" > "$work/sync-engine/VERSION"; }
 
 case_entry_bad_version() {
   entry_setup
   entry_origin bad_version
-  unset SYNC_ENGINE_BIN
+  unset BOOTSTRAP_BIN
   entry_real
   check_exit 5
   check_output "sync-engine/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2')"
@@ -1598,10 +1598,10 @@ case_entry_bad_version() {
 
 case_entry_bin_missing() {
   entry_setup
-  export SYNC_ENGINE_BIN="$dir/missing"
+  export BOOTSTRAP_BIN="$dir/missing"
   entry_real
   check_exit 2
-  check_output "SYNC_ENGINE_BIN $dir/missing is not an executable file"
+  check_output "BOOTSTRAP_BIN $dir/missing is not an executable file"
 }
 
 case_entry_unknown_flag() {
@@ -1653,13 +1653,8 @@ case_entry_nested() {
 
 # The list of the old cache names a stale file, so its removal proves the move.
 case_entry_legacy_move() {
-  local dead
   entry_setup
-  true &
-  dead=$!
-  wait "$dead"
-  mkdir -p -- "$old_cache" "$home/.config/old" "$XDG_CACHE_HOME/bootstrap" "$XDG_CACHE_HOME/bootstrap.lock"
-  printf '%s\n' "$dead" > "$XDG_CACHE_HOME/bootstrap.lock/pid"
+  mkdir -p -- "$old_cache" "$home/.config/old"
   new_header_file "$home/.config/old/stale.txt" "stale"
   printf 'core\t.config/old/stale.txt\n' > "$old_cache/generated.txt"
   entry_real
@@ -1667,8 +1662,6 @@ case_entry_legacy_move() {
   check "the old Mac cache is removed" not test -e "$old_cache"
   check "the moved list is the manifest: its stale file is removed" not test -e "$home/.config/old/stale.txt"
   check "the manifest exists" test -f "$manifest"
-  check "the cache of the old stubs is removed" not test -e "$XDG_CACHE_HOME/bootstrap"
-  check "the lock of the old stubs is removed" not test -e "$XDG_CACHE_HOME/bootstrap.lock"
 }
 
 # A dry run does not write the manifest, so its content is the kept one.
@@ -1835,12 +1828,12 @@ run_case "entry lock: a run waits for a live holder, then takes over" case_entry
 run_case "entry lock: a lock whose pid is dead" case_entry_lock_dead
 run_case "entry lock: a real run holds it, a dry run releases it" case_entry_lock_hold
 run_case "entry engine: a VERSION that is not MAJOR.MINOR.PATCH" case_entry_bad_version
-run_case "entry engine: a SYNC_ENGINE_BIN that is not a file" case_entry_bin_missing
+run_case "entry engine: a BOOTSTRAP_BIN that is not a file" case_entry_bin_missing
 run_case "entry flags: an unknown flag under bash" case_entry_unknown_flag
 run_case "entry flags: --dry-run under bash and under mise run" case_entry_mise_run
 run_case "entry config: MACOS_SETUP_CONFIG_PATH unset" case_entry_config_unset
 run_case "entry: a nested run" case_entry_nested
-run_case "entry legacy: the old list moves, the old caches go" case_entry_legacy_move
+run_case "entry legacy: the old list moves, the old cache goes" case_entry_legacy_move
 run_case "entry legacy: an existing manifest stays" case_entry_legacy_keep_manifest
 run_case "entry legacy: a live old lock keeps the old cache" case_entry_legacy_live
 run_case "entry: no lock and no temp copy after each run" case_entry_leftovers

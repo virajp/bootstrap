@@ -172,7 +172,7 @@ as a normal mise section: `[mise.settings]` becomes `[settings]`, `[mise.env]`
 becomes `[env]`, and `[mise.shell_alias]` becomes `[shell_alias]`. The
 generator is the package `internal/misegen` of the engine. It finds the
 environments of each tool, examines `[overrides.mise*]`, builds the output and
-writes it. The template reads the `SYNC_ENGINE_MISE_*` environment variables.
+writes it. The template reads the `BOOTSTRAP_MISE_*` environment variables.
 
 These parts stay in the repo front-end (`internal/repo`):
 
@@ -469,7 +469,7 @@ example `doppler`.
   of a mise
   tool.
 - Each overridden line gets an `# override: <values file>` comment.
-- The sync examines the overrides before any write. `sync-engine repo --check`
+- The sync examines the overrides before any write. `bootstrap check`
   examines
   their
   structure, without the check of each path.

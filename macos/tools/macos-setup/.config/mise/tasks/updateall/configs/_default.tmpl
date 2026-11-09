@@ -61,7 +61,7 @@ for arg in "$@"; do
       ;;
     --no-bootstrap) ;;
     --verbose)
-      export SYNC_ENGINE_VERBOSE=1
+      export BOOTSTRAP_VERBOSE=1
       continue
       ;;
     -h | --help)
@@ -126,7 +126,6 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 _se_lock
-_se_legacy_cleanup
 mac_legacy_cleanup
 rc=0
 _se_fetch || rc=$?
@@ -138,14 +137,14 @@ if [[ -n ${dry_run} ]]; then
   _se_unlock
 fi
 
-# The engine: SYNC_ENGINE_BIN, a local build, else the release that
+# The engine: BOOTSTRAP_BIN, a local build, else the release that
 # sync-engine/VERSION of the copy names. VERSION has one line, MAJOR.MINOR.PATCH.
-if [[ -n ${SYNC_ENGINE_BIN:-} ]]; then
-  if [[ ! -f ${SYNC_ENGINE_BIN} || ! -x ${SYNC_ENGINE_BIN} ]]; then
-    log_error "SYNC_ENGINE_BIN ${SYNC_ENGINE_BIN} is not an executable file - nothing synced"
+if [[ -n ${BOOTSTRAP_BIN:-} ]]; then
+  if [[ ! -f ${BOOTSTRAP_BIN} || ! -x ${BOOTSTRAP_BIN} ]]; then
+    log_error "BOOTSTRAP_BIN ${BOOTSTRAP_BIN} is not an executable file - nothing synced"
     exit 2
   fi
-  engine=("${SYNC_ENGINE_BIN}")
+  engine=("${BOOTSTRAP_BIN}")
 else
   version=''
   IFS= read -r version 2> /dev/null < "${_SE_COPY}/sync-engine/VERSION" || true
@@ -157,13 +156,13 @@ else
     log_error "cannot install the sync engine ${version} (github:virajp/bootstrap) - nothing synced"
     exit 5
   fi
-  engine=(mise x "github:virajp/bootstrap@${version}" -- sync-engine)
+  engine=(mise x "github:virajp/bootstrap@${version}" -- bootstrap)
 fi
-if [[ ${SYNC_ENGINE_VERBOSE:-} == 1 ]]; then
-  printf '%s\n' "setup-sync: running ${engine[*]} macos" >&2
+if [[ ${BOOTSTRAP_VERBOSE:-} == 1 ]]; then
+  printf '%s\n' "setup-sync: running ${engine[*]} mac sync" >&2
 fi
 # The exit code of the engine is the exit code of this task, exit 4 (the stop
 # after a changed init stage) too.
 rc=0
-SYNC_ENGINE_CLONE="${_SE_COPY}" "${engine[@]}" macos "$@" || rc=$?
+BOOTSTRAP_CLONE="${_SE_COPY}" "${engine[@]}" mac sync "$@" || rc=$?
 exit "${rc}"

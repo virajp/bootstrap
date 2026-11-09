@@ -117,7 +117,7 @@ func TestTOMLMatchesYq(t *testing.T) {
 		h, f, _ := strings.Cut(l, " ")
 		want[f] = h
 	}
-	live := os.Getenv("SYNC_ENGINE_LIVE") == "1" && yqAvailable()
+	live := os.Getenv("BOOTSTRAP_LIVE") == "1" && yqAvailable()
 	stale := 0
 	for _, f := range files {
 		obj, err := ReadTOML(filepath.Join(root, f))

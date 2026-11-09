@@ -56,8 +56,8 @@ The sample values files are in `repo/examples/`. `tools/` holds only a
 forwarding file, for an old sync task of a repository. The sync does not copy
 it.
 
-The sync code is in `sync-engine/`: the Go engine `sync-engine` (`cmd/` and
-`internal/`) with its front-ends `sync-engine repo` and `sync-engine macos`,
+The sync code is in `sync-engine/`: the Go engine `bootstrap` (`cmd/` and
+`internal/`) with its front-ends `bootstrap sync` and `bootstrap mac sync`,
 `clone` for the shared cache and the clone, `repo-sync` for the shim of an old
 sync task, and `VERSION`, the pin of the engine. This folder is not a tool, so
 the sync does not copy it to a repository.
@@ -157,11 +157,11 @@ of the `[files]` table.
 
 1. `setup:configs` fetches the branch `main` of
    `https://github.com/virajp/bootstrap.git` into a shared clone in the cache
-   `${XDG_CACHE_HOME:-~/.cache}/sync-engine/`, and it copies that clone.
-2. It runs the sync engine, `sync-engine repo`, of the release that
+   `${XDG_CACHE_HOME:-~/.cache}/bootstrap/`, and it copies that clone.
+2. It runs the sync engine, `bootstrap sync`, of the release that
    `sync-engine/VERSION` of that copy names, with that copy. Thus a change to
    the sync code applies in the same run.
-3. `sync-engine repo` reads the `[tools.*]` and `[packs.*]` tables of the
+3. `bootstrap sync` reads the `[tools.*]` and `[packs.*]` tables of the
    repository's
    `.config/bootstrap.toml`, adds the `base` pack and the `depends` of each
    tool,
@@ -173,7 +173,7 @@ of the `[files]` table.
    `.config/repo-generated.tsv`, and it sets `bootstrap_commit` of the values
    file to the commit of its clone.
 
-Between two syncs, the gate `code:lint:repo-sync` runs `sync-engine repo
+Between two syncs, the gate `code:lint:repo-sync` runs `bootstrap sync
 --check` at
 each commit that changes `.config/bootstrap.toml`.
 
@@ -200,7 +200,7 @@ by hand one time, as step 2 of `docs/sync/index.md` tells you.
 
 ## Templates
 
-A file whose name ends in `.tmpl` is a template. `sync-engine repo` renders it
+A file whose name ends in `.tmpl` is a template. `bootstrap sync` renders it
 with Go `text/template` and its own copy of the
 [gomplate](https://docs.gomplate.ca) functions, and writes it without the
 `.tmpl` suffix.
@@ -251,7 +251,7 @@ merge_model = "pr"
 
 ## `.gitignore`
 
-`sync-engine repo` writes the shared `.gitignore`, with `[overrides.gitignore]`
+`bootstrap sync` writes the shared `.gitignore`, with `[overrides.gitignore]`
 of the
 values file applied.
 [`docs/design/repo-sync.md`](docs/design/repo-sync.md#overridesgitignore) has
@@ -278,21 +278,21 @@ entries:
 
 ## Tests
 
-`mise run test:repo-sync` runs `sync-engine repo --dry-run`,
-`sync-engine repo --check` and, for a case that compares a written file,
-`sync-engine repo`, built from the working tree's `sync-engine/`, with its
+`mise run test:repo-sync` runs `bootstrap sync --dry-run`,
+`bootstrap check` and, for a case that compares a written file,
+`bootstrap sync`, built from the working tree's `sync-engine/`, with its
 `repo/` and `tools/` (the forwarding file), against scratch values files and
 scratch consumers. It checks the exit code and the message of each case. It
 needs no network when gomplate, jq and yq are installed.
 
-`mise run test:setup-sync` runs `sync-engine macos`, built from the working
+`mise run test:setup-sync` runs `bootstrap mac sync`, built from the working
 tree's `sync-engine/`, against the fixtures in `macos/fixtures/`. It checks the
 exit
 code, the output and the files of each case, and it needs no network when
 gomplate, jq and yq are installed. The entry cases run the rendered task
 `updateall:configs` against a local bare origin.
 
-`mise run test:macos-tools` runs `sync-engine macos` with each tool of
+`mise run test:macos-tools` runs `bootstrap mac sync` with each tool of
 `macos/tools/`
 and a copy of `macos/examples/macos.toml`, in a temporary `HOME`. It checks that
 the example selects each tool and that each rendered file parses, and it needs

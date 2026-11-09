@@ -29,9 +29,9 @@ files are for this repository only:
   excludes of this repository) and `eslint.config.mjs`.
 - `sync-engine/`: the engine of the sync. It is not a tool, so the sync never
   copies it to a consumer. It is the Go module
-  `github.com/virajp/bootstrap/sync-engine` (`go.mod`, `cmd/sync-engine/` and
-  `internal/`), with the front-ends `sync-engine repo` and
-  `sync-engine macos`. It also holds `clone`, which the entry tasks embed, and
+  `github.com/virajp/bootstrap/sync-engine` (`go.mod`, `cmd/bootstrap/` and
+  `internal/`), with the front-ends `bootstrap sync` and
+  `bootstrap mac sync`. It also holds `clone`, which the entry tasks embed, and
   `repo-sync`, the shim of an old consumer sync task. The Go engine replaced
   the bash engine, and it keeps each output line, file and exit code of the
   bash engine.
@@ -65,10 +65,10 @@ values file changes the examples in the same commit.
 
 Each example has an empty `bootstrap_commit`, so a consumer that copies an
 example gets no wrong value: `repo_sync` replaces the empty line with the
-commit of its sync. `test:repo-sync` runs `sync-engine repo --dry-run` with each
+commit of its sync. `test:repo-sync` runs `bootstrap sync --dry-run` with each
 example, in a consumer with its members. That case finds an unknown tool, a
 wrong member and a wrong shape. It does not find an unknown key, because
-`sync-engine repo` accepts one.
+`bootstrap sync` accepts one.
 
 `docs/sync/` tells an AI agent how to adopt `bootstrap` in a consumer
 repository, how to bring it up to date, and how to add and remove tools after
@@ -265,19 +265,19 @@ task that runs only commands.
 
 ## Tests
 
-Each test task sets `SYNC_ENGINE_VERBOSE=1`, so a case compares the per-file log
+Each test task sets `BOOTSTRAP_VERBOSE=1`, so a case compares the per-file log
 lines of the sync. The cases of the default output unset it. See
 `docs/design/sync-engine.md` ("The output of a run").
 
 - `test:repo-sync` is the task of this repository in
-  `.config/mise/tasks/test/repo-sync`. It runs `sync-engine repo --dry-run`,
-  `sync-engine repo --check` and, for a case that compares a written file,
-  `sync-engine repo`, built from the working tree's `sync-engine/`, with the
+  `.config/mise/tasks/test/repo-sync`. It runs `bootstrap sync --dry-run`,
+  `bootstrap check` and, for a case that compares a written file,
+  `bootstrap sync`, built from the working tree's `sync-engine/`, with the
   working tree's `repo/`, `sync-engine/` and `tools/` (the forwarding file)
   against scratch values files and scratch consumers. The forward cases call
   `repo_sync` through the forwarding file and the shim. The entry
   cases run the rendered task `setup:configs` with a fake engine. With
-  `SYNC_ENGINE_BIN` set to an absolute path, it tests that binary and does not
+  `BOOTSTRAP_BIN` set to an absolute path, it tests that binary and does not
   build one. It
   compares the exit code and the message of each case. It needs no network when
   gomplate, jq and yq are installed. Before its
@@ -285,7 +285,7 @@ lines of the sync. The cases of the default output unset it. See
   scratch repositories never write to this repository. It runs the cases in
   parallel, one job for each CPU, and each case in its own folder.
 - `test:setup-sync` is the task of this repository in
-  `.config/mise/tasks/test/setup-sync`. It runs `sync-engine macos`, built
+  `.config/mise/tasks/test/setup-sync`. It runs `bootstrap mac sync`, built
   from the working tree's `sync-engine/`, against the fixtures in
   `macos/fixtures/`, and it
   compares the exit code, the output and the files of each case. The entry cases
@@ -293,10 +293,10 @@ lines of the sync. The cases of the default output unset it. See
   against a local bare origin, for the clone, the lock and the temporary copy.
   Each case has its own temporary `HOME`, so it never changes the real `$HOME`.
   It needs no network when gomplate, jq and yq are installed. With
-  `SYNC_ENGINE_BIN` set to an absolute path, this task and `test:macos-tools`
+  `BOOTSTRAP_BIN` set to an absolute path, this task and `test:macos-tools`
   test that binary and do not build one.
 - `test:macos-tools` is the task of this repository in
-  `.config/mise/tasks/test/macos-tools`. It runs `sync-engine macos`, built
+  `.config/mise/tasks/test/macos-tools`. It runs `bootstrap mac sync`, built
   from the working tree's `sync-engine/`, with each tool of `macos/tools/` and
   a copy of
   `macos/examples/macos.toml`, in a temporary `HOME`. It examines four items:

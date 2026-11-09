@@ -35,7 +35,7 @@ else
 fi
 
 # Without the shared cache, the gate does not apply and prints nothing.
-repo="${SYNC_ENGINE_CACHE:-${XDG_CACHE_HOME:-${HOME}/.cache}/sync-engine}/repo"
+repo="${BOOTSTRAP_CACHE:-${XDG_CACHE_HOME:-${HOME}/.cache}/bootstrap}/repo"
 lib="${repo}/sync-engine/repo-sync"
 [[ -f ${lib} ]] || exit 0
 
@@ -56,7 +56,7 @@ print_header "Validating .config/bootstrap.toml ..."
 # local git repository. The gate reads the sync code of the shared cache without
 # its lock, and it never clones. A fetch at the same time is rare, and the next
 # commit runs the gate again.
-unset SYNC_ENGINE_CLONE REPO_SYNC_CLONE
+unset BOOTSTRAP_CLONE REPO_SYNC_CLONE
 # shellcheck source=/dev/null
 source "${lib}"
 repo_sync --check

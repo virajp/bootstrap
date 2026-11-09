@@ -42,12 +42,12 @@ func binary(t *testing.T) string {
 			binErr = err
 			return
 		}
-		binPath = filepath.Join(dir, "sync-engine")
+		binPath = filepath.Join(dir, "bootstrap")
 		goCmd := filepath.Join(runtime.GOROOT(), "bin", "go")
 		if _, err := os.Stat(goCmd); err != nil {
 			goCmd = "go"
 		}
-		out, err := exec.Command(goCmd, "build", "-o", binPath, "../../cmd/sync-engine").CombinedOutput()
+		out, err := exec.Command(goCmd, "build", "-o", binPath, "../../cmd/bootstrap").CombinedOutput()
 		if err != nil {
 			binErr = fmt.Errorf("go build: %v\n%s", err, out)
 		}
@@ -71,7 +71,7 @@ type pcase struct {
 	name    string
 	config  string // A fixture config folder, "-" for an empty one, "" for none.
 	bad     bool   // The clone has the fixture tool `bad`.
-	quiet   bool   // Without SYNC_ENGINE_VERBOSE=1.
+	quiet   bool   // Without BOOTSTRAP_VERBOSE=1.
 	prepare func(d string)
 	steps   [][]string
 }
@@ -121,9 +121,9 @@ func cases(t *testing.T) []pcase {
 
 // env gives the environment of a run in the case folder <d>.
 func env(d, fakeBin string, c pcase) []string {
-	drop := map[string]bool{"HOME": true, "XDG_CACHE_HOME": true, "SYNC_ENGINE_CACHE": true, "MACOS_SETUP_CONFIG_PATH": true,
-		"TMPDIR": true, "SYNC_ENGINE_VERBOSE": true, "PATH": true, "USER": true, "PWD": true, "FORCE_COLOR": true,
-		"NO_COLOR": true, "TERM": true, "SYNC_ENGINE_CLONE": true, "MISE_DATA_DIR": true, "MISE_CACHE_DIR": true}
+	drop := map[string]bool{"HOME": true, "XDG_CACHE_HOME": true, "BOOTSTRAP_CACHE": true, "MACOS_SETUP_CONFIG_PATH": true,
+		"TMPDIR": true, "BOOTSTRAP_VERBOSE": true, "PATH": true, "USER": true, "PWD": true, "FORCE_COLOR": true,
+		"NO_COLOR": true, "TERM": true, "BOOTSTRAP_CLONE": true, "MISE_DATA_DIR": true, "MISE_CACHE_DIR": true}
 	var out []string
 	for _, kv := range os.Environ() {
 		k, _, _ := strings.Cut(kv, "=")
@@ -147,7 +147,7 @@ func env(d, fakeBin string, c pcase) []string {
 	out = append(out,
 		"HOME="+filepath.Join(d, "home"),
 		"XDG_CACHE_HOME="+filepath.Join(d, "xdg", "cache"),
-		"SYNC_ENGINE_CACHE="+filepath.Join(d, "xdg", "cache", "sync-engine"),
+		"BOOTSTRAP_CACHE="+filepath.Join(d, "xdg", "cache", "sync-engine"),
 		"TMPDIR="+filepath.Join(d, "tmp"),
 		"PATH="+fakeBin+":"+os.Getenv("PATH"),
 		"USER=test", "PWD="+d, "TERM=dumb", "NO_COLOR=1",
@@ -160,7 +160,7 @@ func env(d, fakeBin string, c pcase) []string {
 		out = append(out, "MACOS_SETUP_CONFIG_PATH="+filepath.Join(d, "missing"))
 	}
 	if !c.quiet {
-		out = append(out, "SYNC_ENGINE_VERBOSE=1")
+		out = append(out, "BOOTSTRAP_VERBOSE=1")
 	}
 	return out
 }
@@ -329,7 +329,7 @@ func runCase(t *testing.T, c pcase, d, cloneDir, commit string, cmd []string) st
 	for _, args := range c.steps {
 		x := exec.Command(cmd[0], append(cmd[1:], args...)...)
 		x.Dir = d
-		x.Env = append(env(d, bin, c), "SYNC_ENGINE_CLONE="+cloneDir)
+		x.Env = append(env(d, bin, c), "BOOTSTRAP_CLONE="+cloneDir)
 		var stdout, stderr strings.Builder
 		x.Stdout, x.Stderr = &stdout, &stderr
 		rc := 0
@@ -382,7 +382,7 @@ func TestParity(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			cl, commit := clones[c.bad], commits[c.bad]
-			got := runCase(t, c, filepath.Join(root, "go", c.name), cl, commit, []string{bin, "macos"})
+			got := runCase(t, c, filepath.Join(root, "go", c.name), cl, commit, []string{bin, "mac", "sync"})
 			golden := filepath.Join("testdata", "golden", c.name+".golden")
 			data, err := os.ReadFile(golden)
 			head, want, _ := strings.Cut(string(data), "\n")

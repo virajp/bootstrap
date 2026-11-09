@@ -1,12 +1,12 @@
 // Package repo is the repo front-end of the sync engine: the subcommand
-// `sync-engine repo`. It copies the shared files of the selected tools of
+// `bootstrap sync`. It copies the shared files of the selected tools of
 // `repo/tools/` of a clone of bootstrap into the repository of
 // MISE_PROJECT_ROOT. It replaces the bash file sync-engine/repo-sync, with the
 // same output, files and exit codes.
 //
-// Run reads the same environment as `repo_sync`: SYNC_ENGINE_CLONE,
+// Run reads the same environment as `repo_sync`: BOOTSTRAP_CLONE,
 // MISE_PROJECT_ROOT, REPO_SYNC_VALUES, REPO_SYNC_NO_AUTOUPDATE,
-// SYNC_ENGINE_VERBOSE, TMPDIR, PATH, PWD and the style variables FORCE_COLOR,
+// BOOTSTRAP_VERBOSE, TMPDIR, PATH, PWD and the style variables FORCE_COLOR,
 // NO_COLOR and TERM. A template reads the environment with env.Getenv.
 //
 // Contract: docs/design/repo-sync.md.
@@ -201,9 +201,9 @@ func (s *state) run(args []string) fail.Code {
 
 // sync is the sync of repo_sync, after the checks of its arguments.
 func (s *state) sync(dryRun bool) fail.Code {
-	clone := s.getenv("SYNC_ENGINE_CLONE")
+	clone := s.getenv("BOOTSTRAP_CLONE")
 	if clone == "" {
-		s.log("SYNC_ENGINE_CLONE is not set - run mise run setup:configs, which clones bootstrap")
+		s.log("BOOTSTRAP_CLONE is not set - run mise run setup:configs, which clones bootstrap")
 		return fail.Usage
 	}
 	dir, err := os.MkdirTemp(target.DryRunDir(s.getenv), "repo-sync.")

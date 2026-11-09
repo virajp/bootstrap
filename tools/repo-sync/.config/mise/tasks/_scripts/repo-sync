@@ -9,11 +9,11 @@
 # `REPO_SYNC_CLONE`. This file forwards to `sync-engine/repo-sync` of the same
 # clone. The cleanup plan removes it.
 
-: "${SYNC_ENGINE_CLONE:=${REPO_SYNC_CLONE:-}}"
-if [[ -z $SYNC_ENGINE_CLONE ]]; then
+: "${BOOTSTRAP_CLONE:=${REPO_SYNC_CLONE:-}}"
+if [[ -z $BOOTSTRAP_CLONE ]]; then
   printf '%s\n' 'repo-sync: no clone - run mise run setup:configs' >&2
   return 2
 fi
-export SYNC_ENGINE_CLONE
+export BOOTSTRAP_CLONE
 # shellcheck source=/dev/null
-source "${SYNC_ENGINE_CLONE}/sync-engine/repo-sync"
+source "${BOOTSTRAP_CLONE}/sync-engine/repo-sync"

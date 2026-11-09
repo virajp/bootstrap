@@ -14,11 +14,11 @@ See also: [packs.md](packs.md), [tools.md](tools.md), [mise.md](mise.md),
 `sync-engine/` is not a tool. The sync never copies it to a consumer as a
 folder.
 
-| File        | Job                                                                                                                                                 |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `clone`     | The cache, the lock, the fetch and the copy of the clone. A template of an entry task embeds this file.                                             |
-| `repo-sync` | The shim: the function `repo_sync` for an old consumer task. It runs `sync-engine repo`. See [repo-sync.md](repo-sync.md#the-shim-for-an-old-task). |
-| `VERSION`   | The pin of the Go engine. See [The release of the engine](#the-release-of-the-engine).                                                              |
+| File        | Job                                                                                                                                               |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clone`     | The cache, the lock, the fetch and the copy of the clone. A template of an entry task embeds this file.                                           |
+| `repo-sync` | The shim: the function `repo_sync` for an old consumer task. It runs `bootstrap sync`. See [repo-sync.md](repo-sync.md#the-shim-for-an-old-task). |
+| `VERSION`   | The pin of the Go engine. See [The release of the engine](#the-release-of-the-engine).                                                            |
 
 The rest of `sync-engine/` is the Go engine.
 
@@ -28,23 +28,23 @@ The rest of `sync-engine/` is the Go engine.
 of the engine. The Go engine replaced the bash engine, and it keeps each output
 line, file and exit code of the bash engine.
 
-| Path                 | Job                                                                                                                                                      |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `go.mod`             | The module.                                                                                                                                              |
-| `cmd/sync-engine`    | The command, with the subcommands `repo`, `macos` and `version`. `version` prints `main.version`, which the release build sets. A local build has `dev`. |
-| `internal/fail`      | The typed errors of the exit codes, and a collector where the highest code wins. See [The exit codes](#the-exit-codes).                                  |
-| `internal/report`    | The output of a run. See [The output of a run](#the-output-of-a-run).                                                                                    |
-| `internal/source`    | The read of the clone: the packs file, the `tools.toml` of each tool, the files of a tool folder, and the checks of these files.                         |
-| `internal/values`    | The values files of a repo and of the Mac, and the values merge. See [The values merge](#the-values-merge).                                              |
-| `internal/selection` | The pack expansion, the checks of the packs, the depth-first walk of the `depends`, and the stages of the Mac.                                           |
-| `internal/tmpl`      | `text/template` with the delimiters `<%` and `%>`, and our own copy of the gomplate functions that the templates use. It does not import gomplate.       |
-| `internal/format`    | The parse check and merge mode: JSON in the form of jq, YAML and TOML through the yq command in-process. See [Merge mode](#merge-mode).                  |
-| `internal/header`    | The header of a synced file: its two lines, and its detection. See [The header](#the-header).                                                            |
-| `internal/target`    | The write of one target, and `bootstrap_commit`. See [The write of one target](#the-write-of-one-target).                                                |
-| `internal/manifest`  | The manifest and the stale rule, in the link modes `repo` and `macos`. See [The manifest](#the-manifest-and-the-stale-rule).                             |
-| `internal/misegen`   | The mise config generator of both sides: the environments, the checks of `[overrides.mise*]`, and the `conf.d` files. See [mise.md](mise.md).            |
-| `internal/macos`     | The Mac front-end, `sync-engine macos`. See [setup-sync.md](setup-sync.md).                                                                              |
-| `internal/repo`      | The repo front-end, `sync-engine repo`. See [repo-sync.md](repo-sync.md).                                                                                |
+| Path                 | Job                                                                                                                                                                                                                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `go.mod`             | The module.                                                                                                                                                                                                                                                                                                                     |
+| `cmd/bootstrap`      | The command `bootstrap`, with the commands `sync`, `check`, `mac sync`, `mac check` and `version`. `sync` and `check` (`sync --check`) run the repo front-end, `mac sync` and `mac check` (`mac sync --dry-run`) run the Mac front-end. `version` prints `main.version`, which the release build sets. A local build has `dev`. |
+| `internal/fail`      | The typed errors of the exit codes, and a collector where the highest code wins. See [The exit codes](#the-exit-codes).                                                                                                                                                                                                         |
+| `internal/report`    | The output of a run. See [The output of a run](#the-output-of-a-run).                                                                                                                                                                                                                                                           |
+| `internal/source`    | The read of the clone: the packs file, the `tools.toml` of each tool, the files of a tool folder, and the checks of these files.                                                                                                                                                                                                |
+| `internal/values`    | The values files of a repo and of the Mac, and the values merge. See [The values merge](#the-values-merge).                                                                                                                                                                                                                     |
+| `internal/selection` | The pack expansion, the checks of the packs, the depth-first walk of the `depends`, and the stages of the Mac.                                                                                                                                                                                                                  |
+| `internal/tmpl`      | `text/template` with the delimiters `<%` and `%>`, and our own copy of the gomplate functions that the templates use. It does not import gomplate.                                                                                                                                                                              |
+| `internal/format`    | The parse check and merge mode: JSON in the form of jq, YAML and TOML through the yq command in-process. See [Merge mode](#merge-mode).                                                                                                                                                                                         |
+| `internal/header`    | The header of a synced file: its two lines, and its detection. See [The header](#the-header).                                                                                                                                                                                                                                   |
+| `internal/target`    | The write of one target, and `bootstrap_commit`. See [The write of one target](#the-write-of-one-target).                                                                                                                                                                                                                       |
+| `internal/manifest`  | The manifest and the stale rule, in the link modes `repo` and `macos`. See [The manifest](#the-manifest-and-the-stale-rule).                                                                                                                                                                                                    |
+| `internal/misegen`   | The mise config generator of both sides: the environments, the checks of `[overrides.mise*]`, and the `conf.d` files. See [mise.md](mise.md).                                                                                                                                                                                   |
+| `internal/macos`     | The Mac front-end, `bootstrap mac sync`. See [setup-sync.md](setup-sync.md).                                                                                                                                                                                                                                                    |
+| `internal/repo`      | The repo front-end, `bootstrap sync`. See [repo-sync.md](repo-sync.md).                                                                                                                                                                                                                                                         |
 
 The task `test:go` of this repository runs `go vet`, a `gofmt` check and
 `go test` in the module. The golden files of the parity tests hold the output
@@ -61,7 +61,7 @@ two differ only for a device such as `/dev/null`, where no output can be seen.
 
 ## The cache and the clone
 
-The cache is `${XDG_CACHE_HOME:-~/.cache}/sync-engine/`. `SYNC_ENGINE_CACHE`
+The cache is `${XDG_CACHE_HOME:-~/.cache}/bootstrap/`. `BOOTSTRAP_CACHE`
 changes the folder. All the consumers of the machine and the Mac side share it.
 
 | Entry                 | Use                                                                            |
@@ -71,7 +71,7 @@ changes the folder. All the consumers of the machine and the Mac side share it.
 | `lock.takeover/`      | The short lock of the removal of a dead lock.                                  |
 | `macos-generated.tsv` | The manifest of the Mac side. See [setup-sync.md](setup-sync.md#the-manifest). |
 
-The URL is `https://github.com/virajp/bootstrap.git`. `SYNC_ENGINE_URL` changes
+The URL is `https://github.com/virajp/bootstrap.git`. `BOOTSTRAP_URL` changes
 it. `_se_fetch` does these steps:
 
 - It clones when `repo/` is missing or is an empty folder.
@@ -83,7 +83,7 @@ it. `_se_fetch` does these steps:
   clone.
 - It clones again when `repo/` is a clone with another `origin`, for example
   after
-  a test with `SYNC_ENGINE_URL`.
+  a test with `BOOTSTRAP_URL`.
 - It stops when `repo/` is not a git clone and is not empty. It does not delete
   the
   folder.
@@ -105,7 +105,7 @@ update the cache.
 
 The sync uses the pushed `main` branch. Local changes have no effect on
 consumers
-until you push them. To test a change before you push it, set `SYNC_ENGINE_URL`
+until you push them. To test a change before you push it, set `BOOTSTRAP_URL`
 to
 a local clone with a commit of the change on `main` of that clone. Use
 `mise run setup:configs --dry-run` to show a diff. The next run without that
@@ -121,19 +121,6 @@ no `origin` stops the task, and the task deletes nothing in the cache root. A
 `.git` file (a worktree or a submodule) has no config file there, so it also
 stops
 the task.
-
-### The legacy cleanup
-
-The old stubs used `bootstrap/` and `bootstrap.lock` in
-`${XDG_CACHE_HOME:-~/.cache}`. Each run removes these two while it holds the old
-lock. When a live old stub holds that lock, the run skips the removal, and a
-later
-run does it. A failed removal does not fail the sync. The line
-`Removed the old cache <path>` prints only when the old folder existed before
-the removal and does not exist after it, so a run with only the old lock prints
-nothing. The old Mac cache has its
-own
-step. See [setup-sync.md](setup-sync.md#the-entry-task).
 
 ### The lock
 
@@ -160,26 +147,26 @@ An entry task must run before the consumer has a clone. Thus the sync embeds
 absolute
 path of the `sync-engine/` folder of the clone copy of the run. The entry task
 runs
-`_se_clone_init`, `_se_lock`, `_se_legacy_cleanup`, `_se_fetch` and `_se_copy`,
+`_se_clone_init`, `_se_lock`, `_se_fetch` and `_se_copy`,
 and
 it sets a trap with `_se_clone_cleanup`.
 
 Then the entry task starts the Go engine in a new process with
-`SYNC_ENGINE_CLONE` set to the copy. `setup:configs` starts
-`sync-engine repo`: see [repo-sync.md](repo-sync.md#the-entry-tasks).
-`updateall:configs` starts `sync-engine macos`: see
+`BOOTSTRAP_CLONE` set to the copy. `setup:configs` starts
+`bootstrap sync`: see [repo-sync.md](repo-sync.md#the-entry-tasks).
+`updateall:configs` starts `bootstrap mac sync`: see
 [setup-sync.md](setup-sync.md#the-entry-task).
 
 ## The engine variables
 
-| Variable              | Use                                                                                                           |
-| --------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `SYNC_ENGINE_CLONE`   | The clone copy of the run, which the entry task gives the engine.                                             |
-| `SYNC_ENGINE_URL`     | The clone URL. A test uses it for a change that is not pushed.                                                |
-| `SYNC_ENGINE_VERBOSE` | `1` prints the log line of each target in place of the list. See [The output of a run](#the-output-of-a-run). |
-| `SYNC_ENGINE_CACHE`   | The cache folder. A test uses it.                                                                             |
-| `SYNC_ENGINE_BIN`     | The path of a local build of the Go engine. The entry tasks and the tests run it in place of the pin.         |
-| `REPO_SYNC_CLONE`     | The same copy, which an old `setup:configs` gives its old sync task. See the forwarding file below.           |
+| Variable            | Use                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `BOOTSTRAP_CLONE`   | The clone copy of the run, which the entry task gives the engine.                                             |
+| `BOOTSTRAP_URL`     | The clone URL. A test uses it for a change that is not pushed.                                                |
+| `BOOTSTRAP_VERBOSE` | `1` prints the log line of each target in place of the list. See [The output of a run](#the-output-of-a-run). |
+| `BOOTSTRAP_CACHE`   | The cache folder. A test uses it.                                                                             |
+| `BOOTSTRAP_BIN`     | The path of a local build of the Go engine. The entry tasks and the tests run it in place of the pin.         |
+| `REPO_SYNC_CLONE`   | The same copy, which an old `setup:configs` gives its old sync task. See the forwarding file below.           |
 
 The forwarding file is `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync`
 of
@@ -600,12 +587,12 @@ alone.
 | Last line | `✅ <text>` or `❌ <text>`     | `[OK] <text>` or `[ERROR] <text>` |
 | Table     | Box characters                 | ASCII borders (`+`, `-`, `\|`)    |
 
-These lines have no `sync-engine:` or `setup-sync:` prefix. `_se_say` of `clone`
+These lines have no `bootstrap:` or `setup-sync:` prefix. `_se_say` of `clone`
 uses `print_info` and `print_error` when they exist. Without them, it prints the
-info glyph or the error glyph, or the prefix `sync-engine: ` with style off.
+info glyph or the error glyph, or the prefix `bootstrap: ` with style off.
 
 **Verbose.** `--verbose` of `setup:configs` and `updateall:configs` sets
-`SYNC_ENGINE_VERBOSE=1`. A user can also set the variable, and only the value
+`BOOTSTRAP_VERBOSE=1`. A user can also set the variable, and only the value
 `1`
 turns it on. Each entry task consumes the flag and does not pass it to the
 engine. Each target then prints its log line in place of its list line, for
@@ -647,8 +634,8 @@ only for the Mac front-end: see
 
 - A bad flag, and a side other than `repo` or `macos` in a call of a function of
   `sync-engine/mise`.
-- A missing `mise`, and a sync without `SYNC_ENGINE_CLONE`.
-- A `SYNC_ENGINE_BIN` that is not an executable file.
+- A missing `mise`, and a sync without `BOOTSTRAP_CLONE`.
+- A `BOOTSTRAP_BIN` that is not an executable file.
 - A `repo/` of the cache that is not a clone and not empty, and a repository at
   the cache root with another `origin` or no `origin`.
 - A `tools.toml` that cannot be read or that breaks a rule, also an old key.
@@ -728,15 +715,15 @@ only for the Mac front-end: see
 - A clone or a fetch that fails.
 - A `sync-engine/VERSION` of the copy that is not `MAJOR.MINOR.PATCH`, and a
   `mise install` of the engine that fails.
-- A `SYNC_ENGINE_CLONE` that is not usable, on the repo side.
+- A `BOOTSTRAP_CLONE` that is not usable, on the repo side.
 - A `pre-commit autoupdate` that fails, or a missing `pre-commit`, on the repo
   side.
 
-On the Mac side, a `SYNC_ENGINE_CLONE` without `sync-engine/` or `macos/tools/`
+On the Mac side, a `BOOTSTRAP_CLONE` without `sync-engine/` or `macos/tools/`
 is
 code 2. A child task that does not find its library in the clone returns code 1.
 
-`sync-engine repo --check` returns the highest code of its checks, at most 2.
+`bootstrap check` returns the highest code of its checks, at most 2.
 
 ## The release of the engine
 
@@ -776,7 +763,7 @@ the ruleset `all-tags` does not let you move or delete the tag.
 5. Push the tag: `git push origin vX.Y.Z`.
 6. Monitor the run of `release-engine` in GitHub Actions.
 7. When the run is done, pull `main`. Its last commit is
-   `ops: pin sync-engine X.Y.Z`.
+   `ops: pin bootstrap X.Y.Z`.
 
 The ruleset `all-tags` requires a signed tag. The tag must be
 `vMAJOR.MINOR.PATCH`, with no leading zero and no suffix.
@@ -789,19 +776,19 @@ an arm64 runner, with the permission `contents: write` only.
 1. It examines the tag. The tag must be `vMAJOR.MINOR.PATCH`, and its commit
    must be on `main`. Else the run stops.
 2. It installs the Go version of `sync-engine/go.mod`.
-3. It builds `./cmd/sync-engine` in `sync-engine/` for `darwin/arm64`, with
+3. It builds `./cmd/bootstrap` in `sync-engine/` for `darwin/arm64`, with
    `CGO_ENABLED=0` and `-ldflags "-X main.version=X.Y.Z"`.
-4. It runs `sync-engine version`. The output must be `X.Y.Z`.
+4. It runs `bootstrap version`. The output must be `X.Y.Z`.
 5. It writes the SHA-256 checksum of the binary.
 6. It creates the GitHub release `vX.Y.Z` with two assets:
-   `sync-engine-darwin-arm64` and `sync-engine-darwin-arm64.sha256`.
+   `bootstrap-darwin-arm64` and `bootstrap-darwin-arm64.sha256`.
 7. It commits `sync-engine/VERSION` = `X.Y.Z` on `main`.
 
 The build is for macOS arm64 only. No Linux build and no Intel build exist.
 
 mise reads release assets, not workflow artifacts. It selects the asset of the
 OS and the CPU, and it removes the OS and CPU suffix from a single-file binary.
-Thus `sync-engine-darwin-arm64` installs as `sync-engine`. mise also checks the
+Thus `bootstrap-darwin-arm64` installs as `bootstrap`. mise also checks the
 download against the digest of the asset or the checksum file.
 
 ### The pin commit

