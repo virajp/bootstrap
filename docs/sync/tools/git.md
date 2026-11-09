@@ -82,6 +82,12 @@ forge, from the `github` or the `gitlab` tool. In a repository without an
 hooks over all files as a safety net, with `SKIP=no-commit-to-branch`. The
 safety net makes no commit, so that hook does not apply to it.
 
+A merge task stops when the repository of `MISE_ORIGINAL_CWD` is not the
+repository of the task. In a submodule without that merge task, mise finds the
+task of the root repository and runs it in the root folder. Without the stop,
+that task lands a branch of the root. Run `mise run setup:configs` in the
+submodule to get its own merge tasks.
+
 ## Pre-commit hooks
 
 - The local hook `git-config`, which calls `code:git-config --fix`.
