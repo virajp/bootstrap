@@ -1,0 +1,87 @@
+fingerprint: 4dc4e1a84260f272c3d76db7d010f4302fb7a8654c51d77adf4d7d453e12ae14
+=== --dry-run
+rc=2
+--- stdout
+--- stderr
+repo-sync: using bootstrap at <short>
+repo-sync: tools: mise repo-sync git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner
+repo-sync: environments: dev
+repo-sync: template context: [member.x] in .config/bootstrap.toml is not a submodule or a folder of the repo
+repo-sync: cannot build the template context
+repo-sync: skip env   .config/mise/conf.d/zz-repo/mise.ci.toml
+repo-sync: skip file  .config/mise/tasks/code/format/ruff (no pyproject.toml)
+repo-sync: skip file  .config/mise/tasks/code/lint/pyrefly (no pyproject.toml)
+repo-sync: skip file  .config/mise/tasks/code/lint/ruff (no pyproject.toml)
+repo-sync: would update .config/mise/conf.d/mise/mise.dev.toml
+repo-sync: would update .config/mise/conf.d/zz-repo/mise.dev.toml
+repo-sync: would update .config/mise/tasks/_scripts/checks
+repo-sync: would update .config/mise/tasks/_scripts/helpers
+repo-sync: would update .config/mise/tasks/_scripts/placeholder
+repo-sync: would update .config/mise/tasks/_scripts/worktrees-page
+repo-sync: would update .config/mise/tasks/code/_default
+repo-sync: would update .config/mise/tasks/code/worktrees
+repo-sync: would update .config/mise/tasks/setup/mise
+repo-sync: would update .config/mise/conf.d/repo-sync/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/lint/repo-sync
+repo-sync: would update .config/mise/conf.d/git/mise.dev.toml
+repo-sync: would update .config/mise/tasks/_scripts/merge
+repo-sync: would update .config/mise/tasks/code/git-config
+repo-sync: would update .config/mise/tasks/code/merge/_default
+repo-sync: would update .config/wt.toml
+repo-sync: would update .gitattributes
+repo-sync: would update .gitignore
+repo-sync: would update .config/mise/conf.d/python/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/lint/uv
+repo-sync: would update .config/mise/tasks/setup/deps/python
+repo-sync: would update .config/mise/conf.d/pre-commit/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/precommit
+repo-sync: would update .config/mise/tasks/setup/precommit
+repo-sync: would update .config/mise/conf.d/dprint/mise.dev.toml
+repo-sync: would update .config/mise/tasks/setup/dprint
+repo-sync: would update .config/mise/conf.d/node/mise.dev.toml
+repo-sync: would update .config/mise/tasks/setup/deps/node
+repo-sync: would update .config/mise/conf.d/linter/mise.dev.toml
+repo-sync: would update .config/mise/tasks/setup/linter
+repo-sync: would update .config/mise/conf.d/vscode/mise.dev.toml
+repo-sync: would update .config/mise/tasks/setup/vscode
+repo-sync: would update .vscode/settings.json
+repo-sync: would update .config/mise/tasks/code/sec/_default
+repo-sync: would update .config/mise/conf.d/gitleaks/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/sec/gitleaks
+repo-sync: would update .config/grype.yaml
+repo-sync: would update .config/mise/conf.d/grype/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/sec/grype
+repo-sync: would update .config/mise/conf.d/osv-scanner/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/sec/osv-scanner
+repo-sync: would update .config/osv-scanner.toml
+repo-sync: FAILED: repo/tools/mise/.config/mise.toml.tmpl repo/tools/mise/.config/mise/tasks/setup/_default.tmpl repo/tools/mise/.config/mise/tasks/setup/worktree.tmpl repo/tools/repo-sync/.config/mise/tasks/setup/configs/_default.tmpl repo/tools/git/.config/git-conventional-commits.yaml.tmpl repo/tools/pre-commit/.config/pre-commit-config.yaml.tmpl repo/tools/dprint/.config/mise/tasks/code/format/_default.tmpl repo/tools/linter/.config/mise/tasks/code/lint/_default.tmpl repo/tools/vscode/.vscode/extensions.json.tmpl repo/tools/gitleaks/.config/gitleaks.toml.tmpl
+repo-sync: 48/58 files in sync; existing copies of the rest were left untouched
++---------------+-------+
+| Changed       |     0 |
+| New           |    38 |
+| Seeded        |     4 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     4 |
+| Failed        |    10 |
++---------------+-------+
+| Total         |    56 |
++---------------+-------+
+[ERROR] The sync failed with code 2: 10 files failed
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 112 697b94cbe59db908
+dir  tmp 755
+=== --check
+rc=2
+--- stdout
+--- stderr
+repo-sync: .config/bootstrap.toml: [member.x] in .config/bootstrap.toml is not a submodule or a folder of the repo
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 112 697b94cbe59db908
+dir  tmp 755
+--- end

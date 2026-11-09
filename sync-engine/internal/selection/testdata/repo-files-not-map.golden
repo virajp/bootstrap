@@ -1,4 +1,4 @@
-fingerprint: 741b07af3367c3512ee0b7cd1eb701b844acc5ac2d083929980101f2f7efd6c4
+fingerprint: 07c93440ad5640b5f3cf7cc6ff12a80186d9b63575ceff2f712f0326962ee3b1
 rc=2
 --- stderr
 repo-sync: repo/tools/a/tools.toml: [files] must be a table of [files."<target>"] tables

@@ -1,4 +1,4 @@
-fingerprint: e3d4981f5ba69c4326de84e86019dd4ab215c81fd49cb3b9c99189495c5918c9
+fingerprint: 7b77342020c99d684330bf06c88d289a638890862accb1d80860e1d882ddb849
 rc=2
 --- stderr
 setup-sync: packs in macos.toml must be [packs.<name>] tables - the top-level keys are bootstrap_commit, [tools.<name>], [packs.<name>], [overrides.mise.<path>] and [mise.*]

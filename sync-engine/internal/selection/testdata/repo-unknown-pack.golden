@@ -1,4 +1,4 @@
-fingerprint: 552bb3d8782f8af01ac9ed5b4f69e5f07b622819976465c9eb64ca3b97dc80b4
+fingerprint: 83ec59c5ed91dcf81f663f3f1fc63393fbbc35ca618beb7efc33d4a9059a4460
 rc=3
 --- stderr
 repo-sync: pack 'nope' is not in bootstrap

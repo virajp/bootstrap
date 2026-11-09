@@ -1,4 +1,4 @@
-fingerprint: cd3b30fbfb47f05ced6c34f537dbd8f71e86a19e38647da28305547b9e8439f7
+fingerprint: 8c0edc86f39aaa78773d09f13ae5777ef63753b1d12baed1ca5b324f15247dd3
 pre: rc=0
 envs: rc=2
 | mise: repo/tools/mtest/tools.toml: default_envs has 'dev', but its mise tool 'fd' allows only $

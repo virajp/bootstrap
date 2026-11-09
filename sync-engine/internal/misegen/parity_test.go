@@ -1,7 +1,6 @@
 package misegen
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -21,18 +20,14 @@ import (
 	"github.com/virajp/bootstrap/sync-engine/internal/values"
 )
 
-// The parity test runs each case twice, in two copies of one case folder:
-// once with the bash functions of sync-engine/mise (testdata/bash/mise.sh),
-// once with this package. Both print the same text: the exit code and the
-// log lines of each step, the written files, and the bytes and the mode of
-// each written file. The golden files in testdata/golden/ hold the bash text
-// and a fingerprint of the inputs and of the bash files.
-//
-//	UPDATE_GOLDEN=1 go test ./internal/misegen   writes them again from bash
-//	SYNC_ENGINE_LIVE=1 go test ./internal/misegen also runs bash for each case
-//
-// A golden file with another fingerprint is old: the test runs bash live if
-// it can, else it skips the case.
+// The parity test runs each case with this package in a copy of the case
+// folder, and prints the exit code and the log lines of each step, the
+// written files, and the bytes and the mode of each written file. The golden
+// files in testdata/golden/ hold the same text of the bash engine (its file
+// mise), from before the removal of that engine, and a fingerprint of the
+// inputs of the case. A golden file with another fingerprint is old: the test
+// skips the case, and test:repo-sync, test:setup-sync and test:macos-tools
+// test that behavior.
 
 func engineDir(t *testing.T) string {
 	t.Helper()
@@ -63,25 +58,6 @@ func writeFile(t *testing.T, path, content string) {
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
-}
-
-var (
-	bashOnce sync.Once
-	bashOK   bool
-)
-
-// bashAvailable tells if the tools of the bash engine are installed.
-func bashAvailable() bool {
-	bashOnce.Do(func() {
-		bashOK = true
-		for _, tool := range []string{"gomplate", "jq", "yq"} {
-			out, err := exec.Command("sh", "-c", "cd / && MISE_OFFLINE=1 mise ls --installed "+tool+" 2>/dev/null </dev/null").Output()
-			if err != nil || strings.TrimSpace(string(out)) == "" {
-				bashOK = false
-			}
-		}
-	})
-	return bashOK
 }
 
 // mcase is one case.
@@ -150,7 +126,7 @@ func (c mcase) build(t *testing.T) string {
 	return dir
 }
 
-// fingerprint hashes the files of the case folder and the bash files.
+// fingerprint hashes the files of the case folder.
 func fingerprint(t *testing.T, dir string) string {
 	t.Helper()
 	h := sha256.New()
@@ -162,10 +138,6 @@ func fingerprint(t *testing.T, dir string) string {
 		fmt.Fprintf(h, "%s %d\n", name, len(b))
 		h.Write(b)
 	}
-	for _, name := range []string{"common", "select", "values", "repo-sync", "setup-sync", "mise", "write", "manifest"} {
-		add(filepath.Join(engineDir(t), name), "engine/"+name)
-	}
-	add(filepath.Join("testdata", "bash", "mise.sh"), "mise.sh")
 	var paths []string
 	_ = filepath.WalkDir(dir, func(p string, e fs.DirEntry, err error) error {
 		if err == nil && !e.IsDir() {
@@ -201,35 +173,6 @@ func scrub(s, dir string) string {
 
 func caseEnv(dir string) map[string]string {
 	return map[string]string{"USER": "tester", "TMPDIR": filepath.Join(dir, "tmp")}
-}
-
-// bash runs the case with the bash engine in a copy of <in>.
-func (c mcase) bash(t *testing.T, in string) string {
-	t.Helper()
-	dir := in + "-bash"
-	copyDir(t, in, dir)
-	if err := os.MkdirAll(filepath.Join(dir, "tmp"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	cmd := exec.Command("bash", filepath.Join("testdata", "bash", "mise.sh"), engineDir(t), dir)
-	var env []string
-	for _, kv := range os.Environ() {
-		k, _, _ := strings.Cut(kv, "=")
-		if strings.HasPrefix(k, "GIT_") || k == "SYNC_ENGINE_VERBOSE" || k == "MISE_PROJECT_ROOT" || k == "USER" || k == "TMPDIR" {
-			continue
-		}
-		env = append(env, kv)
-	}
-	for k, v := range caseEnv(dir) {
-		env = append(env, k+"="+v)
-	}
-	cmd.Env = append(env, "NO_COLOR=1")
-	var out, errb bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &out, &errb
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("mise.sh: %v\n%s\n%s", err, out.String(), errb.String())
-	}
-	return scrub(out.String(), dir)
 }
 
 // golang runs the case with this package in a copy of <in>.
@@ -486,30 +429,20 @@ func fileExists(p string) bool {
 	return err == nil
 }
 
-// check runs <c> and compares Go with the golden file, or with bash.
+// check runs <c> and compares Go with the golden file.
 func check(t *testing.T, c mcase, stats *counter) {
 	t.Parallel()
 	in := c.build(t)
 	fp := fingerprint(t, in)
 	golden := filepath.Join("testdata", "golden", c.name+".golden")
 	got := c.golang(t, in)
-	if os.Getenv("UPDATE_GOLDEN") == "1" {
-		if !bashAvailable() {
-			t.Fatal("UPDATE_GOLDEN=1 needs gomplate, jq and yq")
-		}
-		want := c.bash(t, in)
-		writeFile(t, golden, "fingerprint: "+fp+"\n"+want)
-	}
 	data, err := os.ReadFile(golden)
 	if err != nil {
-		t.Fatalf("no golden file %s: run UPDATE_GOLDEN=1 go test ./internal/misegen", golden)
+		t.Skipf("%s: no golden file, and the bash engine that wrote the golden files is gone", golden)
 	}
 	head, want, _ := strings.Cut(string(data), "\n")
-	if head != "fingerprint: "+fp || os.Getenv("SYNC_ENGINE_LIVE") == "1" {
-		if !bashAvailable() {
-			t.Skipf("%s: the golden file is old (inputs or bash files changed) and bash cannot run here", golden)
-		}
-		want = c.bash(t, in)
+	if head != "fingerprint: "+fp {
+		t.Skipf("%s: the golden file is old (the inputs changed), and the bash engine that wrote it is gone", golden)
 	}
 	if !strings.Contains(want, "pre: rc=0\n") {
 		t.Fatalf("%s: the steps before the generator failed in bash:\n%s", c.name, want)

@@ -81,7 +81,7 @@ of a git submodule, or the path of a sibling, for example `../acme-api`. The
 block is the draft of the `.config/bootstrap.toml` of that repository, in the
 format of `repo/examples/` of the clone. It also holds the tools, the packs and
 the plugins, as `[tools.*]`, `[packs.*]` and `[claude.plugins.*]` tables. It has
-no `bootstrap_commit`: `repo_sync` writes it:
+no `bootstrap_commit`: `sync-engine repo` writes it:
 
 ````text
 bootstrap: adopt

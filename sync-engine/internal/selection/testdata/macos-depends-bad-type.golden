@@ -1,4 +1,4 @@
-fingerprint: 011f637f99b290cedd36b54576a7cfe9bbf3436d67a81613804caf28278dd8d9
+fingerprint: b17a3a9507a943e535dee0d89b75a11edefd265098c818b3dfd2b665032af6c0
 rc=2
 --- stderr
 setup-sync: macos/tools/m1/tools.toml: depends must be a list of tool names

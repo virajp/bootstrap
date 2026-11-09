@@ -1,9 +1,7 @@
 # `setup-sync` design
 
 This document describes the Mac front-end of the sync, the command
-`sync-engine macos` of the Go engine. The bash file `sync-engine/setup-sync`,
-the
-function `setup_sync`, has the same behavior, and it stays until phase P7. The
+`sync-engine macos` of the Go engine (`internal/macos`). The
 front-end
 renders the selected tools of `macos/tools/` into `$HOME`, then runs `mise
 bootstrap`.

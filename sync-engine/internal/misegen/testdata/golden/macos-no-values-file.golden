@@ -1,4 +1,4 @@
-fingerprint: 21238b2671c85bbcdc700f4085393ac1f8716fd6db89390a8f9efa6f42408545
+fingerprint: 55adab5eceb2f042450fba8ec2e30d663714d227d10f2053f290f22a4726e1a3
 pre: rc=0
 render mtest: rc=0
   mtest/mise.toml

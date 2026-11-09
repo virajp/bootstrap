@@ -1,4 +1,4 @@
-fingerprint: f13dd6dfe7f976e9f4981ffd5586fc390efebeaf94a407b00f9efe40a0f1f140
+fingerprint: ce3cf91d3bc592b6f0fc50525d439dd23286e7b182cced317bfc62cb1770f949
 rc=2
 --- stderr
 setup-sync: tools = [...] is the old format - write a [tools.<name>] table for each tool

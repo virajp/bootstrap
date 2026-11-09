@@ -1,4 +1,4 @@
-fingerprint: 183ec131bbbaa19ef53d834849543fe0d1a1c49a51e1bf4157fff696fe4c7fad
+fingerprint: 88910253de443aa564bccf49b977ed3139f5620883f265b9b7c3266bc66714af
 pre: rc=0
 envs: rc=2
 | mise: repo/tools/node needs repo/tools/pulumi in 'ci', but its mise tool 'pulumi' allows only dev

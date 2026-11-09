@@ -1,4 +1,4 @@
-fingerprint: 4379e904f279443b975c0eb1a406e62f8e9c0502267b53c11c5f352f6fe97c41
+fingerprint: 4b0693f1af9d45bd3673951eae4ca700b6cca037266b4d0081518297a0dc7ca3
 rc=2
 --- stderr
 repo-sync: repo/tools/a/tools.toml: [files."x.json"] remove must be a list of key paths, each a non-empty list of strings

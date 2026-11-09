@@ -2,5 +2,5 @@
   "format": "yaml",
   "content": "a: [1\n",
   "rc": 2,
-  "stderr": "x: show: the result does not parse as yaml - the current file stays\n  Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestParseCheckGolden1607332746/024/file': yaml: line 2: did not find expected ',' or ']'\n"
+  "stderr": "x: show: the result does not parse as yaml - the current file stays\n  Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestParseCheckGolden2333406419/024/file': yaml: line 2: did not find expected ',' or ']'\n"
 }

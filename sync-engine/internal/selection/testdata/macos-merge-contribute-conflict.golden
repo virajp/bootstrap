@@ -1,4 +1,4 @@
-fingerprint: 406d17ea8476fd642054cbeaef563188716e651e306dfe92f12ee107a1fc7b95
+fingerprint: 193880f1676e395e584ac35fb8cbfcade2f73e2ec7b0e82015fd66efdf30a29c
 rc=2
 --- stderr
 setup-sync: macos/tools/m1/tools.toml and macos/tools/m3/tools.toml set [contributes.m2] k to different values - remove one

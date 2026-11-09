@@ -6,6 +6,6 @@
   "remove": "[[\"sidebar_sections\"]]",
   "remove_items": "[]",
   "rc": 2,
-  "stderr": "Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestMergeGolden2088049536/041/live': array is incomplete\nx: ~/Library/Application Support/superfile/config.toml is not valid toml - kept it as it is\n",
+  "stderr": "Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestMergeGolden3055457462/041/live': array is incomplete\nx: ~/Library/Application Support/superfile/config.toml is not valid toml - kept it as it is\n",
   "out": null
 }

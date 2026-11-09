@@ -1,4 +1,4 @@
-fingerprint: e4a58777849156c4b5461a44a9517085bb646d58cf36a7ea178e517f17fee119
+fingerprint: afa361a63ae72359136a26988365ba40243ce1f71e7eb5d843b8e50362c333fd
 rc=3
 --- stderr
 setup-sync: foo is not a key of macos.toml - the top-level keys are bootstrap_commit, [tools.<name>], [packs.<name>], [overrides.mise.<path>] and [mise.*]

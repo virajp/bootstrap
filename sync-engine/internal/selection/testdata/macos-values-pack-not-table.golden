@@ -1,4 +1,4 @@
-fingerprint: 9911dcd040e0df45bd222ec02d7486b833b388b9cbe8a9a98c0a7d4a0c80651c
+fingerprint: 2a92c023cdad8de7bf13251cc6429af36258fb236d38edda065ded06dd94b781
 rc=2
 --- stderr
 setup-sync: [packs.p] in macos.toml must be an empty table

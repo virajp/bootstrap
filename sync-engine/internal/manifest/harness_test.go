@@ -1,23 +1,17 @@
 package manifest
 
-// The parity harness of P4. Each case builds the same file tree in two
-// scratch folders, runs the bash functions of sync-engine/write,
-// sync-engine/manifest and sync-engine/common in one and the Go functions in
-// the other, then compares the exit codes, stdout, stderr and the file tree.
-// The golden files in testdata/ hold the bash result. TestParityGo compares
-// Go with them (offline). TestParityBash compares bash with them, while the
-// bash files exist (P4_NO_BASH=1 skips it). A case that runs jq or yq (through
-// mise) runs live only with P4_LIVE_TOOLS=1, because it is slow. To write the
-// golden files again from bash, run:
-// UPDATE_GOLDEN=1 go test ./internal/manifest
-// P4_SHOW_NOISE=1 prints the error lines of commands that the compare drops.
+// The parity harness. Each case builds a file tree in a scratch folder, runs
+// the Go functions on it, then compares the exit codes, stdout, stderr and the
+// file tree with the golden files in testdata/. The golden files hold the
+// result of the same steps of the bash engine (the functions of its files
+// write, manifest and common), from before the removal of that engine. The
+// cases do not read the repository, so the golden files cannot get old.
 
 import (
 	"bytes"
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -45,13 +39,10 @@ func (h *run) abs(rel string) string {
 	return h.root + "/" + rel
 }
 
-// op is one step of a case: a bash snippet and the same step in Go. In bash,
-// $R is the root, $DRY the dry-run flag and $TMPDIR the folder of the temp
-// files of a dry run. Each step prints `rc=<code>` to stdout.
+// op is one step of a case in Go. Each step prints `rc=<code>` to stdout. The
+// golden files hold the output of the same step of the bash engine.
 type op struct {
-	bash  string
-	run   func(h *run) int
-	tools bool // the step runs jq or yq
+	run func(h *run) int
 }
 
 type pcase struct {
@@ -61,47 +52,15 @@ type pcase struct {
 	ops   []op
 }
 
-func q(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'" }
-
-func qr(rel string) string {
-	if rel == "" {
-		return `"$R"`
-	}
-	return `"$R"/` + q(rel)
-}
-
-func lines(list []string) string {
-	if len(list) == 0 {
-		return "''"
-	}
-	return q(strings.Join(list, "\n"))
-}
-
 // --- the ops ---
 
 // write is the write of one target as a front-end does it: mkdir (a real
 // run), the temp file, the content, then with <check> the format and the parse
 // check (a failure removes the temp file and keeps the existing file), then
-// _se_finish.
+// the finish of the target.
 func write(mode, content, dest, fileMode string, check bool, explicit string, merge bool) op {
-	var b strings.Builder
-	fmt.Fprintf(&b, "dest=%s; show=$(_se_path \"$dest\")\n", qr(dest))
-	b.WriteString(`if ((DRY)); then d=$TMPDIR; else d=$(dirname -- "$dest"); mkdir -p -- "$d"; fi` + "\n")
-	b.WriteString(`_se_tmp "$d" > /dev/null; tmp=$_SE_TMP` + "\n")
-	fmt.Fprintf(&b, "printf %%s %s > \"$tmp\"\n", q(content))
-	b.WriteString("rc=0\n")
-	if check {
-		file := `"$tmp"`
-		if merge {
-			file = "/dev/null"
-		}
-		fmt.Fprintf(&b, "tf=$(_se_format \"$dest\" %s %s)\n", file, q(explicit))
-		b.WriteString(`_se_parse_check "$tmp" "$tf" "$show" || rc=$?` + "\n")
-	}
-	b.WriteString(`if ((rc != 0)); then rm -f -- "$tmp"; [[ -e $dest ]] && _se_outcome failed "$show" 'kept existing' "kept existing $show"; echo "rc=$rc"` + "\n")
-	fmt.Fprintf(&b, "else _se_finish %s \"$tmp\" \"$dest\" \"$show\" \"$DRY\" %s; echo \"rc=$?\"; fi", mode, q(fileMode))
 	m, _ := strconv.ParseUint(mode, 8, 32)
-	return op{bash: b.String(), tools: check, run: func(h *run) int {
+	return op{run: func(h *run) int {
 		e := h.env
 		d := h.tmp
 		path := h.abs(dest)
@@ -131,13 +90,8 @@ func finish(mode, content, dest, fileMode string) op {
 
 // writeReal is the write of the Mac side to the real path of <rel>.
 func writeReal(mode, content, rel string) op {
-	bash := fmt.Sprintf(`if _se_manifest_real %s; then dest=$_SE_MANIFEST_REAL; show="~/"%s
-  if ((DRY)); then d=$TMPDIR; else d=$(dirname -- "$dest"); mkdir -p -- "$d"; fi
-  _se_tmp "$d" > /dev/null; printf %%s %s > "$_SE_TMP"
-  _se_finish %s "$_SE_TMP" "$dest" "$show" "$DRY" generated; echo "rc=$?"
-else echo rc=loop; fi`, qr(rel), q(rel), q(content), mode)
 	m, _ := strconv.ParseUint(mode, 8, 32)
-	return op{bash: bash, run: func(h *run) int {
+	return op{run: func(h *run) int {
 		e := h.env
 		dest, ok := Real(h.abs(rel))
 		if !ok {
@@ -156,7 +110,7 @@ else echo rc=loop; fi`, qr(rel), q(rel), q(content), mode)
 }
 
 func seedKept(dest string) op {
-	return op{bash: fmt.Sprintf(`_se_seed_kept %s; echo "rc=$?"`, qr(dest)), run: func(h *run) int {
+	return op{run: func(h *run) int {
 		if target.SeedKept(h.abs(dest)) {
 			return 0
 		}
@@ -166,7 +120,6 @@ func seedKept(dest string) op {
 
 func unblock(dir, root string, spare []string, tgt string) op {
 	return op{
-		bash: fmt.Sprintf(`_se_unblock %s %s "$DRY" %s %s; echo "rc=$?"`, qr(dir), qr(root), lines(spare), q(tgt)),
 		run: func(h *run) int {
 			return int(h.env.Unblock(h.abs(dir), h.abs(root), spare, tgt))
 		},
@@ -174,7 +127,7 @@ func unblock(dir, root string, spare []string, tgt string) op {
 }
 
 func hasHeader(file string) op {
-	return op{bash: fmt.Sprintf(`_se_has_header %s; echo "rc=$?"`, qr(file)), run: func(h *run) int {
+	return op{run: func(h *run) int {
 		if header.HasFile(h.abs(file)) {
 			return 0
 		}
@@ -183,7 +136,7 @@ func hasHeader(file string) op {
 }
 
 func badPath(p string) op {
-	return op{bash: fmt.Sprintf(`_se_manifest_bad_path %s; echo "rc=$?"`, q(p)), run: func(h *run) int {
+	return op{run: func(h *run) int {
 		if BadPath(p) {
 			return 0
 		}
@@ -193,7 +146,6 @@ func badPath(p string) op {
 
 func realPath(rel string) op {
 	return op{
-		bash: fmt.Sprintf(`if _se_manifest_real %s; then echo "real=$_SE_MANIFEST_REAL"; echo rc=0; else echo rc=1; fi`, qr(rel)),
 		run: func(h *run) int {
 			p, ok := Real(h.abs(rel))
 			if !ok {
@@ -207,7 +159,6 @@ func realPath(rel string) op {
 
 func read(mode LinkMode, file, root string) op {
 	return op{
-		bash: fmt.Sprintf(`rows=$(_se_manifest_read %s %s %s); rc=$?; printf 'rows=%%s\n' "$rows"; echo "rc=$rc"`, mode, qr(file), qr(root)),
 		run: func(h *run) int {
 			rows, rc := Read(h.env, mode, h.abs(file), h.abs(root))
 			var s []string
@@ -234,7 +185,6 @@ func toRows(list []string) []Row {
 
 func stale(mode LinkMode, rows, handled []string, root string) op {
 	return op{
-		bash: fmt.Sprintf(`_se_manifest_stale %s %s %s %s "$DRY"; echo "rc=$?"`, mode, lines(rows), lines(handled), qr(root)),
 		run: func(h *run) int {
 			return int(Stale(h.env, mode, toRows(rows), handled, h.abs(root)))
 		},
@@ -243,7 +193,6 @@ func stale(mode LinkMode, rows, handled []string, root string) op {
 
 func writeManifest(file string, rows []string) op {
 	return op{
-		bash: fmt.Sprintf(`_se_manifest_write %s %s "$DRY"; echo "rc=$?"`, qr(file), lines(rows)),
 		run: func(h *run) int {
 			return int(Write(h.env, h.abs(file), toRows(rows)))
 		},
@@ -252,7 +201,6 @@ func writeManifest(file string, rows []string) op {
 
 func commit(file, key, sha, comment, hdr string) op {
 	return op{
-		bash: fmt.Sprintf(`_se_record_commit %s %s %s "$DRY" %s %s; echo "rc=$?"`, qr(file), q(key), q(sha), q(comment), q(hdr)),
 		run: func(h *run) int {
 			return int(h.env.RecordCommit(h.abs(file), key, sha, comment, hdr))
 		},
@@ -260,26 +208,17 @@ func commit(file, key, sha, comment, hdr string) op {
 }
 
 func prune(root, path string) op {
-	return op{bash: fmt.Sprintf(`_se_manifest_prune %s %s; echo "rc=$?"`, qr(root), q(path)), run: func(h *run) int {
+	return op{run: func(h *run) int {
 		Prune(h.abs(root), path)
 		return 0
 	}}
 }
 
 // merge is a merge target as a front-end writes it: the parse check of the
-// source as <f>, then the merge with the live file, then _se_finish with the
+// source as <f>, then the merge with the live file, then the finish with the
 // mode of the live file (or 644).
 func merge(content, dest, f string) op {
-	bash := fmt.Sprintf(`dest=%s; show=$(_se_path "$dest")
-if ((DRY)); then d=$TMPDIR; else d=$(dirname -- "$dest"); mkdir -p -- "$d"; fi
-_se_tmp "$d" > /dev/null; tmp=$_SE_TMP; printf %%s %s > "$tmp"; rc=0
-tf=$(_se_format "$dest" /dev/null '')
-_se_parse_check "$tmp" "$tf" "$show" || rc=$?
-((rc != 0)) || _se_merge "$tmp" "$dest" "$tf" '[]' '[]' "$tmp" "$show" || rc=$?
-if ((rc != 0)); then rm -f -- "$tmp"; [[ -e $dest ]] && _se_outcome failed "$show" 'kept existing' "kept existing $show"; echo "rc=$rc"
-else if [[ -e $dest ]]; then m=$(_se_mode "$dest"); else m=644; fi
-_se_finish "$m" "$tmp" "$dest" "$show" "$DRY" merge; echo "rc=$?"; fi`, qr(dest), q(content))
-	return op{bash: bash, tools: true, run: func(h *run) int {
+	return op{run: func(h *run) int {
 		e := h.env
 		path := h.abs(dest)
 		show := e.Show(path)
@@ -313,35 +252,6 @@ const (
 	rootName = "root"
 )
 
-func (c pcase) needsTools() bool {
-	for _, o := range c.ops {
-		if o.tools {
-			return true
-		}
-	}
-	return false
-}
-
-func (c pcase) script(se, base string) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "source %s; source %s; source %s; source %s\n",
-		q(se+"/common"), q(se+"/write"), q(se+"/merge"), q(se+"/manifest"))
-	fmt.Fprintf(&b, "R=%s; DRY=%d\ncd \"$R\" || exit 99\n", q(base+"/"+rootName), b2i(c.dry))
-	fmt.Fprintf(&b, "_se_outcome_start \"$DRY\"\n")
-	for _, o := range c.ops {
-		b.WriteString(o.bash + "\n")
-	}
-	b.WriteString("_se_summary 0\n")
-	return b.String()
-}
-
-func b2i(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 // prepare makes the scratch folder of one run: <base>/root and <base>/tmp.
 func (c pcase) prepare(t *testing.T) string {
 	base, err := filepath.EvalSymlinks(t.TempDir())
@@ -367,49 +277,6 @@ func (r result) String() string {
 	cr := func(s string) string { return strings.ReplaceAll(s, "\r", "<CR>") }
 	r.stdout, r.stderr = cr(r.stdout), cr(r.stderr)
 	return "== stdout ==\n" + r.stdout + "== stderr ==\n" + r.stderr + "== tree ==\n" + r.tree
-}
-
-func (c pcase) runBash(t *testing.T, shell, se string, verbose bool) result {
-	base := c.prepare(t)
-	cmd := exec.Command(shell, "-c", c.script(se, base))
-	var env []string
-	for _, kv := range os.Environ() {
-		k, _, _ := strings.Cut(kv, "=")
-		switch k {
-		case "SYNC_ENGINE_VERBOSE", "FORCE_COLOR", "NO_COLOR", "TMPDIR", "TERM":
-			continue
-		}
-		env = append(env, kv)
-	}
-	env = append(env, "NO_COLOR=1", "TERM=dumb", "TMPDIR="+base+"/"+tmpName)
-	if verbose {
-		env = append(env, "SYNC_ENGINE_VERBOSE=1")
-	}
-	cmd.Env = env
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &stdout, &stderr
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("%s: %v\n%s", shell, err, stderr.String())
-	}
-	return finishResult(t, base, stdout.String(), dropNoise(stderr.String()))
-}
-
-// noise is an error line of a command or of bash itself, for example
-// `mktemp: mkstemp failed on ...`. Its text depends on the system and the bash
-// version, and the Go engine does not print it, so the compare drops it.
-var noise = regexp.MustCompile(`^(mktemp|rm|mv|chmod|mkdir|awk|cmp|readlink|dirname): |^/\S+: line [0-9]+: `)
-
-func dropNoise(s string) string {
-	var out []string
-	for _, l := range strings.SplitAfter(s, "\n") {
-		if noise.MatchString(l) && os.Getenv("P4_SHOW_NOISE") == "1" {
-			fmt.Fprintf(os.Stderr, "noise: %s", l)
-		}
-		if !noise.MatchString(l) {
-			out = append(out, l)
-		}
-	}
-	return strings.Join(out, "")
 }
 
 func (c pcase) runGo(t *testing.T, verbose bool) result {
@@ -511,57 +378,4 @@ func TestParityGo(t *testing.T) {
 		}
 	}
 	t.Logf("%d runs equal to the bash golden files", n)
-}
-
-func TestParityBash(t *testing.T) {
-	se, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(filepath.Join(se, "manifest")); err != nil {
-		t.Skip("no sync-engine/manifest")
-	}
-	if os.Getenv("P4_NO_BASH") == "1" {
-		t.Skip("P4_NO_BASH=1")
-	}
-	var shells []string
-	for _, name := range []string{"/bin/bash", "bash"} {
-		if p, err := exec.LookPath(name); err == nil {
-			shells = append(shells, p)
-		}
-	}
-	if len(shells) == 0 {
-		t.Skip("no bash")
-	}
-	_, misErr := exec.LookPath("mise")
-	update := os.Getenv("UPDATE_GOLDEN") == "1"
-	for _, c := range cases() {
-		for _, verbose := range []bool{false, true} {
-			path := goldenPath(c, verbose)
-			t.Run(filepath.Base(path), func(t *testing.T) {
-				t.Parallel()
-				if c.needsTools() && !update && os.Getenv("P4_LIVE_TOOLS") != "1" {
-					t.Skip("the case runs jq or yq: P4_LIVE_TOOLS=1 runs it")
-				}
-				if c.needsTools() && misErr != nil {
-					t.Skip("no mise for jq and yq")
-				}
-				for i, shell := range shells {
-					got := c.runBash(t, shell, se, verbose).String()
-					if update && i == 0 {
-						if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
-							t.Fatal(err)
-						}
-					}
-					want, err := os.ReadFile(path)
-					if err != nil {
-						t.Fatal(err)
-					}
-					if got != string(want) {
-						t.Errorf("%s differs from %s\ngot:\n%s\nwant:\n%s", shell, path, got, want)
-					}
-				}
-			})
-		}
-	}
 }

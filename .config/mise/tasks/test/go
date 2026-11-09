@@ -2,9 +2,9 @@
 #MISE description="Vet, format-check and test the Go module in sync-engine/"
 
 # Runs `go vet`, a `gofmt` check and `go test` in the Go module of
-# sync-engine/. The golden tests of internal/report also compare the bash
-# output of sync-engine/common, while that file exists. The task runs the Go
-# of the `go` tool, which this repository selects.
+# sync-engine/. The parity tests compare the Go output with golden files of
+# the bash engine. The task runs the Go of the `go` tool, which this
+# repository selects.
 
 set -euo pipefail
 

@@ -1,4 +1,4 @@
-fingerprint: e68fc263c49d87cbd717c79fc04af628755c26c3a34943eadf2f56c9d58c8c29
+fingerprint: 314d3baff0b1f32e91057444d04fc2b6ec86fced1e7456cb323ed2b9d5091f1b
 rc=2
 --- stderr
 setup-sync: pack base does not have the tool macos-setup

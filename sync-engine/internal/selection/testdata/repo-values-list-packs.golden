@@ -1,4 +1,4 @@
-fingerprint: 274e104ae5112e408d741b494e5e0befa23df373040fdec41ca822eef70e32e1
+fingerprint: 96820cd718e31e724c33bb0b7b5c35b97cc7b232bda35e65019e09872b1332d5
 rc=2
 --- stderr
 repo-sync: packs in bootstrap.toml is a list, the old format - write one table for each entry, for example [packs.security] env = ["dev"]; the pack base is always added

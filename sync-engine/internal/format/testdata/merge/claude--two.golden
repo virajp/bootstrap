@@ -6,6 +6,6 @@
   "remove": "[[\"deniedMcpServers\"],[\"env\",\"CONTEXT7_RUNNER\"]]",
   "remove_items": "[]",
   "rc": 2,
-  "stderr": "jq: error (at /var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestMergeGolden2088049536/054/live:1): more than one JSON value\nx: ~/.claude/settings.json is not valid json - kept it as it is\n",
+  "stderr": "jq: error (at /var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestMergeGolden3055457462/054/live:1): more than one JSON value\nx: ~/.claude/settings.json is not valid json - kept it as it is\n",
   "out": null
 }

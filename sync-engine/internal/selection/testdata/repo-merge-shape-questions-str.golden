@@ -1,4 +1,4 @@
-fingerprint: 901cf03fd3cf24e13a562cc0ed78bd635ff530fe90a924e2ae14b2e4be4480a9
+fingerprint: 14821a15888a4323cc14651e6ad4551939ab483937fe91d2f4ce250575dbfffc
 rc=2
 --- stderr
 repo-sync: repo/tools/a/tools.toml: [questions] must be a table of [questions.<key>] tables

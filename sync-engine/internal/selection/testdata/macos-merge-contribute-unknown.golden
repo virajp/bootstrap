@@ -1,4 +1,4 @@
-fingerprint: 7f0c7dbc238943b49a5d53cd1eeb903d4128476058f99087aba8c33556f8c5f3
+fingerprint: 587773f49f968b6ba585ea6a183350b4e71f57173a0ed846f9ea4cd0dedb661b
 rc=3
 --- stderr
 setup-sync: macos/tools/m1/tools.toml: [contributes.zzz] names a tool that bootstrap does not have

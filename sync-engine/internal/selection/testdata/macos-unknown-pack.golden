@@ -1,4 +1,4 @@
-fingerprint: 2bd73f1e6f293ef0150a73897449d64b8f19928924674cc7108066dbb783c766
+fingerprint: 5e5b0b876e4c0980dd8d01b842f9cb04e2d4b90bb64ff9c26df7203b3a1f6027
 rc=3
 --- stderr
 setup-sync: pack 'nope' is not in bootstrap

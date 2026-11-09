@@ -6,6 +6,6 @@
   "remove": "[]",
   "remove_items": "[]",
   "rc": 2,
-  "stderr": "jq: error (at /var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T//sync-engine-merge.CdTx73/src:0): more than one JSON value\nx: the merge source of ~/x.json is not one JSON value\n",
+  "stderr": "jq: error (at /var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T//sync-engine-merge.ssxyGH/src:0): more than one JSON value\nx: the merge source of ~/x.json is not one JSON value\n",
   "out": null
 }

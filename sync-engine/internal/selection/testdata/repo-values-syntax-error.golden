@@ -1,4 +1,4 @@
-fingerprint: 6d0428906bfaa6e4e630e1468b228c0b05853b512fbd91d9f3d04f94cff8bd8e
+fingerprint: 8abb5757789dc829179efc7236e08d9367801885a1d754c027ac20b5d0ff9ee1
 rc=2
 --- stderr
 repo-sync: cannot read bootstrap.toml

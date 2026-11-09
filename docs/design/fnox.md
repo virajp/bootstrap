@@ -21,7 +21,7 @@ settings, so a repository never gets values from `default`.
   not have it, also not an empty one.
 - Each `fnox` call passes `-P <name>`. The `fnox` tool does not set
   `FNOX_PROFILE`.
-- The sync and `repo_sync --check` stop with code 2 on a top-level
+- The sync and `sync-engine repo --check` stop with code 2 on a top-level
   `[secrets]` table, a `[profiles.default]` table, or no named profile. The
   message names M25 of `docs/sync/migrate.md`.
 

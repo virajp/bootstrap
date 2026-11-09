@@ -1,0 +1,11 @@
+fingerprint: 285ae0403d29ea9d80f5326774ff061e39175d7974be64bf1c0dc80633ea3b37
+rc=0
+--- stderr
+--- stdout
+tools: b a
+sel:
+a - default
+deps:
+a b
+values:
+{"a":{},"b":{}}

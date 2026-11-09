@@ -29,7 +29,8 @@ A repository uses `bootstrap` in two ways, in this sequence:
    that the repository needs, it keeps the repository-owned content, and it
    asks the user about each difference.
 2. **Sync, each time after that, by `repo-sync`.** The adoption installs the
-   `setup:configs` task. The task runs `repo_sync`, which copies the newest
+   `setup:configs` task. The task runs `sync-engine repo`, which copies the
+   newest
    shared files of the selected tools into the repository.
 
 The adoption makes sure that the repository is ready for the sync. The sync
@@ -93,7 +94,8 @@ This file holds the instructions. Each rule of the sync has one place in
   `repo/tools/<tool>/` in `bootstrap`. A file at `repo/tools/<tool>/<path>` goes
   to `<path>` in the consumer repository.
 - The values file `.config/bootstrap.toml` lists the tools and the packs of
-  the repository. `repo_sync` always adds the `base` pack, and it syncs all
+  the repository. `sync-engine repo` always adds the `base` pack, and it syncs
+  all
   the files of these tools.
 - Do not edit a synced file in the consumer repository. The next sync replaces
   it. Put repository-owned content in the places that the sync never writes:
@@ -126,8 +128,8 @@ This file holds the instructions. Each rule of the sync has one place in
   uses this URL and needs no SSH key. It does not ask for a password.
 - The temporary clone of this prompt (step 1) uses
   `git@github.com:virajp/bootstrap.git`, which needs SSH access.
-- mise is installed. The sync starts gomplate, jq and yq through mise, and mise
-  installs each one that is missing. This install needs the network.
+- mise is installed. `setup:configs` installs the sync engine of the pin
+  `sync-engine/VERSION` with mise. This install needs the network.
 
 ## An empty repository
 
@@ -219,7 +221,8 @@ change a file.
 
 1. Make the clone of step 1, and get the newest commit of `bootstrap`:
    `git -C "$tmp" rev-parse HEAD`.
-2. Read `bootstrap_commit` of the values file. `repo_sync` writes it after
+2. Read `bootstrap_commit` of the values file. `sync-engine repo` writes it
+   after
    each sync without a failure.
 3. Use `bootstrap_commit` to select the checks of step 4:
 
@@ -263,6 +266,7 @@ file without the header belongs to the repository: keep it.
 | The `post-commit` and `post-merge` git hooks                                                                                                                                         | Uninstall them with pre-commit (M24). |
 | `.config/mise/conf.d/_repo/`                                                                                                                                                         | Rename it to `conf.d/zz-repo/` (M17). |
 | A `.config/mise/conf.d/*/mise*.toml` that `.config/repo-generated.tsv` does not list and the sync did not write, for example in `conf.d/_base/`, `conf.d/_env/` and `conf.d/claude/` | Delete it (M29).                      |
+| `.config/mise/tasks/setup/configs/sync`                                                                                                                                              | Delete it (M31).                      |
 
 The sync removes these old paths itself, so they need no step:
 
@@ -294,7 +298,8 @@ tool file. Show the user each tool and each pack with its description and the
 result. Then ask which tools and packs the repository needs. Ask the questions
 of each pack file.
 
-The `base` pack is always added: `repo_sync` adds it, and the values file does
+The `base` pack is always added: `sync-engine repo` adds it, and the values file
+does
 not list it. Its tools are `mise`, `repo-sync`, `git`, `pre-commit`, `dprint`,
 `linter`, `vscode`, and the tools of the `security` pack. Do not select a tool
 of the
@@ -354,11 +359,11 @@ or `glab`.
 not tools. Thus neither can sync the new layout.
 
 For an update, skip this step when `.config/mise/tasks/setup/configs/_default`
-and `.config/mise/tasks/setup/configs/sync` exist and have the bootstrap
-header. Then `setup:configs` loads the sync code from its own clone.
+exists and has the bootstrap header. Then `setup:configs` runs the sync engine
+of its own clone.
 
-Copy these three files from the clone into the repository: the `setup:configs`
-tasks of the `repo-sync` tool, and `helpers` of the `mise` tool. An old
+Copy these two files from the clone into the repository: the `setup:configs`
+task of the `repo-sync` tool, and `helpers` of the `mise` tool. An old
 `.config/mise/tasks/setup/configs` is a file, and
 `setup/configs/` is now a folder: delete the old file first.
 
@@ -368,7 +373,6 @@ lib="$tmp/repo/tools/mise/.config/mise/tasks"
 rm -f .config/mise/tasks/setup/configs
 mkdir -p .config/mise/tasks/_scripts .config/mise/tasks/setup/configs
 cp "$lib/_scripts/helpers" .config/mise/tasks/_scripts/
-cp "$sync/setup/configs/sync" .config/mise/tasks/setup/configs/
 printf '{"members":[],"sync_engine":"%s/sync-engine"}\n' "$tmp" > "$tmp/context.json"
 mise x gomplate@latest -- gomplate --left-delim '<%' --right-delim '%>' \
   -c ".=$tmp/context.json" -f "$sync/setup/configs/_default.tmpl" \
@@ -385,7 +389,8 @@ Do not run the sync, `mise run setup:configs` without `--dry-run`, before
 step 6. You can run a dry run. When the repository already has the task
 `code:lint:repo-sync`, for example at an update, you can also run
 `mise run code:lint:repo-sync`. It validates the values file with
-`repo_sync --check`, without a clone and without a sync, and it shows each
+`sync-engine repo --check`, without a clone and without a sync, and it shows
+each
 error at once. The task loads the sync code from the clone of the shared cache.
 Without that clone, or when the clone has another `origin`, the task prints
 nothing, exits 0 and does not validate the values file. Thus no output does not
@@ -422,7 +427,8 @@ The keys are in
 Read it, and write the file with these instructions:
 
 - Do not write `bootstrap_commit`, and do not copy it from an example: each
-  example has an empty value. `repo_sync` writes the `bootstrap` commit of each
+  example has an empty value. `sync-engine repo` writes the `bootstrap` commit
+  of each
   sync without a failure. See "A repository that already has
   `.config/bootstrap.toml`".
 - Write one `[tools.<folder>]` table for each tool from step 1, and one
@@ -514,7 +520,7 @@ exists locally or on `origin`.
    branches, `main` can allow it only when `develop` allows it too. Without a
    sign, do not write the key.
 
-`repo_sync` does not ask. It writes the merge tasks of the model that it
+`sync-engine repo` does not ask. It writes the merge tasks of the model that it
 finds, and removes the merge tasks of the other model. If the branches change
 later, run `setup:configs` again.
 
@@ -553,7 +559,8 @@ files, skip this step.
 4. If the dry run replaces repository-owned content, stop. Move that content
    to a repository-owned place (see "Rules"), then do the dry run again.
 5. If the dry run fails with `pre-commit is not available`, and its diff adds
-   a `#MISE tools.pre-commit` line to `.config/mise/tasks/setup/configs/sync`,
+   a `#MISE tools.pre-commit` line to
+   `.config/mise/tasks/setup/configs/_default`,
    the cause is the old task file
    of the repository, not the values file. `setup:configs` runs the
    repository's own copy of that task, and only a real sync writes the new
@@ -576,7 +583,7 @@ files, skip this step.
    the task runs. This run must pass. If it fails again, read the exit code
    below.
 
-If `repo_sync` fails, read the exit code:
+If `sync-engine repo` fails, read the exit code:
 
 | Code | Cause                                                                                                                                                                                                                                                                                                    | Action                                                                                                                                                                                           |
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -593,11 +600,11 @@ If `repo_sync` fails, read the exit code:
 | 2    | The values file is missing, or mise is not available                                                                                                                                                                                                                                                     | Correct the values file, or install mise                                                                                                                                                         |
 | 2    | Neither `main` nor `develop` exists                                                                                                                                                                                                                                                                      | Do step 4                                                                                                                                                                                        |
 | 2    | A git repository at the root of the cache with another `origin` or no `origin`, or a `repo/` of the cache that is not a clone and not empty                                                                                                                                                              | Move it, or set `SYNC_ENGINE_CACHE` to another folder                                                                                                                                            |
-| 2    | `setup:configs:sync` ran without `SYNC_ENGINE_CLONE`                                                                                                                                                                                                                                                     | Run `mise run setup:configs`                                                                                                                                                                     |
+| 2    | The sync engine ran without `SYNC_ENGINE_CLONE`, or `SYNC_ENGINE_BIN` is not an executable file                                                                                                                                                                                                          | Run `mise run setup:configs`                                                                                                                                                                     |
 | 3    | A tool or a pack that is not in `bootstrap`                                                                                                                                                                                                                                                              | Correct the `[tools.*]` and `[packs.*]` entries                                                                                                                                                  |
 | 3    | A member of a pack that is not a tool folder or a pack                                                                                                                                                                                                                                                   | Tell the `bootstrap` owner                                                                                                                                                                       |
 | 3    | A contribution of a selected tool to a tool that is not in `bootstrap`                                                                                                                                                                                                                                   | Tell the `bootstrap` owner                                                                                                                                                                       |
-| 5    | The clone or the fetch failed, `SYNC_ENGINE_CLONE` is not usable, pre-commit is not available (see item 5 of step 6), or `pre-commit autoupdate` failed                                                                                                                                                  | Examine the network and the access                                                                                                                                                               |
+| 5    | The clone or the fetch failed, `sync-engine/VERSION` of the clone is not `MAJOR.MINOR.PATCH`, `mise install` of the engine failed, `SYNC_ENGINE_CLONE` is not usable, pre-commit is not available (see item 5 of step 6), or `pre-commit autoupdate` failed                                              | Examine the network and the access                                                                                                                                                               |
 | 1    | A local file system error                                                                                                                                                                                                                                                                                | Read the `repo-sync:` lines on stderr                                                                                                                                                            |
 
 A failure does not change an existing file.

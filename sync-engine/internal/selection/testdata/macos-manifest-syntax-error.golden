@@ -1,4 +1,4 @@
-fingerprint: 3451510b38da0e6fa00a366e21b561e755c4a0a786c57b766366787f9c1382fc
+fingerprint: a4f19e014f55a2a93b50a3dea299d3bc01f00678c1fe676d70bbd35981b3fe03
 rc=2
 --- stderr
 setup-sync: cannot read macos/tools/m2/tools.toml

@@ -1,0 +1,664 @@
+fingerprint: 4dc4e1a84260f272c3d76db7d010f4302fb7a8654c51d77adf4d7d453e12ae14
+=== --dry-run
+rc=0
+--- stdout
+--- stderr
+repo-sync: using bootstrap at <short>
+repo-sync: tools: mise repo-sync git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner
+repo-sync: environments: dev
+repo-sync: skip env   .config/mise/conf.d/zz-repo/mise.ci.toml
+repo-sync: skip file  .config/mise/tasks/code/format/ruff (no pyproject.toml)
+repo-sync: skip file  .config/mise/tasks/code/lint/pyrefly (no pyproject.toml)
+repo-sync: skip file  .config/mise/tasks/code/lint/ruff (no pyproject.toml)
+repo-sync: repo/tools/pre-commit/.config/pre-commit-config.yaml.tmpl: REPO_SYNC_NO_AUTOUPDATE=1 - pre-commit autoupdate skipped
+repo-sync: would update .config/mise.toml
+repo-sync: would update .config/mise/conf.d/mise/mise.dev.toml
+repo-sync: would update .config/mise/conf.d/zz-repo/mise.dev.toml
+repo-sync: would update .config/mise/tasks/_scripts/checks
+repo-sync: would update .config/mise/tasks/_scripts/helpers
+repo-sync: would update .config/mise/tasks/_scripts/placeholder
+repo-sync: would update .config/mise/tasks/_scripts/worktrees-page
+repo-sync: would update .config/mise/tasks/code/_default
+repo-sync: would update .config/mise/tasks/code/worktrees
+repo-sync: would update .config/mise/tasks/setup/_default
+repo-sync: would update .config/mise/tasks/setup/mise
+repo-sync: would update .config/mise/tasks/setup/worktree
+repo-sync: would update .config/mise/conf.d/repo-sync/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/lint/repo-sync
+repo-sync: would update .config/mise/tasks/setup/configs/_default
+repo-sync: would update .config/git-conventional-commits.yaml
+repo-sync: would update .config/mise/conf.d/git/mise.dev.toml
+repo-sync: would update .config/mise/tasks/_scripts/merge
+repo-sync: would update .config/mise/tasks/code/git-config
+repo-sync: would update .config/mise/tasks/code/merge/_default
+repo-sync: would update .config/wt.toml
+repo-sync: would update .gitattributes
+repo-sync: would update .gitignore
+repo-sync: would update .config/mise/conf.d/python/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/lint/uv
+repo-sync: would update .config/mise/tasks/setup/deps/python
+repo-sync: would update .config/mise/conf.d/pre-commit/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/precommit
+repo-sync: would update .config/mise/tasks/setup/precommit
+repo-sync: would update .config/pre-commit-config.yaml
+repo-sync: would update .config/mise/conf.d/dprint/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/format/_default
+repo-sync: would update .config/mise/tasks/setup/dprint
+repo-sync: would update .config/mise/conf.d/node/mise.dev.toml
+repo-sync: would update .config/mise/tasks/setup/deps/node
+repo-sync: would update .config/mise/conf.d/linter/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/lint/_default
+repo-sync: would update .config/mise/tasks/setup/linter
+repo-sync: would update .config/mise/conf.d/vscode/mise.dev.toml
+repo-sync: would update .config/mise/tasks/setup/vscode
+repo-sync: would update .vscode/extensions.json
+repo-sync: would update .vscode/settings.json
+repo-sync: would update .config/mise/tasks/code/sec/_default
+repo-sync: would update .config/gitleaks.toml
+repo-sync: would update .config/mise/conf.d/gitleaks/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/sec/gitleaks
+repo-sync: would update .config/grype.yaml
+repo-sync: would update .config/mise/conf.d/grype/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/sec/grype
+repo-sync: would update .config/mise/conf.d/osv-scanner/mise.dev.toml
+repo-sync: would update .config/mise/tasks/code/sec/osv-scanner
+repo-sync: would update .config/osv-scanner.toml
+repo-sync: would write .config/repo-generated.tsv
+repo-sync: would set bootstrap_commit <commit> in .config/bootstrap.toml
+repo-sync: done: 58/58 files in sync
++---------------+-------+
+| Changed       |     0 |
+| New           |    48 |
+| Seeded        |     5 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     4 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |    57 |
++---------------+-------+
+[OK] Dry run: 53 files would change
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 82 761cf548f1c7f12c
+dir  tmp 755
+=== $
+rc=0
+--- stdout
+--- stderr
+repo-sync: using bootstrap at <short>
+repo-sync: tools: mise repo-sync git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner
+repo-sync: environments: dev
+repo-sync: skip env   .config/mise/conf.d/zz-repo/mise.ci.toml
+repo-sync: skip file  .config/mise/tasks/code/format/ruff (no pyproject.toml)
+repo-sync: skip file  .config/mise/tasks/code/lint/pyrefly (no pyproject.toml)
+repo-sync: skip file  .config/mise/tasks/code/lint/ruff (no pyproject.toml)
+repo-sync: repo/tools/pre-commit/.config/pre-commit-config.yaml.tmpl: REPO_SYNC_NO_AUTOUPDATE=1 - pre-commit autoupdate skipped
+repo-sync: updated    .config/mise.toml
+repo-sync: updated    .config/mise/conf.d/mise/mise.dev.toml
+repo-sync: updated    .config/mise/conf.d/zz-repo/mise.dev.toml
+repo-sync: updated    .config/mise/tasks/_scripts/checks
+repo-sync: updated    .config/mise/tasks/_scripts/helpers
+repo-sync: updated    .config/mise/tasks/_scripts/placeholder
+repo-sync: updated    .config/mise/tasks/_scripts/worktrees-page
+repo-sync: updated    .config/mise/tasks/code/_default
+repo-sync: updated    .config/mise/tasks/code/worktrees
+repo-sync: updated    .config/mise/tasks/setup/_default
+repo-sync: updated    .config/mise/tasks/setup/mise
+repo-sync: updated    .config/mise/tasks/setup/worktree
+repo-sync: updated    .config/mise/conf.d/repo-sync/mise.dev.toml
+repo-sync: updated    .config/mise/tasks/code/lint/repo-sync
+repo-sync: updated    .config/mise/tasks/setup/configs/_default
+repo-sync: updated    .config/git-conventional-commits.yaml
+repo-sync: updated    .config/mise/conf.d/git/mise.dev.toml
+repo-sync: updated    .config/mise/tasks/_scripts/merge
+repo-sync: updated    .config/mise/tasks/code/git-config
+repo-sync: updated    .config/mise/tasks/code/merge/_default
+repo-sync: updated    .config/wt.toml
+repo-sync: updated    .gitattributes
+repo-sync: updated    .gitignore
+repo-sync: updated    .config/mise/conf.d/python/mise.dev.toml
+repo-sync: updated    .config/mise/tasks/code/lint/uv
+repo-sync: updated    .config/mise/tasks/setup/deps/python
+repo-sync: updated    .config/mise/conf.d/pre-commit/mise.dev.toml
+repo-sync: updated    .config/mise/tasks/code/precommit
+repo-sync: updated    .config/mise/tasks/setup/precommit
+repo-sync: updated    .config/pre-commit-config.yaml
+repo-sync: updated    .config/mise/conf.d/dprint/mise.dev.toml
+repo-sync: updated    .config/mise/tasks/code/format/_default
+repo-sync: updated    .config/mise/tasks/setup/dprint
+repo-sync: updated    .config/mise/conf.d/node/mise.dev.toml
+repo-sync: updated    .config/mise/tasks/setup/deps/node
+repo-sync: updated    .config/mise/conf.d/linter/mise.dev.toml
+repo-sync: updated    .config/mise/tasks/code/lint/_default
+repo-sync: updated    .config/mise/tasks/setup/linter
+repo-sync: updated    .config/mise/conf.d/vscode/mise.dev.toml
+repo-sync: updated    .config/mise/tasks/setup/vscode
+repo-sync: updated    .vscode/extensions.json
+repo-sync: updated    .vscode/settings.json
+repo-sync: updated    .config/mise/tasks/code/sec/_default
+repo-sync: updated    .config/gitleaks.toml
+repo-sync: updated    .config/mise/conf.d/gitleaks/mise.dev.toml
+repo-sync: updated    .config/mise/tasks/code/sec/gitleaks
+repo-sync: updated    .config/grype.yaml
+repo-sync: updated    .config/mise/conf.d/grype/mise.dev.toml
+repo-sync: updated    .config/mise/tasks/code/sec/grype
+repo-sync: updated    .config/mise/conf.d/osv-scanner/mise.dev.toml
+repo-sync: updated    .config/mise/tasks/code/sec/osv-scanner
+repo-sync: updated    .config/osv-scanner.toml
+repo-sync: wrote      .config/repo-generated.tsv
+repo-sync: set bootstrap_commit <commit> in .config/bootstrap.toml
+repo-sync: done: 58/58 files in sync
++---------------+-------+
+| Changed       |     0 |
+| New           |    48 |
+| Seeded        |     5 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     4 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |    57 |
++---------------+-------+
+[OK] Synced: 53 files changed
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 174 5504b099c7cd9bd2
+file repo/.config/git-conventional-commits.yaml 644 1252 08ed9fdc95efd4c6
+file repo/.config/gitleaks.toml 644 390 d7988392533b3239
+file repo/.config/grype.yaml 644 1237 0c6d0764ac6e0205
+dir  repo/.config/mise 755
+file repo/.config/mise.toml 644 693 8e887b5526bee796
+dir  repo/.config/mise/conf.d 755
+dir  repo/.config/mise/conf.d/dprint 755
+file repo/.config/mise/conf.d/dprint/mise.dev.toml 644 179 0e595adc78426ae6
+dir  repo/.config/mise/conf.d/git 755
+file repo/.config/mise/conf.d/git/mise.dev.toml 644 179 683aa81709ed2860
+dir  repo/.config/mise/conf.d/gitleaks 755
+file repo/.config/mise/conf.d/gitleaks/mise.dev.toml 644 183 3eeb13481f9100b7
+dir  repo/.config/mise/conf.d/grype 755
+file repo/.config/mise/conf.d/grype/mise.dev.toml 644 177 9d003281bca8f42d
+dir  repo/.config/mise/conf.d/linter 755
+file repo/.config/mise/conf.d/linter/mise.dev.toml 644 310 1f11ca63def57295
+dir  repo/.config/mise/conf.d/mise 755
+file repo/.config/mise/conf.d/mise/mise.dev.toml 644 548 b297e3935e04cf9f
+dir  repo/.config/mise/conf.d/node 755
+file repo/.config/mise/conf.d/node/mise.dev.toml 644 324 d299f5b07c534ed0
+dir  repo/.config/mise/conf.d/osv-scanner 755
+file repo/.config/mise/conf.d/osv-scanner/mise.dev.toml 644 189 0c3d87895c03f4cb
+dir  repo/.config/mise/conf.d/pre-commit 755
+file repo/.config/mise/conf.d/pre-commit/mise.dev.toml 644 320 ccc83f42f19fc6f8
+dir  repo/.config/mise/conf.d/python 755
+file repo/.config/mise/conf.d/python/mise.dev.toml 644 418 180c6857742b38d6
+dir  repo/.config/mise/conf.d/repo-sync 755
+file repo/.config/mise/conf.d/repo-sync/mise.dev.toml 644 184 e71efb584bed4132
+dir  repo/.config/mise/conf.d/vscode 755
+file repo/.config/mise/conf.d/vscode/mise.dev.toml 644 262 928d18ae0f86d476
+dir  repo/.config/mise/conf.d/zz-repo 755
+file repo/.config/mise/conf.d/zz-repo/mise.dev.toml 644 263 2b09fdc2147704c1
+dir  repo/.config/mise/tasks 755
+dir  repo/.config/mise/tasks/_scripts 755
+file repo/.config/mise/tasks/_scripts/checks 755 3425 d4d52c4a94dbaa1e
+file repo/.config/mise/tasks/_scripts/helpers 755 12598 b78ec84eb4873b77
+file repo/.config/mise/tasks/_scripts/merge 755 17353 fbd5bde151398670
+file repo/.config/mise/tasks/_scripts/placeholder 755 2910 4b487469c5cf733e
+file repo/.config/mise/tasks/_scripts/worktrees-page 755 15191 8a79902db685056c
+dir  repo/.config/mise/tasks/code 755
+file repo/.config/mise/tasks/code/_default 755 633 f08a468c295c47c4
+dir  repo/.config/mise/tasks/code/format 755
+file repo/.config/mise/tasks/code/format/_default 755 1543 5cd1cfbe8795e657
+file repo/.config/mise/tasks/code/git-config 755 1348 504443e2a6b639c1
+dir  repo/.config/mise/tasks/code/lint 755
+file repo/.config/mise/tasks/code/lint/_default 755 1997 81c279ff71dada89
+file repo/.config/mise/tasks/code/lint/repo-sync 755 2592 48999c648bbaf992
+file repo/.config/mise/tasks/code/lint/uv 755 2008 a394b08a3ef18226
+dir  repo/.config/mise/tasks/code/merge 755
+file repo/.config/mise/tasks/code/merge/_default 755 1353 0535f4d9436deb75
+file repo/.config/mise/tasks/code/precommit 755 465 ee74cf3c86d251fb
+dir  repo/.config/mise/tasks/code/sec 755
+file repo/.config/mise/tasks/code/sec/_default 755 1701 3d2a7c147f2e3c07
+file repo/.config/mise/tasks/code/sec/gitleaks 755 1942 a5e87bc751491ed6
+file repo/.config/mise/tasks/code/sec/grype 755 1215 784876f1c50db899
+file repo/.config/mise/tasks/code/sec/osv-scanner 755 1558 b7fdf9f9008d628b
+file repo/.config/mise/tasks/code/worktrees 755 31581 71ad5f80ce705b06
+dir  repo/.config/mise/tasks/setup 755
+file repo/.config/mise/tasks/setup/_default 755 1758 e249db1f9f16b813
+dir  repo/.config/mise/tasks/setup/configs 755
+file repo/.config/mise/tasks/setup/configs/_default 755 12014 d78937a5157e131c
+dir  repo/.config/mise/tasks/setup/deps 755
+file repo/.config/mise/tasks/setup/deps/node 755 3071 2b1cf3d9b92d6435
+file repo/.config/mise/tasks/setup/deps/python 755 1059 8ece5b3a0b7394fe
+file repo/.config/mise/tasks/setup/dprint 755 581 8b238d021b77fbd9
+file repo/.config/mise/tasks/setup/linter 755 405 168ff395ac2c687c
+file repo/.config/mise/tasks/setup/mise 755 914 6659e7ef65498b06
+file repo/.config/mise/tasks/setup/precommit 755 852 aa2b15f13f10996a
+file repo/.config/mise/tasks/setup/vscode 755 8367 9892e16163508890
+file repo/.config/mise/tasks/setup/worktree 755 1229 a301a85e2fb4e0b5
+file repo/.config/osv-scanner.toml 644 1066 4a157af855451a64
+file repo/.config/pre-commit-config.yaml 644 4351 c2dc0ae89de7b9e5
+file repo/.config/repo-generated.tsv 644 2034 c4d838c9471c1cda
+file repo/.config/wt.toml 644 718 d59f757dca025214
+file repo/.gitattributes 644 902 04f1ddcf733eeb9b
+file repo/.gitignore 644 5956 524b4bb91d79294b
+dir  repo/.vscode 755
+file repo/.vscode/extensions.json 644 805 e4def82cb1d3967b
+file repo/.vscode/settings.json 644 5005 16948f49773b0110
+dir  tmp 755
+=== $
+rc=0
+--- stdout
+--- stderr
+repo-sync: using bootstrap at <short>
+repo-sync: tools: mise repo-sync git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner
+repo-sync: environments: dev
+repo-sync: skip env   .config/mise/conf.d/zz-repo/mise.ci.toml
+repo-sync: kept seed  .config/mise/conf.d/zz-repo/mise.dev.toml
+repo-sync: kept seed  .config/wt.toml
+repo-sync: skip file  .config/mise/tasks/code/format/ruff (no pyproject.toml)
+repo-sync: skip file  .config/mise/tasks/code/lint/pyrefly (no pyproject.toml)
+repo-sync: skip file  .config/mise/tasks/code/lint/ruff (no pyproject.toml)
+repo-sync: repo/tools/pre-commit/.config/pre-commit-config.yaml.tmpl: REPO_SYNC_NO_AUTOUPDATE=1 - pre-commit autoupdate skipped
+repo-sync: kept seed  .config/gitleaks.toml
+repo-sync: kept seed  .config/grype.yaml
+repo-sync: kept seed  .config/osv-scanner.toml
+repo-sync: unchanged  .config/mise.toml
+repo-sync: updated    .config/mise/conf.d/mise/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/_scripts/checks
+repo-sync: unchanged  .config/mise/tasks/_scripts/helpers
+repo-sync: unchanged  .config/mise/tasks/_scripts/placeholder
+repo-sync: unchanged  .config/mise/tasks/_scripts/worktrees-page
+repo-sync: unchanged  .config/mise/tasks/code/_default
+repo-sync: unchanged  .config/mise/tasks/code/worktrees
+repo-sync: unchanged  .config/mise/tasks/setup/_default
+repo-sync: unchanged  .config/mise/tasks/setup/mise
+repo-sync: unchanged  .config/mise/tasks/setup/worktree
+repo-sync: updated    .config/mise/conf.d/repo-sync/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/lint/repo-sync
+repo-sync: updated    .config/mise/tasks/setup/configs/_default
+repo-sync: unchanged  .config/git-conventional-commits.yaml
+repo-sync: updated    .config/mise/conf.d/git/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/_scripts/merge
+repo-sync: unchanged  .config/mise/tasks/code/git-config
+repo-sync: unchanged  .config/mise/tasks/code/merge/_default
+repo-sync: unchanged  .gitattributes
+repo-sync: unchanged  .gitignore
+repo-sync: updated    .config/mise/conf.d/python/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/lint/uv
+repo-sync: unchanged  .config/mise/tasks/setup/deps/python
+repo-sync: updated    .config/mise/conf.d/pre-commit/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/precommit
+repo-sync: unchanged  .config/mise/tasks/setup/precommit
+repo-sync: unchanged  .config/pre-commit-config.yaml
+repo-sync: updated    .config/mise/conf.d/dprint/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/format/_default
+repo-sync: unchanged  .config/mise/tasks/setup/dprint
+repo-sync: updated    .config/mise/conf.d/node/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/setup/deps/node
+repo-sync: updated    .config/mise/conf.d/linter/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/lint/_default
+repo-sync: unchanged  .config/mise/tasks/setup/linter
+repo-sync: updated    .config/mise/conf.d/vscode/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/setup/vscode
+repo-sync: unchanged  .vscode/extensions.json
+repo-sync: unchanged  .vscode/settings.json
+repo-sync: unchanged  .config/mise/tasks/code/sec/_default
+repo-sync: updated    .config/mise/conf.d/gitleaks/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/sec/gitleaks
+repo-sync: updated    .config/mise/conf.d/grype/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/sec/grype
+repo-sync: updated    .config/mise/conf.d/osv-scanner/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/sec/osv-scanner
+repo-sync: done: 58/58 files in sync
++---------------+-------+
+| Changed       |    13 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |    34 |
+| Kept seeds    |     5 |
+| Skipped       |     4 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |    56 |
++---------------+-------+
+[OK] Synced: 13 files changed
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 174 5504b099c7cd9bd2
+file repo/.config/git-conventional-commits.yaml 644 1252 08ed9fdc95efd4c6
+file repo/.config/gitleaks.toml 644 390 d7988392533b3239
+file repo/.config/grype.yaml 644 1237 0c6d0764ac6e0205
+dir  repo/.config/mise 755
+file repo/.config/mise.toml 644 693 8e887b5526bee796
+dir  repo/.config/mise/conf.d 755
+dir  repo/.config/mise/conf.d/dprint 755
+file repo/.config/mise/conf.d/dprint/mise.dev.toml 644 185 7f9f26624f124c04
+dir  repo/.config/mise/conf.d/git 755
+file repo/.config/mise/conf.d/git/mise.dev.toml 644 185 6e084dab09e6a712
+dir  repo/.config/mise/conf.d/gitleaks 755
+file repo/.config/mise/conf.d/gitleaks/mise.dev.toml 644 189 6516ef5c3821eabb
+dir  repo/.config/mise/conf.d/grype 755
+file repo/.config/mise/conf.d/grype/mise.dev.toml 644 183 ddf80091494d8ea7
+dir  repo/.config/mise/conf.d/linter 755
+file repo/.config/mise/conf.d/linter/mise.dev.toml 644 332 3218c58da1957137
+dir  repo/.config/mise/conf.d/mise 755
+file repo/.config/mise/conf.d/mise/mise.dev.toml 644 586 5bc7b965c1922fd3
+dir  repo/.config/mise/conf.d/node 755
+file repo/.config/mise/conf.d/node/mise.dev.toml 644 360 0385f68228a4033e
+dir  repo/.config/mise/conf.d/osv-scanner 755
+file repo/.config/mise/conf.d/osv-scanner/mise.dev.toml 644 195 21bbe7e1b9196497
+dir  repo/.config/mise/conf.d/pre-commit 755
+file repo/.config/mise/conf.d/pre-commit/mise.dev.toml 644 332 82b75a12448666ac
+dir  repo/.config/mise/conf.d/python 755
+file repo/.config/mise/conf.d/python/mise.dev.toml 644 454 e20c9a881e44bd0c
+dir  repo/.config/mise/conf.d/repo-sync 755
+file repo/.config/mise/conf.d/repo-sync/mise.dev.toml 644 190 868d68d4e1cd1e5a
+dir  repo/.config/mise/conf.d/vscode 755
+file repo/.config/mise/conf.d/vscode/mise.dev.toml 644 264 6fd09d7e49f51f43
+dir  repo/.config/mise/conf.d/zz-repo 755
+file repo/.config/mise/conf.d/zz-repo/mise.dev.toml 644 263 2b09fdc2147704c1
+dir  repo/.config/mise/tasks 755
+dir  repo/.config/mise/tasks/_scripts 755
+file repo/.config/mise/tasks/_scripts/checks 755 3425 d4d52c4a94dbaa1e
+file repo/.config/mise/tasks/_scripts/helpers 755 12598 b78ec84eb4873b77
+file repo/.config/mise/tasks/_scripts/merge 755 17353 fbd5bde151398670
+file repo/.config/mise/tasks/_scripts/placeholder 755 2910 4b487469c5cf733e
+file repo/.config/mise/tasks/_scripts/worktrees-page 755 15191 8a79902db685056c
+dir  repo/.config/mise/tasks/code 755
+file repo/.config/mise/tasks/code/_default 755 633 f08a468c295c47c4
+dir  repo/.config/mise/tasks/code/format 755
+file repo/.config/mise/tasks/code/format/_default 755 1543 5cd1cfbe8795e657
+file repo/.config/mise/tasks/code/git-config 755 1348 504443e2a6b639c1
+dir  repo/.config/mise/tasks/code/lint 755
+file repo/.config/mise/tasks/code/lint/_default 755 1997 81c279ff71dada89
+file repo/.config/mise/tasks/code/lint/repo-sync 755 2592 48999c648bbaf992
+file repo/.config/mise/tasks/code/lint/uv 755 2008 a394b08a3ef18226
+dir  repo/.config/mise/tasks/code/merge 755
+file repo/.config/mise/tasks/code/merge/_default 755 1353 0535f4d9436deb75
+file repo/.config/mise/tasks/code/precommit 755 465 ee74cf3c86d251fb
+dir  repo/.config/mise/tasks/code/sec 755
+file repo/.config/mise/tasks/code/sec/_default 755 1701 3d2a7c147f2e3c07
+file repo/.config/mise/tasks/code/sec/gitleaks 755 1942 a5e87bc751491ed6
+file repo/.config/mise/tasks/code/sec/grype 755 1215 784876f1c50db899
+file repo/.config/mise/tasks/code/sec/osv-scanner 755 1558 b7fdf9f9008d628b
+file repo/.config/mise/tasks/code/worktrees 755 31581 71ad5f80ce705b06
+dir  repo/.config/mise/tasks/setup 755
+file repo/.config/mise/tasks/setup/_default 755 1758 e249db1f9f16b813
+dir  repo/.config/mise/tasks/setup/configs 755
+file repo/.config/mise/tasks/setup/configs/_default 755 11994 ef3e7bcd022ac560
+dir  repo/.config/mise/tasks/setup/deps 755
+file repo/.config/mise/tasks/setup/deps/node 755 3071 2b1cf3d9b92d6435
+file repo/.config/mise/tasks/setup/deps/python 755 1059 8ece5b3a0b7394fe
+file repo/.config/mise/tasks/setup/dprint 755 581 8b238d021b77fbd9
+file repo/.config/mise/tasks/setup/linter 755 405 168ff395ac2c687c
+file repo/.config/mise/tasks/setup/mise 755 914 6659e7ef65498b06
+file repo/.config/mise/tasks/setup/precommit 755 852 aa2b15f13f10996a
+file repo/.config/mise/tasks/setup/vscode 755 8367 9892e16163508890
+file repo/.config/mise/tasks/setup/worktree 755 1229 a301a85e2fb4e0b5
+file repo/.config/osv-scanner.toml 644 1066 4a157af855451a64
+file repo/.config/pre-commit-config.yaml 644 4351 c2dc0ae89de7b9e5
+file repo/.config/repo-generated.tsv 644 2034 c4d838c9471c1cda
+file repo/.config/wt.toml 644 718 d59f757dca025214
+file repo/.gitattributes 644 902 04f1ddcf733eeb9b
+file repo/.gitignore 644 5956 524b4bb91d79294b
+dir  repo/.vscode 755
+file repo/.vscode/extensions.json 644 805 e4def82cb1d3967b
+file repo/.vscode/settings.json 644 5005 16948f49773b0110
+dir  tmp 755
+=== --dry-run
+rc=0
+--- stdout
+--- stderr
+repo-sync: using bootstrap at <short>
+repo-sync: tools: mise repo-sync git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner
+repo-sync: environments: dev
+repo-sync: skip env   .config/mise/conf.d/zz-repo/mise.ci.toml
+repo-sync: kept seed  .config/mise/conf.d/zz-repo/mise.dev.toml
+repo-sync: kept seed  .config/wt.toml
+repo-sync: skip file  .config/mise/tasks/code/format/ruff (no pyproject.toml)
+repo-sync: skip file  .config/mise/tasks/code/lint/pyrefly (no pyproject.toml)
+repo-sync: skip file  .config/mise/tasks/code/lint/ruff (no pyproject.toml)
+repo-sync: repo/tools/pre-commit/.config/pre-commit-config.yaml.tmpl: REPO_SYNC_NO_AUTOUPDATE=1 - pre-commit autoupdate skipped
+repo-sync: kept seed  .config/gitleaks.toml
+repo-sync: kept seed  .config/grype.yaml
+repo-sync: kept seed  .config/osv-scanner.toml
+repo-sync: unchanged  .config/mise.toml
+repo-sync: unchanged  .config/mise/conf.d/mise/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/_scripts/checks
+repo-sync: unchanged  .config/mise/tasks/_scripts/helpers
+repo-sync: unchanged  .config/mise/tasks/_scripts/placeholder
+repo-sync: unchanged  .config/mise/tasks/_scripts/worktrees-page
+repo-sync: unchanged  .config/mise/tasks/code/_default
+repo-sync: unchanged  .config/mise/tasks/code/worktrees
+repo-sync: unchanged  .config/mise/tasks/setup/_default
+repo-sync: unchanged  .config/mise/tasks/setup/mise
+repo-sync: unchanged  .config/mise/tasks/setup/worktree
+repo-sync: unchanged  .config/mise/conf.d/repo-sync/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/lint/repo-sync
+repo-sync: unchanged  .config/mise/tasks/setup/configs/_default
+repo-sync: unchanged  .config/git-conventional-commits.yaml
+repo-sync: unchanged  .config/mise/conf.d/git/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/_scripts/merge
+repo-sync: unchanged  .config/mise/tasks/code/git-config
+repo-sync: unchanged  .config/mise/tasks/code/merge/_default
+repo-sync: unchanged  .gitattributes
+repo-sync: unchanged  .gitignore
+repo-sync: unchanged  .config/mise/conf.d/python/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/lint/uv
+repo-sync: unchanged  .config/mise/tasks/setup/deps/python
+repo-sync: unchanged  .config/mise/conf.d/pre-commit/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/precommit
+repo-sync: unchanged  .config/mise/tasks/setup/precommit
+repo-sync: unchanged  .config/pre-commit-config.yaml
+repo-sync: unchanged  .config/mise/conf.d/dprint/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/format/_default
+repo-sync: unchanged  .config/mise/tasks/setup/dprint
+repo-sync: unchanged  .config/mise/conf.d/node/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/setup/deps/node
+repo-sync: unchanged  .config/mise/conf.d/linter/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/lint/_default
+repo-sync: unchanged  .config/mise/tasks/setup/linter
+repo-sync: unchanged  .config/mise/conf.d/vscode/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/setup/vscode
+repo-sync: unchanged  .vscode/extensions.json
+repo-sync: unchanged  .vscode/settings.json
+repo-sync: unchanged  .config/mise/tasks/code/sec/_default
+repo-sync: unchanged  .config/mise/conf.d/gitleaks/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/sec/gitleaks
+repo-sync: unchanged  .config/mise/conf.d/grype/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/sec/grype
+repo-sync: unchanged  .config/mise/conf.d/osv-scanner/mise.dev.toml
+repo-sync: unchanged  .config/mise/tasks/code/sec/osv-scanner
+repo-sync: done: 58/58 files in sync
++---------------+-------+
+| Changed       |     0 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |    47 |
+| Kept seeds    |     5 |
+| Skipped       |     4 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |    56 |
++---------------+-------+
+[OK] Dry run: no file would change
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 174 5504b099c7cd9bd2
+file repo/.config/git-conventional-commits.yaml 644 1252 08ed9fdc95efd4c6
+file repo/.config/gitleaks.toml 644 390 d7988392533b3239
+file repo/.config/grype.yaml 644 1237 0c6d0764ac6e0205
+dir  repo/.config/mise 755
+file repo/.config/mise.toml 644 693 8e887b5526bee796
+dir  repo/.config/mise/conf.d 755
+dir  repo/.config/mise/conf.d/dprint 755
+file repo/.config/mise/conf.d/dprint/mise.dev.toml 644 185 7f9f26624f124c04
+dir  repo/.config/mise/conf.d/git 755
+file repo/.config/mise/conf.d/git/mise.dev.toml 644 185 6e084dab09e6a712
+dir  repo/.config/mise/conf.d/gitleaks 755
+file repo/.config/mise/conf.d/gitleaks/mise.dev.toml 644 189 6516ef5c3821eabb
+dir  repo/.config/mise/conf.d/grype 755
+file repo/.config/mise/conf.d/grype/mise.dev.toml 644 183 ddf80091494d8ea7
+dir  repo/.config/mise/conf.d/linter 755
+file repo/.config/mise/conf.d/linter/mise.dev.toml 644 332 3218c58da1957137
+dir  repo/.config/mise/conf.d/mise 755
+file repo/.config/mise/conf.d/mise/mise.dev.toml 644 586 5bc7b965c1922fd3
+dir  repo/.config/mise/conf.d/node 755
+file repo/.config/mise/conf.d/node/mise.dev.toml 644 360 0385f68228a4033e
+dir  repo/.config/mise/conf.d/osv-scanner 755
+file repo/.config/mise/conf.d/osv-scanner/mise.dev.toml 644 195 21bbe7e1b9196497
+dir  repo/.config/mise/conf.d/pre-commit 755
+file repo/.config/mise/conf.d/pre-commit/mise.dev.toml 644 332 82b75a12448666ac
+dir  repo/.config/mise/conf.d/python 755
+file repo/.config/mise/conf.d/python/mise.dev.toml 644 454 e20c9a881e44bd0c
+dir  repo/.config/mise/conf.d/repo-sync 755
+file repo/.config/mise/conf.d/repo-sync/mise.dev.toml 644 190 868d68d4e1cd1e5a
+dir  repo/.config/mise/conf.d/vscode 755
+file repo/.config/mise/conf.d/vscode/mise.dev.toml 644 264 6fd09d7e49f51f43
+dir  repo/.config/mise/conf.d/zz-repo 755
+file repo/.config/mise/conf.d/zz-repo/mise.dev.toml 644 263 2b09fdc2147704c1
+dir  repo/.config/mise/tasks 755
+dir  repo/.config/mise/tasks/_scripts 755
+file repo/.config/mise/tasks/_scripts/checks 755 3425 d4d52c4a94dbaa1e
+file repo/.config/mise/tasks/_scripts/helpers 755 12598 b78ec84eb4873b77
+file repo/.config/mise/tasks/_scripts/merge 755 17353 fbd5bde151398670
+file repo/.config/mise/tasks/_scripts/placeholder 755 2910 4b487469c5cf733e
+file repo/.config/mise/tasks/_scripts/worktrees-page 755 15191 8a79902db685056c
+dir  repo/.config/mise/tasks/code 755
+file repo/.config/mise/tasks/code/_default 755 633 f08a468c295c47c4
+dir  repo/.config/mise/tasks/code/format 755
+file repo/.config/mise/tasks/code/format/_default 755 1543 5cd1cfbe8795e657
+file repo/.config/mise/tasks/code/git-config 755 1348 504443e2a6b639c1
+dir  repo/.config/mise/tasks/code/lint 755
+file repo/.config/mise/tasks/code/lint/_default 755 1997 81c279ff71dada89
+file repo/.config/mise/tasks/code/lint/repo-sync 755 2592 48999c648bbaf992
+file repo/.config/mise/tasks/code/lint/uv 755 2008 a394b08a3ef18226
+dir  repo/.config/mise/tasks/code/merge 755
+file repo/.config/mise/tasks/code/merge/_default 755 1353 0535f4d9436deb75
+file repo/.config/mise/tasks/code/precommit 755 465 ee74cf3c86d251fb
+dir  repo/.config/mise/tasks/code/sec 755
+file repo/.config/mise/tasks/code/sec/_default 755 1701 3d2a7c147f2e3c07
+file repo/.config/mise/tasks/code/sec/gitleaks 755 1942 a5e87bc751491ed6
+file repo/.config/mise/tasks/code/sec/grype 755 1215 784876f1c50db899
+file repo/.config/mise/tasks/code/sec/osv-scanner 755 1558 b7fdf9f9008d628b
+file repo/.config/mise/tasks/code/worktrees 755 31581 71ad5f80ce705b06
+dir  repo/.config/mise/tasks/setup 755
+file repo/.config/mise/tasks/setup/_default 755 1758 e249db1f9f16b813
+dir  repo/.config/mise/tasks/setup/configs 755
+file repo/.config/mise/tasks/setup/configs/_default 755 11994 ef3e7bcd022ac560
+dir  repo/.config/mise/tasks/setup/deps 755
+file repo/.config/mise/tasks/setup/deps/node 755 3071 2b1cf3d9b92d6435
+file repo/.config/mise/tasks/setup/deps/python 755 1059 8ece5b3a0b7394fe
+file repo/.config/mise/tasks/setup/dprint 755 581 8b238d021b77fbd9
+file repo/.config/mise/tasks/setup/linter 755 405 168ff395ac2c687c
+file repo/.config/mise/tasks/setup/mise 755 914 6659e7ef65498b06
+file repo/.config/mise/tasks/setup/precommit 755 852 aa2b15f13f10996a
+file repo/.config/mise/tasks/setup/vscode 755 8367 9892e16163508890
+file repo/.config/mise/tasks/setup/worktree 755 1229 a301a85e2fb4e0b5
+file repo/.config/osv-scanner.toml 644 1066 4a157af855451a64
+file repo/.config/pre-commit-config.yaml 644 4351 c2dc0ae89de7b9e5
+file repo/.config/repo-generated.tsv 644 2034 c4d838c9471c1cda
+file repo/.config/wt.toml 644 718 d59f757dca025214
+file repo/.gitattributes 644 902 04f1ddcf733eeb9b
+file repo/.gitignore 644 5956 524b4bb91d79294b
+dir  repo/.vscode 755
+file repo/.vscode/extensions.json 644 805 e4def82cb1d3967b
+file repo/.vscode/settings.json 644 5005 16948f49773b0110
+dir  tmp 755
+=== --check
+rc=0
+--- stdout
+--- stderr
+repo-sync: .config/bootstrap.toml: valid (local rules)
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 174 5504b099c7cd9bd2
+file repo/.config/git-conventional-commits.yaml 644 1252 08ed9fdc95efd4c6
+file repo/.config/gitleaks.toml 644 390 d7988392533b3239
+file repo/.config/grype.yaml 644 1237 0c6d0764ac6e0205
+dir  repo/.config/mise 755
+file repo/.config/mise.toml 644 693 8e887b5526bee796
+dir  repo/.config/mise/conf.d 755
+dir  repo/.config/mise/conf.d/dprint 755
+file repo/.config/mise/conf.d/dprint/mise.dev.toml 644 185 7f9f26624f124c04
+dir  repo/.config/mise/conf.d/git 755
+file repo/.config/mise/conf.d/git/mise.dev.toml 644 185 6e084dab09e6a712
+dir  repo/.config/mise/conf.d/gitleaks 755
+file repo/.config/mise/conf.d/gitleaks/mise.dev.toml 644 189 6516ef5c3821eabb
+dir  repo/.config/mise/conf.d/grype 755
+file repo/.config/mise/conf.d/grype/mise.dev.toml 644 183 ddf80091494d8ea7
+dir  repo/.config/mise/conf.d/linter 755
+file repo/.config/mise/conf.d/linter/mise.dev.toml 644 332 3218c58da1957137
+dir  repo/.config/mise/conf.d/mise 755
+file repo/.config/mise/conf.d/mise/mise.dev.toml 644 586 5bc7b965c1922fd3
+dir  repo/.config/mise/conf.d/node 755
+file repo/.config/mise/conf.d/node/mise.dev.toml 644 360 0385f68228a4033e
+dir  repo/.config/mise/conf.d/osv-scanner 755
+file repo/.config/mise/conf.d/osv-scanner/mise.dev.toml 644 195 21bbe7e1b9196497
+dir  repo/.config/mise/conf.d/pre-commit 755
+file repo/.config/mise/conf.d/pre-commit/mise.dev.toml 644 332 82b75a12448666ac
+dir  repo/.config/mise/conf.d/python 755
+file repo/.config/mise/conf.d/python/mise.dev.toml 644 454 e20c9a881e44bd0c
+dir  repo/.config/mise/conf.d/repo-sync 755
+file repo/.config/mise/conf.d/repo-sync/mise.dev.toml 644 190 868d68d4e1cd1e5a
+dir  repo/.config/mise/conf.d/vscode 755
+file repo/.config/mise/conf.d/vscode/mise.dev.toml 644 264 6fd09d7e49f51f43
+dir  repo/.config/mise/conf.d/zz-repo 755
+file repo/.config/mise/conf.d/zz-repo/mise.dev.toml 644 263 2b09fdc2147704c1
+dir  repo/.config/mise/tasks 755
+dir  repo/.config/mise/tasks/_scripts 755
+file repo/.config/mise/tasks/_scripts/checks 755 3425 d4d52c4a94dbaa1e
+file repo/.config/mise/tasks/_scripts/helpers 755 12598 b78ec84eb4873b77
+file repo/.config/mise/tasks/_scripts/merge 755 17353 fbd5bde151398670
+file repo/.config/mise/tasks/_scripts/placeholder 755 2910 4b487469c5cf733e
+file repo/.config/mise/tasks/_scripts/worktrees-page 755 15191 8a79902db685056c
+dir  repo/.config/mise/tasks/code 755
+file repo/.config/mise/tasks/code/_default 755 633 f08a468c295c47c4
+dir  repo/.config/mise/tasks/code/format 755
+file repo/.config/mise/tasks/code/format/_default 755 1543 5cd1cfbe8795e657
+file repo/.config/mise/tasks/code/git-config 755 1348 504443e2a6b639c1
+dir  repo/.config/mise/tasks/code/lint 755
+file repo/.config/mise/tasks/code/lint/_default 755 1997 81c279ff71dada89
+file repo/.config/mise/tasks/code/lint/repo-sync 755 2592 48999c648bbaf992
+file repo/.config/mise/tasks/code/lint/uv 755 2008 a394b08a3ef18226
+dir  repo/.config/mise/tasks/code/merge 755
+file repo/.config/mise/tasks/code/merge/_default 755 1353 0535f4d9436deb75
+file repo/.config/mise/tasks/code/precommit 755 465 ee74cf3c86d251fb
+dir  repo/.config/mise/tasks/code/sec 755
+file repo/.config/mise/tasks/code/sec/_default 755 1701 3d2a7c147f2e3c07
+file repo/.config/mise/tasks/code/sec/gitleaks 755 1942 a5e87bc751491ed6
+file repo/.config/mise/tasks/code/sec/grype 755 1215 784876f1c50db899
+file repo/.config/mise/tasks/code/sec/osv-scanner 755 1558 b7fdf9f9008d628b
+file repo/.config/mise/tasks/code/worktrees 755 31581 71ad5f80ce705b06
+dir  repo/.config/mise/tasks/setup 755
+file repo/.config/mise/tasks/setup/_default 755 1758 e249db1f9f16b813
+dir  repo/.config/mise/tasks/setup/configs 755
+file repo/.config/mise/tasks/setup/configs/_default 755 11994 ef3e7bcd022ac560
+dir  repo/.config/mise/tasks/setup/deps 755
+file repo/.config/mise/tasks/setup/deps/node 755 3071 2b1cf3d9b92d6435
+file repo/.config/mise/tasks/setup/deps/python 755 1059 8ece5b3a0b7394fe
+file repo/.config/mise/tasks/setup/dprint 755 581 8b238d021b77fbd9
+file repo/.config/mise/tasks/setup/linter 755 405 168ff395ac2c687c
+file repo/.config/mise/tasks/setup/mise 755 914 6659e7ef65498b06
+file repo/.config/mise/tasks/setup/precommit 755 852 aa2b15f13f10996a
+file repo/.config/mise/tasks/setup/vscode 755 8367 9892e16163508890
+file repo/.config/mise/tasks/setup/worktree 755 1229 a301a85e2fb4e0b5
+file repo/.config/osv-scanner.toml 644 1066 4a157af855451a64
+file repo/.config/pre-commit-config.yaml 644 4351 c2dc0ae89de7b9e5
+file repo/.config/repo-generated.tsv 644 2034 c4d838c9471c1cda
+file repo/.config/wt.toml 644 718 d59f757dca025214
+file repo/.gitattributes 644 902 04f1ddcf733eeb9b
+file repo/.gitignore 644 5956 524b4bb91d79294b
+dir  repo/.vscode 755
+file repo/.vscode/extensions.json 644 805 e4def82cb1d3967b
+file repo/.vscode/settings.json 644 5005 16948f49773b0110
+dir  tmp 755
+--- end

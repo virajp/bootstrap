@@ -6,6 +6,6 @@
   "remove": "[[\"gone\"],[\"nested\",\"old\"],[\"absent\",\"path\"]]",
   "remove_items": "[{\"path\":[\"list\"],\"items\":[\"drop\",{\"j\":2,\"k\":1}]},{\"path\":[\"keep\"],\"items\":[\"app\"]}]",
   "rc": 2,
-  "stderr": "jq: error (at /var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestMergeGolden2088049536/069/live:1): more than one JSON value\nx: ~/.config/merger/m.json is not valid json - kept it as it is\n",
+  "stderr": "jq: error (at /var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestMergeGolden3055457462/069/live:1): more than one JSON value\nx: ~/.config/merger/m.json is not valid json - kept it as it is\n",
   "out": null
 }

@@ -1,4 +1,4 @@
-fingerprint: 6abd33c9ec8841d81b2b2fb2311d0d5b31371b7d1045660e5683d494157214de
+fingerprint: 7a32d69a9b5b9e87cd15afe9da538b5546cd72437baf9616fbfec010211abe94
 rc=2
 --- stderr
 repo-sync: repo/tools/a/tools.toml: [questions.q1] foo is not a key of a question - the keys are question, detect and example

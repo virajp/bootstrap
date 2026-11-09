@@ -4,9 +4,10 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
 	"io"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"sort"
@@ -20,9 +21,9 @@ import (
 // template file (folder c.*): the source path, the JSON context, the flag
 // --missing-key and the output. For an inline template (folder i.*): the
 // template, the files of the -c flags, the environment variables of the engine,
-// the output and the error. The script testdata/capture.sh writes it from the
-// bash engine. To write it again, run: UPDATE_GOLDEN=1 go test ./internal/tmpl
-// The scratch folder of the capture is @TMP@ in the files.
+// the output and the error. A capture of the bash engine wrote it, before the
+// removal of that engine, so nothing can write it again. The scratch folder of
+// the capture is @TMP@ in the files.
 
 const rendersFile = "testdata/renders.tar.gz"
 
@@ -34,7 +35,9 @@ type render struct {
 
 func (r render) get(n string) string { return r.files[n] }
 
-var loadRenders = sync.OnceValues(func() ([]render, error) {
+var loadRenders = sync.OnceValues(readRenders)
+
+func readRenders() ([]render, error) {
 	f, err := os.Open(rendersFile)
 	if err != nil {
 		return nil, err
@@ -80,7 +83,37 @@ var loadRenders = sync.OnceValues(func() ([]render, error) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].name < out[j].name })
 	return out, nil
-})
+}
+
+// sourcesFile holds the sha256 of each source file of the captured renders,
+// at the time of the capture. A source with another hash now is old: its
+// captured output can be wrong.
+const sourcesFile = "testdata/renders.sources"
+
+func hashFile(p string) string {
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return "-"
+	}
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
+}
+
+// readSources reads sourcesFile: the source path to its hash.
+func readSources(t testing.TB) map[string]string {
+	t.Helper()
+	b, err := os.ReadFile(sourcesFile)
+	if err != nil {
+		t.Fatalf("%v (the archive and %s go together)", err, sourcesFile)
+	}
+	m := map[string]string{}
+	for _, l := range strings.Split(strings.TrimSpace(string(b)), "\n") {
+		if h, p, ok := strings.Cut(l, " "); ok {
+			m[p] = h
+		}
+	}
+	return m
+}
 
 // repoRoot is the root of the bootstrap repository.
 func repoRoot(t testing.TB) string {
@@ -92,26 +125,12 @@ func repoRoot(t testing.TB) string {
 	return root
 }
 
-func TestUpdateFilesGolden(t *testing.T) {
-	if os.Getenv("UPDATE_GOLDEN") != "1" {
-		t.Skip("set UPDATE_GOLDEN=1 to write the golden files")
-	}
-	root := repoRoot(t)
-	cmd := exec.Command("bash", filepath.Join(root, "sync-engine", "internal", "tmpl", "testdata", "capture.sh"),
-		filepath.Join(root, "sync-engine", "internal", "tmpl", rendersFile))
-	cmd.Dir = root
-	cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
-	if err := cmd.Run(); err != nil {
-		t.Fatal(err)
-	}
-}
-
 // fileCases returns the renders of template files.
 func fileCases(t testing.TB) []render {
 	t.Helper()
 	all, err := loadRenders()
 	if err != nil {
-		t.Fatalf("%v (run UPDATE_GOLDEN=1 go test ./internal/tmpl)", err)
+		t.Fatal(err)
 	}
 	var out []render
 	for _, r := range all {
@@ -155,14 +174,20 @@ func renderFileCase(t testing.TB, root, tmp string, c render) ([]byte, error) {
 func TestTemplateFiles(t *testing.T) {
 	cases := fileCases(t)
 	if len(cases) == 0 {
-		t.Fatal("no captured renders: run UPDATE_GOLDEN=1 go test ./internal/tmpl")
+		t.Fatal("no captured renders")
 	}
 	root := repoRoot(t)
 	tmp := scratch(t)
+	sources := readSources(t)
 	equal := map[string]int{}
+	stale := map[string]bool{}
 	for _, c := range cases {
-		got, err := renderFileCase(t, root, tmp, c)
 		src := c.get("src")
+		if sources[src] != hashFile(filepath.Join(root, src)) {
+			stale[src] = true
+			continue
+		}
+		got, err := renderFileCase(t, root, tmp, c)
 		if c.get("rc") != "0" {
 			if err == nil {
 				t.Errorf("%s (%s): gomplate failed, Go did not", c.name, src)
@@ -181,14 +206,17 @@ func TestTemplateFiles(t *testing.T) {
 		equal[src]++
 	}
 	// The template files of the repository: each must be in the captures.
-	var missing []string
+	var missing, old []string
 	n := 0
 	for _, base := range []string{"repo", "macos"} {
 		_ = filepath.WalkDir(filepath.Join(root, base), func(p string, d os.DirEntry, err error) error {
 			if err == nil && !d.IsDir() && strings.HasSuffix(p, ".tmpl") {
 				n++
 				rel, _ := filepath.Rel(root, p)
-				if equal[rel] == 0 {
+				switch {
+				case stale[rel]:
+					old = append(old, rel)
+				case equal[rel] == 0:
 					missing = append(missing, rel)
 				}
 			}
@@ -196,9 +224,27 @@ func TestTemplateFiles(t *testing.T) {
 		})
 	}
 	t.Logf("%d of %d templates (.tmpl files) byte-equal, in %d contexts; %d of the captured files are tools.toml files",
-		n-len(missing), n, len(cases), countSuffix(equal, "tools.toml"))
+		n-len(missing)-len(old), n, len(cases), countSuffix(equal, "tools.toml"))
 	for _, m := range missing {
+		if _, has := sources[m]; !has {
+			old = append(old, m)
+			continue
+		}
 		t.Errorf("no captured render of %s", m)
+	}
+	if len(stale) > 0 || len(old) > 0 {
+		var names []string
+		for k := range stale {
+			names = append(names, k)
+		}
+		for _, k := range old {
+			if !stale[k] {
+				names = append(names, k)
+			}
+		}
+		sort.Strings(names)
+		t.Skipf("the captures of %d source files are old or missing (%s): the test tasks test:repo-sync and test:setup-sync test them",
+			len(names), strings.Join(names, ", "))
 	}
 }
 
