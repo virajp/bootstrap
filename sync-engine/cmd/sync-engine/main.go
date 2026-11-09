@@ -1,8 +1,8 @@
 // Command sync-engine syncs the shared files of bootstrap into a repository
 // (repo) or into the home folder of a Mac (macos).
 //
-// Contract: docs/design/sync-engine.md. Phase P0: repo and macos only parse
-// their flags.
+// Contract: docs/design/sync-engine.md. Phase P6: repo only parses its flags.
+// macos is the Mac front-end of internal/macos.
 package main
 
 import (
@@ -13,6 +13,7 @@ import (
 	"os"
 
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
+	"github.com/virajp/bootstrap/sync-engine/internal/macos"
 )
 
 // version is the release version. The release build sets it with
@@ -33,6 +34,10 @@ func main() {
 
 // run runs the command of <args> and gives its exit code.
 func run(args []string, stdout, stderr io.Writer) fail.Code {
+	// macos prints its own usage and errors, as setup_sync of bash.
+	if len(args) > 0 && args[0] == "macos" {
+		return macos.Run(args[1:], stdout, stderr)
+	}
 	err := dispatch(args, stdout)
 	if errors.Is(err, flag.ErrHelp) {
 		fmt.Fprint(stdout, usage)
@@ -54,8 +59,6 @@ func dispatch(args []string, stdout io.Writer) error {
 	switch cmd, rest := args[0], args[1:]; cmd {
 	case "repo":
 		return repo(rest)
-	case "macos":
-		return macos(rest)
 	case "version":
 		if len(rest) != 0 {
 			return fail.New(fail.Usage, "version: unknown argument %s", rest[0])
@@ -95,14 +98,4 @@ func repo(args []string) error {
 		return fail.New(fail.Usage, "repo: --check and --dry-run cannot be used together")
 	}
 	return fail.New(fail.Other, "repo: not implemented")
-}
-
-func macos(args []string) error {
-	fs := flag.NewFlagSet("macos", flag.ContinueOnError)
-	fs.Bool("dry-run", false, "show the changes, write nothing")
-	fs.Bool("no-bootstrap", false, "skip each mise bootstrap step")
-	if err := parse(fs, args); err != nil {
-		return err
-	}
-	return fail.New(fail.Other, "macos: not implemented")
 }
