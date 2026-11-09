@@ -28,8 +28,8 @@ func TestRun(t *testing.T) {
 		{"repo bad flag", []string{"repo", "--no-bootstrap"}, fail.Usage, "", "sync-engine: repo: flag provided but not defined"},
 		{"repo argument", []string{"repo", "x"}, fail.Usage, "", "sync-engine: repo: unknown argument x\n"},
 		{"repo help", []string{"repo", "-h"}, fail.OK, "usage:", ""},
-		{"macos", []string{"macos", "--dry-run", "--no-bootstrap"}, fail.Other, "", "sync-engine: macos: not implemented\n"},
-		{"macos bad flag", []string{"macos", "--check"}, fail.Usage, "", "sync-engine: macos: flag provided but not defined"},
+		{"macos help", []string{"macos", "--dry-run", "-h"}, fail.OK, "usage: setup_sync [--dry-run] [--no-bootstrap]\n", ""},
+		{"macos bad flag", []string{"macos", "--check"}, fail.Usage, "", "setup-sync: unknown flag '--check'\nusage: setup_sync"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

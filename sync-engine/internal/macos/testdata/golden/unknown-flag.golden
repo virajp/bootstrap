@@ -1,0 +1,70 @@
+fingerprint: 38deb6bd45367274cc44fb7c6e074b4e305782a15462b08fd79d40b5e877d4a5
+=== --bogus
+rc=2
+--- stdout
+--- stderr
+setup-sync: unknown flag '--bogus'
+usage: setup_sync [--dry-run] [--no-bootstrap]
+
+  --dry-run       show the changes without writing them
+  --no-bootstrap  skip every mise bootstrap step
+  -h, --help      show this help
+
+exit codes: 0 done, 1 other failure, 2 usage or config error, 3 a tool or a
+pack that macos/ does not have, 4 the init stage changed (open a new terminal,
+then run mise run updateall:configs)
+--- files
+dir  config 755
+file config/macos.toml 644
+  | # The selection of the ok fixture config.
+  | # A second header comment line.
+  | $
+  | [tools.core]
+  | items = [ "x" ]
+  | name = "override-name"
+  | $
+  | [tools.core.table]
+  | left = "file-left"
+  | $
+  | [tools.opt]
+  | extra = "extra-value"
+dir  home 755
+dir  tmp 755
+dir  user 755
+dir  xdg 755
+dir  xdg/cache 755
+=== --dry-run x
+rc=2
+--- stdout
+--- stderr
+setup-sync: unknown flag 'x'
+usage: setup_sync [--dry-run] [--no-bootstrap]
+
+  --dry-run       show the changes without writing them
+  --no-bootstrap  skip every mise bootstrap step
+  -h, --help      show this help
+
+exit codes: 0 done, 1 other failure, 2 usage or config error, 3 a tool or a
+pack that macos/ does not have, 4 the init stage changed (open a new terminal,
+then run mise run updateall:configs)
+--- files
+dir  config 755
+file config/macos.toml 644
+  | # The selection of the ok fixture config.
+  | # A second header comment line.
+  | $
+  | [tools.core]
+  | items = [ "x" ]
+  | name = "override-name"
+  | $
+  | [tools.core.table]
+  | left = "file-left"
+  | $
+  | [tools.opt]
+  | extra = "extra-value"
+dir  home 755
+dir  tmp 755
+dir  user 755
+dir  xdg 755
+dir  xdg/cache 755
+--- end
