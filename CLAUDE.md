@@ -179,7 +179,7 @@ directory path as the task name, for example `code/merge/develop` is
   with `command -v`. `mise x` finds only the tools of a config file, and a
   repository before its first sync, or a shell without `MISE_ENV=dev`, has no
   config that names them. The tools are `pre-commit` in
-  `setup:configs:sync`, `setup:precommit` and `code:precommit`, and
+  `setup:configs`, `setup:precommit` and `code:precommit`, and
   `pre-commit` and `yq` in the `code:merge` tasks, and `yq` in
   `code:worktrees`. The tool calls of the engine in `sync-engine/` are in
   `docs/design/sync-engine.md` ("The tool calls").
@@ -268,12 +268,17 @@ lines of the sync. The cases of the default output unset it. See
 `docs/design/sync-engine.md` ("The output of a run").
 
 - `test:repo-sync` is the task of this repository in
-  `.config/mise/tasks/test/repo-sync`. It runs `repo_sync --dry-run`,
-  `repo_sync --check` and, for a case that compares a written file, `repo_sync`
-  of the working tree's `repo/`, `sync-engine/` and `tools/` (the forwarding
-  file) against scratch values files and scratch consumers. Some cases of the
+  `.config/mise/tasks/test/repo-sync`. It runs `sync-engine repo --dry-run`,
+  `sync-engine repo --check` and, for a case that compares a written file,
+  `sync-engine repo`, built from the working tree's `sync-engine/`, with the
+  working tree's `repo/`, `sync-engine/` and `tools/` (the forwarding file)
+  against scratch values files and scratch consumers. The forward cases call
+  `repo_sync` through the forwarding file. Some cases of the
   manifest also call `_se_manifest_stale` and `_se_manifest_read` directly, and
-  the cases of the `macos` side call `sync-engine/mise` directly. It
+  the cases of the `macos` side call `sync-engine/mise` directly. The entry
+  cases run the rendered task `setup:configs` with a fake engine. With
+  `SYNC_ENGINE_BIN` set to an absolute path, it tests that binary and does not
+  build one. It
   compares the exit code and the message of each case. It needs no network when
   gomplate, jq and yq are installed. Before its
   first `git` call, it unsets the `GIT_*` variables of a git hook, so its

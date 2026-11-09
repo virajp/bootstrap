@@ -263,6 +263,7 @@ file without the header belongs to the repository: keep it.
 | The `post-commit` and `post-merge` git hooks                                                                                                                                         | Uninstall them with pre-commit (M24). |
 | `.config/mise/conf.d/_repo/`                                                                                                                                                         | Rename it to `conf.d/zz-repo/` (M17). |
 | A `.config/mise/conf.d/*/mise*.toml` that `.config/repo-generated.tsv` does not list and the sync did not write, for example in `conf.d/_base/`, `conf.d/_env/` and `conf.d/claude/` | Delete it (M29).                      |
+| `.config/mise/tasks/setup/configs/sync`                                                                                                                                              | Delete it (M31).                      |
 
 The sync removes these old paths itself, so they need no step:
 
@@ -354,11 +355,11 @@ or `glab`.
 not tools. Thus neither can sync the new layout.
 
 For an update, skip this step when `.config/mise/tasks/setup/configs/_default`
-and `.config/mise/tasks/setup/configs/sync` exist and have the bootstrap
-header. Then `setup:configs` loads the sync code from its own clone.
+exists and has the bootstrap header. Then `setup:configs` runs the sync engine
+of its own clone.
 
-Copy these three files from the clone into the repository: the `setup:configs`
-tasks of the `repo-sync` tool, and `helpers` of the `mise` tool. An old
+Copy these two files from the clone into the repository: the `setup:configs`
+task of the `repo-sync` tool, and `helpers` of the `mise` tool. An old
 `.config/mise/tasks/setup/configs` is a file, and
 `setup/configs/` is now a folder: delete the old file first.
 
@@ -368,7 +369,6 @@ lib="$tmp/repo/tools/mise/.config/mise/tasks"
 rm -f .config/mise/tasks/setup/configs
 mkdir -p .config/mise/tasks/_scripts .config/mise/tasks/setup/configs
 cp "$lib/_scripts/helpers" .config/mise/tasks/_scripts/
-cp "$sync/setup/configs/sync" .config/mise/tasks/setup/configs/
 printf '{"members":[],"sync_engine":"%s/sync-engine"}\n' "$tmp" > "$tmp/context.json"
 mise x gomplate@latest -- gomplate --left-delim '<%' --right-delim '%>' \
   -c ".=$tmp/context.json" -f "$sync/setup/configs/_default.tmpl" \
@@ -553,7 +553,8 @@ files, skip this step.
 4. If the dry run replaces repository-owned content, stop. Move that content
    to a repository-owned place (see "Rules"), then do the dry run again.
 5. If the dry run fails with `pre-commit is not available`, and its diff adds
-   a `#MISE tools.pre-commit` line to `.config/mise/tasks/setup/configs/sync`,
+   a `#MISE tools.pre-commit` line to
+   `.config/mise/tasks/setup/configs/_default`,
    the cause is the old task file
    of the repository, not the values file. `setup:configs` runs the
    repository's own copy of that task, and only a real sync writes the new
@@ -593,11 +594,11 @@ If `repo_sync` fails, read the exit code:
 | 2    | The values file is missing, or mise is not available                                                                                                                                                                                                                                                     | Correct the values file, or install mise                                                                                                                                                         |
 | 2    | Neither `main` nor `develop` exists                                                                                                                                                                                                                                                                      | Do step 4                                                                                                                                                                                        |
 | 2    | A git repository at the root of the cache with another `origin` or no `origin`, or a `repo/` of the cache that is not a clone and not empty                                                                                                                                                              | Move it, or set `SYNC_ENGINE_CACHE` to another folder                                                                                                                                            |
-| 2    | `setup:configs:sync` ran without `SYNC_ENGINE_CLONE`                                                                                                                                                                                                                                                     | Run `mise run setup:configs`                                                                                                                                                                     |
+| 2    | The sync engine ran without `SYNC_ENGINE_CLONE`, or `SYNC_ENGINE_BIN` is not an executable file                                                                                                                                                                                                          | Run `mise run setup:configs`                                                                                                                                                                     |
 | 3    | A tool or a pack that is not in `bootstrap`                                                                                                                                                                                                                                                              | Correct the `[tools.*]` and `[packs.*]` entries                                                                                                                                                  |
 | 3    | A member of a pack that is not a tool folder or a pack                                                                                                                                                                                                                                                   | Tell the `bootstrap` owner                                                                                                                                                                       |
 | 3    | A contribution of a selected tool to a tool that is not in `bootstrap`                                                                                                                                                                                                                                   | Tell the `bootstrap` owner                                                                                                                                                                       |
-| 5    | The clone or the fetch failed, `SYNC_ENGINE_CLONE` is not usable, pre-commit is not available (see item 5 of step 6), or `pre-commit autoupdate` failed                                                                                                                                                  | Examine the network and the access                                                                                                                                                               |
+| 5    | The clone or the fetch failed, `sync-engine/VERSION` of the clone is not `MAJOR.MINOR.PATCH`, `mise install` of the engine failed, `SYNC_ENGINE_CLONE` is not usable, pre-commit is not available (see item 5 of step 6), or `pre-commit autoupdate` failed                                              | Examine the network and the access                                                                                                                                                               |
 | 1    | A local file system error                                                                                                                                                                                                                                                                                | Read the `repo-sync:` lines on stderr                                                                                                                                                            |
 
 A failure does not change an existing file.

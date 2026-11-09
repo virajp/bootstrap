@@ -591,7 +591,7 @@ not the tasks of a parent repository.
 | Tool             | Tasks                                                                                                                 |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `mise`           | `setup`, `setup:mise`, `setup:worktree`, `code`, `code:worktrees`                                                     |
-| `repo-sync`      | `setup:configs`, `setup:configs:sync`, `code:lint:repo-sync`                                                          |
+| `repo-sync`      | `setup:configs`, `code:lint:repo-sync`                                                                                |
 | `git`            | `code:git-config`, `code:merge` or `code:merge:develop` and `code:merge:main`                                         |
 | `pre-commit`     | `setup:precommit`, `code:precommit`                                                                                   |
 | `dprint`         | `code:format`, `setup:dprint`                                                                                         |

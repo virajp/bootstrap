@@ -163,10 +163,9 @@ of the `[files]` table.
 1. `setup:configs` fetches the branch `main` of
    `https://github.com/virajp/bootstrap.git` into a shared clone in the cache
    `${XDG_CACHE_HOME:-~/.cache}/sync-engine/`, and it copies that clone.
-2. It updates the local `setup/configs/sync` and `_scripts/helpers` from that
-   copy. Then it runs `setup:configs:sync`, which loads `sync-engine/repo-sync`
-   from that copy and calls `repo_sync`. Thus a change to the sync code applies
-   in the same run.
+2. It runs the sync engine, `sync-engine repo`, of the release that
+   `sync-engine/VERSION` of that copy names, with that copy. Thus a change to
+   the sync code applies in the same run.
 3. `repo_sync` reads the `[tools.*]` and `[packs.*]` tables of the repository's
    `.config/bootstrap.toml`, adds the `base` pack and the `depends` of each
    tool,
