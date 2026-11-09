@@ -55,6 +55,7 @@ line, file and exit code of the bash engine.
 | `internal/manifest`  | The manifest and the stale rule, in the link modes `repo` and `macos`. See [The manifest](#the-manifest-and-the-stale-rule).                             |
 | `internal/misegen`   | The mise config generator of both sides: the environments, the checks of `[overrides.mise*]`, and the `conf.d` files. See [mise.md](mise.md).            |
 | `internal/macos`     | The Mac front-end, `sync-engine macos`: the Go copy of `setup-sync`. See [setup-sync.md](setup-sync.md).                                                 |
+| `internal/repo`      | The repo front-end, `sync-engine repo`: the Go copy of `repo-sync`. See [repo-sync.md](repo-sync.md).                                                    |
 
 The task `test:go` of this repository runs `go vet`, a `gofmt` check and
 `go test` in the module. The golden files of `internal/report` hold the output

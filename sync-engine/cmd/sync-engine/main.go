@@ -1,8 +1,8 @@
 // Command sync-engine syncs the shared files of bootstrap into a repository
 // (repo) or into the home folder of a Mac (macos).
 //
-// Contract: docs/design/sync-engine.md. Phase P6: repo only parses its flags.
-// macos is the Mac front-end of internal/macos.
+// Contract: docs/design/sync-engine.md. repo is the repo front-end of
+// internal/repo, and macos is the Mac front-end of internal/macos.
 package main
 
 import (
@@ -14,6 +14,7 @@ import (
 
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
 	"github.com/virajp/bootstrap/sync-engine/internal/macos"
+	"github.com/virajp/bootstrap/sync-engine/internal/repo"
 )
 
 // version is the release version. The release build sets it with
@@ -34,7 +35,11 @@ func main() {
 
 // run runs the command of <args> and gives its exit code.
 func run(args []string, stdout, stderr io.Writer) fail.Code {
-	// macos prints its own usage and errors, as setup_sync of bash.
+	// repo and macos print their own usage and errors, as repo_sync and
+	// setup_sync of bash.
+	if len(args) > 0 && args[0] == "repo" {
+		return repo.Run(args[1:], stdout, stderr)
+	}
 	if len(args) > 0 && args[0] == "macos" {
 		return macos.Run(args[1:], stdout, stderr)
 	}
@@ -57,8 +62,6 @@ func dispatch(args []string, stdout io.Writer) error {
 		return fail.New(fail.Usage, "no command")
 	}
 	switch cmd, rest := args[0], args[1:]; cmd {
-	case "repo":
-		return repo(rest)
 	case "version":
 		if len(rest) != 0 {
 			return fail.New(fail.Usage, "version: unknown argument %s", rest[0])
@@ -70,32 +73,4 @@ func dispatch(args []string, stdout io.Writer) error {
 	default:
 		return fail.New(fail.Usage, "unknown command %s", cmd)
 	}
-}
-
-// parse parses <args> with <fs>. A bad flag or an argument is a usage error.
-func parse(fs *flag.FlagSet, args []string) error {
-	fs.SetOutput(io.Discard)
-	if err := fs.Parse(args); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-			return err
-		}
-		return fail.New(fail.Usage, "%s: %v", fs.Name(), err)
-	}
-	if fs.NArg() != 0 {
-		return fail.New(fail.Usage, "%s: unknown argument %s", fs.Name(), fs.Arg(0))
-	}
-	return nil
-}
-
-func repo(args []string) error {
-	fs := flag.NewFlagSet("repo", flag.ContinueOnError)
-	dryRun := fs.Bool("dry-run", false, "show the changes, write nothing")
-	check := fs.Bool("check", false, "examine the values file only")
-	if err := parse(fs, args); err != nil {
-		return err
-	}
-	if *dryRun && *check {
-		return fail.New(fail.Usage, "repo: --check and --dry-run cannot be used together")
-	}
-	return fail.New(fail.Other, "repo: not implemented")
 }

@@ -1,0 +1,26 @@
+fingerprint: 6e10a6ce802b1ad716e22ff050cdf688e73821a277cf7d9be9e842c49cda9ae1
+=== --dry-run
+rc=2
+--- stdout
+--- stderr
+repo-sync: using bootstrap at <short>
+repo-sync: cannot read .config/bootstrap.toml
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 74 be074e7bbda4c869
+dir  tmp 755
+=== --check
+rc=2
+--- stdout
+--- stderr
+repo-sync: cannot read .config/bootstrap.toml
+repo-sync: cannot read .config/bootstrap.toml
+repo-sync: cannot read [overrides] of .config/bootstrap.toml
+repo-sync: cannot read [branch] of .config/bootstrap.toml
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 74 be074e7bbda4c869
+dir  tmp 755
+--- end

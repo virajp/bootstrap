@@ -1,0 +1,23 @@
+fingerprint: 6e10a6ce802b1ad716e22ff050cdf688e73821a277cf7d9be9e842c49cda9ae1
+=== --dry-run
+rc=2
+--- stdout
+--- stderr
+repo-sync: using bootstrap at <short>
+repo-sync: environment 'prod' in .config/bootstrap.toml is not one of dev, ci
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 90 69343f843b374be8
+dir  tmp 755
+=== --check
+rc=2
+--- stdout
+--- stderr
+repo-sync: environment 'prod' in .config/bootstrap.toml is not one of dev, ci
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 90 69343f843b374be8
+dir  tmp 755
+--- end

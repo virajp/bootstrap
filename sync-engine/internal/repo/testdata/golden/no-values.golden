@@ -1,0 +1,18 @@
+fingerprint: 6e10a6ce802b1ad716e22ff050cdf688e73821a277cf7d9be9e842c49cda9ae1
+=== --dry-run
+rc=2
+--- stdout
+--- stderr
+repo-sync: values file .config/bootstrap.toml not found - it lists the tools to sync
+--- files
+dir  repo 755
+dir  tmp 755
+=== --check
+rc=2
+--- stdout
+--- stderr
+repo-sync: values file .config/bootstrap.toml not found - it lists the tools to sync
+--- files
+dir  repo 755
+dir  tmp 755
+--- end

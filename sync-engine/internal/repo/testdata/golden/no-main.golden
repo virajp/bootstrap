@@ -1,0 +1,25 @@
+fingerprint: 6e10a6ce802b1ad716e22ff050cdf688e73821a277cf7d9be9e842c49cda9ae1
+=== --dry-run
+rc=2
+--- stdout
+--- stderr
+repo-sync: using bootstrap at <short>
+repo-sync: tools: mise repo-sync git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner
+repo-sync: environments: dev
+repo-sync: the repo has neither 'main' nor 'develop' - create one, then sync again
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 82 761cf548f1c7f12c
+dir  tmp 755
+=== --check
+rc=2
+--- stdout
+--- stderr
+repo-sync: the repo has neither 'main' nor 'develop' - create one, then sync again
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 82 761cf548f1c7f12c
+dir  tmp 755
+--- end
