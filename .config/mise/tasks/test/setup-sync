@@ -983,12 +983,18 @@ case_parse_bad() {
   check "no temp file is left" not test -n "$(find "$home/.config/badparse" -name '.sync-engine.*')"
 }
 
-# target_json <path> <format>: the parsed target as compact JSON, with sorted keys.
-target_json() (
-  # shellcheck source=/dev/null
-  source "$clone/sync-engine/common"
-  _se_yq -p "$2" -o=json -I=0 '.' "$1" | _se_jq -cS .
+# tool <tool> <args>: the installed <tool> of mise, offline, else its latest
+# version. It runs from `/`, so each path must be absolute.
+tool() (
+  cd / || exit 1
+  if [[ -n $(MISE_OFFLINE=1 mise ls --installed "$1" 2> /dev/null < /dev/null) ]]; then
+    MISE_OFFLINE=1 mise x "$1" -- "$@"
+  else
+    mise x "$1@latest" -- "$@"
+  fi
 )
+# target_json <path> <format>: the parsed target as compact JSON, with sorted keys.
+target_json() { tool yq -p "$2" -o=json -I=0 '.' "$1" | tool jq -cS .; }
 target_is() { [[ $(target_json "$1" "$2") == "$3" ]]; }
 
 # Each target parses to the same keys as with a plain value: the double quote and
