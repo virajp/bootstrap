@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #MISE description="Render every Mac tool with the sample values file, and compare the shared mise values of both sides, with no network"
 
-# Runs `sync-engine macos`, built from the working tree's sync-engine/, with
+# Runs `bootstrap mac sync`, built from the working tree's sync-engine/, with
 # every tool of macos/tools/ and a copy of macos/examples/macos.toml, into a temp
 # HOME. The tree is a git copy of the working tree, so the test never touches the
-# real $HOME. SYNC_ENGINE_BIN, when set, is the engine to test (an absolute
+# real $HOME. BOOTSTRAP_BIN, when set, is the engine to test (an absolute
 # path); else the task builds it once from the copy of sync-engine/.
 #
 # Case 0: no [files] table of a tools.toml gives `mode = "seed"` to a target of
@@ -36,7 +36,7 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
 # Each per-file line prints, so the cases compare the log format. A case of the
 # default output unsets the variable.
-export SYNC_ENGINE_VERBOSE=1
+export BOOTSTRAP_VERBOSE=1
 
 root=${MISE_PROJECT_ROOT}
 example="$root/macos/examples/macos.toml"
@@ -47,7 +47,7 @@ export MISE_DATA_DIR="${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise
 export MISE_CACHE_DIR="${MISE_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/mise}"
 # The build of the engine below needs the Go of the `go` tool of this repository.
 mise_env=${MISE_ENV:-}
-unset MISE_ENV SYNC_ENGINE_URL SYNC_ENGINE_CLONE REPO_SYNC_CLONE
+unset MISE_ENV BOOTSTRAP_URL BOOTSTRAP_CLONE REPO_SYNC_CLONE
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-macos-tools.XXXXXX")
 tmp=$(cd "$tmp" && pwd -P)
@@ -80,12 +80,12 @@ _git -C "$tree" init --quiet -b main
 _git -C "$tree" add -A
 _git -C "$tree" commit --quiet --no-verify -m "tree"
 
-# The engine: SYNC_ENGINE_BIN, else one build from the copy of sync-engine/.
-bin=${SYNC_ENGINE_BIN:-}
+# The engine: BOOTSTRAP_BIN, else one build from the copy of sync-engine/.
+bin=${BOOTSTRAP_BIN:-}
 if [[ -z $bin ]]; then
   (cd "$root" && MISE_ENV=$mise_env mise x -- go build -C "$tree/sync-engine" -buildvcs=false \
-    -o "$tmp/sync-engine" ./cmd/sync-engine)
-  bin="$tmp/sync-engine"
+    -o "$tmp/bootstrap" ./cmd/bootstrap)
+  bin="$tmp/bootstrap"
 fi
 
 failures=0
@@ -112,7 +112,7 @@ setup_case() {
   export HOME=$home
   export XDG_CACHE_HOME="$dir/xdg/cache" XDG_CONFIG_HOME="$dir/xdg/config"
   export XDG_STATE_HOME="$dir/xdg/state" XDG_DATA_HOME="$dir/xdg/data"
-  export SYNC_ENGINE_CACHE="$XDG_CACHE_HOME/sync-engine"
+  export BOOTSTRAP_CACHE="$XDG_CACHE_HOME/bootstrap"
   export MACOS_SETUP_CONFIG_PATH="$dir/config"
   export GIT_CONFIG_GLOBAL="$dir/gitconfig" GIT_CONFIG_NOSYSTEM=1
   : > "$GIT_CONFIG_GLOBAL"
@@ -125,7 +125,7 @@ run_real() {
   runs=$((runs + 1))
   log="$dir/run-$runs.txt"
   rc=0
-  (cd "$dir" && SYNC_ENGINE_CLONE=$tree "$bin" macos --no-bootstrap) > "$log" 2>&1 || rc=$?
+  (cd "$dir" && BOOTSTRAP_CLONE=$tree "$bin" mac sync --no-bootstrap) > "$log" 2>&1 || rc=$?
 }
 
 # ---- case 0: no JSON, YAML or TOML file is a seed ------------------------------

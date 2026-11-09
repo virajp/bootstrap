@@ -15,10 +15,10 @@ of each rule that stops the sync is in
 
 ## The two sides
 
-| Side    | Tools root     | A file goes to             | Reads the tools of  |
-| ------- | -------------- | -------------------------- | ------------------- |
-| `repo`  | `repo/tools/`  | The path in the repository | `sync-engine repo`  |
-| `macos` | `macos/tools/` | The path below `$HOME`     | `sync-engine macos` |
+| Side    | Tools root     | A file goes to             | Reads the tools of   |
+| ------- | -------------- | -------------------------- | -------------------- |
+| `repo`  | `repo/tools/`  | The path in the repository | `bootstrap sync`     |
+| `macos` | `macos/tools/` | The path below `$HOME`     | `bootstrap mac sync` |
 
 Each file in a tool folder is at the path that it gets in the target, without
 the
@@ -244,7 +244,7 @@ settings = [ "editor.formatOnSave" ]
 
 The repo side examines these tables for each selected tool, and the Mac side for
 each
-tool of the clone. `sync-engine repo --check` does not examine them, because
+tool of the clone. `bootstrap check` does not examine them, because
 they need
 the
 clone. These stop the sync:

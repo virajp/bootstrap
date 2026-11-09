@@ -1,7 +1,7 @@
 # The `repo-sync` tool
 
 The task `setup:configs` that copies the tools from `bootstrap` with the sync
-engine, `sync-engine repo`. `sync-engine/VERSION` of the clone selects the
+engine, `bootstrap sync`. `sync-engine/VERSION` of the clone selects the
 release of the engine.
 
 | Property     | Value |
@@ -21,7 +21,7 @@ file. A `[tools.repo-sync]` table gives values.
 | Path in the repository                        | Kind      | Use                                                                                                                                                             |
 | --------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`. It fetches `bootstrap` into the cache, then runs the sync engine with a copy of the clone. The sync embeds `sync-engine/clone` in it. |
-| `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `sync-engine repo --check`.                                                                                             |
+| `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `bootstrap check`.                                                                                                      |
 | `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                                                                                                                   |
 
 The sync no longer ships the task `setup:configs:sync`
@@ -50,10 +50,10 @@ The sync does not use this entry. The engine does not call gomplate, jq or yq.
 | Task                  | Use                                                                                                                                                                          |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `setup:configs`       | Sync the shared files from `bootstrap`. `--dry-run` shows the diff. `--verbose` lists each file, also an unchanged one. `--all` and `--<name>` also sync the git submodules. |
-| `code:lint:repo-sync` | Validate `.config/bootstrap.toml` with `sync-engine repo --check`. Hidden.                                                                                                   |
+| `code:lint:repo-sync` | Validate `.config/bootstrap.toml` with `bootstrap check`. Hidden.                                                                                                            |
 
 `setup:configs` keeps a shallow clone of `bootstrap` in `repo/` of the cache
-`${XDG_CACHE_HOME:-~/.cache}/sync-engine/`, for each consumer of the machine:
+`${XDG_CACHE_HOME:-~/.cache}/bootstrap/`, for each consumer of the machine:
 
 - Each run fetches the branch `main` of
   `https://github.com/virajp/bootstrap.git` into the clone, and gives a copy
@@ -63,33 +63,28 @@ The sync does not use this entry. The engine does not call gomplate, jq or yq.
   has made its copy. A waiter removes the lock of a dead holder.
 - The origin compare is normalized, so the SSH and the HTTPS URL of one
   repository match. A clone with another `origin`, for example after a test
-  with `SYNC_ENGINE_URL`, is cloned again.
+  with `BOOTSTRAP_URL`, is cloned again.
 - A `repo/` that is not a git clone and not empty stops `setup:configs` with
   code 2. The task does not delete it.
 - A git repository at the cache root is the old layout. When its raw `origin`
   normalizes to the URL, the run removes it and keeps `repo/`, the lock and
   `macos-generated.tsv`. Another `origin` or no `origin` stops `setup:configs`
   with code 2, and the task deletes nothing in the cache root.
-- Each run removes the old cache `bootstrap/` and `bootstrap.lock` of
-  `${XDG_CACHE_HOME:-~/.cache}` while it holds the old lock. When a live old
-  stub holds that lock, a later run does the removal. A failed removal does
-  not fail the sync. The line `Removed the old cache <path>` prints only when
-  the run removed the old folder.
 - If the fetch or the clone fails, `setup:configs` stops with code 5. It
   never uses an old clone.
 
 After the copy, `setup:configs` selects the sync engine:
 
-- With `SYNC_ENGINE_BIN` set, it runs that file, a local build of the engine.
+- With `BOOTSTRAP_BIN` set, it runs that file, a local build of the engine.
   A path that is not an executable file stops the task with code 2.
 - Else it reads `sync-engine/VERSION` of the copy, the pin of the engine. A
   value that is not `MAJOR.MINOR.PATCH` stops the task with code 5. It runs
   `mise install github:virajp/bootstrap@<version>`, and a failure stops the
   task with code 5. Then it runs
-  `mise x github:virajp/bootstrap@<version> -- sync-engine repo`.
+  `mise x github:virajp/bootstrap@<version> -- bootstrap sync`.
 
 It prints the header "Syncing the shared files from bootstrap ...", and runs
-the engine in the root, with the copy in `SYNC_ENGINE_CLONE`. The exit code of
+the engine in the root, with the copy in `BOOTSTRAP_CLONE`. The exit code of
 the engine is the exit code of the task. The task provides `pre-commit` to the
 engine with `#MISE tools.pre-commit="latest"`.
 
@@ -125,7 +120,7 @@ The sync lists only what changed, then prints a table of counts and a last line:
 - A run that stops before it writes files has no table.
 - `NO_COLOR`, an output that is not a terminal, or `TERM=dumb` removes the
   glyphs and the colors. `FORCE_COLOR` turns them on.
-- `--verbose`, or `SYNC_ENGINE_VERBOSE=1`, prints the log line of each file in
+- `--verbose`, or `BOOTSTRAP_VERBOSE=1`, prints the log line of each file in
   place of the list: `unchanged`, `updated`, `kept seed`, `skip seed`,
   `skip env` and the others. The table and the last line stay.
 
@@ -167,14 +162,14 @@ In the last two conditions, the gate does not validate the values file. Thus
 no output does not show that the values file is correct. A run of
 `setup:configs` makes the clone.
 
-Else it unsets `SYNC_ENGINE_CLONE` and `REPO_SYNC_CLONE`, loads the shim
+Else it unsets `BOOTSTRAP_CLONE` and `REPO_SYNC_CLONE`, loads the shim
 `sync-engine/repo-sync` of the cache without its lock, and calls
-`repo_sync --check`. The shim runs `sync-engine repo --check`: the engine of
-`SYNC_ENGINE_BIN`, else the pin `sync-engine/VERSION` of the cache. The first
+`repo_sync --check`. The shim runs `bootstrap check`: the engine of
+`BOOTSTRAP_BIN`, else the pin `sync-engine/VERSION` of the cache. The first
 gate after a new pin runs `mise install` of the pin, which needs the network.
 A pin that mise cannot install stops the gate with code 5.
 
-`sync-engine repo --check` examines only the rules that need the values file and
+`bootstrap check` examines only the rules that need the values file and
 the
 local git repository. It runs after the checks of the values file and of
 `mise`, and it stops before the clone. It makes no clone, writes no file and
@@ -189,7 +184,7 @@ shared file does not have, a `root_only` tool in a submodule, an old key or a
 bad `[files]` table of a `tools.toml`, and a bad `[defaults]`, `[questions]` or
 `[contributes]` table or a conflict of the values of the tools.
 
-Besides the copy of the files, `sync-engine repo` does these steps:
+Besides the copy of the files, `bootstrap sync` does these steps:
 
 - It stops with code 2 without `mise`. It does not call gomplate, jq or yq: the
   engine has its own template, JSON, YAML and TOML code.
@@ -265,16 +260,16 @@ Besides the copy of the files, `sync-engine repo` does these steps:
   has `.config/bootstrap.toml`" of `index.md`.
 
 These environment variables change the sync. `--check` does not read
-`SYNC_ENGINE_URL` and `SYNC_ENGINE_CLONE`, because it makes no clone:
+`BOOTSTRAP_URL` and `BOOTSTRAP_CLONE`, because it makes no clone:
 
 | Variable                  | Use                                                                                                         |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `SYNC_ENGINE_URL`         | The repository to clone. The default is `https://github.com/virajp/bootstrap.git`.                          |
-| `SYNC_ENGINE_CACHE`       | The cache folder. The default is `sync-engine` in the base of the cache.                                    |
-| `XDG_CACHE_HOME`          | The base of the cache, and of the old cache that each run removes. The default is `~/.cache`.               |
-| `SYNC_ENGINE_CLONE`       | The copy of the clone. `setup:configs` sets it.                                                             |
-| `SYNC_ENGINE_BIN`         | A local build of the sync engine. `setup:configs` runs it in place of the pin `sync-engine/VERSION`.        |
-| `SYNC_ENGINE_VERBOSE`     | `1` prints the log line of each file in place of the list. `--verbose` sets it. Another value does nothing. |
+| `BOOTSTRAP_URL`           | The repository to clone. The default is `https://github.com/virajp/bootstrap.git`.                          |
+| `BOOTSTRAP_CACHE`         | The cache folder. The default is `bootstrap` in the base of the cache.                                      |
+| `XDG_CACHE_HOME`          | The base of the cache. The default is `~/.cache`.                                                           |
+| `BOOTSTRAP_CLONE`         | The copy of the clone. `setup:configs` sets it.                                                             |
+| `BOOTSTRAP_BIN`           | A local build of the sync engine. `setup:configs` runs it in place of the pin `sync-engine/VERSION`.        |
+| `BOOTSTRAP_VERBOSE`       | `1` prints the log line of each file in place of the list. `--verbose` sets it. Another value does nothing. |
 | `REPO_SYNC_VALUES`        | The values file. The default is `.config/bootstrap.toml`.                                                   |
 | `REPO_SYNC_NO_AUTOUPDATE` | `1` skips `pre-commit autoupdate`, so no network is necessary.                                              |
 
@@ -285,11 +280,11 @@ runs `code:lint:repo-sync` with the staged files.
 
 ## Files the repository supplies
 
-| File                                | Used by                                                                                                        |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `.config/bootstrap.toml`            | `sync-engine repo`. The values file of step 3 of `index.md`. `sync-engine repo` writes its `bootstrap_commit`. |
-| `.config/repo-sync/pre-commit.yaml` | `.config/pre-commit-config.yaml`. Optional: its own hooks.                                                     |
-| `.config/repo-generated.tsv`        | `sync-engine repo` writes and reads it. Commit it. Do not edit it.                                             |
+| File                                | Used by                                                                                                    |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `.config/bootstrap.toml`            | `bootstrap sync`. The values file of step 3 of `index.md`. `bootstrap sync` writes its `bootstrap_commit`. |
+| `.config/repo-sync/pre-commit.yaml` | `.config/pre-commit-config.yaml`. Optional: its own hooks.                                                 |
+| `.config/repo-generated.tsv`        | `bootstrap sync` writes and reads it. Commit it. Do not edit it.                                           |
 
 ## Adapt to the repository
 

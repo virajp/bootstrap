@@ -28,6 +28,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | A values file that selects one scanner, or a repository that read `required` | M28. Nothing to do.                                                                                                                                                                                                                                                 |
 | A sync that writes the first `.config/repo-generated.tsv`                    | M29, after the sync.                                                                                                                                                                                                                                                |
 | `.config/mise/tasks/setup/configs/sync`                                      | M31, after the sync.                                                                                                                                                                                                                                                |
+| `SYNC_ENGINE_` in a file or a script, or a folder `~/.cache/sync-engine/`    | M32, after the sync.                                                                                                                                                                                                                                                |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -614,19 +615,18 @@ clones `https://github.com/virajp/bootstrap.git`, so it needs no SSH key. The
 synced `.config/mise/tasks/_scripts/repo-sync` is now only a forwarding file.
 
 The first sync after the update runs the old `setup:configs` one time. It
-writes the new task. The second run uses the new task, and it removes
-`~/.cache/bootstrap/` and `~/.cache/bootstrap.lock` by itself. Delete nothing
-by hand.
+writes the new task. The second run uses the new task. M32 moves the cache
+back to `~/.cache/bootstrap/`, so do M32 after this item.
 
 1. Run `mise run setup:configs` two times. Commit the result of the first run.
    Without a new commit in `bootstrap`, the second run changes no file of the
    repository.
 2. Before the second run, `code:lint:repo-sync` prints nothing and does not
    validate, because the new cache has no clone yet.
-3. If the second run stops with code 2 and names `~/.cache/sync-engine`, that
-   folder holds another repository or a `repo/` that is not a clone. Move it,
-   or set `SYNC_ENGINE_CACHE` to another folder. In `~/.cache/sync-engine`, the
-   sync did not delete the other repository or the `repo/`.
+3. If the second run stops with code 2 and names the cache folder, that folder
+   holds another repository or a `repo/` that is not a clone. Move it, or set
+   `BOOTSTRAP_CACHE` to another folder. The sync did not delete the other
+   repository or the `repo/`.
 
 ## M28: The merged packs model, and `required` is gone
 
@@ -686,7 +686,7 @@ hand, as before.
 
 ## M31: `setup:configs` runs the sync engine
 
-`setup:configs` now runs the Go sync engine, `sync-engine repo`, of the pin
+`setup:configs` now runs the Go sync engine, `bootstrap sync`, of the pin
 `sync-engine/VERSION` of the clone. The task `setup:configs:sync`
 (`.config/mise/tasks/setup/configs/sync`) is gone, and `setup:configs` no
 longer copies a local sync task from the clone.
@@ -704,3 +704,21 @@ run writes the new `_default`.
 3. Do the same in each git submodule. A submodule without
    `.config/bootstrap.toml` now stops `setup:configs --all` with code 2: adopt
    `bootstrap` in it first.
+
+## M32: The engine is the command `bootstrap`
+
+The Go engine is now the command `bootstrap`. `bootstrap sync` replaces
+`sync-engine repo`, `bootstrap check` replaces `sync-engine repo --check`, and
+`bootstrap mac sync` replaces `sync-engine macos`. Each variable
+`SYNC_ENGINE_<name>` is now `BOOTSTRAP_<name>`, for example `BOOTSTRAP_BIN`,
+`BOOTSTRAP_VERBOSE` and `BOOTSTRAP_CACHE`. The cache moved from
+`~/.cache/sync-engine/` to `~/.cache/bootstrap/`. The sync no longer removes
+the cache of the old stubs (`~/.cache/bootstrap.lock`).
+
+1. Run `mise run setup:configs`. Commit the result.
+2. In the files of the repository, replace each `SYNC_ENGINE_<name>` with
+   `BOOTSTRAP_<name>`. Show the user each change before you write it.
+3. Tell the user to replace `SYNC_ENGINE_<name>` in their shell config, if it
+   sets one.
+4. Tell the user to delete `~/.cache/sync-engine/` and
+   `~/.cache/bootstrap.lock`, if they exist. The sync does not delete them.

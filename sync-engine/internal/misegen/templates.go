@@ -19,9 +19,9 @@ const defines = `<% define "se_leaves" %><% range $k, $x := .v %><% $p := coll.A
 // "<problem> <path> <arg>" line, tab separated, for each problem.
 const overridesTemplate = defines + `<% if has .o "overrides" -%>
 <% $ov := .o.overrides -%>
-<% $side := env.Getenv "SYNC_ENGINE_MISE_SIDE" -%>
-<% $envs := env.Getenv "SYNC_ENGINE_MISE_ENVS" -%>
-<% $tools := strings.Split " " (env.Getenv "SYNC_ENGINE_MISE_TOOLS") -%>
+<% $side := env.Getenv "BOOTSTRAP_MISE_SIDE" -%>
+<% $envs := env.Getenv "BOOTSTRAP_MISE_ENVS" -%>
+<% $tools := strings.Split " " (env.Getenv "BOOTSTRAP_MISE_TOOLS") -%>
 <% if not (test.IsKind "map" $ov) %>table	overrides	-
 <% else -%>
 <% $ov = coll.Pick "mise" "mise_env" $ov -%>
@@ -76,12 +76,12 @@ none	overrides.<% join $p "." %>	<% if $only %>mise_env.<% $only %>.<% join $res
 // overrides of the values file (.o). After the TOML, a "#@override <path>" line
 // names each output path that an override changed.
 const miseTemplate = defines + `<% $m := dict %><% if has .t "mise" %><% $m = .t.mise %><% end -%>
-<% $macos := eq (env.Getenv "SYNC_ENGINE_MISE_SIDE") "macos" -%>
+<% $macos := eq (env.Getenv "BOOTSTRAP_MISE_SIDE") "macos" -%>
 <% if and $macos (has .t "mise_env") %><% test.Fail "[mise_env.*] is not valid on the macos side, which has no environments" %><% end -%>
-<% $env := env.Getenv "SYNC_ENGINE_MISE_ENV" -%>
+<% $env := env.Getenv "BOOTSTRAP_MISE_ENV" -%>
 <% $me := dict %><% if and (has .t "mise_env") (has .t.mise_env $env) %><% $me = index .t.mise_env $env %><% end -%>
 <% $marks := coll.Slice -%>
-<% if and (not (env.Getenv "SYNC_ENGINE_MISE_OWN")) (has .o "overrides") (test.IsKind "map" .o.overrides) -%>
+<% if and (not (env.Getenv "BOOTSTRAP_MISE_OWN")) (has .o "overrides") (test.IsKind "map" .o.overrides) -%>
 <% $ov := coll.Pick "mise" "mise_env" .o.overrides -%>
 <% range strings.Split "\n" (tmpl.Exec "se_leaves" (dict "p" (coll.Slice) "v" $ov)) -%>
 <% if . -%>
@@ -102,11 +102,11 @@ const miseTemplate = defines + `<% $m := dict %><% if has .t "mise" %><% $m = .t
 <% end -%>
 <% end -%>
 <% end -%>
-<% $envw := env.Getenv "SYNC_ENGINE_MISE_ENVS" -%>
+<% $envw := env.Getenv "BOOTSTRAP_MISE_ENVS" -%>
 <% $entry := coll.Slice "tools" "tool_alias" "plugins" -%>
 <% $folder := coll.Slice "settings" "env" "tool_config" "task_config" "task_templates" "doctor" "deps" "oci" -%>
 <% $devonly := coll.Slice "vars" "secrets" "redactions" "shell_alias" "hooks" "watch_files" "daemons" "daemon_groups" "daemons_settings" "daemon_providers" "tasks" "bootstrap" "dotfiles" -%>
-<% $in := or $macos (eq (env.Getenv "SYNC_ENGINE_MISE_IN") "1") -%>
+<% $in := or $macos (eq (env.Getenv "BOOTSTRAP_MISE_IN") "1") -%>
 <% $out := dict -%>
 <% range $s, $body := $m -%>
 <% if has $entry $s -%>
@@ -136,7 +136,7 @@ const miseTemplate = defines + `<% $m := dict %><% if has .t "mise" %><% $m = .t
 <% $out = coll.Merge (dict $s $body) $out -%>
 <% end -%>
 <% end -%>
-<% $extra := env.Getenv "SYNC_ENGINE_MISE_DEV_ALIASES" -%>
+<% $extra := env.Getenv "BOOTSTRAP_MISE_DEV_ALIASES" -%>
 <% if and $in (eq $env "dev") $extra -%>
 <% $al := dict %><% if has $out "shell_alias" %><% $al = index $out "shell_alias" %><% end -%>
 <% range (strings.Split "\n" $extra) %><% if . %><% $kv := strings.SplitN "=" 2 . %><% $al = coll.Merge (dict (index $kv 0) (index $kv 1)) $al %><% end %><% end -%>

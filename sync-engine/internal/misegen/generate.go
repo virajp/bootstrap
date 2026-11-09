@@ -149,9 +149,9 @@ func (g *Generator) Overrides(tools, envs []string, local bool) error {
 		ctx["tool_"+tool] = t
 	}
 	out, err := tmpl.Render("<arg>", []byte(overridesTemplate), ctx, &tmpl.Options{Env: g.envWith(map[string]string{
-		"SYNC_ENGINE_MISE_SIDE":  string(g.Side),
-		"SYNC_ENGINE_MISE_ENVS":  envw,
-		"SYNC_ENGINE_MISE_TOOLS": spaceSep(tools),
+		"BOOTSTRAP_MISE_SIDE":  string(g.Side),
+		"BOOTSTRAP_MISE_ENVS":  envw,
+		"BOOTSTRAP_MISE_TOOLS": spaceSep(tools),
 	})})
 	if err != nil {
 		return bad()
@@ -545,12 +545,12 @@ func (g *Generator) generate(src, values, env, in, aliases, note, shown string) 
 	var out []byte
 	if terr == nil {
 		out, terr = tmpl.Render("<arg>", []byte(miseTemplate), ctx, &tmpl.Options{Env: g.envWith(map[string]string{
-			"SYNC_ENGINE_MISE_SIDE":        string(g.Side),
-			"SYNC_ENGINE_MISE_OWN":         own,
-			"SYNC_ENGINE_MISE_ENV":         env,
-			"SYNC_ENGINE_MISE_ENVS":        miseEnvs,
-			"SYNC_ENGINE_MISE_IN":          in,
-			"SYNC_ENGINE_MISE_DEV_ALIASES": aliases,
+			"BOOTSTRAP_MISE_SIDE":        string(g.Side),
+			"BOOTSTRAP_MISE_OWN":         own,
+			"BOOTSTRAP_MISE_ENV":         env,
+			"BOOTSTRAP_MISE_ENVS":        miseEnvs,
+			"BOOTSTRAP_MISE_IN":          in,
+			"BOOTSTRAP_MISE_DEV_ALIASES": aliases,
 		})})
 	}
 	if terr != nil {

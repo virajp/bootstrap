@@ -1,11 +1,11 @@
 // Package macos is the Mac front-end of the sync engine: the subcommand
-// `sync-engine macos`. It renders the selected tools of `macos/tools/` of a
+// `bootstrap mac sync`. It renders the selected tools of `macos/tools/` of a
 // clone of bootstrap into $HOME, then runs `mise bootstrap`. It replaces the
 // bash file sync-engine/setup-sync, with the same output, files and exit
 // codes.
 //
-// Run reads the same environment as `setup_sync`: SYNC_ENGINE_CLONE,
-// SYNC_ENGINE_CACHE, MACOS_SETUP_CONFIG_PATH, SYNC_ENGINE_VERBOSE, HOME, USER,
+// Run reads the same environment as `setup_sync`: BOOTSTRAP_CLONE,
+// BOOTSTRAP_CACHE, MACOS_SETUP_CONFIG_PATH, BOOTSTRAP_VERBOSE, HOME, USER,
 // TMPDIR, XDG_CACHE_HOME, PATH, PWD and the style variables FORCE_COLOR,
 // NO_COLOR and TERM.
 //
@@ -176,9 +176,9 @@ func (s *state) run(args []string) fail.Code {
 	if code := s.checkMise(); code != fail.OK {
 		return code
 	}
-	clone := s.getenv("SYNC_ENGINE_CLONE")
+	clone := s.getenv("BOOTSTRAP_CLONE")
 	if clone == "" || !isDir(clone+"/sync-engine") || !isDir(clone+"/macos/tools") {
-		s.log("SYNC_ENGINE_CLONE is not a clone of bootstrap - run mise run updateall:configs")
+		s.log("BOOTSTRAP_CLONE is not a clone of bootstrap - run mise run updateall:configs")
 		return fail.Usage
 	}
 	cfg := s.getenv("MACOS_SETUP_CONFIG_PATH")
@@ -202,13 +202,13 @@ func (s *state) run(args []string) fail.Code {
 		return fail.Other
 	}
 	s.homeReal = real
-	cache := s.getenv("SYNC_ENGINE_CACHE")
+	cache := s.getenv("BOOTSTRAP_CACHE")
 	if cache == "" {
 		xdg := s.getenv("XDG_CACHE_HOME")
 		if xdg == "" {
 			xdg = s.getenv("HOME") + "/.cache"
 		}
-		cache = xdg + "/sync-engine"
+		cache = xdg + "/bootstrap"
 	}
 	manifestFile := cache + "/macos-generated.tsv"
 	work, err := os.MkdirTemp(target.DryRunDir(s.getenv), "setup-sync.")

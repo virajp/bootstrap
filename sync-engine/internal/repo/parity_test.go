@@ -43,12 +43,12 @@ func binary(t *testing.T) string {
 			binErr = err
 			return
 		}
-		binPath = filepath.Join(dir, "sync-engine")
+		binPath = filepath.Join(dir, "bootstrap")
 		goCmd := filepath.Join(runtime.GOROOT(), "bin", "go")
 		if _, err := os.Stat(goCmd); err != nil {
 			goCmd = "go"
 		}
-		out, err := exec.Command(goCmd, "build", "-o", binPath, "../../cmd/sync-engine").CombinedOutput()
+		out, err := exec.Command(goCmd, "build", "-o", binPath, "../../cmd/bootstrap").CombinedOutput()
 		if err != nil {
 			binErr = fmt.Errorf("go build: %v\n%s", err, out)
 		}
@@ -123,8 +123,8 @@ func clone(t *testing.T, dir string) {
 type pcase struct {
 	name    string
 	values  string // The values file after repo_name and repo_url; "-" for none.
-	quiet   bool   // Without SYNC_ENGINE_VERBOSE=1.
-	noClone bool   // Without SYNC_ENGINE_CLONE.
+	quiet   bool   // Without BOOTSTRAP_VERBOSE=1.
+	noClone bool   // Without BOOTSTRAP_CLONE.
 	prepare func(t *testing.T, repo string)
 	steps   [][]string
 }
@@ -227,7 +227,7 @@ func env(d string, c pcase, cloneDir string) []string {
 	for _, kv := range os.Environ() {
 		k, _, _ := strings.Cut(kv, "=")
 		switch {
-		case strings.HasPrefix(k, "GIT_"), strings.HasPrefix(k, "SYNC_ENGINE_"), strings.HasPrefix(k, "REPO_SYNC_"):
+		case strings.HasPrefix(k, "GIT_"), strings.HasPrefix(k, "BOOTSTRAP_"), strings.HasPrefix(k, "REPO_SYNC_"):
 			continue
 		case k == "MISE_PROJECT_ROOT" || k == "TMPDIR" || k == "PWD" || k == "FORCE_COLOR" || k == "NO_COLOR" || k == "TERM":
 			continue
@@ -241,10 +241,10 @@ func env(d string, c pcase, cloneDir string) []string {
 		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1",
 	)
 	if !c.noClone {
-		out = append(out, "SYNC_ENGINE_CLONE="+cloneDir)
+		out = append(out, "BOOTSTRAP_CLONE="+cloneDir)
 	}
 	if !c.quiet {
-		out = append(out, "SYNC_ENGINE_VERBOSE=1")
+		out = append(out, "BOOTSTRAP_VERBOSE=1")
 	}
 	return out
 }
@@ -403,7 +403,7 @@ func TestParity(t *testing.T) {
 	for _, c := range cases() {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
-			got := runCase(t, c, filepath.Join(root, "go", c.name), cloneDir, commit, []string{bin, "repo"})
+			got := runCase(t, c, filepath.Join(root, "go", c.name), cloneDir, commit, []string{bin, "sync"})
 			golden := filepath.Join("testdata", "golden", c.name+".golden")
 			data, err := os.ReadFile(golden)
 			head, want, _ := strings.Cut(string(data), "\n")

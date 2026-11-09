@@ -1,25 +1,24 @@
 #!/usr/bin/env bash
 # The shared cache and clone of the sync engine. A caller sources this library,
 # calls _se_clone_init, and sets its own traps with _se_clone_cleanup. The
-# cache is ~/.cache/sync-engine/: the clone in repo/, the lock in lock/.
+# cache is ~/.cache/bootstrap/: the clone in repo/, the lock in lock/.
 #
-# An entry task calls _se_clone_init, _se_lock, _se_legacy_cleanup, _se_fetch,
-# _se_copy, _se_unlock and _se_clone_cleanup.
+# An entry task calls _se_clone_init, _se_lock, _se_fetch, _se_copy, _se_unlock
+# and _se_clone_cleanup.
 #
 # Variables, internal only:
-#   SYNC_ENGINE_CACHE  the cache folder; tests use it
-#   SYNC_ENGINE_URL    the clone URL; tests use it for an unpushed change
+#   BOOTSTRAP_CACHE  the cache folder; tests use it
+#   BOOTSTRAP_URL    the clone URL; tests use it for an unpushed change
 #   XDG_CACHE_HOME, HOME, TMPDIR  the default cache and the temporary copy
 #
 # Contract: docs/design/sync-engine.md
 
 # Sets the paths from the environment.
 _se_clone_init() {
-  _SE_OLD_HELD=''
-  _SE_CACHE=${SYNC_ENGINE_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/sync-engine}
+  _SE_CACHE=${BOOTSTRAP_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/bootstrap}
   _SE_REPO=$_SE_CACHE/repo
   _SE_LOCK=$_SE_CACHE/lock
-  _SE_URL=${SYNC_ENGINE_URL:-https://github.com/virajp/bootstrap.git}
+  _SE_URL=${BOOTSTRAP_URL:-https://github.com/virajp/bootstrap.git}
   _SE_BRANCH=main
   _SE_HELD=''
   _SE_COPY=''
@@ -46,7 +45,7 @@ _se_say() {
       print_info "${text}"
     fi
   elif ! _se_clone_styled 2; then
-    printf 'sync-engine: %s\n' "${text}" >&2
+    printf 'bootstrap: %s\n' "${text}" >&2
   elif [[ ${level} == error ]]; then
     printf '❌ %s\n' "${text}" >&2
   else
@@ -123,33 +122,6 @@ _se_unlock() {
   fi
 }
 
-# Removes the cache of the old stubs. An old stub that holds the old lock can
-# be in its copy, so the removal needs that lock. With a live holder, the run
-# skips the removal and a later run does it. A failed removal is not an error
-# of the sync. The cache of the old Mac task stays: its entry task handles it.
-_se_legacy_cleanup() {
-  local base=${XDG_CACHE_HOME:-$HOME/.cache}
-  local old=$base/bootstrap
-  local old_lock=$base/bootstrap.lock
-  local had_old=''
-  [[ -e ${old} || -e ${old_lock} ]] || return 0
-  if ! mkdir -- "${old_lock}" 2> /dev/null; then
-    _se_stale_lock "${old_lock}" || true
-    mkdir -- "${old_lock}" 2> /dev/null || return 0
-  fi
-  _SE_OLD_HELD=${old_lock}
-  if [[ -e ${old} ]]; then
-    had_old=1
-  fi
-  rm -rf -- "${old}" 2> /dev/null || true
-  rm -rf -- "${old_lock}" 2> /dev/null || true
-  _SE_OLD_HELD=''
-  if [[ -n ${had_old} && ! -e ${old} ]]; then
-    _se_say info "Removed the old cache ${old}"
-  fi
-  return 0
-}
-
 # Brings the clone to the newest commit of the branch: cloned when missing or
 # empty, refreshed when its origin is the URL, cloned again when it has another
 # origin. A folder that is not a clone is never deleted. The raw config value,
@@ -162,13 +134,13 @@ _se_fetch() {
   unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 
   # A clone of the URL at the cache root is the old layout. Any other repository
-  # there stays: SYNC_ENGINE_CACHE can name a checkout of another project. The
+  # there stays: BOOTSTRAP_CACHE can name a checkout of another project. The
   # config file itself, so no other repository's config answers: a `.git` file
   # (a worktree, a submodule) has none, and it stops here too.
   if [[ -e ${_SE_CACHE}/.git ]]; then
     origin=$(git config --file "${_SE_CACHE}/.git/config" --get remote.origin.url 2> /dev/null) || origin=''
     if [[ -z ${origin} || $(_se_normalize_url "${origin}") != "$(_se_normalize_url "${_SE_URL}")" ]]; then
-      _se_say error "${_SE_CACHE} is a git repository with the origin '${origin}', not an old clone of ${_SE_URL} - move it, or set SYNC_ENGINE_CACHE to another folder"
+      _se_say error "${_SE_CACHE} is a git repository with the origin '${origin}', not an old clone of ${_SE_URL} - move it, or set BOOTSTRAP_CACHE to another folder"
       return 2
     fi
     for entry in "${_SE_CACHE}"/* "${_SE_CACHE}"/.[!.]* "${_SE_CACHE}"/..?*; do
@@ -202,7 +174,7 @@ _se_fetch() {
       clone=1
     fi
   else
-    _se_say error "${_SE_REPO} is not a git clone and not empty - move it, or set SYNC_ENGINE_CACHE to another folder"
+    _se_say error "${_SE_REPO} is not a git clone and not empty - move it, or set BOOTSTRAP_CACHE to another folder"
     return 2
   fi
 
@@ -228,14 +200,9 @@ _se_copy() {
   cp -R -- "${_SE_REPO}/." "${_SE_COPY}" || return 1
 }
 
-# For the EXIT trap of the caller: releases a held lock and a held old lock,
-# and removes the copy.
+# For the EXIT trap of the caller: releases a held lock, and removes the copy.
 _se_clone_cleanup() {
   _se_unlock
-  if [[ -n ${_SE_OLD_HELD} ]]; then
-    rm -rf -- "${_SE_OLD_HELD}"
-    _SE_OLD_HELD=''
-  fi
   if [[ -n ${_SE_COPY} ]]; then
     rm -rf -- "${_SE_COPY}"
   fi
