@@ -1,0 +1,42 @@
+fingerprint: 6e10a6ce802b1ad716e22ff050cdf688e73821a277cf7d9be9e842c49cda9ae1
+=== --bogus
+rc=2
+--- stdout
+--- stderr
+repo-sync: usage: repo_sync [--dry-run | --check]
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 82 761cf548f1c7f12c
+dir  tmp 755
+=== --dry-run --check
+rc=2
+--- stdout
+--- stderr
+repo-sync: usage: repo_sync [--dry-run | --check]
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 82 761cf548f1c7f12c
+dir  tmp 755
+=== -h
+rc=2
+--- stdout
+--- stderr
+repo-sync: usage: repo_sync [--dry-run | --check]
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 82 761cf548f1c7f12c
+dir  tmp 755
+=== --check x
+rc=2
+--- stdout
+--- stderr
+repo-sync: usage: repo_sync [--dry-run | --check]
+--- files
+dir  repo 755
+dir  repo/.config 755
+file repo/.config/bootstrap.toml 644 82 761cf548f1c7f12c
+dir  tmp 755
+--- end
