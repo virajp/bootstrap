@@ -14,19 +14,20 @@ See also: [packs.md](packs.md), [tools.md](tools.md), [mise.md](mise.md),
 `sync-engine/` is not a tool. The sync never copies it to a consumer as a
 folder.
 
-| File         | Job                                                                                                                                                                                                        |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `clone`      | The cache, the lock, the fetch and the copy of the clone. A template of an entry task embeds this file.                                                                                                    |
-| `common`     | The log, the output of a run, the file mode, the clean-up and its traps, the header detection, the record of the commit and the tool wrappers.                                                             |
-| `write`      | The write of one target: the format, the parse check, the temp file, the seed gate, the unblock of a folder path, the checks of a `[files]` table, the compare, the mode, the dry-run diff and the rename. |
-| `merge`      | Merge mode.                                                                                                                                                                                                |
-| `select`     | The pack expansion and the depth-first walk of the `depends`.                                                                                                                                              |
-| `manifest`   | The read and the write of the manifest, and the stale rule. Its `macos` link mode resolves each link, removes the real file and prunes up to the target root.                                              |
-| `values`     | The merge of the values of the tools.                                                                                                                                                                      |
-| `mise`       | The mise config generator, the environments of each tool and the checks of `[overrides.mise*]`. See [mise.md](mise.md).                                                                                    |
-| `repo-sync`  | The repo front-end, the function `repo_sync`. See [repo-sync.md](repo-sync.md).                                                                                                                            |
-| `setup-sync` | The bash Mac front-end, the function `setup_sync`. The Mac tasks run `sync-engine macos` in its place. See [setup-sync.md](setup-sync.md).                                                                 |
-| `VERSION`    | The pin of the Go engine. See [The release of the engine](#the-release-of-the-engine).                                                                                                                     |
+| File             | Job                                                                                                                                                                                                        |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clone`          | The cache, the lock, the fetch and the copy of the clone. A template of an entry task embeds this file.                                                                                                    |
+| `common`         | The log, the output of a run, the file mode, the clean-up and its traps, the header detection, the record of the commit and the tool wrappers.                                                             |
+| `write`          | The write of one target: the format, the parse check, the temp file, the seed gate, the unblock of a folder path, the checks of a `[files]` table, the compare, the mode, the dry-run diff and the rename. |
+| `merge`          | Merge mode.                                                                                                                                                                                                |
+| `select`         | The pack expansion and the depth-first walk of the `depends`.                                                                                                                                              |
+| `manifest`       | The read and the write of the manifest, and the stale rule. Its `macos` link mode resolves each link, removes the real file and prunes up to the target root.                                              |
+| `values`         | The merge of the values of the tools.                                                                                                                                                                      |
+| `mise`           | The mise config generator, the environments of each tool and the checks of `[overrides.mise*]`. See [mise.md](mise.md).                                                                                    |
+| `repo-sync`      | The bash repo front-end, the function `repo_sync`. `setup:configs` runs `sync-engine repo` in its place. See [repo-sync.md](repo-sync.md).                                                                 |
+| `repo-sync-shim` | The function `repo_sync` for an old consumer task. It runs `sync-engine repo`. See [repo-sync.md](repo-sync.md#the-shim-for-an-old-task).                                                                  |
+| `setup-sync`     | The bash Mac front-end, the function `setup_sync`. The Mac tasks run `sync-engine macos` in its place. See [setup-sync.md](setup-sync.md).                                                                 |
+| `VERSION`        | The pin of the Go engine. See [The release of the engine](#the-release-of-the-engine).                                                                                                                     |
 
 Each front-end sources `common`, `write`, `merge`, `select`, `manifest`,
 `values`
@@ -170,29 +171,31 @@ runs
 and
 it sets a trap with `_se_clone_cleanup`.
 
-Then the entry task starts the front-end in a new process with
-`SYNC_ENGINE_CLONE` set to the copy. `setup:configs` starts its child task,
-which loads the bash front-end `repo-sync` from that copy. `updateall:configs`
-starts the Go engine, `sync-engine macos`: see
+Then the entry task starts the Go engine in a new process with
+`SYNC_ENGINE_CLONE` set to the copy. `setup:configs` starts
+`sync-engine repo`: see [repo-sync.md](repo-sync.md#the-entry-tasks).
+`updateall:configs` starts `sync-engine macos`: see
 [setup-sync.md](setup-sync.md#the-entry-task).
 
 ## The engine variables
 
 | Variable              | Use                                                                                                           |
 | --------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `SYNC_ENGINE_CLONE`   | The clone copy of the run, which the entry task gives its child task.                                         |
+| `SYNC_ENGINE_CLONE`   | The clone copy of the run, which the entry task gives the engine.                                             |
 | `SYNC_ENGINE_URL`     | The clone URL. A test uses it for a change that is not pushed.                                                |
 | `SYNC_ENGINE_VERBOSE` | `1` prints the log line of each target in place of the list. See [The output of a run](#the-output-of-a-run). |
 | `SYNC_ENGINE_CACHE`   | The cache folder. A test uses it.                                                                             |
-| `SYNC_ENGINE_BIN`     | The path of a local build of the Go engine. `updateall:configs` and the Mac tests run it in place of the pin. |
-| `REPO_SYNC_CLONE`     | The same copy, for a member that still has the old sync task. See the forwarding file below.                  |
+| `SYNC_ENGINE_BIN`     | The path of a local build of the Go engine. The entry tasks and the tests run it in place of the pin.         |
+| `REPO_SYNC_CLONE`     | The same copy, which an old `setup:configs` gives its old sync task. See the forwarding file below.           |
 
 The forwarding file is `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync`
 of
 this repository. The sync does not ship it. An old `setup/configs/sync` loads it
 from the clone with `REPO_SYNC_CLONE`, and it loads `sync-engine/repo-sync` of
 the
-same clone. It keeps its old header. The cleanup plan removes it.
+same clone. It keeps its old header. The cleanup plan removes it. The shim
+`repo-sync-shim` for an old task is in
+[repo-sync.md](repo-sync.md#the-shim-for-an-old-task).
 
 ## The tool calls
 
@@ -659,6 +662,7 @@ only for the Mac front-end: see
 - A bad flag, and a side other than `repo` or `macos` in a call of a function of
   `sync-engine/mise`.
 - A missing `mise`, and a sync without `SYNC_ENGINE_CLONE`.
+- A `SYNC_ENGINE_BIN` that is not an executable file.
 - A `repo/` of the cache that is not a clone and not empty, and a repository at
   the cache root with another `origin` or no `origin`.
 - A `tools.toml` that cannot be read or that breaks a rule, also an old key.
@@ -702,8 +706,8 @@ only for the Mac front-end: see
 - A bad `[member.*]` table: a name with other characters, two members with one
   name, a folder that is not in the repository, a `folder` of `.`, and a `type`
   that is not correct.
-- A member without a `setup:configs:sync` task, when `setup:configs` syncs that
-  member with `--all` or `--<name>`.
+- A member without a values file, when `setup:configs` syncs that member with
+  `--all` or `--<name>`.
 - A bad `[overrides.gitignore]`, and the old `.config/repo-sync/gitignore`.
 - A bad `.config/fnox.toml`.
 - A merge target that is a symlink or is below a symlinked folder.
@@ -736,6 +740,8 @@ only for the Mac front-end: see
 **Code 5:**
 
 - A clone or a fetch that fails.
+- A `sync-engine/VERSION` of the copy that is not `MAJOR.MINOR.PATCH`, and a
+  `mise install` of the engine that fails.
 - A `SYNC_ENGINE_CLONE` that is not usable, on the repo side.
 - A `pre-commit autoupdate` that fails, or a missing `pre-commit`, on the repo
   side.

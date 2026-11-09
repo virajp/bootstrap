@@ -1,7 +1,8 @@
 # The `repo-sync` tool
 
-The `setup:configs` tasks that copy the tools from `bootstrap`, with the sync
-function `repo_sync` of `sync-engine/repo-sync` in the clone.
+The task `setup:configs` that copies the tools from `bootstrap` with the sync
+engine, `sync-engine repo`. `sync-engine/VERSION` of the clone selects the
+release of the engine.
 
 | Property     | Value |
 | ------------ | ----- |
@@ -17,12 +18,16 @@ file. A `[tools.repo-sync]` table gives values.
 
 ## What the tool ships
 
-| Path in the repository                        | Kind      | Use                                                                                                                                                                                                    |
-| --------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`. It fetches `bootstrap` into the cache. It updates the local sync task from the clone, then runs it. The sync embeds `sync-engine/clone` in it.                               |
-| `.config/mise/tasks/setup/configs/sync`       | Synced    | The task `setup:configs:sync`. It loads `sync-engine/repo-sync` from the clone, and stops with code 2 without `SYNC_ENGINE_CLONE`. `setup:configs` updates this file from the clone before it runs it. |
-| `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `repo_sync --check`.                                                                                                                                           |
-| `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                                                                                                                                                          |
+| Path in the repository                        | Kind      | Use                                                                                                                                                             |
+| --------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`. It fetches `bootstrap` into the cache, then runs the sync engine with a copy of the clone. The sync embeds `sync-engine/clone` in it. |
+| `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `repo_sync --check`.                                                                                                    |
+| `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                                                                                                                   |
+
+The sync no longer ships the task `setup:configs:sync`
+(`.config/mise/tasks/setup/configs/sync`). With a manifest
+`.config/repo-generated.tsv` that lists it, the stale rule removes it. Without
+such a manifest, M31 of `migrate.md` removes it.
 
 The sync no longer ships the forwarding file. It stays in `bootstrap` at
 `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync`, because an old
@@ -43,18 +48,17 @@ mise, from `/`.
 
 ## Tasks
 
-| Task                  | Use                                                                                                                                                                                                         |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `setup:configs`       | Update the local sync task and sync the shared files from `bootstrap`. `--dry-run` shows the diff. `--verbose` lists each file, also an unchanged one. `--all` and `--<name>` also sync the git submodules. |
-| `setup:configs:sync`  | Run `repo_sync` from the clone of `setup:configs`. Do not run it alone.                                                                                                                                     |
-| `code:lint:repo-sync` | Validate `.config/bootstrap.toml` with `repo_sync --check`. Hidden.                                                                                                                                         |
+| Task                  | Use                                                                                                                                                                          |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:configs`       | Sync the shared files from `bootstrap`. `--dry-run` shows the diff. `--verbose` lists each file, also an unchanged one. `--all` and `--<name>` also sync the git submodules. |
+| `code:lint:repo-sync` | Validate `.config/bootstrap.toml` with `repo_sync --check`. Hidden.                                                                                                          |
 
 `setup:configs` keeps a shallow clone of `bootstrap` in `repo/` of the cache
 `${XDG_CACHE_HOME:-~/.cache}/sync-engine/`, for each consumer of the machine:
 
 - Each run fetches the branch `main` of
   `https://github.com/virajp/bootstrap.git` into the clone, and gives a copy
-  of it to `setup:configs:sync`. The fetch uses the URL, not `origin`. It needs
+  of it to the sync engine. The fetch uses the URL, not `origin`. It needs
   no SSH key.
 - The lock folder `lock/` of the cache makes a second run wait until the first
   has made its copy. A waiter removes the lock of a dead holder.
@@ -75,26 +79,20 @@ mise, from `/`.
 - If the fetch or the clone fails, `setup:configs` stops with code 5. It
   never uses an old clone.
 
-Before each run of `setup:configs:sync`, for the root and for each submodule,
-`setup:configs` updates the local sync task. A running task keeps its old code
-when the sync writes its file, so the task compares the local
-`setup/configs/sync` and `_scripts/helpers` with the same files in the copy of
-the clone:
+After the copy, `setup:configs` selects the sync engine:
 
-- It copies a file that differs, in its content or in its mode. It prints
-  `Updated the local sync task to <short commit>`, below the line
-  `Updating the clone`. If no file differs, it prints
-  `The local sync task is up to date`.
-- A dry run copies nothing. If a file differs, it prints
-  `Would update the local sync task to <short commit>`. The sync then shows the
-  file as `would change`.
-- It skips a file that does not exist locally, a file that the clone does not
-  have and a local symlink. If neither file exists locally, it prints no line.
-- A failed copy prints a warning, and the run continues with the local file.
-- A copied file counts as unchanged in the sync, so the last line can read
-  `Synced: no file changed`.
-- `_default` stays old for that run, because it needs the full render. The sync
-  writes it for the next run.
+- With `SYNC_ENGINE_BIN` set, it runs that file, a local build of the engine.
+  A path that is not an executable file stops the task with code 2.
+- Else it reads `sync-engine/VERSION` of the copy, the pin of the engine. A
+  value that is not `MAJOR.MINOR.PATCH` stops the task with code 5. It runs
+  `mise install github:virajp/bootstrap@<version>`, and a failure stops the
+  task with code 5. Then it runs
+  `mise x github:virajp/bootstrap@<version> -- sync-engine repo`.
+
+It prints the header "Syncing the shared files from bootstrap ...", and runs
+the engine in the root, with the copy in `SYNC_ENGINE_CLONE`. The exit code of
+the engine is the exit code of the task. The task provides `pre-commit` to the
+engine with `#MISE tools.pre-commit="latest"`.
 
 The sync lists only what changed, then prints a table of counts and a last line:
 
@@ -149,8 +147,8 @@ member is part of the root tree, so it gets no flag.
   member, for example "Syncing Backend ...".
 - The first failure stops the task with its code. The submodules after it
   get no sync.
-- A selected submodule without its own `setup/configs/sync` stops the task
-  with code 2. Without that file, mise runs the task of the root in the root.
+- A selected submodule without its own `.config/bootstrap.toml` stops the
+  task with code 2.
 
 `code:lint:repo-sync` is a gate of `code:lint`. It accepts `--debug` and
 `--fix`, and ignores them, because the check has no fixes. It prints nothing
@@ -268,15 +266,16 @@ Besides the copy of the files, `repo_sync` does these steps:
 These environment variables change the sync. `--check` does not read
 `SYNC_ENGINE_URL` and `SYNC_ENGINE_CLONE`, because it makes no clone:
 
-| Variable                  | Use                                                                                                                                    |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `SYNC_ENGINE_URL`         | The repository to clone. The default is `https://github.com/virajp/bootstrap.git`.                                                     |
-| `SYNC_ENGINE_CACHE`       | The cache folder. The default is `sync-engine` in the base of the cache.                                                               |
-| `XDG_CACHE_HOME`          | The base of the cache, and of the old cache that each run removes. The default is `~/.cache`.                                          |
-| `SYNC_ENGINE_CLONE`       | The copy of the clone. `setup:configs` sets it. An old `setup/configs/sync` reads `REPO_SYNC_CLONE`, so `setup:configs` sets that too. |
-| `SYNC_ENGINE_VERBOSE`     | `1` prints the log line of each file in place of the list. `--verbose` sets it. Another value does nothing.                            |
-| `REPO_SYNC_VALUES`        | The values file. The default is `.config/bootstrap.toml`.                                                                              |
-| `REPO_SYNC_NO_AUTOUPDATE` | `1` skips `pre-commit autoupdate`, so no network is necessary.                                                                         |
+| Variable                  | Use                                                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `SYNC_ENGINE_URL`         | The repository to clone. The default is `https://github.com/virajp/bootstrap.git`.                          |
+| `SYNC_ENGINE_CACHE`       | The cache folder. The default is `sync-engine` in the base of the cache.                                    |
+| `XDG_CACHE_HOME`          | The base of the cache, and of the old cache that each run removes. The default is `~/.cache`.               |
+| `SYNC_ENGINE_CLONE`       | The copy of the clone. `setup:configs` sets it.                                                             |
+| `SYNC_ENGINE_BIN`         | A local build of the sync engine. `setup:configs` runs it in place of the pin `sync-engine/VERSION`.        |
+| `SYNC_ENGINE_VERBOSE`     | `1` prints the log line of each file in place of the list. `--verbose` sets it. Another value does nothing. |
+| `REPO_SYNC_VALUES`        | The values file. The default is `.config/bootstrap.toml`.                                                   |
+| `REPO_SYNC_NO_AUTOUPDATE` | `1` skips `pre-commit autoupdate`, so no network is necessary.                                              |
 
 ## Pre-commit hooks
 
@@ -298,5 +297,5 @@ runs `code:lint:repo-sync` with the staged files.
 ## Migration
 
 - Remove `gomplate` from the repository-owned mise files.
-- The general items M1, M15, M23, M27 and M29 of `migrate.md` are about the
-  files of this tool.
+- The general items M1, M15, M23, M27, M29 and M31 of `migrate.md` are about
+  the files of this tool.

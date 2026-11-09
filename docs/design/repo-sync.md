@@ -16,66 +16,56 @@ codes,
 
 ## The entry tasks
 
-The `repo-sync` tool of `repo/tools/` ships the three tasks.
+The `repo-sync` tool of `repo/tools/` ships the two tasks.
 
-| Task                  | Job                                                                                                                          |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `setup:configs`       | Refreshes the cache clone and copies it. Then it updates the local sync task and runs `setup:configs:sync` in a new process. |
-| `setup:configs:sync`  | Hidden. It loads `sync-engine/repo-sync` from the copy and runs `repo_sync`.                                                 |
-| `code:lint:repo-sync` | Hidden. The gate of the values file. See [The gate](#the-gate-codelintrepo-sync).                                            |
+| Task                  | Job                                                                                                   |
+| --------------------- | ----------------------------------------------------------------------------------------------------- |
+| `setup:configs`       | Refreshes the cache clone and copies it. Then it runs `sync-engine repo` of the pin in a new process. |
+| `code:lint:repo-sync` | Hidden. The gate of the values file. See [The gate](#the-gate-codelintrepo-sync).                     |
+
+The old task `setup:configs:sync` (`setup/configs/sync`) loaded
+`sync-engine/repo-sync` from the copy and ran `repo_sync`. The tool no longer
+ships it, so the stale rule removes it. `sync-engine/repo-sync` of the clone is
+still the bash front-end. `sync-engine/repo-sync-shim` is the shim for an old
+consumer task: see [The shim for an old task](#the-shim-for-an-old-task).
 
 `setup:configs` (`setup/configs/_default`) embeds `sync-engine/clone`. See
-[sync-engine.md](sync-engine.md#how-an-entry-task-embeds-clone). It sets
-`SYNC_ENGINE_CLONE` to the copy. It also sets `REPO_SYNC_CLONE` for a member
-that
-still has the old sync task. `setup:configs:sync` stops without
-`SYNC_ENGINE_CLONE`.
+[sync-engine.md](sync-engine.md#how-an-entry-task-embeds-clone). Its order is:
+
+1. It takes the lock of the cache, does the legacy cleanup, refreshes the
+   clone, copies it to a temporary folder and releases the lock.
+2. It selects the engine. With `SYNC_ENGINE_BIN` set, it uses that file: a path
+   that is not an executable file stops the task with exit 2. Else it reads
+   `sync-engine/VERSION` of the copy with `read -r`. A value that is not
+   `MAJOR.MINOR.PATCH` stops the task with exit 5. Then it runs
+   `mise install github:virajp/bootstrap@<version>`, and a failure stops the
+   task with exit 5. See
+   [sync-engine.md](sync-engine.md#the-release-of-the-engine).
+3. It prints the header `Syncing the shared files from bootstrap ...`. Then it
+   runs `sync-engine repo` in the root of the repository, with
+   `MISE_PROJECT_ROOT` set to the root and `SYNC_ENGINE_CLONE` set to the copy:
+   `"$SYNC_ENGINE_BIN" repo`, or
+   `mise x github:virajp/bootstrap@<version> -- sync-engine repo`.
+4. For each selected submodule, it prints the header `Syncing <label> ...`.
+   Then it does step 3 in the folder of the submodule, with
+   `MISE_PROJECT_ROOT` set to that folder.
+
+The first failure stops the task, and the exit code of the engine is the exit
+code of the task. The task provides `pre-commit` to the engine with
+`#MISE tools.pre-commit="latest"`.
 
 `--all` and `--<name>` also sync each selected submodule from the same copy, so
-all
-get the same commit. The first failure stops the task. A member without a
-`setup:configs:sync` task stops the task: without that task, mise finds the task
-of
-the root and runs it in the root.
+all get the same commit. A submodule is a separate repository with its own
+values file. A submodule without a values file stops the engine with code 2.
 
 `--verbose` sets `SYNC_ENGINE_VERBOSE=1`, and the task does not pass the flag to
-`setup:configs:sync`. A member gets the variable from the task. See
+the engine. A member gets the variable from the task. See
 [sync-engine.md](sync-engine.md#the-output-of-a-run). A repository with an old
 `_default` must run the task once without the flag, because mise refuses a flag
 that the old task does not define.
 
 By default, the sync starts with one info line:
 `bootstrap <short commit> · <n> tools · environments: <environments>`.
-
-### The copy of the local sync task
-
-The file loop replaces the local `setup/configs/sync` and `_scripts/helpers`
-with
-`mv -f`, so a running script keeps its old code. Thus, before each run of
-`setup:configs:sync`, for the root and for each member, `setup:configs` compares
-these two files with the same files in the clone copy. It copies a file that
-differs, with its mode. It prints the result below the line `Updating the
-clone`:
-
-| Result                                            | Info line                                            |
-| ------------------------------------------------- | ---------------------------------------------------- |
-| A file was copied                                 | `Updated the local sync task to <short commit>`      |
-| A dry run, and a file differs                     | `Would update the local sync task to <short commit>` |
-| No file was copied or differs, and no copy failed | `The local sync task is up to date`                  |
-| Neither file exists locally                       | None                                                 |
-
-- A difference in the mode is a difference.
-- The step copies only over a file that exists. It skips a file that the clone
-  copy does not have, and a local symlink. A skipped symlink is not a
-  difference.
-- A failed copy prints a warning, and the task continues with the local file.
-- A copied file counts as unchanged in the file loop, so the last line can read
-  `Synced: no file changed`. A dry run copies nothing, so a stale file shows as
-  `would change`.
-- The copy runs before the sync validates anything, so a run that then stops
-  leaves the two fresh files.
-- `_default` stays old for one run, because it needs the full render. The file
-  loop writes it for the next run.
 
 `repo_sync` makes its own private copy of the clone, because it writes the
 generated
@@ -85,6 +75,21 @@ mise config into the copy. It never clones and reads no URL.
 | ------------------------- | -------------------------------------------------------------- |
 | `REPO_SYNC_VALUES`        | The values file. The default is `.config/bootstrap.toml`.      |
 | `REPO_SYNC_NO_AUTOUPDATE` | `1` skips `pre-commit autoupdate`, so no network is necessary. |
+
+### The shim for an old task
+
+An old `setup:configs` runs its local `setup/configs/sync`, which loads
+`sync-engine/repo-sync` from the clone and calls `repo_sync`. The old
+`setup:configs` also copied a newer `setup/configs/sync` from the clone, but
+the clone no longer has that file, so the local file stays.
+
+The shim `sync-engine/repo-sync-shim` defines the function `repo_sync`. It runs
+`sync-engine repo` with the same arguments and environment, and returns the
+exit code of the engine. It selects the engine with the rules of step 2: it
+returns 2 for a bad `SYNC_ENGINE_BIN`, and 5 for a bad pin or a failed
+`mise install`. It reads `VERSION` from its own folder, so `--check` needs no
+`SYNC_ENGINE_CLONE`. Its error lines start with `repo-sync:`. Phase P7b moves
+it over `sync-engine/repo-sync`.
 
 ## The values file and the selection
 
@@ -268,8 +273,8 @@ older `repo-sync` copies it as it is. `REPO_SYNC_NO_AUTOUPDATE=1` skips
 `autoupdate`. If
 `pre-commit` is missing or `autoupdate` fails, the sync keeps the existing file.
 The task
-`setup:configs:sync` provides `pre-commit` with `#MISE
-tools.pre-commit="latest"`, and `repo-sync` calls it without `mise x --`.
+`setup:configs` provides `pre-commit` with `#MISE
+tools.pre-commit="latest"`, and the engine calls it without `mise x --`.
 
 ## `[overrides.gitignore]`
 

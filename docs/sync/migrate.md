@@ -27,6 +27,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | A sync that adds `sync-engine/`                                              | M27, after the sync.                                                                                                                                                                                                                                                |
 | A values file that selects one scanner, or a repository that read `required` | M28. Nothing to do.                                                                                                                                                                                                                                                 |
 | A sync that writes the first `.config/repo-generated.tsv`                    | M29, after the sync.                                                                                                                                                                                                                                                |
+| `.config/mise/tasks/setup/configs/sync`                                      | M31, after the sync.                                                                                                                                                                                                                                                |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -682,3 +683,24 @@ hand, as before.
    wrote the other files, and it skipped the stale rule, the manifest and
    `bootstrap_commit`. Replace the path with a regular file, or delete it. Then
    run the sync again.
+
+## M31: `setup:configs` runs the sync engine
+
+`setup:configs` now runs the Go sync engine, `sync-engine repo`, of the pin
+`sync-engine/VERSION` of the clone. The task `setup:configs:sync`
+(`.config/mise/tasks/setup/configs/sync`) is gone, and `setup:configs` no
+longer copies a local sync task from the clone.
+
+The first sync after the update runs the old `setup:configs` one time. Its old
+`setup/configs/sync` loads a shim from the clone, which runs the engine. That
+run writes the new `_default`.
+
+1. Run `mise run setup:configs`. Commit the result.
+2. If `.config/repo-generated.tsv` listed
+   `.config/mise/tasks/setup/configs/sync`
+   before the sync, the stale rule removed it. Else delete
+   `.config/mise/tasks/setup/configs/sync` when it starts with the bootstrap
+   header. A file without the header belongs to the repository: keep it.
+3. Do the same in each git submodule. A submodule without
+   `.config/bootstrap.toml` now stops `setup:configs --all` with code 2: adopt
+   `bootstrap` in it first.
