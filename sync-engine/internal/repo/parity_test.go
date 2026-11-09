@@ -1,17 +1,14 @@
 package repo
 
-// The parity test runs the Go front-end (a built binary) and the bash
-// function `repo_sync` with the same inputs, and compares the exit code, the
-// output and the files of each step. The clone is a copy of the repo/,
-// sync-engine/ and tools/ folders of the working tree, as test:repo-sync
-// makes it. Each case is a consumer repository with a values file, and steps
-// that run one after the other in it.
-//
-// The golden files in testdata/golden/ hold the bash results, with a
-// fingerprint of the inputs and of the bash files. UPDATE_GOLDEN=1 writes them
-// again from bash. SYNC_ENGINE_LIVE=1 runs bash live. A golden file with an
-// old fingerprint runs bash live, or skips the case when the bash tools
-// (gomplate, jq and yq through mise) are not installed.
+// The parity test runs the Go front-end (a built binary), and compares the
+// exit code, the output and the files of each step with the golden files in
+// testdata/golden/. The golden files hold the results of the bash function
+// `repo_sync` with the same inputs, from before the removal of the bash
+// engine, and a fingerprint of the inputs. The clone is a copy of the repo/
+// and tools/ folders and of sync-engine/clone of the working tree. Each case
+// is a consumer repository with a values file, and steps that run one after
+// the other in it. A golden file with an old fingerprint skips its case:
+// test:repo-sync tests that behavior.
 
 import (
 	"crypto/sha256"
@@ -33,26 +30,10 @@ import (
 const repoRoot = "../../.."
 
 var (
-	bashOnce sync.Once
-	bashOK   bool
-	binOnce  sync.Once
-	binPath  string
-	binErr   error
+	binOnce sync.Once
+	binPath string
+	binErr  error
 )
-
-// bashAvailable tells if the tools of the bash engine are installed.
-func bashAvailable() bool {
-	bashOnce.Do(func() {
-		bashOK = true
-		for _, tool := range []string{"gomplate", "jq", "yq"} {
-			out, err := exec.Command("sh", "-c", "cd / && MISE_OFFLINE=1 mise ls --installed "+tool+" 2>/dev/null </dev/null").Output()
-			if err != nil || strings.TrimSpace(string(out)) == "" {
-				bashOK = false
-			}
-		}
-	})
-	return bashOK
-}
 
 // binary builds the command once for the test run.
 func binary(t *testing.T) string {
@@ -116,8 +97,8 @@ func gitIn(t *testing.T, dir string, args ...string) {
 	}
 }
 
-// clone builds the clone copy in <dir>: repo/, sync-engine/ (the bash files
-// only) and tools/ of the working tree, in a git repository.
+// clone builds the clone copy in <dir>: repo/, sync-engine/clone and tools/
+// of the working tree, in a git repository.
 func clone(t *testing.T, dir string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Join(dir, "sync-engine"), 0o755); err != nil {
@@ -128,20 +109,15 @@ func clone(t *testing.T, dir string) {
 			t.Fatalf("cp %s: %v\n%s", d, err, out)
 		}
 	}
-	for _, name := range bashFiles {
-		b, err := os.ReadFile(filepath.Join(repoRoot, "sync-engine", name))
-		if err != nil {
-			t.Fatal(err)
-		}
-		write(filepath.Join(dir, "sync-engine", name), string(b))
+	b, err := os.ReadFile(filepath.Join(repoRoot, "sync-engine", "clone"))
+	if err != nil {
+		t.Fatal(err)
 	}
+	write(filepath.Join(dir, "sync-engine", "clone"), string(b))
 	gitIn(t, dir, "init", "--quiet")
 	gitIn(t, dir, "add", "-A")
 	gitIn(t, dir, "commit", "--quiet", "--no-verify", "-m", "test copy")
 }
-
-// The bash files of the engine. A template reads `clone`.
-var bashFiles = []string{"clone", "common", "write", "merge", "select", "manifest", "values", "mise", "repo-sync"}
 
 // pcase is one case: a values file and steps in one consumer repository.
 type pcase struct {
@@ -391,16 +367,9 @@ func runCase(t *testing.T, c pcase, d, cloneDir, commit string, cmd []string) st
 	return normalize(b.String(), d, cloneDir, commit)
 }
 
-// fingerprint is the hash of the inputs and of the bash files.
+// fingerprint is the hash of the inputs: repo/ and tools/.
 func fingerprint(t *testing.T) string {
 	h := sha256.New()
-	for _, name := range bashFiles {
-		b, _ := os.ReadFile(filepath.Join(repoRoot, "sync-engine", name))
-		fmt.Fprintf(h, "%s %d\n", name, len(b))
-		h.Write(b)
-	}
-	b, _ := os.ReadFile("parity_test.go")
-	h.Write(b)
 	for _, dir := range []string{"repo", "tools"} {
 		_ = filepath.WalkDir(filepath.Join(repoRoot, dir), func(p string, e fs.DirEntry, err error) error {
 			if err == nil && !e.IsDir() {
@@ -431,31 +400,15 @@ func TestParity(t *testing.T) {
 	}
 	commit := strings.TrimSpace(string(out))
 	fp := fingerprint(t)
-	live := os.Getenv("SYNC_ENGINE_LIVE") == "1"
-	update := os.Getenv("UPDATE_GOLDEN") == "1"
-	if (live || update) && !bashAvailable() {
-		t.Fatal("SYNC_ENGINE_LIVE=1 and UPDATE_GOLDEN=1 need gomplate, jq and yq")
-	}
-	bashCmd := []string{"bash", "-c", `source "` + cloneDir + `/sync-engine/repo-sync" && repo_sync "$@"`, "repo-sync"}
 	for _, c := range cases() {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			got := runCase(t, c, filepath.Join(root, "go", c.name), cloneDir, commit, []string{bin, "repo"})
 			golden := filepath.Join("testdata", "golden", c.name+".golden")
-			var want string
 			data, err := os.ReadFile(golden)
-			head, rest, _ := strings.Cut(string(data), "\n")
-			switch {
-			case update || live || err != nil || head != "fingerprint: "+fp:
-				if !bashAvailable() {
-					t.Skipf("%s is missing or old, and bash cannot run here", golden)
-				}
-				want = runCase(t, c, filepath.Join(root, "bash", c.name), cloneDir, commit, bashCmd)
-				if update {
-					write(golden, "fingerprint: "+fp+"\n"+want)
-				}
-			default:
-				want = rest
+			head, want, _ := strings.Cut(string(data), "\n")
+			if err != nil || head != "fingerprint: "+fp {
+				t.Skipf("%s is missing or old (the inputs changed), and the bash engine that wrote it is gone", golden)
 			}
 			if got != want {
 				t.Errorf("Go differs from bash\n%s", diff(t, want, got))

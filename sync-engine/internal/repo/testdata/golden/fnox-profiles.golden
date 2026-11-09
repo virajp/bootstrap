@@ -1,4 +1,4 @@
-fingerprint: 6e10a6ce802b1ad716e22ff050cdf688e73821a277cf7d9be9e842c49cda9ae1
+fingerprint: 4dc4e1a84260f272c3d76db7d010f4302fb7a8654c51d77adf4d7d453e12ae14
 === --dry-run
 rc=0
 --- stdout
@@ -27,7 +27,6 @@ repo-sync: would update .config/mise/tasks/setup/worktree
 repo-sync: would update .config/mise/conf.d/repo-sync/mise.dev.toml
 repo-sync: would update .config/mise/tasks/code/lint/repo-sync
 repo-sync: would update .config/mise/tasks/setup/configs/_default
-repo-sync: would update .config/mise/tasks/setup/configs/sync
 repo-sync: would update .config/git-conventional-commits.yaml
 repo-sync: would update .config/mise/conf.d/git/mise.dev.toml
 repo-sync: would update .config/mise/tasks/_scripts/merge
@@ -69,10 +68,10 @@ repo-sync: would update .config/mise/conf.d/fnox/mise.dev.toml
 repo-sync: would update .config/mise/tasks/setup/secrets/fnox
 repo-sync: would write .config/repo-generated.tsv
 repo-sync: would set bootstrap_commit <commit> in .config/bootstrap.toml
-repo-sync: done: 62/62 files in sync
+repo-sync: done: 61/61 files in sync
 +---------------+-------+
 | Changed       |     0 |
-| New           |    51 |
+| New           |    50 |
 | Seeded        |     5 |
 | Removed       |     0 |
 | Unchanged     |     0 |
@@ -80,9 +79,9 @@ repo-sync: done: 62/62 files in sync
 | Skipped       |     4 |
 | Failed        |     0 |
 +---------------+-------+
-| Total         |    61 |
+| Total         |    60 |
 +---------------+-------+
-[OK] Dry run: 56 files would change
+[OK] Dry run: 55 files would change
 --- files
 dir  repo 755
 dir  repo/.config 755

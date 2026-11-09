@@ -1,4 +1,4 @@
-fingerprint: e99843c616cadf3fbb231ffa6c7059aff85fe10a9272b80b0d39044119a8b86d
+fingerprint: e0b55d14e35f76713950bd876ef7c858afe40e03c6ead551ddfa5c41538407c3
 rc=2
 --- stderr
 repo-sync: repo/tools/a/tools.toml: [files."x.txt"] mode = "merge" needs a json, yaml or toml target

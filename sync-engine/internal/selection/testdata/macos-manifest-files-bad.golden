@@ -1,4 +1,4 @@
-fingerprint: 1ee10d7a6a9495cab157d5193ccbc159c6d64344b4aa4ac27fac8a7fe9c5304b
+fingerprint: 9f2e55a18b11a901cfc755b47c84a8330596bd572f289f745c15e9229c03ae07
 rc=2
 --- stderr
 setup-sync: macos/tools/m1/tools.toml: [files."a.txt"] format must be "text", "json", "yaml" or "toml"

@@ -1,4 +1,4 @@
-fingerprint: 12b7064355d3d573081e8b75be927d1a45a81f7f648a6552db10dbc1a26b0c7b
+fingerprint: 3464aac4afc611f52630a719038f0e8477c7d07250a8360a9f7657c66029a3cd
 rc=2
 --- stderr
 repo-sync: repo/tools/a/tools.toml: [files."x.txt"] requires: '/abs' must be a path relative to the repository root, with no .. part

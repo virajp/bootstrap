@@ -1,4 +1,4 @@
-fingerprint: 62513d20c985d0a8669ded533340f97a44f6d5047ccdc14f7174edf5e9ae96ae
+fingerprint: 3aab451df8fd0f3dc0dec90e31e5851cdba57835885628489ae9e5de28228e85
 rc=2
 --- stderr
 repo-sync: repo/tools/a/tools.toml: [contributes.b] must be a table

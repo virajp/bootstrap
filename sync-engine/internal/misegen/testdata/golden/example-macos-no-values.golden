@@ -1,4 +1,4 @@
-fingerprint: 59eedaf8ed98b188f5d7a57c95d6beff2f2c10b582fcc510e06bb09fd3837cc9
+fingerprint: 1fe8cce702e6c2c1509d4617e084e22fcec3871d60be8b967ddf9c6a236bcb49
 pre: rc=0
 render bash: rc=0
   bash/mise.toml

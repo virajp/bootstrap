@@ -20,16 +20,12 @@ import (
 
 // The golden files in testdata/ hold the output of the bash engine for each
 // case: the exit code, the log and the result of the read steps (the tool
-// list, the stages, the merged values). A case has a fingerprint of its inputs
-// and of the bash files. When the fingerprint differs from the golden, the
-// golden is old: the test runs bash live if it can, else it skips the case.
-// To write the golden files again from bash, run:
-//
-//	UPDATE_GOLDEN=1 go test ./internal/selection
-//
-// SYNC_ENGINE_LIVE=1 runs bash for each case and compares it with the golden.
+// list, the stages, the merged values), from before the removal of that
+// engine. A case has a fingerprint of its inputs. When the fingerprint differs
+// from the golden, the golden is old: the test skips the case, and
+// test:repo-sync, test:setup-sync and test:macos-tools test that behavior.
 
-// engineDir is sync-engine/ (the bash files are there).
+// engineDir is sync-engine/.
 func engineDir(t *testing.T) string {
 	t.Helper()
 	d, err := filepath.Abs(filepath.Join("..", ".."))
@@ -55,7 +51,7 @@ func copyDir(t *testing.T, from, to string) {
 	}
 }
 
-// fingerprint hashes the files under <dirs> and the bash files of the engine.
+// fingerprint hashes the files under <dirs>.
 func fingerprint(t *testing.T, dirs ...string) string {
 	t.Helper()
 	h := sha256.New()
@@ -67,10 +63,6 @@ func fingerprint(t *testing.T, dirs ...string) string {
 		fmt.Fprintf(h, "%s %d\n", name, len(b))
 		h.Write(b)
 	}
-	for _, name := range []string{"common", "select", "values", "repo-sync", "setup-sync", "mise", "write"} {
-		add(filepath.Join(engineDir(t), name), "engine/"+name)
-	}
-	dirs = append(dirs, filepath.Join("testdata", "bash"))
 	for _, d := range dirs {
 		var paths []string
 		_ = filepath.WalkDir(d, func(p string, e fs.DirEntry, err error) error {
@@ -88,22 +80,11 @@ func fingerprint(t *testing.T, dirs ...string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// bashAvailable tells if the tools of the bash engine are installed.
-func bashAvailable() bool {
-	for _, tool := range []string{"gomplate", "jq"} {
-		out, err := exec.Command("sh", "-c", "cd / && MISE_OFFLINE=1 mise ls --installed "+tool+" 2>/dev/null </dev/null").Output()
-		if err != nil || strings.TrimSpace(string(out)) == "" {
-			return false
-		}
-	}
-	return true
-}
-
 // A case is one run of the read steps against a clone and a values file.
 type pcase struct {
 	name   string
 	side   source.Side
-	clone  string // The clone copy (a writable folder for bash).
+	clone  string // The clone copy.
 	values string // The values file (repo) or the config folder (macos).
 	shown  string // The values file as a message names it.
 	sub    bool   // Repo: the repo is a git submodule.
@@ -117,37 +98,6 @@ func (c pcase) fingerprint(t *testing.T) string {
 // compose gives the text of a result.
 func compose(rc int, stderr, stdout string) string {
 	return fmt.Sprintf("rc=%d\n--- stderr\n%s--- stdout\n%s", rc, stderr, stdout)
-}
-
-func (c pcase) bash(t *testing.T) string {
-	t.Helper()
-	script := "repo.sh"
-	if c.side == source.Macos {
-		script = "macos.sh"
-	}
-	args := []string{filepath.Join("testdata", "bash", script), engineDir(t), c.clone, c.values}
-	if c.sub {
-		args = append(args, "sub")
-	}
-	cmd := exec.Command("bash", args...)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &stdout, &stderr
-	cmd.Env = append(os.Environ(), "NO_COLOR=1", "SYNC_ENGINE_VERBOSE=", "TMPDIR="+os.TempDir())
-	_ = cmd.Run()
-	out := stdout.String()
-	// gomplate prints its own error as a JSON line. The Go engine has no such line.
-	var keep []string
-	for _, l := range strings.SplitAfter(stderr.String(), "\n") {
-		if !strings.HasPrefix(l, `{"time":`) {
-			keep = append(keep, l)
-		}
-	}
-	stderr.Reset()
-	stderr.WriteString(strings.Join(keep, ""))
-	rc := 0
-	first, rest, _ := strings.Cut(out, "\n")
-	fmt.Sscanf(first, "rc=%d", &rc)
-	return compose(rc, stderr.String(), rest)
 }
 
 func (c pcase) golang() string {
@@ -232,35 +182,19 @@ func runMacos(c pcase, log source.Logger) (int, string) {
 	return 0, b.String()
 }
 
-// check compares the Go result of <c> with the golden file, and with bash
-// when the golden is old or the run asks for it.
+// check compares the Go result of <c> with the golden file.
 func check(t *testing.T, c pcase) {
 	t.Helper()
 	golden := filepath.Join("testdata", c.name+".golden")
 	fp := c.fingerprint(t)
 	got := c.golang()
-	update := os.Getenv("UPDATE_GOLDEN") == "1"
-	if update {
-		if !bashAvailable() {
-			t.Fatal("UPDATE_GOLDEN=1 needs gomplate and jq")
-		}
-		want := c.bash(t)
-		if err := os.WriteFile(golden, []byte("fingerprint: "+fp+"\n"+want), 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
 	data, err := os.ReadFile(golden)
 	if err != nil {
-		t.Fatalf("no golden file %s: run UPDATE_GOLDEN=1 go test ./internal/selection", golden)
+		t.Skipf("%s: no golden file, and the bash engine that wrote the golden files is gone", golden)
 	}
 	head, want, _ := strings.Cut(string(data), "\n")
-	stale := head != "fingerprint: "+fp
-	live := stale || os.Getenv("SYNC_ENGINE_LIVE") == "1"
-	if live {
-		if !bashAvailable() {
-			t.Skipf("%s: the golden file is old (inputs or bash files changed) and bash cannot run here", golden)
-		}
-		want = c.bash(t)
+	if head != "fingerprint: "+fp {
+		t.Skipf("%s: the golden file is old (the inputs changed), and the bash engine that wrote it is gone", golden)
 	}
 	if got != want {
 		t.Errorf("%s: Go differs from bash\n--- go\n%s\n--- bash\n%s", c.name, got, want)

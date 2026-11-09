@@ -1,4 +1,4 @@
-fingerprint: 70dd7f2c7ccba10d1702a5794e40dccf70f19b2ca3119a71e0bb1c0b123c66ec
+fingerprint: b8360a3919f545a11b07468d7538890a7ecd7edccda36bed7ef3f83a575f2025
 rc=2
 --- stderr
 setup-sync: macos/tools/m1/tools.toml: [contributes] must be a table of [contributes.<tool>] tables

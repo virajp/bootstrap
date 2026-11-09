@@ -10,29 +10,6 @@ import (
 	"github.com/virajp/bootstrap/sync-engine/internal/source"
 )
 
-// TestTemplatesEqualBash compares the templates with the bash variables of
-// sync-engine/mise.
-func TestTemplatesEqualBash(t *testing.T) {
-	if _, err := exec.LookPath("bash"); err != nil {
-		t.Skip("no bash")
-	}
-	engine := engineDir(t)
-	for name, want := range map[string]string{
-		"_SE_MISE_DEFINES":            defines,
-		"_SE_MISE_OVERRIDES_TEMPLATE": overridesTemplate,
-		"_SE_MISE_TEMPLATE":           miseTemplate,
-	} {
-		out, err := exec.Command("bash", "-c", `source "$1/common" && source "$1/mise" && printf '%s' "${!2}"`, "_",
-			engine, name).Output()
-		if err != nil {
-			t.Fatalf("%s: %v", name, err)
-		}
-		if string(out) != want {
-			t.Errorf("%s differs from bash", name)
-		}
-	}
-}
-
 // TestUsage: the usage errors of the bash functions, with their text.
 func TestUsage(t *testing.T) {
 	expect := func(err error, msg string) {

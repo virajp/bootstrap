@@ -1,4 +1,4 @@
-fingerprint: 6e10a6ce802b1ad716e22ff050cdf688e73821a277cf7d9be9e842c49cda9ae1
+fingerprint: 4dc4e1a84260f272c3d76db7d010f4302fb7a8654c51d77adf4d7d453e12ae14
 === --dry-run
 rc=0
 --- stdout
@@ -27,7 +27,6 @@ repo-sync: would update .config/mise/tasks/setup/worktree
 repo-sync: would update .config/mise/conf.d/repo-sync/mise.dev.toml
 repo-sync: would update .config/mise/tasks/code/lint/repo-sync
 repo-sync: would update .config/mise/tasks/setup/configs/_default
-repo-sync: would update .config/mise/tasks/setup/configs/sync
 repo-sync: would update .config/git-conventional-commits.yaml
 repo-sync: would update .config/mise/conf.d/git/mise.dev.toml
 repo-sync: would update .config/mise/tasks/_scripts/merge
@@ -83,10 +82,10 @@ repo-sync: would update .config/mise/tasks/code/lint/detekt
 repo-sync: would update .config/mise/tasks/setup/deps/kotlin
 repo-sync: would write .config/repo-generated.tsv
 repo-sync: would set bootstrap_commit <commit> in .config/bootstrap.toml
-repo-sync: done: 76/76 files in sync
+repo-sync: done: 75/75 files in sync
 +---------------+-------+
 | Changed       |     0 |
-| New           |    64 |
+| New           |    63 |
 | Seeded        |     8 |
 | Removed       |     0 |
 | Unchanged     |     0 |
@@ -94,9 +93,9 @@ repo-sync: done: 76/76 files in sync
 | Skipped       |     3 |
 | Failed        |     0 |
 +---------------+-------+
-| Total         |    75 |
+| Total         |    74 |
 +---------------+-------+
-[OK] Dry run: 72 files would change
+[OK] Dry run: 71 files would change
 --- files
 dir  repo 755
 dir  repo/.config 755
@@ -130,7 +129,6 @@ repo-sync: updated    .config/mise/tasks/setup/worktree
 repo-sync: updated    .config/mise/conf.d/repo-sync/mise.dev.toml
 repo-sync: updated    .config/mise/tasks/code/lint/repo-sync
 repo-sync: updated    .config/mise/tasks/setup/configs/_default
-repo-sync: updated    .config/mise/tasks/setup/configs/sync
 repo-sync: updated    .config/git-conventional-commits.yaml
 repo-sync: updated    .config/mise/conf.d/git/mise.dev.toml
 repo-sync: updated    .config/mise/tasks/_scripts/merge
@@ -186,10 +184,10 @@ repo-sync: updated    .config/mise/tasks/code/lint/detekt
 repo-sync: updated    .config/mise/tasks/setup/deps/kotlin
 repo-sync: wrote      .config/repo-generated.tsv
 repo-sync: set bootstrap_commit <commit> in .config/bootstrap.toml
-repo-sync: done: 76/76 files in sync
+repo-sync: done: 75/75 files in sync
 +---------------+-------+
 | Changed       |     0 |
-| New           |    64 |
+| New           |    63 |
 | Seeded        |     8 |
 | Removed       |     0 |
 | Unchanged     |     0 |
@@ -197,9 +195,9 @@ repo-sync: done: 76/76 files in sync
 | Skipped       |     3 |
 | Failed        |     0 |
 +---------------+-------+
-| Total         |    75 |
+| Total         |    74 |
 +---------------+-------+
-[OK] Synced: 72 files changed
+[OK] Synced: 71 files changed
 --- files
 dir  repo 755
 dir  repo/.config 755
@@ -283,8 +281,7 @@ file repo/.config/mise/tasks/code/worktrees 755 31581 71ad5f80ce705b06
 dir  repo/.config/mise/tasks/setup 755
 file repo/.config/mise/tasks/setup/_default 755 1758 e249db1f9f16b813
 dir  repo/.config/mise/tasks/setup/configs 755
-file repo/.config/mise/tasks/setup/configs/_default 755 12283 87c5953e18b1b792
-file repo/.config/mise/tasks/setup/configs/sync 755 1225 fa3a4e7b2fc4e6bf
+file repo/.config/mise/tasks/setup/configs/_default 755 12014 d78937a5157e131c
 dir  repo/.config/mise/tasks/setup/deps 755
 file repo/.config/mise/tasks/setup/deps/kotlin 755 7407 3e477d201d39612e
 file repo/.config/mise/tasks/setup/deps/node 755 3071 2b1cf3d9b92d6435
@@ -297,7 +294,7 @@ file repo/.config/mise/tasks/setup/vscode 755 8367 9892e16163508890
 file repo/.config/mise/tasks/setup/worktree 755 1229 a301a85e2fb4e0b5
 file repo/.config/osv-scanner.toml 644 1066 4a157af855451a64
 file repo/.config/pre-commit-config.yaml 644 4351 c2dc0ae89de7b9e5
-file repo/.config/repo-generated.tsv 644 2776 55b3d952323b20ae
+file repo/.config/repo-generated.tsv 644 2728 b829b7a316a9916a
 file repo/.config/wt.toml 644 718 d59f757dca025214
 file repo/.gitattributes 644 902 04f1ddcf733eeb9b
 file repo/.gitignore 644 5956 524b4bb91d79294b
@@ -339,7 +336,6 @@ repo-sync: unchanged  .config/mise/tasks/setup/worktree
 repo-sync: updated    .config/mise/conf.d/repo-sync/mise.dev.toml
 repo-sync: unchanged  .config/mise/tasks/code/lint/repo-sync
 repo-sync: updated    .config/mise/tasks/setup/configs/_default
-repo-sync: unchanged  .config/mise/tasks/setup/configs/sync
 repo-sync: unchanged  .config/git-conventional-commits.yaml
 repo-sync: updated    .config/mise/conf.d/git/mise.dev.toml
 repo-sync: unchanged  .config/mise/tasks/_scripts/merge
@@ -387,18 +383,18 @@ repo-sync: updated    .config/mise/conf.d/kotlin/mise.dev.toml
 repo-sync: unchanged  .config/mise/tasks/code/format/ktlint
 repo-sync: unchanged  .config/mise/tasks/code/lint/detekt
 repo-sync: unchanged  .config/mise/tasks/setup/deps/kotlin
-repo-sync: done: 76/76 files in sync
+repo-sync: done: 75/75 files in sync
 +---------------+-------+
 | Changed       |    25 |
 | New           |     0 |
 | Seeded        |     0 |
 | Removed       |     0 |
-| Unchanged     |    38 |
+| Unchanged     |    37 |
 | Kept seeds    |     8 |
 | Skipped       |     3 |
 | Failed        |     0 |
 +---------------+-------+
-| Total         |    74 |
+| Total         |    73 |
 +---------------+-------+
 [OK] Synced: 25 files changed
 --- files
@@ -484,8 +480,7 @@ file repo/.config/mise/tasks/code/worktrees 755 31581 71ad5f80ce705b06
 dir  repo/.config/mise/tasks/setup 755
 file repo/.config/mise/tasks/setup/_default 755 1758 e249db1f9f16b813
 dir  repo/.config/mise/tasks/setup/configs 755
-file repo/.config/mise/tasks/setup/configs/_default 755 12265 6599c26cdd239933
-file repo/.config/mise/tasks/setup/configs/sync 755 1225 fa3a4e7b2fc4e6bf
+file repo/.config/mise/tasks/setup/configs/_default 755 11994 ef3e7bcd022ac560
 dir  repo/.config/mise/tasks/setup/deps 755
 file repo/.config/mise/tasks/setup/deps/kotlin 755 7407 3e477d201d39612e
 file repo/.config/mise/tasks/setup/deps/node 755 3071 2b1cf3d9b92d6435
@@ -498,7 +493,7 @@ file repo/.config/mise/tasks/setup/vscode 755 8367 9892e16163508890
 file repo/.config/mise/tasks/setup/worktree 755 1229 a301a85e2fb4e0b5
 file repo/.config/osv-scanner.toml 644 1066 4a157af855451a64
 file repo/.config/pre-commit-config.yaml 644 4351 c2dc0ae89de7b9e5
-file repo/.config/repo-generated.tsv 644 2776 55b3d952323b20ae
+file repo/.config/repo-generated.tsv 644 2728 b829b7a316a9916a
 file repo/.config/wt.toml 644 718 d59f757dca025214
 file repo/.gitattributes 644 902 04f1ddcf733eeb9b
 file repo/.gitignore 644 5956 524b4bb91d79294b
@@ -540,7 +535,6 @@ repo-sync: unchanged  .config/mise/tasks/setup/worktree
 repo-sync: unchanged  .config/mise/conf.d/repo-sync/mise.dev.toml
 repo-sync: unchanged  .config/mise/tasks/code/lint/repo-sync
 repo-sync: unchanged  .config/mise/tasks/setup/configs/_default
-repo-sync: unchanged  .config/mise/tasks/setup/configs/sync
 repo-sync: unchanged  .config/git-conventional-commits.yaml
 repo-sync: unchanged  .config/mise/conf.d/git/mise.dev.toml
 repo-sync: unchanged  .config/mise/tasks/_scripts/merge
@@ -588,18 +582,18 @@ repo-sync: unchanged  .config/mise/conf.d/kotlin/mise.dev.toml
 repo-sync: unchanged  .config/mise/tasks/code/format/ktlint
 repo-sync: unchanged  .config/mise/tasks/code/lint/detekt
 repo-sync: unchanged  .config/mise/tasks/setup/deps/kotlin
-repo-sync: done: 76/76 files in sync
+repo-sync: done: 75/75 files in sync
 +---------------+-------+
 | Changed       |     0 |
 | New           |     0 |
 | Seeded        |     0 |
 | Removed       |     0 |
-| Unchanged     |    63 |
+| Unchanged     |    62 |
 | Kept seeds    |     8 |
 | Skipped       |     3 |
 | Failed        |     0 |
 +---------------+-------+
-| Total         |    74 |
+| Total         |    73 |
 +---------------+-------+
 [OK] Dry run: no file would change
 --- files
@@ -685,8 +679,7 @@ file repo/.config/mise/tasks/code/worktrees 755 31581 71ad5f80ce705b06
 dir  repo/.config/mise/tasks/setup 755
 file repo/.config/mise/tasks/setup/_default 755 1758 e249db1f9f16b813
 dir  repo/.config/mise/tasks/setup/configs 755
-file repo/.config/mise/tasks/setup/configs/_default 755 12265 6599c26cdd239933
-file repo/.config/mise/tasks/setup/configs/sync 755 1225 fa3a4e7b2fc4e6bf
+file repo/.config/mise/tasks/setup/configs/_default 755 11994 ef3e7bcd022ac560
 dir  repo/.config/mise/tasks/setup/deps 755
 file repo/.config/mise/tasks/setup/deps/kotlin 755 7407 3e477d201d39612e
 file repo/.config/mise/tasks/setup/deps/node 755 3071 2b1cf3d9b92d6435
@@ -699,7 +692,7 @@ file repo/.config/mise/tasks/setup/vscode 755 8367 9892e16163508890
 file repo/.config/mise/tasks/setup/worktree 755 1229 a301a85e2fb4e0b5
 file repo/.config/osv-scanner.toml 644 1066 4a157af855451a64
 file repo/.config/pre-commit-config.yaml 644 4351 c2dc0ae89de7b9e5
-file repo/.config/repo-generated.tsv 644 2776 55b3d952323b20ae
+file repo/.config/repo-generated.tsv 644 2728 b829b7a316a9916a
 file repo/.config/wt.toml 644 718 d59f757dca025214
 file repo/.gitattributes 644 902 04f1ddcf733eeb9b
 file repo/.gitignore 644 5956 524b4bb91d79294b
@@ -795,8 +788,7 @@ file repo/.config/mise/tasks/code/worktrees 755 31581 71ad5f80ce705b06
 dir  repo/.config/mise/tasks/setup 755
 file repo/.config/mise/tasks/setup/_default 755 1758 e249db1f9f16b813
 dir  repo/.config/mise/tasks/setup/configs 755
-file repo/.config/mise/tasks/setup/configs/_default 755 12265 6599c26cdd239933
-file repo/.config/mise/tasks/setup/configs/sync 755 1225 fa3a4e7b2fc4e6bf
+file repo/.config/mise/tasks/setup/configs/_default 755 11994 ef3e7bcd022ac560
 dir  repo/.config/mise/tasks/setup/deps 755
 file repo/.config/mise/tasks/setup/deps/kotlin 755 7407 3e477d201d39612e
 file repo/.config/mise/tasks/setup/deps/node 755 3071 2b1cf3d9b92d6435
@@ -809,7 +801,7 @@ file repo/.config/mise/tasks/setup/vscode 755 8367 9892e16163508890
 file repo/.config/mise/tasks/setup/worktree 755 1229 a301a85e2fb4e0b5
 file repo/.config/osv-scanner.toml 644 1066 4a157af855451a64
 file repo/.config/pre-commit-config.yaml 644 4351 c2dc0ae89de7b9e5
-file repo/.config/repo-generated.tsv 644 2776 55b3d952323b20ae
+file repo/.config/repo-generated.tsv 644 2728 b829b7a316a9916a
 file repo/.config/wt.toml 644 718 d59f757dca025214
 file repo/.gitattributes 644 902 04f1ddcf733eeb9b
 file repo/.gitignore 644 5956 524b4bb91d79294b

@@ -1,4 +1,4 @@
-fingerprint: 7a2430a94b5b47a9ecd99cb2c3b8312a0cf297c39b238c52dc7fd50afc22df40
+fingerprint: 9c463d572046d4eaf1cb9aea04ebae236c778d48610477611de6f94669202e63
 rc=3
 --- stderr
 setup-sync: tool 'nope' is not in bootstrap

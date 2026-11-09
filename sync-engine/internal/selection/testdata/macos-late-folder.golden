@@ -1,4 +1,4 @@
-fingerprint: aa572678c712f0480df612f3555089d957670fe3f847e42f302b76971b8d8a0a
+fingerprint: 7407fa1556ef8646f2774d92b34a390c0f9aea7c82d4a4d5a93003d8e21d6ec0
 rc=2
 --- stderr
 setup-sync: tool folder macos/tools/zz-macos sorts after zz-macos or is named zz-macos - rename it, because conf.d/zz-macos/ must load last

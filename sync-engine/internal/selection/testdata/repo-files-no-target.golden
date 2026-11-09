@@ -1,4 +1,4 @@
-fingerprint: b6e55cf708ffccdbd7d80159856fc36f508409dbf00d7f0635907d5898d29353
+fingerprint: ca914ad6a914f8938e1fbe2856d38d50d153dd34c9da10cacb69cf35ce4234a1
 rc=2
 --- stderr
 repo-sync: repo/tools/a/tools.toml: [files."x.txt"] names a target that no file of the tool produces

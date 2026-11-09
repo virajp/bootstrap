@@ -6,6 +6,6 @@
   "remove": "[]",
   "remove_items": "[]",
   "rc": 2,
-  "stderr": "Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T//sync-engine-merge.UM3Ne4/src': yaml: line 2: did not find expected ',' or ']'\n",
+  "stderr": "Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T//sync-engine-merge.mfZKC3/src': yaml: line 2: did not find expected ',' or ']'\n",
   "out": null
 }

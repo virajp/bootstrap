@@ -2,5 +2,5 @@
   "format": "toml",
   "content": "= 1\n",
   "rc": 2,
-  "stderr": "x: show: the result does not parse as toml - the current file stays\n  Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestParseCheckGolden1607332746/035/file': invalid character at start of key: U+003D '='\n"
+  "stderr": "x: show: the result does not parse as toml - the current file stays\n  Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestParseCheckGolden2333406419/035/file': invalid character at start of key: U+003D '='\n"
 }

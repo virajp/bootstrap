@@ -1,4 +1,4 @@
-fingerprint: 6e10a6ce802b1ad716e22ff050cdf688e73821a277cf7d9be9e842c49cda9ae1
+fingerprint: 4dc4e1a84260f272c3d76db7d010f4302fb7a8654c51d77adf4d7d453e12ae14
 === --dry-run
 rc=2
 --- stdout
@@ -23,7 +23,6 @@ repo-sync: would update .config/mise/tasks/code/worktrees
 repo-sync: would update .config/mise/tasks/setup/mise
 repo-sync: would update .config/mise/conf.d/repo-sync/mise.dev.toml
 repo-sync: would update .config/mise/tasks/code/lint/repo-sync
-repo-sync: would update .config/mise/tasks/setup/configs/sync
 repo-sync: would update .config/mise/conf.d/git/mise.dev.toml
 repo-sync: would update .config/mise/tasks/_scripts/merge
 repo-sync: would update .config/mise/tasks/code/git-config
@@ -56,10 +55,10 @@ repo-sync: would update .config/mise/conf.d/osv-scanner/mise.dev.toml
 repo-sync: would update .config/mise/tasks/code/sec/osv-scanner
 repo-sync: would update .config/osv-scanner.toml
 repo-sync: FAILED: repo/tools/mise/.config/mise.toml.tmpl repo/tools/mise/.config/mise/tasks/setup/_default.tmpl repo/tools/mise/.config/mise/tasks/setup/worktree.tmpl repo/tools/repo-sync/.config/mise/tasks/setup/configs/_default.tmpl repo/tools/git/.config/git-conventional-commits.yaml.tmpl repo/tools/pre-commit/.config/pre-commit-config.yaml.tmpl repo/tools/dprint/.config/mise/tasks/code/format/_default.tmpl repo/tools/linter/.config/mise/tasks/code/lint/_default.tmpl repo/tools/vscode/.vscode/extensions.json.tmpl repo/tools/gitleaks/.config/gitleaks.toml.tmpl
-repo-sync: 49/59 files in sync; existing copies of the rest were left untouched
+repo-sync: 48/58 files in sync; existing copies of the rest were left untouched
 +---------------+-------+
 | Changed       |     0 |
-| New           |    39 |
+| New           |    38 |
 | Seeded        |     4 |
 | Removed       |     0 |
 | Unchanged     |     0 |
@@ -67,7 +66,7 @@ repo-sync: 49/59 files in sync; existing copies of the rest were left untouched
 | Skipped       |     4 |
 | Failed        |    10 |
 +---------------+-------+
-| Total         |    57 |
+| Total         |    56 |
 +---------------+-------+
 [ERROR] The sync failed with code 2: 10 files failed
 --- files

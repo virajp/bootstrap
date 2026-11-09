@@ -1,4 +1,4 @@
-fingerprint: 664949b8a03f85d695ea5b7f5384730ef76035d0d2e1eea5c78efcdf7e1b67e3
+fingerprint: 27ef8dfb0796dfd3193708acc0d9a64f575622b79597667900c9ab9a3eead8ca
 rc=2
 --- stderr
 repo-sync: repo/packs.toml: [pack.base] "p:extra" is the old form - write "pack:extra" = { default = true }

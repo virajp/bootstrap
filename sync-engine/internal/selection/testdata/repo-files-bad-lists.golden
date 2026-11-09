@@ -1,4 +1,4 @@
-fingerprint: 558313a93c27b96172f46eb96ec2c0e8715f002d43f3325d8a166d5b370580e1
+fingerprint: 21d0fc2f962ec9053352ad07bb481f6fc8f8a00e0f6b26b8850cae940698af7a
 rc=2
 --- stderr
 repo-sync: repo/tools/a/tools.toml: [files."x.txt"] requires must be a non-empty list of paths

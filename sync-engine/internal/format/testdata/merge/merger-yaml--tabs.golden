@@ -6,6 +6,6 @@
   "remove": "[[\"gone\"]]",
   "remove_items": "[{\"path\":[\"list\"],\"items\":[\"drop\"]}]",
   "rc": 2,
-  "stderr": "Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestMergeGolden2088049536/088/live': yaml: line 2: found character that cannot start any token\nx: ~/.config/merger/m.yaml is not valid yaml - kept it as it is\n",
+  "stderr": "Error: bad file '/var/folders/xd/vzp4pzl911x5v4yfxl4bd4xh0000gp/T/TestMergeGolden3055457462/088/live': yaml: line 2: found character that cannot start any token\nx: ~/.config/merger/m.yaml is not valid yaml - kept it as it is\n",
   "out": null
 }

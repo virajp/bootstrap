@@ -1,4 +1,4 @@
-fingerprint: 5fa2ce3eec81a8e35c2b31a45e0c9ec268c439c4c2eca1fd65763413e90a4b03
+fingerprint: 565e0600b7430a24bbdd56ef014a33c3b25c0aebb7b8bc6ea6e2b95864d873e8
 rc=2
 --- stderr
 repo-sync: repo/packs.toml: [pack.base] a has the entry key 'env' - the only entry key is default

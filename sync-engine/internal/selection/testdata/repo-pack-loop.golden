@@ -1,4 +1,4 @@
-fingerprint: ef01a5aec40a2a38b0d5705b67ca0e6bad6fffca00f1b274405ba73226ae817c
+fingerprint: 3425bd8d96a4e7f9a2cfe85fff8c42d571993ebc615902fbd042af2c03f3ea8d
 rc=2
 --- stderr
 repo-sync: repo/packs.toml: a pack loop: x -> y -> z -> x

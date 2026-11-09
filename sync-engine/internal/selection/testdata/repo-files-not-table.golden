@@ -1,4 +1,4 @@
-fingerprint: 8659b34f808b3a9468cacc11499a1a5b3f451915817cd43bc652fdef89bf9fd5
+fingerprint: dd5fc28bdfad8ab9260a2cac2766a0c29e6d8665d37616617f602404c4cf79c8
 rc=2
 --- stderr
 repo-sync: repo/tools/a/tools.toml: [files."x.txt"] must be a table

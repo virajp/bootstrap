@@ -1,4 +1,4 @@
-fingerprint: 5c1f456b8f64f20a608039aef16d0d443a7de6ba700d4deb43ed5cb27b00e917
+fingerprint: a5435d3a59ebff2b9a143563553a25c51572fb29ce3ef4443303a192ccc5a837
 pre: rc=0
 overrides: rc=2
 | mise: overrides.mise.env.Y in values.toml: no selected tool has mise.env.Y - the path after overrides. is the path in macos/tools/<tool>/tools.toml

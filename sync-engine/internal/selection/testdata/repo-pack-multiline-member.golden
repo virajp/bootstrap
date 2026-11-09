@@ -1,4 +1,4 @@
-fingerprint: e4ceba156f461b069694dfdf1ec502da106356f848dd3da919491b15e488ddb2
+fingerprint: 09a9647ee605a3fa377314abf9b47cf41a80f9a69e156a997b369b3548f5ed18
 rc=2
 --- stderr
 repo-sync: repo/packs.toml: [pack.base] b must be on one line

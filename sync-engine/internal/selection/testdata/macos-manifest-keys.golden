@@ -1,4 +1,4 @@
-fingerprint: da34d4d880ce57eb4f30ba06c6a04c315471462011ffca39d48e4d42314d268c
+fingerprint: 4e6ed34bea95c4eb29636bbc962ad527aec9734f6e2366d58a1c31aa52e680bc
 rc=2
 --- stderr
 setup-sync: macos/tools/m1/tools.toml: [defaults] must be a table

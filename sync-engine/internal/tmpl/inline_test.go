@@ -13,9 +13,9 @@ import (
 )
 
 // The folders testdata/files/inline-*/i.* hold the inline templates that the
-// bash engine renders (gomplate -i): the template, the files of the -c flags,
-// the environment variables of the engine, the output and the error. The
-// script testdata/capture.sh writes them. See files_test.go.
+// bash engine rendered (gomplate -i): the template, the files of the -c flags,
+// the environment variables of the engine, the output and the error. See
+// files_test.go.
 
 // loadCtxFile reads one -c file. A TOML file gives int64 numbers, as the
 // gomplate TOML datasource does.
@@ -65,7 +65,7 @@ func fixTOML(v any) any {
 func TestInlineTemplates(t *testing.T) {
 	all, err := loadRenders()
 	if err != nil {
-		t.Fatalf("%v (run UPDATE_GOLDEN=1 go test ./internal/tmpl)", err)
+		t.Fatal(err)
 	}
 	var cases []render
 	for _, r := range all {
@@ -74,7 +74,7 @@ func TestInlineTemplates(t *testing.T) {
 		}
 	}
 	if len(cases) == 0 {
-		t.Fatal("no captured inline renders: run UPDATE_GOLDEN=1 go test ./internal/tmpl")
+		t.Fatal("no captured inline renders")
 	}
 	tmp := scratch(t)
 	sub := func(s string) string { return strings.ReplaceAll(s, "@TMP@", tmp) }

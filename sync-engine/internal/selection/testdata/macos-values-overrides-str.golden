@@ -1,4 +1,4 @@
-fingerprint: 1cc7d514c896dce3e54c6d9dd38b83fd79bd3edeb4ae63ce3e01e243c561f8e4
+fingerprint: ce32b27e8f9acd470bac77b3b8d3af400d12bbed2facbf67e5b5afb7405f77db
 rc=2
 --- stderr
 setup-sync: mise in macos.toml must be a table - the top-level keys are bootstrap_commit, [tools.<name>], [packs.<name>], [overrides.mise.<path>] and [mise.*]
