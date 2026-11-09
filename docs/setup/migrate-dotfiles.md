@@ -47,11 +47,13 @@ MACOS_SETUP_CONFIG_PATH=<clone> mise run updateall:configs
 Later runs get the variable from the generated mise env, and they do not need it
 inline.
 
-The direct form runs the file `sync` of the bootstrap clone:
+The direct form runs the Go engine, `sync-engine macos`, with the bootstrap
+clone. `sync-engine/VERSION` of the clone gives the version of the engine, and
+`mise x` installs that release when it is missing:
 
 ```text
 MACOS_SETUP_CONFIG_PATH=<clone> SYNC_ENGINE_CLONE=<bootstrap> \
-  bash <bootstrap>/macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync
+  mise x "github:virajp/bootstrap@$(cat <bootstrap>/sync-engine/VERSION)" -- sync-engine macos
 ```
 
 Use the direct form only in these two steps, because the task cannot exist there
@@ -230,7 +232,7 @@ first run wrote:
 env -u XDG_CONFIG_HOME -u XDG_CACHE_HOME -u XDG_STATE_HOME -u XDG_DATA_HOME -u MISE_ENV \
   HOME=<scratch> MISE_DATA_DIR="$HOME/.local/share/mise" MISE_CACHE_DIR="$HOME/.cache/mise" \
   MACOS_SETUP_CONFIG_PATH=<clone> SYNC_ENGINE_CLONE=<bootstrap> \
-  bash <bootstrap>/macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync --no-bootstrap
+  mise x "github:virajp/bootstrap@$(cat <bootstrap>/sync-engine/VERSION)" -- sync-engine macos --no-bootstrap
 
 cd <scratch> && env -u XDG_CONFIG_HOME -u XDG_CACHE_HOME -u XDG_STATE_HOME -u XDG_DATA_HOME -u MISE_ENV \
   HOME=<scratch> MISE_DATA_DIR="$HOME/.local/share/mise" MISE_CACHE_DIR="$HOME/.cache/mise" \
@@ -326,7 +328,7 @@ task cannot exist yet: see
 
 ```text
 MACOS_SETUP_CONFIG_PATH=<clone> SYNC_ENGINE_CLONE=<bootstrap> \
-  bash <bootstrap>/macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync --dry-run
+  mise x "github:virajp/bootstrap@$(cat <bootstrap>/sync-engine/VERSION)" -- sync-engine macos --dry-run
 ```
 
 **Pass:** The owner accepts each change. The run writes nothing. The run exits 1

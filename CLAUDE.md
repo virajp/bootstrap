@@ -280,16 +280,20 @@ lines of the sync. The cases of the default output unset it. See
   scratch repositories never write to this repository. It runs the cases in
   parallel, one job for each CPU, and each case in its own folder.
 - `test:setup-sync` is the task of this repository in
-  `.config/mise/tasks/test/setup-sync`. It runs `setup_sync` of the working
-  tree's `sync-engine/` against the fixtures in `macos/fixtures/`, and it
+  `.config/mise/tasks/test/setup-sync`. It runs `sync-engine macos`, built
+  from the working tree's `sync-engine/`, against the fixtures in
+  `macos/fixtures/`, and it
   compares the exit code, the output and the files of each case. The entry cases
   run the rendered task `updateall:configs` of `macos/tools/macos-setup/`
   against a local bare origin, for the clone, the lock and the temporary copy.
   Each case has its own temporary `HOME`, so it never changes the real `$HOME`.
-  It needs no network when gomplate, jq and yq are installed.
+  It needs no network when gomplate, jq and yq are installed. With
+  `SYNC_ENGINE_BIN` set to an absolute path, this task and `test:macos-tools`
+  test that binary and do not build one.
 - `test:macos-tools` is the task of this repository in
-  `.config/mise/tasks/test/macos-tools`. It runs `setup_sync` of the working
-  tree's `sync-engine/` with each tool of `macos/tools/` and a copy of
+  `.config/mise/tasks/test/macos-tools`. It runs `sync-engine macos`, built
+  from the working tree's `sync-engine/`, with each tool of `macos/tools/` and
+  a copy of
   `macos/examples/macos.toml`, in a temporary `HOME`. It examines four items:
   no `[files]` table gives `mode = "seed"` to a JSON, YAML or TOML target, the
   example selects each tool and each rendered file parses, an example without

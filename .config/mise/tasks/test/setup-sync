@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 #MISE description="Test setup-sync against fixtures, with no network"
 
-# Runs `setup_sync` of the working tree's sync-engine/ against the fixture repo
-# in macos/fixtures/repo/ and the fixture config folders in
+# Runs `sync-engine macos`, built from the working tree's sync-engine/, against
+# the fixture repo in macos/fixtures/repo/ and the fixture config folders in
 # macos/fixtures/config/, and checks the exit code, the output and the files of
 # each case. Every case has its own temp HOME, XDG_* folders, cache, TMPDIR and
 # git config, so it needs no network and never touches the real $HOME. Every real
 # run passes --no-bootstrap. The entry cases at the end run the rendered entry
 # task updateall:configs against a local bare origin with the real
-# macos/tools/macos-setup/: they cover the clone, the lock and the temp copy.
+# macos/tools/macos-setup/: they cover the clone, the lock, the temp copy and
+# the engine pin. SYNC_ENGINE_BIN, when set, is the engine to test (an absolute
+# path); else the task builds it once from the copy of sync-engine/.
 
 set -euo pipefail
 
@@ -39,6 +41,8 @@ tilde='~'
 # `mise x gomplate` resolves from the mise cache with no download.
 export MISE_DATA_DIR="${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise}"
 export MISE_CACHE_DIR="${MISE_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/mise}"
+# The build of the engine below needs the Go of the `go` tool of this repository.
+mise_env=${MISE_ENV:-}
 unset MISE_ENV SYNC_ENGINE_URL SYNC_ENGINE_CLONE REPO_SYNC_CLONE
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-setup-sync.XXXXXX")
@@ -76,6 +80,15 @@ _git -C "$tree" init --quiet -b main
 _git -C "$tree" add -A
 _git -C "$tree" commit --quiet --no-verify -m "fixture"
 tree_commit=$(_git -C "$tree" rev-parse HEAD)
+
+# The engine: SYNC_ENGINE_BIN, else one build from the copy of sync-engine/. The
+# entry task runs it too.
+if [[ -z ${SYNC_ENGINE_BIN:-} ]]; then
+  (cd "$root" && MISE_ENV=$mise_env mise x -- go build -C "$tree/sync-engine" -buildvcs=false \
+    -o "$tmp/sync-engine" ./cmd/sync-engine)
+  export SYNC_ENGINE_BIN="$tmp/sync-engine"
+fi
+bin=$SYNC_ENGINE_BIN
 
 failures=0
 max_jobs=$(getconf _NPROCESSORS_ONLN 2> /dev/null) || max_jobs=4
@@ -164,13 +177,12 @@ check_file() { check "${1#"$dir"/} has the expected content" file_is "$1" "$2"; 
 file_is() { [[ -f $1 && $(cat -- "$1") == "$2" ]]; }
 not() { ! "$@"; }
 
-# Run setup_sync as its entry task does, from the case folder.
+# Run the engine as its entry task does, from the case folder.
 sync_run() {
   runs=$((runs + 1))
   log="$dir/run-$runs.txt"
   rc=0
-  # shellcheck disable=SC2016
-  (cd "$dir" && SYNC_ENGINE_CLONE=$clone bash -c 'source "$SYNC_ENGINE_CLONE/sync-engine/setup-sync" && setup_sync "$@"' setup-sync "$@") > "$log" 2>&1 || rc=$?
+  (cd "$dir" && SYNC_ENGINE_CLONE=$clone "$bin" macos "$@") > "$log" 2>&1 || rc=$?
 }
 run_real() { sync_run --no-bootstrap; }
 run_dry() { sync_run --dry-run; }
@@ -871,7 +883,7 @@ case_dry_run() {
   check "nothing written in HOME, a link source, the config folder or the manifest" test "$before" = "$after"
 }
 
-# The default output of setup_sync, with no terminal.
+# The default output of the engine, with no terminal.
 case_default_output() {
   unset SYNC_ENGINE_VERBOSE FORCE_COLOR NO_COLOR
   use_config ok
@@ -1472,12 +1484,11 @@ case_entry_running_line() {
   check_exit 0
   lines=$(grep '^setup-sync: running ' "$log")
   check "one running line" test "$(printf '%s\n' "$lines" | grep -c .)" = 1
-  check "it names the sync of the temp copy" \
-    grep -qE "^setup-sync: running $TMPDIR/macos-setup\.[^/]+/macos/tools/macos-setup/\.config/mise/tasks/updateall/configs/sync$" <<< "$lines"
+  check "it names the engine" test "$lines" = "setup-sync: running $bin macos"
 }
 
 # Without --verbose only the changes print. The entry task consumes the flag,
-# since setup_sync stops on a flag that it does not know.
+# since the engine stops on a flag that it does not know.
 case_entry_verbose() {
   entry_setup
   unset SYNC_ENGINE_VERBOSE FORCE_COLOR NO_COLOR
@@ -1539,27 +1550,52 @@ case_entry_lock_dead() {
   check_no_output "Waiting for another sync"
 }
 
-# A `sync` that reports the lock and the clone that it sees. Its exit code is
-# the exit code of the task.
-entry_sync_probe() {
+# An engine that reports the lock, the clone and the arguments that it sees.
+# Its exit code is the exit code of the task.
+entry_engine_probe() {
   printf '%s\n' '#!/usr/bin/env bash' \
     'if [[ -e $SYNC_ENGINE_CACHE/lock ]]; then echo "lock held"; else echo "lock released"; fi' \
-    'echo "clone $SYNC_ENGINE_CLONE"' 'exit 4' \
-    > "$work/macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync"
+    'echo "clone $SYNC_ENGINE_CLONE"' 'echo "args $*"' 'exit 4' \
+    > "$dir/probe"
+  chmod +x "$dir/probe"
+  export SYNC_ENGINE_BIN="$dir/probe"
 }
 
 case_entry_lock_hold() {
   entry_setup
-  entry_origin entry_sync_probe
+  entry_engine_probe
   entry_real
   check_exit 4
   check_output "lock held"
   check_output "clone $TMPDIR/macos-setup."
+  check_output "args macos --no-bootstrap"
   entry_dry
   check_exit 4
   check_output "lock released"
   check_output "clone $TMPDIR/macos-setup."
   check "after each run: no lock, no temp copy" no_leftovers
+}
+
+# Without SYNC_ENGINE_BIN, the task reads sync-engine/VERSION of the copy. A
+# value that is not MAJOR.MINOR.PATCH stops it before any mise install.
+bad_version() { printf '%s\n' "v1.2" > "$work/sync-engine/VERSION"; }
+
+case_entry_bad_version() {
+  entry_setup
+  entry_origin bad_version
+  unset SYNC_ENGINE_BIN
+  entry_real
+  check_exit 5
+  check_output "sync-engine/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2')"
+  check "no lock, no temp copy" no_leftovers
+}
+
+case_entry_bin_missing() {
+  entry_setup
+  export SYNC_ENGINE_BIN="$dir/missing"
+  entry_real
+  check_exit 2
+  check_output "SYNC_ENGINE_BIN $dir/missing is not an executable file"
 }
 
 case_entry_unknown_flag() {
@@ -1792,6 +1828,8 @@ run_case "entry flags: --verbose" case_entry_verbose
 run_case "entry lock: a run waits for a live holder, then takes over" case_entry_lock_wait
 run_case "entry lock: a lock whose pid is dead" case_entry_lock_dead
 run_case "entry lock: a real run holds it, a dry run releases it" case_entry_lock_hold
+run_case "entry engine: a VERSION that is not MAJOR.MINOR.PATCH" case_entry_bad_version
+run_case "entry engine: a SYNC_ENGINE_BIN that is not a file" case_entry_bin_missing
 run_case "entry flags: an unknown flag under bash" case_entry_unknown_flag
 run_case "entry flags: --dry-run under bash and under mise run" case_entry_mise_run
 run_case "entry config: MACOS_SETUP_CONFIG_PATH unset" case_entry_config_unset

@@ -288,13 +288,15 @@ Some cases of the manifest also call `_se_manifest_stale` and
 `sync-engine/mise` directly. It checks the exit code and the message of each
 case. It needs no network when gomplate, jq and yq are installed.
 
-`mise run test:setup-sync` runs `setup_sync` of the working tree's
-`sync-engine/` against the fixtures in `macos/fixtures/`. It checks the exit
+`mise run test:setup-sync` runs `sync-engine macos`, built from the working
+tree's `sync-engine/`, against the fixtures in `macos/fixtures/`. It checks the
+exit
 code, the output and the files of each case, and it needs no network when
 gomplate, jq and yq are installed. The entry cases run the rendered task
 `updateall:configs` against a local bare origin.
 
-`mise run test:macos-tools` runs `setup_sync` with each tool of `macos/tools/`
+`mise run test:macos-tools` runs `sync-engine macos` with each tool of
+`macos/tools/`
 and a copy of `macos/examples/macos.toml`, in a temporary `HOME`. It checks that
 the example selects each tool and that each rendered file parses, and it needs
 no network when gomplate, jq and yq are installed.

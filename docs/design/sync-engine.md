@@ -25,7 +25,7 @@ folder.
 | `values`     | The merge of the values of the tools.                                                                                                                                                                      |
 | `mise`       | The mise config generator, the environments of each tool and the checks of `[overrides.mise*]`. See [mise.md](mise.md).                                                                                    |
 | `repo-sync`  | The repo front-end, the function `repo_sync`. See [repo-sync.md](repo-sync.md).                                                                                                                            |
-| `setup-sync` | The Mac front-end, the function `setup_sync`. See [setup-sync.md](setup-sync.md).                                                                                                                          |
+| `setup-sync` | The bash Mac front-end, the function `setup_sync`. The Mac tasks run `sync-engine macos` in its place. See [setup-sync.md](setup-sync.md).                                                                 |
 | `VERSION`    | The pin of the Go engine. See [The release of the engine](#the-release-of-the-engine).                                                                                                                     |
 
 Each front-end sources `common`, `write`, `merge`, `select`, `manifest`,
@@ -170,9 +170,11 @@ runs
 and
 it sets a trap with `_se_clone_cleanup`.
 
-Then the entry task starts its child task in a new process with
-`SYNC_ENGINE_CLONE`
-set to the copy. The child task loads the front-end from that copy.
+Then the entry task starts the front-end in a new process with
+`SYNC_ENGINE_CLONE` set to the copy. `setup:configs` starts its child task,
+which loads the bash front-end `repo-sync` from that copy. `updateall:configs`
+starts the Go engine, `sync-engine macos`: see
+[setup-sync.md](setup-sync.md#the-entry-task).
 
 ## The engine variables
 
@@ -182,6 +184,7 @@ set to the copy. The child task loads the front-end from that copy.
 | `SYNC_ENGINE_URL`     | The clone URL. A test uses it for a change that is not pushed.                                                |
 | `SYNC_ENGINE_VERBOSE` | `1` prints the log line of each target in place of the list. See [The output of a run](#the-output-of-a-run). |
 | `SYNC_ENGINE_CACHE`   | The cache folder. A test uses it.                                                                             |
+| `SYNC_ENGINE_BIN`     | The path of a local build of the Go engine. `updateall:configs` and the Mac tests run it in place of the pin. |
 | `REPO_SYNC_CLONE`     | The same copy, for a member that still has the old sync task. See the forwarding file below.                  |
 
 The forwarding file is `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync`
