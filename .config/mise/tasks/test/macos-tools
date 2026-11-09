@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 #MISE description="Render every Mac tool with the sample values file, and compare the shared mise values of both sides, with no network"
 
-# Calls `setup_sync` of the working tree's sync-engine/ directly, with every
-# tool of macos/tools/ and a copy of macos/examples/macos.toml, into a temp HOME.
-# The tree is a git copy of the working tree, so the test never touches the real
-# $HOME.
+# Runs `sync-engine macos`, built from the working tree's sync-engine/, with
+# every tool of macos/tools/ and a copy of macos/examples/macos.toml, into a temp
+# HOME. The tree is a git copy of the working tree, so the test never touches the
+# real $HOME. SYNC_ENGINE_BIN, when set, is the engine to test (an absolute
+# path); else the task builds it once from the copy of sync-engine/.
 #
 # Case 0: no [files] table of a tools.toml gives `mode = "seed"` to a target of
 # format json, yaml or toml (the `format` key, else the extension): such a file
@@ -44,6 +45,8 @@ example="$root/macos/examples/macos.toml"
 # `mise x <tool>@latest` resolves from the mise cache with no download.
 export MISE_DATA_DIR="${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise}"
 export MISE_CACHE_DIR="${MISE_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/mise}"
+# The build of the engine below needs the Go of the `go` tool of this repository.
+mise_env=${MISE_ENV:-}
 unset MISE_ENV SYNC_ENGINE_URL SYNC_ENGINE_CLONE REPO_SYNC_CLONE
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-macos-tools.XXXXXX")
@@ -77,6 +80,14 @@ _git -C "$tree" init --quiet -b main
 _git -C "$tree" add -A
 _git -C "$tree" commit --quiet --no-verify -m "tree"
 
+# The engine: SYNC_ENGINE_BIN, else one build from the copy of sync-engine/.
+bin=${SYNC_ENGINE_BIN:-}
+if [[ -z $bin ]]; then
+  (cd "$root" && MISE_ENV=$mise_env mise x -- go build -C "$tree/sync-engine" -buildvcs=false \
+    -o "$tmp/sync-engine" ./cmd/sync-engine)
+  bin="$tmp/sync-engine"
+fi
+
 failures=0
 pass() { print_success "$name: $1"; }
 fail() {
@@ -109,13 +120,12 @@ setup_case() {
   cp -- "$example" "$MACOS_SETUP_CONFIG_PATH/macos.toml"
 }
 
-# A real run of setup_sync, as its entry task does.
+# A real run of the engine, as its entry task does.
 run_real() {
   runs=$((runs + 1))
   log="$dir/run-$runs.txt"
   rc=0
-  # shellcheck disable=SC2016
-  (cd "$dir" && SYNC_ENGINE_CLONE=$tree bash -c 'source "$SYNC_ENGINE_CLONE/sync-engine/setup-sync" && setup_sync "$@"' setup-sync --no-bootstrap) > "$log" 2>&1 || rc=$?
+  (cd "$dir" && SYNC_ENGINE_CLONE=$tree "$bin" macos --no-bootstrap) > "$log" 2>&1 || rc=$?
 }
 
 # ---- case 0: no JSON, YAML or TOML file is a seed ------------------------------

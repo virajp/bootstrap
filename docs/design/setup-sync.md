@@ -1,7 +1,10 @@
 # `setup-sync` design
 
-This document describes the Mac front-end of the sync, `sync-engine/setup-sync`.
-It
+This document describes the Mac front-end of the sync, the command
+`sync-engine macos` of the Go engine. The bash file `sync-engine/setup-sync`,
+the
+function `setup_sync`, has the same behavior, and it stays until phase P7. The
+front-end
 renders the selected tools of `macos/tools/` into `$HOME`, then runs `mise
 bootstrap`.
 It holds the rules that only the Mac has: `macos.toml`, the stages and exit 4,
@@ -21,22 +24,25 @@ mise run updateall:configs --no-bootstrap # skip each mise bootstrap step
 mise run updateall:configs --verbose      # list each file
 ```
 
-| Flag             | Effect                                                                                                               |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--dry-run`      | Shows the changes. Writes nothing.                                                                                   |
-| `--no-bootstrap` | Skips each `mise bootstrap` step.                                                                                    |
-| `--verbose`      | Lists each file, also an unchanged one. Sets `SYNC_ENGINE_VERBOSE=1`, and the task does not pass the flag to `sync`. |
-| `-h`, `--help`   | Shows the usage.                                                                                                     |
+| Flag             | Effect                                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `--dry-run`      | Shows the changes. Writes nothing.                                                                                       |
+| `--no-bootstrap` | Skips each `mise bootstrap` step.                                                                                        |
+| `--verbose`      | Lists each file, also an unchanged one. Sets `SYNC_ENGINE_VERBOSE=1`, and the task does not pass the flag to the engine. |
+| `-h`, `--help`   | Shows the usage.                                                                                                         |
 
 An unknown flag, and a run inside a run, stop the task.
 
 The `macos-setup` tool ships the tasks into `~/.config/mise/tasks/`:
 
-| Task                     | Job                                                                                           |
-| ------------------------ | --------------------------------------------------------------------------------------------- |
-| `updateall:configs`      | Refreshes the cache clone and copies it. Then it runs `updateall/configs/sync` from the copy. |
-| `updateall/configs/sync` | Hidden. It loads `sync-engine/setup-sync` from the copy and runs `setup_sync`.                |
-| `updateall`              | Upgrades the machine. It runs `updateall:configs -- --no-bootstrap` as one step.              |
+| Task                | Job                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| `updateall:configs` | Refreshes the cache clone and copies it. Then it runs `sync-engine macos` of the pin. |
+| `updateall`         | Upgrades the machine. It runs `updateall:configs -- --no-bootstrap` as one step.      |
+
+The old task `updateall/configs/sync` loaded `sync-engine/setup-sync` from the
+copy and ran `setup_sync`. The tool no longer ships it, so the stale rule
+removes it.
 
 `updateall:configs` embeds `sync-engine/clone`. See
 [sync-engine.md](sync-engine.md#how-an-entry-task-embeds-clone). Its order is:
@@ -50,10 +56,18 @@ The `macos-setup` tool ships the tasks into `~/.config/mise/tasks/`:
 3. It takes the lock of the cache, and it does the legacy cleanup.
 4. It refreshes the clone, and copies it to a temporary folder.
 5. A dry run releases the lock here. A real run holds the lock to the end of
-   `sync`.
-6. It runs `sync` of the copy with `SYNC_ENGINE_CLONE` set to the copy. The exit
-   code of
-   `sync` is the exit code of the task.
+   the engine.
+6. It selects the engine. With `SYNC_ENGINE_BIN` set, it uses that file: a path
+   that is not an executable file stops the task with exit 2. Else it reads
+   `sync-engine/VERSION` of the copy with `read -r`. A value that is not
+   `MAJOR.MINOR.PATCH` stops the task with exit 5. Then it runs
+   `mise install github:virajp/bootstrap@<version>`, and a failure stops the
+   task with exit 5. See
+   [sync-engine.md](sync-engine.md#the-release-of-the-engine).
+7. It runs `sync-engine macos` with the flags, from the current folder, with
+   `SYNC_ENGINE_CLONE` set to the copy: `"$SYNC_ENGINE_BIN" macos`, or
+   `mise x github:virajp/bootstrap@<version> -- sync-engine macos`. The exit
+   code of the engine, exit 4 too, is the exit code of the task.
 
 The old Mac cache `${XDG_CACHE_HOME:-~/.cache}/macos-setup/` is gone. The entry
 task moves
@@ -84,13 +98,13 @@ becomes `$HOME`. Before a first sync, the user sets it by hand.
 ## mise
 
 mise must be the standalone install of `curl https://mise.run | sh`, at
-`~/.local/bin/mise`, so that `mise self-update` manages it. `setup_sync`
+`~/.local/bin/mise`, so that `mise self-update` manages it. The engine
 resolves the `mise`
 on `PATH` through each symlink. When there is no `mise`, or its real path does
 not end with
 `/.local/bin/mise` (for example a Homebrew copy), the run stops and names the
 path that it
-found. This check is the first step of `setup_sync`, after the entry task has
+found. This check is the first step of the engine, after the entry task has
 refreshed the
 clone.
 
@@ -169,7 +183,7 @@ Three Mac templates do not follow this rule, each from its old copy:
 
 ## The mode of `~/.ssh`
 
-When `setup_sync` handles a target below `.ssh/`, it makes sure once in each run
+When the engine handles a target below `.ssh/`, it makes sure once in each run
 that the folder `$_SS_HOME/.ssh` has mode 700, on a new folder and on an
 existing folder. The check uses the path in the home folder, not the real path
 of a linked file. If `~/.ssh` is itself a link, the check reads and sets the
@@ -183,7 +197,7 @@ mode of the target of the link.
 
 ## The run order
 
-1. `setup_sync` parses the flags and examines mise, the clone and the config
+1. The engine parses the flags and examines mise, the clone and the config
    folder.
 2. It reads `macos.toml` and each `tools.toml`, and it resolves the selection.
 3. It merges the values of the tools.
@@ -274,16 +288,15 @@ the Mac:
 - The run has one table across the init and main stages, and it prints after
   `mise bootstrap`. A return of exit 4 after the init stage has no table.
 - `FAILED: <list>` stays by default, before the table.
-- The entry task has no line for the local sync task, because it runs `sync`
-  from
-  the clone copy.
+- The entry task has no line for the local sync task, because it runs the
+  engine of the pin with the clone copy.
 - `log` of the entry task is an info line, and `log_error` is an error line.
   With
   the style rule on, they show the info glyph or the error glyph and no prefix.
-  Otherwise they keep the prefix `setup-sync: `. The two error lines of
-  `updateall/configs/sync` follow the same rule. That file has its own copy of
-  the rule, because it runs before it loads the engine.
-- `setup-sync: running <path>` prints only with verbose.
+  Otherwise they keep the prefix `setup-sync: `.
+- `setup-sync: running <engine command> macos` prints only with verbose, from
+  the entry task. The command is `$SYNC_ENGINE_BIN`, or
+  `mise x github:virajp/bootstrap@<version> -- sync-engine`.
 
 ## The failures
 

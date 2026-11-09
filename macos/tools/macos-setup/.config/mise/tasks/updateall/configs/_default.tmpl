@@ -9,9 +9,9 @@
 
 set -euo pipefail
 
-# This task only refreshes the cache clone. `sync` then runs in a child
-# process from a temp copy of that clone, so a change to the sync code applies
-# in the same run, and the render never reads the clone itself.
+# This task only refreshes the cache clone and copies it. The Go engine then
+# runs in a child process with that temp copy, so the render never reads the
+# clone itself. sync-engine/VERSION of the copy selects the engine release.
 
 # The code below is sync-engine/clone of the bootstrap clone: the sync embeds
 # it when it renders this template. It comes first, because log uses it.
@@ -51,7 +51,7 @@ EOF
 # The flags come from "$@", never from mise's usage_* variables, so the task
 # works the same under `mise run` and under `bash`. `for` expands its list once,
 # so each pass can move its argument to the end of "$@", and --verbose stays
-# out: setup_sync refuses an unknown flag.
+# out: the engine refuses an unknown flag.
 dry_run=''
 for arg in "$@"; do
   shift
@@ -133,18 +133,37 @@ _se_fetch || rc=$?
 ((rc == 0)) || exit "${rc}"
 _se_copy macos-setup || exit 1
 # A dry run writes nothing in $HOME, so it holds the lock only over the refresh
-# and the copy; a real run holds it to the end of `sync`.
+# and the copy; a real run holds it to the end of the engine.
 if [[ -n ${dry_run} ]]; then
   _se_unlock
 fi
 
-sync="${_SE_COPY}/macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync"
-if [[ ! -f ${sync} ]]; then
-  log_error "the clone has no macos/tools/macos-setup/.config/mise/tasks/updateall/configs/sync - nothing synced"
-  exit 1
+# The engine: SYNC_ENGINE_BIN, a local build, else the release that
+# sync-engine/VERSION of the copy names. VERSION has one line, MAJOR.MINOR.PATCH.
+if [[ -n ${SYNC_ENGINE_BIN:-} ]]; then
+  if [[ ! -f ${SYNC_ENGINE_BIN} || ! -x ${SYNC_ENGINE_BIN} ]]; then
+    log_error "SYNC_ENGINE_BIN ${SYNC_ENGINE_BIN} is not an executable file - nothing synced"
+    exit 2
+  fi
+  engine=("${SYNC_ENGINE_BIN}")
+else
+  version=''
+  IFS= read -r version 2> /dev/null < "${_SE_COPY}/sync-engine/VERSION" || true
+  if [[ ! ${version} =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    log_error "sync-engine/VERSION of the clone is not MAJOR.MINOR.PATCH ('${version}') - nothing synced"
+    exit 5
+  fi
+  if ! mise install "github:virajp/bootstrap@${version}"; then
+    log_error "cannot install the sync engine ${version} (github:virajp/bootstrap) - nothing synced"
+    exit 5
+  fi
+  engine=(mise x "github:virajp/bootstrap@${version}" -- sync-engine)
 fi
-# The exit code of `sync` is the exit code of this task, exit 4 (the stop after
-# a changed init stage) too.
+if [[ ${SYNC_ENGINE_VERBOSE:-} == 1 ]]; then
+  printf '%s\n' "setup-sync: running ${engine[*]} macos" >&2
+fi
+# The exit code of the engine is the exit code of this task, exit 4 (the stop
+# after a changed init stage) too.
 rc=0
-SYNC_ENGINE_CLONE="${_SE_COPY}" bash "${sync}" "$@" || rc=$?
+SYNC_ENGINE_CLONE="${_SE_COPY}" "${engine[@]}" macos "$@" || rc=$?
 exit "${rc}"
