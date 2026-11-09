@@ -6,8 +6,9 @@ code in this repository.
 ## Purpose
 
 This repository is the source of shared files for other repositories. Its only
-application code is the sync engine in `sync-engine/`: the bash files, and the
-Go module that replaces them. Its tests are `test:repo-sync`,
+application code is the sync engine in `sync-engine/`: the Go module of the
+engine, and the bash files `clone` and `repo-sync` (the shim). Its tests are
+`test:repo-sync`,
 `test:setup-sync`, `test:macos-tools` and `test:go`, and the task `test` runs
 each test task (see "Tests").
 Other repositories copy files from it with their own `setup:configs` task. Read
@@ -26,14 +27,14 @@ files are for this repository only:
 
 - At the root: `README.md`, `CLAUDE.md`, `LICENSE`, `dprint.jsonc` (with the
   excludes of this repository) and `eslint.config.mjs`.
-- `sync-engine/`: the shared library folder of the sync, with `clone`,
-  `common`, `write`, `merge`, `select`, `manifest`, `values`, `mise`,
-  `repo-sync` and `setup-sync`, the Mac front-end. It is not a
-  tool, so the sync never copies it to a consumer. It is also the Go module
-  `github.com/virajp/bootstrap/sync-engine` of the new engine (`go.mod`,
-  `cmd/sync-engine/` and `internal/`). The Go engine replaces the bash files
-  phase by phase. Until the last phase, it keeps each output line, file and
-  exit code of the bash engine.
+- `sync-engine/`: the engine of the sync. It is not a tool, so the sync never
+  copies it to a consumer. It is the Go module
+  `github.com/virajp/bootstrap/sync-engine` (`go.mod`, `cmd/sync-engine/` and
+  `internal/`), with the front-ends `sync-engine repo` and
+  `sync-engine macos`. It also holds `clone`, which the entry tasks embed, and
+  `repo-sync`, the shim of an old consumer sync task. The Go engine replaced
+  the bash engine, and it keeps each output line, file and exit code of the
+  bash engine.
 - `docs/design/`: the contract of the sync, one place for each rule (see "Where
   the rules are"). `docs/plans/`: the vwf plan index.
 - `.config/mise/tasks/test/`: the tasks `test:repo-sync` (`repo-sync`),
@@ -64,10 +65,10 @@ values file changes the examples in the same commit.
 
 Each example has an empty `bootstrap_commit`, so a consumer that copies an
 example gets no wrong value: `repo_sync` replaces the empty line with the
-commit of its sync. `test:repo-sync` runs `repo_sync --dry-run` with each
+commit of its sync. `test:repo-sync` runs `sync-engine repo --dry-run` with each
 example, in a consumer with its members. That case finds an unknown tool, a
 wrong member and a wrong shape. It does not find an unknown key, because
-`repo_sync` accepts one.
+`sync-engine repo` accepts one.
 
 `docs/sync/` tells an AI agent how to adopt `bootstrap` in a consumer
 repository, how to bring it up to date, and how to add and remove tools after
@@ -114,14 +115,15 @@ Each rule of the sync has one place in `docs/design/`. Read the doc before you
 change the path:
 
 - Read `docs/design/sync-engine.md` before you change `sync-engine/`.
-- Read `docs/design/repo-sync.md` before you change `sync-engine/repo-sync` or
-  `repo/tools/repo-sync/`.
-- Read `docs/design/setup-sync.md` before you change `sync-engine/setup-sync` or
-  `macos/tools/macos-setup/`.
+- Read `docs/design/repo-sync.md` before you change `sync-engine/internal/repo`,
+  the shim `sync-engine/repo-sync` or `repo/tools/repo-sync/`.
+- Read `docs/design/setup-sync.md` before you change
+  `sync-engine/internal/macos` or `macos/tools/macos-setup/`.
 - Read `docs/design/packs.md` before you change `repo/packs.toml` or
   `macos/packs.toml`.
 - Read `docs/design/tools.md` and `docs/design/mise.md` before you change a
-  `tools.toml`. `docs/design/mise.md` also holds `sync-engine/mise`.
+  `tools.toml`. `docs/design/mise.md` also holds
+  `sync-engine/internal/misegen`.
 - Read `docs/design/bootstrap-config.md` before you change the keys of
   `.config/bootstrap.toml`.
 - Read `docs/design/fnox.md` before you change fnox.
@@ -273,9 +275,7 @@ lines of the sync. The cases of the default output unset it. See
   `sync-engine repo`, built from the working tree's `sync-engine/`, with the
   working tree's `repo/`, `sync-engine/` and `tools/` (the forwarding file)
   against scratch values files and scratch consumers. The forward cases call
-  `repo_sync` through the forwarding file. Some cases of the
-  manifest also call `_se_manifest_stale` and `_se_manifest_read` directly, and
-  the cases of the `macos` side call `sync-engine/mise` directly. The entry
+  `repo_sync` through the forwarding file and the shim. The entry
   cases run the rendered task `setup:configs` with a fake engine. With
   `SYNC_ENGINE_BIN` set to an absolute path, it tests that binary and does not
   build one. It
@@ -310,12 +310,11 @@ lines of the sync. The cases of the default output unset it. See
   network when gomplate, jq and yq are installed.
 - `test:go` is the task of this repository in `.config/mise/tasks/test/go`.
   It runs `go vet`, a `gofmt` check and `go test` in the Go module of
-  `sync-engine/`. The golden files of `internal/report` hold the output of the
-  bash functions of `common`. While `common` exists, a test compares each
-  golden file with the output of `/bin/bash` and of the bash on `PATH`. To
-  write the golden files again from bash, run
-  `UPDATE_GOLDEN=1 go test ./internal/report`. The task runs the Go of the
-  `go` tool, which this repository selects.
+  `sync-engine/`. The golden files of the parity tests hold the output of the
+  bash engine, from before its removal, and nothing can write them again. A
+  case whose inputs changed (its fingerprint differs) is skipped: the other
+  three test tasks test that behavior. The task runs the Go of the `go` tool,
+  which this repository selects.
 - `test` (`test/_default`) runs each test task in parallel. No hook and no
   `code:merge` task runs a test, because the tests are slow and a consumer does
   not have them. Run the tests by hand before you commit:

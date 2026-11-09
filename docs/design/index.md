@@ -18,7 +18,7 @@ various tools that it supports
   it regularly to keep the base configuration in sync
 - `setup-sync`: The front-end of the sync for a Mac. It renders the Mac tools
   into `$HOME`
-- `sync engine`: The shared libraries of both front-ends, in `sync-engine/`
+- `sync engine`: The Go engine of both front-ends, in `sync-engine/`
 - `tools`: Tools that are supported by `bootstrap` and can be setup in consumer
   repos or on a Mac
 

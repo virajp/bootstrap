@@ -29,7 +29,8 @@ A repository uses `bootstrap` in two ways, in this sequence:
    that the repository needs, it keeps the repository-owned content, and it
    asks the user about each difference.
 2. **Sync, each time after that, by `repo-sync`.** The adoption installs the
-   `setup:configs` task. The task runs `repo_sync`, which copies the newest
+   `setup:configs` task. The task runs `sync-engine repo`, which copies the
+   newest
    shared files of the selected tools into the repository.
 
 The adoption makes sure that the repository is ready for the sync. The sync
@@ -93,7 +94,8 @@ This file holds the instructions. Each rule of the sync has one place in
   `repo/tools/<tool>/` in `bootstrap`. A file at `repo/tools/<tool>/<path>` goes
   to `<path>` in the consumer repository.
 - The values file `.config/bootstrap.toml` lists the tools and the packs of
-  the repository. `repo_sync` always adds the `base` pack, and it syncs all
+  the repository. `sync-engine repo` always adds the `base` pack, and it syncs
+  all
   the files of these tools.
 - Do not edit a synced file in the consumer repository. The next sync replaces
   it. Put repository-owned content in the places that the sync never writes:
@@ -126,8 +128,8 @@ This file holds the instructions. Each rule of the sync has one place in
   uses this URL and needs no SSH key. It does not ask for a password.
 - The temporary clone of this prompt (step 1) uses
   `git@github.com:virajp/bootstrap.git`, which needs SSH access.
-- mise is installed. The sync starts gomplate, jq and yq through mise, and mise
-  installs each one that is missing. This install needs the network.
+- mise is installed. `setup:configs` installs the sync engine of the pin
+  `sync-engine/VERSION` with mise. This install needs the network.
 
 ## An empty repository
 
@@ -219,7 +221,8 @@ change a file.
 
 1. Make the clone of step 1, and get the newest commit of `bootstrap`:
    `git -C "$tmp" rev-parse HEAD`.
-2. Read `bootstrap_commit` of the values file. `repo_sync` writes it after
+2. Read `bootstrap_commit` of the values file. `sync-engine repo` writes it
+   after
    each sync without a failure.
 3. Use `bootstrap_commit` to select the checks of step 4:
 
@@ -295,7 +298,8 @@ tool file. Show the user each tool and each pack with its description and the
 result. Then ask which tools and packs the repository needs. Ask the questions
 of each pack file.
 
-The `base` pack is always added: `repo_sync` adds it, and the values file does
+The `base` pack is always added: `sync-engine repo` adds it, and the values file
+does
 not list it. Its tools are `mise`, `repo-sync`, `git`, `pre-commit`, `dprint`,
 `linter`, `vscode`, and the tools of the `security` pack. Do not select a tool
 of the
@@ -385,7 +389,8 @@ Do not run the sync, `mise run setup:configs` without `--dry-run`, before
 step 6. You can run a dry run. When the repository already has the task
 `code:lint:repo-sync`, for example at an update, you can also run
 `mise run code:lint:repo-sync`. It validates the values file with
-`repo_sync --check`, without a clone and without a sync, and it shows each
+`sync-engine repo --check`, without a clone and without a sync, and it shows
+each
 error at once. The task loads the sync code from the clone of the shared cache.
 Without that clone, or when the clone has another `origin`, the task prints
 nothing, exits 0 and does not validate the values file. Thus no output does not
@@ -422,7 +427,8 @@ The keys are in
 Read it, and write the file with these instructions:
 
 - Do not write `bootstrap_commit`, and do not copy it from an example: each
-  example has an empty value. `repo_sync` writes the `bootstrap` commit of each
+  example has an empty value. `sync-engine repo` writes the `bootstrap` commit
+  of each
   sync without a failure. See "A repository that already has
   `.config/bootstrap.toml`".
 - Write one `[tools.<folder>]` table for each tool from step 1, and one
@@ -514,7 +520,7 @@ exists locally or on `origin`.
    branches, `main` can allow it only when `develop` allows it too. Without a
    sign, do not write the key.
 
-`repo_sync` does not ask. It writes the merge tasks of the model that it
+`sync-engine repo` does not ask. It writes the merge tasks of the model that it
 finds, and removes the merge tasks of the other model. If the branches change
 later, run `setup:configs` again.
 
@@ -577,7 +583,7 @@ files, skip this step.
    the task runs. This run must pass. If it fails again, read the exit code
    below.
 
-If `repo_sync` fails, read the exit code:
+If `sync-engine repo` fails, read the exit code:
 
 | Code | Cause                                                                                                                                                                                                                                                                                                    | Action                                                                                                                                                                                           |
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

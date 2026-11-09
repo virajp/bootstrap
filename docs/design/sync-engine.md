@@ -14,30 +14,18 @@ See also: [packs.md](packs.md), [tools.md](tools.md), [mise.md](mise.md),
 `sync-engine/` is not a tool. The sync never copies it to a consumer as a
 folder.
 
-| File             | Job                                                                                                                                                                                                        |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `clone`          | The cache, the lock, the fetch and the copy of the clone. A template of an entry task embeds this file.                                                                                                    |
-| `common`         | The log, the output of a run, the file mode, the clean-up and its traps, the header detection, the record of the commit and the tool wrappers.                                                             |
-| `write`          | The write of one target: the format, the parse check, the temp file, the seed gate, the unblock of a folder path, the checks of a `[files]` table, the compare, the mode, the dry-run diff and the rename. |
-| `merge`          | Merge mode.                                                                                                                                                                                                |
-| `select`         | The pack expansion and the depth-first walk of the `depends`.                                                                                                                                              |
-| `manifest`       | The read and the write of the manifest, and the stale rule. Its `macos` link mode resolves each link, removes the real file and prunes up to the target root.                                              |
-| `values`         | The merge of the values of the tools.                                                                                                                                                                      |
-| `mise`           | The mise config generator, the environments of each tool and the checks of `[overrides.mise*]`. See [mise.md](mise.md).                                                                                    |
-| `repo-sync`      | The bash repo front-end, the function `repo_sync`. `setup:configs` runs `sync-engine repo` in its place. See [repo-sync.md](repo-sync.md).                                                                 |
-| `repo-sync-shim` | The function `repo_sync` for an old consumer task. It runs `sync-engine repo`. See [repo-sync.md](repo-sync.md#the-shim-for-an-old-task).                                                                  |
-| `setup-sync`     | The bash Mac front-end, the function `setup_sync`. The Mac tasks run `sync-engine macos` in its place. See [setup-sync.md](setup-sync.md).                                                                 |
-| `VERSION`        | The pin of the Go engine. See [The release of the engine](#the-release-of-the-engine).                                                                                                                     |
+| File        | Job                                                                                                                                                 |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clone`     | The cache, the lock, the fetch and the copy of the clone. A template of an entry task embeds this file.                                             |
+| `repo-sync` | The shim: the function `repo_sync` for an old consumer task. It runs `sync-engine repo`. See [repo-sync.md](repo-sync.md#the-shim-for-an-old-task). |
+| `VERSION`   | The pin of the Go engine. See [The release of the engine](#the-release-of-the-engine).                                                              |
 
-Each front-end sources `common`, `write`, `merge`, `select`, `manifest`,
-`values`
-and `mise` from its own folder.
+The rest of `sync-engine/` is the Go engine.
 
 ### The Go module
 
 `sync-engine/` is also the Go module `github.com/virajp/bootstrap/sync-engine`
-of the new engine. The Go engine replaces the bash files phase by phase. The
-bash files stay until phase P7. Until then, the Go engine keeps each output
+of the engine. The Go engine replaced the bash engine, and it keeps each output
 line, file and exit code of the bash engine.
 
 | Path                 | Job                                                                                                                                                      |
@@ -45,7 +33,7 @@ line, file and exit code of the bash engine.
 | `go.mod`             | The module.                                                                                                                                              |
 | `cmd/sync-engine`    | The command, with the subcommands `repo`, `macos` and `version`. `version` prints `main.version`, which the release build sets. A local build has `dev`. |
 | `internal/fail`      | The typed errors of the exit codes, and a collector where the highest code wins. See [The exit codes](#the-exit-codes).                                  |
-| `internal/report`    | The output of a run, with the same bytes as `common`. See [The output of a run](#the-output-of-a-run).                                                   |
+| `internal/report`    | The output of a run. See [The output of a run](#the-output-of-a-run).                                                                                    |
 | `internal/source`    | The read of the clone: the packs file, the `tools.toml` of each tool, the files of a tool folder, and the checks of these files.                         |
 | `internal/values`    | The values files of a repo and of the Mac, and the values merge. See [The values merge](#the-values-merge).                                              |
 | `internal/selection` | The pack expansion, the checks of the packs, the depth-first walk of the `depends`, and the stages of the Mac.                                           |
@@ -55,17 +43,21 @@ line, file and exit code of the bash engine.
 | `internal/target`    | The write of one target, and `bootstrap_commit`. See [The write of one target](#the-write-of-one-target).                                                |
 | `internal/manifest`  | The manifest and the stale rule, in the link modes `repo` and `macos`. See [The manifest](#the-manifest-and-the-stale-rule).                             |
 | `internal/misegen`   | The mise config generator of both sides: the environments, the checks of `[overrides.mise*]`, and the `conf.d` files. See [mise.md](mise.md).            |
-| `internal/macos`     | The Mac front-end, `sync-engine macos`: the Go copy of `setup-sync`. See [setup-sync.md](setup-sync.md).                                                 |
-| `internal/repo`      | The repo front-end, `sync-engine repo`: the Go copy of `repo-sync`. See [repo-sync.md](repo-sync.md).                                                    |
+| `internal/macos`     | The Mac front-end, `sync-engine macos`. See [setup-sync.md](setup-sync.md).                                                                              |
+| `internal/repo`      | The repo front-end, `sync-engine repo`. See [repo-sync.md](repo-sync.md).                                                                                |
 
 The task `test:go` of this repository runs `go vet`, a `gofmt` check and
-`go test` in the module. The golden files of `internal/report` hold the output
-of the bash functions of `common`. The golden files of `internal/tmpl` hold the
-output of the gomplate CLI for each `.tmpl` file and each inline template.
+`go test` in the module. The golden files of the parity tests hold the output
+of the bash engine, written before its removal. A test compares the Go output
+with them. A golden file whose inputs (a fingerprint of `repo/`, `macos/` or
+the case) changed is old: the test skips that case, and the tasks
+`test:repo-sync`, `test:setup-sync` and `test:macos-tools` test the behavior.
+The golden files of `internal/tmpl` hold the output of the gomplate CLI for
+each `.tmpl` file and each inline template.
 
-One difference from bash: to find a terminal on stderr, Go accepts any
-character device, and the bash test `-t 2` accepts only a terminal. The two
-differ only for a device such as `/dev/null`, where no output can be seen.
+One difference from the bash engine: to find a terminal on stderr, Go accepts
+any character device, and the bash test `-t 2` accepted only a terminal. The
+two differ only for a device such as `/dev/null`, where no output can be seen.
 
 ## The cache and the clone
 
@@ -194,40 +186,30 @@ of
 this repository. The sync does not ship it. An old `setup/configs/sync` loads it
 from the clone with `REPO_SYNC_CLONE`, and it loads `sync-engine/repo-sync` of
 the
-same clone. It keeps its old header. The cleanup plan removes it. The shim
-`repo-sync-shim` for an old task is in
-[repo-sync.md](repo-sync.md#the-shim-for-an-old-task).
+same clone: the shim. It keeps its old header. The cleanup plan removes it. The
+shim is in [repo-sync.md](repo-sync.md#the-shim-for-an-old-task).
 
 ## The tool calls
 
-The wrappers `_se_gomplate`, `_se_jq` and `_se_yq` of `common` start gomplate,
-jq
-and yq from `/`, so no mise config of a repository selects a version. The engine
-calls gomplate, jq and yq only through these wrappers, and it has no pinned
-version.
+The engine does not call gomplate, jq or yq. It has its own template code
+(`internal/tmpl`), and it parses and merges JSON, YAML and TOML in its own
+process (`internal/format`). Thus no task needs a `#MISE` line for them, and
+the sync operates in a shell without `MISE_ENV=dev`, before a first sync, on a
+new machine and in a scratch folder.
 
-| State of the tool | Call                                     |
-| ----------------- | ---------------------------------------- |
-| Installed         | `MISE_OFFLINE=1 mise x <tool> -- <tool>` |
-| Not installed     | `mise x <tool>@latest -- <tool>`         |
+The engine runs these commands:
 
-An installed tool runs with no network. mise resolves `@latest` from its list of
-versions, and with `MISE_OFFLINE=1` it finds no versions, so an installed tool
-runs
-by its name alone. Thus the sync operates before a first sync, on a new machine
-and
-in a scratch folder. No task needs a `#MISE` line for gomplate, jq and yq, and
-the sync operates in a shell without `MISE_ENV=dev`. Each path that a wrapper
-gets is absolute.
-
-gomplate reads the TOML files: the values file, the packs file (an awk scan also
-gives the file order of its members), each `tools.toml` and the consumer file
-`.config/fnox.toml`.
+| Side    | Command                                                                                                                  |
+| ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Both    | `git` of `PATH`, for the commit of the clone and the branches. `diff -u` for the diff of a dry run.                      |
+| `repo`  | `mise x -- which dprint` and `mise x -- dprint fmt`, from the root of the repository, so its mise config selects dprint. |
+| `repo`  | `pre-commit autoupdate` of `PATH`. The entry task provides it with `#MISE tools.pre-commit="latest"`.                    |
+| `macos` | `mise bootstrap --yes` of the `mise` of `PATH`, in `$HOME`, and `dscl` for the login shell.                              |
 
 ## Templates
 
-- `.tmpl` is the only marker of a template. gomplate renders each `.tmpl` file,
-  and
+- `.tmpl` is the only marker of a template. The engine renders each `.tmpl`
+  file, and
   the output file has no `.tmpl` suffix. Any other file is copied byte for byte.
 - A JSON, YAML or TOML target is also a template when its source ends in
   `.tmpl`.
@@ -295,8 +277,8 @@ Each JSON, YAML or TOML target must parse, after its render or copy and before
 its
 merge and dprint. On the repo side, `pre-commit autoupdate` runs before the
 parse
-check of `.config/pre-commit-config.yaml`. jq reads JSON, and yq reads YAML and
-TOML. The `format` key of its
+check of `.config/pre-commit-config.yaml`. The engine reads JSON as jq does,
+and YAML and TOML with the yq code in its own process. The `format` key of its
 `[files]` table selects the format, else the extension of the target without
 `.tmpl`.
 
@@ -359,18 +341,20 @@ changes,
 put the old item in `remove_items`, or the live target keeps it next to the new
 one.
 
-**Output.** JSON is merged and written with jq: a 2-space indent, the key order
+**Output.** JSON is merged and written in the form of jq: a 2-space indent, the
+key order
 of
 the live target, new keys at the end of their table, and one trailing newline.
 YAML
-and TOML are merged and written with yq in their own format, so the comments of
+and TOML are merged and written with the yq code in their own format, so the
+comments of
 the
 live target stay. In TOML, a comment on a table-header line can be lost, and the
 spacing before an inline comment can change.
 
 **Absent target.** A target that is missing, 0 bytes or only whitespace (or, for
 YAML, only comments) is absent. It gets the source without the `remove_items`
-items: JSON through the jq merge, YAML and TOML through yq as rendered, so the
+items: JSON through the JSON merge, YAML and TOML through yq as rendered, so the
 comments of the source stay. A TOML target with only comments is an empty table,
 not an absent target.
 
@@ -547,13 +531,14 @@ to find what changed since the last sync.
 
 ## The output of a run
 
-The code of the output is in `common`, so both front-ends print the same lines.
+The code of the output is in `internal/report`, so both front-ends print the
+same lines.
 The sample is in
 [docs/sync/tools/repo-sync.md](../sync/tools/repo-sync.md#tasks).
 
-**The outcome of a target.** `_se_outcome <kind> <path> [text] [line]` replaces
-each per-file log line. It increments the count of the kind and prints the
-correct line. Each count is a plain variable, for bash 3.2.
+**The outcome of a target.** The outcome of a target (a kind, a path, and an
+optional text and log line) replaces each per-file log line. It increments the
+count of the kind and prints the correct line.
 
 | Kind        | Lines of the log                                      | List                | Dry-run word   | Table row      |
 | ----------- | ----------------------------------------------------- | ------------------- | -------------- | -------------- |
@@ -573,12 +558,12 @@ correct line. Each count is a plain variable, for bash 3.2.
   `kept existing`, prints only with verbose.
 - **No count:** A failure of the mise config of a tool or of the manifest file
   has no count, and its message stays. The line `FAILED: <list>` stays, before
-  the table. The other messages of `_se_log` stay too.
+  the table. The other log messages stay too.
 
-**The table and the last line.** `_se_summary <rc>` prints them once, as the
+**The table and the last line.** The summary of a run prints them once, as the
 last
 output of the run: after the stale rule, the manifest write and
-`bootstrap_commit`. Each return after the file loop calls it, also on a failure.
+`bootstrap_commit`. A run prints it after the file loop, also on a failure.
 A run that stops before the file loop has no table. Each run prints one table,
 so
 `--all` prints one table for each member.
@@ -751,7 +736,7 @@ On the Mac side, a `SYNC_ENGINE_CLONE` without `sync-engine/` or `macos/tools/`
 is
 code 2. A child task that does not find its library in the clone returns code 1.
 
-`repo_sync --check` returns the highest code of its checks, at most 2.
+`sync-engine repo --check` returns the highest code of its checks, at most 2.
 
 ## The release of the engine
 

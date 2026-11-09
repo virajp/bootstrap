@@ -56,16 +56,11 @@ The sample values files are in `repo/examples/`. `tools/` holds only a
 forwarding file, for an old sync task of a repository. The sync does not copy
 it.
 
-The sync code is in `sync-engine/`: `clone` for the shared cache and the clone,
-`common` for the log, the header detection and the wrappers of gomplate, jq and
-yq, `write` for the write of one file, `merge` for merge mode, `select` for the
-packs and the `depends`, `manifest` for the manifest and the stale rule,
-`values`
-for the merge of the values of the tools, `mise` for the mise config generator,
-`repo-sync` for the function `repo_sync`, and `setup-sync` for the function
-`setup_sync`, the Mac front-end. This
-folder is not a tool, so the
-sync does not copy it to a repository.
+The sync code is in `sync-engine/`: the Go engine `sync-engine` (`cmd/` and
+`internal/`) with its front-ends `sync-engine repo` and `sync-engine macos`,
+`clone` for the shared cache and the clone, `repo-sync` for the shim of an old
+sync task, and `VERSION`, the pin of the engine. This folder is not a tool, so
+the sync does not copy it to a repository.
 
 A pack is a named group of tools in `repo/packs.toml`. It has no files of its
 own. The sync always adds the `base` pack:
@@ -166,7 +161,8 @@ of the `[files]` table.
 2. It runs the sync engine, `sync-engine repo`, of the release that
    `sync-engine/VERSION` of that copy names, with that copy. Thus a change to
    the sync code applies in the same run.
-3. `repo_sync` reads the `[tools.*]` and `[packs.*]` tables of the repository's
+3. `sync-engine repo` reads the `[tools.*]` and `[packs.*]` tables of the
+   repository's
    `.config/bootstrap.toml`, adds the `base` pack and the `depends` of each
    tool,
    and finds the branch model from the branches `main` and `develop`.
@@ -177,7 +173,8 @@ of the `[files]` table.
    `.config/repo-generated.tsv`, and it sets `bootstrap_commit` of the values
    file to the commit of its clone.
 
-Between two syncs, the gate `code:lint:repo-sync` runs `repo_sync --check` at
+Between two syncs, the gate `code:lint:repo-sync` runs `sync-engine repo
+--check` at
 each commit that changes `.config/bootstrap.toml`.
 
 The sync needs `mise`. It lists only the files that changed, and it ends with a
@@ -203,8 +200,10 @@ by hand one time, as step 2 of `docs/sync/index.md` tells you.
 
 ## Templates
 
-A file whose name ends in `.tmpl` is a template. `repo_sync` renders it with
-[gomplate](https://docs.gomplate.ca) and writes it without the `.tmpl` suffix.
+A file whose name ends in `.tmpl` is a template. `sync-engine repo` renders it
+with Go `text/template` and its own copy of the
+[gomplate](https://docs.gomplate.ca) functions, and writes it without the
+`.tmpl` suffix.
 The delimiters are `<% %>`. mise uses `{{ }}` and bash uses `[[ ]]`, so both
 reach the output unchanged. The values come from the repository's
 `.config/bootstrap.toml`.
@@ -252,7 +251,8 @@ merge_model = "pr"
 
 ## `.gitignore`
 
-`repo_sync` writes the shared `.gitignore`, with `[overrides.gitignore]` of the
+`sync-engine repo` writes the shared `.gitignore`, with `[overrides.gitignore]`
+of the
 values file applied.
 [`docs/design/repo-sync.md`](docs/design/repo-sync.md#overridesgitignore) has
 the
@@ -278,14 +278,12 @@ entries:
 
 ## Tests
 
-`mise run test:repo-sync` runs `repo_sync --dry-run`, `repo_sync --check` and,
-for a case that compares a written file, `repo_sync` of the working tree's
-`repo/`, `sync-engine/` and `tools/` (the forwarding file) against scratch
-values files and scratch consumers.
-Some cases of the manifest also call `_se_manifest_stale` and
-`_se_manifest_read` directly, and the cases of the `macos` side call
-`sync-engine/mise` directly. It checks the exit code and the message of each
-case. It needs no network when gomplate, jq and yq are installed.
+`mise run test:repo-sync` runs `sync-engine repo --dry-run`,
+`sync-engine repo --check` and, for a case that compares a written file,
+`sync-engine repo`, built from the working tree's `sync-engine/`, with its
+`repo/` and `tools/` (the forwarding file), against scratch values files and
+scratch consumers. It checks the exit code and the message of each case. It
+needs no network when gomplate, jq and yq are installed.
 
 `mise run test:setup-sync` runs `sync-engine macos`, built from the working
 tree's `sync-engine/`, against the fixtures in `macos/fixtures/`. It checks the

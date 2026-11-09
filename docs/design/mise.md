@@ -170,21 +170,20 @@ tables of its `tools.toml`, in mise syntax. The sync removes the prefix
 `mise.` and writes each table into `.config/mise/conf.d/<tool>/mise.<env>.toml`
 as a normal mise section: `[mise.settings]` becomes `[settings]`, `[mise.env]`
 becomes `[env]`, and `[mise.shell_alias]` becomes `[shell_alias]`. The
-generator is the library `sync-engine/mise`: `_SE_MISE_TEMPLATE` builds the
-output, and `_se_mise_render` writes it. `_se_mise_envs` finds the environments
-of each tool, and `_se_mise_overrides` examines `[overrides.mise*]`. The
-template reads the `SYNC_ENGINE_MISE_*` environment variables.
+generator is the package `internal/misegen` of the engine. It finds the
+environments of each tool, examines `[overrides.mise*]`, builds the output and
+writes it. The template reads the `SYNC_ENGINE_MISE_*` environment variables.
 
-These parts stay in `sync-engine/repo-sync`:
+These parts stay in the repo front-end (`internal/repo`):
 
 - `[overrides.gitignore]` and its checks.
 - The `setup-all` and `setup-<submodule>` aliases.
 - The records of the generated files, for the file loop and the manifest.
-- `_rs_envs`, which reads `environments`, and `_rs_env_rules`, which examines
-  the `env` of each entry of the values file.
-- `_rs_mise_index`, which reads each `tools.toml` of the clone, and
-  `_rs_mise_owner`, which finds the tool that defines a mise tool.
-- The call of the library with the side `repo`.
+- The read of `environments`, and the check of the `env` of each entry of the
+  values file.
+- The read of each `tools.toml` of the clone, and the search for the tool that
+  defines a mise tool.
+- The call of the generator with the side `repo`.
 
 The sync sorts each `[mise.<section>]` table into one of three classes:
 
@@ -259,7 +258,7 @@ the value of each tool.
 ### `<% %>` in a `[mise.*]` string
 
 A `[mise.*]` string can hold `<% %>`. When the `tools.toml` of a tool contains
-`<%`, the engine renders that file as a gomplate template into a temp copy. The
+`<%`, the engine renders that file as a template into a temp copy. The
 generator reads the copy, so the generated file holds the rendered value. The
 overrides of the values file are not rendered.
 
@@ -300,10 +299,10 @@ existing `conf.d` files of the tool stay, and the other tools continue.
 | The copy has other key paths             | `<shown>: a rendered value changes the keys of the file`                |
 
 A raw file that is not valid TOML does not follow this rule. On the `repo` side,
-`_rs_mise_index` reads each `tools.toml` of the clone before any render, so the
+the front-end reads each `tools.toml` of the clone before any render, so the
 whole sync stops with `cannot read repo/tools/<tool>/tools.toml`. The
 message `<shown>: not valid TOML before render: <message>` comes only from a
-direct call of `_se_mise_render`.
+direct call of the generator, as in the tests of `internal/misegen`.
 
 The rendered copy must have the same key paths as the raw file, so a rendered
 value cannot add a key or a table.
@@ -315,8 +314,8 @@ read differently is not a defect either.
 
 ### The two sides of the generator
 
-Each function of `sync-engine/mise` takes a side as its first parameter: `repo`
-or `macos`. Any other value is a usage error. The `repo` side writes one
+The generator takes a side: `repo` or `macos`. Any other value is a usage
+error. The `repo` side writes one
 file for each environment. The `macos` side writes one file for each tool and
 refuses environments.
 
@@ -338,7 +337,7 @@ clone, selected or not. See [tools.md](tools.md#the-toolstoml-file).
 
 ### The own config of a values file
 
-`_se_mise_own_config`, only on the `macos` side, generates the `[mise.*]` tables
+The own config, only on the `macos` side, writes the `[mise.*]` tables
 of the values file into `conf.d/zz-macos/mise.toml`. It uses the same section
 list. The header is:
 
@@ -470,7 +469,8 @@ example `doppler`.
   of a mise
   tool.
 - Each overridden line gets an `# override: <values file>` comment.
-- The sync examines the overrides before any write. `repo_sync --check` examines
+- The sync examines the overrides before any write. `sync-engine repo --check`
+  examines
   their
   structure, without the check of each path.
 - The overrides are not rendered.

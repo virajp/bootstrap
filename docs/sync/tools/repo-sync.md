@@ -21,7 +21,7 @@ file. A `[tools.repo-sync]` table gives values.
 | Path in the repository                        | Kind      | Use                                                                                                                                                             |
 | --------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`. It fetches `bootstrap` into the cache, then runs the sync engine with a copy of the clone. The sync embeds `sync-engine/clone` in it. |
-| `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `repo_sync --check`.                                                                                                    |
+| `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `sync-engine repo --check`.                                                                                             |
 | `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                                                                                                                   |
 
 The sync no longer ships the task `setup:configs:sync`
@@ -43,15 +43,14 @@ file, whose `migrate.md` item covers it.
 | ---------- | -------- | ------------ | ---------------------------------- |
 | `gomplate` | `latest` | dev          | For the gate `code:lint:repo-sync` |
 
-The sync does not use this entry. It starts gomplate, jq and yq itself through
-mise, from `/`.
+The sync does not use this entry. The engine does not call gomplate, jq or yq.
 
 ## Tasks
 
 | Task                  | Use                                                                                                                                                                          |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `setup:configs`       | Sync the shared files from `bootstrap`. `--dry-run` shows the diff. `--verbose` lists each file, also an unchanged one. `--all` and `--<name>` also sync the git submodules. |
-| `code:lint:repo-sync` | Validate `.config/bootstrap.toml` with `repo_sync --check`. Hidden.                                                                                                          |
+| `code:lint:repo-sync` | Validate `.config/bootstrap.toml` with `sync-engine repo --check`. Hidden.                                                                                                   |
 
 `setup:configs` keeps a shallow clone of `bootstrap` in `repo/` of the cache
 `${XDG_CACHE_HOME:-~/.cache}/sync-engine/`, for each consumer of the machine:
@@ -155,7 +154,7 @@ member is part of the root tree, so it gets no flag.
 and exits 0 in these conditions:
 
 - gomplate is not available (`mise x -- which gomplate`). The gate does not
-  install it, so a commit never needs the network.
+  install it.
 - A list of files does not include `.config/bootstrap.toml`.
 - No list of files is given, and `.config/bootstrap.toml` does not exist.
 - The cache has no clone with `sync-engine/repo-sync`. The gate never clones.
@@ -168,11 +167,15 @@ In the last two conditions, the gate does not validate the values file. Thus
 no output does not show that the values file is correct. A run of
 `setup:configs` makes the clone.
 
-Else it unsets `SYNC_ENGINE_CLONE` and `REPO_SYNC_CLONE`, loads
-`sync-engine/repo-sync` of the cache without its lock, and runs
-`repo_sync --check`.
+Else it unsets `SYNC_ENGINE_CLONE` and `REPO_SYNC_CLONE`, loads the shim
+`sync-engine/repo-sync` of the cache without its lock, and calls
+`repo_sync --check`. The shim runs `sync-engine repo --check`: the engine of
+`SYNC_ENGINE_BIN`, else the pin `sync-engine/VERSION` of the cache. The first
+gate after a new pin runs `mise install` of the pin, which needs the network.
+A pin that mise cannot install stops the gate with code 5.
 
-`repo_sync --check` examines only the rules that need the values file and the
+`sync-engine repo --check` examines only the rules that need the values file and
+the
 local git repository. It runs after the checks of the values file and of
 `mise`, and it stops before the clone. It makes no clone, writes no file and
 does not set `bootstrap_commit`. It runs each local check, prints each
@@ -186,14 +189,12 @@ shared file does not have, a `root_only` tool in a submodule, an old key or a
 bad `[files]` table of a `tools.toml`, and a bad `[defaults]`, `[questions]` or
 `[contributes]` table or a conflict of the values of the tools.
 
-Besides the copy of the files, `repo_sync` does these steps:
+Besides the copy of the files, `sync-engine repo` does these steps:
 
-- It stops with code 2 without `mise`. An installed gomplate, jq or yq runs as
-  `MISE_OFFLINE=1 mise x <tool> -- <tool>`, with no network. A tool that is not
-  installed runs as `mise x <tool>@latest -- <tool>`. Each call runs from `/`,
-  so no mise config of the repository selects a version.
+- It stops with code 2 without `mise`. It does not call gomplate, jq or yq: the
+  engine has its own template, JSON, YAML and TOML code.
 - It examines each JSON, YAML and TOML target after its render or copy, and
-  before dprint: jq for JSON, yq for YAML and TOML. The `format` key of its
+  before dprint, as JSON, YAML or TOML. The `format` key of its
   `[files]` table selects the format, else the extension. A `.json` target
   without a `format` key, with a line that starts with `//` after spaces, is
   JSONC, and it does not examine that target. This JSONC rule does not apply to
@@ -234,7 +235,7 @@ Besides the copy of the files, `repo_sync` does these steps:
     `.config/repo-generated.tsv` as `would change` or `would add` when the
     content differs. With `--verbose`, the lines are `would remove <path>` and
     `would write .config/repo-generated.tsv`.
-- It merges the values of each selected tool (`sync-engine/values`): the
+- It merges the values of each selected tool: the
   `[defaults]` of the tool, the contributions of the selected tools, then
   `[tools.<name>]` without `env`. A template reads them as `.config` and `.all`.
   A failure stops the sync with code 2 or 3 before it writes a file of a tool.
@@ -284,11 +285,11 @@ runs `code:lint:repo-sync` with the staged files.
 
 ## Files the repository supplies
 
-| File                                | Used by                                                                                          |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `.config/bootstrap.toml`            | `repo_sync`. The values file of step 3 of `index.md`. `repo_sync` writes its `bootstrap_commit`. |
-| `.config/repo-sync/pre-commit.yaml` | `.config/pre-commit-config.yaml`. Optional: its own hooks.                                       |
-| `.config/repo-generated.tsv`        | `repo_sync` writes and reads it. Commit it. Do not edit it.                                      |
+| File                                | Used by                                                                                                        |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `.config/bootstrap.toml`            | `sync-engine repo`. The values file of step 3 of `index.md`. `sync-engine repo` writes its `bootstrap_commit`. |
+| `.config/repo-sync/pre-commit.yaml` | `.config/pre-commit-config.yaml`. Optional: its own hooks.                                                     |
+| `.config/repo-generated.tsv`        | `sync-engine repo` writes and reads it. Commit it. Do not edit it.                                             |
 
 ## Adapt to the repository
 

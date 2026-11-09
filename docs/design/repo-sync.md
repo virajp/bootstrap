@@ -1,7 +1,7 @@
 # `repo-sync` design
 
-This document describes the repo front-end of the sync, `sync-engine/repo-sync`.
-It
+This document describes the repo front-end of the sync, `sync-engine repo` of
+the Go engine (`internal/repo`). It
 writes the files of the selected tools of `repo/tools/` into a consumer
 repository.
 It holds the rules that only a repository has: members and submodules, the
@@ -24,10 +24,10 @@ The `repo-sync` tool of `repo/tools/` ships the two tasks.
 | `code:lint:repo-sync` | Hidden. The gate of the values file. See [The gate](#the-gate-codelintrepo-sync).                     |
 
 The old task `setup:configs:sync` (`setup/configs/sync`) loaded
-`sync-engine/repo-sync` from the copy and ran `repo_sync`. The tool no longer
-ships it, so the stale rule removes it. `sync-engine/repo-sync` of the clone is
-still the bash front-end. `sync-engine/repo-sync-shim` is the shim for an old
-consumer task: see [The shim for an old task](#the-shim-for-an-old-task).
+`sync-engine/repo-sync` from the copy and ran the function `repo_sync`. The tool
+no longer ships it, so the stale rule removes it. `sync-engine/repo-sync` of the
+clone is now the shim for an old consumer task: see
+[The shim for an old task](#the-shim-for-an-old-task).
 
 `setup:configs` (`setup/configs/_default`) embeds `sync-engine/clone`. See
 [sync-engine.md](sync-engine.md#how-an-entry-task-embeds-clone). Its order is:
@@ -67,7 +67,8 @@ that the old task does not define.
 By default, the sync starts with one info line:
 `bootstrap <short commit> · <n> tools · environments: <environments>`.
 
-`repo_sync` makes its own private copy of the clone, because it writes the
+`sync-engine repo` makes its own private copy of the clone, because it writes
+the
 generated
 mise config into the copy. It never clones and reads no URL.
 
@@ -79,24 +80,26 @@ mise config into the copy. It never clones and reads no URL.
 ### The shim for an old task
 
 An old `setup:configs` runs its local `setup/configs/sync`, which loads
-`sync-engine/repo-sync` from the clone and calls `repo_sync`. The old
+`sync-engine/repo-sync` from the clone and calls the function `repo_sync`. The
+old
 `setup:configs` also copied a newer `setup/configs/sync` from the clone, but
 the clone no longer has that file, so the local file stays.
 
-The shim `sync-engine/repo-sync-shim` defines the function `repo_sync`. It runs
+The shim `sync-engine/repo-sync` defines the function `repo_sync`. It runs
 `sync-engine repo` with the same arguments and environment, and returns the
 exit code of the engine. It selects the engine with the rules of step 2: it
 returns 2 for a bad `SYNC_ENGINE_BIN`, and 5 for a bad pin or a failed
 `mise install`. It reads `VERSION` from its own folder, so `--check` needs no
-`SYNC_ENGINE_CLONE`. Its error lines start with `repo-sync:`. Phase P7b moves
-it over `sync-engine/repo-sync`.
+`SYNC_ENGINE_CLONE`. Its error lines start with `repo-sync:`. The forwarding
+file `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync` loads it too.
 
 ## The values file and the selection
 
-`repo_sync` reads the consumer file `.config/bootstrap.toml`. The keys are in
+`sync-engine repo` reads the consumer file `.config/bootstrap.toml`. The keys
+are in
 [bootstrap-config.md](bootstrap-config.md).
 
-- `repo_sync` adds the pack `base`. Its name is fixed in `repo-sync`. See
+- `sync-engine repo` adds the pack `base`. Its name is fixed in the engine. See
   [packs.md](packs.md).
 - It expands each pack to its default members, adds the `depends` of each tool
   and the
@@ -104,10 +107,12 @@ it over `sync-engine/repo-sync`.
   dependency comes before the tool that needs it.
 - The values file is required. A missing file stops the sync. The old name
   `.config/repo-config.toml` is read, with a message: rename it.
-- `repo_sync` copies the clone of `SYNC_ENGINE_CLONE`. A clone that it cannot
+- `sync-engine repo` copies the clone of `SYNC_ENGINE_CLONE`. A clone that it
+  cannot
   use stops
   the run.
-- `repo_sync` examines the manifest of each tool of the clone, selected or not.
+- `sync-engine repo` examines the manifest of each tool of the clone, selected
+  or not.
   See
   [tools.md](tools.md).
 
@@ -166,7 +171,8 @@ in
 
 The branches `main` and `develop` select the model. A branch counts if it exists
 locally
-or on `origin`. `repo_sync` writes the merge tasks of the model that it finds,
+or on `origin`. `sync-engine repo` writes the merge tasks of the model that it
+finds,
 and
 removes the others. It stops if neither branch exists.
 
@@ -201,7 +207,7 @@ removes the others. It stops if neither branch exists.
 
 `direct_commit = true` in `[branch.main]` or `[branch.develop]` allows a direct
 commit to
-that branch. `repo_sync` reads it, and the merge tasks do not.
+that branch. `sync-engine repo` reads it, and the merge tasks do not.
 
 The `no-commit-to-branch` hook of the `git` tool protects only the core branches
 that
@@ -219,7 +225,8 @@ of each other core branch, and the hook when no pair is left.
 | `main` and `develop`            | No table                  | `--branch main --branch develop`  |
 | `main` only, or `develop` only  | No table                  | `--branch <branch>` of the branch |
 
-`repo_sync` validates the key before it writes a file, also when it is `false`.
+`sync-engine repo` validates the key before it writes a file, also when it is
+`false`.
 These
 values stop the sync:
 
@@ -298,7 +305,8 @@ in both lists, an empty line, a key other than `add` and `remove`, the old
 
 A repository does not use the fnox `default` profile, which is only for the
 user-level
-fnox settings. When `.config/fnox.toml` exists, the sync and `repo_sync --check`
+fnox settings. When `.config/fnox.toml` exists, the sync and `sync-engine repo
+--check`
 stop on a
 top-level `[secrets]` table (the `default` profile, also when empty), a
 `[profiles.default]` table, or no `[profiles.<name>]` table. A repository with
@@ -338,12 +346,14 @@ submodule has its own sync. A name has no `/`. A target with `requires` and
 
 ### `--dry-run`
 
-`repo_sync --dry-run` shows each change and writes no file. It examines each
+`sync-engine repo --dry-run` shows each change and writes no file. It examines
+each
 target too.
 
 ### `--check`
 
-`repo_sync --check` examines only the local rules of the values file: the rules
+`sync-engine repo --check` examines only the local rules of the values file: the
+rules
 that need
 the values file and the local git repository, for example `env`, `environments`,
 `[member.*]`, the structure of `[overrides]`, `direct_commit`, a missing `main`
@@ -375,7 +385,8 @@ The rules that need the clone stay with the sync:
 
 ### The gate `code:lint:repo-sync`
 
-The gate runs `repo_sync --check`. The `lint` hook runs `code:lint`, which runs
+The gate runs `sync-engine repo --check`. The `lint` hook runs `code:lint`,
+which runs
 the gate
 with the staged files, so the tool adds no hook. The gate is hidden, and it
 ignores `--fix`.
@@ -391,9 +402,13 @@ It prints nothing and exits 0 in these cases:
   default URL.
   Thus the gate never sources code from another repository at commit time.
 
-Else it unsets `SYNC_ENGINE_CLONE` and `REPO_SYNC_CLONE`, and loads
-`sync-engine/repo-sync`
-of the cache. It takes no lock and never clones.
+Else it unsets `SYNC_ENGINE_CLONE` and `REPO_SYNC_CLONE`, loads the shim
+`sync-engine/repo-sync` of the cache, and calls `repo_sync --check`. The shim
+runs `sync-engine repo --check`: `SYNC_ENGINE_BIN`, else the pin of `VERSION`
+of the cache. See [The shim for an old task](#the-shim-for-an-old-task). Thus
+the first gate after a new pin runs `mise install` of that pin, and a pin that
+mise cannot install stops the gate with code 5. The gate takes no lock and
+never clones.
 
 ## The manifest
 
