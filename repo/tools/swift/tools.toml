@@ -6,12 +6,6 @@ depends = []
 extensions = [ "swiftlang.swift-vscode" ]
 root_only = false
 
-[files.".config/swift-format.json"]
-mode = "seed"
-
-[files.".config/swiftlint.yml"]
-mode = "seed"
-
 # The mise config, generated into .config/mise/conf.d/swift/mise.<env>.toml.
 # SwiftLint is the correctness gate. swift-format comes with the Swift
 # toolchain of the host, so it has no mise tool.
@@ -24,3 +18,27 @@ version = "latest"
 # CI job of a repository with swift in ci runs on a macOS runner.
 [mise_env.ci.settings]
 os = "macos"
+
+# The files of the tool, below files/.
+[files.".config/swift-format.json"]
+mode = "seed"
+source = ".config/swift-format.json"
+
+[files.".config/swiftlint.yml"]
+mode = "seed"
+source = ".config/swiftlint.yml"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."_scripts/xcode"]
+library = true
+source = "xcode"
+
+[tasks."code/format/50-swift-format"]
+source = "code-format-swift-format"
+
+[tasks."code/lint/80-swiftlint"]
+source = "code-lint-swiftlint"
+
+[tasks."setup/deps/60-swift"]
+source = "setup-deps-swift"

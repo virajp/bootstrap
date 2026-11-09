@@ -9,3 +9,14 @@ root_only = false
 depends = [ "android-sdk" ]
 envs = [ "dev", "ci" ]
 version = "3"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."code/format/10-dart"]
+source = "code-format-dart"
+
+[tasks."code/lint/20-dart"]
+source = "code-lint-dart"
+
+[tasks."setup/deps/20-flutter"]
+source = "setup-deps-flutter"

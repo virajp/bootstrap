@@ -4,6 +4,9 @@ description = "The RubyGems config (~/.gemrc): no documentation on install and u
 
 # gem rewrites it (gem sources), so the source holds only the keys that
 # bootstrap enforces. The file has no extension, so its format is set.
+
+# The files of the tool, below files/.
 [files.".gemrc"]
 format = "yaml"
 mode = "merge"
+source = ".gemrc"

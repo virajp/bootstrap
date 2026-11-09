@@ -1,6 +1,0 @@
-fingerprint: b6c9247dfed66eb774de62715561ee20f29e0e453cf9e5330a108fa9ffd34d2f
-rc=2
---- stderr
-repo-sync: repo/tools/a/tools.toml: [files."x.json"] remove must be a list of key paths, each a non-empty list of strings
-repo-sync: repo/tools/a/tools.toml: [files."x.json"] remove_items must be a list of tables, each with exactly path (a non-empty list of strings) and items (a list)
---- stdout

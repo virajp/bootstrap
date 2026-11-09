@@ -2,7 +2,6 @@ package source
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -30,7 +29,6 @@ type Index struct {
 	MiseOwner map[string]string
 	// StageInit is the set of the tools with `stage = "init"` (Mac side).
 	StageInit map[string]bool
-	files     map[string]bool
 }
 
 // Has tells if the index has the tool <name>.
@@ -89,11 +87,6 @@ func (s Source) openRepo() (*Index, error) {
 		// loop above stops at that file.
 		return x, loadErr
 	}
-	all, err := s.walkFiles()
-	if err != nil {
-		return x, fail.New(fail.Usage, "cannot list the files of the tool folders of the clone")
-	}
-	x.files = all
 	var probs []*fail.Error
 	for _, tool := range x.Names {
 		m := x.Manifests[tool]
@@ -115,46 +108,10 @@ func (s Source) openRepo() (*Index, error) {
 			x.MiseOwner[mt.Name] = tool
 		}
 		probs = append(probs, x.repoRules(tool, m)...)
+		probs = append(probs, m.probs...)
+		probs = append(probs, x.parentRule(tool)...)
 	}
-	probs = append(probs, s.tmplDuplicates()...)
 	return x, Problems(probs)
-}
-
-// walkFiles gives the regular files of the tools folder as `<tool>/<path>`.
-func (s Source) walkFiles() (map[string]bool, error) {
-	out := map[string]bool{}
-	root := s.ToolsDir()
-	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.Type().IsRegular() {
-			rel, _ := filepath.Rel(root, p)
-			out[filepath.ToSlash(rel)] = true
-		}
-		return nil
-	})
-	return out, err
-}
-
-// tmplDuplicates finds a file and its `.tmpl` file together.
-func (s Source) tmplDuplicates() []*fail.Error {
-	var probs []*fail.Error
-	root := s.ToolsDir()
-	_ = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
-		if err != nil || !d.Type().IsRegular() || !strings.HasSuffix(p, ".tmpl") {
-			return nil
-		}
-		if st, err := os.Stat(strings.TrimSuffix(p, ".tmpl")); err != nil || !st.Mode().IsRegular() {
-			return nil
-		}
-		rel, _ := filepath.Rel(root, p)
-		rel = strings.TrimSuffix(filepath.ToSlash(rel), ".tmpl")
-		tool, rest, _ := strings.Cut(rel, "/")
-		probs = append(probs, fail.New(fail.Usage, "%s/%s: %s and %s.tmpl both exist - keep one", s.ToolsShown(), tool, rest, rest))
-		return nil
-	})
-	return probs
 }
 
 // formatOf is `_se_format` for a target and an empty file.
@@ -172,27 +129,6 @@ func formatOf(target, format string) string {
 		return "toml"
 	}
 	return "text"
-}
-
-// CheckFileMode is `_se_files_check_mode`: the mode, the format and the merge
-// keys of a `[files]` table agree.
-func CheckFileMode(manifest, target, mode, format string, hasRemove, hasItems bool) []*fail.Error {
-	prefix := fmt.Sprintf("%s: [files.\"%s\"]", manifest, target)
-	if mode == "merge" {
-		switch formatOf(target, format) {
-		case "json", "yaml", "toml":
-			return nil
-		}
-		return []*fail.Error{fail.New(fail.Usage, "%s mode = \"merge\" needs a json, yaml or toml target", prefix)}
-	}
-	var out []*fail.Error
-	if hasRemove {
-		out = append(out, fail.New(fail.Usage, "%s remove works only with mode = \"merge\"", prefix))
-	}
-	if hasItems {
-		out = append(out, fail.New(fail.Usage, "%s remove_items works only with mode = \"merge\"", prefix))
-	}
-	return out
 }
 
 func pathOK(v any) bool {
@@ -243,14 +179,6 @@ func CheckFileShape(manifest, target, key string, v any) *fail.Error {
 	return fail.New(fail.Usage, "%s: [files.\"%s\"] %s", manifest, target, text)
 }
 
-func fileKeyOK(key string) bool {
-	switch key {
-	case "mode", "requires", "requires_found", "format", "remove", "remove_items":
-		return true
-	}
-	return false
-}
-
 // repoRules is `_rs_manifest_rules`: the old keys, the `[files]` tables and
 // `requires_found` of a mise entry of one tool.
 func (x *Index) repoRules(tool string, m *Manifest) []*fail.Error {
@@ -258,13 +186,6 @@ func (x *Index) repoRules(tool string, m *Manifest) []*fail.Error {
 	var out []*fail.Error
 	add := func(format string, args ...any) { out = append(out, fail.New(fail.Usage, format, args...)) }
 	seen := map[string]bool{}
-	target, mode, format := "", "", ""
-	hasRemove, hasItems := false, false
-	closeTable := func() {
-		if target != "" {
-			out = append(out, CheckFileMode(at, target, mode, format, hasRemove, hasItems)...)
-		}
-	}
 	for _, l := range m.lines {
 		switch l.field {
 		case "bad":
@@ -290,56 +211,8 @@ func (x *Index) repoRules(tool string, m *Manifest) []*fail.Error {
 			if l.b == "" || strings.Contains(l.b, "/") {
 				add("%s: requires_found of mise tool %s: '%s' must be a file name, with no /", at, l.a, l.b)
 			}
-		case "files":
-			if l.b == "-" {
-				closeTable()
-				target, mode, format, hasRemove, hasItems = l.a, "", "", false, false
-				if e := x.targetOK(tool, l.a); e != nil {
-					out = append(out, e)
-				}
-				continue
-			}
-			if !fileKeyOK(l.b) {
-				add("%s: [files.\"%s\"] %s is not a key of a file - the keys are mode, requires, requires_found, format, remove and remove_items", at, l.a, l.b)
-				continue
-			}
-			switch l.b {
-			case "mode":
-				switch l.c {
-				case `"generated"`, `"seed"`, `"merge"`:
-					mode = strings.ReplaceAll(l.c, `"`, "")
-				default:
-					add("%s: [files.\"%s\"] mode must be \"generated\", \"seed\" or \"merge\"", at, l.a)
-				}
-			case "format":
-				switch l.c {
-				case `"text"`, `"json"`, `"yaml"`, `"toml"`:
-					format = strings.ReplaceAll(l.c, `"`, "")
-				default:
-					add("%s: [files.\"%s\"] format must be \"text\", \"json\", \"yaml\" or \"toml\"", at, l.a)
-				}
-			case "remove", "remove_items":
-				if l.b == "remove" {
-					hasRemove = true
-				} else {
-					hasItems = true
-				}
-				fe := m.Raw.Get("files").(*Obj).Get(l.a).(*Obj)
-				if e := CheckFileShape(at, l.a, l.b, fe.Get(l.b)); e != nil {
-					out = append(out, e)
-				}
-			}
-		case "files_item":
-			if l.b == "requires" {
-				if badRelPath(l.c) {
-					add("%s: [files.\"%s\"] requires: '%s' must be a path relative to the repository root, with no .. part", at, l.a, l.c)
-				}
-			} else if l.c == "" || strings.Contains(l.c, "/") {
-				add("%s: [files.\"%s\"] requires_found: '%s' must be a file name, with no /", at, l.a, l.c)
-			}
 		}
 	}
-	closeTable()
 	return out
 }
 
@@ -347,20 +220,6 @@ func (x *Index) repoRules(tool string, m *Manifest) []*fail.Error {
 func badRelPath(p string) bool {
 	return p == "" || strings.HasPrefix(p, "/") || p == ".." || strings.HasPrefix(p, "../") ||
 		strings.Contains(p, "/../") || strings.HasSuffix(p, "/..")
-}
-
-// targetOK is `_rs_target_ok`: the folder of the tool has a file for <target>.
-func (x *Index) targetOK(tool, target string) *fail.Error {
-	ok := false
-	switch {
-	case target == "tools.toml", strings.HasSuffix(target, "/tools.toml"), strings.HasSuffix(target, ".tmpl"):
-	default:
-		ok = x.files[tool+"/"+target] || x.files[tool+"/"+target+".tmpl"]
-	}
-	if ok {
-		return nil
-	}
-	return fail.New(fail.Usage, "%s/%s/tools.toml: [files.\"%s\"] names a target that no file of the tool produces", x.Source.ToolsShown(), tool, target)
 }
 
 func (s Source) openMacos() (*Index, error) {
@@ -395,6 +254,8 @@ func (s Source) openMacos() (*Index, error) {
 	var probs []*fail.Error
 	for _, name := range x.Names {
 		probs = append(probs, x.macosRules(name)...)
+		probs = append(probs, x.Manifests[name].probs...)
+		probs = append(probs, x.parentRule(name)...)
 	}
 	return x, Problems(probs)
 }
@@ -412,7 +273,6 @@ func (x *Index) macosRules(tool string) []*fail.Error {
 	var out []*fail.Error
 	add := func(format string, args ...any) { out = append(out, fail.New(fail.Usage, format, args...)) }
 	bad := func(format string, args ...any) { add("%s: %s", at, fmt.Sprintf(format, args...)) }
-	hasRemove, hasItems := false, false
 	for _, k := range m.Raw.Keys() {
 		v := m.Raw.Get(k)
 		switch k {
@@ -490,65 +350,10 @@ func (x *Index) macosRules(tool string) []*fail.Error {
 					bad("[contributes.%s] must be a table", o)
 				}
 			}
-		case "files":
-			files, ok := v.(*Obj)
-			if !ok {
-				bad("[files] must be a table of [files.\"<target>\"] tables")
-				break
-			}
-			for _, f := range files.Keys() {
-				e, ok := files.Get(f).(*Obj)
-				if !ok {
-					bad("[files.\"%s\"] must be a table", f)
-					continue
-				}
-				mode, format := "", ""
-				for _, fk := range e.Keys() {
-					fv := e.Get(fk)
-					switch fk {
-					case "mode":
-						if s, ok := fv.(string); ok && (s == "generated" || s == "seed" || s == "merge") {
-							mode = s
-						} else {
-							bad("[files.\"%s\"] mode must be \"generated\", \"seed\" or \"merge\"", f)
-						}
-					case "remove", "remove_items":
-						if fk == "remove" {
-							hasRemove = true
-						} else {
-							hasItems = true
-						}
-						if er := CheckFileShape(at, f, fk, fv); er != nil {
-							out = append(out, er)
-						}
-					case "format":
-						if s, ok := fv.(string); ok && (s == "text" || s == "json" || s == "yaml" || s == "toml") {
-							format = s
-						} else {
-							bad("[files.\"%s\"] format must be \"text\", \"json\", \"yaml\" or \"toml\"", f)
-						}
-					case "requires":
-						items, good := checkedList(fv)
-						if !good {
-							bad("[files.\"%s\"] requires must be a non-empty list of paths", f)
-							break
-						}
-						for _, it := range items {
-							if badRelPath(it) {
-								add("%s: [files.\"%s\"] requires: '%s' must be a path relative to $HOME, with no .. part", at, f, it)
-							}
-						}
-					default:
-						if fk == "requires_found" {
-							add("%s: [files.\"%s\"] requires_found is for repo tools only", at, f)
-						} else {
-							add("%s: [files.\"%s\"] %s is not a key of a file - the keys are mode, requires, format, remove and remove_items", at, f, fk)
-						}
-					}
-				}
-				out = append(out, CheckFileMode(at, f, mode, format, hasRemove, hasItems)...)
-				hasRemove, hasItems = false, false
-			}
+		case "files", "tasks":
+			// The entries: see entries.
+		case "parent":
+			// See parentRule.
 		case "seed":
 			bad("seed is the old key - write a [files.\"<target>\"] table with mode = \"seed\" for each seed")
 		case "seed_requires":
@@ -556,8 +361,22 @@ func (x *Index) macosRules(tool string) []*fail.Error {
 		case "default_envs", "root_only", "extensions", "precommit", "mise_env":
 			bad("%s is for repo tools only", k)
 		default:
-			bad("%s is not a key of tools.toml - the keys are description, stage, depends, [defaults], [questions], [contributes], [files] and [mise]", k)
+			bad("%s is not a key of tools.toml - the keys are description, stage, depends, parent, [defaults], [questions], [contributes], [files], [tasks] and [mise]", k)
 		}
 	}
 	return out
+}
+
+// parentRule examines `parent`: the name of another tool of the clone.
+func (x *Index) parentRule(tool string) []*fail.Error {
+	m := x.Manifests[tool]
+	v, has := m.Raw.Lookup("parent")
+	if !has {
+		return nil
+	}
+	p, ok := v.(string)
+	if !ok || p == tool || !x.Has(p) {
+		return []*fail.Error{fail.New(fail.Usage, "%s: parent must be the name of another tool of %s", x.Source.ManifestShown(tool), x.Source.ToolsShown())}
+	}
+	return nil
 }

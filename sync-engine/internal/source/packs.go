@@ -10,7 +10,8 @@ import (
 )
 
 // Member is one key of a `[pack.<name>]` table. State is `true` or `false` (the
-// value of `default`), or `bad:key <key>` or `bad:default <kind>`.
+// value of `default`), or `bad:key <key>`, `bad:default <kind>` or
+// `bad:required <kind>`.
 type Member struct {
 	Pack, Key, State string
 }
@@ -37,6 +38,8 @@ type Packs struct {
 	// DefaultTrue holds `<pack>/<key>` for each member table whose `default` is
 	// the boolean true, whatever its other keys are.
 	DefaultTrue map[string]bool
+	// Required holds `<pack>/<key>` for each member with `required = true`.
+	Required map[string]bool
 }
 
 // IsDefaultTrue tells if the member table has `default = true`.
@@ -96,7 +99,7 @@ func kindOf(v any) string {
 // ReadPacks reads the packs file. A missing file gives no pack. It returns the
 // message `cannot read <shown>` (code 2) when the file does not parse.
 func (s Source) ReadPacks() (*Packs, error) {
-	p := &Packs{Shown: s.PacksShown(), DefaultTrue: map[string]bool{}}
+	p := &Packs{Shown: s.PacksShown(), DefaultTrue: map[string]bool{}, Required: map[string]bool{}}
 	file := s.PacksFile()
 	st, err := os.Stat(file)
 	if err != nil || !st.Mode().IsRegular() {
@@ -135,8 +138,16 @@ func (s Source) ReadPacks() (*Packs, error) {
 						state = "bad:default " + kindOf(d)
 					}
 				}
+				if e.Has("required") {
+					r := e.Get("required")
+					if b, ok := r.(bool); ok {
+						p.Required[name+"/"+key] = b
+					} else {
+						state = "bad:required " + kindOf(r)
+					}
+				}
 				for _, ek := range e.Keys() {
-					if ek != "default" {
+					if ek != "default" && ek != "required" {
 						state = "bad:key " + ek
 					}
 				}

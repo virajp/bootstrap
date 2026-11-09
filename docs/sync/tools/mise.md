@@ -27,6 +27,16 @@ file. A `[tools.mise]` table gives values.
 | `.config/mise/tasks/setup/worktree`             | Template  | The task `setup:worktree`.                                                                                                                                        |
 | `.config/mise/tasks/setup/mise`                 | Synced    | The task `setup:mise`.                                                                                                                                            |
 | `.config/mise/tasks/code/_default`, `worktrees` | Synced    | The tasks `code` and `code:worktrees`.                                                                                                                            |
+| `.config/mise/tasks/code/format/_default`       | Template  | The task `code:format`. See [dprint.md](dprint.md).                                                                                                               |
+| `.config/mise/tasks/code/lint/_default`         | Template  | The task `code:lint`. See [linter.md](linter.md).                                                                                                                 |
+| `.config/mise/tasks/code/sec/_default`          | Synced    | The task `code:sec`. See [_security_base.md](_security_base.md).                                                                                                  |
+| `.config/mise/tasks/code/merge/_default`        | Synced    | The task `code:merge`. See [git.md](git.md).                                                                                                                      |
+| `.config/mise/tasks/setup/configs/_default`     | Template  | The task `setup:configs`. See [repo-sync.md](repo-sync.md).                                                                                                       |
+
+The `mise` tool ships each orchestrator `_default`. The tool of a task group
+ships its leaf tasks. A leaf task that an orchestrator runs with `own_tasks`
+has a number prefix, for example `code:lint:70-ruff`: the prefix gives the run
+order.
 
 VS Code extensions: `hverlin.mise-vscode`, `redhat.vscode-yaml`,
 `tamasfe.even-better-toml`.

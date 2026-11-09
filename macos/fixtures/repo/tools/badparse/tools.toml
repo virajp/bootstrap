@@ -1,1 +1,14 @@
 # A JSON, a YAML and a TOML target that do not parse.
+
+# The files of the tool, below files/.
+[files.".config/badparse/bad.json"]
+mode = "template"
+source = ".config/badparse/bad.json.tmpl"
+
+[files.".config/badparse/bad.toml"]
+mode = "template"
+source = ".config/badparse/bad.toml.tmpl"
+
+[files.".config/badparse/bad.yaml"]
+mode = "template"
+source = ".config/badparse/bad.yaml.tmpl"

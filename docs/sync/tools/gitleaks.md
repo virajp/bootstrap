@@ -1,6 +1,6 @@
 # The `gitleaks` tool
 
-gitleaks: the secret scanner, and `code:sec:gitleaks`.
+gitleaks: the secret scanner, and `code:sec:10-gitleaks`.
 
 | Property     | Value                   |
 | ------------ | ----------------------- |
@@ -17,11 +17,11 @@ values.
 
 ## What the tool ships
 
-| Path in the repository                         | Kind           | Use                           |
-| ---------------------------------------------- | -------------- | ----------------------------- |
-| `.config/gitleaks.toml`                        | Seed, template | The gitleaks rules.           |
-| `.config/mise/tasks/code/sec/gitleaks`         | Synced         | The task `code:sec:gitleaks`. |
-| `.config/mise/conf.d/gitleaks/mise.<env>.toml` | Generated      | The mise config of this tool. |
+| Path in the repository                         | Kind           | Use                              |
+| ---------------------------------------------- | -------------- | -------------------------------- |
+| `.config/gitleaks.toml`                        | Seed, template | The gitleaks rules.              |
+| `.config/mise/tasks/code/sec/10-gitleaks`      | Synced         | The task `code:sec:10-gitleaks`. |
+| `.config/mise/conf.d/gitleaks/mise.<env>.toml` | Generated      | The mise config of this tool.    |
 
 ## mise tools
 
@@ -31,9 +31,9 @@ values.
 
 ## Tasks
 
-| Task                | Use                                                                                                              |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `code:sec:gitleaks` | Scan the files that git knows for secrets. `--staged` scans only the staged changes. `--debug` adds `--verbose`. |
+| Task                   | Use                                                                                                              |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `code:sec:10-gitleaks` | Scan the files that git knows for secrets. `--staged` scans only the staged changes. `--debug` adds `--verbose`. |
 
 `code:sec` runs this task.
 

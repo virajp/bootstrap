@@ -54,3 +54,30 @@ ls = "eza --icons --color=always --group-directories-first --classify=always --l
 td = "eza --tree --color=always --only-dirs --group-directories-first --sort name --long --header --icons --classify=always --modified --git --width=1"
 tg = "eza --tree --color=always --all --group-directories-first --sort name --long --header --icons --classify=always --modified --git --width=1 --git-ignore"
 tl = "eza --tree --color=always --all --group-directories-first --sort name --long --header --icons --classify=always --modified --git --width=1"
+
+# The files of the tool, below files/.
+[files.".config/fish/conf.d/52-zoxide.fish"]
+source = ".config/fish/conf.d/52-zoxide.fish"
+
+[files.".config/zsh/02a-zoxide.zsh"]
+source = ".config/zsh/02a-zoxide.zsh"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."cleanupDS"]
+source = "cleanupDS"
+
+[tasks."func/backup"]
+source = "func-backup"
+
+[tasks."func/code"]
+source = "func-code"
+
+[tasks."func/listStartupItems"]
+source = "func-listStartupItems"
+
+[tasks."func/zip"]
+source = "func-zip"
+
+[tasks."keychain/delete"]
+source = "keychain-delete"

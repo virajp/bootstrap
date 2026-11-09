@@ -26,3 +26,8 @@ require_serial = true
 [mise.tools.dprint]
 envs = [ "dev", "ci" ]
 version = "latest"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."setup/dprint"]
+source = "setup-dprint"

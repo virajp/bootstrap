@@ -1,6 +1,6 @@
 # The `grype` tool
 
-grype: the dependency scanner, and `code:sec:grype`.
+grype: the dependency scanner, and `code:sec:20-grype`.
 
 | Property     | Value                |
 | ------------ | -------------------- |
@@ -19,7 +19,7 @@ Do not select it in the values file. A `[tools.grype]` table gives values.
 | Path in the repository                      | Kind      | Use                           |
 | ------------------------------------------- | --------- | ----------------------------- |
 | `.config/grype.yaml`                        | Seed      | The config of grype.          |
-| `.config/mise/tasks/code/sec/grype`         | Synced    | The task `code:sec:grype`.    |
+| `.config/mise/tasks/code/sec/20-grype`      | Synced    | The task `code:sec:20-grype`. |
 | `.config/mise/conf.d/grype/mise.<env>.toml` | Generated | The mise config of this tool. |
 
 ## mise tools
@@ -30,9 +30,9 @@ Do not select it in the values file. A `[tools.grype]` table gives values.
 
 ## Tasks
 
-| Task             | Use                                                                                                           |
-| ---------------- | ------------------------------------------------------------------------------------------------------------- |
-| `code:sec:grype` | Scan the dependencies of the tree, without the git submodules. `--staged` does nothing. `--debug` adds `-vv`. |
+| Task                | Use                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `code:sec:20-grype` | Scan the dependencies of the tree, without the git submodules. `--staged` does nothing. `--debug` adds `-vv`. |
 
 `code:sec` runs this task.
 

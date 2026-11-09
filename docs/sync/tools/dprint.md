@@ -16,11 +16,11 @@ file. A `[tools.dprint]` table gives values.
 
 ## What the tool ships
 
-| Path in the repository                       | Kind      | Use                           |
-| -------------------------------------------- | --------- | ----------------------------- |
-| `.config/mise/tasks/code/format/_default`    | Template  | The task `code:format`.       |
-| `.config/mise/tasks/setup/dprint`            | Synced    | The task `setup:dprint`.      |
-| `.config/mise/conf.d/dprint/mise.<env>.toml` | Generated | The mise config of this tool. |
+| Path in the repository                       | Kind      | Use                                               |
+| -------------------------------------------- | --------- | ------------------------------------------------- |
+| `.config/mise/tasks/code/format/_default`    | Template  | The task `code:format`. The `mise` tool ships it. |
+| `.config/mise/tasks/setup/dprint`            | Synced    | The task `setup:dprint`.                          |
+| `.config/mise/conf.d/dprint/mise.<env>.toml` | Generated | The mise config of this tool.                     |
 
 VS Code extension: `dprint.dprint`.
 

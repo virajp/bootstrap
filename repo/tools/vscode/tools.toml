@@ -13,3 +13,16 @@ root_only = true
 # to the root. The shell expands $REPO_NAME, because the template has no env.
 [mise.shell_alias]
 code = "command code --profile \"$REPO_NAME\" {{config_root | dirname | dirname | dirname | dirname | quote}}"
+
+# The files of the tool, below files/.
+[files.".vscode/extensions.json"]
+mode = "template"
+source = ".vscode/extensions.json.tmpl"
+
+[files.".vscode/settings.json"]
+source = ".vscode/settings.json"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."setup/vscode"]
+source = "setup-vscode"

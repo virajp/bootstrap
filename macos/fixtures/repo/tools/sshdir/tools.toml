@@ -3,8 +3,11 @@
 
 description = "two targets below the ssh folder"
 
+# The files of the tool, below files/.
 [files.".ssh/config"]
 format = "text"
+source = ".ssh/config"
 
 [files.".ssh/config.identity"]
 format = "text"
+source = ".ssh/config.identity"

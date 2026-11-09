@@ -15,3 +15,12 @@ version = "lts"
 [mise.env]
 NODE_ENV = "development"
 _.path = { path = "node_modules/.bin", tools = true }
+
+# The files of the tool, below files/.
+[files.".config/aube/config.toml"]
+source = ".config/aube/config.toml"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."upgrade/npm"]
+source = "upgrade-npm"

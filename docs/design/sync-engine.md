@@ -195,13 +195,11 @@ The engine runs these commands:
 
 ## Templates
 
-- `.tmpl` is the only marker of a template. The engine renders each `.tmpl`
-  file, and
-  the output file has no `.tmpl` suffix. Any other file is copied byte for byte.
-- A JSON, YAML or TOML target is also a template when its source ends in
-  `.tmpl`.
-- The output file takes the mode of the `.tmpl` file. Make a `.tmpl` that
-  renders a
+- The entry of a file makes it a template: `mode = "template"`, a seed with
+  `render = true`, or `mode = "merge"`. See
+  [tools.md](tools.md#the-files-table). Any other file is copied byte for byte.
+  The `.tmpl` suffix of a source is a name convention only.
+- The output file takes the mode of its source. Make a template that renders a
   task or a script executable (`755`).
 - The delimiters are `<% %>`. Do not use `{{ }}` or `[[ ]]` for template logic.
   mise uses `{{ }}` and bash uses `[[ ]]`, and both must reach the output
@@ -266,8 +264,7 @@ merge and dprint. On the repo side, `pre-commit autoupdate` runs before the
 parse
 check of `.config/pre-commit-config.yaml`. The engine reads JSON as jq does,
 and YAML and TOML with the yq code in its own process. The `format` key of its
-`[files]` table selects the format, else the extension of the target without
-`.tmpl`.
+`[files]` table selects the format, else the extension of the target.
 
 - A `.json` target without a `format` key, with a line that starts with `//`
   after
@@ -646,9 +643,13 @@ only for the Mac front-end: see
 - A tool folder that is named `zz-repo` or `zz-macos` for its side, or whose
   name
   sorts after that name.
-- A tool folder with both `<path>` and `<path>.tmpl`.
+- A file of a tool folder outside `files/` and `tasks/` (the old form), and a
+  file below them without an entry.
 - A tool that ships a mise file that the sync also generates.
-- A bad `[files]` table: another key, a target that fails, or a bad value.
+- A bad `[files]` or `[tasks]` table: another key, a target or a source that
+  fails, or a bad value. A `parent` that is not another tool.
+- A `required` member of a pack that is not a `default = true` member of
+  `base`.
 - A bad `[defaults]`, `[questions]` or `[contributes]` table, and two
   contributions or a user value that conflict.
 - A template that cannot render, and a target that does not parse.
@@ -672,7 +673,6 @@ only for the Mac front-end: see
 - An environment that a mise tool does not allow in its `envs`, also of a
   dependency or through `default_envs`.
 - `requires_found`, `requires` or `files` in a `[mise_env.<env>.tools]` entry.
-- A `[files]` target that ends in `.tmpl`, with any file in the tool folder.
 - Two tools that define the same mise tool.
 - A `root_only` tool that a `[tools.*]` entry names in a submodule.
 - A repository with neither `main` nor `develop`, and a bad `direct_commit`.
@@ -694,7 +694,6 @@ only for the Mac front-end: see
 - A `MACOS_SETUP_CONFIG_PATH` that is not set or is not a folder.
 - A `macos.toml` that breaks a rule, also a `[overrides.mise_env.*]` table.
 - A nested run of `updateall:configs`.
-- A pack `base` without the tool `macos-setup`.
 - A key of a Mac `tools.toml` that is for repo tools only, a `requires_found` of
   a
   `[files]` table, and a `[mise_env.*]`, an `envs` or a `requires_found` of a

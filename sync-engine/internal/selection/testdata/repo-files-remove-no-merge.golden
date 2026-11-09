@@ -1,6 +1,0 @@
-fingerprint: 1071b5800c638b0ea108f9af11731a24c6216e7df4532e95f1379ffd11375e9d
-rc=2
---- stderr
-repo-sync: repo/tools/a/tools.toml: [files."x.json"] remove works only with mode = "merge"
-repo-sync: repo/tools/a/tools.toml: [files."x.json"] remove_items works only with mode = "merge"
---- stdout

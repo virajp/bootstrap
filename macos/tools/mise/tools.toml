@@ -22,3 +22,25 @@ updateall = "mise run updateall"
 # Startup, Services and Process related shortcuts
 cancelPrintJobs = "sudo cancel -a -x"
 listServices = "launchctl list | grep -v '^-' | sort -n | grep -v 'com.apple'"
+
+# The files of the tool, below files/.
+[files.".config/bash/01b-mise.bash"]
+mode = "template"
+source = ".config/bash/01b-mise.bash.tmpl"
+
+[files.".config/fish/conf.d/06-mise.fish"]
+mode = "template"
+source = ".config/fish/conf.d/06-mise.fish.tmpl"
+
+[files.".config/mise/config.toml"]
+source = ".config/mise/config.toml"
+
+[files.".config/mise/miserc.toml"]
+source = ".config/mise/miserc.toml"
+
+[files.".config/zsh/01b-mise.zsh"]
+mode = "template"
+source = ".config/zsh/01b-mise.zsh.tmpl"
+
+[files.".zprofile"]
+source = ".zprofile"

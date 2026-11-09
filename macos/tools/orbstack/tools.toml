@@ -34,3 +34,7 @@ k = "kubectl"
 kc-local = "kubectl config use-context orbstack"
 kgc = "kubectl config current-context"
 kubectx = "kubectl config get-contexts"
+
+# The files of the tool, below files/.
+[files.".config/fish/conf.d/90-orbstack.fish"]
+source = ".config/fish/conf.d/90-orbstack.fish"

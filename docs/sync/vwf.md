@@ -245,8 +245,7 @@ tool needs cannot be removed alone.
    - Delete each file of kind `Synced`. These files start with the bootstrap
      header.
    - Delete each file of kind `Template` that has `Synced from bootstrap` in
-     its first three lines. The path in the row is the output path, with no
-     `.tmpl` suffix.
+     its first three lines. The path in the row is the output path.
    - Keep each file of kind `Seed` or `Seed, template`. Each of them is a
      seed, and the repository owns it.
    - Delete a file of kind `Generated` only when `.config/repo-generated.tsv`

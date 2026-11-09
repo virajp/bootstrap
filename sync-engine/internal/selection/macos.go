@@ -12,12 +12,8 @@ import (
 // the first problem, with code 2 or 3.
 func ResolveMacos(idx *source.Index, v *values.Macos) (*Resolved, error) {
 	src := idx.Source
-	packs, err := src.ReadPacks()
-	if err != nil {
+	if _, err := src.ReadPacks(); err != nil {
 		return nil, err
-	}
-	if !packs.IsDefaultTrue(BasePack, "macos-setup") {
-		return nil, usage("pack base does not have the tool macos-setup")
 	}
 	sel, err := Select(src, BasePack, v.Sel)
 	if err != nil {

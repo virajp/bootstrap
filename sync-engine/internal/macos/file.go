@@ -104,7 +104,7 @@ func (s *state) file(it planItem) fail.Code {
 		return fail.Other
 	}
 	rc := fail.OK
-	if strings.HasSuffix(it.path, ".tmpl") {
+	if it.tmpl {
 		if !s.renderTemplate(it.tool, src, tmp) {
 			s.r.Outcome(report.Failed, show, "gomplate cannot render the template",
 				s.src.ToolsShown()+"/"+it.tool+"/"+it.path+": gomplate cannot render the template")

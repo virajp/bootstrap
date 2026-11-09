@@ -3,12 +3,13 @@
 aube, the package manager of a repository that selects it. A repository with a
 `package.json` selects this tool or the [`pnpm`](pnpm.md) tool, not both.
 
-| Property     | Value                                             |
-| ------------ | ------------------------------------------------- |
-| Root only    | No                                                |
-| Depends      | `node`, through its mise `depends`                |
-| Default envs | dev, ci                                           |
-| Seeds        | `aube-workspace.yaml`, only with a `package.json` |
+| Property     | Value                                                      |
+| ------------ | ---------------------------------------------------------- |
+| Root only    | No                                                         |
+| Depends      | `node`, through its mise `depends`                         |
+| Parent       | `node`. The tools with this parent can replace each other. |
+| Default envs | dev, ci                                                    |
+| Seeds        | `aube-workspace.yaml`, only with a `package.json`          |
 
 ## When the tool is relevant
 
@@ -36,7 +37,8 @@ The tool also sets the shell alias `npx = "aubx"`.
 
 ## Tasks
 
-None. `setup:deps:node` of the `node` tool runs aube when this tool is selected.
+None. `setup:deps:40-node` of the `node` tool runs aube when this tool is
+selected.
 
 ## Pre-commit hooks
 
@@ -44,10 +46,10 @@ None.
 
 ## Files the repository supplies
 
-| File                                 | Used by                                           |
-| ------------------------------------ | ------------------------------------------------- |
-| `package.json`                       | `setup:deps:node`. The task skips without it.     |
-| `aube-lock.yaml` or `pnpm-lock.yaml` | `setup:deps:node`. The install uses its versions. |
+| File                                 | Used by                                              |
+| ------------------------------------ | ---------------------------------------------------- |
+| `package.json`                       | `setup:deps:40-node`. The task skips without it.     |
+| `aube-lock.yaml` or `pnpm-lock.yaml` | `setup:deps:40-node`. The install uses its versions. |
 
 aube writes a new project to `aube-lock.yaml`. It keeps an existing
 `pnpm-lock.yaml` and updates it in place, at lockfile version 9 only. An older

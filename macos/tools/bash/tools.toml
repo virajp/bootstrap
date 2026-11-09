@@ -12,3 +12,13 @@ stage = "init"
 # /etc/shells is outside $HOME, so it stays a mise declaration.
 [mise.dotfiles]
 "/etc/shells/brew-bash" = { line = "/opt/homebrew/bin/bash" }
+
+# The files of the tool, below files/.
+[files.".bash_profile"]
+source = ".bash_profile"
+
+[files.".bashrc"]
+source = ".bashrc"
+
+[files.".config/bash/00-bootstrap.bash"]
+source = ".config/bash/00-bootstrap.bash"

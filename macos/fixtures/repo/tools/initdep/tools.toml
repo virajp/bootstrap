@@ -3,3 +3,11 @@
 
 [defaults]
 items = [ "a", "b" ]
+
+# The files of the tool, below files/.
+[files.".config/initdep/dep.txt"]
+source = ".config/initdep/dep.txt"
+
+[files.".config/initdep/items.txt"]
+mode = "template"
+source = ".config/initdep/items.txt.tmpl"

@@ -14,3 +14,19 @@ stage = "init"
 # /etc/shells is outside $HOME, so it stays a mise declaration.
 [mise.dotfiles]
 "/etc/shells/brew-zsh" = { line = "/opt/homebrew/bin/zsh" }
+
+# The files of the tool, below files/.
+[files.".config/zsh/00-bootstrap.zsh"]
+source = ".config/zsh/00-bootstrap.zsh"
+
+[files.".config/zsh/98-zinit.zsh"]
+source = ".config/zsh/98-zinit.zsh"
+
+[files.".config/zsh/99-zsh.zsh"]
+source = ".config/zsh/99-zsh.zsh"
+
+[files.".zshenv"]
+source = ".zshenv"
+
+[files.".zshrc"]
+source = ".zshrc"

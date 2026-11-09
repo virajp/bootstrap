@@ -1,2 +1,7 @@
 # A template that prints the keys of the context of the render.
 description = "The context of a template"
+
+# The files of the tool, below files/.
+[files.".config/context/context.txt"]
+mode = "template"
+source = ".config/context/context.txt.tmpl"

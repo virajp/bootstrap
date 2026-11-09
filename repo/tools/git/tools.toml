@@ -4,9 +4,6 @@ depends = []
 extensions = []
 root_only = false
 
-[files.".config/wt.toml"]
-mode = "seed"
-
 # Git worktree manager (wt).
 [mise.tools.worktrunk]
 version = "latest"
@@ -43,3 +40,33 @@ args = [ "--config", ".config/git-conventional-commits.yaml" ]
 id = "conventional-commits"
 name = "Conventional Commits"
 stages = [ "commit-msg" ]
+
+# The files of the tool, below files/.
+[files.".config/git-conventional-commits.yaml"]
+mode = "template"
+source = ".config/git-conventional-commits.yaml.tmpl"
+
+[files.".config/wt.toml"]
+mode = "seed"
+source = ".config/wt.toml"
+
+[files.".gitattributes"]
+source = ".gitattributes"
+
+[files.".gitignore"]
+source = ".gitignore"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."_scripts/merge"]
+library = true
+source = "merge"
+
+[tasks."code/git-config"]
+source = "code-git-config"
+
+[tasks."code/merge/develop"]
+source = "code-merge-develop"
+
+[tasks."code/merge/main"]
+source = "code-merge-main"

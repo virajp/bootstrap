@@ -3,3 +3,8 @@ depends = [ "core" ]
 
 [defaults]
 level = "default-level"
+
+# The files of the tool, below files/.
+[files.".config/opt/opt.txt"]
+mode = "template"
+source = ".config/opt/opt.txt.tmpl"

@@ -11,5 +11,12 @@ detect = "id -un"
 example = "janedoe"
 question = "Which user name should ssh use by default for remote hosts (User inside Host *)?"
 
+# The files of the tool, below files/.
 [files.".ssh/config"]
 format = "text"
+mode = "template"
+source = ".ssh/config.tmpl"
+
+[files.".ssh/config.identity"]
+mode = "template"
+source = ".ssh/config.identity.tmpl"

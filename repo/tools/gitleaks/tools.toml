@@ -1,14 +1,22 @@
-# gitleaks: the secret scanner, and code:sec:gitleaks.
+# gitleaks: the secret scanner, and code:sec:10-gitleaks.
 default_envs = [ "dev", "ci" ]
 depends = [ "_security_base" ]
 extensions = []
 root_only = false
-
-[files.".config/gitleaks.toml"]
-mode = "seed"
 
 # The mise config, generated into .config/mise/conf.d/gitleaks/mise.<env>.toml.
 # In dev and ci, because CI runs `code:sec` too.
 [mise.tools.gitleaks]
 envs = [ "dev", "ci" ]
 version = "latest"
+
+# The files of the tool, below files/.
+[files.".config/gitleaks.toml"]
+mode = "seed"
+render = true
+source = ".config/gitleaks.toml.tmpl"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."code/sec/10-gitleaks"]
+source = "code-sec-gitleaks"

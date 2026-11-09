@@ -203,12 +203,12 @@ use the task name. Do the first item that agrees:
 3. Else the task is missing. Render it from the clone, as the first sync does:
 
 ```bash
-tool="$tmp/macos/tools/macos-setup/.config/mise/tasks/updateall/configs"
+tool="$tmp/macos/tools/macos-setup/tasks"
 task="$HOME/.config/mise/tasks/updateall/configs"
 mkdir -p "$task"
 printf '{"sync_engine":"%s/sync-engine"}\n' "$tmp" > "$tmp/context.json"
 mise x gomplate@latest -- gomplate --left-delim '<%' --right-delim '%>' \
-  -c ".=$tmp/context.json" -f "$tool/_default.tmpl" -o "$task/_default"
+  -c ".=$tmp/context.json" -f "$tool/updateall-configs.tmpl" -o "$task/_default"
 chmod 755 "$task/_default"
 ```
 

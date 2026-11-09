@@ -8,6 +8,7 @@ import (
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
 	"github.com/virajp/bootstrap/sync-engine/internal/format"
 	"github.com/virajp/bootstrap/sync-engine/internal/misegen"
+	"github.com/virajp/bootstrap/sync-engine/internal/source"
 	"github.com/virajp/bootstrap/sync-engine/internal/tmpl"
 	"github.com/virajp/bootstrap/sync-engine/internal/values"
 )
@@ -218,7 +219,7 @@ func (s *state) branchExists(name string) bool {
 // other branch model. It gives 2, after a message, when neither branch
 // exists.
 func (s *state) mergeModel() fail.Code {
-	const tasks = "git/.config/mise/tasks/code/merge"
+	const tasks = source.TasksTarget + "/code/merge"
 	main, develop := s.branchExists("main"), s.branchExists("develop")
 	switch {
 	case main && develop:
@@ -232,7 +233,7 @@ func (s *state) mergeModel() fail.Code {
 	return fail.OK
 }
 
-// skipped tells if <tool>/<path> is a word of skip.
+// skipped tells if the target <key> is a word of skip.
 func (s *state) skipped(key string) bool {
 	for _, w := range s.skip {
 		if w == key {
@@ -412,7 +413,7 @@ func (s *state) overrides(g *misegen.Generator, local bool) fail.Code {
 		if r.line == "" {
 			continue
 		}
-		shipped := toolsShown + "/git/.gitignore"
+		shipped := s.shippedPath(".gitignore")
 		inAdd := false
 		for _, a := range s.giAdd {
 			if a == r {
@@ -430,6 +431,22 @@ func (s *state) overrides(g *misegen.Generator, local bool) fail.Code {
 		}
 	}
 	return rc
+}
+
+// shippedPath gives the source of the tool file whose target is <target>, as
+// `<side>/tools/<tool>/<source>`, or empty when no tool ships it.
+func (s *state) shippedPath(target string) string {
+	if s.idx == nil {
+		return ""
+	}
+	for _, tool := range s.idx.Names {
+		for _, f := range s.idx.Files(tool) {
+			if f.Target == target {
+				return toolsShown + "/" + tool + "/" + f.Path
+			}
+		}
+	}
+	return ""
 }
 
 // edgeBlanks are the blanks that awk `gsub(/^[ \t]+|[ \t]+$/, "")` removes.

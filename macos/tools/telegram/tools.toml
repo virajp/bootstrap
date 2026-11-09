@@ -8,3 +8,8 @@ description = "Telegram, from the Mac App Store"
 
 [mise.shell_alias]
 cleanupTelegram = "mise run cleanupTelegram"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."cleanupTelegram"]
+source = "cleanupTelegram"

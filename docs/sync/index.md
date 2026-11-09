@@ -91,8 +91,8 @@ This file holds the instructions. Each rule of the sync has one place in
   read its tool file. Examine the repository for the signs in "When the tool
   is relevant", then show the user the result.
 - The shared files are grouped by tool. Each tool is a folder
-  `repo/tools/<tool>/` in `bootstrap`. A file at `repo/tools/<tool>/<path>` goes
-  to `<path>` in the consumer repository.
+  `repo/tools/<tool>/` in `bootstrap`. Its `tools.toml` gives the path in the
+  consumer repository of each file of its `files/` and `tasks/` folders.
 - The values file `.config/bootstrap.toml` lists the tools and the packs of
   the repository. `bootstrap sync` always adds the `base` pack, and it syncs
   all
@@ -238,16 +238,16 @@ change a file.
 4. Do the selected checks of this table. Each check that fails sends you to
    a step:
 
-   | Check                                                                                                                      | Kind       | If it fails, do         |
-   | -------------------------------------------------------------------------------------------------------------------------- | ---------- | ----------------------- |
-   | The values file has no old format and no old key, for example `tools = [...]` or `.config/repo-sync/gitignore`.            | bootstrap  | Step 3 and `migrate.md` |
-   | No item of `migrate.md` applies, and no "Migration" item of a selected tool applies.                                       | bootstrap  | Step 5                  |
-   | No path of "Files that bootstrap no longer ships" exists.                                                                  | bootstrap  | Step 5                  |
-   | `mise run setup:configs --dry-run` shows no change.                                                                        | bootstrap  | Step 6                  |
-   | If the repository has the task `code:lint:repo-sync`, `mise run code:lint:repo-sync` shows no error in the values file.    | repository | Step 3                  |
-   | The selected tools agree with the signs of their tool files: no tool is missing, and no tool is selected without a reason. | repository | Step 1                  |
-   | Each value that you can find agrees with the file, for example `repo_url` and `origin`, or the members and `.gitmodules`.  | repository | Step 3                  |
-   | Each file of "Files the repository supplies" of a selected tool exists.                                                    | repository | Step 7                  |
+   | Check                                                                                                                         | Kind       | If it fails, do         |
+   | ----------------------------------------------------------------------------------------------------------------------------- | ---------- | ----------------------- |
+   | The values file has no old format and no old key, for example `tools = [...]` or `.config/repo-sync/gitignore`.               | bootstrap  | Step 3 and `migrate.md` |
+   | No item of `migrate.md` applies, and no "Migration" item of a selected tool applies.                                          | bootstrap  | Step 5                  |
+   | No path of "Files that bootstrap no longer ships" exists.                                                                     | bootstrap  | Step 5                  |
+   | `mise run setup:configs --dry-run` shows no change.                                                                           | bootstrap  | Step 6                  |
+   | If the repository has the task `code:lint:60-repo-sync`, `mise run code:lint:60-repo-sync` shows no error in the values file. | repository | Step 3                  |
+   | The selected tools agree with the signs of their tool files: no tool is missing, and no tool is selected without a reason.    | repository | Step 1                  |
+   | Each value that you can find agrees with the file, for example `repo_url` and `origin`, or the members and `.gitmodules`.     | repository | Step 3                  |
+   | Each file of "Files the repository supplies" of a selected tool exists.                                                       | repository | Step 7                  |
 
 5. If all the checks pass, tell the user that the repository is up to date,
    and stop.
@@ -308,7 +308,7 @@ table can only add environments, and the sync examines it. See
 [`packs/base.md`](packs/base.md).
 
 A repository with a `package.json` must select one package manager: `pnpm` or
-`aube`. If it selects none, or both, `setup:deps:node` stops the setup. See
+`aube`. If it selects none, or both, `setup:deps:40-node` stops the setup. See
 [`tools/node.md`](tools/node.md).
 
 For each selected tool, and each tool of the `base` pack, do the items in
@@ -323,8 +323,8 @@ each tool are in [`docs/design/mise.md`](../design/mise.md).
 A mise tool with `requires_found`, and a file with `requires` or
 `requires_found`
 in its `[files]` table, need a file in the repository. For example, the `python`
-tool installs `ruff` and `pyrefly`, and writes `code:lint:ruff`,
-`code:format:ruff` and `code:lint:pyrefly`, only in a repository with a
+tool installs `ruff` and `pyrefly`, and writes `code:lint:70-ruff`,
+`code:format:40-ruff` and `code:lint:50-pyrefly`, only in a repository with a
 `pyproject.toml`. If the repository adds its first `pyproject.toml` later,
 run `mise run setup:configs` again.
 
@@ -362,20 +362,19 @@ For an update, skip this step when `.config/mise/tasks/setup/configs/_default`
 exists and has the bootstrap header. Then `setup:configs` runs the sync engine
 of its own clone.
 
-Copy these two files from the clone into the repository: the `setup:configs`
-task of the `repo-sync` tool, and `helpers` of the `mise` tool. An old
+Copy these two files of the `mise` tool from the clone into the repository: the
+`setup:configs` task and `helpers`. An old
 `.config/mise/tasks/setup/configs` is a file, and
 `setup/configs/` is now a folder: delete the old file first.
 
 ```bash
-sync="$tmp/repo/tools/repo-sync/.config/mise/tasks"
-lib="$tmp/repo/tools/mise/.config/mise/tasks"
+lib="$tmp/repo/tools/mise/tasks"
 rm -f .config/mise/tasks/setup/configs
 mkdir -p .config/mise/tasks/_scripts .config/mise/tasks/setup/configs
-cp "$lib/_scripts/helpers" .config/mise/tasks/_scripts/
+cp "$lib/helpers" .config/mise/tasks/_scripts/
 printf '{"members":[],"sync_engine":"%s/sync-engine"}\n' "$tmp" > "$tmp/context.json"
 mise x gomplate@latest -- gomplate --left-delim '<%' --right-delim '%>' \
-  -c ".=$tmp/context.json" -f "$sync/setup/configs/_default.tmpl" \
+  -c ".=$tmp/context.json" -f "$lib/setup-configs.tmpl" \
   -o .config/mise/tasks/setup/configs/_default
 chmod 755 .config/mise/tasks/setup/configs/_default
 ```
@@ -387,8 +386,8 @@ absolute path of the `sync-engine` folder of the clone.
 
 Do not run the sync, `mise run setup:configs` without `--dry-run`, before
 step 6. You can run a dry run. When the repository already has the task
-`code:lint:repo-sync`, for example at an update, you can also run
-`mise run code:lint:repo-sync`. It validates the values file with
+`code:lint:60-repo-sync`, for example at an update, you can also run
+`mise run code:lint:60-repo-sync`. It validates the values file with
 `bootstrap check`, without a clone and without a sync, and it shows
 each
 error at once. The task loads the sync code from the clone of the shared cache.
@@ -550,7 +549,7 @@ files, skip this step.
 1. If mise says that the config files are not trusted, ask the user to run
    `mise trust`.
 2. Run `mise run setup:configs --dry-run`. To validate only the values file,
-   without a sync, run `mise run code:lint:repo-sync` when the repository has
+   without a sync, run `mise run code:lint:60-repo-sync` when the repository has
    that task. It does not examine the rules that need the `bootstrap` clone,
    for example a tool that is not in `bootstrap`. Without a clone in the shared
    cache, or with another `origin` there, it prints nothing and does not

@@ -16,6 +16,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -53,7 +54,14 @@ type cond struct{ key, kind, item string }
 type giLine struct{ ignore, line string }
 
 // pend is one target after its first step: a line of _RS_PENDING.
-type pend struct{ tool, path, tmp string }
+// confDir is the folder of the mise files of a tool in the target.
+const confDir = ".config/mise/conf.d"
+
+type pend struct {
+	tool string
+	f    source.File
+	tmp  string
+}
 
 // state is the state of one run, as the _RS_* variables of bash.
 type state struct {
@@ -82,7 +90,7 @@ type state struct {
 	fileConds   []cond            // _RS_FILE_CONDS
 	fileMerge   map[string][2]string
 	spare       []string          // _RS_SPARE
-	skip        []string          // _RS_SKIP: `git/<path>` words.
+	skip        []string          // _RS_SKIP: the targets of the other merge model.
 	reqSkip     map[string]string // _RS_REQ_SKIP: <tool>/<target> to its missing item.
 	hookDrop    []string          // _RS_HOOK_DROP
 	giAdd       []giLine
@@ -273,10 +281,7 @@ func (s *state) sync(dryRun bool) fail.Code {
 	// remove: the files of the selected tools and their dependencies that this
 	// run writes or keeps, and the merge tasks of the other model, which
 	// remove handles.
-	for _, skipped := range s.skip {
-		_, rest, _ := strings.Cut(skipped, "/")
-		s.handled = append(s.handled, rest)
-	}
+	s.handled = append(s.handled, s.skip...)
 	envs, err := misegen.NewEnvs(source.Repo, s.envs, s.res, toolsShown, s.hasFile)
 	if err != nil {
 		return cleanup(s.logAll(err))
@@ -290,6 +295,14 @@ func (s *state) sync(dryRun bool) fail.Code {
 		ProjectRoot: s.root,
 		Envs:        envs,
 		Getenv:      s.getenv,
+		Ships: func(tool, path string) bool {
+			for _, f := range s.idx.Files(tool) {
+				if f.Target == path {
+					return true
+				}
+			}
+			return false
+		},
 	}
 	defer g.Close()
 	for _, step := range []func() fail.Code{
@@ -303,11 +316,18 @@ func (s *state) sync(dryRun bool) fail.Code {
 		}
 	}
 	g.All = s.all
+	// The files of each tool: the files of its entries, and the mise files
+	// that the generator writes into the tool folder of the clone copy.
+	toolFiles := map[string][]source.File{}
 	for _, tool := range tools {
-		written, err := g.Render(tool, s.src.ToolDir(tool)+"/.config/mise/conf.d", s.devAliases(tool))
+		files := s.idx.Files(tool)
+		written, err := g.Render(tool, s.src.ToolDir(tool)+"/"+confDir, s.devAliases(tool))
 		for _, w := range written {
-			s.generated[tool+"/.config/mise/conf.d/"+w] = true
+			s.generated[tool+"/"+confDir+"/"+w] = true
+			files = append(files, source.File{Path: confDir + "/" + w, Target: confDir + "/" + w})
 		}
+		sort.SliceStable(files, func(i, j int) bool { return files[i].Target < files[j].Target })
+		toolFiles[tool] = files
 		if code := s.logAll(err); code != fail.OK {
 			failed = append(failed, toolsShown+"/"+tool+"/tools.toml [mise]")
 			worst = max(worst, code)
@@ -318,7 +338,7 @@ func (s *state) sync(dryRun bool) fail.Code {
 	// tells file that it could not be built, so each template fails and
 	// every plain file still syncs.
 	var ctx *contexts
-	if anyTemplate(s.src.ToolsDir()) {
+	if s.idx.AnyTemplate() {
 		ctx = s.contexts()
 		if ctx == nil {
 			s.log("cannot build the template context")
@@ -343,19 +363,18 @@ func (s *state) sync(dryRun bool) fail.Code {
 
 	ok, total := 0, 0
 	for _, tool := range tools {
-		files, _ := s.src.Files(tool)
-		for _, f := range files {
+		for _, f := range toolFiles[tool] {
 			total++
 			rc := fail.OK
 			deferred := false
 			out := f.Target
 			switch {
-			case s.skipped(tool + "/" + f.Path):
-				rc = s.remove(f.Path)
+			case s.skipped(out):
+				rc = s.remove(out)
 			case s.inReqSkip(tool + "/" + out):
-				s.skipRequired(tool, f.Path)
+				s.skipRequired(tool, out)
 			default:
-				rc, deferred = s.file(tool, f.Path, ctx)
+				rc, deferred = s.file(tool, f, ctx)
 			}
 			if rc != fail.OK {
 				s.r.Outcome(report.Failed, s.path(s.root+"/"+out), "cannot write the target", "")
@@ -369,13 +388,13 @@ func (s *state) sync(dryRun bool) fail.Code {
 
 	s.format()
 	for _, p := range s.pending {
-		rc := s.fileFinish(p.tool, p.path, p.tmp)
+		rc := s.fileFinish(p.tool, p.f, p.tmp)
 		if rc == fail.OK {
 			ok++
 			continue
 		}
-		s.r.Outcome(report.Failed, s.path(s.root+"/"+strings.TrimSuffix(p.path, ".tmpl")), "cannot write the target", "")
-		failed = append(failed, toolsShown+"/"+p.tool+"/"+p.path)
+		s.r.Outcome(report.Failed, s.path(s.root+"/"+p.f.Target), "cannot write the target", "")
+		failed = append(failed, toolsShown+"/"+p.tool+"/"+p.f.Path)
 		worst = max(worst, rc)
 	}
 	if s.stage != "" {

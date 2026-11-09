@@ -17,15 +17,15 @@ file. A `[tools.git]` table gives values.
 
 ## What the tool ships
 
-| Path in the repository                  | Kind     | Use                                                                                        |
-| --------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
-| `.gitignore`                            | Synced   | The shared ignore lines, with `[overrides.gitignore]` of the values file applied.          |
-| `.gitattributes`                        | Synced   | LF line endings, the generated lockfiles, and the binary files of each stack.              |
-| `.config/git-conventional-commits.yaml` | Template | The commit types, and the scopes from `commit_scopes`, else the members of the repository. |
-| `.config/mise/tasks/_scripts/merge`     | Synced   | The library `merge`, with `merge_to_destination_branch`.                                   |
-| `.config/mise/tasks/code/git-config`    | Synced   | The task `code:git-config`.                                                                |
-| `.config/mise/tasks/code/merge/`        | Synced   | The merge tasks of the branch model (see "Tasks").                                         |
-| `.config/wt.toml`                       | Seed     | The worktrunk config: the `pre-start` hooks and the commit convention (see "worktrunk").   |
+| Path in the repository                  | Kind     | Use                                                                                             |
+| --------------------------------------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `.gitignore`                            | Synced   | The shared ignore lines, with `[overrides.gitignore]` of the values file applied.               |
+| `.gitattributes`                        | Synced   | LF line endings, the generated lockfiles, and the binary files of each stack.                   |
+| `.config/git-conventional-commits.yaml` | Template | The commit types, and the scopes from `commit_scopes`, else the members of the repository.      |
+| `.config/mise/tasks/_scripts/merge`     | Synced   | The library `merge`, with `merge_to_destination_branch`.                                        |
+| `.config/mise/tasks/code/git-config`    | Synced   | The task `code:git-config`.                                                                     |
+| `.config/mise/tasks/code/merge/`        | Synced   | The merge tasks of the branch model (see "Tasks"). The `mise` tool ships `code/merge/_default`. |
+| `.config/wt.toml`                       | Seed     | The worktrunk config: the `pre-start` hooks and the commit convention (see "worktrunk").        |
 
 ## mise tools
 

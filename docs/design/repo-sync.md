@@ -18,10 +18,10 @@ codes,
 
 The `repo-sync` tool of `repo/tools/` ships the two tasks.
 
-| Task                  | Job                                                                                                 |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| `setup:configs`       | Refreshes the cache clone and copies it. Then it runs `bootstrap sync` of the pin in a new process. |
-| `code:lint:repo-sync` | Hidden. The gate of the values file. See [The gate](#the-gate-codelintrepo-sync).                   |
+| Task                     | Job                                                                                                 |
+| ------------------------ | --------------------------------------------------------------------------------------------------- |
+| `setup:configs`          | Refreshes the cache clone and copies it. Then it runs `bootstrap sync` of the pin in a new process. |
+| `code:lint:60-repo-sync` | Hidden. The gate of the values file. See [The gate](#the-gate-codelint60-repo-sync).                |
 
 The old task `setup:configs:sync` (`setup/configs/sync`) loaded
 `sync-engine/repo-sync` from the copy and ran the function `repo_sync`. The tool
@@ -163,7 +163,8 @@ If not, the sync stops.
 
 A template of `repo/tools/` does not encode a string value with `data.ToJSON`
 yet, for
-example `repo/tools/mise/.config/mise.toml.tmpl`. The rule for a Mac template is
+example `repo/tools/mise/files/.config/mise.toml.tmpl`. The rule for a Mac
+template is
 in
 [setup-sync.md](setup-sync.md#the-template-context).
 
@@ -387,7 +388,7 @@ The rules that need the clone stay with the sync:
 
 `--check` with `--dry-run` is a usage error.
 
-### The gate `code:lint:repo-sync`
+### The gate `code:lint:60-repo-sync`
 
 The gate runs `bootstrap check`. The `lint` hook runs `code:lint`,
 which runs

@@ -5,3 +5,7 @@ description = "dasel, the query tool for JSON, YAML and TOML, and its fish compl
 
 [mise.bootstrap.packages]
 "brew:dasel" = "latest" # Command-line tool for querying and modifying data structures like JSON, YAML, TOML, etc.
+
+# The files of the tool, below files/.
+[files.".config/fish/conf.d/53-dasel.fish"]
+source = ".config/fish/conf.d/53-dasel.fish"

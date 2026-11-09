@@ -11,8 +11,10 @@ question = "Which editor command should gh run for issue and pull request text (
 
 # gh config set rewrites the file, so the source holds only the keys that
 # bootstrap enforces; gh owns every other key.
-[files.".config/gh/config.yml"]
-mode = "merge"
-
 [mise.bootstrap.packages]
 "brew:gh" = "latest" # GitHub CLI tool
+
+# The files of the tool, below files/.
+[files.".config/gh/config.yml"]
+mode = "merge"
+source = ".config/gh/config.yml.tmpl"

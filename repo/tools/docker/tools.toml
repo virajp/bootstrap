@@ -4,5 +4,24 @@ depends = []
 extensions = []
 root_only = true
 
+# The files of the tool, below files/.
 [files.".tools/docker-compose.yaml"]
 mode = "seed"
+source = ".tools/docker-compose.yaml"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."setup/external/check"]
+source = "setup-external-check"
+
+[tasks."setup/external/pull"]
+source = "setup-external-pull"
+
+[tasks."setup/external/start"]
+source = "setup-external-start"
+
+[tasks."setup/external/stop"]
+source = "setup-external-stop"
+
+[tasks."setup/external/update"]
+source = "setup-external-update"

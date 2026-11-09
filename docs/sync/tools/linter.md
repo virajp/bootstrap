@@ -16,11 +16,11 @@ file. A `[tools.linter]` table gives values.
 
 ## What the tool ships
 
-| Path in the repository                       | Kind      | Use                           |
-| -------------------------------------------- | --------- | ----------------------------- |
-| `.config/mise/tasks/code/lint/_default`      | Template  | The task `code:lint`.         |
-| `.config/mise/tasks/setup/linter`            | Synced    | The task `setup:linter`.      |
-| `.config/mise/conf.d/linter/mise.<env>.toml` | Generated | The mise config of this tool. |
+| Path in the repository                       | Kind      | Use                                             |
+| -------------------------------------------- | --------- | ----------------------------------------------- |
+| `.config/mise/tasks/code/lint/_default`      | Template  | The task `code:lint`. The `mise` tool ships it. |
+| `.config/mise/tasks/setup/linter`            | Synced    | The task `setup:linter`.                        |
+| `.config/mise/conf.d/linter/mise.<env>.toml` | Generated | The mise config of this tool.                   |
 
 VS Code extensions: `dbaeumer.vscode-eslint`, `foxundermoon.shell-format`.
 

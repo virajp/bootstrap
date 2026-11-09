@@ -1,6 +1,6 @@
 # The `fnox` tool
 
-The secrets from `.config/fnox.toml`, checked by `setup:secrets:fnox`.
+The secrets from `.config/fnox.toml`, checked by `setup:secrets:20-fnox`.
 
 | Property     | Value               |
 | ------------ | ------------------- |
@@ -20,11 +20,11 @@ one keeps the secrets of the repository.
 
 ## What the tool ships
 
-| Path in the repository                   | Kind           | Use                                                                            |
-| ---------------------------------------- | -------------- | ------------------------------------------------------------------------------ |
-| `.config/fnox.toml`                      | Seed, template | The fnox config, with a keychain provider and the empty profile `<repo_name>`. |
-| `.config/mise/tasks/setup/secrets/fnox`  | Synced         | The task `setup:secrets:fnox`.                                                 |
-| `.config/mise/conf.d/fnox/mise.dev.toml` | Generated      | The mise config of this tool.                                                  |
+| Path in the repository                     | Kind           | Use                                                                            |
+| ------------------------------------------ | -------------- | ------------------------------------------------------------------------------ |
+| `.config/fnox.toml`                        | Seed, template | The fnox config, with a keychain provider and the empty profile `<repo_name>`. |
+| `.config/mise/tasks/setup/secrets/20-fnox` | Synced         | The task `setup:secrets:20-fnox`.                                              |
+| `.config/mise/conf.d/fnox/mise.dev.toml`   | Generated      | The mise config of this tool.                                                  |
 
 The seed has `root = true` and `env = "exec"`. Thus fnox does not search the
 parent directories, and the secrets go only to `fnox exec` subprocesses.
@@ -49,7 +49,7 @@ only for the user-level fnox settings.
 The sync and `repo_sync --check` stop with code 2 when `.config/fnox.toml`
 has a top-level `[secrets]` table, a `[profiles.default]` table, or no named
 profile. The message names M25 of `migrate.md`. The check applies when
-`.config/fnox.toml` exists. The lint gate `code:lint:repo-sync` runs
+`.config/fnox.toml` exists. The lint gate `code:lint:60-repo-sync` runs
 `--check` only when `.config/bootstrap.toml` is staged, so a commit that
 changes only `.config/fnox.toml` does not run it. The next sync does.
 
@@ -67,9 +67,9 @@ repository. Do not put a `config.toml` in `.config/fnox/`.
 
 ## Tasks
 
-| Task                 | Use                                                                                                                                                                                                                                                                                               |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `setup:secrets:fnox` | Make sure that each secret of each profile is configured: `fnox -P <profile> check` for each named profile. It does not check `default`. It runs every check, and it fails at the end and names each profile that failed. It fails without a named profile. It skips without `.config/fnox.toml`. |
+| Task                    | Use                                                                                                                                                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:secrets:20-fnox` | Make sure that each secret of each profile is configured: `fnox -P <profile> check` for each named profile. It does not check `default`. It runs every check, and it fails at the end and names each profile that failed. It fails without a named profile. It skips without `.config/fnox.toml`. |
 
 The task needs fnox 1.39.0 or later.
 
@@ -117,5 +117,5 @@ None. The seed supplies `.config/fnox.toml`. Add each secret with
    3. Move each secret of the top-level `[secrets]` table to a named profile,
       and delete the table (M25 of `migrate.md`).
 5. Remove `fnox` from the repository-owned mise files.
-6. Delete an old `setup:secrets` task for fnox. `setup:secrets:fnox`
+6. Delete an old `setup:secrets` task for fnox. `setup:secrets:20-fnox`
    replaces it (M3 of `migrate.md`).

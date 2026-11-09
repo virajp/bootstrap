@@ -17,18 +17,18 @@ resolves the Gradle dependencies against the lockfiles.
 - The user edits Kotlin with an editor or an agent that uses a language
   server.
 - The repository root has a Gradle build with an executable `./gradlew`.
-  `setup:deps:kotlin` needs a `distributionSha256Sum` in
+  `setup:deps:30-kotlin` needs a `distributionSha256Sum` in
   `gradle/wrapper/gradle-wrapper.properties`. It checks the lockfiles only of
   the projects with `dependencyLocking`. The `android/` build of a Flutter app
-  is for `setup:deps:flutter`, not for this task.
+  is for `setup:deps:20-flutter`, not for this task.
 
 ## What the tool ships
 
 | Path in the repository                       | Kind      | Use                                                |
 | -------------------------------------------- | --------- | -------------------------------------------------- |
-| `.config/mise/tasks/setup/deps/kotlin`       | Synced    | The task `setup:deps:kotlin`.                      |
-| `.config/mise/tasks/code/format/ktlint`      | Synced    | The task `code:format:ktlint`.                     |
-| `.config/mise/tasks/code/lint/detekt`        | Synced    | The task `code:lint:detekt`.                       |
+| `.config/mise/tasks/setup/deps/30-kotlin`    | Synced    | The task `setup:deps:30-kotlin`.                   |
+| `.config/mise/tasks/code/format/30-ktlint`   | Synced    | The task `code:format:30-ktlint`.                  |
+| `.config/mise/tasks/code/lint/30-detekt`     | Synced    | The task `code:lint:30-detekt`.                    |
 | `.config/ktlint.editorconfig`                | Seed      | The ktlint rules: `ktlint_official`, lines of 120. |
 | `.config/detekt.yml`                         | Seed      | The changes to the default detekt rules.           |
 | `.config/mise/conf.d/kotlin/mise.<env>.toml` | Generated | The mise config of this tool.                      |
@@ -46,9 +46,9 @@ stays in dev, and it does not stop `kotlin` in ci.
 
 ## Tasks
 
-| Task                | Use                                                                                                                                                      |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `setup:deps:kotlin` | Resolve the resolvable configurations of every Gradle project, and fail when the resolve does not match the lockfiles. `--upgrade` writes the lockfiles. |
+| Task                   | Use                                                                                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:deps:30-kotlin` | Resolve the resolvable configurations of every Gradle project, and fail when the resolve does not match the lockfiles. `--upgrade` writes the lockfiles. |
 
 - The task applies only when the repository root has an executable
   `./gradlew`. Else it prints nothing. It does not look in `android/` or in
@@ -84,8 +84,9 @@ stays in dev, and it does not stop `kotlin` in ci.
   resolve, so it does not use git. It ends with a warning when the build has
   no lockfile.
 
-`code:format:ktlint` checks the Kotlin files with ktlint, and `--fix` formats
-them. `code:lint:detekt` lints them with detekt. `code:format` and `code:lint`
+`code:format:30-ktlint` checks the Kotlin files with ktlint, and `--fix` formats
+them. `code:lint:30-detekt` lints them with detekt. `code:format` and
+`code:lint`
 run them. A gate skips without its tool and without a Kotlin file.
 
 - Without files, the list comes from `git ls-files`, so a gate never reads an
@@ -114,20 +115,22 @@ None.
    Then `java` is in ci too.
 3. The tool adds `java` as a dependency, and `java` gets the environments of
    `kotlin`: dev only. Another selected tool can put `java` in CI through a
-   mise `depends` (for example `flutter`). `setup` runs `setup:deps:kotlin` in
+   mise `depends` (for example `flutter`). `setup` runs `setup:deps:30-kotlin`
+   in
    every environment, and the task runs `./gradlew` when the root has one. If
    the root has an executable `./gradlew`, CI runs `mise run setup`, and `java`
    is not in CI, add `[tools.java]` to the values file. See `java.md`.
 4. If a project of the root Gradle build does not lock its dependencies, tell
-   the user that `setup:deps:kotlin` does not check that project. It is
+   the user that `setup:deps:30-kotlin` does not check that project. It is
    checked after the project has
    `dependencyLocking { lockAllConfigurations() }` and its lockfile is
-   committed (`mise run setup:deps:kotlin --upgrade` writes it).
+   committed (`mise run setup:deps:30-kotlin --upgrade` writes it).
 5. If `gradle/wrapper/gradle-wrapper.properties` has no
    `distributionSha256Sum`, tell the user to add the checksum that Gradle
    publishes for the distribution.
 6. In a Flutter app, the Gradle build is in `android/`, and
-   `setup:deps:flutter` handles it. `setup:deps:kotlin` does nothing there.
+   `setup:deps:20-flutter` handles it. `setup:deps:30-kotlin` does nothing
+   there.
 7. If the repository has its own ktlint `.editorconfig` or detekt config, tell
    the user. The gates read only `.config/ktlint.editorconfig` and
    `.config/detekt.yml`.

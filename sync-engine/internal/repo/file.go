@@ -12,6 +12,7 @@ import (
 	"github.com/virajp/bootstrap/sync-engine/internal/format"
 	"github.com/virajp/bootstrap/sync-engine/internal/manifest"
 	"github.com/virajp/bootstrap/sync-engine/internal/report"
+	"github.com/virajp/bootstrap/sync-engine/internal/source"
 	"github.com/virajp/bootstrap/sync-engine/internal/target"
 	"github.com/virajp/bootstrap/sync-engine/internal/tmpl"
 )
@@ -77,8 +78,7 @@ func (s *state) remove(path string) fail.Code {
 // condition. A seed or a merge target stays as it is. A generated target is
 // only logged: it gets no manifest row, so the stale rule removes a listed
 // copy with the header.
-func (s *state) skipRequired(tool, path string) {
-	out := strings.TrimSuffix(path, ".tmpl")
+func (s *state) skipRequired(tool, out string) {
 	requires := s.reqSkip[tool+"/"+out]
 	dest := s.root + "/" + out
 	show := s.path(dest)
@@ -122,14 +122,15 @@ func envOf(out string) (string, bool) {
 	return strings.TrimSuffix(env, ".toml"), true
 }
 
-// file is `_rs_file`: the first step of the sync of the file <path> of
+// file is `_rs_file`: the first step of the sync of the file <f> of
 // <tool>. It renders the file into a temp file, and merges a merge target
 // with the live target. It leaves the destination untouched when it is a
 // seed that exists, or on any failure. Else it adds the target to pending
 // and gives true: fileFinish does the rest after format.
-func (s *state) file(tool, path string, ctx *contexts) (fail.Code, bool) {
+func (s *state) file(tool string, f source.File, ctx *contexts) (fail.Code, bool) {
+	path := f.Path
 	src := s.src.ToolDir(tool) + "/" + path
-	out := strings.TrimSuffix(path, ".tmpl")
+	out := f.Target
 	key := tool + "/" + out
 	mode := s.fileMode(key)
 	explicit := s.fileFormats[key]
@@ -199,7 +200,7 @@ func (s *state) file(tool, path string, ctx *contexts) (fail.Code, bool) {
 	}
 
 	rc := fail.OK
-	if strings.HasSuffix(path, ".tmpl") {
+	if f.Tmpl {
 		if ctx == nil {
 			rc = fail.Usage
 			s.r.Outcome(report.Failed, show, "cannot write the target", "")
@@ -234,9 +235,9 @@ func (s *state) file(tool, path string, ctx *contexts) (fail.Code, bool) {
 
 	// A JSON, YAML or TOML target must parse, before dprint can change it.
 	// The JSONC rule is not for a merge target.
-	var f format.Format
+	var ff format.Format
 	if rc == fail.OK {
-		f, rc = s.e.Check(tmp, out, explicit, mode == "merge", show)
+		ff, rc = s.e.Check(tmp, out, explicit, mode == "merge", show)
 	}
 
 	// A merge target that is a symlink, also a dangling one: the merge reads
@@ -261,7 +262,7 @@ func (s *state) file(tool, path string, ctx *contexts) (fail.Code, bool) {
 		if err != nil {
 			rc = fail.Usage
 		} else {
-			rc = s.e.Merge(tmp, dest, f, ops, show)
+			rc = s.e.Merge(tmp, dest, ff, ops, show)
 		}
 	}
 
@@ -274,13 +275,13 @@ func (s *state) file(tool, path string, ctx *contexts) (fail.Code, bool) {
 	// through the formatter of this repo before the compare: the file goes to
 	// the stage, at its path in this repo, and format formats the stage in
 	// one dprint call.
-	if (strings.HasSuffix(path, ".tmpl") || mode == "merge" || s.generated[tool+"/"+path]) && s.stage != "" {
+	if (f.Tmpl || mode == "merge" || s.generated[tool+"/"+path]) && s.stage != "" {
 		p := s.stage + "/" + out
 		if os.MkdirAll(target.Dirname(p), 0o777) == nil {
 			copyFile(tmp, p)
 		}
 	}
-	s.pending = append(s.pending, pend{tool, path, tmp})
+	s.pending = append(s.pending, pend{tool, f, tmp})
 	return fail.OK, true
 }
 
@@ -342,11 +343,11 @@ func (s *state) format() {
 }
 
 // fileFinish is `_rs_file_finish`: the second step of the sync of the file
-// <path> of <tool>. It takes the formatted copy from the stage, applies the
+// <f> of <tool>. It takes the formatted copy from the stage, applies the
 // overrides, and compares and writes the temp file <tmp> of file.
-func (s *state) fileFinish(tool, path, tmp string) fail.Code {
-	src := s.src.ToolDir(tool) + "/" + path
-	out := strings.TrimSuffix(path, ".tmpl")
+func (s *state) fileFinish(tool string, f source.File, tmp string) fail.Code {
+	src := s.src.ToolDir(tool) + "/" + f.Path
+	out := f.Target
 	key := tool + "/" + out
 	dest := s.root + "/" + out
 	show := s.path(dest)
@@ -357,8 +358,8 @@ func (s *state) fileFinish(tool, path, tmp string) fail.Code {
 	// [overrides.gitignore]: comment out each line of `remove`, then add the
 	// lines of `add` at the end, so they win.
 	rc := fail.OK
-	if path == ".gitignore" && len(s.giRemove)+len(s.giAdd) > 0 {
-		ignore := strings.TrimPrefix(path, ".")
+	if out == ".gitignore" && len(s.giRemove)+len(s.giAdd) > 0 {
+		ignore := strings.TrimPrefix(out, ".")
 		pick := func(list []giLine) string {
 			var lines []string
 			for _, l := range list {

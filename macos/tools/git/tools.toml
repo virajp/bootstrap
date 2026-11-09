@@ -43,3 +43,30 @@ gc = "git commit -a -m"
 gp = "git push --verbose"
 gpull = "git pull --all --verbose --progress"
 gs = "git status -sb"
+
+# The files of the tool, below files/.
+[files.".config/git/allowed_signers"]
+mode = "template"
+source = ".config/git/allowed_signers.tmpl"
+
+[files.".config/git/config"]
+mode = "template"
+source = ".config/git/config.tmpl"
+
+[files.".config/git/github.config"]
+mode = "template"
+source = ".config/git/github.config.tmpl"
+
+[files.".config/git/gitlab.config"]
+mode = "template"
+source = ".config/git/gitlab.config.tmpl"
+
+[files.".config/git/identity"]
+mode = "template"
+source = ".config/git/identity.tmpl"
+
+[files.".config/git/ignore"]
+source = ".config/git/ignore"
+
+[files.".github/git-commit-guidelines.md"]
+source = ".github/git-commit-guidelines.md"

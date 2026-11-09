@@ -15,12 +15,12 @@ Flutter and Dart. The tool adds the `android` tool for the Android build.
 
 ## What the tool ships
 
-| Path in the repository                        | Kind      | Use                            |
-| --------------------------------------------- | --------- | ------------------------------ |
-| `.config/mise/tasks/setup/deps/flutter`       | Synced    | The task `setup:deps:flutter`. |
-| `.config/mise/tasks/code/format/dart`         | Synced    | The task `code:format:dart`.   |
-| `.config/mise/tasks/code/lint/dart`           | Synced    | The task `code:lint:dart`.     |
-| `.config/mise/conf.d/flutter/mise.<env>.toml` | Generated | The mise config of this tool.  |
+| Path in the repository                        | Kind      | Use                               |
+| --------------------------------------------- | --------- | --------------------------------- |
+| `.config/mise/tasks/setup/deps/20-flutter`    | Synced    | The task `setup:deps:20-flutter`. |
+| `.config/mise/tasks/code/format/10-dart`      | Synced    | The task `code:format:10-dart`.   |
+| `.config/mise/tasks/code/lint/20-dart`        | Synced    | The task `code:lint:20-dart`.     |
+| `.config/mise/conf.d/flutter/mise.<env>.toml` | Generated | The mise config of this tool.     |
 
 VS Code extensions: `dart-code.dart-code`, `dart-code.flutter`.
 
@@ -36,16 +36,16 @@ VS Code extensions: `dart-code.dart-code`, `dart-code.flutter`.
 
 ## Tasks
 
-| Task                 | Use                                                                                                                                                                         |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `setup:deps:flutter` | Install the Dart, Flutter, CocoaPods and Gradle dependencies from the lockfiles, then report the outdated ones. `--upgrade` cleans the caches and lockfiles, then upgrades. |
-| `code:format:dart`   | Check or format the existing `.dart` files of the `[files]` arguments, else `lib/` and `test/`.                                                                             |
-| `code:lint:dart`     | Analyze the existing `.dart` files of the `[files]` arguments, else the whole project. An info also fails the task (`--fatal-infos`). `dart analyze` only reports.          |
+| Task                    | Use                                                                                                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:deps:20-flutter` | Install the Dart, Flutter, CocoaPods and Gradle dependencies from the lockfiles, then report the outdated ones. `--upgrade` cleans the caches and lockfiles, then upgrades. |
+| `code:format:10-dart`   | Check or format the existing `.dart` files of the `[files]` arguments, else `lib/` and `test/`.                                                                             |
+| `code:lint:20-dart`     | Analyze the existing `.dart` files of the `[files]` arguments, else the whole project. An info also fails the task (`--fatal-infos`). `dart analyze` only reports.          |
 
 The two Dart tasks apply only when the root has `pubspec.yaml`. Without
 files, they also need a `.dart` file that git does not ignore.
 
-`setup:deps:flutter` uses CocoaPods only with `ios/Podfile`, and Gradle only
+`setup:deps:20-flutter` uses CocoaPods only with `ios/Podfile`, and Gradle only
 with an executable `android/gradlew`. It accepts the Android licenses. It
 installs `platform-tools` with `android-sdk`, which comes from the `android`
 tool.
@@ -57,10 +57,10 @@ tasks.
 
 ## Files the repository supplies
 
-| File           | Used by                                                              |
-| -------------- | -------------------------------------------------------------------- |
-| `pubspec.yaml` | `setup:deps:flutter`. The task skips without it.                     |
-| `pubspec.lock` | `setup:deps:flutter`. The install uses the versions of the lockfile. |
+| File           | Used by                                                                 |
+| -------------- | ----------------------------------------------------------------------- |
+| `pubspec.yaml` | `setup:deps:20-flutter`. The task skips without it.                     |
+| `pubspec.lock` | `setup:deps:20-flutter`. The install uses the versions of the lockfile. |
 
 ## Adapt to the repository
 

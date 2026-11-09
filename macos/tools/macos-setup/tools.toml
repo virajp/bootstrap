@@ -9,3 +9,25 @@ question = "Which folder holds your macos.toml (the root of your private macos-s
 
 [mise.env]
 MACOS_SETUP_CONFIG_PATH = "<% index .config `config_path` | required `macos-setup: set config_path in [tools.macos-setup] of macos.toml` | regexp.Replace `^~` .env.HOME %>"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."_scripts/helpers"]
+library = true
+source = "helpers"
+
+[tasks."updateall/_default"]
+source = "updateall"
+
+[tasks."updateall/configs/_default"]
+mode = "template"
+source = "updateall-configs.tmpl"
+
+[tasks."upgrade/macos/download"]
+source = "upgrade-macos-download"
+
+[tasks."upgrade/macos/upgrade"]
+source = "upgrade-macos-upgrade"
+
+[tasks."upgrade/power"]
+source = "upgrade-power"

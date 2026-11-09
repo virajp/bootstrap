@@ -174,11 +174,11 @@ target.
 
 Three Mac templates do not follow this rule, each from its old copy:
 
-| Template                                                      | Value                                            |
-| ------------------------------------------------------------- | ------------------------------------------------ |
-| `macos/tools/gh/.config/gh/config.yml.tmpl`                   | The plain value of `editor`.                     |
-| `macos/tools/1password/.config/1Password/ssh/agent.toml.tmpl` | The quoted value of `ssh_vault`.                 |
-| `macos/tools/claude-cli/.claude/settings.json.tmpl`           | The quoted paths in `MISE_TRUSTED_CONFIG_PATHS`. |
+| Template                                                            | Value                                            |
+| ------------------------------------------------------------------- | ------------------------------------------------ |
+| `macos/tools/gh/files/.config/gh/config.yml.tmpl`                   | The plain value of `editor`.                     |
+| `macos/tools/1password/files/.config/1Password/ssh/agent.toml.tmpl` | The quoted value of `ssh_vault`.                 |
+| `macos/tools/claude-cli/files/.claude/settings.json.tmpl`           | The quoted paths in `MISE_TRUSTED_CONFIG_PATHS`. |
 
 ## The mode of `~/.ssh`
 

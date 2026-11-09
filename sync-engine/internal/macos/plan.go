@@ -9,7 +9,10 @@ import (
 )
 
 // shipped is one file of a selected tool: a line of `files` in `_ss_plan`.
-type shipped struct{ tool, path, target string }
+type shipped struct {
+	tool, path, target string
+	tmpl               bool
+}
 
 // makePlan is `_ss_plan`. Each file of a selected tool, except its tools.toml,
 // gives a target relative to $HOME, without `.tmpl`. It sets the plan (in the
@@ -21,9 +24,8 @@ func (s *state) makePlan() fail.Code {
 	shown := s.src.ToolsShown()
 	var files []shipped
 	for _, tool := range s.res.Tools {
-		list, _ := s.src.Files(tool)
-		for _, f := range list {
-			files = append(files, shipped{tool, f.Path, f.Target})
+		for _, f := range s.idx.Files(tool) {
+			files = append(files, shipped{tool, f.Path, f.Target, f.Tmpl})
 		}
 	}
 	rc := fail.OK
@@ -56,29 +58,6 @@ func (s *state) makePlan() fail.Code {
 			rc = fail.Usage
 		}
 	}
-	// Each [files] table of a selected tool names a target of its tool.
-	selected := map[string]bool{}
-	for _, t := range s.res.Tools {
-		selected[t] = true
-	}
-	for _, t := range s.idx.Names {
-		if !selected[t] {
-			continue
-		}
-		for _, fe := range s.idx.Manifests[t].Files {
-			found := false
-			for _, f := range files {
-				if f.tool == t && f.target == fe.Target {
-					found = true
-					break
-				}
-			}
-			if !found {
-				s.log("%s/%s/tools.toml: [files.\"%s\"] names a target that no file of the tool produces", shown, t, fe.Target)
-				rc = fail.Usage
-			}
-		}
-	}
 	if rc != fail.OK {
 		return rc
 	}
@@ -87,7 +66,7 @@ func (s *state) makePlan() fail.Code {
 	// defaults. The generated mise files come first.
 	var all []planItem
 	for _, g := range s.gen {
-		all = append(all, planItem{g.tool, g.file, g.target, "generated", "toml"})
+		all = append(all, planItem{g.tool, g.file, g.target, "generated", "toml", false})
 	}
 	for _, f := range files {
 		mode, format := "generated", "-"
@@ -99,7 +78,7 @@ func (s *state) makePlan() fail.Code {
 				format = fe.Format
 			}
 		}
-		all = append(all, planItem{f.tool, f.path, f.target, mode, format})
+		all = append(all, planItem{f.tool, f.path, f.target, mode, format, f.tmpl})
 	}
 
 	s.plan = nil

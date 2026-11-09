@@ -26,3 +26,17 @@ version = "latest"
 [mise.tools.actionlint]
 envs = [ "dev", "ci" ]
 version = "latest"
+
+# The files of the tool, below files/.
+[files.".github/ISSUE_TEMPLATE/bug_report.yml"]
+source = ".github/ISSUE_TEMPLATE/bug_report.yml"
+
+[files.".github/ISSUE_TEMPLATE/config.yml"]
+mode = "template"
+source = ".github/ISSUE_TEMPLATE/config.yml.tmpl"
+
+[files.".github/ISSUE_TEMPLATE/feature_request.yml"]
+source = ".github/ISSUE_TEMPLATE/feature_request.yml"
+
+[files.".github/pull_request_template.md"]
+source = ".github/pull_request_template.md"

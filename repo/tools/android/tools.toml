@@ -9,3 +9,11 @@ root_only = false
 depends = [ "java" ]
 envs = [ "dev", "ci" ]
 version = "23"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."code/lint/10-android"]
+source = "code-lint-android"
+
+[tasks."setup/deps/10-android"]
+source = "setup-deps-android"

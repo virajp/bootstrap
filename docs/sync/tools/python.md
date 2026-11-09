@@ -21,14 +21,14 @@ need to list `python`.
 
 ## What the tool ships
 
-| Path in the repository                       | Kind      | Use                                                         |
-| -------------------------------------------- | --------- | ----------------------------------------------------------- |
-| `.config/mise/tasks/setup/deps/python`       | Synced    | The task `setup:deps:python`.                               |
-| `.config/mise/tasks/code/lint/ruff`          | Synced    | The task `code:lint:ruff`. Only with a `pyproject.toml`.    |
-| `.config/mise/tasks/code/lint/pyrefly`       | Synced    | The task `code:lint:pyrefly`. Only with a `pyproject.toml`. |
-| `.config/mise/tasks/code/lint/uv`            | Synced    | The task `code:lint:uv`.                                    |
-| `.config/mise/tasks/code/format/ruff`        | Synced    | The task `code:format:ruff`. Only with a `pyproject.toml`.  |
-| `.config/mise/conf.d/python/mise.<env>.toml` | Generated | The mise config of this tool.                               |
+| Path in the repository                       | Kind      | Use                                                            |
+| -------------------------------------------- | --------- | -------------------------------------------------------------- |
+| `.config/mise/tasks/setup/deps/50-python`    | Synced    | The task `setup:deps:50-python`.                               |
+| `.config/mise/tasks/code/lint/70-ruff`       | Synced    | The task `code:lint:70-ruff`. Only with a `pyproject.toml`.    |
+| `.config/mise/tasks/code/lint/50-pyrefly`    | Synced    | The task `code:lint:50-pyrefly`. Only with a `pyproject.toml`. |
+| `.config/mise/tasks/code/lint/90-uv`         | Synced    | The task `code:lint:90-uv`.                                    |
+| `.config/mise/tasks/code/format/40-ruff`     | Synced    | The task `code:format:40-ruff`. Only with a `pyproject.toml`.  |
+| `.config/mise/conf.d/python/mise.<env>.toml` | Generated | The mise config of this tool.                                  |
 
 The VS Code extension is `meta.pyrefly`.
 
@@ -45,8 +45,8 @@ Many repositories get `python` only as a dependency of other tools. Thus the
 sync installs `ruff` and `pyrefly` only when the repository has a
 `pyproject.toml`, at the root or down to 4 folders below it, that git does not
 ignore: each entry has `requires_found`. A `[files]` table with the same
-`requires_found` applies that condition to each task: `code:lint:ruff`,
-`code:format:ruff` and `code:lint:pyrefly`. Without
+`requires_found` applies that condition to each task: `code:lint:70-ruff`,
+`code:format:40-ruff` and `code:lint:50-pyrefly`. Without
 a `pyproject.toml`, the sync does not write them, and the stale rule removes
 the copies that `.config/repo-generated.tsv` lists. If the repository adds its
 first `pyproject.toml` later,
@@ -64,17 +64,18 @@ The `gcloud` tool uses the same Python minor version. Change both together.
 
 ## Tasks
 
-| Task                | Use                                                                                   |
-| ------------------- | ------------------------------------------------------------------------------------- |
-| `setup:deps:python` | Install from `uv.lock`. `--upgrade` also upgrades. It skips without `pyproject.toml`. |
-| `code:lint:ruff`    | Lint the `.py` and `.pyi` files with `ruff check`. `--fix` applies the fixes.         |
-| `code:lint:pyrefly` | Type check the `.py` and `.pyi` files with `pyrefly check`.                           |
-| `code:format:ruff`  | Check the format of the `.py` and `.pyi` files. `--fix` formats them.                 |
-| `code:lint:uv`      | Fail when a `uv.lock` does not agree with the `pyproject.toml` next to it.            |
+| Task                   | Use                                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| `setup:deps:50-python` | Install from `uv.lock`. `--upgrade` also upgrades. It skips without `pyproject.toml`. |
+| `code:lint:70-ruff`    | Lint the `.py` and `.pyi` files with `ruff check`. `--fix` applies the fixes.         |
+| `code:lint:50-pyrefly` | Type check the `.py` and `.pyi` files with `pyrefly check`.                           |
+| `code:format:40-ruff`  | Check the format of the `.py` and `.pyi` files. `--fix` formats them.                 |
+| `code:lint:90-uv`      | Fail when a `uv.lock` does not agree with the `pyproject.toml` next to it.            |
 
 `code:lint` and `code:format` run the four gates. Without ruff or pyrefly,
 the gate skips. Without files, the ruff and pyrefly gates also skip when the
-repository has no `.py` or `.pyi` file that git does not ignore. `code:lint:uv`
+repository has no `.py` or `.pyi` file that git does not ignore.
+`code:lint:90-uv`
 runs `uv lock --check` for each project with a
 `uv.lock` and a `pyproject.toml`. With a list of files, it checks only the
 projects of a given `uv.lock` or `pyproject.toml`. It replaces the
@@ -92,10 +93,10 @@ None.
 
 ## Files the repository supplies
 
-| File             | Used by                                                                                                         |
-| ---------------- | --------------------------------------------------------------------------------------------------------------- |
-| `pyproject.toml` | `setup:deps:python`, and the sync for ruff and pyrefly. `[tool.ruff]` and `[tool.pyrefly]` configure the gates. |
-| `uv.lock`        | `setup:deps:python`. The install uses its versions.                                                             |
+| File             | Used by                                                                                                            |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `pyproject.toml` | `setup:deps:50-python`, and the sync for ruff and pyrefly. `[tool.ruff]` and `[tool.pyrefly]` configure the gates. |
+| `uv.lock`        | `setup:deps:50-python`. The install uses its versions.                                                             |
 
 ## Adapt to the repository
 

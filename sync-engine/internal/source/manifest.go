@@ -3,13 +3,20 @@ package source
 import (
 	"fmt"
 	"strings"
+
+	"github.com/virajp/bootstrap/sync-engine/internal/fail"
 )
 
-// FileEntry is one `[files."<target>"]` table of a tools.toml. A key that the
-// table does not have is nil. Values are as the TOML gives them.
+// FileEntry is one file of a `[files."<target>"]` or `[tasks."<path>"]`
+// table of a tools.toml. A folder entry gives one FileEntry for each file
+// below its folder. A key that the table does not have is nil. Values are as
+// the TOML gives them.
 type FileEntry struct {
-	Target        string
-	Mode          string // "generated", "seed" or "merge"; empty when unset or not valid.
+	Target        string // The path in the target.
+	Source        string // Relative to the tool folder: files/<source> or tasks/<source>.
+	Task          bool   // A [tasks] entry.
+	Tmpl          bool   // The source is a template.
+	Mode          string // "generated" (copy, template), "seed" or "merge".
 	Format        string // "text", "json", "yaml" or "toml"; empty when unset or not valid.
 	Requires      []string
 	RequiresFound []string
@@ -36,8 +43,12 @@ type Manifest struct {
 	DefaultEnvs []string // Repo side.
 	Extensions  []string // Repo side.
 	RootOnly    bool     // Repo side: `root_only = true`.
+	Parent      string   // The parent tool, or empty.
 	Files       []FileEntry
 	Mise        []MiseTool // Repo side.
+
+	// probs are the problems of the [files] and [tasks] tables.
+	probs []*fail.Error
 
 	// lines is the flat form that the rules read (repo side).
 	lines []mline
@@ -112,54 +123,11 @@ func (s Source) LoadManifest(tool string) (*Manifest, error) {
 			}
 		}
 	}
-	m.Files = filesOf(raw)
+	if v, ok := raw.Get("parent").(string); ok {
+		m.Parent = v
+	}
+	m.Files, m.probs = s.entries(s.ManifestShown(tool), s.ToolDir(tool), raw)
 	return m, nil
-}
-
-// filesOf types the valid `[files]` tables. A bad table is a message of the
-// checks, and it has no entry here.
-func filesOf(raw *Obj) []FileEntry {
-	files, ok := raw.Get("files").(*Obj)
-	if !ok {
-		return nil
-	}
-	var out []FileEntry
-	for _, target := range files.Keys() {
-		e, ok := files.Get(target).(*Obj)
-		if !ok {
-			continue
-		}
-		fe := FileEntry{Target: target, Keys: e}
-		if v, ok := e.Get("mode").(string); ok && (v == "generated" || v == "seed" || v == "merge") {
-			fe.Mode = v
-		}
-		if v, ok := e.Get("format").(string); ok && (v == "text" || v == "json" || v == "yaml" || v == "toml") {
-			fe.Format = v
-		}
-		fe.Requires = pathList(e.Get("requires"))
-		fe.RequiresFound = pathList(e.Get("requires_found"))
-		fe.Remove = e.Get("remove")
-		fe.RemoveItems = e.Get("remove_items")
-		out = append(out, fe)
-	}
-	return out
-}
-
-// pathList gives the items of a non-empty list of strings, else nil.
-func pathList(v any) []string {
-	l, ok := asList(v)
-	if !ok || len(l) == 0 {
-		return nil
-	}
-	out := make([]string, len(l))
-	for i, e := range l {
-		s, ok := e.(string)
-		if !ok {
-			return nil
-		}
-		out[i] = s
-	}
-	return out
 }
 
 // repoLines is the port of `_RS_MANIFEST_TEMPLATE`. It gives an error when the
@@ -200,38 +168,6 @@ func (m *Manifest) repoLines() error {
 	}
 	if t.Has("seed_requires") {
 		add("old", "seed_requires", "", "")
-	}
-	if t.Has("files") {
-		if files, isMap := t.Get("files").(*Obj); isMap {
-			for _, f := range files.Keys() {
-				e, isMap := files.Get(f).(*Obj)
-				if !isMap {
-					add("bad", fmt.Sprintf("[files.\"%s\"] must be a table", f), "", "")
-					continue
-				}
-				add("files", f, "-", "-")
-				for _, k := range e.Keys() {
-					v := e.Get(k)
-					add("files", f, k, JSON(v))
-					if k == "requires" || k == "requires_found" {
-						items, good := checkedList(v)
-						if good {
-							for _, it := range items {
-								add("files_item", f, k, it)
-							}
-						} else {
-							what := "file names"
-							if k == "requires" {
-								what = "paths"
-							}
-							add("bad", fmt.Sprintf("[files.\"%s\"] %s must be a non-empty list of %s", f, k, what), "", "")
-						}
-					}
-				}
-			}
-		} else {
-			add("bad", "[files] must be a table of [files.\"<target>\"] tables", "", "")
-		}
 	}
 	if mise, has := t.Get("mise").(*Obj); has {
 		if tools, has := mise.Get("tools").(*Obj); has {

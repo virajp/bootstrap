@@ -3,8 +3,10 @@
 description = "dprint, the code formatter, and its global config"
 
 # JSON with comments and trailing commas: no JSON parser reads it.
-[files.".config/dprint/dprint.jsonc"]
-format = "text"
-
 [mise.tools.dprint]
 version = "latest"
+
+# The files of the tool, below files/.
+[files.".config/dprint/dprint.jsonc"]
+format = "text"
+source = ".config/dprint/dprint.jsonc"

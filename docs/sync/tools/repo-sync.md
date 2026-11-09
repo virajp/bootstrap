@@ -18,11 +18,11 @@ file. A `[tools.repo-sync]` table gives values.
 
 ## What the tool ships
 
-| Path in the repository                        | Kind      | Use                                                                                                                                                             |
-| --------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`. It fetches `bootstrap` into the cache, then runs the sync engine with a copy of the clone. The sync embeds `sync-engine/clone` in it. |
-| `.config/mise/tasks/code/lint/repo-sync`      | Synced    | The gate `code:lint:repo-sync`. It runs `bootstrap check`.                                                                                                      |
-| `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                                                                                                                   |
+| Path in the repository                        | Kind      | Use                                                                                                                                                                                       |
+| --------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`. The `mise` tool ships it. It fetches `bootstrap` into the cache, then runs the sync engine with a copy of the clone. The sync embeds `sync-engine/clone` in it. |
+| `.config/mise/tasks/code/lint/60-repo-sync`   | Synced    | The gate `code:lint:60-repo-sync`. It runs `bootstrap check`.                                                                                                                             |
+| `.config/mise/conf.d/repo-sync/mise.dev.toml` | Generated | The mise config of this tool.                                                                                                                                                             |
 
 The sync no longer ships the task `setup:configs:sync`
 (`.config/mise/tasks/setup/configs/sync`). With a manifest
@@ -39,18 +39,18 @@ file, whose `migrate.md` item covers it.
 
 ## mise tools
 
-| mise tool  | Version  | Environments | Note                               |
-| ---------- | -------- | ------------ | ---------------------------------- |
-| `gomplate` | `latest` | dev          | For the gate `code:lint:repo-sync` |
+| mise tool  | Version  | Environments | Note                                  |
+| ---------- | -------- | ------------ | ------------------------------------- |
+| `gomplate` | `latest` | dev          | For the gate `code:lint:60-repo-sync` |
 
 The sync does not use this entry. The engine does not call gomplate, jq or yq.
 
 ## Tasks
 
-| Task                  | Use                                                                                                                                                                          |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `setup:configs`       | Sync the shared files from `bootstrap`. `--dry-run` shows the diff. `--verbose` lists each file, also an unchanged one. `--all` and `--<name>` also sync the git submodules. |
-| `code:lint:repo-sync` | Validate `.config/bootstrap.toml` with `bootstrap check`. Hidden.                                                                                                            |
+| Task                     | Use                                                                                                                                                                          |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:configs`          | Sync the shared files from `bootstrap`. `--dry-run` shows the diff. `--verbose` lists each file, also an unchanged one. `--all` and `--<name>` also sync the git submodules. |
+| `code:lint:60-repo-sync` | Validate `.config/bootstrap.toml` with `bootstrap check`. Hidden.                                                                                                            |
 
 `setup:configs` keeps a shallow clone of `bootstrap` in `repo/` of the cache
 `${XDG_CACHE_HOME:-~/.cache}/bootstrap/`, for each consumer of the machine:
@@ -92,7 +92,7 @@ The sync lists only what changed, then prints a table of counts and a last line:
 
 ```text
   ✎ changed   .gitignore
-  ✚ new       .config/mise/tasks/code/lint/repo-sync
+  ✚ new       .config/mise/tasks/code/lint/60-repo-sync
   ❋ seeded    .config/swiftlint.yml
   ✖ removed   .config/mise/conf.d/old-tool/mise.dev.toml
 
@@ -144,7 +144,7 @@ member is part of the root tree, so it gets no flag.
 - A selected submodule without its own `.config/bootstrap.toml` stops the
   task with code 2.
 
-`code:lint:repo-sync` is a gate of `code:lint`. It accepts `--debug` and
+`code:lint:60-repo-sync` is a gate of `code:lint`. It accepts `--debug` and
 `--fix`, and ignores them, because the check has no fixes. It prints nothing
 and exits 0 in these conditions:
 
@@ -276,7 +276,7 @@ These environment variables change the sync. `--check` does not read
 ## Pre-commit hooks
 
 None. The `lint` hook of the `linter` tool runs `code:lint`, and `code:lint`
-runs `code:lint:repo-sync` with the staged files.
+runs `code:lint:60-repo-sync` with the staged files.
 
 ## Files the repository supplies
 

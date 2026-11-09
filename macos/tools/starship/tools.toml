@@ -6,3 +6,13 @@ description = "starship prompt, its config and the fish and zsh init drop-ins"
 
 [mise.bootstrap.packages]
 "brew:starship" = "latest" # Cross-shell prompt
+
+# The files of the tool, below files/.
+[files.".config/fish/conf.d/51-prompt.fish"]
+source = ".config/fish/conf.d/51-prompt.fish"
+
+[files.".config/starship.toml"]
+source = ".config/starship.toml"
+
+[files.".config/zsh/02b-starship.zsh"]
+source = ".config/zsh/02b-starship.zsh"

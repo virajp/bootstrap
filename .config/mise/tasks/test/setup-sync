@@ -200,10 +200,63 @@ use_config() {
 # case_tree <function>: a copy of the tree for this case only, after <function>
 # changed its macos/ folder, "$work".
 case_tree() {
+  local d
   cp -R -- "$tree" "$dir/tree"
   clone="$dir/tree"
   work="$clone/macos"
   "$1"
+  [[ -n ${CASE_OLD_FORM:-} ]] && return 0
+  for d in "$work"/tools/*/; do
+    new_form "${d%/}"
+  done
+}
+
+# new_form <tool folder>: a case writes its scratch tools in the old form of a
+# tool folder: each file at its target path, and a [files."<target>"] table only
+# for a file with a mode or a condition. This moves each such file below files/
+# (or tasks/ for a task), and gives it its entry: it adds `source` to the table
+# of the file, or writes a new table. A `.tmpl` file becomes mode = "template",
+# or render = true for a seed. `CASE_OLD_FORM=1` keeps the old form, for a case
+# that tests the refusal of it.
+new_form() {
+  local dir=$1 rel target key table src dest mode toml=$1/tools.toml
+  [[ -f $toml ]] || return 0
+  while IFS= read -r rel; do
+    target=${rel%.tmpl}
+    if [[ $target == .config/mise/tasks/* ]]; then
+      key=${target#.config/mise/tasks/}
+      table=tasks
+      src=${key//\//-}
+      [[ $key != _scripts/* ]] || src=${key#_scripts/}
+    else
+      key=$target
+      table=files
+      src=$target
+    fi
+    [[ $rel == "$target" ]] || src+=.tmpl
+    dest=$dir/$table/$src
+    mkdir -p -- "$(dirname -- "$dest")"
+    mv -- "$dir/$rel" "$dest"
+    mode=$(awk -v h="[files.\"$target\"]" '
+      $0 == h { inside = 1; next }
+      /^\[/ { inside = 0 }
+      inside && $1 == "mode" { gsub(/"/, "", $3); print $3 }' "$toml")
+    awk -v h="[files.\"$target\"]" -v nh="[$table.\"$key\"]" -v src="$src" \
+      -v tmpl="$([[ $rel == "$target" ]] || echo 1)" -v mode="$mode" \
+      -v lib="$([[ $table == tasks && $key == _scripts/* ]] && echo 1)" '
+      function extra() {
+        print "source = \"" src "\""
+        if (tmpl && mode == "seed") print "render = true"
+        else if (tmpl && (mode == "" || mode == "generated")) print "mode = \"template\""
+        if (lib) print "library = true"
+      }
+      $0 == h { print nh; extra(); found = 1; inside = 1; next }
+      /^\[/ { inside = 0 }
+      inside && $1 == "mode" && $3 == "\"generated\"" { next }
+      { print }
+      END { if (!found) { print ""; print nh; extra() } }' "$toml" > "$toml.new"
+    mv -- "$toml.new" "$toml"
+  done < <(cd "$dir" && find . -type f ! -path ./tools.toml ! -path './files/*' ! -path './tasks/*' | sed 's#^\./##' | sort)
 }
 
 # seed_manifest <row>...: a manifest from an earlier run.
@@ -245,7 +298,7 @@ expect() {
 add_bad_tool() { cp -R -- "$fixtures/repo/tools/bad" "$work/tools/bad"; }
 no_packs() { rm -- "$work/packs.toml"; }
 no_base() { printf '%s\n' '[pack.extra]' 'opt = { default = true }' > "$work/packs.toml"; }
-base_no_engine() { printf '%s\n' '[pack.base]' 'core = { default = true }' > "$work/packs.toml"; }
+required_not_default() { printf '%s\n' '[pack.base]' 'core = { required = true }' > "$work/packs.toml"; }
 pack_is_tool() { printf '\n%s\n%s\n' '[pack.core]' 'init = { default = true }' >> "$work/packs.toml"; }
 pack_unknown() { printf '\n%s\n%s\n' '[pack.more]' 'nope = { default = true }' >> "$work/packs.toml"; }
 pack_old_key() { printf '\n%s\n%s\n' '[pack.more]' 'depends = [ "opt" ]' >> "$work/packs.toml"; }
@@ -258,11 +311,21 @@ prepend_key() {
   mv -- "$work/$1.toml" "$work/tools/$1/tools.toml"
 }
 # append_lines <tool> <line>...: lines at the end of a tools.toml.
+# When the tools.toml has the first line already, a table header, the other
+# lines go below that header instead.
 append_lines() {
-  local t=$1
+  local t=$1 toml
   shift
-  printf '\n' >> "$work/tools/$t/tools.toml"
-  printf '%s\n' "$@" >> "$work/tools/$t/tools.toml"
+  toml=$work/tools/$t/tools.toml
+  if grep -qxF -- "$1" "$toml"; then
+    local IFS=$'\n'
+    # awk -v takes no newline, so the lines go through the environment.
+    ADD="${*:2}" awk -v h="$1" '{ print } $0 == h { print ENVIRON["ADD"] }' "$toml" > "$toml.new"
+    mv -- "$toml.new" "$toml"
+    return
+  fi
+  printf '\n' >> "$toml"
+  printf '%s\n' "$@" >> "$toml"
 }
 bad_manifest_key() { prepend_key opt 'depend = [ "core" ]'; }
 bad_stage() { prepend_key opt 'stage = "login"'; }
@@ -287,9 +350,9 @@ ships_conf_d() {
   mkdir -p -- "$work/tools/core/.config/mise/conf.d"
   printf '%s\n' '[env]' > "$work/tools/core/.config/mise/conf.d/x.toml"
 }
-file_and_tmpl() {
-  printf '%s\n' 'a' > "$work/tools/core/.config/core/foo"
-  printf '%s\n' 'b' > "$work/tools/core/.config/core/foo.tmpl"
+two_tools_one_target() {
+  mkdir -p -- "$work/tools/opt/.config/core"
+  printf '%s\n' 'a' > "$work/tools/opt/.config/core/plain.txt"
 }
 
 case_unknown_flag() {
@@ -460,7 +523,7 @@ case_values() {
   use_config ok
   run_real
   check_exit 0
-  check_file "$home/.config/core/values.txt" "$(synced core/.config/core/values.txt.tmpl)
+  check_file "$home/.config/core/values.txt" "$(synced core/files/.config/core/values.txt.tmpl)
 name=override-name
 items=a,b,x,
 left=file-left
@@ -469,7 +532,7 @@ tools=core,macos-setup,opt,
 opt_extra=extra-value
 home=$home
 passthrough={{ mise }} [[ bash ]]"
-  check_file "$home/.config/opt/opt.txt" "$(synced opt/.config/opt/opt.txt.tmpl)
+  check_file "$home/.config/opt/opt.txt" "$(synced opt/files/.config/opt/opt.txt.tmpl)
 level=default-level
 extra=extra-value"
 }
@@ -478,7 +541,7 @@ extra=extra-value"
 # selects the tool too.
 case_values_dependency() {
   local items="$home/.config/initdep/items.txt" head
-  head=$(synced initdep/.config/initdep/items.txt.tmpl)
+  head=$(synced initdep/files/.config/initdep/items.txt.tmpl)
   use_config dep
   run_real
   check_exit 4
@@ -541,6 +604,7 @@ case_render_order() {
 }
 
 add_executables() {
+  mkdir -p -- "$work/tools/core/.config/core"
   printf '%s\n' '#!/bin/sh' > "$work/tools/core/.config/core/run"
   printf '%s\n' '#!/bin/sh' '# <% .config.name %>' > "$work/tools/core/.config/core/rendered.tmpl"
   chmod 755 "$work/tools/core/.config/core/run" "$work/tools/core/.config/core/rendered.tmpl"
@@ -551,7 +615,7 @@ case_render_exact() {
   case_tree add_executables
   run_real
   check_exit 0
-  check "plain.txt equals its source" cmp -s "$fixtures/repo/tools/core/.config/core/plain.txt" "$home/.config/core/plain.txt"
+  check "plain.txt equals its source" cmp -s "$fixtures/repo/tools/core/files/.config/core/plain.txt" "$home/.config/core/plain.txt"
   check_file "$home/.config/core/settings.json" '{"name":"override-name","list":[1,2]}'
   check "a file keeps its mode" test "$(mode_of "$home/.config/core/plain.txt")" = 644
   check "an executable keeps its mode" test "$(mode_of "$home/.config/core/run")" = 755
@@ -593,7 +657,7 @@ case_context() {
   use_config context
   run_real
   check_exit 0
-  check_file "$home/.config/context/context.txt" "$(synced context/.config/context/context.txt.tmpl)
+  check_file "$home/.config/context/context.txt" "$(synced context/files/.config/context/context.txt.tmpl)
 sync_engine=$tree/sync-engine
 config=$MACOS_SETUP_CONFIG_PATH"
 }
@@ -917,7 +981,7 @@ case_default_output() {
 # ---- contributions ------------------------------------------------------------
 
 owner_config() {
-  synced owner/.config/owner/config.tmpl
+  synced owner/files/.config/owner/config.tmpl
   printf '%s\n' "$@"
 }
 
@@ -928,13 +992,13 @@ case_contrib() {
   check_file "$home/.config/owner/config" "$(owner_config "Include ~/a" "Include ~/b" "Include ~/c" "" "Host *" \
     "  IdentityAgent agent-a" "nested=default,from-b" "# again: agent-a")"
   check_file "$home/.config/owner/data.json" '{"agent": "agent-a", "includes": ["~/a","~/b","~/c"]}'
-  check_file "$home/.config/owner/data.toml" "$(synced owner/.config/owner/data.toml.tmpl)
+  check_file "$home/.config/owner/data.toml" "$(synced owner/files/.config/owner/data.toml.tmpl)
 agent = \"agent-a\"
 includes = [\"~/a\",\"~/b\",\"~/c\"]"
   check "the yaml target is written" grep -qxF '  - "~/c"' "$home/.config/owner/data.yaml"
   check "a format = toml target with another extension is written" test -f "$home/.config/owner/settings.conf"
   check "a format = text .json target is copied unparsed" \
-    cmp -s "$fixtures/repo/tools/owner/.config/owner/lenient.json.tmpl" "$home/.config/owner/lenient.json"
+    cmp -s "$fixtures/repo/tools/owner/files/.config/owner/lenient.json.tmpl" "$home/.config/owner/lenient.json"
   check "the contribution to a tool that is not selected is ignored" not test -e "$home/.config/opt"
   check_output "skip file  ~/.config/owner/needs.txt (no ~/.config/owner-needed)"
   check "a generated file waits for its requires" not test -e "$home/.config/owner/needs.txt"
@@ -1188,7 +1252,7 @@ case_merge_absent() {
     "a"
   ]
 }'
-  check_file "$(m_dir)/m.yaml" "$(grep -vxF '  - drop' -- "$fixtures/repo/tools/merger/.config/merger/m.yaml.tmpl")"
+  check_file "$(m_dir)/m.yaml" "$(grep -vxF '  - drop' -- "$fixtures/repo/tools/merger/files/.config/merger/m.yaml.tmpl")"
   check "the toml source is written" grep -qxF 'list = ["x", "y"]' "$(m_dir)/m.toml"
   check "a new target takes the mode of its source" test "$(mode_of "$(m_dir)/m.json")" = 644
 }
@@ -1208,7 +1272,7 @@ case_merge_empty() {
   check_output "updated    ~/.config/merger/m.toml"
   check "the json source is written" grep -qF '"scalar": "src"' "$(m_dir)/m.json"
   check "the permissions of the empty file are kept" test "$(mode_of "$(m_dir)/m.json")" = 600
-  check_file "$(m_dir)/m.yaml" "$(grep -vxF '  - drop' -- "$fixtures/repo/tools/merger/.config/merger/m.yaml.tmpl")"
+  check_file "$(m_dir)/m.yaml" "$(grep -vxF '  - drop' -- "$fixtures/repo/tools/merger/files/.config/merger/m.yaml.tmpl")"
   check "the toml source is written" grep -qxF 'scalar = "src"' "$(m_dir)/m.toml"
 }
 
@@ -1262,8 +1326,8 @@ b: 2
 
 # Sources that cannot merge: a list, two YAML documents.
 src_unusable() {
-  printf '%s\n' '[1]' > "$work/tools/merger/.config/merger/m.json.tmpl"
-  printf '%s\n' 'a: 1' '---' 'b: 2' > "$work/tools/merger/.config/merger/m.yaml.tmpl"
+  printf '%s\n' '[1]' > "$work/tools/merger/files/.config/merger/m.json.tmpl"
+  printf '%s\n' 'a: 1' '---' 'b: 2' > "$work/tools/merger/files/.config/merger/m.yaml.tmpl"
 }
 case_merge_src_bad() {
   local j='{"keep": 1}
@@ -1284,8 +1348,8 @@ case_merge_src_bad() {
 # An empty source enforces nothing: only the removals act; an absent target
 # gets an empty table.
 src_empty() {
-  printf '%s\n' '{}' > "$work/tools/merger/.config/merger/m.json.tmpl"
-  printf '%s\n' '# nothing' > "$work/tools/merger/.config/merger/m.yaml.tmpl"
+  printf '%s\n' '{}' > "$work/tools/merger/files/.config/merger/m.json.tmpl"
+  printf '%s\n' '# nothing' > "$work/tools/merger/files/.config/merger/m.yaml.tmpl"
 }
 case_merge_src_empty() {
   use_config merge
@@ -1351,7 +1415,7 @@ entry_tool="$root/macos/tools/macos-setup"
 entry_task="$tmp/updateall-configs"
 printf '{"sync_engine":"%s/sync-engine"}\n' "$root" > "$tmp/entry-ctx.json"
 mise x gomplate@latest -- gomplate --left-delim '<%' --right-delim '%>' -c ".=$tmp/entry-ctx.json" \
-  -f "$entry_tool/.config/mise/tasks/updateall/configs/_default.tmpl" -o "$entry_task"
+  -f "$entry_tool/tasks/updateall-configs.tmpl" -o "$entry_task"
 chmod +x "$entry_task"
 
 entry_src="$tmp/entry-src"
@@ -1428,7 +1492,7 @@ case_entry_clone_refresh() {
   check_exit 0
   printf '%s\n' "# local edit" >> "$repo/macos/packs.toml"
   printf '%s\n' "untracked" > "$repo/untracked.txt"
-  printf '%s\n' "new line" >> "$work/macos/tools/core/.config/core/plain.txt"
+  printf '%s\n' "new line" >> "$work/macos/tools/core/files/.config/core/plain.txt"
   _git -C "$work" commit --quiet --no-verify -am "new origin commit"
   _git -C "$dir/origin.git" fetch --quiet -- "$work" main:main
   entry_real
@@ -1622,8 +1686,8 @@ case_entry_mise_run() {
   check_exit 0
   a=$(grep '^setup-sync: would update ' "$log")
   mkdir -p -- "$XDG_CONFIG_HOME/mise"
-  cp -R -- "$entry_tool/.config/mise/tasks" "$tasks"
-  rm -- "$tasks/updateall/configs/_default.tmpl"
+  mkdir -p -- "$tasks/_scripts" "$tasks/updateall/configs"
+  cp -- "$entry_tool/tasks/helpers" "$tasks/_scripts/helpers"
   cp -- "$entry_task" "$tasks/updateall/configs/_default"
   entry_mise --dry-run --no-bootstrap
   check_exit 0
@@ -1723,16 +1787,16 @@ run_case "config: an [overrides.<tool>] table" expect bad-override 2 "[overrides
 run_case "config: a [tools.<name>] table with env" expect env-opt 2 "[tools.opt] env is for repo tools only"
 run_case "config: an [overrides.mise_env.<env>.<path>] table" expect override-env 2 "[overrides.mise_env] in config/macos.toml: the Mac side has no environments"
 run_case "config: a tool folder with no tools.toml" expect ok 2 "macos/tools/bad has no tools.toml" add_bad_tool
-run_case "config: a repo with no macos/packs.toml" expect ok 2 "pack base does not have the tool macos-setup" no_packs
-run_case "config: a packs.toml with no [pack.base]" expect ok 2 "pack base does not have the tool macos-setup" no_base
-run_case "config: a pack base without macos-setup" expect ok 2 "pack base does not have the tool macos-setup" base_no_engine
+run_case "config: a repo with no macos/packs.toml" expect ok 3 "pack 'base' is not in bootstrap" no_packs
+run_case "config: a packs.toml with no [pack.base]" expect ok 3 "pack 'base' is not in bootstrap" no_base
+run_case "config: a required member without default = true" expect ok 2 "macos/packs.toml: [pack.base] core: required = true is only for a member of pack base with default = true" required_not_default
 run_case "config: an unknown key in a tools.toml" expect ok 2 "macos/tools/opt/tools.toml: depend is not a key of tools.toml" bad_manifest_key
 run_case "config: a stage that is not init" expect ok 2 'macos/tools/opt/tools.toml: stage = "login" - the only stage is "init"' bad_stage
 run_case "config: the old stage = shell" expect ok 2 'macos/tools/opt/tools.toml: stage = "shell" is the old name - write stage = "init"' old_stage
 run_case "config: the old seed key" expect ok 2 'macos/tools/core/tools.toml: seed is the old key - write a [files."<target>"] table with mode = "seed"' old_seed_key
 run_case "config: the old [seed_requires] table" expect ok 2 'macos/tools/core/tools.toml: [seed_requires] is the old table - write requires = [...]' old_seed_requires
-run_case "config: a [files] table with no source" expect ok 2 'macos/tools/core/tools.toml: [files.".config/core/nothing"] names a target that no file of the tool produces' files_no_source
-run_case "config: an unknown key in a [files] table" expect ok 2 'macos/tools/opt/tools.toml: [files.".config/opt/opt.txt"] owner is not a key of a file' bad_files_key
+run_case "config: a [files] table with no source" expect ok 2 'macos/tools/core/tools.toml: [files.".config/core/nothing"] needs source, a path below files/ with no .. part' files_no_source
+run_case "config: an unknown key in a [files] table" expect ok 2 'macos/tools/opt/tools.toml: [files.".config/opt/opt.txt"] owner is not a key of a files entry' bad_files_key
 run_case "config: an unknown key in a [questions] table" expect ok 2 'macos/tools/opt/tools.toml: [questions.level] ask is not a key of a question' bad_question
 run_case "config: a [questions] table with no question" expect ok 2 'macos/tools/opt/tools.toml: [questions.level] needs a question string' bad_question
 run_case "config: a tool with default_envs" expect ok 2 "macos/tools/opt/tools.toml: default_envs is for repo tools only" repo_default_envs
@@ -1740,8 +1804,8 @@ run_case "config: a tool with [mise_env.dev.tools]" expect ok 2 "macos/tools/opt
 run_case "config: a [files] table with requires_found" expect ok 2 'macos/tools/opt/tools.toml: [files.".config/opt/opt.txt"] requires_found is for repo tools only' repo_requires_found
 run_case "config: a tool folder zz-macos" expect ok 2 "tool folder macos/tools/zz-macos sorts after zz-macos or is named zz-macos" tool_zz_macos
 run_case "config: a tool folder that sorts after zz-macos" expect ok 2 "tool folder macos/tools/zzz sorts after zz-macos or is named zz-macos" tool_after_zz_macos
-run_case "config: a tool that ships a file in conf.d" expect ok 2 "macos/tools/core/.config/mise/conf.d/x.toml: the sync generates .config/mise/conf.d/ from [mise.*] of tools.toml" ships_conf_d
-run_case "config: foo and foo.tmpl in one tool" expect ok 2 "$tilde/.config/core/foo comes from more than one source" file_and_tmpl
+run_case "config: a tool that ships a file in conf.d" expect ok 2 "macos/tools/core/files/.config/mise/conf.d/x.toml: the sync generates .config/mise/conf.d/ from [mise.*] of tools.toml" ships_conf_d
+run_case "config: two tools that ship one target" expect ok 2 "$tilde/.config/core/plain.txt comes from more than one source" two_tools_one_target
 run_case "config: a pack name that is a tool folder" expect ok 2 "macos/packs.toml: pack 'core' is also a tool folder" pack_is_tool
 run_case "config: a pack member that is not a tool" expect ok 3 "tool 'nope' is not in bootstrap (named in pack more)" pack_unknown
 run_case "config: a pack-level key" expect ok 2 "macos/packs.toml: [pack.more] depends is the old format" pack_old_key
