@@ -1,4 +1,3 @@
-fingerprint: 5b8329168adc868a40ef5f95212a64c1782a68e3883c86239cbb80d3a80b3b0e
 rc=2
 --- stderr
 repo-sync: tools in bootstrap.toml is a list, the old format - write one table for each entry, for example [tools.node] env = ["dev"]; the pack base is always added

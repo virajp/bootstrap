@@ -1,4 +1,3 @@
-fingerprint: ae85ad1fd9f6ecbc8aacadea2839a837baf0fc1a716ec8842bca715579cc8c3e
 rc=2
 --- stderr
 repo-sync: [packs.extra] in bootstrap.toml: 'foo' is not a key of a pack entry; the only key of a pack entry is env, a list

@@ -1,4 +1,3 @@
-fingerprint: b6bc59fa949266f52d48c1185c2dc668a5f7d162a69872d63328082416ce487b
 rc=2
 --- stderr
 repo-sync: [tools.c] in bootstrap.toml: env must be a list, for example env = ["dev"]

@@ -1,7 +1,0 @@
-fingerprint: 209f627708ceaac20fef495f71d3351bb4364c4d9dcbe127eccf68b5e943072a
-pre: rc=0
-envs: rc=2
-| mise: envs of mise tool 'fd' in repo/tools/mtest/tools.toml: 'prod' is not one of dev, ci
---- files
-
---- end

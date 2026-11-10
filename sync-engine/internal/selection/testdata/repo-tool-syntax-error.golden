@@ -1,4 +1,3 @@
-fingerprint: cc9cb2d4dd9e8ca145873417917a02eb4cfc493bca81db1ca1f7f96dc75b227a
 rc=2
 --- stderr
 repo-sync: cannot read repo/tools/b/tools.toml

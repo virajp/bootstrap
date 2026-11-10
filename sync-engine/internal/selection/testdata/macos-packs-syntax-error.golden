@@ -1,4 +1,3 @@
-fingerprint: 35c97848cf2655ca824d62a07700b3ba37ecc056f2285a3af4ea2e338e6fe5e7
 rc=2
 --- stderr
 setup-sync: cannot read macos/packs.toml

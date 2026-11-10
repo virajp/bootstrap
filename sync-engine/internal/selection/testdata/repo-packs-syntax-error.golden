@@ -1,4 +1,3 @@
-fingerprint: c4497d29c075a0c338ced53304fe51dba5df668963f645bddf8f5cc52eb10a31
 rc=2
 --- stderr
 repo-sync: cannot read repo/packs.toml

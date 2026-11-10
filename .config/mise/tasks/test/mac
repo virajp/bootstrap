@@ -46,7 +46,7 @@ export MISE_CACHE_DIR="${MISE_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/mise}"
 mise_env=${MISE_ENV:-}
 unset MISE_ENV BOOTSTRAP_URL BOOTSTRAP_CLONE REPO_SYNC_CLONE
 
-tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-setup-sync.XXXXXX")
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-mac.XXXXXX")
 # The real path: setup-sync logs the real path of a target behind a symlink.
 tmp=$(cd "$tmp" && pwd -P)
 # shellcheck disable=SC2046

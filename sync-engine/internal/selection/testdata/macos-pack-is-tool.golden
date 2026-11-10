@@ -1,4 +1,3 @@
-fingerprint: 0d0ea52f520ee2c15b6e3f58515f4e9c43289c57f9dca3ea9b05e9198c85a0c6
 rc=2
 --- stderr
 setup-sync: macos/packs.toml: pack 'm2' is also a tool folder - rename one

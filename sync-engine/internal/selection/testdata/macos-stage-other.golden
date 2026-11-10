@@ -1,4 +1,3 @@
-fingerprint: 911544130b26d0e2b1fe7dccbe85ed5016196a232da7d11d51f398abfc3b209e
 rc=2
 --- stderr
 setup-sync: macos/tools/m1/tools.toml: stage = "late" - the only stage is "init"

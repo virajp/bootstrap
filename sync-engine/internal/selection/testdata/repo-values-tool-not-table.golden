@@ -1,4 +1,3 @@
-fingerprint: 6796bfed498744cf806e2bec1af0068e0462a5d014b54730ba5718573ce569c1
 rc=2
 --- stderr
 repo-sync: [tools.a] in bootstrap.toml: must be a table

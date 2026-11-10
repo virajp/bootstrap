@@ -1,4 +1,3 @@
-fingerprint: c62452e8c7f2cc7daf0cb5095007afdd20442a6688a5aea42b3d175e23cc5b50
 rc=2
 --- stderr
 repo-sync: tool folder repo/tools/zz-repo sorts after zz-repo or is named zz-repo - rename it, because conf.d/zz-repo/ must load last

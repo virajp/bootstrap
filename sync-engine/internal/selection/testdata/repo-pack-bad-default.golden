@@ -1,4 +1,3 @@
-fingerprint: 8c88c9dda99668e797f3675dcfd5a1562035299f8a8367110ede0a40919569d3
 rc=2
 --- stderr
 repo-sync: repo/packs.toml: [pack.base] a: default must be true or false, not string

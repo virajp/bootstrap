@@ -10,7 +10,7 @@ import (
 	"github.com/virajp/bootstrap/sync-engine/internal/source"
 )
 
-// TestUsage: the usage errors of the bash functions, with their text.
+// TestUsage: the usage errors of the functions, with their text.
 func TestUsage(t *testing.T) {
 	expect := func(err error, msg string) {
 		t.Helper()

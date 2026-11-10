@@ -1,4 +1,3 @@
-fingerprint: 2542cf3c0d0352086091f45441a9b714121ecf78c487e24972b482b2e5fb7132
 rc=2
 --- stderr
 repo-sync: repo/tools/a/tools.toml: [defaults] must be a table

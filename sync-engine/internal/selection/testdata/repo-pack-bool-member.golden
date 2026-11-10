@@ -1,4 +1,3 @@
-fingerprint: a10d96f8ca6807c35bcc9097a7544eff516af7cc16adc6c2576316f37ea2db16
 rc=2
 --- stderr
 repo-sync: repo/packs.toml: [pack.base] b must be a table, { default = true } or {}

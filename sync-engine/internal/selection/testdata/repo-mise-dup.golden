@@ -1,4 +1,3 @@
-fingerprint: 83763afe8f64dfb491cd47278ea80fef1535cdfd337276673e643f59e0eb774c
 rc=2
 --- stderr
 repo-sync: mise tool 'ta' is defined in repo/tools/b and in another tool - keep one

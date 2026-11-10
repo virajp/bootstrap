@@ -1,4 +1,3 @@
-fingerprint: cbd19342756cf2a3257f816a034a6657697ead52eba65ab92146c2127046a262
 rc=2
 --- stderr
 repo-sync: tool 'c' is for the root repository only - remove it from the tools of this submodule

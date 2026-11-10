@@ -1,4 +1,3 @@
-fingerprint: a529ddffc224b9544181cc288435b1816fabb8118a30b58ca63a41fd6a71d94f
 pre: rc=0
 overrides: rc=2
 | mise: overrides.mise.tools.fd.depends in values.toml: the envs, the depends, the requires, the requires_found and the files of a mise tool cannot be overridden

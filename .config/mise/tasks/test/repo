@@ -37,7 +37,7 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 export BOOTSTRAP_VERBOSE=1
 
 root=${MISE_PROJECT_ROOT}
-tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-repo-sync.XXXXXX")
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-repo.XXXXXX")
 # The engine runs the scripts of a tool with `mise x` in the scratch
 # consumers, so mise must trust their config files.
 MISE_TRUSTED_CONFIG_PATHS="$tmp:$(cd -- "$tmp" && pwd -P)${MISE_TRUSTED_CONFIG_PATHS:+:$MISE_TRUSTED_CONFIG_PATHS}"
@@ -275,7 +275,7 @@ header_file() {
 
 # The tools of the pack base. _security_base arrives through the depends of the
 # scanners. The first case checks that each one syncs a file.
-base_tools="mise repo-sync git pre-commit dprint linter vscode _security_base gitleaks grype osv-scanner"
+base_tools="mise git pre-commit dprint linter vscode _security_base gitleaks grype osv-scanner"
 
 check_base_files() {
   local tool path found missing=''
@@ -1519,7 +1519,7 @@ run_case "requires and requires_found absent" 0 "$fixture_values" both_lists '' 
 case_args=' ' run_case "requires and requires_found present" 0 "$fixture_values" both_present '' check_both_present
 run_case "requires, the file only in a folder" 0 "$fixture_values" both_need_in_folder '' check_both_folder
 
-# Shared files (mode = "merge"). test:setup-sync and the Go tests cover each
+# Shared files (mode = "merge"). test:mac and the Go tests cover each
 # kind of item; these cases cover the rules of the repo side: the manifest
 # rows, the mode, requires, symlinks and the config errors.
 # merge_spec <name> <line>...: a spec below files/ of the tool fixture.

@@ -9,10 +9,8 @@ import (
 	"testing"
 )
 
-// The golden files in testdata/ hold the result of the merge and of the parse
-// check of the bash engine (its files merge and write), from before the
-// removal of that engine. Each golden file holds the inputs of its case and the
-// output of bash, so the golden files cannot get old.
+// The golden files in testdata/check/ hold the cases of the parse check. Each
+// golden file holds the inputs of its case and the expected result.
 
 const prefix = "x"
 
@@ -58,7 +56,7 @@ func TestParseCheckGolden(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			stderr, rc := goCheck(c)
 			if rc != st.RC {
-				t.Errorf("exit code %d, bash gave %d", rc, st.RC)
+				t.Errorf("exit code %d, want %d", rc, st.RC)
 				return
 			}
 			want := wantErr
@@ -67,7 +65,7 @@ func TestParseCheckGolden(t *testing.T) {
 				stderr, want = firstLine(stderr), firstLine(want)
 			}
 			if normalize(stderr) != normalize(want) {
-				t.Errorf("stderr differs\ngo:   %q\nbash: %q", stderr, want)
+				t.Errorf("stderr differs\ngot:  %q\nwant: %q", stderr, want)
 				return
 			}
 			equal++

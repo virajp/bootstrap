@@ -2,8 +2,8 @@ package header
 
 import "testing"
 
-// The parity of HasFile with _se_has_header is in the tests of
-// internal/manifest (case "header").
+// More cases of HasFile are in the tests of internal/manifest (case
+// "header").
 func TestHas(t *testing.T) {
 	cases := []struct {
 		in   string

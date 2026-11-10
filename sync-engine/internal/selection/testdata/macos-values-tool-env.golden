@@ -1,4 +1,3 @@
-fingerprint: 6203dfa7558828898f2b111ba31162b6594d3b66292c9e335a2b3962d6e50531
 rc=2
 --- stderr
 setup-sync: [tools.m3] env is for repo tools only - the Mac side has no environments
