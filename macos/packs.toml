@@ -1,6 +1,6 @@
 # The packs of the Mac tools in macos/tools/. A pack has no files of its own;
 # each key of its table is a member: `<tool> = { default = true }` or
-# `<tool> = {}`, and a nested pack is `"pack:<name>"`. `setup-sync` sorts the
+# `<tool> = {}`, and a nested pack is `"pack:<name>"`. The Mac sync sorts the
 # tools by name in each stage, so the member order does not change the sync. The
 # sync always adds the pack `base`. `required = true` marks a member of `base`
 # that each Mac must have.

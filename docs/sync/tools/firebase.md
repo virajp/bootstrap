@@ -1,11 +1,12 @@
 # The `firebase` tool
 
-The Firebase CLI only. The tool ships no Firebase config file.
+The Firebase CLI only. The repository owns its Firebase config files.
 
 | Property     | Value   |
 | ------------ | ------- |
 | Root only    | No      |
-| Depends      | None    |
+| Depends      | `node`  |
+| Parent       | None    |
 | Default envs | dev, ci |
 | Seeds        | None    |
 
@@ -13,8 +14,10 @@ The Firebase CLI only. The tool ships no Firebase config file.
 
 - A script, a task or a CI job of the repository calls `firebase`.
 
-A config file such as `firebase.json` is not enough. The repository can use the
-Firebase emulators in a container that installs its own CLI.
+`bootstrap detect` runs the detect script of the tool (see "Scripts"). It
+finds `firebase.json`. A config file is not enough: the repository can use
+the Firebase emulators in a container that installs its own CLI. Ask the user
+before you add the tool.
 
 ## What the tool ships
 
@@ -24,17 +27,31 @@ Firebase emulators in a container that installs its own CLI.
 
 ## mise tools
 
-| mise tool            | Version  | Environments | Note        |
-| -------------------- | -------- | ------------ | ----------- |
-| `npm:firebase-tools` | `latest` | dev, ci      | Needs node. |
+| mise tool            | Version  | Environments |
+| -------------------- | -------- | ------------ |
+| `npm:firebase-tools` | `latest` | dev, ci      |
 
 ## Tasks
 
 None.
 
-## Pre-commit hooks
+## Scripts
+
+| Script           | Kind   | Use                                                    |
+| ---------------- | ------ | ------------------------------------------------------ |
+| `scripts/detect` | detect | `match` with `firebase.json` at the root, else `none`. |
+
+The sync runs the scripts from the clone of `bootstrap`, and never copies them.
+See [`docs/design/tools.md`](../../design/tools.md).
+
+## Contributions
 
 None.
+
+## Values
+
+Only `env`. No questions. See
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 

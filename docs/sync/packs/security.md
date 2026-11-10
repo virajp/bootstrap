@@ -1,7 +1,7 @@
 # The `security` pack
 
-The scanners: gitleaks for secrets, grype and osv-scanner for the
-dependencies, and the `code:sec` task that runs them.
+The scanners: gitleaks for secrets, and grype and osv-scanner for the
+dependencies. The `code:sec` task of the `mise` tool runs them.
 
 | Property | Value                              |
 | -------- | ---------------------------------- |
@@ -24,7 +24,8 @@ Each member is `default = true` in `repo/packs.toml`, for example
 | `osv-scanner` | Yes     | [`tools/osv-scanner.md`](../tools/osv-scanner.md) |
 
 [`_security_base`](../tools/_security_base.md) is the common tool of the pack.
-It is not a member. Each scanner has it in its `depends`, so each scanner
+It is not a member. It adds the pre-commit hook of `code:sec`. Each scanner has
+it in its `depends`, so each scanner
 brings it, also a single scanner without the pack.
 
 ## Environments
@@ -35,8 +36,9 @@ the scanners that need it.
 
 ## Questions
 
-None. The `base` pack always adds this pack. A consumer cannot remove a tool
-of the pack.
+None. The `base` pack always adds this pack. `bootstrap remove` refuses a
+tool that only a pack selects. Thus a consumer cannot remove a tool of the
+pack.
 
 ## Adapt to the repository
 

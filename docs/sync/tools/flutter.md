@@ -2,16 +2,20 @@
 
 Flutter and Dart. The tool adds the `android` tool for the Android build.
 
-| Property     | Value   |
-| ------------ | ------- |
-| Root only    | No      |
-| Depends      | None    |
-| Default envs | dev, ci |
-| Seeds        | None    |
+| Property     | Value     |
+| ------------ | --------- |
+| Root only    | No        |
+| Depends      | `android` |
+| Parent       | None      |
+| Default envs | dev, ci   |
+| Seeds        | None      |
 
 ## When the tool is relevant
 
 - The repository has `pubspec.yaml`.
+
+`bootstrap detect` runs the detect script of the tool. It gives `match` when
+`pubspec.yaml` depends on the flutter SDK (see "Scripts").
 
 ## What the tool ships
 
@@ -22,17 +26,15 @@ Flutter and Dart. The tool adds the `android` tool for the Android build.
 | `.config/mise/tasks/code/lint/20-dart`        | Synced    | The task `code:lint:20-dart`.     |
 | `.config/mise/conf.d/flutter/mise.<env>.toml` | Generated | The mise config of this tool.     |
 
-VS Code extensions: `dart-code.dart-code`, `dart-code.flutter`.
-
 ## mise tools
 
-| mise tool | Version | Environments | Note               |
-| --------- | ------- | ------------ | ------------------ |
-| `flutter` | `3`     | dev, ci      | Needs android-sdk. |
+| mise tool | Version | Environments |
+| --------- | ------- | ------------ |
+| `flutter` | `3`     | dev, ci      |
 
-`flutter` has the mise `depends` `android-sdk`. Thus the sync adds the
-`android` tool, and `android-sdk` and `java` are in the environments of
-`flutter` (dev and ci). See `android.md` and `java.md`.
+The tool has `android` in its `depends`, and `android` has `java`. Thus the
+sync adds both tools, in the environments of `flutter` (dev and ci). See
+[`android.md`](android.md) and [`java.md`](java.md).
 
 ## Tasks
 
@@ -50,10 +52,27 @@ with an executable `android/gradlew`. It accepts the Android licenses. It
 installs `platform-tools` with `android-sdk`, which comes from the `android`
 tool.
 
-## Pre-commit hooks
+## Scripts
 
-None. The `format` hook of `dprint` and the `lint` hook of `linter` run the Dart
-tasks.
+The sync runs the scripts of the tool from the clone, and never copies them.
+
+| Script           | Kind   | Use                                                                                                      |
+| ---------------- | ------ | -------------------------------------------------------------------------------------------------------- |
+| `scripts/detect` | detect | `match` when `pubspec.yaml` has `sdk: flutter`. `none` for a `pubspec.yaml` of Dart only, or without it. |
+
+## Contributions
+
+| Tool     | Shared file               | Items                                      |
+| -------- | ------------------------- | ------------------------------------------ |
+| `vscode` | `.vscode/extensions.json` | `dart-code.dart-code`, `dart-code.flutter` |
+
+The tool adds no hook. The `format` hook of `dprint` and the `lint` hook of
+`linter` run the Dart tasks through `code:format` and `code:lint`.
+
+## Values
+
+Only `env`. No questions. The keys of the values file are in
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 
@@ -72,5 +91,7 @@ tasks.
 
 - Remove `flutter` from the repository-owned mise files. For `android-sdk`
   and `java`, see `android.md` and `java.md`.
+- M16 of `migrate.md` has the move of `android-sdk` and `java` out of
+  `flutter`.
 - If the Gradle build uses the Groovy DSL (`*.gradle`), do the migration of
   [`kotlin-dsl.md`](../kotlin-dsl.md) when the user agrees.

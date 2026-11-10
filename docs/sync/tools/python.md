@@ -1,11 +1,13 @@
 # The `python` tool
 
-Python and uv. In a Python project, also the ruff and pyrefly gates.
+Python and uv. In a repository with a `pyproject.toml`, also ruff and pyrefly,
+with their `code:lint` and `code:format` tasks.
 
 | Property     | Value   |
 | ------------ | ------- |
 | Root only    | No      |
 | Depends      | None    |
+| Parent       | None    |
 | Default envs | dev, ci |
 | Seeds        | None    |
 
@@ -14,23 +16,25 @@ Python and uv. In a Python project, also the ruff and pyrefly gates.
 - The repository has `pyproject.toml`.
 - The core language of the repository is Python.
 
-The `pre-commit` and `claude` tools add `python` in dev, and the `gcloud` tool
-adds it in dev and ci, through their mise `depends`. A repository that uses
-Python only as a development tool does not
-need to list `python`.
+`bootstrap detect` runs the detect script of the tool. It gives `match` when
+the root has a `pyproject.toml` (see "Scripts").
+
+The `pre-commit` and `gcloud` tools have `python` in their `depends`. Thus each
+repository gets `python` through the `base` pack. A repository that uses
+Python only as a development tool does not need to list `python`. The
+environments of a dependency are in
+[`docs/design/mise.md`](../../design/mise.md).
 
 ## What the tool ships
 
-| Path in the repository                       | Kind      | Use                                                            |
-| -------------------------------------------- | --------- | -------------------------------------------------------------- |
-| `.config/mise/tasks/setup/deps/50-python`    | Synced    | The task `setup:deps:50-python`.                               |
-| `.config/mise/tasks/code/lint/70-ruff`       | Synced    | The task `code:lint:70-ruff`. Only with a `pyproject.toml`.    |
-| `.config/mise/tasks/code/lint/50-pyrefly`    | Synced    | The task `code:lint:50-pyrefly`. Only with a `pyproject.toml`. |
-| `.config/mise/tasks/code/lint/90-uv`         | Synced    | The task `code:lint:90-uv`.                                    |
-| `.config/mise/tasks/code/format/40-ruff`     | Synced    | The task `code:format:40-ruff`. Only with a `pyproject.toml`.  |
-| `.config/mise/conf.d/python/mise.<env>.toml` | Generated | The mise config of this tool.                                  |
-
-The VS Code extension is `meta.pyrefly`.
+| Path in the repository                       | Kind      | Use                                                                               |
+| -------------------------------------------- | --------- | --------------------------------------------------------------------------------- |
+| `.config/mise/tasks/setup/deps/50-python`    | Synced    | The task `setup:deps:50-python`.                                                  |
+| `.config/mise/tasks/code/format/40-ruff`     | Synced    | The task `code:format:40-ruff`. Only with a `pyproject.toml` (`requires_found`).  |
+| `.config/mise/tasks/code/lint/50-pyrefly`    | Synced    | The task `code:lint:50-pyrefly`. Only with a `pyproject.toml` (`requires_found`). |
+| `.config/mise/tasks/code/lint/70-ruff`       | Synced    | The task `code:lint:70-ruff`. Only with a `pyproject.toml` (`requires_found`).    |
+| `.config/mise/tasks/code/lint/90-uv`         | Synced    | The task `code:lint:90-uv`.                                                       |
+| `.config/mise/conf.d/python/mise.<env>.toml` | Generated | The mise config of this tool.                                                     |
 
 ## mise tools
 
@@ -42,15 +46,10 @@ The VS Code extension is `meta.pyrefly`.
 | `pipx:pyrefly` | `latest` | dev, ci      | `pyproject.toml` |
 
 Many repositories get `python` only as a dependency of other tools. Thus the
-sync installs `ruff` and `pyrefly` only when the repository has a
-`pyproject.toml`, at the root or down to 4 folders below it, that git does not
-ignore: each entry has `requires_found`. A `[files]` table with the same
-`requires_found` applies that condition to each task: `code:lint:70-ruff`,
-`code:format:40-ruff` and `code:lint:50-pyrefly`. Without
-a `pyproject.toml`, the sync does not write them, and the stale rule removes
-the copies that `.config/repo-generated.tsv` lists. If the repository adds its
-first `pyproject.toml` later,
-run `mise run setup:configs` again.
+sync installs `ruff` and `pyrefly`, and writes their three tasks, only when
+the repository has a `pyproject.toml`. The rule of `requires_found` is in
+[`docs/design/tools.md`](../../design/tools.md). If the repository adds its
+first `pyproject.toml` later, run `mise run setup:configs` again.
 
 The tool also sets:
 
@@ -67,29 +66,42 @@ The `gcloud` tool uses the same Python minor version. Change both together.
 | Task                   | Use                                                                                   |
 | ---------------------- | ------------------------------------------------------------------------------------- |
 | `setup:deps:50-python` | Install from `uv.lock`. `--upgrade` also upgrades. It skips without `pyproject.toml`. |
-| `code:lint:70-ruff`    | Lint the `.py` and `.pyi` files with `ruff check`. `--fix` applies the fixes.         |
-| `code:lint:50-pyrefly` | Type check the `.py` and `.pyi` files with `pyrefly check`.                           |
 | `code:format:40-ruff`  | Check the format of the `.py` and `.pyi` files. `--fix` formats them.                 |
+| `code:lint:50-pyrefly` | Type check the `.py` and `.pyi` files with `pyrefly check`.                           |
+| `code:lint:70-ruff`    | Lint the `.py` and `.pyi` files with `ruff check`. `--fix` applies the fixes.         |
 | `code:lint:90-uv`      | Fail when a `uv.lock` does not agree with the `pyproject.toml` next to it.            |
 
 `code:lint` and `code:format` run the four gates. Without ruff or pyrefly,
 the gate skips. Without files, the ruff and pyrefly gates also skip when the
 repository has no `.py` or `.pyi` file that git does not ignore.
-`code:lint:90-uv`
-runs `uv lock --check` for each project with a
-`uv.lock` and a `pyproject.toml`. With a list of files, it checks only the
-projects of a given `uv.lock` or `pyproject.toml`. It replaces the
-`code:check:uv` task of stackgen. With a list of files, a gate uses only the
-Python files. ruff
-uses `--force-exclude`, so a file that the ruff config excludes stays
-excluded.
+`code:lint:90-uv` runs `uv lock --check` for each project with a `uv.lock` and a
+`pyproject.toml`. With a list of files, it checks only the projects of a given
+`uv.lock` or `pyproject.toml`. With a list of files, the other gates use only
+the Python files. ruff uses `--force-exclude`, so a file that the ruff config
+excludes stays excluded.
 
 The install uses `--locked`. It fails, and does not change `uv.lock`, when
 the lockfile does not agree with `pyproject.toml`.
 
-## Pre-commit hooks
+## Scripts
 
-None.
+The sync runs the scripts of the tool from the clone, and never copies them.
+
+| Script           | Kind   | Use                                           |
+| ---------------- | ------ | --------------------------------------------- |
+| `scripts/detect` | detect | `match` with a `pyproject.toml`, else `none`. |
+
+## Contributions
+
+| Tool     | Shared file               | Items                                                                                   |
+| -------- | ------------------------- | --------------------------------------------------------------------------------------- |
+| `vscode` | `.vscode/extensions.json` | `meta.pyrefly`.                                                                         |
+| `dprint` | `dprint.jsonc`            | The block `ruff` (`indentWidth = 2`, `lineLength = 120`) and the plugin `@dprint/ruff`. |
+
+## Values
+
+Only `env`. No questions. The keys of the values file are in
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 
@@ -111,3 +123,5 @@ None.
 
 - Remove python and uv from the repository-owned mise files.
 - Move the old `UV_*` variables (M7 of `migrate.md`).
+- The old `code:check:uv` task of stackgen is now `code:lint:90-uv` (M19 of
+  `migrate.md`).

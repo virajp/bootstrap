@@ -1,7 +1,7 @@
 // Package values reads the values files (`.config/bootstrap.toml` of a repo and
 // `macos.toml` of the Mac) as far as the engine reads them, and merges the
 // values of the selected tools: defaults, then contributes, then the values
-// file. Contract: docs/design/sync-engine.md ("The values merge").
+// file. Contract: docs/design/sync-engine.md ("The values of a tool").
 package values
 
 import (

@@ -9,7 +9,7 @@
 // BOOTSTRAP_VERBOSE, TMPDIR, PATH, PWD and the style variables FORCE_COLOR,
 // NO_COLOR and TERM. A template reads the environment with env.Getenv.
 //
-// Contract: docs/design/repo-sync.md.
+// Contract: docs/design/repo.md.
 package repo
 
 import (

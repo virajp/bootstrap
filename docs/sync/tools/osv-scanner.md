@@ -1,19 +1,22 @@
 # The `osv-scanner` tool
 
-osv-scanner: the dependency scanner, and `code:sec:30-osv-scanner`.
+osv-scanner: the dependency scanner, and `code:sec:30-osv-scanner`. A member of
+the
+`security` pack, with `default = true`. `bootstrap remove` refuses it, because
+only a pack selects it.
 
 | Property     | Value                      |
 | ------------ | -------------------------- |
 | Root only    | No                         |
 | Depends      | `_security_base`           |
+| Parent       | None                       |
 | Default envs | dev, ci                    |
 | Seeds        | `.config/osv-scanner.toml` |
 
 ## When the tool is relevant
 
-Always. The `base` pack always adds this tool, through the `security` pack.
-Do not select it in the values file. A `[tools.osv-scanner]` table gives
-values.
+Always. The `base` pack adds this tool, through the `security` pack. Do not
+select it in the values file. A `[tools.osv-scanner]` table gives values.
 
 ## What the tool ships
 
@@ -35,11 +38,20 @@ values.
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `code:sec:30-osv-scanner` | Scan the dependencies of the tree, without the git submodules. `--staged` does nothing. `--debug` raises the verbosity to `info`. |
 
-`code:sec` runs this task.
+`code:sec` of the `mise` tool runs this task.
 
-## Pre-commit hooks
+## Scripts
 
 None.
+
+## Contributions
+
+None. The `sec` hook of `_security_base` runs `code:sec`, which runs this
+task.
+
+## Values
+
+Only `env`. No questions.
 
 ## Files the repository supplies
 
@@ -51,4 +63,4 @@ None.
 
 ## Migration
 
-- Remove `osv-scanner` from the repository-owned mise files.
+- Remove `osv-scanner` from the mise files of the repository.

@@ -6,6 +6,7 @@ The secrets from `.config/fnox.toml`, checked by `setup:secrets:20-fnox`.
 | ------------ | ------------------- |
 | Root only    | No                  |
 | Depends      | None                |
+| Parent       | None                |
 | Default envs | dev                 |
 | Seeds        | `.config/fnox.toml` |
 
@@ -14,6 +15,9 @@ The secrets from `.config/fnox.toml`, checked by `setup:secrets:20-fnox`.
 - The repository has `.config/fnox.toml` or `fnox.toml`.
 - A script or a task calls `fnox exec`.
 - The repository needs development secrets in the OS keychain.
+
+`bootstrap detect` runs the detect script of the tool (see "Scripts"). It
+finds only `.config/fnox.toml`.
 
 Do not select both `fnox` and `doppler` without a reason. Ask the user which
 one keeps the secrets of the repository.
@@ -29,29 +33,13 @@ one keeps the secrets of the repository.
 The seed has `root = true` and `env = "exec"`. Thus fnox does not search the
 parent directories, and the secrets go only to `fnox exec` subprocesses.
 
-## Profiles
-
-A repository does not use the fnox `default` profile. The `default` profile is
-only for the user-level fnox settings.
-
-- The secrets live only in `[profiles.<name>.secrets]` tables of
-  `.config/fnox.toml`. The top-level `[secrets]` table is the `default`
-  profile, so the file does not have it, also not an empty one.
-- A repository with one profile uses its `repo_name` as the profile name. The
-  seed has the empty table `[profiles.<repo_name>.secrets]`.
-- A repository with more sets of secrets, for example one for each Pulumi
-  stack, adds one `[profiles.<name>.secrets]` table for each set. The names
-  are free, but not `default`.
-- Each `fnox` call names the profile with `-P <name>`. Without `-P`, fnox uses
-  `default`, and the command gets no secret. The tool does not set
-  `FNOX_PROFILE`.
-
-The sync and `repo_sync --check` stop with code 2 when `.config/fnox.toml`
-has a top-level `[secrets]` table, a `[profiles.default]` table, or no named
-profile. The message names M25 of `migrate.md`. The check applies when
-`.config/fnox.toml` exists. The lint gate `code:lint:60-repo-sync` runs
-`--check` only when `.config/bootstrap.toml` is staged, so a commit that
-changes only `.config/fnox.toml` does not run it. The next sync does.
+A repository keeps its secrets only in named profiles,
+`[profiles.<name>.secrets]`. It does not use the fnox `default` profile. A
+repository with one profile uses its `repo_name` as the profile name. Each
+`fnox` call names the profile with `-P <name>`. Without `-P`, fnox uses
+`default`, and the command gets no secret. The tool does not set
+`FNOX_PROFILE`. The rules are in
+[`docs/design/fnox.md`](../../design/fnox.md).
 
 ## mise tools
 
@@ -77,9 +65,30 @@ The task checks each profile in its own call. `fnox -P a,b check` merges the
 profiles into one overlay, where a later profile replaces a secret of the same
 name, so it can hide a missing secret.
 
-## Pre-commit hooks
+## Scripts
+
+| Script           | Kind   | Use                                                                                                                                                                          |
+| ---------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/check`  | check  | When `.config/fnox.toml` exists, it stops the sync with code 2 for a top-level `[secrets]` table, a `[profiles.default]` table, or no named profile. Each message names M25. |
+| `scripts/detect` | detect | `match` with `.config/fnox.toml`, else `none`.                                                                                                                               |
+
+The sync runs the scripts from the clone of `bootstrap`, and never copies
+them. See [`docs/design/tools.md`](../../design/tools.md).
+
+`bootstrap sync` and `bootstrap check` run the check script. The gate
+`code:lint:60-bootstrap` runs `bootstrap check` only when a commit changes
+`.config/bootstrap.toml`. Thus a commit that changes only `.config/fnox.toml`
+does not run the check. The next sync does.
+
+## Contributions
 
 None.
+
+## Values
+
+Only `env`. No questions. The seed reads the top-level keys `repo_name` and
+`product_name`. See
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 
@@ -92,11 +101,10 @@ None. The seed supplies `.config/fnox.toml`. Add each secret with
    file. Then the keychain provider uses `service = "<product_name>"` and
    `prefix = "<repo_name>/"`. Without it, `service` is `repo_name`.
 2. If the repository has more sets of secrets, add one
-   `[profiles.<name>.secrets]` table for each set. Keep the table of
-   `<repo_name>` only if it is one of the sets.
-3. Load the secrets with `mise x -- fnox -P <profile> exec -- <command>`. Do not
-   use
-   `--config .config/fnox.toml`: fnox finds the file by itself, and an
+   `[profiles.<name>.secrets]` table for each set, for example one for each
+   Pulumi stack. Keep the table of `<repo_name>` only if it is one of the sets.
+3. Load the secrets with `mise x -- fnox -P <profile> exec -- <command>`. Do
+   not use `--config .config/fnox.toml`: fnox finds the file by itself, and an
    explicit `--config` still loads the global config.
 
 ## Migration

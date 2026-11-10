@@ -7,6 +7,7 @@ crane, which operates on container images and registries. It is a member of the
 | ------------ | ------- |
 | Root only    | No      |
 | Depends      | None    |
+| Parent       | None    |
 | Default envs | dev, ci |
 | Seeds        | None    |
 
@@ -30,9 +31,18 @@ crane, which operates on container images and registries. It is a member of the
 
 None.
 
-## Pre-commit hooks
+## Scripts
 
 None.
+
+## Contributions
+
+None.
+
+## Values
+
+Only `env`. No questions. See
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 

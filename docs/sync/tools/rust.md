@@ -6,6 +6,7 @@ Rust and the zola site generator.
 | ------------ | ------- |
 | Root only    | No      |
 | Depends      | None    |
+| Parent       | None    |
 | Default envs | dev, ci |
 | Seeds        | None    |
 
@@ -14,6 +15,9 @@ Rust and the zola site generator.
 - The repository has `Cargo.toml`.
 - The repository has a zola site, for example a `config.toml` with
   `base_url` and a `content/` folder.
+
+`bootstrap detect` runs the detect script of the tool. It gives `match` when
+the root has a `Cargo.toml` (see "Scripts"). It does not find a zola site.
 
 ## What the tool ships
 
@@ -30,11 +34,27 @@ Rust and the zola site generator.
 
 ## Tasks
 
-None.
+None. dprint formats the `.rs` files with rustfmt (see "Contributions"), so
+`code:format:05-dprint` of the `dprint` tool formats them.
 
-## Pre-commit hooks
+## Scripts
 
-None.
+The sync runs the scripts of the tool from the clone, and never copies them.
+
+| Script           | Kind   | Use                                       |
+| ---------------- | ------ | ----------------------------------------- |
+| `scripts/detect` | detect | `match` with a `Cargo.toml`, else `none`. |
+
+## Contributions
+
+| Tool     | Shared file    | Items                                                                                                                                                                      |
+| -------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dprint` | `dprint.jsonc` | The plugin `@dprint/exec`, and an `exec` command for the `rs` files: `mise x -- rustfmt --edition 2024`. `rustfmt.toml` and `rust-toolchain.toml` are its cache key files. |
+
+## Values
+
+Only `env`. No questions. The keys of the values file are in
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 
@@ -44,8 +64,8 @@ None.
 
 1. If the repository has `rust-toolchain.toml`, tell the user. It can select
    a different toolchain than mise.
-2. If the repository needs a Rust formatter or linter in `code:format` or
-   `code:lint`, write a task `code:format:rust` or `code:lint:rust`.
+2. If the repository needs a Rust linter in `code:lint`, for example clippy,
+   write a task `code:lint:<name>`.
 
 ## Migration
 

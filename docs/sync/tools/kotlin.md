@@ -7,6 +7,7 @@ resolves the Gradle dependencies against the lockfiles.
 | ------------ | --------------------------------------------------- |
 | Root only    | No                                                  |
 | Depends      | `java`                                              |
+| Parent       | None                                                |
 | Default envs | dev                                                 |
 | Seeds        | `.config/ktlint.editorconfig`, `.config/detekt.yml` |
 
@@ -21,6 +22,10 @@ resolves the Gradle dependencies against the lockfiles.
   `gradle/wrapper/gradle-wrapper.properties`. It checks the lockfiles only of
   the projects with `dependencyLocking`. The `android/` build of a Flutter app
   is for `setup:deps:20-flutter`, not for this task.
+
+`bootstrap detect` runs the detect script of the tool. It gives `match` when a
+Gradle file at the root, or one level below it, uses the Kotlin plugin (see
+"Scripts").
 
 ## What the tool ships
 
@@ -98,9 +103,22 @@ run them. A gate skips without its tool and without a Kotlin file.
   (`--build-upon-default-config`). A path with whitespace, or with the
   separator of `--input`, is skipped with a warning.
 
-## Pre-commit hooks
+## Scripts
+
+The sync runs the scripts of the tool from the clone, and never copies them.
+
+| Script           | Kind   | Use                                                                                                                                                                |
+| ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `scripts/detect` | detect | `match` when a `*.gradle`, `*.gradle.kts` or `libs.versions.toml` file at the root, or one level below it, names `kotlin(` or `org.jetbrains.kotlin`. Else `none`. |
+
+## Contributions
 
 None.
+
+## Values
+
+Only `env`. No questions. The keys of the values file are in
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 
@@ -114,12 +132,12 @@ None.
 2. To run the gates in CI, set `env = ["dev", "ci"]` in `[tools.kotlin]`.
    Then `java` is in ci too.
 3. The tool adds `java` as a dependency, and `java` gets the environments of
-   `kotlin`: dev only. Another selected tool can put `java` in CI through a
-   mise `depends` (for example `flutter`). `setup` runs `setup:deps:30-kotlin`
-   in
-   every environment, and the task runs `./gradlew` when the root has one. If
-   the root has an executable `./gradlew`, CI runs `mise run setup`, and `java`
-   is not in CI, add `[tools.java]` to the values file. See `java.md`.
+   `kotlin`: dev only. Another selected tool can put `java` in CI through its
+   `depends` (for example `flutter`, through `android`). `setup` runs
+   `setup:deps:30-kotlin` in every environment, and the task runs `./gradlew`
+   when the root has one. If the root has an executable `./gradlew`, CI runs
+   `mise run setup`, and `java` is not in CI, add `[tools.java]` to the values
+   file. See [`java.md`](java.md).
 4. If a project of the root Gradle build does not lock its dependencies, tell
    the user that `setup:deps:30-kotlin` does not check that project. It is
    checked after the project has

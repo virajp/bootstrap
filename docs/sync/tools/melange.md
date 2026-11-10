@@ -7,6 +7,7 @@ of the `container-build` pack.
 | ------------ | ------- |
 | Root only    | No      |
 | Depends      | None    |
+| Parent       | None    |
 | Default envs | dev, ci |
 | Seeds        | None    |
 
@@ -31,9 +32,18 @@ of the `container-build` pack.
 
 None.
 
-## Pre-commit hooks
+## Scripts
 
 None.
+
+## Contributions
+
+None.
+
+## Values
+
+Only `env`. No questions. See
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 

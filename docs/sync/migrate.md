@@ -9,37 +9,37 @@ This file is temporary. Remove an item when all repositories have done it.
 
 ## Find the items that apply
 
-| The repository has                                                           | Do                                                                                                                                                                                                                                                                  |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.config/bootstrap.toml` with a `tools` list                                 | The list stops the sync, and the old synced `setup/configs/sync` loads the removed `tools/base/`. Do step 2 of `index.md` first: copy the sync files by hand. Then write the tables of step 3, then M17 and M16. Then ask the user to run `mise run setup:configs`. |
-| `.config/repo-config.toml` with a `tools` list                               | M15. Its M15.4 includes the row above.                                                                                                                                                                                                                              |
-| No values file, but older shared files or a mise config                      | The steps of `index.md`. Its step 5 sends you here for M1 to M14. Write the new name directly.                                                                                                                                                                      |
-| `.config/mise/conf.d/_repo/`, or an `env` without `dev`                      | M17, before the first sync.                                                                                                                                                                                                                                         |
-| `.config/repo-sync/gitignore`                                                | M18, before the next sync.                                                                                                                                                                                                                                          |
-| Files from the stackgen `tool-config` skill or packs                         | M19, before the next sync.                                                                                                                                                                                                                                          |
-| `[tools.vscode]` without values, or no `vscode` in the root                  | M20.                                                                                                                                                                                                                                                                |
-| `@askviraj/linter` in a file of the repository                               | M21, before the next sync.                                                                                                                                                                                                                                          |
-| A core branch that must allow direct commits                                 | M22. Optional.                                                                                                                                                                                                                                                      |
-| A sync that adds `code:lint:repo-sync`                                       | M23, after the sync.                                                                                                                                                                                                                                                |
-| `[overrides.graphifyignore]`, `.graphifyignore` or `code:graph`              | M24, before the next sync.                                                                                                                                                                                                                                          |
-| `.config/fnox.toml` with a top-level `[secrets]` or no profile               | M25, before the next sync.                                                                                                                                                                                                                                          |
-| A git submodule without a `[member.<name>]` table                            | M26, before the next sync.                                                                                                                                                                                                                                          |
-| A sync that adds `sync-engine/`                                              | M27, after the sync.                                                                                                                                                                                                                                                |
-| A values file that selects one scanner, or a repository that read `required` | M28. Nothing to do.                                                                                                                                                                                                                                                 |
-| A sync that writes the first `.config/repo-generated.tsv`                    | M29, after the sync.                                                                                                                                                                                                                                                |
-| `.config/mise/tasks/setup/configs/sync`                                      | M31, after the sync.                                                                                                                                                                                                                                                |
-| `SYNC_ENGINE_` in a file or a script, or a folder `~/.cache/sync-engine/`    | M32, after the sync.                                                                                                                                                                                                                                                |
-| A file or a script that names a task of the table in M33                     | M33, after the sync.                                                                                                                                                                                                                                                |
+| The repository has                                                                            | Do                                                                                                                                                      |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.config/bootstrap.toml` with a `tools` list                                                  | The list stops `bootstrap`, and `bootstrap init` does not migrate it. Write one `[tools.<name>]` table for each tool by hand. Then do M17, M16 and M34. |
+| `.config/repo-config.toml` with a `tools` list                                                | M15. Its M15.4 includes the row above.                                                                                                                  |
+| No values file, but older shared files or a mise config                                       | The steps of `index.md`. Its step 5 sends you here for M1 to M14. Write the new name directly.                                                          |
+| `.config/mise/conf.d/_repo/`, or an `env` without `dev`                                       | M17, before the first sync.                                                                                                                             |
+| `.config/repo-sync/gitignore`                                                                 | M18, before the next sync.                                                                                                                              |
+| Files from the stackgen `tool-config` skill or packs                                          | M19, before the next sync.                                                                                                                              |
+| `[tools.vscode]` without values, or no `vscode` in the root                                   | M20.                                                                                                                                                    |
+| `@askviraj/linter` in a file of the repository                                                | M21, before the next sync.                                                                                                                              |
+| A core branch that must allow direct commits                                                  | M22. Optional.                                                                                                                                          |
+| A sync that adds `code:lint:repo-sync`                                                        | M23, after the sync.                                                                                                                                    |
+| `[overrides.graphifyignore]`, `.graphifyignore` or `code:graph`                               | M24, before the next sync.                                                                                                                              |
+| `.config/fnox.toml` with a top-level `[secrets]` or no profile                                | M25, before the next sync.                                                                                                                              |
+| A git submodule without a `[member.<name>]` table                                             | M26, before the next sync.                                                                                                                              |
+| A sync that adds `sync-engine/`                                                               | M27, after the sync.                                                                                                                                    |
+| A values file that selects one scanner, or a repository that read `required`                  | M28. Nothing to do.                                                                                                                                     |
+| A sync that writes the first `.config/repo-generated.tsv`                                     | M29, after the sync.                                                                                                                                    |
+| `.config/mise/tasks/setup/configs/sync`                                                       | M31, after the sync.                                                                                                                                    |
+| `SYNC_ENGINE_` in a file or a script, or a folder `~/.cache/sync-engine/`                     | M32, after the sync.                                                                                                                                    |
+| A file or a script that names a task of the table in M33                                      | M33, after the sync.                                                                                                                                    |
+| A `setup:configs` that does not run `bootstrap sync`, or an old form that `bootstrap` reports | M34, before the next sync.                                                                                                                              |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
 
-The sync deletes only three kinds of files: the merge tasks of the other
-branch model, a file with the bootstrap header that
-`.config/repo-generated.tsv` lists and the sync does not write (M29), and a file
-with the bootstrap header at a path where the sync needs a folder. Thus you must
-delete each other obsolete file and
-rename each old task by hand. Do the items that apply to the repository, in
+The sync deletes only two kinds of files: a file with the bootstrap header
+that `.config/repo-generated.tsv` lists and the sync does not write (M29), and
+a file with the bootstrap header at a path where the sync needs a folder. Thus
+you must delete each other obsolete file and rename each old task by hand. Do
+the items that apply to the repository, in
 this sequence. Show the user the list of changes before you make them.
 
 ## M1: Delete the old sync files
@@ -47,9 +47,9 @@ this sequence. Show the user the list of changes before you make them.
 - Delete `.config/gist-sync/` (an old `.gitignore` with only a header).
 - If the repository uses `gist_sync`, delete
   `.config/mise/tasks/_scripts/gist-sync`. Move the lines of
-  `.config/gist-sync/gitignore` to `[overrides.gitignore]` as M18 tells you.
-- Delete the old `.config/mise/tasks/setup/configs`. Step 2 of `index.md`
-  replaces it.
+  `.config/gist-sync/gitignore` into `.gitignore` as M18 tells you.
+- Delete the old `.config/mise/tasks/setup/configs`. `bootstrap init` (M34)
+  writes the new `setup/configs/_default`.
 
 ## M2: Delete the old dependency tasks
 
@@ -94,8 +94,8 @@ The sync replaces `.config/mise.toml`. It keeps only the shared `[settings]`.
 1. Move `REPO_NAME`, `MEMBERS` and `MERGE_MODEL*` into the values file:
    - `REPO_NAME` becomes `repo_name`.
    - `MERGE_MODEL_DEVELOP` becomes `merge_model` of
-     `[branch.develop]`, and `MERGE_MODEL_MAIN` becomes
-     `merge_model` of `[branch.main]`. The old single
+     `[tools.git.branch.develop]`, and `MERGE_MODEL_MAIN` becomes
+     `merge_model` of `[tools.git.branch.main]`. The old single
      `MERGE_MODEL` goes to both tables. A `direct` value is the default, so
      it can stay out. Remove the old keys `merge_model_develop` and
      `merge_model_main`: nothing reads them.
@@ -171,18 +171,18 @@ See "Migration" in [`tools/fnox.md`](tools/fnox.md).
 The template has 10 types: `feat`, `fix`, `perf`, `refactor`, `revert`,
 `test`, `ops`, `docs`, `merge`, `wip`. Other types are not used. The old types
 `spec`, `security` and `blueprint` are dropped. Tell the user. Put the scopes
-of the old file in `commit_scopes`.
+of the old file in `commit_scopes` of `[tools.git]`.
 
 ## M12: The pre-commit hooks
 
-**WARNING:** Do this before the first sync. The sync replaces
-`.config/pre-commit-config.yaml`, and it does not keep the hooks of the
-repository.
+Do this before the first sync. `.config/pre-commit-config.yaml` is a shared
+file: the sync merges the hooks of the tools into it, and it keeps the other
+hooks of the file.
 
-1. Compare the hooks of the existing file with the rendered file. Use
-   `mise run setup:configs --dry-run`.
-2. Move each hook that no tool ships to `.config/repo-sync/pre-commit.yaml`.
-   Prefix each `entry` that calls a tool with `mise x --`.
+1. Compare the hooks of the existing file with the hooks of the selected
+   tools. Use `bootstrap init --dry-run`.
+2. Keep each hook that no tool ships in the file. Prefix each `entry` that
+   calls a tool with `mise x --`.
 3. Remove each hook that a tool now ships, for example `gitleaks` and
    `conventional-commits`.
 
@@ -280,9 +280,8 @@ a dry run.
 1. If mise says that the config files are not trusted, ask the user to run
    `mise trust`.
 2. If the values file has a `tools` list, do the first row of "Find the items
-   that apply" now, but not its last sentence: copy the sync files by hand,
-   write the tables, then do M17 and M16. If not, do M17 and M16 if they
-   apply.
+   that apply" now: write the tables, then do M17, M16 and M34. If not, do
+   M17, M16 and M34 if they apply.
 3. Run `mise run setup:configs --dry-run`.
 4. Examine the diff. Each synced file changes its header. Other changes come
    from the commits in `bootstrap` since the last sync of this repository.
@@ -293,7 +292,7 @@ a dry run.
    you the result.
 7. Run `mise run init`. This makes all the task scripts executable.
 
-If `repo_sync` fails, read the table of exit codes in step 6 of `index.md`.
+If `bootstrap` fails, read "The exit codes" of `index.md`.
 
 ### M15.5: Find the files with the old header
 
@@ -401,36 +400,36 @@ Do this item before the first sync.
    example `env = ["ci"]`, stops the sync with code 2. If the user needs a
    tool in `ci` only, tell the user that `bootstrap` does not support it.
 
-## M18: `.config/repo-sync/gitignore` is now `[overrides.gitignore]`
+## M18: `.config/repo-sync/gitignore` is now part of `.gitignore`
 
-Do this item before the next sync. The old file stops the sync with code 2.
+Do this item before the next sync. The old file stops `bootstrap` with code 2.
+`.gitignore` is a shared file: the sync adds the lines of `bootstrap`, and it
+keeps the other lines of the file.
 
 1. Read `.config/repo-sync/gitignore`. Show the user its lines.
 2. For each line, find the type. Show the user the result:
    - A blank line or a comment line: drop it.
+   - A line that the repository needs to ignore: add it to `.gitignore`.
    - A line that cancels a shared pattern with `!`, for example
-     `!.env.example`: put it in `add`.
-   - A line that the repository needs to ignore: put it in `add`.
+     `!.env.example`: add it to `.gitignore`. A later line wins.
 3. If the old file only cancels a shared line, for example `!*.log` for the
-   shared `*.log`, ask the user whether to put `*.log` in `remove` instead.
-   `remove` comments out the shared line, and the result is easier to read.
-4. Write the lists in `.config/bootstrap.toml`:
+   shared `*.log`, ask the user whether to remove the shared line instead:
 
    ```toml
-   [overrides.gitignore]
-   add = [ "/build/", "!.env.example" ]
-   remove = [ "*.log" ]
+   [tools.git.files.".gitignore"]
+   "*.log" = { "$mode" = "remove" }
    ```
 
-5. Delete the old file:
+4. Delete the old file:
 
    ```bash
    git rm .config/repo-sync/gitignore
    ```
 
-6. Run `mise run setup:configs --dry-run`, and examine the diff of
-   `.gitignore`. The lines of `add` are at the end, under
-   `# ==== Overrides from .config/bootstrap.toml ====`.
+5. Run `bootstrap sync --dry-run`, and examine the diff of `.gitignore`.
+
+An old `[overrides.gitignore]` table needs no manual step: `bootstrap init`
+moves it (M34).
 
 ## M19: The stackgen files that bootstrap now ships
 
@@ -501,15 +500,17 @@ when they are missing. Thus it does not change the old files.
 
 The `no-commit-to-branch` hook protects only the core branches (`main`,
 `develop`) that exist and do not allow direct commits. The key
-`direct_commit` of `[branch.main]` and `[branch.develop]` is new. No old form
+`direct_commit` of `[tools.git.branch.main]` and `[tools.git.branch.develop]`
+is new. No old form
 of it exists.
 
 1. If the repository does not want direct commits on a core branch, do
    nothing. At the next sync, a repository with one core branch gets only
    `--branch <its branch>` in the hook.
 2. To allow direct commits on a core branch, set `direct_commit = true` in its
-   `[branch.<branch>]` table. With `main` and `develop`, `main` can allow
-   them only when `develop` allows them too. See step 4 of `index.md`.
+   `[tools.git.branch.<branch>]` table. With `main` and `develop`, `main` can
+   allow them only when `develop` allows them too. See "Step 2: Select the
+   branch model" of `index.md`.
 3. Run `mise run setup:configs`.
 
 ## M23: `code:lint:repo-sync` validates the values file at each commit
@@ -522,8 +523,9 @@ at once. A values file that the sync accepts also passes the check, because
 the check uses the same rules.
 
 1. After the sync, run `mise run code:lint` once.
-2. If `code:lint:repo-sync` reports an error, correct the values file. See
-   step 3 of `index.md`.
+2. If the gate reports an error, correct the values file. See "Step 6: Write
+   the other values and sync again" of `index.md`. The gate is now
+   `code:lint:60-bootstrap` (M34).
 3. A repository with a valid values file does nothing.
 
 ## M24: The `claude` tool no longer ships graphify and mempalace
@@ -605,7 +607,7 @@ flags and scopes.
    name (its `repo_name`, else the path with `_`). Ask whether to keep the
    new name, or to write a `[member.<name>]` table with `folder = "<path>"`
    and another name.
-5. Run `mise run code:lint:repo-sync`. It must pass.
+5. Run `bootstrap check`. It must pass.
 6. Run `mise run setup:configs --dry-run`, and examine the new flags.
 
 ## M27: The cache moved to `~/.cache/sync-engine/`
@@ -766,3 +768,48 @@ removes the old copies, because `.config/repo-generated.tsv` lists them.
 3. A task of the repository in one of these groups, without a number prefix,
    runs after the tasks of the tools. If it must run before one of them, give
    it a lower number prefix.
+
+## M34: The CLI `bootstrap` replaces the `repo-sync` tool
+
+The `repo-sync` tool is gone. The `mise` tool now ships the entry:
+`setup:configs` runs `bootstrap sync`, and the gate `code:lint:60-bootstrap`
+replaces `code:lint:60-repo-sync`. mise installs the CLI as
+`github:virajp/bootstrap`. Only `bootstrap init` migrates an old form.
+`bootstrap sync` and `bootstrap check` stop with code 2 and the message
+`run bootstrap init`. `bootstrap init` moves these old forms:
+
+| Old form                            | New place                                                               |
+| ----------------------------------- | ----------------------------------------------------------------------- |
+| `commit_scopes`                     | `commit_scopes` of `[tools.git]`                                        |
+| `[branch.<name>]`                   | `[tools.git.branch.<name>]`                                             |
+| `worktree_files`                    | `worktree_files` of `[tools.mise]`                                      |
+| `[claude.plugins.<scope>]`          | `[tools.claude.plugins.<scope>]`                                        |
+| `extensions`                        | The `recommendations` of `.vscode/extensions.json`                      |
+| `add` of `[overrides.gitignore]`    | The lines of `.gitignore`                                               |
+| `remove` of `[overrides.gitignore]` | `"<line>" = { "$mode" = "remove" }` of `[tools.git.files.".gitignore"]` |
+| `.config/repo-sync/pre-commit.yaml` | The `repos` of `.config/pre-commit-config.yaml`. The old file goes.     |
+| `[tools.repo-sync]`                 | Nothing. The `mise` tool has the entry.                                 |
+
+1. Install the CLI:
+
+   ```bash
+   mise use -g github:virajp/bootstrap
+   ```
+
+2. If `.config/mise/tasks/setup/configs/sync` exists, delete it. This old task
+   sources `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync` from the
+   clone, and that file is gone. A file without the bootstrap header belongs
+   to the repository: ask the user first.
+3. Commit or discard the changes of the work tree. `bootstrap init` writes no
+   file that has changes that are not committed.
+4. Run `bootstrap init --dry-run`. Show the user the change list.
+5. Ask the user whether to apply the change list. If the user agrees, run
+   `bootstrap init --yes`. It migrates each old form, then syncs. Give the
+   answer of each new question with `--answer <tool>.<key>=<value>`.
+6. If `.config/mise/tasks/_scripts/repo-sync`,
+   `.config/mise/tasks/code/lint/60-repo-sync` or
+   `.config/mise/conf.d/repo-sync/` stays, delete it when it starts with the
+   bootstrap header.
+7. Replace each `code:lint:60-repo-sync` in the files of the repository with
+   `code:lint:60-bootstrap`. Show the user each change before you write it.
+8. Commit the result. Do the same in each git submodule.

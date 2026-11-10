@@ -1,16 +1,16 @@
 # Tools design
 
 A tool is the building block of `bootstrap`. A tool folder holds a
-`tools.toml`, the config files of the tool in `files/` and its task files in
-`tasks/`. The `tools.toml` gives the target path of each file. This document
-holds the `tools.toml` schema of both sides, the `[files]` and `[tasks]` keys,
-the folder rules and the rule for the header of a source file.
+`tools.toml`, the config files of the tool in `files/`, its task files in
+`tasks/` and its scripts in `scripts/`. The `tools.toml` gives the target path
+of each file. This document holds the `tools.toml` schema of both sides, the
+`[files]`, `[tasks]` and `[formatter]` keys, the scripts, the folder rules and
+the rule for the header of a source file.
 
 See also: [packs.md](packs.md), [mise.md](mise.md) for `[mise.*]`,
-[sync-engine.md](sync-engine.md) for merge mode and the values merge,
-[repo-sync.md](repo-sync.md) and [setup-sync.md](setup-sync.md). The exit code
-of each rule that stops the sync is in
-[sync-engine.md](sync-engine.md#the-exit-codes).
+[sync-engine.md](sync-engine.md) for shared files, the scripts and the values,
+[repo.md](repo.md) and [mac.md](mac.md). The exit code of each rule that stops
+the sync is in [sync-engine.md](sync-engine.md#the-exit-codes).
 
 ## The two sides
 
@@ -19,21 +19,22 @@ of each rule that stops the sync is in
 | `repo`  | `repo/tools/`  | The path in the repository | `bootstrap sync`     |
 | `macos` | `macos/tools/` | The path below `$HOME`     | `bootstrap mac sync` |
 
-A tool folder has three parts:
+A tool folder has four parts:
 
 ```text
 repo/tools/<tool>/
 ├── tools.toml   necessary
-├── files/       optional: the config files, one entry each in [files]
-└── tasks/       optional: the task files, one entry each in [tasks]
+├── files/       optional: the config files and merge specs, one entry each in [files]
+├── tasks/       optional: the task files, one entry each in [tasks]
+└── scripts/     optional: derive, check, after, detect, migrate-<tool>
 ```
 
 Each file below `files/` and `tasks/` has an entry. The entry gives its target.
 For example, the entry `[tasks."code/merge/develop"]` with
 `source = "code-merge-develop"` copies `repo/tools/git/tasks/code-merge-develop`
-to `.config/mise/tasks/code/merge/develop` in a consumer. Some files refer to
-files that are not in the tool folder, for example `dprint.jsonc`. The consumer
-supplies them.
+to `.config/mise/tasks/code/merge/develop` in a consumer. A script is not
+copied: the engine runs it from the clone. See
+[sync-engine.md](sync-engine.md#the-scripts-of-a-tool).
 
 ## The `tools.toml` file
 
@@ -43,26 +44,21 @@ sync.
 | Key                    | `repo`    | `macos`  | Meaning                                                                                                                          |
 | ---------------------- | --------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `default_envs`         | Necessary | Refused  | A list: the environments of the tool when the values file gives it no `env`, for example `["dev"]`. It must include `dev`.       |
-| `depends`              | Necessary | Optional | The tools that the sync adds with this one, transitively. On the repo side, each gets the environments of this tool.             |
-| `root_only`            | Necessary | Refused  | `true`: the tool is not for a git submodule. See [repo-sync.md](repo-sync.md#root_only).                                         |
-| `extensions`           | Necessary | Refused  | The VS Code extensions of the tool.                                                                                              |
-| `description`          | Not read  | Optional | A string: one line that tells the adopting AI what the tool is.                                                                  |
+| `depends`              | Optional  | Optional | The tools that the sync adds with this one, transitively. On the repo side, each gets the environments of this tool.             |
+| `root_only`            | Optional  | Refused  | `true`: the tool is not for a git submodule. See [repo.md](repo.md#root_only).                                                   |
+| `description`          | Optional  | Optional | A string: one line that tells the adopting AI what the tool is.                                                                  |
 | `parent`               | Optional  | Optional | The name of another tool, for example `parent = "node"` in `pnpm` and `aube`. Tools with the same parent can replace each other. |
-| `stage`                | Not read  | Optional | `"init"` puts the tool in the init stage. See [setup-sync.md](setup-sync.md#stages-and-exit-4).                                  |
+| `stage`                | Not read  | Optional | `"init"` puts the tool in the init stage. See [mac.md](mac.md#stages-and-exit-4).                                                |
 | `[files."<target>"]`   | Optional  | Optional | The source, the mode and the condition of one config file. See [The `[files]` table](#the-files-table).                          |
 | `[tasks."<path>"]`     | Optional  | Optional | The source, the mode and the condition of one task file. See [The `[tasks]` table](#the-tasks-table).                            |
 | `[defaults]`           | Optional  | Optional | The values of the tool. See [below](#the-defaults-questions-and-contributes-tables).                                             |
 | `[questions.<key>]`    | Optional  | Optional | The question for one value.                                                                                                      |
-| `[contributes.<tool>]` | Optional  | Optional | Values for another selected tool.                                                                                                |
-| `[[precommit]]`        | Optional  | Refused  | One `repos:` entry of `.config/pre-commit-config.yaml`, with its `[[precommit.hooks]]`.                                          |
+| `[contributes.<tool>]` | Optional  | Optional | Values for another selected tool, for example the hooks of `pre-commit` or the extensions of `vscode`.                           |
+| `[formatter]`          | Optional  | Refused  | The formatter of the sync. See [The `[formatter]` table](#the-formatter-table).                                                  |
 | `[mise.*]`             | Optional  | Optional | The mise config of the tool. See [mise.md](mise.md#the-mise-sections).                                                           |
 | `[mise_env.<env>.*]`   | Optional  | Refused  | More mise config for one environment. See [mise.md](mise.md#the-mise-sections).                                                  |
 
-On the repo side, the four necessary keys are necessary because the sync reads
-them
-without defaults. The sync examines the manifest of each tool of the clone,
-selected
-or not.
+The sync examines the `tools.toml` of each tool of the clone, selected or not.
 
 On the Mac side, "refused" means that the key stops the sync, with the message
 `is for
@@ -103,8 +99,10 @@ file does not select.
   that ship
   one target stop the sync.
 - Each regular file of the tool folder, other than `tools.toml`, is below
-  `files/` or `tasks/`. A file outside these folders is the old form of a tool
-  folder, and it stops the sync.
+  `files/`, `tasks/` or `scripts/`. A file outside these folders is the old
+  form of a tool folder, and it stops the sync.
+- A file of `scripts/` must be `derive`, `check`, `after`, `detect` or
+  `migrate-<tool>`. Any other file there stops the sync.
 - Each file below `files/` and `tasks/` has an entry: the entry names it in
   `source`, or a folder entry names a folder above it. A file without an entry
   stops the sync.
@@ -120,13 +118,12 @@ A tool name is the name of its folder. A pack name must not be a tool folder.
 
 ### The old keys
 
-These keys are gone. Each stops the sync with a message that names
-the new
+These keys are gone. Each stops the sync with a message that names the new
 key: the top-level `seed` key, the old table of seed conditions
-`[seed_requires]`, and
-the `requires` and the `files` of a mise entry. On the Mac side, `stage =
-"shell"` also
-stops the sync and names `stage = "init"`.
+`[seed_requires]`, the `requires` and the `files` of a mise entry, the
+`extensions` key (now `[contributes.vscode] extensions`) and `[[precommit]]`
+(now `[[contributes.pre-commit.repos]]` with an `id`). On the Mac side,
+`stage = "shell"` also stops the sync and names `stage = "init"`.
 
 ## The `[files]` table
 
@@ -137,19 +134,24 @@ not start with `/`.
 
 | Key              | Side | Meaning                                                                                                                                                                         |
 | ---------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source`         | Both | Necessary. The path below `files/`, with no `..` part. A folder copies each regular file below it, to the same path below the target.                                           |
-| `mode`           | Both | `copy` (the default): copied on each run. `template`: rendered on each run. `seed`: written only when it is missing. `merge`: merged into the live target, and always rendered. |
+| `source`         | Both | Necessary. The path below `files/`, with no `..` part. A folder copies each regular file below it, to the same path below the target. For `merge`, a spec `<name>.merge.toml`.  |
+| `mode`           | Both | `copy` (the default): copied on each run. `template`: rendered on each run. `seed`: written only when it is missing. `merge`: a shared file, merged item by item from its spec. |
 | `render`         | Both | Only with `seed`. `true` renders the seed at its first write.                                                                                                                   |
 | `requires`       | Both | A list of exact paths. Each path must exist. It is relative to the root of the repository, or to `$HOME` on the Mac side. It has no `..` part.                                  |
-| `requires_found` | Repo | A list of file names. See [repo-sync.md](repo-sync.md#requires_found). On the Mac side, it stops the sync.                                                                      |
-| `format`         | Both | `text`, `json`, `yaml` or `toml`. It selects the parse check. The default comes from the extension.                                                                             |
-| `remove`         | Both | Only with `merge`. A list of key paths, each a non-empty list of strings. It deletes each path from the live target.                                                            |
-| `remove_items`   | Both | Only with `merge`. A list of tables with exactly `path` and `items`. It deletes each listed item from that list, in the live target and source.                                 |
+| `requires_found` | Repo | A list of file names. See [repo.md](repo.md#requires_found). On the Mac side, it stops the sync.                                                                                |
+| `format`         | Both | `text`, `json`, `jsonc`, `yaml` or `toml`: the type of the file, not the extension. It selects the parse check and the merge. The default comes from the extension.             |
+| `when`           | Both | A value path `<tool>.<path>` in the values of all tools, with an optional `!` at the start. The entry applies only when the value is `true` (with `!`: not `true`).             |
+| `perm`           | Both | The mode of the file, an octal string, for example `"600"`. The default is the mode of the source.                                                                              |
+| `dir_perm`       | Both | The mode of the folder of the target, an octal string, for example `"700"` for each file below `~/.ssh`.                                                                        |
 
 The `.tmpl` suffix of a source is a name convention for a template. The `mode`
-key, not the suffix, makes a file a template. A `copy` or `template` file is a
-generated file: the sync writes it on each run, and it gets a row in the
-manifest.
+key, not the suffix, makes a file a template. A `copy` or `template` file is an
+owned file: the sync writes it on each run, and it gets a row in the manifest.
+
+An entry whose `when` value is not `true` is not shipped, and the stale rule
+removes a synced copy. For example, the merge tasks of `git` have
+`when = "git.branch_pair"`, a value of the derive script of `git`. See
+[repo.md](repo.md#the-branch-model-and-the-merge-tasks).
 
 Any other key stops the sync. `requires` and `requires_found` must
 be
@@ -172,10 +174,9 @@ the header, a seed and a merge target stay.
 - A seed that applies only when the consumer has a specific file also gets
   `requires`,
   for example `requires = ["package.json"]`.
-- Merge mode is in [sync-engine.md](sync-engine.md#merge-mode). The
-  `claude-cli`, `gem`,
-  `gh` and `superfile` tools of `macos/tools/` use merge mode now. No tool of
-  `repo/tools/` uses it.
+- A shared file is in [sync-engine.md](sync-engine.md#shared-files). The
+  `pre-commit`, `dprint`, `git` and `vscode` tools of `repo/tools/` and the
+  `claude-cli`, `gem`, `gh` and `superfile` tools of `macos/tools/` have one.
 - `test:macos-tools` stops when a `[files]` table gives `mode = "seed"` to a
   JSON, YAML
   or TOML target of a Mac tool.
@@ -192,6 +193,7 @@ the path below `.config/mise/tasks/` in the target, for example
 | `mode`           | Both | `copy` (the default) or `template`.                                                                   |
 | `requires`       | Both | As in `[files]`.                                                                                      |
 | `requires_found` | Repo | As in `[files]`.                                                                                      |
+| `when`           | Both | As in `[files]`.                                                                                      |
 | `library`        | Both | `true` for a library below `_scripts/`, and only there. A library is not a task.                      |
 
 The rules of the task files:
@@ -207,6 +209,26 @@ The rules of the task files:
 - A task that a user or another task calls by its name has no prefix, for
   example `code:merge:develop` and `setup:dprint`.
 
+## The `[formatter]` table
+
+A repo tool can have one `[formatter]` table: the formatter that the sync runs
+on each rendered file before the compare. See
+[sync-engine.md](sync-engine.md#the-formatter).
+
+| Key       | Meaning                                                                                                              |
+| --------- | -------------------------------------------------------------------------------------------------------------------- |
+| `command` | A shell command. It runs in the stage folder, and gets the paths of the files on stdin, one for each line.           |
+| `configs` | A list of the names of the config files of the formatter. The stage gets a copy of each one that the repository has. |
+
+The table has exactly these two keys. At most one selected tool can have a
+`[formatter]`. The `dprint` tool has it:
+
+```toml
+[formatter]
+command = "dprint fmt --no-gitignore --allow-no-files --stdin-files"
+configs = [ "dprint.json", "dprint.jsonc", ".config/dprint.jsonc" ]
+```
+
 ## The header of a source file
 
 Each file that is neither a seed nor a merge source has this header in its
@@ -215,7 +237,7 @@ the tool folder, for example `files/.gitignore` or `tasks/code-format.tmpl`:
 
 ```text
 # Synced from bootstrap: repo/tools/<tool>/<path>. Do not edit this file.
-# The next sync replaces it, and a manual change is lost.
+# The next sync writes it again, and each change in this file is lost.
 ```
 
 A file of a Mac tool has `macos/tools/<tool>/<path>` in the header.
@@ -235,14 +257,9 @@ writes the same two lines in each generated mise file. See
 [mise.md](mise.md#the-generated-files). The detection of the header is in
 [sync-engine.md](sync-engine.md#the-header).
 
-A seed and a merge source have no header:
-
-- A YAML or TOML merge source can have the comment `# Merged by bootstrap:
-  <path>`. A
-  JSON merge source has no comment. The sync strips nothing from a merge source.
-- The forwarding file keeps its old header with `tools/repo-sync/...`, because
-  the sync
-  does not ship it.
+A seed and a merge spec have no header. The sync writes the shared header into
+a shared file of a format with comments. See
+[sync-engine.md](sync-engine.md#the-header).
 
 ## The `[defaults]`, `[questions]` and `[contributes]` tables
 
@@ -250,13 +267,15 @@ A `tools.toml` can have three optional tables for the values of a tool. A
 template reads
 the values as `.config` (the values of its tool) and `.all` (the values of each
 selected
-tool, by tool name). The `pre-commit` tool of `repo/tools/` uses `[defaults]`,
-and no other tool of `repo/tools/` uses these tables now. Mac tools such as
+tool, by tool name). The `pre-commit`, `dprint` and `vscode` tools of
+`repo/tools/` use `[defaults]`, and many repo tools use `[contributes]` for the
+hooks of `pre-commit`, the blocks of `dprint` and the extensions of `vscode`.
+Mac tools such as
 `fish`, `git`, `ssh`, `gh` and `macos-defaults` use `[defaults]` or
 `[questions]`. The
 Mac tools `1password` and `orbstack` use `[contributes]`. The merge of these
 values is
-in [sync-engine.md](sync-engine.md#the-values-merge).
+in [sync-engine.md](sync-engine.md#the-values-of-a-tool).
 
 ```toml
 [defaults]
@@ -278,11 +297,7 @@ settings = [ "editor.formatOnSave" ]
 | `[contributes.<tool>]` | Any key                                                                           | Values for another selected tool. |
 
 The repo side examines these tables for each selected tool, and the Mac side for
-each
-tool of the clone. `bootstrap check` does not examine them, because
-they need
-the
-clone. These stop the sync:
+each tool of the clone. These stop the sync:
 
 - `[defaults]` is not a table.
 - `[questions]` or `[contributes]` is not a table, or one of its entries is not
@@ -291,11 +306,12 @@ clone. These stop the sync:
   or a
   `detect` that is not a string.
 
-The sync does not ask a question and does not run `detect`. A missing answer is
-not an
-error of the engine: a template that needs an answer uses `required`, which
-fails that
-file with its message. Exit code 4 is only for the Mac front-end.
+`bootstrap init` and `bootstrap add` ask the questions, and `detect` of a
+question gives the proposal. See
+[sync-engine.md](sync-engine.md#the-questions). `sync` and `check` stop with
+code 2 for a question of a selected tool without an answer: run
+`bootstrap init`. A template that needs a value without a question uses
+`required`, which fails that file with its message.
 
 ## Tools and packs
 
@@ -342,9 +358,9 @@ name in the registry.
 
 ### The current state
 
-- `repo/tools/flutter/tools.toml` gives the mise tool `flutter` the static mise
-  `depends` `android-sdk`. Thus each Flutter consumer gets `android` and
-  `java`, also a web-only or a desktop-only app.
+- `repo/tools/flutter/tools.toml` has `depends = ["android"]`, so the mise tool
+  `flutter` depends on `android-sdk`. Thus each Flutter consumer gets `android`
+  and `java`, also a web-only or a desktop-only app.
 - Gradle does not come from mise. The Android tasks use the `gradlew` wrapper
   of the project. The `kotlin` tool ships `ktlint`, `detekt` and `kotlin-lsp`.
 

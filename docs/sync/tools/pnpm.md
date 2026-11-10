@@ -3,19 +3,21 @@
 pnpm, the package manager of a repository that selects it. A repository with a
 `package.json` selects this tool or the [`aube`](aube.md) tool, not both.
 
-| Property     | Value                                                      |
-| ------------ | ---------------------------------------------------------- |
-| Root only    | No                                                         |
-| Depends      | `node`, through its mise `depends`                         |
-| Parent       | `node`. The tools with this parent can replace each other. |
-| Default envs | dev, ci                                                    |
-| Seeds        | `pnpm-workspace.yaml`, only with a `package.json`          |
+| Property     | Value                                                                    |
+| ------------ | ------------------------------------------------------------------------ |
+| Root only    | No                                                                       |
+| Depends      | `node`                                                                   |
+| Parent       | `node`. `bootstrap replace` changes a tool for another with that parent. |
+| Default envs | dev, ci                                                                  |
+| Seeds        | `pnpm-workspace.yaml`, only with a `package.json`                        |
 
 ## When the tool is relevant
 
 - The repository has `pnpm-lock.yaml` or `pnpm-workspace.yaml`, and the user
   does not want to move to aube.
 - The user selects pnpm as the package manager of the repository.
+
+`bootstrap detect` runs the detect script of the tool (see "Scripts").
 
 ## What the tool ships
 
@@ -41,9 +43,27 @@ The tool also sets the shell alias `npx = "pnpm dlx"`.
 None. `setup:deps:40-node` of the `node` tool runs pnpm when this tool is
 selected.
 
-## Pre-commit hooks
+## Scripts
+
+The sync and the CLI run the scripts of the tool from the clone, and never
+copy them.
+
+| Script                 | Kind    | Use                                                                                                                                                                                                 |
+| ---------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/detect`       | detect  | `match` with a `pnpm-workspace.yaml`. `mismatch` with an `aube-workspace.yaml`, because then aube is the package manager. Else `none`.                                                              |
+| `scripts/migrate-aube` | migrate | For `bootstrap replace aube pnpm`. It renames `aube-workspace.yaml` to `pnpm-workspace.yaml`, and writes a new `pnpm-lock.yaml` in place of `aube-lock.yaml`. Examine the diff of the new lockfile. |
+
+`bootstrap replace` works only between two tools with the same parent, and
+only in a work tree without changes that are not committed.
+
+## Contributions
 
 None.
+
+## Values
+
+Only `env`. No questions. The keys of the values file are in
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 
@@ -72,6 +92,8 @@ in the seed:
    auth and registry settings. pnpm 11 reads only those from `.npmrc`.
 3. If the repository uses npm or yarn, tell the user. The task uses pnpm.
 4. Add each package with a build script to `allowBuilds`.
+5. To move an adopted repository from aube to pnpm, run
+   `bootstrap replace aube pnpm`.
 
 ## Migration
 

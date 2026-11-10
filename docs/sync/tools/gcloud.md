@@ -2,12 +2,13 @@
 
 The Google Cloud CLI, for a repository that deploys to Google Cloud.
 
-| Property     | Value   |
-| ------------ | ------- |
-| Root only    | No      |
-| Depends      | None    |
-| Default envs | dev, ci |
-| Seeds        | None    |
+| Property     | Value    |
+| ------------ | -------- |
+| Root only    | No       |
+| Depends      | `python` |
+| Parent       | None     |
+| Default envs | dev, ci  |
+| Seeds        | None     |
 
 ## When the tool is relevant
 
@@ -23,9 +24,9 @@ The Google Cloud CLI, for a repository that deploys to Google Cloud.
 
 ## mise tools
 
-| mise tool | Version  | Environments | Note         |
-| --------- | -------- | ------------ | ------------ |
-| `gcloud`  | `latest` | dev, ci      | Needs python |
+| mise tool | Version  | Environments |
+| --------- | -------- | ------------ |
+| `gcloud`  | `latest` | dev, ci      |
 
 The tool sets `CLOUDSDK_PYTHON` to the Python 3.14 of mise. gcloud needs this
 Python minor version. Without it, gcloud uses the system `python3` and fails.
@@ -35,9 +36,18 @@ The `python` tool pins the same version.
 
 None.
 
-## Pre-commit hooks
+## Scripts
 
 None.
+
+## Contributions
+
+None.
+
+## Values
+
+Only `env`. No questions. See
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 

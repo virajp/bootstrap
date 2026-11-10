@@ -9,7 +9,7 @@
 // TMPDIR, XDG_CACHE_HOME, PATH, PWD and the style variables FORCE_COLOR,
 // NO_COLOR and TERM.
 //
-// Contract: docs/design/setup-sync.md.
+// Contract: docs/design/mac.md.
 package macos
 
 import (
