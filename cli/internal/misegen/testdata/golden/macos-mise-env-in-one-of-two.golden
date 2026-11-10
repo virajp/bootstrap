@@ -10,6 +10,6 @@ render good: rc=0
 # The next sync writes it again, and each change in this file is lost.
 
 [env]
-  A = "1"
+A = "1"
 
 --- end

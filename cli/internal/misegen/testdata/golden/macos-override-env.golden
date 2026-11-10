@@ -8,6 +8,6 @@ render mtest: rc=0
 # The next sync writes it again, and each change in this file is lost.
 
 [env]
-  X = "c"  # override: macos.toml
+X = "c"  # override: macos.toml
 
 --- end

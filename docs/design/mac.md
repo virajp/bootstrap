@@ -211,8 +211,7 @@ steps:
 4. It runs `mise bootstrap --yes`, unless `--no-bootstrap` is set. A failure of
    this step ends the run with code 1.
 5. It runs the `after` script of each init-stage tool. A script that asks for a
-   restart gives a reason, for example the `after` script of `fish` when the
-   login shell (`dscl`) is not the shell of this terminal.
+   restart gives a reason.
 6. If the stage changed a file, a seed, a shared file, a stale file or a folder
    mode, or a script asked for a restart, the run writes the manifest with the
    rows of this stage and the old rows of the main stage. It prints the reasons

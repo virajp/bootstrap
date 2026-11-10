@@ -61,6 +61,13 @@ mise upgrade --yes --jobs 10
 print_subheader "Pruning unused versions of tools ..."
 mise prune --yes
 
+# Update the plugins of the global dprint config (the dprint tool). The next
+# sync keeps the new versions.
+if [[ -f "${HOME}/.config/dprint/dprint.jsonc" ]] && mise x -- which dprint > /dev/null 2>&1; then
+  print_subheader "Updating dprint plugins ..."
+  mise x -- dprint config update --yes --config "${HOME}/.config/dprint/dprint.jsonc"
+fi
+
 # Upgrade Homebrew and all installed packages (the homebrew tool), with the
 # GitHub token of fnox's brew profile when fnox is there
 if ! task_exists upgrade:brew; then

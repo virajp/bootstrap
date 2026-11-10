@@ -2,11 +2,72 @@
 
 description = "dprint, the code formatter, and its global config"
 
-# JSON with comments and trailing commas: no JSON parser reads it.
+# The base of the global dprint.jsonc: the top-level settings, the excludes,
+# the blocks of the base formats and their plugins. The global config formats
+# the base formats only: TOML, JSON, Markdown, YAML and shell. A repository
+# gets its own dprint.jsonc, which extends no other config. updateall updates
+# the version of each plugin in the file, and the next sync keeps it.
+[defaults]
+excludes = [ "**/*-lock.yaml", "**/*.svg", "brag-output/", "**/package-lock.json" ]
+plugins = [
+  "npm:@dprint/toml@0.10.0",
+  "npm:@dprint/json@0.26.0",
+  "npm:@dprint/markdown@0.29.0",
+  "npm:dprint-plugin-yaml@0.6.0",
+  "npm:@dprint/shuck@0.2.4",
+]
+
+[defaults.settings]
+newLineKind = "lf"
+
+[defaults.blocks.toml]
+"array.preferSingleLine" = true
+"array.spaceSurroundingBrackets" = true
+"comment.forceLeadingSpace" = false
+indentEntries = "never"
+indentTables = "never"
+"inlineTable.spaceSurroundingBraces" = true
+sortArrays = false
+sortInlineTables = true
+sortKeys = true
+
+[defaults.blocks.json]
+jsonTrailingCommaFiles = [ "*.jsonc", ".vscode/settings.json" ]
+preferSingleLine = false
+trailingCommas = "jsonc"
+
+[defaults.blocks.markdown]
+emphasisKind = "asterisks"
+strongKind = "asterisks"
+textWrap = "maintainAndWrap"
+
+[defaults.blocks.markdown.tags]
+bash = "bash"
+sh = "sh"
+shell = "sh"
+zsh = "zsh"
+
+[defaults.blocks.yaml]
+bracketSpacing = true
+formatComments = true
+proseWrap = "always"
+
+# mise task scripts have no file extension, so the shuck plugin does not
+# match them by default. Templates (*.tmpl) are not valid shell.
+[defaults.blocks.shuck]
+associations = [ "**/.config/mise/tasks/**", "!**/*.tmpl" ]
+binaryNextLine = true
+indentWidth = 2
+spaceRedirects = true
+switchCaseIndent = true
+useTabs = false
+
 [mise.tools.dprint]
 version = "latest"
 
 # The files of the tool, below files/.
+# A shared file: the spec adds the settings, the blocks and the plugins of
+# bootstrap. A key, an exclude or a plugin that the user adds stays.
 [files.".config/dprint/dprint.jsonc"]
-format = "text"
-source = ".config/dprint/dprint.jsonc"
+mode = "merge"
+source = ".config/dprint/dprint.jsonc.merge.toml"

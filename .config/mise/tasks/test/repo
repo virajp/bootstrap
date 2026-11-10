@@ -3316,9 +3316,10 @@ printf '%s\n' 'repo_name = "test"' 'environments = [ "dev" ]' > "$clone_consumer
 _git -C "$clone_consumer" add -A
 _git -C "$clone_consumer" commit --quiet --no-verify -m "values"
 
-# A binary with a release version, for the version check.
-release_bin="$tmp/engine-1.0.0"
-(cd "$root" && mise x -- go build -C "$base_clone/cli" -buildvcs=false -ldflags "-X main.version=1.0.0" \
+# A binary with the release version of cli/VERSION, for the version check.
+release_version=$(< "$base_clone/cli/VERSION")
+release_bin="$tmp/engine-${release_version}"
+(cd "$root" && mise x -- go build -C "$base_clone/cli" -buildvcs=false -ldflags "-X main.version=${release_version}" \
   -o "$release_bin" ./cmd/bootstrap)
 
 # run_bin <url>: `bootstrap sync --dry-run` with the cache $cache. RUN_BIN
@@ -3504,7 +3505,7 @@ new_cache version-old
 got=0
 RUN_BIN=$release_bin run_bin "file://$version_remote" || got=$?
 check_clone "$name" 2 "$got"
-check_configs_log "$name" -h "bootstrap 1.0.0 is older than 99.0.0, the version that the clone needs - upgrade it with: mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'"
+check_configs_log "$name" -h "bootstrap ${release_version} is older than 99.0.0, the version that the clone needs - upgrade it with: mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'"
 check_configs_log "$name" -l 'using bootstrap at'
 
 name="bootstrap, a dev build is new enough"

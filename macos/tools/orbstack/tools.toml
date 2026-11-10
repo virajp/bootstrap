@@ -1,6 +1,6 @@
 # The orbstack tool.
 
-description = "OrbStack (Docker and Kubernetes), its env, the docker and kubectl aliases, its fish init and its ssh Include"
+description = "OrbStack (Docker and Kubernetes), its env, the docker and kubectl aliases, its fish and zsh init and its ssh Include"
 
 # OrbStack's `orb` SSH host: an Include at the top of ~/.ssh/config, before any
 # Host block. The ssh tool's template places it.
@@ -38,3 +38,6 @@ kubectx = "kubectl config get-contexts"
 # The files of the tool, below files/.
 [files.".config/fish/conf.d/90-orbstack.fish"]
 source = ".config/fish/conf.d/90-orbstack.fish"
+
+[files.".config/zsh/90-orbstack.zsh"]
+source = ".config/zsh/90-orbstack.zsh"
