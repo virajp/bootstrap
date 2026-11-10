@@ -1,0 +1,4 @@
+rc=2
+--- stderr
+bootstrap: foo is not a key of macos.toml - the top-level keys are bootstrap_commit, [tools.<name>], [packs.<name>], [overrides.mise.<path>] and [mise.*]
+--- stdout

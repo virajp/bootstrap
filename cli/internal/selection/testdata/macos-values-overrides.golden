@@ -1,0 +1,5 @@
+rc=2
+--- stderr
+bootstrap: [overrides.foo] in macos.toml is not valid - write [tools.<name>] for template values and [overrides.mise.<path>] for mise config
+bootstrap: [overrides.mise_env] in macos.toml: the Mac side has no environments - use [overrides.mise.<path>]
+--- stdout

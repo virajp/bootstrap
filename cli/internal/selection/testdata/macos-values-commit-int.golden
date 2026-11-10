@@ -1,0 +1,4 @@
+rc=2
+--- stderr
+bootstrap: bootstrap_commit in macos.toml must be a string
+--- stdout

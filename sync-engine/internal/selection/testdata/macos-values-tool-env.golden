@@ -1,4 +1,0 @@
-rc=2
---- stderr
-setup-sync: [tools.m3] env is for repo tools only - the Mac side has no environments
---- stdout

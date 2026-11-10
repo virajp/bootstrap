@@ -1,17 +1,18 @@
-# The release of the Go sync engine. See docs/design/sync-engine.md ("The
+# The release of the Go sync engine. See docs/design/cli.md ("The
 # release of the engine").
 #
-# A signed tag vX.Y.Z on main starts the workflow. It builds the engine for
-# macOS arm64, attaches the binary and its checksum to the GitHub release
-# vX.Y.Z, and as the last step commits sync-engine/VERSION = X.Y.Z on main.
-# Thus the pin moves only after a successful release.
+# A signed tag cli-vX.Y.Z on main starts the workflow. It builds the engine
+# for macOS arm64, attaches the binary and its checksum to the GitHub release
+# cli-vX.Y.Z, and as the last step commits cli/VERSION = X.Y.Z on main.
+# Thus the pin moves only after a successful release. The prefix cli- keeps
+# the other tags of the repository free for other uses.
 
 name: release-engine
 
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "cli-v*.*.*"
 
 permissions: {}
 
@@ -40,8 +41,8 @@ jobs:
       - name: Examine the tag
         id: tag
         run: |
-          if [[ ! "${GITHUB_REF_NAME}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            echo "::error::The tag ${GITHUB_REF_NAME} is not vMAJOR.MINOR.PATCH."
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^cli-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::The tag ${GITHUB_REF_NAME} is not cli-vMAJOR.MINOR.PATCH."
             exit 1
           fi
           commit=$(git rev-parse "${GITHUB_REF}^{commit}")
@@ -49,16 +50,16 @@ jobs:
             echo "::error::The commit ${commit} of the tag ${GITHUB_REF_NAME} is not on main."
             exit 1
           fi
-          echo "version=${GITHUB_REF_NAME#v}" >> "${GITHUB_OUTPUT}"
+          echo "version=${GITHUB_REF_NAME#cli-v}" >> "${GITHUB_OUTPUT}"
 
       - name: Install Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: sync-engine/go.mod
+          go-version-file: cli/go.mod
           cache: false
 
       - name: Build the engine
-        working-directory: sync-engine
+        working-directory: cli
         env:
           CGO_ENABLED: "0"
           GOOS: darwin
@@ -116,9 +117,9 @@ jobs:
           for attempt in 1 2 3 4 5; do
             head=$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)
             current=$(gh api -H "Accept: application/vnd.github.raw" \
-              "repos/${GITHUB_REPOSITORY}/contents/sync-engine/VERSION?ref=${head}") || current=''
+              "repos/${GITHUB_REPOSITORY}/contents/cli/VERSION?ref=${head}") || current=''
             if [ "${current}" = "${VERSION}" ]; then
-              echo "sync-engine/VERSION on main is already ${VERSION}."
+              echo "cli/VERSION on main is already ${VERSION}."
               exit 0
             fi
             if jq -n \
@@ -131,13 +132,13 @@ jobs:
                 branch: {repositoryNameWithOwner: $repo, branchName: "main"},
                 expectedHeadOid: $head,
                 message: {headline: $headline},
-                fileChanges: {additions: [{path: "sync-engine/VERSION", contents: $contents}]}
+                fileChanges: {additions: [{path: "cli/VERSION", contents: $contents}]}
               }}}' | gh api graphql --input -; then
-              echo "Committed sync-engine/VERSION = ${VERSION} on main."
+              echo "Committed cli/VERSION = ${VERSION} on main."
               exit 0
             fi
             echo "::warning::Attempt ${attempt} failed. main can have moved. Retry."
             sleep $((attempt * 5))
           done
-          echo "::error::Cannot commit sync-engine/VERSION on main. The release ${GITHUB_REF_NAME} exists."
+          echo "::error::Cannot commit cli/VERSION on main. The release ${GITHUB_REF_NAME} exists."
           exit 1

@@ -1,0 +1,6 @@
+rc=3
+--- stderr
+bootstrap: pack '.x' is not in bootstrap (named in macos.toml)
+bootstrap: tool 'a b' is not in bootstrap (named in macos.toml)
+bootstrap: tool 'a/b' is not in bootstrap (named in macos.toml)
+--- stdout

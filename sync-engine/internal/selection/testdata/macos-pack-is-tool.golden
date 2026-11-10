@@ -1,4 +1,0 @@
-rc=2
---- stderr
-setup-sync: macos/packs.toml: pack 'm2' is also a tool folder - rename one
---- stdout

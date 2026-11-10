@@ -1,4 +1,0 @@
-rc=2
---- stderr
-setup-sync: macos/tools/m5 has no tools.toml - each tool folder needs its manifest
---- stdout

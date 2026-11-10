@@ -1,5 +1,0 @@
-rc=2
---- stderr
-setup-sync: mise in macos.toml must be a table - the top-level keys are bootstrap_commit, [tools.<name>], [packs.<name>], [overrides.mise.<path>] and [mise.*]
-setup-sync: overrides in macos.toml must be a table - the top-level keys are bootstrap_commit, [tools.<name>], [packs.<name>], [overrides.mise.<path>] and [mise.*]
---- stdout

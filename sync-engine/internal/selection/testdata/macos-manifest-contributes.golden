@@ -1,4 +1,0 @@
-rc=2
---- stderr
-setup-sync: macos/tools/m1/tools.toml: [contributes.m2] must be a table
---- stdout

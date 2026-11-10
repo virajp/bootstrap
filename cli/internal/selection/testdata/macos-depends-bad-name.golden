@@ -1,0 +1,4 @@
+rc=3
+--- stderr
+bootstrap: macos/tools/m1/tools.toml depends on the tool 'a/b', which bootstrap does not have
+--- stdout

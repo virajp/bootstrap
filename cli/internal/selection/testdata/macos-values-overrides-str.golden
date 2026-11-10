@@ -1,0 +1,5 @@
+rc=2
+--- stderr
+bootstrap: mise in macos.toml must be a table - the top-level keys are bootstrap_commit, [tools.<name>], [packs.<name>], [overrides.mise.<path>] and [mise.*]
+bootstrap: overrides in macos.toml must be a table - the top-level keys are bootstrap_commit, [tools.<name>], [packs.<name>], [overrides.mise.<path>] and [mise.*]
+--- stdout

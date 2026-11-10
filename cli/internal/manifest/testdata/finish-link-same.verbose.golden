@@ -1,0 +1,23 @@
+== stdout ==
+rc=0
+== stderr ==
+bootstrap: chmod 644  d/f.txt
++---------------+-------+
+| Changed       |     1 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |     1 |
++---------------+-------+
+[OK] Synced: 1 file changed
+== tree ==
+d 755 root
+d 755 root/d
+l root/d/f.txt -> ../real.txt
+f 644 root/real.txt "same\n"
+d 755 tmp

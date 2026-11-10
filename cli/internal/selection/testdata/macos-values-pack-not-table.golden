@@ -1,0 +1,4 @@
+rc=2
+--- stderr
+bootstrap: [packs.p] in macos.toml must be an empty table
+--- stdout

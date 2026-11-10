@@ -1,0 +1,4 @@
+rc=2
+--- stderr
+bootstrap: tool folder macos/tools/zzz sorts after zz-macos or is named zz-macos - rename it, because conf.d/zz-macos/ must load last
+--- stdout

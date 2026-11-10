@@ -1,0 +1,22 @@
+== stdout ==
+rc=1
+== stderr ==
+bootstrap: code/format is a file of this repo, but the sync needs a folder there - move it
++---------------+-------+
+| Changed       |     0 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     1 |
++---------------+-------+
+| Total         |     1 |
++---------------+-------+
+[OK] Synced: no file changed
+== tree ==
+d 755 root
+d 755 root/code
+f 644 root/code/format "mine\n"
+d 755 tmp

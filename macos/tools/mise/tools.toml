@@ -25,9 +25,12 @@ version = "latest"
 [mise.tools.usage]
 version = "latest"
 
-# The CLI of the sync. updateall:configs runs it.
+# The CLI of the sync. updateall:configs runs it. Its release tags are
+# cli-vX.Y.Z, so mise reads only the tags with the prefix cli-v, and shows
+# cli-v2.0.0 as 2.0.0.
 [mise.tools."github:virajp/bootstrap"]
 version = "latest"
+version_prefix = "cli-v"
 
 [mise.shell_alias]
 osx-upgrade = "mise run upgrade:macos:upgrade"

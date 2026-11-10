@@ -1,0 +1,4 @@
+rc=2
+--- stderr
+bootstrap: macos/packs.toml: pack 'm2' is also a tool folder - rename one
+--- stdout

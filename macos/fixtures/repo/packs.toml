@@ -1,4 +1,4 @@
-# The packs of the test:setup-sync fixture repo.
+# The packs of the test:mac fixture repo.
 
 [pack.base]
 core = { default = true }

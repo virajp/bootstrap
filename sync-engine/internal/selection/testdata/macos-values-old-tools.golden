@@ -1,4 +1,0 @@
-rc=2
---- stderr
-setup-sync: tools = [...] is the old format - write a [tools.<name>] table for each tool
---- stdout

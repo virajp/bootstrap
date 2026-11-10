@@ -1,0 +1,4 @@
+rc=3
+--- stderr
+bootstrap: macos/tools/m1/tools.toml: [contributes.zzz] names a tool that bootstrap does not have
+--- stdout

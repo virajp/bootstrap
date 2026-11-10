@@ -18,14 +18,14 @@ various tools that it supports.
   write the files of the selected tools of `repo/tools/` into a repository.
 - `the Mac side`: `bootstrap mac <command>`. It renders the Mac tools of
   `macos/tools/` into `$HOME`.
-- `sync engine`: The Go code of the CLI, in `sync-engine/`.
+- `sync engine`: The Go code of the CLI, in `cli/`.
 - `tools`: Tools that `bootstrap` supports, and that a consumer repo or a Mac
   can select.
 
 ## Requirements
 
 `mise` MUST be installed on the machine. mise installs the CLI:
-`mise use -g github:virajp/bootstrap`.
+`mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'`.
 
 ## How bootstrap is used
 
@@ -62,7 +62,7 @@ values file, `macos.toml`.
 
 ## References
 
-- [sync-engine.md](./sync-engine.md): the rules that both sides share: the
+- [cli.md](./cli.md): the rules that both sides share: the
   command line, the cache and the clone, the version check, the scripts of a
   tool, the templates, the write of one target, shared files, the header, the
   manifest and the stale rule, the values of a tool, `bootstrap_commit`, the

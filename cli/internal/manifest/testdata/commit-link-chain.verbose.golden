@@ -1,0 +1,25 @@
+== stdout ==
+rc=0
+== stderr ==
+bootstrap: set bootstrap_commit 0123456789abcdef0123456789abcdef01234567 in cfg/macos.toml
++---------------+-------+
+| Changed       |     0 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |     0 |
++---------------+-------+
+[OK] Synced: no file changed
+== tree ==
+d 755 root
+d 755 root/cfg
+l root/cfg/l1 -> ../dot/macos.toml
+l root/cfg/macos.toml -> l1
+d 755 root/dot
+f 644 root/dot/macos.toml "bootstrap_commit = \"0123456789abcdef0123456789abcdef01234567\"\na = 1\n"
+d 755 tmp

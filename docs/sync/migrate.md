@@ -776,7 +776,15 @@ The `repo-sync` tool is gone. The `mise` tool now ships the entry:
 replaces `code:lint:60-repo-sync`. mise installs the CLI as
 `github:virajp/bootstrap`. Only `bootstrap init` migrates an old form.
 `bootstrap sync` and `bootstrap check` stop with code 2 and the message
-`run bootstrap init`. `bootstrap init` moves these old forms:
+`run bootstrap init`.
+
+The code of the CLI moved from `sync-engine/` to `cli/` of `bootstrap`, and the
+release tags are now `cli-vX.Y.Z`. The old entry task `setup:configs` reads
+`sync-engine/VERSION` of the clone, and installs the release `vX.Y.Z`. Thus it
+stops with an error after this release. Do the steps of this item: the old
+entry task cannot do them.
+
+`bootstrap init` moves these old forms:
 
 | Old form                            | New place                                                               |
 | ----------------------------------- | ----------------------------------------------------------------------- |
@@ -793,7 +801,7 @@ replaces `code:lint:60-repo-sync`. mise installs the CLI as
 1. Install the CLI:
 
    ```bash
-   mise use -g github:virajp/bootstrap
+   mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'
    ```
 
 2. If `.config/mise/tasks/setup/configs/sync` exists, delete it. This old task

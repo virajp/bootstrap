@@ -1,4 +1,0 @@
-rc=3
---- stderr
-setup-sync: pack 'nope' is not in bootstrap
---- stdout

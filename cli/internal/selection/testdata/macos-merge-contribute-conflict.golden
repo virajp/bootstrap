@@ -1,0 +1,4 @@
+rc=2
+--- stderr
+bootstrap: macos/tools/m1/tools.toml and macos/tools/m3/tools.toml set [contributes.m2] k to different values - remove one
+--- stdout

@@ -1,0 +1,23 @@
+== stdout ==
+rc=0
+== stderr ==
+bootstrap: would write .config/repo-generated.tsv
++---------------+-------+
+| Changed       |     1 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |     1 |
++---------------+-------+
+[OK] Dry run: 1 file would change
+== tree ==
+d 755 root
+d 755 root/.config
+l root/.config/repo-generated.tsv -> ../out.tsv
+f 644 root/out.tsv "x\n"
+d 755 tmp

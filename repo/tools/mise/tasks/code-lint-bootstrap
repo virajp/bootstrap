@@ -43,7 +43,7 @@ fi
 # gate does not apply and prints nothing. A fetch at the same time is rare,
 # and the next commit runs the gate again.
 repo="${BOOTSTRAP_CACHE:-${XDG_CACHE_HOME:-${HOME}/.cache}/bootstrap}/repo"
-[[ -f ${repo}/sync-engine/VERSION ]] || exit 0
+[[ -f ${repo}/cli/VERSION ]] || exit 0
 
 # Only a clone of bootstrap. The config file itself, because a git hook sets
 # GIT_DIR to the consumer. Any other origin: the gate does not apply and prints

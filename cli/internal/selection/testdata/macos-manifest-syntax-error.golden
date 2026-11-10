@@ -1,0 +1,4 @@
+rc=2
+--- stderr
+bootstrap: cannot read macos/tools/m2/tools.toml
+--- stdout

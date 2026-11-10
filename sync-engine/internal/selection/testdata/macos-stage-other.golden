@@ -1,5 +1,0 @@
-rc=2
---- stderr
-setup-sync: macos/tools/m1/tools.toml: stage = "late" - the only stage is "init"
-setup-sync: macos/tools/m2/tools.toml: stage must be a string - the only stage is "init"
---- stdout

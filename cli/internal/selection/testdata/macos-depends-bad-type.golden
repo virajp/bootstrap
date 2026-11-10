@@ -1,0 +1,5 @@
+rc=2
+--- stderr
+bootstrap: macos/tools/m1/tools.toml: depends must be a list of tool names
+bootstrap: macos/tools/m2/tools.toml: depends must be a list of tool names
+--- stdout

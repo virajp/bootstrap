@@ -1,4 +1,0 @@
-rc=3
---- stderr
-setup-sync: macos/tools/m1/tools.toml depends on the tool 'nope', which bootstrap does not have
---- stdout

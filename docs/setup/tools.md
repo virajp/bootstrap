@@ -623,7 +623,8 @@ and the entry tasks of the Mac sync.
   `upgrade:*` tasks download and install the macOS updates and apply the power
   profile. The aliases are `updateall` and `osx-upgrade`.
 - **CLI:** `[mise.tools]` installs `github:virajp/bootstrap`, the CLI
-  `bootstrap`.
+  `bootstrap`, with `version_prefix = "cli-v"`, because the release tags are
+  `cli-vX.Y.Z`.
 - **Trust paths:** `MISE_TRUSTED_CONFIG_PATHS` holds `$HOME/.config/mise`,
   `<projects_dir>/github.com` and `<projects_dir>/gitlab.com`. mise loads a
   config below these paths with no prompt, so do not clone an untrusted

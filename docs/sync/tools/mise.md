@@ -48,11 +48,11 @@ run order.
 
 ## mise tools
 
-| mise tool                 | Version  | Environments | Note                                                                                   |
-| ------------------------- | -------- | ------------ | -------------------------------------------------------------------------------------- |
-| `jq`                      | `latest` | dev, ci      | JSON queries                                                                           |
-| `yq`                      | `latest` | dev, ci      | YAML queries                                                                           |
-| `github:virajp/bootstrap` | `latest` | dev          | The CLI `bootstrap`, from `[mise_env.dev.tools]`. `setup:configs` and the gate run it. |
+| mise tool                 | Version  | Environments | Note                                                                                                                    |
+| ------------------------- | -------- | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `jq`                      | `latest` | dev, ci      | JSON queries                                                                                                            |
+| `yq`                      | `latest` | dev, ci      | YAML queries                                                                                                            |
+| `github:virajp/bootstrap` | `latest` | dev          | The CLI `bootstrap`, from `[mise_env.dev.tools]`, with `version_prefix = "cli-v"`. `setup:configs` and the gate run it. |
 
 The tool also sets:
 
@@ -87,7 +87,7 @@ part of the root tree, so it gets no flag.
 submodule. `BOOTSTRAP_BIN`, a local build, replaces the `bootstrap` of mise.
 The exit code of `bootstrap` is the exit code of the task. The clone, the
 cache `~/.cache/bootstrap/` and the output of a sync are in
-[`docs/design/sync-engine.md`](../../design/sync-engine.md).
+[`docs/design/cli.md`](../../design/cli.md).
 
 `code:lint:60-bootstrap` runs `bootstrap check` against the cache clone
 `~/.cache/bootstrap/repo`. It never fetches. Without that clone, without

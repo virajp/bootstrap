@@ -1,0 +1,4 @@
+rc=2
+--- stderr
+bootstrap: macos/tools/m1/tools.toml: [contributes.m2] must be a table
+--- stdout

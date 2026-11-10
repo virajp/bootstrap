@@ -1,0 +1,23 @@
+== stdout ==
+rc=0
+== stderr ==
+changed d/f.txt
++---------------+-------+
+| Changed       |     1 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |     1 |
++---------------+-------+
+[OK] Synced: 1 file changed
+== tree ==
+d 755 root
+d 755 root/d
+d 755 root/d/f.txt
+f 644 root/d/f.txt/.bootstrap.* "a\n"
+d 755 tmp

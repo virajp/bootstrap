@@ -1,0 +1,4 @@
+rc=3
+--- stderr
+bootstrap: tool 'nope' is not in bootstrap
+--- stdout

@@ -1,0 +1,4 @@
+rc=2
+--- stderr
+bootstrap: tools = [...] is the old format - write a [tools.<name>] table for each tool
+--- stdout

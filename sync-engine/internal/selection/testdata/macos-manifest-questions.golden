@@ -1,8 +1,0 @@
-rc=2
---- stderr
-setup-sync: macos/tools/m1/tools.toml: [questions.a] zz is not a key of a question - the keys are question, detect and example
-setup-sync: macos/tools/m1/tools.toml: [questions.a] question must be a string
-setup-sync: macos/tools/m1/tools.toml: [questions.a] detect must be a string (a shell command)
-setup-sync: macos/tools/m1/tools.toml: [questions.b] needs a question string
-setup-sync: macos/tools/m1/tools.toml: [questions.c] must be a table
---- stdout

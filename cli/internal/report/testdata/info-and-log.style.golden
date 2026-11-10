@@ -1,0 +1,19 @@
+ℹ️ Using bootstrap at 1234567
+bootstrap: kept a (link)
+
+  [0;32m✚ new       a[0m
+ℹ️ Set bootstrap_commit to 1234567
+
+  ┌───────────────┬───────┐
+  │ [2m✎ Changed    [0m │ [2m    0[0m │
+  │ [0;32m✚ New        [0m │ [0;32m    1[0m │
+  │ [2m❋ Seeded     [0m │ [2m    0[0m │
+  │ [2m✖ Removed    [0m │ [2m    0[0m │
+  │ [2m= Unchanged  [0m │ [2m    0[0m │
+  │ [2m◦ Kept seeds [0m │ [2m    0[0m │
+  │ [2m⊘ Skipped    [0m │ [2m    0[0m │
+  │ [2m✗ Failed     [0m │ [2m    0[0m │
+  ├───────────────┼───────┤
+  │ Total         │     1 │
+  └───────────────┴───────┘
+✅ Synced: 1 file changed

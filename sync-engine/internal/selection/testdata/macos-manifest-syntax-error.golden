@@ -1,4 +1,0 @@
-rc=2
---- stderr
-setup-sync: cannot read macos/tools/m2/tools.toml
---- stdout

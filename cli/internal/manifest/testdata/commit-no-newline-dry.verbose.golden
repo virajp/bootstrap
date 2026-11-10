@@ -1,0 +1,22 @@
+== stdout ==
+rc=0
+== stderr ==
+bootstrap: would set bootstrap_commit 0123456789abcdef0123456789abcdef01234567 in .config/bootstrap.toml
++---------------+-------+
+| Changed       |     0 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |     0 |
++---------------+-------+
+[OK] Dry run: no file would change
+== tree ==
+d 755 root
+d 755 root/.config
+f 644 root/.config/bootstrap.toml "a = 1"
+d 755 tmp

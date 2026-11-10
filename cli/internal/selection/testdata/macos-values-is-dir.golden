@@ -1,0 +1,4 @@
+rc=2
+--- stderr
+bootstrap: macos.toml is not a file
+--- stdout

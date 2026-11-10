@@ -1,5 +1,0 @@
-rc=2
---- stderr
-setup-sync: [packs.p] in macos.toml has the key 'x' - a pack entry is an empty table
-setup-sync: [packs.p] in macos.toml has the key 'y' - a pack entry is an empty table
---- stdout

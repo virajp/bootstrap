@@ -4,7 +4,7 @@ These instructions are for an AI agent that works in a consumer repository.
 This file is the one entry point of `bootstrap` for the vwf and stackgen
 plugins. A plugin reads only this file. This file sends the agent to the other
 files of `docs/sync/`. Each instruction uses the CLI `bootstrap`. Install it
-with `mise use -g github:virajp/bootstrap`.
+with `mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'`.
 
 ## How a plugin uses this file
 
