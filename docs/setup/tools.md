@@ -211,7 +211,10 @@ Claude Desktop.
 
 ### `claude-status`
 
-The status line of Claude Code (from the virajp/tap tap).
+The status line of Claude Code (from the virajp/tap tap). When this tool is
+selected, the merge spec of `~/.claude/settings.json` of `claude-cli` adds
+`statusLine`, `subagentStatusLine` and the `PostToolUse` hook of
+`claude-status`.
 
 - **Packs:** `ai`
 - **Depends:** `claude-cli`
