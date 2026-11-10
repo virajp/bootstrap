@@ -1,9 +1,13 @@
 # Local services in .tools/docker-compose.yaml, run by setup:external:*.
 default_envs = [ "dev" ]
 depends = []
-extensions = []
 root_only = true
 
+# The dprint block and plugin of Dockerfiles, in dprint.jsonc.
+[contributes.dprint]
+plugins = [ "npm:@dprint/dockerfile@0.7.0" ]
+
+[contributes.dprint.blocks.dockerfile]
 # The files of the tool, below files/.
 [files.".tools/docker-compose.yaml"]
 mode = "seed"

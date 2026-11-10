@@ -113,6 +113,8 @@ func kindWord(typ string) string {
 	switch typ {
 	case "array":
 		return "a list"
+	case "object":
+		return "a table"
 	case "null":
 		return "null"
 	}

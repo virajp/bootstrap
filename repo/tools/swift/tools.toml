@@ -3,8 +3,11 @@
 # gates, and the Xcode and simulator lookup of _scripts/xcode.
 default_envs = [ "dev" ]
 depends = []
-extensions = [ "swiftlang.swift-vscode" ]
 root_only = false
+
+# The VS Code extensions of the tool, in .vscode/extensions.json.
+[contributes.vscode]
+extensions = [ "swiftlang.swift-vscode" ]
 
 # The mise config, generated into .config/mise/conf.d/swift/mise.<env>.toml.
 # SwiftLint is the correctness gate. swift-format comes with the Swift

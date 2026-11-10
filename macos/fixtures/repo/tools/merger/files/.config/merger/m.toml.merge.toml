@@ -1,0 +1,13 @@
+[[item]]
+kind = "keys"
+value = { scalar = "src", nested = { set = 1 } }
+
+[[item]]
+kind = "block"
+path = [ "nested", "list" ]
+value = [ "x", "y" ]
+
+[[item]]
+kind = "key"
+path = [ "gone" ]
+"$mode" = "remove"

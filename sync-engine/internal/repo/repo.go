@@ -5,7 +5,7 @@
 // same output, files and exit codes.
 //
 // Run reads the same environment as `repo_sync`: BOOTSTRAP_CLONE,
-// MISE_PROJECT_ROOT, REPO_SYNC_VALUES, REPO_SYNC_NO_AUTOUPDATE,
+// MISE_PROJECT_ROOT, REPO_SYNC_VALUES,
 // BOOTSTRAP_VERBOSE, TMPDIR, PATH, PWD and the style variables FORCE_COLOR,
 // NO_COLOR and TERM. A template reads the environment with env.Getenv.
 //
@@ -49,10 +49,6 @@ const (
 // line of _RS_FILE_CONDS.
 type cond struct{ key, kind, item string }
 
-// giLine is one line of `[overrides.gitignore]`: a line of _RS_GI_ADD or
-// _RS_GI_REMOVE.
-type giLine struct{ ignore, line string }
-
 // pend is one target after its first step: a line of _RS_PENDING.
 // confDir is the folder of the mise files of a tool in the target.
 const confDir = ".config/mise/conf.d"
@@ -84,23 +80,22 @@ type state struct {
 	res  *selection.Resolved
 	envs []string // _RS_ENVS
 
-	extensions  []string          // _RS_EXTENSIONS
-	fileModes   map[string]string // _RS_FILE_MODES: <tool>/<target> to its mode.
-	fileFormats map[string]string // _RS_FILE_FORMATS
-	fileConds   []cond            // _RS_FILE_CONDS
-	fileMerge   map[string][2]string
-	spare       []string          // _RS_SPARE
-	reqSkip     map[string]string // _RS_REQ_SKIP: <tool>/<target> to its missing item.
-	hookDrop    []string          // _RS_HOOK_DROP
-	giAdd       []giLine
-	giRemove    []giLine
-	valuesNote  string          // _RS_VALUES_NOTE
-	generated   map[string]bool // _RS_GENERATED
-	handled     []string        // _RS_HANDLED
-	rows        []manifest.Row  // _RS_ROWS
-	stage       string          // _RS_STAGE
-	pending     []pend          // _RS_PENDING
-	all         *source.Obj     // The values of the tools (_RS_VALUES_FILE).
+	fileModes   map[string]string   // _RS_FILE_MODES: <tool>/<target> to its mode.
+	fileFormats map[string]string   // _RS_FILE_FORMATS
+	fileConds   []cond              // _RS_FILE_CONDS
+	spare       []string            // _RS_SPARE
+	reqSkip     map[string]string   // _RS_REQ_SKIP: <tool>/<target> to its missing item.
+	formatter   *source.Formatter   // The formatter of the run, or nil.
+	oldRows     []manifest.Row      // The rows of the manifest of the last run.
+	oldCode     fail.Code           // The code of the read of the manifest.
+	items       map[string][]string // The item rows of each shared file, from oldRows.
+	newItems    map[string][]string // The item rows of each shared file of this run.
+	generated   map[string]bool     // _RS_GENERATED
+	handled     []string            // _RS_HANDLED
+	rows        []manifest.Row      // _RS_ROWS
+	stage       string              // _RS_STAGE
+	pending     []pend              // _RS_PENDING
+	all         *source.Obj         // The values of the tools (_RS_VALUES_FILE).
 	allJSON     string
 	derived     map[string]*source.Obj // The derived mise tables of each tool.
 	dirDone     map[string]bool        // The folders at their dir_perm.
@@ -246,10 +241,6 @@ func (s *state) sync(dryRun bool) fail.Code {
 		commit = ""
 	}
 
-	// The formatter for rendered templates; none when dprint is not
-	// available.
-	dprint := run("", "mise", "x", "--", "which", "dprint")
-
 	cleanup := func(code fail.Code) fail.Code {
 		os.RemoveAll(dir)
 		return code
@@ -265,7 +256,6 @@ func (s *state) sync(dryRun bool) fail.Code {
 	if code := s.resolve(); code != fail.OK {
 		return cleanup(code)
 	}
-	s.addExtensions()
 	tools := s.res.Tools
 	if s.r.Verbose() {
 		s.log("tools: " + strings.Join(tools, " "))
@@ -316,7 +306,11 @@ func (s *state) sync(dryRun bool) fail.Code {
 	}
 	g.All = s.all
 	g.Derived = s.derived
-	s.hookBranches()
+	// The rows of the last run: the items that bootstrap added to each
+	// shared file.
+	s.oldRows, s.oldCode = manifest.Read(s.e, manifest.Repo, s.root+"/"+manifestPath, s.root)
+	s.items = manifest.Items(s.oldRows)
+	s.newItems = map[string][]string{}
 	// The files of each tool: the files of its entries, and the mise files
 	// that the generator writes into the tool folder of the clone copy.
 	toolFiles := map[string][]source.File{}
@@ -353,12 +347,13 @@ func (s *state) sync(dryRun bool) fail.Code {
 		}
 	}
 
-	// The stage of format, with a copy of the dprint config of this repo.
-	if dprint {
+	// The stage of the formatter, with a copy of its config files of this
+	// repo. Without the command of the formatter, the raw render stays.
+	if f := s.formatter; f != nil && run("", "mise", "x", "--", "which", strings.Fields(f.Command)[0]) {
 		if stage, err := os.MkdirTemp(target.DryRunDir(s.getenv), "repo-sync-stage."); err == nil {
 			s.stage = stage
 			s.e.Temps.Add(stage)
-			for _, name := range dprintConfigs {
+			for _, name := range f.Configs {
 				if isFile(s.root + "/" + name) {
 					p := s.stage + "/" + name
 					if os.MkdirAll(target.Dirname(p), 0o777) == nil {
@@ -419,14 +414,14 @@ func (s *state) sync(dryRun bool) fail.Code {
 	if len(failed) == 0 {
 		file := s.root + "/" + manifestPath
 		step := manifestPath
-		oldRows, rc := manifest.Read(s.e, manifest.Repo, file, s.root)
+		oldRows, rc := s.oldRows, s.oldCode
 		if rc == fail.OK {
 			step = "stale files"
 			rc = manifest.Stale(s.e, manifest.Repo, oldRows, s.handled, s.root)
 		}
 		if rc == fail.OK {
 			step = manifestPath
-			rc = manifest.Write(s.e, file, s.rows)
+			rc = manifest.Write(s.e, file, append(s.rows, s.keptItems()...))
 		}
 		if rc != fail.OK {
 			failed = append(failed, step)
@@ -454,6 +449,18 @@ func (s *state) sync(dryRun bool) fail.Code {
 	}
 	s.r.Summary(int(worst))
 	return worst
+}
+
+// keptItems gives the item rows of the last run for each shared file that
+// this run did not merge, so a later run can still remove those items.
+func (s *state) keptItems() []manifest.Row {
+	var out []manifest.Row
+	for _, r := range s.oldRows {
+		if _, merged := s.newItems[r.Path]; r.Item != "" && !merged {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 // copyClone is `cp -R -- <clone>/. <dir>`. The error lines of cp go to

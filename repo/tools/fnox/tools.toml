@@ -1,7 +1,6 @@
 # Secrets from .config/fnox.toml, checked by setup:secrets:20-fnox.
 default_envs = [ "dev" ]
 depends = []
-extensions = []
 root_only = false
 
 # The mise config, generated into .config/mise/conf.d/fnox/mise.<env>.toml.

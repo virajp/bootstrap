@@ -33,11 +33,29 @@ const (
 	Macos LinkMode = "macos"
 )
 
-// Row is one row of a manifest: `<tool><TAB><path>`.
-type Row struct{ Tool, Path string }
+// Row is one row of a manifest: `<tool><TAB><path>` for a generated file, or
+// `<tool><TAB><path><TAB><item>` for an item that bootstrap added to a shared
+// file. <item> is the identity of the item as JSON on one line.
+type Row struct{ Tool, Path, Item string }
 
 // String gives the row as a line without the newline.
-func (r Row) String() string { return r.Tool + "\t" + r.Path }
+func (r Row) String() string {
+	if r.Item != "" {
+		return r.Tool + "\t" + r.Path + "\t" + r.Item
+	}
+	return r.Tool + "\t" + r.Path
+}
+
+// Items gives the item rows of <rows> for each path.
+func Items(rows []Row) map[string][]string {
+	out := map[string][]string{}
+	for _, r := range rows {
+		if r.Item != "" {
+			out[r.Path] = append(out[r.Path], r.Item)
+		}
+	}
+	return out
+}
 
 // BadPath is _se_manifest_bad_path: true when <p> is not a clean path below
 // the root: empty, absolute, with an empty, `.` or `..` segment, or a `.git`
@@ -102,11 +120,12 @@ func Read(e *target.Env, mode LinkMode, file, root string) ([]Row, fail.Code) {
 			continue
 		}
 		tool, path, ok := strings.Cut(line, "\t")
+		path, item, _ := strings.Cut(path, "\t")
 		if !ok || tool == "" || BadPath(path) {
 			r.Log(e.Show(file) + ": line " + strconv.Itoa(i+1) + " is not <tool><TAB><path> - skipped")
 			continue
 		}
-		rows = append(rows, Row{tool, path})
+		rows = append(rows, Row{tool, path, item})
 	}
 	return rows, fail.OK
 }
@@ -264,7 +283,8 @@ func Stale(e *target.Env, mode LinkMode, rows []Row, handled []string, root stri
 	rc := fail.OK
 	for _, row := range rows {
 		path := row.Path
-		if inHandled[path] {
+		// An item row is not a file: the merge of its shared file uses it.
+		if inHandled[path] || row.Item != "" {
 			continue
 		}
 		file := root + "/" + path

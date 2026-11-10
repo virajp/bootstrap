@@ -1,5 +1,0 @@
-# Merged by bootstrap: macos/tools/gem/.gemrc (only these keys are enforced)
-:verbose: false
-:backtrace: true
-update: --no-document
-install: --no-document

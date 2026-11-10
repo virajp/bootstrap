@@ -114,71 +114,6 @@ func (s Source) openRepo() (*Index, error) {
 	return x, Problems(probs)
 }
 
-// formatOf is `_se_format` for a target and an empty file.
-func formatOf(target, format string) string {
-	if format != "" {
-		return format
-	}
-	target = strings.TrimSuffix(target, ".tmpl")
-	switch {
-	case strings.HasSuffix(target, ".json"):
-		return "json"
-	case strings.HasSuffix(target, ".yaml"), strings.HasSuffix(target, ".yml"):
-		return "yaml"
-	case strings.HasSuffix(target, ".toml"):
-		return "toml"
-	}
-	return "text"
-}
-
-func pathOK(v any) bool {
-	l, ok := v.([]any)
-	if !ok || len(l) == 0 {
-		return false
-	}
-	for _, e := range l {
-		if _, ok := e.(string); !ok {
-			return false
-		}
-	}
-	return true
-}
-
-// CheckFileShape is `_se_files_check_shape`: the shape of `remove` and
-// `remove_items`. <key> is `remove` or `remove_items`.
-func CheckFileShape(manifest, target, key string, v any) *fail.Error {
-	ok := false
-	text := ""
-	l, isList := v.([]any)
-	if key == "remove" {
-		text = "remove must be a list of key paths, each a non-empty list of strings"
-		ok = isList
-		for _, e := range l {
-			if !pathOK(e) {
-				ok = false
-			}
-		}
-	} else {
-		text = "remove_items must be a list of tables, each with exactly path (a non-empty list of strings) and items (a list)"
-		ok = isList
-		for _, e := range l {
-			o, isObj := e.(*Obj)
-			if !isObj || o.Len() != 2 || !pathOK(o.Get("path")) {
-				ok = false
-				break
-			}
-			if _, isList := o.Get("items").([]any); !isList {
-				ok = false
-				break
-			}
-		}
-	}
-	if ok {
-		return nil
-	}
-	return fail.New(fail.Usage, "%s: [files.\"%s\"] %s", manifest, target, text)
-}
-
 // repoRules is `_rs_manifest_rules`: the old keys, the `[files]` tables and
 // `requires_found` of a mise entry of one tool.
 func (x *Index) repoRules(tool string, m *Manifest) []*fail.Error {
@@ -204,6 +139,10 @@ func (x *Index) repoRules(tool string, m *Manifest) []*fail.Error {
 				add("%s: files in [mise.tools.%s] is not supported; use requires_found in [files.\"<target>\"]", at, l.b)
 			case "requires":
 				add("%s: requires of mise tool %s is the old key - write requires_found = [\"%s\"]", at, l.b, l.c)
+			case "extensions":
+				add("%s: extensions is the old key - write extensions = [...] in [contributes.vscode]", at)
+			case "precommit":
+				add("%s: [[precommit]] is the old form - write [[contributes.pre-commit.repos]] with an id", at)
 			}
 		case "mise_env_key":
 			add("%s: %s of mise tool %s in [mise_env.%s.tools] is valid only in [mise.tools]", at, l.a, l.b, l.c)
@@ -354,11 +293,13 @@ func (x *Index) macosRules(tool string) []*fail.Error {
 			// The entries: see entries.
 		case "parent":
 			// See parentRule.
+		case "extensions", "precommit":
+			bad("%s is the old key - the values go in [contributes.vscode] and [[contributes.pre-commit.repos]]", k)
 		case "seed":
 			bad("seed is the old key - write a [files.\"<target>\"] table with mode = \"seed\" for each seed")
 		case "seed_requires":
 			bad("[seed_requires] is the old table - write requires = [...] in the [files.\"<target>\"] table of the seed")
-		case "default_envs", "root_only", "extensions", "precommit", "mise_env":
+		case "default_envs", "root_only", "mise_env", "formatter":
 			bad("%s is for repo tools only", k)
 		default:
 			bad("%s is not a key of tools.toml - the keys are description, stage, depends, parent, [defaults], [questions], [contributes], [files], [tasks] and [mise]", k)

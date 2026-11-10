@@ -1,7 +1,6 @@
 # The Firebase CLI only. The repository owns its Firebase config files.
 default_envs = [ "dev", "ci" ]
 depends = [ "node" ]
-extensions = []
 root_only = false
 
 # The mise config, generated into .config/mise/conf.d/firebase/mise.<env>.toml.

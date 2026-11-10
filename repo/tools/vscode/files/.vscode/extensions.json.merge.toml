@@ -1,0 +1,11 @@
+# The merge spec of .vscode/extensions.json, a shared file. The sync renders
+# it with the values of the vscode tool: its own extensions, and the
+# extensions that each selected tool adds in [contributes.vscode]. An
+# extension that the user adds to the file stays.
+format = "jsonc"
+<% range .config.extensions %>
+[[item]]
+kind = "item"
+path = [ "recommendations" ]
+value = <% . | data.ToTOMLInline %>
+<% end -%>

@@ -187,6 +187,7 @@ func check(t *testing.T, c pcase) {
 	t.Helper()
 	golden := filepath.Join("testdata", c.name+".golden")
 	fp := c.fingerprint(t)
+	dropOldKeys(t, c.clone)
 	got := c.golang()
 	data, err := os.ReadFile(golden)
 	if err != nil {
@@ -199,6 +200,30 @@ func check(t *testing.T, c pcase) {
 	if got != want {
 		t.Errorf("%s: Go differs from bash\n--- go\n%s\n--- bash\n%s", c.name, got, want)
 	}
+}
+
+// dropOldKeys removes the `extensions` key of each repo tools.toml below
+// <dir>: the fixtures of the bash engine have it, and the key is now an old
+// key. The fingerprint is of the fixture before this change.
+func dropOldKeys(t *testing.T, dir string) {
+	t.Helper()
+	_ = filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || info.Name() != "tools.toml" || !strings.Contains(p, "/repo/tools/") {
+			return nil
+		}
+		b, rerr := os.ReadFile(p)
+		if rerr != nil {
+			return nil
+		}
+		var keep []string
+		for _, l := range strings.Split(string(b), "\n") {
+			if !strings.HasPrefix(l, "extensions = ") {
+				keep = append(keep, l)
+			}
+		}
+		_ = os.WriteFile(p, []byte(strings.Join(keep, "\n")), info.Mode())
+		return nil
+	})
 }
 
 // ---- The real tree

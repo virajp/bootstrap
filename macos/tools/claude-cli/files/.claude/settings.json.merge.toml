@@ -1,0 +1,277 @@
+# The merge spec of ~/.claude/settings.json, a shared file. Claude Code
+# rewrites the file, so bootstrap adds only its own keys and list items. A key
+# that the user or Claude Code changes keeps its value. The sync renders this
+# spec with the values of the tool.
+<%- $projects := index .all.cli "projects_dir" | required "cli: set projects_dir in [tools.cli] of macos.toml" -%>
+<%- if strings.HasPrefix "~" $projects -%><%- $projects = print .env.HOME (strings.TrimPrefix "~" $projects) -%><%- end -%>
+
+# The keys of bootstrap. Each leaf is one key.
+[[item]]
+kind = "keys"
+
+[item.value]
+"$schema" = "https://json.schemastore.org/claude-code-settings.json"
+cleanupPeriodDays = 30
+disableArtifact = false
+effortLevel = "medium"
+forceLoginMethod = "claudeai"
+includeCoAuthoredBy = true
+model = "opus[1m]"
+outputStyle = "STE100"
+respectGitignore = true
+skipDangerousModePermissionPrompt = true
+spinnerTipsEnabled = false
+terminalProgressBarEnabled = true
+tui = "fullscreen"
+
+[item.value.attribution]
+commit = ""
+sessionUrl = false
+
+[item.value.env]
+AI_PLUGINS_USAGE_DIR = "${HOME}/.claude/usage"
+ANTHROPIC_DEFAULT_FABLE_MODEL = "claude-fable-5-1"
+CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1"
+CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "0"
+CLAUDE_INSTALL_METHOD = "other"
+DISABLE_AUTOUPDATER = "1"
+MISE_ENV = "dev"
+MISE_TRUSTED_CONFIG_PATHS = "<% .env.HOME %>/.config/mise:<% $projects %>/github.com:<% $projects %>/gitlab.com"
+
+[item.value.modelSettings]
+
+[item.value.modelSettings.claude-opus-5]
+effortLevel = "medium"
+
+[item.value.skillOverrides]
+"anthropic-skills:computer-use" = "off"
+"anthropic-skills:deep-research" = "off"
+"anthropic-skills:doc-coauthoring" = "off"
+"anthropic-skills:docs" = "off"
+"anthropic-skills:docx" = "off"
+"anthropic-skills:import-memory" = "off"
+"anthropic-skills:morning" = "off"
+"anthropic-skills:pdf" = "off"
+"anthropic-skills:pptx" = "off"
+"anthropic-skills:skill-creator" = "off"
+"anthropic-skills:xlsx" = "off"
+google-workspace = "off"
+
+# The items of autoMode.environment.
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "### Org-wide"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Organization**: None configured"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Cloud provider(s)**: Cloudflare (Workers deploy for the site — via CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN secrets)"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Repository visibility**: PUBLIC — virajp/claude-plugins (github.com) — any push here is publishing"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Secrets management**: CI secrets referenced by name only: CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, GITHUB_TOKEN — values not gathered"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Default / protected branches**: main (default), develop and main protected via active rulesets `protected-branches` and `release-tags`"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**CI/CD deploy targets**: Cloudflare Workers (site, via `wrangler deploy` on `site-v*` tags); npm publish (installer CLI, via `release.yml` on `installer-v*` tags) — both gated by GitHub Actions workflows in this repo"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Network posture**: None configured"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine with open internet"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Source control**: This repo (virajp/claude-plugins) and its origin remote (github.com:virajp/claude-plugins.git) only — no additional orgs configured"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Trusted internal domains**: None configured"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Trusted cloud buckets**: None configured"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Key internal services**: None configured"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Internal package registry**: None configured"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Sensitive data locations & audiences**: docs/memory/decisions/2026-09-06-secrets-store-is-runtime-not-development.md (filename-flagged, contents not read) — treat as confidential; share only with audiences cleared at the [named+specifics] bar"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Data retention / declassification**: None configured"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "### User-specific"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Primary use of Claude Code**: software development — maintaining the virajp-plugins Claude Code plugin marketplace (vwf, stackgen), its installer CLI, and its documentation site"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Trusted repo**: ${HOME}/Projects/github.com/virajp/claude-plugins (working directory) and its origin remote github.com:virajp/claude-plugins.git — PUBLIC, so only this repo's own work belongs in commits/pushes here; confidential material (secrets, sensitive data) is never cleared into it by visibility alone"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "**Org-specific CLIs**: None configured — `mise` (225× in-project, 349× in shell history) is a general-purpose toolchain/task runner, not org-specific"
+[[item]]
+kind = "item"
+path = [ "autoMode", "environment" ]
+value = "routine under virajp/ prefix: none — repo is solo-authored, no org-wide prefix identified"
+
+# The items of autoMode.soft_deny.
+[[item]]
+kind = "item"
+path = [ "autoMode", "soft_deny" ]
+value = "$defaults"
+[[item]]
+kind = "item"
+path = [ "autoMode", "soft_deny" ]
+value = "Bash(gh release create:*) in virajp/claude-plugins — publishing a GitHub Release is an irreversible public action explicitly gated behind user confirmation per CLAUDE.md/release skill"
+[[item]]
+kind = "item"
+path = [ "autoMode", "soft_deny" ]
+value = "Bash(git push --tags) or direct tag pushes to `installer-v*`/`site-v*`/`*-v*` in this repo — release skill requires asking before p:i:release, p:plugins:release, p:site:release"
+
+# The items of permissions.allow.
+[[item]]
+kind = "item"
+path = [ "permissions", "allow" ]
+value = "Read"
+[[item]]
+kind = "item"
+path = [ "permissions", "allow" ]
+value = "Edit"
+[[item]]
+kind = "item"
+path = [ "permissions", "allow" ]
+value = "Skill"
+[[item]]
+kind = "item"
+path = [ "permissions", "allow" ]
+value = "WebFetch"
+[[item]]
+kind = "item"
+path = [ "permissions", "allow" ]
+value = "Bash(pnpm:*)"
+[[item]]
+kind = "item"
+path = [ "permissions", "allow" ]
+value = "Bash(mise:*)"
+[[item]]
+kind = "item"
+path = [ "permissions", "allow" ]
+value = "Bash(git:*)"
+[[item]]
+kind = "item"
+path = [ "permissions", "allow" ]
+value = "WebFetch(domain:raw.githubusercontent.com)"
+[[item]]
+kind = "item"
+path = [ "permissions", "allow" ]
+value = "mcp__plugin_context7_context7__resolve-library-id"
+[[item]]
+kind = "item"
+path = [ "permissions", "allow" ]
+value = "mcp__plugin_context7_context7__query-docs"
+
+# The items of permissions.deny.
+[[item]]
+kind = "item"
+path = [ "permissions", "deny" ]
+value = "Bash(* sudo *)"
+[[item]]
+kind = "item"
+path = [ "permissions", "deny" ]
+value = "Bash(sudo *)"
+[[item]]
+kind = "item"
+path = [ "permissions", "deny" ]
+value = "Bash(* su *)"
+[[item]]
+kind = "item"
+path = [ "permissions", "deny" ]
+value = "Bash(su *)"
+[[item]]
+kind = "item"
+path = [ "permissions", "deny" ]
+value = "Bash(* ssh *)"
+[[item]]
+kind = "item"
+path = [ "permissions", "deny" ]
+value = "Bash(ssh *)"
+[[item]]
+kind = "item"
+path = [ "permissions", "deny" ]
+value = "Bash(* firebase *)"
+[[item]]
+kind = "item"
+path = [ "permissions", "deny" ]
+value = "Bash(firebase *)"
+[[item]]
+kind = "item"
+path = [ "permissions", "deny" ]
+value = "Bash(* gcloud *)"
+[[item]]
+kind = "item"
+path = [ "permissions", "deny" ]
+value = "Bash(gcloud *)"
+[[item]]
+kind = "item"
+path = [ "permissions", "deny" ]
+value = "Bash(doppler *)"
+[[item]]
+kind = "item"
+path = [ "permissions", "deny" ]
+value = "Bash(* doppler *)"
+
+# Keys that bootstrap set before and no longer sets.
+[[item]]
+kind = "key"
+path = [ "deniedMcpServers" ]
+"$mode" = "remove"
+
+[[item]]
+kind = "key"
+path = [ "env", "CONTEXT7_RUNNER" ]
+"$mode" = "remove"

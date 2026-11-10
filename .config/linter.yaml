@@ -4,6 +4,10 @@
 
 version: 1
 
+# A merge spec of a tool is a template, not TOML, until the sync renders it.
+ignores:
+  - "**/*.merge.toml"
+
 # ignores:
 #   - "**/generated/**"
 #   - "**/*.d.ts"

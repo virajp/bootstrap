@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/virajp/bootstrap/sync-engine/internal/header"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -453,6 +454,8 @@ func check(t *testing.T, c mcase, stats *counter) {
 	if !strings.Contains(want, "pre: rc=0\n") {
 		t.Fatalf("%s: the steps before the generator failed in bash:\n%s", c.name, want)
 	}
+	// B3 changed line 2 of the header; the golden files have the old line.
+	want = strings.ReplaceAll(want, "The next sync replaces it, and a manual change is lost.", header.Line2)
 	if got != want {
 		t.Errorf("%s: Go differs from bash\n--- go\n%s\n--- bash\n%s", c.name, got, want)
 		return

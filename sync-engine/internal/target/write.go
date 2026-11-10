@@ -108,30 +108,34 @@ func (e *Env) Check(tmp, target, explicit string, merge bool, show string) (form
 	return f, fail.OK
 }
 
-// Merge is the call of _se_merge in a front-end: it merges the temp file
-// <tmp> (the merge source) over the live target <live> into <tmp>. A <live>
-// that is not a regular file is absent. A failure gives its code, after the
-// messages.
-func (e *Env) Merge(tmp, live string, f format.Format, ops format.Ops, show string) fail.Code {
-	src, err := os.ReadFile(tmp)
+// Shared merges a shared file: the temp file <tmp> holds the rendered spec,
+// <live> is the live target (absent when it is not a regular file). The
+// result goes to <tmp>. <in> gives the other inputs. It gives the item rows
+// of the manifest, or the code of a failure, after the messages.
+func (e *Env) Shared(tmp, live string, in format.SharedInput) ([]string, fail.Code) {
+	spec, err := os.ReadFile(tmp)
 	if err != nil {
-		return fail.Other
+		return nil, fail.Other
 	}
-	var cur []byte
+	in.Spec = spec
+	in.Live = nil
 	if isRegular(live) {
-		if cur, err = os.ReadFile(live); err != nil {
-			cur = nil
+		if cur, err := os.ReadFile(live); err == nil {
+			in.Live = cur
 		}
 	}
-	out, fl := format.Merge(src, cur, f, ops, show)
+	res, fl := format.MergeShared(in)
 	if fl != nil {
-		e.Failure(fl, show)
-		return fail.Code(fl.Code)
+		e.Failure(fl, in.Show)
+		return nil, fail.Code(fl.Code)
 	}
-	if err := os.WriteFile(tmp, out, 0o600); err != nil {
-		return fail.Other
+	for _, w := range res.Warnings {
+		e.Report.Log("warning: " + w)
 	}
-	return fail.OK
+	if err := os.WriteFile(tmp, res.Out, 0o600); err != nil {
+		return nil, fail.Other
+	}
+	return res.Records, fail.OK
 }
 
 // Abort ends a failed target: it removes the temp file <tmp>, and when <dest>

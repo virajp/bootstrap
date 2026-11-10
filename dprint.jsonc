@@ -7,5 +7,8 @@
     // sorts keys.
     "repo/packs.toml",
     "macos/packs.toml",
+    // A merge spec of a tool is a template, not TOML, until the sync
+    // renders it.
+    "**/*.merge.toml",
   ],
 }

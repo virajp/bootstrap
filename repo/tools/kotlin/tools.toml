@@ -1,7 +1,6 @@
 # The Kotlin language server (dev only), and the ktlint and detekt gates.
 default_envs = [ "dev" ]
 depends = [ "java" ]
-extensions = []
 root_only = false
 
 # The mise config, generated into .config/mise/conf.d/kotlin/mise.<env>.toml.

@@ -7,6 +7,3 @@ repo_url = "https://github.com/virajp/bootstrap"
 [tools.claude]
 
 [tools.go]
-# The temporary prompts of a session. They are never committed.
-[overrides.gitignore]
-add = [ "docs/prompts/", "docs/plans/archived/" ]

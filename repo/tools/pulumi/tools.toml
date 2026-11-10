@@ -1,7 +1,6 @@
 # Pulumi. A repository that deploys to Google Cloud also selects gcloud.
 default_envs = [ "dev" ]
 depends = []
-extensions = []
 root_only = false
 
 # The mise config, generated into .config/mise/conf.d/pulumi/mise.<env>.toml.

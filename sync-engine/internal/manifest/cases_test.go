@@ -115,9 +115,6 @@ func cases() []pcase {
 			write("644", "a = \n", "d/f.toml", "generated", true, "", false)),
 		both("check-format-key", nil, write("644", "a = [\n", "d/f.txt", "generated", true, "toml", false)),
 		both("check-text", nil, write("644", "{bad", "d/f.txt", "generated", true, "", false)),
-		both("merge-json", existing("{\"keep\": 1, \"a\": 1}\n", 0o640), merge("{\"a\": 2}\n", "d/f.json", "json")),
-		both("merge-json-new", nil, merge("{\"a\": 2}\n", "d/f.json", "json")),
-		both("merge-json-live-bad", existing("{bad\n", 0o644), merge("{\"a\": 2}\n", "d/f.json", "json")),
 	)
 
 	// The Mac side: a symlink in the path.

@@ -5,8 +5,6 @@
 bootstrap_commit = ""
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
-# The VS Code extensions that no tool has.
-extensions = [ "tamasfe.even-better-toml" ]
 repo_name = "billing-cli"
 # The web URL of the repository, for the github tool.
 repo_url = "https://github.com/example/billing-cli"
@@ -24,7 +22,3 @@ worktree_files = [ ".config/mise.local.toml" ]
 [tools.git.branch.main]
 merge_model = "pr"
 merge_never = [ "gh-pages" ]
-
-# The repository's own ignore lines, added at the end of the shared .gitignore.
-[overrides.gitignore]
-add = [ "/dist/" ]

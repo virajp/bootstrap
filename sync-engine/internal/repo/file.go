@@ -4,21 +4,18 @@ import (
 	"errors"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 	"text/template"
 
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
 	"github.com/virajp/bootstrap/sync-engine/internal/format"
+	hdr "github.com/virajp/bootstrap/sync-engine/internal/header"
 	"github.com/virajp/bootstrap/sync-engine/internal/manifest"
 	"github.com/virajp/bootstrap/sync-engine/internal/report"
 	"github.com/virajp/bootstrap/sync-engine/internal/source"
 	"github.com/virajp/bootstrap/sync-engine/internal/target"
 	"github.com/virajp/bootstrap/sync-engine/internal/tmpl"
 )
-
-// dprintConfigs are the dprint config files of a repo that the stage gets.
-var dprintConfigs = []string{"dprint.json", "dprint.jsonc", ".dprint.json", ".dprint.jsonc", ".config/dprint.json", ".config/dprint.jsonc"}
 
 // fileMode is `_rs_file_mode`: the mode of the target <tool>/<target>;
 // generated without a `mode` key.
@@ -214,30 +211,10 @@ func (s *state) file(tool string, f source.File, ctx *contexts) (fail.Code, bool
 		s.r.Outcome(report.Failed, show, "cannot write the target", "")
 	}
 
-	// The hook revisions: each one becomes the newest tag, chosen by
-	// `pre-commit autoupdate` itself. It needs the network; on a failure the
-	// existing file stays. REPO_SYNC_NO_AUTOUPDATE=1 skips it.
-	if rc == fail.OK && out == ".config/pre-commit-config.yaml" {
-		name := toolsShown + "/" + tool + "/" + path
-		switch {
-		case s.getenv("REPO_SYNC_NO_AUTOUPDATE") == "1":
-			s.log(name + ": REPO_SYNC_NO_AUTOUPDATE=1 - pre-commit autoupdate skipped")
-		case lookPath("pre-commit", s.getenv("PATH")) == "":
-			text := "pre-commit is not available to resolve the hook revisions"
-			s.r.Outcome(report.Failed, show, text, name+": "+text)
-			rc = fail.Network
-		case !run(s.root, lookPath("pre-commit", s.getenv("PATH")), "autoupdate", "--config", tmp):
-			text := "pre-commit autoupdate failed - examine the network and the hook repositories"
-			s.r.Outcome(report.Failed, show, text, name+": "+text)
-			rc = fail.Network
-		}
-	}
-
-	// A JSON, YAML or TOML target must parse, before dprint can change it.
-	// The JSONC rule is not for a merge target.
-	var ff format.Format
-	if rc == fail.OK {
-		ff, rc = s.e.Check(tmp, out, explicit, mode == "merge", show)
+	// A JSON, YAML or TOML target must parse, before the formatter can
+	// change it. A shared file has a spec as its source: the merge parses it.
+	if rc == fail.OK && mode != "merge" {
+		_, rc = s.e.Check(tmp, out, explicit, false, show)
 	}
 
 	// A merge target that is a symlink, also a dangling one: the merge reads
@@ -247,22 +224,26 @@ func (s *state) file(tool string, f source.File, ctx *contexts) (fail.Code, bool
 		rc = fail.Usage
 	}
 
-	// A merge target: merge with the live target, before dprint.
+	// A shared file: merge the rendered spec into the live target, before
+	// the formatter.
 	if rc == fail.OK && mode == "merge" {
-		remove, items := "[]", "[]"
-		if m, ok := s.fileMerge[key]; ok {
-			if m[0] != "" {
-				remove = m[0]
-			}
-			if m[1] != "" {
-				items = m[1]
-			}
+		var ov []byte
+		if files, ok := s.toolVals(tool).Get("files").(*source.Obj); ok && files.Has(out) {
+			ov = []byte(source.JSON(files.Get(out)))
 		}
-		ops, err := format.ParseOps(remove, items)
-		if err != nil {
-			rc = fail.Usage
-		} else {
-			rc = s.e.Merge(tmp, dest, ff, ops, show)
+		name := toolsShown + "/" + tool + "/" + path
+		var rows []string
+		rows, rc = s.e.Shared(tmp, dest, format.SharedInput{
+			Target:    out,
+			Explicit:  explicit,
+			Overrides: ov,
+			Records:   s.items[out],
+			Header:    hdr.Shared(name, strings.TrimPrefix(s.values, s.root+"/")),
+			Show:      show,
+			SpecShow:  name,
+		})
+		if rc == fail.OK {
+			s.newItems[out] = rows
 		}
 	}
 
@@ -271,10 +252,10 @@ func (s *state) file(tool string, f source.File, ctx *contexts) (fail.Code, bool
 		return rc, false
 	}
 
-	// A rendered template, a generated mise config or a merge target goes
+	// A rendered template, a generated mise config or a shared file goes
 	// through the formatter of this repo before the compare: the file goes to
 	// the stage, at its path in this repo, and format formats the stage in
-	// one dprint call.
+	// one call of the formatter.
 	if (f.Tmpl || mode == "merge" || s.generated[tool+"/"+path]) && s.stage != "" {
 		p := s.stage + "/" + out
 		if os.MkdirAll(target.Dirname(p), 0o777) == nil {
@@ -312,13 +293,9 @@ func (s *state) render(tool, src, tmp string, ctx *contexts) bool {
 	return os.WriteFile(tmp, out, 0o600) == nil
 }
 
-// stageSkip is the grep of `_rs_format`: the dprint config files of the
-// stage are not formatted.
-var stageSkip = regexp.MustCompile(`^(\.?dprint\.jsonc?|\.config/dprint\.jsonc?)$`)
-
-// format is `_rs_format`: it formats the files of the stage in one dprint
-// call. Without dprint, or if dprint fails for a file, the raw render of that
-// file stays.
+// format is `_rs_format`: it formats the files of the stage in one call of
+// the formatter, with the paths of the files on stdin. Without the
+// formatter, or if it fails for a file, the raw render of that file stays.
 func (s *state) format() {
 	if s.stage == "" {
 		return
@@ -326,17 +303,14 @@ func (s *state) format() {
 	var files []string
 	walk(s.stage, func(p string, info os.FileInfo) bool {
 		if info.Mode().IsRegular() {
-			rel := strings.TrimPrefix(p, s.stage+"/")
-			if !stageSkip.MatchString(rel) {
-				files = append(files, rel)
-			}
+			files = append(files, strings.TrimPrefix(p, s.stage+"/"))
 		}
 		return true
 	})
 	if len(files) == 0 {
 		return
 	}
-	cmd := exec.Command("mise", "x", "--", "bash", "-c", `cd "$1" && dprint fmt --no-gitignore --allow-no-files --stdin-files`, "_", s.stage)
+	cmd := exec.Command("mise", "x", "--", "bash", "-c", `cd "$1" && `+s.formatter.Command, "_", s.stage)
 	cmd.Dir = s.root
 	cmd.Stdin = strings.NewReader(strings.Join(files, "\n") + "\n")
 	_ = cmd.Run()
@@ -353,31 +327,6 @@ func (s *state) fileFinish(tool string, f source.File, tmp string) fail.Code {
 	show := s.path(dest)
 	if s.stage != "" && isFile(s.stage+"/"+out) {
 		copyFile(s.stage+"/"+out, tmp)
-	}
-
-	// [overrides.gitignore]: comment out each line of `remove`, then add the
-	// lines of `add` at the end, so they win.
-	rc := fail.OK
-	if out == ".gitignore" && len(s.giRemove)+len(s.giAdd) > 0 {
-		ignore := strings.TrimPrefix(out, ".")
-		pick := func(list []giLine) string {
-			var lines []string
-			for _, l := range list {
-				if l.ignore == ignore {
-					lines = append(lines, l.line)
-				}
-			}
-			return strings.Join(lines, "\n")
-		}
-		add, rem := pick(s.giAdd), pick(s.giRemove)
-		if add+rem != "" && !s.gitignore(tmp, add, rem) {
-			rc = fail.Other
-			s.r.Outcome(report.Failed, show, "cannot write the target", "")
-		}
-	}
-	if rc != fail.OK {
-		s.e.Abort(tmp, dest, show)
-		return rc
 	}
 
 	// The folder gets its `dir_perm` before the write.
@@ -408,42 +357,8 @@ func (s *state) fileFinish(tool string, f source.File, tmp string) fail.Code {
 	if fileMode == "generated" {
 		s.rows = append(s.rows, manifest.Row{Tool: tool, Path: out})
 	}
+	for _, item := range s.newItems[out] {
+		s.rows = append(s.rows, manifest.Row{Tool: tool, Path: out, Item: item})
+	}
 	return fail.OK
-}
-
-// gitignore applies `[overrides.gitignore]` to the temp file <tmp>: each line
-// of <rem> becomes a comment, and the lines of <add> go at the end. It gives
-// false when it cannot write.
-func (s *state) gitignore(tmp, add, rem string) bool {
-	b, err := os.ReadFile(tmp)
-	if err != nil {
-		return false
-	}
-	drop := map[string]bool{}
-	for _, l := range strings.Split(rem, "\n") {
-		if l != "" {
-			drop[l] = true
-		}
-	}
-	note := "# override: removed by " + s.valuesNote
-	var out strings.Builder
-	for _, l := range awkLines(b) {
-		if t := trimBlanks(l); drop[t] {
-			out.WriteString("# " + t + "  " + note + "\n")
-		} else {
-			out.WriteString(l + "\n")
-		}
-	}
-	if add != "" {
-		out.WriteString("\n# ==== Overrides from " + s.valuesNote + " ====\n" + add + "\n")
-	}
-	gi := tmp + ".gi"
-	if os.WriteFile(gi, []byte(out.String()), 0o644) != nil {
-		return false
-	}
-	if os.Rename(gi, tmp) != nil {
-		os.Remove(gi)
-		return false
-	}
-	return true
 }

@@ -1,0 +1,19 @@
+# The merge spec of ~/.config/gh/config.yml, a shared file. gh config set
+# rewrites the file, so bootstrap adds only these keys; gh owns every other
+# key. The sync renders this spec with the values of the tool.
+
+[[item]]
+kind = "keys"
+
+[item.value]
+version = "1"
+# SSH for the git operations instead of HTTPS, for better security with keys.
+git_protocol = "ssh"
+# The editor comes from editor in [tools.gh] of macos.toml.
+editor = <% index .config "editor" | required "gh: set editor in [tools.gh] of macos.toml" | data.ToTOMLInline %>
+# The pager of the command output. "cat" disables the pager.
+pager = "less"
+
+# The aliases of commands that the user runs often.
+[item.value.aliases]
+co = "pr checkout"

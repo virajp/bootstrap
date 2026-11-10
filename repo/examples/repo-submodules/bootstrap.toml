@@ -6,9 +6,6 @@
 bootstrap_commit = ""
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
-# The VS Code extensions that no tool has. The root also gets the extensions
-# of each submodule.
-extensions = [ "yzhang.markdown-all-in-one" ]
 # The product name, for the fnox keychain service. Each submodule has the
 # same value.
 product_name = "acme"

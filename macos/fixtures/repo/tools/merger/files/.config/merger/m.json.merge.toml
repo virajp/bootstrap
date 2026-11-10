@@ -1,0 +1,33 @@
+# Each kind of item, and a key that bootstrap set before.
+[[item]]
+kind = "keys"
+value = { scalar = "src", nested = { set = 1, deeper = { x = true } } }
+
+[[item]]
+kind = "key"
+path = [ "kind" ]
+value = [ 1 ]
+
+[[item]]
+kind = "item"
+path = [ "list" ]
+value = "b"
+
+[[item]]
+kind = "block"
+path = [ "maps" ]
+id = "one"
+match = [ "a" ]
+ignore = [ "v" ]
+value = { a = 1, b = 2, v = 0 }
+
+[[item]]
+kind = "key"
+path = [ "gone" ]
+"$mode" = "remove"
+<% range .config.items %>
+[[item]]
+kind = "item"
+path = [ "items" ]
+value = <% . | data.ToTOMLInline %>
+<% end -%>

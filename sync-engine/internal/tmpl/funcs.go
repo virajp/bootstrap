@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"text/template"
@@ -314,6 +315,99 @@ func (*dataNS) ToTOML(in any) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+// ToTOMLInline gives <in> as one TOML inline value: a string, a number, a
+// boolean, an array or an inline table with sorted keys. A merge spec uses it
+// to write a value of the template context.
+func (*dataNS) ToTOMLInline(in any) (string, error) {
+	var b strings.Builder
+	if err := tomlInline(&b, in); err != nil {
+		return "", err
+	}
+	return b.String(), nil
+}
+
+// tomlString gives <s> as a TOML basic string.
+func tomlString(s string) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	_ = enc.Encode(s)
+	return strings.TrimSuffix(buf.String(), "\n")
+}
+
+var bareKey = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
+func tomlInline(b *strings.Builder, in any) error {
+	switch x := in.(type) {
+	case nil:
+		return fmt.Errorf("TOML has no null value")
+	case string:
+		b.WriteString(tomlString(x))
+	case bool:
+		b.WriteString(strconv.FormatBool(x))
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		fmt.Fprintf(b, "%d", x)
+	case float32, float64:
+		f := reflect.ValueOf(x).Float()
+		s := strconv.FormatFloat(f, 'g', -1, 64)
+		if !strings.ContainsAny(s, ".eEn") {
+			s += ".0"
+		}
+		b.WriteString(s)
+	case []any:
+		b.WriteString("[ ")
+		for i, e := range x {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			if err := tomlInline(b, e); err != nil {
+				return err
+			}
+		}
+		b.WriteString(" ]")
+	case map[string]any:
+		keys := make([]string, 0, len(x))
+		for k := range x {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		b.WriteString("{ ")
+		for i, k := range keys {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			if bareKey.MatchString(k) {
+				b.WriteString(k)
+			} else {
+				b.WriteString(tomlString(k))
+			}
+			b.WriteString(" = ")
+			if err := tomlInline(b, x[k]); err != nil {
+				return err
+			}
+		}
+		b.WriteString(" }")
+	default:
+		rv := reflect.ValueOf(in)
+		switch rv.Kind() {
+		case reflect.Slice, reflect.Array:
+			l := make([]any, rv.Len())
+			for i := range l {
+				l[i] = rv.Index(i).Interface()
+			}
+			return tomlInline(b, l)
+		case reflect.Map:
+			m := map[string]any{}
+			for _, k := range rv.MapKeys() {
+				m[fmt.Sprint(k.Interface())] = rv.MapIndex(k).Interface()
+			}
+			return tomlInline(b, m)
+		}
+		return fmt.Errorf("cannot write a %T as a TOML value", in)
+	}
+	return nil
 }
 
 func (*dataNS) JSONArray(in any) ([]any, error) {

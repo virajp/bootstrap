@@ -1,7 +1,6 @@
 # crane, which operates on container images and registries.
 default_envs = [ "dev", "ci" ]
 depends = []
-extensions = []
 root_only = false
 
 # The mise config, generated into .config/mise/conf.d/crane/mise.<env>.toml.

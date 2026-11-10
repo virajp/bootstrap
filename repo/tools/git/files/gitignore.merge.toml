@@ -1,0 +1,635 @@
+# The merge spec of .gitignore, a shared text file. Each item is one line.
+# The sync adds each missing line at the end of the file, in this order. A
+# line that the user adds stays. To remove a line of bootstrap, write
+# "<line>" = { "$mode" = "remove" } in [tools.git.files.".gitignore"] of
+# .config/bootstrap.toml. A later line wins, so a repository can also negate
+# a pattern here with its own line.
+format = "text"
+comment = "#"
+
+
+# ==== macOS ====
+[[item]]
+value = '.DS_Store'
+[[item]]
+value = '.AppleDouble'
+[[item]]
+value = '.LSOverride'
+[[item]]
+value = '._*'
+[[item]]
+value = '.Spotlight-V100'
+[[item]]
+value = '.Trashes'
+[[item]]
+value = '.AppleDB'
+[[item]]
+value = '.AppleDesktop'
+[[item]]
+value = '.DocumentRevisions-V100'
+[[item]]
+value = '.TemporaryItems'
+[[item]]
+value = '.VolumeIcon.icns'
+[[item]]
+value = '.apdisk'
+[[item]]
+value = '.com.apple.timemachine.donotpresent'
+[[item]]
+value = '.fseventsd'
+[[item]]
+value = 'Network Trash Folder'
+[[item]]
+value = 'Temporary Items'
+
+# ==== Windows ====
+[[item]]
+value = 'Thumbs.db'
+[[item]]
+value = 'Thumbs.db:encryptable'
+[[item]]
+value = 'ehthumbs.db'
+[[item]]
+value = 'ehthumbs_vista.db'
+[[item]]
+value = '[Dd]esktop.ini'
+[[item]]
+value = '$RECYCLE.BIN/'
+[[item]]
+value = '*.lnk'
+[[item]]
+value = '*.stackdump'
+
+# ==== Linux ====
+[[item]]
+value = '*~'
+[[item]]
+value = '.directory'
+[[item]]
+value = '.fuse_hidden*'
+[[item]]
+value = '.nfs*'
+[[item]]
+value = '.Trash-*'
+
+# ==== Editors ====
+[[item]]
+value = '.idea/'
+[[item]]
+value = '*.iml'
+[[item]]
+value = '*.ipr'
+[[item]]
+value = '*.iws'
+[[item]]
+value = '*.swp'
+[[item]]
+value = '*.swo'
+[[item]]
+value = '.history/'
+[[item]]
+value = '.vscode-test/'
+[[item]]
+value = '*.vsix'
+[[item]]
+value = '.atom/'
+[[item]]
+value = '.buildlog/'
+[[item]]
+value = '.svn/'
+[[item]]
+value = '.ionide/'
+
+# ==== AI tooling ====
+[[item]]
+value = '.claude/settings.local.json'
+[[item]]
+value = '.claude/worktrees/'
+[[item]]
+value = '.claude/cache/'
+[[item]]
+value = '.claude/todos.json'
+[[item]]
+value = '.claude/commit-msg.txt'
+[[item]]
+value = '.claude/scheduled_tasks.lock'
+[[item]]
+value = '.worktrees/'
+[[item]]
+value = '.cursor/'
+[[item]]
+value = '.opencode/'
+[[item]]
+value = '.superpowers/'
+[[item]]
+value = '.antigravitycli/'
+[[item]]
+value = '.omc/'
+[[item]]
+value = '**/.obsidian/'
+# The code-intelligence graph is rebuilt on every commit, per checkout.
+[[item]]
+value = 'graphify-out/'
+
+# ==== mise ====
+[[item]]
+value = 'mise.local.toml'
+[[item]]
+value = 'mise.*.local.toml'
+[[item]]
+value = '.mise.local.toml'
+[[item]]
+value = '.mise.*.local.toml'
+[[item]]
+value = '**/mise.local.lock'
+[[item]]
+value = '**/.config/mise.local.toml'
+[[item]]
+value = '**/.config/mise.*.local.toml'
+[[item]]
+value = '**/.config/mise/config.local.toml'
+[[item]]
+value = '**/.config/mise/config.*.local.toml'
+[[item]]
+value = '**/.config/mise/conf.d/*.local.toml'
+
+# ==== Secrets and env ====
+# .env.example is tracked: its negation stays after `.env.*`.
+[[item]]
+value = '.env'
+[[item]]
+value = '.env.*'
+[[item]]
+value = '!.env.example'
+[[item]]
+value = 'fnox.local.toml'
+[[item]]
+value = '*.pem'
+[[item]]
+value = '*.key'
+[[item]]
+value = '*.p12'
+[[item]]
+value = '*.pfx'
+[[item]]
+value = '.dev.vars'
+[[item]]
+value = '.dev.vars.*'
+
+# ==== Logs and runtime ====
+# vwf engine logs are part of a plan folder and stay tracked.
+[[item]]
+value = '*.log'
+[[item]]
+value = '!docs/plans/**/*.log'
+[[item]]
+value = 'npm-debug.log*'
+[[item]]
+value = 'yarn-debug.log*'
+[[item]]
+value = 'yarn-error.log*'
+[[item]]
+value = 'pnpm-debug.log*'
+[[item]]
+value = '.pnpm-debug.log*'
+[[item]]
+value = 'lerna-debug.log*'
+[[item]]
+value = 'crash.log'
+[[item]]
+value = 'crash.*.log'
+[[item]]
+value = '*.pid'
+[[item]]
+value = '*.pid.lock'
+[[item]]
+value = '*.seed'
+[[item]]
+value = 'pids/'
+[[item]]
+value = 'logs/'
+[[item]]
+value = 'report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json'
+
+# ==== Build output and coverage ====
+# A mise task group named build/ and a Rust src/bin/ are source.
+[[item]]
+value = 'build/'
+[[item]]
+value = '!.config/mise/tasks/**/build/'
+[[item]]
+value = 'bin/'
+[[item]]
+value = '!**/src/bin/'
+[[item]]
+value = 'dist/'
+[[item]]
+value = 'out/'
+[[item]]
+value = 'coverage/'
+[[item]]
+value = '*.lcov'
+[[item]]
+value = '.nyc_output/'
+[[item]]
+value = 'lib-cov/'
+[[item]]
+value = '*.tgz'
+[[item]]
+value = '*.bak'
+
+# ==== Node and web frameworks ====
+[[item]]
+value = 'node_modules/'
+[[item]]
+value = 'jspm_packages/'
+[[item]]
+value = 'web_modules/'
+[[item]]
+value = 'bower_components/'
+[[item]]
+value = '.npm/'
+[[item]]
+value = '.pnpm-store/'
+[[item]]
+value = '.yarn-integrity'
+[[item]]
+value = '.pnp.*'
+# Yarn v3 keeps these .yarn/ folders tracked.
+[[item]]
+value = '.yarn/*'
+[[item]]
+value = '!.yarn/patches'
+[[item]]
+value = '!.yarn/plugins'
+[[item]]
+value = '!.yarn/releases'
+[[item]]
+value = '!.yarn/sdks'
+[[item]]
+value = '!.yarn/versions'
+[[item]]
+value = '*.tsbuildinfo'
+[[item]]
+value = '.eslintcache'
+[[item]]
+value = '.stylelintcache'
+[[item]]
+value = '.node_repl_history'
+[[item]]
+value = '.cache/'
+[[item]]
+value = '.parcel-cache/'
+[[item]]
+value = '.turbo/'
+[[item]]
+value = '.next/'
+[[item]]
+value = '.nuxt/'
+[[item]]
+value = '.output/'
+[[item]]
+value = '.svelte-kit/'
+[[item]]
+value = '.astro/'
+[[item]]
+value = '.docusaurus/'
+[[item]]
+value = '.vuepress/dist/'
+[[item]]
+value = '**/.vitepress/cache/'
+[[item]]
+value = '**/.vitepress/dist/'
+[[item]]
+value = '.vite/'
+[[item]]
+value = 'vite.config.js.timestamp-*'
+[[item]]
+value = 'vite.config.ts.timestamp-*'
+[[item]]
+value = '.serverless/'
+[[item]]
+value = '.wrangler/'
+[[item]]
+value = '.firebase/'
+[[item]]
+value = '.dynamodb/'
+[[item]]
+value = '.temp/'
+# Bundler and tool caches.
+[[item]]
+value = '.fusebox/'
+[[item]]
+value = '.grunt'
+[[item]]
+value = '.lock-wscript'
+[[item]]
+value = '.rpt2_cache/'
+[[item]]
+value = '.rts2_cache_cjs/'
+[[item]]
+value = '.rts2_cache_es/'
+[[item]]
+value = '.rts2_cache_umd/'
+[[item]]
+value = '.webpack-cache/'
+[[item]]
+value = '.tern-port'
+
+# ==== Python ====
+[[item]]
+value = '__pycache__/'
+[[item]]
+value = '*.py[cod]'
+[[item]]
+value = '.venv/'
+[[item]]
+value = '.pyvenv/'
+[[item]]
+value = '*.egg-info/'
+[[item]]
+value = '.pytest_cache/'
+[[item]]
+value = '.mypy_cache/'
+[[item]]
+value = '.ruff_cache/'
+[[item]]
+value = '.direnv/'
+
+# ==== Go ====
+[[item]]
+value = '*.exe'
+[[item]]
+value = '*.exe~'
+[[item]]
+value = '*.dll'
+[[item]]
+value = '*.so'
+[[item]]
+value = '*.dylib'
+[[item]]
+value = '*.test'
+[[item]]
+value = '*.out'
+[[item]]
+value = 'go.work'
+[[item]]
+value = 'go.work.sum'
+
+# ==== Rust ====
+[[item]]
+value = '/target/'
+
+# ==== .NET ====
+[[item]]
+value = '[Oo]bj/'
+[[item]]
+value = '.vs/'
+[[item]]
+value = '*.user'
+[[item]]
+value = '*.suo'
+[[item]]
+value = '*.userosscache'
+[[item]]
+value = '*.sln.docstates'
+[[item]]
+value = '*.rsuser'
+[[item]]
+value = '*.nupkg'
+[[item]]
+value = '*.snupkg'
+[[item]]
+value = '[Tt]est[Rr]esult*/'
+[[item]]
+value = 'BenchmarkDotNet.Artifacts/'
+[[item]]
+value = '*.DotSettings.user'
+[[item]]
+value = '_ReSharper*/'
+
+# ==== Dart and Flutter ====
+[[item]]
+value = '.dart_tool/'
+[[item]]
+value = '.flutter-plugins'
+[[item]]
+value = '.flutter-plugins-dependencies'
+[[item]]
+value = '.packages'
+[[item]]
+value = '.pub-cache/'
+[[item]]
+value = '.pub/'
+[[item]]
+value = '**/Flutter/ephemeral/'
+[[item]]
+value = '**/generated_plugin_registrant.dart'
+[[item]]
+value = '**/GeneratedPluginRegistrant.java'
+[[item]]
+value = '**/ios/Runner/GeneratedPluginRegistrant.*'
+[[item]]
+value = '**/ios/Flutter/Generated.xcconfig'
+[[item]]
+value = '**/ios/Flutter/flutter_export_environment.sh'
+[[item]]
+value = '**/ios/Flutter/App.framework'
+[[item]]
+value = '**/ios/Flutter/Flutter.framework'
+[[item]]
+value = '**/ios/Flutter/Flutter.podspec'
+[[item]]
+value = '**/ios/.symlinks/'
+[[item]]
+value = '**/macos/Flutter/GeneratedPluginRegistrant.swift'
+[[item]]
+value = '**/linux/flutter/generated_plugin_registrant.*'
+[[item]]
+value = '**/linux/flutter/generated_plugins.cmake'
+[[item]]
+value = '**/windows/flutter/generated_plugin_registrant.*'
+[[item]]
+value = '**/windows/flutter/generated_plugins.cmake'
+# gen-l10n output; the .arb sources stay tracked.
+[[item]]
+value = '**/l10n/app_localizations*.dart'
+[[item]]
+value = '**/ios/Flutter/.last_build_id'
+[[item]]
+value = '**/ios/Flutter/ephemeral/'
+[[item]]
+value = '**/ios/Flutter/flutter_assets/'
+[[item]]
+value = '**/ios/Flutter/app.flx'
+[[item]]
+value = '**/ios/Flutter/app.zip'
+[[item]]
+value = '**/ios/ServiceDefinitions.json'
+[[item]]
+value = '**/macos/Flutter/ephemeral/'
+[[item]]
+value = '**/android/app/debug/'
+[[item]]
+value = '**/android/app/profile/'
+[[item]]
+value = '**/android/app/release/'
+[[item]]
+value = '.pub-preload-cache/'
+[[item]]
+value = 'migrate_working_dir/'
+# dart doc output.
+[[item]]
+value = '**/doc/api/'
+[[item]]
+value = 'app.*.map.json'
+[[item]]
+value = 'app.*.symbols'
+
+# ==== Swift, Xcode and CocoaPods ====
+[[item]]
+value = '.build/'
+[[item]]
+value = '.swiftpm/'
+[[item]]
+value = 'Derived/'
+[[item]]
+value = 'DerivedData/'
+[[item]]
+value = 'xcuserdata/'
+[[item]]
+value = '*.xcuserstate'
+[[item]]
+value = '*.xcscmblueprint'
+[[item]]
+value = '*.xccheckout'
+[[item]]
+value = '*.hmap'
+[[item]]
+value = '*.mode1v3'
+[[item]]
+value = '*.mode2v3'
+[[item]]
+value = '*.pbxuser'
+[[item]]
+value = '*.perspectivev3'
+[[item]]
+value = '!default.mode1v3'
+[[item]]
+value = '!default.mode2v3'
+[[item]]
+value = '!default.pbxuser'
+[[item]]
+value = '!default.perspectivev3'
+[[item]]
+value = '*.moved-aside'
+[[item]]
+value = '*.dSYM'
+[[item]]
+value = '*.dSYM.zip'
+[[item]]
+value = '*.ipa'
+[[item]]
+value = '**/Pods/'
+[[item]]
+value = 'Carthage/Build/'
+[[item]]
+value = 'fastlane/report.xml'
+[[item]]
+value = 'fastlane/Preview.html'
+[[item]]
+value = 'fastlane/screenshots/**/*.png'
+[[item]]
+value = 'fastlane/test_output/'
+
+# ==== Gradle, Kotlin and Android ====
+[[item]]
+value = '.gradle/'
+[[item]]
+value = '.kotlin/'
+[[item]]
+value = 'local.properties'
+[[item]]
+value = '.cxx/'
+[[item]]
+value = '.externalNativeBuild/'
+[[item]]
+value = 'captures/'
+[[item]]
+value = '**/android/build/'
+[[item]]
+value = '**/ios/build/'
+[[item]]
+value = '*.apk'
+[[item]]
+value = '*.aab'
+[[item]]
+value = '*.ap_'
+[[item]]
+value = '*.hprof'
+[[item]]
+value = '*.class'
+[[item]]
+value = 'proguard/'
+
+# ==== Mobile signing and service config ====
+# These files hold keys and project secrets.
+[[item]]
+value = '*.keystore'
+[[item]]
+value = '*.jks'
+[[item]]
+value = '*.p8'
+[[item]]
+value = '*.mobileprovision'
+[[item]]
+value = '*.certSigningRequest'
+[[item]]
+value = '*.cer'
+[[item]]
+value = 'key.properties'
+[[item]]
+value = 'keystore.properties'
+[[item]]
+value = 'release-keystore.properties'
+[[item]]
+value = 'google-services.json'
+[[item]]
+value = 'GoogleService-Info.plist'
+[[item]]
+value = 'Secrets.xcconfig'
+
+# ==== Pulumi ====
+# The local backend's backups and history; the stack state stays tracked.
+[[item]]
+value = '**/.pulumi/backups/'
+[[item]]
+value = '**/.pulumi/history/'
+
+# ==== vwf: working notes and scratch ====
+[[item]]
+value = 'docs/memory/handoff/'
+[[item]]
+value = 'docs/memory/doctor/'
+[[item]]
+value = 'docs/memory/runs/'
+[[item]]
+value = 'docs/scratchpad/'
+
+# ==== mempalace ====
+# The entity list, written at the repo root.
+[[item]]
+value = '/entities.json'
+
+# ==== brag ====
+# The video renders its frames here; the sources stay tracked.
+[[item]]
+value = 'brag-output/work/frames/'
+
+# ==== Reports ====
+[[item]]
+value = 'gitleaks-report.*'
+[[item]]
+value = 'grype-report.*'
+[[item]]
+value = 'sbom.*'

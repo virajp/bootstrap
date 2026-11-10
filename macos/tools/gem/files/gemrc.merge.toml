@@ -1,0 +1,8 @@
+# The merge spec of ~/.gemrc, a shared YAML file. gem rewrites the file (gem
+# sources), so bootstrap adds only these keys: no documentation on install
+# and update.
+format = "yaml"
+
+[[item]]
+kind = "keys"
+value = { ":verbose" = false, ":backtrace" = true, update = "--no-document", install = "--no-document" }

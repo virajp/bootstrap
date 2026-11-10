@@ -2,8 +2,19 @@
 # with their code:lint and code:format tasks.
 default_envs = [ "dev", "ci" ]
 depends = []
-extensions = [ "meta.pyrefly" ]
 root_only = false
+
+# The VS Code extensions of the tool, in .vscode/extensions.json.
+[contributes.vscode]
+extensions = [ "meta.pyrefly" ]
+
+# The dprint block and plugin of Python (ruff), in dprint.jsonc.
+[contributes.dprint]
+plugins = [ "npm:@dprint/ruff@0.11.3" ]
+
+[contributes.dprint.blocks.ruff]
+indentWidth = 2
+lineLength = 120
 
 # The mise config, generated into .config/mise/conf.d/python/mise.<env>.toml.
 [mise.settings]

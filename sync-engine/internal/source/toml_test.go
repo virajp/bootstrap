@@ -36,7 +36,8 @@ func tomlFiles(t *testing.T) []string {
 	var out []string
 	for _, side := range []string{"repo", "macos"} {
 		_ = filepath.WalkDir(filepath.Join(root, side), func(p string, d fs.DirEntry, err error) error {
-			if err == nil && d.Type().IsRegular() && strings.HasSuffix(p, ".toml") {
+			// A merge spec is a template: the engine reads it after the render.
+			if err == nil && d.Type().IsRegular() && strings.HasSuffix(p, ".toml") && !strings.HasSuffix(p, ".merge.toml") {
 				rel, _ := filepath.Rel(root, p)
 				out = append(out, filepath.ToSlash(rel))
 			}
