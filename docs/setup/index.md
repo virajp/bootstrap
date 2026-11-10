@@ -45,7 +45,7 @@ Run the CLI through mise. Before the first sync, the Mac does not have it on
 `PATH`:
 
 ```text
-mise x 'github:virajp/bootstrap[version_prefix=cli-v]@latest' -- bootstrap <command>
+mise x github:virajp/bootstrap@latest -- bootstrap <command>
 ```
 
 In this file, `bootstrap` is short for this command. The CLI gets its own clone

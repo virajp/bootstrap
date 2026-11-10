@@ -2969,6 +2969,10 @@ sync_jobs() { "$bin" sync --dry-run --jobs 1; }
 CASE_CALL=sync_jobs run_case "sync --jobs 1" 0 'environments = [ "dev" ]' '' 'Dry run: '
 questions_none() { "$bin" questions --json; }
 CASE_CALL=questions_none run_case "questions --json without questions" 0 'environments = [ "dev" ]' '' '[]'
+list_base() { "$bin" list; }
+CASE_CALL=list_base run_case "list: a dependency" 0 'environments = [ "dev" ]' '' 'dependency of pre-commit'
+ls_base() { "$bin" ls; }
+CASE_CALL=ls_base run_case "ls: a required tool" 0 'environments = [ "dev" ]' '' 'pack base; required'
 
 # The selection commands: detect, add, remove and replace. Each case first
 # syncs and commits the consumer, so a command starts from a clean work tree.
@@ -3505,7 +3509,7 @@ new_cache version-old
 got=0
 RUN_BIN=$release_bin run_bin "file://$version_remote" || got=$?
 check_clone "$name" 2 "$got"
-check_configs_log "$name" -h "bootstrap ${release_version} is older than 99.0.0, the version that the clone needs - upgrade it with: mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'"
+check_configs_log "$name" -h "bootstrap ${release_version} is older than 99.0.0, the version that the clone needs - upgrade it with: mise use -g github:virajp/bootstrap"
 check_configs_log "$name" -l 'using bootstrap at'
 
 name="bootstrap, a dev build is new enough"

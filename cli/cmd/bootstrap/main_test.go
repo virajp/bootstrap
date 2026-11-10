@@ -17,6 +17,10 @@ func TestRun(t *testing.T) {
 		stderr string // a prefix of stderr
 	}{
 		{"version", []string{"version"}, fail.OK, "dev\n", ""},
+		{"--version", []string{"--version"}, fail.OK, "dev\n", ""},
+		{"mac --version", []string{"mac", "--version"}, fail.Usage, "", "bootstrap: unknown command mac --version\nusage:"},
+		{"list argument", []string{"list", "x"}, fail.Usage, "", "bootstrap: unknown argument x\nusage:"},
+		{"ls bad flag", []string{"ls", "--yes"}, fail.Usage, "", "bootstrap: unknown flag --yes\nusage:"},
 		{"version argument", []string{"version", "x"}, fail.Usage, "", "bootstrap: unknown argument x\nusage:"},
 		{"no command", nil, fail.Usage, "", "bootstrap: no command\nusage:"},
 		{"unknown command", []string{"repo"}, fail.Usage, "", "bootstrap: unknown command repo\n"},

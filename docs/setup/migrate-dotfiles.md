@@ -42,7 +42,7 @@ This guide runs the CLI `bootstrap` through mise, because the symlink model does
 not have it:
 
 ```text
-mise x 'github:virajp/bootstrap[version_prefix=cli-v]@latest' -- bootstrap <command>
+mise x github:virajp/bootstrap@latest -- bootstrap <command>
 ```
 
 In this file, `bootstrap` is short for this command. The CLI gets its own clone
@@ -224,7 +224,7 @@ This step changes nothing in the real `$HOME`. It can write the
 bash:
 
 ```text
-bin=$(mise x 'github:virajp/bootstrap[version_prefix=cli-v]@latest' -- which bootstrap)
+bin=$(mise x github:virajp/bootstrap@latest -- which bootstrap)
 ```
 
 Then run this command in bash two times, in the same shell. The first run

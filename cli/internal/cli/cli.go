@@ -1,5 +1,5 @@
 // Package cli is the command line of `bootstrap`: the commands init, sync,
-// check, questions, add, remove, replace and detect of the repo side and of the Mac side (`bootstrap mac
+// check, questions, add, remove, replace, detect and list of the repo side and of the Mac side (`bootstrap mac
 // <command>`), and version. It does the steps that each command shares: the
 // preflight, the clone and its lock, the version check, the change list, the
 // clean-target rule and the consent. The front-ends internal/repo and
@@ -45,6 +45,7 @@ commands:
                        tools, then sync
   detect               run the detect scripts, and offer to add each tool
                        that matches
+  list, ls             list the selected tools, with the reason of each one
   mac init [tool...]   init for the Mac, in the current folder (the
                        repository of macos.toml)
   mac sync             sync the Mac from MACOS_SETUP_REPO_PATH
@@ -53,7 +54,8 @@ commands:
                        the questions of the Mac tools
   mac add, mac remove, mac replace, mac detect
                        the selection commands for macos.toml
-  version              print the version
+  mac list, mac ls     list the selected Mac tools
+  version, --version   print the version
 
 flags:
   --dry-run            init, sync, add, remove, replace, detect: show the
@@ -108,6 +110,9 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 	}
 	mac := false
 	cmd, rest := args[0], args[1:]
+	if cmd == "--version" {
+		cmd = "version"
+	}
 	if cmd == "mac" {
 		if len(rest) == 0 {
 			a.errorf("mac: no command")
@@ -116,6 +121,9 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		}
 		mac = true
 		cmd, rest = rest[0], rest[1:]
+	}
+	if cmd == "ls" {
+		cmd = "list"
 	}
 	allowed := map[string]string{
 		"init":      "dry-run yes answer jobs",
@@ -126,6 +134,7 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		"remove":    "dry-run yes jobs",
 		"replace":   "dry-run yes answer jobs",
 		"detect":    "dry-run yes no answer jobs",
+		"list":      "",
 		"version":   "",
 	}
 	flags, ok := allowed[cmd]
@@ -182,6 +191,8 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		return a.replace(mac, o)
 	case "detect":
 		return a.detect(mac, o)
+	case "list":
+		return a.list(mac)
 	default:
 		return a.questions(mac, o)
 	}

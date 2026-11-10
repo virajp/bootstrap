@@ -9,20 +9,22 @@ its tools, and `bootstrap sync` copies the files of those tools.
 mise installs the CLI from the GitHub releases of this repository:
 
 ```bash
-mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'
+mise use -g github:virajp/bootstrap
 ```
 
-| Command                         | Job                                                                              |
-| ------------------------------- | -------------------------------------------------------------------------------- |
-| `bootstrap init [tool…]`        | Select `base` and the named tools, migrate an old form, ask the questions, sync. |
-| `bootstrap sync`                | Sync the repository of the current folder. `setup:configs` runs it.              |
-| `bootstrap check`               | Examine the values file, and run the check scripts of the tools.                 |
-| `bootstrap questions [tool…]`   | List the questions, their proposals and their answers. `--json` for an agent.    |
-| `bootstrap detect`              | Run the detect scripts, and offer to add each tool that matches.                 |
-| `bootstrap add <tool…>`         | Add the tools and their dependencies, then sync.                                 |
-| `bootstrap remove <tool…>`      | Remove the tools and the dependencies that no tool needs, then sync.             |
-| `bootstrap replace <old> <new>` | Move from one tool to another with the same parent, then sync.                   |
-| `bootstrap mac <command>`       | The same commands for the Mac, with `macos.toml`.                                |
+| Command                          | Job                                                                              |
+| -------------------------------- | -------------------------------------------------------------------------------- |
+| `bootstrap init [tool…]`         | Select `base` and the named tools, migrate an old form, ask the questions, sync. |
+| `bootstrap sync`                 | Sync the repository of the current folder. `setup:configs` runs it.              |
+| `bootstrap check`                | Examine the values file, and run the check scripts of the tools.                 |
+| `bootstrap questions [tool…]`    | List the questions, their proposals and their answers. `--json` for an agent.    |
+| `bootstrap detect`               | Run the detect scripts, and offer to add each tool that matches.                 |
+| `bootstrap add <tool…>`          | Add the tools and their dependencies, then sync.                                 |
+| `bootstrap remove <tool…>`       | Remove the tools and the dependencies that no tool needs, then sync.             |
+| `bootstrap replace <old> <new>`  | Move from one tool to another with the same parent, then sync.                   |
+| `bootstrap list`, `bootstrap ls` | List the selected tools, with the reason of each one.                            |
+| `bootstrap --version`            | Print the version.                                                               |
+| `bootstrap mac <command>`        | The same commands for the Mac, with `macos.toml`.                                |
 
 Each writing command shows its change list first. `--dry-run` writes nothing,
 and `--yes` writes without a prompt.

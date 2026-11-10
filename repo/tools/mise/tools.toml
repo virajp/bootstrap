@@ -32,11 +32,10 @@ hide = true
 run = "find .config/mise/tasks/ -name '*' -type f -exec chmod 755 {} \\;"
 
 # The CLI of the sync, in dev only. setup:configs and code:lint:60-bootstrap
-# run it. Its release tags are cli-vX.Y.Z, so mise reads only the tags with
-# the prefix cli-v, and shows cli-v2.0.0 as 2.0.0.
+# run it. Its release tags are bootstrap@X.Y.Z, and mise shows bootstrap@2.0.2
+# as 2.0.2.
 [mise_env.dev.tools."github:virajp/bootstrap"]
 version = "latest"
-version_prefix = "cli-v"
 
 # dev run on macOS
 # selects macOS binaries.
