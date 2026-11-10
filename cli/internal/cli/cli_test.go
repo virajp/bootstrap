@@ -83,3 +83,43 @@ func TestStaleLock(t *testing.T) {
 		t.Error("the lock of a live holder is removed")
 	}
 }
+
+func TestRenderTree(t *testing.T) {
+	deps := map[string][]string{
+		"gitleaks":   {"_sec"},
+		"grype":      {"_sec"},
+		"linter":     {"node"},
+		"pre-commit": {"python"},
+		"python":     {"uv"},
+		"uv":         {"python"}, // a loop of depends
+	}
+	required := func(t string) bool { return t == "git" || t == "pre-commit" }
+	roots := []listRoot{
+		{"base (pack)", []string{"pre-commit", "git", "gitleaks", "grype", "linter"}},
+		{"extra (pack)", []string{"zed"}},
+		{"tools (selected directly)", []string{"git", "claude"}},
+	}
+	want := `base (pack)
+├── git         [required]
+├── gitleaks
+│   └── _sec
+├── grype
+│   └── _sec
+├── linter
+│   └── node
+└── pre-commit  [required]
+    └── python
+        └── uv
+extra (pack)
+└── zed
+tools (selected directly)
+├── claude
+└── git         [required]
+`
+	if got := renderTree(roots, deps, required); got != want {
+		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+	if got := renderTree(roots[:2], deps, required); strings.Contains(got, "tools (selected") {
+		t.Errorf("a tools root without tools: %s", got)
+	}
+}

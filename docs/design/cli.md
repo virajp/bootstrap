@@ -81,18 +81,18 @@ The group `mac` names the Mac side. Thus a folder with both `macos.toml` and
 `.config/bootstrap.toml` has no doubt. Each command without `mac` is for the
 repository of the current folder.
 
-| Command                | Job                                                                                                                                                     |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `init [tool…]`         | Selects `base` and the named tools, migrates an old form, asks each question without an answer, then syncs. See [`init`](#init).                        |
-| `sync`                 | The sync of the side. `setup:configs` and `updateall:configs` run it.                                                                                   |
-| `check`                | Examines the values file and runs the check scripts. On the Mac, a dry run of the sync.                                                                 |
-| `questions [tool…]`    | Lists the questions, their proposals and their answers. Without names, the questions of the selected tools. `--json` prints one JSON array.             |
-| `add <tool…>`          | Selects the tools and their dependencies, asks their questions, then syncs.                                                                             |
-| `remove <tool…>`       | Removes the tools, and each dependency that the user named and that no other tool needs, then syncs. Each seed of a removed tool stays, with a line.    |
-| `replace <old> <new>`  | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                                 |
-| `detect`               | Runs the detect scripts, and offers to add each tool that matches. See [`detect`](#detect).                                                             |
-| `list`, `ls`           | Lists each selected tool, sorted, with the reasons of its selection: `tools`, `pack <name>`, `dependency of <tools>` and `required`. It writes nothing. |
-| `version`, `--version` | Prints the version. There is no `mac version`.                                                                                                          |
+| Command                | Job                                                                                                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init [tool…]`         | Selects `base` and the named tools, migrates an old form, asks each question without an answer, then syncs. See [`init`](#init).                     |
+| `sync`                 | The sync of the side. `setup:configs` and `updateall:configs` run it.                                                                                |
+| `check`                | Examines the values file and runs the check scripts. On the Mac, a dry run of the sync.                                                              |
+| `questions [tool…]`    | Lists the questions, their proposals and their answers. Without names, the questions of the selected tools. `--json` prints one JSON array.          |
+| `add <tool…>`          | Selects the tools and their dependencies, asks their questions, then syncs.                                                                          |
+| `remove <tool…>`       | Removes the tools, and each dependency that the user named and that no other tool needs, then syncs. Each seed of a removed tool stays, with a line. |
+| `replace <old> <new>`  | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                              |
+| `detect`               | Runs the detect scripts, and offers to add each tool that matches. See [`detect`](#detect).                                                          |
+| `list`, `ls`           | Prints the selected tools as a tree. See [`list`](#list). It writes nothing.                                                                         |
+| `version`, `--version` | Prints the version. There is no `mac version`.                                                                                                       |
 
 | Flag                            | Commands                                              | Effect                                                                 |
 | ------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -236,6 +236,28 @@ selected, and an old tool that another tool needs.
 The migrate script runs after the consent and before the writes. Its input has
 `tool` = the new tool and `values` = the old `[tools.<old>]` table. The new
 table gets only the `env` of the old table.
+
+### `list`
+
+`list` prints a tree. It writes nothing. Each root is `<pack> (pack)` for a pack
+that selects a tool, `base` first and then the other packs by name. The last
+root is `tools (selected directly)` for the tools of `[tools.<name>]`, and it
+is absent when there are none.
+
+Below a root are its tools, sorted by name. Below a tool are its dependencies,
+sorted by name, and a dependency of a dependency goes one level lower. A tool
+with more than one parent shows below each parent. A required tool has the
+marker `[required]`, and all markers are in one column.
+
+```text
+base (pack)
+├── git         [required]
+├── pre-commit  [required]
+│   └── python
+└── vscode
+tools (selected directly)
+└── claude
+```
 
 ### `detect`
 
