@@ -172,7 +172,7 @@ func copyDir(t *testing.T, from, to string) {
 	}
 }
 
-// clone builds a clone copy in <dir>: sync-engine/clone and the fixture repo
+// clone builds a clone copy in <dir>: sync-engine/VERSION and the fixture repo
 // as macos/, in a git repository.
 func clone(t *testing.T, dir string, bad bool) {
 	t.Helper()
@@ -181,11 +181,11 @@ func clone(t *testing.T, dir string, bad bool) {
 			t.Fatal(err)
 		}
 	}
-	b, err := os.ReadFile(filepath.Join(repoRoot, "sync-engine", "clone"))
+	b, err := os.ReadFile(filepath.Join(repoRoot, "sync-engine", "VERSION"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	write(filepath.Join(dir, "sync-engine", "clone"), string(b))
+	write(filepath.Join(dir, "sync-engine", "VERSION"), string(b))
 	copyDir(t, filepath.Join(repoRoot, "macos", "fixtures", "repo"), filepath.Join(dir, "macos"))
 	if !bad {
 		os.RemoveAll(filepath.Join(dir, "macos", "tools", "bad"))

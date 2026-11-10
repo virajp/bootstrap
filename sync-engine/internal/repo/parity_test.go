@@ -97,23 +97,23 @@ func gitIn(t *testing.T, dir string, args ...string) {
 	}
 }
 
-// clone builds the clone copy in <dir>: repo/, sync-engine/clone and tools/
-// of the working tree, in a git repository.
+// clone builds the clone copy in <dir>: repo/ and sync-engine/VERSION of the
+// working tree, in a git repository.
 func clone(t *testing.T, dir string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Join(dir, "sync-engine"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, d := range []string{"repo", "tools"} {
+	for _, d := range []string{"repo"} {
 		if out, err := exec.Command("cp", "-R", filepath.Join(repoRoot, d), filepath.Join(dir, d)).CombinedOutput(); err != nil {
 			t.Fatalf("cp %s: %v\n%s", d, err, out)
 		}
 	}
-	b, err := os.ReadFile(filepath.Join(repoRoot, "sync-engine", "clone"))
+	b, err := os.ReadFile(filepath.Join(repoRoot, "sync-engine", "VERSION"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	write(filepath.Join(dir, "sync-engine", "clone"), string(b))
+	write(filepath.Join(dir, "sync-engine", "VERSION"), string(b))
 	gitIn(t, dir, "init", "--quiet")
 	gitIn(t, dir, "add", "-A")
 	gitIn(t, dir, "commit", "--quiet", "--no-verify", "-m", "test copy")
@@ -367,10 +367,10 @@ func runCase(t *testing.T, c pcase, d, cloneDir, commit string, cmd []string) st
 	return normalize(b.String(), d, cloneDir, commit)
 }
 
-// fingerprint is the hash of the inputs: repo/ and tools/.
+// fingerprint is the hash of the inputs: repo/.
 func fingerprint(t *testing.T) string {
 	h := sha256.New()
-	for _, dir := range []string{"repo", "tools"} {
+	for _, dir := range []string{"repo"} {
 		_ = filepath.WalkDir(filepath.Join(repoRoot, dir), func(p string, e fs.DirEntry, err error) error {
 			if err == nil && !e.IsDir() {
 				b, _ := os.ReadFile(p)

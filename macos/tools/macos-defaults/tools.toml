@@ -6,7 +6,7 @@
 #   - https://www.defaults-write.com/
 #   - https://mac.install.guide/mac-setup/finder/
 # `defaults read <domain> [<key>]` shows the live value. pmset/nvram live in the
-# upgrade:power task of the macos-setup tool (run weekly by `updateall`).
+# upgrade:power task of the mise tool (run weekly by `updateall`).
 # The defaults of an app (for example com.vorssaint.utils) belong to its own
 # tool.
 

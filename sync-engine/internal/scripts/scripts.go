@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -101,7 +102,7 @@ type Runner struct {
 	ToolsDir string // The absolute folder of the tools of the side.
 	Shown    string // That folder in a message, for example repo/tools.
 	Root     string // The folder where each script runs.
-	Jobs     int    // The number of jobs at a time; 0 is 2 × the CPU count.
+	Jobs     int    // The number of jobs at a time; 0 is BOOTSTRAP_JOBS, else 2 × the CPU count.
 }
 
 // Path gives the absolute path of the script <name> of <tool>.
@@ -125,6 +126,10 @@ func (r Runner) Has(tool, name string) bool {
 func (r Runner) Run(jobs []Job) []Result {
 	out := make([]Result, len(jobs))
 	limit := r.Jobs
+	if limit <= 0 {
+		// --jobs of the command sets BOOTSTRAP_JOBS.
+		limit, _ = strconv.Atoi(os.Getenv("BOOTSTRAP_JOBS"))
+	}
 	if limit <= 0 {
 		limit = 2 * runtime.NumCPU()
 	}

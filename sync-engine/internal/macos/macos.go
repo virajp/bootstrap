@@ -5,7 +5,7 @@
 // codes.
 //
 // Run reads the same environment as `setup_sync`: BOOTSTRAP_CLONE,
-// BOOTSTRAP_CACHE, MACOS_SETUP_CONFIG_PATH, BOOTSTRAP_VERBOSE, HOME, USER,
+// BOOTSTRAP_CACHE, MACOS_SETUP_REPO_PATH, BOOTSTRAP_VERBOSE, HOME, USER,
 // TMPDIR, XDG_CACHE_HOME, PATH, PWD and the style variables FORCE_COLOR,
 // NO_COLOR and TERM.
 //
@@ -24,6 +24,8 @@ import (
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
 	"github.com/virajp/bootstrap/sync-engine/internal/manifest"
 	"github.com/virajp/bootstrap/sync-engine/internal/misegen"
+	"github.com/virajp/bootstrap/sync-engine/internal/oldform"
+	"github.com/virajp/bootstrap/sync-engine/internal/questions"
 	"github.com/virajp/bootstrap/sync-engine/internal/report"
 	"github.com/virajp/bootstrap/sync-engine/internal/selection"
 	"github.com/virajp/bootstrap/sync-engine/internal/source"
@@ -113,9 +115,16 @@ type state struct {
 	show      string          // _SS_SHOW
 }
 
-// Run runs `setup_sync <args>` and gives its exit code. The usage of -h goes
-// to <stdout>; each other line goes to <stderr>.
+// Run runs `bootstrap mac sync <args>` and gives its exit code. The usage of
+// -h goes to <stdout>; each other line goes to <stderr>.
 func Run(args []string, stdout, stderr io.Writer) fail.Code {
+	_, code := RunWith(args, stdout, stderr)
+	return code
+}
+
+// RunWith is Run, and it also gives the change list of a dry run: the
+// absolute path of each file that the run would write, change or remove.
+func RunWith(args []string, stdout, stderr io.Writer) ([]string, fail.Code) {
 	s := &state{stdout: stdout, stderr: stderr, getenv: os.Getenv, dirDone: map[string]bool{}, derived: map[string]*source.Obj{}}
 	isTerm := false
 	if f, ok := stderr.(*os.File); ok {
@@ -149,7 +158,8 @@ func Run(args []string, stdout, stderr io.Writer) fail.Code {
 		}
 	}()
 	defer s.e.Temps.Cleanup()
-	return s.run(args)
+	code := s.run(args)
+	return s.e.Planned, code
 }
 
 func (s *state) log(format string, args ...any) { s.r.Log(fmt.Sprintf(format, args...)) }
@@ -184,13 +194,13 @@ func (s *state) run(args []string) fail.Code {
 		s.log("BOOTSTRAP_CLONE is not a clone of bootstrap - run mise run updateall:configs")
 		return fail.Usage
 	}
-	cfg := s.getenv("MACOS_SETUP_CONFIG_PATH")
+	cfg := s.getenv("MACOS_SETUP_REPO_PATH")
 	if cfg == "" {
-		s.log("MACOS_SETUP_CONFIG_PATH is not set - set it to the folder of macos.toml")
+		s.log("MACOS_SETUP_REPO_PATH is not set - set it to the repository of macos.toml")
 		return fail.Usage
 	}
 	if !isDir(cfg) {
-		s.log("the config folder %s does not exist - set MACOS_SETUP_CONFIG_PATH to the folder of macos.toml", cfg)
+		s.log("the folder %s does not exist - set MACOS_SETUP_REPO_PATH to the repository of macos.toml", cfg)
 		return fail.Usage
 	}
 
@@ -394,6 +404,13 @@ func (s *state) abs(p string) string {
 // readValues is `_ss_read_values`.
 func (s *state) readValues() fail.Code {
 	file := s.config + "/" + valuesName
+	if isFile(file) {
+		if raw, err := source.ReadTOML(file); err == nil {
+			if err := oldform.Mac(raw, s.e.Show(file)); err != nil {
+				return s.logAll(err)
+			}
+		}
+	}
 	v, err := values.ReadMacos(file, s.e.Show(file))
 	if err != nil {
 		return s.logAll(err)
@@ -424,6 +441,12 @@ func (s *state) toolValues() fail.Code {
 	})
 	if err != nil {
 		return s.logAll(err)
+	}
+	if missing := questions.Missing(s.idx, s.res.Tools, s.values.User, over); len(missing) > 0 {
+		for _, q := range missing {
+			s.log("the question %s has no answer in %s - run bootstrap init", q.Name(), valuesName)
+		}
+		return fail.Usage
 	}
 	s.all = m.All()
 	s.ctx = map[string]any{}

@@ -7,7 +7,7 @@ code in this repository.
 
 This repository is the source of shared files for other repositories. Its only
 application code is the sync engine in `sync-engine/`: the Go module of the
-engine, and the bash files `clone` and `repo-sync` (the shim). Its tests are
+engine, the CLI `bootstrap`. Its tests are
 `test:repo-sync`,
 `test:setup-sync`, `test:macos-tools` and `test:go`, and the task `test` runs
 each test task (see "Tests").
@@ -22,9 +22,7 @@ each tool: a `tools.toml`, the config files in `files/` and the task files in
 `repo/packs.toml`, outside each tool folder, so the
 sync never copies it. The examples are in `repo/examples/`. The Mac tools are in
 `macos/tools/<tool>/`, one folder for
-each tool, and their packs are in `macos/packs.toml`. `tools/` holds only the
-forwarding file `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync`, which
-the sync does not ship: an old consumer stub sources it from the clone. These
+each tool, and their packs are in `macos/packs.toml`. These
 files are for this repository only:
 
 - At the root: `README.md`, `CLAUDE.md`, `LICENSE`, `dprint.jsonc` (with the
@@ -33,8 +31,7 @@ files are for this repository only:
   copies it to a consumer. It is the Go module
   `github.com/virajp/bootstrap/sync-engine` (`go.mod`, `cmd/bootstrap/` and
   `internal/`), with the front-ends `bootstrap sync` and
-  `bootstrap mac sync`. It also holds `clone`, which the entry tasks embed, and
-  `repo-sync`, the shim of an old consumer sync task. The Go engine replaced
+  `bootstrap mac sync`. The Go engine replaced
   the bash engine, and it keeps each output line, file and exit code of the
   bash engine.
 - `docs/design/`: the contract of the sync, one place for each rule (see "Where
@@ -117,10 +114,10 @@ Each rule of the sync has one place in `docs/design/`. Read the doc before you
 change the path:
 
 - Read `docs/design/sync-engine.md` before you change `sync-engine/`.
-- Read `docs/design/repo-sync.md` before you change `sync-engine/internal/repo`,
-  the shim `sync-engine/repo-sync` or `repo/tools/repo-sync/`.
+- Read `docs/design/repo-sync.md` before you change `sync-engine/internal/repo`
+  or the entry tasks of `repo/tools/mise/`.
 - Read `docs/design/setup-sync.md` before you change
-  `sync-engine/internal/macos` or `macos/tools/macos-setup/`.
+  `sync-engine/internal/macos` or the entry tasks of `macos/tools/mise/`.
 - Read `docs/design/packs.md` before you change `repo/packs.toml` or
   `macos/packs.toml`.
 - Read `docs/design/tools.md` and `docs/design/mise.md` before you change a
@@ -167,10 +164,6 @@ table").
     `repo/tools/` uses it now.
   - `xcode`: `require_xcode`, `find_xcodeproj` and the simulator functions for
     the Apple tasks.
-  - `repo-sync`: the forwarding file, at
-    `tools/repo-sync/.config/mise/tasks/_scripts/repo-sync` of this repository.
-    The sync does not ship it. See `docs/design/sync-engine.md` ("The engine
-    variables").
   - `worktrees-page`: `write_worktrees_page`, which writes the HTML page of
     `code:worktrees`. It holds a small font with the glyphs of that task.
 
@@ -208,7 +201,7 @@ table").
   executable. The task files load in every environment.
 - A gate of a language is a `code:lint:<gate>` or `code:format:<gate>` task
   in the tool of that language, for example `code:lint:70-ruff` in `python`.
-  `code:lint:60-repo-sync` of `repo-sync` follows the same rules for the values
+  `code:lint:60-bootstrap` of `mise` follows the same rules for the values
   file `.config/bootstrap.toml`:
   - Without its tool (`mise x -- which <tool>`) or without a file of its
     language, the gate prints nothing and exits 0. Some gates examine a
@@ -281,9 +274,9 @@ lines of the sync. The cases of the default output unset it. See
   `.config/mise/tasks/test/repo-sync`. It runs `bootstrap sync --dry-run`,
   `bootstrap check` and, for a case that compares a written file,
   `bootstrap sync`, built from the working tree's `sync-engine/`, with the
-  working tree's `repo/`, `sync-engine/` and `tools/` (the forwarding file)
-  against scratch values files and scratch consumers. The forward cases call
-  `repo_sync` through the forwarding file and the shim. The entry
+  working tree's `repo/` and `sync-engine/` against scratch values files and
+  scratch consumers. The init cases run `bootstrap init` on an old values
+  file, and the clone cases run the binary against a local origin. The entry
   cases run the rendered task `setup:configs` with a fake engine. With
   `BOOTSTRAP_BIN` set to an absolute path, it tests that binary and does not
   build one. It
@@ -297,7 +290,7 @@ lines of the sync. The cases of the default output unset it. See
   from the working tree's `sync-engine/`, against the fixtures in
   `macos/fixtures/`, and it
   compares the exit code, the output and the files of each case. The entry cases
-  run the rendered task `updateall:configs` of `macos/tools/macos-setup/`
+  run the task `updateall:configs` of `macos/tools/mise/`
   against a local bare origin, for the clone, the lock and the temporary copy.
   Each case has its own temporary `HOME`, so it never changes the real `$HOME`.
   It needs no network when gomplate, jq and yq are installed. With
@@ -310,7 +303,7 @@ lines of the sync. The cases of the default output unset it. See
   `macos/examples/macos.toml`, in a temporary `HOME`. It examines four items:
   no `[files]` table gives `mode = "seed"` to a JSON, YAML or TOML target, the
   example selects each tool and each rendered file parses, an example without
-  the answer `config_path` of `macos-setup` stops the sync with code 2, and a
+  the answer `config_path` of `mise` stops the sync with code 2, and a
   mise tool on both sides of `repo/tools/` and `macos/tools/` has one version
   and one `depends`, and a mise setting on both sides has one value. To change
   such a value, change it on both sides. An intended

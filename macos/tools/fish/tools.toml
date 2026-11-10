@@ -4,7 +4,7 @@
 # fish_frozen_* files that fish writes itself are seeds. The [mise.*] tables
 # install Homebrew's fish, add it to /etc/shells and set the login shell. They
 # become ~/.config/mise/conf.d/fish/mise.toml.
-depends = [ "homebrew", "mise", "macos-setup" ]
+depends = [ "homebrew", "mise" ]
 description = "fish from Homebrew, its config, drop-in folder conf.d/ and functions, and the login shell"
 stage = "init"
 

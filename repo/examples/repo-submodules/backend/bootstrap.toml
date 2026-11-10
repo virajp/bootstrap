@@ -1,7 +1,7 @@
 # Example: the submodule backend. It is a node monorepo with the branches main
 # and develop.
 
-# The bootstrap commit of the last sync. repo-sync writes it.
+# The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]

@@ -53,6 +53,7 @@ func (e *Env) Unblock(dir, root string, spare []string, target string) fail.Code
 				return fail.Other
 			}
 			if e.DryRun {
+				e.Plan(dir)
 				r.Outcome(report.Removed, show, "", "would remove "+show+" (a folder replaces it)")
 				return fail.OK
 			}
@@ -184,6 +185,7 @@ func (e *Env) Finish(mode os.FileMode, tmp, dest, show, fileMode string) fail.Co
 		case err == nil && cur == mode:
 			r.Outcome(report.Unchanged, show, "", "unchanged  "+show)
 		case e.DryRun:
+			e.Plan(dest)
 			r.Outcome(report.Changed, show, "", "would chmod "+octal+" "+show)
 		default:
 			if err := os.Chmod(dest, mode); err != nil {
@@ -196,6 +198,7 @@ func (e *Env) Finish(mode os.FileMode, tmp, dest, show, fileMode string) fail.Co
 	}
 
 	if e.DryRun {
+		e.Plan(dest)
 		r.Outcome(kind, show, "", "would update "+show)
 		if isRegular(dest) {
 			cmd := exec.Command("diff", "-u", "--label", show+" (current)", "--label", show+" (bootstrap)", "--", dest, tmp)

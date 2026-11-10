@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
-#MISE description="Test setup-sync against fixtures, with no network"
+#MISE description="Test bootstrap mac against fixtures, with no network"
 
 # Runs `bootstrap mac sync`, built from the working tree's sync-engine/, against
 # the fixture repo in macos/fixtures/repo/ and the fixture config folders in
 # macos/fixtures/config/, and checks the exit code, the output and the files of
 # each case. Every case has its own temp HOME, XDG_* folders, cache, TMPDIR and
 # git config, so it needs no network and never touches the real $HOME. Every real
-# run passes --no-bootstrap. The entry cases at the end run the rendered entry
-# task updateall:configs against a local bare origin with the real
-# macos/tools/macos-setup/: they cover the clone, the lock, the temp copy and
-# the engine pin. BOOTSTRAP_BIN, when set, is the engine to test (an absolute
-# path); else the task builds it once from the copy of sync-engine/.
+# run passes --no-bootstrap. The config folder (MACOS_SETUP_REPO_PATH) is a git
+# repository. The entry cases at the end run the entry task updateall:configs
+# of macos/tools/mise/ against a local bare origin: they cover the clone of
+# bootstrap, the lock and the temp copy. BOOTSTRAP_BIN, when set, is the engine
+# to test (an absolute path); else the task builds it once from the copy of
+# sync-engine/.
 
 set -euo pipefail
 
@@ -57,7 +58,7 @@ _git() {
     -c commit.gpgsign=false -c core.hooksPath=/dev/null -c init.defaultBranch=main "$@"
 }
 
-print_header "Testing setup-sync against fixtures ..."
+print_header "Testing bootstrap mac against fixtures ..."
 
 # No fixture file may be one that git ignores: it would be missing from a
 # fresh checkout.
@@ -142,14 +143,16 @@ case_body() {
   export XDG_CACHE_HOME="$dir/xdg/cache" XDG_CONFIG_HOME="$dir/xdg/config"
   export XDG_STATE_HOME="$dir/xdg/state" XDG_DATA_HOME="$dir/xdg/data"
   export BOOTSTRAP_CACHE="$XDG_CACHE_HOME/bootstrap"
-  export MACOS_SETUP_CONFIG_PATH="$dir/config"
+  export MACOS_SETUP_REPO_PATH="$dir/config"
   export GIT_CONFIG_GLOBAL="$dir/gitconfig" GIT_CONFIG_NOSYSTEM=1
   : > "$GIT_CONFIG_GLOBAL"
   export TMPDIR="$dir/tmp"
   unset BOOTSTRAP_URL
   manifest="$BOOTSTRAP_CACHE/macos-generated.tsv"
-  values="$MACOS_SETUP_CONFIG_PATH/macos.toml"
+  values="$MACOS_SETUP_REPO_PATH/macos.toml"
   user="$dir/user"
+  mkdir -p -- "$MACOS_SETUP_REPO_PATH"
+  _git init --quiet "$MACOS_SETUP_REPO_PATH"
   "$@"
   printf '%s\n' "$failures" > "$dir/failures"
 }
@@ -189,12 +192,19 @@ run_dry() { sync_run --dry-run; }
 
 # use_config <name>: a copy of a fixture config folder; `-` is an empty one.
 use_config() {
-  rm -rf -- "$MACOS_SETUP_CONFIG_PATH"
+  rm -rf -- "$MACOS_SETUP_REPO_PATH"
   if [[ $1 == - ]]; then
-    mkdir -p -- "$MACOS_SETUP_CONFIG_PATH"
+    mkdir -p -- "$MACOS_SETUP_REPO_PATH"
   else
-    cp -R -- "$fixtures/config/$1" "$MACOS_SETUP_CONFIG_PATH"
+    cp -R -- "$fixtures/config/$1" "$MACOS_SETUP_REPO_PATH"
   fi
+  _git init --quiet "$MACOS_SETUP_REPO_PATH"
+  commit_config
+}
+# commit_config: commit each file of the config folder.
+commit_config() {
+  _git -C "$MACOS_SETUP_REPO_PATH" add -A
+  _git -C "$MACOS_SETUP_REPO_PATH" commit --quiet --no-verify --allow-empty -m "config"
 }
 
 # case_tree <function>: a copy of the tree for this case only, after <function>
@@ -271,18 +281,26 @@ new_header_file() { printf '%s\n' "# Synced from bootstrap: test. Do not edit th
 # ---- config ----------------------------------------------------------------
 
 case_config_missing() {
+  rm -rf -- "$MACOS_SETUP_REPO_PATH"
   run_real
   check_exit 2
-  check_output "the config folder $MACOS_SETUP_CONFIG_PATH does not exist"
-  check_output MACOS_SETUP_CONFIG_PATH
+  check_output "MACOS_SETUP_REPO_PATH $MACOS_SETUP_REPO_PATH is not a git repository"
+  check "nothing written" not test -e "$home/.config"
+}
+
+case_config_not_git() {
+  rm -rf -- "$MACOS_SETUP_REPO_PATH/.git"
+  run_real
+  check_exit 2
+  check_output "MACOS_SETUP_REPO_PATH $MACOS_SETUP_REPO_PATH is not a git repository"
   check "nothing written" not test -e "$home/.config"
 }
 
 case_config_unset() {
-  unset MACOS_SETUP_CONFIG_PATH
+  unset MACOS_SETUP_REPO_PATH
   run_real
   check_exit 2
-  check_output "MACOS_SETUP_CONFIG_PATH is not set"
+  check_output "MACOS_SETUP_REPO_PATH is not set"
   check "nothing written" not test -e "$home/.config"
 }
 
@@ -359,8 +377,8 @@ case_unknown_flag() {
   use_config ok
   sync_run --bogus
   check_exit 2
-  check_output "unknown flag '--bogus'"
-  check_output "usage: setup_sync"
+  check_output "unknown flag --bogus"
+  check_output "usage: bootstrap"
 }
 
 # ---- packs and selection ------------------------------------------------------
@@ -370,7 +388,7 @@ case_tools_list() {
   use_config ok
   run_real
   check_exit 0
-  check_output "tools: core macos-setup opt"
+  check_output "tools: core mise opt"
   check "merger (pack extra, not listed) is not rendered" not test -e "$home/.config/merger"
 }
 
@@ -379,7 +397,7 @@ case_packs_table() {
   use_config packs-table
   run_real
   check_exit 0
-  check_output "tools: core macos-setup opt"
+  check_output "tools: core mise opt"
   check "opt (default = true) is rendered" test -f "$home/.config/opt/opt.txt"
   check "merger (default = false) is not rendered" not test -e "$home/.config/merger"
 }
@@ -389,7 +407,7 @@ case_packs_member() {
   use_config packs-member
   run_real
   check_exit 0
-  check_output "tools: core macos-setup merger opt"
+  check_output "tools: core merger mise opt"
   check "merger is rendered" test -f "$home/.config/merger/plain.txt"
 }
 
@@ -399,7 +417,7 @@ case_packs_two() {
   case_tree pack_two
   run_real
   check_exit 0
-  check_output "tools: core macos-setup opt"
+  check_output "tools: core mise opt"
   check "the manifest has the file once" test "$(grep -cF .config/opt/opt.txt "$manifest")" = 1
 }
 
@@ -528,7 +546,7 @@ name=override-name
 items=a,b,x,
 left=file-left
 right=default-right
-tools=core,macos-setup,opt,
+tools=core,mise,opt,
 opt_extra=extra-value
 home=$home
 passthrough={{ mise }} [[ bash ]]"
@@ -659,7 +677,7 @@ case_context() {
   check_exit 0
   check_file "$home/.config/context/context.txt" "$(synced context/files/.config/context/context.txt.tmpl)
 sync_engine=$tree/sync-engine
-config=$MACOS_SETUP_CONFIG_PATH"
+config=$MACOS_SETUP_REPO_PATH"
 }
 
 # ---- symlinks -----------------------------------------------------------------
@@ -978,14 +996,14 @@ case_dry_run() {
   ln -s -- "$user/values.txt" "$home/.config/core/values.txt"
   header_file "$home/.config/old/stale.txt" "stale"
   seed_manifest "core	.config/old/stale.txt"
-  before=$(snapshot "$home" "$user" "$MACOS_SETUP_CONFIG_PATH" "$manifest")
+  before=$(snapshot "$home" "$user" "$MACOS_SETUP_REPO_PATH" "$manifest")
   run_dry
   check_exit 0
   check_output "would update ~/.config/core/values.txt (-> $user/values.txt)"
   check_output "would remove home/.config/old/stale.txt"
   check_output "would update ~/.config/core/settings.json"
   check_no_output "setup-sync: open a new terminal"
-  after=$(snapshot "$home" "$user" "$MACOS_SETUP_CONFIG_PATH" "$manifest")
+  after=$(snapshot "$home" "$user" "$MACOS_SETUP_REPO_PATH" "$manifest")
   check "nothing written in HOME, a link source, the config folder or the manifest" test "$before" = "$after"
 }
 
@@ -1062,7 +1080,7 @@ case_contrib_deselect() {
   run_real
   check_exit 0
   check_file "$home/.config/owner/seed.txt" "agent=agent-a"
-  printf '%s\n' '[tools.contrib-b]' '[tools.owner]' > "$values"
+  printf '%s\n' '[tools.contrib-b]' '[tools.owner]' 'token = "token-1"' > "$values"
   run_real
   check_exit 0
   check_file "$home/.config/owner/config" "$(owner_config "Include ~/a" "Include ~/c" "Include ~/b" "" "Host *" \
@@ -1469,36 +1487,28 @@ remove_old() { append_lines merger '[files.".config/merger/m.json"]' 'remove = [
 
 # ---- the entry task updateall:configs -----------------------------------------
 
-# The entry task, rendered once with the working tree's sync-engine/, as the
-# Mac sync renders it. It runs from the case folder, against this origin: the
-# fixture tree with the real macos/tools/macos-setup/.
-entry_tool="$root/macos/tools/macos-setup"
+# The entry task of the Mac tool mise. It runs from the case folder, and the
+# engine (BOOTSTRAP_BIN) fetches the clone of bootstrap from this origin: the
+# fixture tree.
+entry_tool="$root/macos/tools/mise"
 entry_task="$tmp/updateall-configs"
-printf '{"sync_engine":"%s/sync-engine"}\n' "$root" > "$tmp/entry-ctx.json"
-mise x gomplate@latest -- gomplate --left-delim '<%' --right-delim '%>' -c ".=$tmp/entry-ctx.json" \
-  -f "$entry_tool/tasks/updateall-configs.tmpl" -o "$entry_task"
+cp -- "$entry_tool/tasks/updateall-configs" "$entry_task"
 chmod +x "$entry_task"
 
 entry_src="$tmp/entry-src"
 cp -R -- "$tree" "$entry_src"
-rm -rf -- "$entry_src/macos/tools/macos-setup"
-cp -R -- "$entry_tool" "$entry_src/macos/tools/macos-setup"
-_git -C "$entry_src" add -A
-_git -C "$entry_src" commit --quiet --no-verify -m "the real entry tool"
 entry_url="file://$tmp/entry-origin.git"
 _git clone --quiet --bare -- "$entry_src" "$tmp/entry-origin.git"
 entry_head=$(_git -C "$entry_src" rev-parse HEAD)
 
-# The start of each entry case: the origin, and a macos.toml with the answer of
-# the real tool.
+# The start of each entry case: the origin, and an empty macos.toml.
 entry_setup() {
   export BOOTSTRAP_URL=$entry_url
-  unset _MACOS_SETUP_DEFAULT_RUNNING
+  unset _UPDATEALL_CONFIGS_RUNNING BOOTSTRAP_CLONE
   repo="$BOOTSTRAP_CACHE/repo"
   lock="$BOOTSTRAP_CACHE/lock"
   old_cache="$XDG_CACHE_HOME/macos-setup"
-  mkdir -p -- "$MACOS_SETUP_CONFIG_PATH"
-  printf '%s\n' '[tools.macos-setup]' "config_path = \"$MACOS_SETUP_CONFIG_PATH\"" > "$values"
+  : > "$values"
 }
 
 entry_run() {
@@ -1532,7 +1542,7 @@ entry_origin() {
 }
 
 no_leftovers() {
-  [[ ! -e $lock ]] && [[ -z $(find "$TMPDIR" -maxdepth 1 \( -name 'macos-setup.*' -o -name 'setup-sync.*' \) 2> /dev/null) ]]
+  [[ ! -e $lock ]] && [[ -z $(find "$TMPDIR" -maxdepth 1 \( -name 'bootstrap-*' -o -name 'setup-sync.*' \) 2> /dev/null) ]]
 }
 
 case_entry_clone_first() {
@@ -1541,9 +1551,7 @@ case_entry_clone_first() {
   check_exit 0
   check_output "Cloning into $repo"
   check "the clone is at the origin commit" test "$(_git -C "$repo" rev-parse HEAD)" = "$entry_head"
-  check "the task is rendered with the clone code" grep -qE '^_se_fetch\(\)' "$home/.config/mise/tasks/updateall/configs/_default"
-  check "the mise config has the answer" grep -qF "MACOS_SETUP_CONFIG_PATH = \"$MACOS_SETUP_CONFIG_PATH\"" \
-    "$home/.config/mise/conf.d/macos-setup/mise.toml"
+  check "no lock, no temp copy" no_leftovers
 }
 
 case_entry_clone_refresh() {
@@ -1608,16 +1616,6 @@ case_entry_clone_fails() {
   check_output "Cannot clone"
 }
 
-case_entry_running_line() {
-  local lines
-  entry_setup
-  entry_real
-  check_exit 0
-  lines=$(grep '^setup-sync: running ' "$log")
-  check "one running line" test "$(printf '%s\n' "$lines" | grep -c .)" = 1
-  check "it names the engine" test "$lines" = "setup-sync: running $bin mac sync"
-}
-
 # Without --verbose only the changes print. The entry task consumes the flag,
 # since the engine stops on a flag that it does not know.
 case_entry_verbose() {
@@ -1626,11 +1624,9 @@ case_entry_verbose() {
   entry_real
   check_exit 0
   check_output "new ~/.config/core/plain.txt"
-  check_no_output "setup-sync: running"
   check_no_output "unchanged  "
   entry_run --verbose --no-bootstrap
   check_exit 0
-  check_output "setup-sync: running"
   check_output "unchanged  ~/.config/core/plain.txt"
   check_no_output "unknown"
   check_output "| Total "
@@ -1681,52 +1677,17 @@ case_entry_lock_dead() {
   check_no_output "Waiting for another sync"
 }
 
-# An engine that reports the lock, the clone and the arguments that it sees.
-# Its exit code is the exit code of the task.
-entry_engine_probe() {
-  printf '%s\n' '#!/usr/bin/env bash' \
-    'if [[ -e $BOOTSTRAP_CACHE/lock ]]; then echo "lock held"; else echo "lock released"; fi' \
-    'echo "clone $BOOTSTRAP_CLONE"' 'echo "args $*"' 'exit 4' \
-    > "$dir/probe"
-  chmod +x "$dir/probe"
-  export BOOTSTRAP_BIN="$dir/probe"
-}
-
-case_entry_lock_hold() {
-  entry_setup
-  entry_engine_probe
-  entry_real
-  check_exit 4
-  check_output "lock held"
-  check_output "clone $TMPDIR/macos-setup."
-  check_output "args mac sync --no-bootstrap"
-  entry_dry
-  check_exit 4
-  check_output "lock released"
-  check_output "clone $TMPDIR/macos-setup."
-  check "after each run: no lock, no temp copy" no_leftovers
-}
-
-# Without BOOTSTRAP_BIN, the task reads sync-engine/VERSION of the copy. A
-# value that is not MAJOR.MINOR.PATCH stops it before any mise install.
+# The engine reads sync-engine/VERSION of the clone, its minimum version. A
+# value that is not MAJOR.MINOR.PATCH stops it.
 bad_version() { printf '%s\n' "v1.2" > "$work/sync-engine/VERSION"; }
 
 case_entry_bad_version() {
   entry_setup
   entry_origin bad_version
-  unset BOOTSTRAP_BIN
   entry_real
   check_exit 5
   check_output "sync-engine/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2')"
   check "no lock, no temp copy" no_leftovers
-}
-
-case_entry_bin_missing() {
-  entry_setup
-  export BOOTSTRAP_BIN="$dir/missing"
-  entry_real
-  check_exit 2
-  check_output "BOOTSTRAP_BIN $dir/missing is not an executable file"
 }
 
 case_entry_unknown_flag() {
@@ -1760,16 +1721,16 @@ case_entry_mise_run() {
 
 case_entry_config_unset() {
   entry_setup
-  unset MACOS_SETUP_CONFIG_PATH
+  unset MACOS_SETUP_REPO_PATH
   entry_real
   check_exit 2
-  check_output "MACOS_SETUP_CONFIG_PATH is not set"
+  check_output "MACOS_SETUP_REPO_PATH is not set"
   check "no clone made" not test -e "$repo"
 }
 
 case_entry_nested() {
   entry_setup
-  export _MACOS_SETUP_DEFAULT_RUNNING=1
+  export _UPDATEALL_CONFIGS_RUNNING=1
   entry_real
   check_exit 2
   check_output "a nested run is refused"
@@ -1828,14 +1789,162 @@ case_entry_leftovers() {
   mv -- "$values.new" "$values"
   entry_real
   check_exit 2
-  check_output "colour is not a key of config/macos.toml"
+  check_output "colour is not a key of"
   check "after a bad macos.toml: no lock, no temp copy" no_leftovers
+}
+
+# ---- the commands init and questions -------------------------------------------
+
+# mac_run <args>...: `bootstrap mac <args>` in the config folder, without a
+# terminal.
+mac_run() {
+  runs=$((runs + 1))
+  log="$dir/run-$runs.txt"
+  rc=0
+  (cd "$MACOS_SETUP_REPO_PATH" && BOOTSTRAP_CLONE=$clone "$bin" mac "$@" < /dev/null) > "$log" 2>&1 || rc=$?
+}
+no_token() {
+  sed -i '' '/token/d' "$values"
+  commit_config
+}
+
+case_question_missing() {
+  use_config contrib
+  no_token
+  run_dry
+  check_exit 2
+  check_output "the question owner.token has no answer in macos.toml - run bootstrap init"
+}
+
+case_questions_json() {
+  use_config contrib
+  no_token
+  mac_run questions --json
+  check_exit 0
+  check_output '"tool": "owner"'
+  check_output '"key": "token"'
+  check_output '"question": "Which token does the owner use?"'
+  check_output '"proposal": "token"'
+  check_output '"source": "detect"'
+  check_output '"answer": null'
+  use_config contrib
+  mac_run questions owner
+  check_exit 0
+  check_output "owner.token: Which token does the owner use?"
+  check_output "answer:   token-1"
+}
+
+case_init_answer() {
+  use_config contrib
+  no_token
+  mac_run init --yes --no-bootstrap --answer owner.token=abc
+  check_exit 0
+  check "the answer is in macos.toml" grep -qxF 'token = "abc"' "$values"
+  check "init synced the files" test -f "$home/.config/owner/data.json"
+  check "init set bootstrap_commit" grep -qF "bootstrap_commit = \"$tree_commit\"" "$values"
+  run_dry
+  check_exit 0
+}
+
+case_init_yes_missing() {
+  use_config contrib
+  no_token
+  mac_run init --yes --no-bootstrap
+  check_exit 2
+  check_output "the question owner.token has no answer - give it with --answer owner.token=<value>"
+  check "nothing written" not test -e "$home/.config"
+}
+
+case_init_no_yes() {
+  use_config contrib
+  mac_run init --no-bootstrap
+  check_exit 2
+  check_output "changes need --yes"
+  check "nothing written" not test -e "$home/.config"
+}
+
+case_init_dry_run() {
+  use_config contrib
+  mac_run init --dry-run
+  check_exit 0
+  check_output "sync   $home/.config/owner/data.json"
+  check_output "Dry run: nothing written"
+  check "nothing written" not test -e "$home/.config"
+}
+
+old_mac_values() {
+  use_config -
+  printf '%s\n' '# My Mac.' '' '[tools.macos-setup]' '# The repository of macos.toml.' 'config_path = "~/macos-setup"' '' \
+    '[tools.opt]' > "$values"
+  _git -C "$MACOS_SETUP_REPO_PATH" add -A
+  _git -C "$MACOS_SETUP_REPO_PATH" commit --quiet --no-verify -m "old"
+}
+
+case_sync_old_form() {
+  old_mac_values
+  run_dry
+  check_exit 2
+  check_output "[tools.macos-setup] in config/macos.toml is the old form - run bootstrap init"
+}
+
+case_init_migrate() {
+  old_mac_values
+  mac_run init --yes --no-bootstrap
+  check_exit 0
+  check_output "migrate the old form: [tools.macos-setup] to [tools.mise]"
+  check "no [tools.macos-setup]" not grep -qF 'macos-setup]' "$values"
+  check "config_path in [tools.mise]" grep -qxF 'config_path = "~/macos-setup"' "$values"
+  check "the [tools.mise] table" grep -qxF '[tools.mise]' "$values"
+  check "the header comment stays" grep -qxF '# My Mac.' "$values"
+  check "init synced the files" test -f "$home/.config/opt/opt.txt"
+  _git -C "$MACOS_SETUP_REPO_PATH" add -A
+  _git -C "$MACOS_SETUP_REPO_PATH" commit --quiet --no-verify -m "migrated"
+  run_real
+  check_exit 0
+}
+
+case_init_dirty_values() {
+  old_mac_values
+  printf '%s\n' '# a change that is not committed' >> "$values"
+  mac_run init --yes --no-bootstrap
+  check_exit 2
+  check_output "macos.toml has changes that are not committed"
+  check "the old form stays" grep -qF '[tools.macos-setup]' "$values"
+}
+
+case_init_new() {
+  use_config -
+  mac_run init --yes --no-bootstrap opt
+  check_exit 0
+  check "the header line" grep -qxF '# The values of the Mac sync of bootstrap. See docs/setup/index.md.' "$values"
+  check "opt is selected" grep -qxF '[tools.opt]' "$values"
+  check "init synced the files" test -f "$home/.config/opt/opt.txt"
+}
+
+case_init_not_git() {
+  use_config -
+  rm -rf -- "$MACOS_SETUP_REPO_PATH/.git"
+  mac_run init --yes --no-bootstrap
+  check_exit 2
+  check_output "is not a git repository - create one with git init, then run bootstrap mac init again"
+}
+
+case_init_nothing() {
+  use_config ok
+  run_real
+  check_exit 0
+  _git -C "$MACOS_SETUP_REPO_PATH" add -A
+  _git -C "$MACOS_SETUP_REPO_PATH" commit --quiet --no-verify -m "synced"
+  mac_run init --no-bootstrap
+  check_exit 0
+  check_output "Nothing to change"
 }
 
 # ---- the cases ----------------------------------------------------------------
 
 run_case "config: a missing config folder" case_config_missing
-run_case "config: MACOS_SETUP_CONFIG_PATH unset" case_config_unset
+run_case "config: a config folder that is not a git repository" case_config_not_git
+run_case "config: MACOS_SETUP_REPO_PATH unset" case_config_unset
 run_case "config: an unknown flag, with the usage" case_unknown_flag
 run_case "config: an unknown tool in a [tools.<name>] table" expect unknown-tool 3 "tool 'nope' is not in bootstrap"
 run_case "config: an [overrides.mise.<path>] that no selected tool has" expect unknown-override 2 "no selected tool has"
@@ -1945,22 +2054,32 @@ run_case "merge: a contribution comes and goes, then a deselected tool" case_mer
 run_case "merge: a source that is not a merge spec" expect merge 2 'macos/tools/merger/tools.toml: [files.".config/merger/plain.txt"] the source of a shared file is a merge spec <name>.merge.toml' merge_not_spec
 run_case "merge: the old key remove" expect merge 2 'macos/tools/merger/tools.toml: [files.".config/merger/m.json"] remove is not a key of a files entry' remove_old
 
+run_case "questions: sync stops on a question without an answer" case_question_missing
+run_case "questions: mac questions, --json and text" case_questions_json
+run_case "init: --answer answers a question, then the sync" case_init_answer
+run_case "init: --yes and a question without an answer" case_init_yes_missing
+run_case "init: no --yes and no terminal" case_init_no_yes
+run_case "init: --dry-run lists the changes" case_init_dry_run
+run_case "init: sync stops on the old form" case_sync_old_form
+run_case "init: migrates [tools.macos-setup], then sync" case_init_migrate
+run_case "init: a macos.toml with changes that are not committed" case_init_dirty_values
+run_case "init: a new macos.toml" case_init_new
+run_case "init: a folder that is not a git repository" case_init_not_git
+run_case "init: nothing to change" case_init_nothing
+
 run_case "entry clone: a first clone" case_entry_clone_first
 run_case "entry clone: a refresh after a new origin commit" case_entry_clone_refresh
 run_case "entry clone: a clone with another origin" case_entry_clone_other_origin
 run_case "entry clone: the SSH and https forms of one URL" case_entry_clone_ssh_https
 run_case "entry clone: a non-empty non-git folder" case_entry_clone_not_git
 run_case "entry clone: an origin that cannot be cloned" case_entry_clone_fails
-run_case "entry clone: the running line" case_entry_running_line
 run_case "entry flags: --verbose" case_entry_verbose
 run_case "entry lock: a run waits for a live holder, then takes over" case_entry_lock_wait
 run_case "entry lock: a lock whose pid is dead" case_entry_lock_dead
-run_case "entry lock: a real run holds it, a dry run releases it" case_entry_lock_hold
 run_case "entry engine: a VERSION that is not MAJOR.MINOR.PATCH" case_entry_bad_version
-run_case "entry engine: a BOOTSTRAP_BIN that is not a file" case_entry_bin_missing
 run_case "entry flags: an unknown flag under bash" case_entry_unknown_flag
 run_case "entry flags: --dry-run under bash and under mise run" case_entry_mise_run
-run_case "entry config: MACOS_SETUP_CONFIG_PATH unset" case_entry_config_unset
+run_case "entry config: MACOS_SETUP_REPO_PATH unset" case_entry_config_unset
 run_case "entry: a nested run" case_entry_nested
 run_case "entry legacy: the old list moves, the old cache goes" case_entry_legacy_move
 run_case "entry legacy: an existing manifest stays" case_entry_legacy_keep_manifest
@@ -1975,4 +2094,4 @@ if ((failures)); then
   print_error "$failures check(s) failed in $case_count cases"
   exit 1
 fi
-print_success "All $case_count setup-sync cases passed"
+print_success "All $case_count bootstrap mac cases passed"

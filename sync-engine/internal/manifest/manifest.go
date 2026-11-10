@@ -313,6 +313,7 @@ func Stale(e *target.Env, mode LinkMode, rows []Row, handled []string, root stri
 		}
 		show := e.Show(root + "/" + path)
 		if e.DryRun {
+			e.Plan(file)
 			r.Outcome(report.Removed, show, "", "would remove "+show)
 			continue
 		}
@@ -361,6 +362,7 @@ func Write(e *target.Env, file string, rows []Row) fail.Code {
 		}
 	}
 	if e.DryRun {
+		e.Plan(file)
 		r.Outcome(kind, show, "", "would write "+show)
 		return fail.OK
 	}

@@ -3,7 +3,7 @@
 # ~/.config/zsh/ (homebrew, mise, cli, starship). ~/.zprofile belongs to the
 # mise tool. The [mise.*] tables install Homebrew's zsh and zinit and add zsh to
 # /etc/shells. They become ~/.config/mise/conf.d/zsh/mise.toml.
-depends = [ "homebrew", "mise", "macos-setup" ]
+depends = [ "homebrew", "mise" ]
 description = "zsh from Homebrew with zinit, its rc files and its drop-in folder ~/.config/zsh/"
 stage = "init"
 

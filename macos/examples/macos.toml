@@ -1,6 +1,6 @@
 # Example: the values file of the Mac side.
 # This file is at the root of the private macos-setup clone.
-# MACOS_SETUP_CONFIG_PATH names the folder of that clone.
+# MACOS_SETUP_REPO_PATH names the folder of that clone.
 # Each [tools.<name>] table selects a tool and gives its values.
 # Each [packs.<name>] table adds the default = true members of the pack.
 
@@ -102,10 +102,6 @@ signing_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAISampleKeyForTestsOnly sample
 # The answer to the question dock_orientation of macos-defaults.
 dock_orientation = "right"
 
-[tools.macos-setup]
-# The answer to the question config_path of macos-setup.
-config_path = "~/Projects/github.com/janedoe/macos-setup"
-
 [tools.magnet]
 
 [tools.microsoft-excel]
@@ -113,6 +109,10 @@ config_path = "~/Projects/github.com/janedoe/macos-setup"
 [tools.microsoft-powerpoint]
 
 [tools.microsoft-word]
+
+[tools.mise]
+# The answer to the question config_path of mise.
+config_path = "~/Projects/github.com/janedoe/macos-setup"
 
 [tools.notion]
 

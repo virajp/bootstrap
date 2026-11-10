@@ -3,3 +3,5 @@
 [tools.contrib-b]
 
 [tools.owner]
+# The answer to the question token of owner.
+token = "token-1"

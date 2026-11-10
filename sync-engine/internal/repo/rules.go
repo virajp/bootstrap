@@ -9,6 +9,7 @@ import (
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
 	"github.com/virajp/bootstrap/sync-engine/internal/format"
 	"github.com/virajp/bootstrap/sync-engine/internal/misegen"
+	"github.com/virajp/bootstrap/sync-engine/internal/oldform"
 	"github.com/virajp/bootstrap/sync-engine/internal/source"
 	"github.com/virajp/bootstrap/sync-engine/internal/tmpl"
 	"github.com/virajp/bootstrap/sync-engine/internal/values"
@@ -209,25 +210,14 @@ func (s *state) envRules(sel []values.Item) fail.Code {
 	return fail.OK
 }
 
-// OldPrecommit is the old file of the own hooks of a repository.
-const OldPrecommit = ".config/repo-sync/pre-commit.yaml"
-
 // overrides is `_rs_overrides`. It examines `[overrides]` of the values file:
 // misegen examines the `mise` and `mise_env` keys, and this function the
-// rest. The old forms of the shared files stop the run, with the new form.
+// rest. An old form stops the run.
 // <local> is for `repo_sync --check`: it reads no clone, and it skips the
 // problems that need the tools or the shipped files. It gives 2, after a
 // message for each problem.
 func (s *state) overrides(g *misegen.Generator, local bool) fail.Code {
 	rc := fail.OK
-	if isFile(s.root + "/.config/repo-sync/gitignore") {
-		s.log(".config/repo-sync/gitignore is no longer used - move its lines into .gitignore, then delete it (M18 of docs/sync/migrate.md)")
-		rc = fail.Usage
-	}
-	if isFile(s.root + "/" + OldPrecommit) {
-		s.log(OldPrecommit + " is no longer used - move its repos entries into .config/pre-commit-config.yaml, which the sync now merges, then delete it")
-		rc = fail.Usage
-	}
 	v, err := s.valuesDS()
 	if err != nil {
 		gomplateError(s.stderr, "failed to read datasource o ("+s.values+"): "+err.Error())
@@ -249,7 +239,7 @@ func (s *state) overrides(g *misegen.Generator, local bool) fail.Code {
 			switch k {
 			case "mise", "mise_env":
 			case "gitignore":
-				s.log("overrides.gitignore in " + s.show + " is the old form - add each line of add to .gitignore, and write each line of remove as \"<line>\" = { \"$mode\" = \"remove\" } in [tools.<tool>.files.\".gitignore\"]")
+				s.log("[overrides.gitignore] in " + s.show + " is the old form - " + oldform.Hint)
 				rc = fail.Usage
 			case "graphifyignore":
 				s.log("overrides." + k + " in " + s.show + " is no longer used: bootstrap does not ship .graphifyignore - remove the table (M24 of docs/sync/migrate.md)")

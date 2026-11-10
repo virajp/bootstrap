@@ -1,10 +1,10 @@
 // Package repo is the repo front-end of the sync engine: the subcommand
 // `bootstrap sync`. It copies the shared files of the selected tools of
 // `repo/tools/` of a clone of bootstrap into the repository of
-// MISE_PROJECT_ROOT. It replaces the bash file sync-engine/repo-sync, with the
-// same output, files and exit codes.
+// MISE_PROJECT_ROOT. It replaced the bash engine, with the same output, files
+// and exit codes.
 //
-// Run reads the same environment as `repo_sync`: BOOTSTRAP_CLONE,
+// Run reads this environment: BOOTSTRAP_CLONE,
 // MISE_PROJECT_ROOT, REPO_SYNC_VALUES,
 // BOOTSTRAP_VERBOSE, TMPDIR, PATH, PWD and the style variables FORCE_COLOR,
 // NO_COLOR and TERM. A template reads the environment with env.Getenv.
@@ -24,6 +24,7 @@ import (
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
 	"github.com/virajp/bootstrap/sync-engine/internal/manifest"
 	"github.com/virajp/bootstrap/sync-engine/internal/misegen"
+	"github.com/virajp/bootstrap/sync-engine/internal/oldform"
 	"github.com/virajp/bootstrap/sync-engine/internal/report"
 	"github.com/virajp/bootstrap/sync-engine/internal/selection"
 	"github.com/virajp/bootstrap/sync-engine/internal/source"
@@ -32,17 +33,17 @@ import (
 )
 
 // Prefix is the name at the start of each log line (_SE_PREFIX).
-const Prefix = "repo-sync"
+const Prefix = "bootstrap"
 
-// Usage is the usage line of `repo_sync`. It is a log line, so it has the
-// prefix.
-const Usage = "usage: repo_sync [--dry-run | --check]"
+// Usage is the usage line of the repo commands. It is a log line, so it has
+// the prefix.
+const Usage = "usage: bootstrap sync [--dry-run] | bootstrap check"
 
 // The names of the repo side.
 const (
 	toolsShown   = "repo/tools"
 	manifestPath = ".config/repo-generated.tsv"
-	commitNote   = "# The bootstrap commit of the last sync. repo-sync writes it."
+	commitNote   = "# The bootstrap commit of the last sync. The sync writes it."
 )
 
 // cond is one `requires` or `requires_found` item of a `[files]` table: a
@@ -105,10 +106,17 @@ type state struct {
 	membersRead bool
 }
 
-// Run runs `repo_sync <args>` and gives its exit code. Each line goes to
+// Run runs `bootstrap sync <args>` and gives its exit code. Each line goes to
 // <stderr>; <stdout> gets only the output of the commands that bash lets
 // through.
 func Run(args []string, stdout, stderr io.Writer) fail.Code {
+	_, code := RunWith(args, stdout, stderr)
+	return code
+}
+
+// RunWith is Run, and it also gives the change list of a dry run: the
+// absolute path of each file that the run would write, change or remove.
+func RunWith(args []string, stdout, stderr io.Writer) ([]string, fail.Code) {
 	s := &state{stdout: stdout, stderr: stderr, getenv: os.Getenv, derived: map[string]*source.Obj{}, dirDone: map[string]bool{}}
 	isTerm := false
 	if f, ok := stderr.(*os.File); ok {
@@ -143,7 +151,8 @@ func Run(args []string, stdout, stderr io.Writer) fail.Code {
 		}
 	}()
 	defer s.e.Temps.Cleanup()
-	return s.run(args)
+	code := s.run(args)
+	return s.e.Planned, code
 }
 
 func (s *state) log(msg string) { s.r.Log(msg) }
@@ -214,7 +223,7 @@ func (s *state) sync(dryRun bool) fail.Code {
 		s.log("BOOTSTRAP_CLONE is not set - run mise run setup:configs, which clones bootstrap")
 		return fail.Usage
 	}
-	dir, err := os.MkdirTemp(target.DryRunDir(s.getenv), "repo-sync.")
+	dir, err := os.MkdirTemp(target.DryRunDir(s.getenv), "bootstrap.")
 	if err != nil {
 		s.log("cannot create a temp directory")
 		return fail.Other
@@ -350,7 +359,7 @@ func (s *state) sync(dryRun bool) fail.Code {
 	// The stage of the formatter, with a copy of its config files of this
 	// repo. Without the command of the formatter, the raw render stays.
 	if f := s.formatter; f != nil && run("", "mise", "x", "--", "which", strings.Fields(f.Command)[0]) {
-		if stage, err := os.MkdirTemp(target.DryRunDir(s.getenv), "repo-sync-stage."); err == nil {
+		if stage, err := os.MkdirTemp(target.DryRunDir(s.getenv), "bootstrap-stage."); err == nil {
 			s.stage = stage
 			s.e.Temps.Add(stage)
 			for _, name := range f.Configs {
@@ -484,7 +493,7 @@ func (s *state) check() fail.Code {
 	sel, err := s.readSel()
 	selOK := add(s.logAll(err))
 	if selOK {
-		selOK = add(s.logAll(values.Moved(s.vals.Raw, s.show)))
+		selOK = add(s.logAll(oldform.Repo(s.root, s.vals.Raw, s.show)))
 	}
 	if envsOK && selOK {
 		add(s.envRules(sel))

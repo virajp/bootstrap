@@ -21,6 +21,12 @@ func isDir(path string) bool {
 	return err == nil && info.IsDir()
 }
 
+// isFile is the bash test -f: a regular file after symlinks.
+func isFile(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.Mode().IsRegular()
+}
+
 func hasHeader(path string) bool { return header.HasFile(path) }
 
 // pwd is $PWD of bash: the PWD variable when it names the current folder,
