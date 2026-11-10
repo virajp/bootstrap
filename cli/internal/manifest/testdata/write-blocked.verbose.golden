@@ -1,0 +1,21 @@
+== stdout ==
+rc=1
+== stderr ==
+bootstrap: cannot write .config/repo-generated.tsv
++---------------+-------+
+| Changed       |     0 |
+| New           |     0 |
+| Seeded        |     0 |
+| Removed       |     0 |
+| Unchanged     |     0 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |     0 |
++---------------+-------+
+[OK] Synced: no file changed
+== tree ==
+d 755 root
+f 644 root/.config "file\n"
+d 755 tmp

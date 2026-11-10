@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #MISE description="Render every Mac tool with the sample values file, and compare the shared mise values of both sides, with no network"
 
-# Runs `bootstrap mac sync`, built from the working tree's sync-engine/, with
+# Runs `bootstrap mac sync`, built from the working tree's cli/, with
 # every tool of macos/tools/ and a copy of macos/examples/macos.toml, into a temp
 # HOME. The tree is a git copy of the working tree, so the test never touches the
 # real $HOME. BOOTSTRAP_BIN, when set, is the engine to test (an absolute
-# path); else the task builds it once from the copy of sync-engine/.
+# path); else the task builds it once from the copy of cli/.
 #
 # Case 0: no [files] table of a tools.toml gives `mode = "seed"` to a target of
 # format json, yaml or toml (the `format` key, else the extension): such a file
@@ -71,20 +71,20 @@ _yq() {
 
 print_header "Rendering every Mac tool with the sample values file ..."
 
-# The tree: sync-engine/ and macos/ of the working tree, uncommitted work
+# The tree: cli/ and macos/ of the working tree, uncommitted work
 # included, in a git repository, so a run can record its commit.
 tree="$tmp/tree"
 mkdir -p -- "$tree"
-cp -R -- "$root/sync-engine" "$tree/sync-engine"
+cp -R -- "$root/cli" "$tree/cli"
 cp -R -- "$root/macos" "$tree/macos"
 _git -C "$tree" init --quiet -b main
 _git -C "$tree" add -A
 _git -C "$tree" commit --quiet --no-verify -m "tree"
 
-# The engine: BOOTSTRAP_BIN, else one build from the copy of sync-engine/.
+# The engine: BOOTSTRAP_BIN, else one build from the copy of cli/.
 bin=${BOOTSTRAP_BIN:-}
 if [[ -z $bin ]]; then
-  (cd "$root" && MISE_ENV=$mise_env mise x -- go build -C "$tree/sync-engine" -buildvcs=false \
+  (cd "$root" && MISE_ENV=$mise_env mise x -- go build -C "$tree/cli" -buildvcs=false \
     -o "$tmp/bootstrap" ./cmd/bootstrap)
   bin="$tmp/bootstrap"
 fi

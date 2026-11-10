@@ -7,7 +7,7 @@ the rules that only a repository has: the entry tasks, members and submodules,
 the template context, the branch model, the pre-commit config, `check` and its
 gate.
 
-See also: [sync-engine.md](sync-engine.md) for the command line, the shared
+See also: [cli.md](cli.md) for the command line, the shared
 rules and the exit codes, [bootstrap-config.md](bootstrap-config.md) for the
 keys of the values file, [packs.md](packs.md), [tools.md](tools.md),
 [mise.md](mise.md) and [fnox.md](fnox.md).
@@ -40,7 +40,7 @@ first sync. With `BOOTSTRAP_BIN` set, it runs that file in place of the
 
 The first failure stops the task, and the exit code of the engine is the exit
 code of the task. `bootstrap sync` takes the clone, examines its version and
-syncs: see [sync-engine.md](sync-engine.md#the-cache-and-the-clone).
+syncs: see [cli.md](cli.md#the-cache-and-the-clone).
 
 | Flag                | Effect                                                                                          |
 | ------------------- | ----------------------------------------------------------------------------------------------- |
@@ -87,7 +87,7 @@ A member is a git submodule or a folder below the root. The keys are in
 - A submodule is a separate repository, with its own values file and its own
   manifest. The sync never writes a file of a submodule.
 - The members are in the input of each script: `repo.members`. See
-  [sync-engine.md](sync-engine.md#the-scripts-of-a-tool). The derive script of
+  [cli.md](cli.md#the-scripts-of-a-tool). The derive script of
   `mise` makes the aliases `setup-all` and `setup-<member>` from them.
 
 ### `root_only`
@@ -108,8 +108,8 @@ names are in [bootstrap-config.md](bootstrap-config.md#reserved-names).
 | `.member_types`   | A map from each name to `submodule` or `folder` (`type`, default from the folder).                                                                                                                                                                                       |
 | `.submodules`     | The list of the git submodules only, nested ones included. It is empty in a repository without submodules.                                                                                                                                                               |
 | `.tools`          | The list of the selected tools, with the packs expanded and the dependencies added.                                                                                                                                                                                      |
-| `.sync_engine`    | The absolute path of the `sync-engine/` folder of the clone copy of the run.                                                                                                                                                                                             |
-| `.config`, `.all` | The values of the tools. See [sync-engine.md](sync-engine.md#templates).                                                                                                                                                                                                 |
+| `.cli_dir`        | The absolute path of the `cli/` folder of the clone copy of the run.                                                                                                                                                                                                     |
+| `.config`, `.all` | The values of the tools. See [cli.md](cli.md#templates).                                                                                                                                                                                                                 |
 
 A name has only letters, digits, `-` and `_`, and two members never have the
 same name. If not, the sync stops.
@@ -190,7 +190,7 @@ when it is `false`. These values stop the sync:
 
 `.config/pre-commit-config.yaml` is a shared file of the `pre-commit` tool. Its
 spec is `repo/tools/pre-commit/files/.config/pre-commit-config.yaml.merge.toml`.
-See [sync-engine.md](sync-engine.md#shared-files).
+See [cli.md](cli.md#shared-files).
 
 - The hook repositories come from `[[defaults.repos]]` of `pre-commit` and from
   `[[contributes.pre-commit.repos]]` of each selected tool. Each repository has
@@ -253,7 +253,7 @@ It prints nothing and exits 0 in these cases:
   `BOOTSTRAP_BIN`.
 - With a list of files that does not include `.config/bootstrap.toml`, or with
   no list and no values file.
-- The cache has no clone with `sync-engine/VERSION`.
+- The cache has no clone with `cli/VERSION`.
 - The raw `origin` of `<cache>/repo` is not one of five literal forms of the
   default URL. Thus the gate never uses code of another repository at commit
   time.
@@ -266,7 +266,7 @@ Thus the gate takes no lock and never fetches. A binary that is older than
 
 The manifest is `.config/repo-generated.tsv`. It is committed, and each git
 submodule has its own. Its shape and the stale rule are in
-[sync-engine.md](sync-engine.md#the-manifest-and-the-stale-rule).
+[cli.md](cli.md#the-manifest-and-the-stale-rule).
 
 After a clean run, the order is the stale rule, the write of the manifest, then
 `bootstrap_commit`. A run with a failure runs no stale rule and writes no

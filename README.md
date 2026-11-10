@@ -26,7 +26,7 @@ mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'
 
 Each writing command shows its change list first. `--dry-run` writes nothing,
 and `--yes` writes without a prompt.
-[`docs/design/sync-engine.md`](docs/design/sync-engine.md#the-command-line) has
+[`docs/design/cli.md`](docs/design/cli.md#the-command-line) has
 the rules.
 
 ## Adopt in a repository
@@ -81,7 +81,7 @@ the entry of the Mac sync.
 
 The sample values files are in `repo/examples/`.
 
-The code of the CLI is in `sync-engine/`: the Go module (`cmd/` and
+The code of the CLI is in `cli/`: the Go module (`cmd/` and
 `internal/`) and `VERSION`, the minimum version of the CLI that a clone needs.
 This folder is not a tool, so the sync does not copy it to a repository.
 
@@ -169,7 +169,7 @@ of the `[files]` and `[tasks]` tables, and the scripts.
 1. `setup:configs` runs `bootstrap sync`. It fetches the branch `main` of
    `https://github.com/virajp/bootstrap.git` into a shared clone in the cache
    `${XDG_CACHE_HOME:-~/.cache}/bootstrap/`, copies that clone, and stops when
-   the CLI is older than `sync-engine/VERSION` of the clone.
+   the CLI is older than `cli/VERSION` of the clone.
 2. It reads the `[tools.*]` and `[packs.*]` tables of the repository's
    `.config/bootstrap.toml`, and adds the `base` pack and the `depends` of each
    tool.
@@ -190,7 +190,7 @@ changed, and it ends with a table of counts. Use `--dry-run` to see the changes
 without writing them. Use `--verbose` of `setup:configs` to list each file,
 also an unchanged one. The rules are in `docs/design/`:
 
-- [`sync-engine.md`](docs/design/sync-engine.md): the command line, the clone,
+- [`cli.md`](docs/design/cli.md): the command line, the clone,
   the scripts, the write of one file, shared files, the header, the manifest and
   the stale rule, the values, `bootstrap_commit` and the exit codes.
 - [`repo.md`](docs/design/repo.md): the entry tasks, members, the branch model,
@@ -210,7 +210,7 @@ Go `text/template` and its own copy of the [gomplate](https://docs.gomplate.ca)
 functions. The delimiters are `<% %>`. mise uses `{{ }}` and bash uses `[[ ]]`,
 so both reach the output unchanged. The values come from the tools and from the
 repository's `.config/bootstrap.toml`.
-[`docs/design/sync-engine.md`](docs/design/sync-engine.md#templates) has the
+[`docs/design/cli.md`](docs/design/cli.md#templates) has the
 rules, and
 [`docs/design/repo.md`](docs/design/repo.md#the-template-context) has each value
 of the context.
@@ -271,20 +271,20 @@ at the next sync, unless the values file has an override for it:
 "conventional-commits" = { "$mode" = "remove" }
 ```
 
-[`docs/design/sync-engine.md`](docs/design/sync-engine.md#shared-files) has the
+[`docs/design/cli.md`](docs/design/cli.md#shared-files) has the
 rules.
 
 ## Tests
 
 `mise run test:repo` runs `bootstrap sync --dry-run`, `bootstrap check` and,
 for a case that compares a written file, `bootstrap sync`, built from the
-working tree's `sync-engine/`, with its `repo/`, against scratch values files
+working tree's `cli/`, with its `repo/`, against scratch values files
 and scratch consumers. The init cases run `bootstrap init`. It checks the exit
 code and the message of each case. It needs no network when gomplate, jq and yq
 are installed.
 
 `mise run test:mac` runs `bootstrap mac sync`, built from the working tree's
-`sync-engine/`, against the fixtures in `macos/fixtures/`. It checks the exit
+`cli/`, against the fixtures in `macos/fixtures/`. It checks the exit
 code, the output and the files of each case, and it needs no network when
 gomplate, jq and yq are installed. The entry cases run the rendered task
 `updateall:configs` against a local bare origin.
@@ -295,10 +295,10 @@ It checks that the example selects each tool and that each rendered file
 parses, and it needs no network when gomplate, jq and yq are installed.
 
 `mise run test:go` runs `go vet`, a `gofmt` check and `go test` in
-`sync-engine/`. A test fails when the engine code names a tool.
+`cli/`. A test fails when the engine code names a tool.
 
 `mise run test` runs each test task in parallel. No hook runs a test. Run the
-tests by hand before you commit: `test` for a change to `sync-engine/`,
+tests by hand before you commit: `test` for a change to `cli/`,
 `test:repo` for a change to `repo/`, and `test:mac` and `test:macos-tools` for
 a change to `macos/`.
 

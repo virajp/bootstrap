@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #MISE description="Test bootstrap mac against fixtures, with no network"
 
-# Runs `bootstrap mac sync`, built from the working tree's sync-engine/, against
+# Runs `bootstrap mac sync`, built from the working tree's cli/, against
 # the fixture repo in macos/fixtures/repo/ and the fixture config folders in
 # macos/fixtures/config/, and checks the exit code, the output and the files of
 # each case. Every case has its own temp HOME, XDG_* folders, cache, TMPDIR and
@@ -11,7 +11,7 @@
 # of macos/tools/mise/ against a local bare origin: they cover the clone of
 # bootstrap, the lock and the temp copy. BOOTSTRAP_BIN, when set, is the engine
 # to test (an absolute path); else the task builds it once from the copy of
-# sync-engine/.
+# cli/.
 
 set -euo pipefail
 
@@ -69,12 +69,12 @@ if [[ -n $ignored ]]; then
   exit 1
 fi
 
-# The tree: sync-engine/ of the working tree, uncommitted work included, and the
+# The tree: cli/ of the working tree, uncommitted work included, and the
 # fixture repo as macos/, without tools/bad/ (one case adds it), in a git
 # repository, so a run can record its commit.
 tree="$tmp/tree"
 mkdir -p -- "$tree/macos"
-cp -R -- "$root/sync-engine" "$tree/sync-engine"
+cp -R -- "$root/cli" "$tree/cli"
 cp -R -- "$fixtures/repo/." "$tree/macos"
 rm -rf -- "$tree/macos/tools/bad"
 _git -C "$tree" init --quiet -b main
@@ -82,10 +82,10 @@ _git -C "$tree" add -A
 _git -C "$tree" commit --quiet --no-verify -m "fixture"
 tree_commit=$(_git -C "$tree" rev-parse HEAD)
 
-# The engine: BOOTSTRAP_BIN, else one build from the copy of sync-engine/. The
+# The engine: BOOTSTRAP_BIN, else one build from the copy of cli/. The
 # entry task runs it too.
 if [[ -z ${BOOTSTRAP_BIN:-} ]]; then
-  (cd "$root" && MISE_ENV=$mise_env mise x -- go build -C "$tree/sync-engine" -buildvcs=false \
+  (cd "$root" && MISE_ENV=$mise_env mise x -- go build -C "$tree/cli" -buildvcs=false \
     -o "$tmp/bootstrap" ./cmd/bootstrap)
   export BOOTSTRAP_BIN="$tmp/bootstrap"
 fi
@@ -670,13 +670,13 @@ case_overwrite() {
   check "the edit is overwritten" grep -qxF "name=override-name" "$home/.config/core/values.txt"
 }
 
-# The context of a template: .sync_engine and .env.
+# The context of a template: .cli_dir and .env.
 case_context() {
   use_config context
   run_real
   check_exit 0
   check_file "$home/.config/context/context.txt" "$(synced context/files/.config/context/context.txt.tmpl)
-sync_engine=$tree/sync-engine
+cli_dir=$tree/cli
 config=$MACOS_SETUP_REPO_PATH"
 }
 
@@ -1104,7 +1104,7 @@ case_parse_bad() {
     check_output "$tilde/.config/badparse/bad.$f: the result does not parse as $f - the current file stays"
     check_file "$home/.config/badparse/bad.$f" "old $f"
   done
-  check "no temp file is left" not test -n "$(find "$home/.config/badparse" -name '.sync-engine.*')"
+  check "no temp file is left" not test -n "$(find "$home/.config/badparse" -name '.bootstrap.*')"
 }
 
 # tool <tool> <args>: the installed <tool> of mise, offline, else its latest
@@ -1380,7 +1380,7 @@ case_merge_live_bad() {
   check_same "$(m_dir)/m.json" "$j"
   check_same "$(m_dir)/m.yaml" "$y"
   check_same "$(m_dir)/m.toml" "$t"
-  check "no temp file is left" not test -n "$(find "$(m_dir)" -name '.sync-engine.*')"
+  check "no temp file is left" not test -n "$(find "$(m_dir)" -name '.bootstrap.*')"
 }
 
 case_merge_live_kind() {
@@ -1677,16 +1677,16 @@ case_entry_lock_dead() {
   check_no_output "Waiting for another sync"
 }
 
-# The engine reads sync-engine/VERSION of the clone, its minimum version. A
+# The engine reads cli/VERSION of the clone, its minimum version. A
 # value that is not MAJOR.MINOR.PATCH stops it.
-bad_version() { printf '%s\n' "v1.2" > "$work/sync-engine/VERSION"; }
+bad_version() { printf '%s\n' "v1.2" > "$work/cli/VERSION"; }
 
 case_entry_bad_version() {
   entry_setup
   entry_origin bad_version
   entry_real
   check_exit 5
-  check_output "sync-engine/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2')"
+  check_output "cli/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2')"
   check "no lock, no temp copy" no_leftovers
 }
 
@@ -2053,7 +2053,7 @@ run_case "render: ~/.config/mise/** first" case_render_order
 run_case "render: the output equals the source" case_render_exact
 run_case "render: a seed" case_seed
 run_case "render: a generated file overwritten" case_overwrite
-run_case "context: .sync_engine and .env" case_context
+run_case "context: .cli_dir and .env" case_context
 run_case "symlinks: a link to a file" case_link_file
 run_case "symlinks: a symlinked folder" case_link_folder
 run_case "symlinks: a stale file through a link" case_link_stale

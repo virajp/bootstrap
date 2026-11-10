@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-#MISE description="Vet, format-check and test the Go module in sync-engine/"
+#MISE description="Vet, format-check and test the Go module in cli/"
 
 # Runs `go vet`, a `gofmt` check and `go test` in the Go module of
-# sync-engine/. The task runs the Go of the `go` tool, which this repository
+# cli/. The task runs the Go of the `go` tool, which this repository
 # selects.
 
 set -euo pipefail
@@ -10,11 +10,11 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-cd "${MISE_PROJECT_ROOT}/sync-engine"
+cd "${MISE_PROJECT_ROOT}/cli"
 
 go() { mise x -- go "$@"; }
 
-print_header "Testing the Go module in sync-engine/ ..."
+print_header "Testing the Go module in cli/ ..."
 
 print_subheader "Running go vet ..."
 go vet ./...

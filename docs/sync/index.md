@@ -78,7 +78,7 @@ This file holds the instructions. Each rule of the sync has one place in
   environment or write `[overrides.mise*]`.
 - Read [`docs/design/repo.md`](../design/repo.md) before you select the
   branch model or the members.
-- Read [`docs/design/sync-engine.md`](../design/sync-engine.md) for the
+- Read [`docs/design/cli.md`](../design/cli.md) for the
   commands of `bootstrap`, the clone, a parse failure, a stale file or an exit
   code.
 - Read [`docs/design/fnox.md`](../design/fnox.md) before you select `fnox`.
@@ -580,7 +580,7 @@ add a missing item. The rules of the merge are in
 
 If a command of `bootstrap` fails, read its messages and its exit code. A
 failure does not change an existing file. The full list is in
-[`docs/design/sync-engine.md`](../design/sync-engine.md).
+[`docs/design/cli.md`](../design/cli.md).
 
 | Code | Cause                                                                                                                              | Action                                                                            |
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -593,7 +593,7 @@ failure does not change an existing file. The full list is in
 | 2    | `bootstrap` is older than the version that the clone needs                                                                         | Run `mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'`                 |
 | 2    | Not a git repository, or mise is not available                                                                                     | Run `git init`, or install mise                                                   |
 | 3    | A tool or a pack that is not in `bootstrap`                                                                                        | Correct the `[tools.*]` and `[packs.*]` entries, or the tool names of the command |
-| 5    | The clone or the fetch failed, or `sync-engine/VERSION` of the clone is not `MAJOR.MINOR.PATCH`                                    | Examine the network and the access                                                |
+| 5    | The clone or the fetch failed, or `cli/VERSION` of the clone is not `MAJOR.MINOR.PATCH`                                            | Examine the network and the access                                                |
 | 1    | A local file system error. `bootstrap detect --no` also exits 1 for a detected tool that is not selected                           | Read the `bootstrap:` lines on stderr                                             |
 
 ## Step 7: Supply the files that `bootstrap` does not have

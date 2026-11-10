@@ -32,7 +32,7 @@ Each rule of the sync has one place in `docs/design/`:
 
 - [`docs/design/mac.md`](../design/mac.md): the keys of `macos.toml`, the
   selection, the stages, exit 4 and the symlink rule.
-- [`docs/design/sync-engine.md`](../design/sync-engine.md): the commands of the
+- [`docs/design/cli.md`](../design/cli.md): the commands of the
   CLI `bootstrap` and the exit codes.
 - [`docs/design/packs.md`](../design/packs.md): the packs.
 - [`docs/design/tools.md`](../design/tools.md): the keys of a `tools.toml`.
@@ -263,7 +263,7 @@ Do each command of these items in the clone.
 2. Find what changed. Command:
 
    ```text
-   git -C "$tmp" log --oneline <commit>..main -- macos sync-engine docs/setup
+   git -C "$tmp" log --oneline <commit>..main -- macos cli docs/setup
    ```
 
    Pass: the command exits 0. If it prints nothing, tell the owner that the

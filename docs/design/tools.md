@@ -8,9 +8,9 @@ of each file. This document holds the `tools.toml` schema of both sides, the
 the rule for the header of a source file.
 
 See also: [packs.md](packs.md), [mise.md](mise.md) for `[mise.*]`,
-[sync-engine.md](sync-engine.md) for shared files, the scripts and the values,
+[cli.md](cli.md) for shared files, the scripts and the values,
 [repo.md](repo.md) and [mac.md](mac.md). The exit code of each rule that stops
-the sync is in [sync-engine.md](sync-engine.md#the-exit-codes).
+the sync is in [cli.md](cli.md#the-exit-codes).
 
 ## The two sides
 
@@ -34,7 +34,7 @@ For example, the entry `[tasks."code/merge/develop"]` with
 `source = "code-merge-develop"` copies `repo/tools/git/tasks/code-merge-develop`
 to `.config/mise/tasks/code/merge/develop` in a consumer. A script is not
 copied: the engine runs it from the clone. See
-[sync-engine.md](sync-engine.md#the-scripts-of-a-tool).
+[cli.md](cli.md#the-scripts-of-a-tool).
 
 ## The `tools.toml` file
 
@@ -174,7 +174,7 @@ the header, a seed and a merge target stay.
 - A seed that applies only when the consumer has a specific file also gets
   `requires`,
   for example `requires = ["package.json"]`.
-- A shared file is in [sync-engine.md](sync-engine.md#shared-files). The
+- A shared file is in [cli.md](cli.md#shared-files). The
   `pre-commit`, `dprint`, `git` and `vscode` tools of `repo/tools/` and the
   `claude-cli`, `gem`, `gh` and `superfile` tools of `macos/tools/` have one.
 - `test:macos-tools` stops when a `[files]` table gives `mode = "seed"` to a
@@ -213,7 +213,7 @@ The rules of the task files:
 
 A repo tool can have one `[formatter]` table: the formatter that the sync runs
 on each rendered file before the compare. See
-[sync-engine.md](sync-engine.md#the-formatter).
+[cli.md](cli.md#the-formatter).
 
 | Key       | Meaning                                                                                                              |
 | --------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -255,11 +255,11 @@ The sync does not add this header to a shipped file. The generator of the mise
 config
 writes the same two lines in each generated mise file. See
 [mise.md](mise.md#the-generated-files). The detection of the header is in
-[sync-engine.md](sync-engine.md#the-header).
+[cli.md](cli.md#the-header).
 
 A seed and a merge spec have no header. The sync writes the shared header into
 a shared file of a format with comments. See
-[sync-engine.md](sync-engine.md#the-header).
+[cli.md](cli.md#the-header).
 
 ## The `[defaults]`, `[questions]` and `[contributes]` tables
 
@@ -275,7 +275,7 @@ Mac tools such as
 `[questions]`. The
 Mac tools `1password` and `orbstack` use `[contributes]`. The merge of these
 values is
-in [sync-engine.md](sync-engine.md#the-values-of-a-tool).
+in [cli.md](cli.md#the-values-of-a-tool).
 
 ```toml
 [defaults]
@@ -308,7 +308,7 @@ each tool of the clone. These stop the sync:
 
 `bootstrap init` and `bootstrap add` ask the questions, and `detect` of a
 question gives the proposal. See
-[sync-engine.md](sync-engine.md#the-questions). `sync` and `check` stop with
+[cli.md](cli.md#the-questions). `sync` and `check` stop with
 code 2 for a question of a selected tool without an answer: run
 `bootstrap init`. A template that needs a value without a question uses
 `required`, which fails that file with its message.

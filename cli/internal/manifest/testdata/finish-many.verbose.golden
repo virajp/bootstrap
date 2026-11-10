@@ -1,0 +1,28 @@
+== stdout ==
+rc=0
+rc=0
+rc=0
+== stderr ==
+bootstrap: unchanged  d/f.txt
+bootstrap: updated    d/g.txt
+bootstrap: updated    d/h.txt
++---------------+-------+
+| Changed       |     0 |
+| New           |     1 |
+| Seeded        |     1 |
+| Removed       |     0 |
+| Unchanged     |     1 |
+| Kept seeds    |     0 |
+| Skipped       |     0 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |     3 |
++---------------+-------+
+[OK] Synced: 2 files changed
+== tree ==
+d 755 root
+d 755 root/d
+f 644 root/d/f.txt "x\n"
+f 644 root/d/g.txt "y\n"
+f 644 root/d/h.txt "z\n"
+d 755 tmp

@@ -8,11 +8,11 @@ both sides, the environments, `[overrides.mise*]`, `zz-repo` and `zz-macos`, and
 the tasks.
 
 See also: [tools.md](tools.md), [packs.md](packs.md),
-[sync-engine.md](sync-engine.md) for the stale rule,
+[cli.md](cli.md) for the stale rule,
 [repo.md](repo.md), [mac.md](mac.md) and
 [bootstrap-config.md](bootstrap-config.md). The exit code of each rule that
 stops the sync is in
-[sync-engine.md](sync-engine.md#the-exit-codes).
+[cli.md](cli.md#the-exit-codes).
 
 ## Rules
 
@@ -215,7 +215,7 @@ A derive script of a tool can return a `mise` and a `mise_env` table. They merge
 into the mise config of that tool before `[overrides.mise*]`. For example, the
 derive script of `mise` returns `mise.shell_alias` with the aliases
 `setup-all` and `setup-<member>` of a repository with submodules. See
-[sync-engine.md](sync-engine.md#the-scripts-of-a-tool).
+[cli.md](cli.md#the-scripts-of-a-tool).
 
 #### An example
 
@@ -439,7 +439,7 @@ because `base` is a pack, not a tool. See [packs.md](packs.md#the-base-pack).
   the manifest lists and this run does not write. Thus a removed tool,
   environment
   or folder disappears from consumers. See
-  [sync-engine.md](sync-engine.md#the-manifest-and-the-stale-rule).
+  [cli.md](cli.md#the-manifest-and-the-stale-rule).
 
 The header of a generated file names `<tools root>/<tool>/tools.toml`, for
 example
@@ -479,7 +479,7 @@ example `doppler`.
 
 The Mac side has only `[overrides.mise.*]`. See
 [The two sides](#the-two-sides-of-the-generator). An override of a shared file
-is different: see [sync-engine.md](sync-engine.md#overrides-of-a-shared-file).
+is different: see [cli.md](cli.md#overrides-of-a-shared-file).
 
 ### `zz-repo` and `zz-macos`
 

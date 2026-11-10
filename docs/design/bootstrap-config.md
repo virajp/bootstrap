@@ -8,9 +8,9 @@ keys of the Mac values file are in [mac.md](mac.md#macostoml).
 
 See also: [repo.md](repo.md), [packs.md](packs.md),
 [tools.md](tools.md),
-[mise.md](mise.md), [sync-engine.md](sync-engine.md) and [fnox.md](fnox.md).
+[mise.md](mise.md), [cli.md](cli.md) and [fnox.md](fnox.md).
 The exit code of each rule that stops the sync or the render is in
-[sync-engine.md](sync-engine.md#the-exit-codes).
+[cli.md](cli.md#the-exit-codes).
 
 ## Example
 
@@ -85,7 +85,7 @@ label = "Web"
 
 A key of a question is a `[tools.<folder>].<key>`: `bootstrap init` and
 `bootstrap add` write the answer there. See
-[sync-engine.md](sync-engine.md#the-questions).
+[cli.md](cli.md#the-questions).
 
 The gate `code:lint:60-bootstrap` runs `bootstrap check` at each commit that
 changes this file. See [repo.md](repo.md#bootstrap-check).
@@ -144,7 +144,7 @@ The sync merges the value over the `[defaults]` of the tool and the
 contributions
 of the selected tools and the derived values, and a template reads the result
 as `.config` or `.all`. See
-[sync-engine.md](sync-engine.md#the-values-of-a-tool).
+[cli.md](cli.md#the-values-of-a-tool).
 
 ### `[packs.<name>]`
 
@@ -332,7 +332,7 @@ Values that replace the defaults of the mise config of the tools. See
 
 The overrides of the bootstrap items of a shared file of the tool, for example
 `[tools.git.files.".gitignore"]` with `"*.log" = { "$mode" = "remove" }`. See
-[sync-engine.md](sync-engine.md#overrides-of-a-shared-file). The own items of
+[cli.md](cli.md#overrides-of-a-shared-file). The own items of
 the user go directly in the file.
 
 ### `[tools.claude.plugins.user]` and `[tools.claude.plugins.project]`
@@ -344,13 +344,13 @@ The Claude plugins of each scope. Each key is `"<plugin>@<marketplace>" =
 
 The commit of the last sync without a failure. The sync writes it. An example
 has an
-empty value. See [sync-engine.md](sync-engine.md#bootstrap_commit).
+empty value. See [cli.md](cli.md#bootstrap_commit).
 
 ## Reserved names
 
 The sync merges these keys into the template context before the values file:
 `members`, `member_folders`, `member_types`, `submodules`, `tools`,
-`sync_engine`, `config` and `all`. Thus a key of the same name in the values
+`cli_dir`, `config` and `all`. Thus a key of the same name in the values
 file does not replace the value of the sync. `tools` of the values file is the
 input of the sync, not the value that the templates get.
 
@@ -387,4 +387,4 @@ The default path is `.config/bootstrap.toml`. `BOOTSTRAP_VALUES` sets a
 different path. Without the file, each command except `bootstrap init` stops.
 The overrides file is `.config/bootstrap.overrides.toml` next to it, with only
 `[tools.<folder>]` tables. See
-[sync-engine.md](sync-engine.md#the-values-of-a-tool).
+[cli.md](cli.md#the-values-of-a-tool).

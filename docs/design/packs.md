@@ -6,7 +6,7 @@ outside `tools.toml`, so it has its own document.
 See also: [tools.md](tools.md), [repo.md](repo.md), [mac.md](mac.md) and
 [mise.md](mise.md). The exit code of each
 rule that stops the sync is in
-[sync-engine.md](sync-engine.md#the-exit-codes).
+[cli.md](cli.md#the-exit-codes).
 
 A pack is a named group of members. It is only a pointer: each key of its
 table is a member, and it has no other keys. The config, the tasks and the
@@ -83,7 +83,7 @@ claude-desktop = { default = true }
 
 The packs files hold only the relationships. The questions of a value are in
 the `[questions]` tables of the tools: `bootstrap init` and `bootstrap add` ask
-them. See [sync-engine.md](sync-engine.md#the-questions). The questions of a
+them. See [cli.md](cli.md#the-questions). The questions of a
 selection, for example which pack a repository needs, are in
 `docs/sync/packs/<pack>.md` and `docs/sync/tools/<tool>.md`. The adopting AI
 asks them, and it does not ask a question that the prompt of the user already

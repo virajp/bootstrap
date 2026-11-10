@@ -1,0 +1,22 @@
+bootstrap: updated    .config/mise/tasks/code/lint
+bootstrap: updated    .gitignore
+bootstrap: updated    dir with space/a'b.toml
+bootstrap: updated    .config/linter.yaml
+bootstrap: removed    old/file
+bootstrap: removed    old/file (again)
+bootstrap: unchanged  same
+bootstrap: kept seed  seed
+bootstrap: skip env   skip2
++---------------+-------+
+| Changed       |     1 |
+| New           |     2 |
+| Seeded        |     1 |
+| Removed       |     1 |
+| Unchanged     |     1 |
+| Kept seeds    |     1 |
+| Skipped       |     2 |
+| Failed        |     0 |
++---------------+-------+
+| Total         |     9 |
++---------------+-------+
+[OK] Synced: 5 files changed

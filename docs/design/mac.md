@@ -7,7 +7,7 @@ holds the rules that only the Mac has: the repository of `macos.toml`, the
 entry tasks, `macos.toml`, the stages and exit 4, the place of mise and the
 symlink resolve.
 
-See also: [sync-engine.md](sync-engine.md) for the command line, the shared
+See also: [cli.md](cli.md) for the command line, the shared
 rules and the other exit codes, [packs.md](packs.md), [tools.md](tools.md) and
 [mise.md](mise.md).
 
@@ -89,21 +89,21 @@ path does not end with `/.local/bin/mise` (for example a Homebrew copy), the run
 stops with code 2 and names the path that it found. This check is the first
 step of the front-end.
 
-`BOOTSTRAP_CLONE` must be a folder with `sync-engine/` and `macos/tools/`. The
+`BOOTSTRAP_CLONE` must be a folder with `cli/` and `macos/tools/`. The
 command line sets it. See
-[sync-engine.md](sync-engine.md#the-cache-and-the-clone).
+[cli.md](cli.md#the-cache-and-the-clone).
 
 ## `macos.toml`
 
 `macos.toml` is the values file of the Mac side. It is at the root of the
 repository of `macos.toml`. `macos/examples/macos.toml` is the sample. Its
 overrides file is `macos.overrides.toml` next to it. See
-[sync-engine.md](sync-engine.md#the-values-of-a-tool).
+[cli.md](cli.md#the-values-of-a-tool).
 
 | Key                       | Meaning                                                                                                                          |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `bootstrap_commit`        | A string. The commit of the last clean run. The sync writes it. See [sync-engine.md](sync-engine.md#bootstrap_commit).           |
-| `[tools.<name>]`          | A table. It selects the tool, and each key is a value of the tool. See [sync-engine.md](sync-engine.md#the-values-of-a-tool).    |
+| `bootstrap_commit`        | A string. The commit of the last clean run. The sync writes it. See [cli.md](cli.md#bootstrap_commit).                           |
+| `[tools.<name>]`          | A table. It selects the tool, and each key is a value of the tool. See [cli.md](cli.md#the-values-of-a-tool).                    |
 | `[packs.<name>]`          | An empty table. It adds each `default = true` member of the pack. See [packs.md](packs.md).                                      |
 | `[overrides.mise.<path>]` | It changes the generated mise config. See [mise.md](mise.md#the-overrides).                                                      |
 | `[mise.*]`                | The own mise config of the user. It goes to `conf.d/zz-macos/mise.toml`. See [mise.md](mise.md#the-own-config-of-a-values-file). |
@@ -141,13 +141,13 @@ transitively.
 
 ## The template context
 
-| Value          | Content                                                           |
-| -------------- | ----------------------------------------------------------------- |
-| `.config`      | The values of the tool of the template.                           |
-| `.all`         | The values of each selected tool, by name.                        |
-| `.tools`       | The names of the selected tools.                                  |
-| `.env`         | `HOME`, `USER` and `MACOS_SETUP_REPO_PATH`.                       |
-| `.sync_engine` | The absolute path of the `sync-engine/` folder of the clone copy. |
+| Value      | Content                                                   |
+| ---------- | --------------------------------------------------------- |
+| `.config`  | The values of the tool of the template.                   |
+| `.all`     | The values of each selected tool, by name.                |
+| `.tools`   | The names of the selected tools.                          |
+| `.env`     | `HOME`, `USER` and `MACOS_SETUP_REPO_PATH`.               |
+| `.cli_dir` | The absolute path of the `cli/` folder of the clone copy. |
 
 A TOML, JSON or YAML template of a Mac tool encodes a string value with
 `data.ToJSON`, and a merge spec with `data.ToTOMLInline`, for example
@@ -180,7 +180,7 @@ Two Mac sources do not follow this rule, each from its old copy:
    `after` scripts of the main stage, and sets `bootstrap_commit`.
 
 The write of one file is in
-[sync-engine.md](sync-engine.md#the-write-of-one-target). A file takes this
+[cli.md](cli.md#the-write-of-one-target). A file takes this
 order: the real path of its target, the seed gate, `requires`, the unblock of a
 folder path, the `dir_perm` of its folder, then the render or the copy, the
 parse check, the merge and the compare.
@@ -231,12 +231,12 @@ with exit 4, and it names `mise run updateall`.
 A dry run renders both stages at once, runs no `mise bootstrap` and no `after`
 script, and never stops with exit 4.
 
-The other exit codes are in [sync-engine.md](sync-engine.md#the-exit-codes).
+The other exit codes are in [cli.md](cli.md#the-exit-codes).
 
 ## The output
 
 The list, the table, the last line and verbose are in
-[sync-engine.md](sync-engine.md#the-output-of-a-run). These rules are only for
+[cli.md](cli.md#the-output-of-a-run). These rules are only for
 the Mac:
 
 - The first line is the info line `bootstrap <short commit> · <n> tools`. With
@@ -277,7 +277,7 @@ repository. This difference is on purpose.
 
 The manifest is `macos-generated.tsv` of the cache. It is outside the clone, so
 `git clean` does not remove it. Its shape and the stale rule are in
-[sync-engine.md](sync-engine.md#the-manifest-and-the-stale-rule).
+[cli.md](cli.md#the-manifest-and-the-stale-rule).
 
 Each owned target of a selected tool, each generated mise file, and each item
 that bootstrap added to a shared file has one row. The file
