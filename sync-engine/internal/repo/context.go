@@ -92,29 +92,14 @@ func (s *state) contexts() *contexts {
 		return nil
 	}
 	ctx := map[string]any{"v": v, "all_values": all}
-	// One context for each tool manifest, `tool_<name>`, for the
-	// `[[precommit]]` entries; `repo_precommit` for the own entries of the
-	// repo.
 	var sources []ds
-	for _, tool := range s.res.Tools {
-		sources = append(sources, ds{"tool_" + tool, s.src.ToolDir(tool) + "/tools.toml", "toml"})
-	}
-	own := s.root + "/.config/repo-sync/pre-commit.yaml"
-	hasOwn := ""
-	if isFile(own) {
-		sources = append(sources, ds{"repo_precommit", own, "yaml"})
-		hasOwn = "1"
-	}
 	env := map[string]string{
 		"REPO_SYNC_SYNC_ENGINE":    s.dir + "/sync-engine",
-		"REPO_SYNC_HOOK_DROP":      " " + strings.Join(append(s.hookDrop, ""), " "),
-		"REPO_SYNC_OWN_PRECOMMIT":  hasOwn,
 		"REPO_SYNC_MEMBERS":        strings.Join(names, "\n"),
 		"REPO_SYNC_MEMBER_FOLDERS": strings.Join(folders, "\n"),
 		"REPO_SYNC_MEMBER_TYPES":   strings.Join(kinds, "\n"),
 		"REPO_SYNC_SUBMODULES":     submodules,
 		"REPO_SYNC_TOOLS":          strings.Join(s.res.Tools, "\n"),
-		"REPO_SYNC_EXTENSIONS":     strings.Join(s.extensions, "\n"),
 	}
 	out, ok := s.gomplate(tmplContext, ctx, sources, env, false)
 	if !ok {

@@ -1,7 +1,6 @@
 # git: the shared .gitignore and .gitattributes, the commit convention, the git-config check, the merge tasks and worktrunk.
 default_envs = [ "dev" ]
 depends = []
-extensions = []
 root_only = false
 
 # Git worktree manager (wt).
@@ -9,10 +8,11 @@ root_only = false
 version = "latest"
 
 # The gate hooks are tool-neutral: each names a task and nothing else.
-[[precommit]]
+[[contributes.pre-commit.repos]]
+id = "git-config"
 repo = "local"
 
-[[precommit.hooks]]
+[[contributes.pre-commit.repos.hooks]]
 always_run = true
 description = "Prevents a local .git/config from overriding global user and signing settings."
 entry = "mise x -- mise run code:git-config --fix"
@@ -21,21 +21,23 @@ language = "system"
 name = "Forbidden local git-config"
 pass_filenames = false
 
-[[precommit]]
+[[contributes.pre-commit.repos]]
+id = "no-commit-to-branch"
 repo = "https://github.com/pre-commit/pre-commit-hooks"
 rev = "v6.0.0"
 
-[[precommit.hooks]]
+[[contributes.pre-commit.repos.hooks]]
 args = [ "--branch", "main", "--branch", "develop" ]
 description = "These branches take merges only. git runs pre-merge-commit for a merge, so merges are not affected."
 id = "no-commit-to-branch"
 name = "Refuse a direct commit to a protected branch"
 
-[[precommit]]
+[[contributes.pre-commit.repos]]
+id = "conventional-commits"
 repo = "https://github.com/qoomon/git-conventional-commits"
 rev = "v2.9.0"
 
-[[precommit.hooks]]
+[[contributes.pre-commit.repos.hooks]]
 args = [ "--config", ".config/git-conventional-commits.yaml" ]
 id = "conventional-commits"
 name = "Conventional Commits"
@@ -53,8 +55,10 @@ source = ".config/wt.toml"
 [files.".gitattributes"]
 source = ".gitattributes"
 
+# A shared text file: the lines of the spec merge into it.
 [files.".gitignore"]
-source = ".gitignore"
+mode = "merge"
+source = "gitignore.merge.toml"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.

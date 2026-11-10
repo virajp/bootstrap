@@ -1,5 +1,5 @@
-# A tool with a merge target of each format; only the merge config selects it.
-description = "The merge targets of the fixture repo"
+# A tool with a shared file of each format; only the merge config selects it.
+description = "The shared files of the fixture repo"
 
 [defaults]
 items = [ "a" ]
@@ -7,21 +7,19 @@ items = [ "a" ]
 # The files of the tool, below files/.
 [files.".config/merger/m.json"]
 mode = "merge"
-remove = [ [ "gone" ], [ "nested", "old" ], [ "absent", "path" ] ]
-remove_items = [ { items = [ "drop", { j = 2, k = 1 } ], path = [ "list" ] }, { items = [ "app" ], path = [ "keep" ] } ]
-source = ".config/merger/m.json.tmpl"
+source = ".config/merger/m.json.merge.toml"
 
 [files.".config/merger/m.toml"]
 mode = "merge"
-remove = [ [ "gone" ] ]
-remove_items = [ { items = [ "s" ], path = [ "notlist" ] } ]
-source = ".config/merger/m.toml.tmpl"
+source = ".config/merger/m.toml.merge.toml"
+
+[files.".config/merger/m.txt"]
+mode = "merge"
+source = ".config/merger/m.txt.merge.toml"
 
 [files.".config/merger/m.yaml"]
 mode = "merge"
-remove = [ [ "gone" ] ]
-remove_items = [ { items = [ "drop" ], path = [ "list" ] } ]
-source = ".config/merger/m.yaml.tmpl"
+source = ".config/merger/m.yaml.merge.toml"
 
 [files.".config/merger/plain.txt"]
 source = ".config/merger/plain.txt"

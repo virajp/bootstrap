@@ -2,7 +2,6 @@
 # the aube tool, not both.
 default_envs = [ "dev", "ci" ]
 depends = [ "node" ]
-extensions = []
 parent = "node"
 root_only = false
 

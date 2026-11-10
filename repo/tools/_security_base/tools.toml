@@ -1,16 +1,16 @@
 # _security_base: the code:sec orchestrator and the sec hook of the security pack.
 default_envs = [ "dev", "ci" ]
 depends = []
-extensions = []
 root_only = false
 
 # The gate hooks are tool-neutral: each names a task and nothing else. Which
 # scanners run is decided inside the task, so a hook and CI cannot drift apart.
 # `code:sec` comes last because it is the only one that cannot fix what it finds.
-[[precommit]]
+[[contributes.pre-commit.repos]]
+id = "sec"
 repo = "local"
 
-[[precommit.hooks]]
+[[contributes.pre-commit.repos.hooks]]
 always_run = true
 description = "The secret scan, over what is staged rather than over the tree."
 entry = "mise x -- mise run code:sec --staged"

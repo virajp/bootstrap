@@ -19,7 +19,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/virajp/bootstrap/sync-engine/internal/format"
 	"github.com/virajp/bootstrap/sync-engine/internal/header"
 	"github.com/virajp/bootstrap/sync-engine/internal/report"
 	"github.com/virajp/bootstrap/sync-engine/internal/target"
@@ -178,7 +177,7 @@ func toRows(list []string) []Row {
 			continue // bash skips an empty line
 		}
 		tool, path, _ := strings.Cut(l, "\t")
-		rows = append(rows, Row{tool, path})
+		rows = append(rows, Row{Tool: tool, Path: path})
 	}
 	return rows
 }
@@ -211,37 +210,6 @@ func prune(root, path string) op {
 	return op{run: func(h *run) int {
 		Prune(h.abs(root), path)
 		return 0
-	}}
-}
-
-// merge is a merge target as a front-end writes it: the parse check of the
-// source as <f>, then the merge with the live file, then the finish with the
-// mode of the live file (or 644).
-func merge(content, dest, f string) op {
-	return op{run: func(h *run) int {
-		e := h.env
-		path := h.abs(dest)
-		show := e.Show(path)
-		d := h.tmp
-		if !e.DryRun {
-			d = target.Dirname(path)
-			os.MkdirAll(d, 0o777)
-		}
-		tmp, _ := e.Temps.Create(d)
-		os.WriteFile(tmp, []byte(content), 0o600)
-		tf, rc := e.Check(tmp, path, "", true, show)
-		if rc == 0 {
-			rc = e.Merge(tmp, path, tf, format.Ops{}, show)
-		}
-		if rc != 0 {
-			e.Abort(tmp, path, show)
-			return int(rc)
-		}
-		m := os.FileMode(0o644)
-		if _, err := os.Stat(path); err == nil {
-			m, _ = target.Mode(path)
-		}
-		return int(e.Finish(m, tmp, path, show, "merge"))
 	}}
 }
 

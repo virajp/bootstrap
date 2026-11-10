@@ -593,3 +593,12 @@ func withCtx(c fnCase) fnCase {
 	}
 	return c
 }
+
+func TestToTOMLInline(t *testing.T) {
+	in := map[string]any{"b": []any{int64(1), "x<y"}, "a b": map[string]any{"c": true}, "f": 1.5}
+	got, err := (&dataNS{}).ToTOMLInline(in)
+	want := `{ "a b" = { c = true }, b = [ 1, "x<y" ], f = 1.5 }`
+	if err != nil || got != want {
+		t.Fatalf("got %q, %v; want %q", got, err, want)
+	}
+}

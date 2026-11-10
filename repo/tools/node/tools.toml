@@ -2,9 +2,57 @@
 # pnpm or the aube tool.
 default_envs = [ "dev", "ci" ]
 depends = []
-extensions = [ "christian-kohler.npm-intellisense", "meganrogge.template-string-converter" ]
 root_only = false
 
+# The VS Code extensions of the tool, in .vscode/extensions.json.
+[contributes.vscode]
+extensions = [ "christian-kohler.npm-intellisense", "meganrogge.template-string-converter" ]
+
+# The dprint blocks and plugins of TypeScript, markup and Tailwind CSS, in
+# dprint.jsonc.
+[contributes.dprint]
+plugins = [ "npm:@dprint/typescript@0.96.1", "npm:dprint-plugin-markup@0.27.6", "npm:dprint-plugin-tailwindcss@0.1.0" ]
+
+[contributes.dprint.blocks.typescript]
+"arrowFunction.useParentheses" = "force"
+"binaryExpression.linePerExpression" = true
+"enumDeclaration.memberSpacing" = "newLine"
+"exportDeclaration.forceMultiLine" = "whenMultiple"
+"exportDeclaration.sortTypeOnlyExports" = "last"
+"importDeclaration.forceMultiLine" = "whenMultiple"
+"importDeclaration.sortTypeOnlyImports" = "first"
+"memberExpression.linePerExpression" = true
+quoteProps = "consistent"
+useBraces = "always"
+
+[contributes.dprint.blocks.markup]
+"astro.scriptIndent" = true
+"astro.styleIndent" = true
+astroAttrShorthand = true
+"component.selfClosing" = true
+"component.vSlotStyle" = "vSlot"
+"default.vSlotStyle" = "vSlot"
+formatComments = true
+"html.normal.selfClosing" = true
+"html.scriptIndent" = true
+"html.styleIndent" = true
+"html.void.selfClosing" = true
+maxAttrsPerLine = 1
+"named.vSlotStyle" = "vSlot"
+scriptIndent = true
+styleIndent = true
+"svelte.scriptIndent" = true
+"svelte.styleIndent" = true
+"svg.selfClosing" = true
+vBindSameNameShortHand = true
+vBindStyle = "short"
+vForDelimiterStyle = "in"
+vOnStyle = "short"
+vSlotStyle = "vSlot"
+"vue.scriptIndent" = true
+"vue.styleIndent" = true
+
+[contributes.dprint.blocks.tailwindcss]
 # The mise config, generated into .config/mise/conf.d/node/mise.<env>.toml.
 [mise.settings]
 node.compile = false

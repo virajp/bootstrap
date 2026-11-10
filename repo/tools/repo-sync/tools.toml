@@ -1,7 +1,6 @@
 # repo-sync: the setup:configs tasks and the gate code:lint:60-repo-sync.
 default_envs = [ "dev" ]
 depends = []
-extensions = []
 root_only = false
 
 # The mise config, generated into .config/mise/conf.d/repo-sync/mise.<env>.toml.

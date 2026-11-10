@@ -1,19 +1,23 @@
 # GitHub: the gh CLI, actionlint, and the issue and pull request templates.
 default_envs = [ "dev", "ci" ]
 depends = []
-extensions = [ "github.vscode-github-actions" ]
 root_only = false
 
-[[precommit]]
+[[contributes.pre-commit.repos]]
+id = "actionlint"
 repo = "local"
 
-[[precommit.hooks]]
+[[contributes.pre-commit.repos.hooks]]
 entry = "mise x -- actionlint"
 files = '^\.github/workflows/.*\.ya?ml$'
 id = "actionlint"
 language = "system"
 name = "Lint GitHub Actions workflows (actionlint)"
 pass_filenames = true
+
+# The VS Code extensions of the tool, in .vscode/extensions.json.
+[contributes.vscode]
+extensions = [ "github.vscode-github-actions" ]
 
 # The mise config, generated into .config/mise/conf.d/github/mise.<env>.toml.
 

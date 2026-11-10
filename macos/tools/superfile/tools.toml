@@ -2,14 +2,13 @@
 
 description = "superfile, the terminal file manager, and its config"
 
-# superfile rewrites its config, so the source holds only the keys that
-# bootstrap enforces. sidebar_sections is in remove, so the source list
-# replaces the live list and its order holds.
+# superfile rewrites its config, so it is a shared file: the spec adds only
+# the keys of bootstrap. sidebar_sections is a block, so bootstrap owns the
+# list and its order holds.
 [mise.bootstrap.packages]
 "brew:superfile" = "latest" # File management utility
 
 # The files of the tool, below files/.
 [files."Library/Application Support/superfile/config.toml"]
 mode = "merge"
-remove = [ [ "sidebar_sections" ] ]
-source = "Library/Application Support/superfile/config.toml"
+source = "Library/Application Support/superfile/config.toml.merge.toml"

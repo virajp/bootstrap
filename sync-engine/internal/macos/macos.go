@@ -107,6 +107,7 @@ type state struct {
 	failed    string
 	rows      []manifest.Row
 	oldRows   []manifest.Row
+	merged    map[string]bool // The shared files that this run merged.
 	changed   bool
 	dirDone   map[string]bool // The folders at their dir_perm.
 	show      string          // _SS_SHOW
@@ -284,6 +285,7 @@ func (s *state) run(args []string) fail.Code {
 		s.r.Info("bootstrap " + short + " · " + strconv.Itoa(len(s.res.Tools)) + " tools")
 	}
 	s.oldRows, _ = manifest.Read(s.e, manifest.Macos, manifestFile, "")
+	s.merged = map[string]bool{}
 
 	if dryRun {
 		s.e.DryRun = true
@@ -350,7 +352,7 @@ func (s *state) run(args []string) fail.Code {
 		s.r.Summary(int(worst))
 		return worst
 	}
-	if manifest.Write(s.e, manifestFile, s.rows) != fail.OK {
+	if manifest.Write(s.e, manifestFile, append(s.rows, s.keptItems()...)) != fail.OK {
 		s.r.Summary(1)
 		return fail.Other
 	}
@@ -498,6 +500,18 @@ func (s *state) render(stage string) fail.Code {
 		worst = max(worst, rc)
 	}
 	return worst
+}
+
+// keptItems gives the item rows of the last run for each shared file that
+// this run did not merge, so a later run can still remove those items.
+func (s *state) keptItems() []manifest.Row {
+	var out []manifest.Row
+	for _, r := range s.oldRows {
+		if r.Item != "" && !s.merged[r.Path] {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 // oldRowsOf is `_ss_old_rows`: the old rows whose tool is in <stage>.

@@ -124,7 +124,7 @@ type entryKind struct {
 var filesKind = entryKind{
 	table: "files", dir: FilesDir,
 	modes:  []string{"copy", "template", "seed", "merge"},
-	keys:   []string{"source", "mode", "render", "format", "requires", "requires_found", "remove", "remove_items", "when", "perm", "dir_perm"},
+	keys:   []string{"source", "mode", "render", "format", "requires", "requires_found", "when", "perm", "dir_perm"},
 	target: func(k string) string { return k },
 }
 
@@ -239,8 +239,8 @@ func (s Source) entries(shown, dir string, raw *Obj) ([]FileEntry, []*fail.Error
 			}
 			if v, has := e.Lookup("format"); has {
 				f, isStr := v.(string)
-				if !isStr || !oneOf(f, []string{"text", "json", "yaml", "toml"}) {
-					fail1("format must be \"text\", \"json\", \"yaml\" or \"toml\"")
+				if !isStr || !oneOf(f, []string{"text", "json", "jsonc", "yaml", "toml"}) {
+					fail1("format must be \"text\", \"json\", \"jsonc\", \"yaml\" or \"toml\"")
 				} else {
 					fe.Format = f
 				}
@@ -299,24 +299,9 @@ func (s Source) entries(shown, dir string, raw *Obj) ([]FileEntry, []*fail.Error
 					fe.RequiresFound = items
 				}
 			}
-			for _, k := range []string{"remove", "remove_items"} {
-				v, has := e.Lookup(k)
-				if !has {
-					continue
-				}
-				if mode != "merge" {
-					fail1("%s works only with mode = \"merge\"", k)
-				}
-				if er := CheckFileShape(shown, key, k, v); er != nil {
-					probs = append(probs, er)
-					bad = true
-				}
+			if mode == "merge" && isStr && !strings.HasSuffix(src, ".merge.toml") {
+				fail1("the source of a shared file is a merge spec <name>.merge.toml")
 			}
-			if mode == "merge" && formatOf(key, fe.Format) == "text" {
-				fail1("mode = \"merge\" needs a json, yaml or toml target")
-			}
-			fe.Remove = e.Get("remove")
-			fe.RemoveItems = e.Get("remove_items")
 			switch mode {
 			case "seed", "merge":
 				fe.Mode = mode

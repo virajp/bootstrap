@@ -10,6 +10,7 @@ import (
 
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
 	"github.com/virajp/bootstrap/sync-engine/internal/format"
+	"github.com/virajp/bootstrap/sync-engine/internal/header"
 	"github.com/virajp/bootstrap/sync-engine/internal/manifest"
 	"github.com/virajp/bootstrap/sync-engine/internal/report"
 	"github.com/virajp/bootstrap/sync-engine/internal/source"
@@ -122,12 +123,12 @@ func (s *state) file(it planItem) fail.Code {
 		rc = fail.Other
 		s.r.Outcome(report.Failed, show, "cannot write the target", "")
 	}
-	var f format.Format
-	if rc == fail.OK {
-		f, rc = s.e.Check(tmp, it.target, explicit, it.mode == "merge", show)
+	if rc == fail.OK && it.mode != "merge" {
+		_, rc = s.e.Check(tmp, it.target, explicit, false, show)
 	}
+	var items []string
 	if rc == fail.OK && it.mode == "merge" {
-		rc = s.merge(it, tmp, real, f, show)
+		items, rc = s.merge(it, tmp, real, explicit, show)
 	}
 	if rc != fail.OK {
 		s.e.Abort(tmp, real, show)
@@ -153,6 +154,12 @@ func (s *state) file(it planItem) fail.Code {
 	if it.mode == "generated" {
 		s.rows = append(s.rows, manifest.Row{Tool: it.tool, Path: it.target})
 	}
+	if it.mode == "merge" {
+		s.merged[it.target] = true
+		for _, item := range items {
+			s.rows = append(s.rows, manifest.Row{Tool: it.tool, Path: it.target, Item: item})
+		}
+	}
 	return fail.OK
 }
 
@@ -175,23 +182,25 @@ func (s *state) inSync(tmp, real string, mode os.FileMode) bool {
 	return err == nil && cur == mode
 }
 
-// merge runs the merge mode of <it>: the temp file <tmp> over the live target
-// <real>, with the `remove` and `remove_items` keys of its [files] table.
-func (s *state) merge(it planItem, tmp, real string, f format.Format, show string) fail.Code {
-	remove, items := "[]", "[]"
-	if fe := s.entry(it.tool, it.target); fe != nil {
-		if fe.Keys.Has("remove") {
-			remove = source.JSON(fe.Remove)
-		}
-		if fe.Keys.Has("remove_items") {
-			items = source.JSON(fe.RemoveItems)
+// merge merges the shared file of <it>: the rendered spec in the temp file
+// <tmp> into the live target <real>. It gives the item rows of the manifest.
+func (s *state) merge(it planItem, tmp, real, explicit, show string) ([]string, fail.Code) {
+	var ov []byte
+	if v, ok := s.all.Get(it.tool).(*source.Obj); ok {
+		if files, ok := v.Get("files").(*source.Obj); ok && files.Has(it.target) {
+			ov = []byte(source.JSON(files.Get(it.target)))
 		}
 	}
-	ops, err := format.ParseOps(remove, items)
-	if err != nil {
-		return fail.Usage
-	}
-	return s.e.Merge(tmp, real, f, ops, show)
+	name := s.src.ToolsShown() + "/" + it.tool + "/" + it.path
+	return s.e.Shared(tmp, real, format.SharedInput{
+		Target:    it.target,
+		Explicit:  explicit,
+		Overrides: ov,
+		Records:   manifest.Items(s.oldRows)[it.target],
+		Header:    header.Shared(name, valuesName),
+		Show:      show,
+		SpecShow:  name,
+	})
 }
 
 // context gives the template context of <tool>: .config, .all, .tools,

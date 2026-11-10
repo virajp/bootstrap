@@ -5,9 +5,8 @@ depends = [ "cli" ]
 description = "Claude Code: its settings, CLAUDE.md, output styles, the func:claude and upgrade:ai tasks and the cc* aliases"
 
 # Claude Code rewrites CLAUDE.md, so it is a seed: written once and then owned
-# by the user. settings.json is a merge file: bootstrap enforces only the
-# keys of its source and Claude Code owns the rest. When a list item of the
-# source changes, put the old item in `remove_items`, or the live file keeps it.
+# by the user. settings.json is a shared file: bootstrap adds the keys and list
+# items of its merge spec, and Claude Code owns the rest.
 # The claude-cli tool: Claude Code and its aliases.
 [mise.bootstrap.packages]
 "brew-cask:claude-code@latest" = "latest" # Claude Code latest version
@@ -33,8 +32,7 @@ source = ".claude/output-styles/terse.md"
 
 [files.".claude/settings.json"]
 mode = "merge"
-remove = [ [ "deniedMcpServers" ], [ "env", "CONTEXT7_RUNNER" ] ]
-source = ".claude/settings.json.tmpl"
+source = ".claude/settings.json.merge.toml"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.

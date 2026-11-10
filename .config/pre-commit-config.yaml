@@ -71,6 +71,7 @@ repos:
         exclude: "(^|/)tsconfig[^/]*\\.json$|(^|/)\\.vscode/"
       - id: check-toml
         name: "Check TOML syntax"
+        exclude: "\\.merge\\.toml$"
       - id: check-yaml
         name: "Check YAML syntax"
         args: [ "--allow-multiple-documents" ]

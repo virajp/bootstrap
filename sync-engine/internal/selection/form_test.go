@@ -37,12 +37,12 @@ var formCases = []formCase{
 		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.base] a: required must be true or false, not int64\n--- stdout\n"},
 	{name: "repo-entries-ok", side: source.Repo,
 		over: tree{
-			"repo/tools/a/tools.toml": rt("parent = \"b\"\n[files.\"x.json\"]\nsource = \"x.json\"\nmode = \"merge\"\nremove = [ [ \"a\", \"b\" ] ]\nremove_items = [ { path = [ \"p\" ], items = [ 1 ] } ]\n" +
+			"repo/tools/a/tools.toml": rt("parent = \"b\"\n[files.\"x.json\"]\nsource = \"x.json.merge.toml\"\nmode = \"merge\"\n" +
 				"[files.\"y.txt\"]\nsource = \"y.txt.tmpl\"\nmode = \"seed\"\nrender = true\nrequires = [ \"go.mod\" ]\nrequires_found = [ \"pubspec.yaml\" ]\n" +
 				"[files.\".config/d\"]\nsource = \"d\"\n" +
 				"[tasks.\"code/lint/10-a\"]\nsource = \"code-lint-a.tmpl\"\nmode = \"template\"\nrequires_found = [ \"go.mod\" ]\n" +
 				"[tasks.\"_scripts/lib\"]\nsource = \"lib\"\nlibrary = true\n"),
-			"repo/tools/a/files/x.json":            "{}",
+			"repo/tools/a/files/x.json.merge.toml": "",
 			"repo/tools/a/files/y.txt.tmpl":        "y",
 			"repo/tools/a/files/d/one":             "1",
 			"repo/tools/a/tasks/code-lint-a.tmpl":  "a",
@@ -56,9 +56,9 @@ var formCases = []formCase{
 	{name: "repo-entries-bad", side: source.Repo,
 		over: tree{
 			"repo/tools/a/tools.toml": rt("parent = \"a\"\n[files.\"x.txt\"]\nmode = \"copy\"\nformat = \"ini\"\nzzz = 1\n" +
-				"[files.\"y.txt\"]\nsource = \"y.txt\"\nmode = \"merge\"\nremove = [ [ ] ]\n" +
+				"[files.\"y.txt\"]\nsource = \"y.txt\"\nmode = \"merge\"\n" +
 				"[files.\"../z\"]\nsource = \"../z\"\nrequires = [ \"/abs\" ]\nrequires_found = [ \"a/b\" ]\n" +
-				"[files.\"w.txt\"]\nsource = \"w.txt\"\nmode = \"template\"\nrender = true\nremove = [ [ \"a\" ] ]\n" +
+				"[files.\"w.txt\"]\nsource = \"w.txt\"\nmode = \"template\"\nrender = true\n" +
 				"[files.\"v.txt\"]\nsource = \"nope\"\n" +
 				"[tasks.\"run/x\"]\nsource = \"run-x\"\nmode = \"seed\"\nlibrary = true\n" +
 				"[tasks.\"_scripts/y\"]\nsource = \"y\"\n"),
@@ -76,12 +76,10 @@ var formCases = []formCase{
 			"repo-sync: repo/tools/a/tools.toml: [files.\"../z\"] requires_found: 'a/b' must be a file name, with no /\n" +
 			"repo-sync: repo/tools/a/tools.toml: [files.\"v.txt\"] source: files/nope is not there\n" +
 			"repo-sync: repo/tools/a/tools.toml: [files.\"w.txt\"] render works only with mode = \"seed\" - a template has mode = \"template\"\n" +
-			"repo-sync: repo/tools/a/tools.toml: [files.\"w.txt\"] remove works only with mode = \"merge\"\n" +
-			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] zzz is not a key of a files entry - the keys are source, mode, render, format, requires, requires_found, remove, remove_items, when, perm, dir_perm\n" +
+			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] zzz is not a key of a files entry - the keys are source, mode, render, format, requires, requires_found, when, perm, dir_perm\n" +
 			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] needs source, a path below files/ with no .. part\n" +
-			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] format must be \"text\", \"json\", \"yaml\" or \"toml\"\n" +
-			"repo-sync: repo/tools/a/tools.toml: [files.\"y.txt\"] remove must be a list of key paths, each a non-empty list of strings\n" +
-			"repo-sync: repo/tools/a/tools.toml: [files.\"y.txt\"] mode = \"merge\" needs a json, yaml or toml target\n" +
+			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] format must be \"text\", \"json\", \"jsonc\", \"yaml\" or \"toml\"\n" +
+			"repo-sync: repo/tools/a/tools.toml: [files.\"y.txt\"] the source of a shared file is a merge spec <name>.merge.toml\n" +
 			"repo-sync: repo/tools/a/tools.toml: [tasks.\"_scripts/y\"] a file below _scripts/ is a library - write library = true\n" +
 			"repo-sync: repo/tools/a/tools.toml: [tasks.\"run/x\"] mode must be \"copy\" or \"template\"\n" +
 			"repo-sync: repo/tools/a/tools.toml: [tasks.\"run/x\"] library = true is for a library below _scripts/, and each file below _scripts/ is a library\n" +
@@ -145,6 +143,7 @@ func TestFormCases(t *testing.T) {
 				base = macosBase
 			}
 			clone := writeTree(t, base.with(c.over))
+			dropOldKeys(t, clone)
 			vdir := t.TempDir()
 			values, shown := filepath.Join(vdir, "bootstrap.toml"), "bootstrap.toml"
 			if c.side == source.Macos {

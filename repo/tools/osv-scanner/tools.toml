@@ -1,7 +1,6 @@
 # osv-scanner: the dependency scanner, and code:sec:30-osv-scanner.
 default_envs = [ "dev", "ci" ]
 depends = [ "_security_base" ]
-extensions = []
 root_only = false
 
 # The mise config, generated into .config/mise/conf.d/osv-scanner/mise.<env>.toml.

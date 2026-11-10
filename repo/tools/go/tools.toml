@@ -1,8 +1,11 @@
 # Go, with the gofmt and go vet gates.
 default_envs = [ "dev", "ci" ]
 depends = []
-extensions = [ "golang.go" ]
 root_only = false
+
+# The VS Code extensions of the tool, in .vscode/extensions.json.
+[contributes.vscode]
+extensions = [ "golang.go" ]
 
 # The mise config, generated into .config/mise/conf.d/go/mise.<env>.toml.
 [mise.tools.go]

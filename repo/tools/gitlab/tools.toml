@@ -1,20 +1,24 @@
 # GitLab: the glab CLI, and the issue and merge request templates.
 default_envs = [ "dev", "ci" ]
 depends = []
-extensions = [ "gitlab.gitlab-workflow" ]
 root_only = false
 
 # `glab ci lint` asks the GitLab API, so it needs the network and `glab auth`.
-[[precommit]]
+[[contributes.pre-commit.repos]]
+id = "glab-ci-lint"
 repo = "local"
 
-[[precommit.hooks]]
+[[contributes.pre-commit.repos.hooks]]
 entry = "mise x -- glab ci lint"
 files = '^\.gitlab-ci\.yml$'
 id = "glab-ci-lint"
 language = "system"
 name = "Lint the GitLab CI config (glab ci lint)"
 pass_filenames = false
+
+# The VS Code extensions of the tool, in .vscode/extensions.json.
+[contributes.vscode]
+extensions = [ "gitlab.gitlab-workflow" ]
 
 # The mise config, generated into .config/mise/conf.d/gitlab/mise.<env>.toml.
 

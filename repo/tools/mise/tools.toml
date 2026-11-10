@@ -1,8 +1,11 @@
 # mise: the shared mise config, the task library and the setup and code orchestrators.
 default_envs = [ "dev", "ci" ]
 depends = []
-extensions = [ "hverlin.mise-vscode", "redhat.vscode-yaml", "tamasfe.even-better-toml" ]
 root_only = false
+
+# The VS Code extensions of the tool, in .vscode/extensions.json.
+[contributes.vscode]
+extensions = [ "hverlin.mise-vscode", "redhat.vscode-yaml", "tamasfe.even-better-toml" ]
 
 # The mise config, generated into .config/mise/conf.d/mise/mise.<env>.toml.
 

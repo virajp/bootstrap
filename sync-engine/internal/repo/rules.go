@@ -3,6 +3,7 @@ package repo
 import (
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
@@ -208,74 +209,56 @@ func (s *state) envRules(sel []values.Item) fail.Code {
 	return fail.OK
 }
 
-// branchExists is `_rs_branch_exists`: a branch that exists here or on
-// origin. U3 (the --branch pairs of the no-commit-to-branch hook) needs it
-// until the hook moves to the merge model.
-func (s *state) branchExists(name string) bool {
-	return run("", "git", "-C", s.root, "show-ref", "--verify", "--quiet", "refs/heads/"+name) ||
-		run("", "git", "-C", s.root, "show-ref", "--verify", "--quiet", "refs/remotes/origin/"+name)
-}
+// OldPrecommit is the old file of the own hooks of a repository.
+const OldPrecommit = ".config/repo-sync/pre-commit.yaml"
 
 // overrides is `_rs_overrides`. It examines `[overrides]` of the values file:
 // misegen examines the `mise` and `mise_env` keys, and this function the
-// rest. Each line of `remove` of `[overrides.gitignore]` must be a line of
-// the shipped file, and no line can be in `add` and in `remove`. It sets
-// giAdd, giRemove and valuesNote. <local> is for `repo_sync --check`: it
-// reads no clone, and it skips the problems that need the tools or the
-// shipped files. It gives 2, after a message for each problem.
+// rest. The old forms of the shared files stop the run, with the new form.
+// <local> is for `repo_sync --check`: it reads no clone, and it skips the
+// problems that need the tools or the shipped files. It gives 2, after a
+// message for each problem.
 func (s *state) overrides(g *misegen.Generator, local bool) fail.Code {
 	rc := fail.OK
-	s.giAdd, s.giRemove = nil, nil
-	s.valuesNote = strings.TrimPrefix(s.values, s.root+"/")
 	if isFile(s.root + "/.config/repo-sync/gitignore") {
-		s.log(".config/repo-sync/gitignore is no longer used - move its lines to add of [overrides.gitignore] in " + s.show + ", then delete it (M18 of docs/sync/migrate.md)")
+		s.log(".config/repo-sync/gitignore is no longer used - move its lines into .gitignore, then delete it (M18 of docs/sync/migrate.md)")
+		rc = fail.Usage
+	}
+	if isFile(s.root + "/" + OldPrecommit) {
+		s.log(OldPrecommit + " is no longer used - move its repos entries into .config/pre-commit-config.yaml, which the sync now merges, then delete it")
 		rc = fail.Usage
 	}
 	v, err := s.valuesDS()
-	var out string
-	ok := false
 	if err != nil {
 		gomplateError(s.stderr, "failed to read datasource o ("+s.values+"): "+err.Error())
-	} else {
-		out, ok = s.gomplate(tmplGitignore, map[string]any{"o": v}, nil, nil, false)
-	}
-	if !ok {
 		s.log("cannot read [overrides] of " + s.show)
 		return fail.Usage
 	}
-	for _, line := range bashLines(out) {
-		problem, path, arg := readTabs(line)
-		switch problem {
-		case "table":
-			s.log(path + " in " + s.show + " must be a table")
-		case "key":
-			if path == "overrides.graphifyignore" {
-				s.log(path + " in " + s.show + " is no longer used: bootstrap does not ship .graphifyignore - remove the table (M24 of docs/sync/migrate.md)")
-			} else {
-				s.log(path + " in " + s.show + ": the only keys of [overrides] are mise, mise_env and gitignore")
-			}
-		case "gikey":
-			s.log(path + " in " + s.show + ": the only keys of [" + path[:strings.LastIndex(path, ".")] + "] are add and remove")
-		case "gilist":
-			s.log(path + " in " + s.show + " must be a list of one-line strings, for example [\"/build/\"]")
-		case "giempty":
-			s.log(path + " in " + s.show + " has an empty line")
-		case "add", "remove":
-			// <path> is overrides.<ignore>.<list>.
-			p := strings.TrimPrefix(path, "overrides.")
-			if i := strings.LastIndex(p, "."); i >= 0 {
-				p = p[:i]
-			}
-			if problem == "add" {
-				s.giAdd = append(s.giAdd, giLine{p, arg})
-			} else {
-				s.giRemove = append(s.giRemove, giLine{p, arg})
-			}
-			continue
-		default:
-			continue
+	if m, ok := v.(map[string]any); ok && m["overrides"] != nil {
+		o, isMap := m["overrides"].(map[string]any)
+		if !isMap {
+			s.log("overrides in " + s.show + " must be a table")
+			rc = fail.Usage
 		}
-		rc = fail.Usage
+		var keys []string
+		for k := range o {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			switch k {
+			case "mise", "mise_env":
+			case "gitignore":
+				s.log("overrides.gitignore in " + s.show + " is the old form - add each line of add to .gitignore, and write each line of remove as \"<line>\" = { \"$mode\" = \"remove\" } in [tools.<tool>.files.\".gitignore\"]")
+				rc = fail.Usage
+			case "graphifyignore":
+				s.log("overrides." + k + " in " + s.show + " is no longer used: bootstrap does not ship .graphifyignore - remove the table (M24 of docs/sync/migrate.md)")
+				rc = fail.Usage
+			default:
+				s.log("overrides." + k + " in " + s.show + ": the only keys of [overrides] are mise and mise_env")
+				rc = fail.Usage
+			}
+		}
 	}
 	var tools []string
 	if s.res != nil {
@@ -284,71 +267,7 @@ func (s *state) overrides(g *misegen.Generator, local bool) fail.Code {
 	if s.logAll(g.Overrides(tools, s.envs, local)) != fail.OK {
 		rc = fail.Usage
 	}
-	for _, r := range s.giRemove {
-		if r.line == "" {
-			continue
-		}
-		shipped := s.shippedPath(".gitignore")
-		inAdd := false
-		for _, a := range s.giAdd {
-			if a == r {
-				inAdd = true
-			}
-		}
-		switch {
-		case inAdd:
-			s.log("overrides." + r.ignore + " in " + s.show + ": '" + r.line + "' is in add and in remove - keep one")
-			rc = fail.Usage
-		case local:
-		case !shippedLine(s.dir+"/"+shipped, r.line):
-			s.log("overrides." + r.ignore + ".remove in " + s.show + ": '" + r.line + "' is not a line of the shipped ." + r.ignore + " (" + shipped + ")")
-			rc = fail.Usage
-		}
-	}
 	return rc
-}
-
-// shippedPath gives the source of the tool file whose target is <target>, as
-// `<side>/tools/<tool>/<source>`, or empty when no tool ships it.
-func (s *state) shippedPath(target string) string {
-	if s.idx == nil {
-		return ""
-	}
-	for _, tool := range s.idx.Names {
-		for _, f := range s.idx.Files(tool) {
-			if f.Target == target {
-				return toolsShown + "/" + tool + "/" + f.Path
-			}
-		}
-	}
-	return ""
-}
-
-// edgeBlanks are the blanks that awk `gsub(/^[ \t]+|[ \t]+$/, "")` removes.
-var edgeBlanks = regexp.MustCompile(`^[ \t]+|[ \t]+$`)
-
-// trimBlanks is the gsub of awk that removes the spaces and tabs at the start
-// and the end of a line.
-func trimBlanks(s string) string { return edgeBlanks.ReplaceAllString(s, "") }
-
-// awkLines gives the lines of <b> as awk reads them.
-func awkLines(b []byte) []string {
-	return bashLines(string(b))
-}
-
-// shippedLine tells if a line of the file <path>, without its spaces and tabs
-// at the start and the end, is <line>.
-func shippedLine(path, line string) bool {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return false
-	}
-	for _, l := range awkLines(b) {
-		if trimBlanks(l) == line {
-			return true
-		}
-	}
-	return false
 }
 
 // coreTools is `_rs_core_tools`: a warning for `core_tools`, a key that is no
@@ -507,31 +426,6 @@ func (s *state) hasFile(name string) bool {
 func (s *state) inSubmodule() bool {
 	out, _ := git(s.root, "rev-parse", "--show-superproject-working-tree")
 	return out != ""
-}
-
-// hookBranches sets hookDrop to the branches whose --branch pair leaves the
-// no-commit-to-branch hook: each of main and develop with direct_commit =
-// true in [tools.git.branch.<name>], and each one that does not exist. This
-// is U3, which stays in the engine until the merge model replaces it. The
-// check script of git examines the values.
-func (s *state) hookBranches() {
-	s.hookDrop = nil
-	branch, _ := s.toolVals("git").Get("branch").(*source.Obj)
-	for _, name := range []string{"main", "develop"} {
-		if branch == nil {
-			break
-		}
-		if b, ok := branch.Get(name).(*source.Obj); ok {
-			if v, ok := b.Get("direct_commit").(bool); ok && v {
-				s.hookDrop = append(s.hookDrop, name)
-			}
-		}
-	}
-	for _, name := range []string{"main", "develop"} {
-		if !s.branchExists(name) {
-			s.hookDrop = append(s.hookDrop, name)
-		}
-	}
 }
 
 // checkScripts is the part of `bootstrap check` that needs the clone: the

@@ -1,7 +1,6 @@
 # gitleaks: the secret scanner, and code:sec:10-gitleaks.
 default_envs = [ "dev", "ci" ]
 depends = [ "_security_base" ]
-extensions = []
 root_only = false
 
 # The mise config, generated into .config/mise/conf.d/gitleaks/mise.<env>.toml.

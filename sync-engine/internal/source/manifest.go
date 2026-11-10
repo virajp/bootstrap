@@ -23,14 +23,19 @@ type FileEntry struct {
 	Format        string // "text", "json", "yaml" or "toml"; empty when unset or not valid.
 	Requires      []string
 	RequiresFound []string
-	Remove        any // The value of `remove`, or nil.
-	RemoveItems   any // The value of `remove_items`, or nil.
 	Keys          *Obj
 	// When is the value path of `when`: the sync writes the entry only when
 	// that value is true. A ! at the start negates it. Empty: always.
 	When string
 	// Perm and DirPerm are the modes of `perm` and `dir_perm`; 0 when unset.
 	Perm, DirPerm os.FileMode
+}
+
+// Formatter is the formatter of a tool: the sync formats each rendered file
+// with it before the compare.
+type Formatter struct {
+	Command string   // A shell command; it gets the paths of the files on stdin, one per line.
+	Configs []string // The config files of the repository that the stage gets.
 }
 
 // MiseTool is one `[mise.tools.<name>]` entry (repo side).
@@ -48,11 +53,12 @@ type Manifest struct {
 	Stage       string   // Mac side: "init", or empty.
 	Depends     []string // The tool names of `depends`.
 	DefaultEnvs []string // Repo side.
-	Extensions  []string // Repo side.
-	RootOnly    bool     // Repo side: `root_only = true`.
-	Parent      string   // The parent tool, or empty.
-	Files       []FileEntry
-	Mise        []MiseTool // Repo side.
+	// Formatter is the [formatter] table of a repo tool, or nil.
+	Formatter *Formatter
+	RootOnly  bool   // Repo side: `root_only = true`.
+	Parent    string // The parent tool, or empty.
+	Files     []FileEntry
+	Mise      []MiseTool // Repo side.
 	// MiseOrder holds the names of the [mise.tools] entries in the order of
 	// the file. A mise tool depends on the mise tools above it.
 	MiseOrder []string
@@ -146,7 +152,7 @@ func (s Source) LoadManifest(tool string) (*Manifest, error) {
 func (m *Manifest) repoLines() error {
 	t := m.Raw
 	// The template of bash fails for a key that is not there.
-	for _, k := range []string{"default_envs", "depends", "extensions", "root_only"} {
+	for _, k := range []string{"default_envs", "depends", "root_only"} {
 		if !t.Has(k) {
 			return fmt.Errorf("%s", k)
 		}
@@ -158,9 +164,6 @@ func (m *Manifest) repoLines() error {
 	if m.Depends, ok = listOf(t, "depends"); !ok {
 		return fmt.Errorf("depends")
 	}
-	if m.Extensions, ok = listOf(t, "extensions"); !ok {
-		return fmt.Errorf("extensions")
-	}
 	if b, isBool := t.Get("root_only").(bool); isBool {
 		m.RootOnly = b
 	}
@@ -171,8 +174,21 @@ func (m *Manifest) repoLines() error {
 	for _, e := range m.Depends {
 		add("depends", e, "", "")
 	}
-	for _, e := range m.Extensions {
-		add("extension", e, "", "")
+	for _, k := range []string{"extensions", "precommit"} {
+		if t.Has(k) {
+			add("old", k, "", "")
+		}
+	}
+	if f, has := t.Get("formatter").(*Obj); has {
+		cmd, ok1 := f.Get("command").(string)
+		cfg, ok2 := listOf(f, "configs")
+		if !ok1 || cmd == "" || !ok2 || f.Len() != 2 {
+			add("bad", "[formatter] must have exactly command (a string) and configs (a list of file names)", "", "")
+		} else {
+			m.Formatter = &Formatter{Command: cmd, Configs: cfg}
+		}
+	} else if t.Has("formatter") {
+		add("bad", "[formatter] must be a table", "", "")
 	}
 	if t.Has("seed") {
 		add("old", "seed", "", "")

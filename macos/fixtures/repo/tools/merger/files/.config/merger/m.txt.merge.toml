@@ -1,0 +1,9 @@
+format = "text"
+comment = "#"
+
+[[item]]
+value = "line-one"
+
+[[item]]
+match = '^two='
+value = "two=2"

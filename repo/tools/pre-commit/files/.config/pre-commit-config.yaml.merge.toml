@@ -1,0 +1,65 @@
+# The merge spec of .config/pre-commit-config.yaml, a shared file. The sync
+# renders it with the values of the pre-commit tool, then merges each item
+# into the file. A change of the user in the file stays.
+#
+# pre-commit does not find a config under `.config/`. `setup:precommit`
+# installs the hooks with the path, so `git commit` needs no flag.
+# `pre-commit run` needs `--config .config/pre-commit-config.yaml`.
+
+# 3.2.0 is the first version with the `pre-commit` and `pre-push` stage names.
+[[item]]
+kind = "key"
+path = [ "minimum_pre_commit_version" ]
+value = "3.2.0"
+
+# `commit-msg` is for the conventional-commits hook. A hook type that is not
+# installed never runs.
+[[item]]
+kind = "key"
+path = [ "default_install_hook_types" ]
+value = [ "pre-commit", "commit-msg" ]
+
+[[item]]
+kind = "key"
+path = [ "default_stages" ]
+value = [ "pre-commit" ]
+
+# No hook reads these paths: the `exclude` values of this tool, the selected
+# tools and `[tools.pre-commit]` of `.config/bootstrap.toml`, merged.
+# pre-commit reads one regular expression.
+[[item]]
+kind = "block"
+path = [ "exclude" ]
+value = <% conv.Join .config.exclude "|" | data.ToTOMLInline %>
+
+<%- /* The protected branches of the git tool: the args of the
+   no-commit-to-branch hook. Without one, the hook goes, because without
+   --branch it protects main and master. */ -%>
+<% $branches := coll.Slice -%>
+<% if has .all "git" %><% if has .all.git "protected_branches" %><% $branches = .all.git.protected_branches %><% end %><% end -%>
+<% $args := coll.Slice -%>
+<% range $branches %><% $args = $args | coll.Append "--branch" | coll.Append . %><% end -%>
+
+# The hook repositories of the selected tools, each a block that bootstrap
+# owns. The rev of a found block stays: setup:precommit updates it.
+<% range .config.repos -%>
+<% $hooks := coll.Slice -%>
+<% $remove := false -%>
+<% range $h := .hooks -%>
+<% if eq $h.id "no-commit-to-branch" -%>
+<% if not $args %><% $remove = true %><% end -%>
+<% $h = coll.Merge (dict "args" $args) $h -%>
+<% end -%>
+<% $hooks = $hooks | coll.Append $h -%>
+<% end %>
+[[item]]
+kind = "block"
+path = [ "repos" ]
+id = <% .id | data.ToTOMLInline %>
+match = [ "repo", "hooks.id" ]
+ignore = [ "rev" ]
+<% if $remove -%>
+"$mode" = "remove"
+<% end -%>
+value = <% coll.Merge (dict "hooks" $hooks) (coll.Omit "id" .) | data.ToTOMLInline %>
+<% end -%>

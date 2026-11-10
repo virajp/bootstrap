@@ -2,11 +2,11 @@
 
 description = "The RubyGems config (~/.gemrc): no documentation on install and update"
 
-# gem rewrites it (gem sources), so the source holds only the keys that
-# bootstrap enforces. The file has no extension, so its format is set.
+# gem rewrites it (gem sources), so it is a shared file: the spec adds only
+# the keys of bootstrap. The file has no extension, so the spec sets its
+# format.
 
 # The files of the tool, below files/.
 [files.".gemrc"]
-format = "yaml"
 mode = "merge"
-source = ".gemrc"
+source = "gemrc.merge.toml"

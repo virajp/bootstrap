@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
 # The derive script of the git tool. The sync runs it in the root of the
 # repository, and never copies it. It prints the values of the branch model:
-# branch_pair is true when the repository has both main and develop. A
-# [tasks] entry with `when = "git.branch_pair"` (or "!git.branch_pair")
-# applies to one branch model only.
+# - branch_pair is true when the repository has both main and develop. A
+#   [tasks] entry with `when = "git.branch_pair"` (or "!git.branch_pair")
+#   applies to one branch model only.
+# - protected_branches is main and develop, without each one with
+#   direct_commit = true in [tools.git.branch.<name>]. The pre-commit config
+#   gives them to the no-commit-to-branch hook.
+# The input has no values of the values file, so the script reads
+# direct_commit from the values file and its overrides file.
 
 set -euo pipefail
 
 # Read stdin, so the writer of the input never blocks.
 cat > /dev/null
+
+values=${REPO_SYNC_VALUES:-.config/bootstrap.toml}
+overrides=${values%.toml}.overrides.toml
 
 # A branch that exists here or on origin.
 branch_exists() {
@@ -16,8 +24,26 @@ branch_exists() {
     git show-ref --verify --quiet "refs/remotes/origin/$1"
 }
 
+# direct_commit of the branch <name>: the overrides file wins.
+direct_commit() {
+  local value=false file
+  for file in "${values}" "${overrides}"; do
+    [[ -f ${file} ]] || continue
+    local v
+    v=$(B="$1" mise x yq@latest -- yq -p toml -o yaml '.tools.git.branch[strenv(B)].direct_commit // ""' "${file}") || v=''
+    [[ -n ${v} ]] && value=${v}
+  done
+  printf '%s' "${value}"
+}
+
 pair=false
 if branch_exists main && branch_exists develop; then
   pair=true
 fi
-printf '{"branch_pair": %s}\n' "${pair}"
+
+protected=()
+for name in main develop; do
+  [[ $(direct_commit "${name}") == true ]] || protected+=("\"${name}\"")
+done
+list=$(IFS=,; printf '%s' "${protected[*]-}")
+printf '{"branch_pair": %s, "protected_branches": [%s]}\n' "${pair}" "${list}"

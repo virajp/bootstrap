@@ -5,8 +5,6 @@
 bootstrap_commit = ""
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
-# The VS Code extensions that no tool has.
-extensions = [ "localizely.flutter-intl" ]
 # The product name, for the fnox keychain service.
 product_name = "acme"
 repo_name = "acme-frontend"

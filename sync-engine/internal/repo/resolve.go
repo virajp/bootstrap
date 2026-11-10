@@ -2,12 +2,10 @@ package repo
 
 import (
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
 	"github.com/virajp/bootstrap/sync-engine/internal/selection"
-	"github.com/virajp/bootstrap/sync-engine/internal/source"
 	"github.com/virajp/bootstrap/sync-engine/internal/values"
 )
 
@@ -32,13 +30,10 @@ func (s *state) resolve() fail.Code {
 	s.res = res
 	s.fileModes = map[string]string{}
 	s.fileFormats = map[string]string{}
-	s.fileMerge = map[string][2]string{}
-	var ext []string
 	// The fields of each tool, in the order of the walk, as the done
 	// callback of bash collects them.
 	for _, tool := range res.Tools {
 		m := s.idx.Manifests[tool]
-		ext = append(ext, m.Extensions...)
 		for _, fe := range m.Files {
 			key := tool + "/" + fe.Target
 			if fe.Mode != "generated" {
@@ -48,16 +43,6 @@ func (s *state) resolve() fail.Code {
 			if fe.Format != "" {
 				s.fileFormats[key] = fe.Format
 			}
-			if fe.Remove != nil || fe.RemoveItems != nil {
-				var m [2]string
-				if fe.Remove != nil {
-					m[0] = source.JSON(fe.Remove)
-				}
-				if fe.RemoveItems != nil {
-					m[1] = source.JSON(fe.RemoveItems)
-				}
-				s.fileMerge[key] = m
-			}
 			for _, item := range fe.Requires {
 				s.fileConds = append(s.fileConds, cond{key, "requires", item})
 			}
@@ -66,114 +51,25 @@ func (s *state) resolve() fail.Code {
 			}
 		}
 	}
-	s.extensions = sortedUnique(ext)
+	return s.formatterOf()
+}
+
+// formatterOf sets the formatter of the run: the [formatter] of the
+// selected tool that has one. Two such tools stop the run.
+func (s *state) formatterOf() fail.Code {
+	var with []string
+	s.formatter = nil
+	for _, tool := range s.res.Tools {
+		if f := s.idx.Manifests[tool].Formatter; f != nil {
+			with = append(with, tool)
+			s.formatter = f
+		}
+	}
+	if len(with) > 1 {
+		s.log("the selected tools " + strings.Join(with, ", ") + " each have a [formatter] - at most one selected tool can have one")
+		return fail.Usage
+	}
 	return fail.OK
-}
-
-// sortedUnique is `sort -u` of the non-empty items, in byte order.
-func sortedUnique(in []string) []string {
-	set := map[string]bool{}
-	var out []string
-	for _, x := range in {
-		if x != "" && !set[x] {
-			set[x] = true
-			out = append(out, x)
-		}
-	}
-	sort.Strings(out)
-	return out
-}
-
-// addExtensions is `_rs_extensions`: it adds the `extensions` list of the
-// values file. In the root repository, it also adds the extensions of each
-// git submodule: the tools of its values file and its own `extensions` list.
-// VS Code opens the root only, so the root recommends the extensions of the
-// whole tree.
-func (s *state) addExtensions() {
-	extra := ""
-	if out, ok := s.list("extensions"); ok {
-		extra = out
-	}
-	if !s.inSubmodule() && isFile(s.root+"/.gitmodules") {
-		for _, sub := range strings.Split(s.submodules(), "\n") {
-			subValues := s.root + "/" + sub + "/.config/bootstrap.toml"
-			if !isFile(subValues) {
-				subValues = s.root + "/" + sub + "/.config/repo-config.toml"
-			}
-			if sub == "" || !isFile(subValues) {
-				continue
-			}
-			extra += "\n" + strings.Join(s.toolExtensions(subValues), "\n")
-			own, _ := s.gomplate(listTemplate("extensions"), nil, []ds{{"v", subValues, "toml"}}, nil, true)
-			extra += "\n" + strings.TrimRight(own, "\n")
-		}
-	}
-	s.extensions = sortedUnique(append(s.extensions, strings.Split(extra, "\n")...))
-}
-
-// toolExtensions is `_rs_tool_extensions`: the VS Code extensions of the
-// tools of the values file <file>, packs expanded and dependencies
-// included. Nothing is checked: a problem in the values file of a member is
-// for the own sync of that member to report.
-func (s *state) toolExtensions(file string) []string {
-	var sel []values.Item
-	if v, err := values.ReadRepo(file, s.path(file)); err == nil {
-		sel = v.Sel
-	}
-	var pending []string
-	for _, e := range partialSelect(s.src, sel) {
-		pending = append(pending, e.Tool)
-	}
-	var out []string
-	seen := map[string]bool{}
-	for len(pending) > 0 {
-		tool := pending[0]
-		pending = pending[1:]
-		if tool == "" || seen[tool] || !s.src.HasManifest(tool) {
-			continue
-		}
-		seen[tool] = true
-		m := s.idx.Manifests[tool]
-		if m == nil {
-			continue
-		}
-		out = append(out, m.Extensions...)
-		for _, d := range m.Depends {
-			pending = append(pending, fields(d)...)
-		}
-	}
-	return out
-}
-
-// partialSelect is `_se_selected` as `_rs_tool_extensions` reads it: the
-// entries that bash prints before a failure. A failed check of the packs
-// prints nothing; an unknown pack in the values file stops after the
-// entries of the packs before it.
-func partialSelect(src source.Source, sel []values.Item) []selection.Entry {
-	packs, err := src.ReadPacks()
-	if err != nil || selection.CheckPacks(src, packs) != nil {
-		return nil
-	}
-	out, err := selection.Expand(packs, selection.BasePack, "-", "default")
-	if err != nil {
-		return nil
-	}
-	for _, it := range sel {
-		if it.Kind != "packs" {
-			continue
-		}
-		more, err := selection.Expand(packs, it.Name, it.Envs, "packs."+it.Name)
-		if err != nil {
-			return out
-		}
-		out = append(out, more...)
-	}
-	for _, it := range sel {
-		if it.Kind == "tools" {
-			out = append(out, selection.Entry{Tool: it.Name, Envs: it.Envs, Src: "tools." + it.Name})
-		}
-	}
-	return out
 }
 
 // fileSkips is `_rs_file_skips`: it sets reqSkip to the targets with a

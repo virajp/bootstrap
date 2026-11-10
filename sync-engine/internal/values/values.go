@@ -290,6 +290,7 @@ var MovedKeys = [][2]string{
 	{"commit_scopes", "commit_scopes of [tools.git]"},
 	{"worktree_files", "worktree_files of [tools.mise]"},
 	{"claude", "[tools.claude.plugins.<scope>]"},
+	{"extensions", "the recommendations of .vscode/extensions.json, which the sync now merges and does not write again"},
 }
 
 // Moved gives a message, with code 2, for each old top-level key of the

@@ -5,8 +5,6 @@
 bootstrap_commit = ""
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
-# The VS Code extensions that no tool has.
-extensions = [ "redhat.vscode-yaml" ]
 repo_name = "search-indexer"
 # The web URL of the repository, for the github tool.
 repo_url = "https://github.com/example/search-indexer"
