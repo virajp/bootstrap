@@ -26,7 +26,7 @@ version = "latest"
 version = "latest"
 
 # The CLI of the sync. updateall:configs runs it. Its release tags are
-# bootstrap@X.Y.Z, and mise shows bootstrap@2.0.1 as 2.0.1.
+# bootstrap@X.Y.Z, and mise shows bootstrap@2.0.2 as 2.0.2.
 [mise.tools."github:virajp/bootstrap"]
 version = "latest"
 

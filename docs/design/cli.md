@@ -966,7 +966,7 @@ installs it with its `github:` backend:
 `mise use -g github:virajp/bootstrap`. The release tags
 are `bootstrap@X.Y.Z`, so that other tags of the repository can have other uses.
 mise removes a tag prefix that is the name of the repository, so it shows the
-tag `bootstrap@2.0.1` as the version `2.0.1`, and a command needs no option. The
+tag `bootstrap@2.0.2` as the version `2.0.2`, and a command needs no option. The
 workflow
 `.github/workflows/release-engine.yml` builds the binary and makes
 the release.

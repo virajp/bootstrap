@@ -136,6 +136,6 @@ const miseTemplate = defines + `<% $m := dict %><% if has .t "mise" %><% $m = .t
 <% $out = coll.Merge (dict $s $body) $out -%>
 <% end -%>
 <% end -%>
-<% if $out %><% $out | data.ToTOML %><% end -%>
+<% if $out %><% $out | data.ToTOMLFlat %><% end -%>
 <% range $marks %>#@override <% . %>
 <% end -%>`

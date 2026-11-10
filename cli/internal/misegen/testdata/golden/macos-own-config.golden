@@ -7,9 +7,9 @@ own: rc=0
 # The next sync writes it again, and each change in this file is lost.
 
 [env]
-  H = "@HOME@"
+H = "@HOME@"
 
 [shell_alias]
-  ll = "ls -l"
+ll = "ls -l"
 
 --- end

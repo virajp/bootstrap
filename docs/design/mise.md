@@ -175,6 +175,12 @@ generator is the package `internal/misegen` of the engine. It finds the
 environments of each tool, examines `[overrides.mise*]`, builds the output and
 writes it. The template reads the `BOOTSTRAP_MISE_*` environment variables.
 
+The generator writes the TOML in the style of the dprint config of bootstrap,
+with the template function `data.ToTOMLFlat`: no indent, sorted keys, and arrays
+as `[ "a", "b" ]`. The Mac sync does not format its files with dprint. Thus a
+repository that commits the generated files, for example through a link into
+`macos-setup`, needs no dprint exclude for them.
+
 These parts stay in the repo front-end (`internal/repo`):
 
 - The records of the generated files, for the file loop and the manifest.

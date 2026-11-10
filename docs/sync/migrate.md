@@ -833,8 +833,8 @@ needs no `version_prefix` now:
 mise x github:virajp/bootstrap@latest -- bootstrap <command>
 ```
 
-From 2.0.1, `cli/VERSION` of the clone is 2.0.1 or newer. The old entry task
-`setup:configs` has `version_prefix="cli-v"`, so it installs 2.0.0, and that
+From 2.0.2, `cli/VERSION` of the clone is 2.0.2 or newer. The old entry task
+`setup:configs` has `version_prefix="cli-v"`, so it installs 2.0.1, and that
 binary stops with code 2. Do the steps of this item: the old entry task cannot
 do them.
 

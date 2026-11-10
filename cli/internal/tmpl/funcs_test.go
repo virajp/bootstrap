@@ -602,3 +602,38 @@ func TestToTOMLInline(t *testing.T) {
 		t.Fatalf("got %q, %v; want %q", got, err, want)
 	}
 }
+
+// TestToTOMLFlat: the output is the same as the output of dprint with the
+// TOML block of bootstrap (indentTables "never", array spaces).
+func TestToTOMLFlat(t *testing.T) {
+	in := map[string]any{
+		"tools": map[string]any{"gcloud": map[string]any{"depends": []any{"python", "uv"}, "version": "latest"}},
+		"env": map[string]any{
+			"A":   "1",
+			"USE": map[string]any{"tools": true, "value": "true"},
+		},
+		"dotfiles": map[string]any{"/etc/shells/brew-fish": map[string]any{"line": "/opt/homebrew/bin/fish"}},
+	}
+	got, err := (&dataNS{}).ToTOMLFlat(in)
+	want := `[dotfiles]
+[dotfiles."/etc/shells/brew-fish"]
+line = "/opt/homebrew/bin/fish"
+
+[env]
+A = "1"
+[env.USE]
+tools = true
+value = "true"
+
+[tools]
+[tools.gcloud]
+depends = [ "python", "uv" ]
+version = "latest"
+`
+	if err != nil || got != want {
+		t.Fatalf("got %q, %v; want %q", got, err, want)
+	}
+	if _, err := (&dataNS{}).ToTOMLFlat("x"); err == nil {
+		t.Fatal("a string gave no error")
+	}
+}

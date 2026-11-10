@@ -465,8 +465,8 @@ case_mise_tool() {
   check_file "$file" "$mise_core_header
 
 [env]
-  CORE_HOME = \"{{ env.HOME }}\"
-  CORE_NAME = \"override-name\""
+CORE_HOME = \"{{ env.HOME }}\"
+CORE_NAME = \"override-name\""
   check "the manifest has its line" grep -qxF "core	.config/mise/conf.d/core/mise.toml" "$manifest"
   check "a tool with no [mise.*] gets no file" not test -e "$home/.config/mise/conf.d/opt"
 }
@@ -480,7 +480,7 @@ case_mise_user() {
 # The next sync writes it again, and each change in this file is lost.
 
 [shell_alias]
-  fixture = "echo fixture"'
+fixture = "echo fixture"'
   check "the manifest has its line" grep -qxF "zz-macos	.config/mise/conf.d/zz-macos/mise.toml" "$manifest"
 }
 

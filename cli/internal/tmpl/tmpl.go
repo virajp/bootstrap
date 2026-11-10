@@ -20,7 +20,7 @@
 //
 //	coll:    Append Has Merge Omit Pick Slice
 //	conv:    Join ToString
-//	data:    JSONArray ToJSON ToJSONPretty ToTOML
+//	data:    JSONArray ToJSON ToJSONPretty ToTOML ToTOMLFlat ToTOMLInline
 //	env:     Getenv
 //	file:    Read
 //	math:    Add Seq Sub

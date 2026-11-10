@@ -32,8 +32,8 @@ hide = true
 run = "find .config/mise/tasks/ -name '*' -type f -exec chmod 755 {} \\;"
 
 # The CLI of the sync, in dev only. setup:configs and code:lint:60-bootstrap
-# run it. Its release tags are bootstrap@X.Y.Z, and mise shows bootstrap@2.0.1
-# as 2.0.1.
+# run it. Its release tags are bootstrap@X.Y.Z, and mise shows bootstrap@2.0.2
+# as 2.0.2.
 [mise_env.dev.tools."github:virajp/bootstrap"]
 version = "latest"
 

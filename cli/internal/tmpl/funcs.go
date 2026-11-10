@@ -410,6 +410,85 @@ func tomlInline(b *strings.Builder, in any) error {
 	return nil
 }
 
+// ToTOMLFlat gives the table <in> as a TOML document in the style of the
+// dprint config of bootstrap: no indent, the keys in sorted order, the values
+// of a table before its sub-tables, and the arrays as `[ "a", "b" ]`. A blank
+// line comes before each top-level table. A generated file that a repository
+// commits thus stays the same after dprint formats it.
+func (*dataNS) ToTOMLFlat(in any) (string, error) {
+	m, ok := tomlTable(in)
+	if !ok {
+		return "", fmt.Errorf("cannot write a %T as a TOML document", in)
+	}
+	var b strings.Builder
+	if err := tomlFlat(&b, nil, m); err != nil {
+		return "", err
+	}
+	return strings.TrimPrefix(b.String(), "\n"), nil
+}
+
+// tomlTable gives <in> as a map when it is a table.
+func tomlTable(in any) (map[string]any, bool) {
+	if m, ok := in.(map[string]any); ok {
+		return m, true
+	}
+	rv := reflect.ValueOf(in)
+	if rv.Kind() != reflect.Map {
+		return nil, false
+	}
+	m := map[string]any{}
+	for _, k := range rv.MapKeys() {
+		m[fmt.Sprint(k.Interface())] = rv.MapIndex(k).Interface()
+	}
+	return m, true
+}
+
+func tomlKey(k string) string {
+	if bareKey.MatchString(k) {
+		return k
+	}
+	return tomlString(k)
+}
+
+// tomlFlat writes the table <m> at the path <path>: its header, its values,
+// then its sub-tables.
+func tomlFlat(b *strings.Builder, path []string, m map[string]any) error {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	if len(path) > 0 {
+		if len(path) == 1 {
+			b.WriteString("\n")
+		}
+		parts := make([]string, len(path))
+		for i, p := range path {
+			parts[i] = tomlKey(p)
+		}
+		b.WriteString("[" + strings.Join(parts, ".") + "]\n")
+	}
+	var tables []string
+	for _, k := range keys {
+		if _, ok := tomlTable(m[k]); ok {
+			tables = append(tables, k)
+			continue
+		}
+		b.WriteString(tomlKey(k) + " = ")
+		if err := tomlInline(b, m[k]); err != nil {
+			return err
+		}
+		b.WriteString("\n")
+	}
+	for _, k := range tables {
+		t, _ := tomlTable(m[k])
+		if err := tomlFlat(b, append(append([]string{}, path...), k), t); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (*dataNS) JSONArray(in any) ([]any, error) {
 	s := toString(in)
 	if strings.TrimSpace(s) == "" {
