@@ -318,8 +318,12 @@ dprint, the code formatter, and its global config.
 
 - **Packs:** `dev` (default)
 - **Files:**
-  - `~/.config/dprint/dprint.jsonc` — copy, format `text`
+  - `~/.config/dprint/dprint.jsonc` — merge
+- **Defaults:** `settings`, `blocks`, `excludes`, `plugins`
 - **Mise sections:** `[mise.tools]`
+- **Plugins:** The global config extends no other config. The sync finds a
+  plugin by its name, so it keeps the version in the file. `updateall` runs
+  `dprint config update` on the file, and that step updates the versions.
 
 ### `duplicate-detective`
 
@@ -620,8 +624,10 @@ and the entry tasks of the Mac sync.
 - **Mise sections:** `[mise.env]`, `[mise.tools]`, `[mise.shell_alias]`
 - **Entry of the Mac sync:** `updateall:configs` runs `bootstrap mac sync`, with
   the flags `--dry-run`, `--no-bootstrap` and `--verbose`. `updateall` upgrades
-  the Mac, and runs `updateall:configs --no-bootstrap` as one step. The
-  `upgrade:*` tasks download and install the macOS updates and apply the power
+  the Mac, and runs `updateall:configs --no-bootstrap` as one step. With the
+  `dprint` tool, it also updates the plugins of `~/.config/dprint/dprint.jsonc`.
+  The `upgrade:*` tasks download and install the macOS updates and apply the
+  power
   profile. The aliases are `updateall` and `osx-upgrade`.
 - **CLI:** `[mise.tools]` installs `github:virajp/bootstrap`, the CLI
   `bootstrap`, with `version_prefix = "cli-v"`, because the release tags are

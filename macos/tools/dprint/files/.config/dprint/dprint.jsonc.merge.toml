@@ -1,0 +1,31 @@
+# The merge spec of ~/.config/dprint/dprint.jsonc, a shared file. The sync
+# renders it with the values of the dprint tool. A key, an exclude or a plugin
+# that the user adds stays.
+format = "jsonc"
+<% if .config.settings %>
+[[item]]
+kind = "keys"
+value = <% .config.settings | data.ToTOMLInline %>
+<% end -%>
+<% range $name, $block := .config.blocks %>
+[[item]]
+kind = "keys"
+path = [ <% $name | data.ToTOMLInline %> ]
+value = <% $block | data.ToTOMLInline %>
+<% end -%>
+<% range .config.excludes %>
+[[item]]
+kind = "item"
+path = [ "excludes" ]
+value = <% . | data.ToTOMLInline %>
+<% end -%>
+<%- /* A plugin is found by its name with any version, so the version that
+   updateall writes stays. */ -%>
+<% range .config.plugins %>
+<% $name := regexp.Replace "^(npm:(@[^/@]+/)?[^@]+)@.*$" "$1" . -%>
+[[item]]
+kind = "item"
+path = [ "plugins" ]
+match = <% printf "^%s@" (strings.ReplaceAll "." "\\." $name) | data.ToTOMLInline %>
+value = <% . | data.ToTOMLInline %>
+<% end -%>
