@@ -2794,7 +2794,7 @@ derive_value() {
 }
 unknown_script() {
   script_tool
-  printf '%s\n' 'x' > "$clone/repo/tools/fixture/scripts/detect"
+  printf '%s\n' 'x' > "$clone/repo/tools/fixture/scripts/build"
 }
 check_derived() {
   check_exact "derive: the values file wins over the derived value" "$consumer/.config/fixture.txt" $'word=user other=derived\n'
@@ -2810,7 +2810,7 @@ run_case "a derive script that prints no object" 2 "$fixture_values" derive_bad 
 case_args=' ' run_case "the derive values: level 3 below the values file" 0 "$fixture_values
 word = \"user\"" derive_value '' check_derived
 run_case "a file of scripts/ that is not a script" 2 "$fixture_values" unknown_script \
-  'scripts/detect is not a script of a tool'
+  'scripts/build is not a script of a tool'
 run_check "--check runs the check scripts" 2 "$fixture_values" check_fails 'fixture: the first problem'
 
 # perm and dir_perm of a [files] entry, and the mise files first.
@@ -2969,6 +2969,253 @@ sync_jobs() { "$bin" sync --dry-run --jobs 1; }
 CASE_CALL=sync_jobs run_case "sync --jobs 1" 0 'environments = [ "dev" ]' '' 'Dry run: '
 questions_none() { "$bin" questions --json; }
 CASE_CALL=questions_none run_case "questions --json without questions" 0 'environments = [ "dev" ]' '' '[]'
+
+# The selection commands: detect, add, remove and replace. Each case first
+# syncs and commits the consumer, so a command starts from a clean work tree.
+dev_values='environments = [ "dev" ]'
+synced() {
+  "$bin" sync > /dev/null 2>&1 || exit
+  commit_consumer
+}
+# <name>_files: the config files of a case, in the consumer.
+pnpm_files() { printf '%s\n' '{}' > "$consumer/package.json" && printf '%s\n' 'packages: []' > "$consumer/pnpm-workspace.yaml"; }
+aube_files() { printf '%s\n' '{}' > "$consumer/package.json" && printf '%s\n' 'packages: []' > "$consumer/aube-workspace.yaml"; }
+both_files() { pnpm_files && printf '%s\n' 'packages: []' > "$consumer/aube-workspace.yaml"; }
+kotlin_java_files() { printf '%s\n' 'plugins { kotlin("jvm") version "2.0.0" }' > "$consumer/build.gradle.kts"; }
+
+detect_no() { synced && "$bin" detect --no; }
+detect_yes() { synced && "$bin" detect --yes; }
+detect_plain() { synced && "$bin" detect < /dev/null; }
+detect_dry() { synced && "$bin" detect --yes --dry-run; }
+CASE_CALL=detect_no run_case "detect --no: a tool that matches and is not selected" 1 "$dev_values" pnpm_files \
+  'tool pnpm matches, but it is not selected - add it with bootstrap add pnpm'
+check_detect_yes() {
+  check_that "detect --yes: the values file selects pnpm" tomlq '.tools | has("pnpm")'
+  check_that "detect --yes: the mise config of pnpm" test -f "$consumer/.config/mise/conf.d/pnpm/mise.dev.toml"
+}
+CASE_CALL=detect_yes run_case "detect --yes adds the tool that matches" 0 "$dev_values" pnpm_files 'Synced: ' check_detect_yes
+check_detect_dry() { check_that "detect --dry-run: the values file stays" not_grep 'pnpm' "$values"; }
+CASE_CALL=detect_dry run_case "detect --yes --dry-run" 0 "$dev_values" pnpm_files 'Dry run: nothing written' check_detect_dry
+CASE_CALL=detect_plain run_case "detect without --yes, --no and a terminal" 2 "$dev_values" pnpm_files \
+  'the detected tools need --yes or --no'
+check_detect_none() { check_that "detect: nothing to add" log_has 'No tool to add'; }
+CASE_CALL=detect_no run_case "detect: a selected tool that finds nothing stays" 0 "$dev_values" '' \
+  'tool python is selected, but its detect script finds nothing - it stays selected' check_detect_none
+CASE_CALL=detect_no run_case "detect: a mismatch for a selected tool" 2 "$dev_values
+[tools.pnpm]" both_files 'tool pnpm is selected, but its detect script gives mismatch: aube-workspace.yaml exists'
+CASE_CALL=detect_no run_case "detect: a mismatch for a tool that is not selected" 0 "$dev_values
+[tools.aube]" both_files 'mismatch pnpm'
+check_same_evidence() { check_that "detect: kotlin matches" log_has 'match    kotlin'; }
+CASE_CALL=detect_no run_case "detect: a tool with the evidence of a selected tool" 0 "$dev_values
+[tools.java]" kotlin_java_files 'No tool to add' check_same_evidence
+detect_twice() { synced && "$bin" detect --yes --no; }
+CASE_CALL=detect_twice run_case "detect --yes --no" 2 "$dev_values" '' '--yes and --no cannot be used together'
+
+# Each detect script: a consumer with its evidence, and the match line.
+# detect_case <tool> <code> <file>...: each file is <path>=<content>.
+detect_files() {
+  local f
+  for f in "${DETECT_FILES[@]}"; do
+    mkdir -p -- "$consumer/$(dirname -- "${f%%=*}")"
+    printf '%s\n' "${f#*=}" > "$consumer/${f%%=*}"
+  done
+}
+detect_case() {
+  local tool=$1 code=$2
+  shift 2
+  DETECT_FILES=("$@")
+  CASE_CALL=detect_no run_case "detect script of $tool" "$code" "$dev_values" detect_files "match    $tool "
+}
+detect_case node 0 'package.json={}'
+detect_case pnpm 1 'package.json={}' 'pnpm-workspace.yaml=packages: []'
+detect_case aube 1 'package.json={}' 'aube-workspace.yaml=packages: []'
+detect_case bun 1 'bunfig.toml=[install]'
+detect_case python 0 'pyproject.toml=[project]'
+detect_case go 1 'go.mod=module example.com/x'
+detect_case rust 1 'Cargo.toml=[package]'
+detect_case flutter 1 $'pubspec.yaml=name: x\ndependencies:\n  flutter:\n    sdk: flutter'
+detect_case swift 1 'Package.swift=// swift-tools-version:5.9'
+detect_case swift 1 'App.xcodeproj/project.pbxproj={}'
+detect_case kotlin 1 'build.gradle.kts=plugins { kotlin("jvm") }'
+detect_case java 1 'build.gradle=apply plugin: "java"'
+detect_case android 1 'app/build.gradle.kts=plugins { id("com.android.application") }'
+detect_case docker 1 'Dockerfile=FROM scratch'
+detect_case cloudflare 1 'wrangler.toml=name = "x"'
+detect_case firebase 1 'firebase.json={}'
+detect_case pulumi 1 'Pulumi.yaml=name: x'
+detect_case fnox 1 '.config/fnox.toml=[secrets]'
+detect_case github 1 '.github/CODEOWNERS=* @x'
+detect_case gitlab 1 '.gitlab-ci.yml=stages: []'
+check_no_flutter() { check_that "detect: flutter does not match Dart only" log_lacks 'match    flutter'; }
+DETECT_FILES=('pubspec.yaml=name: x')
+CASE_CALL=detect_no run_case "detect script of flutter: Dart only" 0 "$dev_values" detect_files '' check_no_flutter
+
+# add: the tools and their dependencies, the questions of the new tools.
+add_go() { synced && "$bin" add --yes go; }
+check_add_go() {
+  check_that "add: the values file selects go" tomlq '.tools | has("go")'
+  check_that "add: the go task" test -f "$consumer/.config/mise/tasks/code/lint/40-go"
+  check_that "add: the go extension" grep -qF '"golang.go"' "$consumer/.vscode/extensions.json"
+}
+CASE_CALL=add_go run_case "add go" 0 "$dev_values" '' 'Synced: ' check_add_go
+add_flutter() { synced && "$bin" add --yes flutter; }
+check_add_flutter() {
+  check_that "add: flutter" tomlq '.tools | has("flutter")'
+  check_that "add: its dependency android" tomlq '.tools | has("android")'
+  check_that "add: the dependency of android" tomlq '.tools | has("java")'
+}
+CASE_CALL=add_flutter run_case "add writes the dependencies" 0 "$dev_values" '' 'select java' check_add_flutter
+add_plain() { synced && "$bin" add go < /dev/null; }
+check_add_kept() { check_that "add: the values file stays" not_grep 'go' "$values"; }
+CASE_CALL=add_plain run_case "add without --yes and without a terminal" 2 "$dev_values" '' 'changes need --yes' check_add_kept
+add_dry() { synced && "$bin" add --dry-run go; }
+CASE_CALL=add_dry run_case "add --dry-run" 0 "$dev_values" '' 'Dry run: nothing written' check_add_kept
+add_none() { synced && "$bin" add; }
+CASE_CALL=add_none run_case "add without a tool" 2 "$dev_values" '' 'bootstrap add needs at least one tool'
+add_unknown() { synced && "$bin" add --yes nope; }
+CASE_CALL=add_unknown run_case "add of an unknown tool" 3 "$dev_values" '' "tool 'nope' is not in bootstrap"
+add_again() { synced && "$bin" add --yes dprint; }
+CASE_CALL=add_again run_case "add of a selected tool" 0 "$dev_values" '' 'Nothing to change'
+add_dirty() {
+  synced
+  printf '%s\n' '# a change that is not committed' >> "$values"
+  "$bin" add --yes go
+}
+CASE_CALL=add_dirty run_case "add stops on a values file with changes that are not committed" 2 "$dev_values" '' \
+  '.config/bootstrap.toml has changes that are not committed'
+go_question() {
+  printf '%s\n' '' '[questions.flavor]' 'question = "Which flavor?"' 'example = "plain"' >> "$clone/repo/tools/go/tools.toml"
+}
+CASE_CALL=add_go run_case "add --yes: a question without an answer" 2 "$dev_values" go_question \
+  'the question go.flavor has no answer - give it with --answer go.flavor=<value>'
+add_answer() { synced && "$bin" add --yes --answer go.flavor=sweet go; }
+check_add_answer() { check_that "add: the answer" tomlq '.tools.go.flavor == "sweet"'; }
+CASE_CALL=add_answer run_case "add --answer" 0 "$dev_values" go_question 'answer go.flavor' check_add_answer
+add_no_values() {
+  rm -f -- "$values"
+  commit_consumer
+  "$bin" add --yes go
+}
+CASE_CALL=add_no_values run_case "add without a values file" 2 "$dev_values" '' 'is not there - run bootstrap init first'
+add_old_form() { "$bin" add --yes go; }
+CASE_CALL=add_old_form run_case "add on the old form: run bootstrap init" 2 "$old_values" old_files \
+  'is the old form - run bootstrap init'
+
+# remove: the files and the shared items of the tool go; a seed stays.
+remove_go() { synced && "$bin" remove --yes go; }
+check_remove_go() {
+  check_that "remove: the values file without go" not_grep 'go\]' "$values"
+  check_that "remove: the go task is gone" no_file "$consumer/.config/mise/tasks/code/lint/40-go"
+  check_that "remove: the go extension is gone" lacks_in_file '"golang.go"' "$consumer/.vscode/extensions.json"
+}
+CASE_CALL=remove_go run_case "remove go" 0 "$dev_values
+[tools.go]" '' 'Synced: ' check_remove_go
+remove_pnpm() { synced && "$bin" remove --yes pnpm; }
+check_remove_seed() {
+  check_that "remove: the seed stays" test -f "$consumer/pnpm-workspace.yaml"
+  check_that "remove: the mise config of pnpm is gone" no_file "$consumer/.config/mise/conf.d/pnpm/mise.dev.toml"
+}
+CASE_CALL=remove_pnpm run_case "remove keeps a seed and lists it" 0 "$dev_values
+[tools.pnpm]" pnpm_files 'pnpm-workspace.yaml of a removed tool' check_remove_seed
+remove_flutter() { synced && "$bin" remove --yes flutter; }
+check_remove_deps() {
+  check_that "remove: android goes" not_grep 'android' "$values"
+  check_that "remove: java goes" not_grep 'java' "$values"
+  check_that "remove: go stays" tomlq '.tools | has("go")'
+}
+CASE_CALL=remove_flutter run_case "remove: the dependencies that no tool needs go" 0 "$dev_values
+[tools.flutter]
+[tools.android]
+[tools.java]
+[tools.go]" '' 'remove java (a dependency that no tool needs)' check_remove_deps
+remove_android() { synced && "$bin" remove --yes android; }
+CASE_CALL=remove_android run_case "remove: a tool that another selected tool needs" 2 "$dev_values
+[tools.flutter]
+[tools.android]" '' 'tool android is needed by flutter - remove that tool first'
+remove_named() { synced && "$bin" remove --yes "$REMOVE_TOOL"; }
+REMOVE_TOOL=mise CASE_CALL=remove_named run_case "remove: a required tool" 2 "$dev_values" '' \
+  'tool mise is required - bootstrap remove cannot remove it'
+REMOVE_TOOL=dprint CASE_CALL=remove_named run_case "remove: a tool of a pack" 2 "$dev_values" '' \
+  'tool dprint comes from the pack base - bootstrap remove removes only a tool of [tools.*]'
+REMOVE_TOOL=gitleaks CASE_CALL=remove_named run_case "remove: a tool of a nested pack" 2 "$dev_values" '' \
+  'tool gitleaks comes from the pack base'
+REMOVE_TOOL=go CASE_CALL=remove_named run_case "remove: a tool that is not selected" 2 "$dev_values" '' \
+  'tool go is not selected'
+REMOVE_TOOL=nope CASE_CALL=remove_named run_case "remove: an unknown tool" 3 "$dev_values" '' \
+  "tool 'nope' is not in bootstrap"
+
+# replace: the migrate script of the new tool, then the swap. A fake aube
+# records its calls in $tmp/aube-calls and writes the lock file of its format.
+fake_aube() {
+  mkdir -p -- "$tmp/fakebin"
+  cat > "$tmp/fakebin/aube" << 'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${0%/*}/../aube-calls"
+case $1 in
+  import) printf '%s\n' 'lockfileVersion: aube' > aube-lock.yaml ;;
+  install) printf '%s\n' "lockfileVersion: '9.0'" > "${AUBE_DEFAULT_LOCKFILE:-aube-lock.yaml}" ;;
+esac
+EOF
+  chmod +x "$tmp/fakebin/aube"
+}
+pnpm_lock_files() { pnpm_files && printf '%s\n' "lockfileVersion: '9.0'" > "$consumer/pnpm-lock.yaml" && fake_aube; }
+aube_lock_files() { aube_files && printf '%s\n' 'lockfileVersion: aube' > "$consumer/aube-lock.yaml" && fake_aube; }
+replace_tools() { synced && PATH="$tmp/fakebin:$PATH" "$bin" replace --yes "$@"; }
+replace_pnpm_aube() { replace_tools pnpm aube; }
+check_replace_pnpm_aube() {
+  check_that "replace: the values file selects aube" tomlq '.tools | has("aube") and (has("pnpm") | not)'
+  check_that "replace: aube gets the env of pnpm" tomlq '.tools.aube.env[0] == "dev"'
+  check_that "replace: aube-workspace.yaml" test -f "$consumer/aube-workspace.yaml"
+  check_that "replace: no pnpm-workspace.yaml" no_file "$consumer/pnpm-workspace.yaml"
+  check_that "replace: aube-lock.yaml" test -f "$consumer/aube-lock.yaml"
+  check_that "replace: no pnpm-lock.yaml" no_file "$consumer/pnpm-lock.yaml"
+  check_that "replace: aube import ran" grep -qxF 'import --lockfile-only' "$tmp/aube-calls"
+  check_that "replace: the mise config of aube" test -f "$consumer/.config/mise/conf.d/aube/mise.dev.toml"
+  check_that "replace: no mise config of pnpm" no_file "$consumer/.config/mise/conf.d/pnpm/mise.dev.toml"
+}
+CASE_CALL=replace_pnpm_aube run_case "replace pnpm aube" 0 "$dev_values
+[tools.pnpm]
+env = [ \"dev\" ]" pnpm_lock_files 'Ran repo/tools/aube/scripts/migrate-pnpm' check_replace_pnpm_aube
+replace_aube_pnpm() { replace_tools aube pnpm; }
+check_replace_aube_pnpm() {
+  check_that "replace: pnpm-workspace.yaml" test -f "$consumer/pnpm-workspace.yaml"
+  check_that "replace: pnpm-lock.yaml" test -f "$consumer/pnpm-lock.yaml"
+  check_that "replace: no aube-lock.yaml" no_file "$consumer/aube-lock.yaml"
+}
+CASE_CALL=replace_aube_pnpm run_case "replace aube pnpm" 0 "$dev_values
+[tools.aube]" aube_lock_files 'review its diff' check_replace_aube_pnpm
+replace_dry() { synced && "$bin" replace --dry-run pnpm aube; }
+check_replace_dry() {
+  check_that "replace --dry-run: pnpm-workspace.yaml stays" test -f "$consumer/pnpm-workspace.yaml"
+  check_that "replace --dry-run: the values file stays" tomlq '.tools | has("pnpm")'
+}
+CASE_CALL=replace_dry run_case "replace --dry-run" 0 "$dev_values
+[tools.pnpm]" pnpm_files 'run    repo/tools/aube/scripts/migrate-pnpm' check_replace_dry
+replace_parent() { synced && "$bin" replace --yes pnpm go; }
+CASE_CALL=replace_parent run_case "replace: tools without the same parent" 2 "$dev_values
+[tools.pnpm]" '' "works only between two tools with the same parent - pnpm has the parent 'node', go has ''"
+yarn_tool() {
+  mkdir -p -- "$clone/repo/tools/yarn"
+  printf '%s\n' 'default_envs = [ "dev" ]' 'depends = [ "node" ]' 'parent = "node"' 'root_only = false' \
+    > "$clone/repo/tools/yarn/tools.toml"
+}
+replace_no_script() { synced && "$bin" replace --yes pnpm yarn; }
+CASE_CALL=replace_no_script run_case "replace: no migrate script" 2 "$dev_values
+[tools.pnpm]" yarn_tool 'tool yarn has no script repo/tools/yarn/scripts/migrate-pnpm'
+replace_selected() { synced && "$bin" replace --yes pnpm aube; }
+CASE_CALL=replace_selected run_case "replace: the new tool is selected" 2 "$dev_values
+[tools.pnpm]
+[tools.aube]" '' 'tool aube is already selected'
+replace_dirty() {
+  synced
+  printf '%s\n' 'x' > "$consumer/untracked.txt"
+  "$bin" replace --yes pnpm aube
+}
+check_replace_dirty() { check_that "replace: pnpm-workspace.yaml stays" test -f "$consumer/pnpm-workspace.yaml"; }
+CASE_CALL=replace_dirty run_case "replace: a work tree with changes that are not committed" 2 "$dev_values
+[tools.pnpm]" pnpm_files 'the work tree has changes that are not committed' check_replace_dirty
+replace_one() { synced && "$bin" replace --yes pnpm; }
+CASE_CALL=replace_one run_case "replace with one tool" 2 "$dev_values" '' 'bootstrap replace needs two tools: <old> <new>'
 
 while ((${#case_pids[@]})); do
   collect_case

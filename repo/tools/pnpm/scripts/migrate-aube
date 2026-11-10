@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# The migrate script of the pnpm tool for the aube tool. bootstrap replace
+# aube pnpm runs it in the root of the repository, and never copies it. It
+# moves aube-workspace.yaml to pnpm-workspace.yaml, and writes pnpm-lock.yaml
+# in place of aube-lock.yaml. A problem is a line on stderr, and then the exit
+# code is 1.
+
+set -euo pipefail
+cat > /dev/null
+
+# aube of the PATH, else the aube of mise.
+aube_() {
+  if command -v aube > /dev/null 2>&1; then
+    aube "$@"
+  else
+    mise x aube@latest -- aube "$@"
+  fi
+}
+
+if [ -f aube-workspace.yaml ]; then
+  if [ -e pnpm-workspace.yaml ]; then
+    echo "aube-workspace.yaml and pnpm-workspace.yaml both exist - keep one of them, then run the command again" >&2
+    exit 1
+  fi
+  mv aube-workspace.yaml pnpm-workspace.yaml
+fi
+
+# aube has no export to pnpm-lock.yaml: it writes a new pnpm-lock.yaml from
+# package.json, so the resolved versions can change. Review its diff.
+if [ -f aube-lock.yaml ] && [ ! -e pnpm-lock.yaml ]; then
+  if ! AUBE_DEFAULT_LOCKFILE=pnpm-lock.yaml aube_ install --lockfile-only >&2; then
+    echo "aube install --lockfile-only failed - pnpm-lock.yaml is not written" >&2
+    exit 1
+  fi
+  if [ ! -f pnpm-lock.yaml ]; then
+    echo "aube wrote no pnpm-lock.yaml" >&2
+    exit 1
+  fi
+  rm aube-lock.yaml
+  echo "pnpm-lock.yaml is new: the resolved versions can differ from aube-lock.yaml - review its diff" >&2
+fi

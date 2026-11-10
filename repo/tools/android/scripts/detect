@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# The detect script of the android tool. bootstrap detect runs it in the root of
+# the repository, and never copies it. It prints one JSON object: the result
+# (match, none or mismatch), the evidence (config files, never lock files) and
+# a message.
+
+set -euo pipefail
+cat > /dev/null
+
+# Print the result as JSON: <result> <message> [evidence...].
+emit() {
+  local result=$1 message=$2 sep="" e
+  shift 2
+  printf '{ "result": "%s", "evidence": [' "$result"
+  for e in "$@"; do
+    printf '%s"%s"' "$sep" "$e"
+    sep=", "
+  done
+  printf '], "message": "%s" }\n' "$message"
+}
+
+# The Gradle files of the root and of the folders one level below it.
+gradle_files() {
+  find . -maxdepth 2 \( -name node_modules -o -name .git -o -name build \) -prune -o \
+    -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name libs.versions.toml \) -print |
+    sed "s|^\./||" | LC_ALL=C sort
+}
+found=()
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  if grep -Eq "com\.android\.(application|library)|com\.android\.tools\.build" "$f"; then
+    found+=("$f")
+  fi
+done < <(gradle_files)
+if [ ${#found[@]} -gt 0 ]; then
+  emit match "the Gradle files use the Android Gradle plugin" "${found[@]}"
+else
+  emit none "no Gradle file uses the Android Gradle plugin"
+fi

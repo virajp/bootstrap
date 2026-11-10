@@ -14,6 +14,7 @@ import (
 	"github.com/virajp/bootstrap/sync-engine/internal/format"
 	"github.com/virajp/bootstrap/sync-engine/internal/oldform"
 	"github.com/virajp/bootstrap/sync-engine/internal/questions"
+	"github.com/virajp/bootstrap/sync-engine/internal/scripts"
 	"github.com/virajp/bootstrap/sync-engine/internal/selection"
 	"github.com/virajp/bootstrap/sync-engine/internal/source"
 	"github.com/virajp/bootstrap/sync-engine/internal/values"
@@ -73,6 +74,8 @@ type selected struct {
 	tools []string
 	user  *source.Obj // The [tools.<name>] tables of the values file.
 	over  *source.Obj // The [tools.<name>] tables of its overrides file.
+	res   *selection.Resolved
+	items []values.Item // The [tools.*] and [packs.*] entries of the values file.
 }
 
 // selectionOf reads the values file <file> (the overrides file is next to
@@ -94,7 +97,7 @@ func (a *app) selectionOf(mac bool, dir, root, file, overridesOf string) (*selec
 		if err != nil {
 			return nil, a.logErr(err)
 		}
-		s.user = v.User
+		s.user, s.items = v.User, v.Sel
 		res, err = selection.ResolveMacos(idx, v)
 		if err != nil {
 			return nil, a.logErr(err)
@@ -106,14 +109,14 @@ func (a *app) selectionOf(mac bool, dir, root, file, overridesOf string) (*selec
 				return nil, a.logErr(err)
 			}
 		}
-		s.user = v.User
+		s.user, s.items = v.User, v.Sel
 		sub, _ := git("-C", root, "rev-parse", "--show-superproject-working-tree")
 		res, err = selection.ResolveRepo(idx, v, sub != "")
 		if err != nil {
 			return nil, a.logErr(err)
 		}
 	}
-	s.tools = res.Tools
+	s.tools, s.res = res.Tools, res
 	ov := values.OverridesPath(overridesOf)
 	s.over, err = values.ReadOverrides(ov, a.show(ov))
 	if err != nil {
@@ -193,6 +196,38 @@ func (a *app) init(mac bool, o opts) fail.Code {
 		return a.logErr(err)
 	}
 
+	return a.finish(mac, o, &change{w: w, c: c, cur: cur, existed: existed, next: next, notes: notes, changes: changes, migrating: true})
+}
+
+// change is the change of a writing command: the values file before and
+// after, the other changes, and a script that runs after the consent.
+type change struct {
+	w         where
+	c         *clone
+	cur       []byte // The values file before the command.
+	existed   bool
+	next      []byte // The values file after the command, without the answers.
+	notes     []string
+	exprs     []string // yq expressions for next, before the answers.
+	changes   []oldform.Change
+	migrating bool            // init: the plan accepts the old form of the targets.
+	askOnly   map[string]bool // The tools whose questions the command asks; nil for each tool.
+	before    *script         // A script that runs after the consent, before the writes.
+	seeds     []string        // The seeds of the removed tools that stay.
+}
+
+// script is one script of a tool that a command runs.
+type script struct {
+	runner scripts.Runner
+	job    scripts.Job
+	note   string
+}
+
+// finish asks the questions, plans the sync with the new values file, shows
+// the change list, and after the consent writes the changes and syncs.
+func (a *app) finish(mac bool, o opts, ch *change) fail.Code {
+	w, c, cur, existed, next, notes, changes := ch.w, ch.c, ch.cur, ch.existed, ch.next, ch.notes, ch.changes
+	var err error
 	// A temporary copy of the values file, with its overrides file, for the
 	// selection and the plan.
 	tmp, err := os.MkdirTemp(tmpDir(a.getenv), "bootstrap-init.")
@@ -215,7 +250,7 @@ func (a *app) init(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
-	answered, code := a.ask(mac, sel, o)
+	answered, code := a.ask(mac, sel, o, ch.askOnly)
 	if code != fail.OK {
 		return code
 	}
@@ -245,7 +280,7 @@ func (a *app) init(mac bool, o opts) fail.Code {
 	}
 	old, had := os.LookupEnv(envKey)
 	_ = os.Setenv(envKey, envVal)
-	oldform.Migrating = true
+	oldform.Migrating = ch.migrating
 	planned, pc := run(syncArgs(mac, opts{dryRun: true, noBootstrap: o.noBootstrap}), io.Discard, io.Discard)
 	if pc != fail.OK {
 		// Again, with the output, so the messages show.
@@ -271,11 +306,14 @@ func (a *app) init(mac bool, o opts) fail.Code {
 	}
 	sort.Strings(syncs)
 
-	if len(changes) == 0 && len(syncs) == 0 {
+	if len(changes) == 0 && len(syncs) == 0 && ch.before == nil {
 		a.infof("Nothing to change")
 		return fail.OK
 	}
 	fmt.Fprintln(a.stdout, "Changes:")
+	if ch.before != nil {
+		fmt.Fprintf(a.stdout, "  run    %s - %s\n", ch.before.runner.ShownPath(ch.before.job.Tool, ch.before.job.Name), ch.before.note)
+	}
 	for _, ch := range changes {
 		verb := "write "
 		if ch.Remove {
@@ -289,14 +327,20 @@ func (a *app) init(mac bool, o opts) fail.Code {
 	paths := append(oldform.Paths(changes), syncs...)
 	if o.dryRun {
 		a.warnDirty(dirtyTargets(paths, nil))
+		a.keptSeeds(ch.seeds)
 		a.infof("Dry run: nothing written")
 		return fail.OK
 	}
 	if code := a.stopDirty(dirtyTargets(paths, nil)); code != fail.OK {
 		return code
 	}
-	if done, code := a.consent(o.yes); done {
+	if done, code := a.consent(o.yes || o.confirmed); done {
 		return code
+	}
+	if ch.before != nil {
+		if code := a.runScript(ch.before); code != fail.OK {
+			return code
+		}
 	}
 	if err := oldform.Apply(changes); err != nil {
 		return a.logErr(err)
@@ -309,13 +353,25 @@ func (a *app) init(mac bool, o opts) fail.Code {
 		}
 	}
 	_, code = run(syncArgs(mac, opts{noBootstrap: o.noBootstrap}), a.stdout, a.stderr)
+	a.keptSeeds(ch.seeds)
 	return code
+}
+
+// keptSeeds lists each seed of a removed tool: the seed stays.
+func (a *app) keptSeeds(seeds []string) {
+	for _, p := range seeds {
+		if !exists(p) {
+			continue
+		}
+		a.infof("kept seed %s of a removed tool - it is yours now; remove it when you do not need it", a.show(p))
+	}
 }
 
 // ask gives the answer of each question of the selected tools that has no
 // answer, and of each --answer, as (tool, key, value). With --yes, a question
-// without an --answer is an error. Without a terminal, too.
-func (a *app) ask(mac bool, sel *selected, o opts) ([][3]string, fail.Code) {
+// without an --answer is an error. Without a terminal, too. With <only>, it
+// asks only the questions of those tools.
+func (a *app) ask(mac bool, sel *selected, o opts, only map[string]bool) ([][3]string, fail.Code) {
 	all := questions.Of(sel.idx, sel.tools)
 	byName := map[string]questions.Question{}
 	for _, qq := range all {
@@ -343,6 +399,9 @@ func (a *app) ask(mac bool, sel *selected, o opts) ([][3]string, fail.Code) {
 			continue
 		}
 		if _, ok := questions.Answer(sel.user, sel.over, qq); ok {
+			continue
+		}
+		if only != nil && !only[qq.Tool] {
 			continue
 		}
 		if o.yes || !a.interactive() {

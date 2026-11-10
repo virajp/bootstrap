@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# The detect script of the docker tool. bootstrap detect runs it in the root of
+# the repository, and never copies it. It prints one JSON object: the result
+# (match, none or mismatch), the evidence (config files, never lock files) and
+# a message.
+
+set -euo pipefail
+cat > /dev/null
+
+# Print the result as JSON: <result> <message> [evidence...].
+emit() {
+  local result=$1 message=$2 sep="" e
+  shift 2
+  printf '{ "result": "%s", "evidence": [' "$result"
+  for e in "$@"; do
+    printf '%s"%s"' "$sep" "$e"
+    sep=", "
+  done
+  printf '], "message": "%s" }\n' "$message"
+}
+
+found=()
+while IFS= read -r f; do
+  [ -n "$f" ] && found+=("$f")
+done < <(find . -maxdepth 2 \( -name node_modules -o -name .git \) -prune -o \
+  -type f \( -name Dockerfile -o -name "Dockerfile.*" -o -name "*.Dockerfile" \) -print |
+  sed "s|^\./||" | LC_ALL=C sort)
+if [ ${#found[@]} -gt 0 ]; then
+  emit match "a Dockerfile exists" "${found[@]}"
+else
+  emit none "no Dockerfile"
+fi

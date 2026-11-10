@@ -22,8 +22,20 @@ const (
 	TasksTarget = ".config/mise/tasks"
 )
 
-// ScriptNames are the file names of the scripts of a tool.
-var ScriptNames = []string{"derive", "check", "after"}
+// ScriptNames are the file names of the scripts of a tool. A tool can also
+// have a script migrate-<tool> for each tool that it replaces.
+var ScriptNames = []string{"derive", "check", "after", "detect"}
+
+// MigratePrefix starts the name of a migrate script: migrate-<old tool>.
+const MigratePrefix = "migrate-"
+
+// scriptOK tells if <name> is the name of a script of a tool.
+func scriptOK(name string) bool {
+	if old, ok := strings.CutPrefix(name, MigratePrefix); ok {
+		return NameOK(old)
+	}
+	return oneOf(name, ScriptNames)
+}
 
 // File is one file that a tool ships: one file of an entry, or of a folder
 // entry.
@@ -354,8 +366,8 @@ func (s Source) entries(shown, dir string, raw *Obj) ([]FileEntry, []*fail.Error
 		switch {
 		case f == "tools.toml":
 		case top == ScriptsDir:
-			if !oneOf(strings.TrimPrefix(f, ScriptsDir+"/"), ScriptNames) {
-				add("%s is not a script of a tool - the scripts are %s/%s", f, ScriptsDir, strings.Join(ScriptNames, ", "+ScriptsDir+"/"))
+			if !scriptOK(strings.TrimPrefix(f, ScriptsDir+"/")) {
+				add("%s is not a script of a tool - the scripts are %s/%s and %s/%s<tool>", f, ScriptsDir, strings.Join(ScriptNames, ", "+ScriptsDir+"/"), ScriptsDir, MigratePrefix)
 			}
 		case top == FilesDir || top == TasksDir:
 			if !covered[f] {

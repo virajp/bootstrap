@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# The migrate script of the aube tool for the pnpm tool. bootstrap replace
+# pnpm aube runs it in the root of the repository, and never copies it. It
+# moves pnpm-workspace.yaml to aube-workspace.yaml, and converts
+# pnpm-lock.yaml to aube-lock.yaml with `aube import`. A problem is a line on
+# stderr, and then the exit code is 1.
+
+set -euo pipefail
+cat > /dev/null
+
+# aube of the PATH, else the aube of mise.
+aube_() {
+  if command -v aube > /dev/null 2>&1; then
+    aube "$@"
+  else
+    mise x aube@latest -- aube "$@"
+  fi
+}
+
+if [ -f pnpm-workspace.yaml ]; then
+  if [ -e aube-workspace.yaml ]; then
+    echo "pnpm-workspace.yaml and aube-workspace.yaml both exist - keep one of them, then run the command again" >&2
+    exit 1
+  fi
+  mv pnpm-workspace.yaml aube-workspace.yaml
+fi
+
+# aube reads pnpm-lock.yaml at version 9 only. An older lock file stops the
+# import: run a current pnpm install one time first.
+if [ -f pnpm-lock.yaml ] && [ ! -e aube-lock.yaml ]; then
+  if ! aube_ import --lockfile-only >&2; then
+    echo "aube import failed - if pnpm-lock.yaml is older than version 9, run a current pnpm install one time, then run the command again" >&2
+    exit 1
+  fi
+  if [ ! -f aube-lock.yaml ]; then
+    echo "aube import wrote no aube-lock.yaml" >&2
+    exit 1
+  fi
+  rm pnpm-lock.yaml
+fi
