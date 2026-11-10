@@ -838,17 +838,27 @@ From 2.0.2, `cli/VERSION` of the clone is 2.0.2 or newer. The old entry task
 binary stops with code 2. Do the steps of this item: the old entry task cannot
 do them.
 
+A Mac that has an older Mac sync has `version_prefix = "cli-v"` in
+`~/.config/mise/conf.d/mise/mise.toml` too. mise uses that line in each
+folder, so the command of step 3 does not find the release. The setting
+`minimum_release_age` of mise can also hide a new release, and then `@latest`
+gets an old release.
+
 1. Commit or discard the changes of the work tree.
-2. Run the new CLI once:
+2. If `~/.config/mise/conf.d/mise/mise.toml` has `version_prefix = "cli-v"`,
+   show the user the line, and remove it if the user agrees. The next Mac sync
+   writes the file again without the line (`docs/setup/index.md`).
+3. Run the new CLI once. If mise hides the release, use the version of
+   `cli/VERSION` of the clone in place of `latest`:
 
    ```bash
    mise x github:virajp/bootstrap@latest -- bootstrap sync --dry-run
    ```
 
-3. Show the user the change list. If the user agrees, run the same command
+4. Show the user the change list. If the user agrees, run the same command
    without `--dry-run`. The sync writes the new entry task and
    the new mise config, with no `version_prefix`.
-4. If `version_prefix = "cli-v"` stays in a file that does not have the
+5. If `version_prefix = "cli-v"` stays in a file that does not have the
    bootstrap header, remove that line. Show the user each change before you
    write it.
-5. Commit the result. Do the same in each git submodule.
+6. Commit the result. Do the same in each git submodule.
