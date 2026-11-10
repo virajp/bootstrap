@@ -244,3 +244,65 @@ func Names(items []Item, kind string) []string {
 	}
 	return out
 }
+
+// OverridesPath gives the overrides file of the values file <path>: the
+// same folder and name, with `.overrides.toml` in place of `.toml`, for
+// example `.config/bootstrap.overrides.toml`.
+func OverridesPath(path string) string {
+	return strings.TrimSuffix(path, ".toml") + ".overrides.toml"
+}
+
+// ReadOverrides reads the overrides file <path>, when it exists, and gives
+// its `[tools.<name>]` tables. It wins over all the other values. Its only
+// key is `tools`. <shown> is the path as a message names it.
+func ReadOverrides(path, shown string) (*source.Obj, error) {
+	if _, err := os.Stat(path); err != nil {
+		return nil, nil
+	}
+	raw, err := source.ReadTOML(path)
+	if err != nil {
+		return nil, usage("cannot read %s", shown)
+	}
+	for _, k := range raw.Keys() {
+		if k != "tools" {
+			return nil, usage("%s is not a key of %s - its only key is [tools.<name>]", k, shown)
+		}
+	}
+	t, ok := raw.Get("tools").(*source.Obj)
+	if !ok {
+		if raw.Has("tools") {
+			return nil, usage("tools in %s must be [tools.<name>] tables", shown)
+		}
+		return nil, nil
+	}
+	for _, n := range t.Keys() {
+		if _, ok := t.Get(n).(*source.Obj); !ok {
+			return nil, usage("[tools.%s] in %s must be a table", n, shown)
+		}
+	}
+	return t, nil
+}
+
+// MovedKeys are the old top-level keys of a repo values file, each with its
+// new place.
+var MovedKeys = [][2]string{
+	{"branch", "[tools.git.branch.<name>]"},
+	{"commit_scopes", "commit_scopes of [tools.git]"},
+	{"worktree_files", "worktree_files of [tools.mise]"},
+	{"claude", "[tools.claude.plugins.<scope>]"},
+}
+
+// Moved gives a message, with code 2, for each old top-level key of the
+// values file <raw>.
+func Moved(raw *source.Obj, shown string) error {
+	var probs []*fail.Error
+	for _, mk := range MovedKeys {
+		if raw.Has(mk[0]) {
+			probs = append(probs, usage("%s in %s is the old place - move it to %s", mk[0], shown, mk[1]))
+		}
+	}
+	if len(probs) == 0 {
+		return nil
+	}
+	return source.Problems(probs)
+}

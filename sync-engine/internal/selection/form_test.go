@@ -77,7 +77,7 @@ var formCases = []formCase{
 			"repo-sync: repo/tools/a/tools.toml: [files.\"v.txt\"] source: files/nope is not there\n" +
 			"repo-sync: repo/tools/a/tools.toml: [files.\"w.txt\"] render works only with mode = \"seed\" - a template has mode = \"template\"\n" +
 			"repo-sync: repo/tools/a/tools.toml: [files.\"w.txt\"] remove works only with mode = \"merge\"\n" +
-			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] zzz is not a key of a files entry - the keys are source, mode, render, format, requires, requires_found, remove, remove_items\n" +
+			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] zzz is not a key of a files entry - the keys are source, mode, render, format, requires, requires_found, remove, remove_items, when, perm, dir_perm\n" +
 			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] needs source, a path below files/ with no .. part\n" +
 			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] format must be \"text\", \"json\", \"yaml\" or \"toml\"\n" +
 			"repo-sync: repo/tools/a/tools.toml: [files.\"y.txt\"] remove must be a list of key paths, each a non-empty list of strings\n" +
@@ -88,6 +88,39 @@ var formCases = []formCase{
 			"repo-sync: repo/tools/a/tools.toml: files/u.txt has no entry - write a [files.\"<path>\"] table with source = \"u.txt\"\n" +
 			"repo-sync: repo/tools/a/tools.toml: old.txt is not below files/ or tasks/ - move it, and write an entry for it (the old form of a tool folder is gone)\n" +
 			"repo-sync: repo/tools/a/tools.toml: parent must be the name of another tool of repo/tools\n" +
+			"--- stdout\n"},
+	{name: "repo-mise-depends", side: source.Repo,
+		over: tree{"repo/tools/a/tools.toml": rt("[mise.tools.ta]\nversion = \"1\"\ndepends = [ \"tb\" ]\n[mise_env.ci.tools.tc]\ndepends = [ \"ta\" ]\n")},
+		want: "rc=2\n--- stderr\n" +
+			"repo-sync: repo/tools/a/tools.toml: depends of mise tool ta in [mise.tools] - the sync computes it from depends and parent of the tool; remove it\n" +
+			"repo-sync: repo/tools/a/tools.toml: depends of mise tool tc in [mise_env.ci.tools] - the sync computes it from depends and parent of the tool; remove it\n" +
+			"--- stdout\n"},
+	{name: "repo-new-keys-ok", side: source.Repo,
+		over: tree{
+			"repo/tools/a/tools.toml": rt("[files.\"x.txt\"]\nsource = \"x.txt\"\nwhen = \"!a.flag\"\nperm = \"600\"\ndir_perm = \"0700\"\n" +
+				"[tasks.\"run/x\"]\nsource = \"run-x\"\nwhen = \"b.pair.on\"\n"),
+			"repo/tools/a/files/x.txt":    "x",
+			"repo/tools/a/tasks/run-x":    "r",
+			"repo/tools/a/scripts/derive": "d",
+			"repo/tools/a/scripts/check":  "c",
+			"repo/tools/a/scripts/after":  "a",
+		},
+		want: "rc=0\n--- stderr\n--- stdout\ntools: a\nsel:\na - default\ndeps:\nvalues:\n{\"a\":{}}\n"},
+	{name: "repo-new-keys-bad", side: source.Repo,
+		over: tree{
+			"repo/tools/a/tools.toml": rt("[files.\"x.txt\"]\nsource = \"x.txt\"\nwhen = \"a..b\"\nperm = \"800\"\ndir_perm = 700\n" +
+				"[tasks.\"run/x\"]\nsource = \"run-x\"\nwhen = true\nperm = \"644\"\n"),
+			"repo/tools/a/files/x.txt":    "x",
+			"repo/tools/a/tasks/run-x":    "r",
+			"repo/tools/a/scripts/detect": "d",
+		},
+		want: "rc=2\n--- stderr\n" +
+			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] when must be a value path, for example \"git.branch_pair\", with an optional ! at the start\n" +
+			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] perm must be an octal mode string, for example \"700\"\n" +
+			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] dir_perm must be an octal mode string, for example \"700\"\n" +
+			"repo-sync: repo/tools/a/tools.toml: [tasks.\"run/x\"] perm is not a key of a tasks entry - the keys are source, mode, requires, requires_found, library, when\n" +
+			"repo-sync: repo/tools/a/tools.toml: [tasks.\"run/x\"] when must be a value path, for example \"git.branch_pair\", with an optional ! at the start\n" +
+			"repo-sync: repo/tools/a/tools.toml: scripts/detect is not a script of a tool - the scripts are scripts/derive, scripts/check, scripts/after\n" +
 			"--- stdout\n"},
 	{name: "macos-no-macos-setup", side: source.Macos,
 		over: tree{"macos/packs.toml": "[pack.base]\nm1 = { default = true }\n"},

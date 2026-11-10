@@ -80,6 +80,8 @@ source = "code-lint.tmpl"
 
 [tasks."code/merge/_default"]
 source = "code-merge"
+# Only with one of main and develop: see the merge tasks of the git tool.
+when = "!git.branch_pair"
 
 [tasks."code/sec/_default"]
 source = "code-sec"

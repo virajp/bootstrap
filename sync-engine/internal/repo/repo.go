@@ -90,7 +90,6 @@ type state struct {
 	fileConds   []cond            // _RS_FILE_CONDS
 	fileMerge   map[string][2]string
 	spare       []string          // _RS_SPARE
-	skip        []string          // _RS_SKIP: the targets of the other merge model.
 	reqSkip     map[string]string // _RS_REQ_SKIP: <tool>/<target> to its missing item.
 	hookDrop    []string          // _RS_HOOK_DROP
 	giAdd       []giLine
@@ -103,13 +102,19 @@ type state struct {
 	pending     []pend          // _RS_PENDING
 	all         *source.Obj     // The values of the tools (_RS_VALUES_FILE).
 	allJSON     string
+	derived     map[string]*source.Obj // The derived mise tables of each tool.
+	dirDone     map[string]bool        // The folders at their dir_perm.
+
+	memberRows  []member
+	membersCode fail.Code
+	membersRead bool
 }
 
 // Run runs `repo_sync <args>` and gives its exit code. Each line goes to
 // <stderr>; <stdout> gets only the output of the commands that bash lets
 // through.
 func Run(args []string, stdout, stderr io.Writer) fail.Code {
-	s := &state{stdout: stdout, stderr: stderr, getenv: os.Getenv}
+	s := &state{stdout: stdout, stderr: stderr, getenv: os.Getenv, derived: map[string]*source.Obj{}, dirDone: map[string]bool{}}
 	isTerm := false
 	if f, ok := stderr.(*os.File); ok {
 		isTerm = report.IsTerminal(f)
@@ -268,20 +273,12 @@ func (s *state) sync(dryRun bool) fail.Code {
 	} else {
 		s.r.Info("bootstrap " + rev + " · " + strconv.Itoa(len(tools)) + " tools · environments: " + strings.Join(s.envs, " "))
 	}
-	if code := s.mergeModel(); code != fail.OK {
-		return cleanup(code)
-	}
 	s.fileSkips()
 	s.coreTools()
 
 	worst := fail.OK
 	var failed []string
 	s.generated = map[string]bool{}
-	// The rows of the manifest, and the paths that the stale rule must not
-	// remove: the files of the selected tools and their dependencies that this
-	// run writes or keeps, and the merge tasks of the other model, which
-	// remove handles.
-	s.handled = append(s.handled, s.skip...)
 	envs, err := misegen.NewEnvs(source.Repo, s.envs, s.res, toolsShown, s.hasFile)
 	if err != nil {
 		return cleanup(s.logAll(err))
@@ -295,6 +292,8 @@ func (s *state) sync(dryRun bool) fail.Code {
 		ProjectRoot: s.root,
 		Envs:        envs,
 		Getenv:      s.getenv,
+		Index:       s.idx,
+		Tools:       s.res.Tools,
 		Ships: func(tool, path string) bool {
 			for _, f := range s.idx.Files(tool) {
 				if f.Target == path {
@@ -307,21 +306,30 @@ func (s *state) sync(dryRun bool) fail.Code {
 	defer g.Close()
 	for _, step := range []func() fail.Code{
 		func() fail.Code { return s.overrides(g, false) },
-		s.directCommit,
-		s.fnoxProfiles,
+		func() fail.Code { _, code := s.memberList("template context"); return code },
 		s.toolValues,
+		s.checks,
 	} {
 		if code := step(); code != fail.OK {
 			return cleanup(code)
 		}
 	}
 	g.All = s.all
+	g.Derived = s.derived
+	s.hookBranches()
 	// The files of each tool: the files of its entries, and the mise files
 	// that the generator writes into the tool folder of the clone copy.
 	toolFiles := map[string][]source.File{}
 	for _, tool := range tools {
-		files := s.idx.Files(tool)
-		written, err := g.Render(tool, s.src.ToolDir(tool)+"/"+confDir, s.devAliases(tool))
+		var files []source.File
+		for _, f := range s.idx.Files(tool) {
+			// An entry whose `when` is false is not shipped: the stale rule
+			// removes a synced copy.
+			if s.when(f) {
+				files = append(files, f)
+			}
+		}
+		written, err := g.Render(tool, s.src.ToolDir(tool)+"/"+confDir)
 		for _, w := range written {
 			s.generated[tool+"/"+confDir+"/"+w] = true
 			files = append(files, source.File{Path: confDir + "/" + w, Target: confDir + "/" + w})
@@ -369,8 +377,6 @@ func (s *state) sync(dryRun bool) fail.Code {
 			deferred := false
 			out := f.Target
 			switch {
-			case s.skipped(out):
-				rc = s.remove(out)
 			case s.inReqSkip(tool + "/" + out):
 				s.skipRequired(tool, out)
 			default:
@@ -387,6 +393,11 @@ func (s *state) sync(dryRun bool) fail.Code {
 	}
 
 	s.format()
+	// The mise files first: a later file can need the tools of the new mise
+	// config.
+	sort.SliceStable(s.pending, func(i, j int) bool {
+		return strings.HasPrefix(s.pending[i].f.Target, confDir+"/") && !strings.HasPrefix(s.pending[j].f.Target, confDir+"/")
+	})
 	for _, p := range s.pending {
 		rc := s.fileFinish(p.tool, p.f, p.tmp)
 		if rc == fail.OK {
@@ -465,10 +476,12 @@ func (s *state) check() fail.Code {
 	envsOK := add(s.readEnvs())
 	sel, err := s.readSel()
 	selOK := add(s.logAll(err))
+	if selOK {
+		selOK = add(s.logAll(values.Moved(s.vals.Raw, s.show)))
+	}
 	if envsOK && selOK {
 		add(s.envRules(sel))
 	}
-	add(s.mergeModel())
 	s.coreTools()
 	g := &misegen.Generator{
 		Side:        source.Repo,
@@ -481,10 +494,11 @@ func (s *state) check() fail.Code {
 	}
 	defer g.Close()
 	add(s.overrides(g, true))
-	add(s.directCommit())
-	add(s.fnoxProfiles())
-	_, code := s.members(strings.TrimPrefix(s.values, s.root+"/"))
+	_, code := s.memberList(strings.TrimPrefix(s.values, s.root+"/"))
 	add(code)
+	if rc == fail.OK {
+		add(s.checkScripts())
+	}
 	if rc == fail.OK {
 		s.log(s.show + ": valid (local rules)")
 	}

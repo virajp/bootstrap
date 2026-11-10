@@ -1,12 +1,11 @@
 # The Android SDK command-line tools.
 default_envs = [ "dev", "ci" ]
-depends = []
+depends = [ "java" ]
 extensions = []
 root_only = false
 
 # The mise config, generated into .config/mise/conf.d/android/mise.<env>.toml.
 [mise.tools.android-sdk]
-depends = [ "java" ]
 envs = [ "dev", "ci" ]
 version = "23"
 

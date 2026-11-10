@@ -4,9 +4,6 @@
 
 # The bootstrap commit of the last sync. repo-sync writes it.
 bootstrap_commit = ""
-# The commit scopes of git-conventional-commits. The default is the member
-# list.
-commit_scopes = [ "backend", "frontend", "iac", "docs" ]
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
 # The VS Code extensions that no tool has. The root also gets the extensions
@@ -18,11 +15,18 @@ product_name = "acme"
 repo_name = "acme"
 # The web URL of the repository, for the github tool.
 repo_url = "https://github.com/example/acme"
+
+[tools.git]
+# The commit scopes of git-conventional-commits. The default is the member
+# list.
+commit_scopes = [ "backend", "frontend", "iac", "docs" ]
+
+[tools.mise]
 # The gitignored files to copy into a new worktree.
 worktree_files = [ ".config/mise.local.toml", "docs/memory/handoff" ]
 
 # A feature branch merges into develop. main never merges into develop.
-[branch.develop]
+[tools.git.branch.develop]
 merge_model = "direct"
 merge_never = [ "main" ]
 

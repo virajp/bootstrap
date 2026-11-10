@@ -19,6 +19,9 @@ func (s *state) resolve() fail.Code {
 	if err != nil {
 		return s.logAll(err)
 	}
+	if err := values.Moved(s.vals.Raw, s.show); err != nil {
+		return s.logAll(err)
+	}
 	if code := s.envRules(sel); code != fail.OK {
 		return code
 	}
@@ -137,14 +140,6 @@ func (s *state) toolExtensions(file string) []string {
 		out = append(out, m.Extensions...)
 		for _, d := range m.Depends {
 			pending = append(pending, fields(d)...)
-		}
-		for _, mt := range m.Mise {
-			_, names := selection.MiseDepends(mt)
-			for _, name := range names {
-				if owner := s.idx.MiseOwner[name]; owner != "" {
-					pending = append(pending, owner)
-				}
-			}
 		}
 	}
 	return out

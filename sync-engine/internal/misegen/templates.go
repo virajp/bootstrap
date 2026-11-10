@@ -136,12 +136,6 @@ const miseTemplate = defines + `<% $m := dict %><% if has .t "mise" %><% $m = .t
 <% $out = coll.Merge (dict $s $body) $out -%>
 <% end -%>
 <% end -%>
-<% $extra := env.Getenv "BOOTSTRAP_MISE_DEV_ALIASES" -%>
-<% if and $in (eq $env "dev") $extra -%>
-<% $al := dict %><% if has $out "shell_alias" %><% $al = index $out "shell_alias" %><% end -%>
-<% range (strings.Split "\n" $extra) %><% if . %><% $kv := strings.SplitN "=" 2 . %><% $al = coll.Merge (dict (index $kv 0) (index $kv 1)) $al %><% end %><% end -%>
-<% $out = coll.Merge (dict "shell_alias" $al) $out -%>
-<% end -%>
 <% if $out %><% $out | data.ToTOML %><% end -%>
 <% range $marks %>#@override <% . %>
 <% end -%>`

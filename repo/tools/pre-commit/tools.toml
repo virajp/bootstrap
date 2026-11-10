@@ -1,6 +1,6 @@
 # pre-commit: the rendered pre-commit config, its setup task and code:precommit.
 default_envs = [ "dev" ]
-depends = []
+depends = [ "python" ]
 extensions = []
 root_only = false
 
@@ -80,7 +80,6 @@ name = "Normalise line endings to LF"
 
 # The mise config, generated into .config/mise/conf.d/pre-commit/mise.<env>.toml.
 [mise.tools.pre-commit]
-depends = [ "python", "uv" ]
 version = "latest"
 
 [mise.env]

@@ -1,13 +1,12 @@
 # The Cloudflare CLI (npm:cf).
 default_envs = [ "dev", "ci" ]
-depends = []
+depends = [ "node" ]
 extensions = []
 root_only = false
 
 # The mise config, generated into .config/mise/conf.d/cloudflare/mise.<env>.toml.
 [mise.tools."npm:cf"]
 allow_builds = [ "workerd" ]
-depends = [ "node" ]
 envs = [ "dev", "ci" ]
 minimum_release_age = "0h"
 version = "latest"

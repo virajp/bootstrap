@@ -66,20 +66,7 @@ func ResolveRepo(idx *source.Index, v *values.Repo, inSubmodule bool) (*Resolved
 			}
 			return nil, usage("cannot read %s/%s/tools.toml", shown, tool)
 		}
-		out := append([]string(nil), m.Depends...)
-		for _, mt := range m.Mise {
-			entry, names := MiseDepends(mt)
-			for _, name := range names {
-				owner, ok := idx.MiseOwner[name]
-				if !ok {
-					return nil, usage("mise tool '%s' of %s/%s depends on '%s', which no tool defines", entry, shown, tool, name)
-				}
-				if owner != tool {
-					out = append(out, owner)
-				}
-			}
-		}
-		return out, nil
+		return append([]string(nil), m.Depends...), nil
 	}
 	done := func(tool string) error {
 		m := idx.Manifests[tool]
@@ -98,31 +85,6 @@ func ResolveRepo(idx *source.Index, v *values.Repo, inSubmodule bool) (*Resolved
 		return nil, err
 	}
 	return &Resolved{Index: idx, Sel: sel, Tools: w.Visited, Deps: w.Deps, Keep: keepTools(sel, w.Deps)}, nil
-}
-
-// MiseDepends gives the mise `depends` of <mt> as bash reads them. Bash
-// prints the manifest line `<name> <envs|-> <depends>...` and reads it with
-// `read -r entry _ value`, then splits the words of value. An empty `envs`
-// (`envs = []`) prints no word, so the fields shift: the first depends goes
-// into `_`, and the walk does not see it. It gives the name of the entry and
-// the depends.
-func MiseDepends(mt source.MiseTool) (string, []string) {
-	envs := "-"
-	if mt.Envs != nil {
-		envs = strings.Join(mt.Envs, ",")
-	}
-	line := mt.Name + " " + envs
-	for _, d := range mt.Depends {
-		line += " " + d
-	}
-	f := strings.FieldsFunc(line, func(r rune) bool { return r == ' ' || r == '\t' || r == '\n' })
-	switch len(f) {
-	case 0:
-		return "", nil
-	case 1, 2:
-		return f[0], nil
-	}
-	return f[0], f[2:]
 }
 
 func envNameOK(name string) bool {

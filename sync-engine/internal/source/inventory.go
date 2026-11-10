@@ -15,9 +15,15 @@ import (
 const (
 	FilesDir = "files"
 	TasksDir = "tasks"
+	// ScriptsDir holds the scripts of a tool, which the sync runs from the
+	// clone and never copies.
+	ScriptsDir = "scripts"
 	// TasksTarget is the folder of the task files in a target.
 	TasksTarget = ".config/mise/tasks"
 )
+
+// ScriptNames are the file names of the scripts of a tool.
+var ScriptNames = []string{"derive", "check", "after"}
 
 // File is one file that a tool ships: one file of an entry, or of a folder
 // entry.
@@ -25,6 +31,9 @@ type File struct {
 	Path   string // The source, relative to the tool folder: files/<source> or tasks/<source>.
 	Target string // The path in the target.
 	Tmpl   bool   // The source is a template: mode template, a seed with render, or merge.
+	When   string // The value path of `when`, or empty.
+	// Perm and DirPerm are the modes of `perm` and `dir_perm`; 0 when unset.
+	Perm, DirPerm os.FileMode
 }
 
 // Files gives the files that <tool> ships, from the entries of its
@@ -37,7 +46,7 @@ func (x *Index) Files(tool string) []File {
 	}
 	out := make([]File, 0, len(m.Files))
 	for _, fe := range m.Files {
-		out = append(out, File{Path: fe.Source, Target: fe.Target, Tmpl: fe.Tmpl})
+		out = append(out, File{Path: fe.Source, Target: fe.Target, Tmpl: fe.Tmpl, When: fe.When, Perm: fe.Perm, DirPerm: fe.DirPerm})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Target < out[j].Target })
 	return out
@@ -73,6 +82,36 @@ func regularFiles(dir string) []string {
 	return out
 }
 
+// whenOK tells if <w> is a value path: words joined with dots, with an
+// optional ! at the start.
+func whenOK(w string) bool {
+	w = strings.TrimPrefix(w, "!")
+	if w == "" {
+		return false
+	}
+	for _, part := range strings.Split(w, ".") {
+		if part == "" || strings.ContainsAny(part, " \t\n!") {
+			return false
+		}
+	}
+	return true
+}
+
+// ParsePerm reads an octal mode string of 3 or 4 digits, for example "700".
+func ParsePerm(p string) (os.FileMode, bool) {
+	if len(p) < 3 || len(p) > 4 {
+		return 0, false
+	}
+	var m os.FileMode
+	for _, c := range p {
+		if c < '0' || c > '7' {
+			return 0, false
+		}
+		m = m*8 + os.FileMode(c-'0')
+	}
+	return m, true
+}
+
 // entryKind is the kind of an entry table: [files] or [tasks].
 type entryKind struct {
 	table  string // "files" or "tasks"
@@ -85,14 +124,14 @@ type entryKind struct {
 var filesKind = entryKind{
 	table: "files", dir: FilesDir,
 	modes:  []string{"copy", "template", "seed", "merge"},
-	keys:   []string{"source", "mode", "render", "format", "requires", "requires_found", "remove", "remove_items"},
+	keys:   []string{"source", "mode", "render", "format", "requires", "requires_found", "remove", "remove_items", "when", "perm", "dir_perm"},
 	target: func(k string) string { return k },
 }
 
 var tasksKind = entryKind{
 	table: "tasks", dir: TasksDir,
 	modes:  []string{"copy", "template"},
-	keys:   []string{"source", "mode", "requires", "requires_found", "library"},
+	keys:   []string{"source", "mode", "requires", "requires_found", "library", "when"},
 	target: func(k string) string { return TasksTarget + "/" + k },
 }
 
@@ -206,6 +245,29 @@ func (s Source) entries(shown, dir string, raw *Obj) ([]FileEntry, []*fail.Error
 					fe.Format = f
 				}
 			}
+			if v, has := e.Lookup("when"); has {
+				w, isStr := v.(string)
+				if !isStr || !whenOK(w) {
+					fail1("when must be a value path, for example \"git.branch_pair\", with an optional ! at the start")
+				} else {
+					fe.When = w
+				}
+			}
+			for _, k := range []string{"perm", "dir_perm"} {
+				v, has := e.Lookup(k)
+				if !has {
+					continue
+				}
+				p, isStr := v.(string)
+				m, good := ParsePerm(p)
+				if !isStr || !good {
+					fail1("%s must be an octal mode string, for example \"700\"", k)
+				} else if k == "perm" {
+					fe.Perm = m
+				} else {
+					fe.DirPerm = m
+				}
+			}
 			for _, k := range []string{"requires", "requires_found"} {
 				v, has := e.Lookup(k)
 				if !has {
@@ -306,6 +368,10 @@ func (s Source) entries(shown, dir string, raw *Obj) ([]FileEntry, []*fail.Error
 		top, _, _ := strings.Cut(f, "/")
 		switch {
 		case f == "tools.toml":
+		case top == ScriptsDir:
+			if !oneOf(strings.TrimPrefix(f, ScriptsDir+"/"), ScriptNames) {
+				add("%s is not a script of a tool - the scripts are %s/%s", f, ScriptsDir, strings.Join(ScriptNames, ", "+ScriptsDir+"/"))
+			}
 		case top == FilesDir || top == TasksDir:
 			if !covered[f] {
 				table := "files"

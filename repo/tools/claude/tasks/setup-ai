@@ -78,7 +78,7 @@ if ! grep -Eq '^vwf@virajp-plugins\|' <<< "${INSTALLED}"; then
   fi
 fi
 
-# The plugins of [claude.plugins.user] and [claude.plugins.project] in
+# The plugins of [tools.claude.plugins.user] and [tools.claude.plugins.project] in
 # .config/bootstrap.toml: `"<plugin>@<marketplace>" = "<source>"`. The task
 # installs each one that is missing at its scope. It first adds the
 # marketplace from <source> at the same scope, when no scope has it.
@@ -86,7 +86,7 @@ VALUES=.config/bootstrap.toml
 if [[ -f "${VALUES}" ]]; then
   MARKETPLACES=$(mise x -- claude plugin marketplace list --json | mise x -- jq -r '.[].name') || MARKETPLACES=''
   for SCOPE in user project; do
-    WANTED=$(mise x -- yq -p toml -o yaml ".claude.plugins.${SCOPE} // {} | to_entries | .[] | .key + \"|\" + .value" "${VALUES}")
+    WANTED=$(mise x -- yq -p toml -o yaml ".tools.claude.plugins.${SCOPE} // {} | to_entries | .[] | .key + \"|\" + .value" "${VALUES}")
     while IFS='|' read -r PLUGIN SOURCE; do
       [[ -n "${PLUGIN}" ]] || continue
       grep -Fqx "${PLUGIN}|${SCOPE}" <<< "${INSTALLED}" && continue

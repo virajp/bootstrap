@@ -139,9 +139,6 @@ func NewEnvs(side source.Side, selected []string, r *selection.Resolved, shown s
 				envs = strings.Join(mt.Envs, ",")
 			}
 			line := mt.Name + " " + envs
-			for _, d := range mt.Depends {
-				line += " " + d
-			}
 			entries = append(entries, entry{tool, line})
 			found[mt.Name] = append(found[mt.Name], mt.RequiresFound...)
 		}

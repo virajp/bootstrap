@@ -18,8 +18,8 @@ import (
 )
 
 // file is `_ss_file`: it syncs one file of the plan. The steps are the real
-// path of the target, the seed gate, `requires`, the unblock, the mode of the
-// `.ssh` folder, the render or the copy, the parse check, the merge, and the
+// path of the target, the seed gate, `requires`, the unblock, the
+// `dir_perm` of the folder, the render or the copy, the parse check, the merge, and the
 // compare and the write. A generated file with a missing `requires` leaves
 // the handled targets, so the stale rule removes a listed copy. It sets the
 // change flag for a change on disk, and adds the manifest row of a generated
@@ -93,8 +93,16 @@ func (s *state) file(it planItem) fail.Code {
 			return fail.Other
 		}
 	}
-	if strings.HasPrefix(it.target, ".ssh/") && s.sshFolder() != fail.OK {
-		return fail.Other
+	fe := s.entry(it.tool, it.target)
+	if fe != nil && fe.DirPerm != 0 {
+		dir := target.Dirname(it.target)
+		changed, code := s.e.DirPerm(s.home+"/"+dir, tilde+"/"+dir, fe.DirPerm, s.dirDone)
+		if code != fail.OK {
+			return code
+		}
+		if changed {
+			s.changed = true
+		}
 	}
 	// The temp file is next to the real path, so the final rename is atomic.
 	tmp, err := s.e.Temps.Create(destdir)
@@ -126,10 +134,12 @@ func (s *state) file(it planItem) fail.Code {
 		return rc
 	}
 
-	// The target takes the mode of its source, also when it exists already;
-	// an existing merge target keeps its own.
+	// The target takes its `perm`, else the mode of its source, also when it
+	// exists already; an existing merge target without `perm` keeps its own.
 	var mode os.FileMode
-	if it.mode == "merge" && exists(real) {
+	if fe != nil && fe.Perm != 0 {
+		mode = fe.Perm
+	} else if it.mode == "merge" && exists(real) {
 		mode, _ = target.Mode(real)
 	} else {
 		mode, _ = target.Mode(src)
@@ -243,40 +253,6 @@ func (s *state) renderTemplate(tool, src, tmp string) bool {
 func (s *state) gomplateError(msg string) {
 	fmt.Fprintf(s.stderr, `{"time":"%s","level":"ERROR","msg":"","err":%s}`+"\n",
 		time.Now().Format("2006-01-02T15:04:05.999999Z07:00"), source.JSON(msg))
-}
-
-// sshFolder is `_ss_ssh_folder`: it keeps the folder ~/.ssh at mode 700,
-// once in each run. The check reads the path in the home folder, not the real
-// path of a linked file, and `/.` reads the target when the folder is a link.
-// After a failed chmod it stays not done, so each later target below `.ssh/`
-// also fails.
-func (s *state) sshFolder() fail.Code {
-	if s.sshDone {
-		return fail.OK
-	}
-	dir, show := s.home+"/.ssh", tilde+"/.ssh"
-	if isDir(dir) {
-		if mode, err := target.Mode(dir + "/."); err == nil && mode == 0o700 {
-			s.sshDone = true
-			return fail.OK
-		}
-	} else if s.e.DryRun {
-		s.sshDone = true
-		return fail.OK
-	}
-	if s.e.DryRun {
-		s.sshDone = true
-		s.r.Outcome(report.Changed, show, "", "would chmod 700 "+show)
-		return fail.OK
-	}
-	if os.MkdirAll(dir, 0o777) != nil || os.Chmod(dir, 0o700) != nil {
-		s.r.Outcome(report.Failed, show, "cannot chmod", "cannot chmod "+show)
-		return fail.Other
-	}
-	s.sshDone = true
-	s.r.Outcome(report.Changed, show, "", "chmod 700  "+show)
-	s.changed = true
-	return fail.OK
 }
 
 // copyFile is `cp -- <src> <dst>` into an existing <dst>: the content only.

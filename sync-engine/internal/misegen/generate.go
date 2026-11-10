@@ -46,6 +46,14 @@ type Generator struct {
 	// Ships tells if <tool> has an entry for the target <path> (repo). Nil:
 	// no tool ships a mise file.
 	Ships func(tool, path string) bool
+	// Index and Tools are the clone and the selected tools: the generator
+	// computes the `depends` of each mise tool from them. Nil: no depends.
+	Index *source.Index
+	Tools []string
+	// Derived holds the `mise` and `mise_env` tables that the derive script
+	// of a tool gives. They merge into the mise config of the tool before
+	// [overrides.mise].
+	Derived map[string]*source.Obj
 
 	work string
 }
@@ -232,11 +240,10 @@ func readTabs(line string) (a, b, c string) {
 
 // Render is `_se_mise_render`: it generates the mise config of <tool> into
 // <confd>/<tool>/. Repo: one mise.<env>.toml for each selected environment
-// with content. Macos: one mise.toml. <aliases> holds `<name>=<command>` lines
-// for [shell_alias] of dev (repo only). It gives the written files as
+// with content. Macos: one mise.toml. It gives the written files as
 // `<tool>/<name>` (_SE_MISE_WRITTEN), also after a failure. A failure writes
 // nothing more for this tool, and the existing files of the tool stay.
-func (g *Generator) Render(tool, confd string, aliases []string) ([]string, error) {
+func (g *Generator) Render(tool, confd string) ([]string, error) {
 	if err := checkSide(g.Side); err != nil {
 		return nil, err
 	}
@@ -258,7 +265,7 @@ func (g *Generator) Render(tool, confd string, aliases []string) ([]string, erro
 	var written []string
 	if g.Side == source.Macos {
 		note := "# override: " + MacosValues
-		body, full, err := g.generate(src, g.Values, "", "1", "", note, file)
+		body, full, err := g.generate(tool, src, g.Values, "", "1", note, file)
 		if err != nil {
 			return nil, err
 		}
@@ -282,7 +289,7 @@ func (g *Generator) Render(tool, confd string, aliases []string) ([]string, erro
 		if g.Envs.In(tool, env) {
 			in = "1"
 		}
-		body, full, err := g.generate(src, g.Values, env, in, strings.Join(aliases, "\n"), note, file)
+		body, full, err := g.generate(tool, src, g.Values, env, in, note, file)
 		if err != nil {
 			return written, err
 		}
@@ -348,7 +355,7 @@ func (g *Generator) OwnConfig(confd string, tools []string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	body, full, err := g.generate(src, "", "", "1", "", "", MacosValues)
+	body, full, err := g.generate("", src, "", "", "1", "", MacosValues)
 	if err != nil || !full {
 		return nil, err
 	}
@@ -525,12 +532,12 @@ func equalPaths(a, b map[string]bool) bool {
 // `[overrides]` of <values> applied (empty: the own config, no overrides).
 // Each line that an override changed gets the comment <note>. <full> is true
 // when the output has content. The error (code 2) names <shown>.
-func (g *Generator) generate(src, values, env, in, aliases, note, shown string) (body []byte, full bool, err error) {
+func (g *Generator) generate(tool, src, values, env, in, note, shown string) (body []byte, full bool, err error) {
 	ctx := map[string]any{}
 	own := "1"
 	var terr error
 	if t, err := readTOMLFile(src); err == nil {
-		ctx["t"] = t
+		ctx["t"] = g.extend(tool, env, t)
 	} else {
 		terr = err
 	}
@@ -549,12 +556,11 @@ func (g *Generator) generate(src, values, env, in, aliases, note, shown string) 
 	var out []byte
 	if terr == nil {
 		out, terr = tmpl.Render("<arg>", []byte(miseTemplate), ctx, &tmpl.Options{Env: g.envWith(map[string]string{
-			"BOOTSTRAP_MISE_SIDE":        string(g.Side),
-			"BOOTSTRAP_MISE_OWN":         own,
-			"BOOTSTRAP_MISE_ENV":         env,
-			"BOOTSTRAP_MISE_ENVS":        miseEnvs,
-			"BOOTSTRAP_MISE_IN":          in,
-			"BOOTSTRAP_MISE_DEV_ALIASES": aliases,
+			"BOOTSTRAP_MISE_SIDE": string(g.Side),
+			"BOOTSTRAP_MISE_OWN":  own,
+			"BOOTSTRAP_MISE_ENV":  env,
+			"BOOTSTRAP_MISE_ENVS": miseEnvs,
+			"BOOTSTRAP_MISE_IN":   in,
 		})})
 	}
 	if terr != nil {

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# The derive script of the git tool. The sync runs it in the root of the
+# repository, and never copies it. It prints the values of the branch model:
+# branch_pair is true when the repository has both main and develop. A
+# [tasks] entry with `when = "git.branch_pair"` (or "!git.branch_pair")
+# applies to one branch model only.
+
+set -euo pipefail
+
+# Read stdin, so the writer of the input never blocks.
+cat > /dev/null
+
+# A branch that exists here or on origin.
+branch_exists() {
+  git show-ref --verify --quiet "refs/heads/$1" ||
+    git show-ref --verify --quiet "refs/remotes/origin/$1"
+}
+
+pair=false
+if branch_exists main && branch_exists develop; then
+  pair=true
+fi
+printf '{"branch_pair": %s}\n' "${pair}"

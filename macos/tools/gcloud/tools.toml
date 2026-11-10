@@ -1,9 +1,9 @@
 # The gcloud tool.
 
+depends = [ "python" ]
 description = "The Google Cloud CLI (gcloud) and its env"
 
 [mise.tools.gcloud]
-depends = [ "python", "uv" ]
 version = "latest"
 
 [mise.env]

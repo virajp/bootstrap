@@ -125,24 +125,6 @@ var repoCases = []repoCase{
 	{name: "depends-cycle", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"b\" ]\n", "repo/tools/b/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"a\" ]\n"}, values: repoValues},
 	{name: "depends-unknown", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"zzz\" ]\n"}, values: repoValues},
 	{name: "depends-not-list", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\" ]\ndepends = \"b\"\n"}, values: repoValues},
-	{name: "mise-depends", over: tree{
-		"repo/tools/a/tools.toml": rt("[mise.tools.ta]\nversion = \"1\"\ndepends = [ \"tb\" ]\n"),
-		"repo/tools/b/tools.toml": rt("[mise.tools.tb]\nversion = \"1\"\n"),
-	}, values: repoValues},
-	{name: "mise-depends-string", over: tree{
-		"repo/tools/a/tools.toml": rt("[mise.tools.ta]\nversion = \"1\"\ndepends = \"tb\"\nenvs = [ \"dev\" ]\n"),
-		"repo/tools/b/tools.toml": rt("[mise.tools.tb]\nversion = \"1\"\n"),
-	}, values: repoValues},
-	{name: "mise-depends-empty-envs", over: tree{
-		"repo/tools/a/tools.toml": rt("[mise.tools.ta]\nversion = \"1\"\nenvs = []\ndepends = [ \"zz\", \"tb\" ]\n"),
-		"repo/tools/b/tools.toml": rt("[mise.tools.tb]\nversion = \"1\"\n"),
-	}, values: repoValues},
-	{name: "mise-depends-empty-envs-one", over: tree{
-		"repo/tools/a/tools.toml": rt("[mise.tools.ta]\nversion = \"1\"\nenvs = []\ndepends = \"tb\"\n"),
-		"repo/tools/b/tools.toml": rt("[mise.tools.tb]\nversion = \"1\"\n"),
-	}, values: repoValues},
-	{name: "mise-depends-none", over: tree{"repo/tools/a/tools.toml": rt("[mise.tools.ta]\nversion = \"1\"\ndepends = [ \"zz\" ]\n")}, values: repoValues},
-	{name: "mise-depends-self", over: tree{"repo/tools/a/tools.toml": rt("[mise.tools.ta]\nversion = \"1\"\n[mise.tools.tz]\nversion = \"1\"\ndepends = [ \"ta\" ]\n")}, values: repoValues},
 	{name: "mise-dup", over: tree{
 		"repo/tools/a/tools.toml": rt("[mise.tools.ta]\nversion = \"1\"\n"),
 		"repo/tools/b/tools.toml": rt("[mise.tools.ta]\nversion = \"2\"\n"),

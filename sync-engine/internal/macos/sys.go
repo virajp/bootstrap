@@ -98,14 +98,6 @@ func gitHead(dir string) string {
 	return out
 }
 
-// loginShell is `_ss_login_shell`: the login shell as dscl reports it, or ""
-// when dscl cannot tell.
-func (s *state) loginShell() string {
-	out, _ := output("", "dscl", ".", "-read", s.getenv("HOME"), "UserShell")
-	return out
-}
-
-// bootstrap is `_ss_bootstrap`: `mise bootstrap --yes` in $HOME. It gives 1,
 // after a message, when it fails.
 func (s *state) bootstrap() fail.Code {
 	s.log("running mise bootstrap --yes")

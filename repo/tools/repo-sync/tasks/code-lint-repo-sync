@@ -52,11 +52,12 @@ esac
 
 print_header "Validating .config/bootstrap.toml ..."
 
-# The check needs no clone of its own: it reads only the values file and the
-# local git repository. The gate reads the sync code of the shared cache without
-# its lock, and it never clones. A fetch at the same time is rare, and the next
-# commit runs the gate again.
-unset BOOTSTRAP_CLONE REPO_SYNC_CLONE
+# The check needs no clone of its own: it reads the values file, the local git
+# repository, and the check scripts of the tools in the shared cache. The gate
+# reads the cache without its lock, and it never clones. A fetch at the same
+# time is rare, and the next commit runs the gate again.
+unset REPO_SYNC_CLONE
+export BOOTSTRAP_CLONE="${repo}"
 # shellcheck source=/dev/null
 source "${lib}"
 repo_sync --check

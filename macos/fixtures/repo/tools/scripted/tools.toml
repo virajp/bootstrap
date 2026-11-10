@@ -1,0 +1,11 @@
+# The scripted tool of the fixture repo: a derive, a check and an after script.
+
+description = "a tool with scripts"
+
+[defaults]
+word = "default"
+
+# The files of the tool, below files/.
+[files.".config/scripted/values.txt"]
+mode = "template"
+source = ".config/scripted/values.txt.tmpl"
