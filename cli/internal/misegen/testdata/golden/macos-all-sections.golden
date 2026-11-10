@@ -8,16 +8,16 @@ render mtest: rc=0
 # The next sync writes it again, and each change in this file is lost.
 
 [bootstrap]
-  [bootstrap.packages]
-    brew = "a"
+[bootstrap.packages]
+brew = "a"
 
 [env]
-  X = "a"
+X = "a"
 
 [shell_alias]
-  ll = "ls -l"
+ll = "ls -l"
 
 [tools]
-  fd = "latest"
+fd = "latest"
 
 --- end
