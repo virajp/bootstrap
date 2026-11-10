@@ -22,7 +22,7 @@ mise use -g github:virajp/bootstrap
 | `bootstrap add <tool…>`          | Add the tools and their dependencies, then sync.                                 |
 | `bootstrap remove <tool…>`       | Remove the tools and the dependencies that no tool needs, then sync.             |
 | `bootstrap replace <old> <new>`  | Move from one tool to another with the same parent, then sync.                   |
-| `bootstrap list`, `bootstrap ls` | List the selected tools, with the reason of each one.                            |
+| `bootstrap list`, `bootstrap ls` | List the selected tools as a tree of packs, tools and dependencies.              |
 | `bootstrap --version`            | Print the version.                                                               |
 | `bootstrap mac <command>`        | The same commands for the Mac, with `macos.toml`.                                |
 

@@ -2970,9 +2970,10 @@ CASE_CALL=sync_jobs run_case "sync --jobs 1" 0 'environments = [ "dev" ]' '' 'Dr
 questions_none() { "$bin" questions --json; }
 CASE_CALL=questions_none run_case "questions --json without questions" 0 'environments = [ "dev" ]' '' '[]'
 list_base() { "$bin" list; }
-CASE_CALL=list_base run_case "list: a dependency" 0 'environments = [ "dev" ]' '' 'dependency of pre-commit'
+CASE_CALL=list_base run_case "list: a dependency below its tool" 0 'environments = [ "dev" ]' '' '│   └── python'
+CASE_CALL=list_base run_case "list: the root of a pack" 0 'environments = [ "dev" ]' '' 'base (pack)'
 ls_base() { "$bin" ls; }
-CASE_CALL=ls_base run_case "ls: a required tool" 0 'environments = [ "dev" ]' '' 'pack base; required'
+CASE_CALL=ls_base run_case "ls: a required tool" 0 'environments = [ "dev" ]' '' '[required]'
 
 # The selection commands: detect, add, remove and replace. Each case first
 # syncs and commits the consumer, so a command starts from a clean work tree.
