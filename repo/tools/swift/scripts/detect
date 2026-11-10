@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# The detect script of the swift tool. bootstrap detect runs it in the root of
+# the repository, and never copies it. It prints one JSON object: the result
+# (match, none or mismatch), the evidence (config files, never lock files) and
+# a message.
+
+set -euo pipefail
+cat > /dev/null
+
+# Print the result as JSON: <result> <message> [evidence...].
+emit() {
+  local result=$1 message=$2 sep="" e
+  shift 2
+  printf '{ "result": "%s", "evidence": [' "$result"
+  for e in "$@"; do
+    printf '%s"%s"' "$sep" "$e"
+    sep=", "
+  done
+  printf '], "message": "%s" }\n' "$message"
+}
+
+found=()
+[ -f Package.swift ] && found+=(Package.swift)
+for p in *.xcodeproj; do
+  [ -d "$p" ] && found+=("$p")
+done
+if [ ${#found[@]} -gt 0 ]; then
+  emit match "a Swift package or an Xcode project exists" "${found[@]}"
+else
+  emit none "no Package.swift and no *.xcodeproj"
+fi

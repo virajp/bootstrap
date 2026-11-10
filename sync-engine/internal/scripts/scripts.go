@@ -1,6 +1,6 @@
-// Package scripts runs the scripts of a tool: the files `derive`, `check`
-// and `after` in `<side>/tools/<tool>/scripts/` of the clone. The engine
-// never copies them. Each one runs as `mise x -- bash <path>` in the target
+// Package scripts runs the scripts of a tool: the files `derive`, `check`,
+// `after`, `detect` and `migrate-<tool>` in `<side>/tools/<tool>/scripts/` of
+// the clone. The engine never copies them. Each one runs as `mise x -- bash <path>` in the target
 // root, with one JSON object on stdin. The jobs run in parallel, and the
 // results come back in the order of the jobs.
 // Contract: docs/design/sync-engine.md ("The scripts of a tool").
@@ -27,6 +27,7 @@ const (
 	Derive = "derive"
 	Check  = "check"
 	After  = "after"
+	Detect = "detect"
 )
 
 // Dir is the folder of the scripts in a tool folder.

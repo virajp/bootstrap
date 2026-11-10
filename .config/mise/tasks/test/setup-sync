@@ -815,7 +815,7 @@ case_scripts_after() {
 }
 
 bad_derive() { printf '%s\n' 'cat > /dev/null' 'echo nope' > "$work/tools/scripted/scripts/derive"; }
-unknown_script() { printf '%s\n' 'x' > "$work/tools/scripted/scripts/detect"; }
+unknown_script() { printf '%s\n' 'x' > "$work/tools/scripted/scripts/build"; }
 
 # ---- init stage ---------------------------------------------------------------
 
@@ -1940,6 +1940,52 @@ case_init_nothing() {
   check_output "Nothing to change"
 }
 
+# The selection commands of the Mac side.
+case_mac_detect() {
+  use_config ok
+  mac_run detect --no-bootstrap
+  check_exit 0
+  check_output "No Mac tool has a detect script"
+}
+
+case_mac_add() {
+  use_config ok
+  run_real
+  commit_config
+  mac_run add --yes --no-bootstrap merger
+  check_exit 0
+  check_output "select merger"
+  check "merger is selected" grep -qxF '[tools.merger]' "$values"
+}
+
+case_mac_remove() {
+  use_config ok
+  run_real
+  check "opt synced" test -f "$home/.config/opt/opt.txt"
+  commit_config
+  mac_run remove --yes --no-bootstrap opt
+  check_exit 0
+  check "opt is not selected" not grep -qF '[tools.opt]' "$values"
+  check "the file of opt is gone" test ! -e "$home/.config/opt/opt.txt"
+}
+
+case_mac_remove_refused() {
+  use_config ok
+  mac_run remove --yes --no-bootstrap mise
+  check_exit 2
+  check_output "tool mise is required - bootstrap mac remove cannot remove it"
+  mac_run remove --yes --no-bootstrap merger
+  check_exit 2
+  check_output "tool merger is not selected"
+}
+
+case_mac_replace_refused() {
+  use_config ok
+  mac_run replace --yes --no-bootstrap opt merger
+  check_exit 2
+  check_output "bootstrap mac replace works only between two tools with the same parent"
+}
+
 # ---- the cases ----------------------------------------------------------------
 
 run_case "config: a missing config folder" case_config_missing
@@ -2022,7 +2068,7 @@ run_case "scripts: the derive values and mise table" case_scripts_derive
 run_case "scripts: a check that fails stops the run" case_scripts_check
 run_case "scripts: an after script asks for a restart" case_scripts_after
 run_case "scripts: a derive output that is not JSON" expect scripted 2 "macos/tools/scripted/scripts/derive did not print a JSON object" bad_derive
-run_case "scripts: a file of scripts/ that is not a script" expect scripted 2 "scripts/detect is not a script of a tool" unknown_script
+run_case "scripts: a file of scripts/ that is not a script" expect scripted 2 "scripts/build is not a script of a tool" unknown_script
 run_case "ssh folder: a new folder" case_ssh_new
 run_case "ssh folder: an existing folder with another mode" case_ssh_existing
 run_case "ssh folder: a linked file below the folder" case_ssh_link
@@ -2056,6 +2102,11 @@ run_case "merge: the old key remove" expect merge 2 'macos/tools/merger/tools.to
 
 run_case "questions: sync stops on a question without an answer" case_question_missing
 run_case "questions: mac questions, --json and text" case_questions_json
+run_case "selection: mac detect without a detect script" case_mac_detect
+run_case "selection: mac add" case_mac_add
+run_case "selection: mac remove" case_mac_remove
+run_case "selection: mac remove refuses a required tool and a tool that is not selected" case_mac_remove_refused
+run_case "selection: mac replace refuses tools without the same parent" case_mac_replace_refused
 run_case "init: --answer answers a question, then the sync" case_init_answer
 run_case "init: --yes and a question without an answer" case_init_yes_missing
 run_case "init: no --yes and no terminal" case_init_no_yes

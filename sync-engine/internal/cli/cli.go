@@ -1,5 +1,5 @@
 // Package cli is the command line of `bootstrap`: the commands init, sync,
-// check and questions of the repo side and of the Mac side (`bootstrap mac
+// check, questions, add, remove, replace and detect of the repo side and of the Mac side (`bootstrap mac
 // <command>`), and version. It does the steps that each command shares: the
 // preflight, the clone and its lock, the version check, the change list, the
 // clean-target rule and the consent. The front-ends internal/repo and
@@ -37,20 +37,34 @@ commands:
   check                examine the values file of the repository
   questions [tool...]  list the questions of the tools, with their proposals
                        and their answers
+  add <tool...>        select the tools and their dependencies, ask their
+                       questions, then sync
+  remove <tool...>     remove the tools and the dependencies that no other
+                       tool needs, then sync
+  replace <old> <new>  run the migrate script of <new> for <old>, swap the
+                       tools, then sync
+  detect               run the detect scripts, and offer to add each tool
+                       that matches
   mac init [tool...]   init for the Mac, in the current folder (the
                        repository of macos.toml)
   mac sync             sync the Mac from MACOS_SETUP_REPO_PATH
   mac check            show what mac sync changes, and write nothing
   mac questions [tool...]
                        the questions of the Mac tools
+  mac add, mac remove, mac replace, mac detect
+                       the selection commands for macos.toml
   version              print the version
 
 flags:
-  --dry-run            init, sync, mac init, mac sync: show the changes, and
-                       write nothing
-  --yes, -y            init, mac init: write the changes without a prompt
+  --dry-run            init, sync, add, remove, replace, detect: show the
+                       changes, and write nothing
+  --yes, -y            init, add, remove, replace, detect: write the changes
+                       without a prompt; detect: add each matched tool
+  --no                 detect: add nothing; a matched tool that is not
+                       selected exits 1
   --answer <tool>.<key>=<value>
-                       init, mac init: the answer of a question (repeatable)
+                       init, add, replace, detect: the answer of a question
+                       (repeatable)
   --json               questions, mac questions: JSON output
   --no-bootstrap       mac init, mac sync, mac check: skip mise bootstrap
   --jobs <n>           the jobs at a time (default: 2 x the CPU count)
@@ -69,9 +83,10 @@ type app struct {
 
 // opts are the flags and the arguments of a command.
 type opts struct {
-	dryRun, yes, json, noBootstrap, help bool
-	answers                              []string
-	names                                []string
+	dryRun, yes, no, json, noBootstrap, help bool
+	confirmed                                bool // The user said yes to the changes at a prompt.
+	answers                                  []string
+	names                                    []string
 }
 
 // Run runs the command of <args> and gives its exit code.
@@ -107,6 +122,10 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		"sync":      "dry-run jobs",
 		"check":     "jobs",
 		"questions": "json",
+		"add":       "dry-run yes answer jobs",
+		"remove":    "dry-run yes jobs",
+		"replace":   "dry-run yes answer jobs",
+		"detect":    "dry-run yes no answer jobs",
 		"version":   "",
 	}
 	flags, ok := allowed[cmd]
@@ -129,7 +148,8 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 	if mac && cmd != "questions" {
 		flags += " no-bootstrap"
 	}
-	o, err := parse(rest, flags, cmd == "init" || cmd == "questions")
+	takesNames := cmd == "init" || cmd == "questions" || cmd == "add" || cmd == "remove" || cmd == "replace"
+	o, err := parse(rest, flags, takesNames)
 	if err != nil {
 		a.errorf("%s", err)
 		fmt.Fprint(stderr, Usage)
@@ -138,6 +158,11 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 	if o.help {
 		fmt.Fprint(stdout, Usage)
 		return fail.OK
+	}
+	if (cmd == "add" || cmd == "remove") && len(o.names) == 0 {
+		a.errorf("%s needs at least one tool", cmdName(mac, cmd))
+		fmt.Fprint(stderr, Usage)
+		return fail.Usage
 	}
 	switch cmd {
 	case "version":
@@ -149,6 +174,14 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		return a.check(mac, o)
 	case "init":
 		return a.init(mac, o)
+	case "add":
+		return a.add(mac, o)
+	case "remove":
+		return a.remove(mac, o)
+	case "replace":
+		return a.replace(mac, o)
+	case "detect":
+		return a.detect(mac, o)
 	default:
 		return a.questions(mac, o)
 	}
@@ -197,6 +230,8 @@ func parse(args []string, flags string, names bool) (opts, error) {
 			o.dryRun = true
 		case "yes":
 			o.yes = true
+		case "no":
+			o.no = true
 		case "json":
 			o.json = true
 		case "no-bootstrap":
