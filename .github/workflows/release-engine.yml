@@ -1,18 +1,19 @@
 # The release of the Go sync engine. See docs/design/cli.md ("The
 # release of the engine").
 #
-# A signed tag cli-vX.Y.Z on main starts the workflow. It builds the engine
+# A signed tag bootstrap@X.Y.Z on main starts the workflow. It builds the engine
 # for macOS arm64, attaches the binary and its checksum to the GitHub release
-# cli-vX.Y.Z, and as the last step commits cli/VERSION = X.Y.Z on main.
-# Thus the pin moves only after a successful release. The prefix cli- keeps
-# the other tags of the repository free for other uses.
+# bootstrap@X.Y.Z, and as the last step commits cli/VERSION = X.Y.Z on main.
+# Thus the pin moves only after a successful release. The prefix bootstrap@
+# keeps the other tags of the repository free for other uses, and mise removes
+# it, because it is the name of the repository.
 
 name: release-engine
 
 on:
   push:
     tags:
-      - "cli-v*.*.*"
+      - "bootstrap@*.*.*"
 
 permissions: {}
 
@@ -41,8 +42,8 @@ jobs:
       - name: Examine the tag
         id: tag
         run: |
-          if [[ ! "${GITHUB_REF_NAME}" =~ ^cli-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            echo "::error::The tag ${GITHUB_REF_NAME} is not cli-vMAJOR.MINOR.PATCH."
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^bootstrap@(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::The tag ${GITHUB_REF_NAME} is not bootstrap@MAJOR.MINOR.PATCH."
             exit 1
           fi
           commit=$(git rev-parse "${GITHUB_REF}^{commit}")
@@ -50,7 +51,7 @@ jobs:
             echo "::error::The commit ${commit} of the tag ${GITHUB_REF_NAME} is not on main."
             exit 1
           fi
-          echo "version=${GITHUB_REF_NAME#cli-v}" >> "${GITHUB_OUTPUT}"
+          echo "version=${GITHUB_REF_NAME#bootstrap@}" >> "${GITHUB_OUTPUT}"
 
       - name: Install Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0

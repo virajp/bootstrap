@@ -81,27 +81,28 @@ The group `mac` names the Mac side. Thus a folder with both `macos.toml` and
 `.config/bootstrap.toml` has no doubt. Each command without `mac` is for the
 repository of the current folder.
 
-| Command               | Job                                                                                                                                                  |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `init [tool…]`        | Selects `base` and the named tools, migrates an old form, asks each question without an answer, then syncs. See [`init`](#init).                     |
-| `sync`                | The sync of the side. `setup:configs` and `updateall:configs` run it.                                                                                |
-| `check`               | Examines the values file and runs the check scripts. On the Mac, a dry run of the sync.                                                              |
-| `questions [tool…]`   | Lists the questions, their proposals and their answers. Without names, the questions of the selected tools. `--json` prints one JSON array.          |
-| `add <tool…>`         | Selects the tools and their dependencies, asks their questions, then syncs.                                                                          |
-| `remove <tool…>`      | Removes the tools, and each dependency that the user named and that no other tool needs, then syncs. Each seed of a removed tool stays, with a line. |
-| `replace <old> <new>` | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                              |
-| `detect`              | Runs the detect scripts, and offers to add each tool that matches. See [`detect`](#detect).                                                          |
-| `version`             | Prints the version. There is no `mac version`.                                                                                                       |
+| Command                | Job                                                                                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init [tool…]`         | Selects `base` and the named tools, migrates an old form, asks each question without an answer, then syncs. See [`init`](#init).                        |
+| `sync`                 | The sync of the side. `setup:configs` and `updateall:configs` run it.                                                                                   |
+| `check`                | Examines the values file and runs the check scripts. On the Mac, a dry run of the sync.                                                                 |
+| `questions [tool…]`    | Lists the questions, their proposals and their answers. Without names, the questions of the selected tools. `--json` prints one JSON array.             |
+| `add <tool…>`          | Selects the tools and their dependencies, asks their questions, then syncs.                                                                             |
+| `remove <tool…>`       | Removes the tools, and each dependency that the user named and that no other tool needs, then syncs. Each seed of a removed tool stays, with a line.    |
+| `replace <old> <new>`  | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                                 |
+| `detect`               | Runs the detect scripts, and offers to add each tool that matches. See [`detect`](#detect).                                                             |
+| `list`, `ls`           | Lists each selected tool, sorted, with the reasons of its selection: `tools`, `pack <name>`, `dependency of <tools>` and `required`. It writes nothing. |
+| `version`, `--version` | Prints the version. There is no `mac version`.                                                                                                          |
 
-| Flag                            | Commands                                             | Effect                                                                 |
-| ------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------- |
-| `--dry-run`                     | `init`, `sync`, `add`, `remove`, `replace`, `detect` | Prints the change list, and writes nothing.                            |
-| `--yes`, `-y`                   | `init`, `add`, `remove`, `replace`, `detect`         | Writes the changes without a prompt. `detect`: adds each matched tool. |
-| `--no`                          | `detect`                                             | Adds nothing. A matched tool that is not selected exits 1.             |
-| `--answer <tool>.<key>=<value>` | `init`, `add`, `replace`, `detect`                   | The answer of a question. The flag can repeat.                         |
-| `--json`                        | `questions`                                          | JSON output, for an AI agent.                                          |
-| `--no-bootstrap`                | each `mac` command except `questions`                | Skips each `mise bootstrap` step.                                      |
-| `--jobs <n>`                    | each command except `questions` and `version`        | The jobs at a time. The default is 2 × the CPU count.                  |
+| Flag                            | Commands                                              | Effect                                                                 |
+| ------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------- |
+| `--dry-run`                     | `init`, `sync`, `add`, `remove`, `replace`, `detect`  | Prints the change list, and writes nothing.                            |
+| `--yes`, `-y`                   | `init`, `add`, `remove`, `replace`, `detect`          | Writes the changes without a prompt. `detect`: adds each matched tool. |
+| `--no`                          | `detect`                                              | Adds nothing. A matched tool that is not selected exits 1.             |
+| `--answer <tool>.<key>=<value>` | `init`, `add`, `replace`, `detect`                    | The answer of a question. The flag can repeat.                         |
+| `--json`                        | `questions`                                           | JSON output, for an AI agent.                                          |
+| `--no-bootstrap`                | each `mac` command except `questions`                 | Skips each `mise bootstrap` step.                                      |
+| `--jobs <n>`                    | each command except `questions`, `list` and `version` | The jobs at a time. The default is 2 × the CPU count.                  |
 
 A flag that a command does not take, an unknown command, and `add` or `remove`
 without a tool name are usage errors (code 2).
@@ -324,11 +325,11 @@ version with that value.
 
 - A `VERSION` that is not `MAJOR.MINOR.PATCH` stops the command with code 5.
 - An older binary stops the command with code 2, and tells the user to run
-  `mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'`.
+  `mise use -g github:virajp/bootstrap`.
 - A build without a version, for example `dev`, is new enough.
 
-mise installs the binary with `github:virajp/bootstrap` and the option
-`version_prefix = "cli-v"`. The `mise` tool of each side has it as a mise tool.
+mise installs the binary with `github:virajp/bootstrap`. The `mise` tool of each
+side has it as a mise tool.
 See [repo.md](repo.md) and [mac.md](mac.md).
 
 ## The engine variables
@@ -962,10 +963,11 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
 
 The engine is a binary of a GitHub release of `virajp/bootstrap`. mise
 installs it with its `github:` backend:
-`mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'`. The release tags
-are `cli-vX.Y.Z`, so that other tags of the repository can have other uses. With
-the option `version_prefix = "cli-v"`, mise reads only the tags that start with
-`cli-v`, and shows the tag `cli-v2.0.0` as the version `2.0.0`. The workflow
+`mise use -g github:virajp/bootstrap`. The release tags
+are `bootstrap@X.Y.Z`, so that other tags of the repository can have other uses.
+mise removes a tag prefix that is the name of the repository, so it shows the
+tag `bootstrap@2.0.1` as the version `2.0.1`, and a command needs no option. The
+workflow
 `.github/workflows/release-engine.yml` builds the binary and makes
 the release.
 
@@ -975,7 +977,8 @@ the release.
 `main` needs. See [The version check](#the-version-check).
 
 - It has one line, `MAJOR.MINOR.PATCH`, with no `v` and no comment.
-- The tag `cli-vX.Y.Z` is the source of the version. The binary gets `X.Y.Z`
+- The tag `bootstrap@X.Y.Z` is the source of the version. The binary gets
+  `X.Y.Z`
   from
   the build, and the release workflow writes `X.Y.Z` to `VERSION`.
 - Nobody edits `VERSION` by hand. A manual change can name a version that has no
@@ -999,29 +1002,30 @@ the ruleset `all-tags` does not let you move or delete the tag.
 2. Pull `main`.
 3. Select the next version `X.Y.Z`.
 4. Make a signed tag on the commit of `main`:
-   `git tag -s cli-vX.Y.Z -m "cli-vX.Y.Z"`.
-5. Push the tag: `git push origin cli-vX.Y.Z`.
+   `git tag -s bootstrap@X.Y.Z -m "bootstrap@X.Y.Z"`.
+5. Push the tag: `git push origin bootstrap@X.Y.Z`.
 6. Monitor the run of `release-engine` in GitHub Actions.
 7. When the run is done, pull `main`. Its last commit is
    `ops: pin bootstrap X.Y.Z`.
 
 The ruleset `all-tags` requires a signed tag. The tag must be
-`cli-vMAJOR.MINOR.PATCH`, with no leading zero and no suffix.
+`bootstrap@MAJOR.MINOR.PATCH`, with no leading zero and no suffix.
 
 ### What the workflow does
 
-The workflow starts on a push of a tag `cli-v*.*.*`. Its one job runs on
+The workflow starts on a push of a tag `bootstrap@*.*.*`. Its one job runs on
 `macos-15`,
 an arm64 runner, with the permission `contents: write` only.
 
-1. It examines the tag. The tag must be `cli-vMAJOR.MINOR.PATCH`, and its commit
+1. It examines the tag. The tag must be `bootstrap@MAJOR.MINOR.PATCH`, and its
+   commit
    must be on `main`. Else the run stops.
 2. It installs the Go version of `cli/go.mod`.
 3. It builds `./cmd/bootstrap` in `cli/` for `darwin/arm64`, with
    `CGO_ENABLED=0` and `-ldflags "-X main.version=X.Y.Z"`.
 4. It runs `bootstrap version`. The output must be `X.Y.Z`.
 5. It writes the SHA-256 checksum of the binary.
-6. It creates the GitHub release `cli-vX.Y.Z` with two assets:
+6. It creates the GitHub release `bootstrap@X.Y.Z` with two assets:
    `bootstrap-darwin-arm64` and `bootstrap-darwin-arm64.sha256`.
 7. It commits `cli/VERSION` = `X.Y.Z` on `main`.
 

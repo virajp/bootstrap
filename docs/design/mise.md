@@ -513,7 +513,7 @@ This table has the mise tools of `repo/tools/` now.
 | `mise`        | `yq`                      | `latest` | dev, ci |                    |                                                    |
 | `osv-scanner` | `osv-scanner`             | `latest` | dev, ci |                    |                                                    |
 | `pre-commit`  | `pre-commit`              | `latest` | dev     | `python`, `uv`     | `env` (`PRE_COMMIT_HOME`), `shell_alias`           |
-| `mise`        | `github:virajp/bootstrap` | `latest` | dev     |                    | In `[mise_env.dev.tools]`, `version_prefix`        |
+| `mise`        | `github:virajp/bootstrap` | `latest` | dev     |                    | In `[mise_env.dev.tools]`                          |
 | `apko`        | `apko`                    | `latest` | dev, ci |                    |                                                    |
 | `aube`        | `aube`                    | `latest` | dev, ci | `node`             | `shell_alias` (`npx`)                              |
 | `bun`         | `bun`                     | `latest` | dev, ci |                    |                                                    |

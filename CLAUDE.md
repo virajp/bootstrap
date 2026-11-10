@@ -32,7 +32,8 @@ files are for this repository only:
   copies it to a consumer. It is the Go module
   `github.com/virajp/bootstrap/cli` (`go.mod`, `cmd/bootstrap/` and
   `internal/`), the CLI `bootstrap` with the commands `init`, `check`, `sync`,
-  `questions`, `detect`, `add`, `remove`, `replace` and the group `mac`. No Go
+  `questions`, `detect`, `add`, `remove`, `replace`, `list` and the group `mac`.
+  No Go
   file of the engine names a tool: `TestEngineNamesNoTool` examines this rule.
 - `docs/design/`: the contract of the sync, one place for each rule (see "Where
   the rules are"). `docs/plans/`: the vwf plan index.
@@ -42,7 +43,7 @@ files are for this repository only:
   `macos/tools/`, so no consumer gets them.
 - `.github/workflows/release-engine.yml` and `cli/VERSION`: the release
   of the Go engine and the minimum version that a clone needs. A signed tag
-  `cli-vX.Y.Z` on `main` starts the
+  `bootstrap@X.Y.Z` on `main` starts the
   release, and the workflow writes `VERSION`. Do not edit `VERSION` by hand. See
   `docs/design/cli.md` ("The release of the engine").
 - `.config/mise/tasks/vorssaint/diff`: the task `vorssaint:diff`. It compares

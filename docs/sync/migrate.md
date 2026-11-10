@@ -31,6 +31,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | `SYNC_ENGINE_` in a file or a script, or a folder `~/.cache/sync-engine/`                     | M32, after the sync.                                                                                                                                    |
 | A file or a script that names a task of the table in M33                                      | M33, after the sync.                                                                                                                                    |
 | A `setup:configs` that does not run `bootstrap sync`, or an old form that `bootstrap` reports | M34, before the next sync.                                                                                                                              |
+| `version_prefix = "cli-v"` or `version_prefix="cli-v"` in a file of the repository            | M35, before the next sync.                                                                                                                              |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -779,7 +780,7 @@ replaces `code:lint:60-repo-sync`. mise installs the CLI as
 `run bootstrap init`.
 
 The code of the CLI moved from `sync-engine/` to `cli/` of `bootstrap`, and the
-release tags are now `cli-vX.Y.Z`. The old entry task `setup:configs` reads
+release tags changed (see M35). The old entry task `setup:configs` reads
 `sync-engine/VERSION` of the clone, and installs the release `vX.Y.Z`. Thus it
 stops with an error after this release. Do the steps of this item: the old
 entry task cannot do them.
@@ -801,7 +802,7 @@ entry task cannot do them.
 1. Install the CLI:
 
    ```bash
-   mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'
+   mise use -g github:virajp/bootstrap
    ```
 
 2. If `.config/mise/tasks/setup/configs/sync` exists, delete it. This old task
@@ -821,3 +822,33 @@ entry task cannot do them.
 7. Replace each `code:lint:60-repo-sync` in the files of the repository with
    `code:lint:60-bootstrap`. Show the user each change before you write it.
 8. Commit the result. Do the same in each git submodule.
+
+## M35: The release tags are `bootstrap@X.Y.Z`
+
+The release tags of the CLI changed from `cli-vX.Y.Z` to `bootstrap@X.Y.Z`.
+mise removes a tag prefix that is the name of the repository, so a mise command
+needs no `version_prefix` now:
+
+```bash
+mise x github:virajp/bootstrap@latest -- bootstrap <command>
+```
+
+From 2.0.1, `cli/VERSION` of the clone is 2.0.1 or newer. The old entry task
+`setup:configs` has `version_prefix="cli-v"`, so it installs 2.0.0, and that
+binary stops with code 2. Do the steps of this item: the old entry task cannot
+do them.
+
+1. Commit or discard the changes of the work tree.
+2. Run the new CLI once:
+
+   ```bash
+   mise x github:virajp/bootstrap@latest -- bootstrap sync --dry-run
+   ```
+
+3. Show the user the change list. If the user agrees, run the same command
+   without `--dry-run`. The sync writes the new entry task and
+   the new mise config, with no `version_prefix`.
+4. If `version_prefix = "cli-v"` stays in a file that does not have the
+   bootstrap header, remove that line. Show the user each change before you
+   write it.
+5. Commit the result. Do the same in each git submodule.

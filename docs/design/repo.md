@@ -16,8 +16,7 @@ keys of the values file, [packs.md](packs.md), [tools.md](tools.md),
 
 The `mise` tool of `repo/tools/` ships the entry of the sync, so each
 repository has it. The tool also has the mise tool `github:virajp/bootstrap`
-in `[mise_env.dev.tools]`, with `version_prefix = "cli-v"`, because the release
-tags are `cli-vX.Y.Z`.
+in `[mise_env.dev.tools]`.
 
 | Task                     | Job                                                                                  |
 | ------------------------ | ------------------------------------------------------------------------------------ |
@@ -25,8 +24,7 @@ tags are `cli-vX.Y.Z`.
 | `code:lint:60-bootstrap` | Hidden. The gate of the values file. See [The gate](#the-gate-codelint60-bootstrap). |
 
 `setup:configs` (`setup/configs/_default`) has
-`#MISE tools."github:virajp/bootstrap"={version="latest",
-version_prefix="cli-v"}`,
+`#MISE tools."github:virajp/bootstrap"="latest"`,
 so it runs also before the
 first sync. With `BOOTSTRAP_BIN` set, it runs that file in place of the
 `bootstrap` of mise. Its order is:
