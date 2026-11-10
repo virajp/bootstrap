@@ -362,8 +362,6 @@ login shell.
   - `~/.config/fish/conf.d/fish_frozen_theme.fish` — seed
   - `~/.config/fish/config.fish` — copy
   - `~/.config/fish/functions/fish_title.fish` — seed
-- **Scripts:** `after`. When the login shell is not the shell of the
-  terminal, it asks for a new terminal, and the sync stops with exit 4.
 - **Defaults:** `login_shell`
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.bootstrap.user]`,
   `[mise.dotfiles]`
