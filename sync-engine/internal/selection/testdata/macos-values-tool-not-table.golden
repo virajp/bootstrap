@@ -1,4 +1,3 @@
-fingerprint: 7988b40e45d81e4b5c53bca037e511b60be801627d0d9ee7debe34025f7afe18
 rc=2
 --- stderr
 setup-sync: [tools.m3] in macos.toml must be a table

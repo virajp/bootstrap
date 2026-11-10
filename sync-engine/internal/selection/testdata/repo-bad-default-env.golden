@@ -1,4 +1,3 @@
-fingerprint: 3207770296ae68ad0151650c86a450e63c2ae0b05b287ac696651c2de6935d38
 rc=2
 --- stderr
 repo-sync: default_envs of repo/tools/a/tools.toml: 'qa' is not one of dev, ci

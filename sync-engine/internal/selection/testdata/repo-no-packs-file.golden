@@ -1,4 +1,3 @@
-fingerprint: ec595effb64ebe7d79c045f4433d7980d1a204294219c005d8a8c4dfe507f54e
 rc=3
 --- stderr
 repo-sync: pack 'base' is not in bootstrap

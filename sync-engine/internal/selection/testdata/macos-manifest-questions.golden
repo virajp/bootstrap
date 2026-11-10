@@ -1,4 +1,3 @@
-fingerprint: 0ea6b98c31fe78a5523c967e3cd5b0016f838106d79e5b79ff86fc06719170f0
 rc=2
 --- stderr
 setup-sync: macos/tools/m1/tools.toml: [questions.a] zz is not a key of a question - the keys are question, detect and example

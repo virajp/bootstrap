@@ -6,12 +6,16 @@ Go, with the gofmt and go vet gates.
 | ------------ | ------- |
 | Root only    | No      |
 | Depends      | None    |
+| Parent       | None    |
 | Default envs | dev, ci |
 | Seeds        | None    |
 
 ## When the tool is relevant
 
 - The repository has `go.mod` or `go.work`.
+
+`bootstrap detect` runs the detect script of the tool. It gives `match` when
+the root has a `go.mod` (see "Scripts").
 
 ## What the tool ships
 
@@ -21,13 +25,11 @@ Go, with the gofmt and go vet gates.
 | `.config/mise/tasks/code/lint/40-go`      | Synced    | The task `code:lint:40-go`.      |
 | `.config/mise/conf.d/go/mise.<env>.toml`  | Generated | The mise config of this tool.    |
 
-The VS Code extension is `golang.go`.
-
 ## mise tools
 
-| mise tool | Version  | Environments | Note |
-| --------- | -------- | ------------ | ---- |
-| `go`      | `latest` | dev, ci      |      |
+| mise tool | Version  | Environments |
+| --------- | -------- | ------------ |
+| `go`      | `latest` | dev, ci      |
 
 mise sets `GOBIN` to the folder of the active Go version, unless the
 environment already sets `GOBIN`. Thus `go install` puts its binaries there.
@@ -58,9 +60,24 @@ newer Go than the mise version, the `go` command stops with an error.
   task examines each module with a `go.mod` that git does not ignore. `--fix`
   is accepted, but `go vet` only reports.
 
-## Pre-commit hooks
+## Scripts
 
-None.
+The sync runs the scripts of the tool from the clone, and never copies them.
+
+| Script           | Kind   | Use                                   |
+| ---------------- | ------ | ------------------------------------- |
+| `scripts/detect` | detect | `match` with a `go.mod`, else `none`. |
+
+## Contributions
+
+| Tool     | Shared file               | Items       |
+| -------- | ------------------------- | ----------- |
+| `vscode` | `.vscode/extensions.json` | `golang.go` |
+
+## Values
+
+Only `env`. No questions. The keys of the values file are in
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 

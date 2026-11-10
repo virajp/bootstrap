@@ -1,19 +1,21 @@
 # The `gitleaks` tool
 
-gitleaks: the secret scanner, and `code:sec:10-gitleaks`.
+gitleaks: the secret scanner, and `code:sec:10-gitleaks`. A member of the
+`security` pack, with `default = true`. `bootstrap remove` refuses it, because
+only a pack selects it.
 
 | Property     | Value                   |
 | ------------ | ----------------------- |
 | Root only    | No                      |
 | Depends      | `_security_base`        |
+| Parent       | None                    |
 | Default envs | dev, ci                 |
 | Seeds        | `.config/gitleaks.toml` |
 
 ## When the tool is relevant
 
-Always. The `base` pack always adds this tool, through the `security` pack.
-Do not select it in the values file. A `[tools.gitleaks]` table gives
-values.
+Always. The `base` pack adds this tool, through the `security` pack. Do not
+select it in the values file. A `[tools.gitleaks]` table gives values.
 
 ## What the tool ships
 
@@ -35,11 +37,20 @@ values.
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `code:sec:10-gitleaks` | Scan the files that git knows for secrets. `--staged` scans only the staged changes. `--debug` adds `--verbose`. |
 
-`code:sec` runs this task.
+`code:sec` of the `mise` tool runs this task.
 
-## Pre-commit hooks
+## Scripts
 
-None. The `sec` hook of `_security_base` runs this task.
+None.
+
+## Contributions
+
+None. The `sec` hook of `_security_base` runs `code:sec`, which runs this
+task.
+
+## Values
+
+Only `env`. No questions.
 
 ## Files the repository supplies
 
@@ -53,5 +64,5 @@ None.
 
 ## Migration
 
-- Remove `gitleaks` from the repository-owned mise files.
+- Remove `gitleaks` from the mise files of the repository.
 - Remove an old `gitleaks` hook (M12 of `migrate.md`).

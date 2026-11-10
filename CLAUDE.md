@@ -7,18 +7,19 @@ code in this repository.
 
 This repository is the source of shared files for other repositories. Its only
 application code is the sync engine in `sync-engine/`: the Go module of the
-engine, the CLI `bootstrap`. Its tests are
-`test:repo-sync`,
-`test:setup-sync`, `test:macos-tools` and `test:go`, and the task `test` runs
-each test task (see "Tests").
+engine, the CLI `bootstrap`. Its tests are `test:repo`, `test:mac`,
+`test:macos-tools` and `test:go`, and the task `test` runs each test task (see
+"Tests").
 Other repositories copy files from it with their own `setup:configs` task. Read
 `docs/design/index.md` for the contract of the sync.
 
 ## Layout rule
 
 The shared files of a repository are in `repo/tools/<tool>/`, one folder for
-each tool: a `tools.toml`, the config files in `files/` and the task files in
-`tasks/`. Each file has an entry in `tools.toml`. The packs are in
+each tool: a `tools.toml`, the config files and merge specs in `files/`, the
+task files in `tasks/` and the scripts in `scripts/`. Each file of `files/` and
+`tasks/` has an entry in `tools.toml`. The engine runs a script from the clone
+and never copies it. The packs are in
 `repo/packs.toml`, outside each tool folder, so the
 sync never copies it. The examples are in `repo/examples/`. The Mac tools are in
 `macos/tools/<tool>/`, one folder for
@@ -30,24 +31,24 @@ files are for this repository only:
 - `sync-engine/`: the engine of the sync. It is not a tool, so the sync never
   copies it to a consumer. It is the Go module
   `github.com/virajp/bootstrap/sync-engine` (`go.mod`, `cmd/bootstrap/` and
-  `internal/`), with the front-ends `bootstrap sync` and
-  `bootstrap mac sync`. The Go engine replaced
-  the bash engine, and it keeps each output line, file and exit code of the
-  bash engine.
+  `internal/`), the CLI `bootstrap` with the commands `init`, `check`, `sync`,
+  `questions`, `detect`, `add`, `remove`, `replace` and the group `mac`. No Go
+  file of the engine names a tool: `TestEngineNamesNoTool` examines this rule.
 - `docs/design/`: the contract of the sync, one place for each rule (see "Where
   the rules are"). `docs/plans/`: the vwf plan index.
-- `.config/mise/tasks/test/`: the tasks `test:repo-sync` (`repo-sync`),
-  `test:setup-sync` (`setup-sync`), `test:macos-tools` (`macos-tools`),
+- `.config/mise/tasks/test/`: the tasks `test:repo` (`repo`), `test:mac`
+  (`mac`), `test:macos-tools` (`macos-tools`),
   `test:go` (`go`) and `test` (`_default`). They are not in `repo/tools/` or
   `macos/tools/`, so no consumer gets them.
 - `.github/workflows/release-engine.yml` and `sync-engine/VERSION`: the release
-  of the Go engine and its pin. A signed tag `vX.Y.Z` on `main` starts the
+  of the Go engine and the minimum version that a clone needs. A signed tag
+  `vX.Y.Z` on `main` starts the
   release, and the workflow writes `VERSION`. Do not edit `VERSION` by hand. See
   `docs/design/sync-engine.md` ("The release of the engine").
 - `.config/mise/tasks/vorssaint/diff`: the task `vorssaint:diff`. It compares
   a Vorssaint backup file with the defaults of `macos/tools/vorssaint/`, and
   exits 1 when a key differs or is missing.
-- `macos/fixtures/`: the fixtures of `test:setup-sync`.
+- `macos/fixtures/`: the fixtures of `test:mac`.
 - `macos/examples/macos.toml`: the sample values file of the Mac side, and the
   model of `test:macos-tools`. A change to a Mac tool also changes this file
   when the tool needs a value or a selection, because `test:macos-tools` fails
@@ -63,25 +64,27 @@ use them as the model of a values file, so a change to the contract of the
 values file changes the examples in the same commit.
 
 Each example has an empty `bootstrap_commit`, so a consumer that copies an
-example gets no wrong value: `repo_sync` replaces the empty line with the
-commit of its sync. `test:repo-sync` runs `bootstrap sync --dry-run` with each
+example gets no wrong value: the sync replaces the empty line with the
+commit of its sync. `test:repo` runs `bootstrap sync --dry-run` with each
 example, in a consumer with its members. That case finds an unknown tool, a
 wrong member and a wrong shape. It does not find an unknown key, because
 `bootstrap sync` accepts one.
 
 `docs/sync/` tells an AI agent how to adopt `bootstrap` in a consumer
 repository, how to bring it up to date, and how to add and remove tools after
-the adoption. After the adoption, `repo-sync` keeps the consumer in sync.
+the adoption. After the adoption, `setup:configs` (`bootstrap sync`) keeps the
+consumer in sync.
 
-- `docs/sync/index.md`: the adoption prompt. It does the first adoption, and
-  it brings an adopted repository up to date with `bootstrap_commit`.
+- `docs/sync/index.md`: the adoption prompt. It runs
+  `bootstrap questions --json`, then `bootstrap init <tool…> --answer …`, and
+  it brings an adopted repository up to date with `bootstrap init`.
 - `docs/sync/migrate.md`: the items for a repository with older copies.
 - `docs/sync/kotlin-dsl.md`: the static prompt that migrates a Gradle build
   from the Groovy DSL to the Kotlin DSL. `vwf.md` and the "Migration"
   sections of `kotlin.md`, `android.md` and `flutter.md` send an agent there.
 - `docs/sync/vwf.md`: the entry point for the vwf and stackgen plugins. It
-  accepts the `adopt`, `add tools`, `remove tools`, `add plugins` and
-  `remove plugins` instructions. A plugin names this path
+  accepts the `init`, `add`, `remove`, `add plugins` and `remove plugins`
+  instructions. A plugin names this path
   and no other bootstrap path.
 - `docs/sync/tools/<tool>.md`: one file for each folder in `repo/tools/`, with
   the same sections in each file. The file of the `claude` tool is
@@ -91,8 +94,9 @@ the adoption. After the adoption, `repo-sync` keeps the consumer in sync.
   with the tools that it adds and the questions of the adopting AI.
 
 `docs/setup/` tells an AI agent how to adopt `bootstrap` on a Mac, and how to
-bring the Mac up to date. After the adoption, the task `updateall:configs` keeps
-the Mac in sync. The sync never copies this folder.
+bring the Mac up to date with `bootstrap mac init`. After the adoption, the task
+`updateall:configs` (`bootstrap mac sync`) keeps the Mac in sync. The sync never
+copies this folder.
 
 - `docs/setup/index.md`: the Mac adoption prompt. It does the first adoption,
   and it brings a Mac up to date with `bootstrap_commit`.
@@ -114,9 +118,9 @@ Each rule of the sync has one place in `docs/design/`. Read the doc before you
 change the path:
 
 - Read `docs/design/sync-engine.md` before you change `sync-engine/`.
-- Read `docs/design/repo-sync.md` before you change `sync-engine/internal/repo`
+- Read `docs/design/repo.md` before you change `sync-engine/internal/repo`
   or the entry tasks of `repo/tools/mise/`.
-- Read `docs/design/setup-sync.md` before you change
+- Read `docs/design/mac.md` before you change
   `sync-engine/internal/macos` or the entry tasks of `macos/tools/mise/`.
 - Read `docs/design/packs.md` before you change `repo/packs.toml` or
   `macos/packs.toml`.
@@ -181,10 +185,11 @@ table").
   and the libraries that it sources call it without `mise x --` and find it
   with `command -v`. `mise x` finds only the tools of a config file, and a
   repository before its first sync, or a shell without `MISE_ENV=dev`, has no
-  config that names them. The tools are `pre-commit` in
-  `setup:configs`, `setup:precommit` and `code:precommit`, and
-  `pre-commit` and `yq` in the `code:merge` tasks, and `yq` in
-  `code:worktrees`. The tool calls of the engine in `sync-engine/` are in
+  config that names them. The tools are `github:virajp/bootstrap` in
+  `setup:configs`, `pre-commit` in `setup:precommit` and `code:precommit`,
+  `pre-commit` and `yq` in the `code:merge` tasks, `yq` in `code:worktrees`,
+  and `dprint` in `setup:dprint`. The tool calls of the engine in `sync-engine/`
+  are in
   `docs/design/sync-engine.md` ("The tool calls").
 - To find whether the repository has an optional task, use `has_own_task` and
   `own_tasks` from `helpers`. Do not use `mise tasks info` or a wildcard
@@ -270,8 +275,8 @@ Each test task sets `BOOTSTRAP_VERBOSE=1`, so a case compares the per-file log
 lines of the sync. The cases of the default output unset it. See
 `docs/design/sync-engine.md` ("The output of a run").
 
-- `test:repo-sync` is the task of this repository in
-  `.config/mise/tasks/test/repo-sync`. It runs `bootstrap sync --dry-run`,
+- `test:repo` is the task of this repository in
+  `.config/mise/tasks/test/repo`. It runs `bootstrap sync --dry-run`,
   `bootstrap check` and, for a case that compares a written file,
   `bootstrap sync`, built from the working tree's `sync-engine/`, with the
   working tree's `repo/` and `sync-engine/` against scratch values files and
@@ -285,8 +290,8 @@ lines of the sync. The cases of the default output unset it. See
   first `git` call, it unsets the `GIT_*` variables of a git hook, so its
   scratch repositories never write to this repository. It runs the cases in
   parallel, one job for each CPU, and each case in its own folder.
-- `test:setup-sync` is the task of this repository in
-  `.config/mise/tasks/test/setup-sync`. It runs `bootstrap mac sync`, built
+- `test:mac` is the task of this repository in
+  `.config/mise/tasks/test/mac`. It runs `bootstrap mac sync`, built
   from the working tree's `sync-engine/`, against the fixtures in
   `macos/fixtures/`, and it
   compares the exit code, the output and the files of each case. The entry cases
@@ -311,18 +316,18 @@ lines of the sync. The cases of the default output unset it. See
   network when gomplate, jq and yq are installed.
 - `test:go` is the task of this repository in `.config/mise/tasks/test/go`.
   It runs `go vet`, a `gofmt` check and `go test` in the Go module of
-  `sync-engine/`. The golden files of the parity tests hold the output of the
-  bash engine, from before its removal, and nothing can write them again. A
-  case whose inputs changed (its fingerprint differs) is skipped: the other
-  three test tasks test that behavior. The task runs the Go of the `go` tool,
-  which this repository selects.
+  `sync-engine/`. Some unit tests compare a case with a golden file in
+  `testdata/`; see `docs/design/sync-engine.md` ("The files of
+  `sync-engine/`"). `TestEngineNamesNoTool` fails when a string literal of the
+  engine code names a tool, outside its allow list. The task runs the Go of the
+  `go` tool, which this repository selects.
 - `test` (`test/_default`) runs each test task in parallel. No hook and no
   `code:merge` task runs a test, because the tests are slow and a consumer does
   not have them. Run the tests by hand before you commit:
   - A change to `sync-engine/`: `mise run test`.
   - A change to the Go code only: `mise run test:go`.
-  - A change to `repo/`: `mise run test:repo-sync`.
-  - A change to `macos/`: `mise run test:setup-sync` and
+  - A change to `repo/`: `mise run test:repo`.
+  - A change to `macos/`: `mise run test:mac` and
     `mise run test:macos-tools`.
 
 ## Change a shared file

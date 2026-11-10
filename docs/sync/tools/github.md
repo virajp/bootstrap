@@ -6,6 +6,7 @@ GitHub: the `gh` CLI, actionlint, and the issue and pull request templates.
 | ------------ | ------- |
 | Root only    | No      |
 | Depends      | None    |
+| Parent       | None    |
 | Default envs | dev, ci |
 | Seeds        | None    |
 
@@ -13,6 +14,8 @@ GitHub: the `gh` CLI, actionlint, and the issue and pull request templates.
 
 - The `origin` remote of the repository is on GitHub.
 - The repository has `.github/`.
+
+`bootstrap detect` runs the detect script of the tool (see "Scripts").
 
 Select `github` or `gitlab`, not both. The `pr` merge model needs the CLI of
 the forge.
@@ -27,7 +30,7 @@ the forge.
 | `.github/pull_request_template.md`           | Synced    | The pull request template.    |
 | `.config/mise/conf.d/github/mise.<env>.toml` | Generated | The mise config of this tool. |
 
-VS Code extension: `github.vscode-github-actions`.
+`config.yml` has the contact links only when the values file has `repo_url`.
 
 ## mise tools
 
@@ -41,9 +44,26 @@ VS Code extension: `github.vscode-github-actions`.
 None. The `code:merge` tasks of the `git` tool use `gh` under the `pr` merge
 model.
 
-## Pre-commit hooks
+## Scripts
 
-- `actionlint` on `.github/workflows/*.yml` and `*.yaml`.
+| Script           | Kind   | Use                                            |
+| ---------------- | ------ | ---------------------------------------------- |
+| `scripts/detect` | detect | `match` with a `.github/` folder, else `none`. |
+
+The sync runs the scripts from the clone of `bootstrap`, and never copies
+them. See [`docs/design/tools.md`](../../design/tools.md).
+
+## Contributions
+
+| Tool         | Shared file                      | Items                                                                                                        |
+| ------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `pre-commit` | `.config/pre-commit-config.yaml` | The local hook block `actionlint`. It runs `mise x -- actionlint` on `.github/workflows/*.yml` and `*.yaml`. |
+| `vscode`     | `.vscode/extensions.json`        | `github.vscode-github-actions`.                                                                              |
+
+## Values
+
+Only `env`. No questions. The template reads the top-level key `repo_url`.
+See [`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 
@@ -51,7 +71,9 @@ None.
 
 ## Adapt to the repository
 
-1. Set `repo_url` in the values file to the GitHub web URL of the repository.
+1. Set `repo_url` in the values file to the GitHub web URL of the repository
+   ("Step 6: Write the other values and sync again" of
+   [`index.md`](../index.md)).
 
 ## Migration
 

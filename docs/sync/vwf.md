@@ -3,7 +3,8 @@
 These instructions are for an AI agent that works in a consumer repository.
 This file is the one entry point of `bootstrap` for the vwf and stackgen
 plugins. A plugin reads only this file. This file sends the agent to the other
-files of `docs/sync/`.
+files of `docs/sync/`. Each instruction uses the CLI `bootstrap`. Install it
+with `mise use -g github:virajp/bootstrap`.
 
 ## How a plugin uses this file
 
@@ -13,7 +14,7 @@ files of `docs/sync/`.
 
    ```bash
    tmp=$(mktemp -d)
-   git clone --quiet --filter=blob:none git@github.com:virajp/bootstrap.git "$tmp"
+   git clone --quiet --filter=blob:none https://github.com/virajp/bootstrap.git "$tmp"
    ```
 
 2. Read `"$tmp"/docs/sync/vwf.md`, this file.
@@ -22,25 +23,26 @@ files of `docs/sync/`.
 4. Remove the clone after the agent completes: `rm -rf "$tmp"`.
 
 The plugin never edits `.config/bootstrap.toml` itself. The agent that reads
-this file does.
+this file does, with `bootstrap`.
 
 In this file, "the clone" is that temporary directory. Each path in
-`docs/sync/` and `repo/` is a path in the clone.
+`docs/sync/` and `repo/` is a path in the clone. The CLI `bootstrap` uses its
+own clone in `~/.cache/bootstrap/`.
 
 ## Instructions
 
-An instruction adopts `bootstrap` in a product, adds tools or removes tools,
-or adds or removes Claude Code plugins. In a tools instruction, a name in the
-list is a tool folder of
-`repo/tools/`, or a pack of `repo/packs.toml`. It has this format:
+An instruction adopts `bootstrap` in a product (`init`), adds tools (`add`)
+or removes tools (`remove`), or adds or removes Claude Code plugins. In a
+tools instruction, a name in the list is a tool folder of `repo/tools/`, or a
+pack of `repo/packs.toml`. It has this format:
 
 ```text
-bootstrap: add tools [<tool>, …]
+bootstrap: add [<tool>, …]
 reason: <why>
 ```
 
 ```text
-bootstrap: remove tools [<tool>, …]
+bootstrap: remove [<tool>, …]
 reason: <why>
 ```
 
@@ -48,7 +50,7 @@ One message can hold several instructions. Each instruction has its own
 `reason:` line, directly after it. For example:
 
 ```text
-bootstrap: add tools [flutter]
+bootstrap: add [flutter]
 reason: stackgen pack app-framework/flutter pinned
 ```
 
@@ -74,17 +76,17 @@ bootstrap: add user plugins [taste-skill@taste-skill=Leonxlnx/taste-skill]
 reason: stackgen pack design-tool/claude-code pinned
 ```
 
-An adopt instruction has one values block for each repository of the
+An init instruction has one values block for each repository of the
 product. A `repository:` line before the block gives the path of the
 repository from the root of the base repository: `.` for the base, the path
 of a git submodule, or the path of a sibling, for example `../acme-api`. The
 block is the draft of the `.config/bootstrap.toml` of that repository, in the
 format of `repo/examples/` of the clone. It also holds the tools, the packs and
-the plugins, as `[tools.*]`, `[packs.*]` and `[claude.plugins.*]` tables. It has
-no `bootstrap_commit`: `bootstrap sync` writes it:
+the plugins, as `[tools.*]`, `[packs.*]` and `[tools.claude.plugins.*]`
+tables. It has no `bootstrap_commit`: `bootstrap sync` writes it:
 
 ````text
-bootstrap: adopt
+bootstrap: init
 reason: <why>
 repository: <path>
 ```toml
@@ -95,7 +97,7 @@ repository: <path>
 For example, for a base repository with one sibling:
 
 ````text
-bootstrap: adopt
+bootstrap: init
 reason: /vwf:init survey of acme
 repository: .
 ```toml
@@ -106,7 +108,7 @@ repo_url = "https://github.com/example/acme-product"
 
 [tools.claude]
 
-[branch.main]
+[tools.git.branch.main]
 merge_model = "pr"
 ```
 repository: ../acme-api
@@ -118,17 +120,17 @@ repo_url = "https://github.com/example/acme-api"
 
 [tools.python]
 
-[claude.plugins.user]
+[tools.claude.plugins.user]
 "taste-skill@taste-skill" = "Leonxlnx/taste-skill"
 ```
 ````
 
-A `[branch.main]` or `[branch.develop]` table of a block can also have
-`direct_commit = true`, to allow a direct commit to that branch. See step 4 of
-`index.md`.
+A `[tools.git.branch.main]` or `[tools.git.branch.develop]` table of a block
+can also have `direct_commit = true`, to allow a direct commit to that
+branch. See "Step 2: Select the branch model" of `index.md`.
 
 The instruction is the consent. The plugin asked the user before it sent the
-instruction. Do not ask the user again to apply it. An adopt instruction is
+instruction. Do not ask the user again to apply it. An init instruction is
 the consent to start the adoption: `index.md` still asks each of its
 questions, and the values of the blocks are the defaults.
 
@@ -137,24 +139,17 @@ questions, and the values of the blocks are the defaults.
 Do these checks for all the instructions of the message before you change a
 file. If a check stops, change nothing, and give its message to the caller.
 
-| Condition                                                                                      | Message                                                                                                   |
-| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| A tools or a plugins instruction, and the repository has no `.config/bootstrap.toml`.          | The repository did not adopt `bootstrap`. Send `bootstrap: adopt` first.                                  |
-| A name is not a folder in `repo/tools/` of the clone, and not a pack of `repo/packs.toml`.     | `<name>` is not a tool or a pack of `bootstrap`.                                                          |
-| `remove` names a tool that another selected tool needs, through `depends` or a mise `depends`. | `<tool>` cannot be removed alone: `<other tool>` needs it. Remove `<other tool>` in the same instruction. |
-| A name is `base`, or a tool or a pack that the `base` pack adds.                               | `<tool>` is in the `base` pack. The sync always adds it.                                                  |
+| Condition                                                                                  | Message                                                                 |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| A tools or a plugins instruction, and the repository has no `.config/bootstrap.toml`.      | The repository did not adopt `bootstrap`. Send `bootstrap: init` first. |
+| A name is not a folder in `repo/tools/` of the clone, and not a pack of `repo/packs.toml`. | `<name>` is not a tool or a pack of `bootstrap`.                        |
+| A name is `base`, or a tool or a pack that the `base` pack adds.                           | `<tool>` is in the `base` pack. The sync always adds it.                |
 
-To find whether a selected tool needs a tool, read
-`repo/tools/<selected>/tools.toml` in the clone:
+`bootstrap add` and `bootstrap remove` do the other checks of a tool. For
+example, `bootstrap remove` refuses a tool that another selected tool needs,
+and names that tool. Give each message of a command that stops to the caller.
 
-- Its `depends` key names the tool.
-- A mise `depends` of one of its `[mise.tools.<name>]` entries names a mise
-  tool that a `[mise.tools.<name>]` entry of `repo/tools/<tool>/tools.toml`
-  defines.
-
-A tool that the same instruction also removes does not count.
-
-An adopt instruction has these checks too:
+An init instruction has these checks too:
 
 | Condition                                                                                  | Message                                                                   |
 | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
@@ -174,19 +169,26 @@ A plugins instruction has one more check:
 
 These cases are not a stop:
 
-- `adopt` for a repository that already has `.config/bootstrap.toml`. The
+- `init` for a repository that already has `.config/bootstrap.toml`. The
   agent finds whether that repository is up to date, and does only the steps
   that are not.
-- `adopt` with a path that does not exist. The agent asks whether to clone or
+- `init` with a path that does not exist. The agent asks whether to clone or
   to initialize that repository, or to skip it.
-
-- `add` of a tool that already has a `[tools.<tool>]` entry (or a pack that
-  already has a `[packs.<pack>]` entry) changes nothing for that name.
-- `remove` of a name that has no entry changes nothing for that name.
+- `add` of a tool that is already selected changes nothing for that name.
+  `bootstrap add` tells so.
 - `add` of a plugin that the table of that scope already has replaces its
   source.
 
-## Adopt
+## Before a command that writes
+
+`bootstrap` writes no target that has changes that are not committed. It
+stops with code 2, names each file, and writes nothing. Give that message to
+the caller. Do not commit or discard the changes yourself.
+
+Each command that writes needs `--yes`, because the agent has no terminal.
+The instruction is the consent, so give `--yes` after the dry run.
+
+## Init
 
 1. Read `docs/sync/index.md` in the clone, and do its steps in each
    repository of the instruction. Use the clone of this file as the clone of
@@ -194,78 +196,66 @@ These cases are not a stop:
 2. Use the order of "A product with more than one repository" of `index.md`:
    the deepest submodules first, the siblings, then the base repository.
 3. For each repository, use its values block as the defaults: of the tools
-   and the packs in step 1, and of the values in step 3. Ask each question of
-   `index.md`, also when the block has the answer. Only the user can skip a
-   question.
-4. For a repository that already has `.config/bootstrap.toml`, start with "A
+   and the packs in step 1, of the branch model in step 2, and of the values
+   in step 6. Ask each question of `index.md`, also when the block has the
+   answer. Only the user can skip a question.
+4. Give the `[tools.*]` names of the block to `bootstrap init <tool…>` in
+   step 5 of `index.md`. Write the `[packs.*]` tables and the other values
+   of the block in its step 6.
+5. For a repository that already has `.config/bootstrap.toml`, start with "A
    repository that already has `.config/bootstrap.toml`" of `index.md`.
-5. A repository without a block gets no defaults. Ask the user whether to
+6. A repository without a block gets no defaults. Ask the user whether to
    include it.
 
-## Add tools
+## Add
 
-1. In `.config/bootstrap.toml`, add a `[tools.<tool>]` table for each tool,
-   and a `[packs.<pack>]` table for each pack. Write no `env` key: the tool
-   then gets its `default_envs`. Keep the tables sorted.
-2. Find the tools that each added tool adds, then the tools that these tools
-   add in turn. For a pack, start with its `default = true` members in
-   `repo/packs.toml`, and expand each `"pack:<pack>"` of them in turn. Read
-   `repo/tools/<tool>/tools.toml` in the clone. A tool adds:
-   - each tool of its `depends` key;
-   - for each mise `depends` of one of its `[mise.tools.<name>]` entries, the
-     tool whose `tools.toml` has the `[mise.tools.<name>]` entry of that mise
-     tool.
-3. For each added tool and each tool of step 2, read
-   `docs/sync/tools/<tool>.md` in the clone. For each added pack, also read
-   `docs/sync/packs/<pack>.md`. Do the items of its "Adapt to the repository"
-   and "Migration" sections.
-4. Run `mise run setup:configs`.
+1. For each tool of the instruction, read `docs/sync/tools/<tool>.md` in the
+   clone. Do the items of its "Adapt to the repository" and "Migration"
+   sections.
+2. Get the questions of the tools, and find each answer as step 3 of
+   `index.md` tells you:
 
-## Remove tools
+   ```text
+   bootstrap questions <tool…> --json
+   ```
 
-Do the checks of "Before each instruction" first. A tool that another selected
-tool needs cannot be removed alone.
+3. Run `bootstrap add <tool…> --answer <tool>.<key>=<value> --dry-run`.
+   `bootstrap add` adds each tool and each tool of its `depends`, asks the
+   questions of the new tools, and syncs. Examine the change list.
+4. Run the same command with `--yes` in place of `--dry-run`.
 
-1. Find the dependency-only tools that leave. Make two sets of tools, with
-   the rule of step 2 of "Add tools":
-   - The first set is the tools of the `[tools.*]` and `[packs.*]` entries of
-     `.config/bootstrap.toml` before the change, the tools of the `base` pack,
-     and each tool that they add in turn.
-   - The second set is the same, without the removed tools and packs, and
-     each tool that they add in turn.
+For a pack, `bootstrap add` does not apply. Read
+`docs/sync/packs/<pack>.md`, and do its items. Then write a `[packs.<pack>]`
+table in `.config/bootstrap.toml`, and run `mise run setup:configs`. Without
+an `env` key, each tool gets its `default_envs`.
 
-   A tool that is in the first set, is not in the second set, and has no
-   `[tools.*]` entry is a dependency-only tool that leaves. Step 3 deletes its
-   files too.
-2. Remove the `[tools.<tool>]` or `[packs.<pack>]` table of each name from
-   `.config/bootstrap.toml`. A dependency-only tool has no table.
-3. For each tool that is in the first set of step 1 and not in the second
-   set, read "What the tool ships" in `docs/sync/tools/<tool>.md` in the
-   clone:
-   - Delete each file of kind `Synced`. These files start with the bootstrap
-     header.
-   - Delete each file of kind `Template` that has `Synced from bootstrap` in
-     its first three lines. The path in the row is the output path.
-   - Keep each file of kind `Seed` or `Seed, template`. Each of them is a
-     seed, and the repository owns it.
-   - Delete a file of kind `Generated` only when `.config/repo-generated.tsv`
-     does not list it and it has `Synced from bootstrap` in its first three
-     lines. Step 4 removes a listed copy.
-   - Keep a file of kind `Template` without that header in its first three
-     lines. Keep a file of any other kind.
-4. Run `mise run setup:configs`. After a sync without a failure, the sync
-   removes each file of the tools of step 3 that `.config/repo-generated.tsv`
-   lists and that has the bootstrap header. A sync with a failure runs no stale
-   rule and writes no manifest: correct the failure, and run it again.
+## Remove
+
+1. Run `bootstrap remove <tool…> --dry-run`. Examine the change list.
+2. Run the same command with `--yes` in place of `--dry-run`.
+
+`bootstrap remove` removes the `[tools.<tool>]` table of each tool, and each
+dependency that no other selected tool needs. The sync then removes the files
+of these tools that `.config/repo-generated.tsv` lists, and their items in the
+shared files. A seed of a removed tool stays: `bootstrap remove` lists it.
+Ask the user whether to delete it.
+
+`bootstrap remove` refuses a `required` tool, a tool that only a pack
+selects, and a tool that another selected tool needs. Give its message to the
+caller. To remove a tool that another tool needs, put both tools in one
+instruction.
+
+For a pack, remove its `[packs.<pack>]` table from `.config/bootstrap.toml`,
+and run `mise run setup:configs`.
 
 ## Add plugins
 
-1. In `.config/bootstrap.toml`, add each plugin to `[claude.plugins.user]` or
-   `[claude.plugins.project]`, the table of the scope:
-   `"<name>@<marketplace>" = "<source>"`. Make the table if it is missing.
-   Keep the keys sorted.
-2. If no selected tool or pack adds the `claude` tool, do "Add tools" for
-   `claude` first.
+1. If no selected tool or pack adds the `claude` tool, do "Add" for `claude`
+   first.
+2. In `.config/bootstrap.toml`, add each plugin to
+   `[tools.claude.plugins.user]` or `[tools.claude.plugins.project]`, the
+   table of the scope: `"<name>@<marketplace>" = "<source>"`. Make the table
+   if it is missing. Keep the keys sorted.
 3. Run `mise run setup:ai`. It installs each missing plugin.
 
 ## Remove plugins
@@ -282,7 +272,7 @@ tool needs cannot be removed alone.
 in the clone is a static prompt that migrates a Gradle build from the Groovy
 DSL (`*.gradle`) to the Kotlin DSL (`*.gradle.kts`).
 
-After an `adopt` or an `add tools` instruction, examine each repository that
+After an `init` or an `add` instruction, examine each repository that
 changed. Its first section, "When the migration applies", gives the condition:
 an executable `gradlew` at the root or in `android/`, and a `*.gradle` file
 that git tracks in that folder. If the condition is true, tell the caller, and
@@ -291,12 +281,12 @@ not the consent for this migration.
 
 ## After the change
 
-If `mise run setup:configs` fails, read its exit code in "Step 6: Run the
-sync" of `docs/sync/index.md`.
+If a command of `bootstrap` or `mise run setup:configs` fails, read its exit
+code in "The exit codes" of `docs/sync/index.md`.
 
 1. Show the changed files to the caller, with `git status --short`, in each
    repository that changed.
 2. Show the `reason:` of each instruction to the caller.
 3. For a tools or a plugins instruction, do not commit. The caller commits.
-   For an adopt instruction, commit only if the user chose it in step 6 of
+   For an init instruction, commit only if the user chose it in step 5 of
    `index.md`.

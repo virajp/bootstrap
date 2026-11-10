@@ -1,4 +1,3 @@
-fingerprint: d18df748ce0a899fb4c3e6186a59e8a2cfbe2520e204a3b4b839e260a052ea76
 rc=2
 --- stderr
 repo-sync: repo/tools/a/tools.toml: seed is not supported; use [files."<target>"] with mode = "seed"

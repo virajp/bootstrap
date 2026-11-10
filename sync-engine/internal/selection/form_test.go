@@ -8,9 +8,8 @@ import (
 	"github.com/virajp/bootstrap/sync-engine/internal/source"
 )
 
-// The cases of the tool folder form and of `required` in the packs file. The
-// bash engine never had these rules, so each case holds its own expected
-// output, not a golden file of bash.
+// The cases of the tool folder form and of `required` in the packs file. Each
+// case holds its own expected output.
 
 type formCase struct {
 	name string
@@ -143,7 +142,6 @@ func TestFormCases(t *testing.T) {
 				base = macosBase
 			}
 			clone := writeTree(t, base.with(c.over))
-			dropOldKeys(t, clone)
 			vdir := t.TempDir()
 			values, shown := filepath.Join(vdir, "bootstrap.toml"), "bootstrap.toml"
 			if c.side == source.Macos {

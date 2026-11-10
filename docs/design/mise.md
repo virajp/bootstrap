@@ -9,7 +9,7 @@ the tasks.
 
 See also: [tools.md](tools.md), [packs.md](packs.md),
 [sync-engine.md](sync-engine.md) for the stale rule,
-[repo-sync.md](repo-sync.md), [setup-sync.md](setup-sync.md) and
+[repo.md](repo.md), [mac.md](mac.md) and
 [bootstrap-config.md](bootstrap-config.md). The exit code of each rule that
 stops the sync is in
 [sync-engine.md](sync-engine.md#the-exit-codes).
@@ -133,7 +133,7 @@ file
 for every environment.
 It holds the shared `[settings]` and the `[env]` values `REPO_NAME` and
 `MEMBERS` (the
-folders of the members, see [repo-sync.md](repo-sync.md#the-template-context)).
+folders of the members, see [repo.md](repo.md#the-template-context)).
 
 | `[settings]` key                     | Value          |
 | ------------------------------------ | -------------- |
@@ -177,8 +177,6 @@ writes it. The template reads the `BOOTSTRAP_MISE_*` environment variables.
 
 These parts stay in the repo front-end (`internal/repo`):
 
-- `[overrides.gitignore]` and its checks.
-- The `setup-all` and `setup-<submodule>` aliases.
 - The records of the generated files, for the file loop and the manifest.
 - The read of `environments`, and the check of the `env` of each entry of the
   values file.
@@ -212,6 +210,12 @@ Any other section stops the mise config of that tool. The sync keeps
 the
 existing `conf.d` files of that tool, and it still syncs the other files of the
 tool.
+
+A derive script of a tool can return a `mise` and a `mise_env` table. They merge
+into the mise config of that tool before `[overrides.mise*]`. For example, the
+derive script of `mise` returns `mise.shell_alias` with the aliases
+`setup-all` and `setup-<member>` of a repository with submodules. See
+[sync-engine.md](sync-engine.md#the-scripts-of-a-tool).
 
 #### An example
 
@@ -354,13 +358,18 @@ A `<% %>` string renders with `.all` and `.env`, and has no `.config`.
 ### The keys of a mise tool
 
 A `[mise.tools.<name>]` table has the mise keys of the tool, for example
-`version`, and three keys for the sync:
+`version`, and two keys for the sync:
 
 | Key              | Meaning                                                                                                                              |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `envs`           | The environments that the mise tool allows. The default is `["dev"]`. Not written.                                                   |
-| `depends`        | The mise tools that this mise tool needs. mise reads it too, so it stays.                                                            |
 | `requires_found` | A list of file names. The sync writes the entry only when it finds each name at the root or down to 4 folders below it. Not written. |
+
+A `[mise.tools.<name>]` table has no `depends`: the sync computes it, and a
+written `depends` stops the sync. Each mise tool depends on the mise tools of
+the selected tools in `depends` and `parent` of its tool, and on the mise tools
+above it in the same `tools.toml`. The sync writes the computed `depends`, so
+mise installs the tools in that order.
 
 A file that follows the same condition, for example the task of that mise tool,
 states it in its own `[files]` table. See [tools.md](tools.md#the-files-table).
@@ -373,7 +382,7 @@ it writes
 `code:lint:70-ruff` only with a `pyproject.toml`, because the table of that task
 has
 `requires_found = ["pyproject.toml"]`. The search is in
-[repo-sync.md](repo-sync.md#requires_found).
+[repo.md](repo.md#requires_found).
 
 ### The environments of a mise tool
 
@@ -387,8 +396,7 @@ mise tool gets the environments of its tool.
    once gets each of these environments. An `env` name that is not in
    `environments`, an empty `env`, or an `env` item with a space stops the sync.
 2. Each dependency gets the environments of the tool that needs it: a tool of
-   the `depends` key, and the tool of a mise `depends`. The sync repeats this
-   step until nothing changes.
+   the `depends` key. The sync repeats this step until nothing changes.
 3. The sync keeps only the environments that the values file selects.
 4. Each tool must be in `dev`. An `env` without `dev` stops the sync. A
    `default_envs` without `dev` also
@@ -406,22 +414,15 @@ mise tool gets the environments of its tool.
 
 ### The dependencies between tools
 
-A tool gets other tools in two ways:
-
-| Link                       | Example                                | Effect                                      |
-| -------------------------- | -------------------------------------- | ------------------------------------------- |
-| `depends` of `tools.toml`  | `kotlin` has `depends = ["java"]`      | The sync adds the tool `java`.              |
-| mise `depends` of an entry | `android-sdk` has `depends = ["java"]` | The sync adds the tool that defines `java`. |
-
-The sync resolves the tools depth first. A dependency comes before the tool
-that needs it. Do not repeat a mise `depends` in the `depends` key.
+A tool gets other tools with the `depends` key of its `tools.toml`. For example,
+`kotlin` has `depends = ["java"]`, so the sync adds the tool `java`. The sync
+resolves the tools depth first. A dependency comes before the tool that needs
+it. The mise `depends` of each mise tool come from `depends` and `parent`: see
+[The keys of a mise tool](#the-keys-of-a-mise-tool).
 
 Two tools must not define the same mise tool. The sync reads all the
 `tools.toml` files of `bootstrap`, also the files of the tools that are not
-selected, and stops for a duplicate.
-
-The mise `depends` link and the stop for a duplicate apply to the repo side
-only. The Mac side follows only the `depends` key of `tools.toml`.
+selected, and stops for a duplicate. This stop applies to the repo side only.
 
 ### The generated files
 
@@ -464,7 +465,7 @@ example `doppler`.
   selected tool has: it cannot add a key.
 - These stop the sync: a path that no selected tool has, a key of
   `[overrides]`
-  other than `mise`, `mise_env` and `gitignore`, an environment outside
+  other than `mise` and `mise_env`, an environment outside
   `environments`, and
   the `envs`, the `depends`, the `requires`, the `requires_found` or the `files`
   of a mise
@@ -477,9 +478,8 @@ example `doppler`.
 - The overrides are not rendered.
 
 The Mac side has only `[overrides.mise.*]`. See
-[The two sides](#the-two-sides-of-the-generator). `[overrides.gitignore]` is
-different: see
-[repo-sync.md](repo-sync.md#overridesgitignore).
+[The two sides](#the-two-sides-of-the-generator). An override of a shared file
+is different: see [sync-engine.md](sync-engine.md#overrides-of-a-shared-file).
 
 ### `zz-repo` and `zz-macos`
 
@@ -500,50 +500,50 @@ stops the sync. The sync writes a seed only when it is missing.
 
 This table has the mise tools of `repo/tools/` now.
 
-| Tool          | mise tool                | Version  | `envs`  | mise `depends` | Other `[mise.*]` sections                          |
-| ------------- | ------------------------ | -------- | ------- | -------------- | -------------------------------------------------- |
-| `android`     | `android-sdk`            | `23`     | dev, ci | `java`         |                                                    |
-| `dprint`      | `dprint`                 | `latest` | dev, ci |                |                                                    |
-| `git`         | `worktrunk`              | `latest` | dev     |                |                                                    |
-| `gitleaks`    | `gitleaks`               | `latest` | dev, ci |                |                                                    |
-| `grype`       | `grype`                  | `latest` | dev, ci |                |                                                    |
-| `linter`      | `npm:@virajp.dev/linter` | `latest` | dev, ci | `node`         |                                                    |
-| `linter`      | `shellcheck`             | `latest` | dev, ci |                |                                                    |
-| `mise`        | `jq`                     | `latest` | dev, ci |                | `tasks` (`init`), `shell_alias`; `mise_env` (`os`) |
-| `mise`        | `yq`                     | `latest` | dev, ci |                |                                                    |
-| `osv-scanner` | `osv-scanner`            | `latest` | dev, ci |                |                                                    |
-| `pre-commit`  | `pre-commit`             | `latest` | dev     | `python`, `uv` | `env` (`PRE_COMMIT_HOME`), `shell_alias`           |
-| `repo-sync`   | `gomplate`               | `latest` | dev     |                |                                                    |
-| `apko`        | `apko`                   | `latest` | dev, ci |                |                                                    |
-| `aube`        | `aube`                   | `latest` | dev, ci | `node`         | `shell_alias` (`npx`)                              |
-| `bun`         | `bun`                    | `latest` | dev, ci |                |                                                    |
-| `cloudflare`  | `npm:cf`                 | `latest` | dev, ci | `node`         |                                                    |
-| `cosign`      | `cosign`                 | `latest` | dev, ci |                |                                                    |
-| `crane`       | `crane`                  | `latest` | dev, ci |                |                                                    |
-| `doppler`     | `doppler`                | `latest` | dev     |                |                                                    |
-| `firebase`    | `npm:firebase-tools`     | `latest` | dev, ci | `node`         |                                                    |
-| `flutter`     | `flutter`                | `3`      | dev, ci | `android-sdk`  |                                                    |
-| `fnox`        | `fnox`                   | `latest` | dev     |                | `env` (`FNOX_CONFIG_DIR`)                          |
-| `gcloud`      | `gcloud`                 | `latest` | dev, ci | `python`, `uv` | `env` (`CLOUDSDK_PYTHON`)                          |
-| `github`      | `gh`                     | `latest` | dev, ci |                |                                                    |
-| `github`      | `actionlint`             | `latest` | dev, ci |                |                                                    |
-| `gitlab`      | `glab`                   | `latest` | dev, ci |                |                                                    |
-| `go`          | `go`                     | `latest` | dev, ci |                | `env` (`GOTOOLCHAIN`)                              |
-| `java`        | `java`                   | `lts`    | dev, ci |                | `settings`                                         |
-| `kotlin`      | `ktlint`                 | `latest` | dev, ci |                |                                                    |
-| `kotlin`      | `github:detekt/detekt`   | `latest` | dev, ci |                |                                                    |
-| `kotlin`      | `http:kotlin-lsp`        | `latest` | dev     |                | In `[mise_env.dev.tools]`. Platform URLs for macOS |
-| `melange`     | `melange`                | `latest` | dev, ci |                |                                                    |
-| `node`        | `node`                   | `lts`    | dev, ci |                | `settings`, `env` (`_.path`)                       |
-| `pnpm`        | `pnpm`                   | `latest` | dev, ci | `node`         | `shell_alias` (`npx`)                              |
-| `pulumi`      | `pulumi`                 | `latest` | dev     |                |                                                    |
-| `python`      | `python`                 | `3.14`   | dev, ci |                | `settings`, `env` (`UV_*`)                         |
-| `python`      | `uv`                     | `latest` | dev, ci | `python`       |                                                    |
-| `python`      | `ruff`                   | `latest` | dev, ci |                | `requires_found` (`pyproject.toml`)                |
-| `python`      | `pipx:pyrefly`           | `latest` | dev, ci | `python`, `uv` | `requires_found` (`pyproject.toml`)                |
-| `rust`        | `core:rust`              | `latest` | dev, ci |                | `profile = "default"`                              |
-| `rust`        | `zola`                   | `latest` | dev, ci |                |                                                    |
-| `swift`       | `swiftlint`              | `latest` | dev, ci |                | `mise_env` (`os` in `ci`)                          |
+| Tool          | mise tool                 | Version  | `envs`  | Computed `depends` | Other `[mise.*]` sections                          |
+| ------------- | ------------------------- | -------- | ------- | ------------------ | -------------------------------------------------- |
+| `android`     | `android-sdk`             | `23`     | dev, ci | `java`             |                                                    |
+| `dprint`      | `dprint`                  | `latest` | dev, ci |                    |                                                    |
+| `git`         | `worktrunk`               | `latest` | dev     |                    |                                                    |
+| `gitleaks`    | `gitleaks`                | `latest` | dev, ci |                    |                                                    |
+| `grype`       | `grype`                   | `latest` | dev, ci |                    |                                                    |
+| `linter`      | `npm:@virajp.dev/linter`  | `latest` | dev, ci | `node`             |                                                    |
+| `linter`      | `shellcheck`              | `latest` | dev, ci |                    |                                                    |
+| `mise`        | `jq`                      | `latest` | dev, ci |                    | `tasks` (`init`), `shell_alias`; `mise_env` (`os`) |
+| `mise`        | `yq`                      | `latest` | dev, ci |                    |                                                    |
+| `osv-scanner` | `osv-scanner`             | `latest` | dev, ci |                    |                                                    |
+| `pre-commit`  | `pre-commit`              | `latest` | dev     | `python`, `uv`     | `env` (`PRE_COMMIT_HOME`), `shell_alias`           |
+| `mise`        | `github:virajp/bootstrap` | `latest` | dev     |                    | In `[mise_env.dev.tools]`                          |
+| `apko`        | `apko`                    | `latest` | dev, ci |                    |                                                    |
+| `aube`        | `aube`                    | `latest` | dev, ci | `node`             | `shell_alias` (`npx`)                              |
+| `bun`         | `bun`                     | `latest` | dev, ci |                    |                                                    |
+| `cloudflare`  | `npm:cf`                  | `latest` | dev, ci | `node`             |                                                    |
+| `cosign`      | `cosign`                  | `latest` | dev, ci |                    |                                                    |
+| `crane`       | `crane`                   | `latest` | dev, ci |                    |                                                    |
+| `doppler`     | `doppler`                 | `latest` | dev     |                    |                                                    |
+| `firebase`    | `npm:firebase-tools`      | `latest` | dev, ci | `node`             |                                                    |
+| `flutter`     | `flutter`                 | `3`      | dev, ci | `android-sdk`      |                                                    |
+| `fnox`        | `fnox`                    | `latest` | dev     |                    | `env` (`FNOX_CONFIG_DIR`)                          |
+| `gcloud`      | `gcloud`                  | `latest` | dev, ci | `python`, `uv`     | `env` (`CLOUDSDK_PYTHON`)                          |
+| `github`      | `gh`                      | `latest` | dev, ci |                    |                                                    |
+| `github`      | `actionlint`              | `latest` | dev, ci |                    |                                                    |
+| `gitlab`      | `glab`                    | `latest` | dev, ci |                    |                                                    |
+| `go`          | `go`                      | `latest` | dev, ci |                    | `env` (`GOTOOLCHAIN`)                              |
+| `java`        | `java`                    | `lts`    | dev, ci |                    | `settings`                                         |
+| `kotlin`      | `ktlint`                  | `latest` | dev, ci |                    |                                                    |
+| `kotlin`      | `github:detekt/detekt`    | `latest` | dev, ci |                    |                                                    |
+| `kotlin`      | `http:kotlin-lsp`         | `latest` | dev     |                    | In `[mise_env.dev.tools]`. Platform URLs for macOS |
+| `melange`     | `melange`                 | `latest` | dev, ci |                    |                                                    |
+| `node`        | `node`                    | `lts`    | dev, ci |                    | `settings`, `env` (`_.path`)                       |
+| `pnpm`        | `pnpm`                    | `latest` | dev, ci | `node`             | `shell_alias` (`npx`)                              |
+| `pulumi`      | `pulumi`                  | `latest` | dev     |                    |                                                    |
+| `python`      | `python`                  | `3.14`   | dev, ci |                    | `settings`, `env` (`UV_*`)                         |
+| `python`      | `uv`                      | `latest` | dev, ci | `python`           |                                                    |
+| `python`      | `ruff`                    | `latest` | dev, ci |                    | `requires_found` (`pyproject.toml`)                |
+| `python`      | `pipx:pyrefly`            | `latest` | dev, ci | `python`, `uv`     | `requires_found` (`pyproject.toml`)                |
+| `rust`        | `core:rust`               | `latest` | dev, ci |                    | `profile = "default"`                              |
+| `rust`        | `zola`                    | `latest` | dev, ci |                    |                                                    |
+| `swift`       | `swiftlint`               | `latest` | dev, ci |                    | `mise_env` (`os` in `ci`)                          |
 
 These tools have no mise tools: `_security_base`, `claude`, `docker` and
 `vscode`.
@@ -580,7 +580,7 @@ not the tasks of a parent repository.
 | `setup`          | `setup:secrets:*`, then `setup:deps:*` (with `--upgrade`) | `setup:mise`, `setup:precommit`; with `--upgrade`: `setup:external:update`, `setup:dprint`, `setup:ai`; then each member |
 | `setup:worktree` | `setup:secrets:*`, then `setup:deps:*`                    | `setup:mise`, `setup:precommit`; then each member                                                                        |
 | `code`           | None                                                      | `code:format`, `code:lint`, `code:sec`                                                                                   |
-| `code:format`    | `code:format:*` (with `--fix` and the files)              | `dprint`; then each selected member                                                                                      |
+| `code:format`    | `code:format:*` (with `--fix` and the files)              | Each selected member                                                                                                     |
 | `code:lint`      | `code:lint:*` (with `--fix` and the files)                | Each selected member                                                                                                     |
 | `code:sec`       | `code:sec:*` (with `--staged` and `--debug`)              | First, it stops if `code:sec:10-gitleaks`, `code:sec:20-grype` or `code:sec:30-osv-scanner` is missing or not executable |
 
@@ -589,30 +589,28 @@ not the tasks of a parent repository.
 
 ### The tasks of each tool
 
-| Tool             | Tasks                                                                                                                 |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `mise`           | `setup`, `setup:mise`, `setup:worktree`, `code`, `code:worktrees`                                                     |
-| `repo-sync`      | `setup:configs`, `code:lint:60-repo-sync`                                                                             |
-| `git`            | `code:git-config`, `code:merge` or `code:merge:develop` and `code:merge:main`                                         |
-| `pre-commit`     | `setup:precommit`, `code:precommit`                                                                                   |
-| `dprint`         | `code:format`, `setup:dprint`                                                                                         |
-| `linter`         | `code:lint`, `setup:linter`                                                                                           |
-| `_security_base` | `code:sec`                                                                                                            |
-| `gitleaks`       | `code:sec:10-gitleaks`                                                                                                |
-| `grype`          | `code:sec:20-grype`                                                                                                   |
-| `osv-scanner`    | `code:sec:30-osv-scanner`                                                                                             |
-| `android`        | `setup:deps:10-android`, `code:lint:10-android`                                                                       |
-| `claude`         | `setup:ai`                                                                                                            |
-| `docker`         | `setup:external:check`, `setup:external:pull`, `setup:external:start`, `setup:external:stop`, `setup:external:update` |
-| `doppler`        | `setup:secrets:10-doppler`                                                                                            |
-| `flutter`        | `setup:deps:20-flutter`, `code:format:10-dart`, `code:lint:20-dart`                                                   |
-| `fnox`           | `setup:secrets:20-fnox`                                                                                               |
-| `go`             | `code:format:20-gofmt`, `code:lint:40-go`                                                                             |
-| `kotlin`         | `setup:deps:30-kotlin`, `code:format:30-ktlint`, `code:lint:30-detekt`                                                |
-| `node`           | `setup:deps:40-node`                                                                                                  |
-| `python`         | `setup:deps:50-python`, `code:format:40-ruff`, `code:lint:70-ruff`, `code:lint:50-pyrefly`, `code:lint:90-uv`         |
-| `swift`          | `setup:deps:60-swift`, `code:format:50-swift-format`, `code:lint:80-swiftlint`                                        |
-| `vscode`         | `setup:vscode`                                                                                                        |
+| Tool          | Tasks                                                                                                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mise`        | `setup`, `setup:configs`, `setup:mise`, `setup:worktree`, `code`, `code:format`, `code:lint`, `code:lint:60-bootstrap`, `code:sec`, `code:merge` (one branch), `code:worktrees` |
+| `git`         | `code:git-config`, `code:merge:develop` and `code:merge:main` (both branches)                                                                                                   |
+| `pre-commit`  | `setup:precommit`, `code:precommit`                                                                                                                                             |
+| `dprint`      | `code:format:05-dprint`, `setup:dprint`                                                                                                                                         |
+| `linter`      | `code:lint:05-linter`, `setup:linter`                                                                                                                                           |
+| `gitleaks`    | `code:sec:10-gitleaks`                                                                                                                                                          |
+| `grype`       | `code:sec:20-grype`                                                                                                                                                             |
+| `osv-scanner` | `code:sec:30-osv-scanner`                                                                                                                                                       |
+| `android`     | `setup:deps:10-android`, `code:lint:10-android`                                                                                                                                 |
+| `claude`      | `setup:ai`                                                                                                                                                                      |
+| `docker`      | `setup:external:check`, `setup:external:pull`, `setup:external:start`, `setup:external:stop`, `setup:external:update`                                                           |
+| `doppler`     | `setup:secrets:10-doppler`                                                                                                                                                      |
+| `flutter`     | `setup:deps:20-flutter`, `code:format:10-dart`, `code:lint:20-dart`                                                                                                             |
+| `fnox`        | `setup:secrets:20-fnox`                                                                                                                                                         |
+| `go`          | `code:format:20-gofmt`, `code:lint:40-go`                                                                                                                                       |
+| `kotlin`      | `setup:deps:30-kotlin`, `code:format:30-ktlint`, `code:lint:30-detekt`                                                                                                          |
+| `node`        | `setup:deps:40-node`                                                                                                                                                            |
+| `python`      | `setup:deps:50-python`, `code:format:40-ruff`, `code:lint:70-ruff`, `code:lint:50-pyrefly`, `code:lint:90-uv`                                                                   |
+| `swift`       | `setup:deps:60-swift`, `code:format:50-swift-format`, `code:lint:80-swiftlint`                                                                                                  |
+| `vscode`      | `setup:vscode`                                                                                                                                                                  |
 
 ### The libraries in `_scripts/`
 
@@ -643,15 +641,14 @@ not the tasks of a parent repository.
 | `setup`             | `mise run setup`               | `repo/tools/mise/tools.toml`                          |
 | `precommit`         | `mise run code:precommit`      | `repo/tools/mise/tools.toml` and `pre-commit`         |
 | `worktrees`         | `mise run code:worktrees`      | `repo/tools/mise/tools.toml`                          |
-| `setup-all`         | `mise run setup --all`         | The sync, only with git submodules, in `conf.d/mise/` |
-| `setup-<submodule>` | `mise run setup --<submodule>` | The sync, one for each git submodule, also nested     |
+| `setup-all`         | `mise run setup --all`         | The derive script of `mise`, only with git submodules |
+| `setup-<submodule>` | `mise run setup --<submodule>` | The derive script of `mise`, one for each submodule   |
 | `npx`               | `pnpm dlx`                     | `repo/tools/pnpm/tools.toml`                          |
 | `npx`               | `aubx`                         | `repo/tools/aube/tools.toml`                          |
 | `code`              | `command code --profile ...`   | `repo/tools/vscode/tools.toml`                        |
 
 All aliases are in `dev` only, because `shell_alias` is a dev-only section. The
-sync
-writes the aliases of `mise` and the submodule aliases in the generated
+sync writes the aliases of `mise` and the submodule aliases in the generated
 `mise/mise.dev.toml`.
 
 ## Observations
@@ -659,8 +656,8 @@ writes the aliases of `mise` and the submodule aliases in the generated
 These facts came from the examination. They are not decisions.
 
 - No tool ships a task that runs, tests or builds the application.
-- The mise tool `flutter` has the static mise `depends` `android-sdk`. Thus
-  each Flutter consumer gets `android` and `java`. See [tools.md](tools.md).
+- The tool `flutter` has `depends = ["android"]`. Thus each Flutter consumer
+  gets `android` and `java`. See [tools.md](tools.md).
 - Gradle does not come from mise. The Gradle tasks use the `gradlew` wrapper
   of the project.
 - `fnox` and `doppler` install their CLI in `dev` only. See

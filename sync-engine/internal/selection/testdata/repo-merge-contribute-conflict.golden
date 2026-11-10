@@ -1,4 +1,3 @@
-fingerprint: 0db35ddd59d4cb29391d32b8c96f02bcfb2f59651dcb464eebb34acceabeefce
 rc=2
 --- stderr
 repo-sync: repo/tools/a/tools.toml and repo/tools/b/tools.toml set [contributes.d] name to different values - remove one

@@ -2,7 +2,7 @@ package target
 
 import "testing"
 
-// The parity of the writes with bash is in the tests of internal/manifest.
+// The tests of the writes are in internal/manifest.
 func TestDirnameShow(t *testing.T) {
 	for in, want := range map[string]string{
 		"/a/b": "/a", "/a/b/": "/a", "a": ".", "/a": "/", "/": "/", "//": "/",

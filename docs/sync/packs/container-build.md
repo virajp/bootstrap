@@ -38,7 +38,8 @@ replaces them.
 ## Questions
 
 Does the repository need all four tools? If it needs only some of them, do not
-select the pack. Write one `[tools.<name>]` table for each tool.
+select the pack. Select each tool with `bootstrap add <tool>`, or name it in
+`bootstrap init <tool…>`.
 
 ## Adapt to the repository
 

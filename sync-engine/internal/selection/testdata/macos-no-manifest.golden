@@ -1,4 +1,3 @@
-fingerprint: d6afb5649ddf16aeaa05a927b17b7b0b89994cb6b780d91261b3808366f12345
 rc=2
 --- stderr
 setup-sync: macos/tools/m5 has no tools.toml - each tool folder needs its manifest

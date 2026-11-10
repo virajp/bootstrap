@@ -7,6 +7,7 @@ The local services in `.tools/docker-compose.yaml`, run by the
 | ------------ | ---------------------------- |
 | Root only    | Yes                          |
 | Depends      | None                         |
+| Parent       | None                         |
 | Default envs | dev                          |
 | Seeds        | `.tools/docker-compose.yaml` |
 
@@ -16,6 +17,10 @@ The local services in `.tools/docker-compose.yaml`, run by the
 - The development of the repository needs local services, for example a
   database, a queue or an emulator.
 - The repository has a Docker Compose file for these services.
+
+`bootstrap detect` runs the detect script of the tool (see "Scripts"). It
+finds a Dockerfile, not a Compose file. A Dockerfile alone does not show that
+the repository needs local services. Ask the user before you add the tool.
 
 ## What the tool ships
 
@@ -41,9 +46,29 @@ None. The tool uses the Docker of the machine.
 `setup:external:pull`, `start`, `stop` and `update` apply only when
 `MISE_ENV` is `dev`. In another environment, they print nothing and exit 0.
 
-## Pre-commit hooks
+**WARNING:** `setup:external:stop` removes the volumes of the services, and
+`setup:external:update` runs it at most once a week. Tell the user before a
+service keeps data that is not in a different location.
 
-None.
+## Scripts
+
+| Script           | Kind   | Use                                                                                                            |
+| ---------------- | ------ | -------------------------------------------------------------------------------------------------------------- |
+| `scripts/detect` | detect | `match` with a `Dockerfile`, `Dockerfile.*` or `*.Dockerfile` at most two folders below the root, else `none`. |
+
+The sync runs the scripts from the clone of `bootstrap`, and never copies
+them. See [`docs/design/tools.md`](../../design/tools.md).
+
+## Contributions
+
+| Tool     | Shared file    | Items                                                                 |
+| -------- | -------------- | --------------------------------------------------------------------- |
+| `dprint` | `dprint.jsonc` | The plugin `npm:@dprint/dockerfile@0.7.0` and the block `dockerfile`. |
+
+## Values
+
+Only `env`. No questions. See
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 
@@ -55,10 +80,6 @@ None.
 
 1. If the repository has a Docker Compose file at a different path, ask the
    user whether to move its services to `.tools/docker-compose.yaml`.
-
-**WARNING:** `setup:external:stop` removes the volumes of the services, and
-`setup:external:update` runs it at most once a week. Tell the user before a
-service keeps data that is not in a different location.
 
 ## Migration
 

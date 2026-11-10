@@ -1,4 +1,3 @@
-fingerprint: dd29dede57c5fe0796d71779502faa182933aa65ab8c6f2c04891bb2b8715595
 rc=3
 --- stderr
 setup-sync: pack '.x' is not in bootstrap (named in macos.toml)

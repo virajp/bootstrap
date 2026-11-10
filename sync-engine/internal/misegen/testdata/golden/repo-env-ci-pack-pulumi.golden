@@ -1,7 +1,0 @@
-fingerprint: d2fff84db6fe5a2d6cccd65c78f3c318d631edc4f85891210dc4e20f576076b7
-pre: rc=0
-envs: rc=2
-| mise: env 'ci' of [packs.p] in the values file: mise tool 'pulumi' of repo/tools/pulumi allows only dev
---- files
-
---- end

@@ -1,4 +1,3 @@
-fingerprint: 474b97fe28c084fb11212ade457b301376cdffbc842f195da86e0fe09a061c5b
 rc=2
 --- stderr
 repo-sync: [tools.d] of bootstrap.toml sets n to a string, but it is a number in the base or dependency tool d - write a number there (a list adds its items)

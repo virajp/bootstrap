@@ -8,7 +8,7 @@ import (
 	"github.com/virajp/bootstrap/sync-engine/internal/source"
 )
 
-// The merge is tested against bash in internal/selection. These tests cover the
+// The tests of the merge are in internal/selection. These tests cover the
 // small rules of this package alone.
 
 func TestReadRepoSelection(t *testing.T) {

@@ -1,4 +1,3 @@
-fingerprint: 04fd8a547f75b37aa6d339aed8857d2fc260dd6bdac76aa3ad2f1f20ac53e896
 rc=2
 --- stderr
 setup-sync: cannot read macos.toml

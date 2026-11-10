@@ -1,4 +1,3 @@
-fingerprint: d398dbb403dde89993fa32ad61621c482ea2e5705b074bd605bb4603aca94487
 rc=3
 --- stderr
 repo-sync: tool 'zzz' is not in bootstrap

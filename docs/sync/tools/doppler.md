@@ -1,13 +1,13 @@
 # The `doppler` tool
 
 The Doppler CLI and `setup:secrets:10-doppler`. A repository selects it only
-when
-it keeps its secrets in Doppler.
+when it keeps its secrets in Doppler.
 
 | Property     | Value |
 | ------------ | ----- |
 | Root only    | No    |
 | Depends      | None  |
+| Parent       | None  |
 | Default envs | dev   |
 | Seeds        | None  |
 
@@ -42,9 +42,18 @@ Only dev. The `ci` environment has its own secret management.
 
 The task does not run `doppler login`, because that command opens a browser.
 
-## Pre-commit hooks
+## Scripts
 
 None.
+
+## Contributions
+
+None.
+
+## Values
+
+Only `env`. No questions. See
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 

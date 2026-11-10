@@ -7,10 +7,9 @@ import (
 	"testing"
 )
 
-// The golden files in testdata/ hold the output of the bash engine (the
-// functions of its file common) for each case, from before the removal of that
-// engine. The cases do not read the repository, so the golden files cannot get
-// old.
+// The golden files in testdata/ hold the expected output of each case. The
+// cases do not read the repository, so a change of the repository does not
+// make a golden file old.
 
 // step is one call of a case: an outcome, an info line, a log line or the
 // start of a run. The summary is always the last call.

@@ -1,4 +1,3 @@
-fingerprint: e2af111509f5af8834ed3fd417d3a798e8dfe0cd27b4251c8f61183b64205133
 rc=2
 --- stderr
 setup-sync: [overrides.foo] in macos.toml is not valid - write [tools.<name>] for template values and [overrides.mise.<path>] for mise config

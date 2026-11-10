@@ -8,6 +8,7 @@ Xcode tasks.
 | ------------ | ---------------------------------------------------- |
 | Root only    | No                                                   |
 | Depends      | None                                                 |
+| Parent       | None                                                 |
 | Default envs | dev                                                  |
 | Seeds        | `.config/swiftlint.yml`, `.config/swift-format.json` |
 
@@ -16,6 +17,10 @@ Xcode tasks.
 - The repository has `Package.swift` or an `*.xcodeproj`.
 - The repository has the `ios/` or `macos/` folder of a Flutter app.
 
+`bootstrap detect` runs the detect script of the tool. It gives `match` when
+the root has `Package.swift` or an `*.xcodeproj` (see "Scripts"). It does not
+look in the folders of a Flutter app.
+
 ## What the tool ships
 
 | Path in the repository                           | Kind      | Use                                                             |
@@ -23,12 +28,10 @@ Xcode tasks.
 | `.config/mise/tasks/setup/deps/60-swift`         | Synced    | The task `setup:deps:60-swift`.                                 |
 | `.config/mise/tasks/code/lint/80-swiftlint`      | Synced    | The task `code:lint:80-swiftlint`.                              |
 | `.config/mise/tasks/code/format/50-swift-format` | Synced    | The task `code:format:50-swift-format`.                         |
-| `.config/mise/tasks/_scripts/xcode`              | Synced    | The library `xcode`, with `require_xcode` and `find_xcodeproj`. |
+| `.config/mise/tasks/_scripts/xcode`              | Library   | The library `xcode`, with `require_xcode` and `find_xcodeproj`. |
 | `.config/swiftlint.yml`                          | Seed      | The SwiftLint rules. The layout rules are off for swift-format. |
 | `.config/swift-format.json`                      | Seed      | The swift-format rules: 4 spaces, lines of 120 characters.      |
 | `.config/mise/conf.d/swift/mise.<env>.toml`      | Generated | The mise config of this tool.                                   |
-
-VS Code extensions: `swiftlang.swift-vscode`.
 
 ## mise tools
 
@@ -93,9 +96,24 @@ on a Linux CI host continues. It uses the developer folder that
 fails when no Xcode is selected. A root with only `Package.swift` needs only
 the Command Line Tools, and the task fails when `swift` is not available.
 
-## Pre-commit hooks
+## Scripts
 
-None.
+The sync runs the scripts of the tool from the clone, and never copies them.
+
+| Script           | Kind   | Use                                                                |
+| ---------------- | ------ | ------------------------------------------------------------------ |
+| `scripts/detect` | detect | `match` with a root `Package.swift` or `*.xcodeproj`, else `none`. |
+
+## Contributions
+
+| Tool     | Shared file               | Items                    |
+| -------- | ------------------------- | ------------------------ |
+| `vscode` | `.vscode/extensions.json` | `swiftlang.swift-vscode` |
+
+## Values
+
+Only `env`. No questions. The keys of the values file are in
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 

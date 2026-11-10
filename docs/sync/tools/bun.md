@@ -6,6 +6,7 @@ Bun, with a `bunfig.toml` that the repository owns.
 | ------------ | ------------- |
 | Root only    | No            |
 | Depends      | None          |
+| Parent       | None          |
 | Default envs | dev, ci       |
 | Seeds        | `bunfig.toml` |
 
@@ -13,6 +14,8 @@ Bun, with a `bunfig.toml` that the repository owns.
 
 - The repository has `bun.lock`, `bun.lockb` or `bunfig.toml`.
 - A script or a task calls `bun` or `bunx`.
+
+`bootstrap detect` runs the detect script of the tool (see "Scripts").
 
 ## What the tool ships
 
@@ -31,9 +34,26 @@ Bun, with a `bunfig.toml` that the repository owns.
 
 None.
 
-## Pre-commit hooks
+## Scripts
 
-None.
+The sync runs the scripts of the tool from the clone, and never copies them.
+
+| Script           | Kind   | Use                                        |
+| ---------------- | ------ | ------------------------------------------ |
+| `scripts/detect` | detect | `match` with a `bunfig.toml`, else `none`. |
+
+## Contributions
+
+| Tool     | Shared file    | Items                                                                                                                                              |
+| -------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dprint` | `dprint.jsonc` | The blocks `typescript`, `markup` and `tailwindcss`, and the plugins `@dprint/typescript`, `dprint-plugin-markup` and `dprint-plugin-tailwindcss`. |
+
+The `node` tool adds the same blocks and plugins.
+
+## Values
+
+Only `env`. No questions. The keys of the values file are in
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 

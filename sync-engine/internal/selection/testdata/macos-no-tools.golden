@@ -1,4 +1,3 @@
-fingerprint: c9c46142703c8ad23a5881f1e1c32754e0e3cf62ff7dd3c763fc4fabf1038fd7
 rc=2
 --- stderr
 setup-sync: the clone has no tool in macos/tools

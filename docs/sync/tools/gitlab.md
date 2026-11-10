@@ -6,6 +6,7 @@ GitLab: the `glab` CLI, and the issue and merge request templates.
 | ------------ | ------- |
 | Root only    | No      |
 | Depends      | None    |
+| Parent       | None    |
 | Default envs | dev, ci |
 | Seeds        | None    |
 
@@ -13,6 +14,9 @@ GitLab: the `glab` CLI, and the issue and merge request templates.
 
 - The `origin` remote of the repository is on GitLab.
 - The repository has `.gitlab/` or `.gitlab-ci.yml`.
+
+`bootstrap detect` runs the detect script of the tool (see "Scripts"). It
+finds only `.gitlab-ci.yml`.
 
 Select `github` or `gitlab`, not both. The `pr` merge model needs the CLI of
 the forge.
@@ -26,8 +30,6 @@ the forge.
 | `.gitlab/merge_request_templates/Default.md` | Synced    | The merge request template.   |
 | `.config/mise/conf.d/gitlab/mise.<env>.toml` | Generated | The mise config of this tool. |
 
-VS Code extension: `gitlab.gitlab-workflow`.
-
 ## mise tools
 
 | mise tool | Version  | Environments | Note                                                             |
@@ -39,10 +41,26 @@ VS Code extension: `gitlab.gitlab-workflow`.
 None. The `code:merge` tasks of the `git` tool use `glab` under the `pr` merge
 model.
 
-## Pre-commit hooks
+## Scripts
 
-- `glab-ci-lint` on `.gitlab-ci.yml`. It asks the GitLab API, so it needs the
-  network and `glab auth`.
+| Script           | Kind   | Use                                                     |
+| ---------------- | ------ | ------------------------------------------------------- |
+| `scripts/detect` | detect | `match` with `.gitlab-ci.yml` at the root, else `none`. |
+
+The sync runs the scripts from the clone of `bootstrap`, and never copies
+them. See [`docs/design/tools.md`](../../design/tools.md).
+
+## Contributions
+
+| Tool         | Shared file                      | Items                                                                                                                                                       |
+| ------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` | `.config/pre-commit-config.yaml` | The local hook block `glab-ci-lint`. It runs `mise x -- glab ci lint` on `.gitlab-ci.yml`. It asks the GitLab API, so it needs the network and `glab auth`. |
+| `vscode`     | `.vscode/extensions.json`        | `gitlab.gitlab-workflow`.                                                                                                                                   |
+
+## Values
+
+Only `env`. No questions. See
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 

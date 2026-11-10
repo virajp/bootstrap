@@ -1,4 +1,3 @@
-fingerprint: 7684fd66c386f835cf3cb4fe646941433f6c7573789c097b19a88b3099a7bb94
 rc=2
 --- stderr
 repo-sync: repo/packs.toml: a pack loop: base -> base

@@ -42,7 +42,7 @@ func writeTree(t *testing.T, files tree) string {
 	return root
 }
 
-const devHead = "default_envs = [ \"dev\" ]\ndepends = []\nextensions = []\nroot_only = false\n"
+const devHead = "default_envs = [ \"dev\" ]\ndepends = []\nroot_only = false\n"
 
 // rt gives a repo tools.toml.
 func rt(extra string) string { return devHead + extra }
@@ -121,7 +121,7 @@ var repoCases = []repoCase{
 	{name: "pack-empty-table", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\n\n[pack.e]\n"}, values: repoValues + "[packs.e]\n"},
 	{name: "pack-comment-and-quotes", over: tree{"repo/packs.toml": "# top\n[pack.base] # base\n  a   =   { default = true }   # a\n'b' = { default = true }\n\"c\" = {}\n"}, values: repoValues},
 	{name: "pack-default-false", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\nb = { default = false }\n"}, values: repoValues},
-	{name: "depends", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"b\", \"c\" ]\nextensions = []\nroot_only = false\n", "repo/tools/b/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"c\" ]\nextensions = []\nroot_only = false\n"}, values: repoValues},
+	{name: "depends", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"b\", \"c\" ]\nroot_only = false\n", "repo/tools/b/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"c\" ]\nroot_only = false\n"}, values: repoValues},
 	{name: "depends-cycle", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"b\" ]\n", "repo/tools/b/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"a\" ]\n"}, values: repoValues},
 	{name: "depends-unknown", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"zzz\" ]\n"}, values: repoValues},
 	{name: "depends-not-list", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\" ]\ndepends = \"b\"\n"}, values: repoValues},
@@ -129,7 +129,7 @@ var repoCases = []repoCase{
 		"repo/tools/a/tools.toml": rt("[mise.tools.ta]\nversion = \"1\"\n"),
 		"repo/tools/b/tools.toml": rt("[mise.tools.ta]\nversion = \"2\"\n"),
 	}, values: repoValues},
-	{name: "missing-key", over: tree{"repo/tools/d/tools.toml": "RAW:default_envs = [ \"dev\" ]\ndepends = []\nextensions = []\n"}, values: repoValues},
+	{name: "missing-key", over: tree{"repo/tools/d/tools.toml": "RAW:default_envs = [ \"dev\" ]\ndepends = []\n"}, values: repoValues},
 	{name: "no-dev", over: tree{"repo/tools/d/tools.toml": "default_envs = [ \"ci\" ]\n"}, values: repoValues},
 	{name: "bad-default-env", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\", \"qa\" ]\n"}, values: repoValues},
 	{name: "late-folder", over: tree{"repo/tools/zz-repo/tools.toml": rt("")}, values: repoValues},
@@ -199,14 +199,14 @@ var repoCases = []repoCase{
 	}, values: repoValues + "[tools.d]\n"},
 }
 
-// fill adds the four keys that bash needs in each repo tools.toml, when a case
-// leaves one out. A text that starts with "RAW:" is used as it is.
+// fill adds the three keys of a repo tools.toml, when a case leaves one out.
+// A text that starts with "RAW:" is used as it is.
 func fill(text string) string {
 	if strings.HasPrefix(text, "RAW:") {
 		return strings.TrimPrefix(text, "RAW:")
 	}
 	head := ""
-	for _, kv := range []string{"default_envs = [ \"dev\" ]\n", "depends = []\n", "extensions = []\n", "root_only = false\n"} {
+	for _, kv := range []string{"default_envs = [ \"dev\" ]\n", "depends = []\n", "root_only = false\n"} {
 		key := kv[:strings.Index(kv, " ")]
 		if !strings.Contains("\n"+text, "\n"+key+" =") {
 			head += kv

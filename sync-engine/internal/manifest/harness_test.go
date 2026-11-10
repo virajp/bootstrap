@@ -1,11 +1,10 @@
 package manifest
 
-// The parity harness. Each case builds a file tree in a scratch folder, runs
+// The test harness. Each case builds a file tree in a scratch folder, runs
 // the Go functions on it, then compares the exit codes, stdout, stderr and the
 // file tree with the golden files in testdata/. The golden files hold the
-// result of the same steps of the bash engine (the functions of its files
-// write, manifest and common), from before the removal of that engine. The
-// cases do not read the repository, so the golden files cannot get old.
+// expected result of each case. The cases do not read the repository, so a
+// change of the repository does not make a golden file old.
 
 import (
 	"bytes"
@@ -38,8 +37,8 @@ func (h *run) abs(rel string) string {
 	return h.root + "/" + rel
 }
 
-// op is one step of a case in Go. Each step prints `rc=<code>` to stdout. The
-// golden files hold the output of the same step of the bash engine.
+// op is one step of a case. Each step prints `rc=<code>` to stdout. The
+// golden files hold the expected output of each step.
 type op struct {
 	run func(h *run) int
 }
@@ -174,7 +173,7 @@ func toRows(list []string) []Row {
 	var rows []Row
 	for _, l := range list {
 		if l == "" {
-			continue // bash skips an empty line
+			continue // an empty line is not a row
 		}
 		tool, path, _ := strings.Cut(l, "\t")
 		rows = append(rows, Row{Tool: tool, Path: path})
@@ -320,7 +319,7 @@ func goldenPath(c pcase, verbose bool) string {
 	return filepath.Join("testdata", c.name+"."+v+".golden")
 }
 
-func TestParityGo(t *testing.T) {
+func TestCases(t *testing.T) {
 	n := 0
 	for _, c := range cases() {
 		for _, verbose := range []bool{false, true} {
@@ -340,10 +339,10 @@ func TestParityGo(t *testing.T) {
 					n++
 					t.Logf("only the position of a jq parse error differs from %s", path)
 				default:
-					t.Errorf("Go differs from %s\ngot:\n%s\nwant:\n%s", path, got, want)
+					t.Errorf("the output differs from %s\ngot:\n%s\nwant:\n%s", path, got, want)
 				}
 			})
 		}
 	}
-	t.Logf("%d runs equal to the bash golden files", n)
+	t.Logf("%d runs equal to the golden files", n)
 }

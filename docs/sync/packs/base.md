@@ -1,35 +1,35 @@
 # The `base` pack
 
-The tools that each repository gets: mise, the sync, git, pre-commit, the
-formatter, the linters, VS Code and the scanners.
+The tools that each repository gets: mise with the entry of the sync, git,
+pre-commit, the formatter, the linters, VS Code and the scanners.
 
-| Property | Value                                                                                     |
-| -------- | ----------------------------------------------------------------------------------------- |
-| Members  | `mise`, `repo-sync`, `git`, `pre-commit`, `dprint`, `linter`, `vscode`, `"pack:security"` |
+| Property | Value                                                                        |
+| -------- | ---------------------------------------------------------------------------- |
+| Members  | `mise`, `git`, `pre-commit`, `dprint`, `linter`, `vscode`, `"pack:security"` |
 
 ## When the pack is relevant
 
-Always. `repo-sync` always adds the `base` pack. Its name is fixed in
-`repo-sync`. Do not write `[packs.base]` in the values file.
+Always. `bootstrap sync` always adds the `base` pack. Do not write
+`[packs.base]` in the values file.
 
 ## What the pack adds
 
-Each member is `default = true` in `repo/packs.toml`, for example
-`mise = { default = true }`.
+| Member            | Default | Required | Tool file                                         |
+| ----------------- | ------- | -------- | ------------------------------------------------- |
+| `mise`            | Yes     | Yes      | [`tools/mise.md`](../tools/mise.md)               |
+| `git`             | Yes     | Yes      | [`tools/git.md`](../tools/git.md)                 |
+| `pre-commit`      | Yes     | Yes      | [`tools/pre-commit.md`](../tools/pre-commit.md)   |
+| `dprint`          | Yes     | No       | [`tools/dprint.md`](../tools/dprint.md)           |
+| `linter`          | Yes     | No       | [`tools/linter.md`](../tools/linter.md)           |
+| `vscode`          | Yes     | No       | [`tools/vscode.md`](../tools/vscode.md)           |
+| `"pack:security"` | Yes     | No       | The `security` pack, [`security.md`](security.md) |
 
-| Member            | Default | Tool file                                         |
-| ----------------- | ------- | ------------------------------------------------- |
-| `mise`            | Yes     | [`tools/mise.md`](../tools/mise.md)               |
-| `repo-sync`       | Yes     | [`tools/repo-sync.md`](../tools/repo-sync.md)     |
-| `git`             | Yes     | [`tools/git.md`](../tools/git.md)                 |
-| `pre-commit`      | Yes     | [`tools/pre-commit.md`](../tools/pre-commit.md)   |
-| `dprint`          | Yes     | [`tools/dprint.md`](../tools/dprint.md)           |
-| `linter`          | Yes     | [`tools/linter.md`](../tools/linter.md)           |
-| `vscode`          | Yes     | [`tools/vscode.md`](../tools/vscode.md)           |
-| `"pack:security"` | Yes     | The `security` pack, [`security.md`](security.md) |
+`required = true` marks a tool that each repository must have. The rules of
+`default` and `required` are in
+[`docs/design/packs.md`](../../design/packs.md).
 
-The mise `depends` of `pre-commit` and `linter` add the `python` and `node`
-tools too.
+The `depends` of the members add more tools: `pre-commit` adds `python`, and
+`linter` adds `node`.
 
 `vscode` is a `root_only` tool. In a git submodule, the sync skips it.
 
@@ -41,7 +41,9 @@ need it.
 
 ## Questions
 
-None. The pack is always added. A consumer cannot remove a tool of the pack.
+None. The pack is always added. `bootstrap remove` refuses a `required` tool,
+and a tool that only a pack selects. Thus a consumer cannot remove a tool of
+the pack. A `[tools.<name>]` table of a member gives values only.
 
 ## Adapt to the repository
 

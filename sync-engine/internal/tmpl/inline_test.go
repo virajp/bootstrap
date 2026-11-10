@@ -12,10 +12,8 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// The folders testdata/files/inline-*/i.* hold the inline templates that the
-// bash engine rendered (gomplate -i): the template, the files of the -c flags,
-// the environment variables of the engine, the output and the error. See
-// files_test.go.
+// TestInlineTemplates uses the inline templates of testdata/renders.tar.gz.
+// See renders_test.go.
 
 // loadCtxFile reads one -c file. A TOML file gives int64 numbers, as the
 // gomplate TOML datasource does.

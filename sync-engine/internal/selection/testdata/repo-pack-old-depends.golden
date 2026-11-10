@@ -1,4 +1,3 @@
-fingerprint: 1a50cc0beaef48b80ca823b92f98262a4e43d0e8684c76031bac75200e6a35c5
 rc=2
 --- stderr
 repo-sync: repo/packs.toml: [pack.base] depends is the old format - write each member as <tool> = { default = true } or <tool> = {}

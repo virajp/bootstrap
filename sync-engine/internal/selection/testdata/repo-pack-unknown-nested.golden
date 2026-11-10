@@ -1,4 +1,3 @@
-fingerprint: 406634a900643945cb45f7115029ab5fa6774ea0126d814b0f88804f79b589b4
 rc=3
 --- stderr
 repo-sync: pack 'zzz' is not in bootstrap (named in pack base)

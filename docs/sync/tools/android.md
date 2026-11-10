@@ -2,19 +2,24 @@
 
 The Android SDK command-line tools.
 
-| Property     | Value                                               |
-| ------------ | --------------------------------------------------- |
-| Root only    | No                                                  |
-| Depends      | None. Its mise tool adds `java` (see "mise tools"). |
-| Default envs | dev, ci                                             |
-| Seeds        | None                                                |
+| Property     | Value   |
+| ------------ | ------- |
+| Root only    | No      |
+| Depends      | `java`  |
+| Parent       | None    |
+| Default envs | dev, ci |
+| Seeds        | None    |
 
 ## When the tool is relevant
 
 - The repository has an Android build: a Gradle build with the Android Gradle
   plugin, in the Kotlin DSL (`settings.gradle.kts`) or the Groovy DSL
   (`settings.gradle`), or the `android/` folder of a Flutter app.
-- The `flutter` tool adds it.
+- The `flutter` tool adds it: `flutter` has `android` in its `depends`.
+
+`bootstrap detect` runs the detect script of the tool. It gives `match` when a
+Gradle file at the root, or one level below it, uses the Android Gradle plugin
+(see "Scripts"). It does not look in the `android/` folder of a Flutter app.
 
 ## What the tool ships
 
@@ -26,9 +31,9 @@ The Android SDK command-line tools.
 
 ## mise tools
 
-| mise tool     | Version | Environments | Note                                                    |
-| ------------- | ------- | ------------ | ------------------------------------------------------- |
-| `android-sdk` | `23`    | dev, ci      | Needs java. Sets `ANDROID_HOME` and `ANDROID_SDK_ROOT`. |
+| mise tool     | Version | Environments | Note                                                                   |
+| ------------- | ------- | ------------ | ---------------------------------------------------------------------- |
+| `android-sdk` | `23`    | dev, ci      | Runs on the JDK of `java`. Sets `ANDROID_HOME` and `ANDROID_SDK_ROOT`. |
 
 ## Tasks
 
@@ -102,9 +107,22 @@ projects of its `android/` build, are not linted. A temporary init script runs
 module without the Android Gradle plugin has none and is skipped.
 `--debug` adds `--info`.
 
-## Pre-commit hooks
+## Scripts
+
+The sync runs the scripts of the tool from the clone, and never copies them.
+
+| Script           | Kind   | Use                                                                                                                                                                                                          |
+| ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `scripts/detect` | detect | `match` when a `*.gradle`, `*.gradle.kts` or `libs.versions.toml` file at the root, or one level below it, names `com.android.application`, `com.android.library` or `com.android.tools.build`. Else `none`. |
+
+## Contributions
 
 None.
+
+## Values
+
+Only `env`. No questions. The keys of the values file are in
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 

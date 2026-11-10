@@ -5,7 +5,8 @@ The Cloudflare CLI (`npm:cf`).
 | Property     | Value   |
 | ------------ | ------- |
 | Root only    | No      |
-| Depends      | None    |
+| Depends      | `node`  |
+| Parent       | None    |
 | Default envs | dev, ci |
 | Seeds        | None    |
 
@@ -13,6 +14,8 @@ The Cloudflare CLI (`npm:cf`).
 
 - The repository has `wrangler.toml`, `wrangler.json` or `wrangler.jsonc`.
 - The repository deploys to Cloudflare Workers or Pages.
+
+`bootstrap detect` runs the detect script of the tool (see "Scripts").
 
 ## What the tool ships
 
@@ -22,17 +25,31 @@ The Cloudflare CLI (`npm:cf`).
 
 ## mise tools
 
-| mise tool | Version  | Environments | Note                                                                                          |
-| --------- | -------- | ------------ | --------------------------------------------------------------------------------------------- |
-| `npm:cf`  | `latest` | dev, ci      | Needs node. The `workerd` build is permitted. `minimum_release_age` is `0h`: no release wait. |
+| mise tool | Version  | Environments | Note                                                                              |
+| --------- | -------- | ------------ | --------------------------------------------------------------------------------- |
+| `npm:cf`  | `latest` | dev, ci      | The `workerd` build is permitted. `minimum_release_age` is `0h`: no release wait. |
 
 ## Tasks
 
 None.
 
-## Pre-commit hooks
+## Scripts
+
+| Script           | Kind   | Use                                                                                         |
+| ---------------- | ------ | ------------------------------------------------------------------------------------------- |
+| `scripts/detect` | detect | `match` with `wrangler.toml`, `wrangler.json` or `wrangler.jsonc` at the root, else `none`. |
+
+The sync runs the scripts from the clone of `bootstrap`, and never copies them.
+See [`docs/design/tools.md`](../../design/tools.md).
+
+## Contributions
 
 None.
+
+## Values
+
+Only `env`. No questions. See
+[`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
 

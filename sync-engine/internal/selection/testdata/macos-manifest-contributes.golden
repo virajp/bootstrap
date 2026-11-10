@@ -1,4 +1,3 @@
-fingerprint: da4de5bbee9b16182a90842bf00a06341970e45394616c321e987a0c30b13c95
 rc=2
 --- stderr
 setup-sync: macos/tools/m1/tools.toml: [contributes.m2] must be a table
