@@ -15,7 +15,7 @@ set -euo pipefail
 # Read stdin, so the writer of the input never blocks.
 cat > /dev/null
 
-values=${REPO_SYNC_VALUES:-.config/bootstrap.toml}
+values=${BOOTSTRAP_VALUES:-.config/bootstrap.toml}
 overrides=${values%.toml}.overrides.toml
 
 # A branch that exists here or on origin.

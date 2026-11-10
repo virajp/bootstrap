@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-setup-sync: macos.toml is not a file
+bootstrap: macos.toml is not a file
 --- stdout

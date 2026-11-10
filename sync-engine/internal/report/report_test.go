@@ -177,8 +177,8 @@ func TestIsTerminal(t *testing.T) {
 
 func TestPrefix(t *testing.T) {
 	var b bytes.Buffer
-	NewReport(&b, Options{Prefix: "setup-sync"}).Log("tools: a b")
-	if got, want := b.String(), "setup-sync: tools: a b\n"; got != want {
+	NewReport(&b, Options{Prefix: "bootstrap"}).Log("tools: a b")
+	if got, want := b.String(), "bootstrap: tools: a b\n"; got != want {
 		t.Errorf("Log() = %q, want %q", got, want)
 	}
 }

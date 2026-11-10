@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-setup-sync: [packs.p] in macos.toml must be an empty table
+bootstrap: [packs.p] in macos.toml must be an empty table
 --- stdout

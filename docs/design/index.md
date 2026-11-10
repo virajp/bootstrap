@@ -25,7 +25,7 @@ various tools that it supports.
 ## Requirements
 
 `mise` MUST be installed on the machine. mise installs the CLI:
-`mise use -g github:virajp/bootstrap`.
+`mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'`.
 
 ## How bootstrap is used
 

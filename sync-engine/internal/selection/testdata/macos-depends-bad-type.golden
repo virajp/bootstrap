@@ -1,5 +1,5 @@
 rc=2
 --- stderr
-setup-sync: macos/tools/m1/tools.toml: depends must be a list of tool names
-setup-sync: macos/tools/m2/tools.toml: depends must be a list of tool names
+bootstrap: macos/tools/m1/tools.toml: depends must be a list of tool names
+bootstrap: macos/tools/m2/tools.toml: depends must be a list of tool names
 --- stdout

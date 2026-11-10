@@ -1,10 +1,8 @@
 // Package macos is the Mac front-end of the sync engine: the subcommand
 // `bootstrap mac sync`. It renders the selected tools of `macos/tools/` of a
-// clone of bootstrap into $HOME, then runs `mise bootstrap`. It replaces the
-// bash file sync-engine/setup-sync, with the same output, files and exit
-// codes.
+// clone of bootstrap into $HOME, then runs `mise bootstrap`.
 //
-// Run reads the same environment as `setup_sync`: BOOTSTRAP_CLONE,
+// Run reads this environment: BOOTSTRAP_CLONE,
 // BOOTSTRAP_CACHE, MACOS_SETUP_REPO_PATH, BOOTSTRAP_VERBOSE, HOME, USER,
 // TMPDIR, XDG_CACHE_HOME, PATH, PWD and the style variables FORCE_COLOR,
 // NO_COLOR and TERM.
@@ -34,7 +32,7 @@ import (
 )
 
 // Prefix is the name at the start of each log line (_SE_PREFIX).
-const Prefix = "setup-sync"
+const Prefix = "bootstrap"
 
 // The names of the Mac side in a message.
 const (
@@ -47,8 +45,8 @@ const (
 	valuesHeader = "# The values of the Mac sync of bootstrap. See docs/setup/index.md."
 )
 
-// Usage is the help text of `_ss_usage`.
-const Usage = `usage: setup_sync [--dry-run] [--no-bootstrap]
+// Usage is the help text of `bootstrap mac sync`.
+const Usage = `usage: bootstrap mac sync [--dry-run] [--no-bootstrap]
 
   --dry-run       show the changes without writing them
   --no-bootstrap  skip every mise bootstrap step
@@ -167,7 +165,7 @@ func (s *state) log(format string, args ...any) { s.r.Log(fmt.Sprintf(format, ar
 // logAll prints each message of <err> and gives its code.
 func (s *state) logAll(err error) fail.Code { return source.LogAll(s.r, err) }
 
-// run is setup_sync.
+// run is `bootstrap mac sync`.
 func (s *state) run(args []string) fail.Code {
 	dryRun, bootstrap := false, true
 	for _, arg := range args {
@@ -224,7 +222,7 @@ func (s *state) run(args []string) fail.Code {
 		cache = xdg + "/bootstrap"
 	}
 	manifestFile := cache + "/macos-generated.tsv"
-	work, err := os.MkdirTemp(target.DryRunDir(s.getenv), "setup-sync.")
+	work, err := os.MkdirTemp(target.DryRunDir(s.getenv), "bootstrap-mac.")
 	if err != nil {
 		s.log("cannot create a temp folder")
 		return fail.Other
@@ -444,7 +442,7 @@ func (s *state) toolValues() fail.Code {
 	}
 	if missing := questions.Missing(s.idx, s.res.Tools, s.values.User, over); len(missing) > 0 {
 		for _, q := range missing {
-			s.log("the question %s has no answer in %s - run bootstrap init", q.Name(), valuesName)
+			s.log("the question %s has no answer in %s - %s", q.Name(), valuesName, oldform.MacHint)
 		}
 		return fail.Usage
 	}

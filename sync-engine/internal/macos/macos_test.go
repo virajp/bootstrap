@@ -55,7 +55,7 @@ func TestCheckMise(t *testing.T) {
 	if err := os.Symlink(filepath.Join(other, "mise"), filepath.Join(linked, "mise")); err != nil {
 		t.Fatal(err)
 	}
-	const msg = "setup-sync: mise must be installed with `curl https://mise.run | sh` at ~/.local/bin/mise, not from a package manager (found: "
+	const msg = "bootstrap: mise must be installed with `curl https://mise.run | sh` at ~/.local/bin/mise, not from a package manager (found: "
 	cases := []struct{ path, want string }{
 		{good, ""},
 		{other, msg + filepath.Join(other, "mise") + ")\n"},
@@ -86,10 +86,10 @@ func TestUsage(t *testing.T) {
 	}
 	out.Reset()
 	if code := Run([]string{"--dry-run", "--bogus", "-h"}, &out, &errs); code != 2 || out.Len() != 0 ||
-		errs.String() != "setup-sync: unknown flag '--bogus'\n"+Usage {
+		errs.String() != "bootstrap: unknown flag '--bogus'\n"+Usage {
 		t.Errorf("bad flag: code %d, stdout %q, stderr %q", code, out.String(), errs.String())
 	}
-	if !strings.HasPrefix(Usage, "usage: setup_sync [--dry-run] [--no-bootstrap]\n") {
+	if !strings.HasPrefix(Usage, "usage: bootstrap mac sync [--dry-run] [--no-bootstrap]\n") {
 		t.Errorf("usage: %q", Usage)
 	}
 }

@@ -116,14 +116,15 @@ Each command first examines these items. A failure stops it with code 2.
   folder. Each other `mac` command uses `MACOS_SETUP_REPO_PATH`: see
   [mac.md](mac.md).
 - The values file is `.config/bootstrap.toml` of the repository, or the file of
-  `REPO_SYNC_VALUES`. On the Mac, it is `macos.toml` of the repository of
+  `BOOTSTRAP_VALUES`. On the Mac, it is `macos.toml` of the repository of
   `macos.toml`.
 
 `init` outside a git repository tells the user to create one with `git init`.
 On the repo side, each command except `init` needs a values file. `add`,
 `remove`, `replace` and `detect` need a values file on both sides. A values file
-in the old form stops each command except `init` with "run bootstrap init".
-`sync` and `check` also stop for a question of a selected tool without an
+in the old form stops each command except `init` with "run bootstrap init"
+("run bootstrap mac init" on the Mac). `sync` and `check` also stop for a
+question of a selected tool without an
 answer.
 
 ### The change list
@@ -174,7 +175,8 @@ Mac.
 2. An existing values file gets the migration of each old form, with its
    comments kept. See [bootstrap-config.md](bootstrap-config.md) for the old
    forms. Only `init` migrates: `sync` and `check` stop with code 2 and
-   "run bootstrap init" when they find an old form.
+   "run bootstrap init" ("run bootstrap mac init" on the Mac) when they find
+   an old form.
 3. Each named tool that is not selected gets an empty `[tools.<name>]` table.
 4. The command asks each question of a selected tool that has no answer. See
    [The questions](#the-questions).
@@ -322,11 +324,12 @@ version with that value.
 
 - A `VERSION` that is not `MAJOR.MINOR.PATCH` stops the command with code 5.
 - An older binary stops the command with code 2, and tells the user to run
-  `mise upgrade github:virajp/bootstrap`.
+  `mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'`.
 - A build without a version, for example `dev`, is new enough.
 
-mise installs the binary with `github:virajp/bootstrap`. The `mise` tool of
-each side has it as a mise tool. See [repo.md](repo.md) and [mac.md](mac.md).
+mise installs the binary with `github:virajp/bootstrap` and the option
+`version_prefix = "cli-v"`. The `mise` tool of each side has it as a mise tool.
+See [repo.md](repo.md) and [mac.md](mac.md).
 
 ## The engine variables
 
@@ -338,7 +341,7 @@ each side has it as a mise tool. See [repo.md](repo.md) and [mac.md](mac.md).
 | `BOOTSTRAP_VERBOSE`     | `1` prints the log line of each target in place of the list. See [The output of a run](#the-output-of-a-run).                  |
 | `BOOTSTRAP_BIN`         | The path of a local build of the engine. The entry tasks, the gate and the tests run it in place of the `bootstrap` of mise.   |
 | `BOOTSTRAP_JOBS`        | The jobs at a time. `--jobs` sets it.                                                                                          |
-| `REPO_SYNC_VALUES`      | The values file of the repo side. The default is `.config/bootstrap.toml`.                                                     |
+| `BOOTSTRAP_VALUES`      | The values file of the repo side. The default is `.config/bootstrap.toml`.                                                     |
 | `MACOS_SETUP_REPO_PATH` | The repository of `macos.toml`. See [mac.md](mac.md).                                                                          |
 
 ## The tool calls
@@ -811,9 +814,9 @@ it.
 | Last line | `✅ <text>` or `❌ <text>`     | `[OK] <text>` or `[ERROR] <text>` |
 | Table     | Box characters                 | ASCII borders (`+`, `-`, `\|`)    |
 
-These lines have no prefix. A log line of a front-end has the prefix of its
-side with style off. A line of `internal/cli` shows the info glyph or the error
-glyph, or the prefix `bootstrap: ` with style off.
+These lines have no prefix. A log line of a front-end, on the two sides, has
+the prefix `bootstrap: ` with style off. A line of `internal/cli` shows the
+info glyph or the error glyph, or the same prefix with style off.
 
 **Verbose.** `--verbose` of `setup:configs` and `updateall:configs` sets
 `BOOTSTRAP_VERBOSE=1`. A user can also set the variable, and only the value `1`
@@ -855,7 +858,8 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
 - A missing `mise`, a folder outside a git repository, and a missing values
   file for each command except `init`.
 - An old form of the values file (except for `init`), and a question of a
-  selected tool without an answer, with the message "run bootstrap init".
+  selected tool without an answer, with the message "run bootstrap init"
+  ("run bootstrap mac init" on the Mac).
 - An `--answer` for a question that no selected tool has, and a question without
   an answer with `--yes` or without a terminal.
 - Changes without `--yes` and without a terminal: `changes need --yes`.
@@ -957,8 +961,12 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
 ## The release of the engine
 
 The engine is a binary of a GitHub release of `virajp/bootstrap`. mise
-installs it with its `github:` backend: `mise use -g github:virajp/bootstrap`.
-The workflow `.github/workflows/release-engine.yml` builds the binary and makes
+installs it with its `github:` backend:
+`mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'`. The release tags
+are `cli-vX.Y.Z`, so that other tags of the repository can have other uses. With
+the option `version_prefix = "cli-v"`, mise reads only the tags that start with
+`cli-v`, and shows the tag `cli-v2.0.0` as the version `2.0.0`. The workflow
+`.github/workflows/release-engine.yml` builds the binary and makes
 the release.
 
 ### `VERSION`
@@ -967,7 +975,8 @@ the release.
 `main` needs. See [The version check](#the-version-check).
 
 - It has one line, `MAJOR.MINOR.PATCH`, with no `v` and no comment.
-- The tag `vX.Y.Z` is the source of the version. The binary gets `X.Y.Z` from
+- The tag `cli-vX.Y.Z` is the source of the version. The binary gets `X.Y.Z`
+  from
   the build, and the release workflow writes `X.Y.Z` to `VERSION`.
 - Nobody edits `VERSION` by hand. A manual change can name a version that has no
   release.
@@ -989,28 +998,30 @@ the ruleset `all-tags` does not let you move or delete the tag.
 1. Land the engine change on `main` with `mise run code:merge <branch>`.
 2. Pull `main`.
 3. Select the next version `X.Y.Z`.
-4. Make a signed tag on the commit of `main`: `git tag -s vX.Y.Z -m "vX.Y.Z"`.
-5. Push the tag: `git push origin vX.Y.Z`.
+4. Make a signed tag on the commit of `main`:
+   `git tag -s cli-vX.Y.Z -m "cli-vX.Y.Z"`.
+5. Push the tag: `git push origin cli-vX.Y.Z`.
 6. Monitor the run of `release-engine` in GitHub Actions.
 7. When the run is done, pull `main`. Its last commit is
    `ops: pin bootstrap X.Y.Z`.
 
 The ruleset `all-tags` requires a signed tag. The tag must be
-`vMAJOR.MINOR.PATCH`, with no leading zero and no suffix.
+`cli-vMAJOR.MINOR.PATCH`, with no leading zero and no suffix.
 
 ### What the workflow does
 
-The workflow starts on a push of a tag `v*.*.*`. Its one job runs on `macos-15`,
+The workflow starts on a push of a tag `cli-v*.*.*`. Its one job runs on
+`macos-15`,
 an arm64 runner, with the permission `contents: write` only.
 
-1. It examines the tag. The tag must be `vMAJOR.MINOR.PATCH`, and its commit
+1. It examines the tag. The tag must be `cli-vMAJOR.MINOR.PATCH`, and its commit
    must be on `main`. Else the run stops.
 2. It installs the Go version of `sync-engine/go.mod`.
 3. It builds `./cmd/bootstrap` in `sync-engine/` for `darwin/arm64`, with
    `CGO_ENABLED=0` and `-ldflags "-X main.version=X.Y.Z"`.
 4. It runs `bootstrap version`. The output must be `X.Y.Z`.
 5. It writes the SHA-256 checksum of the binary.
-6. It creates the GitHub release `vX.Y.Z` with two assets:
+6. It creates the GitHub release `cli-vX.Y.Z` with two assets:
    `bootstrap-darwin-arm64` and `bootstrap-darwin-arm64.sha256`.
 7. It commits `sync-engine/VERSION` = `X.Y.Z` on `main`.
 

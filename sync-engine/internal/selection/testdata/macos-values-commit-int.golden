@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-setup-sync: bootstrap_commit in macos.toml must be a string
+bootstrap: bootstrap_commit in macos.toml must be a string
 --- stdout

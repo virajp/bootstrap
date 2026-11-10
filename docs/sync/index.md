@@ -139,13 +139,14 @@ This file holds the instructions. Each rule of the sync has one place in
 - The repository is a git repository. `bootstrap` stops outside of one.
 - mise is installed.
 - The CLI `bootstrap` is installed. Install it with
-  `mise use -g github:virajp/bootstrap`. This install needs the network.
+  `mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'`. This install
+  needs the network.
   After the adoption, the `mise` tool also installs it in `dev`.
 - The machine can reach `https://github.com/virajp/bootstrap.git`.
   `bootstrap` clones this URL into `~/.cache/bootstrap/`, and needs no SSH
   key. `BOOTSTRAP_CACHE` changes the folder.
 - When `bootstrap` is older than the version that the clone needs, it stops.
-  Upgrade it with `mise upgrade github:virajp/bootstrap`.
+  Upgrade it with `mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'`.
 
 ## An empty repository
 
@@ -589,7 +590,7 @@ failure does not change an existing file. The full list is in
 | 2    | `changes need --yes`                                                                                                               | Ask the user, then run the command with `--yes`                                   |
 | 2    | A bad key or value of the values file, a root-only tool in a submodule, or a check script that failed. The message names the cause | Correct the values file, or the repository                                        |
 | 2    | A bad `tools.toml`, packs file or merge spec of `bootstrap`                                                                        | Tell the `bootstrap` owner                                                        |
-| 2    | `bootstrap` is older than the version that the clone needs                                                                         | Run `mise upgrade github:virajp/bootstrap`                                        |
+| 2    | `bootstrap` is older than the version that the clone needs                                                                         | Run `mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'`                 |
 | 2    | Not a git repository, or mise is not available                                                                                     | Run `git init`, or install mise                                                   |
 | 3    | A tool or a pack that is not in `bootstrap`                                                                                        | Correct the `[tools.*]` and `[packs.*]` entries, or the tool names of the command |
 | 5    | The clone or the fetch failed, or `sync-engine/VERSION` of the clone is not `MAJOR.MINOR.PATCH`                                    | Examine the network and the access                                                |

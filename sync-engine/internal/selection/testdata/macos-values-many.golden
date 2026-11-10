@@ -1,7 +1,7 @@
 rc=3
 --- stderr
-setup-sync: foo is not a key of macos.toml - the top-level keys are bootstrap_commit, [tools.<name>], [packs.<name>], [overrides.mise.<path>] and [mise.*]
-setup-sync: [packs.p] in macos.toml has the key 'z' - a pack entry is an empty table
-setup-sync: tool 'a/b' is not in bootstrap (named in macos.toml)
-setup-sync: [tools.m3] env is for repo tools only - the Mac side has no environments
+bootstrap: foo is not a key of macos.toml - the top-level keys are bootstrap_commit, [tools.<name>], [packs.<name>], [overrides.mise.<path>] and [mise.*]
+bootstrap: [packs.p] in macos.toml has the key 'z' - a pack entry is an empty table
+bootstrap: tool 'a/b' is not in bootstrap (named in macos.toml)
+bootstrap: [tools.m3] env is for repo tools only - the Mac side has no environments
 --- stdout

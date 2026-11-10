@@ -48,7 +48,7 @@ export MISE_DATA_DIR="${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise
 export MISE_CACHE_DIR="${MISE_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/mise}"
 # The build of the engine below needs the Go of the `go` tool of this repository.
 mise_env=${MISE_ENV:-}
-unset MISE_ENV BOOTSTRAP_URL BOOTSTRAP_CLONE REPO_SYNC_CLONE
+unset MISE_ENV BOOTSTRAP_URL BOOTSTRAP_CLONE
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-macos-tools.XXXXXX")
 tmp=$(cd "$tmp" && pwd -P)
@@ -183,7 +183,7 @@ run_real
 check_exit "$first_exit"
 
 # The selection check: the example must select each tool of macos/tools/.
-selected=$(sed -n 's/^setup-sync: tools://p' "$log" | head -n 1)
+selected=$(sed -n 's/^bootstrap: tools://p' "$log" | head -n 1)
 missing=''
 for t in "$root"/macos/tools/*/; do
   t=${t%/}
@@ -247,7 +247,7 @@ setup_case "missing question" missing
 grep -v '^config_path = ' "$example" > "$MACOS_SETUP_REPO_PATH/macos.toml"
 run_real
 check_exit 2
-if grep -qF 'the question mise.config_path has no answer in macos.toml - run bootstrap init' "$log"; then
+if grep -qF 'the question mise.config_path has no answer in macos.toml - run bootstrap mac init' "$log"; then
   pass "the message names the question"
 else
   fail "the message does not name the question 'mise.config_path'"

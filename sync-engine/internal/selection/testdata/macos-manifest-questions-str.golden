@@ -1,5 +1,5 @@
 rc=2
 --- stderr
-setup-sync: macos/tools/m1/tools.toml: [contributes] must be a table of [contributes.<tool>] tables
-setup-sync: macos/tools/m1/tools.toml: [questions] must be a table of [questions.<key>] tables
+bootstrap: macos/tools/m1/tools.toml: [contributes] must be a table of [contributes.<tool>] tables
+bootstrap: macos/tools/m1/tools.toml: [questions] must be a table of [questions.<key>] tables
 --- stdout

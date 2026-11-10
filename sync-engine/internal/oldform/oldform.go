@@ -1,6 +1,7 @@
 // Package oldform finds the old forms of a values file and of the files that
 // went with it, and migrates them to the new form. `sync` and `check` stop
-// with code 2 on an old form; only `bootstrap init` migrates it.
+// with code 2 on an old form; only `bootstrap init` (`bootstrap mac init` on
+// the Mac) migrates it.
 //
 // This package is the one place of the old names: the old tools of the entry
 // and the old files of the own hooks and of the .gitignore lines.
@@ -48,8 +49,11 @@ var movedKeys = []string{"branch", "claude", "commit_scopes", "extensions", "wor
 // error, because the migration removes it.
 var Migrating bool
 
-// Hint ends each message of an old form.
+// Hint ends each message of an old form of the repo side.
 const Hint = "run bootstrap init"
+
+// MacHint ends each message of an old form of the Mac side.
+const MacHint = "run bootstrap mac init"
 
 func usage(format string, args ...any) *fail.Error { return fail.New(fail.Usage, format, args...) }
 
@@ -89,7 +93,7 @@ func Mac(raw *source.Obj, shown string) error {
 		return nil
 	}
 	if t, ok := raw.Get("tools").(*source.Obj); ok && t.Has(OldMacTool) {
-		return source.Problems([]*fail.Error{usage("[tools.%s] in %s is the old form - %s", OldMacTool, shown, Hint)})
+		return source.Problems([]*fail.Error{usage("[tools.%s] in %s is the old form - %s", OldMacTool, shown, MacHint)})
 	}
 	return nil
 }

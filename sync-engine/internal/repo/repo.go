@@ -5,7 +5,7 @@
 // and exit codes.
 //
 // Run reads this environment: BOOTSTRAP_CLONE,
-// MISE_PROJECT_ROOT, REPO_SYNC_VALUES,
+// MISE_PROJECT_ROOT, BOOTSTRAP_VALUES,
 // BOOTSTRAP_VERBOSE, TMPDIR, PATH, PWD and the style variables FORCE_COLOR,
 // NO_COLOR and TERM. A template reads the environment with env.Getenv.
 //
@@ -186,14 +186,14 @@ func (s *state) run(args []string) fail.Code {
 	if base == "" {
 		base = s.pwd
 	}
-	valuesFile := s.getenv("REPO_SYNC_VALUES")
+	valuesFile := s.getenv("BOOTSTRAP_VALUES")
 	if valuesFile == "" {
 		valuesFile = base + "/.config/bootstrap.toml"
 	}
 	// `.config/repo-config.toml` is the old name, from before this
 	// repository was renamed to bootstrap.
 	old := base + "/.config/repo-config.toml"
-	if s.getenv("REPO_SYNC_VALUES") == "" && !isFile(valuesFile) && isFile(old) {
+	if s.getenv("BOOTSTRAP_VALUES") == "" && !isFile(valuesFile) && isFile(old) {
 		s.log(s.path(old) + " is the old name of the values file - rename it to .config/bootstrap.toml")
 		valuesFile = old
 	}

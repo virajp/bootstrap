@@ -274,7 +274,7 @@ func (a *app) finish(mac bool, o opts, ch *change) fail.Code {
 
 	// The plan of the sync, with the new values file.
 	run := frontEndOf(mac)
-	envKey, envVal := "REPO_SYNC_VALUES", tmpValues
+	envKey, envVal := "BOOTSTRAP_VALUES", tmpValues
 	if mac {
 		envKey, envVal = "MACOS_SETUP_REPO_PATH", tmp
 	}

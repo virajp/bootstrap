@@ -11,7 +11,6 @@ import (
 )
 
 // NameOK tells if <name> can be a tool or pack name: one word, not a path.
-// This is `_ss_name_ok` of setup-sync.
 func NameOK(name string) bool {
 	return name != "" && !strings.Contains(name, "/") && !strings.HasPrefix(name, ".") &&
 		strings.IndexFunc(name, func(r rune) bool {

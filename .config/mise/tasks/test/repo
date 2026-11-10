@@ -146,10 +146,10 @@ case_body() {
     args=${args/ --check / }
   fi
   (
-    unset BOOTSTRAP_URL BOOTSTRAP_CLONE REPO_SYNC_CLONE
+    unset BOOTSTRAP_URL BOOTSTRAP_CLONE
     export BOOTSTRAP_CACHE=$tmp/cache
     [[ -z ${CASE_BOOTSTRAP_URL:-} ]] || export BOOTSTRAP_URL=$CASE_BOOTSTRAP_URL
-    export REPO_SYNC_VALUES=$values MISE_PROJECT_ROOT=$consumer REPO_SYNC_NO_AUTOUPDATE=1
+    export BOOTSTRAP_VALUES=$values MISE_PROJECT_ROOT=$consumer
     [[ ${CASE_CLONE:-} == none ]] || export BOOTSTRAP_CLONE=$clone
     if [[ -n ${CASE_CALL:-} ]]; then
       "$CASE_CALL"
@@ -1151,8 +1151,8 @@ check_exact() {
 # case_rerun: run the engine again in the case. The log gets its output.
 case_rerun() {
   (
-    unset FORCE_COLOR BOOTSTRAP_URL REPO_SYNC_CLONE
-    export REPO_SYNC_VALUES=$values MISE_PROJECT_ROOT=$consumer REPO_SYNC_NO_AUTOUPDATE=1 BOOTSTRAP_CLONE=$clone
+    unset FORCE_COLOR BOOTSTRAP_URL
+    export BOOTSTRAP_VALUES=$values MISE_PROJECT_ROOT=$consumer BOOTSTRAP_CLONE=$clone
     export BOOTSTRAP_CACHE=$tmp/cache
     [[ -n ${CASE_DIRTY:-} ]] || commit_consumer
     "$bin" sync
@@ -3326,7 +3326,7 @@ release_bin="$tmp/engine-1.0.0"
 run_bin() {
   (
     cd -- "$clone_consumer"
-    env -u BOOTSTRAP_CLONE -u REPO_SYNC_VALUES BOOTSTRAP_CACHE="$cache" BOOTSTRAP_URL="$1" \
+    env -u BOOTSTRAP_CLONE -u BOOTSTRAP_VALUES BOOTSTRAP_CACHE="$cache" BOOTSTRAP_URL="$1" \
       MISE_PROJECT_ROOT="$clone_consumer" "${RUN_BIN:-$bin}" sync --dry-run
   ) > "$log" 2>&1
 }
@@ -3504,7 +3504,7 @@ new_cache version-old
 got=0
 RUN_BIN=$release_bin run_bin "file://$version_remote" || got=$?
 check_clone "$name" 2 "$got"
-check_configs_log "$name" -h 'bootstrap 1.0.0 is older than 99.0.0, the version that the clone needs - upgrade it with: mise upgrade github:virajp/bootstrap'
+check_configs_log "$name" -h "bootstrap 1.0.0 is older than 99.0.0, the version that the clone needs - upgrade it with: mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'"
 check_configs_log "$name" -l 'using bootstrap at'
 
 name="bootstrap, a dev build is new enough"
@@ -3542,7 +3542,7 @@ printf '%s\n' 'repo_name = "test"' 'repo_url = "https://example.com/test"' 'envi
 run_gate() {
   (
     cd -- "$root"
-    env -u usage_files -u REPO_SYNC_VALUES -u BOOTSTRAP_CLONE MISE_PROJECT_ROOT="$gate_root" \
+    env -u usage_files -u BOOTSTRAP_VALUES -u BOOTSTRAP_CLONE MISE_PROJECT_ROOT="$gate_root" \
       BOOTSTRAP_CACHE="$gate_cache" BOOTSTRAP_URL="file://$tmp/no-such-remote" BOOTSTRAP_BIN="$bin" bash "$lint_task"
   ) > "$log" 2>&1
 }

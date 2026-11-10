@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-setup-sync: [tools.m3] in macos.toml must be a table
+bootstrap: [tools.m3] in macos.toml must be a table
 --- stdout

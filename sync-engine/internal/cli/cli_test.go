@@ -43,7 +43,7 @@ func TestCheckVersion(t *testing.T) {
 		{"1.10.0", "1.9.9", fail.OK, ""},
 		{"2.0.0", "1.9.9", fail.OK, ""},
 		{"1.2.2", "1.2.3", fail.Usage, "bootstrap 1.2.2 is older than 1.2.3"},
-		{"0.9.0", "1.0.0", fail.Usage, "upgrade it with: mise upgrade github:virajp/bootstrap"},
+		{"0.9.0", "1.0.0", fail.Usage, "upgrade it with: mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'"},
 		{"1.0.0", "v1.2", fail.Network, "is not MAJOR.MINOR.PATCH ('v1.2')"},
 	}
 	for _, c := range cases {

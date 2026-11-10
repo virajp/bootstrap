@@ -383,7 +383,7 @@ items are not migrated:
 
 ## The location of the file
 
-The default path is `.config/bootstrap.toml`. `REPO_SYNC_VALUES` sets a
+The default path is `.config/bootstrap.toml`. `BOOTSTRAP_VALUES` sets a
 different path. Without the file, each command except `bootstrap init` stops.
 The overrides file is `.config/bootstrap.overrides.toml` next to it, with only
 `[tools.<folder>]` tables. See

@@ -9,7 +9,7 @@ its tools, and `bootstrap sync` copies the files of those tools.
 mise installs the CLI from the GitHub releases of this repository:
 
 ```bash
-mise use -g github:virajp/bootstrap
+mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'
 ```
 
 | Command                         | Job                                                                              |

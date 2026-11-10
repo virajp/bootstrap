@@ -315,7 +315,7 @@ func (a *app) checkVersion(dir string) fail.Code {
 			return fail.OK
 		}
 		if h < n {
-			a.errorf("bootstrap %s is older than %s, the version that the clone needs - upgrade it with: mise upgrade github:virajp/bootstrap", a.version, need)
+			a.errorf("bootstrap %s is older than %s, the version that the clone needs - upgrade it with: mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'", a.version, need)
 			return fail.Usage
 		}
 	}

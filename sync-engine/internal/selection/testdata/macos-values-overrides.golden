@@ -1,5 +1,5 @@
 rc=2
 --- stderr
-setup-sync: [overrides.foo] in macos.toml is not valid - write [tools.<name>] for template values and [overrides.mise.<path>] for mise config
-setup-sync: [overrides.mise_env] in macos.toml: the Mac side has no environments - use [overrides.mise.<path>]
+bootstrap: [overrides.foo] in macos.toml is not valid - write [tools.<name>] for template values and [overrides.mise.<path>] for mise config
+bootstrap: [overrides.mise_env] in macos.toml: the Mac side has no environments - use [overrides.mise.<path>]
 --- stdout

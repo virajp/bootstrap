@@ -45,7 +45,7 @@ Run the CLI through mise. Before the first sync, the Mac does not have it on
 `PATH`:
 
 ```text
-mise x github:virajp/bootstrap@latest -- bootstrap <command>
+mise x 'github:virajp/bootstrap[version_prefix=cli-v]@latest' -- bootstrap <command>
 ```
 
 In this file, `bootstrap` is short for this command. The CLI gets its own clone
@@ -273,7 +273,8 @@ Do each command of these items in the clone.
    Put each other new tool on the list of tools.
 4. Get the questions, as in step 2 of the first adoption. Name the new tools of
    item 3 in the second command. Ask each question with no answer. If the
-   command stops with `run bootstrap init`, `macos.toml` has an old form. Then
+   command stops with `run bootstrap mac init`, `macos.toml` has an old form.
+   Then
    go to item 5: the dry run names each question with no answer.
 5. Do a dry run: `bootstrap mac init <new tool…> --answer … --dry-run`. It also
    moves an old form, for example the table of the old Mac entry tool to
@@ -293,14 +294,14 @@ Do each command of these items in the clone.
 
 ## Exit codes
 
-| Code | Cause                                          | Action                                                                                                                           |
-| ---- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| 0    | Done, or nothing to change.                    | Continue.                                                                                                                        |
-| 1    | Another failure, for example a file error.     | Read the lines on stderr.                                                                                                        |
-| 2    | A usage error, or a config that breaks a rule. | Read the message. Correct `macos.toml`, or tell the `bootstrap` owner about a bad tool. For `run bootstrap init`, do the update. |
-| 3    | A tool or a pack that `macos/` does not have.  | Correct the `[tools.*]` and `[packs.*]` tables.                                                                                  |
-| 4    | The init stage changed.                        | Open a new terminal, then run `mise run updateall:configs`.                                                                      |
-| 5    | The clone or the fetch failed.                 | Examine the network and the access.                                                                                              |
+| Code | Cause                                          | Action                                                                                                                               |
+| ---- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 0    | Done, or nothing to change.                    | Continue.                                                                                                                            |
+| 1    | Another failure, for example a file error.     | Read the lines on stderr.                                                                                                            |
+| 2    | A usage error, or a config that breaks a rule. | Read the message. Correct `macos.toml`, or tell the `bootstrap` owner about a bad tool. For `run bootstrap mac init`, do the update. |
+| 3    | A tool or a pack that `macos/` does not have.  | Correct the `[tools.*]` and `[packs.*]` tables.                                                                                      |
+| 4    | The init stage changed.                        | Open a new terminal, then run `mise run updateall:configs`.                                                                          |
+| 5    | The clone or the fetch failed.                 | Examine the network and the access.                                                                                                  |
 
 A failure of one file does not stop the other files. After a failure, the
 manifest and `bootstrap_commit` stay as they are, and no `mise bootstrap` runs.

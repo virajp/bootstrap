@@ -48,11 +48,11 @@ run order.
 
 ## mise tools
 
-| mise tool                 | Version  | Environments | Note                                                                                   |
-| ------------------------- | -------- | ------------ | -------------------------------------------------------------------------------------- |
-| `jq`                      | `latest` | dev, ci      | JSON queries                                                                           |
-| `yq`                      | `latest` | dev, ci      | YAML queries                                                                           |
-| `github:virajp/bootstrap` | `latest` | dev          | The CLI `bootstrap`, from `[mise_env.dev.tools]`. `setup:configs` and the gate run it. |
+| mise tool                 | Version  | Environments | Note                                                                                                                    |
+| ------------------------- | -------- | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `jq`                      | `latest` | dev, ci      | JSON queries                                                                                                            |
+| `yq`                      | `latest` | dev, ci      | YAML queries                                                                                                            |
+| `github:virajp/bootstrap` | `latest` | dev          | The CLI `bootstrap`, from `[mise_env.dev.tools]`, with `version_prefix = "cli-v"`. `setup:configs` and the gate run it. |
 
 The tool also sets:
 

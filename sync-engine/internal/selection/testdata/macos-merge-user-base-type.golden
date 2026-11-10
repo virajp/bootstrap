@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-setup-sync: [tools.m1] of macos.toml sets k to a string, but it is a number in the base or dependency tool m1 - write a number there (a list adds its items)
+bootstrap: [tools.m1] of macos.toml sets k to a string, but it is a number in the base or dependency tool m1 - write a number there (a list adds its items)
 --- stdout

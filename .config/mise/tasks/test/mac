@@ -44,10 +44,10 @@ export MISE_DATA_DIR="${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise
 export MISE_CACHE_DIR="${MISE_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/mise}"
 # The build of the engine below needs the Go of the `go` tool of this repository.
 mise_env=${MISE_ENV:-}
-unset MISE_ENV BOOTSTRAP_URL BOOTSTRAP_CLONE REPO_SYNC_CLONE
+unset MISE_ENV BOOTSTRAP_URL BOOTSTRAP_CLONE
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-mac.XXXXXX")
-# The real path: setup-sync logs the real path of a target behind a symlink.
+# The real path: bootstrap mac sync logs the real path of a target behind a symlink.
 tmp=$(cd "$tmp" && pwd -P)
 # shellcheck disable=SC2046
 trap 'kill $(jobs -p) 2> /dev/null || true; rm -rf -- "$tmp"' EXIT
@@ -617,7 +617,7 @@ case_render_order() {
     ((class >= last)) || ok=0
     last=$class
     n=$((n + 1))
-  done < <(sed -n 's/^setup-sync: would update \([^ ]*\).*/\1/p' "$log")
+  done < <(sed -n 's/^bootstrap: would update \([^ ]*\).*/\1/p' "$log")
   check "$t/.config/mise/** first in each stage, the init stage first ($n files)" test "$ok" = 1 -a "$n" -gt 5
 }
 
@@ -835,7 +835,7 @@ case_init_stage() {
   check "no commit after a stop" not grep -qF bootstrap_commit "$values"
   run_real
   check_exit 0
-  check_no_output "setup-sync: open a new terminal"
+  check_no_output "bootstrap: open a new terminal"
   check "the second run writes the core targets" test -f "$home/.config/core/values.txt"
 }
 
@@ -857,7 +857,7 @@ case_init_fail() {
   mkdir -p -- "$home/.config/init/initrc"
   run_real
   check_exit 1
-  check_no_output "setup-sync: open a new terminal"
+  check_no_output "bootstrap: open a new terminal"
   check "no later stage" not test -e "$home/.config/core/values.txt"
   check "no manifest write" not test -e "$manifest"
 }
@@ -954,7 +954,7 @@ case_commit() {
   run_real
   check_exit 0
   check_output "unchanged  ~/.config/core/values.txt"
-  check "a second run reports only unchanged" not grep -qE '^setup-sync: (updated|chmod|removed|wrote|set |would)' "$log"
+  check "a second run reports only unchanged" not grep -qE '^bootstrap: (updated|chmod|removed|wrote|set |would)' "$log"
   check "macos.toml is unchanged" test "$(cat -- "$values")" = "$after"
 }
 
@@ -1002,7 +1002,7 @@ case_dry_run() {
   check_output "would update ~/.config/core/values.txt (-> $user/values.txt)"
   check_output "would remove home/.config/old/stale.txt"
   check_output "would update ~/.config/core/settings.json"
-  check_no_output "setup-sync: open a new terminal"
+  check_no_output "bootstrap: open a new terminal"
   after=$(snapshot "$home" "$user" "$MACOS_SETUP_REPO_PATH" "$manifest")
   check "nothing written in HOME, a link source, the config folder or the manifest" test "$before" = "$after"
 }
@@ -1072,7 +1072,7 @@ includes = [\"~/a\",\"~/b\",\"~/c\"]"
   check_exit 0
   check_output "unchanged  ~/.config/owner/config"
   check "a run with unchanged inputs reports only unchanged" \
-    not grep -qE '^setup-sync: (updated|chmod|removed|wrote|set |skip|would)' "$log"
+    not grep -qE '^bootstrap: (updated|chmod|removed|wrote|set |skip|would)' "$log"
 }
 
 case_contrib_deselect() {
@@ -1219,7 +1219,7 @@ case_merge_json() {
   run_real
   check_exit 0
   check_output "unchanged  ~/.config/merger/m.json"
-  check "a second run writes nothing" not grep -qE '^setup-sync: (updated|chmod).*merger/m\.' "$log"
+  check "a second run writes nothing" not grep -qE '^bootstrap: (updated|chmod).*merger/m\.' "$log"
   printf '%s\n' '{"keep": "edited"}' > "$f"
   before=$(cat -- "$f")
   run_dry
@@ -1542,7 +1542,7 @@ entry_origin() {
 }
 
 no_leftovers() {
-  [[ ! -e $lock ]] && [[ -z $(find "$TMPDIR" -maxdepth 1 \( -name 'bootstrap-*' -o -name 'setup-sync.*' \) 2> /dev/null) ]]
+  [[ ! -e $lock ]] && [[ -z $(find "$TMPDIR" -maxdepth 1 \( -name 'bootstrap-*' \) 2> /dev/null) ]]
 }
 
 case_entry_clone_first() {
@@ -1706,14 +1706,14 @@ case_entry_mise_run() {
   entry_setup
   entry_dry
   check_exit 0
-  a=$(grep '^setup-sync: would update ' "$log")
+  a=$(grep '^bootstrap: would update ' "$log")
   mkdir -p -- "$XDG_CONFIG_HOME/mise"
   mkdir -p -- "$tasks/_scripts" "$tasks/updateall/configs"
   cp -- "$entry_tool/tasks/helpers" "$tasks/_scripts/helpers"
   cp -- "$entry_task" "$tasks/updateall/configs/_default"
   entry_mise --dry-run --no-bootstrap
   check_exit 0
-  b=$(grep '^setup-sync: would update ' "$log")
+  b=$(grep '^bootstrap: would update ' "$log")
   check "mise run prints the same would-update lines" test -n "$a" -a "$a" = "$b"
   entry_mise --bogus
   check "mise run rejects an unknown flag itself (exit $rc)" test "$rc" != 0
@@ -1813,7 +1813,7 @@ case_question_missing() {
   no_token
   run_dry
   check_exit 2
-  check_output "the question owner.token has no answer in macos.toml - run bootstrap init"
+  check_output "the question owner.token has no answer in macos.toml - run bootstrap mac init"
 }
 
 case_questions_json() {
@@ -1884,7 +1884,7 @@ case_sync_old_form() {
   old_mac_values
   run_dry
   check_exit 2
-  check_output "[tools.macos-setup] in config/macos.toml is the old form - run bootstrap init"
+  check_output "[tools.macos-setup] in config/macos.toml is the old form - run bootstrap mac init"
 }
 
 case_init_migrate() {

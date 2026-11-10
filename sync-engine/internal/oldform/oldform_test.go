@@ -121,6 +121,19 @@ remove = [ "*.log" ]
 	}
 }
 
+func TestMacFindsTheOldForm(t *testing.T) {
+	values := t.TempDir() + "/macos.toml"
+	write(t, values, "[tools.macos-setup]\n")
+	raw, err := source.ReadTOML(values)
+	if err != nil {
+		t.Fatal(err)
+	}
+	msgs := source.Messages(Mac(raw, "macos.toml"))
+	if len(msgs) != 1 || msgs[0].Error() != "[tools.macos-setup] in macos.toml is the old form - run bootstrap mac init" {
+		t.Errorf("messages = %v", msgs)
+	}
+}
+
 func TestMigrateMac(t *testing.T) {
 	values := t.TempDir() + "/macos.toml"
 	write(t, values, "# Mac.\n[tools.macos-setup]\nconfig_path = \"~/m\"\n\n[tools.mise]\nx = 1\n")

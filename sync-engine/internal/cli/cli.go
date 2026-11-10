@@ -328,7 +328,7 @@ func (a *app) prepare(mac, initCmd bool) (where, fail.Code) {
 		_ = os.Setenv("MISE_PROJECT_ROOT", root)
 	}
 	w.root = root
-	w.values = a.getenv("REPO_SYNC_VALUES")
+	w.values = a.getenv("BOOTSTRAP_VALUES")
 	if w.values == "" {
 		w.values = root + "/.config/bootstrap.toml"
 	}

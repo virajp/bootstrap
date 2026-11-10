@@ -793,7 +793,7 @@ replaces `code:lint:60-repo-sync`. mise installs the CLI as
 1. Install the CLI:
 
    ```bash
-   mise use -g github:virajp/bootstrap
+   mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'
    ```
 
 2. If `.config/mise/tasks/setup/configs/sync` exists, delete it. This old task

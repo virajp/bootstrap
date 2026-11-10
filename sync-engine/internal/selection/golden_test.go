@@ -37,7 +37,7 @@ func (c pcase) golang() string {
 	var eb bytes.Buffer
 	prefix := "repo-sync"
 	if c.side == source.Macos {
-		prefix = "setup-sync"
+		prefix = "bootstrap"
 	}
 	log := report.NewReport(&eb, report.Options{Prefix: prefix})
 	rc, out := 0, ""
@@ -91,7 +91,7 @@ func prefixed(words []string) string {
 
 func runMacos(c pcase, log source.Logger) (int, string) {
 	src := source.Source{Root: c.clone, Side: source.Macos}
-	// The order of setup_sync: the values file, the manifests, the selection.
+	// The order of bootstrap mac sync: the values file, the manifests, the selection.
 	v, err := values.ReadMacos(filepath.Join(c.values, "macos.toml"), c.shown)
 	if err != nil {
 		return int(source.LogAll(log, err)), ""

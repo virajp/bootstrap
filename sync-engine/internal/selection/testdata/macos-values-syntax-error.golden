@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-setup-sync: cannot read macos.toml
+bootstrap: cannot read macos.toml
 --- stdout

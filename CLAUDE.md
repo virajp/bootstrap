@@ -42,7 +42,7 @@ files are for this repository only:
   `macos/tools/`, so no consumer gets them.
 - `.github/workflows/release-engine.yml` and `sync-engine/VERSION`: the release
   of the Go engine and the minimum version that a clone needs. A signed tag
-  `vX.Y.Z` on `main` starts the
+  `cli-vX.Y.Z` on `main` starts the
   release, and the workflow writes `VERSION`. Do not edit `VERSION` by hand. See
   `docs/design/sync-engine.md` ("The release of the engine").
 - `.config/mise/tasks/vorssaint/diff`: the task `vorssaint:diff`. It compares

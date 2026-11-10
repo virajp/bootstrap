@@ -1,6 +1,6 @@
 rc=3
 --- stderr
-setup-sync: pack '.x' is not in bootstrap (named in macos.toml)
-setup-sync: tool 'a b' is not in bootstrap (named in macos.toml)
-setup-sync: tool 'a/b' is not in bootstrap (named in macos.toml)
+bootstrap: pack '.x' is not in bootstrap (named in macos.toml)
+bootstrap: tool 'a b' is not in bootstrap (named in macos.toml)
+bootstrap: tool 'a/b' is not in bootstrap (named in macos.toml)
 --- stdout

@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-setup-sync: the clone has no tool in macos/tools
+bootstrap: the clone has no tool in macos/tools
 --- stdout

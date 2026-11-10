@@ -30,7 +30,7 @@ sync, `mac init` sets it for its own run.
 ## The entry tasks
 
 The Mac tool `mise` ships the tasks into `~/.config/mise/tasks/`, and the mise
-tool `github:virajp/bootstrap`.
+tool `github:virajp/bootstrap` with `version_prefix = "cli-v"`.
 
 | Task                                                               | Job                                                                           |
 | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
@@ -75,7 +75,8 @@ message and stops at once with exit 4. It runs its other upgrade steps only when
 
 A new Mac has no mise and no clone. The `setup` script of the user's
 `macos-setup` repository installs mise and `bootstrap`
-(`mise use -g github:virajp/bootstrap`), then runs `bootstrap mac sync`. After
+(`mise use -g 'github:virajp/bootstrap[version_prefix=cli-v]'`), then runs
+`bootstrap mac sync`. After
 that, the Mac tool `mise` keeps `bootstrap` as a mise tool, and the version
 check applies.
 

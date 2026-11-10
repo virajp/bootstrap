@@ -42,7 +42,7 @@ This guide runs the CLI `bootstrap` through mise, because the symlink model does
 not have it:
 
 ```text
-mise x github:virajp/bootstrap@latest -- bootstrap <command>
+mise x 'github:virajp/bootstrap[version_prefix=cli-v]@latest' -- bootstrap <command>
 ```
 
 In this file, `bootstrap` is short for this command. The CLI gets its own clone
@@ -225,7 +225,7 @@ continues with the main stage:
 env -u XDG_CONFIG_HOME -u XDG_CACHE_HOME -u XDG_STATE_HOME -u XDG_DATA_HOME -u MISE_ENV \
   HOME=<scratch> MISE_DATA_DIR="$HOME/.local/share/mise" MISE_CACHE_DIR="$HOME/.cache/mise" \
   MACOS_SETUP_REPO_PATH=<clone> \
-  mise x github:virajp/bootstrap@latest -- bootstrap mac sync --no-bootstrap
+  mise x 'github:virajp/bootstrap[version_prefix=cli-v]@latest' -- bootstrap mac sync --no-bootstrap
 ```
 
 The `XDG_*` variables stay out of the command, because otherwise the run writes

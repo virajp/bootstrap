@@ -101,12 +101,12 @@ func (s *state) contexts() *contexts {
 	ctx := map[string]any{"v": v, "all_values": all}
 	var sources []ds
 	env := map[string]string{
-		"REPO_SYNC_SYNC_ENGINE":    s.dir + "/sync-engine",
-		"REPO_SYNC_MEMBERS":        strings.Join(names, "\n"),
-		"REPO_SYNC_MEMBER_FOLDERS": strings.Join(folders, "\n"),
-		"REPO_SYNC_MEMBER_TYPES":   strings.Join(kinds, "\n"),
-		"REPO_SYNC_SUBMODULES":     submodules,
-		"REPO_SYNC_TOOLS":          strings.Join(s.res.Tools, "\n"),
+		"BOOTSTRAP_SYNC_ENGINE":    s.dir + "/sync-engine",
+		"BOOTSTRAP_MEMBERS":        strings.Join(names, "\n"),
+		"BOOTSTRAP_MEMBER_FOLDERS": strings.Join(folders, "\n"),
+		"BOOTSTRAP_MEMBER_TYPES":   strings.Join(kinds, "\n"),
+		"BOOTSTRAP_SUBMODULES":     submodules,
+		"BOOTSTRAP_TOOLS":          strings.Join(s.res.Tools, "\n"),
 	}
 	out, ok := s.gomplate(tmplContext, ctx, sources, env, false)
 	if !ok {

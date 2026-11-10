@@ -128,9 +128,9 @@ var formCases = []formCase{
 	{name: "macos-manifest-keys", side: source.Macos,
 		over: tree{"macos/tools/m1/tools.toml": "description = 1\nparent = \"m2\"\nfoo = 1\n[tasks.\"x\"]\nsource = \"x\"\nrequires_found = [ \"a\" ]\n", "macos/tools/m1/tasks/x": "x"},
 		want: "rc=2\n--- stderr\n" +
-			"setup-sync: macos/tools/m1/tools.toml: description must be a string\n" +
-			"setup-sync: macos/tools/m1/tools.toml: foo is not a key of tools.toml - the keys are description, stage, depends, parent, [defaults], [questions], [contributes], [files], [tasks] and [mise]\n" +
-			"setup-sync: macos/tools/m1/tools.toml: [tasks.\"x\"] requires_found is for repo tools only\n" +
+			"bootstrap: macos/tools/m1/tools.toml: description must be a string\n" +
+			"bootstrap: macos/tools/m1/tools.toml: foo is not a key of tools.toml - the keys are description, stage, depends, parent, [defaults], [questions], [contributes], [files], [tasks] and [mise]\n" +
+			"bootstrap: macos/tools/m1/tools.toml: [tasks.\"x\"] requires_found is for repo tools only\n" +
 			"--- stdout\n"},
 }
 
