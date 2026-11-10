@@ -9,3 +9,8 @@ greeting = "hello"
 
 [mise.env]
 INIT_FIXTURE = "1"
+
+# The files of the tool, below files/.
+[files.".config/init/initrc"]
+mode = "template"
+source = ".config/init/initrc.tmpl"

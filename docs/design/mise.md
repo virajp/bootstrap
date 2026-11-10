@@ -128,7 +128,8 @@ warning.
 consumer repository. It is not set now. When it is set, it must be continously
 upgraded as new versions of the mise configuration are released.
 
-The template is `repo/tools/mise/.config/mise.toml.tmpl`. It is the only file
+The template is `repo/tools/mise/files/.config/mise.toml.tmpl`. It is the only
+file
 for every environment.
 It holds the shared `[settings]` and the `[env]` values `REPO_NAME` and
 `MEMBERS` (the
@@ -369,7 +370,7 @@ states it in its own `[files]` table. See [tools.md](tools.md#the-files-table).
 list of
 files. For example, `python` installs `ruff` only with a `pyproject.toml`, and
 it writes
-`code:lint:ruff` only with a `pyproject.toml`, because the table of that task
+`code:lint:70-ruff` only with a `pyproject.toml`, because the table of that task
 has
 `requires_found = ["pyproject.toml"]`. The search is in
 [repo-sync.md](repo-sync.md#requires_found).
@@ -581,7 +582,7 @@ not the tasks of a parent repository.
 | `code`           | None                                                      | `code:format`, `code:lint`, `code:sec`                                                                                   |
 | `code:format`    | `code:format:*` (with `--fix` and the files)              | `dprint`; then each selected member                                                                                      |
 | `code:lint`      | `code:lint:*` (with `--fix` and the files)                | Each selected member                                                                                                     |
-| `code:sec`       | `code:sec:*` (with `--staged` and `--debug`)              | First, it stops if `code:sec:gitleaks`, `code:sec:grype` or `code:sec:osv-scanner` is missing or not executable          |
+| `code:sec`       | `code:sec:*` (with `--staged` and `--debug`)              | First, it stops if `code:sec:10-gitleaks`, `code:sec:20-grype` or `code:sec:30-osv-scanner` is missing or not executable |
 
 `has_own_task` finds an optional task, for example `setup:ai` or
 `setup:external:update`.
@@ -591,26 +592,26 @@ not the tasks of a parent repository.
 | Tool             | Tasks                                                                                                                 |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `mise`           | `setup`, `setup:mise`, `setup:worktree`, `code`, `code:worktrees`                                                     |
-| `repo-sync`      | `setup:configs`, `code:lint:repo-sync`                                                                                |
+| `repo-sync`      | `setup:configs`, `code:lint:60-repo-sync`                                                                             |
 | `git`            | `code:git-config`, `code:merge` or `code:merge:develop` and `code:merge:main`                                         |
 | `pre-commit`     | `setup:precommit`, `code:precommit`                                                                                   |
 | `dprint`         | `code:format`, `setup:dprint`                                                                                         |
 | `linter`         | `code:lint`, `setup:linter`                                                                                           |
 | `_security_base` | `code:sec`                                                                                                            |
-| `gitleaks`       | `code:sec:gitleaks`                                                                                                   |
-| `grype`          | `code:sec:grype`                                                                                                      |
-| `osv-scanner`    | `code:sec:osv-scanner`                                                                                                |
-| `android`        | `setup:deps:android`, `code:lint:android`                                                                             |
+| `gitleaks`       | `code:sec:10-gitleaks`                                                                                                |
+| `grype`          | `code:sec:20-grype`                                                                                                   |
+| `osv-scanner`    | `code:sec:30-osv-scanner`                                                                                             |
+| `android`        | `setup:deps:10-android`, `code:lint:10-android`                                                                       |
 | `claude`         | `setup:ai`                                                                                                            |
 | `docker`         | `setup:external:check`, `setup:external:pull`, `setup:external:start`, `setup:external:stop`, `setup:external:update` |
-| `doppler`        | `setup:secrets:doppler`                                                                                               |
-| `flutter`        | `setup:deps:flutter`, `code:format:dart`, `code:lint:dart`                                                            |
-| `fnox`           | `setup:secrets:fnox`                                                                                                  |
-| `go`             | `code:format:gofmt`, `code:lint:go`                                                                                   |
-| `kotlin`         | `setup:deps:kotlin`, `code:format:ktlint`, `code:lint:detekt`                                                         |
-| `node`           | `setup:deps:node`                                                                                                     |
-| `python`         | `setup:deps:python`, `code:format:ruff`, `code:lint:ruff`, `code:lint:pyrefly`, `code:lint:uv`                        |
-| `swift`          | `setup:deps:swift`, `code:format:swift-format`, `code:lint:swiftlint`                                                 |
+| `doppler`        | `setup:secrets:10-doppler`                                                                                            |
+| `flutter`        | `setup:deps:20-flutter`, `code:format:10-dart`, `code:lint:20-dart`                                                   |
+| `fnox`           | `setup:secrets:20-fnox`                                                                                               |
+| `go`             | `code:format:20-gofmt`, `code:lint:40-go`                                                                             |
+| `kotlin`         | `setup:deps:30-kotlin`, `code:format:30-ktlint`, `code:lint:30-detekt`                                                |
+| `node`           | `setup:deps:40-node`                                                                                                  |
+| `python`         | `setup:deps:50-python`, `code:format:40-ruff`, `code:lint:70-ruff`, `code:lint:50-pyrefly`, `code:lint:90-uv`         |
+| `swift`          | `setup:deps:60-swift`, `code:format:50-swift-format`, `code:lint:80-swiftlint`                                        |
 | `vscode`         | `setup:vscode`                                                                                                        |
 
 ### The libraries in `_scripts/`
@@ -664,7 +665,7 @@ These facts came from the examination. They are not decisions.
   of the project.
 - `fnox` and `doppler` install their CLI in `dev` only. See
   [fnox.md](fnox.md) for the new fnox design.
-- `repo/tools/mise/.config/mise/tasks/code/_default` has the shebang
+- `repo/tools/mise/tasks/code` has the shebang
   `#!/usr/bin/env zsh`. The other task scripts use bash.
 - No file of `repo/tools/` sets `MISE_ENV`. The session of this examination had
   `MISE_ENV=dev`, but its source is not known. It is not in

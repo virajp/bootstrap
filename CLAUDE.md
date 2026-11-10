@@ -17,7 +17,9 @@ Other repositories copy files from it with their own `setup:configs` task. Read
 ## Layout rule
 
 The shared files of a repository are in `repo/tools/<tool>/`, one folder for
-each tool. The packs are in `repo/packs.toml`, outside each tool folder, so the
+each tool: a `tools.toml`, the config files in `files/` and the task files in
+`tasks/`. Each file has an entry in `tools.toml`. The packs are in
+`repo/packs.toml`, outside each tool folder, so the
 sync never copies it. The examples are in `repo/examples/`. The Mac tools are in
 `macos/tools/<tool>/`, one folder for
 each tool, and their packs are in `macos/packs.toml`. `tools/` holds only the
@@ -139,9 +141,15 @@ source file").
 
 ## Task scripts
 
-Task scripts are in `repo/tools/<tool>/.config/mise/tasks/`. mise uses the
-directory path as the task name, for example `code/merge/develop` is
-`code:merge:develop`. A `_default` file is the task for the directory name.
+Task scripts are in `repo/tools/<tool>/tasks/`, each with a `[tasks."<path>"]`
+entry in its `tools.toml`. The key is the path below `.config/mise/tasks/` in a
+consumer. mise uses that path as the task name, for example `code/merge/develop`
+is `code:merge:develop`. A `_default` file is the task for the directory name.
+The `mise` tool ships each `_default`. A leaf task of a group that an
+orchestrator runs with `own_tasks` (`code:format`, `code:lint`, `code:sec`,
+`setup:deps`, `setup:secrets`) has a number prefix for its run order, for
+example `code:lint:70-ruff`. See `docs/design/tools.md` ("The `[tasks]`
+table").
 
 - `_scripts/` contains libraries, not tasks. Each task sources them through
   `${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/<name>`.
@@ -199,8 +207,8 @@ directory path as the task name, for example `code/merge/develop` is
   `repo/tools/mise/tools.toml`, always dev). It makes the task scripts
   executable. The task files load in every environment.
 - A gate of a language is a `code:lint:<gate>` or `code:format:<gate>` task
-  in the tool of that language, for example `code:lint:ruff` in `python`.
-  `code:lint:repo-sync` of `repo-sync` follows the same rules for the values
+  in the tool of that language, for example `code:lint:70-ruff` in `python`.
+  `code:lint:60-repo-sync` of `repo-sync` follows the same rules for the values
   file `.config/bootstrap.toml`:
   - Without its tool (`mise x -- which <tool>`) or without a file of its
     language, the gate prints nothing and exits 0. Some gates examine a
@@ -214,7 +222,7 @@ directory path as the task name, for example `code/merge/develop` is
     only to find whether a file exists.
   - Without `--fix`, a format task is the check of its tool. Do not add a
     lint task that runs the same check, for example `code:lint:ktlint` next
-    to `code:format:ktlint`.
+    to `code:format:30-ktlint`.
   - Its config file, when it has one, is a seed.
 
 `bootstrap` does not ship these items on purpose. Do not add them again
@@ -229,7 +237,7 @@ without a new reason:
   apply to them. The `mise` tool of `macos/tools/` ships the user-level
   `.config/mise/miserc.toml` with that setting.
 - A `code:check` task group: a check of a language is a `code:lint:<name>`
-  task, for example `code:lint:uv` for `uv lock --check`.
+  task, for example `code:lint:90-uv` for `uv lock --check`.
 
 ## Task output: headers and subheaders
 
@@ -237,7 +245,7 @@ An orchestrator is a task that runs other tasks with `mise run`. A leaf is a
 task that runs only commands.
 
 1. A task first checks whether it applies. If it does not apply, it prints
-   nothing and exits 0. For example, `setup:deps:python` without a
+   nothing and exits 0. For example, `setup:deps:50-python` without a
    `pyproject.toml`.
 2. A leaf prints `print_header` first, and only once. Nothing comes before
    it.

@@ -53,15 +53,19 @@ claude-desktop = { default = true }
   `"pack:<name>" = {}` does not expand: that pack arrives only through its own
   `[packs.<name>]`.
 - A tool can be in several packs. The sync adds it once.
-- A pack has no pack-level keys, and the only key of a member is `default`, a
-  boolean. Each member is on one line.
+- A pack has no pack-level keys. The keys of a member are `default` and
+  `required`, each a boolean. Each member is on one line.
+- `required = true` marks a tool that each consumer must have. It is valid only
+  for a member of `base` with `default = true`, for example
+  `mise = { default = true, required = true }`. Else the sync stops.
 - The member order of a pack is the sync order of `repo-sync`. `setup-sync`
   sorts
   the tools by name in each stage.
 - The TOML plugin of dprint sorts keys, so the root `dprint.jsonc` excludes
   `repo/packs.toml` and `macos/packs.toml`. Keep the order by hand.
 - The old keys stop the sync: `depends`, `required`, `tools` or
-  `default` with a list, and a member with the prefix `p:`. A member that is
+  `default` with a list as a pack key, and a member with the prefix `p:`. A
+  member that is
   not a table or is not on one line, another key in a member, and a `default`
   that is not a boolean also stop the sync.
 - A member that is not a tool folder or a pack stops the sync. The
@@ -150,10 +154,9 @@ the
 - Its members are in the packs file, as for each other pack. Thus a change to
   the
   pack is a change to the packs file only.
-- On the Mac side, `base` must have the member `macos-setup = { default = true
-  }`,
-  because `updateall` runs `updateall:configs` with no guard. If not, the sync
-  stops.
+- On the Mac side, `base` has the member
+  `macos-setup = { default = true, required = true }`, because `updateall`
+  runs `updateall:configs` with no guard. The sync does not name this tool.
 
 <!-- dprint-ignore -->
 ```toml
@@ -207,16 +210,16 @@ member tool. For example, `gitleaks`, `grype` and `osv-scanner` each have
 | Tool             | Files and config                                                                                                                                                                                                                                                                                                                                                      |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `mise`           | `.config/mise.toml.tmpl`, the `zz-repo` seeds, `_scripts/helpers`, `_scripts/checks`, `_scripts/placeholder`, `_scripts/worktrees-page`, `setup`, `setup:mise`, `setup:worktree`, `code`, `code:worktrees`, the `init` task, the `setup`, `precommit` and `worktrees` aliases, the `os` settings of each environment. The mise tools `jq` and `yq`, in `dev` and `ci` |
-| `repo-sync`      | `setup:configs`, `code:lint:repo-sync`, the mise tool `gomplate`                                                                                                                                                                                                                                                                                                      |
+| `repo-sync`      | `setup:configs`, `code:lint:60-repo-sync`, the mise tool `gomplate`                                                                                                                                                                                                                                                                                                   |
 | `git`            | `.gitignore`, `git-conventional-commits.yaml.tmpl`, `_scripts/merge`, `code:merge` and `code:merge:*`, `code:git-config`. The hooks `git-config`, `no-commit-to-branch` (its args follow `direct_commit`) and `conventional-commits`                                                                                                                                  |
 | `pre-commit`     | `pre-commit-config.yaml.tmpl`, `setup:precommit`, `code:precommit`, the mise tool `pre-commit`, `PRE_COMMIT_HOME`, the `precommit` alias. The file-check hooks from `pre-commit/pre-commit-hooks`                                                                                                                                                                     |
 | `dprint`         | The mise tool `dprint`, `code:format`, `setup:dprint`, the `format` hook                                                                                                                                                                                                                                                                                              |
 | `linter`         | The mise tools `npm:@virajp.dev/linter` and `shellcheck`, `code:lint`, `setup:linter`, the `lint` hook                                                                                                                                                                                                                                                                |
 | `vscode`         | `.vscode/settings.json`, `.vscode/extensions.json.tmpl`, `setup:vscode`, the `code` alias. Root only                                                                                                                                                                                                                                                                  |
-| `gitleaks`       | The mise tool `gitleaks`, `.config/gitleaks.toml.tmpl` (a seed), `code:sec:gitleaks`                                                                                                                                                                                                                                                                                  |
-| `grype`          | The mise tool `grype`, `.config/grype.yaml` (a seed), `code:sec:grype`                                                                                                                                                                                                                                                                                                |
+| `gitleaks`       | The mise tool `gitleaks`, `.config/gitleaks.toml.tmpl` (a seed), `code:sec:10-gitleaks`                                                                                                                                                                                                                                                                               |
+| `grype`          | The mise tool `grype`, `.config/grype.yaml` (a seed), `code:sec:20-grype`                                                                                                                                                                                                                                                                                             |
 | `_security_base` | `code:sec`, which runs each `code:sec:*` task. The `sec` hook                                                                                                                                                                                                                                                                                                         |
-| `osv-scanner`    | The mise tool `osv-scanner`, `.config/osv-scanner.toml` (a seed), `code:sec:osv-scanner`                                                                                                                                                                                                                                                                              |
+| `osv-scanner`    | The mise tool `osv-scanner`, `.config/osv-scanner.toml` (a seed), `code:sec:30-osv-scanner`                                                                                                                                                                                                                                                                           |
 
 Each hook moves to the tool that owns its task. Thus a removed tool also
 removes its hook, and no hook calls a task that is missing.

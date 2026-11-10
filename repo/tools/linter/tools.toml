@@ -34,3 +34,8 @@ version = "latest"
 [mise.tools.shellcheck]
 envs = [ "dev", "ci" ]
 version = "latest"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."setup/linter"]
+source = "setup-linter"

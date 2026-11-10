@@ -1,7 +1,0 @@
-fingerprint: e939ef90646262414b9be91897ed22cbfcc367a92ce0fd68d376f8d79888451c
-rc=2
---- stderr
-repo-sync: repo/tools/a/tools.toml: [files."x.txt"] format must be "text", "json", "yaml" or "toml"
-repo-sync: repo/tools/a/tools.toml: [files."x.txt"] mode must be "generated", "seed" or "merge"
-repo-sync: repo/tools/a/tools.toml: [files."x.txt"] zzz is not a key of a file - the keys are mode, requires, requires_found, format, remove and remove_items
---- stdout

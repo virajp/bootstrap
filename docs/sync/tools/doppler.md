@@ -1,6 +1,7 @@
 # The `doppler` tool
 
-The Doppler CLI and `setup:secrets:doppler`. A repository selects it only when
+The Doppler CLI and `setup:secrets:10-doppler`. A repository selects it only
+when
 it keeps its secrets in Doppler.
 
 | Property     | Value |
@@ -20,10 +21,10 @@ one keeps the secrets of the repository.
 
 ## What the tool ships
 
-| Path in the repository                      | Kind      | Use                               |
-| ------------------------------------------- | --------- | --------------------------------- |
-| `.config/mise/tasks/setup/secrets/doppler`  | Synced    | The task `setup:secrets:doppler`. |
-| `.config/mise/conf.d/doppler/mise.dev.toml` | Generated | The mise config of this tool.     |
+| Path in the repository                        | Kind      | Use                                  |
+| --------------------------------------------- | --------- | ------------------------------------ |
+| `.config/mise/tasks/setup/secrets/10-doppler` | Synced    | The task `setup:secrets:10-doppler`. |
+| `.config/mise/conf.d/doppler/mise.dev.toml`   | Generated | The mise config of this tool.        |
 
 ## mise tools
 
@@ -35,9 +36,9 @@ Only dev. The `ci` environment has its own secret management.
 
 ## Tasks
 
-| Task                    | Use                                                                                                                                                             |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `setup:secrets:doppler` | Select the Doppler project and config from `doppler.yaml`. It skips without `doppler.yaml`, without a login, or with a warning when `doppler` is not installed. |
+| Task                       | Use                                                                                                                                                             |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:secrets:10-doppler` | Select the Doppler project and config from `doppler.yaml`. It skips without `doppler.yaml`, without a login, or with a warning when `doppler` is not installed. |
 
 The task does not run `doppler login`, because that command opens a browser.
 
@@ -47,9 +48,9 @@ None.
 
 ## Files the repository supplies
 
-| File           | Used by                                                           |
-| -------------- | ----------------------------------------------------------------- |
-| `doppler.yaml` | `setup:secrets:doppler`. It names the Doppler project and config. |
+| File           | Used by                                                              |
+| -------------- | -------------------------------------------------------------------- |
+| `doppler.yaml` | `setup:secrets:10-doppler`. It names the Doppler project and config. |
 
 ## Adapt to the repository
 
@@ -58,5 +59,5 @@ None.
 ## Migration
 
 - Remove `doppler` from the repository-owned mise files.
-- Delete an old `setup:secrets` task for Doppler. `setup:secrets:doppler`
+- Delete an old `setup:secrets` task for Doppler. `setup:secrets:10-doppler`
   replaces it (M3 of `migrate.md`).

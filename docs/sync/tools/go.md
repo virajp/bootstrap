@@ -15,11 +15,11 @@ Go, with the gofmt and go vet gates.
 
 ## What the tool ships
 
-| Path in the repository                   | Kind      | Use                           |
-| ---------------------------------------- | --------- | ----------------------------- |
-| `.config/mise/tasks/code/format/gofmt`   | Synced    | The task `code:format:gofmt`. |
-| `.config/mise/tasks/code/lint/go`        | Synced    | The task `code:lint:go`.      |
-| `.config/mise/conf.d/go/mise.<env>.toml` | Generated | The mise config of this tool. |
+| Path in the repository                    | Kind      | Use                              |
+| ----------------------------------------- | --------- | -------------------------------- |
+| `.config/mise/tasks/code/format/20-gofmt` | Synced    | The task `code:format:20-gofmt`. |
+| `.config/mise/tasks/code/lint/40-go`      | Synced    | The task `code:lint:40-go`.      |
+| `.config/mise/conf.d/go/mise.<env>.toml`  | Generated | The mise config of this tool.    |
 
 The VS Code extension is `golang.go`.
 
@@ -42,18 +42,18 @@ newer Go than the mise version, the `go` command stops with an error.
 
 ## Tasks
 
-| Task                | Use                                                                                  |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| `code:format:gofmt` | Check the format of the `.go` files with `gofmt -l`. `--fix` formats them with `-w`. |
-| `code:lint:go`      | Run `go vet ./...` in each Go module.                                                |
+| Task                   | Use                                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| `code:format:20-gofmt` | Check the format of the `.go` files with `gofmt -l`. `--fix` formats them with `-w`. |
+| `code:lint:40-go`      | Run `go vet ./...` in each Go module.                                                |
 
 `code:lint` and `code:format` run the two gates. Without `go`, or without a
 `go.mod` that git does not ignore, a gate prints nothing and exits 0.
 
-- `code:format:gofmt` uses only the `.go` files. Without files, it formats
+- `code:format:20-gofmt` uses only the `.go` files. Without files, it formats
   each `.go` file that git does not ignore. `gofmt -l` exits 0 when a file is
   not formatted, so the task fails when the list is not empty.
-- `code:lint:go` examines packages, not files. A given `.go` file, `go.mod`
+- `code:lint:40-go` examines packages, not files. A given `.go` file, `go.mod`
   or `go.sum` selects the module of its nearest `go.mod`. Without files, the
   task examines each module with a `go.mod` that git does not ignore. `--fix`
   is accepted, but `go vet` only reports.
@@ -64,10 +64,10 @@ None.
 
 ## Files the repository supplies
 
-| File      | Used by                                                    |
-| --------- | ---------------------------------------------------------- |
-| `go.mod`  | `code:lint:go` and `code:format:gofmt`. It marks a module. |
-| `go.work` | The `go` command, when the modules are in one workspace.   |
+| File      | Used by                                                          |
+| --------- | ---------------------------------------------------------------- |
+| `go.mod`  | `code:lint:40-go` and `code:format:20-gofmt`. It marks a module. |
+| `go.work` | The `go` command, when the modules are in one workspace.         |
 
 ## Adapt to the repository
 

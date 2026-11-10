@@ -14,14 +14,38 @@ detect = "printf token"
 example = "token-1"
 question = "Which token does the owner use?"
 
-[files.".config/owner/seed.txt"]
-mode = "seed"
+# The files of the tool, below files/.
+[files.".config/owner/config"]
+mode = "template"
+source = ".config/owner/config.tmpl"
 
-[files.".config/owner/needs.txt"]
-requires = [ ".config/owner-needed" ]
+[files.".config/owner/data.json"]
+mode = "template"
+source = ".config/owner/data.json.tmpl"
+
+[files.".config/owner/data.toml"]
+mode = "template"
+source = ".config/owner/data.toml.tmpl"
+
+[files.".config/owner/data.yaml"]
+mode = "template"
+source = ".config/owner/data.yaml.tmpl"
 
 [files.".config/owner/lenient.json"]
 format = "text"
+mode = "template"
+source = ".config/owner/lenient.json.tmpl"
+
+[files.".config/owner/needs.txt"]
+requires = [ ".config/owner-needed" ]
+source = ".config/owner/needs.txt"
+
+[files.".config/owner/seed.txt"]
+mode = "seed"
+render = true
+source = ".config/owner/seed.txt.tmpl"
 
 [files.".config/owner/settings.conf"]
 format = "toml"
+mode = "template"
+source = ".config/owner/settings.conf.tmpl"

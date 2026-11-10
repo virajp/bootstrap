@@ -1,14 +1,21 @@
-# osv-scanner: the dependency scanner, and code:sec:osv-scanner.
+# osv-scanner: the dependency scanner, and code:sec:30-osv-scanner.
 default_envs = [ "dev", "ci" ]
 depends = [ "_security_base" ]
 extensions = []
 root_only = false
-
-[files.".config/osv-scanner.toml"]
-mode = "seed"
 
 # The mise config, generated into .config/mise/conf.d/osv-scanner/mise.<env>.toml.
 # In dev and ci, because CI runs `code:sec` too.
 [mise.tools.osv-scanner]
 envs = [ "dev", "ci" ]
 version = "latest"
+
+# The files of the tool, below files/.
+[files.".config/osv-scanner.toml"]
+mode = "seed"
+source = ".config/osv-scanner.toml"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."code/sec/30-osv-scanner"]
+source = "code-sec-osv-scanner"

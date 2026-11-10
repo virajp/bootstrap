@@ -18,15 +18,15 @@ Xcode tasks.
 
 ## What the tool ships
 
-| Path in the repository                        | Kind      | Use                                                             |
-| --------------------------------------------- | --------- | --------------------------------------------------------------- |
-| `.config/mise/tasks/setup/deps/swift`         | Synced    | The task `setup:deps:swift`.                                    |
-| `.config/mise/tasks/code/lint/swiftlint`      | Synced    | The task `code:lint:swiftlint`.                                 |
-| `.config/mise/tasks/code/format/swift-format` | Synced    | The task `code:format:swift-format`.                            |
-| `.config/mise/tasks/_scripts/xcode`           | Synced    | The library `xcode`, with `require_xcode` and `find_xcodeproj`. |
-| `.config/swiftlint.yml`                       | Seed      | The SwiftLint rules. The layout rules are off for swift-format. |
-| `.config/swift-format.json`                   | Seed      | The swift-format rules: 4 spaces, lines of 120 characters.      |
-| `.config/mise/conf.d/swift/mise.<env>.toml`   | Generated | The mise config of this tool.                                   |
+| Path in the repository                           | Kind      | Use                                                             |
+| ------------------------------------------------ | --------- | --------------------------------------------------------------- |
+| `.config/mise/tasks/setup/deps/60-swift`         | Synced    | The task `setup:deps:60-swift`.                                 |
+| `.config/mise/tasks/code/lint/80-swiftlint`      | Synced    | The task `code:lint:80-swiftlint`.                              |
+| `.config/mise/tasks/code/format/50-swift-format` | Synced    | The task `code:format:50-swift-format`.                         |
+| `.config/mise/tasks/_scripts/xcode`              | Synced    | The library `xcode`, with `require_xcode` and `find_xcodeproj`. |
+| `.config/swiftlint.yml`                          | Seed      | The SwiftLint rules. The layout rules are off for swift-format. |
+| `.config/swift-format.json`                      | Seed      | The swift-format rules: 4 spaces, lines of 120 characters.      |
+| `.config/mise/conf.d/swift/mise.<env>.toml`      | Generated | The mise config of this tool.                                   |
 
 VS Code extensions: `swiftlang.swift-vscode`.
 
@@ -46,11 +46,11 @@ this value wins.
 
 ## Tasks
 
-| Task                       | Use                                                                                                                                         |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `setup:deps:swift`         | Resolve the SwiftPM and Xcode package dependencies from `Package.resolved`. `--upgrade` resolves them again to the newest allowed versions. |
-| `code:lint:swiftlint`      | Lint the `.swift` files with `swiftlint lint --strict`. A warning is a failure.                                                             |
-| `code:format:swift-format` | Check the format of the `.swift` files with `swift format lint --strict`. `--fix` formats them.                                             |
+| Task                          | Use                                                                                                                                         |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:deps:60-swift`         | Resolve the SwiftPM and Xcode package dependencies from `Package.resolved`. `--upgrade` resolves them again to the newest allowed versions. |
+| `code:lint:80-swiftlint`      | Lint the `.swift` files with `swiftlint lint --strict`. A warning is a failure.                                                             |
+| `code:format:50-swift-format` | Check the format of the `.swift` files with `swift format lint --strict`. `--fix` formats them.                                             |
 
 `code:lint` and `code:format` run the two gates. A gate skips without its tool
 (SwiftLint from mise, swift-format from the host) and without a `.swift` file.
@@ -73,7 +73,7 @@ sets and exports four values. A value that the repository sets wins:
 `find_xcodeproj <task>` prints the one `*.xcodeproj` at the root, and fails
 for none or more than one.
 
-`setup:deps:swift` acts on the repository root only. It applies when the root
+`setup:deps:60-swift` acts on the repository root only. It applies when the root
 has `Package.swift` or one `*.xcodeproj`, and runs for both when both exist.
 On macOS, more than one root `*.xcodeproj` fails.
 
@@ -106,17 +106,17 @@ None.
 ## Adapt to the repository
 
 1. The tool is for macOS only. There is no Linux toolchain. On a different
-   host, `setup:deps:swift` skips. If the user develops on a different
+   host, `setup:deps:60-swift` skips. If the user develops on a different
    platform, tell the user.
 2. For a root `*.xcodeproj`, Xcode must be installed and selected:
    `sudo xcode-select -s /Applications/Xcode.app`. A root with only
    `Package.swift` needs only the Command Line Tools: `xcode-select --install`.
 3. Commit `Package.resolved` (for an `*.xcodeproj`, the file in
    `<project>/project.xcworkspace/xcshareddata/swiftpm/`). A normal run of
-   `setup:deps:swift` installs only the versions that it names. The task does
+   `setup:deps:60-swift` installs only the versions that it names. The task does
    not read a root `*.xcworkspace` or its `Package.resolved`.
-4. In a Flutter app, `setup:deps:flutter` handles the `ios/` and `macos/`
-   folders. `setup:deps:swift` acts only on the repository root.
+4. In a Flutter app, `setup:deps:20-flutter` handles the `ios/` and `macos/`
+   folders. `setup:deps:60-swift` acts only on the repository root.
 5. If the repository records golden images or needs one Xcode, set
    `XCODE_VERSION`, `SIMULATOR_PLATFORM`, `SIMULATOR_OS` and
    `SIMULATOR_DEVICE` in the `[env]` of

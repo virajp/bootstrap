@@ -40,9 +40,10 @@ prompt.
 
 ## Layout
 
-The shared files are in `repo/tools/`, one folder for each tool. Each file in
-`repo/tools/<tool>/` is at the path that it gets in a repository. For example,
-`repo/tools/git/.config/mise/tasks/code/merge/develop` here is
+The shared files are in `repo/tools/`, one folder for each tool. The
+`tools.toml` of a tool gives the path that each file of its `files/` and
+`tasks/` folders gets in a repository. For example,
+`repo/tools/git/tasks/code-merge-develop` here is
 `.config/mise/tasks/code/merge/develop` in every repository, because the
 `base` pack adds the `git` tool. This repository also syncs its own `base`
 pack.
@@ -173,7 +174,7 @@ of the `[files]` table.
    `.config/repo-generated.tsv`, and it sets `bootstrap_commit` of the values
    file to the commit of its clone.
 
-Between two syncs, the gate `code:lint:repo-sync` runs `bootstrap sync
+Between two syncs, the gate `code:lint:60-repo-sync` runs `bootstrap sync
 --check` at
 each commit that changes `.config/bootstrap.toml`.
 

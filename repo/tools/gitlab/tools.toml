@@ -23,3 +23,13 @@ pass_filenames = false
 [mise.tools.glab]
 envs = [ "dev", "ci" ]
 version = "latest"
+
+# The files of the tool, below files/.
+[files.".gitlab/issue_templates/Bug.md"]
+source = ".gitlab/issue_templates/Bug.md"
+
+[files.".gitlab/issue_templates/Feature.md"]
+source = ".gitlab/issue_templates/Feature.md"
+
+[files.".gitlab/merge_request_templates/Default.md"]
+source = ".gitlab/merge_request_templates/Default.md"

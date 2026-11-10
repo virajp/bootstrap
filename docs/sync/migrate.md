@@ -29,6 +29,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | A sync that writes the first `.config/repo-generated.tsv`                    | M29, after the sync.                                                                                                                                                                                                                                                |
 | `.config/mise/tasks/setup/configs/sync`                                      | M31, after the sync.                                                                                                                                                                                                                                                |
 | `SYNC_ENGINE_` in a file or a script, or a folder `~/.cache/sync-engine/`    | M32, after the sync.                                                                                                                                                                                                                                                |
+| A file or a script that names a task of the table in M33                     | M33, after the sync.                                                                                                                                                                                                                                                |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -570,7 +571,7 @@ The old seed ends with an empty `[secrets]` table, so each repository with
 3. Delete the top-level `[secrets]` table. Rename a `[profiles.default]`
    table.
 4. Replace the comment above the table with the comment of the new seed
-   `repo/tools/fnox/.config/fnox.toml.tmpl`.
+   `repo/tools/fnox/files/.config/fnox.toml.tmpl`.
 5. Add `-P <profile>` to each `fnox` call of the repository, for example
    `mise x -- fnox -P <repo_name> exec -- <command>`. Without `-P`, fnox uses
    the `default` profile, and the command gets no secret.
@@ -722,3 +723,46 @@ the cache of the old stubs (`~/.cache/bootstrap.lock`).
    sets one.
 4. Tell the user to delete `~/.cache/sync-engine/` and
    `~/.cache/bootstrap.lock`, if they exist. The sync does not delete them.
+
+## M33: The tasks of a task group have a number prefix
+
+Each task that an orchestrator runs for each tool (`code:format`,
+`code:lint`, `code:sec`, `setup:deps` and `setup:secrets`) has a number
+prefix now. The prefix gives the run order. The sync writes the new files and
+removes the old copies, because `.config/repo-generated.tsv` lists them.
+
+| Old name                   | New name                      |
+| -------------------------- | ----------------------------- |
+| `code:format:dart`         | `code:format:10-dart`         |
+| `code:format:gofmt`        | `code:format:20-gofmt`        |
+| `code:format:ktlint`       | `code:format:30-ktlint`       |
+| `code:format:ruff`         | `code:format:40-ruff`         |
+| `code:format:swift-format` | `code:format:50-swift-format` |
+| `code:lint:android`        | `code:lint:10-android`        |
+| `code:lint:dart`           | `code:lint:20-dart`           |
+| `code:lint:detekt`         | `code:lint:30-detekt`         |
+| `code:lint:go`             | `code:lint:40-go`             |
+| `code:lint:pyrefly`        | `code:lint:50-pyrefly`        |
+| `code:lint:repo-sync`      | `code:lint:60-repo-sync`      |
+| `code:lint:ruff`           | `code:lint:70-ruff`           |
+| `code:lint:swiftlint`      | `code:lint:80-swiftlint`      |
+| `code:lint:uv`             | `code:lint:90-uv`             |
+| `code:sec:gitleaks`        | `code:sec:10-gitleaks`        |
+| `code:sec:grype`           | `code:sec:20-grype`           |
+| `code:sec:osv-scanner`     | `code:sec:30-osv-scanner`     |
+| `setup:deps:android`       | `setup:deps:10-android`       |
+| `setup:deps:flutter`       | `setup:deps:20-flutter`       |
+| `setup:deps:kotlin`        | `setup:deps:30-kotlin`        |
+| `setup:deps:node`          | `setup:deps:40-node`          |
+| `setup:deps:python`        | `setup:deps:50-python`        |
+| `setup:deps:swift`         | `setup:deps:60-swift`         |
+| `setup:secrets:doppler`    | `setup:secrets:10-doppler`    |
+| `setup:secrets:fnox`       | `setup:secrets:20-fnox`       |
+
+1. Run `mise run setup:configs`. Commit the result.
+2. In the files of the repository, replace each old name with its new name,
+   for example in a CI workflow, a script or a document. Show the user each
+   change before you write it.
+3. A task of the repository in one of these groups, without a number prefix,
+   runs after the tasks of the tools. If it must run before one of them, give
+   it a lower number prefix.

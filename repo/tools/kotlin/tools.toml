@@ -4,12 +4,6 @@ depends = [ "java" ]
 extensions = []
 root_only = false
 
-[files.".config/detekt.yml"]
-mode = "seed"
-
-[files.".config/ktlint.editorconfig"]
-mode = "seed"
-
 # The mise config, generated into .config/mise/conf.d/kotlin/mise.<env>.toml.
 # ktlint is the layout gate, and detekt the correctness gate. detekt-cli runs
 # on the JDK of the java tool.
@@ -32,3 +26,23 @@ version_regex = 'kotlin-lsp/v(\d+\.\d+\.\d+)'
 [mise_env.dev.tools."http:kotlin-lsp".platforms]
 macos-arm64 = { checksum_url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.sit.sha256", format = "zip", rename_exe = "kotlin-lsp", url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.sit" }
 macos-x64 = { checksum_url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.sit.sha256", format = "zip", rename_exe = "kotlin-lsp", url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.sit" }
+
+# The files of the tool, below files/.
+[files.".config/detekt.yml"]
+mode = "seed"
+source = ".config/detekt.yml"
+
+[files.".config/ktlint.editorconfig"]
+mode = "seed"
+source = ".config/ktlint.editorconfig"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."code/format/30-ktlint"]
+source = "code-format-ktlint"
+
+[tasks."code/lint/30-detekt"]
+source = "code-lint-detekt"
+
+[tasks."setup/deps/30-kotlin"]
+source = "setup-deps-kotlin"

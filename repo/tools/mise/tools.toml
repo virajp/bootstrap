@@ -4,12 +4,6 @@ depends = []
 extensions = [ "hverlin.mise-vscode", "redhat.vscode-yaml", "tamasfe.even-better-toml" ]
 root_only = false
 
-[files.".config/mise/conf.d/zz-repo/mise.ci.toml"]
-mode = "seed"
-
-[files.".config/mise/conf.d/zz-repo/mise.dev.toml"]
-mode = "seed"
-
 # The mise config, generated into .config/mise/conf.d/mise/mise.<env>.toml.
 
 # JSON and YAML queries. In dev and ci, because the tasks use them in both.
@@ -41,3 +35,69 @@ os = "macos"
 # selects Linux binaries.
 [mise_env.ci.settings]
 os = "linux"
+
+# The files of the tool, below files/.
+[files.".config/mise.toml"]
+mode = "template"
+source = ".config/mise.toml.tmpl"
+
+[files.".config/mise/conf.d/zz-repo/mise.ci.toml"]
+mode = "seed"
+source = ".config/mise/conf.d/zz-repo/mise.ci.toml"
+
+[files.".config/mise/conf.d/zz-repo/mise.dev.toml"]
+mode = "seed"
+source = ".config/mise/conf.d/zz-repo/mise.dev.toml"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."_scripts/checks"]
+library = true
+source = "checks"
+
+[tasks."_scripts/helpers"]
+library = true
+source = "helpers"
+
+[tasks."_scripts/placeholder"]
+library = true
+source = "placeholder"
+
+[tasks."_scripts/worktrees-page"]
+library = true
+source = "worktrees-page"
+
+[tasks."code/_default"]
+source = "code"
+
+[tasks."code/format/_default"]
+mode = "template"
+source = "code-format.tmpl"
+
+[tasks."code/lint/_default"]
+mode = "template"
+source = "code-lint.tmpl"
+
+[tasks."code/merge/_default"]
+source = "code-merge"
+
+[tasks."code/sec/_default"]
+source = "code-sec"
+
+[tasks."code/worktrees"]
+source = "code-worktrees"
+
+[tasks."setup/_default"]
+mode = "template"
+source = "setup.tmpl"
+
+[tasks."setup/configs/_default"]
+mode = "template"
+source = "setup-configs.tmpl"
+
+[tasks."setup/mise"]
+source = "setup-mise"
+
+[tasks."setup/worktree"]
+mode = "template"
+source = "setup-worktree.tmpl"

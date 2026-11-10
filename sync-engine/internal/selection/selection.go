@@ -130,10 +130,16 @@ func CheckPacks(src source.Source, p *source.Packs) error {
 	}
 	for _, m := range p.Members {
 		if v, ok := strings.CutPrefix(m.State, "bad:key "); ok {
-			return usage("%s: [pack.%s] %s has the entry key '%s' - the only entry key is default", shown, m.Pack, m.Key, v)
+			return usage("%s: [pack.%s] %s has the entry key '%s' - the entry keys are default and required", shown, m.Pack, m.Key, v)
 		}
 		if v, ok := strings.CutPrefix(m.State, "bad:default "); ok {
 			return usage("%s: [pack.%s] %s: default must be true or false, not %s", shown, m.Pack, m.Key, v)
+		}
+		if v, ok := strings.CutPrefix(m.State, "bad:required "); ok {
+			return usage("%s: [pack.%s] %s: required must be true or false, not %s", shown, m.Pack, m.Key, v)
+		}
+		if p.Required[m.Pack+"/"+m.Key] && (m.Pack != BasePack || m.State != "true") {
+			return usage("%s: [pack.%s] %s: required = true is only for a member of pack %s with default = true", shown, m.Pack, m.Key, BasePack)
 		}
 	}
 	for _, m := range p.Members {

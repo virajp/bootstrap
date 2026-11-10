@@ -13,3 +13,11 @@ version = "latest"
 # The go command uses only the Go of mise, and never downloads a toolchain
 # for a newer go or toolchain line of go.mod. Module downloads do not change.
 GOTOOLCHAIN = "local"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."code/format/20-gofmt"]
+source = "code-format-gofmt"
+
+[tasks."code/lint/40-go"]
+source = "code-lint-go"

@@ -3,13 +3,10 @@
 default_envs = [ "dev", "ci" ]
 depends = []
 extensions = []
+parent = "node"
 root_only = false
 
 # A repository without a package.json does not get the aube settings.
-[files."aube-workspace.yaml"]
-mode = "seed"
-requires = [ "package.json" ]
-
 # The mise config, generated into .config/mise/conf.d/aube/mise.<env>.toml.
 [mise.tools.aube]
 depends = [ "node" ]
@@ -18,3 +15,9 @@ version = "latest"
 
 [mise.shell_alias]
 npx = "aubx"
+
+# The files of the tool, below files/.
+[files."aube-workspace.yaml"]
+mode = "seed"
+requires = [ "package.json" ]
+source = "aube-workspace.yaml"

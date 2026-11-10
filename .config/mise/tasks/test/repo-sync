@@ -136,6 +136,7 @@ case_body() {
   if [[ -n $change ]]; then
     "$change"
   fi
+  [[ -n ${CASE_OLD_FORM:-} ]] || new_form_all
   local args=${case_args:---dry-run}
   (
     unset BOOTSTRAP_URL BOOTSTRAP_CLONE REPO_SYNC_CLONE
@@ -175,6 +176,60 @@ case_body() {
   fi
   sed 's/^/    /' "$log" >&2
   printf '%s\n' "$((failures + 1))" > "$dir/failures"
+}
+
+# new_form <tool folder>: a case writes its scratch tools in the old form of a
+# tool folder: each file at its target path, and a [files."<target>"] table only
+# for a file with a mode or a condition. This moves each such file below files/
+# (or tasks/ for a task), and gives it its entry: it adds `source` to the table
+# of the file, or writes a new table. A `.tmpl` file becomes mode = "template",
+# or render = true for a seed. `CASE_OLD_FORM=1` keeps the old form, for a case
+# that tests the refusal of it.
+new_form() {
+  local dir=$1 rel target key table src dest mode toml=$1/tools.toml
+  [[ -f $toml ]] || return 0
+  while IFS= read -r rel; do
+    target=${rel%.tmpl}
+    if [[ $target == .config/mise/tasks/* ]]; then
+      key=${target#.config/mise/tasks/}
+      table=tasks
+      src=${key//\//-}
+      [[ $key != _scripts/* ]] || src=${key#_scripts/}
+    else
+      key=$target
+      table=files
+      src=$target
+    fi
+    [[ $rel == "$target" ]] || src+=.tmpl
+    dest=$dir/$table/$src
+    mkdir -p -- "$(dirname -- "$dest")"
+    mv -- "$dir/$rel" "$dest"
+    mode=$(awk -v h="[files.\"$target\"]" '
+      $0 == h { inside = 1; next }
+      /^\[/ { inside = 0 }
+      inside && $1 == "mode" { gsub(/"/, "", $3); print $3 }' "$toml")
+    awk -v h="[files.\"$target\"]" -v nh="[$table.\"$key\"]" -v src="$src" \
+      -v tmpl="$([[ $rel == "$target" ]] || echo 1)" -v mode="$mode" \
+      -v lib="$([[ $table == tasks && $key == _scripts/* ]] && echo 1)" '
+      function extra() {
+        print "source = \"" src "\""
+        if (tmpl && mode == "seed") print "render = true"
+        else if (tmpl && (mode == "" || mode == "generated")) print "mode = \"template\""
+        if (lib) print "library = true"
+      }
+      $0 == h { print nh; extra(); found = 1; inside = 1; next }
+      /^\[/ { inside = 0 }
+      inside && $1 == "mode" && $3 == "\"generated\"" { next }
+      { print }
+      END { if (!found) { print ""; print nh; extra() } }' "$toml" > "$toml.new"
+    mv -- "$toml.new" "$toml"
+  done < <(cd "$dir" && find . -type f ! -path ./tools.toml ! -path './files/*' ! -path './tasks/*' | sed 's#^\./##' | sort)
+}
+new_form_all() {
+  local d
+  for d in "$clone"/repo/tools/*/; do
+    new_form "${d%/}"
+  done
 }
 
 # run_check: run_case with `bootstrap check`.
@@ -224,12 +279,17 @@ check_base_files() {
   local tool path found missing=''
   for tool in $base_tools; do
     found=0
+    # The targets of the entries of the tool: [files."<target>"] and
+    # [tasks."<path>"].
     while IFS= read -r path; do
-      if grep -qF "would update $consumer/${path%.tmpl}" "$log"; then
+      if grep -qF "would update $consumer/$path" "$log"; then
         found=1
         break
       fi
-    done < <(cd "$clone/repo/tools/$tool" && find . -type f ! -name tools.toml | sed 's#^\./##')
+    done < <(sed -n -e 's/^\[files\."\(.*\)"\]$/\1/p' -e 's#^\[tasks\."\(.*\)"\]$#.config/mise/tasks/\1#p' \
+      "$clone/repo/tools/$tool/tools.toml")
+    # A tool without an entry ships no file, for example _security_base.
+    grep -qE '^\[(files|tasks)\.' "$clone/repo/tools/$tool/tools.toml" || found=1
     ((found)) || missing+=" $tool"
   done
   if [[ -n $missing ]]; then
@@ -468,7 +528,7 @@ requires_found = [ \"setup.py\" ]" '' 'the envs, the depends, the requires, the 
 
 # The `[files]` tables of the python tool: the ruff and pyrefly tasks have the
 # `requires_found` of their mise tool.
-gate=.config/mise/tasks/code/lint/pyrefly
+gate=.config/mise/tasks/code/lint/50-pyrefly
 gate_synced_copy() {
   python_conf
   mkdir -p -- "$consumer/${gate%/*}"
@@ -498,15 +558,15 @@ python_files_edit() {
   cp -- "$tmp/python.toml" "$clone/repo/tools/python/tools.toml"
 }
 pyrefly_missing_file() {
-  python_files_edit '[files.".config/mise/tasks/code/lint/pyrefly"]' '[files.".config/mise/tasks/code/lint/nope"]'
+  python_files_edit 'source = "code-lint-pyrefly"' 'source = "nope"'
 }
 pyrefly_parent_path() {
-  python_files_edit '[files.".config/mise/tasks/code/lint/pyrefly"]' '[files."../python/tools.toml"]'
+  python_files_edit '[tasks."code/lint/50-pyrefly"]' '[tasks."../python/tools.toml"]'
 }
 
 lacks_gate_update() {
   check_log_lacks "[files], no pyproject.toml: the gates are skipped" "would update $consumer/$gate"
-  check_log_lacks "[files], no pyproject.toml: code:lint:uv stays" "skip file  $consumer/.config/mise/tasks/code/lint/uv"
+  check_log_lacks "[files], no pyproject.toml: code:lint:uv stays" "skip file  $consumer/.config/mise/tasks/code/lint/90-uv"
 }
 lacks_gate_skip() {
   check_log_lacks "[files], a pyproject.toml: the gates are written" '(no pyproject.toml)'
@@ -533,10 +593,10 @@ run_case "[files], no pyproject.toml: a synced gate with a block header is remov
   "$gate (no pyproject.toml)" has_gate_remove
 run_case "[files], no pyproject.toml: a gate of the repo without the header stays" 0 "$python_values" gate_own \
   "$gate (no pyproject.toml)" lacks_gate_remove
-run_case "[files], a target that is not a file of the tool folder" 2 "$python_values" pyrefly_missing_file \
-  'python/tools.toml: [files.".config/mise/tasks/code/lint/nope"] names a target that no file of the tool produces'
-run_case "[files], a target outside the tool folder" 2 "$python_values" pyrefly_parent_path \
-  'python/tools.toml: [files."../python/tools.toml"] names a target that no file of the tool produces'
+run_case "[tasks], a source that is not a file of the tool folder" 2 "$python_values" pyrefly_missing_file \
+  'python/tools.toml: [tasks."code/lint/50-pyrefly"] source: tasks/nope is not there'
+run_case "[tasks], a path outside the tasks folder" 2 "$python_values" pyrefly_parent_path \
+  'python/tools.toml: [tasks."../python/tools.toml"] must be a path relative to the target root, with no .. part'
 run_case "[overrides.mise.tools.ruff] files" 2 "$python_values
 [overrides.mise.tools.ruff]
 files = []" '' 'the envs, the depends, the requires, the requires_found and the files of a mise tool cannot be overridden'
@@ -894,6 +954,7 @@ run_case "no values file" 2 'environments = [ "dev" ]' no_values_file 'not found
 # already has its output file, so the dry run shows its diff.
 sync_engine_template() {
   local path=.config/sync-engine-path
+  mkdir -p -- "$clone/repo/tools/repo-sync/.config"
   {
     printf '%s\n' "# Synced from bootstrap: repo/tools/repo-sync/$path.tmpl. Do not edit this file."
     printf '%s\n' '# The next sync replaces it, and a manual change is lost.'
@@ -1229,40 +1290,24 @@ files_no_source() {
   fixture_txt
   fixture_toml '[files."nope.txt"]' 'mode = "seed"'
 }
-files_tmpl_target() {
-  fixture_txt
-  fixture_file b.txt.tmpl 'b'
-  fixture_toml '[files."b.txt.tmpl"]' 'mode = "seed"'
-}
-# files_merge_key <key>: a merge target spelled <key>. The file sub/m.json
-# exists, so only the spelling of the key breaks the rule.
-files_merge_key() {
+files_missing_source() {
   fixture_tool
-  mkdir -p -- "$clone/repo/tools/fixture/sub"
-  fixture_file sub/m.json '{"a": 1}'
-  fixture_toml "[files.\"$1\"]" 'mode = "merge"'
+  fixture_toml '[files."nope.txt"]' 'source = "nope.txt"'
 }
-files_dot_target() { files_merge_key ./sub/m.json; }
-files_double_slash_target() { files_merge_key sub//m.json; }
-# A file system that ignores case finds A.TXT, and only the exact match refuses it.
-files_case_variant() {
-  fixture_txt
-  fixture_toml '[files."A.TXT"]' 'mode = "seed"'
+files_parent_source() {
+  fixture_tool
+  fixture_toml '[files."up.txt"]' 'source = "../tools.toml"'
 }
-# The file exists through the link, and only the exact match refuses it.
-files_symlink_folder() {
-  files_merge_key link/m.json
-  ln -s sub "$clone/repo/tools/fixture/link"
-}
-files_both_sources() {
-  fixture_txt
-  fixture_file a.txt.tmpl 'a'
+files_no_entry() {
+  fixture_tool
+  mkdir -p -- "$clone/repo/tools/fixture/files"
+  printf '%s\n' x > "$clone/repo/tools/fixture/files/x.txt"
 }
 files_not_table() {
   fixture_txt
   fixture_toml '[files]' '"a.txt" = 1'
 }
-files_bad_mode() { files_table 'mode = "copy"'; }
+files_bad_mode() { files_table 'mode = "owned"'; }
 files_bad_format() { files_table 'format = "ini"'; }
 files_requires_parent() { files_table 'requires = [ "../a" ]'; }
 files_requires_inner() { files_table 'requires = [ "x/../a" ]'; }
@@ -1271,29 +1316,25 @@ files_requires_empty() { files_table 'requires = []'; }
 files_requires_number() { files_table 'requires = 1'; }
 files_found_slash() { files_table 'requires_found = [ "a/b" ]'; }
 files_found_empty() { files_table 'requires_found = []'; }
-files_two_errors() { files_table 'format = "ini"' 'mode = "copy"'; }
+files_two_errors() { files_table 'format = "ini"' 'mode = "owned"'; }
 check_files_two_errors() { check_that "two errors in a [files] table: the second message" log_has '[files."a.txt"] mode must be'; }
 
 run_case "[files], an unknown key" 2 "$no_tool_values" files_unknown_key \
-  'fixture/tools.toml: [files."a.txt"] owner is not a key of a file'
-run_case "[files], a target that no file of the tool produces" 2 "$no_tool_values" files_no_source \
-  'fixture/tools.toml: [files."nope.txt"] names a target that no file of the tool produces'
-run_case "[files], a target with .tmpl" 2 "$no_tool_values" files_tmpl_target \
-  'fixture/tools.toml: [files."b.txt.tmpl"] names a target that no file of the tool produces'
-run_case "[files], a merge target with ./ at the start" 2 "$no_tool_values" files_dot_target \
-  'fixture/tools.toml: [files."./sub/m.json"] names a target that no file of the tool produces'
-run_case "[files], a merge target with // inside" 2 "$no_tool_values" files_double_slash_target \
-  'fixture/tools.toml: [files."sub//m.json"] names a target that no file of the tool produces'
-run_case "[files], a case variant of a target" 2 "$no_tool_values" files_case_variant \
-  'fixture/tools.toml: [files."A.TXT"] names a target that no file of the tool produces'
-run_case "[files], a target through a symlinked folder" 2 "$no_tool_values" files_symlink_folder \
-  'fixture/tools.toml: [files."link/m.json"] names a target that no file of the tool produces'
-run_case "<p> and <p>.tmpl in one tool folder" 2 "$no_tool_values" files_both_sources \
-  'fixture: a.txt and a.txt.tmpl both exist - keep one'
-run_case "[files], a target that is not a table" 2 "$no_tool_values" files_not_table \
+  'fixture/tools.toml: [files."a.txt"] owner is not a key of a files entry'
+run_case "[files], a table without a source" 2 "$no_tool_values" files_no_source \
+  'fixture/tools.toml: [files."nope.txt"] needs source, a path below files/ with no .. part'
+run_case "[files], a source that is not there" 2 "$no_tool_values" files_missing_source \
+  'fixture/tools.toml: [files."nope.txt"] source: files/nope.txt is not there'
+run_case "[files], a source with a .. part" 2 "$no_tool_values" files_parent_source \
+  'fixture/tools.toml: [files."up.txt"] needs source, a path below files/ with no .. part'
+run_case "a file below files/ without an entry" 2 "$no_tool_values" files_no_entry \
+  'fixture/tools.toml: files/x.txt has no entry - write a [files."<path>"] table with source = "x.txt"'
+CASE_OLD_FORM=1 run_case "the old form: a file outside files/ and tasks/" 2 "$no_tool_values" fixture_txt \
+  'fixture/tools.toml: a.txt is not below files/ or tasks/ - move it, and write an entry for it (the old form of a tool folder is gone)'
+CASE_OLD_FORM=1 run_case "[files], a target that is not a table" 2 "$no_tool_values" files_not_table \
   'fixture/tools.toml: [files."a.txt"] must be a table'
 run_case "[files], an unknown mode" 2 "$no_tool_values" files_bad_mode \
-  'fixture/tools.toml: [files."a.txt"] mode must be "generated", "seed" or "merge"'
+  'fixture/tools.toml: [files."a.txt"] mode must be "copy", "template", "seed" or "merge"'
 run_case "[files], an unknown format" 2 "$no_tool_values" files_bad_format \
   'fixture/tools.toml: [files."a.txt"] format must be "text", "json", "yaml" or "toml"'
 run_case "[files], requires with a .. part at the start" 2 "$no_tool_values" files_requires_parent \
@@ -2031,7 +2072,7 @@ run_case "[pack.*], the old default list in a pack that is not selected" 2 "$no_
 run_case "[pack.*], a key with the old prefix p:" 2 "$no_tool_values" packs_old_prefix \
   'repo/packs.toml: [pack.odd] "p:x" is the old form - write "pack:x" = { default = true }'
 run_case "[pack.*], an entry key other than default" 2 "$no_tool_values" packs_entry_key \
-  "repo/packs.toml: [pack.odd] node has the entry key 'version' - the only entry key is default"
+  "repo/packs.toml: [pack.odd] node has the entry key 'version' - the entry keys are default and required"
 run_case "[pack.*], default that is not a boolean" 2 "$no_tool_values" packs_default_string \
   'repo/packs.toml: [pack.odd] node: default must be true or false, not string'
 run_case "[pack.*], a member that is a string" 2 "$no_tool_values" packs_member_string \
@@ -2184,7 +2225,7 @@ run_case "the stale rule, a listed header file" 0 "$no_tool_values" stale_listed
 # file.
 check_header_paths() {
   check_that "a real run: line 2 of a script has the repo/tools header" grep -qF \
-    'Synced from bootstrap: repo/tools/mise/.config/mise/tasks/_scripts/helpers.' \
+    'Synced from bootstrap: repo/tools/mise/tasks/helpers.' \
     <(sed -n 2p "$consumer/.config/mise/tasks/_scripts/helpers")
   check_that "a real run: a generated conf.d file has the repo/tools header" grep -qF \
     'Synced from bootstrap: repo/tools/mise/tools.toml' "$consumer/.config/mise/conf.d/mise/mise.dev.toml"
@@ -2927,7 +2968,7 @@ shim_layout() { export BOOTSTRAP_BIN=$bin; }
 shim_old_task() {
   local tasks=$consumer/.config/mise/tasks
   mkdir -p -- "$tasks/_scripts" "$tasks/setup/configs"
-  cp -- "$clone/repo/tools/mise/.config/mise/tasks/_scripts/helpers" "$tasks/_scripts/helpers"
+  cp -- "$clone/repo/tools/mise/tasks/helpers" "$tasks/_scripts/helpers"
   cat > "$tasks/setup/configs/sync" << 'EOF'
 #!/usr/bin/env bash
 # Synced from bootstrap: repo/tools/repo-sync/.config/mise/tasks/setup/configs/sync. Do not edit this file.
@@ -3024,7 +3065,7 @@ done
 task="$tmp/setup-configs"
 printf '{"members":["sub"],"member_types":{"sub":"submodule"},"member_folders":{"sub":"sub"},"sync_engine":"%s/sync-engine"}\n' "$root" > "$tmp/ctx.json"
 gomplate --left-delim '<%' --right-delim '%>' -c ".=$tmp/ctx.json" \
-  -f "$root/repo/tools/repo-sync/.config/mise/tasks/setup/configs/_default.tmpl" -o "$task"
+  -f "$root/repo/tools/mise/tasks/setup-configs.tmpl" -o "$task"
 cache="$tmp/cache/bootstrap"
 mkdir -p -- "$tmp/bin"
 cat > "$tmp/bin/bootstrap" << 'EOF'
@@ -3337,7 +3378,7 @@ check_configs_log "$name" -l 'Cloning into'
 
 # The gate code:lint:repo-sync. It finds gomplate with `mise x`, so it starts in
 # this repository, and then it does a cd to its own MISE_PROJECT_ROOT.
-lint_task="$root/repo/tools/repo-sync/.config/mise/tasks/code/lint/repo-sync"
+lint_task="$root/repo/tools/repo-sync/tasks/code-lint-repo-sync"
 gate_root="$tmp/gate-consumer"
 gate_cache="$tmp/gate-cache"
 cp -R -- "$base_consumer" "$gate_root"

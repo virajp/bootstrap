@@ -2,9 +2,10 @@
 # each key of its table is a member: `<tool> = { default = true }` or
 # `<tool> = {}`, and a nested pack is `"pack:<name>"`. `setup-sync` sorts the
 # tools by name in each stage, so the member order does not change the sync. The
-# sync always adds the pack `base`, and `base` must hold `macos-setup`.
+# sync always adds the pack `base`. `required = true` marks a member of `base`
+# that each Mac must have.
 [pack.base]
-macos-setup = { default = true }
+macos-setup = { default = true, required = true }
 mise = { default = true }
 homebrew = { default = true }
 bash = { default = true }

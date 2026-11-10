@@ -8,13 +8,6 @@ description = "Claude Code: its settings, CLAUDE.md, output styles, the func:cla
 # by the user. settings.json is a merge file: bootstrap enforces only the
 # keys of its source and Claude Code owns the rest. When a list item of the
 # source changes, put the old item in `remove_items`, or the live file keeps it.
-[files.".claude/CLAUDE.md"]
-mode = "seed"
-
-[files.".claude/settings.json"]
-mode = "merge"
-remove = [ [ "deniedMcpServers" ], [ "env", "CONTEXT7_RUNNER" ] ]
-
 # The claude-cli tool: Claude Code and its aliases.
 [mise.bootstrap.packages]
 "brew-cask:claude-code@latest" = "latest" # Claude Code latest version
@@ -26,3 +19,27 @@ ccf = "mise run --silent func:claude --model 'fable[1m]'"
 cch = "mise run --silent func:claude --model 'haiku[1m]'"
 cco = "mise run --silent func:claude --model 'opus[1m]'"
 ccs = "mise run --silent func:claude --model 'sonnet[1m]'"
+
+# The files of the tool, below files/.
+[files.".claude/CLAUDE.md"]
+mode = "seed"
+source = ".claude/CLAUDE.md"
+
+[files.".claude/output-styles/ste100.md"]
+source = ".claude/output-styles/ste100.md"
+
+[files.".claude/output-styles/terse.md"]
+source = ".claude/output-styles/terse.md"
+
+[files.".claude/settings.json"]
+mode = "merge"
+remove = [ [ "deniedMcpServers" ], [ "env", "CONTEXT7_RUNNER" ] ]
+source = ".claude/settings.json.tmpl"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."func/claude"]
+source = "func-claude"
+
+[tasks."upgrade/ai"]
+source = "upgrade-ai"

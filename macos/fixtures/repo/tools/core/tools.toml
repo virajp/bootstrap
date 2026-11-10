@@ -8,10 +8,24 @@ name = "default-name"
 left = "default-left"
 right = "default-right"
 
-[files.".config/core/seeded.toml"]
-mode = "seed"
-requires = [ ".config/core-needed" ]
-
 [mise.env]
 CORE_HOME = "{{ env.HOME }}"
 CORE_NAME = "<% .config.name %>"
+
+# The files of the tool, below files/.
+[files.".config/core/plain.txt"]
+source = ".config/core/plain.txt"
+
+[files.".config/core/seeded.toml"]
+mode = "seed"
+render = true
+requires = [ ".config/core-needed" ]
+source = ".config/core/seeded.toml.tmpl"
+
+[files.".config/core/settings.json"]
+mode = "template"
+source = ".config/core/settings.json.tmpl"
+
+[files.".config/core/values.txt"]
+mode = "template"
+source = ".config/core/values.txt.tmpl"

@@ -20,35 +20,73 @@ func write(t *testing.T, root string, files map[string]string) {
 	}
 }
 
-func TestFilesRepoAndMacos(t *testing.T) {
+func TestEntries(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, map[string]string{
-		"repo/tools/a/tools.toml":      "",
-		"repo/tools/a/x.txt":           "x",
-		"repo/tools/a/y.json.tmpl":     "y",
-		"repo/tools/a/sub/tools.toml":  "",
-		"repo/tools/a/sub/z":           "z",
-		"macos/tools/a/tools.toml":     "",
-		"macos/tools/a/x.txt":          "x",
-		"macos/tools/a/sub/tools.toml": "",
+		"macos/tools/a/tools.toml": `
+[files."x.txt"]
+source = "x.txt"
+[files.".config/y.json"]
+source = "y.json.tmpl"
+mode = "template"
+[files.".config/d"]
+source = "d"
+[files."s.md"]
+source = "s.md"
+mode = "seed"
+render = true
+[tasks."_scripts/lib"]
+source = "lib"
+library = true
+[tasks."run/it"]
+source = "run-it"
+`,
+		"macos/tools/a/files/x.txt":       "x",
+		"macos/tools/a/files/y.json.tmpl": "y",
+		"macos/tools/a/files/d/one":       "1",
+		"macos/tools/a/files/d/sub/two":   "2",
+		"macos/tools/a/files/s.md":        "s",
+		"macos/tools/a/tasks/lib":         "l",
+		"macos/tools/a/tasks/run-it":      "r",
+		"macos/tools/b/tools.toml": `
+[files."x"]
+source = "x"
+mode = "copy"
+render = true
+[tasks."lib"]
+source = "lib"
+library = true
+`,
+		"macos/tools/b/files/x":     "x",
+		"macos/tools/b/files/extra": "e",
+		"macos/tools/b/tasks/lib":   "l",
+		"macos/tools/b/old.txt":     "o",
 	})
-	if err := os.Symlink("x.txt", filepath.Join(root, "repo/tools/a/link")); err != nil {
-		t.Fatal(err)
+	x, err := Source{Root: root, Side: Macos}.Open()
+	want := []File{
+		{"files/d/one", ".config/d/one", false},
+		{"files/d/sub/two", ".config/d/sub/two", false},
+		{"tasks/lib", ".config/mise/tasks/_scripts/lib", false},
+		{"tasks/run-it", ".config/mise/tasks/run/it", false},
+		{"files/y.json.tmpl", ".config/y.json", true},
+		{"files/s.md", "s.md", true},
+		{"files/x.txt", "x.txt", false},
 	}
-	got := func(side Side) []File {
-		f, err := Source{Root: root, Side: side}.Files("a")
-		if err != nil {
-			t.Fatal(err)
-		}
-		return f
+	if g := x.Files("a"); !reflect.DeepEqual(g, want) {
+		t.Errorf("files = %v, want %v", g, want)
 	}
-	wantRepo := []File{{"sub/z", "sub/z", false}, {"x.txt", "x.txt", false}, {"y.json.tmpl", "y.json", true}}
-	if g := got(Repo); !reflect.DeepEqual(g, wantRepo) {
-		t.Errorf("repo files = %v, want %v", g, wantRepo)
+	var got []string
+	for _, e := range Messages(err) {
+		got = append(got, e.Msg)
 	}
-	wantMacos := []File{{"sub/tools.toml", "sub/tools.toml", false}, {"x.txt", "x.txt", false}}
-	if g := got(Macos); !reflect.DeepEqual(g, wantMacos) {
-		t.Errorf("macos files = %v, want %v", g, wantMacos)
+	wantMsgs := []string{
+		`macos/tools/b/tools.toml: [files."x"] render works only with mode = "seed" - a template has mode = "template"`,
+		`macos/tools/b/tools.toml: [tasks."lib"] library = true is for a library below _scripts/, and each file below _scripts/ is a library`,
+		`macos/tools/b/tools.toml: files/extra has no entry - write a [files."<path>"] table with source = "extra"`,
+		`macos/tools/b/tools.toml: old.txt is not below files/ or tasks/ - move it, and write an entry for it (the old form of a tool folder is gone)`,
+	}
+	if !reflect.DeepEqual(got, wantMsgs) {
+		t.Errorf("messages:\n%v\nwant\n%v", got, wantMsgs)
 	}
 }
 

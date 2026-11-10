@@ -19,3 +19,8 @@ gpg.ssh.program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
 
 [mise.bootstrap.packages]
 "brew-cask:1password" = { appdir = "/Applications", version = "latest" }
+
+# The files of the tool, below files/.
+[files.".config/1Password/ssh/agent.toml"]
+mode = "template"
+source = ".config/1Password/ssh/agent.toml.tmpl"

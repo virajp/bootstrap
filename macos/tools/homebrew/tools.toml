@@ -23,3 +23,24 @@ HOMEBREW_NO_ENV_HINTS = "1"
 
 [mise.shell_alias]
 brew = "fnox -c $HOME/.config/fnox/config.toml exec -P brew -- brew"
+
+# The files of the tool, below files/.
+[files.".config/bash/01a-homebrew.bash"]
+source = ".config/bash/01a-homebrew.bash"
+
+[files.".config/brewfile"]
+source = ".config/brewfile"
+
+[files.".config/fish/conf.d/05-homebrew.fish"]
+source = ".config/fish/conf.d/05-homebrew.fish"
+
+[files.".config/zsh/01a-homebrew.zsh"]
+source = ".config/zsh/01a-homebrew.zsh"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."brew/casks"]
+source = "brew-casks"
+
+[tasks."upgrade/brew"]
+source = "upgrade-brew"

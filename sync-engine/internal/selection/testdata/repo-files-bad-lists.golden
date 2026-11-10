@@ -1,6 +1,0 @@
-fingerprint: 21d0fc2f962ec9053352ad07bb481f6fc8f8a00e0f6b26b8850cae940698af7a
-rc=2
---- stderr
-repo-sync: repo/tools/a/tools.toml: [files."x.txt"] requires must be a non-empty list of paths
-repo-sync: repo/tools/a/tools.toml: [files."x.txt"] requires_found must be a non-empty list of file names
---- stdout

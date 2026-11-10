@@ -1,5 +1,0 @@
-fingerprint: 100ca1960db52e74094036d7db14bfbbcabf57a424218565820a6b07c6a1ab41
-rc=2
---- stderr
-setup-sync: macos/tools/m1/tools.toml: [files] must be a table of [files."<target>"] tables
---- stdout

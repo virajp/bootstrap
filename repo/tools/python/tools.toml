@@ -5,15 +5,6 @@ depends = []
 extensions = [ "meta.pyrefly" ]
 root_only = false
 
-[files.".config/mise/tasks/code/format/ruff"]
-requires_found = [ "pyproject.toml" ]
-
-[files.".config/mise/tasks/code/lint/ruff"]
-requires_found = [ "pyproject.toml" ]
-
-[files.".config/mise/tasks/code/lint/pyrefly"]
-requires_found = [ "pyproject.toml" ]
-
 # The mise config, generated into .config/mise/conf.d/python/mise.<env>.toml.
 [mise.settings]
 pipx.uvx = true
@@ -48,3 +39,23 @@ version = "latest"
 UV_NO_CACHE = true
 UV_NO_MANAGED_PYTHON = true
 UV_PYTHON_DOWNLOADS = "never"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."code/format/40-ruff"]
+requires_found = [ "pyproject.toml" ]
+source = "code-format-ruff"
+
+[tasks."code/lint/50-pyrefly"]
+requires_found = [ "pyproject.toml" ]
+source = "code-lint-pyrefly"
+
+[tasks."code/lint/70-ruff"]
+requires_found = [ "pyproject.toml" ]
+source = "code-lint-ruff"
+
+[tasks."code/lint/90-uv"]
+source = "code-lint-uv"
+
+[tasks."setup/deps/50-python"]
+source = "setup-deps-python"

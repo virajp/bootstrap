@@ -4,10 +4,12 @@ depends = []
 extensions = []
 root_only = false
 
-[files."bunfig.toml"]
-mode = "seed"
-
 # The mise config, generated into .config/mise/conf.d/bun/mise.<env>.toml.
 [mise.tools.bun]
 envs = [ "dev", "ci" ]
 version = "latest"
+
+# The files of the tool, below files/.
+[files."bunfig.toml"]
+mode = "seed"
+source = "bunfig.toml"

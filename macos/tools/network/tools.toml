@@ -29,3 +29,23 @@ ipInfo0 = "ipconfig getpacket en0"
 openports = "sudo lsof -i -P | grep LISTEN"
 ping = "prettyping -i 2 --nolegend"
 routes = "netstat -nr -f inet"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."ips/gateway"]
+source = "ips-gateway"
+
+[tasks."ips/ii"]
+source = "ips-ii"
+
+[tasks."ips/ips"]
+source = "ips-ips"
+
+[tasks."ips/ipv4"]
+source = "ips-ipv4"
+
+[tasks."ips/ipv6"]
+source = "ips-ipv6"
+
+[tasks."ips/remoteip"]
+source = "ips-remoteip"

@@ -6,3 +6,7 @@ description = "fnox and age: secrets from the macOS Keychain, with a profile per
 [mise.bootstrap.packages]
 "brew:age" = "latest" # Encryption tool
 "brew:fnox" = "latest" # Secret management tool
+
+# The files of the tool, below files/.
+[files.".config/fnox/config.toml"]
+source = ".config/fnox/config.toml"

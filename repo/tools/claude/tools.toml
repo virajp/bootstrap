@@ -3,3 +3,8 @@ default_envs = [ "dev" ]
 depends = []
 extensions = []
 root_only = false
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."setup/ai"]
+source = "setup-ai"

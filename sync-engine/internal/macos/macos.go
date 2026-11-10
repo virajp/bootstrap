@@ -73,6 +73,7 @@ type planItem struct {
 	target string // Relative to $HOME.
 	mode   string // generated, seed or merge.
 	format string // The `format` key, or "-".
+	tmpl   bool   // The source is a template.
 }
 
 // state is the state of one run, as the _SS_* variables of bash.

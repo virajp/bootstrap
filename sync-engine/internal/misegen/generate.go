@@ -43,6 +43,9 @@ type Generator struct {
 	// Getenv reads HOME, USER, TMPDIR and each env.Getenv of a template. Nil
 	// reads the real environment.
 	Getenv func(string) string
+	// Ships tells if <tool> has an entry for the target <path> (repo). Nil:
+	// no tool ships a mise file.
+	Ships func(tool, path string) bool
 
 	work string
 }
@@ -286,7 +289,8 @@ func (g *Generator) Render(tool, confd string, aliases []string) ([]string, erro
 		if !full {
 			continue
 		}
-		if _, err := os.Stat(filepath.Join(out, name)); err == nil {
+		shipped := g.Ships != nil && g.Ships(tool, ".config/mise/conf.d/"+tool+"/"+name)
+		if _, err := os.Stat(filepath.Join(out, name)); err == nil || shipped {
 			return written, usage("%s/%s ships .config/mise/conf.d/%s/%s and also generates it from [mise] - remove one", g.Shown, tool, tool, name)
 		}
 		w, err := put(file, out, name, body)

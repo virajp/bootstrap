@@ -1,6 +1,6 @@
 # The `osv-scanner` tool
 
-osv-scanner: the dependency scanner, and `code:sec:osv-scanner`.
+osv-scanner: the dependency scanner, and `code:sec:30-osv-scanner`.
 
 | Property     | Value                      |
 | ------------ | -------------------------- |
@@ -17,11 +17,11 @@ values.
 
 ## What the tool ships
 
-| Path in the repository                            | Kind      | Use                              |
-| ------------------------------------------------- | --------- | -------------------------------- |
-| `.config/osv-scanner.toml`                        | Seed      | The config of osv-scanner.       |
-| `.config/mise/tasks/code/sec/osv-scanner`         | Synced    | The task `code:sec:osv-scanner`. |
-| `.config/mise/conf.d/osv-scanner/mise.<env>.toml` | Generated | The mise config of this tool.    |
+| Path in the repository                            | Kind      | Use                                 |
+| ------------------------------------------------- | --------- | ----------------------------------- |
+| `.config/osv-scanner.toml`                        | Seed      | The config of osv-scanner.          |
+| `.config/mise/tasks/code/sec/30-osv-scanner`      | Synced    | The task `code:sec:30-osv-scanner`. |
+| `.config/mise/conf.d/osv-scanner/mise.<env>.toml` | Generated | The mise config of this tool.       |
 
 ## mise tools
 
@@ -31,9 +31,9 @@ values.
 
 ## Tasks
 
-| Task                   | Use                                                                                                                               |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `code:sec:osv-scanner` | Scan the dependencies of the tree, without the git submodules. `--staged` does nothing. `--debug` raises the verbosity to `info`. |
+| Task                      | Use                                                                                                                               |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `code:sec:30-osv-scanner` | Scan the dependencies of the tree, without the git submodules. `--staged` does nothing. `--debug` raises the verbosity to `info`. |
 
 `code:sec` runs this task.
 

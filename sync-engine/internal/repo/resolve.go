@@ -38,25 +38,22 @@ func (s *state) resolve() fail.Code {
 		ext = append(ext, m.Extensions...)
 		for _, fe := range m.Files {
 			key := tool + "/" + fe.Target
-			for _, k := range fe.Keys.Keys() {
-				switch k {
-				case "mode":
-					mode := strings.ReplaceAll(source.JSON(fe.Keys.Get(k)), `"`, "")
-					s.fileModes[key] = mode
-					if mode != "generated" {
-						s.spare = append(s.spare, fe.Target)
-					}
-				case "format":
-					s.fileFormats[key] = strings.ReplaceAll(source.JSON(fe.Keys.Get(k)), `"`, "")
-				case "remove":
-					m := s.fileMerge[key]
-					m[0] = source.JSON(fe.Keys.Get(k))
-					s.fileMerge[key] = m
-				case "remove_items":
-					m := s.fileMerge[key]
-					m[1] = source.JSON(fe.Keys.Get(k))
-					s.fileMerge[key] = m
+			if fe.Mode != "generated" {
+				s.fileModes[key] = fe.Mode
+				s.spare = append(s.spare, fe.Target)
+			}
+			if fe.Format != "" {
+				s.fileFormats[key] = fe.Format
+			}
+			if fe.Remove != nil || fe.RemoveItems != nil {
+				var m [2]string
+				if fe.Remove != nil {
+					m[0] = source.JSON(fe.Remove)
 				}
+				if fe.RemoveItems != nil {
+					m[1] = source.JSON(fe.RemoveItems)
+				}
+				s.fileMerge[key] = m
 			}
 			for _, item := range fe.Requires {
 				s.fileConds = append(s.fileConds, cond{key, "requires", item})
@@ -210,20 +207,6 @@ func (s *state) fileSkips() {
 
 // inReqSkip tells if <key> has an entry in reqSkip.
 func (s *state) inReqSkip(key string) bool { _, ok := s.reqSkip[key]; return ok }
-
-// anyTemplate tells if the folder <dir> has a regular `*.tmpl` file, at any
-// depth (`find <dir> -name '*.tmpl' -type f -print -quit`).
-func anyTemplate(dir string) bool {
-	found := false
-	walk(dir, func(p string, info os.FileInfo) bool {
-		if info.Mode().IsRegular() && strings.HasSuffix(info.Name(), ".tmpl") {
-			found = true
-			return false
-		}
-		return true
-	})
-	return found
-}
 
 // walk visits each entry below <dir>, without a symlink to a folder, until
 // <visit> gives false.

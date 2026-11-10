@@ -18,11 +18,11 @@ The Android SDK command-line tools.
 
 ## What the tool ships
 
-| Path in the repository                        | Kind      | Use                            |
-| --------------------------------------------- | --------- | ------------------------------ |
-| `.config/mise/tasks/setup/deps/android`       | Synced    | The task `setup:deps:android`. |
-| `.config/mise/tasks/code/lint/android`        | Synced    | The task `code:lint:android`.  |
-| `.config/mise/conf.d/android/mise.<env>.toml` | Generated | The mise config of this tool.  |
+| Path in the repository                        | Kind      | Use                               |
+| --------------------------------------------- | --------- | --------------------------------- |
+| `.config/mise/tasks/setup/deps/10-android`    | Synced    | The task `setup:deps:10-android`. |
+| `.config/mise/tasks/code/lint/10-android`     | Synced    | The task `code:lint:10-android`.  |
+| `.config/mise/conf.d/android/mise.<env>.toml` | Generated | The mise config of this tool.     |
 
 ## mise tools
 
@@ -32,18 +32,18 @@ The Android SDK command-line tools.
 
 ## Tasks
 
-| Task                 | Use                                                                                                                                |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `setup:deps:android` | Install `platform-tools`, the platform of `compileSdk`, `emulator` and the emulator image. `--upgrade` installs the same packages. |
-| `code:lint:android`  | Run Android lint on the Gradle modules of the given files. `--fix` runs `lintFix`.                                                 |
+| Task                    | Use                                                                                                                                |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:deps:10-android` | Install `platform-tools`, the platform of `compileSdk`, `emulator` and the emulator image. `--upgrade` installs the same packages. |
+| `code:lint:10-android`  | Run Android lint on the Gradle modules of the given files. `--fix` runs `lintFix`.                                                 |
 
-`setup:deps:android` applies only when the root has an executable `./gradlew`
+`setup:deps:10-android` applies only when the root has an executable `./gradlew`
 and a `*.gradle.kts` or `*.gradle` file, `build-logic/` or
 `gradle/libs.versions.toml` applies `com.android.application` or
 `com.android.library`. The Kotlin DSL and the Groovy DSL are supported. The
 detects read only the files that git tracks or does not ignore, so an ignored
 folder, for example `.worktrees/` or `node_modules`, is not read. The `android/`
-folder of a Flutter app is for `setup:deps:flutter`.
+folder of a Flutter app is for `setup:deps:20-flutter`.
 
 - The level is the env value `COMPILE_SDK`, else the first `compileSdk` in the
   `build.gradle.kts` and `*.gradle` files, then in the text files of
@@ -80,7 +80,7 @@ folder of a Flutter app is for `setup:deps:flutter`.
   platform or image id that installs nothing fails the task, and the task
   names the id.
 
-`code:lint:android` uses the Gradle root `./gradlew`, else `android/gradlew`,
+`code:lint:10-android` uses the Gradle root `./gradlew`, else `android/gradlew`,
 and applies only when `$ANDROID_HOME/platforms` exists. Without files, it
 applies only when the Gradle root has an `AndroidManifest.xml` that git does
 not ignore, at any depth. Thus a Kotlin/JVM build without an Android module
@@ -114,7 +114,7 @@ None.
 
 1. If the repository sets `ANDROID_HOME` by hand, tell the user that the tool
    sets it.
-2. If `setup:deps:android` finds no `compileSdk` level, for example when it
+2. If `setup:deps:10-android` finds no `compileSdk` level, for example when it
    comes from a variable such as `libs.versions.sdk.get().toInt()`, set
    `COMPILE_SDK` in the `[env]` of
    `.config/mise/conf.d/zz-repo/mise.<env>.toml`. If it finds no `targetSdk`

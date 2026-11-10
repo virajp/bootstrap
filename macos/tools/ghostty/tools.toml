@@ -4,3 +4,7 @@ description = "Ghostty, the terminal emulator, and its config"
 
 [mise.bootstrap.packages]
 "brew-cask:ghostty" = "latest" # Terminal emulator
+
+# The files of the tool, below files/.
+[files.".config/ghostty/config"]
+source = ".config/ghostty/config"

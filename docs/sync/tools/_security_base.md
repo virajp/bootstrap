@@ -18,9 +18,9 @@ pack has it in its `depends`. Do not select it in the values file. A
 
 ## What the tool ships
 
-| Path in the repository                 | Kind   | Use                  |
-| -------------------------------------- | ------ | -------------------- |
-| `.config/mise/tasks/code/sec/_default` | Synced | The task `code:sec`. |
+| Path in the repository                 | Kind   | Use                                            |
+| -------------------------------------- | ------ | ---------------------------------------------- |
+| `.config/mise/tasks/code/sec/_default` | Synced | The task `code:sec`. The `mise` tool ships it. |
 
 ## mise tools
 
@@ -32,8 +32,9 @@ None.
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `code:sec` | Run each `code:sec:<scanner>` task, and pass on `--staged` and `--debug` when they are given. `--staged` scans only the staged changes for secrets, skips grype, and prints no success line. |
 
-`code:sec` stops with an error if one of `code:sec:gitleaks`,
-`code:sec:grype` and `code:sec:osv-scanner` is missing or not executable. Then
+`code:sec` stops with an error if one of `code:sec:10-gitleaks`,
+`code:sec:20-grype` and `code:sec:30-osv-scanner` is missing or not executable.
+Then
 run `mise run init`. A repository can add its own `code:sec:<name>` task, and
 `code:sec` runs it too.
 

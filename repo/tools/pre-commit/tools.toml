@@ -88,3 +88,16 @@ PRE_COMMIT_HOME = "$HOME/.cache/pre-commit"
 
 [mise.shell_alias]
 precommit = "mise run code:precommit"
+
+# The files of the tool, below files/.
+[files.".config/pre-commit-config.yaml"]
+mode = "template"
+source = ".config/pre-commit-config.yaml.tmpl"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."code/precommit"]
+source = "code-precommit"
+
+[tasks."setup/precommit"]
+source = "setup-precommit"

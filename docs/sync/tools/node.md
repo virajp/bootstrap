@@ -23,10 +23,10 @@ the repository selects.
 
 ## What the tool ships
 
-| Path in the repository                     | Kind      | Use                           |
-| ------------------------------------------ | --------- | ----------------------------- |
-| `.config/mise/tasks/setup/deps/node`       | Synced    | The task `setup:deps:node`.   |
-| `.config/mise/conf.d/node/mise.<env>.toml` | Generated | The mise config of this tool. |
+| Path in the repository                     | Kind      | Use                            |
+| ------------------------------------------ | --------- | ------------------------------ |
+| `.config/mise/tasks/setup/deps/40-node`    | Synced    | The task `setup:deps:40-node`. |
+| `.config/mise/conf.d/node/mise.<env>.toml` | Generated | The mise config of this tool.  |
 
 VS Code extensions: `christian-kohler.npm-intellisense`,
 `meganrogge.template-string-converter`.
@@ -46,9 +46,9 @@ The tool also sets:
 
 ## Tasks
 
-| Task              | Use                                                                                                         |
-| ----------------- | ----------------------------------------------------------------------------------------------------------- |
-| `setup:deps:node` | Install from the lockfile, then report the outdated and vulnerable dependencies. `--upgrade` upgrades them. |
+| Task                 | Use                                                                                                         |
+| -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `setup:deps:40-node` | Install from the lockfile, then report the outdated and vulnerable dependencies. `--upgrade` upgrades them. |
 
 The task finds the package manager from `.config/mise/conf.d/`:
 
@@ -75,9 +75,9 @@ None.
 
 ## Files the repository supplies
 
-| File           | Used by                                       |
-| -------------- | --------------------------------------------- |
-| `package.json` | `setup:deps:node`. The task skips without it. |
+| File           | Used by                                          |
+| -------------- | ------------------------------------------------ |
+| `package.json` | `setup:deps:40-node`. The task skips without it. |
 
 ## Adapt to the repository
 

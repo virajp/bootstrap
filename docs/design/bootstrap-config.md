@@ -83,7 +83,7 @@ merge_never = [ "main" ]
 | `[claude.plugins.project]`          | Table           | No        | `setup:ai`                                                                          |
 | `bootstrap_commit`                  | String          | No        | `repo-sync` writes it                                                               |
 
-The gate `code:lint:repo-sync` runs `bootstrap check` at each commit
+The gate `code:lint:60-repo-sync` runs `bootstrap check` at each commit
 that
 changes
 this file. See [repo-sync.md](repo-sync.md#--check) for the rules that it

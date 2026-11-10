@@ -12,15 +12,6 @@ stage = "init"
 # The path of the login shell. Write the path of another shell to keep it.
 login_shell = "/opt/homebrew/bin/fish"
 
-[files.".config/fish/functions/fish_title.fish"]
-mode = "seed"
-
-[files.".config/fish/conf.d/fish_frozen_key_bindings.fish"]
-mode = "seed"
-
-[files.".config/fish/conf.d/fish_frozen_theme.fish"]
-mode = "seed"
-
 [mise.bootstrap.packages]
 "brew:fish" = "latest"
 
@@ -30,3 +21,25 @@ mode = "seed"
 
 [mise.bootstrap.user]
 login_shell = "<% index .config `login_shell` | required `fish: set login_shell in [tools.fish] of macos.toml` %>"
+
+# The files of the tool, below files/.
+[files.".config/fish/conf.d/01-env.fish"]
+source = ".config/fish/conf.d/01-env.fish"
+
+[files.".config/fish/conf.d/02-path.fish"]
+source = ".config/fish/conf.d/02-path.fish"
+
+[files.".config/fish/conf.d/fish_frozen_key_bindings.fish"]
+mode = "seed"
+source = ".config/fish/conf.d/fish_frozen_key_bindings.fish"
+
+[files.".config/fish/conf.d/fish_frozen_theme.fish"]
+mode = "seed"
+source = ".config/fish/conf.d/fish_frozen_theme.fish"
+
+[files.".config/fish/config.fish"]
+source = ".config/fish/config.fish"
+
+[files.".config/fish/functions/fish_title.fish"]
+mode = "seed"
+source = ".config/fish/functions/fish_title.fish"

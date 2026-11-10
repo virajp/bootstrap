@@ -6,8 +6,10 @@ description = "Voice-to-text dictation with AI agents, and its hotkey"
 # then owned by the app. The app reads only DICTATION_KEY and ACTIVATION_MODE
 # from it on a new install. It keeps the local model choice in its own
 # storage, so the owner selects it once in the app.
-[files."Library/Application Support/open-whispr/.env"]
-mode = "seed"
-
 [mise.bootstrap.packages]
 "brew-cask:openwhispr" = "latest" # Voice-to-text dictation with AI agents
+
+# The files of the tool, below files/.
+[files."Library/Application Support/open-whispr/.env"]
+mode = "seed"
+source = "Library/Application Support/open-whispr/.env"

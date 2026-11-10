@@ -8,3 +8,8 @@ description = "pstree, the process tree, with the func:myps task and its myps al
 
 [mise.shell_alias]
 myps = "mise run func:myps"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."func/myps"]
+source = "func-myps"

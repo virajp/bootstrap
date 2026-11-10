@@ -1,11 +1,8 @@
-# Secrets from .config/fnox.toml, checked by setup:secrets:fnox.
+# Secrets from .config/fnox.toml, checked by setup:secrets:20-fnox.
 default_envs = [ "dev" ]
 depends = []
 extensions = []
 root_only = false
-
-[files.".config/fnox.toml"]
-mode = "seed"
 
 # The mise config, generated into .config/mise/conf.d/fnox/mise.<env>.toml.
 # Fnox resolves the repo's secrets from the providers in .config/fnox.toml.
@@ -18,3 +15,14 @@ version = "latest"
 # repository has no config.toml, so no global secrets load here. config_root is
 # the folder of the generated file, .config/mise/conf.d/fnox/.
 FNOX_CONFIG_DIR = "{{ config_root }}/../../../../.config/fnox"
+
+# The files of the tool, below files/.
+[files.".config/fnox.toml"]
+mode = "seed"
+render = true
+source = ".config/fnox.toml.tmpl"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."setup/secrets/20-fnox"]
+source = "setup-secrets-fnox"

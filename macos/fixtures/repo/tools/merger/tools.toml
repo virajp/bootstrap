@@ -4,17 +4,24 @@ description = "The merge targets of the fixture repo"
 [defaults]
 items = [ "a" ]
 
+# The files of the tool, below files/.
 [files.".config/merger/m.json"]
 mode = "merge"
 remove = [ [ "gone" ], [ "nested", "old" ], [ "absent", "path" ] ]
 remove_items = [ { items = [ "drop", { j = 2, k = 1 } ], path = [ "list" ] }, { items = [ "app" ], path = [ "keep" ] } ]
-
-[files.".config/merger/m.yaml"]
-mode = "merge"
-remove = [ [ "gone" ] ]
-remove_items = [ { items = [ "drop" ], path = [ "list" ] } ]
+source = ".config/merger/m.json.tmpl"
 
 [files.".config/merger/m.toml"]
 mode = "merge"
 remove = [ [ "gone" ] ]
 remove_items = [ { items = [ "s" ], path = [ "notlist" ] } ]
+source = ".config/merger/m.toml.tmpl"
+
+[files.".config/merger/m.yaml"]
+mode = "merge"
+remove = [ [ "gone" ] ]
+remove_items = [ { items = [ "drop" ], path = [ "list" ] } ]
+source = ".config/merger/m.yaml.tmpl"
+
+[files.".config/merger/plain.txt"]
+source = ".config/merger/plain.txt"

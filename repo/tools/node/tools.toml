@@ -16,3 +16,8 @@ version = "lts"
 
 [mise.env]
 _.path = { path = "node_modules/.bin", tools = true }
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."setup/deps/40-node"]
+source = "setup-deps-node"
