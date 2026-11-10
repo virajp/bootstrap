@@ -56,6 +56,9 @@ The symlink model has no task `updateall:configs`, and no
 MACOS_SETUP_REPO_PATH=<clone> bootstrap mac sync
 ```
 
+Step 6 runs the binary of the CLI without `mise x`. See
+[step 6](#step-6-compare-in-a-scratch-home) for the reason.
+
 [Step 10](#step-10-do-the-first-real-run) runs `bootstrap mac init` in
 `<clone>`. That command needs no variable, and it writes the task and the
 variable.
@@ -217,19 +220,31 @@ to get a private repo. Do not commit `macos.toml` to a public repo.
 This step changes nothing in the real `$HOME`. It can write the
 `bootstrap_commit` line of `macos.toml`, and that is correct.
 
-**1. Render.** Run this command in bash two times. The first run stops with
-exit 4, because the init stage changed. That is correct. The second run
-continues with the main stage:
+**1. Render.** First get the path of the CLI with the real `HOME`. Run this in
+bash:
+
+```text
+bin=$(mise x 'github:virajp/bootstrap[version_prefix=cli-v]@latest' -- which bootstrap)
+```
+
+Then run this command in bash two times, in the same shell. The first run
+stops with exit 4, because the init stage changed. That is correct. The second
+run continues with the main stage:
 
 ```text
 env -u XDG_CONFIG_HOME -u XDG_CACHE_HOME -u XDG_STATE_HOME -u XDG_DATA_HOME -u MISE_ENV \
   HOME=<scratch> MISE_DATA_DIR="$HOME/.local/share/mise" MISE_CACHE_DIR="$HOME/.cache/mise" \
   MACOS_SETUP_REPO_PATH=<clone> \
-  mise x 'github:virajp/bootstrap[version_prefix=cli-v]@latest' -- bootstrap mac sync --no-bootstrap
+  "$bin" mac sync --no-bootstrap
 ```
 
 The `XDG_*` variables stay out of the command, because otherwise the run writes
-to the real cache. **Pass:** The first run exits 4, and the second run exits 0.
+to the real cache. The command runs the CLI without `mise x`. The first run
+writes a mise config into `<scratch>`, and that config sets
+`MACOS_SETUP_REPO_PATH` from `config_path`. `mise x` with the scratch `HOME`
+loads that config, and expands `~` to `<scratch>`. That value then replaces the
+inline value, and the second run stops with exit 2. **Pass:** The first run
+exits 4, and the second run exits 0.
 
 **2. Compare the plain files.** Each file outside `.config/mise/conf.d/` is
 compared byte for byte, after the removal of the header and of the scratch path.
