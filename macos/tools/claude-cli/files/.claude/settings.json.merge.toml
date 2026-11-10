@@ -11,28 +11,60 @@ kind = "keys"
 
 [item.value]
 "$schema" = "https://json.schemastore.org/claude-code-settings.json"
+agentPushNotifEnabled = true
 cleanupPeriodDays = 30
+disableClaudeAiConnectors = true
 disableArtifact = false
 effortLevel = "medium"
 forceLoginMethod = "claudeai"
 includeCoAuthoredBy = true
+inputNeededNotifEnabled = true
 model = "opus[1m]"
 outputStyle = "STE100"
 respectGitignore = true
 skipDangerousModePermissionPrompt = true
 spinnerTipsEnabled = false
 terminalProgressBarEnabled = true
+theme = "dark"
 tui = "fullscreen"
 
 [item.value.attribution]
 commit = ""
 sessionUrl = false
 
+[item.value.enabledPlugins]
+"brag@brag" = true
+"impeccable@impeccable" = true
+"stackgen@virajp-plugins" = true
+"taste-skill@taste-skill" = true
+"vwf-tools@vwf-tools" = false
+"vwf@virajp-plugins" = true
+
+[item.value.extraKnownMarketplaces.brag.source]
+repo = "latent-spaces/brag"
+source = "github"
+
+[item.value.extraKnownMarketplaces.claude-plugins-official.source]
+repo = "anthropics/claude-plugins-official"
+source = "github"
+
+[item.value.extraKnownMarketplaces.impeccable.source]
+source = "git"
+url = "https://github.com/pbakaus/impeccable.git"
+
+[item.value.extraKnownMarketplaces.virajp-plugins.source]
+path = "${HOME}/Projects/github.com/virajp/claude-plugins/.dev-marketplace"
+source = "directory"
+
+[item.value.extraKnownMarketplaces.vwf-tools.source]
+path = "<% .env.HOME %>/.claude/plugins/local/vwf-tools"
+source = "directory"
+
 [item.value.env]
 AI_PLUGINS_USAGE_DIR = "${HOME}/.claude/usage"
 ANTHROPIC_DEFAULT_FABLE_MODEL = "claude-fable-5-1"
 CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1"
-CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "0"
+CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"
 CLAUDE_INSTALL_METHOD = "other"
 DISABLE_AUTOUPDATER = "1"
 MISE_ENV = "dev"
@@ -215,55 +247,33 @@ kind = "item"
 path = [ "permissions", "allow" ]
 value = "mcp__plugin_context7_context7__query-docs"
 
-# The items of permissions.deny.
+# The status line and the hook of claude-status, when that tool is selected.
+<%- if coll.Has .tools "claude-status" %>
 [[item]]
-kind = "item"
-path = [ "permissions", "deny" ]
-value = "Bash(* sudo *)"
+kind = "keys"
+path = [ "statusLine" ]
+
+[item.value]
+command = "claude-status --statusline"
+padding = 0
+refreshInterval = 4
+type = "command"
+
 [[item]]
-kind = "item"
-path = [ "permissions", "deny" ]
-value = "Bash(sudo *)"
+kind = "keys"
+path = [ "subagentStatusLine" ]
+
+[item.value]
+command = "claude-status --subagent"
+type = "command"
+
 [[item]]
-kind = "item"
-path = [ "permissions", "deny" ]
-value = "Bash(* su *)"
-[[item]]
-kind = "item"
-path = [ "permissions", "deny" ]
-value = "Bash(su *)"
-[[item]]
-kind = "item"
-path = [ "permissions", "deny" ]
-value = "Bash(* ssh *)"
-[[item]]
-kind = "item"
-path = [ "permissions", "deny" ]
-value = "Bash(ssh *)"
-[[item]]
-kind = "item"
-path = [ "permissions", "deny" ]
-value = "Bash(* firebase *)"
-[[item]]
-kind = "item"
-path = [ "permissions", "deny" ]
-value = "Bash(firebase *)"
-[[item]]
-kind = "item"
-path = [ "permissions", "deny" ]
-value = "Bash(* gcloud *)"
-[[item]]
-kind = "item"
-path = [ "permissions", "deny" ]
-value = "Bash(gcloud *)"
-[[item]]
-kind = "item"
-path = [ "permissions", "deny" ]
-value = "Bash(doppler *)"
-[[item]]
-kind = "item"
-path = [ "permissions", "deny" ]
-value = "Bash(* doppler *)"
+kind = "block"
+path = [ "hooks", "PostToolUse" ]
+id = "claude-status"
+match = [ "hooks.command" ]
+value = { hooks = [ { command = "claude-status --caps-hook", type = "command" } ] }
+<%- end %>
 
 # Keys that bootstrap set before and no longer sets.
 [[item]]
