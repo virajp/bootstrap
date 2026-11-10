@@ -718,11 +718,12 @@ Voice-to-text dictation with AI agents, and its hotkey.
 ### `orbstack`
 
 OrbStack (Docker and Kubernetes), its env, the docker and kubectl aliases, its
-fish init and its ssh Include.
+fish and zsh init and its ssh Include.
 
 - **Packs:** `dev`
 - **Files:**
   - `~/.config/fish/conf.d/90-orbstack.fish` — copy
+  - `~/.config/zsh/90-orbstack.zsh` — copy
 - **Contributes to `ssh`:** `includes`
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.env]`,
   `[mise.shell_alias]`
