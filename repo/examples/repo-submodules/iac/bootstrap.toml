@@ -1,7 +1,7 @@
 # Example: the submodule iac. It is a pulumi polyrepo with the branch develop
 # only.
 
-# The bootstrap commit of the last sync. repo-sync writes it.
+# The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]

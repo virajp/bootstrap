@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
+	"github.com/virajp/bootstrap/sync-engine/internal/oldform"
 	"github.com/virajp/bootstrap/sync-engine/internal/selection"
-	"github.com/virajp/bootstrap/sync-engine/internal/values"
 )
 
 // resolve is `_rs_resolve`: the tools of the values file, packs expanded and
@@ -17,7 +17,7 @@ func (s *state) resolve() fail.Code {
 	if err != nil {
 		return s.logAll(err)
 	}
-	if err := values.Moved(s.vals.Raw, s.show); err != nil {
+	if err := oldform.Repo(s.root, s.vals.Raw, s.show); err != nil {
 		return s.logAll(err)
 	}
 	if code := s.envRules(sel); code != fail.OK {

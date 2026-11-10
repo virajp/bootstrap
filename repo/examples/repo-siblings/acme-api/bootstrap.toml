@@ -1,7 +1,7 @@
 # Example: the sibling ../acme-api of the base repository acme-product. It is
 # a python polyrepo with the branch main only.
 
-# The bootstrap commit of the last sync. repo-sync writes it.
+# The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]

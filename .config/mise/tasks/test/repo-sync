@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
 
-#MISE description="Test repo-sync against scratch values files"
+#MISE description="Test bootstrap sync, check and init against scratch values files"
 #MISE tools.gomplate="latest"
 
 # Runs `bootstrap sync --dry-run`, `bootstrap check` and, for a case
 # that compares a written file, `bootstrap sync`, with the working tree's
-# repo/, sync-engine/ and tools/ (the forwarding file), against scratch values
-# files and scratch consumers,
-# and checks the exit code and message of each case. The forward cases source
-# the forwarding file and call `repo_sync`. BOOTSTRAP_BIN, when set, is the engine to test
-# (an absolute path); else the task builds it once from the copy of
-# sync-engine/. Needs no
-# network when gomplate, jq and yq are installed:
-# REPO_SYNC_NO_AUTOUPDATE=1 skips `pre-commit autoupdate`. Writes
-# nothing outside its temporary folder.
+# repo/ and sync-engine/, against scratch values files and scratch consumers,
+# and checks the exit code and message of each case. BOOTSTRAP_BIN, when set,
+# is the engine to test (an absolute path); else the task builds it once from
+# the copy of sync-engine/. Each case has its own cache (BOOTSTRAP_CACHE).
+# Needs no network when gomplate, jq and yq are installed. Writes nothing
+# outside its temporary folder.
 
 set -euo pipefail
 
@@ -54,17 +51,15 @@ _git() {
     -c core.hooksPath=/dev/null "$@"
 }
 
-print_header "Testing repo-sync against scratch values files ..."
+print_header "Testing bootstrap against scratch values files ..."
 
-# The bootstrap copy: the working tree's repo/, sync-engine/ and tools/ (the
-# forwarding file), uncommitted work included, committed in a temporary
-# repository.
+# The bootstrap copy: the working tree's repo/ and sync-engine/, uncommitted
+# work included, committed in a temporary repository on main.
 clone="$tmp/bootstrap"
 mkdir -p -- "$clone"
 cp -R -- "$root/repo" "$clone/repo"
 cp -R -- "$root/sync-engine" "$clone/sync-engine"
-cp -R -- "$root/tools" "$clone/tools"
-_git -C "$clone" init --quiet
+_git -C "$clone" init --quiet -b main
 _git -C "$clone" add -A
 _git -C "$clone" commit --quiet --no-verify -m "test copy"
 
@@ -104,14 +99,13 @@ case_dirs=()
 # function name, or empty), runs the dry run, and compares the exit code.
 # A <message> (a fixed string) must also be in the output. If the case
 # passes, the function <check> examines its output.
-# `case_args` replaces the arguments of the engine for the case; a case with
-# `--check` in them runs without BOOTSTRAP_CLONE. `CASE_BOOTSTRAP_URL`, when
-# set, becomes BOOTSTRAP_URL of the case. `CASE_LIB=forward` sources the
-# forwarding file at the old library path, with REPO_SYNC_CLONE only, and
-# calls `repo_sync`.
-# `CASE_CLONE=none` sets no clone variable. `CASE_CHECK_CLONE=1` gives
-# `--check` the clone, so the check scripts of the tools run.
-# `CASE_CALL` names a function that the case runs instead of the library.
+# `case_args` replaces the arguments of `bootstrap sync` for the case; with
+# `--check` in them, the case runs `bootstrap check` with the other
+# arguments. `CASE_BOOTSTRAP_URL`, when set, becomes BOOTSTRAP_URL of the case.
+# `CASE_CLONE=none` sets no BOOTSTRAP_CLONE, so bootstrap fetches its clone
+# into the cache of the case. `CASE_CALL` names a function that the case runs
+# instead of bootstrap. `CASE_DIRTY=1` does not commit the consumer before the
+# run.
 run_case() {
   local dir
   case_count=$((case_count + 1))
@@ -142,30 +136,27 @@ case_body() {
     "$change"
   fi
   [[ -n ${CASE_OLD_FORM:-} ]] || new_form_all
-  local args=${case_args:---dry-run}
+  # The clean-target rule: a target with changes that are not committed stops
+  # a sync, so the case commits its consumer first.
+  [[ -n ${CASE_DIRTY:-} ]] || commit_consumer
+  local args=${case_args:---dry-run} cmd=sync
+  if [[ " $args " == *" --check "* ]]; then
+    cmd=check
+    args=" $args "
+    args=${args/ --check / }
+  fi
   (
     unset BOOTSTRAP_URL BOOTSTRAP_CLONE REPO_SYNC_CLONE
+    export BOOTSTRAP_CACHE=$tmp/cache
     [[ -z ${CASE_BOOTSTRAP_URL:-} ]] || export BOOTSTRAP_URL=$CASE_BOOTSTRAP_URL
     export REPO_SYNC_VALUES=$values MISE_PROJECT_ROOT=$consumer REPO_SYNC_NO_AUTOUPDATE=1
+    [[ ${CASE_CLONE:-} == none ]] || export BOOTSTRAP_CLONE=$clone
     if [[ -n ${CASE_CALL:-} ]]; then
       "$CASE_CALL"
       exit
     fi
-    if [[ ${CASE_LIB:-} == forward ]]; then
-      [[ ${CASE_CLONE:-} == none ]] || export REPO_SYNC_CLONE=$clone
-      # `set -e` does not apply on the left of `||`, so a failed source stops
-      # here.
-      # shellcheck source=/dev/null
-      source "$clone/tools/repo-sync/.config/mise/tasks/_scripts/repo-sync" || exit $?
-      # shellcheck disable=SC2086
-      repo_sync $args
-      exit
-    fi
-    if [[ ${CASE_CLONE:-} != none && (" $args " != *" --check "* || -n ${CASE_CHECK_CLONE:-}) ]]; then
-      export BOOTSTRAP_CLONE=$clone
-    fi
     # shellcheck disable=SC2086
-    "$bin" sync $args
+    "$bin" $cmd $args
   ) > "$log" 2>&1 || got=$?
   # After the dry run, so that its output stays plain for the greps.
   [[ -n $case_color ]] && export FORCE_COLOR=1
@@ -235,6 +226,12 @@ new_form_all() {
   for d in "$clone"/repo/tools/*/; do
     new_form "${d%/}"
   done
+}
+
+# commit_consumer: commit each file of the consumer of the case.
+commit_consumer() {
+  _git -C "$consumer" add -A > /dev/null 2>&1 || true
+  _git -C "$consumer" commit --quiet --no-verify --allow-empty -m "case" > /dev/null 2>&1 || true
 }
 
 # run_check: run_case with `bootstrap check`.
@@ -423,7 +420,7 @@ consumer_submodule() {
 }
 
 check_no_vscode() {
-  if grep -F 'repo-sync: tools:' "$log" | grep -qw vscode; then
+  if grep -F 'bootstrap: tools:' "$log" | grep -qw vscode; then
     print_error "submodule: the tools include vscode"
     failures=$((failures + 1))
   else
@@ -664,7 +661,7 @@ check_fnox_seed() {
 run_case "[overrides.gitignore], the old form" 2 'environments = [ "dev" ]
 [overrides.gitignore]
 remove = [ "*.log" ]
-add = [ "/coverage/" ]' '' 'is the old form - add each line of add to .gitignore'
+add = [ "/coverage/" ]' '' '[overrides.gitignore] in'
 run_case "a .gitignore line with \"\$mode\" = \"remove\"" 0 'environments = [ "dev" ]
 [tools.git.files.".gitignore"]
 "*.log" = { "$mode" = "remove" }' gitignore_file '+node_modules/' lacks_log_line
@@ -672,7 +669,7 @@ run_case "a .gitignore override that matches no line" 2 'environments = [ "dev" 
 [tools.git.files.".gitignore"]
 "/nope/" = { "$mode" = "remove" }' '' 'the override /nope/ has no item of bootstrap - remove it'
 run_case "the old top-level extensions" 2 'environments = [ "dev" ]
-extensions = [ "x.y" ]' '' '/.config/bootstrap.toml is the old place - move it to the recommendations of .vscode/extensions.json'
+extensions = [ "x.y" ]' '' 'extensions in'
 
 case_args=' ' run_case "[tools.fnox], the seed has the profile of repo_name" 0 'environments = [ "dev" ]
 [tools.fnox]' '' '' check_fnox_seed
@@ -741,7 +738,7 @@ case_args=' ' run_case "direct_commit, main only, no key" 0 'environments = [ "d
 case_args=' ' run_case "the own hooks of the repository stay" 0 'environments = [ "dev" ]' precommit_own '' \
   own_hook_stays
 run_case "the old .config/repo-sync/pre-commit.yaml" 2 'environments = [ "dev" ]' old_precommit_file \
-  '.config/repo-sync/pre-commit.yaml is no longer used'
+  '.config/repo-sync/pre-commit.yaml is the old form - run bootstrap init'
 case_args=' ' run_case "direct_commit, main only, main true" 0 'environments = [ "dev" ]
 [tools.git.branch.main]
 direct_commit = true' '' '' hook_develop
@@ -772,7 +769,7 @@ run_case "direct_commit, main false in a develop-only repo" 2 'environments = [ 
 [tools.git.branch.main]
 direct_commit = false' precommit_develop_branch "the branch 'main' does not exist"
 
-# repo_sync --check: the local rules of the values file, with no clone.
+# bootstrap check: the local rules of the values file, with no clone.
 check_valid='valid (local rules)'
 consumer_no_core_branch() { _git -C "$consumer" branch -m main trunk; }
 # A git submodule `sub` in the consumer.
@@ -813,15 +810,12 @@ check_no_clone() {
 }
 
 run_check "--check, a valid file" 0 'environments = [ "dev" ]' '' "$check_valid"
-run_check "--check, the rules of the clone are skipped" 0 'environments = [ "dev" ]
-[tools.nope]
-[packs.nope]
-[overrides.mise.tools.nope]
-version = "1"' '' "$check_valid"
-CASE_BOOTSTRAP_URL="$tmp/no-such-repo" run_check "--check, no clone" 0 'environments = [ "dev" ]' '' \
-  "$check_valid" check_no_clone
+run_check "--check, a tool that the clone does not have" 3 'environments = [ "dev" ]
+[tools.nope]' '' 'nope'
+CASE_CLONE=none CASE_BOOTSTRAP_URL="$tmp/no-such-repo" run_check "--check, a clone that fails" 5 \
+  'environments = [ "dev" ]' '' 'Cannot clone' check_no_clone
 case_args='--check --dry-run' run_case "--check with --dry-run" 2 'environments = [ "dev" ]' '' \
-  'usage: repo_sync [--dry-run | --check]'
+  'unknown flag --dry-run'
 run_check "--check, no environments" 0 '' '' 'lists no environments - using dev only'
 run_check "--check, environments with prod" 2 'environments = [ "dev", "prod" ]' '' \
   "environment 'prod' in"
@@ -849,27 +843,27 @@ env = [ "dev", "ci" ]' '' 'is not in environments: dev'
 run_check "--check, env ci without dev" 2 'environments = [ "dev", "ci" ]
 [tools.node]
 env = [ "ci" ]' '' 'has no dev - each tool must be in dev'
-CASE_CHECK_CLONE=1 run_check "--check, neither main nor develop" 2 'environments = [ "dev" ]' consumer_no_core_branch \
+run_check "--check, neither main nor develop" 2 'environments = [ "dev" ]' consumer_no_core_branch \
   "the repo has neither 'main' nor 'develop'"
 run_check "--check, core_tools" 0 'environments = [ "dev" ]
 core_tools = [ "node" ]' '' 'core_tools in'
 run_check "--check, the old .config/repo-sync/gitignore" 2 'environments = [ "dev" ]' old_gitignore_file \
   '.config/repo-sync/gitignore is no longer used'
-CASE_CHECK_CLONE=1 run_check "--check, fnox.toml, the old seed with [secrets]" 2 'environments = [ "dev" ]
+run_check "--check, fnox.toml, the old seed with [secrets]" 2 'environments = [ "dev" ]
 [tools.fnox]' fnox_old_seed \
   'M25 of docs/sync/migrate.md'
-CASE_CHECK_CLONE=1 run_check "--check, fnox.toml, [secrets] next to a profile" 2 'environments = [ "dev" ]
+run_check "--check, fnox.toml, [secrets] next to a profile" 2 'environments = [ "dev" ]
 [tools.fnox]' fnox_top_secret \
   'has a top-level [secrets] table'
-CASE_CHECK_CLONE=1 run_check "--check, fnox.toml, no profile" 2 'environments = [ "dev" ]
+run_check "--check, fnox.toml, no profile" 2 'environments = [ "dev" ]
 [tools.fnox]' fnox_no_profile \
   'has no named profile - add [profiles.test.secrets]'
-CASE_CHECK_CLONE=1 run_check "--check, fnox.toml, [profiles.default]" 2 'environments = [ "dev" ]
+run_check "--check, fnox.toml, [profiles.default]" 2 'environments = [ "dev" ]
 [tools.fnox]' fnox_profile_default \
   '[profiles.default] in .config/fnox.toml'
-CASE_CHECK_CLONE=1 run_check "--check, fnox.toml, a profile of repo_name" 0 'environments = [ "dev" ]
+run_check "--check, fnox.toml, a profile of repo_name" 0 'environments = [ "dev" ]
 [tools.fnox]' fnox_profile_repo "$check_valid"
-CASE_CHECK_CLONE=1 run_check "--check, fnox.toml, two named profiles" 0 'environments = [ "dev" ]
+run_check "--check, fnox.toml, two named profiles" 0 'environments = [ "dev" ]
 [tools.fnox]' fnox_profiles_two "$check_valid"
 run_check "--check, overrides not a table" 2 'environments = [ "dev" ]
 overrides = 1' '' 'overrides in'
@@ -881,9 +875,9 @@ run_check "--check, the old [overrides.graphifyignore]" 2 'environments = [ "dev
 add = [ "fixtures/" ]' '' 'is no longer used: bootstrap does not ship .graphifyignore'
 run_check "--check, [overrides.gitignore], the old form" 2 'environments = [ "dev" ]
 [overrides.gitignore]
-add = [ "/build/" ]' '' 'is the old form - add each line of add to .gitignore'
+add = [ "/build/" ]' '' '[overrides.gitignore] in'
 run_check "--check, the old top-level extensions" 2 'environments = [ "dev" ]
-extensions = [ "x.y" ]' '' '/.config/bootstrap.toml is the old place - move it to the recommendations of .vscode/extensions.json'
+extensions = [ "x.y" ]' '' 'extensions in'
 run_check "--check, [overrides.mise_env.prod]" 2 'environments = [ "dev" ]
 [overrides.mise_env.prod.tools.java]
 version = "21"' '' "'prod' is not one of dev, ci"
@@ -893,16 +887,16 @@ version = "21"' '' "'ci' is not in environments: dev"
 run_check "--check, [overrides.mise.tools.java] envs" 2 'environments = [ "dev" ]
 [overrides.mise.tools.java]
 envs = [ "dev" ]' '' 'the envs, the depends, the requires, the requires_found and the files of a mise tool cannot be overridden'
-CASE_CHECK_CLONE=1 run_check "--check, direct_commit, not a boolean" 2 'environments = [ "dev" ]
+run_check "--check, direct_commit, not a boolean" 2 'environments = [ "dev" ]
 [tools.git.branch.main]
 direct_commit = "yes"' '' 'direct_commit must be true or false'
-CASE_CHECK_CLONE=1 run_check "--check, direct_commit in [tools.git.branch.feature]" 2 'environments = [ "dev" ]
+run_check "--check, direct_commit in [tools.git.branch.feature]" 2 'environments = [ "dev" ]
 [tools.git.branch.feature]
 direct_commit = false' '' 'direct_commit is a key of [tools.git.branch.main] and [tools.git.branch.develop] only'
-CASE_CHECK_CLONE=1 run_check "--check, direct_commit of a branch that does not exist" 2 'environments = [ "dev" ]
+run_check "--check, direct_commit of a branch that does not exist" 2 'environments = [ "dev" ]
 [tools.git.branch.develop]
 direct_commit = true' '' "the branch 'develop' does not exist"
-CASE_CHECK_CLONE=1 run_check "--check, direct_commit, both branches, main true only" 2 'environments = [ "dev" ]
+run_check "--check, direct_commit, both branches, main true only" 2 'environments = [ "dev" ]
 [tools.git.branch.main]
 direct_commit = true' precommit_both_branches 'has direct_commit = true, but [tools.git.branch.develop] does not'
 run_check "--check, [member.self], the folder of the repo itself" 2 'environments = [ "dev" ]
@@ -941,28 +935,26 @@ env = [ "ci" ]
 [member.self]
 folder = "."' '' "environment 'prod' in" check_two_errors
 
-# The forwarding file at the old library path, and no clone. The case "the
-# forwarding file through the shim" runs it with REPO_SYNC_CLONE.
-CASE_LIB=forward CASE_CLONE=none run_case "the forwarding file without a clone" 2 'environments = [ "dev" ]' '' \
-  'repo-sync: no clone - run mise run setup:configs'
-CASE_CLONE=none run_case "repo_sync without BOOTSTRAP_CLONE" 2 'environments = [ "dev" ]' '' \
-  'mise run setup:configs'
+# Without BOOTSTRAP_CLONE, bootstrap fetches its clone. A URL that is not a
+# repository stops it with 5.
+CASE_CLONE=none CASE_BOOTSTRAP_URL="$tmp/no-such-repo" run_case "sync, a clone that fails" 5 \
+  'environments = [ "dev" ]' '' 'Cannot clone'
 
 # A repository without a values file: `setup:configs` relies on this stop for a
 # member that has not adopted bootstrap.
 no_values_file() { rm -f -- "$values"; }
 run_case "no values file" 2 'environments = [ "dev" ]' no_values_file 'not found - it lists the tools to sync'
 
-# A template of the repo-sync tool that prints .sync_engine. The consumer
+# A template of the mise tool that prints .sync_engine. The consumer
 # already has its output file, so the dry run shows its diff.
 sync_engine_template() {
   local path=.config/sync-engine-path
-  mkdir -p -- "$clone/repo/tools/repo-sync/.config"
+  mkdir -p -- "$clone/repo/tools/mise/.config"
   {
-    printf '%s\n' "# Synced from bootstrap: repo/tools/repo-sync/$path.tmpl. Do not edit this file."
+    printf '%s\n' "# Synced from bootstrap: repo/tools/mise/$path.tmpl. Do not edit this file."
     printf '%s\n' '# The next sync writes it again, and each change in this file is lost.'
     printf '%s\n' '<% .sync_engine %>'
-  } > "$clone/repo/tools/repo-sync/$path.tmpl"
+  } > "$clone/repo/tools/mise/$path.tmpl"
   printf '%s\n' x > "$consumer/$path"
 }
 check_sync_engine() {
@@ -1161,6 +1153,8 @@ case_rerun() {
   (
     unset FORCE_COLOR BOOTSTRAP_URL REPO_SYNC_CLONE
     export REPO_SYNC_VALUES=$values MISE_PROJECT_ROOT=$consumer REPO_SYNC_NO_AUTOUPDATE=1 BOOTSTRAP_CLONE=$clone
+    export BOOTSTRAP_CACHE=$tmp/cache
+    [[ -n ${CASE_DIRTY:-} ]] || commit_consumer
     "$bin" sync
   ) > "$log" 2>&1
 }
@@ -1809,7 +1803,7 @@ run_case "[pack.*], a member as its own table" 2 "$no_tool_values" packs_subtabl
   'repo/packs.toml: [pack.odd] node must be on one line'
 
 # tools_has <tool>: the `tools:` line of the output has the tool.
-tools_has() { grep -F 'repo-sync: tools:' "$log" | grep -qw -- "$1"; }
+tools_has() { grep -F 'bootstrap: tools:' "$log" | grep -qw -- "$1"; }
 tools_lacks() { ! tools_has "$1"; }
 
 # The members of the pack `extra` are outside the pack base and its depends.
@@ -1854,7 +1848,7 @@ packs_two_with_fixture() {
   fixture_txt
   packs_lines '[pack.one]' 'fixture = { default = true }' '' '[pack.two]' 'fixture = { default = true }'
 }
-tools_once() { [[ $(grep -F 'repo-sync: tools:' "$log" | grep -ow -- "$1" | wc -l | tr -d ' ') == 1 ]]; }
+tools_once() { [[ $(grep -F 'bootstrap: tools:' "$log" | grep -ow -- "$1" | wc -l | tr -d ' ') == 1 ]]; }
 check_two_packs() {
   check_that "a tool in two selected packs: its file once" log_count "would update $consumer/a.txt" 1
   check_that "a tool in two selected packs: the tool once" tools_once fixture
@@ -1878,8 +1872,8 @@ run_case "no scanner, a pack base without the pack security" 0 "$no_tool_values"
 # tools before the security tools stay. At that commit _security_base came
 # after the scanners; it now comes before them, as a dependency of each one.
 # The hook order does not matter: a hook that changes a file fails the commit.
-order_tools='mise repo-sync git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner'
-tool_order_is() { grep -qxF "repo-sync: tools: $order_tools" "$log"; }
+order_tools='mise git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner'
+tool_order_is() { grep -qxF "bootstrap: tools: $order_tools" "$log"; }
 check_order() { check_that "the order of the pack base: the tools" tool_order_is; }
 run_case "the tool order does not change" 0 "$no_tool_values" '' '' check_order
 
@@ -2236,6 +2230,7 @@ case_args=' ' run_case "the stale rule, a listed file of a folder member" 0 "$me
 stale_nested_clone() {
   stale_folder_member
   _git -C "$consumer/mem" init --quiet
+  _git -C "$consumer/mem" commit --quiet --no-verify --allow-empty -m "nested"
 }
 check_stale_nested_clone() {
   check_that "a nested clone: the row is kept" log_has 'kept mem/stale.txt (another repository)'
@@ -2398,7 +2393,10 @@ run_case "questions: the key foo" 2 "$vtest_values" values_question_key \
   'repo/tools/vtest/tools.toml: [questions.q] foo is not a key of a question - the keys are question, detect and example'
 run_case "questions: detect = 1" 2 "$vtest_values" values_question_detect \
   'repo/tools/vtest/tools.toml: [questions.q] detect must be a string (a shell command)'
-run_case "questions: a valid question" 0 "$vtest_values" values_question_valid
+run_case "questions: a valid question with its answer" 0 "$vtest_values
+q = \"y\"" values_question_valid
+run_case "questions: a valid question without an answer" 2 "$vtest_values" values_question_valid \
+  'the question vtest.q has no answer in'
 run_case "values: .all holds the values of another selected tool" 0 "$vother_values" values_other \
   '+vtest config={"key":"default"}' check_all
 run_case "values: config and all of the values file do not replace the engine keys" 0 'environments = [ "dev" ]
@@ -2449,7 +2447,7 @@ mtest_new() {
 # mtest_diff <file>: the diff of the dry run for a generated file of mtest.
 mtest_diff() {
   awk -v file="would update $consumer/.config/mise/conf.d/mtest/$1" \
-    'index($0, file) { on = 1; next } /^repo-sync: / { on = 0 } on' "$log"
+    'index($0, file) { on = 1; next } /^bootstrap: / { on = 0 } on' "$log"
 }
 diff_has() { [[ $(mtest_diff "$1") == *"$2"* ]]; }
 diff_lacks() { ! diff_has "$1" "$2"; }
@@ -2569,7 +2567,7 @@ check_output_list() {
     case_rerun
   ) || got=$?
   check_that "verbose: exit 0" test "$got" = 0
-  lines=$(grep -c '^repo-sync: unchanged  ' "$log") || lines=0
+  lines=$(grep -c '^bootstrap: unchanged  ' "$log") || lines=0
   check_that "verbose: each unchanged file, a.txt and b.txt too" test "$lines" = "$((unchanged + 2))"
   check_that "verbose: the table" table_adds_up
   check_that "verbose: the last line" test "$(tail -n 1 -- "$log")" = '[OK] Synced: no file changed'
@@ -2659,76 +2657,6 @@ check_output_forced() {
 case_args=' ' run_case "the default output: not a terminal" 0 "$fixture_values" output_files '' check_output_plain
 case_args=' ' run_case "the default output: FORCE_COLOR" 0 "$fixture_values" output_forced '' check_output_forced
 
-# The shim for an old consumer task: sync-engine/repo-sync. Its `repo_sync`
-# runs the engine of BOOTSTRAP_BIN.
-shim_layout() { export BOOTSTRAP_BIN=$bin; }
-# The old task `setup/configs/sync` of a consumer, as bootstrap shipped it
-# before the engine. The old `setup:configs` runs it with the clone copy.
-shim_old_task() {
-  local tasks=$consumer/.config/mise/tasks
-  mkdir -p -- "$tasks/_scripts" "$tasks/setup/configs"
-  cp -- "$clone/repo/tools/mise/tasks/helpers" "$tasks/_scripts/helpers"
-  cat > "$tasks/setup/configs/sync" << 'EOF'
-#!/usr/bin/env bash
-# Synced from bootstrap: repo/tools/repo-sync/.config/mise/tasks/setup/configs/sync. Do not edit this file.
-# The next sync writes it again, and each change in this file is lost.
-
-#MISE description="Sync the shared files from the bootstrap clone of setup:configs"
-#MISE hide=true
-#MISE tools.pre-commit="latest"
-
-#USAGE flag "--dry-run" help="show the changes without writing them"
-
-set -euo pipefail
-# shellcheck source=/dev/null
-source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
-
-if [[ -z ${BOOTSTRAP_CLONE:-} ]]; then
-  print_error "BOOTSTRAP_CLONE is not set - run mise run setup:configs, which clones bootstrap"
-  exit 2
-fi
-# shellcheck source=/dev/null
-source "${BOOTSTRAP_CLONE}/sync-engine/repo-sync"
-
-print_header "Syncing the shared files from bootstrap ..."
-
-if [[ "${usage_dry_run:-false}" == "true" ]]; then
-  repo_sync --dry-run
-else
-  repo_sync
-fi
-EOF
-  chmod 755 "$tasks/setup/configs/sync"
-  BOOTSTRAP_CLONE=$clone REPO_SYNC_CLONE=$clone usage_dry_run=true bash "$tasks/setup/configs/sync"
-}
-check_shim_old_task() {
-  check_that "the old sync task through the shim: its header" log_has 'Syncing the shared files from bootstrap ...'
-  check_that "the old sync task through the shim: a would update line" log_has "would update $consumer/"
-}
-CASE_CALL=shim_old_task run_case "the old sync task through the shim" 0 'environments = [ "dev" ]' shim_layout \
-  'Dry run: ' check_shim_old_task
-CASE_LIB=forward run_case "the forwarding file through the shim" 0 'environments = [ "dev" ]' shim_layout \
-  'Dry run: '
-shim_call() {
-  export BOOTSTRAP_CLONE=$clone
-  # shellcheck source=/dev/null
-  source "$clone/sync-engine/repo-sync"
-  repo_sync --dry-run
-}
-shim_bad_version() {
-  shim_layout
-  unset BOOTSTRAP_BIN
-  printf '%s\n' v1.2 > "$clone/sync-engine/VERSION"
-}
-CASE_CALL=shim_call run_case "the shim, a VERSION that is not MAJOR.MINOR.PATCH" 5 'environments = [ "dev" ]' \
-  shim_bad_version "repo-sync: sync-engine/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2') - nothing synced"
-shim_bin_missing() {
-  shim_layout
-  export BOOTSTRAP_BIN=$tmp/missing
-}
-CASE_CALL=shim_call run_case "the shim, a BOOTSTRAP_BIN that is not a file" 2 'environments = [ "dev" ]' \
-  shim_bin_missing 'is not an executable file - nothing synced'
-
 # The examples of repo/examples/. Each values file must pass a dry run in a
 # consumer with its members: a folder for each folder member, and a git
 # submodule for each submodule member. The dry run refuses an unknown tool, a
@@ -2757,14 +2685,14 @@ done < <(cd -- "$root/repo/examples" && find . -name bootstrap.toml | sed 's#^\.
 run_case "an old key: commit_scopes at the top" 2 'environments = [ "dev" ]
 commit_scopes = [ "api" ]' '' 'commit_scopes in'
 run_case "an old key: commit_scopes, the new place" 2 'environments = [ "dev" ]
-commit_scopes = [ "api" ]' '' 'is the old place - move it to commit_scopes of [tools.git]'
+commit_scopes = [ "api" ]' '' 'is the old form - run bootstrap init'
 run_case "an old key: worktree_files" 2 'environments = [ "dev" ]
-worktree_files = [ ".env" ]' '' 'is the old place - move it to worktree_files of [tools.mise]'
+worktree_files = [ ".env" ]' '' 'is the old form - run bootstrap init'
 run_case "an old key: [claude.plugins.user]" 2 'environments = [ "dev" ]
-[claude.plugins.user]' '' 'is the old place - move it to [tools.claude.plugins.<scope>]'
+[claude.plugins.user]' '' 'is the old form - run bootstrap init'
 run_check "--check, an old key: [branch.main]" 2 'environments = [ "dev" ]
 [branch.main]
-merge_model = "pr"' '' 'is the old place - move it to [tools.git.branch.<name>]'
+merge_model = "pr"' '' 'is the old form - run bootstrap init'
 
 # The value order: commit_scopes of [tools.git] reaches the template, and the
 # overrides file wins over the values file. A real run, because a dry run
@@ -2883,9 +2811,7 @@ case_args=' ' run_case "the derive values: level 3 below the values file" 0 "$fi
 word = \"user\"" derive_value '' check_derived
 run_case "a file of scripts/ that is not a script" 2 "$fixture_values" unknown_script \
   'scripts/detect is not a script of a tool'
-CASE_CHECK_CLONE=1 run_check "--check runs the check scripts" 2 "$fixture_values" check_fails 'fixture: the first problem'
-run_check "--check without the clone skips the check scripts" 0 "$fixture_values" check_fails \
-  'the check scripts of the tools were skipped'
+run_check "--check runs the check scripts" 2 "$fixture_values" check_fails 'fixture: the first problem'
 
 # perm and dir_perm of a [files] entry, and the mise files first.
 perm_files() {
@@ -2906,65 +2832,266 @@ check_perm() {
 }
 case_args=' ' run_case "perm and dir_perm" 0 "$fixture_values" perm_files '' check_perm
 
+# bootstrap init. The old form of a values file and of its files: init
+# migrates them, with consent, and then sync runs.
+old_values='environments = [ "dev" ]
+commit_scopes = [ "api" ]
+worktree_files = [ ".env" ]
+extensions = [ "foo.bar" ]
+
+[tools.repo-sync]
+
+[branch.main]
+# The protected main branch.
+direct_commit = false
+
+[overrides.gitignore]
+add = [ "docs/prompts/" ]
+remove = [ "*.log" ]'
+old_files() {
+  mkdir -p -- "$consumer/.config/repo-sync"
+  printf '%s\n' 'repos:' '  - repo: https://example.com/own-hooks' '    rev: v1' '    hooks:' '      - id: own' \
+    > "$consumer/.config/repo-sync/pre-commit.yaml"
+}
+init_then_sync() {
+  "$bin" init --yes || exit
+  commit_consumer
+  "$bin" sync
+}
+check_init_migrated() {
+  check_that "init: no top-level commit_scopes" tomlq 'has("commit_scopes") | not'
+  check_that "init: no [branch.main]" not_grep '^\[branch\.main\]' "$values"
+  check_that "init: no [tools.repo-sync]" not_grep 'repo-sync' "$values"
+  check_that "init: no [overrides.gitignore]" not_grep 'overrides' "$values"
+  check_that "init: commit_scopes in [tools.git]" tomlq '.tools.git.commit_scopes[0] == "api"'
+  check_that "init: [tools.git.branch.main]" tomlq '.tools.git.branch.main.direct_commit == false'
+  check_that "init: worktree_files in [tools.mise]" tomlq '.tools.mise.worktree_files[0] == ".env"'
+  check_that "init: the remove line of .gitignore" tomlq '.tools.git.files[".gitignore"]["*.log"]["$mode"] == "remove"'
+  check_that "init: the comment stays" grep -qF '# The protected main branch.' "$values"
+  check_that "init: the add line in .gitignore" grep -qxF 'docs/prompts/' "$consumer/.gitignore"
+  check_that "init: the extension" grep -qF '"foo.bar"' "$consumer/.vscode/extensions.json"
+  check_that "init: the own hook" grep -qF 'https://example.com/own-hooks' "$consumer/.config/pre-commit-config.yaml"
+  check_that "init: the old hook file is gone" test ! -e "$consumer/.config/repo-sync/pre-commit.yaml"
+  check_that "init: bootstrap_commit" grep -q '^bootstrap_commit = "[0-9a-f]\{40\}"' "$values"
+  check_that "init: the sync after init" log_has 'Synced: '
+}
+not_grep() { ! grep -q "$@"; }
+tomlq() { [[ $(mise x -- yq -p toml -o json "$1" "$values") == true ]]; }
+CASE_CALL=init_then_sync run_case "init migrates the old form, then sync runs" 0 "$old_values" old_files '' \
+  check_init_migrated
+
+check_values_unchanged() {
+  check_that "the old form stays" grep -q '^commit_scopes' "$values"
+  check_that "the old hook file stays" test -e "$consumer/.config/repo-sync/pre-commit.yaml"
+}
+init_no_yes() { "$bin" init < /dev/null; }
+CASE_CALL=init_no_yes run_case "init without --yes and without a terminal" 2 "$old_values" old_files \
+  'changes need --yes' check_values_unchanged
+init_dry_run() { "$bin" init --dry-run; }
+check_init_dry_run() {
+  check_values_unchanged
+  check_that "init --dry-run: the values file in the list" log_has 'consumer/.config/bootstrap.toml - migrate the old form'
+  check_that "init --dry-run: the old hook file in the list" log_has 'consumer/.config/repo-sync/pre-commit.yaml - its hooks move'
+}
+CASE_CALL=init_dry_run run_case "init --dry-run" 0 "$old_values" old_files 'Dry run: nothing written' \
+  check_init_dry_run
+sync_old_form() { "$bin" sync; }
+CASE_CALL=sync_old_form run_case "sync on the old form: run bootstrap init" 2 "$old_values" old_files \
+  'is the old form - run bootstrap init' check_values_unchanged
+check_old_form() { "$bin" check; }
+CASE_CALL=check_old_form run_case "check on the old form: run bootstrap init" 2 "$old_values" old_files \
+  '[tools.repo-sync] in '
+init_dirty_values() {
+  printf '%s\n' '# a change that is not committed' >> "$values"
+  "$bin" init --yes
+}
+CASE_CALL=init_dirty_values run_case "init stops on a values file with changes that are not committed" 2 "$old_values" \
+  old_files '.config/bootstrap.toml has changes that are not committed' check_values_unchanged
+
+# init in a repository without a values file: base and the named tools.
+init_new() {
+  rm -f -- "$values"
+  commit_consumer
+  "$bin" init --yes node
+}
+check_init_new() {
+  check_that "init: the new values file selects node" tomlq '.tools | has("node")'
+  check_that "init: the sync wrote the mise config" test -f "$consumer/.config/mise.toml"
+}
+CASE_CALL=init_new run_case "init without a values file" 0 'environments = [ "dev" ]' '' 'Synced: ' check_init_new
+init_plain() {
+  mkdir -p -- "$tmp/plain"
+  MISE_PROJECT_ROOT=$tmp/plain "$bin" init --yes
+}
+CASE_CALL=init_plain run_case "init outside a git repository" 2 'environments = [ "dev" ]' '' \
+  'is not a git repository - create one with git init, then run bootstrap init again'
+init_twice() {
+  "$bin" sync > /dev/null 2>&1 || exit
+  commit_consumer
+  "$bin" init < /dev/null
+}
+CASE_CALL=init_twice run_case "init with nothing to change" 0 'environments = [ "dev" ]' '' 'Nothing to change'
+init_unknown_answer() { "$bin" init --yes --answer nope.key=1; }
+CASE_CALL=init_unknown_answer run_case "init --answer of an unknown question" 2 'environments = [ "dev" ]' '' \
+  '--answer nope.key=1: no question nope.key of the selected tools'
+init_unknown_tool() { "$bin" init --yes nope; }
+CASE_CALL=init_unknown_tool run_case "init of an unknown tool" 3 'environments = [ "dev" ]' '' 'nope'
+
+# The clean-target rule: a target with changes that are not committed stops a
+# sync, which then writes nothing. The values file does not count.
+sync_dirty_target() {
+  "$bin" sync > /dev/null 2>&1 || exit
+  commit_consumer
+  printf '%s\n' '# a change that is not committed' >> "$consumer/.config/mise.toml"
+  "$bin" sync
+}
+check_dirty_kept() {
+  check_that "the dirty target keeps its change" grep -qxF '# a change that is not committed' "$consumer/.config/mise.toml"
+}
+CASE_CALL=sync_dirty_target run_case "sync stops on a target with changes that are not committed" 2 \
+  'environments = [ "dev" ]' '' '.config/mise.toml has changes that are not committed' check_dirty_kept
+sync_dirty_dry_run() {
+  "$bin" sync > /dev/null 2>&1 || exit
+  commit_consumer
+  printf '%s\n' '# a change that is not committed' >> "$consumer/.config/mise.toml"
+  "$bin" sync --dry-run
+}
+CASE_CALL=sync_dirty_dry_run run_case "sync --dry-run names a target with changes that are not committed" 0 \
+  'environments = [ "dev" ]' '' '.config/mise.toml has changes that are not committed - a run without --dry-run stops' \
+  check_dirty_kept
+sync_dirty_values() {
+  printf '%s\n' '# a change that is not committed' >> "$values"
+  "$bin" sync
+}
+CASE_CALL=sync_dirty_values run_case "sync with a values file with changes that are not committed" 0 \
+  'environments = [ "dev" ]' '' 'Synced: '
+sync_jobs() { "$bin" sync --dry-run --jobs 1; }
+CASE_CALL=sync_jobs run_case "sync --jobs 1" 0 'environments = [ "dev" ]' '' 'Dry run: '
+questions_none() { "$bin" questions --json; }
+CASE_CALL=questions_none run_case "questions --json without questions" 0 'environments = [ "dev" ]' '' '[]'
+
 while ((${#case_pids[@]})); do
   collect_case
 done
 
-# The cache and the lock of setup:configs. A fake engine, through
-# BOOTSTRAP_BIN, replaces `bootstrap sync`: it records the commit of the
-# copy that it gets, when the copy is a clone outside the cache, the lock is
-# released and it runs in the folder of MISE_PROJECT_ROOT. It adds one line for
-# each call, with the folder below the root and the flag after the commit. A
-# fake `mise` records each call, because the task must not call mise with
-# BOOTSTRAP_BIN set. The task is rendered with one submodule `sub`.
+# setup:configs runs `bootstrap sync` for the root, then for each selected
+# submodule. A fake engine, through BOOTSTRAP_BIN, records each call: the folder
+# below the root and the flag. It fails when it does not run in the folder of
+# MISE_PROJECT_ROOT. The task is rendered with one submodule `sub`.
 task="$tmp/setup-configs"
 printf '{"members":["sub"],"member_types":{"sub":"submodule"},"member_folders":{"sub":"sub"},"sync_engine":"%s/sync-engine"}\n' "$root" > "$tmp/ctx.json"
 gomplate --left-delim '<%' --right-delim '%>' -c ".=$tmp/ctx.json" \
   -f "$root/repo/tools/mise/tasks/setup-configs.tmpl" -o "$task"
-cache="$tmp/cache/bootstrap"
 mkdir -p -- "$tmp/bin"
 cat > "$tmp/bin/bootstrap" << 'EOF'
 #!/usr/bin/env bash
-[[ ${1:-} == sync && $(pwd -P) == "$(cd -- "$MISE_PROJECT_ROOT" && pwd -P)" && -e $BOOTSTRAP_CLONE/.git && $BOOTSTRAP_CLONE != "$XDG_CACHE_HOME"/* && ! -e $XDG_CACHE_HOME/bootstrap/lock ]] || exit 1
+[[ ${1:-} == sync && $(pwd -P) == "$(cd -- "$MISE_PROJECT_ROOT" && pwd -P)" ]] || exit 1
 sub=${MISE_PROJECT_ROOT#"$SYNC_ROOT"}
 sub=${sub#/}
-printf '%s\n' "$(git -C "$BOOTSTRAP_CLONE" rev-parse HEAD)${sub:+ $sub}${2:+ $2}" >> "$SYNC_OUT"
+printf '%s\n' "sync${sub:+ $sub}${2:+ $2}" >> "$SYNC_OUT"
 [[ -z ${SYNC_FAIL:-} || ${SYNC_FAIL_IN:-$sub} != "$sub" ]] || exit "$SYNC_FAIL"
 EOF
-cat > "$tmp/bin/mise" << 'EOF'
-#!/usr/bin/env bash
-printf '%s\n' "mise $*" >> "$SYNC_OUT"
-exit 1
-EOF
-chmod +x "$tmp/bin/bootstrap" "$tmp/bin/mise"
+chmod +x "$tmp/bin/bootstrap"
 
-# A remote with one commit: file:// so that --depth applies.
-new_remote() {
-  _git init --quiet -b main "$1"
-  _git -C "$1" commit --quiet --no-verify --allow-empty -m "init"
-}
-new_remote "$tmp/remote"
-new_remote "$tmp/remote2"
+# The member `sub` is a folder of a scratch root.
+members_root="$tmp/members"
+mkdir -p -- "$members_root/.config/mise/tasks/_scripts" "$members_root/sub"
+cp -- "$root/.config/mise/tasks/_scripts/helpers" "$members_root/.config/mise/tasks/_scripts/helpers"
 
-# CONFIGS_BIN sets BOOTSTRAP_BIN of the run; `none` unsets it.
+# run_configs: the task, with the fake engine. CONFIGS_BIN=path runs the fake
+# engine as `bootstrap` of PATH, without BOOTSTRAP_BIN.
 run_configs() {
-  local bin_env=(BOOTSTRAP_BIN="${CONFIGS_BIN:-$tmp/bin/bootstrap}")
-  [[ ${CONFIGS_BIN:-} != none ]] || bin_env=(-u BOOTSTRAP_BIN)
+  local bin_env=(BOOTSTRAP_BIN="$tmp/bin/bootstrap")
+  [[ ${CONFIGS_BIN:-} != path ]] || bin_env=(-u BOOTSTRAP_BIN)
   rm -f -- "$tmp/synced"
-  env -u BOOTSTRAP_CACHE "${bin_env[@]}" MISE_PROJECT_ROOT="${CONFIGS_ROOT:-$root}" PATH="$tmp/bin:$PATH" \
-    XDG_CACHE_HOME="${cache%/*}" BOOTSTRAP_URL="$1" SYNC_OUT="$tmp/synced" SYNC_ROOT="${CONFIGS_ROOT:-$root}" \
-    bash "$task" > "$log" 2>&1
+  env "${bin_env[@]}" MISE_PROJECT_ROOT="$members_root" PATH="$tmp/bin:$PATH" \
+    SYNC_OUT="$tmp/synced" SYNC_ROOT="$members_root" bash "$task" > "$log" 2>&1
 }
 
-# check_configs <name> <want> <got> [<commit>]: the exit code, the commit that
-# the first sync got, and no lock left.
+# check_configs <name> <want> <got> <lines>: the exit code, and the calls of
+# the fake engine.
 check_configs() {
-  local name=$1 want=$2 got=$3 commit=${4:-} synced=''
-  synced=$(head -n 1 -- "$tmp/synced" 2> /dev/null) || synced=''
+  local synced=''
+  synced=$(cat -- "$tmp/synced" 2> /dev/null) || synced=''
+  if [[ $3 != "$2" ]]; then
+    print_error "$1: exit $3, expected $2"
+  elif [[ $synced != "$4" ]]; then
+    print_error "$1: synced '${synced}', expected '$4'"
+  else
+    print_success "$1: exit $3"
+    return 0
+  fi
+  sed 's/^/    /' "$log" >&2
+  failures=$((failures + 1))
+}
+
+got=0
+run_configs || got=$?
+check_configs "setup:configs without a member flag" 0 "$got" "sync"
+
+got=0
+CONFIGS_BIN=path run_configs || got=$?
+check_configs "setup:configs runs bootstrap of PATH" 0 "$got" "sync"
+
+got=0
+usage_sub=true run_configs || got=$?
+check_configs "setup:configs --sub" 0 "$got" $'sync\nsync sub'
+grep -qF "Syncing sub ..." "$log" || {
+  print_error "setup:configs --sub: no header for sub"
+  failures=$((failures + 1))
+}
+
+got=0
+usage_all=true run_configs || got=$?
+check_configs "setup:configs --all" 0 "$got" $'sync\nsync sub'
+
+got=0
+SYNC_FAIL=2 usage_all=true run_configs || got=$?
+check_configs "setup:configs --all, the root fails" 2 "$got" "sync"
+
+got=0
+SYNC_FAIL=2 SYNC_FAIL_IN=sub usage_all=true run_configs || got=$?
+check_configs "setup:configs --all, the member fails" 2 "$got" $'sync\nsync sub'
+
+got=0
+usage_dry_run=true usage_sub=true run_configs || got=$?
+check_configs "setup:configs --dry-run --sub" 0 "$got" $'sync --dry-run\nsync sub --dry-run'
+
+# The clone of bootstrap. Without BOOTSTRAP_CLONE, bootstrap takes the lock of
+# its cache, fetches main of BOOTSTRAP_URL into the cache and syncs from a
+# copy. Each run is `bootstrap sync --dry-run` in a scratch consumer. The log
+# names the commit of the copy (BOOTSTRAP_VERBOSE=1).
+remote="$tmp/remote"
+_git clone --quiet -- "$base_clone" "$remote"
+clone_consumer="$tmp/clone-consumer"
+cp -R -- "$base_consumer" "$clone_consumer"
+printf '%s\n' 'repo_name = "test"' 'environments = [ "dev" ]' > "$clone_consumer/.config/bootstrap.toml"
+_git -C "$clone_consumer" add -A
+_git -C "$clone_consumer" commit --quiet --no-verify -m "values"
+
+# A binary with a release version, for the version check.
+release_bin="$tmp/engine-1.0.0"
+(cd "$root" && mise x -- go build -C "$base_clone/sync-engine" -buildvcs=false -ldflags "-X main.version=1.0.0" \
+  -o "$release_bin" ./cmd/bootstrap)
+
+# run_bin <url>: `bootstrap sync --dry-run` with the cache $cache. RUN_BIN
+# replaces the engine.
+run_bin() {
+  (
+    cd -- "$clone_consumer"
+    env -u BOOTSTRAP_CLONE -u REPO_SYNC_VALUES BOOTSTRAP_CACHE="$cache" BOOTSTRAP_URL="$1" \
+      MISE_PROJECT_ROOT="$clone_consumer" "${RUN_BIN:-$bin}" sync --dry-run
+  ) > "$log" 2>&1
+}
+
+# check_clone <name> <want> <got> [<commit>]: the exit code, the commit of the
+# copy, and no lock left.
+check_clone() {
+  local name=$1 want=$2 got=$3 commit=${4:-}
   if [[ $got != "$want" ]]; then
     print_error "$name: exit $got, expected $want"
-  elif [[ -n $commit && $synced != "$commit" ]]; then
-    print_error "$name: the sync got '${synced}', expected $commit"
+  elif [[ -n $commit ]] && ! grep -qF "using bootstrap at ${commit:0:7}" "$log"; then
+    print_error "$name: the sync did not use ${commit:0:7}"
   elif [[ -e $cache/lock ]]; then
     print_error "$name: the lock is still there"
   else
@@ -2975,138 +3102,7 @@ check_configs() {
   failures=$((failures + 1))
 }
 
-got=0
-run_configs "file://$tmp/remote" || got=$?
-check_configs "setup:configs clones into the cache" 0 "$got" "$(git -C "$tmp/remote" rev-parse HEAD)"
-
-_git -C "$tmp/remote" commit --quiet --no-verify --allow-empty -m "second"
-got=0
-run_configs "file://$tmp/remote" || got=$?
-check_configs "setup:configs fetches a new commit into the cache" 0 "$got" "$(git -C "$tmp/remote" rev-parse HEAD)"
-
-# A live holder makes the run wait. When the holder dies, the run takes its
-# stale lock.
-sleep 30 &
-holder=$!
-mkdir -- "$cache/lock"
-printf '%s\n' "$holder" > "$cache/lock/pid"
-run_configs "file://$tmp/remote" &
-runner=$!
-sleep 3
-got=0
-if ! kill -0 "$runner" 2> /dev/null; then
-  print_error "setup:configs with a live lock: the run did not wait"
-  failures=$((failures + 1))
-elif ! grep -qF "Waiting for another sync (pid $holder) ..." "$log"; then
-  print_error "setup:configs with a live lock: no wait message"
-  failures=$((failures + 1))
-else
-  print_success "setup:configs with a live lock: the run waits"
-fi
-kill "$holder" 2> /dev/null || true
-wait "$holder" 2> /dev/null || true
-for _ in 1 2 3 4 5 6 7 8 9 10; do
-  kill -0 "$runner" 2> /dev/null || break
-  sleep 1
-done
-if kill -0 "$runner" 2> /dev/null; then
-  kill "$runner" 2> /dev/null || true
-fi
-wait "$runner" || got=$?
-check_configs "setup:configs takes the lock of a dead holder" 0 "$got" "$(git -C "$tmp/remote" rev-parse HEAD)"
-
-got=0
-run_configs "file://$tmp/remote2" || got=$?
-check_configs "setup:configs clones again for another URL" 0 "$got" "$(git -C "$tmp/remote2" rev-parse HEAD)"
-
-mv -- "$tmp/remote2" "$tmp/remote2.gone"
-got=0
-run_configs "file://$tmp/remote2" || got=$?
-check_configs "setup:configs, a fetch that fails" 5 "$got"
-if [[ ! -e $cache/repo/.git ]]; then
-  print_error "setup:configs, a fetch that fails: the cache is gone"
-  failures=$((failures + 1))
-fi
-
-# The member flags. The member `sub` is a folder of a scratch root.
-commit=$(git -C "$tmp/remote" rev-parse HEAD)
-members_root="$tmp/members"
-mkdir -p -- "$members_root/.config/mise/tasks/_scripts" "$members_root/sub"
-cp -- "$root/.config/mise/tasks/_scripts/helpers" "$members_root/.config/mise/tasks/_scripts/helpers"
-
-# check_synced <name> <lines>: the lines that the fake mise recorded.
-check_synced() {
-  local got=''
-  got=$(cat -- "$tmp/synced" 2> /dev/null) || got=''
-  if [[ $got == "$2" ]]; then
-    print_success "$1: the synced repositories"
-  else
-    print_error "$1: synced '${got}', expected '$2'"
-    failures=$((failures + 1))
-  fi
-}
-
-got=0
-CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
-check_configs "setup:configs without a member flag" 0 "$got" "$commit"
-check_synced "setup:configs without a member flag" "$commit"
-
-got=0
-usage_sub=true CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
-check_configs "setup:configs --sub" 0 "$got" "$commit"
-check_synced "setup:configs --sub" "$commit"$'\n'"$commit sub"
-grep -qF "Syncing sub ..." "$log" || {
-  print_error "setup:configs --sub: no header for sub"
-  failures=$((failures + 1))
-}
-
-got=0
-usage_all=true CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
-check_configs "setup:configs --all" 0 "$got" "$commit"
-check_synced "setup:configs --all" "$commit"$'\n'"$commit sub"
-
-got=0
-SYNC_FAIL=2 usage_all=true CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
-check_configs "setup:configs --all, the root fails" 2 "$got" "$commit"
-check_synced "setup:configs --all, the root fails" "$commit"
-
-got=0
-SYNC_FAIL=2 SYNC_FAIL_IN=sub usage_all=true CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
-check_configs "setup:configs --all, the member fails" 2 "$got" "$commit"
-check_synced "setup:configs --all, the member fails" "$commit"$'\n'"$commit sub"
-
-got=0
-usage_dry_run=true usage_sub=true CONFIGS_ROOT=$members_root run_configs "file://$tmp/remote" || got=$?
-check_configs "setup:configs --dry-run --sub" 0 "$got" "$commit --dry-run"
-check_synced "setup:configs --dry-run --sub" "$commit --dry-run"$'\n'"$commit sub --dry-run"
-
-# The engine. Without BOOTSTRAP_BIN, the task reads sync-engine/VERSION of the
-# copy. A value that is not MAJOR.MINOR.PATCH stops it before any mise call.
-version_remote="$tmp/remote-version"
-new_remote "$version_remote"
-mkdir -p -- "$version_remote/sync-engine"
-printf '%s\n' v1.2 > "$version_remote/sync-engine/VERSION"
-_git -C "$version_remote" add -A
-_git -C "$version_remote" commit --quiet --no-verify -m "a bad VERSION"
-got=0
-CONFIGS_BIN=none run_configs "file://$version_remote" || got=$?
-check_configs "setup:configs, a VERSION that is not MAJOR.MINOR.PATCH" 5 "$got"
-check_synced "setup:configs, a VERSION that is not MAJOR.MINOR.PATCH" ''
-grep -qF "sync-engine/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2') - nothing synced" "$log" || {
-  print_error "setup:configs, a VERSION that is not MAJOR.MINOR.PATCH: no error message"
-  failures=$((failures + 1))
-}
-
-got=0
-CONFIGS_BIN="$tmp/no-such-engine" run_configs "file://$tmp/remote" || got=$?
-check_configs "setup:configs, a BOOTSTRAP_BIN that is not a file" 2 "$got"
-check_synced "setup:configs, a BOOTSTRAP_BIN that is not a file" ''
-grep -qF "BOOTSTRAP_BIN $tmp/no-such-engine is not an executable file - nothing synced" "$log" || {
-  print_error "setup:configs, a BOOTSTRAP_BIN that is not a file: no error message"
-  failures=$((failures + 1))
-}
-
-# The rules of the shared cache. Each case has its own XDG_CACHE_HOME.
+# The rules of the shared cache. Each case has its own cache.
 new_cache() {
   cache="$tmp/$1/bootstrap"
   mkdir -p -- "${cache%/*}"
@@ -3151,89 +3147,143 @@ check_configs_log() {
   fi
 }
 
-name="setup:configs leaves the old Mac cache"
-new_cache legacy-mac
-old="${cache%/*}/macos-setup"
-mkdir -p -- "$old"
-: > "$old/generated.txt"
+new_cache clone
 got=0
-run_configs "file://$tmp/remote" || got=$?
-check_configs "$name" 0 "$got" "$commit"
-check_paths "$name" -e "$old/generated.txt" -n "$cache/macos-generated.tsv"
+run_bin "file://$remote" || got=$?
+check_clone "bootstrap clones into the cache" 0 "$got" "$(git -C "$remote" rev-parse HEAD)"
+check_configs_log "bootstrap clones into the cache" -h 'Cloning into'
 
-name="setup:configs, a normalized origin is the same clone"
+_git -C "$remote" commit --quiet --no-verify --allow-empty -m "second"
+got=0
+run_bin "file://$remote" || got=$?
+check_clone "bootstrap fetches a new commit into the cache" 0 "$got" "$(git -C "$remote" rev-parse HEAD)"
+check_configs_log "bootstrap fetches a new commit into the cache" -h 'Updating the clone'
+
+# A live holder makes the run wait. When the holder dies, the run takes its
+# stale lock.
+sleep 30 &
+holder=$!
+mkdir -- "$cache/lock"
+printf '%s\n' "$holder" > "$cache/lock/pid"
+run_bin "file://$remote" &
+runner=$!
+sleep 3
+got=0
+if ! kill -0 "$runner" 2> /dev/null; then
+  print_error "bootstrap with a live lock: the run did not wait"
+  failures=$((failures + 1))
+elif ! grep -qF "Waiting for another sync (pid $holder) ..." "$log"; then
+  print_error "bootstrap with a live lock: no wait message"
+  failures=$((failures + 1))
+else
+  print_success "bootstrap with a live lock: the run waits"
+fi
+kill "$holder" 2> /dev/null || true
+wait "$holder" 2> /dev/null || true
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  kill -0 "$runner" 2> /dev/null || break
+  sleep 1
+done
+if kill -0 "$runner" 2> /dev/null; then
+  kill "$runner" 2> /dev/null || true
+fi
+wait "$runner" || got=$?
+check_clone "bootstrap takes the lock of a dead holder" 0 "$got" "$(git -C "$remote" rev-parse HEAD)"
+
+remote2="$tmp/remote2"
+_git clone --quiet -- "$base_clone" "$remote2"
+_git -C "$remote2" commit --quiet --no-verify --allow-empty -m "other"
+got=0
+run_bin "file://$remote2" || got=$?
+check_clone "bootstrap clones again for another URL" 0 "$got" "$(git -C "$remote2" rev-parse HEAD)"
+check_configs_log "bootstrap clones again for another URL" -h 'cloning again'
+
+mv -- "$remote2" "$remote2.gone"
+got=0
+run_bin "file://$remote2" || got=$?
+check_clone "bootstrap, a fetch that fails" 5 "$got"
+check_paths "bootstrap, a fetch that fails" -e "$cache/repo/.git"
+
+name="bootstrap, a normalized origin is the same clone"
 new_cache normalized
 got=0
-run_configs "file://$tmp/remote" || got=$?
-check_configs "$name, the first run" 0 "$got" "$commit"
+run_bin "file://$remote" || got=$?
+check_clone "$name, the first run" 0 "$got"
 got=0
-run_configs "$tmp/remote" || got=$?
-check_configs "$name, the second run" 0 "$got" "$commit"
+run_bin "$remote" || got=$?
+check_clone "$name, the second run" 0 "$got"
 check_configs_log "$name" -h 'Updating the clone'
 check_configs_log "$name" -l 'Cloning into'
 
-name="setup:configs, a non-git folder stops with 2"
+name="bootstrap, a non-git folder stops with 2"
 new_cache not-a-clone
 mkdir -p -- "$cache/repo"
 : > "$cache/repo/file"
 got=0
-run_configs "file://$tmp/remote" || got=$?
-check_configs "$name" 2 "$got"
+run_bin "file://$remote" || got=$?
+check_clone "$name" 2 "$got"
 check_paths "$name" -e "$cache/repo/file"
 
-name="setup:configs, an old clone at the cache root"
+name="bootstrap, an old clone at the cache root"
 new_cache old-layout
 mkdir -p -- "$cache"
 _git init --quiet "$cache"
-_git -C "$cache" remote add origin "file://$tmp/remote"
+_git -C "$cache" remote add origin "file://$remote"
 got=0
-run_configs "file://$tmp/remote" || got=$?
-check_configs "$name" 0 "$got" "$commit"
+run_bin "file://$remote" || got=$?
+check_clone "$name" 0 "$got"
 check_paths "$name" -n "$cache/.git" -e "$cache/repo/.git"
 
-# Any other repository at the cache root stays.
-name="setup:configs, another origin at the cache root stops with 2"
+name="bootstrap, another origin at the cache root stops with 2"
 new_cache other-root-origin
 mkdir -p -- "$cache"
 _git init --quiet "$cache"
-_git -C "$cache" remote add origin "file://$tmp/remote2"
+_git -C "$cache" remote add origin "file://$tmp/elsewhere"
 : > "$cache/file"
 got=0
-run_configs "file://$tmp/remote" || got=$?
-check_configs "$name" 2 "$got"
-check_paths "$name" -e "$cache/.git" -e "$cache/file" -n "$cache/repo" -n "$tmp/synced"
+run_bin "file://$remote" || got=$?
+check_clone "$name" 2 "$got"
+check_paths "$name" -e "$cache/.git" -e "$cache/file" -n "$cache/repo"
 check_configs_log "$name" -h 'is a git repository with the origin'
 
-name="setup:configs, no origin at the cache root stops with 2"
-new_cache no-root-origin
-mkdir -p -- "$cache"
-_git init --quiet "$cache"
-: > "$cache/file"
+# The version check: sync-engine/VERSION of the clone is the minimum version
+# of the binary. A dev build is new enough.
+version_remote="$tmp/remote-version"
+_git clone --quiet -- "$base_clone" "$version_remote"
+printf '%s\n' 99.0.0 > "$version_remote/sync-engine/VERSION"
+_git -C "$version_remote" commit --quiet --no-verify -am "a newer VERSION"
+name="bootstrap, a binary older than VERSION stops with 2"
+new_cache version-old
 got=0
-run_configs "file://$tmp/remote" || got=$?
-check_configs "$name" 2 "$got"
-check_paths "$name" -e "$cache/.git" -e "$cache/file" -n "$cache/repo" -n "$tmp/synced"
-check_configs_log "$name" -h 'is a git repository with the origin'
+RUN_BIN=$release_bin run_bin "file://$version_remote" || got=$?
+check_clone "$name" 2 "$got"
+check_configs_log "$name" -h 'bootstrap 1.0.0 is older than 99.0.0, the version that the clone needs - upgrade it with: mise upgrade github:virajp/bootstrap'
+check_configs_log "$name" -l 'using bootstrap at'
 
-# The compare of the origins drops the scheme, so the fetch must use the URL: a
-# fetch from this origin fails.
-name="setup:configs, another scheme of the origin fetches from the URL"
-new_cache other-scheme
-new_remote "$tmp/remote3"
+name="bootstrap, a dev build is new enough"
+new_cache version-dev
 got=0
-run_configs "file://$tmp/remote3" || got=$?
-check_configs "$name, the first run" 0 "$got" "$(git -C "$tmp/remote3" rev-parse HEAD)"
-_git -C "$cache/repo" remote set-url origin "bogus://$tmp/remote3"
-_git -C "$tmp/remote3" commit --quiet --no-verify --allow-empty -m "second"
-got=0
-run_configs "file://$tmp/remote3" || got=$?
-check_configs "$name, the second run" 0 "$got" "$(git -C "$tmp/remote3" rev-parse HEAD)"
-check_configs_log "$name" -h 'Updating the clone'
-check_configs_log "$name" -l 'Cloning into'
+run_bin "file://$version_remote" || got=$?
+check_clone "$name" 0 "$got"
 
-# The gate code:lint:repo-sync. It finds gomplate with `mise x`, so it starts in
-# this repository, and then it does a cd to its own MISE_PROJECT_ROOT.
-lint_task="$root/repo/tools/repo-sync/tasks/code-lint-repo-sync"
+name="bootstrap, a binary at VERSION"
+new_cache version-same
+got=0
+RUN_BIN=$release_bin run_bin "file://$remote" || got=$?
+check_clone "$name" 0 "$got"
+
+printf '%s\n' v1.2 > "$version_remote/sync-engine/VERSION"
+_git -C "$version_remote" commit --quiet --no-verify -am "a bad VERSION"
+name="bootstrap, a VERSION that is not MAJOR.MINOR.PATCH stops with 5"
+new_cache version-bad
+got=0
+RUN_BIN=$release_bin run_bin "file://$version_remote" || got=$?
+check_clone "$name" 5 "$got"
+check_configs_log "$name" -h "sync-engine/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2') - nothing synced"
+
+# The gate code:lint:60-bootstrap. It runs `bootstrap check` with the cache
+# clone, and it never fetches.
+lint_task="$root/repo/tools/mise/tasks/code-lint-bootstrap"
 gate_root="$tmp/gate-consumer"
 gate_cache="$tmp/gate-cache"
 cp -R -- "$base_consumer" "$gate_root"
@@ -3242,12 +3292,11 @@ cp -- "$root/.config/mise/tasks/_scripts/helpers" "$gate_root/.config/mise/tasks
 printf '%s\n' 'repo_name = "test"' 'repo_url = "https://example.com/test"' 'environments = [ "dev" ]' \
   > "$gate_root/.config/bootstrap.toml"
 
-# BOOTSTRAP_BIN gives the engine to the shim of the cache.
 run_gate() {
   (
     cd -- "$root"
-    env -u usage_files -u REPO_SYNC_VALUES MISE_PROJECT_ROOT="$gate_root" BOOTSTRAP_CACHE="$gate_cache" \
-      BOOTSTRAP_BIN="$bin" bash "$lint_task"
+    env -u usage_files -u REPO_SYNC_VALUES -u BOOTSTRAP_CLONE MISE_PROJECT_ROOT="$gate_root" \
+      BOOTSTRAP_CACHE="$gate_cache" BOOTSTRAP_URL="file://$tmp/no-such-remote" BOOTSTRAP_BIN="$bin" bash "$lint_task"
   ) > "$log" 2>&1
 }
 
@@ -3261,10 +3310,8 @@ else
   failures=$((failures + 1))
 fi
 
-mkdir -p -- "$gate_cache/repo/sync-engine"
-cp -- "$root/sync-engine/repo-sync" "$root/sync-engine/VERSION" "$gate_cache/repo/sync-engine/"
-_git init --quiet "$gate_cache/repo"
-_git -C "$gate_cache/repo" remote add origin https://github.com/virajp/bootstrap.git
+_git clone --quiet -- "$base_clone" "$gate_cache/repo"
+_git -C "$gate_cache/repo" remote set-url origin https://github.com/virajp/bootstrap.git
 got=0
 run_gate || got=$?
 if [[ $got == 0 ]] && grep -qF 'valid (local rules)' "$log"; then
@@ -3275,18 +3322,13 @@ else
   failures=$((failures + 1))
 fi
 
-# A library that leaves a mark when the gate sources it.
-gate_cache="$tmp/gate-cache-other"
-mkdir -p -- "$gate_cache/repo/sync-engine"
-printf ': > %q\n' "$tmp/gate-sourced" > "$gate_cache/repo/sync-engine/repo-sync"
-_git init --quiet "$gate_cache/repo"
-_git -C "$gate_cache/repo" remote add origin https://github.com/virajp/other.git
+_git -C "$gate_cache/repo" remote set-url origin https://github.com/virajp/other.git
 got=0
 run_gate || got=$?
-if [[ $got == 0 && ! -s $log && ! -e $tmp/gate-sourced ]]; then
-  print_success "the gate with another origin: exit 0, no output, not sourced"
+if [[ $got == 0 && ! -s $log ]]; then
+  print_success "the gate with another origin: exit 0, no output"
 else
-  print_error "the gate with another origin: exit $got, or an output, or the library was sourced"
+  print_error "the gate with another origin: exit $got, or an output"
   sed 's/^/    /' "$log" >&2
   failures=$((failures + 1))
 fi
@@ -3295,4 +3337,4 @@ if ((failures)); then
   print_error "$failures check(s) failed"
   exit 1
 fi
-print_success "All repo-sync cases passed"
+print_success "All bootstrap cases passed"

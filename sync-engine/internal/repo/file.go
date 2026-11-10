@@ -49,6 +49,7 @@ func (s *state) remove(path string) fail.Code {
 		return fail.OK
 	}
 	if s.e.DryRun {
+		s.e.Plan(dest)
 		s.r.Outcome(report.Removed, show, "", "would remove "+show)
 		return fail.OK
 	}
@@ -238,7 +239,7 @@ func (s *state) file(tool string, f source.File, ctx *contexts) (fail.Code, bool
 			Explicit:  explicit,
 			Overrides: ov,
 			Records:   s.items[out],
-			Header:    hdr.Shared(name, strings.TrimPrefix(s.values, s.root+"/")),
+			Header:    hdr.Shared(name, s.valuesInRepo()),
 			Show:      show,
 			SpecShow:  name,
 		})
@@ -361,4 +362,14 @@ func (s *state) fileFinish(tool string, f source.File, tmp string) fail.Code {
 		s.rows = append(s.rows, manifest.Row{Tool: tool, Path: out, Item: item})
 	}
 	return fail.OK
+}
+
+// valuesInRepo gives the values file below the root of the repository, as
+// the header of a shared file names it. A values file outside the repository
+// (the plan of `bootstrap init`) is named as the default values file.
+func (s *state) valuesInRepo() string {
+	if rel, ok := strings.CutPrefix(s.values, s.root+"/"); ok {
+		return rel
+	}
+	return ".config/bootstrap.toml"
 }

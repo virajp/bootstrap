@@ -13,10 +13,11 @@
 # `stage = "init"`, else 0, the second run exits 0, the example selects every
 # tool of macos/tools/, and every .json, .yaml/.yml and .toml file in the temp
 # HOME parses (jq or yq). Case 2: the example without the answer `config_path`
-# of macos-setup exits 2, and the message names the key. Case 3: a mise tool on
+# of mise exits 2, and the message names the question. Case 3: a mise tool on
 # both sides of repo/tools/ and macos/tools/ has one version and one `depends`, a
 # mise setting on both sides has one value, and a fixture proves that the check
-# finds a difference.
+# finds a difference. Case 4: `bootstrap mac init` migrates the example in its
+# old form ([tools.macos-setup]), then `bootstrap mac sync` runs.
 
 set -euo pipefail
 
@@ -113,11 +114,19 @@ setup_case() {
   export XDG_CACHE_HOME="$dir/xdg/cache" XDG_CONFIG_HOME="$dir/xdg/config"
   export XDG_STATE_HOME="$dir/xdg/state" XDG_DATA_HOME="$dir/xdg/data"
   export BOOTSTRAP_CACHE="$XDG_CACHE_HOME/bootstrap"
-  export MACOS_SETUP_CONFIG_PATH="$dir/config"
+  export MACOS_SETUP_REPO_PATH="$dir/config"
   export GIT_CONFIG_GLOBAL="$dir/gitconfig" GIT_CONFIG_NOSYSTEM=1
   : > "$GIT_CONFIG_GLOBAL"
   export TMPDIR="$dir/tmp"
-  cp -- "$example" "$MACOS_SETUP_CONFIG_PATH/macos.toml"
+  cp -- "$example" "$MACOS_SETUP_REPO_PATH/macos.toml"
+  _git init --quiet "$MACOS_SETUP_REPO_PATH"
+  commit_config
+}
+
+# commit_config: commit each file of the config folder.
+commit_config() {
+  _git -C "$MACOS_SETUP_REPO_PATH" add -A
+  _git -C "$MACOS_SETUP_REPO_PATH" commit --quiet --no-verify --allow-empty -m "config"
 }
 
 # A real run of the engine, as its entry task does.
@@ -197,8 +206,8 @@ check_exit 0
 
 # mise does not expand ~ in [env], so the answer of the example reaches it with
 # $HOME in its place.
-mise_config="$home/.config/mise/conf.d/macos-setup/mise.toml"
-if grep -qF "MACOS_SETUP_CONFIG_PATH = \"$home/Projects/github.com/janedoe/macos-setup\"" "$mise_config"; then
+mise_config="$home/.config/mise/conf.d/mise/mise.toml"
+if grep -qF "MACOS_SETUP_REPO_PATH = \"$home/Projects/github.com/janedoe/macos-setup\"" "$mise_config"; then
   pass "a ~ at the start of config_path becomes \$HOME"
 else
   fail "$mise_config does not have config_path with \$HOME in place of ~"
@@ -235,14 +244,33 @@ if ((count == 0)); then fail "no .json, .yaml/.yml or .toml file was rendered"; 
 # ---- case 2: a missing answer --------------------------------------------------
 
 setup_case "missing question" missing
-grep -v '^config_path = ' "$example" > "$MACOS_SETUP_CONFIG_PATH/macos.toml"
+grep -v '^config_path = ' "$example" > "$MACOS_SETUP_REPO_PATH/macos.toml"
 run_real
 check_exit 2
-if grep -qF 'macos-setup: set config_path in [tools.macos-setup] of macos.toml' "$log"; then
-  pass "the message names the key"
+if grep -qF 'the question mise.config_path has no answer in macos.toml - run bootstrap init' "$log"; then
+  pass "the message names the question"
 else
-  fail "the message does not name the key 'config_path'"
+  fail "the message does not name the question 'mise.config_path'"
 fi
+
+# ---- case 4: mac init migrates the old form, then mac sync runs ----------------
+
+setup_case "init" init
+sed 's/^\[tools\.mise\]$/[tools.macos-setup]/' "$example" > "$MACOS_SETUP_REPO_PATH/macos.toml"
+commit_config
+runs=$((runs + 1))
+log="$dir/run-$runs.txt"
+rc=0
+(cd "$MACOS_SETUP_REPO_PATH" && BOOTSTRAP_CLONE=$tree "$bin" mac init --yes --no-bootstrap < /dev/null) > "$log" 2>&1 || rc=$?
+check_exit "$first_exit"
+if grep -qxF '[tools.mise]' "$MACOS_SETUP_REPO_PATH/macos.toml" && ! grep -qF 'macos-setup]' "$MACOS_SETUP_REPO_PATH/macos.toml"; then
+  pass "[tools.macos-setup] becomes [tools.mise]"
+else
+  fail "macos.toml still has the old form"
+fi
+commit_config
+run_real
+check_exit 0
 
 # ---- case 3: the two sides agree on a shared mise tool and setting --------------
 

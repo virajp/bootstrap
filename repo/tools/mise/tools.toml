@@ -1,4 +1,6 @@
-# mise: the shared mise config, the task library and the setup and code orchestrators.
+# mise: the shared mise config, the task library, the setup and code
+# orchestrators, and the entry of the sync: setup:configs and the gate
+# code:lint:60-bootstrap.
 default_envs = [ "dev", "ci" ]
 depends = []
 root_only = false
@@ -28,6 +30,11 @@ description = "Initialize mise tasks"
 dir = "{{exec(command='git rev-parse --show-toplevel')}}"
 hide = true
 run = "find .config/mise/tasks/ -name '*' -type f -exec chmod 755 {} \\;"
+
+# The CLI of the sync, in dev only. setup:configs and code:lint:60-bootstrap
+# run it.
+[mise_env.dev.tools."github:virajp/bootstrap"]
+version = "latest"
 
 # dev run on macOS
 # selects macOS binaries.
@@ -80,6 +87,9 @@ source = "code-format.tmpl"
 [tasks."code/lint/_default"]
 mode = "template"
 source = "code-lint.tmpl"
+
+[tasks."code/lint/60-bootstrap"]
+source = "code-lint-bootstrap"
 
 [tasks."code/merge/_default"]
 source = "code-merge"

@@ -5,8 +5,7 @@
 # sync always adds the pack `base`. `required = true` marks a member of `base`
 # that each Mac must have.
 [pack.base]
-macos-setup = { default = true, required = true }
-mise = { default = true }
+mise = { default = true, required = true }
 homebrew = { default = true }
 bash = { default = true }
 zsh = { default = true }

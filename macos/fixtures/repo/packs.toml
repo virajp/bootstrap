@@ -2,7 +2,7 @@
 
 [pack.base]
 core = { default = true }
-macos-setup = { default = true, required = true }
+mise = { default = true, required = true }
 
 [pack.extra]
 merger = {}

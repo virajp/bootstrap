@@ -2,7 +2,7 @@
 # ../acme-api and ../acme-app. They are separate checkouts next to it, not
 # submodules. See the folders of the siblings for their own values files.
 
-# The bootstrap commit of the last sync. repo-sync writes it.
+# The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev" ]

@@ -64,19 +64,3 @@ func TestReadOverrides(t *testing.T) {
 		t.Errorf("other key = %v", err)
 	}
 }
-
-func TestMoved(t *testing.T) {
-	raw := obj(map[string]any{"commit_scopes": []any{"a"}, "branch": map[string]any{}, "repo_name": "x"})
-	err := Moved(raw, "v.toml")
-	if err == nil {
-		t.Fatal("no error")
-	}
-	msgs := source.Messages(err)
-	if len(msgs) != 2 || !strings.Contains(msgs[0].Error(), "branch in v.toml is the old place - move it to [tools.git.branch.<name>]") ||
-		!strings.Contains(msgs[1].Error(), "commit_scopes in v.toml is the old place - move it to commit_scopes of [tools.git]") {
-		t.Errorf("messages = %v", msgs)
-	}
-	if Moved(obj(map[string]any{"repo_name": "x"}), "v.toml") != nil {
-		t.Error("error without an old key")
-	}
-}

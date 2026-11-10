@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
+	"github.com/virajp/bootstrap/sync-engine/internal/questions"
 	"github.com/virajp/bootstrap/sync-engine/internal/source"
 	"github.com/virajp/bootstrap/sync-engine/internal/tmpl"
 	"github.com/virajp/bootstrap/sync-engine/internal/values"
@@ -30,6 +31,12 @@ func (s *state) toolValues() fail.Code {
 	})
 	if err != nil {
 		return s.logAll(err)
+	}
+	if missing := questions.Missing(s.idx, s.res.Tools, s.vals.User, over); len(missing) > 0 {
+		for _, q := range missing {
+			s.log("the question " + q.Name() + " has no answer in " + s.show + " - run bootstrap init")
+		}
+		return fail.Usage
 	}
 	s.all = m.All()
 	s.allJSON = source.JSON(s.all)

@@ -2,3 +2,5 @@
 # The opt-in tool owner: its list replaces the merged one.
 [tools.owner]
 includes = [ "~/z" ]
+# The answer to the question token of owner.
+token = "token-1"

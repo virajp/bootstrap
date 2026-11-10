@@ -84,6 +84,7 @@ func (e *Env) RecordCommit(file, key, commit, comment, header string) fail.Code 
 		short = short[:7]
 	}
 	if e.DryRun {
+		e.Plan(real)
 		if r.Verbose() {
 			r.Log("would set " + key + " " + commit + " in " + show)
 		} else {

@@ -41,7 +41,13 @@ type Env struct {
 	// Temps holds the temp files of the run. The front-end defers
 	// Temps.Cleanup.
 	Temps Temps
+	// Planned holds the absolute path of each file that a dry run would
+	// write, change or remove: the change list of the run.
+	Planned []string
 }
+
+// Plan records <path> in the change list of a dry run.
+func (e *Env) Plan(path string) { e.Planned = append(e.Planned, path) }
 
 // Show is _se_path: <path> relative to Env.Pwd when it is below it, else
 // <path> as it is.
