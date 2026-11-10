@@ -65,8 +65,13 @@ source = "merge"
 [tasks."code/git-config"]
 source = "code-git-config"
 
+# The merge tasks of the branch pair main and develop. The derive script
+# gives branch_pair; code:merge (code/merge/_default of the mise tool) is the
+# task of a repository with one of the two branches.
 [tasks."code/merge/develop"]
 source = "code-merge-develop"
+when = "git.branch_pair"
 
 [tasks."code/merge/main"]
 source = "code-merge-main"
+when = "git.branch_pair"

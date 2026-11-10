@@ -209,136 +209,11 @@ func (s *state) envRules(sel []values.Item) fail.Code {
 }
 
 // branchExists is `_rs_branch_exists`: a branch that exists here or on
-// origin.
+// origin. U3 (the --branch pairs of the no-commit-to-branch hook) needs it
+// until the hook moves to the merge model.
 func (s *state) branchExists(name string) bool {
 	return run("", "git", "-C", s.root, "show-ref", "--verify", "--quiet", "refs/heads/"+name) ||
 		run("", "git", "-C", s.root, "show-ref", "--verify", "--quiet", "refs/remotes/origin/"+name)
-}
-
-// mergeModel is `_rs_merge_model`: it sets skip to the merge tasks of the
-// other branch model. It gives 2, after a message, when neither branch
-// exists.
-func (s *state) mergeModel() fail.Code {
-	const tasks = source.TasksTarget + "/code/merge"
-	main, develop := s.branchExists("main"), s.branchExists("develop")
-	switch {
-	case main && develop:
-		s.skip = []string{tasks + "/_default"}
-	case main || develop:
-		s.skip = []string{tasks + "/develop", tasks + "/main"}
-	default:
-		s.log("the repo has neither 'main' nor 'develop' - create one, then sync again")
-		return fail.Usage
-	}
-	return fail.OK
-}
-
-// skipped tells if the target <key> is a word of skip.
-func (s *state) skipped(key string) bool {
-	for _, w := range s.skip {
-		if w == key {
-			return true
-		}
-	}
-	return false
-}
-
-// directCommit is `_rs_direct_commit`. It validates `direct_commit` of the
-// `[branch.*]` tables, and sets hookDrop to the branches whose `--branch`
-// pair leaves the no-commit-to-branch hook. It gives 2, after a message for
-// each problem.
-func (s *state) directCommit() fail.Code {
-	rc := fail.OK
-	s.hookDrop = nil
-	out, ok := s.onValues(tmplDirectCommit, false)
-	if !ok {
-		s.log("cannot read [branch] of " + s.show)
-		return fail.Usage
-	}
-	main, develop := s.branchExists("main"), s.branchExists("develop")
-	drop := func(b string) bool {
-		for _, x := range s.hookDrop {
-			if x == b {
-				return true
-			}
-		}
-		return false
-	}
-	for _, line := range bashLines(out) {
-		name, value, _ := readTabs(line)
-		if name == "" {
-			continue
-		}
-		switch {
-		case name != "main" && name != "develop":
-			s.log("[branch." + name + "] in " + s.show + ": direct_commit is a key of [branch.main] and [branch.develop] only")
-			rc = fail.Usage
-		case value == "bad":
-			s.log("[branch." + name + "] in " + s.show + ": direct_commit must be true or false")
-			rc = fail.Usage
-		case !s.branchExists(name):
-			s.log("[branch." + name + "] in " + s.show + " has direct_commit, but the branch '" + name + "' does not exist - create it, or remove the key")
-			rc = fail.Usage
-		case value == "true":
-			s.hookDrop = append(s.hookDrop, name)
-		}
-	}
-	if main && develop && drop("main") && !drop("develop") {
-		s.log("[branch.main] in " + s.show + " has direct_commit = true, but [branch.develop] does not - with main and develop, set direct_commit = true for develop too, or remove it from main")
-		rc = fail.Usage
-	}
-	if !main {
-		s.hookDrop = append(s.hookDrop, "main")
-	}
-	if !develop {
-		s.hookDrop = append(s.hookDrop, "develop")
-	}
-	return rc
-}
-
-// fnoxProfiles is `_rs_fnox_profiles`: `.config/fnox.toml` of this repo, when
-// it exists, has no top-level `[secrets]` table, 1 or more
-// `[profiles.<name>]` tables, and no `[profiles.default]`. It gives 2, after
-// a message for each problem.
-func (s *state) fnoxProfiles() fail.Code {
-	file := s.root + "/.config/fnox.toml"
-	if !isFile(file) {
-		return fail.OK
-	}
-	repo, ok := s.onValues(tmplRepoName, false)
-	if !ok || repo == "" {
-		repo = "<repo_name>"
-	}
-	out, ok := s.gomplate(tmplFnox, nil, []ds{{"f", file, "toml"}}, nil, false)
-	if !ok {
-		s.log("cannot read .config/fnox.toml")
-		return fail.Usage
-	}
-	rc := fail.OK
-	count := 0
-	for _, line := range bashLines(out) {
-		kind, name, _ := readWords(line)
-		switch kind {
-		case "secrets":
-			s.log(".config/fnox.toml has a top-level [secrets] table, the fnox default profile - move each secret to [profiles." + repo + ".secrets], then delete the table (M25 of docs/sync/migrate.md)")
-			rc = fail.Usage
-		case "bad":
-			s.log("profiles in .config/fnox.toml must be [profiles.<name>] tables (M25 of docs/sync/migrate.md)")
-			rc = fail.Usage
-		case "profile":
-			if name == "default" {
-				s.log("[profiles.default] in .config/fnox.toml: a repository does not use the fnox default profile - rename it, for example to [profiles." + repo + "] (M25 of docs/sync/migrate.md)")
-				rc = fail.Usage
-			} else {
-				count++
-			}
-		}
-	}
-	if count == 0 {
-		s.log(".config/fnox.toml has no named profile - add [profiles." + repo + ".secrets]; a repository does not use the fnox default profile (M25 of docs/sync/migrate.md)")
-		rc = fail.Usage
-	}
-	return rc
 }
 
 // overrides is `_rs_overrides`. It examines `[overrides]` of the values file:
@@ -613,24 +488,6 @@ func (s *state) members(name string) ([]member, fail.Code) {
 	return out, fail.OK
 }
 
-// devAliases is `_rs_dev_aliases`: the extra dev aliases of <tool>, as
-// `<name>=<command>` lines. `setup-all` and `setup-<submodule>` exist only in
-// a repo with git submodules, for the tool mise.
-func (s *state) devAliases(tool string) []string {
-	if tool != "mise" || !isFile(s.root+"/.gitmodules") {
-		return nil
-	}
-	subs := s.submodules()
-	if subs == "" {
-		return nil
-	}
-	aliases := []string{"setup-all=mise run setup --all"}
-	for _, sub := range fields(subs) {
-		aliases = append(aliases, "setup-"+sub+"=mise run setup --"+sub)
-	}
-	return aliases
-}
-
 // hasFile is `_rs_has_file`: this repo has a file named <name>, at the root
 // or down to 4 folders below it, that git tracks or does not ignore. A git
 // submodule is not searched.
@@ -650,4 +507,54 @@ func (s *state) hasFile(name string) bool {
 func (s *state) inSubmodule() bool {
 	out, _ := git(s.root, "rev-parse", "--show-superproject-working-tree")
 	return out != ""
+}
+
+// hookBranches sets hookDrop to the branches whose --branch pair leaves the
+// no-commit-to-branch hook: each of main and develop with direct_commit =
+// true in [tools.git.branch.<name>], and each one that does not exist. This
+// is U3, which stays in the engine until the merge model replaces it. The
+// check script of git examines the values.
+func (s *state) hookBranches() {
+	s.hookDrop = nil
+	branch, _ := s.toolVals("git").Get("branch").(*source.Obj)
+	for _, name := range []string{"main", "develop"} {
+		if branch == nil {
+			break
+		}
+		if b, ok := branch.Get(name).(*source.Obj); ok {
+			if v, ok := b.Get("direct_commit").(bool); ok && v {
+				s.hookDrop = append(s.hookDrop, name)
+			}
+		}
+	}
+	for _, name := range []string{"main", "develop"} {
+		if !s.branchExists(name) {
+			s.hookDrop = append(s.hookDrop, name)
+		}
+	}
+}
+
+// checkScripts is the part of `bootstrap check` that needs the clone: the
+// selection, the values and the check script of each selected tool. Without
+// BOOTSTRAP_CLONE, it skips them after a line that says so.
+func (s *state) checkScripts() fail.Code {
+	clone := s.getenv("BOOTSTRAP_CLONE")
+	if clone == "" || !exists(clone+"/repo/tools") {
+		s.log("no clone of bootstrap - the check scripts of the tools were skipped")
+		return fail.OK
+	}
+	s.dir = clone
+	s.src = source.Source{Root: clone, Side: source.Repo}
+	idx, err := s.src.Open()
+	s.idx = idx
+	if err != nil {
+		return s.logAll(err)
+	}
+	if code := s.resolve(); code != fail.OK {
+		return code
+	}
+	if code := s.toolValues(); code != fail.OK {
+		return code
+	}
+	return s.checks()
 }

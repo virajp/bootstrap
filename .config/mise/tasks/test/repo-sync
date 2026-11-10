@@ -41,6 +41,10 @@ export BOOTSTRAP_VERBOSE=1
 
 root=${MISE_PROJECT_ROOT}
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-repo-sync.XXXXXX")
+# The engine runs the scripts of a tool with `mise x` in the scratch
+# consumers, so mise must trust their config files.
+MISE_TRUSTED_CONFIG_PATHS="$tmp:$(cd -- "$tmp" && pwd -P)${MISE_TRUSTED_CONFIG_PATHS:+:$MISE_TRUSTED_CONFIG_PATHS}"
+export MISE_TRUSTED_CONFIG_PATHS
 # shellcheck disable=SC2046
 trap 'kill $(jobs -p) 2> /dev/null || true; rm -rf -- "$tmp"' EXIT
 
@@ -105,7 +109,8 @@ case_dirs=()
 # set, becomes BOOTSTRAP_URL of the case. `CASE_LIB=forward` sources the
 # forwarding file at the old library path, with REPO_SYNC_CLONE only, and
 # calls `repo_sync`.
-# `CASE_CLONE=none` sets no clone variable.
+# `CASE_CLONE=none` sets no clone variable. `CASE_CHECK_CLONE=1` gives
+# `--check` the clone, so the check scripts of the tools run.
 # `CASE_CALL` names a function that the case runs instead of the library.
 run_case() {
   local dir
@@ -156,7 +161,7 @@ case_body() {
       repo_sync $args
       exit
     fi
-    if [[ ${CASE_CLONE:-} != none && " $args " != *" --check "* ]]; then
+    if [[ ${CASE_CLONE:-} != none && (" $args " != *" --check "* || -n ${CASE_CHECK_CLONE:-}) ]]; then
       export BOOTSTRAP_CLONE=$clone
     fi
     # shellcheck disable=SC2086
@@ -223,7 +228,7 @@ new_form() {
       { print }
       END { if (!found) { print ""; print nh; extra() } }' "$toml" > "$toml.new"
     mv -- "$toml.new" "$toml"
-  done < <(cd "$dir" && find . -type f ! -path ./tools.toml ! -path './files/*' ! -path './tasks/*' | sed 's#^\./##' | sort)
+  done < <(cd "$dir" && find . -type f ! -path ./tools.toml ! -path './files/*' ! -path './tasks/*' ! -path './scripts/*' | sed 's#^\./##' | sort)
 }
 new_form_all() {
   local d
@@ -364,8 +369,8 @@ run_case "a pack loop a -> b -> a" 2 'environments = [ "dev" ]
 [packs.a]' pack_loop 'a pack loop: a -> b -> a'
 run_case "a pack named like a tool folder" 2 'environments = [ "dev" ]
 [packs.node]' pack_named_like_tool "pack 'node' is also a tool folder"
-run_case "[branch.main], the merge config of the repo" 0 'environments = [ "dev" ]
-[branch.main]
+run_case "[tools.git.branch.main], the merge config of the repo" 0 'environments = [ "dev" ]
+[tools.git.branch.main]
 merge_model = "pr"
 merge_never = [ "develop" ]'
 run_case "[member.web], a folder below the root" 0 'environments = [ "dev" ]
@@ -435,20 +440,20 @@ run_case "a submodule with [tools.vscode], a root_only tool" 2 'environments = [
 # shows its diff, with the override comments.
 java_conf() {
   mkdir -p -- "$consumer/.config/mise/conf.d/java"
-  printf '%s\n' x > "$consumer/.config/mise/conf.d/java/mise.dev.toml"
-  printf '%s\n' x > "$consumer/.config/mise/conf.d/java/mise.ci.toml"
+  printf '%s\n' '# x' > "$consumer/.config/mise/conf.d/java/mise.dev.toml"
+  printf '%s\n' '# x' > "$consumer/.config/mise/conf.d/java/mise.ci.toml"
 }
 
 run_case "[overrides.mise.tools.java] version" 0 'environments = [ "dev" ]
 [tools.java]
 [overrides.mise.tools.java]
-version = "21"' java_conf 'version = "21"  # override: .config/bootstrap.toml'
+version = "21"' java_conf 'version = "21" # override: .config/bootstrap.toml'
 run_case "[overrides.mise_env.ci] wins over [overrides.mise]" 0 'environments = [ "dev", "ci" ]
 [tools.java]
 [overrides.mise.tools.java]
 version = "21"
 [overrides.mise_env.ci.tools.java]
-version = "17"' java_conf 'version = "17"  # override: .config/bootstrap.toml'
+version = "17"' java_conf 'version = "17" # override: .config/bootstrap.toml'
 run_case "[overrides.mise.tools.jav], an unknown mise tool" 2 'environments = [ "dev" ]
 [tools.java]
 [overrides.mise.tools.jav]
@@ -478,7 +483,7 @@ version = "21"' '' ".config/bootstrap.toml: 'ci' is not in environments: dev"
 # consumer, so the dry run shows its diff.
 python_conf() {
   mkdir -p -- "$consumer/.config/mise/conf.d/python"
-  printf '%s\n' x > "$consumer/.config/mise/conf.d/python/mise.dev.toml"
+  printf '%s\n' '# x' > "$consumer/.config/mise/conf.d/python/mise.dev.toml"
 }
 
 pyproject_at() {
@@ -605,7 +610,7 @@ files = []" '' 'the envs, the depends, the requires, the requires_found and the 
 # so each case makes one generated file of the consumer.
 conf_file() {
   mkdir -p -- "$consumer/.config/mise/conf.d/$1"
-  printf '%s\n' x > "$consumer/.config/mise/conf.d/$1/mise.$2.toml"
+  printf '%s\n' '# x' > "$consumer/.config/mise/conf.d/$1/mise.$2.toml"
 }
 kotlin_ci() { conf_file kotlin ci; }
 kotlin_dev() { conf_file kotlin dev; }
@@ -736,33 +741,33 @@ run_case "direct_commit, main only, no key" 0 'environments = [ "dev" ]' precomm
 run_case "a hook of the repo, develop missing" 0 'environments = [ "dev" ]' precommit_own "$hook_main" \
   lacks_own_hook
 run_case "direct_commit, main only, main true" 0 'environments = [ "dev" ]
-[branch.main]
+[tools.git.branch.main]
 direct_commit = true' precommit_file 'id: conventional-commits' lacks_hook_main
 run_case "direct_commit, develop only, develop true" 0 'environments = [ "dev" ]
-[branch.develop]
+[tools.git.branch.develop]
 direct_commit = true' precommit_develop 'id: conventional-commits' lacks_hook_develop
 run_case "direct_commit, both branches, develop true" 0 'environments = [ "dev" ]
-[branch.develop]
+[tools.git.branch.develop]
 direct_commit = true' precommit_both "$hook_main"
 run_case "direct_commit, both branches, both true" 0 'environments = [ "dev" ]
-[branch.main]
+[tools.git.branch.main]
 direct_commit = true
-[branch.develop]
+[tools.git.branch.develop]
 direct_commit = true' precommit_both 'id: conventional-commits' lacks_hook_both
 run_case "direct_commit, both branches, main true only" 2 'environments = [ "dev" ]
-[branch.main]
-direct_commit = true' precommit_both_branches 'has direct_commit = true, but [branch.develop] does not'
+[tools.git.branch.main]
+direct_commit = true' precommit_both_branches 'has direct_commit = true, but [tools.git.branch.develop] does not'
 run_case "direct_commit, not a boolean" 2 'environments = [ "dev" ]
-[branch.main]
+[tools.git.branch.main]
 direct_commit = "yes"' '' '.config/bootstrap.toml: direct_commit must be true or false'
-run_case "direct_commit in [branch.feature]" 2 'environments = [ "dev" ]
-[branch.feature]
-direct_commit = false' '' 'direct_commit is a key of [branch.main] and [branch.develop] only'
+run_case "direct_commit in [tools.git.branch.feature]" 2 'environments = [ "dev" ]
+[tools.git.branch.feature]
+direct_commit = false' '' 'direct_commit is a key of [tools.git.branch.main] and [tools.git.branch.develop] only'
 run_case "direct_commit, develop true in a main-only repo" 2 'environments = [ "dev" ]
-[branch.develop]
+[tools.git.branch.develop]
 direct_commit = true' '' ".config/bootstrap.toml has direct_commit, but the branch 'develop' does not exist"
 run_case "direct_commit, main false in a develop-only repo" 2 'environments = [ "dev" ]
-[branch.main]
+[tools.git.branch.main]
 direct_commit = false' precommit_develop_branch "the branch 'main' does not exist"
 
 # repo_sync --check: the local rules of the values file, with no clone.
@@ -787,7 +792,7 @@ nested_submodule() {
 }
 lacks_env_rule() { check_log_lacks "--check, two errors: the env rules are skipped" '[tools.node]'; }
 check_two_errors() {
-  if grep -qF "direct_commit must be true or false" "$log"; then
+  if grep -qF "[member.self] in" "$log"; then
     print_success "--check, two errors: the second message"
   else
     print_error "--check, two errors: the output lacks the second message"
@@ -844,22 +849,28 @@ env = [ "dev", "ci" ]' '' 'is not in environments: dev'
 run_check "--check, env ci without dev" 2 'environments = [ "dev", "ci" ]
 [tools.node]
 env = [ "ci" ]' '' 'has no dev - each tool must be in dev'
-run_check "--check, neither main nor develop" 2 'environments = [ "dev" ]' consumer_no_core_branch \
+CASE_CHECK_CLONE=1 run_check "--check, neither main nor develop" 2 'environments = [ "dev" ]' consumer_no_core_branch \
   "the repo has neither 'main' nor 'develop'"
 run_check "--check, core_tools" 0 'environments = [ "dev" ]
 core_tools = [ "node" ]' '' 'core_tools in'
 run_check "--check, the old .config/repo-sync/gitignore" 2 'environments = [ "dev" ]' old_gitignore_file \
   '.config/repo-sync/gitignore is no longer used'
-run_check "--check, fnox.toml, the old seed with [secrets]" 2 'environments = [ "dev" ]' fnox_old_seed \
+CASE_CHECK_CLONE=1 run_check "--check, fnox.toml, the old seed with [secrets]" 2 'environments = [ "dev" ]
+[tools.fnox]' fnox_old_seed \
   'M25 of docs/sync/migrate.md'
-run_check "--check, fnox.toml, [secrets] next to a profile" 2 'environments = [ "dev" ]' fnox_top_secret \
+CASE_CHECK_CLONE=1 run_check "--check, fnox.toml, [secrets] next to a profile" 2 'environments = [ "dev" ]
+[tools.fnox]' fnox_top_secret \
   'has a top-level [secrets] table'
-run_check "--check, fnox.toml, no profile" 2 'environments = [ "dev" ]' fnox_no_profile \
+CASE_CHECK_CLONE=1 run_check "--check, fnox.toml, no profile" 2 'environments = [ "dev" ]
+[tools.fnox]' fnox_no_profile \
   'has no named profile - add [profiles.test.secrets]'
-run_check "--check, fnox.toml, [profiles.default]" 2 'environments = [ "dev" ]' fnox_profile_default \
+CASE_CHECK_CLONE=1 run_check "--check, fnox.toml, [profiles.default]" 2 'environments = [ "dev" ]
+[tools.fnox]' fnox_profile_default \
   '[profiles.default] in .config/fnox.toml'
-run_check "--check, fnox.toml, a profile of repo_name" 0 'environments = [ "dev" ]' fnox_profile_repo "$check_valid"
-run_check "--check, fnox.toml, two named profiles" 0 'environments = [ "dev" ]' fnox_profiles_two "$check_valid"
+CASE_CHECK_CLONE=1 run_check "--check, fnox.toml, a profile of repo_name" 0 'environments = [ "dev" ]
+[tools.fnox]' fnox_profile_repo "$check_valid"
+CASE_CHECK_CLONE=1 run_check "--check, fnox.toml, two named profiles" 0 'environments = [ "dev" ]
+[tools.fnox]' fnox_profiles_two "$check_valid"
 run_check "--check, overrides not a table" 2 'environments = [ "dev" ]
 overrides = 1' '' 'overrides in'
 run_check "--check, [overrides.tools.java]" 2 'environments = [ "dev" ]
@@ -890,18 +901,18 @@ run_check "--check, [overrides.gitignore], a line in add and in remove" 2 'envir
 [overrides.gitignore]
 add = [ "*.log" ]
 remove = [ "*.log" ]' '' "'*.log' is in add and in remove"
-run_check "--check, direct_commit, not a boolean" 2 'environments = [ "dev" ]
-[branch.main]
+CASE_CHECK_CLONE=1 run_check "--check, direct_commit, not a boolean" 2 'environments = [ "dev" ]
+[tools.git.branch.main]
 direct_commit = "yes"' '' 'direct_commit must be true or false'
-run_check "--check, direct_commit in [branch.feature]" 2 'environments = [ "dev" ]
-[branch.feature]
-direct_commit = false' '' 'direct_commit is a key of [branch.main] and [branch.develop] only'
-run_check "--check, direct_commit of a branch that does not exist" 2 'environments = [ "dev" ]
-[branch.develop]
+CASE_CHECK_CLONE=1 run_check "--check, direct_commit in [tools.git.branch.feature]" 2 'environments = [ "dev" ]
+[tools.git.branch.feature]
+direct_commit = false' '' 'direct_commit is a key of [tools.git.branch.main] and [tools.git.branch.develop] only'
+CASE_CHECK_CLONE=1 run_check "--check, direct_commit of a branch that does not exist" 2 'environments = [ "dev" ]
+[tools.git.branch.develop]
 direct_commit = true' '' "the branch 'develop' does not exist"
-run_check "--check, direct_commit, both branches, main true only" 2 'environments = [ "dev" ]
-[branch.main]
-direct_commit = true' precommit_both_branches 'has direct_commit = true, but [branch.develop] does not'
+CASE_CHECK_CLONE=1 run_check "--check, direct_commit, both branches, main true only" 2 'environments = [ "dev" ]
+[tools.git.branch.main]
+direct_commit = true' precommit_both_branches 'has direct_commit = true, but [tools.git.branch.develop] does not'
 run_check "--check, [member.self], the folder of the repo itself" 2 'environments = [ "dev" ]
 [member.self]
 folder = "."' '' '.config/bootstrap.toml: [member.self] in'
@@ -935,8 +946,8 @@ folder = "projects/web"' member_folder "the member projects/web has the name 'we
 run_check "--check, two errors in two checks" 2 'environments = [ "dev", "prod" ]
 [tools.node]
 env = [ "ci" ]
-[branch.main]
-direct_commit = "yes"' '' "environment 'prod' in" check_two_errors
+[member.self]
+folder = "."' '' "environment 'prod' in" check_two_errors
 
 # The forwarding file at the old library path, and no clone. The case "the
 # forwarding file through the shim" runs it with REPO_SYNC_CLONE.
@@ -1259,7 +1270,7 @@ mise_found_two() {
   fixture_tool
   fixture_toml '[mise.tools.fixture-x]' 'requires_found = [ "marker.toml", "other.toml" ]' 'version = "latest"'
   mkdir -p -- "$consumer/.config/mise/conf.d/fixture"
-  printf '%s\n' x > "$consumer/.config/mise/conf.d/fixture/mise.dev.toml"
+  printf '%s\n' '# x' > "$consumer/.config/mise/conf.d/fixture/mise.dev.toml"
   marker_at .
 }
 mise_found_two_both() {
@@ -2592,8 +2603,11 @@ values_vdep() {
   value_needs_vdep
   value_tool vdep '[defaults]' 'items = [ "a" ]'
 }
+# The mise tool of vtest depends on vdep-x through the depends of its tool.
 values_mise_vdep() {
-  value_tool vtest '[mise.tools.vtest-x]' 'depends = [ "vdep-x" ]' 'version = "latest"'
+  value_tool vtest '[mise.tools.vtest-x]' 'version = "latest"'
+  sed -i.bak 's/^depends = \[\]$/depends = [ "vdep" ]/' "$clone/repo/tools/vtest/tools.toml"
+  rm -f -- "$clone/repo/tools/vtest/tools.toml.bak"
   value_tool vdep '[defaults]' 'items = [ "a" ]' '[mise.tools.vdep-x]' 'version = "latest"'
 }
 values_replace() {
@@ -2786,7 +2800,7 @@ run_case "<% %> in a tools.toml, a required value that is missing" 2 "$mtest_val
   'x is needed' check_mtest_kept
 run_case "[overrides.mise.env] over a <% %> value" 0 "$mtest_values
 [overrides.mise.env]
-X = \"c\"" mtest_render 'X = "c"  # override: .config/bootstrap.toml'
+X = \"c\"" mtest_render 'X = "c" # override: .config/bootstrap.toml'
 run_case "<% %> in a tools.toml, .env.HOME" 0 "$mtest_values" mtest_home "H = \"$HOME\""
 run_case "<% %> in a tools.toml, a value that breaks the TOML" 2 "$mtest_values" mtest_bad_toml \
   'repo/tools/mtest/tools.toml: not valid TOML after render'
@@ -3050,6 +3064,162 @@ example_consumer() {
 while IFS= read -r example; do
   case_example=$example run_case "the example $example" 0 '' example_consumer
 done < <(cd -- "$root/repo/examples" && find . -name bootstrap.toml | sed 's#^\./##' | LC_ALL=C sort)
+
+# ---- B2: values and scripts -------------------------------------------------
+
+# An old top-level key of the values file stops the sync and names its new
+# place.
+run_case "an old key: commit_scopes at the top" 2 'environments = [ "dev" ]
+commit_scopes = [ "api" ]' '' 'commit_scopes in'
+run_case "an old key: commit_scopes, the new place" 2 'environments = [ "dev" ]
+commit_scopes = [ "api" ]' '' 'is the old place - move it to commit_scopes of [tools.git]'
+run_case "an old key: worktree_files" 2 'environments = [ "dev" ]
+worktree_files = [ ".env" ]' '' 'is the old place - move it to worktree_files of [tools.mise]'
+run_case "an old key: [claude.plugins.user]" 2 'environments = [ "dev" ]
+[claude.plugins.user]' '' 'is the old place - move it to [tools.claude.plugins.<scope>]'
+run_check "--check, an old key: [branch.main]" 2 'environments = [ "dev" ]
+[branch.main]
+merge_model = "pr"' '' 'is the old place - move it to [tools.git.branch.<name>]'
+
+# The value order: commit_scopes of [tools.git] reaches the template, and the
+# overrides file wins over the values file. A real run, because a dry run
+# prints no content for a new file.
+commits_file() { cat -- "$consumer/.config/git-conventional-commits.yaml"; }
+overrides_file() {
+  printf '%s\n' '[tools.git]' 'commit_scopes = [ "from-overrides" ]' > "$consumer/.config/bootstrap.overrides.toml"
+}
+check_scopes_values() {
+  check_that "commit_scopes of [tools.git]: in the template" grep -qF -- 'from-values' "$consumer/.config/git-conventional-commits.yaml"
+}
+check_scopes_overrides() {
+  check_that "the overrides file: its value wins" grep -qF -- 'from-overrides' "$consumer/.config/git-conventional-commits.yaml"
+  check_that "the overrides file: the value of the values file is gone" lacks_in_file "from-values" "$consumer/.config/git-conventional-commits.yaml"
+}
+case_args=' ' run_case "commit_scopes of [tools.git]" 0 'environments = [ "dev" ]
+[tools.git]
+commit_scopes = [ "from-values" ]' '' '' check_scopes_values
+case_args=' ' run_case "the overrides file wins over the values file" 0 'environments = [ "dev" ]
+[tools.git]
+commit_scopes = [ "from-values" ]' overrides_file '' check_scopes_overrides
+bad_overrides_file() { printf '%s\n' 'repo_name = "x"' > "$consumer/.config/bootstrap.overrides.toml"; }
+run_case "the overrides file with another key" 2 'environments = [ "dev" ]' bad_overrides_file \
+  'its only key is [tools.<name>]'
+
+# when: the derive script of git gives branch_pair, and the merge tasks
+# follow it.
+check_merge_single() {
+  check_that "when, main only: code:merge" log_has "/.config/mise/tasks/code/merge/_default"
+  check_that "when, main only: no code:merge:main" log_lacks "/.config/mise/tasks/code/merge/main"
+  check_that "when, main only: no code:merge:develop" log_lacks "/.config/mise/tasks/code/merge/develop"
+}
+check_merge_pair() {
+  check_that "when, both branches: no code:merge" log_lacks "/.config/mise/tasks/code/merge/_default"
+  check_that "when, both branches: code:merge:main" log_has "/.config/mise/tasks/code/merge/main"
+  check_that "when, both branches: code:merge:develop" log_has "/.config/mise/tasks/code/merge/develop"
+}
+run_case "when: main only gives code:merge" 0 'environments = [ "dev" ]' '' '' check_merge_single
+run_case "when: main and develop give code:merge:main and develop" 0 'environments = [ "dev" ]' \
+  precommit_both_branches '' check_merge_pair
+run_case "the git check: neither main nor develop" 2 'environments = [ "dev" ]' consumer_no_core_branch \
+  "the repo has neither 'main' nor 'develop'"
+
+# The derive script of mise: the aliases of the submodule members.
+check_aliases() {
+  local file="$consumer/.config/mise/conf.d/mise/mise.dev.toml"
+  check_that "the aliases: setup-all" grep -qE '^setup-all = "mise run setup --all"' "$file"
+  check_that "the aliases: setup-sub" grep -qE '^setup-sub = "mise run setup --sub"' "$file"
+  check_that "the aliases: the alias of the tool stays" grep -qE '^setup = "mise run setup"' "$file"
+}
+check_no_aliases() {
+  check_that "no submodule: no setup-all" lacks_in_file 'setup-all' "$consumer/.config/mise/conf.d/mise/mise.dev.toml"
+}
+case_args=' ' run_case "the aliases of the submodule members" 0 'environments = [ "dev" ]' \
+  consumer_with_submodule '' check_aliases
+case_args=' ' run_case "no submodule, no member aliases" 0 'environments = [ "dev" ]' '' '' check_no_aliases
+
+# The mise depends: from depends and parent of the tool, and the mise tools
+# above in the same tool.
+check_depends() {
+  check_that "depends: pnpm on node" grep -qE '^depends = \[ ?"node" ?\]' "$consumer/.config/mise/conf.d/pnpm/mise.dev.toml"
+  check_that "depends: uv on python" grep -qE '^depends = \[ ?"python" ?\]' "$consumer/.config/mise/conf.d/python/mise.dev.toml"
+  check_that "depends: node has none" lacks_in_file 'depends' "$consumer/.config/mise/conf.d/node/mise.dev.toml"
+}
+case_args=' ' run_case "the mise depends are computed" 0 'environments = [ "dev" ]
+[tools.pnpm]' '' '' check_depends
+hand_depends() {
+  printf '%s\n' '' '[mise.tools.extra]' 'version = "1"' 'depends = [ "node" ]' >> "$clone/repo/tools/node/tools.toml"
+}
+run_case "a hand-written mise depends" 2 'environments = [ "dev" ]
+[tools.node]' hand_depends 'depends of mise tool extra in [mise.tools] - the sync computes it'
+
+# The scripts of a tool of the scratch clone.
+script_tool() {
+  fixture_tool
+  mkdir -p -- "$clone/repo/tools/fixture/scripts"
+}
+check_fails() {
+  script_tool
+  printf '%s\n' 'cat > /dev/null' 'echo "fixture: the first problem"' 'echo "fixture: the second problem"' 'exit 2' \
+    > "$clone/repo/tools/fixture/scripts/check"
+}
+check_crashes() {
+  script_tool
+  printf '%s\n' 'cat > /dev/null' 'echo "a crash" >&2' 'exit 7' > "$clone/repo/tools/fixture/scripts/check"
+}
+derive_bad() {
+  script_tool
+  printf '%s\n' 'cat > /dev/null' 'echo "[1]"' > "$clone/repo/tools/fixture/scripts/derive"
+}
+derive_value() {
+  script_tool
+  printf '%s\n' '[defaults]' 'word = "default"' >> "$clone/repo/tools/fixture/tools.toml"
+  # The input of the script, and the folder where it runs.
+  printf '%s\n' 'in=$(cat)' 'printf "%s\n" "$in" > "$PWD/.derive-input"' \
+    'printf "{\"word\": \"derived\", \"other\": \"derived\"}\n"' > "$clone/repo/tools/fixture/scripts/derive"
+  mkdir -p -- "$clone/repo/tools/fixture/.config"
+  fixture_file .config/fixture.txt.tmpl 'word=<% .config.word %> other=<% .config.other %>'
+}
+unknown_script() {
+  script_tool
+  printf '%s\n' 'x' > "$clone/repo/tools/fixture/scripts/detect"
+}
+check_derived() {
+  check_exact "derive: the values file wins over the derived value" "$consumer/.config/fixture.txt" $'word=user other=derived\n'
+  check_that "derive: the input has the tool" grep -qF '"tool":"fixture"' "$consumer/.derive-input"
+  check_that "derive: the input has levels 1 and 2" grep -qF '"values":{"word":"default"}' "$consumer/.derive-input"
+  check_that "derive: the input has the repo name" grep -qF '"name":"test"' "$consumer/.derive-input"
+}
+run_case "a check script that finds problems" 2 "$fixture_values" check_fails 'fixture: the second problem'
+run_case "a check script that crashes" 2 "$fixture_values" check_crashes \
+  'repo/tools/fixture/scripts/check failed with exit code 7'
+run_case "a derive script that prints no object" 2 "$fixture_values" derive_bad \
+  'repo/tools/fixture/scripts/derive did not print a JSON object'
+case_args=' ' run_case "the derive values: level 3 below the values file" 0 "$fixture_values
+word = \"user\"" derive_value '' check_derived
+run_case "a file of scripts/ that is not a script" 2 "$fixture_values" unknown_script \
+  'scripts/detect is not a script of a tool'
+CASE_CHECK_CLONE=1 run_check "--check runs the check scripts" 2 "$fixture_values" check_fails 'fixture: the first problem'
+run_check "--check without the clone skips the check scripts" 0 "$fixture_values" check_fails \
+  'the check scripts of the tools were skipped'
+
+# perm and dir_perm of a [files] entry, and the mise files first.
+perm_files() {
+  fixture_tool
+  fixture_file secret.txt 'secret'
+  printf '%s\n' '[files."private/secret.txt"]' 'source = "secret.txt"' 'perm = "600"' 'dir_perm = "700"' \
+    >> "$clone/repo/tools/fixture/tools.toml"
+  mkdir -p -- "$clone/repo/tools/fixture/files"
+  mv -- "$clone/repo/tools/fixture/secret.txt" "$clone/repo/tools/fixture/files/secret.txt"
+}
+check_perm() {
+  check_that "perm: the file has mode 600" mode_is 600 "$consumer/private/secret.txt"
+  check_that "dir_perm: the folder has mode 700" mode_is 700 "$consumer/private"
+  check_that "the mise files first" awk '
+    /updated / && /\.config\/mise\/conf\.d\// { if (other) bad = 1; next }
+    /updated / { other = 1 }
+    END { exit bad }' "$log"
+}
+case_args=' ' run_case "perm and dir_perm" 0 "$fixture_values" perm_files '' check_perm
 
 while ((${#case_pids[@]})); do
   collect_case

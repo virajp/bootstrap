@@ -17,14 +17,14 @@ source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/checks"
 
 print_header "Checking out submodules ..."
 git -C "${MISE_PROJECT_ROOT}" submodule update --init --recursive
-<% if has . "worktree_files" %>
+<% if has .config "worktree_files" %>
 # The gitignored files a checkout needs but git never brings, copied from the
 # main worktree. An existing file is never overwritten. In the main checkout
 # itself there is nothing to copy from.
 if is_git_worktree; then
   print_header "Copying local files from the main worktree ..."
   MAIN_WORKTREE_PATH=$(get_main_worktree_path)
-  files=(<% range .worktree_files %> "<% . %>"<% end %>)
+  files=(<% range .config.worktree_files %> "<% . %>"<% end %>)
   for file in "${files[@]}"; do
     if [[ -e "${MISE_PROJECT_ROOT}/${file}" ]]; then
       print_info "${file}: already present"

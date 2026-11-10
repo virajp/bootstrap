@@ -11,7 +11,7 @@
 // copy into the temp file, Check, Merge (merge mode only), and on a failure
 // Abort, else Finish. The front-end keeps its own steps between them (the
 // skip of an environment, `requires`, the symlink checks of a merge target,
-// the `.ssh` folder, `pre-commit autoupdate`, dprint and the overrides).
+// DirPerm, `pre-commit autoupdate`, dprint and the overrides).
 //
 // Contract: docs/design/sync-engine.md ("The write of one target",
 // "`bootstrap_commit`").

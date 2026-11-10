@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# The derive script of the fixture: a value from the input, and a mise alias.
+set -euo pipefail
+input=$(cat)
+word=$(jq -r '.values.word' <<< "$input")
+home=$(jq -r '.home' <<< "$input")
+[[ $home == "$HOME" && $PWD == "$(cd "$HOME" && pwd)" ]] && seen=yes || seen=no
+printf '{"derived": "from-%s", "home_seen": "%s", "mise": {"shell_alias": {"scripted": "echo scripted"}}}\n' "$word" "$seen"

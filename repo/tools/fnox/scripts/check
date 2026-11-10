@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# The check script of the fnox tool. The sync runs it in the root of the
+# repository before it writes a file, and never copies it. .config/fnox.toml,
+# when it exists, has no top-level [secrets] table, 1 or more
+# [profiles.<name>] tables, and no [profiles.default]. Each problem is a line
+# on stdout, and then the exit code is 2.
+
+set -euo pipefail
+
+input=$(cat)
+file=.config/fnox.toml
+[[ -f ${file} ]] || exit 0
+
+# A tool of the PATH, else the tool of mise.
+tool_() {
+  local name=$1
+  shift
+  if command -v "${name}" > /dev/null 2>&1; then
+    "${name}" "$@"
+  else
+    mise x "${name}@latest" -- "${name}" "$@"
+  fi
+}
+
+repo=$(tool_ jq -r '.repo.name // ""' <<< "${input}") || repo=''
+[[ -n ${repo} ]] || repo='<repo_name>'
+
+# The `secrets`, `bad` and `profile <name>` lines of fnox.toml.
+if ! rows=$(tool_ yq -p toml -o json '.' "${file}" | tool_ jq -r '
+  (if has("secrets") then "secrets" else empty end),
+  (if has("profiles") then
+    (if (.profiles | type) == "object" then (.profiles | keys[] | "profile \(.)") else "bad" end)
+  else empty end)'); then
+  printf '%s\n' "cannot read ${file}"
+  exit 2
+fi
+
+rc=0
+count=0
+while read -r kind name; do
+  case ${kind} in
+    secrets)
+      printf '%s\n' "${file} has a top-level [secrets] table, the fnox default profile - move each secret to [profiles.${repo}.secrets], then delete the table (M25 of docs/sync/migrate.md)"
+      rc=2
+      ;;
+    bad)
+      printf '%s\n' "profiles in ${file} must be [profiles.<name>] tables (M25 of docs/sync/migrate.md)"
+      rc=2
+      ;;
+    profile)
+      if [[ ${name} == default ]]; then
+        printf '%s\n' "[profiles.default] in ${file}: a repository does not use the fnox default profile - rename it, for example to [profiles.${repo}] (M25 of docs/sync/migrate.md)"
+        rc=2
+      else
+        count=$((count + 1))
+      fi
+      ;;
+  esac
+done <<< "${rows}"
+
+if ((count == 0)); then
+  printf '%s\n' "${file} has no named profile - add [profiles.${repo}.secrets]; a repository does not use the fnox default profile (M25 of docs/sync/migrate.md)"
+  rc=2
+fi
+exit "${rc}"

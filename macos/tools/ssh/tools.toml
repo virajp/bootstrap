@@ -12,11 +12,15 @@ example = "janedoe"
 question = "Which user name should ssh use by default for remote hosts (User inside Host *)?"
 
 # The files of the tool, below files/.
+# ssh refuses a ~/.ssh folder that other users can read: dir_perm keeps it
+# at 700.
 [files.".ssh/config"]
+dir_perm = "700"
 format = "text"
 mode = "template"
 source = ".ssh/config.tmpl"
 
 [files.".ssh/config.identity"]
+dir_perm = "700"
 mode = "template"
 source = ".ssh/config.identity.tmpl"

@@ -13,6 +13,11 @@ import (
 // tools. The user values are each `[tools.<name>]` table of the values file
 // without `env`. It gives the code of the merge, after its messages.
 func (s *state) toolValues() fail.Code {
+	overrides := values.OverridesPath(s.values)
+	over, err := values.ReadOverrides(overrides, s.path(overrides))
+	if err != nil {
+		return s.logAll(err)
+	}
 	m, err := values.Merge(values.Input{
 		Index:       s.idx,
 		Selected:    s.res.Tools,
@@ -20,6 +25,8 @@ func (s *state) toolValues() fail.Code {
 		User:        s.vals.User,
 		ShownRoot:   toolsShown,
 		ShownValues: s.show,
+		Overrides:   over,
+		Derive:      s.derive,
 	})
 	if err != nil {
 		return s.logAll(err)
@@ -60,7 +67,7 @@ func (c *contexts) of(tool string) (any, error) {
 // the values file do not go in. It gives nil, after the messages, when the
 // context cannot be built.
 func (s *state) contexts() *contexts {
-	rows, code := s.members("template context")
+	rows, code := s.memberList("template context")
 	if code != fail.OK {
 		return nil
 	}

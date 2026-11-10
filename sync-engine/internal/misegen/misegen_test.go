@@ -25,7 +25,7 @@ func TestUsage(t *testing.T) {
 	bad := &Generator{Side: "x"}
 	side := "sync-engine/mise: the side must be repo or macos, not 'x'"
 	expect(bad.Overrides(nil, nil, false), side)
-	_, err := bad.Render("t", t.TempDir(), nil)
+	_, err := bad.Render("t", t.TempDir())
 	expect(err, side)
 	_, err = bad.OwnConfig(t.TempDir(), nil)
 	expect(err, side)

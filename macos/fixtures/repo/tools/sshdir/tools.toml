@@ -5,9 +5,12 @@ description = "two targets below the ssh folder"
 
 # The files of the tool, below files/.
 [files.".ssh/config"]
+dir_perm = "700"
 format = "text"
 source = ".ssh/config"
 
 [files.".ssh/config.identity"]
+dir_perm = "700"
 format = "text"
+perm = "600"
 source = ".ssh/config.identity"

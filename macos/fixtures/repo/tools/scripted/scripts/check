@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# The check script of the fixture: a problem when ~/.check-fail exists.
+set -euo pipefail
+cat > /dev/null
+if [[ -e $HOME/.check-fail ]]; then
+  echo "scripted: the check failed"
+  exit 2
+fi

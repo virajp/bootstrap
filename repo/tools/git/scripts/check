@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# The check script of the git tool. The sync runs it in the root of the
+# repository before it writes a file, and never copies it. It examines the
+# branches and direct_commit of [tools.git.branch.<name>] in the values file.
+# Each problem is a line on stdout, and then the exit code is 2.
+
+set -euo pipefail
+
+input=$(cat)
+values=.config/bootstrap.toml
+
+# jq of the PATH, else the jq of mise.
+jq_() {
+  if command -v jq > /dev/null 2>&1; then
+    jq "$@"
+  else
+    mise x jq@latest -- jq "$@"
+  fi
+}
+
+# A branch that exists here or on origin.
+branch_exists() {
+  git show-ref --verify --quiet "refs/heads/$1" ||
+    git show-ref --verify --quiet "refs/remotes/origin/$1"
+}
+
+main=false
+develop=false
+branch_exists main && main=true
+branch_exists develop && develop=true
+
+rc=0
+if [[ ${main} == false && ${develop} == false ]]; then
+  printf '%s\n' "the repo has neither 'main' nor 'develop' - create one, then sync again"
+  rc=2
+fi
+
+# <branch><TAB>true|false|bad for each [tools.git.branch.<name>] table with
+# direct_commit.
+rows=$(jq_ -r '(.values.branch // {}) | if type == "object" then to_entries[]
+  | select((.value | type) == "object" and (.value | has("direct_commit")))
+  | "\(.key)\t\(.value.direct_commit | if type == "boolean" then tostring else "bad" end)"
+  else empty end' <<< "${input}")
+
+main_true=false
+develop_true=false
+while IFS=$'\t' read -r name value; do
+  [[ -n ${name} ]] || continue
+  table="[tools.git.branch.${name}] in ${values}"
+  if [[ ${name} != main && ${name} != develop ]]; then
+    printf '%s\n' "${table}: direct_commit is a key of [tools.git.branch.main] and [tools.git.branch.develop] only"
+    rc=2
+  elif [[ ${value} == bad ]]; then
+    printf '%s\n' "${table}: direct_commit must be true or false"
+    rc=2
+  elif ! branch_exists "${name}"; then
+    printf '%s\n' "${table} has direct_commit, but the branch '${name}' does not exist - create it, or remove the key"
+    rc=2
+  elif [[ ${value} == true ]]; then
+    if [[ ${name} == main ]]; then main_true=true; else develop_true=true; fi
+  fi
+done <<< "${rows}"
+
+if [[ ${main} == true && ${develop} == true && ${main_true} == true && ${develop_true} == false ]]; then
+  printf '%s\n' "[tools.git.branch.main] in ${values} has direct_commit = true, but [tools.git.branch.develop] does not - with main and develop, set direct_commit = true for develop too, or remove it from main"
+  rc=2
+fi
+exit "${rc}"

@@ -97,6 +97,7 @@ type state struct {
 	res     *selection.Resolved
 	all     *source.Obj // _SS_ALL_VALUES
 	ctx     map[string]any
+	derived map[string]*source.Obj // The derived mise tables of each tool.
 	gen     []genFile
 	miseBad []badTool
 	plan    []planItem
@@ -107,14 +108,14 @@ type state struct {
 	rows      []manifest.Row
 	oldRows   []manifest.Row
 	changed   bool
-	sshDone   bool
-	show      string // _SS_SHOW
+	dirDone   map[string]bool // The folders at their dir_perm.
+	show      string          // _SS_SHOW
 }
 
 // Run runs `setup_sync <args>` and gives its exit code. The usage of -h goes
 // to <stdout>; each other line goes to <stderr>.
 func Run(args []string, stdout, stderr io.Writer) fail.Code {
-	s := &state{stdout: stdout, stderr: stderr, getenv: os.Getenv}
+	s := &state{stdout: stdout, stderr: stderr, getenv: os.Getenv, dirDone: map[string]bool{}, derived: map[string]*source.Obj{}}
 	isTerm := false
 	if f, ok := stderr.(*os.File); ok {
 		isTerm = report.IsTerminal(f)
@@ -236,6 +237,9 @@ func (s *state) run(args []string) fail.Code {
 	if code := s.toolValues(); code != fail.OK {
 		return code
 	}
+	if code := s.checks(); code != fail.OK {
+		return code
+	}
 	g := &misegen.Generator{
 		Side:        source.Macos,
 		ToolsDir:    s.src.ToolsDir(),
@@ -244,6 +248,9 @@ func (s *state) run(args []string) fail.Code {
 		ValuesShown: s.e.Show(s.valFile),
 		All:         s.all,
 		Getenv:      s.getenv,
+		Index:       s.idx,
+		Tools:       s.res.Tools,
+		Derived:     s.derived,
 	}
 	defer g.Close()
 	if s.valFile != "" {
@@ -299,7 +306,6 @@ func (s *state) run(args []string) fail.Code {
 
 	// The init stage: skipped when no init-stage tool is selected.
 	if len(s.res.InitOrder) > 0 {
-		before := s.loginShell()
 		worst := s.render("init")
 		if rc := s.stale("init"); rc != fail.OK {
 			s.failed += " stale files"
@@ -314,16 +320,21 @@ func (s *state) run(args []string) fail.Code {
 			s.r.Summary(1)
 			return fail.Other
 		}
-		if after := s.loginShell(); before != after {
-			s.changed = true
+		restart, code := s.after("init")
+		if code != fail.OK {
+			s.r.Summary(int(code))
+			return code
 		}
-		if s.changed {
+		if s.changed || len(restart) > 0 {
 			rows := append(s.oldRowsOf("main"), s.rows...)
 			if manifest.Write(s.e, manifestFile, rows) != fail.OK {
 				s.r.Summary(1)
 				return fail.Other
 			}
 			s.log("the init stage changed")
+			for _, r := range restart {
+				s.log("%s", r)
+			}
 			s.log("open a new terminal, then run: mise run updateall:configs")
 			return fail.Terminal
 		}
@@ -346,6 +357,18 @@ func (s *state) run(args []string) fail.Code {
 	if bootstrap && s.bootstrap() != fail.OK {
 		s.r.Summary(1)
 		return fail.Other
+	}
+	restart, code := s.after("main")
+	if code != fail.OK {
+		s.r.Summary(int(code))
+		return code
+	}
+	if len(restart) > 0 {
+		for _, r := range restart {
+			s.log("%s", r)
+		}
+		s.log("open a new terminal, then run: mise run updateall:configs")
+		return fail.Terminal
 	}
 	if commit != "" && s.recordCommit(commit) != fail.OK {
 		s.r.Summary(1)
@@ -382,6 +405,11 @@ func (s *state) readValues() fail.Code {
 
 // toolValues is `_ss_tool_values`: the values of each selected tool.
 func (s *state) toolValues() fail.Code {
+	overrides := values.OverridesPath(s.config + "/" + valuesName)
+	over, err := values.ReadOverrides(overrides, s.e.Show(overrides))
+	if err != nil {
+		return s.logAll(err)
+	}
 	m, err := values.Merge(values.Input{
 		Index:       s.idx,
 		Selected:    s.res.Tools,
@@ -389,6 +417,8 @@ func (s *state) toolValues() fail.Code {
 		User:        s.values.User,
 		ShownRoot:   s.src.ToolsShown(),
 		ShownValues: valuesName,
+		Overrides:   over,
+		Derive:      s.derive,
 	})
 	if err != nil {
 		return s.logAll(err)
@@ -413,7 +443,7 @@ func (s *state) miseGenerate(g *misegen.Generator) {
 		}
 	}
 	for _, tool := range s.res.Tools {
-		w, err := g.Render(tool, confd, nil)
+		w, err := g.Render(tool, confd)
 		add(tool, w, err)
 	}
 	if s.valFile == "" {

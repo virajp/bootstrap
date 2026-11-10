@@ -25,6 +25,10 @@ func (s *state) makePlan() fail.Code {
 	var files []shipped
 	for _, tool := range s.res.Tools {
 		for _, f := range s.idx.Files(tool) {
+			// An entry whose `when` is false is not shipped.
+			if !source.When(s.all, f.When) {
+				continue
+			}
 			files = append(files, shipped{tool, f.Path, f.Target, f.Tmpl})
 		}
 	}

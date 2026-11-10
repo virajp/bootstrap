@@ -17,7 +17,6 @@ envs = [ "dev", "ci" ]
 version = "3.14"
 
 [mise.tools.uv]
-depends = [ "python" ]
 envs = [ "dev", "ci" ]
 version = "latest"
 
@@ -30,7 +29,6 @@ requires_found = [ "pyproject.toml" ]
 version = "latest"
 
 [mise.tools."pipx:pyrefly"]
-depends = [ "python", "uv" ]
 envs = [ "dev", "ci" ]
 requires_found = [ "pyproject.toml" ]
 version = "latest"

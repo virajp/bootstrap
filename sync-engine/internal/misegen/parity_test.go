@@ -328,16 +328,22 @@ func (r *runner) repo(c mcase) {
 		return
 	}
 	g.All = m.All()
-	var aliases []string
+	// The member aliases come from the derive script of mise now.
 	if c.aliases != "" {
-		aliases = strings.Split(c.aliases, "\n")
+		al := source.NewObj()
+		for _, line := range strings.Split(c.aliases, "\n") {
+			if k, v, ok := strings.Cut(line, "="); ok {
+				al.Set(k, v)
+			}
+		}
+		mise := source.NewObj()
+		mise.Set("shell_alias", al)
+		d := source.NewObj()
+		d.Set("mise", mise)
+		g.Derived = map[string]*source.Obj{"mise": d}
 	}
 	for _, tool := range res.Tools {
-		var a []string
-		if tool == "mise" {
-			a = aliases
-		}
-		w, err := g.Render(tool, filepath.Join(src.ToolDir(tool), ".config", "mise", "conf.d"), a)
+		w, err := g.Render(tool, filepath.Join(src.ToolDir(tool), ".config", "mise", "conf.d"))
 		r.step("render "+tool, err)
 		r.written(w, "clone/repo/tools/"+tool+"/.config/mise/conf.d/")
 	}
@@ -408,7 +414,7 @@ func (r *runner) macos(c mcase) {
 	}
 	if c.mode != "own" {
 		for _, tool := range tools {
-			w, err := g.Render(tool, confd, nil)
+			w, err := g.Render(tool, confd)
 			r.step("render "+tool, err)
 			r.written(w, "out/conf.d/")
 		}

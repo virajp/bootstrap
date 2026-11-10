@@ -1,12 +1,11 @@
 # Flutter and Dart. Needs android-sdk, from the android tool.
 default_envs = [ "dev", "ci" ]
-depends = []
+depends = [ "android" ]
 extensions = [ "dart-code.dart-code", "dart-code.flutter" ]
 root_only = false
 
 # The mise config, generated into .config/mise/conf.d/flutter/mise.<env>.toml.
 [mise.tools.flutter]
-depends = [ "android-sdk" ]
 envs = [ "dev", "ci" ]
 version = "3"
 

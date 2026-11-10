@@ -3,9 +3,6 @@
 
 # The bootstrap commit of the last sync. repo-sync writes it.
 bootstrap_commit = ""
-# The commit scopes of git-conventional-commits. The default is the member
-# list.
-commit_scopes = [ "common", "deps", "service", "worker" ]
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
 # The VS Code extensions that no tool has.
@@ -15,6 +12,13 @@ product_name = "shop"
 repo_name = "shop-platform"
 # The web URL of the repository, for the github tool.
 repo_url = "https://github.com/example/shop-platform"
+
+[tools.git]
+# The commit scopes of git-conventional-commits. The default is the member
+# list.
+commit_scopes = [ "common", "deps", "service", "worker" ]
+
+[tools.mise]
 # The gitignored files to copy into a new worktree.
 worktree_files = [ ".config/mise.local.toml", ".env" ]
 
@@ -46,19 +50,19 @@ remove = [ "*.log" ]
 
 # The Claude Code plugins that setup:ai installs. The key is the plugin, and
 # the value is the source of its marketplace. Each table can be empty.
-[claude.plugins.user]
+[tools.claude.plugins.user]
 "taste-skill@taste-skill" = "Leonxlnx/taste-skill"
 
-[claude.plugins.project]
+[tools.claude.plugins.project]
 # A feature branch merges into develop. main never merges into develop.
-[branch.develop]
+[tools.git.branch.develop]
 merge_model = "direct"
 merge_never = [ "main" ]
 # Allow a direct commit to develop. main can allow it only when develop does.
 # direct_commit = true
 
 # Only develop merges into main, through a pull request.
-[branch.main]
+[tools.git.branch.main]
 merge_from = [ "develop" ]
 merge_model = "pr"
 

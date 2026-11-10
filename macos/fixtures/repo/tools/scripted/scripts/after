@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# The after script of the fixture: a restart when ~/.restart exists.
+set -euo pipefail
+cat > /dev/null
+if [[ -e $HOME/.restart ]]; then
+  echo '{"restart": "a new shell"}'
+fi

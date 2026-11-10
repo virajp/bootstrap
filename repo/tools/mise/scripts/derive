@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# The derive script of the mise tool. The sync runs it in the root of the
+# repository, and never copies it. In a repository with git submodules, it
+# gives the dev aliases setup-all and setup-<member>, one for each submodule
+# member, as mise.shell_alias.
+
+set -euo pipefail
+
+input=$(cat)
+
+# jq of the PATH, else the jq of mise.
+jq_() {
+  if command -v jq > /dev/null 2>&1; then
+    jq "$@"
+  else
+    mise x jq@latest -- jq "$@"
+  fi
+}
+
+jq_ -c '[.repo.members[] | select(.type == "submodule") | .name] as $subs
+  | if ($subs | length) == 0 then {}
+    else {mise: {shell_alias: ({"setup-all": "mise run setup --all"}
+      + ([$subs[] | {key: "setup-\(.)", value: "mise run setup --\(.)"}] | from_entries))}}
+    end' <<< "${input}"

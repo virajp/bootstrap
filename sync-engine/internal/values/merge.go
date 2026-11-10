@@ -18,6 +18,13 @@ type Input struct {
 	User           *source.Obj // The user values: tool name to table.
 	ShownRoot      string      // The folder of the tools in a message, for example repo/tools.
 	ShownValues    string      // The values file in a message.
+	// Overrides holds the `[tools.<name>]` tables of the overrides file. They
+	// win over all.
+	Overrides *source.Obj
+	// Derive runs the derive scripts. It gets the selected tools and their
+	// values of levels 1 and 2, and gives the values of level 3 of each tool
+	// (nil for a tool without a derive script).
+	Derive func(tools []string, base map[string]*source.Obj) (map[string]*source.Obj, error)
 }
 
 // Result holds the merged values of the selected tools.
@@ -349,45 +356,6 @@ func Merge(in Input) (*Result, error) {
 			in.ShownRoot, first, in.ShownRoot, failTool, n, strings.Join(failed.path, "."))})
 	}
 
-	type merged struct {
-		n   string
-		v   *source.Obj
-		bad string
-	}
-	var mergedList []merged
-	for _, x := range contributions {
-		if x.bad != "" {
-			continue
-		}
-		base := contributionMerge(defaults[x.n], x.v)
-		user := any(source.NewObj())
-		if in.User != nil && in.User.Has(x.n) && in.User.Get(x.n) != nil {
-			user = in.User.Get(x.n)
-		}
-		if keep[x.n] {
-			v, err := keepMerge(base, user, nil)
-			if err != nil {
-				mergedList = append(mergedList, merged{n: x.n, bad: fmt.Sprintf("[tools.%s] of %s sets %s to a %s, but it is a %s in the base or dependency tool %s - write a %s there (a list adds its items)",
-					x.n, in.ShownValues, strings.Join(err.path, "."), typeWord(err.b), typeWord(err.a), x.n, typeWord(err.a))})
-				continue
-			}
-			mergedList = append(mergedList, merged{n: x.n, v: asObj(v)})
-		} else {
-			mergedList = append(mergedList, merged{n: x.n, v: asObj(replaceMerge(base, user))})
-		}
-	}
-
-	var bad []string
-	for _, c := range contributions {
-		if c.bad != "" {
-			bad = append(bad, c.bad)
-		}
-	}
-	for _, m := range mergedList {
-		if m.bad != "" {
-			bad = append(bad, m.bad)
-		}
-	}
 	var probs []*fail.Error
 	for _, m := range bad2 {
 		probs = append(probs, fail.New(fail.Usage, "%s", m))
@@ -395,8 +363,69 @@ func Merge(in Input) (*Result, error) {
 	for _, m := range bad3 {
 		probs = append(probs, fail.New(fail.Missing, "%s", m))
 	}
-	for _, m := range bad {
-		probs = append(probs, fail.New(fail.Usage, "%s", m))
+	for _, c := range contributions {
+		if c.bad != "" {
+			probs = append(probs, fail.New(fail.Usage, "%s", c.bad))
+		}
+	}
+	if len(probs) > 0 {
+		return nil, source.Problems(probs)
+	}
+
+	// Levels 1 and 2: the defaults, then the contributions.
+	base := map[string]*source.Obj{}
+	for _, x := range contributions {
+		base[x.n] = asObj(contributionMerge(defaults[x.n], x.v))
+	}
+	// Level 3: the output of the derive script of each tool wins over 1 and 2.
+	if in.Derive != nil {
+		derived, err := in.Derive(names, base)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range names {
+			if d := derived[n]; d != nil {
+				base[n] = asObj(replaceMerge(base[n], d))
+			}
+		}
+	}
+
+	type merged struct {
+		n   string
+		v   *source.Obj
+		bad string
+	}
+	var mergedList []merged
+	for _, x := range contributions {
+		b := base[x.n]
+		user := any(source.NewObj())
+		if in.User != nil && in.User.Has(x.n) && in.User.Get(x.n) != nil {
+			user = in.User.Get(x.n)
+		}
+		var v *source.Obj
+		if keep[x.n] {
+			kv, err := keepMerge(b, user, nil)
+			if err != nil {
+				mergedList = append(mergedList, merged{n: x.n, bad: fmt.Sprintf("[tools.%s] of %s sets %s to a %s, but it is a %s in the base or dependency tool %s - write a %s there (a list adds its items)",
+					x.n, in.ShownValues, strings.Join(err.path, "."), typeWord(err.b), typeWord(err.a), x.n, typeWord(err.a))})
+				continue
+			}
+			v = asObj(kv)
+		} else {
+			v = asObj(replaceMerge(b, user))
+		}
+		// The overrides file wins over all.
+		if in.Overrides != nil && in.Overrides.Has(x.n) {
+			if o, ok := in.Overrides.Get(x.n).(*source.Obj); ok {
+				v = asObj(replaceMerge(v, o))
+			}
+		}
+		mergedList = append(mergedList, merged{n: x.n, v: v})
+	}
+	for _, m := range mergedList {
+		if m.bad != "" {
+			probs = append(probs, fail.New(fail.Usage, "%s", m.bad))
+		}
 	}
 	if len(probs) > 0 {
 		return nil, source.Problems(probs)

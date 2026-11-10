@@ -380,11 +380,23 @@ func (s *state) fileFinish(tool string, f source.File, tmp string) fail.Code {
 		return rc
 	}
 
-	// The file takes the mode of its source in bootstrap, also when it
-	// exists. An existing merge target keeps its own mode: the app owns it.
+	// The folder gets its `dir_perm` before the write.
+	if f.DirPerm != 0 {
+		dir := s.root + "/" + target.Dirname(out)
+		if _, code := s.e.DirPerm(dir, s.path(dir), f.DirPerm, s.dirDone); code != fail.OK {
+			s.e.Abort(tmp, dest, show)
+			return code
+		}
+	}
+
+	// The file takes its `perm`, else the mode of its source in bootstrap,
+	// also when it exists. An existing merge target without `perm` keeps its
+	// own mode: the app owns it.
 	fileMode := s.fileMode(key)
 	var mode os.FileMode
-	if exists(dest) && fileMode == "merge" {
+	if f.Perm != 0 {
+		mode = f.Perm
+	} else if exists(dest) && fileMode == "merge" {
 		mode, _ = target.Mode(dest)
 	} else {
 		mode, _ = target.Mode(src)

@@ -256,7 +256,7 @@ new_form() {
       { print }
       END { if (!found) { print ""; print nh; extra() } }' "$toml" > "$toml.new"
     mv -- "$toml.new" "$toml"
-  done < <(cd "$dir" && find . -type f ! -path ./tools.toml ! -path './files/*' ! -path './tasks/*' | sed 's#^\./##' | sort)
+  done < <(cd "$dir" && find . -type f ! -path ./tools.toml ! -path './files/*' ! -path './tasks/*' ! -path './scripts/*' | sed 's#^\./##' | sort)
 }
 
 # seed_manifest <row>...: a manifest from an earlier run.
@@ -759,6 +759,46 @@ case_generated() {
 }
 sorted_rows() { sed 1d "$manifest" | LC_ALL=C sort -c 2> /dev/null; }
 
+# ---- the scripts of a tool ---------------------------------------------------
+
+case_scripts_derive() {
+  use_config scripted
+  run_real
+  check_exit 0
+  check_file "$home/.config/scripted/values.txt" 'word=user derived=from-default home=yes'
+  check "the derived mise table is in the mise file" grep -qF 'scripted = "echo scripted"' "$home/.config/mise/conf.d/scripted/mise.toml"
+}
+
+case_scripts_check() {
+  use_config scripted
+  : > "$home/.check-fail"
+  run_dry
+  check_exit 2
+  check_output "scripted: the check failed"
+  run_real
+  check_exit 2
+  check "a failed check writes nothing" not test -e "$home/.config/scripted/values.txt"
+}
+
+case_scripts_after() {
+  use_config scripted
+  : > "$home/.restart"
+  run_dry
+  check_exit 0
+  run_real
+  check_exit 4
+  check_output "scripted: a new shell"
+  check_output "open a new terminal, then run: mise run updateall:configs"
+  check "the files are written before the stop" test -f "$home/.config/scripted/values.txt"
+  check "no commit after a stop" not grep -qF bootstrap_commit "$values"
+  rm -- "$home/.restart"
+  run_real
+  check_exit 0
+}
+
+bad_derive() { printf '%s\n' 'cat > /dev/null' 'echo nope' > "$work/tools/scripted/scripts/derive"; }
+unknown_script() { printf '%s\n' 'x' > "$work/tools/scripted/scripts/detect"; }
+
 # ---- init stage ---------------------------------------------------------------
 
 case_init_stage() {
@@ -804,7 +844,7 @@ case_init_fail() {
   check "no manifest write" not test -e "$manifest"
 }
 
-# ---- the mode of the ssh folder -----------------------------------------------
+# ---- dir_perm and perm: the ssh folder ---------------------------------------
 
 case_ssh_new() {
   use_config sshdir
@@ -812,6 +852,8 @@ case_ssh_new() {
   check_exit 0
   check "the folder has mode 700" test "$(mode_of "$home/.ssh")" = 700
   check "the file is written in it" test -f "$home/.ssh/config"
+  check "perm gives the file its mode" test "$(mode_of "$home/.ssh/config.identity")" = 600
+  check "a file without perm has the mode of its source" test "$(mode_of "$home/.ssh/config")" = 644
   run_real
   check_exit 0
   check_no_output "chmod 700"
@@ -1848,6 +1890,11 @@ run_case "manifest: its first line, the sorted rows, a second run" case_generate
 run_case "init stage: a stop with exit 4, then a pass" case_init_stage
 run_case "init stage: a chmod-only change" case_init_chmod
 run_case "init stage: a failed file" case_init_fail
+run_case "scripts: the derive values and mise table" case_scripts_derive
+run_case "scripts: a check that fails stops the run" case_scripts_check
+run_case "scripts: an after script asks for a restart" case_scripts_after
+run_case "scripts: a derive output that is not JSON" expect scripted 2 "macos/tools/scripted/scripts/derive did not print a JSON object" bad_derive
+run_case "scripts: a file of scripts/ that is not a script" expect scripted 2 "scripts/detect is not a script of a tool" unknown_script
 run_case "ssh folder: a new folder" case_ssh_new
 run_case "ssh folder: an existing folder with another mode" case_ssh_existing
 run_case "ssh folder: a linked file below the folder" case_ssh_link

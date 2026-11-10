@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# The after script of the fish tool. The sync runs it in $HOME after the
+# stage of the tool, and never copies it. When the login shell of the user
+# (dscl) is not the shell of this terminal ($SHELL), a new terminal must
+# start: it prints a restart request. When dscl cannot tell, it prints
+# nothing.
+
+set -euo pipefail
+
+cat > /dev/null
+
+login=$(dscl . -read "${HOME}" UserShell 2> /dev/null) || login=''
+login=${login#UserShell: }
+login=${login%%$'\n'*}
+if [[ -n ${login} && ${login} != "${SHELL:-}" ]]; then
+  printf '{"restart": "the login shell is now %s"}\n' "${login}"
+fi

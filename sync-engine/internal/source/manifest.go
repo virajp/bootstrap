@@ -2,7 +2,10 @@ package source
 
 import (
 	"fmt"
+	"os"
 	"strings"
+
+	"github.com/BurntSushi/toml"
 
 	"github.com/virajp/bootstrap/sync-engine/internal/fail"
 )
@@ -23,13 +26,17 @@ type FileEntry struct {
 	Remove        any // The value of `remove`, or nil.
 	RemoveItems   any // The value of `remove_items`, or nil.
 	Keys          *Obj
+	// When is the value path of `when`: the sync writes the entry only when
+	// that value is true. A ! at the start negates it. Empty: always.
+	When string
+	// Perm and DirPerm are the modes of `perm` and `dir_perm`; 0 when unset.
+	Perm, DirPerm os.FileMode
 }
 
 // MiseTool is one `[mise.tools.<name>]` entry (repo side).
 type MiseTool struct {
 	Name          string
 	Envs          []string // nil when the entry has no envs.
-	Depends       []string
 	RequiresFound []string
 }
 
@@ -46,6 +53,9 @@ type Manifest struct {
 	Parent      string   // The parent tool, or empty.
 	Files       []FileEntry
 	Mise        []MiseTool // Repo side.
+	// MiseOrder holds the names of the [mise.tools] entries in the order of
+	// the file. A mise tool depends on the mise tools above it.
+	MiseOrder []string
 
 	// probs are the problems of the [files] and [tasks] tables.
 	probs []*fail.Error
@@ -57,7 +67,6 @@ type Manifest struct {
 // mline is one line of the flat manifest form of `_RS_MANIFEST_TEMPLATE`.
 type mline struct {
 	field, a, b, c string
-	rest           []string // mise: the mise depends.
 }
 
 func asList(v any) ([]any, bool) {
@@ -127,6 +136,8 @@ func (s Source) LoadManifest(tool string) (*Manifest, error) {
 		m.Parent = v
 	}
 	m.Files, m.probs = s.entries(s.ManifestShown(tool), s.ToolDir(tool), raw)
+	m.MiseOrder = miseOrder(s.ToolDir(tool) + "/tools.toml")
+	m.probs = append(m.probs, miseDependsKeys(s.ManifestShown(tool), raw)...)
 	return m, nil
 }
 
@@ -186,21 +197,12 @@ func (m *Manifest) repoLines() error {
 							mt.Envs = []string{}
 						}
 					}
-					if v, has := ve.Lookup("depends"); has {
-						if s, isStr := v.(string); isStr {
-							mt.Depends = []string{s}
-						} else if l, isList := asList(v); isList {
-							mt.Depends = strList(l)
-						} else {
-							return fmt.Errorf("depends")
-						}
-					}
 				}
 				envs := "-"
 				if mt.Envs != nil {
 					envs = strings.Join(mt.Envs, ",")
 				}
-				m.lines = append(m.lines, mline{field: "mise", a: k, b: envs, rest: mt.Depends})
+				m.lines = append(m.lines, mline{field: "mise", a: k, b: envs})
 				if isMap {
 					if v, has := ve.Lookup("requires_found"); has {
 						items, good := checkedList(v)
@@ -267,4 +269,51 @@ func checkedList(v any) ([]string, bool) {
 		out[i] = s
 	}
 	return out, true
+}
+
+// miseOrder gives the names of the [mise.tools] entries of the TOML file
+// <path>, in the order of the file.
+func miseOrder(path string) []string {
+	var m map[string]any
+	md, err := toml.DecodeFile(path, &m)
+	if err != nil {
+		return nil
+	}
+	var out []string
+	seen := map[string]bool{}
+	for _, k := range md.Keys() {
+		if len(k) >= 3 && k[0] == "mise" && k[1] == "tools" && !seen[k[2]] {
+			seen[k[2]] = true
+			out = append(out, k[2])
+		}
+	}
+	return out
+}
+
+// miseDependsKeys gives a message for each `depends` of a mise tool: the
+// engine computes it from the depends and the parent of the tool.
+func miseDependsKeys(shown string, raw *Obj) []*fail.Error {
+	var out []*fail.Error
+	check := func(where string, tools any) {
+		t, ok := tools.(*Obj)
+		if !ok {
+			return
+		}
+		for _, k := range t.Keys() {
+			if e, ok := t.Get(k).(*Obj); ok && e.Has("depends") {
+				out = append(out, fail.New(fail.Usage, "%s: depends of mise tool %s in [%s] - the sync computes it from depends and parent of the tool; remove it", shown, k, where))
+			}
+		}
+	}
+	if mise, ok := raw.Get("mise").(*Obj); ok {
+		check("mise.tools", mise.Get("tools"))
+	}
+	if me, ok := raw.Get("mise_env").(*Obj); ok {
+		for _, env := range me.Keys() {
+			if b, ok := me.Get(env).(*Obj); ok {
+				check("mise_env."+env+".tools", b.Get("tools"))
+			}
+		}
+	}
+	return out
 }

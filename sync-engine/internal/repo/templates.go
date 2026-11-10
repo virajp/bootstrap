@@ -7,19 +7,8 @@ package repo
 const tmplMembers = `<% if has .v "member" %><% range $k, $x := .v.member %><% $k %>	<% if has $x "folder" %><% $x.folder %><% else %><% $k %><% end %>	<% if has $x "type" %><% $x.type %><% end %>
 <% end %><% end %>`
 
-// tmplRepoName is `repo_name` of a values file (_rs_members and
-// _rs_fnox_profiles).
+// tmplRepoName is `repo_name` of a values file (_rs_members).
 const tmplRepoName = `<% if has .v "repo_name" %><% .v.repo_name %><% end %>`
-
-// tmplDirectCommit is _rs_direct_commit: `<branch><TAB>true|false|bad` lines.
-const tmplDirectCommit = `<% if and (has .v "branch") (test.IsKind "map" .v.branch) %><% range $k, $b := .v.branch %><% if and (test.IsKind "map" $b) (has $b "direct_commit") %><% $k %>	<% if test.IsKind "bool" $b.direct_commit %><% $b.direct_commit %><% else %>bad<% end %>
-<% end %><% end %><% end %>`
-
-// tmplFnox is _rs_fnox_profiles: the `secrets`, `bad` and `profile <name>` lines of fnox.toml.
-const tmplFnox = `<% if has .f "secrets" %>secrets
-<% end %><% if has .f "profiles" %><% if test.IsKind "map" .f.profiles %><% range $k, $p := .f.profiles %>profile <% $k %>
-<% end %><% else %>bad
-<% end %><% end %>`
 
 // tmplGitignore is _RS_GITIGNORE_TEMPLATE.
 const tmplGitignore = `<% if and (has .o "overrides") (test.IsKind "map" .o.overrides) -%>

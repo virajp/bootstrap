@@ -1,6 +1,6 @@
 # linter: the house linter and ShellCheck, code:lint and setup:linter.
 default_envs = [ "dev", "ci" ]
-depends = []
+depends = [ "node" ]
 extensions = [ "dbaeumer.vscode-eslint", "foxundermoon.shell-format" ]
 root_only = false
 
@@ -25,7 +25,6 @@ require_serial = true
 # The own package of bootstrap: a new release installs at once. Without
 # allow_low_downloads, aube refuses a package with few weekly downloads.
 allow_low_downloads = true
-depends = [ "node" ]
 envs = [ "dev", "ci" ]
 minimum_release_age = "0h"
 version = "latest"

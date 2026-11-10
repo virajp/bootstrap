@@ -1,0 +1,4 @@
+# The selection of the scripted fixture config.
+
+[tools.scripted]
+word = "user"
