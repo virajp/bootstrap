@@ -19,7 +19,6 @@ run = "find .config/mise/tasks/ -name '*' -type f -exec chmod 755 {} \\;"
 [tools]
 [tools."github:virajp/bootstrap"]
 version = "latest"
-version_prefix = "cli-v"
 [tools.jq]
 version = "latest"
 [tools.yq]

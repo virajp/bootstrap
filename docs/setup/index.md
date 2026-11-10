@@ -48,6 +48,12 @@ Run the CLI through mise. Before the first sync, the Mac does not have it on
 mise x github:virajp/bootstrap@latest -- bootstrap <command>
 ```
 
+A Mac sync before 2.0.2 wrote `version_prefix = "cli-v"` in
+`~/.config/mise/conf.d/mise/mise.toml`. With that line, mise does not find the
+release. Remove the line, then run the command. The next Mac sync writes the
+file again without the line. If the setting `minimum_release_age` of mise
+hides the release, use the version of `cli/VERSION` in place of `latest`.
+
 In this file, `bootstrap` is short for this command. The CLI gets its own clone
 of `bootstrap` in `~/.cache/bootstrap/`. This file uses these commands:
 
