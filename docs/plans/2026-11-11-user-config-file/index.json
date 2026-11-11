@@ -93,11 +93,11 @@
         "U1"
       ],
       "waits": "The new test:repo cases run the flags and the command `bootstrap config` that U1 adds.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-11T16:22:10.652Z",
+      "ended": "2026-11-11T16:38:29.151Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -179,8 +179,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-11T16:22:10.612Z",
       "ended": ""
     },
     {

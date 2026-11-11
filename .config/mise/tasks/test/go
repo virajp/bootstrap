@@ -10,6 +10,10 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
+# The tests never read the real config file of the user: the engine reads
+# this path, which does not exist, so each setting has its default.
+export BOOTSTRAP_CONFIG=/nonexistent/bootstrap/config.toml
+
 cd "${MISE_PROJECT_ROOT}/cli"
 
 go() { mise x -- go "$@"; }

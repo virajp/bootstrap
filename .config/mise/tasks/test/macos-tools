@@ -52,6 +52,9 @@ unset MISE_ENV BOOTSTRAP_URL BOOTSTRAP_CLONE
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-macos-tools.XXXXXX")
 tmp=$(cd "$tmp" && pwd -P)
+# The tests never read the real config file of the user: the engine reads
+# this path, which does not exist, so each setting has its default.
+export BOOTSTRAP_CONFIG="$tmp/no-config/bootstrap/config.toml"
 trap 'rm -rf -- "$tmp"' EXIT
 
 # git without the user's config, hooks, signing or identity.

@@ -38,6 +38,9 @@ export BOOTSTRAP_VERBOSE=1
 
 root=${MISE_PROJECT_ROOT}
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-repo.XXXXXX")
+# The tests never read the real config file of the user: the engine reads
+# this path, which does not exist, so each setting has its default.
+export BOOTSTRAP_CONFIG="$tmp/no-config/bootstrap/config.toml"
 # The engine runs the scripts of a tool with `mise x` in the scratch
 # consumers, so mise must trust their config files.
 MISE_TRUSTED_CONFIG_PATHS="$tmp:$(cd -- "$tmp" && pwd -P)${MISE_TRUSTED_CONFIG_PATHS:+:$MISE_TRUSTED_CONFIG_PATHS}"
@@ -1155,7 +1158,7 @@ case_rerun() {
     export BOOTSTRAP_VALUES=$values MISE_PROJECT_ROOT=$consumer BOOTSTRAP_CLONE=$clone
     export BOOTSTRAP_CACHE=$tmp/cache
     [[ -n ${CASE_DIRTY:-} ]] || commit_consumer
-    "$bin" sync
+    "$bin" sync "$@"
   ) > "$log" 2>&1
 }
 
@@ -2577,6 +2580,15 @@ check_output_list() {
     case_rerun
   ) || got=$?
   check_that "only the value 1 is verbose" log_lacks 'unchanged  '
+  got=0
+  (
+    unset BOOTSTRAP_VERBOSE
+    case_rerun --verbose
+  ) || got=$?
+  check_that "--verbose: exit 0" test "$got" = 0
+  lines=$(grep -c '^bootstrap: unchanged  ' "$log") || lines=0
+  check_that "--verbose: each unchanged file" test "$lines" = "$((unchanged + 2))"
+  check_that "--verbose: the last line" test "$(tail -n 1 -- "$log")" = '[OK] Synced: no file changed'
 }
 case_args=' ' run_case "the default output: the list and the table" 0 "$fixture_values" output_files '' check_output_list
 
@@ -2974,6 +2986,101 @@ CASE_CALL=list_base run_case "list: a dependency below its tool" 0 'environments
 CASE_CALL=list_base run_case "list: the root of a pack" 0 'environments = [ "dev" ]' '' 'base (pack)'
 ls_base() { "$bin" ls; }
 CASE_CALL=ls_base run_case "ls: a required tool" 0 'environments = [ "dev" ]' '' '[required]'
+
+# The user config file. BOOTSTRAP_CONFIG of the task names a missing file; a
+# case points it at a file of the case, or gives --config.
+# config_has <key> <value> <source>: a line of `bootstrap config`, with the
+# spaces of the columns as one space.
+config_has() { sed 's/  */ /g' "$log" | grep -qxF -- "$*"; }
+config_sources() {
+  printf '%s\n' 'jobs = 3' 'cache_dir = "~/cache-from-file"' 'url = "https://example.com/file.git"' \
+    > "$tmp/config.toml"
+  unset BOOTSTRAP_CACHE BOOTSTRAP_CLONE BOOTSTRAP_JOBS MACOS_SETUP_REPO_PATH
+  export BOOTSTRAP_CONFIG=$tmp/config.toml BOOTSTRAP_URL=https://example.com/variable.git
+  "$bin" config --jobs 5
+}
+check_config_sources() {
+  check_that "config: the file and its source" config_has file "$tmp/config.toml" variable BOOTSTRAP_CONFIG
+  check_that "config: a flag over the file" config_has jobs 5 flag --jobs
+  check_that "config: a value of the file, ~/ expanded" config_has cache_dir "$HOME/cache-from-file" file
+  check_that "config: a variable over the file" config_has url https://example.com/variable.git variable BOOTSTRAP_URL
+  check_that "config: a default with no value" config_has clone - default
+  check_that "config: mac.repo_path by default" config_has mac.repo_path - default
+}
+CASE_CALL=config_sources run_case "config: the source of each value" 0 'environments = [ "dev" ]' '' '' \
+  check_config_sources
+config_flag() {
+  printf '%s\n' 'jobs = 7' > "$tmp/other.toml"
+  unset BOOTSTRAP_JOBS
+  "$bin" config --config "$tmp/other.toml"
+}
+check_config_flag() {
+  check_that "config --config: the file and its source" config_has file "$tmp/other.toml" flag --config
+  check_that "config --config: a value of that file" config_has jobs 7 file
+}
+CASE_CALL=config_flag run_case "config --config over BOOTSTRAP_CONFIG" 0 'environments = [ "dev" ]' '' '' \
+  check_config_flag
+config_missing() {
+  unset BOOTSTRAP_CACHE BOOTSTRAP_CLONE BOOTSTRAP_JOBS MACOS_SETUP_REPO_PATH
+  export BOOTSTRAP_CONFIG=$tmp/missing/config.toml
+  "$bin" config 2> "$tmp/stderr"
+}
+check_config_missing() {
+  check_that "config, a missing file: (missing)" config_has file "$tmp/missing/config.toml (missing)" \
+    variable BOOTSTRAP_CONFIG
+  check_that "config, a missing file: the default jobs" grep -qE '^jobs +[0-9]+ +default$' "$log"
+  check_that "config, a missing file: the default cache_dir" \
+    config_has cache_dir "${XDG_CACHE_HOME:-$HOME/.cache}/bootstrap" default
+  check_that "config, a missing file: the default url" config_has url https://github.com/virajp/bootstrap.git default
+  check_that "config, a missing file: the default clone" config_has clone - default
+  check_that "config, a missing file: no message" test ! -s "$tmp/stderr"
+}
+CASE_CALL=config_missing run_case "config: a missing file gives the defaults" 0 'environments = [ "dev" ]' '' '' \
+  check_config_missing
+# config_bad <line>... : a config file with these lines.
+config_bad() {
+  printf '%s\n' "$@" > "$tmp/config.toml"
+  export BOOTSTRAP_CONFIG=$tmp/config.toml
+}
+config_verbose() {
+  config_bad 'verbose = true'
+  "$bin" sync --dry-run
+}
+check_config_verbose() {
+  check_that "a verbose key: names the file and the key" log_has "bootstrap: $tmp/config.toml: verbose: unknown key"
+  check_that "a verbose key: the sync does not start" log_lacks 'Dry run: '
+}
+CASE_CALL=config_verbose run_case "a config file with a verbose key" 2 'environments = [ "dev" ]' '' \
+  'verbose: unknown key' check_config_verbose
+config_jobs_string() {
+  config_bad 'jobs = "4"'
+  "$bin" config
+}
+check_config_jobs_string() {
+  check_that "jobs as a string: names the file and the key" \
+    log_has "bootstrap: $tmp/config.toml: jobs: needs a number above 0, not a string"
+}
+CASE_CALL=config_jobs_string run_case "a config file with jobs as a string" 2 'environments = [ "dev" ]' '' \
+  'jobs: needs a number above 0' check_config_jobs_string
+config_not_toml() {
+  config_bad 'jobs = = 4'
+  "$bin" config
+}
+check_config_not_toml() {
+  check_that "not TOML: names the file" log_has "bootstrap: $tmp/config.toml: not valid TOML"
+}
+CASE_CALL=config_not_toml run_case "a config file that is not TOML" 2 'environments = [ "dev" ]' '' \
+  'not valid TOML' check_config_not_toml
+# clone in the file: the sync uses that clone. The URL names no remote, so a
+# fetch into the cache fails.
+config_clone() {
+  printf 'clone = "%s"\n' "$clone" > "$tmp/config.toml"
+  unset BOOTSTRAP_CLONE
+  export BOOTSTRAP_CONFIG=$tmp/config.toml BOOTSTRAP_URL="file://$tmp/no-such-remote"
+  "$bin" sync --dry-run
+}
+CASE_CALL=config_clone run_case "clone in the config file, without BOOTSTRAP_CLONE" 0 'environments = [ "dev" ]' '' \
+  'Dry run: '
 
 # The selection commands: detect, add, remove and replace. Each case first
 # syncs and commits the consumer, so a command starts from a clean work tree.
