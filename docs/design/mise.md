@@ -135,19 +135,20 @@ It holds the shared `[settings]` and the `[env]` values `REPO_NAME` and
 `MEMBERS` (the
 folders of the members, see [repo.md](repo.md#the-template-context)).
 
-| `[settings]` key                     | Value          |
-| ------------------------------------ | -------------- |
-| `activate_aggressive`                | `true`         |
-| `all_compile`                        | `false`        |
-| `env_shell_expand`                   | `true`         |
-| `gpg_verify`                         | `true`         |
-| `lockfile`                           | `false`        |
-| `minimum_release_age`                | `"10h"`        |
-| `raw`                                | `true`         |
-| `status.missing_tools`               | `"always"`     |
-| `task.disable_spec_from_run_scripts` | `true`         |
-| `task.output`                        | `"interleave"` |
-| `task.timings`                       | `true`         |
+| `[settings]` key                     | Value                         |
+| ------------------------------------ | ----------------------------- |
+| `activate_aggressive`                | `true`                        |
+| `all_compile`                        | `false`                       |
+| `env_shell_expand`                   | `true`                        |
+| `gpg_verify`                         | `true`                        |
+| `lockfile`                           | `false`                       |
+| `minimum_release_age`                | `"10h"`                       |
+| `minimum_release_age_excludes`       | `["github:virajp/bootstrap"]` |
+| `raw`                                | `true`                        |
+| `status.missing_tools`               | `"always"`                    |
+| `task.disable_spec_from_run_scripts` | `true`                        |
+| `task.output`                        | `"interleave"`                |
+| `task.timings`                       | `true`                        |
 
 > As of now, we will NOT be supporting `monorepo_root` and `[monorepo]`
 > The repository puts its own `[env]` values in the `zz-repo` seeds.

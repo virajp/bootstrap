@@ -48,11 +48,11 @@ run order.
 
 ## mise tools
 
-| mise tool                 | Version  | Environments | Note                                                                                   |
-| ------------------------- | -------- | ------------ | -------------------------------------------------------------------------------------- |
-| `jq`                      | `latest` | dev, ci      | JSON queries                                                                           |
-| `yq`                      | `latest` | dev, ci      | YAML queries                                                                           |
-| `github:virajp/bootstrap` | `latest` | dev          | The CLI `bootstrap`, from `[mise_env.dev.tools]`. `setup:configs` and the gate run it. |
+| mise tool                 | Version  | Environments | Note                                                                                                                                                                                 |
+| ------------------------- | -------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `jq`                      | `latest` | dev, ci      | JSON queries                                                                                                                                                                         |
+| `yq`                      | `latest` | dev, ci      | YAML queries                                                                                                                                                                         |
+| `github:virajp/bootstrap` | `latest` | dev          | The CLI `bootstrap`, from `[mise_env.dev.tools]`. `setup:configs` and the gate run it. `minimum_release_age_excludes` of `.config/mise.toml` names it, so a new release has no wait. |
 
 The tool also sets:
 
