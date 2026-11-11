@@ -158,16 +158,19 @@
       "file": "05-gates.md",
       "kind": "edit",
       "model": "opus",
-      "owns": [],
+      "owns": [
+        "cli/go.mod",
+        "cli/go.sum"
+      ],
       "depends_on": [
         "U4"
       ],
       "waits": "",
       "status": "green",
       "started": "2026-11-11T16:57:27.637Z",
-      "ended": "2026-11-11T16:58:21.764Z",
+      "ended": "2026-11-11T17:09:48.887Z",
       "commit": "",
-      "rounds": 1
+      "rounds": 2
     }
   ],
   "waves": [
@@ -414,6 +417,15 @@
         "U1",
         "U2"
       ]
+    },
+    {
+      "id": "D20",
+      "decision": "Q1: the inherited red plan gate code:sec (grype GHSA-hp87-p4gw-j4gq, High, in gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c, which main also has)",
+      "ruling": "The user said: \"Bump yaml.v3\". Bump gopkg.in/yaml.v3 to v3.0.1 in cli/ with go get and go mod tidy, as one more commit on this branch. The Owns of U5 widens to cli/go.mod and cli/go.sum. Then run the plan gates again and land per the consent.",
+      "rejected": "Land with the red line as an open gap; stop BLOCKED and fix main in a separate change.",
+      "units": [
+        "U5"
+      ]
     }
   ],
   "stages": {
@@ -455,6 +467,13 @@
       "unit": "U4",
       "stage": "",
       "text": "The wave 4 review left three fold errors in docs/design/cli.md (lines 313, 400, 1073) open after its two-round cap · closed: the closing pass refolded the three paragraphs by hand with no word changed, and a fresh check answered RESOLVED for each with no regression",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "U5",
+      "stage": "",
+      "text": "The plan gate code:sec was red from an inherited grype finding (GHSA-hp87-p4gw-j4gq in gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c); no unit owned cli/go.mod or cli/go.sum · closed: Owns of U5 widened to cli/go.mod and cli/go.sum under D20 (Q1), and U5 bumps yaml.v3 to v3.0.1",
       "state": "closed"
     }
   ],
