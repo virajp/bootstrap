@@ -631,7 +631,9 @@ and the entry tasks of the Mac sync.
   profile. The aliases are `updateall` and `osx-upgrade`.
 - **CLI:** `[mise.tools]` installs `github:virajp/bootstrap`, the CLI
   `bootstrap`. mise reads the release tags `bootstrap@X.Y.Z` as the
-  versions `X.Y.Z`.
+  versions `X.Y.Z`. `minimum_release_age_excludes` names
+  `github:virajp/bootstrap`, so mise installs a new release of the CLI with no
+  wait. mise accepts no owner pattern such as `github:virajp/*`.
 - **Trust paths:** `MISE_TRUSTED_CONFIG_PATHS` holds `$HOME/.config/mise`,
   `<projects_dir>/github.com` and `<projects_dir>/gitlab.com`. mise loads a
   config below these paths with no prompt, so do not clone an untrusted
