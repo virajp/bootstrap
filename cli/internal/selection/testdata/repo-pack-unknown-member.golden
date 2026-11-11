@@ -1,4 +1,4 @@
 rc=3
 --- stderr
-repo-sync: tool 'zzz' is not in bootstrap (named in pack base)
+repo-sync: zzz is not a bootstrap tool (named in pack base)
 --- stdout

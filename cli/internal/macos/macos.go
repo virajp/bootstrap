@@ -122,7 +122,7 @@ func Run(args []string, stdout, stderr io.Writer) fail.Code {
 
 // RunWith is Run, and it also gives the change list of a dry run: the
 // absolute path of each file that the run would write, change or remove.
-func RunWith(args []string, stdout, stderr io.Writer) ([]string, fail.Code) {
+func RunWith(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Code) {
 	s := &state{stdout: stdout, stderr: stderr, getenv: os.Getenv, dirDone: map[string]bool{}, derived: map[string]*source.Obj{}}
 	isTerm := false
 	if f, ok := stderr.(*os.File); ok {
@@ -160,7 +160,11 @@ func RunWith(args []string, stdout, stderr io.Writer) ([]string, fail.Code) {
 	return s.e.Planned, code
 }
 
-func (s *state) log(format string, args ...any) { s.r.Log(fmt.Sprintf(format, args...)) }
+// log prints an error message: the problem and, after " - ", its fix.
+func (s *state) log(format string, args ...any) { s.r.Error(fmt.Sprintf(format, args...)) }
+
+// verbose prints a log line that shows only with --verbose.
+func (s *state) verbose(format string, args ...any) { s.r.Log(fmt.Sprintf(format, args...)) }
 
 // logAll prints each message of <err> and gives its code.
 func (s *state) logAll(err error) fail.Code { return source.LogAll(s.r, err) }
@@ -209,7 +213,7 @@ func (s *state) run(args []string) fail.Code {
 	s.home = strings.TrimSuffix(s.getenv("HOME"), "/")
 	real, ok := manifest.Real(s.home)
 	if !ok {
-		s.log("cannot resolve %s - a symlink loop", s.home)
+		s.log("cannot resolve %s: a symlink loop", s.home)
 		return fail.Other
 	}
 	s.homeReal = real
@@ -280,8 +284,8 @@ func (s *state) run(args []string) fail.Code {
 		if shown == "" {
 			shown = "an unknown commit"
 		}
-		s.log("using bootstrap at %s", shown)
-		s.log("tools: %s", strings.Join(s.res.Tools, " "))
+		s.verbose("using bootstrap at %s", shown)
+		s.verbose("tools: %s", strings.Join(s.res.Tools, " "))
 	} else {
 		short := commit
 		if len(short) > 7 {
@@ -290,7 +294,7 @@ func (s *state) run(args []string) fail.Code {
 		if short == "" {
 			short = "an unknown commit"
 		}
-		s.r.Info("bootstrap " + short + " · " + strconv.Itoa(len(s.res.Tools)) + " tools")
+		s.r.Clone("bootstrap " + short + " · " + strconv.Itoa(len(s.res.Tools)) + " tools")
 	}
 	s.oldRows, _ = manifest.Read(s.e, manifest.Macos, manifestFile, "")
 	s.merged = map[string]bool{}
@@ -300,7 +304,7 @@ func (s *state) run(args []string) fail.Code {
 		worst := s.render("all")
 		s.stale("all")
 		if worst != fail.OK {
-			s.log("FAILED:%s", s.failed)
+			s.r.Info("FAILED:" + s.failed)
 			s.r.Summary(int(worst))
 			return worst
 		}
@@ -308,7 +312,7 @@ func (s *state) run(args []string) fail.Code {
 			s.recordCommit(commit)
 		}
 		if s.r.Verbose() {
-			s.log("dry run: %d/%d files checked, nothing written", s.ok, s.total)
+			s.verbose("dry run: %d/%d files checked, nothing written", s.ok, s.total)
 		}
 		s.r.Summary(0)
 		return fail.OK
@@ -341,11 +345,11 @@ func (s *state) run(args []string) fail.Code {
 				s.r.Summary(1)
 				return fail.Other
 			}
-			s.log("the init stage changed")
+			s.r.Warn("the init stage changed")
 			for _, r := range restart {
-				s.log("%s", r)
+				s.r.Warn(r)
 			}
-			s.log("open a new terminal, then run: mise run updateall:configs")
+			s.r.Warn("open a new terminal, then run: mise run updateall:configs")
 			return fail.Terminal
 		}
 	}
@@ -375,9 +379,9 @@ func (s *state) run(args []string) fail.Code {
 	}
 	if len(restart) > 0 {
 		for _, r := range restart {
-			s.log("%s", r)
+			s.r.Warn(r)
 		}
-		s.log("open a new terminal, then run: mise run updateall:configs")
+		s.r.Warn("open a new terminal, then run: mise run updateall:configs")
 		return fail.Terminal
 	}
 	if commit != "" && s.recordCommit(commit) != fail.OK {
@@ -385,7 +389,7 @@ func (s *state) run(args []string) fail.Code {
 		return fail.Other
 	}
 	if s.r.Verbose() {
-		s.log("done: %d/%d files in sync", s.ok, s.total)
+		s.verbose("done: %d/%d files in sync", s.ok, s.total)
 	}
 	s.r.Summary(0)
 	return fail.OK
@@ -573,8 +577,8 @@ func (s *state) recordCommit(commit string) fail.Code {
 
 // reportFailed is `_ss_report_failed`.
 func (s *state) reportFailed() {
-	s.log("FAILED:%s", s.failed)
+	s.r.Info("FAILED:" + s.failed)
 	if s.r.Verbose() {
-		s.log("%d/%d files in sync; existing copies of the rest were left untouched", s.ok, s.total)
+		s.verbose("%d/%d files in sync; existing copies of the rest were left untouched", s.ok, s.total)
 	}
 }

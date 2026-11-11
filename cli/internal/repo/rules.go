@@ -122,7 +122,7 @@ func (s *state) readEnvs() fail.Code {
 		return fail.Usage
 	}
 	if strings.Trim(list, "\n ") == "" {
-		s.log(s.show + " lists no environments - using dev only; add environments = [\"dev\", ...]")
+		s.r.Warn(s.show + " lists no environments - using dev only; add environments = [\"dev\", ...]")
 		list = "dev"
 	}
 	names := fields(list)
@@ -424,7 +424,7 @@ func (s *state) inSubmodule() bool {
 func (s *state) checkScripts() fail.Code {
 	clone := s.getenv("BOOTSTRAP_CLONE")
 	if clone == "" || !exists(clone+"/repo/tools") {
-		s.log("no clone of bootstrap - the check scripts of the tools were skipped")
+		s.r.Warn("no clone of bootstrap - the check scripts of the tools were skipped")
 		return fail.OK
 	}
 	s.dir = clone

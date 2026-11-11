@@ -30,7 +30,7 @@ import (
 // Usage is the help text of the command.
 const Usage = `usage: bootstrap <command> [flags]
 
-commands:
+Repository
   init [tool...]       select base and the named tools, migrate an old form,
                        ask the questions without an answer, then sync
   sync                 sync the repository of the current folder
@@ -45,7 +45,12 @@ commands:
                        tools, then sync
   detect               run the detect scripts, and offer to add each tool
                        that matches
-  list, ls             list the selected tools, with the reason of each one
+  list, ls             print the selected tools as a tree
+  config               print each setting of the engine, with its value and
+                       its source
+  version, --version   print the version
+
+Mac
   mac init [tool...]   init for the Mac, in the current folder (the
                        repository of macos.toml)
   mac sync             sync the Mac from MACOS_SETUP_REPO_PATH
@@ -54,12 +59,9 @@ commands:
                        the questions of the Mac tools
   mac add, mac remove, mac replace, mac detect
                        the selection commands for macos.toml
-  mac list, mac ls     list the selected Mac tools
-  config               print each setting of the engine, with its value and
-                       its source
-  version, --version   print the version
+  mac list, mac ls     print the selected Mac tools as a tree
 
-flags:
+Flags
   --dry-run            init, sync, add, remove, replace, detect: show the
                        changes, and write nothing
   --yes, -y            init, add, remove, replace, detect: write the changes
@@ -84,6 +86,43 @@ flags:
                        repository of macos.toml
 `
 
+// argsOf gives the arguments of a command in its usage line.
+var argsOf = map[string]string{
+	"init": " [tool...]", "questions": " [tool...]", "add": " <tool...>",
+	"remove": " <tool...>", "replace": " <old> <new>",
+}
+
+// flagUsage gives each flag of a usage line, by the name of the flag.
+var flagUsage = map[string]string{
+	"answer": "[--answer <tool>.<key>=<value>]", "jobs": "[--jobs <n>]",
+	"repo-path": "[--repo-path <path>]",
+}
+
+// usageLine gives the usage line of a command: its arguments and its own
+// flags, not the flags of every command.
+func usageLine(mac bool, cmd, flags string) string {
+	b := "bootstrap " + cmdWord(mac, cmd) + argsOf[cmd]
+	for _, f := range strings.Fields(flags) {
+		switch f {
+		case "config", "cache-dir", "url", "clone":
+			continue
+		}
+		if u, ok := flagUsage[f]; ok {
+			b += " " + u
+		} else {
+			b += " [--" + f + "]"
+		}
+	}
+	return b
+}
+
+func cmdWord(mac bool, cmd string) string {
+	if mac {
+		return "mac " + cmd
+	}
+	return cmd
+}
+
 // app is the state of one command.
 type app struct {
 	version        string
@@ -94,6 +133,7 @@ type app struct {
 	in             *bufio.Reader
 	pwd            string
 	settings       settings // The settings of the command and their sources.
+	reasons        []string // Why a command has nothing to add: the end line shows them.
 }
 
 // opts are the flags and the arguments of a command.
@@ -119,8 +159,7 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		a.pwd = wd
 	}
 	if len(args) == 0 {
-		a.errorf("no command")
-		fmt.Fprint(stderr, Usage)
+		a.usageErr("no command given", "")
 		return fail.Usage
 	}
 	mac := false
@@ -130,8 +169,7 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 	}
 	if cmd == "mac" {
 		if len(rest) == 0 {
-			a.errorf("mac: no command")
-			fmt.Fprint(stderr, Usage)
+			a.usageErr("mac needs a command", "")
 			return fail.Usage
 		}
 		mac = true
@@ -166,10 +204,10 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		if mac {
 			name = "mac " + cmd
 		}
-		a.errorf("unknown command %s", name)
-		fmt.Fprint(stderr, Usage)
+		a.usageErr(name+" is not a command", "")
 		return fail.Usage
 	}
+	own := flags
 	if mac && cmd != "questions" {
 		flags += " no-bootstrap"
 	}
@@ -180,10 +218,9 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		flags += " repo-path"
 	}
 	takesNames := cmd == "init" || cmd == "questions" || cmd == "add" || cmd == "remove" || cmd == "replace"
-	o, err := parse(rest, flags, takesNames)
+	o, err := parse(cmdWord(mac, cmd), rest, flags, takesNames)
 	if err != nil {
-		a.errorf("%s", err)
-		fmt.Fprint(stderr, Usage)
+		a.usageErr(err.Error(), usageLine(mac, cmd, own))
 		return fail.Usage
 	}
 	if o.help {
@@ -191,8 +228,7 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		return fail.OK
 	}
 	if (cmd == "add" || cmd == "remove") && len(o.names) == 0 {
-		a.errorf("%s needs at least one tool", cmdName(mac, cmd))
-		fmt.Fprint(stderr, Usage)
+		a.usageErr(cmdWord(mac, cmd)+" needs at least one tool", usageLine(mac, cmd, own))
 		return fail.Usage
 	}
 	if cmd == "version" {
@@ -229,7 +265,7 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 
 // parse reads the flags of <flags> (names without dashes) and, with
 // <names>, the arguments.
-func parse(args []string, flags string, names bool) (opts, error) {
+func parse(cmd string, args []string, flags string, names bool) (opts, error) {
 	o := opts{values: map[string]string{}}
 	has := map[string]bool{}
 	for _, f := range strings.Fields(flags) {
@@ -240,7 +276,7 @@ func parse(args []string, flags string, names bool) (opts, error) {
 		name, value, withValue := strings.Cut(strings.TrimLeft(arg, "-"), "=")
 		if !strings.HasPrefix(arg, "-") {
 			if !names {
-				return o, fmt.Errorf("unknown argument %s", arg)
+				return o, fmt.Errorf("%s takes no argument %s", cmd, arg)
 			}
 			o.names = append(o.names, arg)
 			continue
@@ -253,7 +289,7 @@ func parse(args []string, flags string, names bool) (opts, error) {
 			name = "yes"
 		}
 		if !has[name] {
-			return o, fmt.Errorf("unknown flag %s", arg)
+			return o, fmt.Errorf("%s has no flag %s", cmd, arg)
 		}
 		takes := name == "answer" || name == "jobs" || name == "config" || name == "cache-dir" ||
 			name == "url" || name == "clone" || name == "repo-path"
@@ -284,7 +320,7 @@ func parse(args []string, flags string, names bool) (opts, error) {
 		case "jobs":
 			n, err := strconv.Atoi(value)
 			if err != nil || n < 1 {
-				return o, fmt.Errorf("--jobs needs a number above 0, not '%s'", value)
+				return o, fmt.Errorf("--jobs needs a number above 0, not %s", value)
 			}
 			// applySettings sets BOOTSTRAP_JOBS, which the script runner reads.
 			o.values[name] = value
@@ -298,16 +334,30 @@ func parse(args []string, flags string, names bool) (opts, error) {
 	return o, nil
 }
 
-func (a *app) line(glyph, text string) {
-	if a.styled {
-		fmt.Fprintf(a.stderr, "%s %s\n", glyph, text)
-	} else {
-		fmt.Fprintf(a.stderr, "bootstrap: %s\n", text)
-	}
+// printer gives the Printer of the command: it writes to stderr.
+func (a *app) printer() report.Printer { return report.NewPrinter(a.stderr, a.styled) }
+
+// errorf prints an error line, with no fix.
+func (a *app) errorf(format string, args ...any) {
+	a.printer().ErrorFix(fmt.Sprintf(format, args...), "")
 }
 
-func (a *app) infof(format string, args ...any)  { a.line("ℹ️", fmt.Sprintf(format, args...)) }
-func (a *app) errorf(format string, args ...any) { a.line("❌", fmt.Sprintf(format, args...)) }
+// fail prints an error line with the line of its fix.
+func (a *app) fail(problem, fix string) { a.printer().ErrorFix(problem, fix) }
+
+func (a *app) infof(format string, args ...any) { a.printer().Info(fmt.Sprintf(format, args...)) }
+func (a *app) warnf(format string, args ...any) { a.printer().Warn(fmt.Sprintf(format, args...)) }
+
+// usageErr prints a usage error: the problem, the usage line of the command
+// when it has one, and the pointer to the help.
+func (a *app) usageErr(problem, usage string) {
+	p := a.printer()
+	p.ErrorFix(problem, "")
+	if usage != "" {
+		fmt.Fprintf(a.stderr, "  usage: %s\n", usage)
+	}
+	p.Fix("Run bootstrap --help for all commands")
+}
 
 // logErr prints each message of <err> and gives its code.
 func (a *app) logErr(err error) fail.Code {
@@ -315,7 +365,7 @@ func (a *app) logErr(err error) fail.Code {
 		return fail.OK
 	}
 	for _, m := range source.Messages(err) {
-		a.errorf("%s", m.Error())
+		a.printer().Error(m.Error())
 	}
 	return fail.CodeOf(err)
 }
@@ -334,7 +384,7 @@ type where struct {
 func (a *app) prepare(mac, initCmd bool) (where, fail.Code) {
 	var w where
 	if _, err := exec.LookPath("mise"); err != nil {
-		a.errorf("mise is not available - install it from https://mise.run")
+		a.fail("mise is not available", "install it from https://mise.run")
 		return w, fail.Usage
 	}
 	if mac {
@@ -342,12 +392,12 @@ func (a *app) prepare(mac, initCmd bool) (where, fail.Code) {
 		if initCmd {
 			dir = a.pwd
 		} else if dir == "" {
-			a.errorf("MACOS_SETUP_REPO_PATH is not set - set it to the repository of macos.toml, or run bootstrap mac init in that repository")
+			a.fail("MACOS_SETUP_REPO_PATH is not set", "set it to the repository of macos.toml, or run bootstrap mac init in that repository")
 			return w, fail.Usage
 		}
 		if _, ok := toplevel(dir); !ok {
 			if initCmd {
-				a.errorf("%s is not a git repository - create one with git init, then run bootstrap mac init again", dir)
+				a.fail(dir+" is not a git repository", "create one with git init, then run bootstrap mac init again")
 			} else {
 				a.errorf("MACOS_SETUP_REPO_PATH %s is not a git repository", dir)
 			}
@@ -365,7 +415,7 @@ func (a *app) prepare(mac, initCmd bool) (where, fail.Code) {
 	top, ok := toplevel(dir)
 	if !ok {
 		if initCmd {
-			a.errorf("%s is not a git repository - create one with git init, then run bootstrap init again", dir)
+			a.fail(dir+" is not a git repository", "create one with git init, then run bootstrap init again")
 		} else {
 			a.errorf("%s is not a git repository", dir)
 		}
@@ -383,9 +433,27 @@ func (a *app) prepare(mac, initCmd bool) (where, fail.Code) {
 	return w, fail.OK
 }
 
+// cloneText gives the clone line of a command: the short commit of the
+// clone and its folder, with the home folder as `~`. The commands sync and
+// mac check print their own line.
+func (a *app) cloneText(c *clone) string {
+	commit, ok := git("-C", c.dir, "rev-parse", "--short", "HEAD")
+	if !ok || commit == "" {
+		commit = "an unknown commit"
+	}
+	where := c.repo
+	if where == "" {
+		where = c.dir
+	}
+	if home := a.getenv("HOME"); home != "" && (where == home || strings.HasPrefix(where, home+"/")) {
+		where = "~" + strings.TrimPrefix(where, home)
+	}
+	return "bootstrap " + commit + " · " + where
+}
+
 // openClone takes the clone of the command and checks its version. The
 // caller defers cleanup. With <hold>, the lock stays held to the end.
-func (a *app) openClone(hold bool) (*clone, fail.Code) {
+func (a *app) openClone(hold, line bool) (*clone, fail.Code) {
 	c, code := a.acquireClone()
 	if code != fail.OK {
 		return c, code
@@ -408,11 +476,25 @@ func (a *app) openClone(hold bool) (*clone, fail.Code) {
 		return c, code
 	}
 	_ = os.Setenv("BOOTSTRAP_CLONE", c.dir)
+	if line {
+		a.printer().Clone(a.cloneText(c))
+		// The sync of the command does not print a second clone line.
+		report.CloneShown = true
+	}
 	return c, fail.OK
 }
 
 // frontEnd is the sync of a side, with its change list.
-type frontEnd func(args []string, stdout, stderr io.Writer) ([]string, fail.Code)
+type frontEnd func(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Code)
+
+// planPaths gives the path of each file of a change list.
+func planPaths(list []target.Planned) []string {
+	paths := make([]string, len(list))
+	for i, p := range list {
+		paths[i] = p.Path
+	}
+	return paths
+}
 
 func frontEndOf(mac bool) frontEnd {
 	if mac {
@@ -449,7 +531,7 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
-	c, code := a.openClone(mac && !o.dryRun)
+	c, code := a.openClone(mac && !o.dryRun, false)
 	defer c.cleanup()
 	if code != fail.OK {
 		return code
@@ -459,7 +541,7 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 	skip := valuesSkip(w.values)
 	if o.dryRun {
 		planned, code := run(args, a.stdout, a.stderr)
-		a.warnDirty(dirtyTargets(planned, skip))
+		a.warnDirty(dirtyTargets(planPaths(planned), skip))
 		return code
 	}
 	// The plan, then the write. A repository without a change that is not
@@ -467,7 +549,7 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 	if mac || a.dirtyBesides(w.root, skip) {
 		planned, code := run(append(args, "--dry-run"), io.Discard, io.Discard)
 		if code == fail.OK {
-			if code := a.stopDirty(dirtyTargets(planned, skip)); code != fail.OK {
+			if code := a.stopDirty(dirtyTargets(planPaths(planned), skip)); code != fail.OK {
 				return code
 			}
 		}
@@ -501,7 +583,7 @@ func (a *app) check(mac bool, o opts) fail.Code {
 		return code
 	}
 	_ = w
-	c, code := a.openClone(false)
+	c, code := a.openClone(false, !mac)
 	defer c.cleanup()
 	if code != fail.OK {
 		return code

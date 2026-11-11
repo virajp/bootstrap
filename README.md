@@ -189,7 +189,7 @@ Between two syncs, the gate `code:lint:60-bootstrap` runs `bootstrap check` at
 each commit that changes `.config/bootstrap.toml`.
 
 The sync needs `mise` and a git repository. It lists only the files that
-changed, and it ends with a table of counts. Use `--dry-run` to see the changes
+changed, and it ends with one line of counts. Use `--dry-run` to see the changes
 without writing them. Use `--verbose` of `setup:configs` to list each file,
 also an unchanged one. The user config file `~/.config/bootstrap/config.toml`
 sets the defaults of the CLI: the jobs, the cache, the URL and the clone.

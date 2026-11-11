@@ -14,7 +14,7 @@ import (
 // step is one call of a case: an outcome, an info line, a log line or the
 // start of a run. The summary is always the last call.
 type step struct {
-	call             string // "outcome", "info", "log" or "start"
+	call             string // "outcome", "info", "log", "start", "clone", "step", "success", "warn" or "error"
 	kind             Kind
 	path, text, line string
 	dry              bool
@@ -72,7 +72,15 @@ var goldenCases = []goldenCase{
 		{call: "info", text: "Using bootstrap at 1234567"},
 		{call: "log", text: "kept a (link)"},
 		outcome(New, "a", "", "updated    a"),
-		{call: "info", text: "Set bootstrap_commit to 1234567"},
+		{call: "info", text: "bootstrap_commit changed to 1234567"},
+	}, rc: 0},
+	{name: "status-lines", steps: []step{
+		{call: "clone", text: "bootstrap 1234567 · 14 tools · env dev"},
+		{call: "step", text: "Running mise bootstrap --yes"},
+		{call: "success", text: "mise bootstrap done"},
+		{call: "warn", text: "the init stage changed"},
+		{call: "error", text: "git is not selected - run bootstrap add git"},
+		{call: "error", text: "git is required by the base pack, so remove cannot remove it"},
 	}, rc: 0},
 	{name: "restart", steps: []step{
 		outcome(Changed, "a", "", ""),
@@ -98,6 +106,16 @@ func (c goldenCase) run(style bool) string {
 			r.Log(s.text)
 		case "start":
 			r.Start(s.dry)
+		case "clone":
+			r.Clone(s.text)
+		case "step":
+			r.Step(s.text)
+		case "success":
+			r.Success(s.text)
+		case "warn":
+			r.Warn(s.text)
+		case "error":
+			r.Error(s.text)
 		}
 	}
 	r.Summary(c.rc)
@@ -117,6 +135,12 @@ func TestGolden(t *testing.T) {
 		for _, style := range []bool{false, true} {
 			path := goldenPath(c, style)
 			t.Run(filepath.Base(path), func(t *testing.T) {
+				if os.Getenv("UPDATE_GOLDEN") == "1" {
+					if err := os.WriteFile(path, []byte(c.run(style)), 0o644); err != nil {
+						t.Fatal(err)
+					}
+					return
+				}
 				want, err := os.ReadFile(path)
 				if err != nil {
 					t.Fatal(err)

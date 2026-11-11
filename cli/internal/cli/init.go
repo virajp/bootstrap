@@ -9,14 +9,17 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/format"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/questions"
+	"github.com/virajp/bootstrap/cli/internal/report"
 	"github.com/virajp/bootstrap/cli/internal/scripts"
 	"github.com/virajp/bootstrap/cli/internal/selection"
 	"github.com/virajp/bootstrap/cli/internal/source"
+	"github.com/virajp/bootstrap/cli/internal/target"
 	"github.com/virajp/bootstrap/cli/internal/values"
 )
 
@@ -131,7 +134,7 @@ func (a *app) init(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
-	c, code := a.openClone(mac)
+	c, code := a.openClone(mac, true)
 	defer c.cleanup()
 	if code != fail.OK {
 		return code
@@ -295,46 +298,53 @@ func (a *app) finish(mac bool, o opts, ch *change) fail.Code {
 	if pc != fail.OK {
 		return pc
 	}
-	var syncs []string
+	var syncs []target.Planned
 	seen := map[string]bool{}
 	for _, p := range planned {
-		if strings.HasPrefix(p, tmp+"/") || seen[p] {
+		if strings.HasPrefix(p.Path, tmp+"/") || seen[p.Path] {
 			continue
 		}
-		seen[p] = true
+		seen[p.Path] = true
 		syncs = append(syncs, p)
 	}
-	sort.Strings(syncs)
+	sort.Slice(syncs, func(i, j int) bool { return syncs[i].Path < syncs[j].Path })
 
 	if len(changes) == 0 && len(syncs) == 0 && ch.before == nil {
-		a.infof("Nothing to change")
+		a.nothingToChange()
 		return fail.OK
 	}
-	fmt.Fprintln(a.stdout, "Changes:")
+	var entries []entry
 	if ch.before != nil {
-		fmt.Fprintf(a.stdout, "  run    %s - %s\n", ch.before.runner.ShownPath(ch.before.job.Tool, ch.before.job.Name), ch.before.note)
+		entries = append(entries, entry{step: true, path: ch.before.runner.ShownPath(ch.before.job.Tool, ch.before.job.Name), note: ch.before.note})
 	}
-	for _, ch := range changes {
-		verb := "write "
-		if ch.Remove {
-			verb = "remove"
+	for _, c := range changes {
+		kind := report.Changed
+		switch {
+		case c.Remove:
+			kind = report.Removed
+		case !exists(c.Path):
+			kind = report.New
 		}
-		fmt.Fprintf(a.stdout, "  %s %s - %s\n", verb, a.show(ch.Path), ch.Note)
+		entries = append(entries, entry{kind: kind, path: a.show(c.Path), note: c.Note})
 	}
 	for _, p := range syncs {
-		fmt.Fprintf(a.stdout, "  sync   %s\n", a.show(p))
+		entries = append(entries, entry{kind: p.Kind, path: a.show(p.Path)})
 	}
-	paths := append(oldform.Paths(changes), syncs...)
+	for _, r := range a.reasons {
+		a.infof("%s", r)
+	}
+	a.printChanges(entries)
+	paths := append(oldform.Paths(changes), planPaths(syncs)...)
 	if o.dryRun {
 		a.warnDirty(dirtyTargets(paths, nil))
 		a.keptSeeds(ch.seeds)
-		a.infof("Dry run: nothing written")
+		a.printer().Success("Dry run: " + count(len(entries), "change") + ", nothing written")
 		return fail.OK
 	}
 	if code := a.stopDirty(dirtyTargets(paths, nil)); code != fail.OK {
 		return code
 	}
-	if done, code := a.consent(o.yes || o.confirmed); done {
+	if done, code := a.consent(o.yes || o.confirmed, len(entries)); done {
 		return code
 	}
 	if ch.before != nil {
@@ -355,6 +365,50 @@ func (a *app) finish(mac bool, o opts, ch *change) fail.Code {
 	_, code = run(syncArgs(mac, opts{noBootstrap: o.noBootstrap}), a.stdout, a.stderr)
 	a.keptSeeds(ch.seeds)
 	return code
+}
+
+// entry is one line of the change list.
+type entry struct {
+	kind report.Kind
+	step bool // A script that runs before the writes.
+	path string
+	note string
+}
+
+// printChanges prints the change list: a blank line, the header, one line for
+// each entry with its glyph, the notes in one column, and a blank line.
+func (a *app) printChanges(entries []entry) {
+	width := 0
+	for _, e := range entries {
+		width = max(width, utf8.RuneCountInString(e.path))
+	}
+	fmt.Fprintln(a.stdout)
+	fmt.Fprintln(a.stdout, "Changes")
+	for _, e := range entries {
+		mark := report.Mark(e.kind, a.styled)
+		if e.step {
+			mark = "▸"
+			if !a.styled {
+				mark = "run    "
+			}
+		}
+		line := "  " + mark + " " + e.path
+		if e.note != "" {
+			line += strings.Repeat(" ", width-utf8.RuneCountInString(e.path)+2) + e.note
+		}
+		fmt.Fprintln(a.stdout, line)
+	}
+	fmt.Fprintln(a.stdout)
+}
+
+// nothingToChange ends a command that has nothing to do. The reasons of the
+// command follow the first words.
+func (a *app) nothingToChange() {
+	text := "Nothing to change"
+	for _, r := range a.reasons {
+		text += " · " + r
+	}
+	a.printer().Success(text)
 }
 
 // keptSeeds lists each seed of a removed tool: the seed stays.
@@ -382,7 +436,7 @@ func (a *app) ask(mac bool, sel *selected, o opts, only map[string]bool) ([][3]s
 	for _, ans := range o.answers {
 		name, value, ok := strings.Cut(ans, "=")
 		if _, known := byName[name]; !ok || !known {
-			a.errorf("--answer %s: no question %s of the selected tools - the form is <tool>.<key>=<value>", ans, name)
+			a.fail(fmt.Sprintf("--answer %s: no question %s of the selected tools", ans, name), "the form is <tool>.<key>=<value>")
 			rc = fail.Usage
 			continue
 		}
@@ -405,16 +459,16 @@ func (a *app) ask(mac bool, sel *selected, o opts, only map[string]bool) ([][3]s
 			continue
 		}
 		if o.yes || !a.interactive() {
-			a.errorf("the question %s has no answer - give it with --answer %s=<value>", qq.Name(), qq.Name())
+			a.fail(fmt.Sprintf("the question %s has no answer", qq.Name()), fmt.Sprintf("give it with --answer %s=<value>", qq.Name()))
 			rc = fail.Usage
 			continue
 		}
 		proposal, _ := questions.Proposal(qq, dir)
 		for {
 			if proposal != "" {
-				fmt.Fprintf(a.stdout, "%s (%s)\n  [%s]: ", qq.Text, qq.Name(), proposal)
+				fmt.Fprintf(a.stdout, "? %s (%s)\n  [%s]: ", qq.Text, qq.Name(), proposal)
 			} else {
-				fmt.Fprintf(a.stdout, "%s (%s)\n  : ", qq.Text, qq.Name())
+				fmt.Fprintf(a.stdout, "? %s (%s)\n  : ", qq.Text, qq.Name())
 			}
 			line, ok := a.readLine()
 			if !ok {
@@ -471,7 +525,7 @@ func (a *app) questions(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
-	c, code := a.openClone(false)
+	c, code := a.openClone(false, true)
 	defer c.cleanup()
 	if code != fail.OK {
 		return code
@@ -499,7 +553,7 @@ func (a *app) questions(mac bool, o opts) fail.Code {
 	if len(o.names) > 0 {
 		for _, n := range o.names {
 			if sel.idx.Manifests[n] == nil {
-				a.errorf("unknown tool %s", n)
+				a.errorf("%s is not a bootstrap tool", n)
 				return fail.Missing
 			}
 		}
@@ -530,20 +584,56 @@ func (a *app) questions(mac bool, o opts) fail.Code {
 		fmt.Fprintln(a.stdout, string(b))
 		return fail.OK
 	}
+	out := report.NewPrinter(a.stdout, a.styled)
 	if len(rows) == 0 {
-		fmt.Fprintln(a.stdout, "No questions.")
+		out.Success("No questions")
 		return fail.OK
 	}
+	width := 0
 	for _, r := range rows {
-		fmt.Fprintf(a.stdout, "%s.%s: %s\n", r.Tool, r.Key, r.Question)
-		if r.Proposal != nil {
-			fmt.Fprintf(a.stdout, "  proposal: %s (%s)\n", *r.Proposal, *r.Source)
+		width = max(width, utf8.RuneCountInString(r.Key))
+	}
+	pad := strings.Repeat(" ", width+5)
+	tool, answered := "", 0
+	for _, r := range rows {
+		if r.Tool != tool {
+			if tool != "" {
+				fmt.Fprintln(a.stdout)
+			}
+			tool = r.Tool
+			fmt.Fprintln(a.stdout, tool)
 		}
+		fmt.Fprintf(a.stdout, "  %-*s   %s\n", width, r.Key, r.Question)
+		answer := ""
 		if r.Answer != nil {
-			fmt.Fprintf(a.stdout, "  answer:   %v\n", r.Answer)
+			answered++
+			answer = fmt.Sprint(r.Answer)
+			fmt.Fprintf(a.stdout, "%s%s %s\n", pad, report.Glyph("ok", a.styled), shortValue(answer))
 		} else {
-			fmt.Fprintln(a.stdout, "  answer:   none")
+			fmt.Fprintf(a.stdout, "%s%s no answer\n", pad, report.Glyph("error", a.styled))
+		}
+		if r.Proposal != nil && *r.Proposal != answer {
+			fmt.Fprintf(a.stdout, "%s%s proposal (%s): %s\n", pad, report.Glyph("info", a.styled), *r.Source, shortValue(*r.Proposal))
 		}
 	}
+	fmt.Fprintln(a.stdout)
+	text := count(len(rows), "question")
+	if answered > 0 {
+		text += fmt.Sprintf(" · %d answered", answered)
+	}
+	if answered < len(rows) {
+		text += fmt.Sprintf(" · %d without an answer", len(rows)-answered)
+	}
+	out.Info(text)
 	return fail.OK
+}
+
+// shortValue gives <v>, or for a value longer than 40 characters its first
+// 20 characters, "…" and its last 4 characters.
+func shortValue(v string) string {
+	r := []rune(v)
+	if len(r) <= 40 {
+		return v
+	}
+	return string(r[:20]) + "…" + string(r[len(r)-4:])
 }

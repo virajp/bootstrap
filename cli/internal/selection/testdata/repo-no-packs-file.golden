@@ -1,4 +1,4 @@
 rc=3
 --- stderr
-repo-sync: pack 'base' is not in bootstrap
+repo-sync: base is not a bootstrap pack
 --- stdout

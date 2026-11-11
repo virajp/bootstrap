@@ -67,7 +67,8 @@ Go module `github.com/virajp/bootstrap/cli`.
 The task `test:go` of this repository runs `go vet`, a `gofmt` check and
 `go test` in the module. Some unit tests compare the output of a case with a
 golden file in `testdata/`. `UPDATE_GOLDEN=1 go test ./internal/<package>`
-writes the golden files of `selection`, `misegen`, `source` and `tmpl` again.
+writes the golden files of `selection`, `misegen`, `source`, `tmpl`, `manifest`
+and `report` again.
 The golden files of `internal/tmpl` hold the output of the gomplate CLI for the
 template functions and the inline templates.
 
@@ -117,7 +118,11 @@ A flag of a repo command also applies to the same `mac` command, for example
 `--flag=value`. An empty value is a usage error.
 
 A flag that a command does not take, an unknown command, and `add` or `remove`
-without a tool name are usage errors (code 2).
+without a tool name are usage errors (code 2). A usage error prints the problem,
+the usage line of that command only, and a pointer to the help. See
+[The output of a run](#the-output-of-a-run). `bootstrap --help` and
+`bootstrap <command> --help` print the full help on stdout, in the groups
+`Repository`, `Mac` and `Flags`.
 
 ### The preflight
 
@@ -152,7 +157,9 @@ full change list in memory first: the writes of the values file, the
 migrations, and each file that the sync writes, changes or removes. The sync
 part comes from a quiet dry run of the front-end with the new values file.
 
-- An empty change list prints `Nothing to change` and exits 0.
+- An empty change list prints `✔ Nothing to change` and exits 0. When the
+  command has a reason, for example that a tool is already selected, the line
+  adds it after `·`: `✔ Nothing to change · python is already selected`.
 - `--dry-run` prints the list, names each dirty target, and writes nothing.
 - Else the command applies the clean-target rule, asks for consent, writes the
   values file and the migrations, and then runs the sync.
@@ -164,9 +171,10 @@ writes.
 
 ### The consent
 
-`--yes` writes the changes. Else the command asks at a prompt in a terminal.
-A "no" writes nothing and exits 0 with `Nothing changed`. Without a terminal,
-and without `--yes`, the command stops with code 2: `changes need --yes`.
+`--yes` writes the changes. Else the command asks at a prompt in a terminal:
+`? Write <n> changes? [y/N]` (`1 change` for one). A "no" writes nothing and
+exits 0 with `· Nothing changed`. Without a terminal, and without `--yes`, the
+command stops with code 2: `changes need --yes`.
 
 ### The clean-target rule
 
@@ -176,7 +184,7 @@ staged or untracked). It names each such target and stops with code 2, and it
 writes nothing.
 
 - The rule applies only to a target inside a git work tree.
-- `--dry-run` never stops. It names each dirty target in an info line.
+- `--dry-run` never stops. It names each dirty target in a warning line.
 - `sync` does not apply the rule to the values file, because it writes only
   `bootstrap_commit` there. `init` applies the rule to the values file.
 - `replace` needs a clean work tree, because its migrate script can change any
@@ -220,15 +228,38 @@ it adds.
   proposal, an empty input is not accepted.
 - With `--yes`, or without a terminal, the command does not accept a proposal:
   a question without an `--answer` stops the command with code 2.
-- `questions` lists each question with its proposal and its source (`detect` or
-  `example`), and its answer. The `detect` command runs in the repository, or
-  in `$HOME` on the Mac.
+- `questions` lists the questions in one group for each tool. Each question has
+  its key, its text, and its answer: `✔ <answer>`, or `✗ no answer`. A line
+  `· proposal (<source>): <proposal>` follows only when the question has a
+  proposal that is not the answer. The source is `detect` or `example`. A value
+  longer than 40 characters shows its first 20 characters, `…` and its last 4
+  characters. The last line counts the questions:
+  `· 6 questions · 5 answered · 1 without an answer` (a zero part is absent).
+  Without a question, the output is `✔ No questions`. `--json` is not changed.
+  The `detect` command runs in the repository, or in `$HOME` on the Mac.
+
+```text
+git
+  email_github   Which email do your GitHub commits use?
+                 ✔ me@users.noreply.github.com
+  signing_key    Which SSH public key signs your commits?
+                 ✔ ssh-ed25519 AAAAC3Nz…ICGo
+                 · proposal (detect): ssh-ed25519 AAAAC3Nz…CBSM ssh-digitalocean
+
+1password
+  ssh_vault      Which 1Password vault holds your SSH keys?
+                 ✗ no answer
+                 · proposal (example): Personal
+
+· 3 questions · 2 answered · 1 without an answer
+```
 
 ### `add` and `remove`
 
 `add` writes an empty `[tools.<name>]` table for each named tool and each
 dependency that is not selected yet. A tool that is already selected, also
-through a pack, gets an info line and no table.
+through a pack, gets no table. The reason `<tool> is already selected` shows in
+the last line when the command has nothing else to do.
 
 `remove` acts only on `[tools.<name>]` tables. It refuses each of these with
 code 2:
@@ -259,21 +290,29 @@ table gets only the `env` of the old table.
 `list` prints a tree. It writes nothing. Each root is `<pack> (pack)` for a pack
 that selects a tool, `base` first and then the other packs by name. The last
 root is `tools (selected directly)` for the tools of `[tools.<name>]`, and it
-is absent when there are none.
+is absent when there are none. With the style on, the root names are bold.
 
 Below a root are its tools, sorted by name. Below a tool are its dependencies,
-sorted by name, and a dependency of a dependency goes one level lower. A tool
-with more than one parent shows below each parent. A required tool has the
-marker `[required]`, and all markers are in one column.
+sorted by name, and a dependency of a dependency goes one level lower. The
+subtree of a tool shows in full at its first copy only, in the order of the
+print. Each later copy of a tool that has dependencies shows `<name> ↑` and no
+children. A required tool has the marker `● required`, also on a later copy,
+and all markers are in one column. The last line counts the tools and the packs.
+It adds
+` · ↑ = the subtree shows above` only when the tree has an arrow.
 
 ```text
 base (pack)
-├── git         [required]
-├── pre-commit  [required]
-│   └── python
+├── bash
+│   └── mise          ● required
+│       └── cli
+├── fish
+│   └── mise ↑        ● required
 └── vscode
 tools (selected directly)
 └── claude
+
+· 6 tools · 1 pack · ↑ = the subtree shows above
 ```
 
 ### `detect`
@@ -281,14 +320,48 @@ tools (selected directly)
 `detect` runs the detect script of each tool, in parallel. Each script prints a
 result. See [The scripts of a tool](#the-scripts-of-a-tool).
 
-- `match` of a tool that is not selected: the command offers to add it. A
-  match whose evidence is only the evidence of a selected tool that matches is
-  not offered.
-- `mismatch` of a selected tool is an error.
-- `none` of a selected tool is an info line. The tool stays selected.
-- `--yes` adds each offered tool, and `--no` adds nothing. With `--no`, an
-  offered tool exits 1. Without both flags and without a terminal, the command
-  stops with code 2. `--yes` with `--no` is a usage error.
+The output is the tree of the selected tools, as in [`list`](#list), with the
+same roots and the same order. It shows only a tool that has a detect script,
+and the path from its root to it. The result of each script is in one column,
+and the evidence and the reason follow:
+
+| Result     | Column                                                                                                         |
+| ---------- | -------------------------------------------------------------------------------------------------------------- |
+| `match`    | `✔ found`, then `<evidence>: <reason>`. A list of more than one evidence shows the first and `+N more`.        |
+| `none`     | `· nothing found` (dim) for a tool that a pack selects, also as a dependency. It is part of the pack.          |
+| `none`     | `○ nothing found` (yellow) for a tool selected directly with a `[tools.<name>]` table. The user can remove it. |
+| `mismatch` | `✗ mismatch`. A `mismatch` of a selected tool is an error.                                                     |
+
+A tool that matches and is not selected shows after the tree, in the group
+`Found, not selected`. Its rows use the columns of the tree: the status
+(`offered` or `not offered`) is in the result column, and the evidence is in
+the evidence column.
+
+- `· <tool>  not offered  <evidence> is the evidence of <tool>`: the evidence is
+  only the evidence of a selected tool that matches. The tool is not offered.
+- `✚ <tool>  offered  <evidence>: <reason>`: the command offers to add the tool.
+
+```text
+base (pack)
+└── linter
+    └── node               · nothing found   no package.json
+tools (selected directly)
+├── android                ✔ found           android/settings.gradle: the Gradle files use the Android Gradle plugin
+└── go                     ○ nothing found   no go.mod
+
+Found, not selected
+  · kotlin                 not offered       android/settings.gradle is the evidence of android
+  ✚ github                 offered           .github/: .github/ exists
+
+? Add github? [y/N]
+```
+
+- `--yes` adds each offered tool, and `--no` adds nothing. With `--no`, each
+  offered tool prints `✗ <tool> is found, but it is not selected` with the fix
+  `Run bootstrap add <tool>`, and the command exits 1. Without both flags and
+  without a terminal, the command stops with code 2. `--yes` with `--no` is a
+  usage error.
+- When nothing is offered, the last line is `✔ No tool to add`.
 
 ## The cache and the clone
 
@@ -448,7 +521,7 @@ The rules of the file:
 
 These errors stop the command with code 2. The message names the file, and the
 key when it has one, for example
-`bootstrap: <file>: jobs: needs a number above 0, not 0`:
+`✗ <file>: jobs: needs a number above 0, not 0`:
 
 - A file that is not valid TOML.
 - An unknown key or table, for example `mac.verbose`.
@@ -877,8 +950,10 @@ compares it with `main` to find what changed since the last sync.
   else on the first line. A comment just above a key belongs to that key.
 - Each other line stays. This is the only write of `sync` to the values file.
 - Through a symlink, the sync writes the real file, so the link stays.
-- A real run prints the info line `Set bootstrap_commit to <short commit>`, and
-  a dry run prints `Would set bootstrap_commit to <short commit>`. With verbose,
+- A real run prints the info line `· bootstrap_commit changed to <short
+  commit>`,
+  and a dry run prints `· bootstrap_commit would change to <short commit>`. With
+  verbose,
   the lines are `set bootstrap_commit <commit> in <path>` and
   `would set bootstrap_commit <commit> in <path>`.
 - A missing `macos.toml` is created. See [mac.md](mac.md#macostoml). On the repo
@@ -888,70 +963,173 @@ compares it with `main` to find what changed since the last sync.
 
 The code of the output is in `internal/report`, so both front-ends print the
 same lines. `internal/cli` prints its own lines, for example the change list,
-the prompts and the info lines, with the same style rule.
+the prompts and the status lines, with the same glyphs and the same style rule.
+
+**The glyphs.** One set of glyphs is for all commands. Each glyph is one column
+wide, so the columns stay aligned.
+
+| Glyph     | Meaning                                 | Color                    | Style off            |
+| --------- | --------------------------------------- | ------------------------ | -------------------- |
+| `✔`       | A success, a match, a valid item        | Green                    | `[OK]`               |
+| `✗`       | An error                                | Red                      | `[ERROR]`            |
+| `!`       | A warning                               | Yellow                   | `[WARN]`             |
+| `·`       | An info line                            | Dim                      | `[INFO]`             |
+| `↻`       | The clone and its commit                | Dim                      | `[INFO]`             |
+| `▸`       | A step that runs a command              | Bold                     | `[INFO]`             |
+| `→`       | The fix of an error                     | Dim                      | `  -> <fix>`         |
+| `○`       | A tool selected directly, nothing found | Yellow                   | `[WARN]`             |
+| `●`       | A required tool in `list`               | None                     | `*`                  |
+| `↑`       | A later copy of a subtree in a tree     | None                     | `^`                  |
+| `✎ ✚ ❋ ✖` | A changed, new, seeded, removed file    | Yellow, green, blue, red | The word of the kind |
+
+An error line is `✗ <problem>`. When the error has a fix, a second line
+`  → <fix>` follows, with an upper case first letter. The fix is a command to
+run, for example `  → Run bootstrap add github`, or a short instruction. An
+error that has no fix is one line.
+
+**The first line.** A command that uses the clone prints one line after the
+clone update: `↻ bootstrap <short commit> · <cache path>`, with `$HOME` shown as
+`~`. With `--clone` or `BOOTSTRAP_CLONE`, the path is the clone that the command
+uses. `sync`, `mac sync` and `mac check` print `↻ bootstrap <short commit> ·
+<n> tools · env <environments>` in place of that line, and the Mac side has no
+env part. A command prints one clone line only: after the change list of
+`init`, `add`, `remove`, `replace` and `detect`, the sync does not print its
+own. The other lines of the clone are info lines: `· Cloning into <path>`,
+`· Waiting for another sync (pid <pid>) ...` and `· Removed an old clone at
+<path>`.
 
 **The outcome of a target.** The outcome of a target (a kind, a path, and an
 optional text and log line) replaces each per-file log line. It increments the
 count of the kind and prints the correct line.
 
-| Kind        | Lines of the log                                      | List                | Dry-run word   | Table row      |
-| ----------- | ----------------------------------------------------- | ------------------- | -------------- | -------------- |
-| `changed`   | `updated`, `chmod`, `wrote` of a manifest that exists | `✎ changed`, yellow | `would change` | `Changed`      |
-| `new`       | `updated`, `wrote` of a target that does not exist    | `✚ new`, green      | `would add`    | `New`          |
-| `seeded`    | `updated` of a seed                                   | `❋ seeded`, blue    | `would seed`   | `Seeded`       |
-| `removed`   | `removed`                                             | `✖ removed`, red    | `would remove` | `Removed`      |
-| `failed`    | Each failure message of a target                      | `✗ failed`, red     | `failed`       | `Failed`       |
-| `unchanged` | `unchanged`                                           | None                | None           | `= Unchanged`  |
-| `kept`      | `kept seed`                                           | None                | None           | `◦ Kept seeds` |
-| `skipped`   | `skip seed`, `skip merge`, `skip file`, `skip env`    | None                | None           | `⊘ Skipped`    |
+| Kind        | Lines of the log                                      | List                | Dry-run word   | Count in the last line |
+| ----------- | ----------------------------------------------------- | ------------------- | -------------- | ---------------------- |
+| `changed`   | `updated`, `chmod`, `wrote` of a manifest that exists | `✎ changed`, yellow | `would change` | In the headline        |
+| `new`       | `updated`, `wrote` of a target that does not exist    | `✚ new`, green      | `would add`    | `new`                  |
+| `seeded`    | `updated` of a seed                                   | `❋ seeded`, blue    | `would seed`   | `seeded`               |
+| `removed`   | `removed`                                             | `✖ removed`, red    | `would remove` | `removed`              |
+| `failed`    | Each failure message of a target                      | `✗ failed`, red     | `failed`       | `failed`               |
+| `unchanged` | `unchanged`                                           | None                | None           | `unchanged`            |
+| `kept`      | `kept seed`                                           | None                | None           | `kept seeds`           |
+| `skipped`   | `skip seed`, `skip merge`, `skip file`, `skip env`    | None                | None           | `skipped`              |
+
+The list lines start at the start of the line, with no indent and no blank line
+before the list: `✎ changed  <path>`, `✚ new      <path>`.
 
 - **A failed target:** It counts once, and it has one list line, from its first
-  failure message: `failed <path>: <text>`. `<path>` is the target, and the text
-  does not repeat it. A target that fails with no message gets the text
+  failure message: `✗ failed   <path>: <text>`. `<path>` is the target, and the
+  text does not repeat it. A target that fails with no message gets the text
   `cannot write the target`. A later line for the same target, for example
   `kept existing`, prints only with verbose.
 - **No count:** A failure of the mise config of a tool or of the manifest file
-  has no count, and its message stays. The line `FAILED: <list>` stays, before
-  the table. The other log messages stay too.
+  has no count, and its message stays. The info line `FAILED: <list>` stays
+  before the last line. It names the source file of each failure, not the
+  target, so it does not repeat the list lines of the failed targets.
+- `bootstrap_commit` prints the info line `· bootstrap_commit would change to
+  <short commit>` (`changed to` for a real run) before the last line.
 
-**The table and the last line.** The summary of a run prints them once, as the
-last output of the run: after the stale rule, the manifest write and
-`bootstrap_commit`. A run prints it after the file loop, also on a failure. A
-run that stops before the file loop has no table.
+**The last line.** The summary of a run prints it once, as the last output of
+the run: after the stale rule, the manifest write and `bootstrap_commit`. A run
+prints it after the file loop, also on a failure. A run that stops before the
+file loop has no last line. There is no table. `n` is the sum of the counts
+`changed`, `new`, `seeded` and `removed`.
 
-- The table always has the rows `Changed`, `New`, `Seeded`, `Removed`,
-  `Unchanged`, `Kept seeds`, `Skipped`, `Failed` and `Total`, in that order.
-  `Total` is the sum of the rows.
-- A row with a zero count is dim. Another row takes the color of its kind in the
-  list. `Unchanged`, `Kept seeds`, `Skipped` and `Total` have no color.
-- `n` is the sum of `Changed`, `New`, `Seeded` and `Removed`.
+| Run              | Headline                                                                  |
+| ---------------- | ------------------------------------------------------------------------- |
+| Real run, code 0 | `✔ Synced: <n> files changed`, or `✔ Synced: no file changed`             |
+| Dry run, code 0  | `✔ Dry run: <n> files would change`, or `✔ Dry run: no file would change` |
+| Another code     | A red `✗ The sync failed with code <rc>`                                  |
 
-| Run              | Last line                                                                   |
-| ---------------- | --------------------------------------------------------------------------- |
-| Real run, code 0 | `✅ Synced: <n> files changed`, or `✅ Synced: no file changed`             |
-| Dry run, code 0  | `✅ Dry run: <n> files would change`, or `✅ Dry run: no file would change` |
-| Another code     | A red `❌ The sync failed with code <rc>: <failed count> files failed`      |
+The headline uses `1 file` for one file. After the headline, ` · <count>
+<label>` follows for each kind that is not zero, in the order `new`, `seeded`,
+`removed`, `unchanged`, `kept seeds`, `skipped`, `failed`; the kind `changed` is
+in the headline. A run with another code lists `failed` first, and then each
+other kind that is not zero, with `changed` after `failed`. For example:
 
-The last line uses `1 file` for one file. With no failed file, the line with
-another code stops after `<rc>`.
+```text
+✎ changed  ~/.config/mise/config.toml
+✚ new      ~/.config/zed/settings.json
+✔ Synced: 2 files changed · 1 new · 161 unchanged · 4 kept seeds
+```
+
+```text
+✗ failed   .vscode/settings.json: the merge spec is not valid JSON
+✗ The sync failed with code 1 · 1 failed · 1 changed · 60 unchanged
+```
+
+**The change list.** The change list of `init`, `add`, `remove`, `replace` and
+`detect` has the header `Changes`. Each line is `  <glyph> <path>` with the
+glyph of what the sync does to the file (`✎` changed, `✚` new, `❋` seeded, `✖`
+removed), and a note column that is aligned, for example `remove claude` for
+the values file. A script that runs before the writes has the glyph `▸`. A dry
+run ends with `✔ Dry run: <n> changes, nothing written`. Else the prompt is
+`? Write <n> changes? [y/N]`.
+
+```text
+Changes
+  ✎ .config/bootstrap.toml          remove claude
+  ✖ .config/mise/tasks/setup/ai
+  ✎ .config/repo-generated.tsv
+
+✔ Dry run: 3 changes, nothing written
+```
+
+**Errors.** Each error prints `✗ <problem>` and, when it has a fix, the line
+`  → <fix>`. The problem is a short statement, and the name of a tool has no
+quotes: `✗ nosuchtool is not a bootstrap tool`, `✗ git is required by the base
+pack, so remove cannot remove it`. The front-ends and the packages below them
+write a fix after `-` in the message; the output puts it on its own line.
+Verbose does not change an error.
+
+A usage error prints `✗ <problem>`, then `  usage: bootstrap <command> <its
+flags>` for that command only, then `  → Run bootstrap --help for all commands`.
+An unknown command, or a command that is missing, has no usage line:
+`✗ frob is not a command`.
+
+```text
+✗ sync has no flag --bogus
+  usage: bootstrap sync [--dry-run] [--jobs <n>] [--verbose]
+  → Run bootstrap --help for all commands
+```
+
+**The check.** `check` prints `✔ <values file> is valid` when the local rules of
+the values file pass. Then it prints `✔ check script of <tool>` for each check
+script that ran. A script that fails prints `✗ check script of <tool>: <text>`
+and, when the script gives a fix after `-`, the fix line. The exit codes do not
+change. The local rules are the rules that the engine checks without a tool
+script: the environments, the packs, the members and the overrides. When
+`BOOTSTRAP_CLONE` is not set, the check scripts do not run, and a warning says
+so.
+
+**The step of `mac sync`.** `mac sync` prints `▸ Running mise bootstrap --yes`
+before the command and `✔ mise bootstrap done` after a success. The output of
+mise stays as it is. A failure is the error `✗ mise bootstrap failed with exit
+code <rc>`.
 
 **The style rule.** One rule turns the glyphs and the colors on and off
 together: `FORCE_COLOR` (not `0`) turns them on, `NO_COLOR` turns them off, and
 otherwise they need a terminal on stderr and a `TERM` that is not `dumb`. This
 is the rule of `style_enabled` of `helpers`. The engine does not call
 `helpers`, because the local copy can be stale and the Mac side does not have
-it.
+it. The style table:
 
-| Line      | Style on                       | Style off                         |
-| --------- | ------------------------------ | --------------------------------- |
-| List      | `<glyph> <word> <path>`, color | `<word> <path>`                   |
-| Info      | `ℹ️ <text>`, no color          | `[INFO] <text>`                   |
-| Last line | `✅ <text>` or `❌ <text>`     | `[OK] <text>` or `[ERROR] <text>` |
-| Table     | Box characters                 | ASCII borders (`+`, `-`, `\|`)    |
+| Line    | Style on                           | Style off                                   |
+| ------- | ---------------------------------- | ------------------------------------------- |
+| List    | `<glyph> <word> <path>`, color     | `<word> <path>`                             |
+| Change  | `  <glyph> <path>  <note>`, color  | `  <word> <path>  <note>`                   |
+| Success | `✔ <text>`                         | `[OK] <text>`                               |
+| Error   | `✗ <text>`, red                    | `[ERROR] <text>`                            |
+| Fix     | `  → <fix>`, dim                   | `  -> <fix>`                                |
+| Warning | `! <text>`                         | `[WARN] <text>`                             |
+| Info    | `· <text>`, dim                    | `[INFO] <text>`                             |
+| Clone   | `↻ <text>`, dim                    | `[INFO] <text>`                             |
+| Step    | `▸ <text>`, bold                   | `[INFO] <text>`                             |
+| Tree    | Bold pack names, `●`, `↑`, `✔ ○ ·` | Plain names, `*`, `^`, `[OK] [WARN] [INFO]` |
+| Prompt  | `? <text>`                         | `? <text>`                                  |
 
-These lines have no prefix. A log line of a front-end, on the two sides, has
-the prefix `bootstrap: ` with style off. A line of `internal/cli` shows the
-info glyph or the error glyph, or the same prefix with style off.
+The usage line of a usage error and the output of `config` have no glyph. The
+verbose log lines have the prefix `bootstrap: ` with style on and with style
+off.
 
 **Verbose.** `--verbose` of the engine sets `BOOTSTRAP_VERBOSE=1`, on `init`,
 `sync`, `check`, `add`, `remove`, `replace` and `detect`. `--verbose` of
@@ -960,11 +1138,11 @@ consumes the flag and does not pass it to the engine. A user can also set the
 variable, and only the value `1` turns it on. The config file has no `verbose`
 key. Each target then prints its log line in place of its list line, for
 example `unchanged  <path>`, `updated    <path>`, `kept seed  <path>`,
-`skip env   <path>` or `would update <path>`. The table and the last line stay.
-These lines print only with verbose:
+`skip env   <path>` or `would update <path>`. The last line stays. These lines
+print only with verbose:
 
 - `using bootstrap at <commit>`, `tools:` and, on the repo side,
-  `environments:`. By default, they are one info line. See
+  `environments:`. By default, they are the first line. See
   [repo.md](repo.md#the-entry-tasks) and [mac.md](mac.md#the-output).
 - `kept <path> (link)` and `kept <path> (another repository)`.
 - `done: <ok>/<total> files in sync`, `<ok>/<total> files in sync; existing

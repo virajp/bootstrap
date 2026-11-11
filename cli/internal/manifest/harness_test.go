@@ -325,11 +325,17 @@ func TestCases(t *testing.T) {
 		for _, verbose := range []bool{false, true} {
 			path := goldenPath(c, verbose)
 			t.Run(filepath.Base(path), func(t *testing.T) {
+				got := c.runGo(t, verbose).String()
+				if os.Getenv("UPDATE_GOLDEN") == "1" {
+					if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
+						t.Fatal(err)
+					}
+					return
+				}
 				want, err := os.ReadFile(path)
 				if err != nil {
 					t.Fatal(err)
 				}
-				got := c.runGo(t, verbose).String()
 				// The position in a jq parse error is best effort in
 				// internal/format (see p3-format.md).
 				switch {

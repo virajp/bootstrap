@@ -220,7 +220,7 @@ func (r Runner) Checked(res Result) []*fail.Error {
 	if res.Code == 2 {
 		var probs []*fail.Error
 		for _, l := range lines(res.Stdout) {
-			probs = append(probs, fail.New(fail.Usage, "%s", l))
+			probs = append(probs, fail.New(fail.Usage, "check script of %s: %s", res.Tool, l))
 		}
 		if len(probs) == 0 {
 			probs = append(probs, fail.New(fail.Usage, "%s found a problem and printed no message", r.ShownPath(res.Tool, res.Name)))

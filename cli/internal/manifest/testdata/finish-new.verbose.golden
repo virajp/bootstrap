@@ -2,19 +2,7 @@
 rc=0
 == stderr ==
 bootstrap: updated    new/dir/f.txt
-+---------------+-------+
-| Changed       |     0 |
-| New           |     1 |
-| Seeded        |     0 |
-| Removed       |     0 |
-| Unchanged     |     0 |
-| Kept seeds    |     0 |
-| Skipped       |     0 |
-| Failed        |     0 |
-+---------------+-------+
-| Total         |     1 |
-+---------------+-------+
-[OK] Synced: 1 file changed
+[OK] Synced: 1 file changed · 1 new
 == tree ==
 d 755 root
 d 755 root/new

@@ -125,6 +125,23 @@ run_case() {
   fi
 }
 
+# flatten_log <file>: the output with each fix line joined to its error line, as
+# `<problem> - <fix>`, so a case names a message in one string. The fix has a
+# lower case first letter. The cases of the default output read the log itself.
+flatten_log() {
+  awk 'function flush() { if (have) print prev; have = 0 }
+    /^  -> / { f = substr($0, 6); if (have) { prev = prev " - " tolower(substr(f, 1, 1)) substr(f, 2) } else { print }; next }
+    { flush(); prev = $0; have = 1 }
+    END { flush() }' "$1"
+}
+
+# The grep reads a file: a grep -q on a pipe closes it early, and awk fails.
+log_has() {
+  flatten_log "$log" > "$log.flat"
+  grep -qF -- "$1" "$log.flat"
+}
+log_lacks() { ! log_has "$1"; }
+
 case_body() {
   local dir=$1 name=$2 want=$3 body=$4 change=${5:-} message=${6:-} check=${7:-} got=0
   tmp=$dir clone=$dir/bootstrap consumer=$dir/consumer log=$dir/log failures=0
@@ -165,7 +182,7 @@ case_body() {
   [[ -n $case_color ]] && export FORCE_COLOR=1
   if [[ $got != "$want" ]]; then
     print_error "$name: exit $got, expected $want"
-  elif [[ -n $message ]] && ! grep -qF -- "$message" "$log"; then
+  elif [[ -n $message ]] && ! log_has "$message"; then
     print_error "$name: exit $got, but the output lacks: $message"
   else
     print_success "$name: exit $got"
@@ -390,7 +407,7 @@ run_case "[member.web], an unknown type" 2 'environments = [ "dev" ]
 folder = "projects/web"
 type = "repo"' member_folder "has the type 'repo'"
 run_case "[packs.nope], an unknown pack" 3 'environments = [ "dev" ]
-[packs.nope]' '' "pack 'nope' is not in bootstrap"
+[packs.nope]' '' "nope is not a bootstrap pack"
 run_case "env ci on a tool whose mise tool allows dev only" 2 'environments = [ "dev", "ci" ]
 [tools.pulumi]
 env = [ "dev", "ci" ]' '' "mise tool 'pulumi' of repo/tools/pulumi allows only dev"
@@ -434,7 +451,7 @@ check_no_vscode() {
 run_case "a submodule skips vscode, a root_only tool of the pack base" 0 'environments = [ "dev" ]' \
   consumer_submodule '' check_no_vscode
 run_case "a submodule with [tools.vscode], a root_only tool" 2 'environments = [ "dev" ]
-[tools.vscode]' consumer_submodule "tool 'vscode' is for the root repository only"
+[tools.vscode]' consumer_submodule "vscode is for the root repository only"
 
 # The generated java config already exists in the consumer, so the dry run
 # shows its diff, with the override comments.
@@ -502,7 +519,7 @@ pyproject_ignored() {
 # check_log_lacks <name> <text>: the output of the last case must not have
 # the fixed string <text>.
 check_log_lacks() {
-  if grep -qF -- "$2" "$log"; then
+  if log_has "$2"; then
     print_error "$1: the output has: $2"
     sed 's/^/    /' "$log" >&2
     failures=$((failures + 1))
@@ -773,7 +790,7 @@ run_case "direct_commit, main false in a develop-only repo" 2 'environments = [ 
 direct_commit = false' precommit_develop_branch "the branch 'main' does not exist"
 
 # bootstrap check: the local rules of the values file, with no clone.
-check_valid='valid (local rules)'
+check_valid=' is valid'
 consumer_no_core_branch() { _git -C "$consumer" branch -m main trunk; }
 # A git submodule `sub` in the consumer.
 consumer_with_submodule() {
@@ -818,7 +835,7 @@ run_check "--check, a tool that the clone does not have" 3 'environments = [ "de
 CASE_CLONE=none CASE_BOOTSTRAP_URL="$tmp/no-such-repo" run_check "--check, a clone that fails" 5 \
   'environments = [ "dev" ]' '' 'Cannot clone' check_no_clone
 case_args='--check --dry-run' run_case "--check with --dry-run" 2 'environments = [ "dev" ]' '' \
-  'unknown flag --dry-run'
+  'check has no flag --dry-run'
 run_check "--check, no environments" 0 '' '' 'lists no environments - using dev only'
 run_check "--check, environments with prod" 2 'environments = [ "dev", "prod" ]' '' \
   "environment 'prod' in"
@@ -1118,8 +1135,6 @@ check_that() {
     failures=$((failures + 1))
   fi
 }
-log_has() { grep -qF -- "$1" "$log"; }
-log_lacks() { ! grep -qF -- "$1" "$log"; }
 # log_count <text> <n>: the output has <n> lines with the fixed string <text>.
 log_count() { [[ $(grep -cF -- "$1" "$log") == "$2" ]]; }
 lacks_in_file() { ! grep -qF -- "$1" "$2"; }
@@ -1797,9 +1812,9 @@ run_case "[pack.*], a member that is a string" 2 "$no_tool_values" packs_member_
 run_case "[pack.*], a loop through {} members in packs that are not selected" 2 "$no_tool_values" packs_empty_loop \
   'repo/packs.toml: a pack loop: x -> y -> x'
 run_case "[pack.*], an unknown tool in a pack that is not selected" 3 "$no_tool_values" packs_unknown_tool \
-  "tool 'nope' is not in bootstrap (named in pack odd)"
+  "nope is not a bootstrap tool (named in pack odd)"
 run_case "[pack.*], an unknown pack in a pack that is not selected" 3 "$no_tool_values" packs_unknown_pack \
-  "pack 'nope' is not in bootstrap (named in pack odd)"
+  "nope is not a bootstrap pack (named in pack odd)"
 run_case "[pack.*], a member on two lines" 2 "$no_tool_values" packs_two_lines \
   'repo/packs.toml: [pack.odd] node must be on one line'
 run_case "[pack.*], a member as its own table" 2 "$no_tool_values" packs_subtable \
@@ -2510,19 +2525,24 @@ z = \"z\"\"\"" mtest_new "repo/tools/mtest/$msg_mise_keys" check_mtest_no_hook
 # The default output. A <change> of these cases unsets BOOTSTRAP_VERBOSE and
 # the style variables, and the output is a log file, not a terminal.
 output_default() { unset BOOTSTRAP_VERBOSE FORCE_COLOR NO_COLOR; }
-# table_count <label>: the count of the row <label> of the plain table.
-table_count() { sed -n "s/^| $1 *| *\([0-9]*\) |\$/\1/p" "$log"; }
-table_is() { [[ $(table_count "$1") == "$2" ]]; }
-# One table, and its Total is the sum of its rows.
-table_adds_up() {
-  local label n sum=0
-  for label in Changed New Seeded Removed Unchanged 'Kept seeds' Skipped Failed; do
-    n=$(table_count "$label")
-    [[ -n $n ]] || return 1
-    sum=$((sum + n))
-  done
-  [[ $(grep -c '^| Total ' "$log") == 1 ]] && table_is Total "$sum"
+# count_of <label>: the count of the kind <label> in the last line of the plain
+# output. The kind `changed` is the headline count minus the other kinds in it.
+count_of() {
+  local last n
+  last=$(tail -n 1 -- "$log")
+  if [[ $1 == changed ]]; then
+    n=$(sed -nE 's/^\[[A-Z]+\] (Synced|Dry run): ([0-9]+) files?.*/\2/p' <<< "$last")
+    [[ -n $n ]] || n=0
+    n=$((n - $(count_of new) - $(count_of seeded) - $(count_of removed)))
+    echo "$n"
+    return
+  fi
+  n=$(sed -nE "s/.* · ([0-9]+) $1( .*)?\$/\1/p" <<< "$last")
+  echo "${n:-0}"
 }
+count_is() { [[ $(count_of "$1") == "$2" ]]; }
+# The last line is one line: no table.
+no_table() { ! grep -qE '^\| |^\+---' "$log"; }
 log_line() { grep -qxF -- "$1" "$log"; }
 # The state of the consumer, without its .git.
 consumer_state() {
@@ -2543,7 +2563,7 @@ output_edit_a() { printf '%s\n' '# Synced from bootstrap: repo/tools/fixture/a.t
 check_output_list() {
   local got=0 unchanged lines
   check_that "the default output: the first run lists a new file" log_line "new $consumer/c.txt"
-  check_that "the default output: the first run has a table" table_adds_up
+  check_that "the default output: the first run has no table" no_table
   # A second run writes the mise fragments and `_default` of the first run
   # again, so the third run is the one with exact counts.
   case_rerun || got=$?
@@ -2555,15 +2575,15 @@ check_output_list() {
   check_that "the default output: a changed file" log_line "changed $consumer/a.txt"
   check_that "the default output: a new file" log_line "new $consumer/b.txt"
   check_that "the default output: no unchanged file" log_lacks "$consumer/c.txt"
-  check_that "the default output: Changed" table_is Changed 1
-  check_that "the default output: New" table_is New 1
-  check_that "the default output: Seeded" table_is Seeded 0
-  check_that "the default output: Removed" table_is Removed 0
-  check_that "the default output: Failed" table_is Failed 0
-  check_that "the default output: the sum" table_adds_up
-  check_that "the default output: the last line" test "$(tail -n 1 -- "$log")" = '[OK] Synced: 2 files changed'
+  check_that "the default output: Changed" count_is changed 1
+  check_that "the default output: New" count_is new 1
+  check_that "the default output: Seeded" count_is seeded 0
+  check_that "the default output: Removed" count_is removed 0
+  check_that "the default output: Failed" count_is failed 0
+  check_that "the default output: no table" no_table
+  check_that "the default output: the last line" grep -qE '^\[OK\] Synced: 2 files changed · 1 new( · [0-9]+ (unchanged|kept seeds|skipped))*$' <<< "$(tail -n 1 -- "$log")"
   check_that "the default output: no per-file log line" log_lacks 'unchanged  '
-  unchanged=$(table_count Unchanged)
+  unchanged=$(count_of unchanged)
   got=0
   (
     export BOOTSTRAP_VERBOSE=1
@@ -2572,8 +2592,8 @@ check_output_list() {
   check_that "verbose: exit 0" test "$got" = 0
   lines=$(grep -c '^bootstrap: unchanged  ' "$log") || lines=0
   check_that "verbose: each unchanged file, a.txt and b.txt too" test "$lines" = "$((unchanged + 2))"
-  check_that "verbose: the table" table_adds_up
-  check_that "verbose: the last line" test "$(tail -n 1 -- "$log")" = '[OK] Synced: no file changed'
+  check_that "verbose: no table" no_table
+  check_that "verbose: the last line" grep -qE '^\[OK\] Synced: no file changed( · .*)?$' <<< "$(tail -n 1 -- "$log")"
   got=0
   (
     export BOOTSTRAP_VERBOSE=true
@@ -2588,7 +2608,7 @@ check_output_list() {
   check_that "--verbose: exit 0" test "$got" = 0
   lines=$(grep -c '^bootstrap: unchanged  ' "$log") || lines=0
   check_that "--verbose: each unchanged file" test "$lines" = "$((unchanged + 2))"
-  check_that "--verbose: the last line" test "$(tail -n 1 -- "$log")" = '[OK] Synced: no file changed'
+  check_that "--verbose: the last line" grep -qE '^\[OK\] Synced: no file changed( · .*)?$' <<< "$(tail -n 1 -- "$log")"
 }
 case_args=' ' run_case "the default output: the list and the table" 0 "$fixture_values" output_files '' check_output_list
 
@@ -2600,13 +2620,13 @@ output_seed() {
 check_output_seed() {
   local got=0 seeds
   check_that "the default output, a new seed: seeded" log_line "seeded $consumer/a.txt"
-  seeds=$(table_count Seeded)
+  seeds=$(count_of seeded)
   check_that "the default output, a new seed: counted" test "${seeds:-0}" -ge 1
   case_rerun || got=$?
   check_that "the default output, an existing seed: exit 0" test "$got" = 0
   check_that "the default output, an existing seed: not listed" log_lacks "$consumer/a.txt"
-  check_that "the default output, an existing seed: not seeded" table_is Seeded 0
-  check_that "the default output, an existing seed: Kept seeds" table_is 'Kept seeds' "$seeds"
+  check_that "the default output, an existing seed: not seeded" count_is seeded 0
+  check_that "the default output, an existing seed: Kept seeds" count_is 'kept seeds' "$seeds"
 }
 case_args=' ' run_case "the default output: a seed" 0 "$fixture_values" output_seed '' check_output_seed
 
@@ -2618,11 +2638,10 @@ check_output_failed() {
   check_that "the default output, a failed file: the list" \
     log_line "failed $consumer/bad.json: the result does not parse as json - the current file stays"
   check_that "the default output, a failed file: the good file" log_line "new $consumer/good.txt"
-  check_that "the default output, a failed file: Failed" table_is Failed 1
-  check_that "the default output, a failed file: the sum" table_adds_up
+  check_that "the default output, a failed file: Failed" count_is failed 1
   check_that "the default output, a failed file: no count of files in sync" log_lacks 'files in sync'
   check_that "the default output, a failed file: the last line" \
-    test "$(tail -n 1 -- "$log")" = '[ERROR] The sync failed with code 2: 1 file failed'
+    grep -qE '^\[ERROR\] The sync failed with code 2 · 1 failed( · .*)?$' <<< "$(tail -n 1 -- "$log")"
 }
 case_args=' ' run_case "the default output: a failed file" 2 "$fixture_values" output_failed 'FAILED: ' check_output_failed
 
@@ -2635,10 +2654,10 @@ check_output_dry() {
   check_that "the default dry run: would change" log_line "would change $consumer/a.txt"
   check_that "the default dry run: would add" log_line "would add $consumer/b.txt"
   check_that "the default dry run: the diff of a change" log_has "$consumer/a.txt (bootstrap)"
-  check_that "the default dry run: Changed" table_is Changed 1
-  check_that "the default dry run: the sum" table_adds_up
-  check_that "the default dry run: the commit line" log_has '[INFO] Would set bootstrap_commit to '
-  check_that "the default dry run: the last line" grep -qE '^\[OK\] Dry run: [0-9]+ files would change$' "$log"
+  check_that "the default dry run: Changed" count_is changed 1
+  check_that "the default dry run: no table" no_table
+  check_that "the default dry run: the commit line" log_has '[INFO] bootstrap_commit would change to '
+  check_that "the default dry run: the last line" grep -qE '^\[OK\] Dry run: [0-9]+ files would change( · .*)?$' "$log"
   check_that "the default dry run: writes nothing" test "$(consumer_state)" = "$dry_state"
 }
 run_case "the default output: a dry run" 0 "$fixture_values" output_dry '' check_output_dry
@@ -2650,19 +2669,19 @@ output_forced() {
 }
 check_output_plain() {
   local text
-  for text in '✎' '✚' '❋' '✖' '✗' '┌' '│' 'ℹ️' '✅' '❌' $'\033'; do
+  for text in '✎' '✚' '❋' '✖' '✗' '┌' '│' '↻' '✔' '▸' $'\033'; do
     check_that "no terminal: no $(printf '%q' "$text")" log_lacks "$text"
   done
   check_that "no terminal: the info line" log_has '[INFO] bootstrap '
-  check_that "no terminal: the ASCII table" log_line '+---------------+-------+'
-  check_that "no terminal: the last line" grep -qE '^\[OK\] Synced: [0-9]+ files changed$' "$log"
+  check_that "no terminal: no table" no_table
+  check_that "no terminal: the last line" grep -qE '^\[OK\] Synced: [0-9]+ files changed( · .*)?$' "$log"
 }
 check_output_forced() {
-  check_that "FORCE_COLOR: a changed line" log_has "✎ changed   $consumer/a.txt"
-  check_that "FORCE_COLOR: a new line" log_has "✚ new       $consumer/b.txt"
-  check_that "FORCE_COLOR: the info line" log_has 'ℹ️ bootstrap '
-  check_that "FORCE_COLOR: the box table" log_line '  ┌───────────────┬───────┐'
-  check_that "FORCE_COLOR: the last line" log_has '✅ Synced: '
+  check_that "FORCE_COLOR: a changed line" log_has "✎ changed  $consumer/a.txt"
+  check_that "FORCE_COLOR: a new line" log_has "✚ new      $consumer/b.txt"
+  check_that "FORCE_COLOR: the clone line" log_has '↻ bootstrap '
+  check_that "FORCE_COLOR: no box table" log_lacks '┌'
+  check_that "FORCE_COLOR: the last line" log_has '✔'
   check_that "FORCE_COLOR: an escape code" log_has $'\033['
   check_that "FORCE_COLOR: no plain info line" log_lacks '[INFO]'
 }
@@ -2902,10 +2921,10 @@ CASE_CALL=init_no_yes run_case "init without --yes and without a terminal" 2 "$o
 init_dry_run() { "$bin" init --dry-run; }
 check_init_dry_run() {
   check_values_unchanged
-  check_that "init --dry-run: the values file in the list" log_has 'consumer/.config/bootstrap.toml - migrate the old form'
-  check_that "init --dry-run: the old hook file in the list" log_has 'consumer/.config/repo-sync/pre-commit.yaml - its hooks move'
+  check_that "init --dry-run: the values file in the list" grep -qE 'consumer/\.config/bootstrap\.toml +migrate the old form' "$log"
+  check_that "init --dry-run: the old hook file in the list" grep -qE 'consumer/\.config/repo-sync/pre-commit\.yaml +its hooks move' "$log"
 }
-CASE_CALL=init_dry_run run_case "init --dry-run" 0 "$old_values" old_files 'Dry run: nothing written' \
+CASE_CALL=init_dry_run run_case "init --dry-run" 0 "$old_values" old_files 'changes, nothing written' \
   check_init_dry_run
 sync_old_form() { "$bin" sync; }
 CASE_CALL=sync_old_form run_case "sync on the old form: run bootstrap init" 2 "$old_values" old_files \
@@ -2969,7 +2988,7 @@ sync_dirty_dry_run() {
   "$bin" sync --dry-run
 }
 CASE_CALL=sync_dirty_dry_run run_case "sync --dry-run names a target with changes that are not committed" 0 \
-  'environments = [ "dev" ]' '' '.config/mise.toml has changes that are not committed - a run without --dry-run stops' \
+  'environments = [ "dev" ]' '' '.config/mise.toml has changes that are not committed; a run without --dry-run stops' \
   check_dirty_kept
 sync_dirty_values() {
   printf '%s\n' '# a change that is not committed' >> "$values"
@@ -2985,7 +3004,7 @@ list_base() { "$bin" list; }
 CASE_CALL=list_base run_case "list: a dependency below its tool" 0 'environments = [ "dev" ]' '' '│   └── python'
 CASE_CALL=list_base run_case "list: the root of a pack" 0 'environments = [ "dev" ]' '' 'base (pack)'
 ls_base() { "$bin" ls; }
-CASE_CALL=ls_base run_case "ls: a required tool" 0 'environments = [ "dev" ]' '' '[required]'
+CASE_CALL=ls_base run_case "ls: a required tool" 0 'environments = [ "dev" ]' '' '* required'
 
 # The user config file. BOOTSTRAP_CONFIG of the task names a missing file; a
 # case points it at a file of the case, or gives --config.
@@ -3047,7 +3066,7 @@ config_verbose() {
   "$bin" sync --dry-run
 }
 check_config_verbose() {
-  check_that "a verbose key: names the file and the key" log_has "bootstrap: $tmp/config.toml: verbose: unknown key"
+  check_that "a verbose key: names the file and the key" log_has "[ERROR] $tmp/config.toml: verbose: unknown key"
   check_that "a verbose key: the sync does not start" log_lacks 'Dry run: '
 }
 CASE_CALL=config_verbose run_case "a config file with a verbose key" 2 'environments = [ "dev" ]' '' \
@@ -3058,7 +3077,7 @@ config_jobs_string() {
 }
 check_config_jobs_string() {
   check_that "jobs as a string: names the file and the key" \
-    log_has "bootstrap: $tmp/config.toml: jobs: needs a number above 0, not a string"
+    log_has "[ERROR] $tmp/config.toml: jobs: needs a number above 0, not a string"
 }
 CASE_CALL=config_jobs_string run_case "a config file with jobs as a string" 2 'environments = [ "dev" ]' '' \
   'jobs: needs a number above 0' check_config_jobs_string
@@ -3067,7 +3086,7 @@ config_not_toml() {
   "$bin" config
 }
 check_config_not_toml() {
-  check_that "not TOML: names the file" log_has "bootstrap: $tmp/config.toml: not valid TOML"
+  check_that "not TOML: names the file" log_has "[ERROR] $tmp/config.toml: not valid TOML"
 }
 CASE_CALL=config_not_toml run_case "a config file that is not TOML" 2 'environments = [ "dev" ]' '' \
   'not valid TOML' check_config_not_toml
@@ -3100,24 +3119,24 @@ detect_yes() { synced && "$bin" detect --yes; }
 detect_plain() { synced && "$bin" detect < /dev/null; }
 detect_dry() { synced && "$bin" detect --yes --dry-run; }
 CASE_CALL=detect_no run_case "detect --no: a tool that matches and is not selected" 1 "$dev_values" pnpm_files \
-  'tool pnpm matches, but it is not selected - add it with bootstrap add pnpm'
+  'pnpm is found, but it is not selected - run bootstrap add pnpm'
 check_detect_yes() {
   check_that "detect --yes: the values file selects pnpm" tomlq '.tools | has("pnpm")'
   check_that "detect --yes: the mise config of pnpm" test -f "$consumer/.config/mise/conf.d/pnpm/mise.dev.toml"
 }
 CASE_CALL=detect_yes run_case "detect --yes adds the tool that matches" 0 "$dev_values" pnpm_files 'Synced: ' check_detect_yes
 check_detect_dry() { check_that "detect --dry-run: the values file stays" not_grep 'pnpm' "$values"; }
-CASE_CALL=detect_dry run_case "detect --yes --dry-run" 0 "$dev_values" pnpm_files 'Dry run: nothing written' check_detect_dry
+CASE_CALL=detect_dry run_case "detect --yes --dry-run" 0 "$dev_values" pnpm_files 'changes, nothing written' check_detect_dry
 CASE_CALL=detect_plain run_case "detect without --yes, --no and a terminal" 2 "$dev_values" pnpm_files \
   'the detected tools need --yes or --no'
 check_detect_none() { check_that "detect: nothing to add" log_has 'No tool to add'; }
 CASE_CALL=detect_no run_case "detect: a selected tool that finds nothing stays" 0 "$dev_values" '' \
-  'tool python is selected, but its detect script finds nothing - it stays selected' check_detect_none
+  '' check_detect_none
 CASE_CALL=detect_no run_case "detect: a mismatch for a selected tool" 2 "$dev_values
-[tools.pnpm]" both_files 'tool pnpm is selected, but its detect script gives mismatch: aube-workspace.yaml exists'
+[tools.pnpm]" both_files 'pnpm is selected, but its detect script gives mismatch: aube-workspace.yaml exists'
 CASE_CALL=detect_no run_case "detect: a mismatch for a tool that is not selected" 0 "$dev_values
-[tools.aube]" both_files 'mismatch pnpm'
-check_same_evidence() { check_that "detect: kotlin matches" log_has 'match    kotlin'; }
+[tools.aube]" both_files 'No tool to add'
+check_same_evidence() { check_that "detect: kotlin matches" log_has 'not offered'; }
 CASE_CALL=detect_no run_case "detect: a tool with the evidence of a selected tool" 0 "$dev_values
 [tools.java]" kotlin_java_files 'No tool to add' check_same_evidence
 detect_twice() { synced && "$bin" detect --yes --no; }
@@ -3132,11 +3151,16 @@ detect_files() {
     printf '%s\n' "${f#*=}" > "$consumer/${f%%=*}"
   done
 }
+# check_detect_found: the tool of the case is in the output as found or offered.
+check_detect_found() {
+  check_that "detect script of $DETECT_TOOL: found" grep -qE "($DETECT_TOOL +\\[OK\\] found|\\[NEW\\] $DETECT_TOOL +offered)" "$log"
+}
 detect_case() {
   local tool=$1 code=$2
+  DETECT_TOOL=$tool
   shift 2
   DETECT_FILES=("$@")
-  CASE_CALL=detect_no run_case "detect script of $tool" "$code" "$dev_values" detect_files "match    $tool "
+  CASE_CALL=detect_no run_case "detect script of $tool" "$code" "$dev_values" detect_files '' check_detect_found
 }
 detect_case node 0 'package.json={}'
 detect_case pnpm 1 'package.json={}' 'pnpm-workspace.yaml=packages: []'
@@ -3165,10 +3189,12 @@ detect_case claude 1 'CLAUDE.md=# x'
 detect_case claude 1 '.claude/settings.json={}'
 detect_case apko 1 $'image/apko.yaml=contents:\n  packages: []\nentrypoint:\n  command: /bin/sh'
 detect_case melange 1 $'melange.yaml=package:\n  name: x\nenvironment:\n  contents: {}\npipeline: []'
-check_no_apko() { check_that "detect: apko does not match a melange config" log_lacks 'match    apko'; }
+check_no_apko() {
+  check_that "detect: apko does not match a melange config" not_grep -E "(apko +\\[OK\\] found|\\[NEW\\] apko +offered)" "$log"
+}
 DETECT_FILES=($'melange.yaml=package:\n  name: x\nenvironment:\n  contents: {}\npipeline: []')
 CASE_CALL=detect_no run_case "detect script of apko: a melange config" 1 "$dev_values" detect_files '' check_no_apko
-check_no_flutter() { check_that "detect: flutter does not match Dart only" log_lacks 'match    flutter'; }
+check_no_flutter() { check_that "detect: flutter does not match Dart only" log_lacks 'flutter  offered'; }
 DETECT_FILES=('pubspec.yaml=name: x')
 CASE_CALL=detect_no run_case "detect script of flutter: Dart only" 0 "$dev_values" detect_files '' check_no_flutter
 
@@ -3178,6 +3204,7 @@ check_add_go() {
   check_that "add: the values file selects go" tomlq '.tools | has("go")'
   check_that "add: the go task" test -f "$consumer/.config/mise/tasks/code/lint/40-go"
   check_that "add: the go extension" grep -qF '"golang.go"' "$consumer/.vscode/extensions.json"
+  check_that "add: one clone line" log_count '[INFO] bootstrap ' 1
 }
 CASE_CALL=add_go run_case "add go" 0 "$dev_values" '' 'Synced: ' check_add_go
 add_flutter() { synced && "$bin" add --yes flutter; }
@@ -3191,11 +3218,11 @@ add_plain() { synced && "$bin" add go < /dev/null; }
 check_add_kept() { check_that "add: the values file stays" not_grep 'go' "$values"; }
 CASE_CALL=add_plain run_case "add without --yes and without a terminal" 2 "$dev_values" '' 'changes need --yes' check_add_kept
 add_dry() { synced && "$bin" add --dry-run go; }
-CASE_CALL=add_dry run_case "add --dry-run" 0 "$dev_values" '' 'Dry run: nothing written' check_add_kept
+CASE_CALL=add_dry run_case "add --dry-run" 0 "$dev_values" '' 'changes, nothing written' check_add_kept
 add_none() { synced && "$bin" add; }
-CASE_CALL=add_none run_case "add without a tool" 2 "$dev_values" '' 'bootstrap add needs at least one tool'
+CASE_CALL=add_none run_case "add without a tool" 2 "$dev_values" '' 'add needs at least one tool'
 add_unknown() { synced && "$bin" add --yes nope; }
-CASE_CALL=add_unknown run_case "add of an unknown tool" 3 "$dev_values" '' "tool 'nope' is not in bootstrap"
+CASE_CALL=add_unknown run_case "add of an unknown tool" 3 "$dev_values" '' "nope is not a bootstrap tool"
 add_again() { synced && "$bin" add --yes dprint; }
 CASE_CALL=add_again run_case "add of a selected tool" 0 "$dev_values" '' 'Nothing to change'
 add_dirty() {
@@ -3253,18 +3280,18 @@ CASE_CALL=remove_flutter run_case "remove: the dependencies that no tool needs g
 remove_android() { synced && "$bin" remove --yes android; }
 CASE_CALL=remove_android run_case "remove: a tool that another selected tool needs" 2 "$dev_values
 [tools.flutter]
-[tools.android]" '' 'tool android is needed by flutter - remove that tool first'
+[tools.android]" '' 'android is needed by flutter - remove flutter first'
 remove_named() { synced && "$bin" remove --yes "$REMOVE_TOOL"; }
 REMOVE_TOOL=mise CASE_CALL=remove_named run_case "remove: a required tool" 2 "$dev_values" '' \
-  'tool mise is required - bootstrap remove cannot remove it'
+  'mise is required by the base pack, so remove cannot remove it'
 REMOVE_TOOL=dprint CASE_CALL=remove_named run_case "remove: a tool of a pack" 2 "$dev_values" '' \
-  'tool dprint comes from the pack base - bootstrap remove removes only a tool of [tools.*]'
+  'dprint comes from the base pack, so remove cannot remove it'
 REMOVE_TOOL=gitleaks CASE_CALL=remove_named run_case "remove: a tool of a nested pack" 2 "$dev_values" '' \
-  'tool gitleaks comes from the pack base'
+  'gitleaks comes from the base pack'
 REMOVE_TOOL=go CASE_CALL=remove_named run_case "remove: a tool that is not selected" 2 "$dev_values" '' \
-  'tool go is not selected'
+  'go is not selected'
 REMOVE_TOOL=nope CASE_CALL=remove_named run_case "remove: an unknown tool" 3 "$dev_values" '' \
-  "tool 'nope' is not in bootstrap"
+  "nope is not a bootstrap tool"
 
 # replace: the migrate script of the new tool, then the swap. A fake aube
 # records its calls in $tmp/aube-calls and writes the lock file of its format.
@@ -3312,10 +3339,10 @@ check_replace_dry() {
   check_that "replace --dry-run: the values file stays" tomlq '.tools | has("pnpm")'
 }
 CASE_CALL=replace_dry run_case "replace --dry-run" 0 "$dev_values
-[tools.pnpm]" pnpm_files 'run    repo/tools/aube/scripts/migrate-pnpm' check_replace_dry
+[tools.pnpm]" pnpm_files 'run     repo/tools/aube/scripts/migrate-pnpm' check_replace_dry
 replace_parent() { synced && "$bin" replace --yes pnpm go; }
 CASE_CALL=replace_parent run_case "replace: tools without the same parent" 2 "$dev_values
-[tools.pnpm]" '' "works only between two tools with the same parent - pnpm has the parent 'node', go has ''"
+[tools.pnpm]" '' "works only between two tools with the same parent (pnpm has the parent 'node', go has '')"
 yarn_tool() {
   mkdir -p -- "$clone/repo/tools/yarn"
   printf '%s\n' 'default_envs = [ "dev" ]' 'depends = [ "node" ]' 'parent = "node"' 'root_only = false' \
@@ -3323,11 +3350,11 @@ yarn_tool() {
 }
 replace_no_script() { synced && "$bin" replace --yes pnpm yarn; }
 CASE_CALL=replace_no_script run_case "replace: no migrate script" 2 "$dev_values
-[tools.pnpm]" yarn_tool 'tool yarn has no script repo/tools/yarn/scripts/migrate-pnpm'
+[tools.pnpm]" yarn_tool 'yarn has no script repo/tools/yarn/scripts/migrate-pnpm, so replace cannot replace pnpm with it'
 replace_selected() { synced && "$bin" replace --yes pnpm aube; }
 CASE_CALL=replace_selected run_case "replace: the new tool is selected" 2 "$dev_values
 [tools.pnpm]
-[tools.aube]" '' 'tool aube is already selected'
+[tools.aube]" '' 'aube is already selected'
 replace_dirty() {
   synced
   printf '%s\n' 'x' > "$consumer/untracked.txt"
@@ -3337,7 +3364,7 @@ check_replace_dirty() { check_that "replace: pnpm-workspace.yaml stays" test -f 
 CASE_CALL=replace_dirty run_case "replace: a work tree with changes that are not committed" 2 "$dev_values
 [tools.pnpm]" pnpm_files 'the work tree has changes that are not committed' check_replace_dirty
 replace_one() { synced && "$bin" replace --yes pnpm; }
-CASE_CALL=replace_one run_case "replace with one tool" 2 "$dev_values" '' 'bootstrap replace needs two tools: <old> <new>'
+CASE_CALL=replace_one run_case "replace with one tool" 2 "$dev_values" '' 'replace needs two tools'
 
 while ((${#case_pids[@]})); do
   collect_case
@@ -3527,7 +3554,7 @@ _git -C "$remote" commit --quiet --no-verify --allow-empty -m "second"
 got=0
 run_bin "file://$remote" || got=$?
 check_clone "bootstrap fetches a new commit into the cache" 0 "$got" "$(git -C "$remote" rev-parse HEAD)"
-check_configs_log "bootstrap fetches a new commit into the cache" -h 'Updating the clone'
+check_configs_log "bootstrap fetches a new commit into the cache" -h ' · '
 
 # A live holder makes the run wait. When the holder dies, the run takes its
 # stale lock.
@@ -3582,7 +3609,7 @@ check_clone "$name, the first run" 0 "$got"
 got=0
 run_bin "$remote" || got=$?
 check_clone "$name, the second run" 0 "$got"
-check_configs_log "$name" -h 'Updating the clone'
+check_configs_log "$name" -h ' · '
 check_configs_log "$name" -l 'Cloning into'
 
 name="bootstrap, a non-git folder stops with 2"
@@ -3627,7 +3654,8 @@ new_cache version-old
 got=0
 RUN_BIN=$release_bin run_bin "file://$version_remote" || got=$?
 check_clone "$name" 2 "$got"
-check_configs_log "$name" -h "bootstrap ${release_version} is older than 99.0.0, the version that the clone needs - upgrade it with: mise use -g github:virajp/bootstrap"
+check_configs_log "$name" -h "bootstrap ${release_version} is older than 99.0.0, the version that the clone needs"
+check_configs_log "$name" -h "Upgrade it with: mise use -g github:virajp/bootstrap"
 check_configs_log "$name" -l 'using bootstrap at'
 
 name="bootstrap, a dev build is new enough"
@@ -3649,7 +3677,7 @@ new_cache version-bad
 got=0
 RUN_BIN=$release_bin run_bin "file://$version_remote" || got=$?
 check_clone "$name" 5 "$got"
-check_configs_log "$name" -h "cli/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2') - nothing synced"
+check_configs_log "$name" -h "cli/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2'): nothing synced"
 
 # The gate code:lint:60-bootstrap. It runs `bootstrap check` with the cache
 # clone, and it never fetches.
@@ -3684,7 +3712,7 @@ _git clone --quiet -- "$base_clone" "$gate_cache/repo"
 _git -C "$gate_cache/repo" remote set-url origin https://github.com/virajp/bootstrap.git
 got=0
 run_gate || got=$?
-if [[ $got == 0 ]] && grep -qF 'valid (local rules)' "$log"; then
+if [[ $got == 0 ]] && grep -qF ' is valid' "$log"; then
   print_success "the gate with a cache: exit 0, valid"
 else
   print_error "the gate with a cache: exit $got, or no valid line"

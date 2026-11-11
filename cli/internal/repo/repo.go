@@ -101,6 +101,8 @@ type state struct {
 	derived     map[string]*source.Obj // The derived mise tables of each tool.
 	dirDone     map[string]bool        // The folders at their dir_perm.
 
+	listChecks bool // check: print a line for each check script that passes.
+
 	memberRows  []member
 	membersCode fail.Code
 	membersRead bool
@@ -116,7 +118,7 @@ func Run(args []string, stdout, stderr io.Writer) fail.Code {
 
 // RunWith is Run, and it also gives the change list of a dry run: the
 // absolute path of each file that the run would write, change or remove.
-func RunWith(args []string, stdout, stderr io.Writer) ([]string, fail.Code) {
+func RunWith(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Code) {
 	s := &state{stdout: stdout, stderr: stderr, getenv: os.Getenv, derived: map[string]*source.Obj{}, dirDone: map[string]bool{}}
 	isTerm := false
 	if f, ok := stderr.(*os.File); ok {
@@ -155,7 +157,8 @@ func RunWith(args []string, stdout, stderr io.Writer) ([]string, fail.Code) {
 	return s.e.Planned, code
 }
 
-func (s *state) log(msg string) { s.r.Log(msg) }
+// log prints an error message: the problem and, after " - ", its fix.
+func (s *state) log(msg string) { s.r.Error(msg) }
 
 // logAll prints each message of <err> and gives its code.
 func (s *state) logAll(err error) fail.Code { return source.LogAll(s.r, err) }
@@ -173,12 +176,12 @@ func (s *state) run(args []string) fail.Code {
 		case "--check":
 			check = true
 		default:
-			s.log(Usage)
+			s.r.Log(Usage)
 			return fail.Usage
 		}
 	}
 	if dryRun && check {
-		s.log(Usage)
+		s.r.Log(Usage)
 		return fail.Usage
 	}
 
@@ -194,7 +197,7 @@ func (s *state) run(args []string) fail.Code {
 	// repository was renamed to bootstrap.
 	old := base + "/.config/repo-config.toml"
 	if s.getenv("BOOTSTRAP_VALUES") == "" && !isFile(valuesFile) && isFile(old) {
-		s.log(s.path(old) + " is the old name of the values file - rename it to .config/bootstrap.toml")
+		s.r.Warn(s.path(old) + " is the old name of the values file - rename it to .config/bootstrap.toml")
 		valuesFile = old
 	}
 	if !isFile(valuesFile) {
@@ -233,7 +236,7 @@ func (s *state) sync(dryRun bool) fail.Code {
 	// files come from the same commit. A private copy, because the sync
 	// writes the generated mise config into its clone.
 	if !exists(clone+"/.git") || !s.copyClone(clone, dir) {
-		s.log("cannot use the clone " + clone + " - nothing synced; existing files were left untouched")
+		s.log("cannot use the clone " + clone + ": nothing synced, existing files were left untouched")
 		return fail.Network
 	}
 	s.dir = dir
@@ -242,7 +245,7 @@ func (s *state) sync(dryRun bool) fail.Code {
 	s.r.Start(dryRun)
 	s.e.DryRun = dryRun
 	if s.r.Verbose() {
-		s.log("using bootstrap at " + rev)
+		s.r.Log("using bootstrap at " + rev)
 	}
 	// The full id, for `bootstrap_commit` after a sync without a failure.
 	commit, good := command("", s.stderr, "git", "-C", dir, "rev-parse", "HEAD")
@@ -267,10 +270,10 @@ func (s *state) sync(dryRun bool) fail.Code {
 	}
 	tools := s.res.Tools
 	if s.r.Verbose() {
-		s.log("tools: " + strings.Join(tools, " "))
-		s.log("environments: " + strings.Join(s.envs, " "))
+		s.r.Log("tools: " + strings.Join(tools, " "))
+		s.r.Log("environments: " + strings.Join(s.envs, " "))
 	} else {
-		s.r.Info("bootstrap " + rev + " · " + strconv.Itoa(len(tools)) + " tools · environments: " + strings.Join(s.envs, " "))
+		s.r.Clone("bootstrap " + rev + " · " + strconv.Itoa(len(tools)) + " tools · env " + strings.Join(s.envs, ", "))
 	}
 	s.fileSkips()
 	s.coreTools()
@@ -447,14 +450,14 @@ func (s *state) sync(dryRun bool) fail.Code {
 			return fail.Other
 		}
 		if s.r.Verbose() {
-			s.log("done: " + strconv.Itoa(ok) + "/" + strconv.Itoa(total) + " files in sync")
+			s.r.Log("done: " + strconv.Itoa(ok) + "/" + strconv.Itoa(total) + " files in sync")
 		}
 		s.r.Summary(0)
 		return fail.OK
 	}
-	s.log("FAILED: " + strings.Join(failed, " "))
+	s.r.Info("FAILED: " + strings.Join(failed, " "))
 	if s.r.Verbose() {
-		s.log(strconv.Itoa(ok) + "/" + strconv.Itoa(total) + " files in sync; existing copies of the rest were left untouched")
+		s.r.Log(strconv.Itoa(ok) + "/" + strconv.Itoa(total) + " files in sync; existing copies of the rest were left untouched")
 	}
 	s.r.Summary(int(worst))
 	return worst
@@ -513,10 +516,9 @@ func (s *state) check() fail.Code {
 	_, code := s.memberList(strings.TrimPrefix(s.values, s.root+"/"))
 	add(code)
 	if rc == fail.OK {
+		s.r.Success(s.show + " is valid")
+		s.listChecks = true
 		add(s.checkScripts())
-	}
-	if rc == fail.OK {
-		s.log(s.show + ": valid (local rules)")
 	}
 	return rc
 }

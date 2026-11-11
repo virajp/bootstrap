@@ -53,7 +53,7 @@ func (e *Env) Unblock(dir, root string, spare []string, target string) fail.Code
 				return fail.Other
 			}
 			if e.DryRun {
-				e.Plan(dir)
+				e.Plan(dir, report.Removed)
 				r.Outcome(report.Removed, show, "", "would remove "+show+" (a folder replaces it)")
 				return fail.OK
 			}
@@ -131,7 +131,7 @@ func (e *Env) Shared(tmp, live string, in format.SharedInput) ([]string, fail.Co
 		return nil, fail.Code(fl.Code)
 	}
 	for _, w := range res.Warnings {
-		e.Report.Log("warning: " + w)
+		e.Report.Warn(w)
 	}
 	if err := os.WriteFile(tmp, res.Out, 0o600); err != nil {
 		return nil, fail.Other
@@ -185,7 +185,7 @@ func (e *Env) Finish(mode os.FileMode, tmp, dest, show, fileMode string) fail.Co
 		case err == nil && cur == mode:
 			r.Outcome(report.Unchanged, show, "", "unchanged  "+show)
 		case e.DryRun:
-			e.Plan(dest)
+			e.Plan(dest, report.Changed)
 			r.Outcome(report.Changed, show, "", "would chmod "+octal+" "+show)
 		default:
 			if err := os.Chmod(dest, mode); err != nil {
@@ -198,7 +198,7 @@ func (e *Env) Finish(mode os.FileMode, tmp, dest, show, fileMode string) fail.Co
 	}
 
 	if e.DryRun {
-		e.Plan(dest)
+		e.Plan(dest, kind)
 		r.Outcome(kind, show, "", "would update "+show)
 		if isRegular(dest) {
 			cmd := exec.Command("diff", "-u", "--label", show+" (current)", "--label", show+" (bootstrap)", "--", dest, tmp)

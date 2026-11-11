@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/report"
 )
 
 // tableLine is a TOML table header line, as the awk of bash finds it.
@@ -43,7 +44,7 @@ func (e *Env) RecordCommit(file, key, commit, comment, header string) fail.Code 
 	show := e.Show(file)
 	line := key + ` = "` + commit + `"`
 	cannot := func() fail.Code {
-		r.Log("cannot write " + show)
+		r.Error("cannot write " + show)
 		return fail.Other
 	}
 	real := file
@@ -84,11 +85,11 @@ func (e *Env) RecordCommit(file, key, commit, comment, header string) fail.Code 
 		short = short[:7]
 	}
 	if e.DryRun {
-		e.Plan(real)
+		e.Plan(real, report.Changed)
 		if r.Verbose() {
 			r.Log("would set " + key + " " + commit + " in " + show)
 		} else {
-			r.Info("Would set " + key + " to " + short)
+			r.Info(key + " would change to " + short)
 		}
 		return fail.OK
 	}
@@ -129,7 +130,7 @@ func (e *Env) RecordCommit(file, key, commit, comment, header string) fail.Code 
 	if r.Verbose() {
 		r.Log("set " + key + " " + commit + " in " + show)
 	} else {
-		r.Info("Set " + key + " to " + short)
+		r.Info(key + " changed to " + short)
 	}
 	return fail.OK
 }

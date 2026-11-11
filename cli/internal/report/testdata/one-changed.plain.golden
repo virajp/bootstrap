@@ -1,14 +1,2 @@
 changed a
-+---------------+-------+
-| Changed       |     1 |
-| New           |     0 |
-| Seeded        |     0 |
-| Removed       |     0 |
-| Unchanged     |     0 |
-| Kept seeds    |     0 |
-| Skipped       |     0 |
-| Failed        |     0 |
-+---------------+-------+
-| Total         |     1 |
-+---------------+-------+
 [OK] Synced: 1 file changed

@@ -106,7 +106,7 @@ func gitHead(dir string) string {
 
 // after a message, when it fails.
 func (s *state) bootstrap() fail.Code {
-	s.log("running mise bootstrap --yes")
+	s.r.Step("Running mise bootstrap --yes")
 	rc := 127
 	if mise := lookPath("mise", s.getenv("PATH")); mise != "" {
 		rc = 0
@@ -129,5 +129,6 @@ func (s *state) bootstrap() fail.Code {
 		s.log("mise bootstrap failed with exit code %d", rc)
 		return fail.Other
 	}
+	s.r.Success("mise bootstrap done")
 	return fail.OK
 }

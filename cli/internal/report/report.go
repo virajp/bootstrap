@@ -1,6 +1,6 @@
 // Package report prints the output of a run: the list lines, the verbose log
-// lines, the info lines, the table and the last line. It writes the same bytes
-// as the output functions of the bash file common.
+// lines, the status lines (success, error, warning, info, clone and step) and
+// the last line with the counts.
 //
 // Contract: docs/design/cli.md ("The output of a run").
 package report
@@ -34,23 +34,36 @@ const (
 	blue   = "\033[0;34m"
 	red    = "\033[0;31m"
 	dim    = "\033[2m"
+	bold   = "\033[1m"
 	reset  = "\033[0m"
 )
 
 // The look of each kind: the color, the glyph and the word of its list line,
-// the word of a dry run, and the label of its table row. A kind without a word
-// has no list line.
+// the word of a dry run, and the label of its count in the last line. A kind
+// without a word has no list line.
 var kinds = [nKinds]struct {
 	color, glyph, word, dryWord, label string
 }{
-	Changed:   {yellow, "✎", "changed", "would change", "Changed"},
-	New:       {green, "✚", "new", "would add", "New"},
-	Seeded:    {blue, "❋", "seeded", "would seed", "Seeded"},
-	Removed:   {red, "✖", "removed", "would remove", "Removed"},
-	Unchanged: {"", "=", "", "", "Unchanged"},
-	Kept:      {"", "◦", "", "", "Kept seeds"},
-	Skipped:   {"", "⊘", "", "", "Skipped"},
-	Failed:    {red, "✗", "failed", "failed", "Failed"},
+	Changed:   {yellow, "✎", "changed", "would change", "changed"},
+	New:       {green, "✚", "new", "would add", "new"},
+	Seeded:    {blue, "❋", "seeded", "would seed", "seeded"},
+	Removed:   {red, "✖", "removed", "would remove", "removed"},
+	Unchanged: {"", "", "", "", "unchanged"},
+	Kept:      {"", "", "", "", "kept seeds"},
+	Skipped:   {"", "", "", "", "skipped"},
+	Failed:    {red, "✗", "failed", "failed", "failed"},
+}
+
+// CloneShown is true when the command already printed its clone line. Then the
+// clone line of a front-end does not print again, so a command shows one clone
+// line. internal/cli sets it.
+var CloneShown bool
+
+// Clone prints the clone line of a front-end, unless CloneShown.
+func (r *Report) Clone(text string) {
+	if !CloneShown {
+		r.Printer.Clone(text)
+	}
 }
 
 // Options sets the look of a Report.
@@ -68,6 +81,7 @@ type Options struct {
 // Report counts the outcomes of a run and prints its lines to one writer,
 // the stderr of the engine.
 type Report struct {
+	Printer
 	w      io.Writer
 	opt    Options
 	dryRun bool
@@ -81,7 +95,7 @@ func NewReport(w io.Writer, opt Options) *Report {
 	if opt.Prefix == "" {
 		opt.Prefix = "bootstrap"
 	}
-	r := &Report{w: w, opt: opt}
+	r := &Report{Printer: Printer{W: w, Style: opt.Style}, w: w, opt: opt}
 	r.Start(false)
 	return r
 }
@@ -135,15 +149,6 @@ func (r *Report) Log(msg string) {
 	fmt.Fprintf(r.w, "%s: %s\n", r.opt.Prefix, msg)
 }
 
-// Info prints an info line.
-func (r *Report) Info(text string) {
-	if r.opt.Style {
-		fmt.Fprintf(r.w, "ℹ️ %s\n", text)
-	} else {
-		fmt.Fprintf(r.w, "[INFO] %s\n", text)
-	}
-}
-
 // Outcome reports one target: it counts <kind> and prints its line. <text> is
 // the reason of a failed target, and it does not repeat <path>. <line> is the
 // log line that prints with verbose; without it, verbose prints nothing. A
@@ -174,7 +179,7 @@ func (r *Report) listLine(kind Kind, path, text string) {
 	if k.word == "" {
 		return
 	}
-	word, width := k.word, 9
+	word, width := k.word, 8
 	if kind != Failed && r.dryRun {
 		word, width = k.dryWord, 12
 	}
@@ -186,95 +191,47 @@ func (r *Report) listLine(kind Kind, path, text string) {
 		}
 		return
 	}
-	if !r.listed {
-		r.listed = true
-		fmt.Fprint(r.w, "\n")
-	}
 	if kind == Failed {
-		fmt.Fprintf(r.w, "  %s%s %s %s: %s%s\n", k.color, k.glyph, word, path, text, reset)
+		fmt.Fprintf(r.w, "%s%s %-*s %s: %s%s\n", k.color, k.glyph, width, word, path, text, reset)
 	} else {
-		fmt.Fprintf(r.w, "  %s%s %-*s %s%s\n", k.color, k.glyph, width, word, path, reset)
+		fmt.Fprintf(r.w, "%s%s %-*s %s%s\n", k.color, k.glyph, width, word, path, reset)
 	}
 }
 
-// tableRow prints one row of the table. A row with a zero count is dim.
-func (r *Report) tableRow(kind Kind) {
-	k, count := kinds[kind], r.counts[kind]
-	if !r.opt.Style {
-		fmt.Fprintf(r.w, "| %-13s | %5d |\n", k.label, count)
-		return
-	}
-	color, off := k.color, ""
-	if count == 0 {
-		color = dim
-	}
-	if color != "" {
-		off = reset
-	}
-	fmt.Fprintf(r.w, "  │ %s%s %-11s%s │ %s%5d%s │\n", color, k.glyph, k.label, off, color, count, off)
-}
-
-// Summary prints the table of the counts and the last line of a run that
-// ended with <rc>.
+// Summary prints the last line of a run that ended with <rc>: the headline
+// and, after it, the count of each kind that is not zero. A run that failed
+// lists the failed count first.
 func (r *Report) Summary(rc int) {
-	top, middle, bottom := "+---------------+-------+", "+---------------+-------+", "+---------------+-------+"
-	if r.opt.Style {
-		top = "  ┌───────────────┬───────┐"
-		middle = "  ├───────────────┼───────┤"
-		bottom = "  └───────────────┴───────┘"
-		fmt.Fprint(r.w, "\n")
-	}
 	n := r.counts[Changed] + r.counts[New] + r.counts[Seeded] + r.counts[Removed]
-	total := 0
-	for _, c := range r.counts {
-		total += c
-	}
-	fmt.Fprintln(r.w, top)
-	for kind := Changed; kind < nKinds; kind++ {
-		r.tableRow(kind)
-	}
-	fmt.Fprintln(r.w, middle)
-	if r.opt.Style {
-		fmt.Fprintf(r.w, "  │ %-13s │ %5d │\n", "Total", total)
-	} else {
-		fmt.Fprintf(r.w, "| %-13s | %5d |\n", "Total", total)
-	}
-	fmt.Fprintln(r.w, bottom)
-
-	if rc != 0 {
-		var b strings.Builder
-		fmt.Fprintf(&b, "The sync failed with code %d", rc)
-		switch failed := r.counts[Failed]; {
-		case failed == 1:
-			b.WriteString(": 1 file failed")
-		case failed > 1:
-			fmt.Fprintf(&b, ": %d files failed", failed)
-		}
-		if r.opt.Style {
-			fmt.Fprintf(r.w, "%s❌ %s%s\n", red, b.String(), reset)
-		} else {
-			fmt.Fprintf(r.w, "[ERROR] %s\n", b.String())
-		}
-		return
-	}
 	files := "files"
 	if n == 1 {
 		files = "file"
 	}
-	var text string
-	switch {
-	case r.dryRun && n == 0:
-		text = "Dry run: no file would change"
-	case r.dryRun:
-		text = fmt.Sprintf("Dry run: %d %s would change", n, files)
-	case n == 0:
-		text = "Synced: no file changed"
-	default:
-		text = fmt.Sprintf("Synced: %d %s changed", n, files)
-	}
-	if r.opt.Style {
-		fmt.Fprintf(r.w, "✅ %s\n", text)
+	var b strings.Builder
+	order := []Kind{New, Seeded, Removed, Unchanged, Kept, Skipped, Failed}
+	if rc != 0 {
+		fmt.Fprintf(&b, "The sync failed with code %d", rc)
+		order = []Kind{Failed, Changed, New, Seeded, Removed, Unchanged, Kept, Skipped}
 	} else {
-		fmt.Fprintf(r.w, "[OK] %s\n", text)
+		switch {
+		case r.dryRun && n == 0:
+			b.WriteString("Dry run: no file would change")
+		case r.dryRun:
+			fmt.Fprintf(&b, "Dry run: %d %s would change", n, files)
+		case n == 0:
+			b.WriteString("Synced: no file changed")
+		default:
+			fmt.Fprintf(&b, "Synced: %d %s changed", n, files)
+		}
+	}
+	for _, kind := range order {
+		if c := r.counts[kind]; c > 0 {
+			fmt.Fprintf(&b, " · %d %s", c, kinds[kind].label)
+		}
+	}
+	if rc != 0 {
+		r.Error(b.String())
+	} else {
+		r.Success(b.String())
 	}
 }
