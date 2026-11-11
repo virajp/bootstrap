@@ -444,5 +444,8 @@
   },
   "gaps": [],
   "overrides": [],
-  "run": {}
+  "run": {
+    "worktree": ".worktrees/user-config-file",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-11-user-config-file.jsonl"
+  }
 }
