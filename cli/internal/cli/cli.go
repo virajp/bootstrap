@@ -55,6 +55,8 @@ commands:
   mac add, mac remove, mac replace, mac detect
                        the selection commands for macos.toml
   mac list, mac ls     list the selected Mac tools
+  config               print each setting of the engine, with its value and
+                       its source
   version, --version   print the version
 
 flags:
@@ -70,6 +72,16 @@ flags:
   --json               questions, mac questions: JSON output
   --no-bootstrap       mac init, mac sync, mac check: skip mise bootstrap
   --jobs <n>           the jobs at a time (default: 2 x the CPU count)
+  --verbose            init, sync, check, add, remove, replace, detect: print
+                       the log line of each target
+  --config <path>      each command except version: the config file (default:
+                       ~/.config/bootstrap/config.toml)
+  --cache-dir <path>   each command except version: the cache folder
+  --url <url>          each command except version: the clone URL
+  --clone <path>       each command except version: a clone of bootstrap, with
+                       no fetch
+  --repo-path <path>   each mac command except mac init, and config: the
+                       repository of macos.toml
 `
 
 // app is the state of one command.
@@ -81,14 +93,17 @@ type app struct {
 	styled         bool
 	in             *bufio.Reader
 	pwd            string
+	settings       settings // The settings of the command and their sources.
 }
 
 // opts are the flags and the arguments of a command.
 type opts struct {
 	dryRun, yes, no, json, noBootstrap, help bool
+	verbose                                  bool
 	confirmed                                bool // The user said yes to the changes at a prompt.
 	answers                                  []string
 	names                                    []string
+	values                                   map[string]string // The value flags of the settings, by flag name.
 }
 
 // Run runs the command of <args> and gives its exit code.
@@ -126,19 +141,20 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		cmd = "list"
 	}
 	allowed := map[string]string{
-		"init":      "dry-run yes answer jobs",
-		"sync":      "dry-run jobs",
-		"check":     "jobs",
+		"init":      "dry-run yes answer jobs verbose",
+		"sync":      "dry-run jobs verbose",
+		"check":     "jobs verbose",
 		"questions": "json",
-		"add":       "dry-run yes answer jobs",
-		"remove":    "dry-run yes jobs",
-		"replace":   "dry-run yes answer jobs",
-		"detect":    "dry-run yes no answer jobs",
+		"add":       "dry-run yes answer jobs verbose",
+		"remove":    "dry-run yes jobs verbose",
+		"replace":   "dry-run yes answer jobs verbose",
+		"detect":    "dry-run yes no answer jobs verbose",
 		"list":      "",
+		"config":    "jobs repo-path",
 		"version":   "",
 	}
 	flags, ok := allowed[cmd]
-	if !ok || (mac && cmd == "version") {
+	if !ok || (mac && (cmd == "version" || cmd == "config")) {
 		switch cmd {
 		case "-h", "-help", "--help", "help":
 			if !mac {
@@ -157,6 +173,12 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 	if mac && cmd != "questions" {
 		flags += " no-bootstrap"
 	}
+	if cmd != "version" {
+		flags += " config cache-dir url clone"
+	}
+	if mac && cmd != "init" {
+		flags += " repo-path"
+	}
 	takesNames := cmd == "init" || cmd == "questions" || cmd == "add" || cmd == "remove" || cmd == "replace"
 	o, err := parse(rest, flags, takesNames)
 	if err != nil {
@@ -173,10 +195,17 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		fmt.Fprint(stderr, Usage)
 		return fail.Usage
 	}
-	switch cmd {
-	case "version":
+	if cmd == "version" {
 		fmt.Fprintln(stdout, version)
 		return fail.OK
+	}
+	// The config file, before any other work.
+	if code := a.applySettings(o); code != fail.OK {
+		return code
+	}
+	switch cmd {
+	case "config":
+		return a.config(o)
 	case "sync":
 		return a.sync(mac, o)
 	case "check":
@@ -201,7 +230,7 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 // parse reads the flags of <flags> (names without dashes) and, with
 // <names>, the arguments.
 func parse(args []string, flags string, names bool) (opts, error) {
-	var o opts
+	o := opts{values: map[string]string{}}
 	has := map[string]bool{}
 	for _, f := range strings.Fields(flags) {
 		has[f] = true
@@ -226,7 +255,8 @@ func parse(args []string, flags string, names bool) (opts, error) {
 		if !has[name] {
 			return o, fmt.Errorf("unknown flag %s", arg)
 		}
-		takes := name == "answer" || name == "jobs"
+		takes := name == "answer" || name == "jobs" || name == "config" || name == "cache-dir" ||
+			name == "url" || name == "clone" || name == "repo-path"
 		if takes && !withValue {
 			if i+1 >= len(args) {
 				return o, fmt.Errorf("%s needs a value", arg)
@@ -247,6 +277,8 @@ func parse(args []string, flags string, names bool) (opts, error) {
 			o.json = true
 		case "no-bootstrap":
 			o.noBootstrap = true
+		case "verbose":
+			o.verbose = true
 		case "answer":
 			o.answers = append(o.answers, value)
 		case "jobs":
@@ -254,8 +286,13 @@ func parse(args []string, flags string, names bool) (opts, error) {
 			if err != nil || n < 1 {
 				return o, fmt.Errorf("--jobs needs a number above 0, not '%s'", value)
 			}
-			// The script runner reads it.
-			_ = os.Setenv("BOOTSTRAP_JOBS", value)
+			// applySettings sets BOOTSTRAP_JOBS, which the script runner reads.
+			o.values[name] = value
+		case "config", "cache-dir", "url", "clone", "repo-path":
+			if value == "" {
+				return o, fmt.Errorf("--%s needs a value", name)
+			}
+			o.values[name] = value
 		}
 	}
 	return o, nil
