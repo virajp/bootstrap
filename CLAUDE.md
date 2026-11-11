@@ -32,7 +32,8 @@ files are for this repository only:
   copies it to a consumer. It is the Go module
   `github.com/virajp/bootstrap/cli` (`go.mod`, `cmd/bootstrap/` and
   `internal/`), the CLI `bootstrap` with the commands `init`, `check`, `sync`,
-  `questions`, `detect`, `add`, `remove`, `replace`, `list` and the group `mac`.
+  `questions`, `detect`, `add`, `remove`, `replace`, `list`, `config` and the
+  group `mac`.
   No Go
   file of the engine names a tool: `TestEngineNamesNoTool` examines this rule.
 - `docs/design/`: the contract of the sync, one place for each rule (see "Where
@@ -274,7 +275,9 @@ task that runs only commands.
 
 Each test task sets `BOOTSTRAP_VERBOSE=1`, so a case compares the per-file log
 lines of the sync. The cases of the default output unset it. See
-`docs/design/cli.md` ("The output of a run").
+`docs/design/cli.md` ("The output of a run"). Each test task also sets
+`BOOTSTRAP_CONFIG` to a missing path, so the config file of the user never
+changes a case. See `docs/design/cli.md` ("The config file").
 
 - `test:repo` is the task of this repository in
   `.config/mise/tasks/test/repo`. It runs `bootstrap sync --dry-run`,
@@ -283,7 +286,11 @@ lines of the sync. The cases of the default output unset it. See
   working tree's `repo/` and `cli/` against scratch values files and
   scratch consumers. The init cases run `bootstrap init` on an old values
   file, and the clone cases run the binary against a local origin. The entry
-  cases run the rendered task `setup:configs` with a fake engine. With
+  cases run the rendered task `setup:configs` with a fake engine. The config
+  cases point `BOOTSTRAP_CONFIG` or `--config` at a file of the case, or at a
+  missing file. Most of them run `bootstrap config`. The cases of a `verbose`
+  key and of the key `clone` run `bootstrap sync --dry-run`. A case of the
+  default output also runs `bootstrap sync --verbose`. With
   `BOOTSTRAP_BIN` set to an absolute path, it tests that binary and does not
   build one. It
   compares the exit code and the message of each case. It needs no network when

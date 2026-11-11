@@ -2,10 +2,10 @@
 
 This document holds the rules that both sides of the sync share: the command
 line, the cache and the clone, the version check, the engine variables, the
-tool calls, the scripts of a tool, the templates, the write of one target,
-shared files, the header, the manifest and the stale rule, the values, the
-`bootstrap_commit` key, the output, the exit codes and the release of the
-engine. It is the one place of these rules.
+config file, the tool calls, the scripts of a tool, the templates, the write of
+one target, shared files, the header, the manifest and the stale rule, the
+values, the `bootstrap_commit` key, the output, the exit codes and the release
+of the engine. It is the one place of these rules.
 
 See also: [packs.md](packs.md), [tools.md](tools.md), [mise.md](mise.md),
 [repo.md](repo.md), [mac.md](mac.md).
@@ -46,6 +46,7 @@ Go module `github.com/virajp/bootstrap/cli`.
 | `go.mod`             | The module.                                                                                                                                        |
 | `cmd/bootstrap`      | The command `bootstrap`. It calls `internal/cli`. `version` prints `main.version`, which the release build sets. A local build has `dev`.          |
 | `internal/cli`       | The command line: the preflight, the clone and its lock, the version check, the change list, the clean-target rule, the consent and each command.  |
+| `internal/config`    | The user config file of the engine: its path, its keys and its checks. See [The config file](#the-config-file).                                    |
 | `internal/oldform`   | The old forms of a values file, and their migration. It is the one place of the old names.                                                         |
 | `internal/questions` | The questions of the selected tools, their proposals and their answers.                                                                            |
 | `internal/scripts`   | The run of the scripts of a tool. See [The scripts of a tool](#the-scripts-of-a-tool).                                                             |
@@ -92,30 +93,46 @@ repository of the current folder.
 | `replace <old> <new>`  | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                              |
 | `detect`               | Runs the detect scripts, and offers to add each tool that matches. See [`detect`](#detect).                                                          |
 | `list`, `ls`           | Prints the selected tools as a tree. See [`list`](#list). It writes nothing.                                                                         |
+| `config`               | Prints the config file and each setting, with its value and its source. See [The config file](#the-config-file). There is no `mac config`.           |
 | `version`, `--version` | Prints the version. There is no `mac version`.                                                                                                       |
 
-| Flag                            | Commands                                              | Effect                                                                 |
-| ------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------- |
-| `--dry-run`                     | `init`, `sync`, `add`, `remove`, `replace`, `detect`  | Prints the change list, and writes nothing.                            |
-| `--yes`, `-y`                   | `init`, `add`, `remove`, `replace`, `detect`          | Writes the changes without a prompt. `detect`: adds each matched tool. |
-| `--no`                          | `detect`                                              | Adds nothing. A matched tool that is not selected exits 1.             |
-| `--answer <tool>.<key>=<value>` | `init`, `add`, `replace`, `detect`                    | The answer of a question. The flag can repeat.                         |
-| `--json`                        | `questions`                                           | JSON output, for an AI agent.                                          |
-| `--no-bootstrap`                | each `mac` command except `questions`                 | Skips each `mise bootstrap` step.                                      |
-| `--jobs <n>`                    | each command except `questions`, `list` and `version` | The jobs at a time. The default is 2 × the CPU count.                  |
+| Flag                            | Commands                                                      | Effect                                                                       |
+| ------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `--dry-run`                     | `init`, `sync`, `add`, `remove`, `replace`, `detect`          | Prints the change list, and writes nothing.                                  |
+| `--yes`, `-y`                   | `init`, `add`, `remove`, `replace`, `detect`                  | Writes the changes without a prompt. `detect`: adds each matched tool.       |
+| `--no`                          | `detect`                                                      | Adds nothing. A matched tool that is not selected exits 1.                   |
+| `--answer <tool>.<key>=<value>` | `init`, `add`, `replace`, `detect`                            | The answer of a question. The flag can repeat.                               |
+| `--json`                        | `questions`                                                   | JSON output, for an AI agent.                                                |
+| `--no-bootstrap`                | each `mac` command except `questions`                         | Skips each `mise bootstrap` step.                                            |
+| `--jobs <n>`                    | each command except `questions`, `list` and `version`         | The jobs at a time. The default is 2 × the CPU count.                        |
+| `--verbose`                     | `init`, `sync`, `check`, `add`, `remove`, `replace`, `detect` | Sets `BOOTSTRAP_VERBOSE=1`. See [The output of a run](#the-output-of-a-run). |
+| `--config <path>`               | each command except `version`                                 | The config file. See [The config file](#the-config-file).                    |
+| `--cache-dir <path>`            | each command except `version`                                 | The cache folder. It sets `BOOTSTRAP_CACHE`.                                 |
+| `--url <url>`                   | each command except `version`                                 | The clone URL. It sets `BOOTSTRAP_URL`.                                      |
+| `--clone <path>`                | each command except `version`                                 | A clone of bootstrap, with no lock and no fetch. It sets `BOOTSTRAP_CLONE`.  |
+| `--repo-path <path>`            | each `mac` command except `mac init`, and `config`            | The repository of `macos.toml`. It sets `MACOS_SETUP_REPO_PATH`.             |
+
+A flag of a repo command also applies to the same `mac` command, for example
+`mac sync --verbose`. A flag with a value takes `--flag value` and
+`--flag=value`. An empty value is a usage error.
 
 A flag that a command does not take, an unknown command, and `add` or `remove`
 without a tool name are usage errors (code 2).
 
 ### The preflight
 
-Each command first examines these items. A failure stops it with code 2.
+Before the preflight, each command except `version` reads the config file. An
+error of the file stops the command with code 2. See
+[The config file](#the-config-file).
+
+Each command except `version` and `config` then examines these items. A failure
+stops it with code 2.
 
 - `mise` is on `PATH`.
 - The folder is in a git repository. The repo side uses `MISE_PROJECT_ROOT`,
   else the git top level of the current folder. `mac init` uses the current
-  folder. Each other `mac` command uses `MACOS_SETUP_REPO_PATH`: see
-  [mac.md](mac.md).
+  folder. Each other `mac` command uses `--repo-path` or
+  `MACOS_SETUP_REPO_PATH`: see [mac.md](mac.md).
 - The values file is `.config/bootstrap.toml` of the repository, or the file of
   `BOOTSTRAP_VALUES`. On the Mac, it is `macos.toml` of the repository of
   `macos.toml`.
@@ -275,8 +292,9 @@ result. See [The scripts of a tool](#the-scripts-of-a-tool).
 
 ## The cache and the clone
 
-The cache is `${XDG_CACHE_HOME:-~/.cache}/bootstrap/`. `BOOTSTRAP_CACHE`
-changes the folder. All the consumers of the machine and the Mac side share it.
+The cache is `${XDG_CACHE_HOME:-~/.cache}/bootstrap/`. `--cache-dir`,
+`BOOTSTRAP_CACHE` or the key `cache_dir` of the config file changes the folder.
+All the consumers of the machine and the Mac side share it.
 
 | Entry                 | Use                                                  |
 | --------------------- | ---------------------------------------------------- |
@@ -285,14 +303,15 @@ changes the folder. All the consumers of the machine and the Mac side share it.
 | `lock.takeover/`      | The short lock of the removal of a dead lock.        |
 | `macos-generated.tsv` | The manifest of the Mac side. See [mac.md](mac.md).  |
 
-Each command except `version` takes the clone in `internal/cli`. With
-`BOOTSTRAP_CLONE` set, the command uses that folder as it is: it takes no lock
-and makes no fetch. Else it takes the lock, fetches, and copies the clone to a
-temporary folder. The sync reads only this copy. Thus a change of the clone
-applies to a whole run, and the next run can update the cache.
+Each command except `version` and `config` takes the clone in `internal/cli`.
+With `--clone`, `BOOTSTRAP_CLONE` or the key `clone` of the config file, the
+command uses that folder as it is: it takes no lock and makes no fetch. Else it
+takes the lock, fetches, and copies the clone to a temporary folder. The sync
+reads only this copy. Thus a change of the clone applies to a whole run, and the
+next run can update the cache.
 
-The URL is `https://github.com/virajp/bootstrap.git`. `BOOTSTRAP_URL` changes
-it. The fetch does these steps:
+The URL is `https://github.com/virajp/bootstrap.git`. `--url`, `BOOTSTRAP_URL`
+or the key `url` of the config file changes it. The fetch does these steps:
 
 - It clones when `repo/` is missing or is an empty folder.
 - It fetches the branch `main` when `repo/` is a clone whose `origin` matches
@@ -366,6 +385,99 @@ See [repo.md](repo.md) and [mac.md](mac.md).
 | `BOOTSTRAP_JOBS`        | The jobs at a time. `--jobs` sets it.                                                                                          |
 | `BOOTSTRAP_VALUES`      | The values file of the repo side. The default is `.config/bootstrap.toml`.                                                     |
 | `MACOS_SETUP_REPO_PATH` | The repository of `macos.toml`. See [mac.md](mac.md).                                                                          |
+| `BOOTSTRAP_CONFIG`      | The config file. See [The config file](#the-config-file). The test tasks set it to a missing path.                             |
+
+A flag sets its variable for the run: `--jobs`, `--cache-dir`, `--url`,
+`--clone`, `--repo-path`, `--config` and `--verbose` (`BOOTSTRAP_VERBOSE=1`).
+The config file sets `BOOTSTRAP_JOBS`, `BOOTSTRAP_CACHE`, `BOOTSTRAP_URL` and
+`BOOTSTRAP_CLONE` when no flag and no variable sets them. See
+[The config file](#the-config-file).
+
+## The config file
+
+The user config file holds the defaults of the settings of the engine. Thus a
+user sets them one time, and does not export a variable in each shell. The path
+of the file is the first of these that is set:
+
+1. The flag `--config <path>`. It also sets `BOOTSTRAP_CONFIG`, so a child
+   `bootstrap` reads the same file.
+2. The variable `BOOTSTRAP_CONFIG`.
+3. `$XDG_CONFIG_HOME/bootstrap/config.toml`.
+4. `~/.config/bootstrap/config.toml`, when `XDG_CONFIG_HOME` is not set.
+
+The engine reads only that path. When the file at that path is missing, the
+engine does not try the next path: it uses the defaults. An empty
+`BOOTSTRAP_CONFIG` or `XDG_CONFIG_HOME` is not set. The file has these keys:
+
+| Key         | Type                | Variable          | Flag          |
+| ----------- | ------------------- | ----------------- | ------------- |
+| `jobs`      | An integer above 0. | `BOOTSTRAP_JOBS`  | `--jobs`      |
+| `cache_dir` | A path.             | `BOOTSTRAP_CACHE` | `--cache-dir` |
+| `url`       | A string.           | `BOOTSTRAP_URL`   | `--url`       |
+| `clone`     | A path.             | `BOOTSTRAP_CLONE` | `--clone`     |
+
+For example:
+
+```toml
+cache_dir = "~/.cache/bootstrap"
+jobs = 4
+```
+
+Each value comes from the flag, then the variable, then the file, then the
+default. An empty variable is not set, so the value of the file applies. A
+variable with a value is set, also when the value is bad, for example
+`BOOTSTRAP_JOBS=abc`: it blocks the value of the file. The engine reads the file
+for each command except `version` and help, before the preflight. For each key
+without a flag and without a variable, it sets the variable of the process from
+the file. Thus the scripts of a tool and mise get the value of the file as a
+variable, the same as an exported variable.
+
+The rules of the file:
+
+- A missing file gives the defaults, with no message.
+- A path of `cache_dir` or `clone` is absolute or starts with `~/`. The engine
+  expands a leading `~/` with `HOME`. The engine uses the value of a flag or of
+  a variable as it is.
+- The file is for the repo side and for the Mac side. A `[mac]` table is for the
+  keys of the Mac side only. The table has no key now, so a key in it is an
+  unknown key. An empty `[mac]` table is valid. The file has no key for
+  `MACOS_SETUP_REPO_PATH`: see [mac.md](mac.md).
+- `verbose` is a flag only. A `verbose` key is an unknown key.
+- The file holds only the settings of the engine, never the config of a tool.
+  No sync, no seed and no tool writes the file. Only the user writes it.
+
+These errors stop the command with code 2. The message names the file, and the
+key when it has one, for example
+`bootstrap: <file>: jobs: needs a number above 0, not 0`:
+
+- A file that is not valid TOML.
+- An unknown key or table, for example `mac.verbose`.
+- A wrong type, for example `jobs = "4"`.
+- An empty string, a `jobs` below 1, and a path of `cache_dir` or `clone` that
+  is not absolute and does not start with `~/`.
+- A path that is a folder or that the engine cannot read.
+
+`bootstrap config` prints the file and each key, and changes nothing. It needs
+no git repository, no mise and no clone. The first line is `file`, the path of
+the file and its source (`flag --config`, `variable BOOTSTRAP_CONFIG` or
+`default`), with `(missing)` after the path of a missing file. Then each key has
+one line with its value and its source: `flag --<name>`, `variable <NAME>`,
+`file` or `default`. `-` is no value. The line `mac.repo_path` shows the value
+of `--repo-path` or `MACOS_SETUP_REPO_PATH`. For example:
+
+```text
+file           /Users/me/.config/bootstrap/config.toml  default
+jobs           4                                        flag --jobs
+cache_dir      /Users/me/.cache/bootstrap               default
+url            https://github.com/virajp/bootstrap.git  default
+clone          -                                        default
+mac.repo_path  /Users/me/Projects/macos-setup           variable MACOS_SETUP_REPO_PATH
+```
+
+Only the engine reads the file. The gate `code:lint:60-bootstrap` and the
+cleanup of the old files of `updateall:configs` find the cache only from
+`BOOTSTRAP_CACHE` or the default. With `cache_dir` only in the file, the gate
+skips with no message, and the cleanup uses the default cache.
 
 ## The tool calls
 
@@ -841,10 +953,12 @@ These lines have no prefix. A log line of a front-end, on the two sides, has
 the prefix `bootstrap: ` with style off. A line of `internal/cli` shows the
 info glyph or the error glyph, or the same prefix with style off.
 
-**Verbose.** `--verbose` of `setup:configs` and `updateall:configs` sets
-`BOOTSTRAP_VERBOSE=1`. A user can also set the variable, and only the value `1`
-turns it on. Each entry task consumes the flag and does not pass it to the
-engine. Each target then prints its log line in place of its list line, for
+**Verbose.** `--verbose` of the engine sets `BOOTSTRAP_VERBOSE=1`, on `init`,
+`sync`, `check`, `add`, `remove`, `replace` and `detect`. `--verbose` of
+`setup:configs` and `updateall:configs` also sets the variable. Each entry task
+consumes the flag and does not pass it to the engine. A user can also set the
+variable, and only the value `1` turns it on. The config file has no `verbose`
+key. Each target then prints its log line in place of its list line, for
 example `unchanged  <path>`, `updated    <path>`, `kept seed  <path>`,
 `skip env   <path>` or `would update <path>`. The table and the last line stay.
 These lines print only with verbose:
@@ -878,6 +992,7 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
 
 - A bad flag or command, `add` or `remove` without a tool, `--yes` with `--no`,
   and `--check` with `--dry-run` of the front-end.
+- A config file that breaks a rule: see [The config file](#the-config-file).
 - A missing `mise`, a folder outside a git repository, and a missing values
   file for each command except `init`.
 - An old form of the values file (except for `init`), and a question of a
@@ -954,8 +1069,8 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
 **Code 2, only on the Mac side:**
 
 - A `mise` that is not at `~/.local/bin/mise`.
-- A `MACOS_SETUP_REPO_PATH` that is not set, is not a folder or is not a git
-  repository.
+- A `MACOS_SETUP_REPO_PATH` (or `--repo-path`) that is not set, is not a folder
+  or is not a git repository.
 - A `BOOTSTRAP_CLONE` without `cli/` or `macos/tools/`.
 - A `macos.toml` that breaks a rule, also a `[overrides.mise_env.*]` table.
 - A nested run of `updateall:configs`.

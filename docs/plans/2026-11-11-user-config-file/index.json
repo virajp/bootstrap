@@ -145,11 +145,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-11T16:44:19.546Z",
+      "ended": "2026-11-11T16:48:13.632Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -191,8 +191,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-11T16:44:19.511Z",
       "ended": ""
     },
     {
@@ -436,10 +436,10 @@
       "ended": "2026-11-11T16:09:17.623Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: no stamps; no code unit: nothing to persist; no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-11T16:44:19.305Z"
     }
   },
   "gaps": [
@@ -448,6 +448,13 @@
       "unit": "",
       "stage": "doctor",
       "text": "The repo has no .config/vwf.yaml, so doctor reports only that it is not onboarded and no blocking finding can arise · closed: not a blocking finding; the plan has no code unit, no covers and names no project, and the review cap stays its default of 4",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U4",
+      "stage": "",
+      "text": "The wave 4 review left three fold errors in docs/design/cli.md (lines 313, 400, 1073) open after its two-round cap · closed: the closing pass refolded the three paragraphs by hand with no word changed, and a fresh check answered RESOLVED for each with no regression",
       "state": "closed"
     }
   ],

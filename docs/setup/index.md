@@ -64,7 +64,8 @@ of `bootstrap` in `~/.cache/bootstrap/`. This file uses these commands:
 | `bootstrap mac sync`                     | Syncs the Mac. The task `updateall:configs` runs it.                                                                       |
 
 `bootstrap mac questions` and `bootstrap mac sync` find `macos.toml` through
-`MACOS_SETUP_REPO_PATH`. Before the first sync, give that variable inline.
+`MACOS_SETUP_REPO_PATH`, or `--repo-path <path>`. Before the first sync, give
+that variable inline. The user config file of the CLI has no key for this path.
 
 An agent has no terminal for a prompt of the CLI. Thus give each answer with
 `--answer <tool>.<key>=<value>`, and give `--yes` after the owner agrees with
