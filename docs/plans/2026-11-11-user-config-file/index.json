@@ -1,0 +1,448 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "B27 — user config file ~/.config/bootstrap/config.toml for the engine",
+  "requires": [],
+  "source": [
+    "B27"
+  ],
+  "backlog": [
+    "B27"
+  ],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "execution": "solo",
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-11 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Build the engine from the worktree. In a scratch folder, write a config file with jobs = 3 and cache_dir = \"~/x\". Run `BOOTSTRAP_CONFIG=<file> BOOTSTRAP_CACHE=/tmp/c bootstrap config --jobs 5`.",
+        "pass": "The output shows the file line with source `variable BOOTSTRAP_CONFIG`, jobs 5 with source `flag --jobs`, cache_dir /tmp/c with source `variable BOOTSTRAP_CACHE`, and url with source `default`. With the flag and the variable removed, jobs 3 and cache_dir $HOME/x show source `file`. A file with `verbose = true` exits 2 and names the key and the file."
+      }
+    ]
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-11-user-config-file",
+      "mode": "run",
+      "notes": "Archive the plan folder, only when its gaps list has no open entry. With an open gap, skip this step and report the gaps."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "New behavior: a user config file, new flags and the command `bootstrap config`. Each existing variable and flag keeps its effect, so nothing breaks."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The config file, the new flags and bootstrap config in the engine",
+      "wave": 1,
+      "file": "01-engine.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/internal/config/",
+        "cli/internal/cli/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "The test tasks: BOOTSTRAP_CONFIG and the config cases",
+      "wave": 2,
+      "file": "02-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo",
+        ".config/mise/tasks/test/mac",
+        ".config/mise/tasks/test/macos-tools",
+        ".config/mise/tasks/test/go",
+        "macos/tools/mise/tasks/updateall-configs"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "The new test:repo cases run the flags and the command `bootstrap config` that U1 adds.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Review: the engine change and the test tasks",
+      "wave": 3,
+      "file": "03-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U4",
+      "title": "Docs",
+      "wave": 4,
+      "file": "04-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/cli.md",
+        "docs/design/mac.md",
+        "docs/design/repo.md",
+        "docs/sync/index.md",
+        "docs/setup/index.md",
+        "docs/setup/tools.md"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Gates",
+      "wave": 5,
+      "file": "05-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "README.md, CLAUDE.md, docs/**",
+      "why": "each human-facing doc",
+      "owner": "U4"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D0",
+      "decision": "The rulings of B27 (2026-11-11), agreed before the plan",
+      "ruling": "1. Precedence: flag, then variable, then config file, then default; each existing variable keeps its effect. 2. Path: ~/.config/bootstrap/config.toml, or $XDG_CONFIG_HOME/bootstrap/config.toml when XDG_CONFIG_HOME is set. 3. A missing file: the defaults, with no message. 4. An unknown key or a wrong type: an error; the engine stops with code 2 and names the key and the file. 5. One file for the repo side and the Mac side, with a [mac] table for the keys of the Mac side only. 6. `bootstrap config` prints each key, its value and the source: flag, variable (with its name), file (with its path) or default. 7. No sync, seed or tool writes the file; only the user, or bootstrap when the user explicitly tells it to. The file holds only the settings of the CLI itself, never the config of a tool. 8. The path of the file: the flag --config <path>, then the variable BOOTSTRAP_CONFIG, then the default path of rule 2. The test tasks set BOOTSTRAP_CONFIG to a missing path; a test case of the config points it at a test file; the test tasks do not change XDG_CONFIG_HOME.",
+      "rejected": "Not reopened.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D1",
+      "decision": "How the engine applies the file",
+      "ruling": "Run loads the file at start, after the flags are parsed. A flag sets its variable of the process (as --jobs sets BOOTSTRAP_JOBS now). For each key with no flag and no variable, Run sets the variable of the process from the file. The code that reads the variables (clone.go, cli.go prepare, report.go, scripts.go, macos) does not change. Run records the source of each value for `bootstrap config`.",
+      "rejected": "A config struct passed through each package: a larger change for the same result.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Which keys the file has",
+      "ruling": "Four keys: jobs (integer above 0; variable BOOTSTRAP_JOBS), cache_dir (string; BOOTSTRAP_CACHE), url (string; BOOTSTRAP_URL), clone (string; BOOTSTRAP_CLONE). The user said: \"6 keys are fine\", then removed verbose (D3), then said \"Drop the key\" for [mac] repo_path (D16).",
+      "rejected": "BOOTSTRAP_VALUES (names a file of one repository), BOOTSTRAP_BIN (the engine does not read it), color, [mac] bootstrap, yes (a risk: no consent), timings (B26 not built), update_interval (new behavior).",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "verbose",
+      "ruling": "The user said: \"`verbose` will always be a flag and never a setting inside config\". A new flag --verbose sets BOOTSTRAP_VERBOSE=1 for the run. BOOTSTRAP_VERBOSE=1 keeps its effect, and only the value 1 turns it on. A verbose key in the file is an unknown key: exit 2.",
+      "rejected": "A verbose key in the file.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "Which commands take which new flag",
+      "ruling": "The user said: \"other keys can be file or flag\" and \"All keys get a flag\". --config <path>: each command except version. --cache-dir <path>, --url <url>, --clone <path>: each command that opens the clone, which is each command except version (init, sync, check, questions, add, remove, replace, detect, list, on both sides), and config. --repo-path <path>: each mac command except mac init (mac init uses the current folder), and config. --verbose: init, sync, check, add, remove, replace, detect, on both sides. --jobs keeps its commands. `bootstrap config` takes --config, --jobs, --cache-dir, --url, --clone, --repo-path and --help. Each value flag takes `--flag value` and `--flag=value`, as --jobs does. An empty value of a flag is a usage error (exit 2).",
+      "rejected": "Flags for some keys only.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "A path in the file",
+      "ruling": "A value of cache_dir or clone in the file is absolute or starts with `~/`. The engine expands a leading `~/` with HOME. Any other value stops with code 2 and names the key and the file. Flags and variables keep the current behavior: the engine uses their value as given.",
+      "rejected": "A path relative to the file or to the current folder.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "The errors of the file",
+      "ruling": "Exit 2 for: a file that is not valid TOML (names the file), an unknown key or table (names the key, for example `mac.verbose`, and the file), a wrong type (for example jobs = \"4\"), an empty string, and jobs below 1. The message has the form `bootstrap: <file>: <key>: <problem>` through a.errorf. A missing file at any of the three paths: the defaults, no message (ruling 3). A path that exists but is a folder or cannot be read: exit 2, names the file. The engine reads the file for each command except version and help, and before the preflight, so an error stops the command before any other work.",
+      "rejected": "A warning that ignores the bad key.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "The child processes",
+      "ruling": "A value of the file goes to the scripts and to mise as a variable of the process, the same as an exported variable. Accepted.",
+      "rejected": "Hide the file values from the child processes.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "The command `bootstrap config`",
+      "ruling": "`bootstrap config` writes to stdout and changes nothing. Line 1: `file` and the path of the config file and the source of the path (`flag --config`, `variable BOOTSTRAP_CONFIG` or `default`), and `(missing)` after the path when the file does not exist. Then one line for each key, in this order: jobs, cache_dir, url, clone, mac.repo_path. Each line has three columns: the key, the value and the source. The source is `flag --<name>`, `variable <NAME>`, `file` or `default`; the source `file` does not repeat the path. `-` is no value (for example clone and mac.repo_path by default). The default of jobs is 2 x the CPU count, of cache_dir ${XDG_CACHE_HOME:-$HOME/.cache}/bootstrap, of url the defaultURL of clone.go. The columns are aligned with spaces, as in the example of the plan. It needs no git repository, no mise and no clone. An error of the file exits 2 as in D6. `bootstrap mac config` is an unknown command. No --json. Example:\nfile           /Users/me/.config/bootstrap/config.toml  default\njobs           4                                        flag --jobs\ncache_dir      /Users/me/.cache/bootstrap               default\nurl            https://github.com/virajp/bootstrap.git  default\nclone          -                                        default\nmac.repo_path  /Users/me/Projects/macos-setup           variable MACOS_SETUP_REPO_PATH",
+      "rejected": "A `mac config` command; JSON output; a verbose line.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "The review unit",
+      "ruling": "One review unit (U3) after U1 and U2, because the change lands runnable code: the Go engine and the bash test tasks.",
+      "rejected": "No review unit (the wave review only).",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "The execution mode",
+      "ruling": "solo: each wave has one edit unit, so no two units need to talk.",
+      "rejected": "teams.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "Landing",
+      "ruling": "The user said: \"Merge and push\". A green run lands the branch with `mise run code:merge <branch>` from the branch worktree, which merges to main and pushes.",
+      "rejected": "Stop before the push.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "Bash readers of the cache path (rulings review gaps 1, 2)",
+      "ruling": "Accepted: code:lint:60-bootstrap (repo/tools/mise/tasks/code-lint-bootstrap:45) and legacy_cleanup of updateall:configs (macos/tools/mise/tasks/updateall-configs:95) find the cache only from BOOTSTRAP_CACHE or the XDG default. With cache_dir only in the file, the gate skips with no message and the cleanup uses the default cache. The docs state this limit. No change to those lines.",
+      "rejected": "Make the bash tasks read the config file.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "The comment on --verbose in updateall:configs (gap 3)",
+      "ruling": "Fix the comment only at macos/tools/mise/tasks/updateall-configs:56-58: it must not say that the engine refuses --verbose. The task does not pass --verbose to the engine.",
+      "rejected": "Pass --verbose through the entry task.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "An empty or a bad variable (gaps 6, 7)",
+      "ruling": "An empty variable (for example BOOTSTRAP_CACHE=) is unset, as acquireClone treats it now: the value of the file applies. A non-empty variable is set, also when its value is bad (for example BOOTSTRAP_JOBS=abc): it blocks the file value, and bootstrap config shows its raw value with the source variable <NAME>. The script runner falls back to 2 x the CPU count, as now.",
+      "rejected": "Validate the variables.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Values of the process in the tests (gaps 8, 9)",
+      "ruling": "Each Go test that calls Run uses t.Setenv for BOOTSTRAP_JOBS, BOOTSTRAP_CACHE, BOOTSTRAP_URL, BOOTSTRAP_CLONE, MACOS_SETUP_REPO_PATH, BOOTSTRAP_VERBOSE and BOOTSTRAP_CONFIG first, so Go resets them after the test. A child bootstrap that a script starts sees the values: accepted. test/go exports BOOTSTRAP_CONFIG=/nonexistent/bootstrap/config.toml.",
+      "rejected": "Run restores the environment when it ends.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "[mac] repo_path (rulings review gap 5)",
+      "ruling": "The user said: \"Drop the key\". On an adopted Mac, the mise env exports MACOS_SETUP_REPO_PATH from config_path of macos.toml (macos/tools/mise/tools.toml:18), so the variable always beats a key of the file. The file has no [mac] repo_path key. A [mac] table with any key is an unknown key (exit 2); an empty [mac] table is valid. Ruling 5 stays for a later Mac key. The flag --repo-path stays (D4), and bootstrap config still shows the line mac.repo_path with the source flag --repo-path, variable MACOS_SETUP_REPO_PATH or default (value -).",
+      "rejected": "Keep the key and accept that it applies only outside a mise shell.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Round 2 of the rulings review (gaps 1-3)",
+      "ruling": "1. An empty XDG_CONFIG_HOME is unset: the default path is $HOME/.config/bootstrap/config.toml, as for an empty XDG_CACHE_HOME now; a non-empty value is used as given. 2. --config <path> also sets BOOTSTRAP_CONFIG in the process, the same as each other flag sets its variable (D1), so a child bootstrap reads the same file. 3. The commit of U2 keeps the type test: its change to updateall:configs is one comment, with no change of behavior.",
+      "rejected": "Use an empty XDG_CONFIG_HOME literally; --config without the variable; a separate commit for the comment.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "Round 3 of the rulings review (gaps 2, 3)",
+      "ruling": "1. cli/cmd/bootstrap/main_test.go is exempt from D15 and stays outside each owns list: each of its cases exits at parse, version or help, before Run loads the file. 2. The release is out of scope, by the vwf rule that a plan never releases: the signed tag bootstrap@X.Y.Z and the pin commit of github:virajp/bootstrap are a later hand step (docs/design/cli.md, \"The release of the engine\"). The docs that U4 lands describe the new behavior before a released binary has it; accepted, as for the earlier engine plans.",
+      "rejected": "Add main_test.go to U1; a release step in after_landing.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Round 4 of the rulings review (gaps 1, 2)",
+      "ruling": "1. U2 also fixes the comment at .config/mise/tasks/test/mac:1619-1620 so that it does not say that the engine stops on --verbose; it changes no code of that case. 2. The text that U1 passes to a.errorf is `<file>: <key>: <problem>` (or `<file>: <problem>` with no key); a.errorf adds `bootstrap: ` when unstyled and the glyph on a styled terminal, as for each other error.",
+      "rejected": "Leave the comment; print the prefix by hand.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
