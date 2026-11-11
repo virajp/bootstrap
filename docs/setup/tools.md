@@ -646,7 +646,7 @@ and the entry tasks of the Mac sync.
   is the folder of `macos.toml`. The sync writes it to the mise env as
   `MACOS_SETUP_REPO_PATH`, and `~` at the start becomes `$HOME`. Each
   `bootstrap mac` command except `mac init` finds `macos.toml` through this
-  variable.
+  variable, or through `--repo-path <path>`.
 
 ### `network`
 

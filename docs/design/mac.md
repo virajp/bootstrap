@@ -18,14 +18,21 @@ clone. Each `mac` command needs that repository.
 
 - `bootstrap mac init [tool…]` runs in the current folder, which must be a git
   repository. Else it tells the user to create one with `git init`.
-- Each other `mac` command runs from any folder, and uses
-  `MACOS_SETUP_REPO_PATH`. A variable that is not set, or that does not name a
-  git repository, stops the command with code 2.
+- Each other `mac` command runs from any folder, and uses `--repo-path <path>`
+  or `MACOS_SETUP_REPO_PATH`. The flag sets the variable for the run. A path
+  that is not set, or that does not name a git repository, stops the command
+  with code 2.
 
 The Mac tool `mise` writes `MACOS_SETUP_REPO_PATH` in its `[mise.env]`, from
 the answer `config_path` of `[tools.mise]`. `~` at the start becomes `$HOME`.
 Thus the variable is set in each shell after the first sync. Before the first
 sync, `mac init` sets it for its own run.
+
+The config file of the engine has no key for the repository of `macos.toml`.
+The mise env exports `MACOS_SETUP_REPO_PATH` in each shell, so the variable
+always comes before a key of the file. `bootstrap config` shows the line
+`mac.repo_path` with the value of `--repo-path` or of the variable. See
+[cli.md](cli.md#the-config-file).
 
 ## The entry tasks
 

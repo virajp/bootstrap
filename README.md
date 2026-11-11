@@ -23,8 +23,9 @@ mise use -g github:virajp/bootstrap
 | `bootstrap remove <tool…>`       | Remove the tools and the dependencies that no tool needs, then sync.             |
 | `bootstrap replace <old> <new>`  | Move from one tool to another with the same parent, then sync.                   |
 | `bootstrap list`, `bootstrap ls` | List the selected tools as a tree of packs, tools and dependencies.              |
+| `bootstrap config`               | Print the config file and each setting, with its value and its source.           |
 | `bootstrap --version`            | Print the version.                                                               |
-| `bootstrap mac <command>`        | The same commands for the Mac, with `macos.toml`.                                |
+| `bootstrap mac <command>`        | The same commands for the Mac, with `macos.toml`. There is no `mac config`.      |
 
 Each writing command shows its change list first. `--dry-run` writes nothing,
 and `--yes` writes without a prompt.
@@ -190,7 +191,10 @@ each commit that changes `.config/bootstrap.toml`.
 The sync needs `mise` and a git repository. It lists only the files that
 changed, and it ends with a table of counts. Use `--dry-run` to see the changes
 without writing them. Use `--verbose` of `setup:configs` to list each file,
-also an unchanged one. The rules are in `docs/design/`:
+also an unchanged one. The user config file `~/.config/bootstrap/config.toml`
+sets the defaults of the CLI: the jobs, the cache, the URL and the clone.
+`bootstrap config` shows each setting and its source. The rules are in
+`docs/design/`:
 
 - [`cli.md`](docs/design/cli.md): the command line, the clone,
   the scripts, the write of one file, shared files, the header, the manifest and

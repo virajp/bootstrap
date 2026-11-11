@@ -54,8 +54,8 @@ USAGE
 
 # The flags come from "$@", never from mise's usage_* variables, so the task
 # works the same under `mise run` and under `bash`. `for` expands its list once,
-# so each pass can move its argument to the end of "$@", and --verbose stays
-# out: the engine refuses an unknown flag.
+# so each pass can move its argument to the end of "$@". The task consumes
+# --verbose: it exports BOOTSTRAP_VERBOSE=1 and does not pass the flag on.
 for arg in "$@"; do
   shift
   case ${arg} in

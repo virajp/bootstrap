@@ -13,8 +13,8 @@
   "gaps_of": [],
   "execution": "solo",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-11 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-11 — 146cff5 fd7aa8d 5e4a48e 3ddfc68"
   },
   "consent": {
     "merge": true,
@@ -69,11 +69,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-11T16:09:17.951Z",
+      "ended": "2026-11-11T16:14:26.061Z",
+      "commit": "146cff5",
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -93,11 +93,11 @@
         "U1"
       ],
       "waits": "The new test:repo cases run the flags and the command `bootstrap config` that U1 adds.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-11T16:22:10.652Z",
+      "ended": "2026-11-11T16:38:29.151Z",
+      "commit": "fd7aa8d",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -112,14 +112,14 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-11T16:41:51.912Z",
+      "ended": "2026-11-11T16:43:29.911Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "4c71f4d",
+        "to": "b11da5f"
       }
     },
     {
@@ -145,11 +145,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-11T16:44:19.546Z",
+      "ended": "2026-11-11T16:48:13.632Z",
+      "commit": "5e4a48e",
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -158,48 +158,51 @@
       "file": "05-gates.md",
       "kind": "edit",
       "model": "opus",
-      "owns": [],
+      "owns": [
+        "cli/go.mod",
+        "cli/go.sum"
+      ],
       "depends_on": [
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-11T16:57:27.637Z",
+      "ended": "2026-11-11T17:09:48.887Z",
+      "commit": "3ddfc68",
+      "rounds": 2
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-11T16:09:17.917Z",
+      "ended": "2026-11-11T16:21:57.519Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-11T16:22:10.612Z",
+      "ended": "2026-11-11T16:41:39.692Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-11T16:41:51.876Z",
+      "ended": "2026-11-11T16:43:57.357Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-11T16:44:19.511Z",
+      "ended": "2026-11-11T16:57:14.755Z"
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-11T16:57:27.600Z",
+      "ended": "2026-11-11T16:58:52.608Z"
     }
   ],
   "shared_files": [
@@ -414,35 +417,66 @@
         "U1",
         "U2"
       ]
+    },
+    {
+      "id": "D20",
+      "decision": "Q1: the inherited red plan gate code:sec (grype GHSA-hp87-p4gw-j4gq, High, in gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c, which main also has)",
+      "ruling": "The user said: \"Bump yaml.v3\". Bump gopkg.in/yaml.v3 to v3.0.1 in cli/ with go get and go mod tidy, as one more commit on this branch. The Owns of U5 widens to cli/go.mod and cli/go.sum. Then run the plan gates again and land per the consent.",
+      "rejected": "Land with the red line as an open gap; stop BLOCKED and fix main in a separate change.",
+      "units": [
+        "U5"
+      ]
     }
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: no renders",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-11T16:09:17.700Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: no acceptance criteria",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-11T16:09:17.547Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-11T16:09:17.623Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: no stamps; no code unit: nothing to persist; no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-11T16:44:19.305Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "",
+      "stage": "doctor",
+      "text": "The repo has no .config/vwf.yaml, so doctor reports only that it is not onboarded and no blocking finding can arise · closed: not a blocking finding; the plan has no code unit, no covers and names no project, and the review cap stays its default of 4",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U4",
+      "stage": "",
+      "text": "The wave 4 review left three fold errors in docs/design/cli.md (lines 313, 400, 1073) open after its two-round cap · closed: the closing pass refolded the three paragraphs by hand with no word changed, and a fresh check answered RESOLVED for each with no regression",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "U5",
+      "stage": "",
+      "text": "The plan gate code:sec was red from an inherited grype finding (GHSA-hp87-p4gw-j4gq in gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c); no unit owned cli/go.mod or cli/go.sum · closed: Owns of U5 widened to cli/go.mod and cli/go.sum under D20 (Q1), and U5 bumps yaml.v3 to v3.0.1",
+      "state": "closed"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".worktrees/user-config-file",

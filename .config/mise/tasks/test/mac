@@ -49,6 +49,9 @@ unset MISE_ENV BOOTSTRAP_URL BOOTSTRAP_CLONE
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-mac.XXXXXX")
 # The real path: bootstrap mac sync logs the real path of a target behind a symlink.
 tmp=$(cd "$tmp" && pwd -P)
+# The tests never read the real config file of the user: the engine reads
+# this path, which does not exist, so each setting has its default.
+export BOOTSTRAP_CONFIG="$tmp/no-config/bootstrap/config.toml"
 # shellcheck disable=SC2046
 trap 'kill $(jobs -p) 2> /dev/null || true; rm -rf -- "$tmp"' EXIT
 
@@ -1616,8 +1619,8 @@ case_entry_clone_fails() {
   check_output "Cannot clone"
 }
 
-# Without --verbose only the changes print. The entry task consumes the flag,
-# since the engine stops on a flag that it does not know.
+# Without --verbose only the changes print. The entry task consumes the flag:
+# it exports BOOTSTRAP_VERBOSE=1 and does not pass the flag to the engine.
 case_entry_verbose() {
   entry_setup
   unset BOOTSTRAP_VERBOSE FORCE_COLOR NO_COLOR

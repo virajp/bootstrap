@@ -144,7 +144,10 @@ This file holds the instructions. Each rule of the sync has one place in
   After the adoption, the `mise` tool also installs it in `dev`.
 - The machine can reach `https://github.com/virajp/bootstrap.git`.
   `bootstrap` clones this URL into `~/.cache/bootstrap/`, and needs no SSH
-  key. `BOOTSTRAP_CACHE` changes the folder.
+  key. `BOOTSTRAP_CACHE`, or the key `cache_dir` of the user config file
+  `~/.config/bootstrap/config.toml`, changes the folder. `bootstrap config`
+  shows each setting of the CLI and its source. See
+  [The config file](../design/cli.md#the-config-file).
 - When `bootstrap` is older than the version that the clone needs, it stops.
   Upgrade it with `mise use -g github:virajp/bootstrap`.
 
