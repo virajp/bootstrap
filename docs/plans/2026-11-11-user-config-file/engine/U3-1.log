@@ -1,0 +1,5 @@
+security-review engine, loop U3, round 1, range 4c71f4d..b11da5f
+
+No findings.
+
+No new vulnerability with real exploitation potential. The config file path comes only from --config, BOOTSTRAP_CONFIG, XDG_CONFIG_HOME or HOME (trusted flags and variables); the file is in the user's home folder and only the user writes it. The values jobs, cache_dir, url and clone go into the same BOOTSTRAP_* variables the engine already trusted, so the change adds no trust boundary. jobs is an integer above 0; cache_dir and clone are absolute or start with ~/. The URL reaches git as one argv element after -- (cli/internal/cli/clone.go:279). Nothing goes through a shell, eval or a template. The TOML decode uses a fixed typed struct and refuses unknown keys; errors print only the file path and key names. bootstrap config prints settings to the user's terminal, no secrets. The updateall-configs change is a comment only; test tasks and *_test.go are out of scope.
