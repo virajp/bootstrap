@@ -16,6 +16,10 @@ The Google Cloud CLI, for a repository that deploys to Google Cloud.
 - A script, a task or a CI workflow calls `gcloud`.
 - The repository selects `pulumi` with the Google Cloud provider.
 
+`bootstrap detect` runs the detect script of the tool (see "Scripts"). It
+finds `.gcloudignore` and `cloudbuild.yaml` at the root. It does not find
+`app.yaml`, because many tools use that name.
+
 ## What the tool ships
 
 | Path in the repository                       | Kind      | Use                           |
@@ -38,7 +42,11 @@ None.
 
 ## Scripts
 
-None.
+The sync runs the scripts of the tool from the clone, and never copies them.
+
+| Script           | Kind   | Use                                                                 |
+| ---------------- | ------ | ------------------------------------------------------------------- |
+| `scripts/detect` | detect | `match` with a `.gcloudignore` or a `cloudbuild.yaml`, else `none`. |
 
 ## Contributions
 

@@ -3182,6 +3182,18 @@ detect_case pulumi 1 'Pulumi.yaml=name: x'
 detect_case fnox 1 '.config/fnox.toml=[secrets]'
 detect_case github 1 '.github/CODEOWNERS=* @x'
 detect_case gitlab 1 '.gitlab-ci.yml=stages: []'
+detect_case doppler 1 'doppler.yaml=setup: []'
+detect_case gcloud 1 '.gcloudignore=.git'
+detect_case gcloud 1 'cloudbuild.yaml=steps: []'
+detect_case claude 1 'CLAUDE.md=# x'
+detect_case claude 1 '.claude/settings.json={}'
+detect_case apko 1 $'image/apko.yaml=contents:\n  packages: []\nentrypoint:\n  command: /bin/sh'
+detect_case melange 1 $'melange.yaml=package:\n  name: x\nenvironment:\n  contents: {}\npipeline: []'
+check_no_apko() {
+  check_that "detect: apko does not match a melange config" not_grep -E "(apko +\\[OK\\] found|\\[NEW\\] apko +offered)" "$log"
+}
+DETECT_FILES=($'melange.yaml=package:\n  name: x\nenvironment:\n  contents: {}\npipeline: []')
+CASE_CALL=detect_no run_case "detect script of apko: a melange config" 1 "$dev_values" detect_files '' check_no_apko
 check_no_flutter() { check_that "detect: flutter does not match Dart only" log_lacks 'flutter  offered'; }
 DETECT_FILES=('pubspec.yaml=name: x')
 CASE_CALL=detect_no run_case "detect script of flutter: Dart only" 0 "$dev_values" detect_files '' check_no_flutter

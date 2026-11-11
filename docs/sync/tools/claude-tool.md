@@ -16,6 +16,9 @@ pack has this tool: select it with `[tools.claude]`.
 - The user uses Claude Code in the repository, for example the repository has
   `CLAUDE.md` or `.claude/`.
 
+`bootstrap detect` runs the detect script of the tool (see "Scripts"). It
+finds `CLAUDE.md` and `.claude/` at the root.
+
 `setup:ai` skips in a submodule.
 
 ## What the tool ships
@@ -55,7 +58,11 @@ repository.
 
 ## Scripts
 
-None.
+The sync runs the scripts of the tool from the clone, and never copies them.
+
+| Script           | Kind   | Use                                                      |
+| ---------------- | ------ | -------------------------------------------------------- |
+| `scripts/detect` | detect | `match` with a `CLAUDE.md` or a `.claude/`, else `none`. |
 
 ## Contributions
 

@@ -16,6 +16,10 @@ of the `container-build` pack.
 - The repository has melange package configs.
 - A script or a task of the repository calls `melange`.
 
+`bootstrap detect` runs the detect script of the tool (see "Scripts"). It
+finds a melange config by its top-level keys `package:` and `pipeline:`,
+because melange has no fixed file name.
+
 ## What the tool ships
 
 | Path in the repository                        | Kind      | Use                           |
@@ -34,7 +38,11 @@ None.
 
 ## Scripts
 
-None.
+The sync runs the scripts of the tool from the clone, and never copies them.
+
+| Script           | Kind   | Use                                                                                                                                               |
+| ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/detect` | detect | `match` with a `*.yaml` or `*.yml` file, at most two folders below the root, that has the top-level keys `package:` and `pipeline:`, else `none`. |
 
 ## Contributions
 
