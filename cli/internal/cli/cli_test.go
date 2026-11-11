@@ -44,7 +44,7 @@ func TestCheckVersion(t *testing.T) {
 		{"1.10.0", "1.9.9", fail.OK, ""},
 		{"2.0.0", "1.9.9", fail.OK, ""},
 		{"1.2.2", "1.2.3", fail.Usage, "bootstrap 1.2.2 is older than 1.2.3"},
-		{"0.9.0", "1.0.0", fail.Usage, "upgrade it with: mise use -g github:virajp/bootstrap"},
+		{"0.9.0", "1.0.0", fail.Usage, "Upgrade it with: mise use -g github:virajp/bootstrap"},
 		{"1.0.0", "v1.2", fail.Network, "is not MAJOR.MINOR.PATCH ('v1.2')"},
 	}
 	for _, c := range cases {
@@ -94,34 +94,52 @@ func TestRenderTree(t *testing.T) {
 		"python":     {"uv"},
 		"uv":         {"python"}, // a loop of depends
 	}
-	required := func(t string) bool { return t == "git" || t == "pre-commit" }
+	required := func(tool string) (cell, string) {
+		if tool == "git" || tool == "pre-commit" {
+			return cell{vis: "* required", colored: "* required"}, ""
+		}
+		return cell{}, ""
+	}
 	roots := []listRoot{
 		{"base (pack)", []string{"pre-commit", "git", "gitleaks", "grype", "linter"}},
 		{"extra (pack)", []string{"zed"}},
-		{"tools (selected directly)", []string{"git", "claude"}},
+		{"tools (selected directly)", []string{"git", "claude", "gitleaks", "pre-commit"}},
 	}
 	want := `base (pack)
-├── git         [required]
+├── git           * required
 ├── gitleaks
 │   └── _sec
 ├── grype
 │   └── _sec
 ├── linter
 │   └── node
-└── pre-commit  [required]
+└── pre-commit    * required
     └── python
         └── uv
 extra (pack)
 └── zed
 tools (selected directly)
 ├── claude
-└── git         [required]
+├── git           * required
+├── gitleaks ^
+└── pre-commit ^  * required
 `
-	if got := renderTree(roots, deps, required); got != want {
-		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	opt := treeOpts{cell: required, arrowCell: true}
+	got, arrows := renderTree(roots, deps, opt)
+	if got != want || !arrows {
+		t.Errorf("got (arrows %v):\n%s\nwant:\n%s", arrows, got, want)
 	}
-	if got := renderTree(roots[:2], deps, required); strings.Contains(got, "tools (selected") {
+	if got, arrows := renderTree(roots[:2], deps, opt); strings.Contains(got, "tools (selected") || arrows {
 		t.Errorf("a tools root without tools: %s", got)
+	}
+	// A tree without a repeated subtree has no arrow.
+	if _, arrows := renderTree(roots[1:2], deps, opt); arrows {
+		t.Error("an arrow without a repeated subtree")
+	}
+	// include keeps a tool and the path to it.
+	only := treeOpts{include: func(tool string) bool { return tool == "node" }}
+	if got, _ := renderTree(roots[:1], deps, only); got != "base (pack)\n└── linter\n    └── node\n" {
+		t.Errorf("include: %s", got)
 	}
 }
 
@@ -230,11 +248,11 @@ func TestConfigErrors(t *testing.T) {
 	}{
 		{"unknown key", []string{"config"}, "verbose = true\n", ": verbose: unknown key"},
 		{"unknown key before the preflight", []string{"sync"}, "[mac]\nverbose = 1\n", ": mac.verbose: unknown key"},
-		{"mac config", []string{"mac", "config"}, "", "unknown command mac config"},
+		{"mac config", []string{"mac", "config"}, "", "mac config is not a command"},
 		{"empty url", []string{"config", "--url="}, "", "--url needs a value"},
-		{"verbose of config", []string{"config", "--verbose"}, "", "unknown flag --verbose"},
-		{"repo-path of mac init", []string{"mac", "init", "--repo-path", "/r"}, "", "unknown flag --repo-path"},
-		{"config of version", []string{"version", "--config", "/c"}, "", "unknown flag --config"},
+		{"verbose of config", []string{"config", "--verbose"}, "", "config has no flag --verbose"},
+		{"repo-path of mac init", []string{"mac", "init", "--repo-path", "/r"}, "", "mac init has no flag --repo-path"},
+		{"config of version", []string{"version", "--config", "/c"}, "", "version has no flag --config"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -247,7 +265,7 @@ func TestConfigErrors(t *testing.T) {
 			if !strings.Contains(stderr.String(), c.msg) {
 				t.Errorf("stderr %q lacks %q", stderr.String(), c.msg)
 			}
-			if strings.HasPrefix(c.msg, ": ") && !strings.Contains(stderr.String(), "bootstrap: "+path+c.msg) {
+			if strings.HasPrefix(c.msg, ": ") && !strings.Contains(stderr.String(), "[ERROR] "+path+c.msg) {
 				t.Errorf("stderr %q does not name the file", stderr.String())
 			}
 		})
@@ -265,5 +283,51 @@ func TestVerboseFlag(t *testing.T) {
 	}
 	if os.Getenv("BOOTSTRAP_VERBOSE") != "1" {
 		t.Error("--verbose does not set BOOTSTRAP_VERBOSE=1")
+	}
+}
+
+func TestShortValue(t *testing.T) {
+	long := "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICGo"
+	for in, want := range map[string]string{
+		"short":                 "short",
+		strings.Repeat("a", 40): strings.Repeat("a", 40),
+		long + " comment":       "ssh-ed25519 AAAAC3Nz…ment",
+		strings.Repeat("é", 20) + strings.Repeat("x", 30) + "abcd": strings.Repeat("é", 20) + "…abcd",
+	} {
+		if got := shortValue(in); got != want {
+			t.Errorf("shortValue(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestUsageLine(t *testing.T) {
+	for _, c := range []struct {
+		mac        bool
+		cmd, flags string
+		want       string
+	}{
+		{false, "sync", "dry-run jobs verbose", "bootstrap sync [--dry-run] [--jobs <n>] [--verbose]"},
+		{true, "add", "dry-run yes answer jobs verbose no-bootstrap", "bootstrap mac add <tool...> [--dry-run] [--yes] [--answer <tool>.<key>=<value>] [--jobs <n>] [--verbose] [--no-bootstrap]"},
+		{false, "list", "", "bootstrap list"},
+	} {
+		if got := usageLine(c.mac, c.cmd, c.flags); got != c.want {
+			t.Errorf("usageLine = %q, want %q", got, c.want)
+		}
+	}
+}
+
+func TestDetectText(t *testing.T) {
+	for _, c := range []struct {
+		d    detected
+		want string
+	}{
+		{detected{Evidence: []string{"a", "b", "c"}, Message: "m"}, "a, +2 more: m"},
+		{detected{Evidence: []string{"a"}, Message: "m"}, "a: m"},
+		{detected{Evidence: []string{"a"}}, "a"},
+		{detected{Message: "m"}, "m"},
+	} {
+		if got := detectText(c.d); got != c.want {
+			t.Errorf("detectText(%+v) = %q, want %q", c.d, got, c.want)
+		}
 	}
 }

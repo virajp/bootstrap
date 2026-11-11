@@ -4,19 +4,7 @@ rc=2
 rows=
 rc=0
 == stderr ==
-bootstrap: .config/repo-generated.tsv: the manifest is a link or is below a linked folder - not read
-+---------------+-------+
-| Changed       |     0 |
-| New           |     0 |
-| Seeded        |     0 |
-| Removed       |     0 |
-| Unchanged     |     0 |
-| Kept seeds    |     0 |
-| Skipped       |     0 |
-| Failed        |     0 |
-+---------------+-------+
-| Total         |     0 |
-+---------------+-------+
+[WARN] .config/repo-generated.tsv: the manifest is a link or is below a linked folder - not read
 [OK] Synced: no file changed
 == tree ==
 d 755 root

@@ -67,7 +67,7 @@ func TestRun(t *testing.T) {
 	if o, probs := r.Derived(res[2]); o != nil || probs != nil {
 		t.Errorf("no script = %v, %v", o, probs)
 	}
-	if probs := r.Checked(res[3]); len(probs) != 2 || probs[0].Error() != "first problem" || probs[1].Error() != "second problem" {
+	if probs := r.Checked(res[3]); len(probs) != 2 || probs[0].Error() != "check script of c: first problem" || probs[1].Error() != "check script of c: second problem" {
 		t.Errorf("check c = %v", probs)
 	}
 	if probs := r.Checked(res[4]); len(probs) != 2 || probs[0].Error() != "repo/tools/d/scripts/check: oops" ||

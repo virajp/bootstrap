@@ -2,16 +2,4 @@ changed a
 failed f: x
 failed f: y
 would remove r
-+---------------+-------+
-| Changed       |     0 |
-| New           |     0 |
-| Seeded        |     0 |
-| Removed       |     1 |
-| Unchanged     |     0 |
-| Kept seeds    |     0 |
-| Skipped       |     0 |
-| Failed        |     1 |
-+---------------+-------+
-| Total         |     2 |
-+---------------+-------+
-[OK] Dry run: 1 file would change
+[OK] Dry run: 1 file would change · 1 removed · 1 failed

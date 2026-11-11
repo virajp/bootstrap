@@ -241,18 +241,20 @@ The other exit codes are in [cli.md](cli.md#the-exit-codes).
 
 ## The output
 
-The list, the table, the last line and verbose are in
+The list, the last line and verbose are in
 [cli.md](cli.md#the-output-of-a-run). These rules are only for
 the Mac:
 
-- The first line is the info line `bootstrap <short commit> · <n> tools`. With
-  an empty commit, it reads `bootstrap an unknown commit · <n> tools`.
-- The run has one table across the init and main stages, and it prints after
-  `mise bootstrap`. A return of exit 4 after the init stage has no table.
-- `FAILED: <list>` stays by default, before the table.
+- The first line is `↻ bootstrap <short commit> · <n> tools`. With an empty
+  commit, it reads `↻ bootstrap an unknown commit · <n> tools`.
+- `mise bootstrap` prints `▸ Running mise bootstrap --yes` before it and
+  `✔ mise bootstrap done` after a success. The output of mise stays as it is.
+- The run has one last line across the init and main stages, and it prints after
+  `mise bootstrap`. A return of exit 4 after the init stage has no last line.
+- `FAILED: <list>` stays by default, before the last line.
 - `log` of the entry task is an info line, and `log_error` is an error line.
-  With the style rule on, they show the info glyph or the error glyph and no
-  prefix. Otherwise they have the prefix `bootstrap: `.
+  With the style rule on, they show the glyphs `·` and `✗`. Otherwise they have
+  the prefixes `[INFO] ` and `[ERROR] `.
 
 ## The failures
 

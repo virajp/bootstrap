@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -227,7 +228,7 @@ func (c *clone) fetch() fail.Code {
 	if exists(c.cache + "/.git") {
 		origin, _ := git("config", "--file", c.cache+"/.git/config", "--get", "remote.origin.url")
 		if origin == "" || normalizeURL(origin) != normalizeURL(c.url) {
-			c.a.errorf("%s is a git repository with the origin '%s', not an old clone of %s - move it, or set BOOTSTRAP_CACHE to another folder", c.cache, origin, c.url)
+			c.a.fail(fmt.Sprintf("%s is a git repository with the origin '%s', not an old clone of %s", c.cache, origin, c.url), "move it, or set BOOTSTRAP_CACHE to another folder")
 			return fail.Usage
 		}
 		entries, _ := os.ReadDir(c.cache)
@@ -251,15 +252,14 @@ func (c *clone) fetch() fail.Code {
 	case st.IsDir() && exists(c.repo+"/.git"):
 		origin, _ := git("-C", c.repo, "config", "--get", "remote.origin.url")
 		if origin != "" && normalizeURL(origin) == normalizeURL(c.url) {
-			c.a.infof("Updating the clone in %s", c.repo)
 			// From the URL, not from origin: the compare drops the scheme,
 			// and the transport must not come from the cached origin.
 			if !c.gitQuiet("-C", c.repo, "fetch", "--quiet", "--depth", "1", "--", c.url, "main") {
-				c.a.errorf("Cannot fetch %s - nothing synced", c.url)
+				c.a.errorf("Cannot fetch %s: nothing synced", c.url)
 				return fail.Network
 			}
 			if !c.gitQuiet("-C", c.repo, "reset", "--quiet", "--hard", "FETCH_HEAD") || !c.gitQuiet("-C", c.repo, "clean", "--quiet", "-ffdx") {
-				c.a.errorf("Cannot update the clone in %s - nothing synced", c.repo)
+				c.a.errorf("Cannot update the clone in %s: nothing synced", c.repo)
 				return fail.Network
 			}
 			return fail.OK
@@ -267,7 +267,7 @@ func (c *clone) fetch() fail.Code {
 		c.a.infof("The clone in %s has the origin '%s', not %s - cloning again", c.repo, origin, c.url)
 		again = true
 	default:
-		c.a.errorf("%s is not a git clone and not empty - move it, or set BOOTSTRAP_CACHE to another folder", c.repo)
+		c.a.fail(c.repo+" is not a git clone and not empty", "move it, or set BOOTSTRAP_CACHE to another folder")
 		return fail.Usage
 	}
 	if !again {
@@ -278,7 +278,7 @@ func (c *clone) fetch() fail.Code {
 	_ = os.MkdirAll(filepath.Dir(c.repo), 0o777)
 	if !c.gitQuiet("clone", "--quiet", "--depth", "1", "--single-branch", "--branch", "main", "--", c.url, c.repo) {
 		os.RemoveAll(c.repo)
-		c.a.errorf("Cannot clone %s - nothing synced", c.url)
+		c.a.errorf("Cannot clone %s: nothing synced", c.url)
 		return fail.Network
 	}
 	return fail.OK
@@ -302,7 +302,7 @@ func (a *app) checkVersion(dir string) fail.Code {
 	need = strings.TrimSpace(need)
 	nm := semver.FindStringSubmatch(need)
 	if nm == nil {
-		a.errorf("%s/VERSION of the clone is not MAJOR.MINOR.PATCH ('%s') - nothing synced", source.CLIDir, need)
+		a.errorf("%s/VERSION of the clone is not MAJOR.MINOR.PATCH ('%s'): nothing synced", source.CLIDir, need)
 		return fail.Network
 	}
 	hm := semver.FindStringSubmatch(strings.TrimPrefix(a.version, "v"))
@@ -316,7 +316,7 @@ func (a *app) checkVersion(dir string) fail.Code {
 			return fail.OK
 		}
 		if h < n {
-			a.errorf("bootstrap %s is older than %s, the version that the clone needs - upgrade it with: mise use -g github:virajp/bootstrap", a.version, need)
+			a.fail(fmt.Sprintf("bootstrap %s is older than %s, the version that the clone needs", a.version, need), "upgrade it with: mise use -g github:virajp/bootstrap")
 			return fail.Usage
 		}
 	}

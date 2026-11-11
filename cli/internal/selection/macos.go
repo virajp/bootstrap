@@ -23,7 +23,7 @@ func ResolveMacos(idx *source.Index, v *values.Macos) (*Resolved, error) {
 	deps := func(from string) ([]string, error) {
 		m := idx.Manifests[from]
 		if m == nil {
-			return nil, missing("tool '%s' is not in bootstrap", from)
+			return nil, missing("%s is not a bootstrap tool", from)
 		}
 		for _, dep := range m.Depends {
 			if !source.NameOK(dep) || idx.Manifests[dep] == nil {

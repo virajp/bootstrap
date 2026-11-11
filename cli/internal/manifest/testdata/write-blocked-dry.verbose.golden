@@ -2,19 +2,7 @@
 rc=0
 == stderr ==
 bootstrap: would write .config/repo-generated.tsv
-+---------------+-------+
-| Changed       |     0 |
-| New           |     1 |
-| Seeded        |     0 |
-| Removed       |     0 |
-| Unchanged     |     0 |
-| Kept seeds    |     0 |
-| Skipped       |     0 |
-| Failed        |     0 |
-+---------------+-------+
-| Total         |     1 |
-+---------------+-------+
-[OK] Dry run: 1 file would change
+[OK] Dry run: 1 file would change · 1 new
 == tree ==
 d 755 root
 f 644 root/.config "file\n"

@@ -1,0 +1,8 @@
+[2m↻ bootstrap 1234567 · 14 tools · env dev[0m
+[1m▸ Running mise bootstrap --yes[0m
+[0;32m✔[0m mise bootstrap done
+[0;33m![0m the init stage changed
+[0;31m✗ git is not selected[0m
+[2m  → Run bootstrap add git[0m
+[0;31m✗ git is required by the base pack, so remove cannot remove it[0m
+[0;32m✔[0m Synced: no file changed

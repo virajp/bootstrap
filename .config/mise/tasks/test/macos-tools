@@ -250,7 +250,7 @@ setup_case "missing question" missing
 grep -v '^config_path = ' "$example" > "$MACOS_SETUP_REPO_PATH/macos.toml"
 run_real
 check_exit 2
-if grep -qF 'the question mise.config_path has no answer in macos.toml - run bootstrap mac init' "$log"; then
+if grep -qF 'the question mise.config_path has no answer in macos.toml' "$log"; then
   pass "the message names the question"
 else
   fail "the message does not name the question 'mise.config_path'"

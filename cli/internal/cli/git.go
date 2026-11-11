@@ -106,14 +106,14 @@ func (a *app) stopDirty(dirty []string) fail.Code {
 	for _, p := range dirty {
 		a.errorf("%s has changes that are not committed", a.show(p))
 	}
-	a.errorf("commit or discard the changes of these targets, then run the command again - nothing written")
+	a.fail("nothing written", "commit or discard the changes of these targets, then run the command again")
 	return fail.Usage
 }
 
 // warnDirty prints each dirty target of a dry run.
 func (a *app) warnDirty(dirty []string) {
 	for _, p := range dirty {
-		a.infof("%s has changes that are not committed - a run without --dry-run stops", a.show(p))
+		a.warnf("%s has changes that are not committed; a run without --dry-run stops", a.show(p))
 	}
 }
 
@@ -139,15 +139,15 @@ func (a *app) readLine() (string, bool) {
 // consent gives OK when the changes can be written: --yes, else a "y" at the
 // prompt of a terminal. A "no" gives done = true: nothing is written, and the
 // command exits 0. Without a terminal, it gives code 2.
-func (a *app) consent(yes bool) (done bool, code fail.Code) {
+func (a *app) consent(yes bool, n int) (done bool, code fail.Code) {
 	if yes {
 		return false, fail.OK
 	}
 	if !a.interactive() {
-		a.errorf("changes need --yes")
+		a.fail("changes need --yes", "run the command in a terminal, or add --yes")
 		return true, fail.Usage
 	}
-	fmt.Fprint(a.stdout, "Apply these changes? [y/N] ")
+	fmt.Fprintf(a.stdout, "? Write %s? [y/N] ", count(n, "change"))
 	line, _ := a.readLine()
 	switch strings.ToLower(strings.TrimSpace(line)) {
 	case "y", "yes":
@@ -155,4 +155,12 @@ func (a *app) consent(yes bool) (done bool, code fail.Code) {
 	}
 	a.infof("Nothing changed")
 	return true, fail.OK
+}
+
+// count gives "<n> <noun>" with the plural of <noun> when <n> is not 1.
+func count(n int, noun string) string {
+	if n == 1 {
+		return "1 " + noun
+	}
+	return fmt.Sprintf("%d %ss", n, noun)
 }

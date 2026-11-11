@@ -2,18 +2,6 @@
 rows=
 rc=0
 == stderr ==
-+---------------+-------+
-| Changed       |     0 |
-| New           |     0 |
-| Seeded        |     0 |
-| Removed       |     0 |
-| Unchanged     |     0 |
-| Kept seeds    |     0 |
-| Skipped       |     0 |
-| Failed        |     0 |
-+---------------+-------+
-| Total         |     0 |
-+---------------+-------+
 [OK] Dry run: no file would change
 == tree ==
 d 755 root

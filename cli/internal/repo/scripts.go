@@ -102,15 +102,20 @@ func (s *state) toolVals(tool string) *source.Obj {
 func (s *state) checks() fail.Code {
 	r := s.runner()
 	results := r.Run(s.jobs(scripts.Check, s.res.Tools, s.toolVals))
-	var probs []*fail.Error
+	code := fail.OK
 	for _, res := range results {
 		if p := r.Checked(res); p != nil {
-			probs = append(probs, p...)
-		} else if res.Ran && len(res.Stderr) > 0 {
+			code = max(code, s.logAll(source.Problems(p)))
+			continue
+		}
+		if res.Ran && len(res.Stderr) > 0 {
 			s.stderr.Write(res.Stderr)
 		}
+		if res.Ran && s.listChecks {
+			s.r.Success("check script of " + res.Tool)
+		}
 	}
-	return s.logAll(source.Problems(probs))
+	return code
 }
 
 // when tells if the entry of <f> applies.

@@ -3,19 +3,7 @@ rc=2
 == stderr ==
 bootstrap: d/f.yaml: the result does not parse as yaml - the current file stays
   Error: bad file '@/root/d/.bootstrap.*': yaml: line 2: did not find expected node content
-+---------------+-------+
-| Changed       |     0 |
-| New           |     0 |
-| Seeded        |     0 |
-| Removed       |     0 |
-| Unchanged     |     0 |
-| Kept seeds    |     0 |
-| Skipped       |     0 |
-| Failed        |     1 |
-+---------------+-------+
-| Total         |     1 |
-+---------------+-------+
-[OK] Synced: no file changed
+[OK] Synced: no file changed · 1 failed
 == tree ==
 d 755 root
 d 755 root/d

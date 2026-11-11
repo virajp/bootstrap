@@ -49,8 +49,8 @@ syncs: see [cli.md](cli.md#the-cache-and-the-clone).
 A submodule is a separate repository with its own values file. A submodule
 without a values file stops the engine with code 2.
 
-By default, the sync starts with one info line:
-`bootstrap <short commit> · <n> tools · environments: <environments>`.
+By default, the sync starts with one line:
+`↻ bootstrap <short commit> · <n> tools · env <environments>`.
 
 `bootstrap sync` makes its own private copy of the clone, because it writes
 the generated mise config into the copy.

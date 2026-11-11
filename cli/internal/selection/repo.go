@@ -62,7 +62,7 @@ func ResolveRepo(idx *source.Index, v *values.Repo, inSubmodule bool) (*Resolved
 		m := idx.Manifests[tool]
 		if m == nil {
 			if !src.HasManifest(tool) {
-				return nil, missing("tool '%s' is not in bootstrap", tool)
+				return nil, missing("%s is not a bootstrap tool", tool)
 			}
 			return nil, usage("cannot read %s/%s/tools.toml", shown, tool)
 		}
@@ -76,7 +76,7 @@ func ResolveRepo(idx *source.Index, v *values.Repo, inSubmodule bool) (*Resolved
 			}
 		}
 		if m.RootOnly && inSubmodule {
-			return usage("tool '%s' is for the root repository only - remove it from the tools of this submodule", tool)
+			return usage("%s is for the root repository only - remove it from the tools of this submodule", tool)
 		}
 		return nil
 	}

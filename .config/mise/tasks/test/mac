@@ -176,8 +176,18 @@ check() {
 check_exit() {
   if [[ $rc == "$1" ]]; then pass "exit $rc"; else fail "exit $rc, expected $1"; fi
 }
-check_output() { check "the output has: $1" grep -qF -- "$1" "$log"; }
-check_no_output() { check "the output lacks: $1" not grep -qF -- "$1" "$log"; }
+# flatten_log: the output with each fix line joined to its error line, as
+# `<problem> - <fix>`, so a case names a message in one string. The fix has a
+# lower case first letter. The cases of the default output read the log itself.
+flatten_log() {
+  awk 'function flush() { if (have) print prev; have = 0 }
+    /^  -> / { f = substr($0, 6); if (have) { prev = prev " - " tolower(substr(f, 1, 1)) substr(f, 2) } else { print }; next }
+    { flush(); prev = $0; have = 1 }
+    END { flush() }' "$log"
+}
+flat_has() { flatten_log | grep -qF -- "$1"; }
+check_output() { check "the output has: $1" flat_has "$1"; }
+check_no_output() { check "the output lacks: $1" not flat_has "$1"; }
 # check_file <path> <content>: the file exists with exactly <content>.
 check_file() { check "${1#"$dir"/} has the expected content" file_is "$1" "$2"; }
 file_is() { [[ -f $1 && $(cat -- "$1") == "$2" ]]; }
@@ -380,7 +390,7 @@ case_unknown_flag() {
   use_config ok
   sync_run --bogus
   check_exit 2
-  check_output "unknown flag --bogus"
+  check_output "sync has no flag --bogus"
   check_output "usage: bootstrap"
 }
 
@@ -1017,7 +1027,8 @@ case_default_output() {
   run_real
   check_exit 0
   check_output "new ~/.config/core/plain.txt"
-  check "the first run has the table" grep -qE '^\| Total +\| +[0-9]+ \|$' "$log"
+  check "the first run has the last line" grep -qE '^\[OK\] Synced: [0-9]+ files changed( · .*)?$' "$log"
+  check "the first run has no table" not grep -qF '| Total' "$log"
   printf '%s\n' "edited" > "$home/.config/core/values.txt"
   rm -- "$home/.config/core/plain.txt"
   run_real
@@ -1028,17 +1039,15 @@ case_default_output() {
   check_no_output "unchanged  "
   check_no_output "using bootstrap"
   check "the info line" grep -qE "^\[INFO\] bootstrap ${tree_commit:0:7} · [0-9]+ tools" "$log"
-  check_output "| Changed       |     1 |"
-  check_output "| New           |     1 |"
-  check_output "| Seeded        |     0 |"
-  check_output "| Removed       |     0 |"
-  check_output "| Failed        |     0 |"
-  check "one table" test "$(grep -c '^| Total ' "$log")" = 1
-  check "the last line" test "$(tail -n 1 -- "$log")" = "[OK] Synced: 2 files changed"
+  check "one last line, with no table" test "$(grep -c '^| Total ' "$log")" = 0
+  check "the last line: 2 files changed, 1 new, no failed or seeded or removed" \
+    grep -qE '^\[OK\] Synced: 2 files changed · 1 new( · [0-9]+ (unchanged|kept seeds|skipped))*$' "$log"
   FORCE_COLOR=1 run_real
   check_exit 0
-  check_output "┌───────────────┬───────┐"
-  check_output "✅ Synced: no file changed"
+  check_output "↻ bootstrap "
+  check_output "✔"
+  check_output "Synced: no file changed"
+  check_no_output "┌───────────────┬───────┐"
 }
 
 # ---- contributions ------------------------------------------------------------
@@ -1186,7 +1195,9 @@ case_merge_json() {
   run_real
   check_exit 0
   check_output "updated    ~/.config/merger/m.json"
-  check_output "warning: ~/.config/merger/m.json: kind is a table, not a list - written again"
+  # The message shows the literal ~ of the path.
+  # shellcheck disable=SC2088
+  check_output "~/.config/merger/m.json: kind is a table, not a list - written again"
   check_file "$f" '{
   "keep": "app",
   "scalar": "app",
@@ -1569,7 +1580,6 @@ case_entry_clone_refresh() {
   _git -C "$dir/origin.git" fetch --quiet -- "$work" main:main
   entry_real
   check_exit 0
-  check_output "Updating the clone in $repo"
   check "the clone is at the new commit" test "$(_git -C "$repo" rev-parse HEAD)" = "$(_git -C "$work" rev-parse HEAD)"
   check "the local edit is reset" cmp -s "$repo/macos/packs.toml" "$work/macos/packs.toml"
   check "the untracked file is removed" not test -e "$repo/untracked.txt"
@@ -1596,7 +1606,6 @@ case_entry_clone_ssh_https() {
   export BOOTSTRAP_URL="https://github.com/virajp/bootstrap.git"
   entry_real
   check_exit 0
-  check_output "Updating the clone in $repo"
   check_no_output "cloning again"
 }
 
@@ -1632,7 +1641,8 @@ case_entry_verbose() {
   check_exit 0
   check_output "unchanged  ~/.config/core/plain.txt"
   check_no_output "unknown"
-  check_output "| Total "
+  check_output "Synced: no file changed"
+  check_no_output "| Total "
 }
 
 case_entry_lock_wait() {
@@ -1774,7 +1784,7 @@ case_entry_legacy_live() {
   printf '%s\n' "$holder" > "$old_cache/lock/pid"
   entry_real
   check_exit 0
-  check_output "the old Mac sync runs (pid $holder) - keeping $old_cache"
+  check_output "the old Mac sync runs (pid $holder): keeping $old_cache"
   check "the old Mac cache stays" test -f "$old_cache/lock/pid"
   kill "$holder" 2> /dev/null
   wait "$holder" 2> /dev/null
@@ -1833,8 +1843,8 @@ case_questions_json() {
   use_config contrib
   mac_run questions owner
   check_exit 0
-  check_output "owner.token: Which token does the owner use?"
-  check_output "answer:   token-1"
+  check_output "token   Which token does the owner use?"
+  check_output "[OK] token-1"
 }
 
 case_init_answer() {
@@ -1870,8 +1880,8 @@ case_init_dry_run() {
   use_config contrib
   mac_run init --dry-run
   check_exit 0
-  check_output "sync   $home/.config/owner/data.json"
-  check_output "Dry run: nothing written"
+  check_output "new     $home/.config/owner/data.json"
+  check_output "changes, nothing written"
   check "nothing written" not test -e "$home/.config"
 }
 
@@ -1948,7 +1958,7 @@ case_mac_detect() {
   use_config ok
   mac_run detect --no-bootstrap
   check_exit 0
-  check_output "No Mac tool has a detect script"
+  check_output "Nothing to change · no Mac tool has a detect script"
 }
 
 case_mac_add() {
@@ -1976,17 +1986,17 @@ case_mac_remove_refused() {
   use_config ok
   mac_run remove --yes --no-bootstrap mise
   check_exit 2
-  check_output "tool mise is required - bootstrap mac remove cannot remove it"
+  check_output "mise is required by the base pack, so mac remove cannot remove it"
   mac_run remove --yes --no-bootstrap merger
   check_exit 2
-  check_output "tool merger is not selected"
+  check_output "merger is not selected"
 }
 
 case_mac_replace_refused() {
   use_config ok
   mac_run replace --yes --no-bootstrap opt merger
   check_exit 2
-  check_output "bootstrap mac replace works only between two tools with the same parent"
+  check_output "mac replace works only between two tools with the same parent"
 }
 
 # ---- the cases ----------------------------------------------------------------
@@ -1995,7 +2005,7 @@ run_case "config: a missing config folder" case_config_missing
 run_case "config: a config folder that is not a git repository" case_config_not_git
 run_case "config: MACOS_SETUP_REPO_PATH unset" case_config_unset
 run_case "config: an unknown flag, with the usage" case_unknown_flag
-run_case "config: an unknown tool in a [tools.<name>] table" expect unknown-tool 3 "tool 'nope' is not in bootstrap"
+run_case "config: an unknown tool in a [tools.<name>] table" expect unknown-tool 3 "nope is not a bootstrap tool"
 run_case "config: an [overrides.mise.<path>] that no selected tool has" expect unknown-override 2 "no selected tool has"
 run_case "config: a packs list, the old format" expect old-packs-list 2 "packs in config/macos.toml must be [packs.<name>] tables - the top-level keys are"
 run_case "config: a tools key that is a string, the old format" expect tools-string 2 "tools = [...] is the old format"
@@ -2006,8 +2016,8 @@ run_case "config: an [overrides.<tool>] table" expect bad-override 2 "[overrides
 run_case "config: a [tools.<name>] table with env" expect env-opt 2 "[tools.opt] env is for repo tools only"
 run_case "config: an [overrides.mise_env.<env>.<path>] table" expect override-env 2 "[overrides.mise_env] in config/macos.toml: the Mac side has no environments"
 run_case "config: a tool folder with no tools.toml" expect ok 2 "macos/tools/bad has no tools.toml" add_bad_tool
-run_case "config: a repo with no macos/packs.toml" expect ok 3 "pack 'base' is not in bootstrap" no_packs
-run_case "config: a packs.toml with no [pack.base]" expect ok 3 "pack 'base' is not in bootstrap" no_base
+run_case "config: a repo with no macos/packs.toml" expect ok 3 "base is not a bootstrap pack" no_packs
+run_case "config: a packs.toml with no [pack.base]" expect ok 3 "base is not a bootstrap pack" no_base
 run_case "config: a required member without default = true" expect ok 2 "macos/packs.toml: [pack.base] core: required = true is only for a member of pack base with default = true" required_not_default
 run_case "config: an unknown key in a tools.toml" expect ok 2 "macos/tools/opt/tools.toml: depend is not a key of tools.toml" bad_manifest_key
 run_case "config: a stage that is not init" expect ok 2 'macos/tools/opt/tools.toml: stage = "login" - the only stage is "init"' bad_stage
@@ -2026,7 +2036,7 @@ run_case "config: a tool folder that sorts after zz-macos" expect ok 2 "tool fol
 run_case "config: a tool that ships a file in conf.d" expect ok 2 "macos/tools/core/files/.config/mise/conf.d/x.toml: the sync generates .config/mise/conf.d/ from [mise.*] of tools.toml" ships_conf_d
 run_case "config: two tools that ship one target" expect ok 2 "$tilde/.config/core/plain.txt comes from more than one source" two_tools_one_target
 run_case "config: a pack name that is a tool folder" expect ok 2 "macos/packs.toml: pack 'core' is also a tool folder" pack_is_tool
-run_case "config: a pack member that is not a tool" expect ok 3 "tool 'nope' is not in bootstrap (named in pack more)" pack_unknown
+run_case "config: a pack member that is not a tool" expect ok 3 "nope is not a bootstrap tool (named in pack more)" pack_unknown
 run_case "config: a pack-level key" expect ok 2 "macos/packs.toml: [pack.more] depends is the old format" pack_old_key
 run_case "config: a pack entry key other than default" expect ok 2 "macos/packs.toml: [pack.more] opt has the entry key 'tag'" pack_entry_key
 run_case "config: a pack entry that is not a table" expect ok 2 "macos/packs.toml: [pack.more] tools must be a table" pack_not_table

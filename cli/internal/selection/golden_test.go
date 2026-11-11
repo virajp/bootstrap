@@ -39,7 +39,8 @@ func (c pcase) golang() string {
 	if c.side == source.Macos {
 		prefix = "bootstrap"
 	}
-	log := report.NewReport(&eb, report.Options{Prefix: prefix})
+	// Only Log: the cases compare the message text, not the error glyph.
+	log := logOnly{report.NewReport(&eb, report.Options{Prefix: prefix})}
 	rc, out := 0, ""
 	if c.side == source.Macos {
 		rc, out = runMacos(c, log)
@@ -48,6 +49,11 @@ func (c pcase) golang() string {
 	}
 	return compose(rc, eb.String(), out)
 }
+
+// logOnly hides the Error method of the report.
+type logOnly struct{ r *report.Report }
+
+func (l logOnly) Log(msg string) { l.r.Log(msg) }
 
 func runRepo(c pcase, log source.Logger) (int, string) {
 	src := source.Source{Root: c.clone, Side: source.Repo}

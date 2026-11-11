@@ -148,7 +148,7 @@ func ReadMacos(path, shown string) (*Macos, error) {
 	bad := func(format string, args ...any) { probs = append(probs, usage(format, args...)) }
 	named := func(kind, name string) {
 		if !source.NameOK(name) {
-			probs = append(probs, fail.New(fail.Missing, "%s '%s' is not in bootstrap (named in %s)", kind, name, shown))
+			probs = append(probs, fail.New(fail.Missing, "%s is not a bootstrap %s (named in %s)", name, kind, shown))
 			return
 		}
 		v.Sel = append(v.Sel, Item{Kind: kind + "s", Name: name, Envs: "-"})

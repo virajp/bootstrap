@@ -49,7 +49,7 @@ func (s *state) remove(path string) fail.Code {
 		return fail.OK
 	}
 	if s.e.DryRun {
-		s.e.Plan(dest)
+		s.e.Plan(dest, report.Removed)
 		s.r.Outcome(report.Removed, show, "", "would remove "+show)
 		return fail.OK
 	}

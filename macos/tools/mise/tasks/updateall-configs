@@ -21,19 +21,19 @@ styled() {
   fi
   [[ -z ${NO_COLOR:-} && -t 2 && ${TERM:-dumb} != dumb ]]
 }
-# An info line and an error line: a glyph when styled, else the prefix.
+# An info line and an error line: a glyph when styled, else [INFO] or [ERROR].
 log() {
   if styled; then
-    printf 'ℹ️ %s\n' "$*" >&2
+    printf '· %s\n' "$*" >&2
   else
-    printf '%s\n' "bootstrap: $*" >&2
+    printf '[INFO] %s\n' "$*" >&2
   fi
 }
 log_error() {
   if styled; then
-    printf '❌ %s\n' "$*" >&2
+    printf '✗ %s\n' "$*" >&2
   else
-    printf '%s\n' "bootstrap: $*" >&2
+    printf '[ERROR] %s\n' "$*" >&2
   fi
 }
 
@@ -78,7 +78,7 @@ for arg in "$@"; do
 done
 
 if [[ -n ${_UPDATEALL_CONFIGS_RUNNING:-} ]]; then
-  log_error "updateall:configs is already running in this process tree - a nested run is refused"
+  log_error "updateall:configs is already running in this process tree: a nested run is refused"
   exit 2
 fi
 export _UPDATEALL_CONFIGS_RUNNING=1
@@ -100,13 +100,13 @@ legacy_cleanup() {
   mkdir -p -- "${cache}"
   if [[ ! -e ${manifest} && -f ${old}/generated.txt ]]; then
     if ! mv -- "${old}/generated.txt" "${manifest}"; then
-      log_error "cannot move ${old}/generated.txt to ${manifest} - keeping ${old}"
+      log_error "cannot move ${old}/generated.txt to ${manifest}: keeping ${old}"
       return 0
     fi
   fi
   pid=$(cat -- "${old}/lock/pid" 2> /dev/null) || pid=''
   if [[ -n ${pid} ]] && kill -0 "${pid}" 2> /dev/null; then
-    log "the old Mac sync runs (pid ${pid}) - keeping ${old}"
+    log "the old Mac sync runs (pid ${pid}): keeping ${old}"
     return 0
   fi
   rm -rf -- "${old}" 2> /dev/null || true
