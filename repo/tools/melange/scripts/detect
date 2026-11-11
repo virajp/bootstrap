@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# The detect script of the melange tool. bootstrap detect runs it in the root of
+# the repository, and never copies it. It prints one JSON object: the result
+# (match, none or mismatch), the evidence (config files, never lock files) and
+# a message.
+
+set -euo pipefail
+cat > /dev/null
+
+# Print the result as JSON: <result> <message> [evidence...].
+emit() {
+  local result=$1 message=$2 sep="" e
+  shift 2
+  printf '{ "result": "%s", "evidence": [' "$result"
+  for e in "$@"; do
+    printf '%s"%s"' "$sep" "$e"
+    sep=", "
+  done
+  printf '], "message": "%s" }\n' "$message"
+}
+
+# The YAML files that have the top-level keys package: and pipeline:.
+found=()
+while IFS= read -r f; do
+  if grep -q '^package:' "$f" && grep -q '^pipeline:' "$f"; then
+    found+=("$f")
+  fi
+done < <(find . -maxdepth 2 \( -name node_modules -o -name .git \) -prune -o \
+  -type f \( -name "*.yaml" -o -name "*.yml" \) -print |
+  sed "s|^\./||" | LC_ALL=C sort)
+if [ ${#found[@]} -gt 0 ]; then
+  emit match "a melange config exists" "${found[@]}"
+else
+  emit none "no melange config"
+fi

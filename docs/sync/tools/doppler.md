@@ -16,6 +16,9 @@ when it keeps its secrets in Doppler.
 - The repository has `doppler.yaml`.
 - A script or a task calls `doppler run` or `doppler secrets`.
 
+`bootstrap detect` runs the detect script of the tool (see "Scripts"). It
+finds only `doppler.yaml`, the repository config of `doppler setup`.
+
 Do not select both `doppler` and `fnox` without a reason. Ask the user which
 one keeps the secrets of the repository.
 
@@ -44,7 +47,11 @@ The task does not run `doppler login`, because that command opens a browser.
 
 ## Scripts
 
-None.
+The sync runs the scripts of the tool from the clone, and never copies them.
+
+| Script           | Kind   | Use                                         |
+| ---------------- | ------ | ------------------------------------------- |
+| `scripts/detect` | detect | `match` with a `doppler.yaml`, else `none`. |
 
 ## Contributions
 
