@@ -10,6 +10,7 @@ import (
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
+	"github.com/virajp/bootstrap/cli/internal/report"
 	"github.com/virajp/bootstrap/cli/internal/scripts"
 	"github.com/virajp/bootstrap/cli/internal/selection"
 	"github.com/virajp/bootstrap/cli/internal/source"
@@ -48,14 +49,14 @@ func (a *app) open(mac bool) (*side, fail.Code) {
 	if code != fail.OK {
 		return nil, code
 	}
-	c, code := a.openClone(mac)
+	c, code := a.openClone(mac, true)
 	s := &side{mac: mac, w: w, c: c}
 	if code != fail.OK {
 		return s, code
 	}
 	cur, err := os.ReadFile(w.values)
 	if err != nil {
-		a.errorf("%s is not there - run %s first", a.show(w.values), cmdName(mac, "init"))
+		a.fail(a.show(w.values)+" is not there", "run "+cmdName(mac, "init")+" first")
 		return s, fail.Usage
 	}
 	s.cur = cur
@@ -157,7 +158,7 @@ func (a *app) known(s *side, names []string) fail.Code {
 	code := fail.OK
 	for _, n := range names {
 		if !source.NameOK(n) || s.manifest(n) == nil {
-			a.errorf("tool '%s' is not in bootstrap", n)
+			a.errorf("%s is not a bootstrap tool", n)
 			code = fail.Missing
 		}
 	}
@@ -182,7 +183,7 @@ func (a *app) planAdd(s *side, ch *change, names []string) map[string]bool {
 	added := map[string]bool{}
 	for _, n := range names {
 		if s.selected(n) {
-			a.infof("tool %s is already selected", n)
+			a.reasons = append(a.reasons, n+" is already selected")
 		}
 	}
 	// Each name and its dependencies, a dependency before its tool.
@@ -214,13 +215,17 @@ func (a *app) planRemove(s *side, ch *change, names, extra []string) fail.Code {
 	for _, n := range names {
 		switch {
 		case s.required(n):
-			a.errorf("tool %s is required - %s cannot remove it", n, cmdName(s.mac, "remove"))
+			pack := s.packOf(n)
+			if pack == "" {
+				pack = selection.BasePack
+			}
+			a.errorf("%s is required by the %s pack, so %s cannot remove it", n, pack, cmdWord(s.mac, "remove"))
 			code = fail.Usage
 		case !s.named[n] && s.packOf(n) != "":
-			a.errorf("tool %s comes from the pack %s - %s removes only a tool of [tools.*]", n, s.packOf(n), cmdName(s.mac, "remove"))
+			a.errorf("%s comes from the %s pack, so %s cannot remove it", n, s.packOf(n), cmdWord(s.mac, "remove"))
 			code = fail.Usage
 		case !s.named[n] && !s.selected(n):
-			a.errorf("tool %s is not selected", n)
+			a.errorf("%s is not selected", n)
 			code = fail.Usage
 		}
 	}
@@ -282,7 +287,7 @@ func (a *app) planRemove(s *side, ch *change, names, extra []string) fail.Code {
 			}
 		}
 		sort.Strings(by)
-		a.errorf("tool %s is needed by %s - remove that tool first", n, strings.Join(by, ", "))
+		a.fail(fmt.Sprintf("%s is needed by %s", n, strings.Join(by, ", ")), "remove "+strings.Join(by, ", ")+" first")
 		code = fail.Usage
 	}
 	if code != fail.OK {
@@ -386,7 +391,7 @@ func (a *app) remove(mac bool, o opts) fail.Code {
 // replace is `bootstrap [mac] replace <old> <new>`.
 func (a *app) replace(mac bool, o opts) fail.Code {
 	if len(o.names) != 2 {
-		a.errorf("%s needs two tools: <old> <new>", cmdName(mac, "replace"))
+		a.usageErr(cmdWord(mac, "replace")+" needs two tools", "bootstrap "+cmdWord(mac, "replace")+" <old> <new> [--dry-run] [--yes] [--answer <tool>.<key>=<value>] [--jobs <n>] [--verbose]")
 		return fail.Usage
 	}
 	s, code := a.open(mac)
@@ -402,27 +407,27 @@ func (a *app) replace(mac bool, o opts) fail.Code {
 	}
 	mo, mn := s.manifest(oldT), s.manifest(newT)
 	if mo.Parent == "" || mo.Parent != mn.Parent {
-		a.errorf("%s works only between two tools with the same parent - %s has the parent '%s', %s has '%s'", cmdName(mac, "replace"), oldT, mo.Parent, newT, mn.Parent)
+		a.errorf("%s works only between two tools with the same parent (%s has the parent '%s', %s has '%s')", cmdWord(mac, "replace"), oldT, mo.Parent, newT, mn.Parent)
 		return fail.Usage
 	}
 	if s.selected(newT) {
-		a.errorf("tool %s is already selected", newT)
+		a.errorf("%s is already selected", newT)
 		return fail.Usage
 	}
 	r := s.runner(a)
 	name := source.MigratePrefix + oldT
 	if !r.Has(newT, name) {
-		a.errorf("tool %s has no script %s - %s cannot replace %s with it", newT, r.ShownPath(newT, name), cmdName(mac, "replace"), oldT)
+		a.errorf("%s has no script %s, so %s cannot replace %s with it", newT, r.ShownPath(newT, name), cmdWord(mac, "replace"), oldT)
 		return fail.Usage
 	}
 	// The migrate script can change any file: the work tree must be clean.
 	if !mac {
 		if o.dryRun {
 			if a.dirtyBesides(s.w.root, nil) {
-				a.infof("the work tree has changes that are not committed - a run without --dry-run stops")
+				a.warnf("the work tree has changes that are not committed; a run without --dry-run stops")
 			}
 		} else if a.dirtyBesides(s.w.root, nil) {
-			a.errorf("the work tree has changes that are not committed - commit or discard them, then run the command again - nothing written")
+			a.fail("the work tree has changes that are not committed", "commit or discard them, then run the command again")
 			return fail.Usage
 		}
 	}
@@ -522,7 +527,7 @@ type detected struct {
 // detect is `bootstrap [mac] detect`.
 func (a *app) detect(mac bool, o opts) fail.Code {
 	if o.yes && o.no {
-		a.errorf("--yes and --no cannot be used together")
+		a.usageErr("--yes and --no cannot be used together", usageLine(mac, "detect", "dry-run yes no answer jobs verbose"))
 		return fail.Usage
 	}
 	s, code := a.open(mac)
@@ -542,10 +547,11 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 	sort.Strings(tools)
 	if len(tools) == 0 {
 		if mac {
-			a.infof("No Mac tool has a detect script")
+			a.reasons = append(a.reasons, "no Mac tool has a detect script")
 		} else {
-			a.infof("No tool has a detect script")
+			a.reasons = append(a.reasons, "no tool has a detect script")
 		}
+		a.nothingToChange()
 		return fail.OK
 	}
 	var jobs []scripts.Job
@@ -576,7 +582,7 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 		switch d.Result {
 		case "match", "none", "mismatch":
 		default:
-			a.errorf("%s printed the result '%s' - the results are match, none and mismatch", shown, d.Result)
+			a.fail(fmt.Sprintf("%s printed the result '%s'", shown, d.Result), "the results are match, none and mismatch")
 			code = fail.Usage
 			continue
 		}
@@ -595,57 +601,98 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 			}
 		}
 	}
+	// The tools that match and are not selected: the ones to offer, and the
+	// ones whose evidence a selected tool has already.
+	type notSelected struct {
+		tool, status, text string
+		offered            bool
+	}
+	var rest []notSelected
 	var cands []string
-	fmt.Fprintln(a.stdout, "Detected:")
 	for _, t := range tools {
 		d := found[t]
-		sel := s.selected(t)
-		if d.Result == "none" && !sel {
+		if s.selected(t) {
+			if d.Result == "mismatch" {
+				a.errorf("%s is selected, but its detect script gives mismatch: %s", t, d.Message)
+				code = fail.Usage
+			}
 			continue
 		}
-		state := "not selected"
-		if sel {
-			state = "selected"
+		if d.Result != "match" {
+			continue
 		}
-		line := fmt.Sprintf("  %-8s %-14s %s", d.Result, t, state)
-		if len(d.Evidence) > 0 {
-			line += " (" + strings.Join(d.Evidence, ", ") + ")"
+		// Two tools with the same evidence: the selected one is enough.
+		same, shared := "", ""
+		for _, e := range d.Evidence {
+			if u, ok := selEvidence[e]; ok {
+				same, shared = u, e
+			}
 		}
-		if d.Message != "" {
-			line += " - " + d.Message
+		if same != "" {
+			rest = append(rest, notSelected{t, "not offered", shared + " is the evidence of " + same, false})
+			continue
 		}
-		fmt.Fprintln(a.stdout, line)
-		switch {
-		case d.Result == "mismatch" && sel:
-			a.errorf("tool %s is selected, but its detect script gives mismatch: %s", t, d.Message)
-			code = fail.Usage
-		case d.Result == "none" && sel:
-			a.infof("tool %s is selected, but its detect script finds nothing - it stays selected", t)
-		case d.Result == "match" && !sel:
-			// Two tools with the same evidence: the selected one is enough.
-			same := ""
-			for _, e := range d.Evidence {
-				if u, ok := selEvidence[e]; ok {
-					same = u
+		cands = append(cands, t)
+		rest = append(rest, notSelected{t, "offered", detectText(d), true})
+	}
+	style := a.styled
+	opt := treeOpts{style: style,
+		include: func(t string) bool { _, ok := found[t]; return ok && s.selected(t) },
+		cell: func(t string) (cell, string) {
+			d, ok := found[t]
+			if !ok {
+				return cell{}, ""
+			}
+			var name, word string
+			switch d.Result {
+			case "match":
+				name, word = "ok", "found"
+			case "mismatch":
+				name, word = "error", "mismatch"
+			case "none":
+				name, word = "info", "nothing found"
+				if s.named[t] && s.packOf(t) == "" {
+					name = "none"
 				}
 			}
-			if same == "" {
-				cands = append(cands, t)
+			vis, painted := report.GlyphParts(name, style)
+			detail := d.Message
+			if d.Result == "match" {
+				detail = detectText(d)
 			}
+			return cell{vis: vis + " " + word, colored: painted + " " + word}, detail
+		}}
+	if len(rest) > 0 {
+		opt.groupTitle = "Found, not selected"
+		for _, n := range rest {
+			vis, painted := report.GlyphParts("info", style)
+			if n.offered {
+				vis, painted = "✚", report.Mark(report.New, style)
+				if !style {
+					vis, painted = "[NEW]", "[NEW]"
+				}
+			}
+			opt.group = append(opt.group, groupRow{
+				lead: "  " + vis + " " + n.tool, painted: "  " + painted + " " + n.tool,
+				cell: cell{vis: n.status, colored: n.status}, det: n.text,
+			})
 		}
 	}
+	tree, _ := renderTree(listRoots(s), depsOf(s), opt)
+	fmt.Fprint(a.stdout, tree)
 	if code != fail.OK {
 		return code
 	}
 	if len(cands) == 0 {
-		a.infof("No tool to add")
+		fmt.Fprintln(a.stdout)
+		report.NewPrinter(a.stdout, style).Success("No tool to add")
 		return fail.OK
 	}
 	var add []string
 	switch {
 	case o.no:
 		for _, t := range cands {
-			a.errorf("tool %s matches, but it is not selected - add it with %s %s", t, cmdName(mac, "add"), t)
+			a.fail(t+" is found, but it is not selected", "run "+cmdName(mac, "add")+" "+t)
 		}
 		return fail.Other
 	case o.yes:
@@ -654,8 +701,9 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 		a.errorf("the detected tools need --yes or --no")
 		return fail.Usage
 	default:
+		fmt.Fprintln(a.stdout)
 		for _, t := range cands {
-			fmt.Fprintf(a.stdout, "Add %s? [y/N] ", t)
+			fmt.Fprintf(a.stdout, "? Add %s? [y/N] ", t)
 			line, _ := a.readLine()
 			switch strings.ToLower(strings.TrimSpace(line)) {
 			case "y", "yes":
@@ -669,4 +717,23 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 		o.confirmed = true
 	}
 	return a.addNames(s, o, add)
+}
+
+// detectText gives the evidence and the message of a match: the first
+// evidence, "+N more" for the others, then the message.
+func detectText(d detected) string {
+	text := ""
+	if len(d.Evidence) > 0 {
+		text = d.Evidence[0]
+		if n := len(d.Evidence) - 1; n > 0 {
+			text += fmt.Sprintf(", +%d more", n)
+		}
+	}
+	switch {
+	case text == "":
+		return d.Message
+	case d.Message == "":
+		return text
+	}
+	return text + ": " + d.Message
 }

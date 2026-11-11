@@ -92,11 +92,11 @@ func Read(e *target.Env, mode LinkMode, file, root string) ([]Row, fail.Code) {
 	case Repo:
 		root = strings.TrimSuffix(root, "/")
 		if Linked(root, strings.TrimPrefix(file, root+"/")) {
-			r.Log(e.Show(file) + ": the manifest is a link or is below a linked folder - not read")
+			r.Warn(e.Show(file) + ": the manifest is a link or is below a linked folder - not read")
 			return nil, fail.Usage
 		}
 		if info, err := os.Stat(file); err == nil && !info.Mode().IsRegular() {
-			r.Log(e.Show(file) + ": the manifest is not a regular file - not read")
+			r.Warn(e.Show(file) + ": the manifest is not a regular file - not read")
 			return nil, fail.Usage
 		}
 	case Macos:
@@ -122,7 +122,7 @@ func Read(e *target.Env, mode LinkMode, file, root string) ([]Row, fail.Code) {
 		tool, path, ok := strings.Cut(line, "\t")
 		path, item, _ := strings.Cut(path, "\t")
 		if !ok || tool == "" || BadPath(path) {
-			r.Log(e.Show(file) + ": line " + strconv.Itoa(i+1) + " is not <tool><TAB><path> - skipped")
+			r.Warn(e.Show(file) + ": line " + strconv.Itoa(i+1) + " is not <tool><TAB><path> - skipped")
 			continue
 		}
 		rows = append(rows, Row{tool, path, item})
@@ -313,7 +313,7 @@ func Stale(e *target.Env, mode LinkMode, rows []Row, handled []string, root stri
 		}
 		show := e.Show(root + "/" + path)
 		if e.DryRun {
-			e.Plan(file)
+			e.Plan(file, report.Removed)
 			r.Outcome(report.Removed, show, "", "would remove "+show)
 			continue
 		}
@@ -362,12 +362,12 @@ func Write(e *target.Env, file string, rows []Row) fail.Code {
 		}
 	}
 	if e.DryRun {
-		e.Plan(file)
+		e.Plan(file, kind)
 		r.Outcome(kind, show, "", "would write "+show)
 		return fail.OK
 	}
 	cannot := func() fail.Code {
-		r.Log("cannot write " + show)
+		r.Error("cannot write " + show)
 		return fail.Other
 	}
 	if err := os.MkdirAll(target.Dirname(file), 0o777); err != nil {

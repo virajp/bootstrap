@@ -2,19 +2,7 @@
 rc=0
 == stderr ==
 bootstrap: updated    s/seed.yaml
-+---------------+-------+
-| Changed       |     0 |
-| New           |     0 |
-| Seeded        |     1 |
-| Removed       |     0 |
-| Unchanged     |     0 |
-| Kept seeds    |     0 |
-| Skipped       |     0 |
-| Failed        |     0 |
-+---------------+-------+
-| Total         |     1 |
-+---------------+-------+
-[OK] Synced: 1 file changed
+[OK] Synced: 1 file changed · 1 seeded
 == tree ==
 d 755 root
 d 755 root/s

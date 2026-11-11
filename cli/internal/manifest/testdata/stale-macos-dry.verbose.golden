@@ -8,19 +8,7 @@ bootstrap: would remove link.txt
 bootstrap: would remove linkdir/in.txt
 bootstrap: would remove sub/stale.txt
 bootstrap: would remove nested/x/stale.txt
-+---------------+-------+
-| Changed       |     0 |
-| New           |     0 |
-| Seeded        |     0 |
-| Removed       |     7 |
-| Unchanged     |     0 |
-| Kept seeds    |     0 |
-| Skipped       |     0 |
-| Failed        |     0 |
-+---------------+-------+
-| Total         |     7 |
-+---------------+-------+
-[OK] Dry run: 7 files would change
+[OK] Dry run: 7 files would change · 7 removed
 == tree ==
 d 755 root
 d 755 root/a

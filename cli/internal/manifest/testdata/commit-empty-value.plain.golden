@@ -1,19 +1,7 @@
 == stdout ==
 rc=0
 == stderr ==
-[INFO] Set bootstrap_commit to 0123456
-+---------------+-------+
-| Changed       |     0 |
-| New           |     0 |
-| Seeded        |     0 |
-| Removed       |     0 |
-| Unchanged     |     0 |
-| Kept seeds    |     0 |
-| Skipped       |     0 |
-| Failed        |     0 |
-+---------------+-------+
-| Total         |     0 |
-+---------------+-------+
+[INFO] bootstrap_commit changed to 0123456
 [OK] Synced: no file changed
 == tree ==
 d 755 root

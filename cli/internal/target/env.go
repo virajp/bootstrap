@@ -43,11 +43,20 @@ type Env struct {
 	Temps Temps
 	// Planned holds the absolute path of each file that a dry run would
 	// write, change or remove: the change list of the run.
-	Planned []string
+	Planned []Planned
 }
 
-// Plan records <path> in the change list of a dry run.
-func (e *Env) Plan(path string) { e.Planned = append(e.Planned, path) }
+// Planned is one file of the change list of a dry run, with what the run
+// would do to it.
+type Planned struct {
+	Path string
+	Kind report.Kind
+}
+
+// Plan records <path> and its <kind> in the change list of a dry run.
+func (e *Env) Plan(path string, kind report.Kind) {
+	e.Planned = append(e.Planned, Planned{path, kind})
+}
 
 // Show is _se_path: <path> relative to Env.Pwd when it is below it, else
 // <path> as it is.

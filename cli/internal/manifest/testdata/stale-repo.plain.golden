@@ -4,19 +4,7 @@ rc=0
 removed gone.txt
 removed a/b/c/deep.txt
 removed e/f/only.txt
-+---------------+-------+
-| Changed       |     0 |
-| New           |     0 |
-| Seeded        |     0 |
-| Removed       |     3 |
-| Unchanged     |     0 |
-| Kept seeds    |     0 |
-| Skipped       |     0 |
-| Failed        |     0 |
-+---------------+-------+
-| Total         |     3 |
-+---------------+-------+
-[OK] Synced: 3 files changed
+[OK] Synced: 3 files changed · 3 removed
 == tree ==
 d 755 root
 d 755 root/a

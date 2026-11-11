@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-repo-sync: tool 'c' is for the root repository only - remove it from the tools of this submodule
+repo-sync: c is for the root repository only - remove it from the tools of this submodule
 --- stdout

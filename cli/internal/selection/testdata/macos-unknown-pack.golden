@@ -1,4 +1,4 @@
 rc=3
 --- stderr
-bootstrap: pack 'nope' is not in bootstrap
+bootstrap: nope is not a bootstrap pack
 --- stdout

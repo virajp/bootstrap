@@ -66,7 +66,7 @@ func Select(src source.Source, base string, sel []values.Item) ([]Entry, error) 
 // Code 3 for an unknown pack.
 func Expand(p *source.Packs, name, envs, srcName string) ([]Entry, error) {
 	if !p.HasPack(name) {
-		return nil, missing("pack '%s' is not in bootstrap", name)
+		return nil, missing("%s is not a bootstrap pack", name)
 	}
 	var out []Entry
 	for _, o := range p.Order {
@@ -155,10 +155,10 @@ func CheckPacks(src source.Source, p *source.Packs) error {
 	for _, m := range p.Members {
 		if rest, ok := strings.CutPrefix(m.Key, "pack:"); ok {
 			if !p.HasPack(rest) {
-				return missing("pack '%s' is not in bootstrap (named in pack %s)", rest, m.Pack)
+				return missing("%s is not a bootstrap pack (named in pack %s)", rest, m.Pack)
 			}
 		} else if !src.IsDir(m.Key) {
-			return missing("tool '%s' is not in bootstrap (named in pack %s)", m.Key, m.Pack)
+			return missing("%s is not a bootstrap tool (named in pack %s)", m.Key, m.Pack)
 		}
 	}
 	for _, name := range p.Names {

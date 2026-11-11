@@ -1,4 +1,4 @@
 rc=3
 --- stderr
-repo-sync: tool 'nope' is not in bootstrap
+repo-sync: nope is not a bootstrap tool
 --- stdout

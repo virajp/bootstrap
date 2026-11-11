@@ -1,0 +1,8 @@
+[INFO] bootstrap 1234567 · 14 tools · env dev
+[INFO] Running mise bootstrap --yes
+[OK] mise bootstrap done
+[WARN] the init stage changed
+[ERROR] git is not selected
+  -> Run bootstrap add git
+[ERROR] git is required by the base pack, so remove cannot remove it
+[OK] Synced: no file changed

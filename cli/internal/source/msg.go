@@ -6,7 +6,8 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/fail"
 )
 
-// Logger prints one message line, as `_se_log` does. *report.Report has it.
+// Logger prints one message line. *report.Report has it. A Logger that also
+// has Error(msg string) gets each message of LogAll as an error.
 type Logger interface{ Log(msg string) }
 
 // Problems joins the failures of one check. Each part is a *fail.Error whose
@@ -46,7 +47,11 @@ func Messages(err error) []*fail.Error {
 func LogAll(l Logger, err error) fail.Code {
 	for _, e := range Messages(err) {
 		if e.Msg != "" {
-			l.Log(e.Msg)
+			if el, ok := l.(interface{ Error(string) }); ok {
+				el.Error(e.Msg)
+			} else {
+				l.Log(e.Msg)
+			}
 		}
 	}
 	return fail.CodeOf(err)
