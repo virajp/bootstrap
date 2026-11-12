@@ -4,6 +4,7 @@
 #MISE description="Setup / Upgrade AI tools"
 #MISE hide=true
 #MISE dir="~"
+#MISE tools={jq = "latest"}
 
 set -e
 source "${HOME}/.config/mise/tasks/_scripts/helpers"
@@ -11,7 +12,12 @@ source "${HOME}/.config/mise/tasks/_scripts/helpers"
 print_header "Upgrading AI tools ..."
 
 print_subheader "Adding marketplaces ..."
-pnpx @virajp.dev/claude-plugins --all
+if ! claude plugins marketplace list --json | jq -e '.[] | select(.name == "claude-plugins-official")' > /dev/null; then
+  claude plugins marketplace add anthropics/claude-plugins-official
+fi
+if ! claude plugins marketplace list --json | jq -e '.[] | select(.name == "virajp-plugins")' > /dev/null; then
+  claude plugins marketplace add virajp/claude-plugins
+fi
 
 print_subheader "Upgrading marketplaces ..."
 claude plugins marketplace update
