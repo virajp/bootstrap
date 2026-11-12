@@ -126,6 +126,8 @@ value = '.antigravitycli/'
 [[item]]
 value = '.omc/'
 [[item]]
+value = '.impeccable/'
+[[item]]
 value = '**/.obsidian/'
 # The code-intelligence graph is rebuilt on every commit, per checkout.
 [[item]]
