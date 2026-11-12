@@ -65,7 +65,9 @@ in the form of the existing cases.
    `summary`, `category` and `selectable` are accepted (code 0); `hosts` on a
    Mac tool gives code 2 ("hosts is for repo tools only"); the changed key list
    of the unknown-key message; a `macos/categories.toml` case; a pack
-   `description`; a group question with no answer (code 2).
+   `description`; a group question with no answer (code 2); `bootstrap mac
+   detect --dry-run` does not propose a fixture tool with `selectable = false`
+   when its package is installed (the package scan of `601225f`, D13 a).
 3. Change each existing case whose expected message U1 changed (the key list
    of the Mac unknown-key message, the key list of the question message).
 
