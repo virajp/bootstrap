@@ -349,6 +349,17 @@
         "U2",
         "U4"
       ]
+    },
+    {
+      "id": "D15",
+      "decision": "No --skip-answer flag.",
+      "ruling": "Ruling of the user (2026-11-13), which replaces each --skip-answer rule of D6, D12 and D14: the engine has no --skip-answer flag. --answer <tool>.<key>= (an empty value) is the one form of an empty answer: it writes \"\", and it is accepted only for an optional or a group question (code 2 for another question). Where D6, D12 or D14 names --skip-answer, read --answer <tool>.<key>=. The rule of D14 (9 b) for two flags on one question falls away: for --answer two times on one question, the last one wins, as today. The hint of a missing answer with --yes or no terminal names --answer, and for an optional or a group question also --answer <tool>.<key>= . The TUI of plan 2 gives an empty answer with --answer <tool>.<key>= when it calls the CLI, and through the change list in the process.",
+      "rejected": "--skip-answer as a second form: it does the same as --answer <q>=.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
     }
   ],
   "stages": {

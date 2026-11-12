@@ -12,6 +12,18 @@ Each
 rule gets at least one case. Each case compares the exit code and the message,
 in the form of the existing cases.
 
+- D15: "Ruling of the user (2026-11-13), which replaces each --skip-answer rule
+  of D6, D12 and D14: the engine has no --skip-answer flag. --answer
+  <tool>.<key>= (an empty value) is the one form of an empty answer: it writes
+  "", and it is accepted only for an optional or a group question (code 2 for
+  another question). Where D6, D12 or D14 names --skip-answer, read --answer
+  <tool>.<key>=. The rule of D14 (9 b) for two flags on one question falls away:
+  for --answer two times on one question, the last one wins, as today. The hint
+  of a missing answer with --yes or no terminal names --answer, and for an
+  optional or a group question also --answer <tool>.<key>= . The TUI of plan 2
+  gives an empty answer with --answer <tool>.<key>= when it calls the CLI, and
+  through the change list in the process."
+
 ## Edits
 
 1. **`.config/mise/tasks/test/repo`** — add cases with a scratch clone, as the
@@ -48,15 +60,13 @@ in the form of the existing cases.
      and `optional` (code 2); `bootstrap init --yes` with a group and no
      `--answer` (code 2); D14: `bootstrap init --yes` with an `optional`
      question and no flag (code 2, the hint names `--answer` and
-     `--skip-answer`); `--skip-answer` on an `optional` question (code 0, `""`
-     written; a second `init --yes` with no flag passes); `--answer <q>=` on an
-     `optional` question (code 0, `""`
-     written); `--skip-answer` and `--answer <q>=` on a question with no
-     `group` and no `optional` (code 2); `--skip-answer` on `bootstrap add`;
-     `init --yes --skip-answer` on each question of a group (code 2, "the group
-     <tool>.<group> has no answer" and the hint of D14 (9) c);
-     `--skip-answer <q>` with `--answer <q>=<value>` (code 2, "--answer and
-     --skip-answer both name <q>");
+     `--answer <tool>.<key>=`); `--answer <q>=` on an `optional` question
+     (code 0, `""` written; a second `init --yes` with no flag passes);
+     `--answer <q>=` on a question with no `group` and no `optional`
+     (code 2); `--answer <q>=` on `bootstrap add`; `init --yes` with
+     `--answer <q>=` on each question of a group (code 2, "the group
+     <tool>.<group> has no answer" and the hint of D14 (9) c); `--skip-answer`
+     is an unknown flag (code 2, D15);
      `bootstrap questions --json` shows `group`, `note`
      and `optional`; the text output of `bootstrap questions` for an optional
      question with no answer and an answer `""`; the changed key list of the
