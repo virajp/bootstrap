@@ -1,0 +1,383 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "The catalog engine: the new keys of a tool, a pack and a question",
+  "requires": [],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "execution": "solo",
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-12 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Build the engine from the worktree (`cd cli && go build -o <tmp>/bootstrap ./cmd/bootstrap`). In the main checkout of this repository, run `<tmp>/bootstrap check`. Then run `<tmp>/bootstrap mac sync --dry-run` on this Mac.",
+        "pass": "Each command exits 0 with the data of today: no tool has summary or category yet, and the clone has no categories file."
+      }
+    ]
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-12-catalog-engine",
+      "mode": "run",
+      "notes": "Archive the plan folder, only when its gaps list has no open entry. With an open gap, skip this step and report the gaps."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "New behavior: new keys of a tool, a pack and a question, and new rules in init, add, replace, questions, list, sync and check. The data of today still syncs, so nothing breaks. The user tags bootstrap@2.1.0 by hand after the landing."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The engine: the new keys and their rules",
+      "wave": 1,
+      "file": "01-engine.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "The test tasks: the cases of the new keys",
+      "wave": 2,
+      "file": "02-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo",
+        ".config/mise/tasks/test/mac",
+        "macos/fixtures/"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "The new cases run the rules and the messages that U1 adds.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Review: the engine change and the test tasks",
+      "wave": 3,
+      "file": "03-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U4",
+      "title": "Docs",
+      "wave": 4,
+      "file": "04-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/",
+        "docs/sync/",
+        "docs/setup/"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Gates",
+      "wave": 5,
+      "file": "05-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "README.md, CLAUDE.md, docs/**",
+      "why": "each human-facing doc",
+      "owner": "U4"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "The new keys of a tool, on both sides.",
+      "ruling": "summary (a string of 47 characters or fewer: the right pane of the TUI), category (a string: the id of a category of the side), selectable (a boolean, default true) and description (a string, now also read on the repo side: the bottom pane of the TUI). In this plan, summary and category are optional. A wrong type, or a summary of more than 47 characters, stops the sync with code 2.",
+      "rejected": "summary and category necessary in this plan: no tool has them yet, so each sync stops (they become necessary in plan 1b). A summary that falls back to the start of description: the same text shows twice.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Where the categories are.",
+      "ruling": "One categories file for each side: repo/categories.toml and macos/categories.toml. Each entry is [category.<id>] with the key title (a string). The order of the entries in the file is the order in the TUI. A tool names one id: category = \"<id>\". The sync stops with code 2 if a tool names an id that is not in the file of its side, or if a tool names a category and the file is missing. A missing file with no category in a tool is not an error. Another key in a [category.<id>] table, a [category.<id>] with no title, a title that is not a string, or a top-level key or table other than [category] stops the sync with code 2.",
+      "rejected": "The title of the category directly in each tool: the same title then is in many files, and a typing error makes a new category.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "The description of a pack.",
+      "ruling": "description is a reserved key in [pack.<name>] of repo/packs.toml and macos/packs.toml. A string value at the key description is the text of the pack. An inline table is a member. A string at another key still stops the sync with code 2 with the message of today. A description that is not a string stops the sync with code 2. A pack has no summary.",
+      "rejected": "A [pack.<name>.members] table: it changes the form of each pack. A summary for a pack: the user dropped it.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "The key hosts.",
+      "ruling": "hosts is an optional list of the mise OS names: macos, linux and windows. The engine maps the Go name darwin to macos (runtime.GOOS). No key means each host. It is a key of the repo side only: a Mac tool with hosts stops the sync with code 2. Only the TUI (plan 2), init, add and the new tool of replace examine it: on another host they refuse the tool with code 2 and a message that names the tool and its hosts. hosts = [] stops the sync with code 2 (\"hosts must name at least one host\"). On a runtime.GOOS other than darwin, linux and windows, the host name is runtime.GOOS as it is, so init and add refuse each tool that has hosts. sync and check do not examine it, so a CI job on Linux still syncs a repository that has a macOS-only tool. A value that is not one of the three names stops the sync with code 2.",
+      "rejected": "The Go names (darwin): the repo already uses the mise names (os = \"macos\" in repo/tools/swift/tools.toml and repo/tools/mise/tools.toml). sync that refuses the tool: a Linux CI job of a swift repository then stops.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "The key selectable = false.",
+      "ruling": "init and add refuse a named tool with selectable = false, with code 2, and replace refuses it as its new tool only (the old tool can be one that a values file names directly). The message names the tools that need it, for example: \"_security_base is not selectable. Select gitleaks, grype or osv-scanner.\" (the tools of the side whose depends name it, sorted). If no tool of the side depends on it, the message is only \"<tool> is not selectable.\" bootstrap questions --json and bootstrap list do not change: they show selected tools only, and a values file that names it directly still shows it. sync accepts a values file that names it directly. check prints a warning only and keeps its exit code. The key works the same way on both sides.",
+      "rejected": "sync that stops for it: a consumer that names it today then stops. Mac tools with selectable = false now: no Mac tool needs it.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "The new keys of a question: group, note and optional.",
+      "ruling": "Rule 1: group is a string (the name of the group, for example group = \"email\"). note is a string. optional = true is a boolean, and a question with a group cannot also have it (code 2). Each key is valid on both sides. Rule 2: an empty string \"\" is a valid answer, and it means no answer. init writes \"\" for a question that the user leaves empty, so init does not ask it again on the next run. Rule 3: sync and check: an optional question can have no key or \"\". A group needs at least one answer that is not empty. If all the answers of a group are empty or missing, the sync stops with code 2: \"the group <tool>.<group> has no answer in <file> - <hint>\", with the file and the hint of the message of today for a single question (\"run bootstrap init\" on the repo side, the hint of oldform.MacHint on the Mac side), for example \"the group git.email has no answer in macos.toml - run bootstrap mac init\". A question with no group and no optional still needs a key, as today; \"\" is accepted as its answer. Rule 4 (changed by D14): init, add, replace and detect ask in a terminal each question of the selected tools that has no key in the files and no --answer or --skip-answer flag. They also ask an optional question. The field starts with the proposal (the output of detect, else the example), and the user can edit or delete the text. Enter accepts the text. An empty text is accepted for an optional question or a group question, and init writes \"\". For another question, the field stays open and shows \"an answer is necessary\". init also asks again each question of a group whose answers in the files are all empty or missing, because the sync stops for that group. After the last question of a group, if all its answers are empty, init shows \"Give at least one answer: email_github, email_gitlab\" and asks again every question of the group, also the questions that a flag set, each field started with its proposal. init shows the note on a line under the question. Rule 5 (changed by D14): --skip-answer <tool>.<key> (repeatable) and --answer <tool>.<key>= both write \"\" for an optional or a group question, so init does not ask it now or on a later run, except in the second ask of an all-empty group (rule 4). Both forms are accepted only for an optional or a group question; for another question they give code 2. With --yes or no terminal, a question with no key in the files and no flag stops init with code 2, as today. The hint names --answer, and also --skip-answer for an optional or a group question. A group needs at least one answer that is not empty, from the files or from --answer. Rule 6: bootstrap questions --json gives each question the keys group, note and optional too. The text output of bootstrap questions shows an answer \"\" as answered, with the value (empty); it shows an optional question with no answer, and a group question with no answer in a group that has an answer, with the info glyph and \"no answer (optional)\" or \"no answer (group <group> has an answer)\", and it does not count them as \"without an answer\". Rule 7 (the git templates of the Mac side) is in plan 1b.",
+      "rejected": "Keep the rule that each question needs an answer that is not empty: the Mac git tool then needs both emails. A required key on one email: the user has GitHub or GitLab or both.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "No tool name in the engine.",
+      "ruling": "The engine reads the new keys generically. No string literal of the engine names a tool, also not _security_base, git or swift. TestEngineNamesNoTool stays green with no new entry in its allow list. The texts of D5 and D6 are examples; the engine builds them from the data.",
+      "rejected": "A special case for _security_base or git in the engine.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "One plan, or the engine and the data apart.",
+      "ruling": "Two plans. docs/design/cli.md (\"The rule\") says: a tool change that needs a new feature of the engine lands after the pin commit. The installed engine 2.0.3 stops for an unknown key of a Mac tool, so the data (summary, category, group, the categories files, the pack descriptions) must land after the release of this plan. This plan (1a) lands the engine. The user then tags bootstrap@2.1.0 by hand. Plan 1b (the data) requires this plan and makes summary and category necessary.",
+      "rejected": "One plan with the release step in the middle: a plan lands only once.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "A review unit.",
+      "ruling": "Yes, one review unit (U3) over U1 and U2: the change lands runnable code (the Go engine and the bash test tasks).",
+      "rejected": "No review unit: the wave review does not run /code-review or /security-review.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "The execution mode.",
+      "ruling": "solo: no wave has two edit units.",
+      "rejected": "teams: no wave has two edit units that can talk.",
+      "units": [
+        "U1",
+        "U2",
+        "U4",
+        "U5"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "Where the test cases go.",
+      "ruling": "A separate unit U2 owns the test tasks and the Mac fixtures, as in the plan 2026-11-11-user-config-file. U1 owns cli/ with its Go unit tests and goldens.",
+      "rejected": "The test cases in U1: a larger unit with two trees.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "The 12 gaps of the first rulings review (2026-11-12).",
+      "ruling": "Assumed by the planner from the rulings D2-D6 and the standing rule of the user to take the simplest consistent rule for a CLI case: the repo question keys are validated in cli/internal/values/merge.go:224 (change that check, no second check); replace examines hosts and selectable on its new tool only; questions --json and list do not change for selectable = false; the exact group message with the file and the hint of today; init asks again an all-empty group; --skip-answer writes \"\" for an optional or group question (D14); the text output of bootstrap questions per D6 rule 6; a category with no title and an unknown top-level key are code 2; hosts = [] is code 2 and an unknown GOOS is used as it is; a not-selectable tool that no tool needs gets the short message.",
+      "rejected": "A second validation of the repo question keys in check.go (each problem then shows twice). init that writes \"\" with --yes (a later terminal init then never asks it). Removing the tool from list (list shows only selected tools).",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "The gaps 2-7 of the second rulings review (2026-11-12).",
+      "ruling": "Assumed by the planner from D4-D6 and the rule of the simplest consistent CLI rule: (a) bootstrap detect does not propose a tool whose hosts leave out the host or that has selectable = false, so detect --yes never stops for them. (b) D6 rule 5: with --yes or no terminal, a group passes when one of its answers is not empty, from the files or from --answer, so init --yes again on a values file that init wrote for the group (each question of the group has a key, one of them not empty) passes with no flag. (c) In bootstrap questions, a question of a group whose answers are all empty or missing shows the error glyph and \"no answer\", and counts as without an answer. (d) optional = false is valid, and it is accepted with group; only optional = true with group is code 2. (e) The warning of check (both sides, also bootstrap mac check): \"<tool> is not selectable - remove [tools.<tool>] from <file>; a tool that needs it selects it\". (f) The allowed table of cli.go is at :181-192.",
+      "rejected": "detect that proposes the tool and add that then stops: detect --yes then fails on each Linux run of a repository with swift files.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "The answers of init: the flags first, a prompt only for a question with no answer, and the library of the prompt.",
+      "ruling": "Rulings of the user (2026-11-12): (1) init and add ask in a terminal only the questions that have no answer in the files and no flag. If --answer gives 3 of 4 answers, init asks the fourth. (2) The TUI of plan 2 gives every answer with a flag, also the empty ones, so the CLI never asks under the TUI. (3) Without a flag, init also asks an optional question. --skip-answer <tool>.<key> or --answer <tool>.<key>= leaves it empty. (4) The y/N consent before init writes stays, and --yes skips it. (5) The field of the prompt starts with the detected answer, and the user can edit or delete it. (6) The prompt uses Bubble Tea v2 (charm.land/bubbletea/v2) and the textinput component of Bubbles v2 (charm.land/bubbles/v2), the latest releases at the run (v2.1.1 and v2.2.1 on 2026-11-12). U1 adds them with go get; go.sum comes from go get and go mod tidy only. Plan 2 uses the same field model in the TUI form. Assumed by the planner from the simplest consistent CLI rule: --skip-answer is accepted wherever --answer is (init, add, replace, detect), and also for a group question; the prompt runs only when a.interactive() is true, with the stdin and the stdout of the app; the y/N consent keeps readLine. (7) Ruling of the user after rulings review round 3: --skip-answer <q> writes \"\", the same as --answer <q>=, so the key is in the file and a later init --yes does not stop for it. (8) Ruling of the user after rulings review round 3: if each answer of a group is empty after the flags and the prompt, init in a terminal asks again every question of the group, also the questions that a flag set, each field started with its proposal; with --yes or no terminal, init stops with code 2 and names the group and its keys. (9) Rulings of the user after rulings review round 4: (a) if the group is empty again at the second ask, init asks the group again until one answer is not empty; ctrl+c stops init with code 2 and writes nothing. (b) --skip-answer <q> and --answer <q>=<value> on the same question stop init with code 2: \"--answer and --skip-answer both name <q>\"; the same flag two times on one question: the last one wins, as --answer does today (init.go:437-444). (c) The code-2 message of an all-empty group with --yes or no terminal: \"the group <tool>.<group> has no answer\", with the hint \"give at least one with --answer <tool>.<key>=<value>: <key>, <key>\" (the keys of the group in key order), for example \"the group git.email has no answer\" and \"give at least one with --answer <tool>.<key>=<value>: email_github, email_gitlab\".",
+      "rejected": "huh v2 (charm.land/huh/v2): no release after v2.0.3 of 2026-03-10, 28 commits not released, 43 pull requests with no reply, OpenSSF Scorecard Maintained 2 of 10, and its main authors left Charm. golang.org/x/term: it cannot start a line with text. The prompt of today ([proposal], an empty line takes it): the user cannot delete a detected answer. Flags only, with no prompt: the user wants a terminal init to ask.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
