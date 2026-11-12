@@ -92,7 +92,7 @@ repository of the current folder.
 | `add <tool…>`          | Selects the tools and their dependencies, asks their questions, then syncs.                                                                          |
 | `remove <tool…>`       | Removes the tools, and each dependency that the user named and that no other tool needs, then syncs. Each seed of a removed tool stays, with a line. |
 | `replace <old> <new>`  | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                              |
-| `detect`               | Runs the detect scripts, and offers to add each tool that matches. See [`detect`](#detect).                                                          |
+| `detect`               | Runs the detect scripts, or on the Mac the package scan, and offers to add each tool that matches. See [`detect`](#detect).                          |
 | `list`, `ls`           | Prints the selected tools as a tree. See [`list`](#list). It writes nothing.                                                                         |
 | `config`               | Prints the config file and each setting, with its value and its source. See [The config file](#the-config-file). There is no `mac config`.           |
 | `version`, `--version` | Prints the version. There is no `mac version`.                                                                                                       |
@@ -363,6 +363,48 @@ Found, not selected
   usage error.
 - When nothing is offered, the last line is `✔ No tool to add`.
 
+#### The package scan of `mac detect`
+
+`mac detect` runs no detect script. It lists the installed packages of the
+Mac, in `$HOME`:
+
+| Kind of package | Command                                                     | Key                                          |
+| --------------- | ----------------------------------------------------------- | -------------------------------------------- |
+| Formula         | `brew leaves --installed-on-request`, `brew list --formula` | `brew:<name>` of `[mise.bootstrap.packages]` |
+| Cask            | `brew list --cask`                                          | `brew-cask:<name>`                           |
+| App Store app   | `mas list`                                                  | `mas:<id>`                                   |
+| mise tool       | `mise ls --global --installed --json`                       | `<name>` of `[mise.tools]`                   |
+
+- Without `brew` on `PATH`, the scan skips the formulae and the casks, with the
+  info line `brew is not installed, so Homebrew packages are not scanned`.
+  Without `mas`, it skips the apps the same way. A command that fails stops the
+  run.
+- brew prints a formula or a cask of a tap without the tap. Thus the scan
+  compares a `brew:` or `brew-cask:` key by the part after its last `/`:
+  `brew-cask:stablyai/orca/orca` matches the cask `orca`.
+- Each installed formula of `brew list --formula` can match a Mac tool. Only a
+  formula of `brew leaves --installed-on-request` can be an offer of a package
+  of no tool. Thus a dependency is never an offer. `brew leaves` also does not
+  list a formula of a tap that Homebrew does not trust.
+- Each key of `[mise.bootstrap.packages]` and `[mise.tools]` in a `tools.toml`
+  belongs to that tool. A Mac tool with one or more installed keys gives
+  `match`, with those keys as the evidence and the reason `installed`. A Mac
+  tool with keys and none installed gives `none`, with the reason
+  `no package installed`. The tree and the offers of tools are as above.
+- An installed key of no Mac tool, and not in the own `[mise]` tables of
+  `macos.toml`, is an offered row of the group `Found, not selected`, with the
+  reason `no Mac tool has it: add it to <table> of macos.toml`. The prompt is
+  `? Add <key> to macos.toml? [y/N]`, one for each key.
+- An accepted key goes into `[mise.bootstrap.packages]` or `[mise.tools]` of
+  `macos.toml`, with the version `latest`. See [mac.md](mac.md) for the own
+  config of the values file.
+- An accepted `mas:` key also adds the tool that installs `brew:mas` or the
+  mise tool `mas`, when it is not selected: the own config has no `depends`.
+- With `--no`, each offered key prints
+  `✗ <key> is installed, but no Mac tool has it` with the fix
+  `Add it to <table> of macos.toml`. `--yes` adds each offered tool and each
+  offered key.
+
 ## The cache and the clone
 
 The cache is `${XDG_CACHE_HOME:-~/.cache}/bootstrap/`. `--cache-dir`,
@@ -568,6 +610,7 @@ The engine runs these commands:
 | Both    | `mise x -- bash <script>` for each script of a tool. See [The scripts of a tool](#the-scripts-of-a-tool).               |
 | `repo`  | `mise x -- which <formatter>` and `mise x -- bash -c <formatter command>`. See [The formatter](#the-formatter).         |
 | `macos` | `mise bootstrap --yes` of the `mise` of `PATH`, in `$HOME`.                                                             |
+| `macos` | `mac detect`: `brew leaves`, `brew list`, `mas list` and `mise ls` of `PATH`, in `$HOME`. See [`detect`](#detect).      |
 
 ## The scripts of a tool
 
@@ -579,7 +622,7 @@ from the clone, and never copies them.
 | `derive`             | Each sync and each plan, before the render.     | One JSON object: the derived values of the tool. It can have a `mise` and a `mise_env` table, which merge into the mise config of the tool. See [mise.md](mise.md). |
 | `check`              | `sync` and `check`, before a write.             | Exit 0. Or each line of stdout is a message, and the exit code is 2.                                                                                                |
 | `after`              | Mac only: after `mise bootstrap` of each stage. | Nothing, or `{ "restart": "<reason>" }`, which asks for a new terminal (exit 4). See [mac.md](mac.md).                                                              |
-| `detect`             | `detect` only.                                  | `{ "result": "match" \| "none" \| "mismatch", "evidence": [...], "message": "..." }`.                                                                               |
+| `detect`             | Repo side, `detect` only.                       | `{ "result": "match" \| "none" \| "mismatch", "evidence": [...], "message": "..." }`.                                                                               |
 | `migrate-<old tool>` | `replace <old tool> <this tool>` only.          | Exit 0. It moves the repository from the old tool to this tool.                                                                                                     |
 
 - The engine runs each script as `mise x -- bash
@@ -600,7 +643,8 @@ from the clone, and never copies them.
 - A script parses JSON with `jq` of `PATH`, else with `mise x jq@latest`.
 - A script cannot read the output of a script of another tool.
 - Evidence of a detect script is config files, never lock files. The script
-  does the precise detection.
+  does the precise detection. The Mac side runs no detect script: `mac detect`
+  scans the installed packages. See [`detect`](#detect).
 
 Any other file in `scripts/` stops the sync. See [tools.md](tools.md).
 

@@ -1954,11 +1954,71 @@ case_init_nothing() {
 }
 
 # The selection commands of the Mac side.
+# fake_packages [nobrew]: fake brew, mas and mise commands for the package
+# scan of mac detect. The fake mise is at .local/bin/mise, and it runs the real
+# mise for each command but ls. With nobrew, PATH has no brew and no mas.
+fake_packages() {
+  local real fake="$dir/fake/.local/bin"
+  real=$(command -v mise)
+  mkdir -p -- "$fake"
+  printf '%s\n' '#!/bin/sh' \
+    'if [ "$1" = ls ]; then echo '"'"'{"pkgmise": [], "loosetool": []}'"'"'; exit 0; fi' \
+    "exec '$real' \"\$@\"" > "$fake/mise"
+  if [[ ${1:-} != nobrew ]]; then
+    printf '%s\n' '#!/bin/sh' \
+      'case "$1 $2" in leaves*) printf "pkgfmla\nloosefmla\n" ;;' \
+      '"list --formula") printf "pkgfmla\nloosefmla\ndepfmla\n" ;; "list --cask") echo loosecask ;; esac' > "$fake/brew"
+    printf '%s\n' '#!/bin/sh' 'echo "123  Some App  (1.0)"' > "$fake/mas"
+  fi
+  chmod +x -- "$fake"/*
+  if [[ ${1:-} == nobrew ]]; then
+    export PATH="$fake:/usr/bin:/bin"
+  else
+    export PATH="$fake:$PATH"
+  fi
+}
+
 case_mac_detect() {
   use_config ok
-  mac_run detect --no-bootstrap
+  fake_packages
+  mac_run detect --no --no-bootstrap
+  check_exit 1
+  check_output "pkgtool is found, but it is not selected"
+  check_output "brew:pkgfmla, +1 more: installed"
+  check_output "brew:loosefmla is installed, but no Mac tool has it - add it to [mise.bootstrap.packages] of macos.toml"
+  check_output "brew-cask:loosecask is installed, but no Mac tool has it"
+  check_output "mas:123 is installed, but no Mac tool has it"
+  check_output "loosetool is installed, but no Mac tool has it - add it to [mise.tools] of macos.toml"
+  check_no_output "pkgmise is installed"
+  check_no_output "brew:pkgfmla is installed"
+  check_no_output "brew:depfmla"
+}
+
+case_mac_detect_yes() {
+  use_config ok
+  fake_packages
+  mac_run detect --yes --no-bootstrap
   check_exit 0
-  check_output "Nothing to change · no Mac tool has a detect script"
+  check "macos.toml selects pkgtool" grep -qxF '[tools.pkgtool]' "$values"
+  check "macos.toml selects appcmd for the mas: app" grep -qxF '[tools.appcmd]' "$values"
+  check "macos.toml has the formula" grep -qxF '"brew:loosefmla" = "latest"' "$values"
+  check "macos.toml has the cask" grep -qxF '"brew-cask:loosecask" = "latest"' "$values"
+  check "macos.toml has the app" grep -qxF '"mas:123" = "latest"' "$values"
+  check "macos.toml has the mise tool" grep -qxF '[mise.tools.loosetool]' "$values"
+  mac_run detect --no --no-bootstrap
+  check_exit 0
+  check_output "No tool to add"
+}
+
+case_mac_detect_nobrew() {
+  use_config ok
+  fake_packages nobrew
+  mac_run detect --no --no-bootstrap
+  check_exit 1
+  check_output "brew is not installed, so Homebrew packages are not scanned"
+  check_output "mas is not installed, so App Store apps are not scanned"
+  check_output "loosetool is installed, but no Mac tool has it"
+  check_no_output "brew:loosefmla"
 }
 
 case_mac_add() {
@@ -2115,7 +2175,9 @@ run_case "merge: the old key remove" expect merge 2 'macos/tools/merger/tools.to
 
 run_case "questions: sync stops on a question without an answer" case_question_missing
 run_case "questions: mac questions, --json and text" case_questions_json
-run_case "selection: mac detect without a detect script" case_mac_detect
+run_case "selection: mac detect offers the installed packages" case_mac_detect
+run_case "selection: mac detect --yes adds the tools and the packages" case_mac_detect_yes
+run_case "selection: mac detect without brew and mas" case_mac_detect_nobrew
 run_case "selection: mac add" case_mac_add
 run_case "selection: mac remove" case_mac_remove
 run_case "selection: mac remove refuses a required tool and a tool that is not selected" case_mac_remove_refused
