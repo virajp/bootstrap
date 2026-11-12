@@ -4,7 +4,7 @@
 
 After this plan lands, each tool of both sides has a `summary` and a
 `category`, and the engine stops the sync for a tool without them. Each repo
-tool has a `description`, and each pack of both sides has one. Each side has a
+tool has a `description`. Each side has a
 categories file. `_security_base` is not selectable, `swift` runs only on
 macOS, and the Mac git tool needs one email only.
 
@@ -23,7 +23,9 @@ TUI) requires this plan. The plan reverses no standing decision.
 - The packs: `repo/packs.toml` has `base`, `security` and `container-build`.
   `macos/packs.toml` has `base`, `ai`, `essentials`, `security`, `dev`,
   `terminal`, `apple-dev`, `iwork`, `ms-office`, `disk`, `media`, `chat`,
-  `notes` and `cli-extras`. No pack has a `description` now.
+  `notes` and `cli-extras`. No pack has a `description` now. The local branch
+  `packs-shortcut` (`420e3e6`) reshapes both files for plan 2; this plan does
+  not change them (D13).
 - Each Mac tool has a `description` now. No repo tool has one: its text is
   the header comment of its `tools.toml`.
 - The Mac git questions are at `macos/tools/git/tools.toml:12-29`. The four
@@ -83,7 +85,8 @@ A block with no question carries the one line `QUESTION: none`.
 ## Out of scope
 
 - The TUI, and every engine change other than D5: plan 2, or plan 1a.
-- A summary of a pack: the user ruled that a pack has only a description.
+- The packs files: no description and no new comment (D13). Plan 2 writes
+  them with the packs of the branch `packs-shortcut`.
 - A change of the Mac tool descriptions of today, and of the header comment of
   a repo tool.
 - A `conflicts` key: `parent` is the only conflict data.

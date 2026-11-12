@@ -67,6 +67,14 @@ Quoted verbatim from the decisions of `index.json`:
   U4 never changes repo/categories.toml or a file of macos/fixtures/ in the
   working tree. Each case of plan 1a for the categories file stays, rewritten
   that way."
+- D13: "Ruling of the user (2026-11-13), which replaces the pack parts of D2 and
+  D11 b: this plan does not change repo/packs.toml or macos/packs.toml. It
+  writes no pack description and no new comment there. The user reshaped the
+  packs on the local branch packs-shortcut (420e3e6): new names, members with no
+  default key, and a base whose members are mostly required. The engine of today
+  refuses that form, so the branch lands with plan 2, which also writes the
+  descriptions of the new packs. The sections "The comments of the packs files"
+  and "The pack descriptions" of texts.md are not used."
 
 ## Precondition
 
@@ -83,11 +91,7 @@ nothing. Report "cli/VERSION is <v>; plan 1b needs 2.1.0 or later" (D7).
    top-level keys (`depends`, `parent`). Keep the header comment as it is.
 3. **`repo/tools/_security_base/tools.toml`** — add `selectable = false`.
 4. **`repo/tools/swift/tools.toml`** — add `hosts = ["macos"]`.
-5. **`repo/packs.toml`** — add `description = "<text>"` as the first key of
-   each `[pack.<name>]` table, with the texts of `texts.md` ("The pack
-   descriptions of `repo/packs.toml`"). Keep the member order. Replace the
-   comment at the top with the text of `texts.md` ("The comments of the packs
-   files").
+5. **`repo/packs.toml`** — do not change it (D13).
 
 Use a TOML string with double quotes. Escape a double quote in a text, if
 there is one.
@@ -110,4 +114,4 @@ there is one.
 
 ## Commit
 
-`feat: add the catalog data of the repo tools and packs`
+`feat: add the catalog data of the repo tools`

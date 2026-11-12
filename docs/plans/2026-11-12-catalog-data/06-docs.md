@@ -31,6 +31,14 @@ Quoted verbatim from the decisions of `index.json`:
   values file that names [tools._security_base] directly gets the warning of
   check; remove the table, because gitleaks, grype or osv-scanner selects the
   tool. A macos.toml needs no change: an empty email is now valid."
+- D13: "Ruling of the user (2026-11-13), which replaces the pack parts of D2 and
+  D11 b: this plan does not change repo/packs.toml or macos/packs.toml. It
+  writes no pack description and no new comment there. The user reshaped the
+  packs on the local branch packs-shortcut (420e3e6): new names, members with no
+  default key, and a base whose members are mostly required. The engine of today
+  refuses that form, so the branch lands with plan 2, which also writes the
+  descriptions of the new packs. The sections "The comments of the packs files"
+  and "The pack descriptions" of texts.md are not used."
 
 ## Edits
 

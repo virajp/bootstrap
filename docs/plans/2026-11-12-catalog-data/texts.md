@@ -98,29 +98,7 @@ title = "Disk"
 
 ## The comments of the packs files
 
-Replace the comment at the top of each packs file with this text (D11 b).
-
-`repo/packs.toml`:
-
-```toml
-# The packs. A pack has no files of its own. The key description of its table
-# is the text of the pack. Each other key is a member:
-# `<tool> = { default = true }` or `<tool> = {}`, and a nested pack is
-# `"pack:<name>"`. The member order is the sync order, so keep it.
-# The sync always adds the pack `base`. `required = true` marks a member of
-# `base` that each repository must have. See docs/design/packs.md.
-```
-
-`macos/packs.toml`:
-
-```toml
-# The packs of the Mac tools in macos/tools/. A pack has no files of its own.
-# The key description of its table is the text of the pack. Each other key is
-# a member: `<tool> = { default = true }` or `<tool> = {}`, and a nested pack
-# is `"pack:<name>"`. The Mac sync sorts the tools by name in each stage, so the
-# member order does not change the sync. The sync always adds the pack `base`.
-# `required = true` marks a member of `base` that each Mac must have.
-```
+Not used (D13).
 
 ## Repo tools
 
@@ -282,29 +260,6 @@ of `cli` is `The projects folder, the aliases and func:*`).
 | `zoxide`               | `cli`          | zoxide, the fast directory jumper              |
 | `zsh`                  | `shell`        | zsh, with zinit and its rc files               |
 
-## The pack descriptions of `repo/packs.toml`
+## The pack descriptions
 
-| Pack              | description                                                                                                                      |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `base`            | The tools of each repository: mise, git and pre-commit, and by default the formatter, the linter, VS Code and the security pack. |
-| `security`        | The scanners of code:sec: gitleaks for secrets, grype and osv-scanner for dependencies with known vulnerabilities.               |
-| `container-build` | The tools that build, sign and copy container images: apko, melange, cosign and crane.                                           |
-
-## The pack descriptions of `macos/packs.toml`
-
-| Pack         | description                                                                                         |
-| ------------ | --------------------------------------------------------------------------------------------------- |
-| `base`       | The tools of each Mac: mise, Homebrew, the shells, git, ssh, the command-line tools and the fonts.  |
-| `ai`         | The AI apps and tools: Claude, OpenCode, OpenWhispr, Orca and Zed Delta.                            |
-| `essentials` | The daily apps: web browsers, the launcher, window and disk tools, Tailscale and the git extras.    |
-| `security`   | The password managers: 1Password with its CLI and its Safari extension, and Bitwarden.              |
-| `dev`        | The development tools: the dev env, the code editors, dprint, OrbStack, gcloud, lcov and superfile. |
-| `terminal`   | The terminal apps Ghostty and Warp.                                                                 |
-| `apple-dev`  | The tools for Apple and Android apps: Xcode, Developer, TestFlight, Transporter and Android Studio. |
-| `iwork`      | The iWork apps: Keynote, Numbers and Pages.                                                         |
-| `ms-office`  | The Microsoft Office apps: Excel, PowerPoint and Word.                                              |
-| `disk`       | The disk tools: DaisyDisk, Disk Doctor, Disk Map and Duplicate Detective.                           |
-| `media`      | The media apps: VLC, Final Cut Pro and HandBrake.                                                   |
-| `chat`       | The chat apps: Telegram and WhatsApp.                                                               |
-| `notes`      | The notes and reading apps: Notion, Obsidian, Kindle, Cardhop and the PDF tools.                    |
-| `cli-extras` | More command-line tools: btop, dasel, ImageMagick, pstree, tree, watch, wget and yq.                |
+Not used (D13). Plan 2 writes the descriptions of the new packs.
