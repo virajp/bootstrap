@@ -75,6 +75,14 @@ Quoted verbatim from the decisions of `index.json`:
   U4 never changes repo/categories.toml or a file of macos/fixtures/ in the
   working tree. Each case of plan 1a for the categories file stays, rewritten
   that way."
+- D13: "Ruling of the user (2026-11-13), which replaces the pack parts of D2 and
+  D11 b: this plan does not change repo/packs.toml or macos/packs.toml. It
+  writes no pack description and no new comment there. The user reshaped the
+  packs on the local branch packs-shortcut (420e3e6): new names, members with no
+  default key, and a base whose members are mostly required. The engine of today
+  refuses that form, so the branch lands with plan 2, which also writes the
+  descriptions of the new packs. The sections "The comments of the packs files"
+  and "The pack descriptions" of texts.md are not used."
 
 ## Precondition
 
@@ -88,10 +96,7 @@ nothing. Report "cli/VERSION is <v>; plan 1b needs 2.1.0 or later" (D7).
 2. **Each `macos/tools/<tool>/tools.toml`** (109 files) — add `summary` and
    `category` with the values of `texts.md` ("Mac tools"), next to
    `description`. Keep `description` as it is.
-3. **`macos/packs.toml`** — add `description = "<text>"` as the first key of
-   each `[pack.<name>]` table, with the texts of `texts.md`. Replace the
-   comment at the top with the text of `texts.md` ("The comments of the packs
-   files").
+3. **`macos/packs.toml`** — do not change it (D13).
 4. **`macos/tools/git/tools.toml`** — add `group = "email"` to
    `[questions.email_github]` and `[questions.email_gitlab]`, and the `note`
    of D4 to `[questions.email_github]` only.

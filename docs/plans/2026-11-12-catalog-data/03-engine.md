@@ -61,7 +61,7 @@ Quoted verbatim from the decisions of `index.json`:
 4. **The goldens** — write them again with `UPDATE_GOLDEN=1 go test ./...` in
    `cli/`, and examine each changed golden. The hashes of
    `cli/internal/source/testdata/toml-yq.golden` change because U1 and U2
-   changed each `tools.toml` and the packs files, and step 3 changed the
+   changed each `tools.toml`, and step 3 changed the
    fixtures. Write the
    golden after step 3.
 
