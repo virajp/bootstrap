@@ -7,7 +7,8 @@ and enforces their CLI rules: `summary`, `category`, `selectable`, `hosts` and
 `description` of a tool, the categories file of each side, the `description` of
 a pack, and the question keys `group`, `note` and `optional`. `init` takes its
 answers
-from flags first (`--answer`, the new `--skip-answer`), and asks only the
+from the flag `--answer` first (`--answer <q>=` for an empty answer, D15), and
+asks only the
 questions with no answer, in a field that starts with the detected answer
 (D14). The data of today still syncs with no change.
 
@@ -138,7 +139,7 @@ A block with no question carries the one line `QUESTION: none`.
   `summary` and `category` made necessary.
 - Plan 2, the TUI: `bootstrap tui` and `bootstrap mac tui` per the artifact.
   It uses the field model of D14 in its question form, and gives every answer
-  to the CLI with `--answer` or `--skip-answer`.
+  to the CLI with `--answer`, also `--answer <q>=` for an empty answer.
 
 ## Launch
 

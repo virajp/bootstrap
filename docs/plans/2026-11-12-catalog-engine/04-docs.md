@@ -7,7 +7,8 @@
 
 ## Ruling
 
-The decisions D1–D8 and D14 of `index.json`, as the code of U1 implements them.
+The decisions D1–D8, D14 and D15 of `index.json`, as the code of U1 implements
+them.
 
 ## Edits
 
@@ -22,7 +23,7 @@ The decisions D1–D8 and D14 of `index.json`, as the code of U1 implements them
 3. **`docs/design/packs.md`** — the reserved key `description` (D3).
 4. **`docs/design/cli.md`** — the refusals of `init`, `add` and `replace`
    (D4, D5), the new keys of `questions --json` (D6), the warning of `check`
-   (D5), the list of `list` (D5), the flag `--skip-answer`, the empty
+   (D5), the list of `list` (D5), the empty
    `--answer <q>=`, the prompt with the pre-filled field (D6 rules 4 and 5,
    D14), and the new Go dependencies Bubble Tea v2 and Bubbles v2 where the
    doc names the dependencies of the engine.

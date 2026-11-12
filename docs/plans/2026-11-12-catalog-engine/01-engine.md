@@ -160,6 +160,17 @@ Quoted verbatim from the decisions of `index.json`:
   <tool>.<key>=<value>: <key>, <key>" (the keys of the group in key order), for
   example "the group git.email has no answer" and "give at least one with
   --answer <tool>.<key>=<value>: email_github, email_gitlab"."
+- D15: "Ruling of the user (2026-11-13), which replaces each --skip-answer rule
+  of D6, D12 and D14: the engine has no --skip-answer flag. --answer
+  <tool>.<key>= (an empty value) is the one form of an empty answer: it writes
+  "", and it is accepted only for an optional or a group question (code 2 for
+  another question). Where D6, D12 or D14 names --skip-answer, read --answer
+  <tool>.<key>=. The rule of D14 (9 b) for two flags on one question falls away:
+  for --answer two times on one question, the last one wins, as today. The hint
+  of a missing answer with --yes or no terminal names --answer, and for an
+  optional or a group question also --answer <tool>.<key>= . The TUI of plan 2
+  gives an empty answer with --answer <tool>.<key>= when it calls the CLI, and
+  through the change list in the process."
 
 ## Edits
 
@@ -215,15 +226,14 @@ Quoted verbatim from the decisions of `index.json`:
    hint of the message of today, and the message of today for a single
    question.
 7. **`cli/internal/cli/init.go`** — `ask`: rules 2, 4 and 5 of D6, and D14.
-   - Read `--skip-answer <tool>.<key>` next to `--answer` (the same name
-     check). `--skip-answer`, or `--answer <q>=` with an empty value, on a
-     question that is neither `optional` nor in a group is an error with
-     code 2.
-   - A question with an `--answer` takes that value. A question with a
-     `--skip-answer` takes `""`, the same as `--answer <q>=`.
+   - `--answer <q>=` with an empty value, on a question that is neither
+     `optional` nor in a group, is an error with code 2 (D15).
+   - A question with an `--answer` takes that value; `--answer <q>=` takes
+     `""`.
    - With `--yes` or no terminal, a question with no key in the files and no
      flag is the error of today (code 2). Its hint names `--answer`, and also
-     `--skip-answer` for an optional or a group question. A group with no
+     `--answer <tool>.<key>=` for an optional or a group question (D15). A group
+     with no
      non-empty answer (from the files or `--answer`) is an error with code 2
      that names the group and its keys.
    - In a terminal, replace the `readLine` loop of the questions
@@ -242,9 +252,8 @@ Quoted verbatim from the decisions of `index.json`:
      `init.go:452`). An interrupt (ctrl+c) stops `init` with code 2 and
      writes nothing.
    - D14 (9): ask an all-empty group again until one answer is not empty.
-     Refuse `--skip-answer <q>` together with `--answer <q>=<value>` (code 2,
-     "--answer and --skip-answer both name <q>"); for the same flag two times,
-     the last one wins. The code-2 message of an all-empty group with `--yes`
+     For `--answer` two times on one question, the last one wins (D15). The
+     code-2 message of an all-empty group with `--yes`
      or no terminal is "the group <tool>.<group> has no answer", with the hint
      "give at least one with --answer <tool>.<key>=<value>: <key>, <key>".
    - `consent` (`git.go:142`) keeps `readLine`.
@@ -269,10 +278,9 @@ Quoted verbatim from the decisions of `index.json`:
     the values file names directly, print a warning (the existing warning print
     function), and keep the exit code. `list` and `questions --json` do not
     change for `selectable = false` (D5).
-11. **`cli/internal/cli/cli.go`** — add `skip-answer` to the `allowed` table
-    (`cli.go:181-193`) of `init`, `add`, `replace` and `detect`, as a
-    repeatable flag with a value, the same as `answer`, and to `Usage`
-    (`cli.go:31`).
+11. **`cli/internal/cli/cli.go`** — no new flag (D15). Change the line of
+    `--answer` in `Usage` (`cli.go:31`) to say that `--answer <tool>.<key>=`
+    writes an empty answer for an optional or a group question.
 12. **The field model** — a new file in `cli/internal/cli/` (or a small new
     package in `cli/internal/`) with a Bubble Tea v2 model around the
     `textinput` of Bubbles v2: the question, the note under it, the field
