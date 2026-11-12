@@ -21,6 +21,7 @@ network = { default = true }
 macos-defaults = { default = true }
 gh = { default = true }
 python = { default = true }
+fonts = { default = true }
 mas = { default = true }
 age = { default = true }
 bat = { default = true }
@@ -28,11 +29,6 @@ coreutils = { default = true }
 curl = { default = true }
 doggo = { default = true }
 eza = { default = true }
-font-fira-code-nerd-font = { default = true }
-font-hack-nerd-font = { default = true }
-font-iosevka-nerd-font = { default = true }
-font-iosevka-term-nerd-font = { default = true }
-font-meslo-lg-nerd-font = { default = true }
 fzf = { default = true }
 gping = { default = true }
 httping = { default = true }

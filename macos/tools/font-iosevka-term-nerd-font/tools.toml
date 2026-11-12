@@ -1,7 +1,0 @@
-# The font-iosevka-term-nerd-font tool: the Iosevka Term Nerd Font cask.
-
-description = "The Iosevka Term Nerd Font"
-
-[mise.bootstrap.packages]
-# Font family designed for developers, with a high number of glyphs (e.g. icons from popular 'Nerd Fonts' and 'Font Awesome' sets)
-"brew-cask:font-iosevka-term-nerd-font" = "latest"
