@@ -1,7 +1,7 @@
 # The ghostty tool. Its config uses the MesloLGS Nerd Font, so it depends on
-# font-meslo-lg-nerd-font.
+# fonts.
 
-depends = [ "font-meslo-lg-nerd-font" ]
+depends = [ "fonts" ]
 description = "Ghostty, the terminal emulator, and its config"
 
 [mise.bootstrap.packages]

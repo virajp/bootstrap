@@ -1,0 +1,17 @@
+# The ruby tool: Ruby through mise, and the RubyGems config (~/.gemrc). mise
+# uses Ruby to run the hooks of some casks and to build a formula without a
+# bottle. The [mise.*] tables become ~/.config/mise/conf.d/ruby/mise.toml.
+
+description = "Ruby through mise, and the RubyGems config (~/.gemrc): no documentation on install and update"
+
+[mise.tools.ruby]
+version = "latest"
+
+# gem rewrites ~/.gemrc (gem sources), so it is a shared file: the spec adds
+# only the keys of bootstrap. The file has no extension, so the spec sets its
+# format.
+
+# The files of the tool, below files/.
+[files.".gemrc"]
+mode = "merge"
+source = "gemrc.merge.toml"

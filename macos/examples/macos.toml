@@ -62,8 +62,6 @@ ssh_vault = "Sample"
 
 [tools.gcloud]
 
-[tools.gem]
-
 [tools.gh]
 # The answer to the question editor of gh.
 editor = "vim"

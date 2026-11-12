@@ -1,7 +1,0 @@
-# The font-meslo-lg-nerd-font tool: the Meslo LG Nerd Font cask.
-
-description = "The Meslo LG Nerd Font"
-
-[mise.bootstrap.packages]
-# Font family designed for developers, with a high number of glyphs (e.g. icons from popular 'Nerd Fonts' and 'Font Awesome' sets)
-"brew-cask:font-meslo-lg-nerd-font" = "latest"
