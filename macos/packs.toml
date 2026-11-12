@@ -21,6 +21,7 @@ network = { default = true }
 macos-defaults = { default = true }
 gh = { default = true }
 python = { default = true }
+ruby = { default = true }
 fonts = { default = true }
 mas = { default = true }
 age = { default = true }
@@ -82,7 +83,6 @@ visual-studio-code = { default = true }
 lcov = {}
 orbstack = {}
 gcloud = {}
-gem = {}
 superfile = {}
 zed = {}
 sublime-text = {}

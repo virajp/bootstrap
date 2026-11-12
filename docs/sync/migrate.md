@@ -32,7 +32,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | A file or a script that names a task of the table in M33                                      | M33, after the sync.                                                                                                                                    |
 | A `setup:configs` that does not run `bootstrap sync`, or an old form that `bootstrap` reports | M34, before the next sync.                                                                                                                              |
 | `version_prefix = "cli-v"` or `version_prefix="cli-v"` in a file of the repository            | M35, before the next sync.                                                                                                                              |
-| A Mac with `[packs.security]` in `macos.toml`                                                 | M36, before the next Mac sync.                                                                                                                          |
+| A Mac with `[tools.gem]` or `[packs.security]` in `macos.toml`                                | M36, before the next Mac sync.                                                                                                                          |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -879,12 +879,16 @@ more than one package. Now each package is a tool of its own, in the pack
 | `python`  | `uv`                                                                |
 
 `ca-certificates` moved from `cli` to `mise`. The tool `fonts` keeps its five
-fonts. A Mac that selects only `base` gets the same packages after the sync.
+fonts. `ruby` moved from `mise` to the new tool `ruby` in `base`, and the tool
+`gem` is now part of `ruby`. A Mac that selects only `base` gets the same
+packages after the sync.
 
 The member `1password` of the pack `security` is now `{}`. Thus
 `[packs.security]` no longer adds the 1Password app.
 
-1. If `macos.toml` has `[packs.security]` and the owner wants the 1Password
+1. If `macos.toml` has `[tools.gem]`, remove that table. Else the Mac sync
+   stops with code 3. `ruby` in `base` writes `~/.gemrc`.
+2. If `macos.toml` has `[packs.security]` and the owner wants the 1Password
    app, add `[tools.1password]`, with its answer `ssh_vault`. Ask the owner
    first.
-2. Run `mise run updateall:configs`.
+3. Run `mise run updateall:configs`.

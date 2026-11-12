@@ -2,7 +2,7 @@
 # miserc.toml), the activation files of bash, zsh and fish, and ~/.zprofile,
 # which puts ~/.local/bin (the folder of mise) on PATH. The activation files
 # read `projects_dir` of the cli tool, so this tool depends on cli. The [mise.*]
-# tables (ruby, usage and the system aliases) become
+# tables (usage, ca-certificates and the system aliases) become
 # ~/.config/mise/conf.d/mise/mise.toml.
 # It also ships the entry of the Mac sync: the task `updateall:configs`, which
 # runs `bootstrap mac sync`, the task `updateall` and the upgrade tasks, into
@@ -16,10 +16,6 @@ question = "Which folder holds your macos.toml (the root of your private macos-s
 
 [mise.env]
 MACOS_SETUP_REPO_PATH = "<% index .config `config_path` | required `mise: set config_path in [tools.mise] of macos.toml` | regexp.Replace `^~` .env.HOME %>"
-
-# Required by mise to parse the brew-cask correctly
-[mise.tools.ruby]
-version = "latest"
 
 # MISE tools
 [mise.tools.usage]
