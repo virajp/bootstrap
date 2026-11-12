@@ -1,9 +1,10 @@
 # The zsh tool: ~/.zshenv, ~/.zshrc and its own drop-ins in ~/.config/zsh/
 # (00-bootstrap, 98-zinit, 99-zsh). Other tools add their drop-ins to
 # ~/.config/zsh/ (homebrew, mise, cli, starship). ~/.zprofile belongs to the
-# mise tool. The [mise.*] tables install Homebrew's zsh and zinit and add zsh to
+# mise tool. The fzf-tab plugin of 98-zinit.zsh needs fzf, so this tool depends
+# on fzf. The [mise.*] tables install Homebrew's zsh and zinit and add zsh to
 # /etc/shells. They become ~/.config/mise/conf.d/zsh/mise.toml.
-depends = [ "homebrew", "mise" ]
+depends = [ "fzf", "homebrew", "mise" ]
 description = "zsh from Homebrew with zinit, its rc files and its drop-in folder ~/.config/zsh/"
 stage = "init"
 

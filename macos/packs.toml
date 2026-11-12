@@ -21,8 +21,29 @@ network = { default = true }
 macos-defaults = { default = true }
 gh = { default = true }
 python = { default = true }
-fonts = { default = true }
 mas = { default = true }
+age = { default = true }
+bat = { default = true }
+coreutils = { default = true }
+curl = { default = true }
+doggo = { default = true }
+eza = { default = true }
+font-fira-code-nerd-font = { default = true }
+font-hack-nerd-font = { default = true }
+font-iosevka-nerd-font = { default = true }
+font-iosevka-term-nerd-font = { default = true }
+font-meslo-lg-nerd-font = { default = true }
+fzf = { default = true }
+gping = { default = true }
+httping = { default = true }
+ipcalc = { default = true }
+jq = { default = true }
+lazygit = { default = true }
+prettyping = { default = true }
+ripgrep = { default = true }
+uv = { default = true }
+worktrunk = { default = true }
+zoxide = { default = true }
 
 [pack.ai]
 claude-desktop = { default = true }
@@ -53,7 +74,7 @@ git-tools = {}
 glab = {}
 
 [pack.security]
-1password = { default = true }
+1password = {}
 1password-cli = {}
 1password-safari = {}
 bitwarden = {}

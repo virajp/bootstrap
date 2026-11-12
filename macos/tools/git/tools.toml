@@ -1,5 +1,4 @@
-# The git tool: git, lazygit and worktrunk, the git aliases, the global git
-# config, the ignore file, the identity files and the commit guidelines.
+# The git tool: git, the git aliases, the global git config, the ignore file, the identity files and the commit guidelines.
 # The identity values are questions; the projects folder of the `gitdir:`
 # includes is `projects_dir` of the cli tool. The [mise.*] tables become
 # ~/.config/mise/conf.d/git/mise.toml.
@@ -29,12 +28,8 @@ detect = "ssh-add -L | head -n 1"
 example = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA..."
 question = "Which SSH public key signs your commits (the full line: type, key, optional comment)?"
 
-[mise.tools.worktrunk]
-version = "latest"
-
 [mise.bootstrap.packages]
 "brew:git" = "latest" # Distributed version control system
-"brew:lazygit" = "latest" # Simple terminal UI for git
 
 [mise.shell_alias]
 # Git Related Aliases (diff-so-fancy is the tool diff-so-fancy, a depends)

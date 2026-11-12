@@ -1,0 +1,9 @@
+# The prettyping tool: prettyping, an enhanced ping, and the ping alias.
+
+description = "prettyping, an enhanced ping, and the ping alias"
+
+[mise.bootstrap.packages]
+"brew:prettyping" = "latest" # Enhanced ping with visual output
+
+[mise.shell_alias]
+ping = "prettyping -i 2 --nolegend"

@@ -1,21 +1,10 @@
-# The python tool: Python and uv through mise. The [mise.*] tables become
-# ~/.config/mise/conf.d/python/mise.toml.
-description = "Python and uv through mise, with uv as the pipx backend"
+# The python tool: Python through mise. uv is the tool uv. The [mise.*] tables
+# become ~/.config/mise/conf.d/python/mise.toml.
+description = "Python through mise"
 
 [mise.settings]
-# Python, pipx, uv settings
-# every pipx: tool installs through uv
-pipx.uvx = true
+# Python settings
 python.compile = false
 
 [mise.tools.python]
 version = "3.14"
-
-[mise.tools.uv]
-version = "latest"
-
-[mise.env]
-# Python (uv)
-UV_NO_CACHE = true
-UV_NO_MANAGED_PYTHON = true
-UV_PYTHON_DOWNLOADS = "never"

@@ -25,6 +25,10 @@ version = "latest"
 [mise.tools.usage]
 version = "latest"
 
+# The CA certificates that each Mac must have
+[mise.bootstrap.packages]
+"brew:ca-certificates" = "latest" # Common CA certificates
+
 # The CLI of the sync. updateall:configs runs it. Its release tags are
 # bootstrap@X.Y.Z, and mise shows bootstrap@2.0.2 as 2.0.2.
 [mise.tools."github:virajp/bootstrap"]

@@ -1,0 +1,7 @@
+# The lazygit tool: lazygit, a terminal UI for git. It depends on the git tool.
+
+depends = [ "git" ]
+description = "lazygit, a simple terminal UI for git"
+
+[mise.bootstrap.packages]
+"brew:lazygit" = "latest" # Simple terminal UI for git

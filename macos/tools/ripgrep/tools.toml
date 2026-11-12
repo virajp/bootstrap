@@ -1,0 +1,6 @@
+# The ripgrep tool: ripgrep, the fast search tool.
+
+description = "ripgrep, the fast search tool"
+
+[mise.bootstrap.packages]
+"brew:ripgrep" = "latest" # Fast search tool

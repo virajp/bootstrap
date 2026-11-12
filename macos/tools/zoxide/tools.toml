@@ -1,0 +1,18 @@
+# The zoxide tool: zoxide, the fast directory jumper, its shell init in zsh and
+# fish, and the cd alias. The [mise.*] tables become
+# ~/.config/mise/conf.d/zoxide/mise.toml.
+
+description = "zoxide, the fast directory jumper, its shell init and the cd alias"
+
+[mise.bootstrap.packages]
+"brew:zoxide" = "latest" # Fast directory jumper
+
+[mise.shell_alias]
+cd = "z"
+
+# The files of the tool, below files/.
+[files.".config/fish/conf.d/52-zoxide.fish"]
+source = ".config/fish/conf.d/52-zoxide.fish"
+
+[files.".config/zsh/02a-zoxide.zsh"]
+source = ".config/zsh/02a-zoxide.zsh"

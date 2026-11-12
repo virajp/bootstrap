@@ -1,0 +1,9 @@
+# The bat tool: bat, an alternative to cat, and its alias.
+
+description = "bat, an alternative to cat, and its alias"
+
+[mise.bootstrap.packages]
+"brew:bat" = "latest" # Alternative to cat
+
+[mise.shell_alias]
+bat = "bat --tabs 2"

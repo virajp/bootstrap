@@ -1,0 +1,6 @@
+# The coreutils tool: coreutils, the GNU core utilities.
+
+description = "coreutils, the GNU core utilities"
+
+[mise.bootstrap.packages]
+"brew:coreutils" = "latest" # GNU core utilities

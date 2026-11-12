@@ -1,0 +1,7 @@
+# The font-fira-code-nerd-font tool: the Fira Code Nerd Font cask.
+
+description = "The Fira Code Nerd Font"
+
+[mise.bootstrap.packages]
+# Font family designed for developers, with a high number of glyphs (e.g. icons from popular 'Nerd Fonts' and 'Font Awesome' sets)
+"brew-cask:font-fira-code-nerd-font" = "latest"

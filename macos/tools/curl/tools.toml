@@ -1,0 +1,6 @@
+# The curl tool: curl, which transfers data with URLs.
+
+description = "curl, which transfers data with URLs"
+
+[mise.bootstrap.packages]
+"brew:curl" = "latest" # Command line tool and library for transferring data with URLs
