@@ -1,0 +1,16 @@
+# The uv tool: uv through mise, with uv as the pipx backend. The [mise.*]
+# tables become ~/.config/mise/conf.d/uv/mise.toml.
+description = "uv through mise, with uv as the pipx backend"
+
+[mise.settings]
+# every pipx: tool installs through uv
+pipx.uvx = true
+
+[mise.tools.uv]
+version = "latest"
+
+[mise.env]
+# uv
+UV_NO_CACHE = true
+UV_NO_MANAGED_PYTHON = true
+UV_PYTHON_DOWNLOADS = "never"

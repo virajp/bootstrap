@@ -1,0 +1,18 @@
+# The eza tool: eza, a modern replacement for ls, and the ls and tree aliases.
+
+description = "eza, a modern replacement for ls, and the ls and tree aliases"
+
+[mise.bootstrap.packages]
+"brew:eza" = "latest" # Modern replacement for 'ls'
+
+[mise.shell_alias]
+# ls & tree related aliases
+la = "ls -a"
+ld = "ls --only-dirs"
+lf = "ls --only-files"
+lg = "ls --git-ignore"
+ll = "ls"
+ls = "eza --icons --color=always --group-directories-first --classify=always --long --grid --all --modified --git --header --width=1 --links"
+td = "eza --tree --color=always --only-dirs --group-directories-first --sort name --long --header --icons --classify=always --modified --git --width=1"
+tg = "eza --tree --color=always --all --group-directories-first --sort name --long --header --icons --classify=always --modified --git --width=1 --git-ignore"
+tl = "eza --tree --color=always --all --group-directories-first --sort name --long --header --icons --classify=always --modified --git --width=1"

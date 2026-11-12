@@ -1,0 +1,9 @@
+# The doggo tool: doggo, the DNS lookup utility, and the dig alias.
+
+description = "doggo, the DNS lookup utility, and the dig alias"
+
+[mise.bootstrap.packages]
+"brew:doggo" = "latest" # DNS lookup utility
+
+[mise.shell_alias]
+dig = "doggo"

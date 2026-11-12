@@ -32,6 +32,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | A file or a script that names a task of the table in M33                                      | M33, after the sync.                                                                                                                                    |
 | A `setup:configs` that does not run `bootstrap sync`, or an old form that `bootstrap` reports | M34, before the next sync.                                                                                                                              |
 | `version_prefix = "cli-v"` or `version_prefix="cli-v"` in a file of the repository            | M35, before the next sync.                                                                                                                              |
+| A Mac with `[tools.fonts]` or `[packs.security]` in `macos.toml`                              | M36, before the next Mac sync.                                                                                                                          |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -862,3 +863,32 @@ gets an old release.
    bootstrap header, remove that line. Show the user each change before you
    write it.
 6. Commit the result. Do the same in each git submodule.
+
+## M36: Each Mac package is a tool of its own
+
+The Mac tools `cli`, `network`, `git`, `fnox`, `fonts` and `python` installed
+more than one package. Now each package is a tool of its own, in the pack
+`base` with `default = true`:
+
+| Old tool  | New tools                                                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `cli`     | `bat`, `coreutils`, `curl`, `eza`, `fzf`, `jq`, `ripgrep`, `zoxide`                                                                   |
+| `network` | `doggo`, `gping`, `httping`, `ipcalc`, `prettyping`                                                                                   |
+| `git`     | `lazygit`, `worktrunk`                                                                                                                |
+| `fnox`    | `age`                                                                                                                                 |
+| `fonts`   | `font-fira-code-nerd-font`, `font-hack-nerd-font`, `font-iosevka-nerd-font`, `font-iosevka-term-nerd-font`, `font-meslo-lg-nerd-font` |
+| `python`  | `uv`                                                                                                                                  |
+
+`ca-certificates` moved from `cli` to `mise`. The tool `fonts` is gone. A Mac
+that selects only `base` gets the same packages after the sync.
+
+The member `1password` of the pack `security` is now `{}`. Thus
+`[packs.security]` no longer adds the 1Password app.
+
+1. If `macos.toml` has `[tools.fonts]`, remove that table. Else the Mac sync
+   stops with code 3.
+2. If `macos.toml` has `[packs.security]` and the owner wants the 1Password
+   app, add `[tools.1password]`, with its answer `ssh_vault`. Ask the owner
+   first.
+3. Run `mise run updateall:configs`. The stale rule removes
+   `~/.config/mise/conf.d/fonts/mise.toml`.

@@ -1,0 +1,6 @@
+# The age tool: age, the encryption tool.
+
+description = "age, the encryption tool"
+
+[mise.bootstrap.packages]
+"brew:age" = "latest" # Encryption tool

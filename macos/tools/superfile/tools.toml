@@ -1,5 +1,7 @@
-# The superfile tool.
+# The superfile tool. Its config previews code with bat and uses zoxide, so it
+# depends on bat and zoxide.
 
+depends = [ "bat", "zoxide" ]
 description = "superfile, the terminal file manager, and its config"
 
 # superfile rewrites its config, so it is a shared file: the spec adds only

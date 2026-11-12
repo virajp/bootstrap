@@ -1,15 +1,10 @@
-# The network tool: the network packages (DNS, ping, IP utilities), the IP,
-# DNS, ping and routing aliases, and the tasks ips:*. Tailscale is its own
-# tool. The [mise.*] tables become ~/.config/mise/conf.d/network/mise.toml.
+# The network tool: the IP, DNS and routing aliases, and the tasks ips:*. Each
+# network package (doggo, gping, httping, ipcalc, prettyping) and Tailscale is
+# a tool of its own. The task ips:remoteip runs doggo, so this tool depends on
+# doggo. The [mise.*] tables become ~/.config/mise/conf.d/network/mise.toml.
 
-description = "network utilities (doggo, gping, httping, ipcalc, prettyping), the ips:* tasks and the DNS, ping and routing aliases"
-
-[mise.bootstrap.packages]
-"brew:doggo" = "latest" # DNS lookup utility
-"brew:gping" = "latest" # Ping with a graph
-"brew:httping" = "latest" # Ping a web server over HTTP
-"brew:ipcalc" = "latest" # IP address calculator
-"brew:prettyping" = "latest" # Enhanced ping with visual output
+depends = [ "doggo" ]
+description = "the ips:* tasks and the IP, DNS and routing aliases"
 
 [mise.shell_alias]
 # IP related shortcuts
@@ -20,14 +15,11 @@ ipv4 = "mise run ips:ipv4"
 ipv6 = "mise run ips:ipv6"
 remoteip = "mise run ips:remoteip"
 
-# DNS, ping & routing
-dig = "doggo"
+# DNS & routing
 dns = "scutil --dns"
 flushdns = "dscacheutil -flushcache"
-hping = "httping --ts -GBbXsSYaWZvv"
 ipInfo0 = "ipconfig getpacket en0"
 openports = "sudo lsof -i -P | grep LISTEN"
-ping = "prettyping -i 2 --nolegend"
 routes = "netstat -nr -f inet"
 
 # The task files of the tool, below tasks/. The key is the path below
