@@ -25,8 +25,11 @@ that command.
 
 The sync also adds the pack `base` and each tool in `depends`, transitively.
 `bootstrap mac add`, `bootstrap mac remove`, `bootstrap mac replace` and
-`bootstrap mac detect` change the `[tools.<name>]` tables. No command of the CLI
-changes a `[packs.<name>]` table.
+`bootstrap mac detect` change the `[tools.<name>]` tables. `bootstrap mac
+detect`
+also adds an installed package that no tool has to `[mise.bootstrap.packages]`
+or `[mise.tools]` of `macos.toml`. No command of the CLI changes a
+`[packs.<name>]` table.
 
 A key of `[tools.<name>]` sets a value of that tool. It answers a question of
 the tool, or it replaces a key of `[defaults]` of its `tools.toml`.

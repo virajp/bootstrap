@@ -45,6 +45,14 @@ var allowed = map[string][]string{
 	"internal/source/source.go": {"cli"},
 	// The message of the old list form of [tools] has an example tool.
 	"internal/values/values.go": {"node"},
+	// The JSON parser keeps the error text of jq, which the old code used.
+	"internal/format/jsonparse.go": {"jq"},
+	// The message of the mise check gives the install command of mise.
+	"internal/macos/sys.go": {"curl"},
+	// The package scan of mac detect runs the command of the App Store apps
+	// and reads the prefix mas: of [mise.bootstrap.packages], the package
+	// manager of mise that installs them.
+	"internal/cli/packages.go": {"mas"},
 }
 
 // lets tells whether the file <rel> can use the word <w>.

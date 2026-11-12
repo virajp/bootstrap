@@ -102,7 +102,8 @@ file does not select.
   `files/`, `tasks/` or `scripts/`. A file outside these folders is the old
   form of a tool folder, and it stops the sync.
 - A file of `scripts/` must be `derive`, `check`, `after`, `detect` or
-  `migrate-<tool>`. Any other file there stops the sync.
+  `migrate-<tool>`. Any other file there stops the sync. The Mac side runs no
+  `detect` script.
 - Each file below `files/` and `tasks/` has an entry: the entry names it in
   `source`, or a folder entry names a folder above it. A file without an entry
   stops the sync.

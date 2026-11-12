@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -537,59 +538,21 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
-	r := s.runner(a)
 	var tools []string
-	for t := range s.sel.idx.Manifests {
-		if r.Has(t, scripts.Detect) {
-			tools = append(tools, t)
+	var found map[string]detected
+	var scan macScan
+	if mac {
+		inst, deps, code := a.installedPackages()
+		if code != fail.OK {
+			return code
 		}
-	}
-	sort.Strings(tools)
-	if len(tools) == 0 {
-		if mac {
-			a.reasons = append(a.reasons, "no Mac tool has a detect script")
-		} else {
-			a.reasons = append(a.reasons, "no tool has a detect script")
+		scan = scanMac(s, inst, deps)
+		tools, found = scan.tools, scan.found
+	} else {
+		tools, found, code = a.detectScripts(s)
+		if code != fail.OK || tools == nil {
+			return code
 		}
-		a.nothingToChange()
-		return fail.OK
-	}
-	var jobs []scripts.Job
-	for _, t := range tools {
-		jobs = append(jobs, scripts.Job{Tool: t, Name: scripts.Detect, Input: s.input(t, t)})
-	}
-	results := r.Run(jobs)
-	found := map[string]detected{}
-	code = fail.OK
-	for _, res := range results {
-		shown := r.ShownPath(res.Tool, res.Name)
-		var d detected
-		if res.Code != 0 {
-			for _, l := range strings.Split(strings.TrimSpace(string(res.Stderr)), "\n") {
-				if l != "" {
-					a.errorf("%s: %s", shown, l)
-				}
-			}
-			a.errorf("%s failed with exit code %d", shown, res.Code)
-			code = fail.Usage
-			continue
-		}
-		if err := json.Unmarshal(res.Stdout, &d); err != nil {
-			a.errorf("%s did not print a JSON object: %s", shown, err)
-			code = fail.Usage
-			continue
-		}
-		switch d.Result {
-		case "match", "none", "mismatch":
-		default:
-			a.fail(fmt.Sprintf("%s printed the result '%s'", shown, d.Result), "the results are match, none and mismatch")
-			code = fail.Usage
-			continue
-		}
-		found[res.Tool] = d
-	}
-	if code != fail.OK {
-		return code
 	}
 
 	// The evidence of the selected tools that match.
@@ -662,6 +625,11 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 			}
 			return cell{vis: vis + " " + word, colored: painted + " " + word}, detail
 		}}
+	// The installed packages of no Mac tool: each one is an offer for the own
+	// [mise] tables of macos.toml.
+	for _, p := range scan.unknown {
+		rest = append(rest, notSelected{p.key, "offered", "no Mac tool has it: add it to " + p.table() + " of macos.toml", true})
+	}
 	if len(rest) > 0 {
 		opt.groupTitle = "Found, not selected"
 		for _, n := range rest {
@@ -683,43 +651,145 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
-	if len(cands) == 0 {
+	if len(cands) == 0 && len(scan.unknown) == 0 {
 		fmt.Fprintln(a.stdout)
 		report.NewPrinter(a.stdout, style).Success("No tool to add")
 		return fail.OK
 	}
 	var add []string
+	var addPkgs []pkg
 	switch {
 	case o.no:
 		for _, t := range cands {
 			a.fail(t+" is found, but it is not selected", "run "+cmdName(mac, "add")+" "+t)
 		}
+		for _, p := range scan.unknown {
+			a.fail(p.key+" is installed, but no Mac tool has it", "add it to "+p.table()+" of macos.toml")
+		}
 		return fail.Other
 	case o.yes:
-		add = cands
+		add, addPkgs = cands, scan.unknown
 	case !a.interactive():
 		a.errorf("the detected tools need --yes or --no")
 		return fail.Usage
 	default:
 		fmt.Fprintln(a.stdout)
 		for _, t := range cands {
-			fmt.Fprintf(a.stdout, "? Add %s? [y/N] ", t)
-			line, _ := a.readLine()
-			switch strings.ToLower(strings.TrimSpace(line)) {
-			case "y", "yes":
+			if a.askYes(fmt.Sprintf("? Add %s? [y/N] ", t)) {
 				add = append(add, t)
 			}
 		}
-		if len(add) == 0 {
+		for _, p := range scan.unknown {
+			if a.askYes(fmt.Sprintf("? Add %s to macos.toml? [y/N] ", p.key)) {
+				addPkgs = append(addPkgs, p)
+			}
+		}
+		if len(add) == 0 && len(addPkgs) == 0 {
 			a.infof("Nothing changed")
 			return fail.OK
 		}
 		o.confirmed = true
 	}
-	return a.addNames(s, o, add)
+	if len(addPkgs) == 0 {
+		return a.addNames(s, o, add)
+	}
+	return a.addPackages(s, o, add, addPkgs, scan)
+}
+
+// askYes prints <prompt> and reads a line. It gives true for y and yes.
+func (a *app) askYes(prompt string) bool {
+	fmt.Fprint(a.stdout, prompt)
+	line, _ := a.readLine()
+	switch strings.ToLower(strings.TrimSpace(line)) {
+	case "y", "yes":
+		return true
+	}
+	return false
+}
+
+// addPackages adds the tools <names> and the packages <pkgs> to macos.toml,
+// and syncs. A mas: app also adds the tool of the mas command, when it is
+// not selected: the own [mise] tables have no depends.
+func (a *app) addPackages(s *side, o opts, names []string, pkgs []pkg, scan macScan) fail.Code {
+	if t := scan.appStoreTool(); t != "" && !s.selected(t) {
+		for _, p := range pkgs {
+			if p.kind == kindPackage && strings.HasPrefix(p.key, prefixApp) && !slices.Contains(names, t) {
+				names = append(names, t)
+				break
+			}
+		}
+	}
+	if code := a.known(s, names); code != fail.OK {
+		return code
+	}
+	ch := s.change()
+	ch.askOnly = a.planAdd(s, ch, names)
+	for _, p := range pkgs {
+		ch.exprs = append(ch.exprs, p.expr())
+		ch.notes = append(ch.notes, "add "+p.key+" to "+p.table())
+	}
+	if code := a.edited(ch); code != fail.OK {
+		return code
+	}
+	return a.finish(s.mac, o, ch)
 }
 
 // detectText gives the evidence and the message of a match: the first
+// detectScripts runs the detect script of each tool of <s> that has one, and
+// gives the tools and their results. Without a script, it prints the end line
+// and gives no tool.
+func (a *app) detectScripts(s *side) ([]string, map[string]detected, fail.Code) {
+	r := s.runner(a)
+	var tools []string
+	for t := range s.sel.idx.Manifests {
+		if r.Has(t, scripts.Detect) {
+			tools = append(tools, t)
+		}
+	}
+	sort.Strings(tools)
+	if len(tools) == 0 {
+		a.reasons = append(a.reasons, "no tool has a detect script")
+		a.nothingToChange()
+		return nil, nil, fail.OK
+	}
+	var jobs []scripts.Job
+	for _, t := range tools {
+		jobs = append(jobs, scripts.Job{Tool: t, Name: scripts.Detect, Input: s.input(t, t)})
+	}
+	results := r.Run(jobs)
+	found := map[string]detected{}
+	code := fail.OK
+	for _, res := range results {
+		shown := r.ShownPath(res.Tool, res.Name)
+		var d detected
+		if res.Code != 0 {
+			for _, l := range strings.Split(strings.TrimSpace(string(res.Stderr)), "\n") {
+				if l != "" {
+					a.errorf("%s: %s", shown, l)
+				}
+			}
+			a.errorf("%s failed with exit code %d", shown, res.Code)
+			code = fail.Usage
+			continue
+		}
+		if err := json.Unmarshal(res.Stdout, &d); err != nil {
+			a.errorf("%s did not print a JSON object: %s", shown, err)
+			code = fail.Usage
+			continue
+		}
+		switch d.Result {
+		case "match", "none", "mismatch":
+		default:
+			a.fail(fmt.Sprintf("%s printed the result '%s'", shown, d.Result), "the results are match, none and mismatch")
+			code = fail.Usage
+			continue
+		}
+		found[res.Tool] = d
+	}
+	return tools, found, code
+
+}
+
 // evidence, "+N more" for the others, then the message.
 func detectText(d detected) string {
 	text := ""
