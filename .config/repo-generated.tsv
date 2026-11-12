@@ -87,6 +87,7 @@ git	.config/mise/conf.d/git/mise.dev.toml
 git	.config/mise/tasks/_scripts/merge
 git	.config/mise/tasks/code/git-config
 git	.gitattributes
+git	.gitignore	{"kind":"item","path":[],"value":".impeccable/"}
 gitleaks	.config/mise/conf.d/gitleaks/mise.dev.toml
 gitleaks	.config/mise/tasks/code/sec/10-gitleaks
 go	.config/mise/conf.d/go/mise.dev.toml
