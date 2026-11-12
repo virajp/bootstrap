@@ -209,7 +209,7 @@ Claude Code: its settings, CLAUDE.md, output styles, the func:claude and
 upgrade:ai tasks and the cc* aliases.
 
 - **Packs:** `ai`
-- **Depends:** `cli`, `jq`
+- **Depends:** `cli`
 - **Files:**
   - `~/.claude/CLAUDE.md` — seed
   - `~/.claude/output-styles/ste100.md` — copy

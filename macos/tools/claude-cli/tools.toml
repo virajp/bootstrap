@@ -1,8 +1,7 @@
 # The claude-cli tool: Claude Code, its ~/.claude files (settings, CLAUDE.md,
-# output styles), the func:claude and upgrade:ai tasks and the cc* aliases. The
-# task upgrade:ai runs jq, so this tool depends on jq.
+# output styles), the func:claude and upgrade:ai tasks and the cc* aliases.
 
-depends = [ "cli", "jq" ]
+depends = [ "cli" ]
 description = "Claude Code: its settings, CLAUDE.md, output styles, the func:claude and upgrade:ai tasks and the cc* aliases"
 
 # Claude Code rewrites CLAUDE.md, so it is a seed: written once and then owned
