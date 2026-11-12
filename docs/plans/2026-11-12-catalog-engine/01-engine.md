@@ -103,16 +103,18 @@ Quoted verbatim from the decisions of `index.json`:
 - D13: "Assumed by the planner from D4-D6 and the rule of the simplest
   consistent CLI rule: (a) bootstrap detect does not propose a tool whose hosts
   leave out the host or that has selectable = false, so detect --yes never stops
-  for them. (b) D6 rule 5: with --yes or no terminal, a group passes when one of
-  its answers is not empty, from the files or from --answer, so init --yes again
-  on a values file that init wrote for the group (each question of the group has
-  a key, one of them not empty) passes with no flag. (c) In bootstrap questions,
-  a question of a group whose answers are all empty or missing shows the error
+  for them. This includes the Mac detect, which proposes tools from the
+  installed packages (scanMac, cli/internal/cli/packages.go:212, since 601225f).
+  (b) D6 rule 5: with --yes or no terminal, a group passes when one of its
+  answers is not empty, from the files or from --answer, so init --yes again on
+  a values file that init wrote for the group (each question of the group has a
+  key, one of them not empty) passes with no flag. (c) In bootstrap questions, a
+  question of a group whose answers are all empty or missing shows the error
   glyph and "no answer", and counts as without an answer. (d) optional = false
   is valid, and it is accepted with group; only optional = true with group is
   code 2. (e) The warning of check (both sides, also bootstrap mac check):
   "<tool> is not selectable - remove [tools.<tool>] from <file>; a tool that
-  needs it selects it". (f) The allowed table of cli.go is at :181-192."
+  needs it selects it". (f) The allowed table of cli.go is at :181-193."
 - D12: "Assumed by the planner from the rulings D2-D6 and the standing rule of
   the user to take the simplest consistent rule for a CLI case: the repo
   question keys are validated in cli/internal/values/merge.go:224 (change that
@@ -260,14 +262,15 @@ Quoted verbatim from the decisions of `index.json`:
    the dependencies that `planAdd` adds. Put the host name in one function that
    maps `runtime.GOOS` (`darwin` → `macos`, another value as it is), so the
    tests can replace it.
-9. **`detect`** (`select.go:528`) — do not propose a tool whose `hosts`
+9. **`detect`** (`select.go:529`, and the Mac scan `scanMac` at
+   `packages.go:212`) — do not propose a tool whose `hosts`
    leave out the host or that has `selectable = false` (D13 a).
 10. **`check`** (`cli.go:580`) — for each tool with `selectable = false` that
     the values file names directly, print a warning (the existing warning print
     function), and keep the exit code. `list` and `questions --json` do not
     change for `selectable = false` (D5).
 11. **`cli/internal/cli/cli.go`** — add `skip-answer` to the `allowed` table
-    (`cli.go:181-192`) of `init`, `add`, `replace` and `detect`, as a
+    (`cli.go:181-193`) of `init`, `add`, `replace` and `detect`, as a
     repeatable flag with a value, the same as `answer`, and to `Usage`
     (`cli.go:31`).
 12. **The field model** — a new file in `cli/internal/cli/` (or a small new

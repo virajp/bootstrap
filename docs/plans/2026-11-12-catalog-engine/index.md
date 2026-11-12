@@ -22,7 +22,7 @@ longer takes the proposal, because the field starts with it (D14).
 ## Facts the survey established
 
 - Dispatch: `Usage` is at `cli/internal/cli/cli.go:31`, `Run` at `:150`, the
-  `allowed` table of flags at `:181-192`, `parse` at `:268`. The exit codes are
+  `allowed` table of flags at `:181-193`, `parse` at `:268`. The exit codes are
   in `cli/internal/fail/fail.go:19-27` (`fail.Usage` is code 2, `fail.Missing`
   is code 3). `a.interactive()` is at `cli/internal/cli/git.go:121`.
 - The manifest: `Source.LoadManifest` is at
@@ -55,14 +55,18 @@ longer takes the proposal, because the field starts with it (D14).
   `go.mod` has no TUI library now. `app.questions`
   (`init.go:523-631`) writes the JSON rows at `init.go:563-583` (keys `tool`,
   `key`, `question`, `proposal`, `source`, `answer`).
-- The selection: `app.open` is at `cli/internal/cli/select.go:47`, `known` at
-  `:157`, `planAdd` at `:182`, `planRemove` at `:209`, `add` at `:343`,
-  `addNames` at `:356`, `replace` at `:392`. `init` is at `init.go:132`, and
+- The selection: `app.open` is at `cli/internal/cli/select.go:48`, `known` at
+  `:158`, `planAdd` at `:183`, `planRemove` at `:210`, `add` at `:344`,
+  `addNames` at `:357`, `replace` at `:393`, `detect` at `:529`. Since
+  `601225f`, the Mac `detect` also proposes tools from the installed
+  packages: `installedPackages` and `scanMac`
+  (`cli/internal/cli/packages.go:153`, `:212`). `init` is at `init.go:132`, and
   `finish` at `init.go:231`. `list` is at `cli/internal/cli/list.go:24`.
   `sync` is at `cli.go:529` and `check` at `cli.go:580`.
 - No code of the engine examines the host now (no `runtime.GOOS`).
-- `TestEngineNamesNoTool` (`cli/internal/source/notools_test.go:95`, allow lists
-  at `:20-40`) fails when a string literal of the engine names a tool folder.
+- `TestEngineNamesNoTool` (`cli/internal/source/notools_test.go:103`, allow
+  lists
+  at `:25-62`) fails when a string literal of the engine names a tool folder.
 - Goldens: `cli/internal/selection/testdata` and others. Write them again with
   `UPDATE_GOLDEN=1 go test ./...` in `cli/`.
   `cli/internal/source/testdata/toml-yq.golden`
