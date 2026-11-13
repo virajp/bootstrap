@@ -329,6 +329,18 @@
         "U2",
         "U6"
       ]
+    },
+    {
+      "id": "D23",
+      "decision": "A shared core package for the CLI and the TUI.",
+      "ruling": "Ruling of the user (2026-11-13), from the interview of plan 2c: U3 creates the package cli/internal/core, and plan 2c does not move the code again. core holds the change list, Plan and Apply (D9), Detect (the scan of detect and mac detect, with detectScripts, scanMac and installedPackages, that returns the proposals and the own packages), and the parts of open, prepare and openClone that Plan, Apply and Detect need. Each function of core returns values and errors only: it never prints, never prompts and never calls a.fail. cli/internal/cli stays the shell of the command line: it parses the arguments, calls core, prints the result and the errors, asks the questions and the consent [y/N], and does the dirty-tree check. The TUI of plan 2c calls core and does not import cli/internal/cli. core does not import cli/internal/cli. An entry of the allow list of TestEngineNamesNoTool moves with its code to the new path, with the same words (for example the entry of internal/cli/packages.go); D12 stays true: no new word goes in the allow list. docs/design/cli.md (\"The files of cli/\") gets a row for internal/core (U7).",
+      "rejected": "Keep Plan and Apply in cli/internal/cli or in cli/internal/change, and let plan 2c move the code into a shared package.",
+      "units": [
+        "U3",
+        "U4",
+        "U6",
+        "U7"
+      ]
     }
   ],
   "units": [

@@ -4,6 +4,7 @@
   "The output of a run"), then `cli/internal/cli/init.go` and
   `cli/internal/cli/select.go`, top to bottom.
 - **Lazy-load:** `cli/internal/cli/git.go`, `cli/internal/cli/cli.go`,
+  `cli/internal/cli/packages.go`, `cli/internal/source/notools_test.go`,
   `cli/internal/oldform/oldform.go`, `cli/internal/repo/repo.go`,
   `cli/internal/macos/macos.go`.
 
@@ -126,11 +127,26 @@ Quoted verbatim from the decisions of `index.json`:
   so a command writes the values file one time; the sync that Apply runs then
   finds no missing table. Only a plain sync writes the tables itself, in its one
   write of the values file."
+- D23: "Ruling of the user (2026-11-13), from the interview of plan 2c: U3
+  creates the package cli/internal/core, and plan 2c does not move the code
+  again. core holds the change list, Plan and Apply (D9), Detect (the scan of
+  detect and mac detect, with detectScripts, scanMac and installedPackages, that
+  returns the proposals and the own packages), and the parts of open, prepare
+  and openClone that Plan, Apply and Detect need. Each function of core returns
+  values and errors only: it never prints, never prompts and never calls a.fail.
+  cli/internal/cli stays the shell of the command line: it parses the arguments,
+  calls core, prints the result and the errors, asks the questions and the
+  consent [y/N], and does the dirty-tree check. The TUI of plan 2c calls core
+  and does not import cli/internal/cli. core does not import cli/internal/cli.
+  An entry of the allow list of TestEngineNamesNoTool moves with its code to the
+  new path, with the same words (for example the entry of
+  internal/cli/packages.go); D12 stays true: no new word goes in the allow list.
+  docs/design/cli.md ("The files of cli/") gets a row for internal/core (U7)."
 
 ## Edits
 
-1. **The change list** — a type for the list (for example in a new package
-   `cli/internal/change` or in `cli/internal/cli`): items `AddTool`,
+1. **The change list** — a type for the list in the new package
+   `cli/internal/core` (D23): items `AddTool`,
    `AddPack` (with `Exclude`), `RemoveTool`, `Replace`, `AddPackage` (Mac,
    D16 f), and the answers
    (`<tool>.<key>` → value, `""` for an empty answer).
@@ -150,8 +166,17 @@ Quoted verbatim from the decisions of `index.json`:
 4. **`finish`** — becomes the CLI shell: it calls `Plan`, prints the changes,
    asks the questions (`ask`), takes the consent and the dirty-tree check,
    then calls `Apply`. The output of each command of today stays the same.
-5. **Go tests** — unit tests of `Plan` and `Apply`, with a sync that fails and
-   restores the file.
+5. **`Detect`** — in `core`, from `detect` (`select.go:529`), `detectScripts`,
+   `scanMac` and `installedPackages` (`packages.go`): the scan returns the
+   proposals and the own packages as values. `detect` of the CLI calls it and
+   prints the result (D23).
+6. **The package `core`** — `Plan`, `Apply` and `Detect` live in
+   `cli/internal/core` with the parts of `open`, `prepare` and `openClone`
+   that they need. `core` does not import `cli/internal/cli`. An entry of the
+   allow list of `TestEngineNamesNoTool` moves with its code to the new path,
+   with the same words; add no new word (D12, D23).
+7. **Go tests** — unit tests of `Plan`, `Apply` and `Detect`, with a sync that
+   fails and restores the file.
 
 ## Verification
 
@@ -164,8 +189,9 @@ Quoted verbatim from the decisions of `index.json`:
 
 - Do not change the grammar or the flags: U4 does.
 - Keep the process-global state serial (facts section).
+- No function of `core` prints, prompts or calls `a.fail` (D23).
 - Do not touch `repo/`, `macos/`, the test tasks or a doc.
 
 ## Commit
 
-`refactor: move the plan and the apply of a change into functions`
+`refactor: move the plan, the apply and the detect scan into internal/core`
