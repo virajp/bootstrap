@@ -200,17 +200,22 @@ Quoted verbatim from the decisions of `index.json`:
   creates the package cli/internal/core, and plan 2c does not move the code
   again. core holds the change list, Plan and Apply (D9), Detect (the scan of
   detect and mac detect, with detectScripts, scanMac and installedPackages, that
-  returns the proposals and the own packages), and the parts of open, prepare
-  and openClone that Plan, Apply and Detect need. Each function of core returns
-  values and errors only: it never prints, never prompts and never calls a.fail.
-  cli/internal/cli stays the shell of the command line: it parses the arguments,
-  calls core, prints the result and the errors, asks the questions and the
-  consent [y/N], and does the dirty-tree check. The TUI of plan 2c calls core
-  and does not import cli/internal/cli. core does not import cli/internal/cli.
-  An entry of the allow list of TestEngineNamesNoTool moves with its code to the
-  new path, with the same words (for example the entry of
-  internal/cli/packages.go); D12 stays true: no new word goes in the allow list.
-  docs/design/cli.md ("The files of cli/") gets a row for internal/core (U7)."
+  returns the proposals and the own packages), the check of the clean-target
+  rule (a function that returns the dirty targets), and the parts of open,
+  prepare and openClone that Plan, Apply and Detect need. Each function of core
+  returns values and errors only: it never prints, never prompts and never calls
+  a.fail. cli/internal/cli stays the shell of the command line: it parses the
+  arguments, calls core, prints the result and the errors, asks the questions
+  and the consent [y/N], and calls the check of the clean-target rule of core
+  and prints the dirty targets (this changes D9, which kept the dirty-tree check
+  in the CLI). Amended by the user on 2026-11-13 (rulings review round 2 of plan
+  2c): the check of the clean-target rule moves into core too, so plan 2c calls
+  it and does not move it. The TUI of plan 2c calls core and does not import
+  cli/internal/cli. core does not import cli/internal/cli. An entry of the allow
+  list of TestEngineNamesNoTool moves with its code to the new path, with the
+  same words (for example the entry of internal/cli/packages.go); D12 stays
+  true: no new word goes in the allow list. docs/design/cli.md ("The files of
+  cli/") gets a row for internal/core (U7)."
 
 ## Edits
 
