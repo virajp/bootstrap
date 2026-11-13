@@ -1,0 +1,976 @@
+<title>Bootstrap TUI Screens</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column of screens; each screen = terminal frame, then its actions and open points. */
+:root {
+  --bg: #f3f4f1; --fg: #1d211e; --muted: #5d655f; --line: #d4d8d2; --panel: #ffffff;
+  --accent: #2f6f55; --warn: #9a5b12;
+  /* the terminal keeps one dark look in both themes */
+  --t-bg: #15191a; --t-fg: #d5ddd8; --t-dim: #8d9992;
+  --t-sel: #7fd19b; --t-dep: #74b8d6; --t-lock: #e3c06b; --t-add: #9be37f; --t-rem: #f08a7a; --t-cur: #2a3a3a; --t-hd: #f2f5f3;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121615; --fg: #dfe5e1; --muted: #93a099; --line: #2b3331; --panel: #1a201e; --accent: #7fc8a3; --warn: #e0a95a; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #121615; --fg: #dfe5e1; --muted: #93a099; --line: #2b3331; --panel: #1a201e; --accent: #7fc8a3; --warn: #e0a95a; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font: 600 28px/1.2 var(--sans); margin: 0 0 6px; text-wrap: balance; }
+h2 { font: 600 20px/1.3 var(--sans); margin: 0; text-wrap: balance; }
+h3 { font: 600 13px/1.3 var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+p { margin: 0; max-width: 70ch; }
+.lede { color: var(--muted); }
+code { font: 13px var(--mono); }
+section { display: grid; gap: 16px; padding-block: 28px; border-top: 1px solid var(--line); }
+.tag { font: 500 12px var(--mono); color: var(--accent); }
+.term { background: var(--t-bg); color: var(--t-fg); border-radius: 6px; overflow-x: auto; }
+.term pre { margin: 0; padding: 14px 16px; font: 12.5px/1.5 var(--mono); white-space: pre; }
+.s { color: var(--t-sel); } .d { color: var(--t-dep); } .l { color: var(--t-lock); } .a { color: var(--t-add); font-weight: 600; }
+.r { color: var(--t-rem); font-weight: 600; } .m { color: var(--t-dim); } .h { color: var(--t-hd); font-weight: 600; } .c { background: var(--t-cur); }
+.g { color: var(--t-lock); } .bg { color: #4d5753; } .k { color: var(--t-dep); font-weight: 600; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.cols > div { min-width: 0; }
+@media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+td, th { text-align: left; vertical-align: top; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line); }
+th { font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+td:first-child { white-space: nowrap; font-family: var(--mono); font-size: 13px; }
+ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.open li::marker { color: var(--warn); font-weight: 600; }
+.legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 18px; font: 13px var(--mono); }
+.rulings li { max-width: 75ch; }
+.rulings b { font-weight: 600; }
+</style>
+
+<div class="wrap">
+  <h1>Bootstrap TUI Screens</h1>
+  <p class="lede">Draft 43 of the screens of <code>bootstrap tui</code> (repo side) and <code>bootstrap mac tui</code> (Mac side). Nothing is built. Each screen shows its actions and its open points. The sample repository is <code>~/Projects/acme-web</code>. On the cursor row, a name that is longer than its column scrolls. The selection model of the engine is in the artifact "Bootstrap Selection Model".</p>
+  <p><code>bootstrap init</code> in a terminal opens the TUI. On a repository with no values file, the TUI starts with the pack <code>base</code> selected, and Apply writes the new values file. With no terminal, or with <code>--no-tui</code>, <code>init</code> selects only <code>base</code> and syncs. On a repository that has a values file, <code>init</code> first runs the migrations of the old forms, for example <code>[packs.*]</code> into tables of tools. Then it opens the TUI with the tools of the values file, the same screen as <code>bootstrap tui</code>. With no terminal, or with <code>--no-tui</code>, it adds the members of <code>base</code> that have no table, asks nothing, and syncs. In a terminal that is smaller than 100 × 25, <code>init</code> stops with code 2 (screen 1). It never goes on as <code>--no-tui</code>. <code>bootstrap tui</code> opens the TUI on a repository that has a values file. The Mac side is the same: <code>bootstrap mac init</code> and <code>bootstrap mac tui</code>.</p>
+
+  <section>
+    <span class="tag">0 · Data and layout</span>
+    <h2>The data and the fixed layout</h2>
+    <p>The TUI reads only the catalog data. No Go file names a tool. The TUI writes the values file, then runs the same sync as <code>bootstrap sync</code>.</p>
+    <div class="cols">
+      <div>
+        <h3>New and changed keys in tools.toml</h3>
+        <table>
+          <tr><th>Key</th><th>Proposal</th></tr>
+          <tr><td>summary</td><td>New, necessary on both sides. A short line, 47 characters or fewer, for the right pane.</td></tr>
+          <tr><td>description</td><td>Necessary on both sides. The longer text for the bottom pane. Today the Mac tools have it. The repo tools have the text only in the header comment.</td></tr>
+          <tr><td>category</td><td>New, necessary on both sides. One category name. A categories file of each side gives the order and the title of each category.</td></tr>
+          <tr><td>selectable</td><td>New, optional, default <code>true</code>. <code>true</code>: the tool installs alone, so it has its own row with a selector, and it also shows in the trees of the tools that need it. <code>false</code>: the tool shows only in a tree, without a selector, for example <code>_security_base</code>.</td></tr>
+          <tr><td>hosts</td><td>New, optional. The host systems of the tool, with the OS names of mise, for example <code>hosts = ["macos"]</code> for <code>swift</code>. On another host, the TUI shows the row as not available, and <code>init</code> and <code>add</code> refuse the tool. A tool without the key works on every host.</td></tr>
+          <tr><td>[questions.*] group</td><td>New, optional. The questions with the same <code>group</code> need at least one answer, for example <code>email_github</code> and <code>email_gitlab</code> of git. A question without a group needs an answer, unless it has <code>optional = true</code>.</td></tr>
+          <tr><td>[questions.*] note</td><td>New, optional. A line that the form shows under the question, for example that one SSH key signs for GitHub and GitLab.</td></tr>
+          <tr><td>[questions.*] optional</td><td>New, optional, default <code>false</code>. <code>true</code>: the question can stay empty. Its templates must work without the value. A question in a group does not use it.</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>The fixed columns (in characters)</h3>
+        <table>
+          <tr><th>Part</th><th>Width</th></tr>
+          <tr><td>screen</td><td>100 columns. The two top panes and the bottom pane fill it.</td></tr>
+          <tr><td>left pane</td><td>30: cursor 2, selector 3 (packs only), name 16 (packs) or 19 (categories), counter 5 (right-aligned, <code>3/3</code> to <code>10/10</code>), detected hint 1 (categories), scroll mark 1.</td></tr>
+          <tr><td>right pane</td><td>69: selector 3, name 14, summary 47, scroll mark 1. A dependency row has no selector: the tree glyphs and the name share the name column, so all summaries align. A member row of the Packs tab has no selector: name 14, summary 35, status 11 (dim), scroll mark 1. The right pane has no ◆.</td></tr>
+          <tr><td>bottom pane</td><td>100 × 7 lines: the description and the details of the item under the cursor, or a dialog. Scroll mark in the last column.</td></tr>
+          <tr><td>long text</td><td>Truncated with <code>…</code>. On the cursor row, the text scrolls.</td></tr>
+          <tr><td>modal dialog</td><td>For a critical step. It takes over the center of the screen, over the dimmed panes, up to 20 lines. Long content scrolls in the dialog, with ▲ ▼ at its right edge. A yes/no question is the last line of the dialog and ends with <code>[y/N]</code>: <code>y</code> confirms, and any other key cancels. A form (screen 7) keeps its Accept and Cancel buttons.</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="cols">
+      <div>
+        <h3>The conflict rules (from data that exists)</h3>
+        <table>
+          <tr><th>Source</th><th>TUI behavior</th></tr>
+          <tr><td>depends</td><td>Shows the needed tools as a tree under the selected tool. A removal that other tools need opens the cascade dialog (screen 4).</td></tr>
+          <tr><td>parent</td><td>Tools with the same parent are alternatives: one radio group (screen 5).</td></tr>
+          <tr><td>required</td><td>The row is locked (screen 6).</td></tr>
+          <tr><td>root_only</td><td>In a submodule, the row is not available (screen 6).</td></tr>
+          <tr><td>hosts</td><td>On a host that is not in the list, the row is not available (screen 6).</td></tr>
+          <tr><td>packs</td><td>A pack is a shortcut. Select adds the members that are not selected. Deselect removes the members, except a required member and a member that another selected tool needs. The values file holds only <code>[tools.&lt;name&gt;]</code> tables.</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Marks</h3>
+        <div class="legend">
+          <span>[x] selected</span><span>[=] required, or the pack base</span><span>[+] will add</span><span>[-] will remove</span><span>[~] some members of a pack (pack row only)</span><span>(•) ( ) alternatives</span><span>[·] not available</span><span>├─ └─ dependency</span><span>◆ detection proposes a change (left pane only)</span><span>[?] a proposal, not on the change list: green to add, red to remove</span><span>▲ more above</span><span>▼ more below</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s1">
+    <span class="tag">1 · repo · main</span>
+    <h2>Tools by category</h2>
+    <p>Two panes at the top: the categories, and the tools of the category with their summaries. A selected tool shows its dependencies as a tree, without a selector. The bottom pane shows the description and the details of the item under the cursor. A selectable dependency (<code>java</code>) also has its own row. Here the bottom pane has more lines below, so it shows ▼.</p>
+    <div class="term"><pre id="t1"></pre></div>
+    <p>In a terminal smaller than 100 × 25, the TUI does not start. It shows this message and exits with code 2. <code>bootstrap init</code> does the same, and its second line also names <code>bootstrap init --no-tui</code>. It never goes on without the TUI.</p>
+    <div class="term"><pre id="t1s"></pre></div>
+    <p>If the terminal becomes too small while the TUI runs, the TUI shows the message in place of the screen. The change list stays. When the terminal is large enough again, the screen comes back as it was.</p>
+    <div class="term"><pre id="t1r"></pre></div>
+    <div class="cols">
+      <div><h3>Actions</h3>
+        <table>
+          <tr><td>↑ ↓</td><td>Move the cursor in the pane. The bottom pane follows the cursor. A dependency row takes the cursor, so its details show.</td></tr>
+          <tr><td>← →</td><td>Go to the other top pane.</td></tr>
+          <tr><td>space</td><td>Select or unselect the tool. The change goes on the list. Nothing is written yet. On a dependency row, space does nothing.</td></tr>
+          <tr><td>e</td><td>On a selected tool with questions: open the questions form (screen 7) with the current answers. An accepted change goes on the change list.</td></tr>
+          <tr><td>shift ↑ ↓</td><td>Scroll the bottom pane.</td></tr>
+          <tr><td>tab</td><td>Show the next tab: Tools, Packs (screen 2), Detected (screen 2b).</td></tr>
+          <tr><td>/</td><td>Search all tools (screen 3).</td></tr>
+          <tr><td>r</td><td>Review the changes (screen 8).</td></tr>
+          <tr><td>q</td><td>Quit. With changes, ask "Discard 2 changes? [y/N]".</td></tr>
+        </table>
+      </div>
+      <div><h3>Open points</h3>
+        <p>None.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="s2">
+    <span class="tag">2 · packs · repo and Mac</span>
+    <h2>Packs</h2>
+    <p>A pack is a shortcut. It adds tools, and the values file keeps no record of it: the file holds only <code>[tools.&lt;name&gt;]</code> tables. The user selects or deselects packs in the left pane only. The left pane shows a mark for each pack: [x] each member is selected, [~] some members are selected, [ ] no member is selected, [+] will add, [-] will remove, [=] the pack <code>base</code>, which the user cannot deselect. The right pane only lists the tools that the pack installs, with the name, the summary and a dim status. It has no selector, and its rows have no action. While the cursor is on a pack in the left pane, the bottom pane shows the name of the pack and its description. A pack has no summary. The cursor can go into the right pane with ← →. There the pane is read-only: the bottom pane shows the details of the member under the cursor (the description, the kind on the Mac, the tools that it needs and the status), and space does nothing.</p>
+    <p>A selected or a deselected pack is one change in the counter of the header, and one line in the review.</p>
+    <p>On the repo side, <code>base</code> is the only pack. The other repo tools come from the Tools tab or the Detected tab. In this sample, the cursor is in the right pane on <code>vscode</code>.</p>
+    <div class="term"><pre id="t2"></pre></div>
+    <p>The Mac side has more packs. Here the user deselects the installed pack <code>terminal</code>, so it shows [-] and its two tools will leave. The user also selects the pack <code>media</code>, so it shows [+]. The header shows 2 changes: one for each pack.</p>
+    <div class="term"><pre id="t2m"></pre></div>
+    <p id="s2toml">The form of <code>repo/packs.toml</code>. Each member is a default: <code>tool = {}</code>, or <code>tool = { required = true }</code> in <code>base</code> only. <code>description</code> is a reserved key. A tool can be in no pack.</p>
+    <div class="term"><pre>[pack.base]
+description = "The tools of each repository: mise, git, the hooks, the format and lint gates, the security scanners and the VS Code config."
+mise = { required = true }
+git = { required = true }
+pre-commit = { required = true }
+dprint = { required = true }
+linter = { required = true }
+gitleaks = { required = true }
+grype = { required = true }
+osv-scanner = { required = true }
+vscode = {}</pre></div>
+    <div class="cols">
+      <div><h3>Actions</h3>
+        <table>
+          <tr><td>space on a pack</td><td>The pack goes on the change list as one change. Select: Apply adds the members that are not selected. Same as: <code>bootstrap add pack P</code>. Deselect of an installed pack: Apply removes each member, except a required member and a member that another selected tool needs. When a tool outside the pack needs a member, the cascade dialog (screen 4) asks first. The CLI has no command for it: one <code>bootstrap remove tool</code> for each member.</td></tr>
+          <tr><td>space on [=]</td><td>Nothing. The user cannot deselect <code>base</code>.</td></tr>
+          <tr><td>← →</td><td>Go to the other top pane. In the right pane, the bottom pane shows the details of the member.</td></tr>
+          <tr><td>space in the right pane</td><td>Nothing. The right pane is read-only. To remove one tool, the user goes to the Tools tab.</td></tr>
+        </table>
+      </div>
+      <div><h3>Open points</h3>
+        <p>None.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="s2b">
+    <span class="tag">2b · repo · detected</span>
+    <h2>Detected tools</h2>
+    <p>Each time the user opens the Detected tab, the TUI runs the detect scripts, as <code>bootstrap detect</code> does. The Mac side also has the Detected tab: it runs <code>bootstrap mac detect</code>. On the command line, <code>bootstrap detect</code> with no flag only lists the detected tools, also in a terminal: it does not open the TUI. It exits with code 1 when a detected tool is not selected, else with code 0. <code>bootstrap detect --add</code> adds each detected tool that is not selected, after the <code>[y/N]</code> consent. <code>--yes</code> answers the consent. The flag <code>--no</code> is gone. A modal dialog shows while the scripts run. <code>esc</code> stops the scripts and goes back to the tab of before, with no change.</p>
+    <div class="term"><pre id="t2a"></pre></div>
+    <p>Then the tab shows the proposal of the detection. In the right pane, the selector of a proposal shows <code>[?]</code>: the user must make a choice. A green <code>[?]</code> adds the tool, and a red <code>[?]</code> removes it. A proposal is not on the change list, so the counter of changes in the header does not change. The right pane has no ◆. In the left pane, ◆ marks a category with a proposal. On the Tools tab, ◆ also marks such a category, but not the tool row.</p>
+    <div class="term"><pre id="t2b"></pre></div>
+    <div class="cols">
+      <div><h3>Actions</h3>
+        <table>
+          <tr><td>space</td><td>Accept the proposal of one tool: it goes on the change list, and the green <code>[?]</code> becomes <code>[+]</code>, or the red <code>[?]</code> becomes <code>[-]</code>. Space again takes it off the list, and the mark is <code>[?]</code> again.</td></tr>
+          <tr><td>a</td><td>Accept all proposals. They go on the change list. Same as: <code>bootstrap detect --add</code>.</td></tr>
+          <tr><td>esc (dialog)</td><td>Stop the detect scripts. Go back to the tab of before.</td></tr>
+        </table>
+      </div>
+      <div><h3>Open points</h3>
+        <p>None.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="s3">
+    <span class="tag">3 · search</span>
+    <h2>Search</h2>
+    <p>The search finds a text in the name, the summary, the description and the category. The left pane holds the search field. The right pane shows the results.</p>
+    <div class="term"><pre id="t3"></pre></div>
+  </section>
+
+  <section id="s4">
+    <span class="tag">4 · conflict · cascade</span>
+    <h2>Remove a tool that other tools need</h2>
+    <p>The user unselects <code>java</code>. Three selected tools need it: <code>kotlin</code> and <code>android</code> need <code>java</code>, and <code>flutter</code> needs <code>android</code>. A modal dialog takes over the center of the screen. The panes stay dimmed behind it. A dependency that no tool needs after the change also leaves.</p>
+    <div class="term"><pre id="t4"></pre></div>
+    <p>A required tool can need the tool that the user unselects: <code>pre-commit</code> is required, and it needs <code>python</code>. Then the dialog shows only a message, with no <code>[y/N]</code> question. Any key closes it, and nothing changes. <code>node</code> is the same: the required tool <code>linter</code> needs it.</p>
+    <div class="term"><pre id="t4b"></pre></div>
+    <div class="cols">
+      <div><h3>Actions</h3>
+        <table>
+          <tr><td>y</td><td>All four go on the list as [-]. Nothing is written yet.</td></tr>
+          <tr><td>any other key</td><td>No change. The dialog closes.</td></tr>
+        </table>
+      </div>
+      <div><h3>Open points</h3>
+        <p>None.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="s5">
+    <span class="tag">5 · conflict · alternatives</span>
+    <h2>Tools with the same parent</h2>
+    <p><code>pnpm</code> and <code>aube</code> have <code>parent = "node"</code>. They show as one radio group, "select one or none". Space on the selected tool unselects it, so the group can have no selection. The user moves the selection from pnpm to aube, and a modal dialog asks to replace.</p>
+    <div class="term"><pre id="t5"></pre></div>
+    <p>If aube has no migrate script for pnpm, <code>bootstrap replace tool</code> refuses. The TUI offers the long way: remove pnpm and add aube. The seed files of pnpm, such as <code>pnpm-workspace.yaml</code>, stay, and the user moves their content.</p>
+    <div class="term"><pre id="t5b"></pre></div>
+    <div class="cols">
+      <div><h3>Actions</h3>
+        <table>
+          <tr><td>y</td><td>pnpm goes on the list as [-], aube as [+], marked "replace". The migrate script runs at apply.</td></tr>
+          <tr><td>any other key</td><td>No change. The dialog closes.</td></tr>
+        </table>
+      </div>
+      <div><h3>Open points</h3>
+        <p>None.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="s6">
+    <span class="tag">6 · locked and not available</span>
+    <h2>Rows that the user cannot change</h2>
+    <p>A required tool is locked. A tool that this repository cannot have is grey. The bottom pane gives the reason. Space on such a row does nothing.</p>
+    <div class="term"><pre id="t6a"></pre></div>
+    <div class="term"><pre id="t6b"></pre></div>
+    <div class="cols">
+      <div><h3>Open points</h3>
+        <p>None.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="s7">
+    <span class="tag">7 · questions</span>
+    <h2>A tool needs values</h2>
+    <p>The questions form opens in three cases. The user selects a tool with <code>[questions]</code>: the TUI asks each question before the tool goes on the list. The user presses <code>e</code> on a selected tool. Or the user starts Apply: Apply first plans the change list. If a selected tool has a question with no answer in the values file and no answer on the change list, the TUI opens the form for that tool before it writes. It opens one form for each such tool, in the order of the tools. Cancel in such a form stops Apply, and the TUI goes back to the main screen with the change list kept.</p>
+    <p>The sample is the form of the Mac tool <code>git</code> at the first Apply of <code>bootstrap mac init</code>. <code>git</code> is a required member of <code>base</code>, and <code>macos.toml</code> has no answers yet. A <code>detect</code> command fills each proposal, for example the GitHub email from <code>gh api user</code>. The form is a modal dialog. The 4 questions do not fit, so the content scrolls: here it is scrolled down, and the dialog shows ▲. A <code>group</code> line says that at least one of the two emails is necessary. A <code>note</code> under the SSH key says that one key signs for both forges. The buttons stay visible.</p>
+    <div class="term"><pre id="t7"></pre></div>
+    <div class="cols">
+      <div><h3>Open points</h3>
+        <p>None.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="s8">
+    <span class="tag">8 · review and apply</span>
+    <h2>Review the changes</h2>
+    <p>The list of changes, then the file plan of a dry run. A pack is one line. Apply first plans the change list and asks the questions that have no answer (screen 7). Then it writes the values file and runs the sync. This is the only step that writes.</p>
+    <div class="term"><pre id="t8"></pre></div>
+    <p>After Apply, the TUI shows the output of the sync. Any key goes back to the main screen.</p>
+    <div class="term"><pre id="t8b"></pre></div>
+    <p>If the sync fails, the TUI puts the values file back as it was before Apply and shows the output. Any key goes back to the main screen with the change list kept. The user can correct the changes and apply again.</p>
+    <div class="term"><pre id="t8c"></pre></div>
+    <div class="cols">
+      <div><h3>Actions</h3>
+        <table>
+          <tr><td>Apply</td><td>Plan the change list. For each selected tool with a question that has no answer, open the questions form (screen 7). Cancel stops Apply and keeps the change list. Then write the values file and run the sync. Show its output (below), then go back to the main screen with an empty change list.</td></tr>
+          <tr><td>f</td><td>Show the full file list.</td></tr>
+          <tr><td>Back / esc</td><td>Go back to the main screen. The changes stay.</td></tr>
+        </table>
+      </div>
+      <div><h3>Open points</h3>
+        <p>None.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="s9">
+    <span class="tag">9 · mac · main</span>
+    <h2>bootstrap mac tui</h2>
+    <p>The same screens, with the three tabs Tools, Packs (screen 2) and Detected. The data comes from <code>macos/tools/</code>, <code>macos/packs.toml</code> and <code>macos.toml</code>. The required members of the Mac pack <code>base</code>, such as <code>fish</code>, show [=]. The first sample shows a tree with two levels, and scroll marks in the two top panes: the left pane has more categories below, and the right pane is scrolled down. In the second sample, the name on the cursor row scrolls.</p>
+    <div class="term"><pre id="t9"></pre></div>
+    <div class="term"><pre id="t9b"></pre></div>
+    <p>The Mac sync does not uninstall an app: <code>mise bootstrap</code> installs, and only <code>mise bootstrap packages prune</code> uninstalls. Thus the review shows a line under each Mac tool that it removes. The Mac categories are, in this order: System, Shell and terminal, CLI tools, Development, Editors, AI, Browsers, Passwords and secrets, Productivity, Office, Notes and reading, Media, Chat and Disk.</p>
+    <div class="term"><pre id="t9r"></pre></div>
+    <div class="cols">
+      <div><h3>Open points</h3>
+        <p>None.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <span class="tag">Decisions</span>
+    <h2>Rulings</h2>
+    <ol class="rulings">
+      <li><b>2026-11-12, tabs.</b> The tab line shows the active tab in a mark: <code>[Tools] | Packs</code> or <code>Tools | [Packs]</code>. The mark is the brackets.</li>
+      <li><b>2026-11-12, panes.</b> Two panes share the width at the top. The details of the item under the cursor show in a bottom pane under them.</li>
+      <li><b>2026-11-12, fixed widths.</b> Each pane has a fixed size. The selector <code>[?]</code> has a fixed size, the counter has 3 to 5 characters, and the text column has a fixed size. Text that does not fit is truncated. On the cursor row, the text scrolls.</li>
+      <li><b>2026-11-12, two descriptions.</b> The right pane shows a short summary. The bottom pane shows the longer description. The same text does not show twice.</li>
+      <li><b>2026-11-12, dependency tree.</b> Dependencies show as a tree under the tool that needs them, without a selector.</li>
+      <li><b>2026-11-12, scroll marks.</b> Each of the three panes shows ▲ when it has more lines above, and ▼ when it has more lines below.</li>
+      <li><b>2026-11-12, selectable.</b> A tool that installs alone has <code>selectable = true</code>: it has its own row with a selector, and it also shows in the trees. A tool with <code>selectable = false</code> shows only in a tree, without a selector.</li>
+      <li><b>2026-11-12, repeated dependencies.</b> A tree repeats a dependency under each tool that needs it, for clarity.</li>
+      <li><b>2026-11-12, selectable default.</b> <code>selectable</code> is <code>true</code> by default. Only a tool such as <code>_security_base</code> sets it to <code>false</code>.</li>
+      <li><b>2026-11-12, dependency on its own row.</b> The own row of a selectable tool that is only a dependency shows <code>[ ]</code>. Space on it makes it a direct tool.</li>
+      <li><b>2026-11-12, detected.</b> The TUI shows the result of the detect scripts: a third tab <code>Detected</code> (<code>[Tools] | Packs | Detected</code>), and a ◆ hint in the left pane. The hint never selects a tool.</li>
+      <li><b>2026-11-12, detection proposal (superseded by 15).</b> The Detected tab shows the proposal of the detection with <code>[+]</code> (add) and <code>[-]</code> (remove) in the selector. ◆ shows only in the left pane. The key <code>a</code> accepts all proposals.</li>
+      <li><b>2026-11-12, detecting dialog.</b> Each time the user opens the Detected tab, a modal "Detecting ..." dialog shows while the detect scripts run. <code>esc</code> cancels and goes back to the tab of before.</li>
+      <li><b>2026-11-12, proposal is not a change.</b> A detection proposal is only a proposal. It goes on the change list only when the user presses space on it, or <code>a</code> for all proposals.</li>
+      <li><b>2026-11-12, proposal mark.</b> A proposal shows <code>[?]</code>, because the user must make a choice: green to add the tool, red to remove it. An accepted proposal shows <code>[+]</code> or <code>[-]</code> in the same color.</li>
+      <li><b>2026-11-12, Detected left pane (changed 2026-11-13).</b> The left pane of the Detected tab lists only the categories that have a proposal. If nothing is detected, the right pane shows "No tool detected". The bottom pane names the evidence file of each proposal.</li>
+      <li><b>2026-11-12, terminal size.</b> The TUI needs a terminal of 100 × 25 or larger. In a smaller terminal, it shows a message and exits with code 2. If the terminal becomes too small during a run, the TUI shows the message until the terminal is large enough again, and keeps the change list.</li>
+      <li><b>2026-11-12, pack texts (form changed 2026-11-13).</b> Each pack has a <code>description</code>, and no summary. It goes in <code>packs.toml</code>, as a reserved key of the <code>[pack.&lt;name&gt;]</code> table: a string value is a pack key, and an inline table is a member. A member is <code>tool = {}</code>, or <code>tool = { required = true }</code> in <code>base</code> only. The key <code>default</code> is gone (ruling 45). No tool or pack can have the name <code>description</code>.</li>
+      <li><b>2026-11-12, pack title.</b> The title of the right pane on the Packs tab is the name of the pack only. The right pane lists the tools that the pack installs (ruling 46).</li>
+      <li><b>2026-11-12, pack details.</b> While the cursor is on a pack in the left pane, the bottom pane shows the name of the pack, its description and its status, for example "will add 2 tools".</li>
+      <li><b>2026-11-12, optional members (withdrawn 2026-11-13).</b> A pack has no optional member now. Each member is a default (ruling 45), and the right pane of the Packs tab has no selector (ruling 46).</li>
+      <li><b>2026-11-12, modal dialogs.</b> A critical step uses a modal dialog. It takes over the center of the screen, so it has room for its content. Content that does not fit scrolls in the dialog.</li>
+      <li><b>2026-11-12, y/N.</b> A dialog that asks yes or no ends with <code>[y/N]</code>. The key <code>y</code> confirms. Any other key cancels.</li>
+      <li><b>2026-11-12, critical steps.</b> These steps use a modal dialog: a removal that also removes other tools, a replacement, the questions of a new tool, "Detecting ...", and "Discard N changes? [y/N]" at quit, for example "Discard 2 changes? [y/N]". The review stays a full screen. The reason that a row is locked stays in the bottom pane.</li>
+      <li><b>2026-11-12, cascade and the base pack (superseded by 51).</b> The cascade can remove a default member of the base pack that is not required, for example <code>linter</code>.</li>
+      <li><b>2026-11-12, cascade and a required tool.</b> If a required tool needs the tool that the user unselects, the dialog shows only a message. It has no <code>[y/N]</code> question. Any key closes it, and nothing changes.</li>
+      <li><b>2026-11-12, replace without a migrate script.</b> If the new tool has no migrate script for the old tool, the TUI offers the long way: "Remove pnpm and add aube? [y/N]". The seed files of the old tool stay.</li>
+      <li><b>2026-11-12, alternatives group.</b> Tools with the same parent are a group with the label "select one or none". Space on the selected tool unselects it. Space on another tool of the group asks to replace.</li>
+      <li><b>2026-11-12, no conflicts key.</b> <code>parent</code> is the only data that marks a conflict. No <code>conflicts</code> key now. A tool can add one later, when a real conflict occurs.</li>
+      <li><b>2026-11-12, hosts (names changed 2026-11-13).</b> A new optional key <code>hosts</code> lists the host systems of a tool with the OS names of mise, for example <code>hosts = ["macos"]</code>. On another host, the row is not available, and <code>init</code> and <code>add</code> refuse the tool. A tool without the key works on every host.</li>
+      <li><b>2026-11-12, rows not available.</b> A row that is not available stays visible, grey, with <code>[·]</code>. The bottom pane gives the reason.</li>
+      <li><b>2026-11-12, git emails and key.</b> At least one email, GitHub or GitLab, is necessary. The form tells the user that the SSH key must be the same for both, if the user uses both.</li>
+      <li><b>2026-11-12, question keys.</b> A question has two new optional keys: <code>group</code> (the questions of a group need at least one answer) and <code>note</code> (a line under the question in the form).</li>
+      <li><b>2026-11-12, optional question.</b> A question can be independent and optional: <code>optional = true</code> lets it stay empty. The form shows "optional" next to its field.</li>
+      <li><b>2026-11-12, edit values.</b> The key <code>e</code> on a selected tool opens the questions form with the current answers. An accepted change goes on the change list, and the review shows it.</li>
+      <li><b>2026-11-12, Accept, not Save.</b> The questions form uses Accept and Cancel. Accept only puts the answers on the change list. The values file is written at Apply on the review screen.</li>
+      <li><b>2026-11-12, after Apply.</b> The TUI shows the output of the sync, then goes back to the main screen with an empty change list.</li>
+      <li><b>2026-11-12, failed sync.</b> If the sync fails, the TUI puts the values file back as it was before Apply, and keeps the change list, so that the user can correct it and apply again.</li>
+      <li><b>2026-11-12, next command.</b> After a sync that passes, the TUI only prints the next command, for example <code>MISE_ENV=dev mise run setup</code>. It does not run it.</li>
+      <li><b>2026-11-12, Mac categories (list in 62).</b> The Mac tools use a separate <code>category</code> key, as the repo tools do. The Mac packs stay on the Packs tab.</li>
+      <li><b>2026-11-12, Mac kind.</b> On the Mac side, the TUI tells if a tool is a terminal app or a desktop app. It gets the kind from the install data, with no new key: <code>brew:</code> or <code>[mise.tools]</code> is a terminal app, <code>brew-cask:</code> or <code>mas:</code> is a desktop app, and no package is config only. A tool with both kinds is a desktop app. Only the bottom pane shows the kind (line "Kind"). The rows do not change.</li>
+      <li><b>2026-11-12, removed Mac apps.</b> The TUI does not uninstall an app. The review shows a line under each Mac tool that it removes: a desktop app stays installed, and the user uninstalls it; a terminal app leaves at the next <code>upgrade:brew</code>.</li>
+      <li><b>2026-11-12, accept refused.</b> The form refuses Accept while a question without a group and without <code>optional = true</code> is empty, or while all the questions of a group are empty. The field shows "An answer is necessary", and the cursor goes to it.</li>
+      <li><b>2026-11-12, git change in scope.</b> The TUI work includes a change of the Mac tool <code>git</code>: its templates write the GitHub config or the GitLab config only for an email with an answer, and no longer use <code>required</code> for one email.</li>
+      <li><b>2026-11-13, packs are a shortcut.</b> A pack only adds tools. The values file holds <code>[tools.&lt;name&gt;]</code> tables only, never <code>[packs.*]</code>. Each member of a pack is a default: no member is optional, and the key <code>default</code> is gone. A member in <code>packs.toml</code> is <code>tool = {}</code>, or <code>tool = { required = true }</code> in <code>base</code> only. A tool can be in no pack. Replaces ruling 21.</li>
+      <li><b>2026-11-13, right pane of the Packs tab (cursor changed by 59).</b> The user selects or deselects packs in the left pane only. The right pane only lists the tools that the pack installs: the name, the summary and a dim status, such as "installed", "will add" or "required". It has no selector, and its rows have no action. A user removes one tool on the Tools tab.</li>
+      <li><b>2026-11-13, pack marks.</b> A pack row in the left pane shows <code>[x]</code> when each member is selected, <code>[~]</code> when some are, <code>[ ]</code> when none is, <code>[+]</code> when it will add, <code>[-]</code> when it will remove, and <code>[=]</code> for <code>base</code>, which the user cannot deselect. A tool row never shows <code>[~]</code>.</li>
+      <li><b>2026-11-13, select and deselect of a pack.</b> Select adds the members that are not selected (<code>[+]</code> on the pack). Deselect of an installed pack removes its tools: one removal for each member, except a required member and a member that another selected tool needs (<code>[-]</code> on the pack). When a tool outside the pack needs a member, the cascade dialog (screen 4) asks first.</li>
+      <li><b>2026-11-13, a table for each tool.</b> Each selected tool has a <code>[tools.&lt;name&gt;]</code> table, also a required tool and a dependency, so that a user can write overrides in it. The sync always installs a required member of <code>base</code> and a needed dependency, also when a user deletes its table by hand. Then the tool has no overrides.</li>
+      <li><b>2026-11-13, init opens the TUI (extended by 56 and 57).</b> <code>bootstrap init</code> in a terminal opens the TUI. On a repository with no values file, the TUI starts with <code>base</code> selected, and Apply writes the new values file. With no terminal, or with <code>--no-tui</code>, <code>init</code> selects only <code>base</code> and syncs. <code>bootstrap tui</code> opens the TUI on a repository that has a values file. <code>bootstrap mac init</code> is the same on the Mac.</li>
+      <li><b>2026-11-13, repo has only base.</b> On the repo side, <code>base</code> is the only pack: <code>mise</code>, <code>git</code>, <code>pre-commit</code>, <code>dprint</code>, <code>linter</code>, <code>gitleaks</code>, <code>grype</code> and <code>osv-scanner</code> are required, and <code>vscode</code> is not. The other repo tools come from the Tools tab or the Detected tab. Thus the cascade cannot remove <code>linter</code>, and a removal of <code>node</code> shows the message of ruling 26. Replaces ruling 25.</li>
+      <li><b>2026-11-13, bootstrap mac tui.</b> The Mac TUI command is <code>bootstrap mac tui</code>. No <code>--mac</code> flag. The Mac packs are base, claude, essentials, 1password, dev, terminal, mobile-dev, iwork, ms-office, disk and media.</li>
+      <li><b>2026-11-13, Detected tab on the Mac.</b> The Mac TUI also has the Detected tab. It runs <code>bootstrap mac detect</code>, with the same dialog and the same proposal marks as the repo side.</li>
+      <li><b>2026-11-13, CLI equivalents.</b> A TUI action names its CLI command with "Same as:": <code>add tool</code>, <code>add pack P [--exclude m]</code>, <code>remove tool</code>, <code>replace tool &lt;old&gt; &lt;new&gt;</code> and <code>detect --add</code>. The deselect of a pack has no command: one <code>remove tool</code> for each member.</li>
+      <li><b>2026-11-13, host names.</b> <code>hosts</code> uses the OS names of mise, for example <code>hosts = ["macos"]</code>, not <code>"darwin"</code>. Changes ruling 30.</li>
+      <li><b>2026-11-13, init in a small terminal.</b> <code>bootstrap init</code> in a terminal that is smaller than 100 × 25 stops with code 2 and shows the size message. The second line also names <code>bootstrap init --no-tui</code>. <code>init</code> never goes on without the TUI.</li>
+      <li><b>2026-11-13, init with a values file.</b> On a repository or a Mac that has a values file, <code>init</code> first runs the migrations of the old forms, for example <code>[packs.*]</code> into tables of tools. Then it opens the TUI with the tools of the values file, the same screen as <code>bootstrap tui</code>. With no terminal, or with <code>--no-tui</code>, it adds the members of <code>base</code> that have no table, asks nothing, and syncs.</li>
+      <li><b>2026-11-13, questions at Apply.</b> Apply first plans the change list. If a selected tool has a question with no answer in the values file and none on the change list, the TUI opens the questions form for that tool before it writes: one form for each such tool, in the order of the tools. Cancel in such a form stops Apply, and the TUI goes back to the main screen with the change list kept. The form also opens with <code>e</code> on a selected tool, and when the user selects a tool with questions.</li>
+      <li><b>2026-11-13, cursor in the right pane of the Packs tab.</b> The keys ← → move the cursor into the right pane of the Packs tab. There the pane is read-only: the bottom pane shows the details of the member (the description, the kind on the Mac, the tools that it needs and the status), and space does nothing.</li>
+      <li><b>2026-11-13, a pack is one change.</b> A selected or a deselected pack is one change in the counter of the header, and one line in the review, for example "+ media  adds vlc, handbrake" and "- terminal  removes ghostty, warp".</li>
+      <li><b>2026-11-13, detect.</b> <code>bootstrap detect</code> with no flag only lists the detected tools, also in a terminal, and does not open the TUI. It exits with code 1 when a detected tool is not selected, else with code 0. <code>--add</code> adds each detected tool that is not selected, after the <code>[y/N]</code> consent. <code>--yes</code> answers the consent. <code>--no</code> is gone. The key <code>a</code> of the Detected tab is the same as <code>bootstrap detect --add</code>.</li>
+      <li><b>2026-11-13, Mac categories.</b> The Mac categories are, in this order: System, Shell and terminal, CLI tools, Development, Editors, AI, Browsers, Passwords and secrets, Productivity, Office, Notes and reading, Media, Chat and Disk (14, plan 1b).</li>
+      <li><b>2026-11-13, Cancel at select.</b> When the user selects a tool with questions, the form opens. Cancel in that form also cancels the select: the tool stays <code>[ ]</code>, and no change goes on the change list. Cancel in the form of <code>e</code> keeps the old answers, and the tool stays selected.</li>
+      <li><b>2026-11-13, help key.</b> The key <code>?</code> opens a modal help dialog. It lists each key of the current screen, with one line for each key. <code>esc</code> closes it. It uses the full view of the Bubbles <code>help</code> component.</li>
+      <li><b>2026-11-13, tests by hand.</b> Plan 2c has no automated tests of the TUI screens. The user tests the TUI by hand. The tests of <code>cli/internal/core</code> come from plan 2a. Golden <code>View</code> strings at 100 × 25 are backlog item B29 (P1).</li>
+      <li><b>2026-11-13, init flags.</b> <code>init</code> in a terminal with <code>--yes</code>, <code>--dry-run</code>, <code>--answer</code> or <code>--skip-answer</code> takes the <code>--no-tui</code> path. These flags come from an agent or a script.</li>
+      <li><b>2026-11-13, migration in the TUI.</b> On an old-form values file, <code>init</code> opens the TUI with the migration as one change on the change list. Apply writes it with the other changes. A quit that discards the list writes nothing. The user cannot remove this change.</li>
+      <li><b>2026-11-13, own packages.</b> On the Mac, the Detected tab lists the own packages (installed, with no tool) in a last category "Own packages", with <code>[?]</code>. <code>a</code> accepts them too.</li>
+      <li><b>2026-11-13, dirty targets.</b> The clean-target rule applies to Apply: the review names each dirty target, Apply writes nothing, and the change list stays.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function () {
+  var W = 100, LW = 30, RW = W - LW - 1, BH = 7;
+  var chars = function (s) { return Array.from(s); };
+  var len = function (s) { return chars(s).length; };
+  var esc = function (s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+  var probe = document.createElement('div');
+  function vis(html) { probe.innerHTML = html; return len(probe.textContent); }
+  function fit(s, w) { var a = chars(s); return a.length > w ? a.slice(0, w - 1).join('') + '…' : s + ' '.repeat(w - a.length); }
+  function rp(s, w) { return ' '.repeat(Math.max(0, w - len(s))) + s; }
+  function span(t, cls) { return cls ? '<span class="' + cls + '">' + esc(t) + '</span>' : esc(t); }
+  function pad(html, w) { var n = vis(html); return n < w ? html + ' '.repeat(w - n) : html; }
+  // A text cell of fixed width; on the cursor row a long text scrolls.
+  function cell(s, w, cls, scroll) {
+    if (scroll && len(s) > w) return '<span class="mq ' + (cls || '') + '" data-full="' + esc(s) + '" data-w="' + w + '">' + esc(fit(s, w)) + '</span>';
+    return span(fit(s, w), cls);
+  }
+  var SEL = { '[x]': 's', '[=]': 'l', '[+]': 'a', '[-]': 'r', '[·]': 'm', '(•)': 's', '[~]': 's' };
+  function sel(x) { return span(x, SEL[x] || ''); }
+  function L(segs) { var html = ''; segs.forEach(function (sg) { html += span(sg[0], sg[1]); }); return html; }
+  // The scroll mark of row i of a pane with n rows.
+  function mark(p, i, n) { return (p.up && i === 0) ? span('▲', 'g') : (p.down && i === n - 1) ? span('▼', 'g') : ' '; }
+
+  function leftRow(r, active) {
+    if (!r) return ' '.repeat(LW - 1);
+    var cur = r.cur && active, html;
+    if (r.raw) return span(fit(r.raw, LW - 1), r.cls);
+    if (r.pack) html = esc(r.cur ? '▸ ' : '  ') + sel(r.sel) + ' ' + cell(r.pack, 16, '', cur) + ' ' + esc(rp(r.n, 5));
+    else html = esc(r.cur ? '▸ ' : '  ') + cell(r.cat, 19, '', cur) + ' ' + esc(rp(r.n, 5)) + ' ';
+    html += r.det ? span('◆', 'k') : ' ';
+    return cur ? '<span class="c">' + html + '</span>' : html;
+  }
+  // A tool row: selector, name, summary. A dependency row: tree glyphs in place of the selector. A pack member row: no selector.
+  function rightRow(r, active) {
+    if (!r) return ' '.repeat(RW - 1);
+    if (r.group) return span(' ' + fit(r.group, RW - 2), 'm');
+    var cur = r.cur && active, html;
+    if (r.member) {
+      // a member row of the Packs tab: no selector, no action; name, summary and a dim status
+      html = ' ' + '    ' + cell(r.member, 14, '', cur) + ' ' + cell(r.sum, 35, 'm', false) + ' ' + span(fit(r.status, 11), 'm') + ' ';
+    } else if (r.tree) {
+      var name = r.tree + r.name;
+      // no selector: glyphs + name in the name column (14), summary in the summary column (47)
+      html = ' ' + '    ' + cell(name, 14, r.add ? 'a' : 'd', cur) + ' ' + cell(r.sum, 47, 'm', false) + ' ';
+    } else {
+      var dim = r.dim ? 'm' : '';
+      html = ' ' + (r.dim ? span(r.sel, 'm') : r.prop ? span(r.sel, r.prop) : sel(r.sel)) + ' ' + cell(r.name, 14, dim, cur) + ' ' + cell(r.sum, 47, dim, false) + ' ';
+    }
+    return cur ? '<span class="c">' + html + '</span>' : html;
+  }
+  function header(o) {
+    var left = o.mac ? ' bootstrap mac tui · ' + o.path : ' bootstrap tui · repo · ' + o.path;
+    var right = o.changes ? o.changes + ' ' : '';
+    var line1 = span(left, 'h') + ' '.repeat(Math.max(1, W - len(left) - len(right))) + span(right, 'a');
+    var names = ['Tools', 'Packs', 'Detected'], tabs = ' ', tabHtml = ' ';
+    names.forEach(function (t, i) {
+      var on = t.toLowerCase() === (o.tab || 'tools'), txt = on ? '[' + t + ']' : t;
+      if (i) { tabs += ' | '; tabHtml += span(' | ', 'm'); }
+      tabs += txt; tabHtml += span(txt, on ? 'h' : 'm');
+    });
+    var file = o.file + ' ';
+    return [line1, tabHtml + ' '.repeat(Math.max(1, W - len(tabs) - len(file))) + span(file, 'm')];
+  }
+  function rule(a) { return span('─'.repeat(LW) + a + '─'.repeat(RW), 'm'); }
+  function bottom(b) {
+    var body = [L([[' ' + b.title, b.titleCls || 'h']])];
+    (b.lines || []).forEach(function (x) { body.push(typeof x === 'string' ? x : L(x)); });
+    body = body.slice(0, BH);
+    while (body.length < BH) body.push('');
+    return body.map(function (h, i) { return pad(h, W - 1) + mark(b, i, BH); });
+  }
+  function kv(a, b) {
+    var segs = [[' ' + fit(a[0], 11), 'm'], [fit(a[1], 37)]];
+    if (b) { segs.push([' ' + fit(b[0], 11), 'm']); segs.push([b[1]]); }
+    return segs;
+  }
+  function wrap(s, w) {
+    var out = [], line = '';
+    s.split(' ').forEach(function (word) {
+      if (len(line) + len(word) + (line ? 1 : 0) > w) { out.push(line); line = word; }
+      else line = line ? line + ' ' + word : word;
+    });
+    if (line) out.push(line);
+    return out;
+  }
+  function screen(o) {
+    var out = header(o);
+    var la = o.active === 'left', ra = !la, H = 11;
+    out.push(rule('┬'));
+    out.push(span(' ' + fit(o.left.title, LW - 1), la ? 'h' : 'm') + span('│', 'm') + span(' ' + fit(o.right.title, RW - 1), ra ? 'h' : 'm'));
+    for (var i = 0; i < H; i++) {
+      out.push(leftRow(o.left.rows[i], la) + mark(o.left, i, H) + span('│', 'm') + rightRow(o.right.rows[i], ra) + mark(o.right, i, H));
+    }
+    out.push(rule('┴'));
+    out = out.concat(bottom(o.bottom));
+    out.push(span('─'.repeat(W), 'm'));
+    out.push(span(' ' + o.keys, 'm'));
+    return out.join('\n');
+  }
+  function full(o, body) {
+    var out = header(o);
+    out.push(span('─'.repeat(W), 'm'));
+    out = out.concat(body);
+    out.push(span('─'.repeat(W), 'm'));
+    out.push(span(' ' + o.keys, 'm'));
+    return out.join('\n');
+  }
+  function detail(name, desc, pairs, extra, down) {
+    var lines = wrap(desc, W - 3).map(function (t) { return [[' ' + t]]; });
+    lines.push([['']]);
+    for (var i = 0; i < pairs.length; i += 2) lines.push(kv(pairs[i], pairs[i + 1]));
+    if (extra) lines.push(extra);
+    return { title: name, lines: lines, down: down };
+  }
+  function set(id, html) { var el = document.getElementById(id); if (el) el.innerHTML = html; }
+
+  var REPO = { path: '~/Projects/acme-web', file: '.config/bootstrap.toml' };
+  function cats(curName, counts) {
+    var names = ['Core', 'Format and lint', 'Editor and AI', 'Languages', 'Package managers', 'Security', 'Secrets', 'Containers', 'Cloud and deploy', 'Forge'];
+    var n = counts || ['3/3', '2/2', '1/2', '3/10', '1/2', '3/3', '0/2', '0/5', '1/4', '1/2'];
+    return names.map(function (c, i) { return { cat: c, n: n[i], cur: c === curName, det: !counts && c === 'Languages' }; });
+  }
+  var LANG = [
+    { sel: '[x]', name: 'node', sum: 'Node.js through mise' },
+    { sel: '[+]', name: 'kotlin', sum: 'Kotlin language server, ktlint and detekt' },
+    { tree: '└─ ', name: 'java', sum: 'Java development kit (JDK)', add: true },
+    { sel: '[ ]', name: 'java', sum: 'Java development kit (JDK)' },
+    { sel: '[x]', name: 'python', sum: 'Python and uv' },
+    { sel: '[ ]', name: 'bun', sum: 'Bun runtime' },
+    { sel: '[ ]', name: 'go', sum: 'Go, with gofmt and go vet' },
+    { sel: '[ ]', name: 'rust', sum: 'Rust and the zola site generator' },
+    { sel: '[ ]', name: 'swift', sum: 'Swift and SwiftPM (macOS only)' },
+    { sel: '[ ]', name: 'flutter', sum: 'Flutter and Dart' },
+    { sel: '[ ]', name: 'android', sum: 'Android SDK command-line tools' }
+  ];
+  function withCur(rows, name, patch) {
+    return rows.map(function (r) { var c = Object.assign({}, r, { cur: r.name === name }); if (r.name === name && patch) Object.assign(c, patch); return c; });
+  }
+  var KEYS = '↑↓ move  ←→ pane  space select  e values  tab next tab  / search  r review  ? help  q quit';
+
+  // 1 main
+  set('t1', screen(Object.assign({}, REPO, {
+    changes: '2 changes', tab: 'tools', active: 'right',
+    left: { title: 'Categories', rows: cats('Languages') },
+    right: { title: 'Languages', rows: withCur(LANG, 'kotlin') },
+    bottom: detail('kotlin', 'The Kotlin language server (dev only), and the ktlint and detekt gates. ktlint runs as code:format:30-ktlint, and detekt runs as code:lint:40-detekt. A repository with a settings.gradle.kts selects it.',
+      [['Status', 'will add'], ['Category', 'Languages'], ['Needs', 'java (comes as a dependency)'], ['Packs', 'none'], ['Envs', 'dev, ci'], ['Writes', 'conf.d/kotlin/, 2 tasks']], null, true),
+    keys: KEYS
+  })));
+
+  // 2 packs: the repo side has only base
+  var PACKKEYS = '↑↓ move  ←→ pane  space select or deselect a pack  tab next tab  / search  r review  q quit';
+  set('t2', screen(Object.assign({}, REPO, {
+    tab: 'packs', active: 'right',
+    left: { title: 'Packs', rows: [
+      { pack: 'base', sel: '[=]', n: '9/9', cur: true },
+      null,
+      { raw: ' base is the only pack of', cls: 'm' },
+      { raw: ' the repo side. Add other', cls: 'm' },
+      { raw: ' tools on the Tools tab or', cls: 'm' },
+      { raw: ' the Detected tab.', cls: 'm' }
+    ] },
+    right: { title: 'base', rows: [
+      { member: 'mise', sum: 'Shared mise config and task library', status: 'required' },
+      { member: 'git', sum: 'gitignore, gitattributes and merge tasks', status: 'required' },
+      { member: 'pre-commit', sum: 'Shared pre-commit config and hooks', status: 'required' },
+      { member: 'dprint', sum: 'dprint and its shared config', status: 'required' },
+      { member: 'linter', sum: 'The shared lint gates', status: 'required' },
+      { member: 'gitleaks', sum: 'Secret scanner', status: 'required' },
+      { member: 'grype', sum: 'Dependency scanner (Anchore)', status: 'required' },
+      { member: 'osv-scanner', sum: 'Dependency scanner (OSV database)', status: 'required' },
+      { member: 'vscode', sum: 'VS Code settings and extensions', status: 'installed', cur: true }
+    ] },
+    bottom: detail('vscode', 'vscode: the shared VS Code settings, the recommended extensions and the task setup:vscode, which creates the profile of the repository.',
+      [['Status', 'installed'], ['Category', 'Editor and AI'], ['Packs', 'base'], ['Needs', 'nothing']],
+      [[' The right pane is read-only. To remove vscode, use the Tools tab.', 'm']]),
+    keys: PACKKEYS
+  })));
+
+  // 2m Mac packs: deselect terminal, select media
+  var MACP = { mac: true, path: '~/Projects/github.com/virajp/macos-setup/macos.toml', file: 'macos.toml' };
+  set('t2m', screen(Object.assign({}, MACP, {
+    changes: '2 changes', tab: 'packs', active: 'left',
+    left: { title: 'Packs', rows: [
+      { pack: 'base', sel: '[=]', n: '46/46' },
+      { pack: 'claude', sel: '[x]', n: '4/4' },
+      { pack: 'essentials', sel: '[~]', n: '8/10' },
+      { pack: '1password', sel: '[x]', n: '3/3' },
+      { pack: 'dev', sel: '[x]', n: '4/4' },
+      { pack: 'terminal', sel: '[-]', n: '2/2', cur: true },
+      { pack: 'mobile-dev', sel: '[~]', n: '3/5' },
+      { pack: 'iwork', sel: '[x]', n: '3/3' },
+      { pack: 'ms-office', sel: '[~]', n: '1/3' },
+      { pack: 'disk', sel: '[ ]', n: '0/4' },
+      { pack: 'media', sel: '[+]', n: '0/2' }
+    ] },
+    right: { title: 'terminal', rows: [
+      { member: 'ghostty', sum: 'Ghostty, the terminal emulator', status: 'will remove' },
+      { member: 'warp', sum: 'Warp, a terminal in Rust', status: 'will remove' }
+    ] },
+    bottom: detail('terminal', 'The terminal apps: Ghostty, with its config, and Warp. Deselect removes the two tools. A tool that another selected tool needs stays.',
+      [['Status', 'will remove 2 tools'], ['Members', '2']],
+      [[' Same as: one bootstrap mac remove tool for each member (no remove pack).', 'm']]),
+    keys: PACKKEYS
+  })));
+
+  // 1s terminal too small
+  set('t1s', [
+    span('$ ', 'm') + 'bootstrap tui',
+    span('bootstrap tui needs a terminal of 100 × 25 or larger. This terminal is 80 × 24.', 'r'),
+    span('Make the terminal larger, then run bootstrap tui again.', 'm'),
+    '',
+    span('$ ', 'm') + 'bootstrap init',
+    span('bootstrap init needs a terminal of 100 × 25 or larger. This terminal is 80 × 24.', 'r'),
+    span('Make the terminal larger, then run bootstrap init again, or run bootstrap init --no-tui.', 'm')
+  ].join('\n'));
+
+  // 1r resized during a run
+  set('t1r', [
+    '',
+    span(' bootstrap tui needs a terminal of 100 × 25 or larger. This terminal is 80 × 24.', 'r'),
+    span(' Make the terminal larger to continue. Your 2 changes are kept.', 'm'),
+    '',
+    span(' q quit', 'm')
+  ].join('\n'));
+
+  // A modal dialog over the dimmed screen: centered, up to 20 lines, scroll marks at its right edge.
+  function modal(bgHtml, m) {
+    probe.innerHTML = bgHtml;
+    var bg = probe.textContent.split('\n'), w = m.w, box = [];
+    var title = m.title, n = w - 5 - len(title);
+    box.push(span('┌─ ', 'h') + span(title, m.titleCls || 'h') + span(' ' + '─'.repeat(n) + '┐', 'h'));
+    box.push(span('│', 'h') + ' '.repeat(w - 2) + span('│', 'h'));
+    m.body.forEach(function (h, i) {
+      var mk = (m.up && i === 0) ? span('▲', 'g') : (m.down && i === m.body.length - 1) ? span('▼', 'g') : ' ';
+      box.push(span('│ ', 'h') + pad(h, w - 5) + mk + span(' │', 'h'));
+    });
+    box.push(span('│', 'h') + ' '.repeat(w - 2) + span('│', 'h'));
+    box.push(span('│ ', 'h') + pad(m.buttons, w - 4) + span(' │', 'h'));
+    box.push(span('└' + '─'.repeat(w - 2) + '┘', 'h'));
+    var top = 3 + Math.floor((20 - box.length) / 2), left = Math.floor((W - w) / 2), out = [];
+    bg.forEach(function (line, i) {
+      var c = chars(line);
+      while (c.length < W) c.push(' ');
+      if (i === bg.length - 1) out.push(span(' ' + m.keys, 'm'));
+      else if (i >= top && i < top + box.length) out.push(span(c.slice(0, left).join(''), 'bg') + box[i - top] + span(c.slice(left + w).join(''), 'bg'));
+      else out.push(span(line, 'bg'));
+    });
+    return out.join('\n');
+  }
+  function btn(on, label) { return on ? '<span class="c"> ' + esc(label) + ' </span>' : ' ' + esc(label) + ' '; }
+
+  // 2a detecting (modal)
+  set('t2a', modal(screen(Object.assign({}, REPO, {
+    changes: '2 changes', tab: 'detected', active: 'right',
+    left: { title: 'Categories', rows: cats('Languages') },
+    right: { title: 'Languages', rows: withCur(LANG, 'kotlin') },
+    bottom: { title: '' }, keys: ''
+  })), {
+    w: 56, title: 'Detecting ...',
+    body: [L([['⠋ Running the detect scripts            21/36']]), L([['█'.repeat(28) + '░'.repeat(22), 'm']])],
+    buttons: btn(true, 'Cancel'),
+    keys: 'esc cancel and go back to [Tools]'
+  }));
+
+  // 2b detected
+  set('t2b', screen(Object.assign({}, REPO, {
+    changes: '2 changes', tab: 'detected', active: 'right',
+    left: { title: 'Categories', rows: [
+      { cat: 'Format and lint', n: '1/1' },
+      { cat: 'Languages', n: '2/3', det: true },
+      { cat: 'Package managers', n: '0/2', cur: true, det: true },
+      { cat: 'Forge', n: '1/1' }
+    ] },
+    right: { title: 'Package managers · detected', rows: [
+      { sel: '[?]', name: 'pnpm', sum: 'Package manager for node', cur: true, prop: 'r' },
+      { tree: '└─ ', name: 'node', sum: 'Node.js through mise' },
+      { sel: '[?]', name: 'aube', sum: 'Package manager for node', prop: 'a' },
+      { tree: '└─ ', name: 'node', sum: 'Node.js through mise' }
+    ] },
+    bottom: detail('pnpm', 'pnpm, the package manager of a repository that selects it. Select this tool or the aube tool, not both.',
+      [['Proposal', 'remove (space: accept)'], ['Category', 'Package managers'], ['Detected', 'mismatch'], ['Evidence', 'aube-workspace.yaml']],
+      [[' - The detect script of pnpm found aube-workspace.yaml, the file of aube. Press space to accept.', 'r']]),
+    keys: '↑↓ move  ←→ pane  space accept  a accept all  tab next tab  / search  r review  q quit'
+  })));
+
+  // 3 search
+  set('t3', screen(Object.assign({}, REPO, {
+    tab: 'tools', active: 'right',
+    left: { title: 'Search', rows: [{ raw: ' / scan▏', cls: 'h' }, null, { raw: ' 4 results', cls: 'm' }] },
+    right: { title: 'Results for "scan"', rows: [
+      { sel: '[=]', name: 'gitleaks', sum: 'Secret scanner' },
+      { tree: '└─ ', name: '_security_base', sum: 'The code:sec task and the sec hook' },
+      { sel: '[=]', name: 'grype', sum: 'Dependency scanner (Anchore)', cur: true },
+      { tree: '└─ ', name: '_security_base', sum: 'The code:sec task and the sec hook' },
+      { sel: '[=]', name: 'osv-scanner', sum: 'Dependency scanner (OSV database)' },
+      { tree: '└─ ', name: '_security_base', sum: 'The code:sec task and the sec hook' },
+      { sel: '[ ]', name: 'crane', sum: 'Operates on images and registries' }
+    ] },
+    bottom: detail('grype', 'grype: the dependency scanner, and code:sec:20-grype. It scans the lock files of the repository for known vulnerabilities.',
+      [['Status', 'required'], ['Category', 'Security'], ['Packs', 'base (required)'], ['Needs', '_security_base (not selectable)'], ['Envs', 'dev, ci']]),
+    keys: 'type to search  ↑↓ move  space select  esc close search'
+  })));
+
+  // 4 cascade (modal)
+  set('t4', modal(screen(Object.assign({}, REPO, {
+    changes: '2 changes', tab: 'tools', active: 'right',
+    left: { title: 'Categories', rows: cats('Languages', ['3/3', '2/2', '1/2', '6/10', '1/2', '3/3', '0/2', '0/5', '1/4', '1/2']) },
+    right: { title: 'Languages', rows: withCur(LANG.filter(function (r) { return !r.tree; }).map(function (r) {
+      var c = Object.assign({}, r);
+      if (c.name === 'kotlin' || c.name === 'java' || c.name === 'android' || c.name === 'flutter') c.sel = '[x]';
+      return c;
+    }), 'java') },
+    bottom: detail('java', 'The Java development kit (JDK) through mise. kotlin and android need it.',
+      [['Status', 'selected'], ['Category', 'Languages']]),
+    keys: KEYS
+  })), {
+    w: 64, title: 'Remove java?', titleCls: 'l',
+    body: [
+      L([['These selected tools need java. They leave too:']]),
+      '',
+      L([['- ', 'r'], [fit('kotlin', 14)], ['needs java', 'm']]),
+      L([['- ', 'r'], [fit('android', 14)], ['needs java', 'm']]),
+      L([['- ', 'r'], [fit('flutter', 14)], ['needs android', 'm']])
+    ],
+    buttons: L([['Remove java and these 3 tools? '], ['[y/N]', 'h']]),
+    keys: 'y remove the 4 tools  any other key keeps java'
+  }));
+
+  // 4b blocked by a required tool (modal, message only)
+  set('t4b', modal(screen(Object.assign({}, REPO, {
+    changes: '2 changes', tab: 'tools', active: 'right',
+    left: { title: 'Categories', rows: cats('Languages') },
+    right: { title: 'Languages', rows: withCur(LANG, 'python') },
+    bottom: detail('python', 'Python and uv. In a repository with a pyproject.toml, also the ruff and pyrefly gates.',
+      [['Status', 'selected'], ['Category', 'Languages']]),
+    keys: KEYS
+  })), {
+    w: 64, title: 'Cannot remove python', titleCls: 'l',
+    body: [
+      L([['python is necessary for a required tool:']]),
+      '',
+      L([['= ', 'l'], [fit('pre-commit', 14)], ['required by the pack base', 'm']])
+    ],
+    buttons: L([['Press any key to close.', 'm']]),
+    keys: 'any key closes'
+  }));
+
+  // 5 alternatives (modal)
+  set('t5', modal(screen(Object.assign({}, REPO, {
+    changes: '2 changes', tab: 'tools', active: 'right',
+    left: { title: 'Categories', rows: cats('Package managers') },
+    right: { title: 'Package managers', rows: [
+      { group: 'node · select one or none' },
+      { sel: '(•)', name: 'pnpm', sum: 'Package manager for node' },
+      { tree: '└─ ', name: 'node', sum: 'Node.js through mise' },
+      { sel: '( )', name: 'aube', sum: 'Package manager for node', cur: true },
+      { tree: '└─ ', name: 'node', sum: 'Node.js through mise' }
+    ] },
+    bottom: detail('aube', 'aube, the package manager of a repository that selects it. Select this tool or the pnpm tool, not both.',
+      [['Status', 'not selected'], ['Parent', 'node']]),
+    keys: KEYS
+  })), {
+    w: 72, title: 'Replace pnpm with aube?', titleCls: 'l',
+    body: [
+      L([['The migrate script of aube for pnpm runs at apply. It moves']]),
+      L([['pnpm-workspace.yaml to aube-workspace.yaml.']]),
+      '',
+      L([['Same as: bootstrap replace tool pnpm aube', 'm']])
+    ],
+    buttons: L([['Replace pnpm with aube? '], ['[y/N]', 'h']]),
+    keys: 'y replace  any other key cancels'
+  }));
+
+  // 5b no migrate script: the long way (modal)
+  set('t5b', modal(screen(Object.assign({}, REPO, {
+    changes: '2 changes', tab: 'tools', active: 'right',
+    left: { title: 'Categories', rows: cats('Package managers') },
+    right: { title: 'Package managers', rows: [
+      { group: 'node · select one or none' },
+      { sel: '(•)', name: 'pnpm', sum: 'Package manager for node' },
+      { tree: '└─ ', name: 'node', sum: 'Node.js through mise' },
+      { sel: '( )', name: 'aube', sum: 'Package manager for node', cur: true },
+      { tree: '└─ ', name: 'node', sum: 'Node.js through mise' }
+    ] },
+    bottom: detail('aube', 'aube, the package manager of a repository that selects it. Select this tool or the pnpm tool, not both.',
+      [['Status', 'not selected'], ['Parent', 'node']]),
+    keys: KEYS
+  })), {
+    w: 72, title: 'Replace pnpm with aube?', titleCls: 'l',
+    body: [
+      L([['aube has no migrate script for pnpm.']]),
+      '',
+      L([['- ', 'r'], [fit('pnpm', 14)], ['its seed files stay: pnpm-workspace.yaml', 'm']]),
+      L([['+ ', 'a'], [fit('aube', 14)], ['its seed files are new: aube-workspace.yaml', 'm']]),
+      '',
+      L([['Move the content of the seed files yourself.', 'm']])
+    ],
+    buttons: L([['Remove pnpm and add aube? '], ['[y/N]', 'h']]),
+    keys: 'y remove pnpm and add aube  any other key cancels'
+  }));
+
+  // 6a required
+  set('t6a', screen(Object.assign({}, REPO, {
+    tab: 'tools', active: 'right',
+    left: { title: 'Categories', rows: cats('Core') },
+    right: { title: 'Core', rows: [
+      { sel: '[=]', name: 'mise', sum: 'Shared mise config and task library', cur: true },
+      { sel: '[=]', name: 'git', sum: 'gitignore, gitattributes and merge tasks' },
+      { sel: '[=]', name: 'pre-commit', sum: 'Shared pre-commit config and hooks' },
+      { tree: '└─ ', name: 'python', sum: 'Python and uv' }
+    ] },
+    bottom: detail('mise', 'mise: the shared mise config, the task library, the setup and code tasks, and the entry task setup:configs.',
+      [['Status', 'required'], ['Packs', 'base (required)']],
+      [[' ! mise is required by the pack base. You cannot remove it.', 'l']]),
+    keys: KEYS
+  })));
+
+  // 6b not available
+  set('t6b', screen(Object.assign({}, REPO, {
+    path: '~/Projects/acme-api (Linux)',
+    tab: 'tools', active: 'right',
+    left: { title: 'Categories', rows: cats('Languages', ['3/3', '2/2', '1/2', '1/10', '1/2', '3/3', '0/2', '0/5', '0/4', '1/2']) },
+    right: { title: 'Languages', rows: withCur(LANG.filter(function (r) { return !r.tree; }).map(function (r) {
+      var c = Object.assign({}, r);
+      if (c.name === 'kotlin' || c.name === 'python') c.sel = '[ ]';
+      if (c.name === 'swift') { c.sel = '[·]'; c.dim = true; }
+      return c;
+    }), 'swift') },
+    bottom: detail('swift', 'Swift and SwiftPM from the host. Xcode for a root with an Xcode project. macOS only.',
+      [['Status', 'not available'], ['Category', 'Languages'], ['Hosts', 'macos']],
+      [[' · swift is for macOS only (hosts = ["macos"]). This host is Linux.', 'm']]),
+    keys: KEYS
+  })));
+
+  // 7 questions (modal, the content scrolls)
+  function field(q, val, tag, cur, empty) {
+    var input = fit(val, 62) + ' ';
+    return [
+      L([[q]]),
+      (cur ? '<span class="c">' + esc(input) + '</span>' : span(input, empty ? 'm' : '')) + span(tag, 'm'),
+      ''
+    ];
+  }
+  // the first Apply of bootstrap mac init: the review behind the form, padded to the full height
+  var MACBG = { mac: true, path: '~/Projects/github.com/virajp/macos-setup/macos.toml', file: 'macos.toml', tab: 'tools', changes: '1 change', keys: '' };
+  var t7body = [
+    L([[' Review · 1 change', 'h']]), '',
+    L([[' Packs', 'h']]),
+    chg('+', 'a', 'base', 'adds 46 tools, 43 required'),
+    '',
+    L([[' Files', 'h'], ['   same as bootstrap mac sync --dry-run', 'm']]),
+    file('write', 'a', 'macos.toml', 'new file'),
+    file('write', 'a', '~/.config/git/config', '+ 85 more'),
+    '',
+    '   <span class="c"> Apply </span>     Back '
+  ];
+  while (t7body.length < 20) t7body.push('');
+  set('t7', modal(full(MACBG, t7body), {
+    w: 86, title: 'Apply · git needs 4 values',
+    body: [L([['At least one of the two emails is necessary.', 'g']])].concat(
+      field('Which email do your GitHub commits use?', '1234567+janedoe@users.noreply.github.com▏', 'from gh api user', true),
+      field('Which email do your GitLab commits use?', 'example: 12345-janedoe@users.noreply.gitlab.com', 'empty', false, true),
+      field('Which SSH public key signs your commits?', 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA...', 'detected').slice(0, 2),
+      [L([['This one key signs for GitHub and for GitLab. Add the same key to both accounts.', 'g']])]
+    ),
+    up: true,
+    buttons: btn(true, 'Accept') + '   ' + btn(false, 'Cancel'),
+    keys: 'tab next field  shift ↑↓ scroll  enter accept  esc cancel Apply and keep the change list'
+  }));
+
+  // 8 review (full screen)
+  function chg(sign, cls, name, note) { return L([['   ' + sign + ' ', cls], [fit(name, 18)], [note || '', 'm']]); }
+  function file(op, cls, path, note) { return L([['   ' + fit(op, 7), cls], [path], [note ? '   ' + note : '', 'm']]); }
+  set('t8', full(Object.assign({}, REPO, { changes: '4 changes', tab: 'tools', keys: 'enter apply  f all files  esc back' }), [
+    L([[' Review · 4 changes', 'h']]), '',
+    L([[' Tools', 'h']]),
+    chg('+', 'a', 'kotlin'),
+    L([['     └─ ', 'm'], ['java', 'a'], ['            dependency', 'm']]),
+    chg('+', 'a', 'cosign'),
+    chg('+', 'a', 'crane'),
+    chg('-', 'r', 'firebase'),
+    '',
+    L([[' Files', 'h'], ['   same as bootstrap sync --dry-run', 'm']]),
+    file('write', 'a', '.config/mise/conf.d/kotlin/mise.dev.toml'),
+    file('write', 'a', '.config/mise/tasks/code/format/30-ktlint'),
+    file('write', 'a', '.config/mise/conf.d/cosign/mise.dev.toml', '+ 3 more'),
+    file('remove', 'r', '.config/mise/conf.d/firebase/mise.dev.toml'),
+    file('change', 'm', '.config/bootstrap.toml'),
+    '',
+    L([[' Next: MISE_ENV=dev mise run setup', 'm']]),
+    '',
+    '   <span class="c"> Apply </span>     Back '
+  ]));
+
+  // 8b output of the sync after apply
+  set('t8b', full(Object.assign({}, REPO, { changes: '', tab: 'tools', keys: 'any key goes back to the main screen' }), [
+    L([[' Applying 4 changes ...', 'h']]), '',
+    L([['   ✓ ', 's'], ['wrote .config/bootstrap.toml']]),
+    L([['   ✓ ', 's'], ['bootstrap sync: 14 files written, 1 removed']]),
+    '',
+    L([[' Next: MISE_ENV=dev mise run setup', 'm']]),
+    '',
+    L([[' Done. Press any key to go back.', 's']])
+  ]));
+
+  // 8c the sync fails: the change list stays
+  set('t8c', full(Object.assign({}, REPO, { changes: '4 changes', tab: 'tools', keys: 'any key goes back to the main screen' }), [
+    L([[' Applying 4 changes ...', 'h']]), '',
+    L([['   ✓ ', 's'], ['wrote .config/bootstrap.toml']]),
+    L([['   ✗ ', 'r'], ['bootstrap sync: exit code 2']]),
+    L([['     kotlin: the question jdk_vendor has no answer', 'r']]),
+    L([['   ↺ ', 'l'], ['put .config/bootstrap.toml back as it was before Apply']]),
+    '',
+    L([[' The sync failed. Your 4 changes are kept. Press any key to go back.', 'l']])
+  ]));
+
+  // 9 mac: two-level tree, scroll marks in both top panes
+  var MAC = { mac: true, path: '~/Projects/github.com/virajp/macos-setup/macos.toml', file: 'macos.toml', tab: 'tools' };
+  var MACCATS = ['System', 'Shell and terminal', 'CLI tools', 'Development', 'Editors', 'AI', 'Browsers', 'Passwords and secrets', 'Productivity', 'Office', 'Notes and reading', 'Media', 'Chat', 'Disk'];
+  var MACN = ['5/7', '5/7', '9/12', '4/9', '1/3', '4/8', '2/3', '3/4', '3/9', '4/6', '1/4', '1/3', '2/2', '1/4'];
+  function macCats(cur) { return MACCATS.map(function (c, i) { return { cat: c, n: MACN[i], cur: c === cur }; }); }
+  set('t9', screen(Object.assign({}, MAC, { changes: '1 change', active: 'right',
+    left: { title: 'Categories', rows: macCats('Shell and terminal').slice(0, 11), down: true },
+    right: { title: 'Shell and terminal', up: true, down: true, rows: [
+      { sel: '[=]', name: 'zsh', sum: 'zsh from Homebrew, with zinit' },
+      { tree: '├─ ', name: 'homebrew', sum: 'Homebrew, the Brewfile and its tasks' },
+      { tree: '│  └─ ', name: 'fnox', sum: 'Secrets from the macOS Keychain' },
+      { tree: '└─ ', name: 'mise', sum: 'User-level mise config and tasks' },
+      { tree: '   └─ ', name: 'cli', sum: 'The base command-line tools' },
+      { sel: '[=]', name: 'fish', sum: 'fish from Homebrew, the login shell', cur: true },
+      { tree: '├─ ', name: 'homebrew', sum: 'Homebrew, the Brewfile and its tasks' },
+      { tree: '│  └─ ', name: 'fnox', sum: 'Secrets from the macOS Keychain' },
+      { tree: '└─ ', name: 'mise', sum: 'User-level mise config and tasks' },
+      { tree: '   └─ ', name: 'cli', sum: 'The base command-line tools' },
+      { sel: '[=]', name: 'starship', sum: 'starship prompt and its config' }
+    ] },
+    bottom: detail('fish', 'fish from Homebrew, its config, drop-in folder conf.d/ and functions, and the login shell.',
+      [['Status', 'required'], ['Category', 'Shell and terminal'], ['Kind', 'terminal app'], ['Installs', 'brew fish'], ['Packs', 'base (required)'], ['Needs', 'homebrew, mise']]),
+    keys: KEYS
+  })));
+
+  set('t9b', screen(Object.assign({}, MAC, { changes: '1 change', active: 'right',
+    left: { title: 'Categories', rows: macCats('Office').slice(3, 14), up: true },
+    right: { title: 'Office', rows: [
+      { sel: '[x]', name: 'keynote', sum: 'Keynote, from the Mac App Store' },
+      { tree: '└─ ', name: 'mas', sum: 'The Mac App Store CLI' },
+      { sel: '[x]', name: 'numbers', sum: 'Numbers, from the Mac App Store' },
+      { tree: '└─ ', name: 'mas', sum: 'The Mac App Store CLI' },
+      { sel: '[x]', name: 'pages', sum: 'Pages, from the Mac App Store' },
+      { tree: '└─ ', name: 'mas', sum: 'The Mac App Store CLI' },
+      { sel: '[x]', name: 'microsoft-excel', sum: 'Microsoft Excel, from the Mac App Store' },
+      { tree: '└─ ', name: 'mas', sum: 'The Mac App Store CLI' },
+      { sel: '[+]', name: 'microsoft-powerpoint', sum: 'Microsoft PowerPoint, from the Mac App Store', cur: true },
+      { tree: '└─ ', name: 'mas', sum: 'The Mac App Store CLI' },
+      { sel: '[ ]', name: 'microsoft-word', sum: 'Microsoft Word, from the Mac App Store' }
+    ], down: true },
+    bottom: detail('microsoft-powerpoint', 'Microsoft PowerPoint, the presentation app of Microsoft 365, from the Mac App Store.',
+      [['Status', 'will add'], ['Category', 'Office'], ['Kind', 'desktop app'], ['Installs', 'mas Microsoft PowerPoint'], ['Packs', 'ms-office'], ['Needs', 'mas']]),
+    keys: KEYS
+  })));
+
+  // 9r Mac review: removed apps stay installed
+  set('t9r', full(Object.assign({}, MAC, { changes: '3 changes', keys: 'enter apply  f all files  esc back' }), [
+    L([[' Review · 3 changes', 'h']]), '',
+    L([[' Packs', 'h']]),
+    chg('-', 'r', 'terminal', 'removes ghostty, warp'),
+    L([['     ghostty and warp are desktop apps. They stay installed. Uninstall them yourself.', 'l']]),
+    chg('+', 'a', 'media', 'adds vlc, handbrake'),
+    L([[' Tools', 'h']]),
+    L([['   - ', 'r'], [fit('superfile', 18)], ['terminal app', 'm']]),
+    L([['     superfile stays installed until the next upgrade:brew, which prunes it.', 'l']]),
+    '',
+    L([[' Files', 'h'], ['   same as bootstrap mac sync --dry-run', 'm']]),
+    L([['   ' + fit('change', 7), 'm'], ['macos.toml']]),
+    '',
+    '   <span class="c"> Apply </span>     Back '
+  ]));
+
+  // Scroll the long text of each cursor row.
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduce) {
+    document.querySelectorAll('.mq').forEach(function (el) {
+      var loop = chars(el.getAttribute('data-full') + '   '), w = +el.getAttribute('data-w'), i = 0, hold = 10;
+      setInterval(function () {
+        if (hold > 0) { hold--; return; }
+        i = (i + 1) % loop.length;
+        if (i === 0) hold = 10;
+        var t = '';
+        for (var k = 0; k < w; k++) t += loop[(i + k) % loop.length];
+        el.textContent = t;
+      }, 160);
+    });
+  }
+})();
+</script>
