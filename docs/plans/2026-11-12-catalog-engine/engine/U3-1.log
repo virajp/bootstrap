@@ -1,0 +1,8 @@
+/security-review over f3dba54..92398c6 (worktree all-2026-11-13-1753)
+
+No high-confidence vulnerabilities found.
+- dropped: cli/internal/field/field.go:538-541 — question and note text from tools.toml or a values-file override reach the terminal unescaped; trusted clone or the consumer's own values file, printed raw before this delta too; no new trust boundary. (confidence 3)
+- dropped: cli/internal/source/catalog.go:876-894 (ReadCategories) — fixed path <clone>/<side>/categories.toml; parsed with BurntSushi/toml into a map. (confidence 1)
+- dropped: cli/internal/cli/init.go:136-141,198-202 — --answer values and typed answers go through the existing answer-writing path; flags and terminal input are trusted. (confidence 2)
+- dropped: cli/internal/cli/cli.go:45-64 (warnNotSelectable) — values-file tool keys used only as map lookups and in a warning. (confidence 1)
+- dropped: cli/internal/source/manifest.go, packs.go — display and validation data from the trusted clone; selectable/hosts are UX refusals, not an authorization boundary. (confidence 1)
