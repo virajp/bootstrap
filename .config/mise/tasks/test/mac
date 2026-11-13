@@ -369,6 +369,28 @@ bad_question() { append_lines opt '[questions.level]' 'ask = "Which level?"'; }
 repo_default_envs() { prepend_key opt 'default_envs = [ "dev" ]'; }
 repo_mise_env() { append_lines opt '[mise_env.dev.tools]' 'jq = "latest"'; }
 repo_requires_found() { append_lines opt '[files.".config/opt/opt.txt"]' 'requires_found = [ "x" ]'; }
+# The catalog keys of a Mac tool, the categories file and the description of a
+# pack.
+categories_file() { printf '%s\n' '[category.dev]' 'title = "Development"' > "$work/categories.toml"; }
+catalog_keys() {
+  prepend_key opt 'summary = "The opt tool of the fixture repo"'
+  prepend_key opt 'category = "dev"'
+  prepend_key opt 'selectable = true'
+  categories_file
+}
+catalog_unknown_category() {
+  prepend_key opt 'category = "nope"'
+  categories_file
+}
+catalog_no_categories() { prepend_key opt 'category = "dev"'; }
+catalog_category_key() { printf '%s\n' '[category.dev]' 'color = "red"' 'title = "Development"' > "$work/categories.toml"; }
+catalog_hosts() { prepend_key opt 'hosts = [ "macos" ]'; }
+pack_description() { printf '\n%s\n%s\n%s\n' '[pack.more]' 'description = "More tools."' 'opt = { default = true }' >> "$work/packs.toml"; }
+pack_description_number() { printf '\n%s\n%s\n%s\n' '[pack.more]' 'description = 1' 'opt = { default = true }' >> "$work/packs.toml"; }
+group_question() {
+  append_lines opt '[questions.email_a]' 'group = "email"' 'note = "One answer is enough."' 'question = "Which a?"' \
+    '' '[questions.email_b]' 'group = "email"' 'question = "Which b?"'
+}
 tool_zz_macos() {
   mkdir -p -- "$work/tools/zz-macos"
   printf '%s\n' 'description = "x"' > "$work/tools/zz-macos/tools.toml"
@@ -384,6 +406,14 @@ ships_conf_d() {
 two_tools_one_target() {
   mkdir -p -- "$work/tools/opt/.config/core"
   printf '%s\n' 'a' > "$work/tools/opt/.config/core/plain.txt"
+}
+
+# pass_tree <tree change>: a dry run of the ok config that passes.
+pass_tree() {
+  use_config ok
+  case_tree "$1"
+  run_dry
+  check_exit 0
 }
 
 case_unknown_flag() {
@@ -2021,6 +2051,18 @@ case_mac_detect_nobrew() {
   check_no_output "brew:loosefmla"
 }
 
+pkgtool_not_selectable() { prepend_key pkgtool 'selectable = false'; }
+case_mac_detect_not_selectable() {
+  use_config ok
+  case_tree pkgtool_not_selectable
+  fake_packages
+  mac_run detect --yes --dry-run --no-bootstrap
+  check_exit 0
+  check_no_output "select pkgtool"
+  check_no_output "[NEW] pkgtool"
+  check "macos.toml does not select pkgtool" not grep -qF '[tools.pkgtool]' "$values"
+}
+
 case_mac_add() {
   use_config ok
   run_real
@@ -2079,14 +2121,14 @@ run_case "config: a tool folder with no tools.toml" expect ok 2 "macos/tools/bad
 run_case "config: a repo with no macos/packs.toml" expect ok 3 "base is not a bootstrap pack" no_packs
 run_case "config: a packs.toml with no [pack.base]" expect ok 3 "base is not a bootstrap pack" no_base
 run_case "config: a required member without default = true" expect ok 2 "macos/packs.toml: [pack.base] core: required = true is only for a member of pack base with default = true" required_not_default
-run_case "config: an unknown key in a tools.toml" expect ok 2 "macos/tools/opt/tools.toml: depend is not a key of tools.toml" bad_manifest_key
+run_case "config: an unknown key in a tools.toml" expect ok 2 "macos/tools/opt/tools.toml: depend is not a key of tools.toml - the keys are description, summary, category, selectable, stage, depends, parent, [defaults], [questions], [contributes], [files], [tasks] and [mise]" bad_manifest_key
 run_case "config: a stage that is not init" expect ok 2 'macos/tools/opt/tools.toml: stage = "login" - the only stage is "init"' bad_stage
 run_case "config: the old stage = shell" expect ok 2 'macos/tools/opt/tools.toml: stage = "shell" is the old name - write stage = "init"' old_stage
 run_case "config: the old seed key" expect ok 2 'macos/tools/core/tools.toml: seed is the old key - write a [files."<target>"] table with mode = "seed"' old_seed_key
 run_case "config: the old [seed_requires] table" expect ok 2 'macos/tools/core/tools.toml: [seed_requires] is the old table - write requires = [...]' old_seed_requires
 run_case "config: a [files] table with no source" expect ok 2 'macos/tools/core/tools.toml: [files.".config/core/nothing"] needs source, a path below files/ with no .. part' files_no_source
 run_case "config: an unknown key in a [files] table" expect ok 2 'macos/tools/opt/tools.toml: [files.".config/opt/opt.txt"] owner is not a key of a files entry' bad_files_key
-run_case "config: an unknown key in a [questions] table" expect ok 2 'macos/tools/opt/tools.toml: [questions.level] ask is not a key of a question' bad_question
+run_case "config: an unknown key in a [questions] table" expect ok 2 'macos/tools/opt/tools.toml: [questions.level] ask is not a key of a question - the keys are question, detect, example, group, note and optional' bad_question
 run_case "config: a [questions] table with no question" expect ok 2 'macos/tools/opt/tools.toml: [questions.level] needs a question string' bad_question
 run_case "config: a tool with default_envs" expect ok 2 "macos/tools/opt/tools.toml: default_envs is for repo tools only" repo_default_envs
 run_case "config: a tool with [mise_env.dev.tools]" expect ok 2 "macos/tools/opt/tools.toml: mise_env is for repo tools only" repo_mise_env
@@ -2100,6 +2142,14 @@ run_case "config: a pack member that is not a tool" expect ok 3 "nope is not a b
 run_case "config: a pack-level key" expect ok 2 "macos/packs.toml: [pack.more] depends is the old format" pack_old_key
 run_case "config: a pack entry key other than default" expect ok 2 "macos/packs.toml: [pack.more] opt has the entry key 'tag'" pack_entry_key
 run_case "config: a pack entry that is not a table" expect ok 2 "macos/packs.toml: [pack.more] tools must be a table" pack_not_table
+run_case "catalog: summary, category and selectable" pass_tree catalog_keys
+run_case "catalog: an unknown category" expect ok 2 "macos/tools/opt/tools.toml: category nope is not a category of macos/categories.toml" catalog_unknown_category
+run_case "catalog: a category and no macos/categories.toml" expect ok 2 "macos/tools/opt/tools.toml: category dev needs the file macos/categories.toml" catalog_no_categories
+run_case "catalog: a key other than title in macos/categories.toml" expect ok 2 "macos/categories.toml: [category.dev] color is not a key of a category - the only key is title" catalog_category_key
+run_case "catalog: hosts on a Mac tool" expect ok 2 "macos/tools/opt/tools.toml: hosts is for repo tools only" catalog_hosts
+run_case "catalog: a pack description" pass_tree pack_description
+run_case "catalog: a pack description that is not a string" expect ok 2 "macos/packs.toml: [pack.more] description must be a string" pack_description_number
+run_case "questions: a group with no answer" expect ok 2 "the group opt.email has no answer in macos.toml - run bootstrap mac init" group_question
 run_case "config: a contribution to a name that is not a tool" expect contrib-bad 3 "macos/tools/contrib-bad/tools.toml: [contributes.nope] names a tool that bootstrap does not have"
 run_case "config: two contributors that set one scalar" expect conflict 2 "macos/tools/contrib-a/tools.toml and macos/tools/contrib-c/tools.toml set [contributes.owner] agent to different values"
 run_case "config: a scalar over a list of a base tool" expect type-list 2 "[tools.core] of macos.toml sets items to a string, but it is a list in the base or dependency tool core"
@@ -2178,6 +2228,7 @@ run_case "questions: mac questions, --json and text" case_questions_json
 run_case "selection: mac detect offers the installed packages" case_mac_detect
 run_case "selection: mac detect --yes adds the tools and the packages" case_mac_detect_yes
 run_case "selection: mac detect without brew and mas" case_mac_detect_nobrew
+run_case "selection: mac detect does not offer a tool with selectable = false" case_mac_detect_not_selectable
 run_case "selection: mac add" case_mac_add
 run_case "selection: mac remove" case_mac_remove
 run_case "selection: mac remove refuses a required tool and a tool that is not selected" case_mac_remove_refused
