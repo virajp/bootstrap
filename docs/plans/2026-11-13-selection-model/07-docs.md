@@ -196,13 +196,29 @@ Quoted verbatim from the decisions of `index.json`:
   test:macos-tools needs one value on both sides. macos/examples/macos.toml gets
   a [tools.pre-commit] table (D18 d). docs/setup/tools.md gets a section for the
   tool (U7)."
+- D23: "Ruling of the user (2026-11-13), from the interview of plan 2c: U3
+  creates the package cli/internal/core, and plan 2c does not move the code
+  again. core holds the change list, Plan and Apply (D9), Detect (the scan of
+  detect and mac detect, with detectScripts, scanMac and installedPackages, that
+  returns the proposals and the own packages), and the parts of open, prepare
+  and openClone that Plan, Apply and Detect need. Each function of core returns
+  values and errors only: it never prints, never prompts and never calls a.fail.
+  cli/internal/cli stays the shell of the command line: it parses the arguments,
+  calls core, prints the result and the errors, asks the questions and the
+  consent [y/N], and does the dirty-tree check. The TUI of plan 2c calls core
+  and does not import cli/internal/cli. core does not import cli/internal/cli.
+  An entry of the allow list of TestEngineNamesNoTool moves with its code to the
+  new path, with the same words (for example the entry of
+  internal/cli/packages.go); D12 stays true: no new word goes in the allow list.
+  docs/design/cli.md ("The files of cli/") gets a row for internal/core (U7)."
 
 ## Edits
 
 1. Run `vwf:docs-sync` over the branch delta. Apply its findings and each
    `DOCS FALSIFIED:` line of U1 to U5.
 2. **`docs/design/cli.md`** — the grammar, the flags, `init --no-tui`,
-   `detect`, `Plan`/`Apply` and the restore, the exit codes.
+   `detect`, `Plan`/`Apply` and the restore, the exit codes, and a row for
+   `internal/core` in "The files of `cli/`" (D23).
 3. **`docs/design/packs.md`** — the new form, the shortcut rule, and the sync
    order of D19 (c) at `:62`.
 4. **`docs/design/bootstrap-config.md`** — `format = 2`, no `[packs.*]`, a

@@ -9,9 +9,11 @@ judged by the wave review.
 
 ## Ruling
 
-Review against D1-D9, D12 and D14-D22 of `index.json` and `docs/design/cli.md`.
+Review against D1-D9, D12 and D14-D23 of `index.json` and `docs/design/cli.md`.
 Look for: a command that writes or syncs more than one time; an error that
-prints instead of being returned by `Plan` or `Apply`; a restore that misses a
+prints instead of being returned by `Plan`, `Apply` or `Detect`; a function of
+`core` that prints or prompts, or an import of `cli/internal/cli` from `core`; a
+restore that misses a
 new values file; the frozen copy read as the current packs; a tool literal in
 the engine; a test case that asserts nothing.
 
