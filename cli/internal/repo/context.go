@@ -33,8 +33,12 @@ func (s *state) toolValues() fail.Code {
 		return s.logAll(err)
 	}
 	if missing := questions.Missing(s.idx, s.res.Tools, s.vals.User, over); len(missing) > 0 {
-		for _, q := range missing {
-			s.log("the question " + q.Name() + " has no answer in " + s.show + " - run bootstrap init")
+		for _, g := range missing {
+			what := "the question "
+			if g.Group {
+				what = "the group "
+			}
+			s.log(what + g.Name() + " has no answer in " + s.show + " - run bootstrap init")
 		}
 		return fail.Usage
 	}

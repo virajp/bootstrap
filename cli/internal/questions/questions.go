@@ -21,7 +21,17 @@ type Question struct {
 	Text      string // The `question` string.
 	Detect    string // The `detect` shell command, or empty.
 	Example   string // The `example`, or empty.
+	Group     string // The `group`, or empty: a group needs one answer that is not empty.
+	Note      string // The `note`, or empty.
+	Optional  bool   // `optional = true`: the question can have no answer.
 }
+
+// Necessary tells if <q> needs an answer that is not empty: it is not
+// optional and not in a group.
+func (q Question) Necessary() bool { return !q.Optional && q.Group == "" }
+
+// GroupName is `<tool>.<group>`.
+func (q Question) GroupName() string { return q.Tool + "." + q.Group }
 
 // Name is `<tool>.<key>`.
 func (q Question) Name() string { return q.Tool + "." + q.Key }
@@ -49,6 +59,9 @@ func Of(idx *source.Index, tools []string) []Question {
 			q.Text, _ = e.Get("question").(string)
 			q.Detect, _ = e.Get("detect").(string)
 			q.Example, _ = e.Get("example").(string)
+			q.Group, _ = e.Get("group").(string)
+			q.Note, _ = e.Get("note").(string)
+			q.Optional, _ = e.Get("optional").(bool)
 			out = append(out, q)
 		}
 	}
@@ -70,12 +83,77 @@ func Answer(user, over *source.Obj, q Question) (any, bool) {
 	return nil, false
 }
 
-// Missing gives each question of <tools> that has no answer.
-func Missing(idx *source.Index, tools []string, user, over *source.Obj) []Question {
+// Empty tells if the answer <v> is the empty string: no answer.
+func Empty(v any) bool {
+	s, ok := v.(string)
+	return ok && s == ""
+}
+
+// Gap is a question without an answer, or a group without an answer that is
+// not empty.
+type Gap struct {
+	Question Question // The question; for a group, its first question.
+	Group    bool     // A group: Question.GroupName() names it.
+	Keys     []string // A group: the keys of its questions, in key order.
+}
+
+// Name gives `<tool>.<key>`, or `<tool>.<group>` for a group.
+func (g Gap) Name() string {
+	if g.Group {
+		return g.Question.GroupName()
+	}
+	return g.Question.Name()
+}
+
+// Members gives the questions of the group of <q> in <all>, in their order.
+func Members(all []Question, q Question) []Question {
 	var out []Question
-	for _, q := range Of(idx, tools) {
-		if _, ok := Answer(user, over, q); !ok {
-			out = append(out, q)
+	for _, o := range all {
+		if q.Group != "" && o.Tool == q.Tool && o.Group == q.Group {
+			out = append(out, o)
+		}
+	}
+	return out
+}
+
+// GroupAnswered tells if a question of the group of <q> has an answer that
+// is not empty in the files.
+func GroupAnswered(all []Question, q Question, user, over *source.Obj) bool {
+	for _, m := range Members(all, q) {
+		if v, ok := Answer(user, over, m); ok && !Empty(v) {
+			return true
+		}
+	}
+	return false
+}
+
+// Missing gives each question of <tools> that has no answer, and each group
+// whose answers are all empty or missing. An optional question can have no
+// answer. A question of a group needs no key; its group needs one answer
+// that is not empty.
+func Missing(idx *source.Index, tools []string, user, over *source.Obj) []Gap {
+	all := Of(idx, tools)
+	var out []Gap
+	seen := map[string]bool{}
+	for _, q := range all {
+		switch {
+		case q.Optional:
+		case q.Group != "":
+			if seen[q.GroupName()] {
+				continue
+			}
+			seen[q.GroupName()] = true
+			if !GroupAnswered(all, q, user, over) {
+				g := Gap{Question: q, Group: true}
+				for _, m := range Members(all, q) {
+					g.Keys = append(g.Keys, m.Key)
+				}
+				out = append(out, g)
+			}
+		default:
+			if _, ok := Answer(user, over, q); !ok {
+				out = append(out, Gap{Question: q})
+			}
 		}
 	}
 	return out

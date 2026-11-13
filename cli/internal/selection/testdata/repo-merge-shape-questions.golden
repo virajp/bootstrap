@@ -1,6 +1,6 @@
 rc=2
 --- stderr
-repo-sync: repo/tools/a/tools.toml: [questions.q1] foo is not a key of a question - the keys are question, detect and example
+repo-sync: repo/tools/a/tools.toml: [questions.q1] foo is not a key of a question - the keys are question, detect, example, group, note and optional
 repo-sync: repo/tools/a/tools.toml: [questions.q1] question must be a string
 repo-sync: repo/tools/a/tools.toml: [questions.q1] detect must be a string (a shell command)
 repo-sync: repo/tools/a/tools.toml: [questions.q2] needs a question string

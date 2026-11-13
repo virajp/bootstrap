@@ -116,6 +116,9 @@ func PackLoop(p *source.Packs, name string, chain []string, shown string) error 
 // or not. The error is the first problem, with code 2 or 3.
 func CheckPacks(src source.Source, p *source.Packs) error {
 	shown := p.Shown
+	if len(p.BadDescriptions) > 0 {
+		return usage("%s: [pack.%s] description must be a string", shown, p.BadDescriptions[0])
+	}
 	for _, b := range p.Bad {
 		switch b.Key + ":" + b.Kind {
 		case "depends:slice", "required:slice", "tools:slice", "default:slice":

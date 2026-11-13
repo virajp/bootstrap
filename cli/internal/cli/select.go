@@ -166,6 +166,36 @@ func (a *app) known(s *side, names []string) fail.Code {
 	return code
 }
 
+// refuse gives code 2, after a message, for each name of <names> that a
+// command cannot select by its name: a tool with selectable = false, and a
+// tool whose hosts leave out this host. It examines only the names, not
+// their dependencies.
+func (a *app) refuse(idx *source.Index, names []string) fail.Code {
+	code := fail.OK
+	host := source.HostName()
+	for _, n := range names {
+		m := idx.Manifests[n]
+		if m == nil {
+			continue
+		}
+		if !m.Selectable {
+			a.errorf("%s", idx.NotSelectable(n))
+			code = fail.Usage
+		}
+		if !m.RunsOn(host) {
+			a.errorf("%s", m.HostMessage(host))
+			code = fail.Usage
+		}
+	}
+	return code
+}
+
+// proposable tells if detect can propose <m>: it is selectable and runs on
+// this host.
+func proposable(m *source.Manifest) bool {
+	return m != nil && m.Selectable && m.RunsOn(source.HostName())
+}
+
 // sortedKeys gives the keys of <m> with a true value, sorted.
 func sortedKeys(m map[string]bool) []string {
 	var out []string
@@ -358,6 +388,9 @@ func (a *app) addNames(s *side, o opts, names []string) fail.Code {
 	if code := a.known(s, names); code != fail.OK {
 		return code
 	}
+	if code := a.refuse(s.sel.idx, names); code != fail.OK {
+		return code
+	}
 	ch := s.change()
 	ch.askOnly = a.planAdd(s, ch, names)
 	if code := a.edited(ch); code != fail.OK {
@@ -404,6 +437,9 @@ func (a *app) replace(mac bool, o opts) fail.Code {
 	}
 	oldT, newT := o.names[0], o.names[1]
 	if code := a.known(s, o.names); code != fail.OK {
+		return code
+	}
+	if code := a.refuse(s.sel.idx, []string{newT}); code != fail.OK {
 		return code
 	}
 	mo, mn := s.manifest(oldT), s.manifest(newT)
@@ -581,7 +617,7 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 			}
 			continue
 		}
-		if d.Result != "match" {
+		if d.Result != "match" || !proposable(s.manifest(t)) {
 			continue
 		}
 		// Two tools with the same evidence: the selected one is enough.
