@@ -32,6 +32,23 @@
       ],
       "backlog": [],
       "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-13-selection-model",
+      "folder": "docs/plans/2026-11-13-selection-model",
+      "kind": "change",
+      "title": "The selection model: tool and pack commands, a values file of tools, and the new packs",
+      "target_repo": null,
+      "priority": 30,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-12-catalog-data"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
     }
   ]
 }
