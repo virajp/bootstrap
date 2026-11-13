@@ -1,0 +1,609 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "The selection model: tool and pack commands, a values file of tools, and the new packs",
+  "requires": [
+    "docs/plans/2026-11-12-catalog-data"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "execution": "teams",
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-13 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Build the engine from the worktree (`cd cli && go build -o <tmp>/bootstrap ./cmd/bootstrap`). Copy the main checkout of this repository to a temporary folder (with its .git). There, run `env -u MISE_PROJECT_ROOT -u MACOS_SETUP_REPO_PATH BOOTSTRAP_CONFIG=/nonexistent <tmp>/bootstrap init --no-tui --dry-run --clone <worktree>`.",
+        "pass": "Exit 0. The plan shows a [tools.<name>] table for each member of the frozen base and for each new dependency (D15 b), keeps [tools.claude] and [tools.go], and adds format = 2."
+      },
+      {
+        "id": "K2",
+        "check": "Copy the repository of macos.toml (MACOS_SETUP_REPO_PATH, ~/Projects/github.com/virajp/macos-setup) to a temporary folder. There, run `env -u MISE_PROJECT_ROOT -u MACOS_SETUP_REPO_PATH BOOTSTRAP_CONFIG=/nonexistent <tmp>/bootstrap mac init --no-tui --dry-run --no-bootstrap --clone <worktree>`.",
+        "pass": "Exit 0. Each tool that [packs.ai], [packs.apple-dev], [packs.chat], [packs.cli-extras] and the other [packs.*] tables select today (default = true members of the frozen copy) gets a table, also each new dependency (D15 b), the [packs.*] tables go, and format = 2 is added."
+      }
+    ]
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-13-selection-model",
+      "mode": "run",
+      "notes": "Archive the plan folder, only when its gaps list has no open entry. With an open gap, skip this step and report the gaps."
+    },
+    {
+      "id": "A2",
+      "step": "git branch -D packs-shortcut",
+      "mode": "run",
+      "notes": "Delete the local branch packs-shortcut in the main checkout: U2 copied its files. Skip it when the branch does not exist."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MAJOR",
+      "reason": "Breaking: the grammar of the CLI (add tool|pack, remove tool, replace tool, detect --add), the form of packs.toml and the form of the values file (format = 2, no [packs.*], a table for each tool). The user tags bootstrap@3.0.0 by hand after the landing."
+    }
+  ],
+  "dependencies": [],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "The grammar of the selection commands.",
+      "ruling": "Ruling of the user (2026-11-12/13, the artifact \"Bootstrap Selection Model\" (https://claude.ai/artifact/JM1D6D53Lqk3SBbSGrRUGu, source docs/scratchpad/selection-model/index.html)): bootstrap <verb> <kind> <name>... [flags] acts on the repository of the current folder; bootstrap mac <verb> <kind> <name>... acts on the Mac with the same grammar. The kinds are tool and pack. add takes tool or pack; remove and replace take tool only (remove tool <name>..., replace tool <old> <new>). sync, check, list, questions, config and detect take no kind word; questions keeps its tool names. Each command keeps the flags of today (--jobs, --verbose, --config, --cache-dir, --url, --clone; on the Mac --no-bootstrap and --repo-path).",
+      "rejected": "--tool/--pack flags; pack:<name> as a name; replace <old> <new> without the kind word.",
+      "units": [
+        "U4",
+        "U5",
+        "U7"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "A pack is a shortcut of add.",
+      "ruling": "Ruling of the user (2026-11-13): the values file keeps no record of a pack. add pack P [--exclude m]... takes each member of P (each member is a default), expands each nested pack \"pack:Q\" the same way, removes each --exclude member, and writes a [tools.<name>] table for each of these tools that is not selected yet and for their new dependencies. --exclude takes a member key as packs.toml writes it, also a nested pack (\"pack:security\"). --exclude needs exactly one pack name: add pack a b --exclude x is code 2; add pack a b with no --exclude is valid. A name that is not a member of P, or --exclude on a required member, is code 2. There is no remove pack and no --include. add pack P again adds only the members that are not selected.",
+      "rejected": "[packs.<name>] with include and exclude lists; remove pack; optional members with --include.",
+      "units": [
+        "U1",
+        "U4",
+        "U5",
+        "U7"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "A table for each selected tool.",
+      "ruling": "Ruling of the user (2026-11-13): each selected tool has a [tools.<name>] table, also each required member of base and each dependency, so a user can write overrides in it. A tool is selected when it has a table, or a selected tool needs it (depends), or it is a required member of base. If a user deletes the table of a required tool or of a needed dependency by hand, the sync still installs the tool, with no overrides. add tool t writes [tools.t] and the tables of its new dependencies (as today). remove tool t removes [tools.t] and each table of a dependency that no other selected tool needs; it stops with code 2 for a required tool, a tool that is not selected, and a tool that another selected tool needs. No tool is selected by a pack only.",
+      "rejected": "A base that stays implicit (a non-required member then cannot leave).",
+      "units": [
+        "U1",
+        "U4",
+        "U5",
+        "U7"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "The form of packs.toml.",
+      "ruling": "Ruling of the user (2026-11-13): each member of a pack is a default. A member is <tool> = {}, or in [pack.base] only <tool> = { required = true }; a nested pack is \"pack:<name>\" = {}. The key default is gone: a default key, a required key outside base, or another key in a member table is code 2. description = \"<text>\" is the reserved key of a pack (plan 1a). A tool can be in no pack. The engine reads the new form only (no second reader for the form of today). The member order is the order of the file.",
+      "rejected": "A members = [...] list; an engine that reads both forms during the transition.",
+      "units": [
+        "U1",
+        "U2",
+        "U5",
+        "U7"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "The format key and the migration of an old values file.",
+      "ruling": "Ruling of the user (2026-11-13): a values file of the new form has the top-level key format = 2 (repo and Mac). init writes it in a new file and in a migrated file. A file without it is an old form: sync and check stop with code 2 and the hint of today (\"run bootstrap init\" / the Mac hint), through the package oldform. init migrates it: it expands each [packs.<name>] table, and the implicit pack base, with a frozen copy of repo/packs.toml and macos/packs.toml as they are on main before this plan (the rules of today: only the default = true members, base always added, nested packs expanded), writes a [tools.<name>] table for each such tool that has no table, removes the [packs.*] tables, and writes format = 2. A [tools.<name>] table of a tool that no longer exists (for example devtools) is removed by the migration, which lists it. The frozen copy is a data file in the engine (embedded with go:embed), not a Go literal. After the migration, the new packs.toml applies to add pack only.",
+      "rejected": "A file with no base table is old (a user can delete such tables by hand); a migration that reads the new packs.toml (renamed packs are lost).",
+      "units": [
+        "U1",
+        "U2",
+        "U5",
+        "U7"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "init.",
+      "ruling": "Ruling of the user (2026-11-12/13): init takes no tool or pack names. With no terminal, or with the new flag --no-tui, it runs the old-form migrations (D5), adds a table for each member of base that has no table (add pack base), asks nothing, and syncs; --answer, --dry-run and --yes work on this path as today. With a terminal, init opens the TUI of plan 2c; until plan 2c lands, init with a terminal takes the --no-tui path too. The same for bootstrap mac init.",
+      "rejected": "--tool and --pack flags on init; the kind word on init.",
+      "units": [
+        "U4",
+        "U5",
+        "U7"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "detect.",
+      "ruling": "Ruling of the user (2026-11-13): detect with no flag only lists the detected tools (also in a terminal) and exits 1 when a detected tool is not selected, 0 when each detected tool is selected. --add adds each detected tool that is not selected, after the consent [y/N]; --yes answers that consent with yes. --no is gone (code 2 as an unknown flag). --answer and --dry-run stay. The same for bootstrap mac detect.",
+      "rejected": "--add that replaces --yes with no consent; --no kept as the check mode.",
+      "units": [
+        "U4",
+        "U5",
+        "U7"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "The old grammar.",
+      "ruling": "Ruling of the user (2026-11-12): bootstrap add node (a name with no kind word), remove node and replace a b stop with code 2 and the hint of the new form, for example \"use: bootstrap add tool node\". The same with mac.",
+      "rejected": "The old form accepted as tool for one release, with a warning.",
+      "units": [
+        "U4",
+        "U5",
+        "U7"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "One change list, Plan and Apply.",
+      "ruling": "Ruling of the user (2026-11-12, option 1): the core of finish (cli/internal/cli/init.go:231-368) moves into two functions that return errors as values and print nothing: Plan(side, list) gives the new values bytes, the cascade, the questions without an answer and the dry-run file list; Apply(side, plan) runs the before script, writes the values file and the migration changes, and runs the sync; if the sync fails, Apply puts the values file back as it was before Apply (ch.cur and ch.existed hold the old bytes) and returns the code of the sync. init, add, remove, replace and detect --add build a change list (items AddTool, AddPack with Exclude, RemoveTool, Replace, and answers) and call Plan, then Apply, so each command writes one time and syncs one time. The consent, the dirty-tree check and the print of the changes stay in the CLI. Plan 2c calls the same functions.",
+      "rejected": "A TUI that runs the CLI commands one by one.",
+      "units": [
+        "U3",
+        "U4",
+        "U5",
+        "U7"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "The pack data.",
+      "ruling": "Ruling of the user (2026-11-13): this plan lands the local branch packs-shortcut (420e3e6): repo/packs.toml (base only), macos/packs.toml (the new packs), macos/tools/brave-browser/tools.toml (CHROME_EXECUTABLE) and the removal of macos/tools/devtools/. U2 copies each file from the branch (git show packs-shortcut:<path>), adds the accepted description of each pack (texts.md of this folder) as the first key of its [pack.<name>] table, and replaces the comment at the top of each packs file with the comment of texts.md. The example values files (macos/examples/macos.toml, repo/examples/*/bootstrap.toml) get format = 2, no [packs.*] and no [tools.devtools].",
+      "rejected": "A separate plan 2b after the release of this plan (the engine of this plan reads the new form only).",
+      "units": [
+        "U2",
+        "U7"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "The units, the order and the review unit.",
+      "ruling": "Ruling of the user (2026-11-13): W1 U1 packs (cli/) and U2 data (repo/packs.toml, macos/) in parallel (teams: disjoint paths); W2 U3 Plan and Apply (cli/); W3 U4 commands (cli/); W4 U5 tests; W5 U6 review; W6 U7 docs; W7 U8 gates. The engine parts wait for each other because each one changes cli/internal/cli/. The plan changes Go and bash code, so it has one review unit. Model opus for each unit.",
+      "rejected": "One engine unit (too large for one subagent).",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6",
+        "U7",
+        "U8"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "No tool literal in the engine.",
+      "ruling": "Assumed by the planner from D7 of plan 1a: no string literal of the engine names a tool; TestEngineNamesNoTool stays green with no new entry in its allow list. The frozen copy of the packs files is an embedded data file, so its tool names are not Go literals. The pack name base stays the constant selection.BasePack.",
+      "rejected": "",
+      "units": [
+        "U1",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "The release and the window before the tag.",
+      "ruling": "Ruling of the user (2026-11-13): the release level is MAJOR (bootstrap@3.0.0): the grammar of the CLI and the form of the values file break the forms of today. The user tags the release by hand right after the landing: until the tag writes cli/VERSION, a consumer with the engine of today stops with code 2 on the new packs.toml. After the tag, each consumer and the Mac run init once (the migration of D5).",
+      "rejected": "",
+      "units": [
+        "U7",
+        "U8"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Planner assumptions for the cases the rulings leave open.",
+      "ruling": "Assumed by the planner from D1-D10 and the rule of the simplest consistent CLI rule: (a) list prints the selected tools as a tree with no pack roots: each root is a tool with a table that no selected tool needs, required tools are marked, and the last line counts the tools. (b) The values file keeps format = 2 at the top level next to bootstrap_commit; check accepts it; a value other than 2 is code 2. (c) The restore of Apply covers the values file only; the files that the sync wrote stay as the sync left them, as ruling 38 of the TUI design says. (d) add pack on a pack with no member that is not selected writes nothing and says \"<pack> is already selected\". (e) questions --json and the --answer rules of plan 1a stay as they are.",
+      "rejected": "",
+      "units": [
+        "U1",
+        "U3",
+        "U4",
+        "U5",
+        "U7"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "The mechanical gaps of rulings review round 1 (2026-11-13).",
+      "ruling": "Assumed by the planner from D1-D14: (a) U2 adds only the [mise.env] CHROME_EXECUTABLE block of the branch to macos/tools/brave-browser/tools.toml of the tree, so the summary and category of plan 1b stay; the packs files come whole from the branch (plan 1b does not change them, its D13). (b) The migration and add pack write a table for each new dependency too (D3); K1 and K2 show them. (c) The migration skips a member of the frozen copy that the clone does not have (for example devtools), and does not list it. (d) U1 owns the migration and the base tables that it writes; U4 owns init: the base tables of a new file and of the --no-tui path. U1 does not change finish or init.go. (e) U3, U1 and U4 verify with go test of their packages and skip TestTOMLMatchesYq (U5 writes cli/internal/source/testdata/toml-yq.golden again after its fixture edits, as the last writer of a .toml in the run; shared file S3). (f) The migrate item of this plan is M38 (plan 1b adds M37). (g) U2 owns four falsified passages and writes this text: repo/tools/mise/tasks/setup-configs.tmpl:40-41 \"The tools come from the [tools.*] tables of .config/bootstrap.toml and from the required members of the pack base.\"; repo/tools/mise/tasks/code-sec:25 \"The scanners of the pack base must be there\"; repo/tools/_security_base/tools.toml:1 \"_security_base: the code:sec orchestrator and the sec hook of the scanners gitleaks, grype and osv-scanner.\"; and macos/tools/claude-cli/files/.claude/CLAUDE.md:36: the list of folders names each folder of macos/tools/ whose [mise.shell_alias] defines one of the aliases of that table (U2 reads them), without devtools. (h) K1 and K2 unset MISE_PROJECT_ROOT and MACOS_SETUP_REPO_PATH before they run. (i) The docs check of U7 is: grep -rnE \"detect --no|bootstrap (mac )?(add|remove|replace) [a-z]\" docs/design docs/sync docs/setup README.md CLAUDE.md | grep -vE \"(add|remove|replace) (tool|pack) |migrate.md\" finds nothing.",
+      "rejected": "",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U7"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "The six rulings of rulings review round 1 (2026-11-13).",
+      "ruling": "Rulings of the user (2026-11-13): (a) a dependency with selectable = false (for example _security_base) gets no table; the sync installs it through depends; the check warning of plan 1a stays. (b) The migration gives the env of a [packs.<name>] table to each new table of its tools; a tool that already has a table keeps its own env; when two old packs give a tool different env values, the new table gets the union of both. (c) init adds the tables of the members of base only to a new values file and in the migration (a file with no format = 2); a later init on a file with format = 2 does not add a removed member again. (d) In a git submodule, init, add pack and the migration skip a member that is root_only (for example vscode), as the sync does today. (e) add pack P --exclude m, when another member of P that the command adds needs m (depends), is code 2 with a message that names those members; the user excludes them too, or keeps m. (f) The change list has one more item, AddPackage (Mac only): a key of [mise.bootstrap.packages] or [mise.tools] of an own package that mac detect --add writes; Plan and Apply write it with the tools in one write and one sync.",
+      "rejected": "A table for _security_base with a changed check warning; env lost in the migration; init that adds removed base members again; root_only tables in a submodule; an excluded member that comes back as a dependency; packages written outside the change list.",
+      "units": [
+        "U1",
+        "U3",
+        "U4",
+        "U5",
+        "U7"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "The mechanical gaps of rulings review round 2 (2026-11-13).",
+      "ruling": "Assumed by the planner from D1-D16: (a) U1 also owns dprint.jsonc and adds an exclude for cli/internal/oldform/packs-v2/, as for repo/packs.toml and macos/packs.toml, so the frozen copies stay byte for byte. (b) env in the migration: when one source of a tool has no env (the implicit base, or a pack table with no env), the new table has no env (all the default environments); else the union of the env lists (D16 b). (c) Apply restores the values file only (D14 c); the other files of an old-form migration stay, and a second init accepts that state (each migration step is idempotent). (d) detect: --yes and --answer need --add, else code 2 with the hint \"add --add\"; --dry-run works with or without --add. (e) Plain mac detect exits 1 when a detected tool or an own installed package is not selected, as mac detect --no does today. (f) --exclude takes a member of P or a tool that a nested pack of P adds. (g) add pack skips, with an info line, a member whose hosts leave out this host or that has selectable = false, as D16 (d) does for root_only. (h) A file with format = 2 and a [packs.*] table: init migrates the [packs.*] tables with the frozen copy and does not add the tables of base again (D16 c); sync and check stop with code 2 until then. (i) init with names: code 2 and the hint \"use: bootstrap add tool <names>\" (D8). (j) list shows a required member of base with no table as a root, marked required. (k) U5 owns cli/internal/source/testdata/toml-yq.golden and nothing else of cli/. (l) D15 (g) names four passages. (m) The review unit covers D15 and D16 too.",
+      "rejected": "",
+      "units": [
+        "U1",
+        "U3",
+        "U4",
+        "U5",
+        "U6"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "Which tables the migration and sync write for base (rulings review round 2, gap 2).",
+      "ruling": "Ruling of the user (2026-11-13), with the details the planner assumed from D1-D17: (a) The values file holds tools only and never a pack, so a later change of a pack other than base reaches no values file. The migration writes tables for the tools of the frozen copy only (the frozen base and each old [packs.*] table) and their dependencies (D15 b). It writes no table for a non-required member of the new base (for example visual-studio-code, python and uv on the Mac); such a member comes only into a new file (D16 c). (b) sync, on both sides, writes an empty [tools.<name>] table into the values file for each required member of base that has no table, so the user can add overrides; this also applies when the user deleted the table by hand, and it replaces that part of D3. It skips a member that hosts, selectable = false or root_only in a submodule leaves out (D16 a, d; D17 g). It uses the comment-keeping write of the migration, before it syncs the files, and logs one line for each table. A dependency that has no table gets no table from sync: D3 stays for it. (c) sync --dry-run and check write nothing; they list each table that sync will write. check exits as it does for a file that differs. (d) The example values files hold a table for each required member of base, so a sync of an example writes no table. (e) U5 adds the cases: required = true in a pack other than base is code 2 (repo and Mac); sync writes the table of a required member with no table and logs it; sync --dry-run and check do not write it; a non-required member of the new base gets no table in a migration.",
+      "rejected": "The migration also writes a table for each non-required member of the new base: the values file holds no pack, so a later change of base cannot reach it either.",
+      "units": [
+        "U1",
+        "U2",
+        "U4",
+        "U5",
+        "U6",
+        "U7"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "The mechanical gaps of rulings review round 3 (2026-11-13).",
+      "ruling": "Assumed by the planner from D1-D18: (a) Each line number of this folder is from main before plans 2026-11-12-catalog-engine and 2026-11-12-catalog-data landed; those plans change cli/ and macos/examples/, so a unit finds the code by the name of its function or key, and uses the line only as a hint. (b) --no-tui, and init in a terminal before plan 2c, leave out the selection screen only: they select no tool other than the tables of D6. The questions with no answer follow D14 of plan 2026-11-12-catalog-engine with no change: a prompt in a terminal, code 2 and the hint with no terminal or --yes; the consent [y/N] stays. (c) The repo sync order: the required members of base in the order of packs.toml, then the tools of the [tools.*] tables in name order, each dependency before its tool. repo/packs.toml stays excluded from dprint for that order. U1 rewrites the comment at dprint.jsonc:6-7 to say so; U7 rewrites docs/design/packs.md:62 to say so.",
+      "rejected": "",
+      "units": [
+        "U1",
+        "U3",
+        "U4",
+        "U6",
+        "U7"
+      ]
+    },
+    {
+      "id": "D20",
+      "decision": "Where the env values of the deleted Mac tool devtools go.",
+      "ruling": "Ruling of the user (2026-11-13) on the env of the deleted Mac tool devtools (rulings review round 3, gap 4): (a) DOTNET_CLI_TELEMETRY_OPTOUT is dropped; a later .NET tool brings it. (b) RUNTIME_ENV is dropped; each repository sets it, and no bootstrap tool sets it. (c) PRE_COMMIT_HOME goes to a new Mac tool macos/tools/pre-commit/, a member of [pack.base] of macos/packs.toml with { required = true }, after vorssaint. Its tools.toml, with the bootstrap header comment of the other Mac tools: depends = [ \"python\" ], the summary \"pre-commit through mise, with a shared cache\", category = \"dev\", [mise.tools.pre-commit] version = \"latest\", and [mise.env] PRE_COMMIT_HOME = \"$HOME/.cache/pre-commit\". The version, the depends and the env value are those of repo/tools/pre-commit/tools.toml, because test:macos-tools needs one value on both sides. macos/examples/macos.toml gets a [tools.pre-commit] table (D18 d). docs/setup/tools.md gets a section for the tool (U7).",
+      "rejected": "Move RUNTIME_ENV and DOTNET_CLI_TELEMETRY_OPTOUT to another Mac tool.",
+      "units": [
+        "U2",
+        "U5",
+        "U6",
+        "U7"
+      ]
+    },
+    {
+      "id": "D21",
+      "decision": "The mechanical gaps of rulings review round 4 (2026-11-13).",
+      "ruling": "Assumed by the planner from D1-D20: (a) The check of U2 with git diff packs-shortcut also accepts the member line pre-commit = { required = true } of D20 (c). (b) The comment at the top of macos/packs.toml in texts.md names bootstrap mac add pack (D1); the orchestrator corrected the text. (c) U2 also owns repo/tools/pnpm/scripts/migrate-aube and repo/tools/aube/scripts/migrate-pnpm, and changes \"bootstrap replace\" in their top comments to \"bootstrap replace tool\" (D8). (d) D18 (b) and D9 agree: Plan adds each missing table of a required member of base to the new values bytes, so a command writes the values file one time; the sync that Apply runs then finds no missing table. Only a plain sync writes the tables itself, in its one write of the values file.",
+      "rejected": "",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U6"
+      ]
+    },
+    {
+      "id": "D22",
+      "decision": "python in the Mac base.",
+      "ruling": "Ruling of the user (2026-11-13) on rulings review round 4, gap 2: the required Mac tool pre-commit depends on python, so python becomes a required member of the Mac base: python = { required = true } in [pack.base] of macos/packs.toml (U2). The Mac base description of texts.md names Python with the tools that a Mac cannot remove, and only VS Code and uv as tools that the user can remove; the orchestrator corrected the text. The git diff packs-shortcut check of U2 also accepts this changed member line.",
+      "rejected": "Keep python = {} and change only the text.",
+      "units": [
+        "U2",
+        "U6"
+      ]
+    }
+  ],
+  "units": [
+    {
+      "id": "U1",
+      "title": "Engine: the packs form, the tables of each tool, the format key and the migration",
+      "wave": 1,
+      "file": "01-packs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/",
+        "dprint.jsonc"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Data: the new packs, the descriptions and the examples",
+      "wave": 1,
+      "file": "02-data.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/packs.toml",
+        "macos/",
+        "repo/examples/",
+        "repo/tools/mise/tasks/setup-configs.tmpl",
+        "repo/tools/mise/tasks/code-sec",
+        "repo/tools/_security_base/tools.toml",
+        "repo/tools/pnpm/scripts/migrate-aube",
+        "repo/tools/aube/scripts/migrate-pnpm"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Engine: Plan and Apply",
+      "wave": 2,
+      "file": "03-plan-apply.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "U1 changes the selection (no implicit base, the new packs form) that Plan reads, and both units change cli/.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Engine: the commands",
+      "wave": 3,
+      "file": "04-commands.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [
+        "U3"
+      ],
+      "waits": "The commands build a change list for Plan and Apply of U3.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Tests: the cases of the selection model",
+      "wave": 4,
+      "file": "05-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/",
+        "macos/fixtures/",
+        "cli/internal/source/testdata/toml-yq.golden"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U4"
+      ],
+      "waits": "The cases assert the messages of U1 and U4 and use the data of U2.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U6",
+      "title": "Review: the engine and the test tasks",
+      "wave": 5,
+      "file": "06-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U3",
+        "U4",
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U7",
+      "title": "Docs",
+      "wave": 6,
+      "file": "07-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/",
+        "docs/sync/",
+        "docs/setup/"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U8",
+      "title": "Gates",
+      "wave": 7,
+      "file": "08-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U7"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W6",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W7",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "README.md, CLAUDE.md, docs/**",
+      "why": "each human-facing doc",
+      "owner": "U7"
+    },
+    {
+      "id": "S2",
+      "file": "texts.md of this folder",
+      "why": "the accepted texts that U2 copies; read only",
+      "owner": "orchestrator"
+    },
+    {
+      "id": "S3",
+      "file": "cli/internal/source/testdata/toml-yq.golden",
+      "why": "it hashes each .toml below repo/ and macos/, which U2 and U5 change",
+      "owner": "U5"
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
