@@ -86,11 +86,11 @@
         "U1"
       ],
       "waits": "The new cases run the rules and the messages that U1 adds.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-13T17:05:25.701Z",
+      "ended": "2026-11-13T19:00:08.961Z",
+      "commit": "5b148ff",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -169,9 +169,9 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-13T17:05:25.662Z",
+      "ended": "2026-11-13T19:03:41.582Z"
     },
     {
       "id": "W3",
