@@ -71,6 +71,24 @@
       ],
       "backlog": [],
       "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-14-task-ports",
+      "folder": "docs/plans/2026-11-14-task-ports",
+      "kind": "change",
+      "title": "R1c — the test ports as group dispatchers",
+      "target_repo": null,
+      "priority": 70,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-14-config-folder",
+        "2026-11-14-contract-commands"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
     }
   ]
 }
