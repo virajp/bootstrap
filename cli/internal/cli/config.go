@@ -72,13 +72,13 @@ func (a *app) config(o opts) fail.Code {
 	if s.missing {
 		path += " (missing)"
 	}
-	fmt.Fprintf(w, "file\t%s\t%s\n", path, s.pathSource)
+	_, _ = fmt.Fprintf(w, "file\t%s\t%s\n", path, s.pathSource)
 	for _, v := range s.keys {
 		value := v.value
 		if value == "" {
 			value = a.defaultOf(v.key.Name)
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\n", v.key.Name, value, v.source)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n", v.key.Name, value, v.source)
 	}
 	_ = w.Flush()
 	return fail.OK

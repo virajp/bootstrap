@@ -22,16 +22,16 @@ func NewPrinter(w io.Writer, style bool) Printer { return Printer{W: w, Style: s
 // the whole line.
 func (p Printer) status(glyph, color, plain, text string, whole bool) {
 	if !p.Style {
-		fmt.Fprintf(p.W, "%s %s\n", plain, text)
+		_, _ = fmt.Fprintf(p.W, "%s %s\n", plain, text)
 		return
 	}
 	switch {
 	case color == "":
-		fmt.Fprintf(p.W, "%s %s\n", glyph, text)
+		_, _ = fmt.Fprintf(p.W, "%s %s\n", glyph, text)
 	case whole:
-		fmt.Fprintf(p.W, "%s%s %s%s\n", color, glyph, text, reset)
+		_, _ = fmt.Fprintf(p.W, "%s%s %s%s\n", color, glyph, text, reset)
 	default:
-		fmt.Fprintf(p.W, "%s%s%s %s\n", color, glyph, reset, text)
+		_, _ = fmt.Fprintf(p.W, "%s%s%s %s\n", color, glyph, reset, text)
 	}
 }
 
@@ -61,9 +61,9 @@ func (p Printer) Fix(fix string) {
 	switch {
 	case fix == "":
 	case p.Style:
-		fmt.Fprintf(p.W, "%s  → %s%s\n", dim, Capital(fix), reset)
+		_, _ = fmt.Fprintf(p.W, "%s  → %s%s\n", dim, Capital(fix), reset)
 	default:
-		fmt.Fprintf(p.W, "  -> %s\n", Capital(fix))
+		_, _ = fmt.Fprintf(p.W, "  -> %s\n", Capital(fix))
 	}
 }
 

@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -150,6 +149,6 @@ func TestTOMLMatchesYq(t *testing.T) {
 		}
 	}
 	if stale > 0 {
-		t.Skip(fmt.Sprintf("%d TOML files are not in the golden file and yq cannot run: run UPDATE_GOLDEN=1", stale))
+		t.Skipf("%d TOML files are not in the golden file and yq cannot run: run UPDATE_GOLDEN=1", stale)
 	}
 }

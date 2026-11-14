@@ -195,7 +195,7 @@ func skipText(s core.Skip) string {
 func (a *app) step(s core.Step) {
 	switch s.Kind {
 	case core.Ran:
-		a.stderr.Write(s.Stderr)
+		_, _ = a.stderr.Write(s.Stderr)
 		a.infof("Ran %s", s.Path)
 	case core.Wrote:
 		a.infof("Wrote %s", a.show(s.Path))
@@ -219,8 +219,8 @@ func (a *app) printChanges(entries []entry) {
 	for _, e := range entries {
 		width = max(width, utf8.RuneCountInString(e.path))
 	}
-	fmt.Fprintln(a.stdout)
-	fmt.Fprintln(a.stdout, "Changes")
+	_, _ = fmt.Fprintln(a.stdout)
+	_, _ = fmt.Fprintln(a.stdout, "Changes")
 	for _, e := range entries {
 		mark := report.Mark(e.kind, a.styled)
 		if e.step {
@@ -233,9 +233,9 @@ func (a *app) printChanges(entries []entry) {
 		if e.note != "" {
 			line += strings.Repeat(" ", width-utf8.RuneCountInString(e.path)+2) + e.note
 		}
-		fmt.Fprintln(a.stdout, line)
+		_, _ = fmt.Fprintln(a.stdout, line)
 	}
-	fmt.Fprintln(a.stdout)
+	_, _ = fmt.Fprintln(a.stdout)
 }
 
 // nothingToChange ends a command that has nothing to do. The reasons of the
@@ -348,7 +348,7 @@ func (a *app) ask(mac bool, sel *core.Selected, o opts, only map[string]bool) ([
 			continue
 		}
 		for groupEmpty(qq) {
-			fmt.Fprintf(a.stdout, "Give at least one answer: %s\n", strings.Join(keys, ", "))
+			_, _ = fmt.Fprintf(a.stdout, "Give at least one answer: %s\n", strings.Join(keys, ", "))
 			for _, m := range members {
 				v, code := a.askField(m, dir)
 				if code != fail.OK {
@@ -479,7 +479,7 @@ func (a *app) printQuestions(mac bool, sel *core.Selected, o opts) fail.Code {
 	}
 	if o.json {
 		b, _ := json.MarshalIndent(rows, "", "  ")
-		fmt.Fprintln(a.stdout, string(b))
+		_, _ = fmt.Fprintln(a.stdout, string(b))
 		return fail.OK
 	}
 	out := report.NewPrinter(a.stdout, a.styled)
@@ -496,12 +496,12 @@ func (a *app) printQuestions(mac bool, sel *core.Selected, o opts) fail.Code {
 	for _, r := range rows {
 		if r.Tool != tool {
 			if tool != "" {
-				fmt.Fprintln(a.stdout)
+				_, _ = fmt.Fprintln(a.stdout)
 			}
 			tool = r.Tool
-			fmt.Fprintln(a.stdout, tool)
+			_, _ = fmt.Fprintln(a.stdout, tool)
 		}
-		fmt.Fprintf(a.stdout, "  %-*s   %s\n", width, r.Key, r.Question)
+		_, _ = fmt.Fprintf(a.stdout, "  %-*s   %s\n", width, r.Key, r.Question)
 		answer := ""
 		switch {
 		case r.Answer != nil && !r.gone:
@@ -511,21 +511,21 @@ func (a *app) printQuestions(mac bool, sel *core.Selected, o opts) fail.Code {
 			if answer != "" {
 				line += " " + shortValue(answer)
 			}
-			fmt.Fprintln(a.stdout, line)
+			_, _ = fmt.Fprintln(a.stdout, line)
 		case r.state == "optional":
 			others++
-			fmt.Fprintf(a.stdout, "%s%s no answer (optional)\n", pad, report.Glyph("info", a.styled))
+			_, _ = fmt.Fprintf(a.stdout, "%s%s no answer (optional)\n", pad, report.Glyph("info", a.styled))
 		case r.state == "group":
 			others++
-			fmt.Fprintf(a.stdout, "%s%s no answer (group %s has an answer)\n", pad, report.Glyph("info", a.styled), r.Group)
+			_, _ = fmt.Fprintf(a.stdout, "%s%s no answer (group %s has an answer)\n", pad, report.Glyph("info", a.styled), r.Group)
 		default:
-			fmt.Fprintf(a.stdout, "%s%s no answer\n", pad, report.Glyph("error", a.styled))
+			_, _ = fmt.Fprintf(a.stdout, "%s%s no answer\n", pad, report.Glyph("error", a.styled))
 		}
 		if r.Proposal != nil && *r.Proposal != answer {
-			fmt.Fprintf(a.stdout, "%s%s proposal (%s): %s\n", pad, report.Glyph("info", a.styled), *r.Source, shortValue(*r.Proposal))
+			_, _ = fmt.Fprintf(a.stdout, "%s%s proposal (%s): %s\n", pad, report.Glyph("info", a.styled), *r.Source, shortValue(*r.Proposal))
 		}
 	}
-	fmt.Fprintln(a.stdout)
+	_, _ = fmt.Fprintln(a.stdout)
 	text := count(len(rows), "question")
 	if answered > 0 {
 		text += fmt.Sprintf(" · %d answered", answered)

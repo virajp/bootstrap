@@ -37,7 +37,7 @@ func (s *state) derive(tools []string, base map[string]*source.Obj) (map[string]
 			continue
 		}
 		if res.Ran && len(res.Stderr) > 0 {
-			s.stderr.Write(res.Stderr)
+			_, _ = s.stderr.Write(res.Stderr)
 		}
 		if o != nil {
 			out[res.Tool] = splitMise(o, res.Tool, s.derived)
@@ -81,7 +81,7 @@ func (s *state) checks() fail.Code {
 		if p := r.Checked(res); p != nil {
 			probs = append(probs, p...)
 		} else if res.Ran && len(res.Stderr) > 0 {
-			s.stderr.Write(res.Stderr)
+			_, _ = s.stderr.Write(res.Stderr)
 		}
 	}
 	return s.logAll(source.Problems(probs))
@@ -107,7 +107,7 @@ func (s *state) after(stage string) ([]string, fail.Code) {
 			continue
 		}
 		if res.Ran && len(res.Stderr) > 0 {
-			s.stderr.Write(res.Stderr)
+			_, _ = s.stderr.Write(res.Stderr)
 		}
 		if reason != "" {
 			restart = append(restart, res.Tool+": "+reason)

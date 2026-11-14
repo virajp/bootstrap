@@ -18,7 +18,7 @@ func ParseCheck(content []byte, f Format, show string) *Failure {
 	if err != nil {
 		return &Failure{Code: 1, Text: "cannot create a temp directory", Line: "cannot create a temp directory"}
 	}
-	defer os.Remove(tmp.Name())
+	defer func() { _ = os.Remove(tmp.Name()) }()
 	_, werr := tmp.Write(content)
 	if cerr := tmp.Close(); werr != nil || cerr != nil {
 		return &Failure{Code: 1, Text: "cannot create a temp directory", Line: "cannot create a temp directory"}

@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 )
 
@@ -67,7 +66,7 @@ func tomlToJSON(text []byte) (Value, error) {
 	if err != nil {
 		return Value{}, err
 	}
-	defer os.Remove(tmp.Name())
+	defer func() { _ = os.Remove(tmp.Name()) }()
 	_, werr := tmp.Write(text)
 	if cerr := tmp.Close(); werr != nil || cerr != nil {
 		return Value{}, fmt.Errorf("cannot write a temp file")
@@ -340,18 +339,4 @@ func FormatOf(sp *Spec, explicit, target string) Format {
 		return TOML
 	}
 	return Text
-}
-
-// sortedStrings gives a sorted copy without duplicates.
-func sortedStrings(in []string) []string {
-	set := map[string]bool{}
-	var out []string
-	for _, s := range in {
-		if !set[s] {
-			set[s] = true
-			out = append(out, s)
-		}
-	}
-	sort.Strings(out)
-	return out
 }

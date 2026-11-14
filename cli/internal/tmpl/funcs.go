@@ -60,7 +60,7 @@ func toString(in any) string {
 		return v.String()
 	}
 	rv := reflect.ValueOf(in)
-	for rv.Kind() == reflect.Ptr && !rv.IsNil() {
+	for rv.Kind() == reflect.Pointer && !rv.IsNil() {
 		rv = rv.Elem()
 	}
 	return fmt.Sprintf("%v", rv.Interface())
@@ -740,7 +740,7 @@ func (n *tmplNS) Exec(name string, in ...any) (string, error) {
 	if t == nil {
 		return "", fmt.Errorf("template %q not defined", name)
 	}
-	var ctx any = n.root
+	ctx := n.root
 	switch len(in) {
 	case 0:
 	case 1:

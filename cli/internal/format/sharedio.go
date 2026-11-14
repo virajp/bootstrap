@@ -145,7 +145,7 @@ func readLive(live []byte, f Format, show string) (Value, bool, *hujson.Value, *
 	if err != nil {
 		return Value{}, false, nil, &Failure{Code: 1, Text: "cannot create a temp directory", Line: "cannot create a temp directory"}
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 	p := filepath.Join(dir, "live")
 	if err := os.WriteFile(p, live, 0o600); err != nil {
 		return Value{}, false, nil, &Failure{Code: 1, Text: "cannot write a temp file", Line: "cannot write a temp file"}
@@ -241,7 +241,7 @@ func fromJSON(v Value, f Format) ([]byte, *Failure) {
 	if err != nil {
 		return nil, &Failure{Code: 1, Text: "cannot create a temp directory", Line: "cannot create a temp directory"}
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 	p := filepath.Join(dir, "new.json")
 	if err := os.WriteFile(p, v.marshal(), 0o600); err != nil {
 		return nil, &Failure{Code: 1, Text: "cannot write a temp file", Line: "cannot write a temp file"}
@@ -260,7 +260,7 @@ func applyYQ(live []byte, f Format, ops []op) ([]byte, *Failure) {
 	if err != nil {
 		return nil, &Failure{Code: 1, Text: "cannot create a temp directory", Line: "cannot create a temp directory"}
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 	livePath := filepath.Join(dir, "live")
 	opsPath := filepath.Join(dir, "ops.json")
 	var list []Value

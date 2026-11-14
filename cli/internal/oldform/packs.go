@@ -159,9 +159,7 @@ func tablesOf(raw *source.Obj, shown string, side source.Side, idx *source.Index
 			ps := packSource{name: name}
 			if e, ok := old.Get(name).(*source.Obj); ok && e.Has("env") && side == source.Repo {
 				ps.hasEnv = true
-				for _, x := range strList(e.Get("env")) {
-					ps.env = append(ps.env, x)
-				}
+				ps.env = append(ps.env, strList(e.Get("env"))...)
 			}
 			sources = append(sources, ps)
 		}
@@ -188,7 +186,7 @@ func tablesOf(raw *source.Obj, shown string, side source.Side, idx *source.Index
 		// The members that get a table, then each dependency of them.
 		var start []string
 		for _, t := range members {
-			if m := idx.Manifests[t]; m != nil && !optional[t] && !(sub && m.RootOnly) {
+			if m := idx.Manifests[t]; m != nil && !optional[t] && (!sub || !m.RootOnly) {
 				start = append(start, t)
 			}
 		}

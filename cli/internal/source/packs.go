@@ -185,7 +185,7 @@ func scanOrder(file string) ([]Order, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	var out []Order
 	name := ""
 	sc := bufio.NewScanner(f)

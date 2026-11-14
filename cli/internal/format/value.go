@@ -76,8 +76,6 @@ func str(s string) Value          { return Value{k: kString, s: s} }
 func arr(a []Value) Value         { return Value{k: kArray, a: a} }
 func objv(o *object) Value        { return Value{k: kObject, o: o} }
 func intVal(i int) Value          { return Value{k: kNumber, n: mustDec(strconv.Itoa(i))} }
-func (v Value) isObject() bool    { return v.k == kObject }
-func (v Value) isArray() bool     { return v.k == kArray }
 func (v Value) has(k string) bool { _, ok := v.o.m[k]; return ok }
 
 // typeName gives the name that the jq filter `type` gives.
@@ -95,17 +93,6 @@ func (v Value) typeName() string {
 		return "object"
 	}
 	return "null"
-}
-
-// kindOf gives table, list or scalar.
-func (v Value) kindOf() string {
-	switch v.k {
-	case kObject:
-		return "table"
-	case kArray:
-		return "list"
-	}
-	return "scalar"
 }
 
 // kindWord gives a jq type as words: `a list`, `null`, `a string`, ...

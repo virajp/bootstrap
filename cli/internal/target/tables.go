@@ -75,12 +75,12 @@ func (e *Env) AddTables(file string, names []string, head string, listOnly bool)
 		return cannot()
 	}
 	if err := os.WriteFile(tmp, in, 0o600); err != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return cannot()
 	}
 	out, _, err := format.YQ("-p", "toml", "-o", "toml", strings.Join(exprs, " | "), tmp)
 	if err != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return cannot()
 	}
 	// yq drops the comments of a file that has no key: keep its first
@@ -104,15 +104,15 @@ func (e *Env) AddTables(file string, names []string, head string, listOnly bool)
 		}
 	}
 	if err := os.WriteFile(tmp, []byte(out), 0o600); err != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return cannot()
 	}
 	if err := os.Chmod(tmp, mode); err != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return cannot()
 	}
 	if err := Move(tmp, real); err != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return cannot()
 	}
 	for _, n := range names {

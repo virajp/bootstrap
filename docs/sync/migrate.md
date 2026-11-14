@@ -35,6 +35,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | A Mac with `[tools.gem]` or `[packs.security]` in `macos.toml`                                | M36, before the next Mac sync.                                                                                                                          |
 | `[tools._security_base]` in the values file                                                   | M37.                                                                                                                                                    |
 | A values file without `format = 2`, or with `[packs.*]`, also `macos.toml`                    | M38, after the release `bootstrap@3.0.0`.                                                                                                               |
+| `[tools.go]`, or `.config/mise/tasks/code/format/20-gofmt`                                    | M39, after the sync.                                                                                                                                    |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -968,3 +969,34 @@ Do these steps in each repository, after the release `bootstrap@3.0.0`:
 On the Mac, run `bootstrap mac init --dry-run`, then `bootstrap mac init --yes`,
 in the repository of `macos.toml`. It also removes `[tools.devtools]` and lists
 it. Then run `mise run updateall:configs`.
+
+## M39: The `go` tool formats with dprint, and lints with golangci-lint
+
+The `go` tool changed in four ways:
+
+- dprint formats the `.go` files. The `go` tool adds an `exec` command for
+  `gofmt` to the shared `dprint.jsonc`. The task `code:format:20-gofmt`
+  (`.config/mise/tasks/code/format/20-gofmt`) is gone.
+- `code:lint:40-go` runs `golangci-lint` with its standard linters, not
+  `go vet`. These linters find more problems than `go vet`.
+- The new check `code:lint:45-gomod` fails when a `go.mod` or a `go.sum` is
+  not tidy.
+- The new task `setup:deps:25-go` downloads and verifies the modules, reports
+  the outdated ones, and audits them with `govulncheck`.
+
+The sync installs `golangci-lint` and `govulncheck`, and writes
+`code:lint:40-go` and `setup:deps:25-go`, only when it finds a `go.mod`.
+
+Do these steps in each repository that selects `go`:
+
+1. Run `mise run setup:configs`, then `mise install`.
+2. If `.config/repo-generated.tsv` listed
+   `.config/mise/tasks/code/format/20-gofmt` before the sync, the sync removed
+   it. Else delete it when it starts with the bootstrap header. A file without
+   the header belongs to the repository: keep it.
+3. Run `mise run code:format`. If dprint changes a `.go` file, commit the
+   result.
+4. Run `mise run code:lint`. If `code:lint:40-go` finds problems, show them to
+   the user. Fix them, or let the user add a `.golangci.yml` to the module.
+5. If `code:lint:45-gomod` fails, run `mise run code:lint:45-gomod --fix`.
+6. Commit the result.

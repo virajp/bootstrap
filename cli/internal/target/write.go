@@ -82,12 +82,12 @@ func contains(list []string, s string) bool {
 // order of bash: the tool output, the outcome `failed`, then the detail.
 func (e *Env) Failure(f *format.Failure, show string) {
 	if f.Stderr != "" {
-		fmt.Fprint(e.Stderr, f.Stderr)
+		_, _ = fmt.Fprint(e.Stderr, f.Stderr)
 	}
 	if f.Text != "" {
 		e.Report.Outcome(report.Failed, show, f.Text, f.Line)
 	}
-	fmt.Fprint(e.Stderr, f.IndentedDetail())
+	_, _ = fmt.Fprint(e.Stderr, f.IndentedDetail())
 }
 
 // Check finds the format of the target <target> (its path, with or without
@@ -143,7 +143,7 @@ func (e *Env) Shared(tmp, live string, in format.SharedInput) ([]string, fail.Co
 // exists, it reports `kept existing`.
 func (e *Env) Abort(tmp, dest, show string) {
 	if tmp != "" {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 	}
 	if exists(dest) {
 		e.Report.Outcome(report.Failed, show, "kept existing", "kept existing "+show)
@@ -179,7 +179,7 @@ func (e *Env) Finish(mode os.FileMode, tmp, dest, show, fileMode string) fail.Co
 	}
 	octal := fmt.Sprintf("%o", mode)
 	if isRegular(dest) && sameContent(tmp, dest) {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		cur, err := Mode(dest)
 		switch {
 		case err == nil && cur == mode:
@@ -206,13 +206,13 @@ func (e *Env) Finish(mode os.FileMode, tmp, dest, show, fileMode string) fail.Co
 			cmd.Stderr = e.Stderr
 			_ = cmd.Run()
 		}
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return fail.OK
 	}
 
 	_ = os.Chmod(tmp, mode)
 	if err := Move(tmp, dest); err != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		r.Outcome(report.Failed, show, "cannot write", "cannot write "+show)
 		return fail.Other
 	}

@@ -125,7 +125,7 @@ func acquireClone(o CloneOptions) (*Clone, error) {
 	}
 	c.copy = copyDir
 	if out, err := exec.Command("cp", "-R", "--", c.Repo+"/.", copyDir).CombinedOutput(); err != nil {
-		c.stderr.Write(out)
+		_, _ = c.stderr.Write(out)
 		c.Cleanup()
 		return c, problem(fail.Other, fmt.Sprintf("cannot copy the clone %s", c.Repo), "")
 	}
@@ -179,7 +179,7 @@ func staleLock(lock string) bool {
 	take := lock + ".takeover"
 	if os.Mkdir(take, 0o777) != nil {
 		if olderThanMinute(take) {
-			os.RemoveAll(take)
+			_ = os.RemoveAll(take)
 		}
 		return false
 	}
@@ -194,16 +194,16 @@ func staleLock(lock string) bool {
 		stale = true
 	}
 	if stale {
-		os.RemoveAll(lock)
+		_ = os.RemoveAll(lock)
 	}
-	os.Remove(take)
+	_ = os.Remove(take)
 	return stale
 }
 
 // Unlock releases the lock when this run holds it.
 func (c *Clone) Unlock() {
 	if c.held {
-		os.RemoveAll(c.lock)
+		_ = os.RemoveAll(c.lock)
 		c.held = false
 	}
 }
@@ -212,7 +212,7 @@ func (c *Clone) Unlock() {
 func (c *Clone) Cleanup() {
 	c.Unlock()
 	if c.copy != "" {
-		os.RemoveAll(c.copy)
+		_ = os.RemoveAll(c.copy)
 		c.copy = ""
 	}
 }
@@ -265,7 +265,7 @@ func (c *Clone) fetch() error {
 			case "repo", "lock", "lock.takeover", "macos-generated.tsv":
 				continue
 			}
-			os.RemoveAll(filepath.Join(c.Cache, e.Name()))
+			_ = os.RemoveAll(filepath.Join(c.Cache, e.Name()))
 		}
 		c.note(fmt.Sprintf("Removed an old clone at %s", c.Cache))
 	}
@@ -299,10 +299,10 @@ func (c *Clone) fetch() error {
 		return nil
 	}
 	c.note(fmt.Sprintf("Cloning into %s", c.Repo))
-	os.RemoveAll(c.Repo)
+	_ = os.RemoveAll(c.Repo)
 	_ = os.MkdirAll(filepath.Dir(c.Repo), 0o777)
 	if !c.gitQuiet("clone", "--quiet", "--depth", "1", "--single-branch", "--branch", "main", "--", c.url, c.Repo) {
-		os.RemoveAll(c.Repo)
+		_ = os.RemoveAll(c.Repo)
 		return problem(fail.Network, fmt.Sprintf("Cannot clone %s: nothing synced", c.url), "")
 	}
 	return nil

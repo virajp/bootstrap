@@ -3410,7 +3410,7 @@ CASE_CALL=detect_no run_case "detect script of flutter: Dart only" 0 "$dev_value
 add_go() { synced && "$bin" add tool --yes go; }
 check_add_go() {
   check_that "add: the values file selects go" tomlq '.tools | has("go")'
-  check_that "add: the go task" test -f "$consumer/.config/mise/tasks/code/lint/40-go"
+  check_that "add: the go task" test -f "$consumer/.config/mise/tasks/code/lint/45-gomod"
   check_that "add: the go extension" grep -qF '"golang.go"' "$consumer/.vscode/extensions.json"
   check_that "add: one clone line" log_count '[INFO] bootstrap ' 1
 }
@@ -3463,7 +3463,7 @@ CASE_NO_FORMAT=1 CASE_CALL=add_old_form run_case "add on the old form: run boots
 remove_go() { synced && "$bin" remove tool --yes go; }
 check_remove_go() {
   check_that "remove: the values file without go" not_grep 'go\]' "$values"
-  check_that "remove: the go task is gone" no_file "$consumer/.config/mise/tasks/code/lint/40-go"
+  check_that "remove: the go task is gone" no_file "$consumer/.config/mise/tasks/code/lint/45-gomod"
   check_that "remove: the go extension is gone" lacks_in_file '"golang.go"' "$consumer/.vscode/extensions.json"
 }
 CASE_CALL=remove_go run_case "remove go" 0 "$dev_values

@@ -378,7 +378,7 @@ func Write(e *target.Env, file string, rows []Row) fail.Code {
 		return cannot()
 	}
 	if os.WriteFile(tmp, []byte(content), 0o600) != nil || os.Chmod(tmp, 0o644) != nil || target.Move(tmp, file) != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return cannot()
 	}
 	r.Outcome(kind, show, "", "wrote      "+show)

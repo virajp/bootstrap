@@ -169,16 +169,16 @@ func (c *applyCmd) SetStderr(w io.Writer) { c.errw = w }
 // Run applies the plan, and prints each step before the sync.
 func (c *applyCmd) Run() error {
 	sd := c.m.opt.Side
-	fmt.Fprintf(c.out, "\nApplying %s ...\n", plural(c.n, "change"))
+	_, _ = fmt.Fprintf(c.out, "\nApplying %s ...\n", plural(c.n, "change"))
 	opt := core.Options{NoBootstrap: c.m.opt.NoBootstrap, Stdout: c.out, Stderr: c.errw, Step: func(s core.Step) {
 		switch s.Kind {
 		case core.Ran:
 			_, _ = c.errw.Write(s.Stderr)
-			fmt.Fprintf(c.out, "  ✓ ran %s\n", s.Path)
+			_, _ = fmt.Fprintf(c.out, "  ✓ ran %s\n", s.Path)
 		case core.Wrote:
-			fmt.Fprintf(c.out, "  ✓ wrote %s\n", sd.Show(s.Path))
+			_, _ = fmt.Fprintf(c.out, "  ✓ wrote %s\n", sd.Show(s.Path))
 		case core.Removed:
-			fmt.Fprintf(c.out, "  ✓ removed %s\n", sd.Show(s.Path))
+			_, _ = fmt.Fprintf(c.out, "  ✓ removed %s\n", sd.Show(s.Path))
 		}
 	}}
 	c.code, c.putBack, c.err = core.Apply(c.p, opt)

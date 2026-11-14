@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
@@ -204,12 +203,6 @@ func (s Source) openMacos() (*Index, error) {
 		probs = append(probs, x.parentRule(name)...)
 	}
 	return x, Problems(probs)
-}
-
-func sortedKeys(o *Obj) []string {
-	k := append([]string(nil), o.Keys()...)
-	sort.Strings(k)
-	return k
 }
 
 // macosRules is the template and the loop of `_ss_manifests` for one tool.
