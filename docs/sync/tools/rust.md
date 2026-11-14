@@ -47,9 +47,9 @@ The sync runs the scripts of the tool from the clone, and never copies them.
 
 ## Contributions
 
-| Tool     | Shared file    | Items                                                                                                                                                                      |
-| -------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dprint` | `dprint.jsonc` | The plugin `@dprint/exec`, and an `exec` command for the `rs` files: `mise x -- rustfmt --edition 2024`. `rustfmt.toml` and `rust-toolchain.toml` are its cache key files. |
+| Tool     | Shared file    | Items                                                                                                    |
+| -------- | -------------- | -------------------------------------------------------------------------------------------------------- |
+| `dprint` | `dprint.jsonc` | The plugin `@dprint/exec`, and an `exec` command for the `rs` files: `mise x -- rustfmt --edition 2024`. |
 
 ## Values
 

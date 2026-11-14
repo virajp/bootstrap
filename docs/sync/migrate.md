@@ -36,6 +36,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | `[tools._security_base]` in the values file                                                   | M37.                                                                                                                                                    |
 | A values file without `format = 2`, or with `[packs.*]`, also `macos.toml`                    | M38, after the release `bootstrap@3.0.0`.                                                                                                               |
 | `[tools.go]`, or `.config/mise/tasks/code/format/20-gofmt`                                    | M39, after the sync.                                                                                                                                    |
+| An `exec` block in `dprint.jsonc`, for example from `[tools.rust]` or `[tools.go]`            | M40, after the sync.                                                                                                                                    |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -1000,3 +1001,26 @@ Do these steps in each repository that selects `go`:
    the user. Fix them, or let the user add a `.golangci.yml` to the module.
 5. If `code:lint:45-gomod` fails, run `mise run code:lint:45-gomod --fix`.
 6. Commit the result.
+
+## M40: Each exec command of `dprint.jsonc` is its own item
+
+Before this change, the sync wrote the list `exec.commands` of `dprint.jsonc`
+only one time. A later tool did not add its command, and a removed tool left
+its command. The rustfmt command of the `rust` tool also had `cacheKeyFiles`.
+The exec plugin stops when a listed file does not exist, so dprint formatted
+no `.rs` and no `.go` files in a repository without `rustfmt.toml`.
+
+Now the sync finds each command by its `exts`, and the rustfmt command has no
+`cacheKeyFiles`. The first sync after this change removes the old list, and
+the second sync writes each command again.
+
+Do these steps in each repository with an `exec` block in `dprint.jsonc`:
+
+1. Copy the list `exec.commands` of `dprint.jsonc`.
+2. Run `mise run setup:configs` two times.
+3. Make sure that `exec.commands` has one command for each selected tool with
+   a formatter through exec, for example `gofmt` for `go` and `rustfmt` for
+   `rust`.
+4. If the copy of step 1 had a command that the repository added, add it
+   again. The sync keeps it from now on.
+5. Run `mise run code:format`, then commit the result.

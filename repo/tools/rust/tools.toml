@@ -10,10 +10,9 @@ summary = "Rust and the zola site generator"
 [contributes.dprint]
 plugins = [ "npm:@dprint/exec@0.8.0/plugin.json@9d6234ea05810c775f388c2a4cce82b9116b69294b65e0e1e9d64f1446283ef3" ]
 
-# The config files of rustfmt are cache keys: a change of the Rust version or
-# of the rustfmt config formats again.
+# No cacheKeyFiles: the exec plugin stops when a listed file does not exist,
+# and most repositories have no rustfmt.toml.
 [[contributes.dprint.blocks.exec.commands]]
-cacheKeyFiles = [ "rustfmt.toml", "rust-toolchain.toml" ]
 command = "mise x -- rustfmt --edition 2024"
 exts = [ "rs" ]
 

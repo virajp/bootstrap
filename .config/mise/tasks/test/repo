@@ -3487,6 +3487,44 @@ CASE_CALL=remove_flutter run_case "remove: the dependencies that no tool needs g
 [tools.android]
 [tools.java]
 [tools.go]" '' 'remove java (a dependency that no tool needs)' check_remove_deps
+
+# The exec commands of dprint.jsonc: each command is a block, found by its
+# exts. A command of a new tool is added, the command of a removed tool goes,
+# and a command of the user stays.
+gofmt_cmd='"command": "mise x -- gofmt"'
+rustfmt_cmd='"command": "mise x -- rustfmt --edition 2024"'
+own_cmd='"command": "own-fmt"'
+add_exec_both() { synced && "$bin" add tool --yes go rust; }
+check_exec_both() {
+  check_that "exec: the gofmt command" file_has "$gofmt_cmd" "$consumer/dprint.jsonc"
+  check_that "exec: the rustfmt command" file_has "$rustfmt_cmd" "$consumer/dprint.jsonc"
+  check_that "exec: no cacheKeyFiles" lacks_in_file 'cacheKeyFiles' "$consumer/dprint.jsonc"
+}
+CASE_CALL=add_exec_both run_case "exec: add go and rust" 0 "$dev_values" '' 'Synced: ' check_exec_both
+add_exec_later() { synced && "$bin" add tool --yes rust; }
+CASE_CALL=add_exec_later run_case "exec: add rust to a repository with go" 0 "$dev_values
+[tools.go]" '' 'Synced: ' check_exec_both
+remove_exec() { synced && "$bin" remove tool --yes rust; }
+check_exec_removed() {
+  check_that "exec: the gofmt command stays" file_has "$gofmt_cmd" "$consumer/dprint.jsonc"
+  check_that "exec: the rustfmt command is gone" lacks_in_file "$rustfmt_cmd" "$consumer/dprint.jsonc"
+}
+CASE_CALL=remove_exec run_case "exec: remove rust" 0 "$dev_values
+[tools.go]
+[tools.rust]" '' 'Synced: ' check_exec_removed
+own_exec() {
+  synced
+  sed -i.bak 's#"commands": \[#"commands": [ { "command": "own-fmt", "exts": ["own"] },#' "$consumer/dprint.jsonc"
+  rm -f -- "$consumer/dprint.jsonc.bak"
+  commit_consumer
+  "$bin" add tool --yes rust
+}
+check_exec_own() {
+  check_that "exec: the command of the user stays" file_has "$own_cmd" "$consumer/dprint.jsonc"
+  check_exec_both
+}
+CASE_CALL=own_exec run_case "exec: a command of the user stays" 0 "$dev_values
+[tools.go]" '' 'Synced: ' check_exec_own
 remove_android() { synced && "$bin" remove tool --yes android; }
 CASE_CALL=remove_android run_case "remove: a tool that another selected tool needs" 2 "$dev_values
 [tools.flutter]
