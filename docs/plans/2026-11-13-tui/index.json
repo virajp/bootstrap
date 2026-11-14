@@ -142,7 +142,7 @@
       "status": "green",
       "started": "2026-11-14T10:59:17.203Z",
       "ended": "2026-11-14T11:17:11.984Z",
-      "commit": "",
+      "commit": "b58fcbf",
       "rounds": 2
     },
     {
@@ -159,11 +159,11 @@
         "U4"
       ],
       "waits": "U5 opens the form from the select of U2 and reviews the changes of the Tools, Packs and Detected tabs of U2, U3 and U4; one unit writes cli/ at a time.",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-14T11:26:09.180Z",
-      "ended": "",
+      "ended": "2026-11-14T11:45:32.138Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -635,6 +635,15 @@
       "ruling": "Treat code:lint:60-bootstrap as inherited from main: count the wave gate green when every other code:lint step passes, record one open gap naming it, and continue — the plan lands; the gap stays open until a 3.x engine release, so the folder is not archived.",
       "rejected": "Stop the run here (STOPPED) until a new engine is released or the clone is fixed; Mark wave 4 failed as the rules say for an unattributed red line",
       "units": []
+    },
+    {
+      "id": "D23",
+      "decision": "Q9: 05-apply.md Edit 3 says the review ends with [y/N], screen 8 shows only enter apply with Apply/Back. Which wins?",
+      "ruling": "Add a \"Write <n> changes? [y/N]\" modal after enter — it matches 05-apply.md Edit 3 and the CLI consent (\"? Write <n> changes? [y/N]\", docs/design/cli.md \"The consent\"), but adds a step that screen 8 does not show.",
+      "rejected": "Keep enter as the consent, as built — it matches screen 8, and the [y/N] of Edit 3 becomes a wording slip in the unit file, with no code change",
+      "units": [
+        "U5"
+      ]
     }
   ]
 }

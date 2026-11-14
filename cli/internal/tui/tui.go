@@ -85,6 +85,9 @@ type Model struct {
 	// fixed are the changes that the user cannot remove: the new values
 	// file, or the migration of its old form.
 	fixed []string
+	// edits are the tools whose answers e changed, when no item of the list
+	// adds them: each one is a change.
+	edits []string
 	// state is the values file and its selection, when it has the new form.
 	state *core.State
 
@@ -105,7 +108,12 @@ type Model struct {
 	tabs  []*tab
 	cur   int    // The tab that shows.
 	modal *modal // The modal dialog over the screen, or nil.
-	tick  int    // The ticks since the cursor moved: the scroll of its text.
+	form  *form  // The questions form of the modal dialog, or nil.
+	// review is the review screen (r), or nil; applied is the result of
+	// Apply until a key, or nil.
+	review  *review
+	applied *applied
+	tick    int // The ticks since the cursor moved: the scroll of its text.
 }
 
 // tickInterval is the time of one step of the scroll of a long text.
@@ -134,9 +142,9 @@ func newModel(o Options) *Model {
 	return m
 }
 
-// changes gives the count of the changes of the header: the fixed changes
-// and the items of the change list.
-func (m *Model) changes() int { return len(m.fixed) + len(m.list.Items) }
+// changes gives the count of the changes of the header: the fixed changes,
+// the items of the change list and the tools whose answers e changed.
+func (m *Model) changes() int { return len(m.fixed) + len(m.list.Items) + len(m.edits) }
 
 // Messages of the model.
 type (
@@ -243,11 +251,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case detectMsg:
 		m.detected(msg)
 		return m, nil
+	case appliedMsg:
+		m.afterApply(msg)
+		return m, nil
 	case tea.KeyPressMsg:
 		if m.phase != ready {
 			if msg.String() == "ctrl+c" {
 				return m, tea.Quit
 			}
+			return m, nil
+		}
+		if m.applied != nil {
+			// Any key goes back to the main screen (screen 8).
+			m.applied = nil
 			return m, nil
 		}
 		if m.modal != nil {
@@ -259,7 +275,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		if m.review != nil {
+			return m, m.reviewKey(msg)
+		}
 		return m, m.mainKey(msg)
+	default:
+		// The paste and the other messages of the field of a form.
+		if m.form != nil && m.modal != nil {
+			return m, m.formInput(m.form, msg)
+		}
 	}
 	return m, nil
 }
@@ -290,6 +314,8 @@ func (m *Model) mainKey(msg tea.KeyPressMsg) tea.Cmd {
 		return m.quit()
 	case key.Matches(msg, m.keys.Help):
 		m.modal = m.helpModal()
+	case key.Matches(msg, m.keys.Review):
+		return m.openReview()
 	case key.Matches(msg, m.keys.Scroll):
 		if msg.String() == "shift+up" {
 			t.scrollBottom(-1)
@@ -371,12 +397,20 @@ func (m *Model) View() tea.View {
 	if m.phase != ready {
 		return tea.NewView("")
 	}
+	if m.applied != nil {
+		// The result of Apply shows under the output of the sync, in the
+		// main buffer of the terminal (D12 c).
+		return tea.NewView(m.appliedView())
+	}
 	var lines []line
 	switch {
 	case m.small():
 		lines = m.smallLines()
 	default:
 		lines = m.screen()
+		if m.review != nil {
+			lines = m.reviewScreen()
+		}
 		if m.modal != nil {
 			lines = m.modal.over(lines)
 		}

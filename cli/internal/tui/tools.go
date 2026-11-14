@@ -607,6 +607,11 @@ func (m *Model) toolsKey(msg tea.KeyPressMsg) (tea.Cmd, bool) {
 			return nil, true
 		}
 		return m.space(), true
+	case "e":
+		if !t.onRight {
+			return nil, true
+		}
+		return m.editForm(), true
 	}
 	return nil, false
 }
@@ -653,14 +658,6 @@ func (m *Model) choose(t string) tea.Cmd {
 	return m.selectHook(core.Item{Kind: core.AddTool, Names: []string{t}})
 }
 
-// selectHook adds the select <it>. The questions form of a tool with
-// questions opens here (U5); for now the change goes on the list with no
-// form.
-func (m *Model) selectHook(it core.Item) tea.Cmd {
-	m.push(it)
-	return nil
-}
-
 // push puts <items> at the end of the change list. When core refuses the
 // list, the list stays as it was, and a dialog shows why.
 func (m *Model) push(items ...core.Item) bool {
@@ -675,6 +672,7 @@ func (m *Model) setItems(items []core.Item) bool {
 		return false
 	}
 	m.list.Items, m.eff = items, eff
+	m.pruneAnswers()
 	m.refreshDetected()
 	m.refreshTools()
 	m.refreshPacks()
@@ -829,7 +827,7 @@ func (m *Model) replaceModal(old, new string) *modal {
 		d.onKey = func(m *Model, k tea.KeyPressMsg) tea.Cmd {
 			m.modal = nil
 			if k.String() == "y" {
-				m.push(core.Item{Kind: core.Replace, Old: old, New: new})
+				return m.selectHook(core.Item{Kind: core.Replace, Old: old, New: new})
 			}
 			return nil
 		}
@@ -853,7 +851,7 @@ func (m *Model) replaceModal(old, new string) *modal {
 	d.onKey = func(m *Model, k tea.KeyPressMsg) tea.Cmd {
 		m.modal = nil
 		if k.String() == "y" {
-			m.push(core.Item{Kind: core.RemoveTool, Names: []string{old}}, core.Item{Kind: core.AddTool, Names: []string{new}})
+			return m.selectHook(core.Item{Kind: core.RemoveTool, Names: []string{old}}, core.Item{Kind: core.AddTool, Names: []string{new}})
 		}
 		return nil
 	}
