@@ -1,0 +1,10 @@
+/security-review engine, loop U5 round 1, range ee623c3..69f722c (run as a subagent scoped to the worktree, because the skill's built-in diff read the main checkout, which has no branch delta)
+
+No high-confidence vulnerabilities found.
+
+Files examined: cli/internal 13 (1 non-test: source/catalog.go), macos/tools 110 (tools.toml catalog keys, 4 git templates), repo/tools 36, macos/fixtures 19, .config/mise/tasks/test 3, plus repo/categories.toml and macos/categories.toml.
+
+- catalog.go: the change only tightens validation. A missing or empty summary or category is now an error. It does not touch any path, exec or template sink.
+- tools.toml and categories.toml: every added line is static catalog data, apart from two lines in the git tool (a question group and a note); neither adds a command.
+- git templates: they use with blocks so an email can be left out. Values come from the user's own macos.toml, trusted input.
+- Behavior, not a vuln: identity.tmpl falls back to email_gitlab when email_github is empty (the intended D4 rule).
