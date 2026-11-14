@@ -388,7 +388,23 @@ func TestApply(t *testing.T) {
 		t.Errorf("the sync did not see the new values file: %q", f.saw)
 	}
 
+	// A sync that stops with code 4 (the Mac init stage changed) keeps the
+	// values file as the sync left it: Apply does not put it back.
+	sd = macFixture(t, cur)
+	f = &fakeSync{code: fail.Terminal}
+	f.install(t, sd)
+	if p, err = Plan(sd, List{Items: []Item{{Kind: AddTool, Names: []string{"c"}}}}, Options{}); err != nil {
+		t.Fatal(problems(err))
+	}
+	if code, putBack, err = Apply(p, Options{}); code != fail.Terminal || putBack || err != nil {
+		t.Fatalf("code %d put back %v err %v", code, putBack, err)
+	}
+	if b, _ := os.ReadFile(sd.Values); string(b) != "broken\n" {
+		t.Errorf("values %q, want the file of the sync", b)
+	}
+
 	// A values file that init creates goes when the sync fails.
+	f = &fakeSync{code: fail.Network}
 	sd = macFixture(t, "")
 	f.install(t, sd)
 	if p, err = Plan(sd, List{Init: true}, Options{}); err != nil {

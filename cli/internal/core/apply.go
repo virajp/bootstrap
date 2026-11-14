@@ -34,7 +34,9 @@ type Step struct {
 // writes, writes the values file and the changes of a migration, and runs the
 // sync. When the sync fails, it puts the values file back as it was before
 // Apply (or removes a values file that did not exist), and gives the code of
-// the sync and true; the other files stay as the sync left them. A problem
+// the sync and true; the other files stay as the sync left them. A sync that
+// stops with fail.Terminal (the Mac init stage changed) did its work, so the
+// values file stays and Apply gives that code and false. A problem
 // before the sync gives its code and an error.
 func Apply(p *PlanResult, o Options) (fail.Code, bool, error) {
 	step := func(s Step) {
@@ -69,7 +71,7 @@ func Apply(p *PlanResult, o Options) (fail.Code, bool, error) {
 	}
 	out, errw := o.writers()
 	_, code := frontEnd(p.Mac)(SyncArgs(p.Mac, false, o.NoBootstrap), out, errw)
-	if code != fail.OK {
+	if code != fail.OK && code != fail.Terminal {
 		if err := p.restore(); err != nil {
 			return code, false, err
 		}
