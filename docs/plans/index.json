@@ -108,6 +108,25 @@
       "backlog_pieces": [
         "B28"
       ]
+    },
+    {
+      "id": "2026-11-14-plugins-setup-ai",
+      "folder": "docs/plans/2026-11-14-plugins-setup-ai",
+      "kind": "change",
+      "title": "R2c — contributed merge items, the virajp-plugins tool and a declarative setup:ai",
+      "target_repo": null,
+      "priority": 100,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-14-lsp"
+      ],
+      "backlog": [
+        "B28"
+      ],
+      "backlog_pieces": []
     }
   ]
 }
