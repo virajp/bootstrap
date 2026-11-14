@@ -1,0 +1,506 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "R2d — projects in bootstrap: [projects.<name>] in repo.toml, a projects list per tool, found by detect",
+  "requires": [
+    "docs/plans/2026-11-14-plugins-setup-ai"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "execution": "teams",
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-15 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint",
+      "mise x -- mise run test:go"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Build the worktree engine (go build -o <tmp>/bootstrap ./cmd/bootstrap in cli/) and export BOOTSTRAP_BIN=<tmp>/bootstrap and BOOTSTRAP_CLONE=<worktree>. In a new scratch git repo with pnpm-workspace.yaml (packages: [apps/web]), apps/web/package.json and apps/api/go.mod, run env -u MISE_PROJECT_ROOT BOOTSTRAP_CONFIG=/nonexistent <tmp>/bootstrap init --no-tui --yes --clone <worktree>; then <tmp>/bootstrap detect --add --yes --json --clone <worktree>; then <tmp>/bootstrap describe --json --clone <worktree>.",
+        "pass": "describe data.repo has projects api (folder apps/api) and web (folder apps/web); the go tool lists projects [api]; the node tool lists [web]; each tool has a category; a second detect --json proposes no project and no link."
+      }
+    ]
+  },
+  "after_landing": [],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MAJOR",
+      "reason": "Covered by the one bootstrap@4.0.0 tag (R1b D16). New: [projects.<name>] in repo.toml, a projects list per tool in tools.toml, project and per-folder detection, the project checks, and a category per tool in describe."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The engine: projects, tool links, detect, check, describe",
+      "wave": 1,
+      "file": "01-engine.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "Integration tests",
+      "wave": 2,
+      "file": "02-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "Needs U1 first.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Review: the engine and the tests",
+      "wave": 3,
+      "file": "03-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "Needs U1, U2 first.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U4",
+      "title": "Docs",
+      "wave": 4,
+      "file": "04-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/",
+        "docs/sync/",
+        "docs/memory/decisions/2026-11-14-bootstrap-plugins-split.md",
+        "repo/tools/*/scripts/detect"
+      ],
+      "depends_on": [
+        "U3"
+      ],
+      "waits": "Needs U3 first.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Gates",
+      "wave": 5,
+      "file": "05-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U4"
+      ],
+      "waits": "Needs U4 first.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "every human-facing doc (README.md, CLAUDE.md, docs/**)",
+      "why": "U1 falsifies the config, detect, check and describe docs",
+      "owner": "U4"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "vwf format 28 reads languages and package_manager per project from bootstrap, but no tool has a projects list (ST2 not planned).",
+      "ruling": "Bootstrap plan first (Recommended): this plan adds the projects; claude-plugins R4b reads them after the bootstrap 4.0.0 release.",
+      "rejected": "Repo-wide for now; keep the keys in format 28.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "What a tool's projects entry names.",
+      "ruling": "User: move the project names to bootstrap; vwf uses the bootstrap CLI to get them.",
+      "rejected": "Folder paths; free names that bootstrap cannot test.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Which project fields move into repo.toml.",
+      "ruling": "User: name and folder only; platforms are vwf-specific. repo.toml gets [projects.<name>] with folder; each repo lists its own projects.",
+      "rejected": "Name only; name, folder and platforms.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "Who fills each tool's projects list.",
+      "ruling": "detect, per folder (Recommended): detect runs each detect script in the root and in each [projects.<name>].folder; a match adds that name to the tool's projects; detect --add writes it on consent. check reports a listed project whose folder no longer matches.",
+      "rejected": "vwf writes it; by hand only.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "Who writes the [projects.<name>] tables.",
+      "ruling": "User: either. bootstrap detects the existing ones; vwf creates new ones through the bootstrap CLI (config set).",
+      "rejected": "vwf only; bootstrap init asks.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "How bootstrap detects an existing project.",
+      "ruling": "Both: the workspace manifests first; then the language-tool match for the folders they do not name.",
+      "rejected": "Language-tool match only; workspace manifests only.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "Stated by the planner, confirmed at the shape gate: the schema.",
+      "ruling": "[projects.<name>].folder is repo-relative; . is the root. A name is lowercase kebab case. [tools.<t>].projects = [<name>...] is always valid, as env is (R1a D86); each name must be a [projects.<name>] of the same repo.toml, else code 2. A root_only tool has no projects (code 2).",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "Stated by the planner, confirmed at the shape gate: the project detection.",
+      "ruling": "Workspace manifests: pnpm-workspace.yaml (packages), go.work (use), Cargo.toml [workspace] members, pyproject.toml [tool.uv.workspace] members, globs expanded. Then the folder walk skips .git, node_modules, vendor and the gitignored paths; a folder inside a found project is not a new project. With no project found, the root is one project named repo_name. A name is the folder basename; when two are the same, the path with / replaced by -. A listed project is never proposed again.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "Stated by the planner, confirmed at the shape gate: detect output and writes.",
+      "ruling": "detect --json data adds projects (the new [projects.<name>] tables) and links (tool to the project names to add). detect --add writes both on consent (--yes or the prompt). A tool that matches only in a project folder is offered too. init and the TUI write no projects.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "Stated by the planner, confirmed at the shape gate: check.",
+      "ruling": "A listed project whose folder does not exist is a finding with code 2. A tool link whose detect script no longer gives match in that folder is a warning.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "Stated by the planner, confirmed at the shape gate: describe.",
+      "ruling": "Each tool in describe data.tools gets category, from the catalog. Additive: the contract stays 1 (R1b D7). The projects come through data.repo and each tool's values.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "Stated by the planner, confirmed at the shape gate: config.",
+      "ruling": "config set repo.projects.<name> '<JSON table>' --json works through the R1a schema table. config unset repo.projects.<name> stops with code 2 while a tool lists the name, and the error names those tools.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Stated by the planner, confirmed at the shape gate: release and docs.",
+      "ruling": "No new level: the one bootstrap@4.0.0 tag covers it (R1b D16). U4 updates docs/design/, README.md, CLAUDE.md and the ST2 line of the decision record.",
+      "rejected": "",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Round 1 gap 1: a package manager matches only at the root, so it never links to a project.",
+      "ruling": "A tool that matches at the root and in no project folder links to the projects that the workspace manifest in its evidence names (pnpm: the packages of pnpm-workspace.yaml). With no workspace manifest in its evidence, it links to the root project.",
+      "rejected": "Link to every project; link to none.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Round 1 gap 2: a monorepo root with its own manifest matches in the walk.",
+      "ruling": "The walk skips the root when step 1 or the walk below the root found a project. The root is a project only when nothing else is found (D8 step 3).",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "Round 1 gap 3: a basename or repo_name that is not kebab case.",
+      "ruling": "Normalize to lowercase kebab case (My_App → my-app). An empty result skips the folder with a warning.",
+      "rejected": "Skip every such folder.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Round 1 gap 4: is a listed project matched by name or by folder?",
+      "ruling": "By folder: a listed folder is never proposed again. A new folder whose name is already used takes the path form of D8 step 4.",
+      "rejected": "By name.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "Round 1 gap 5: the walk has no depth limit.",
+      "ruling": "The walk stops 4 levels below the root, as hasFile does (cli/internal/repo/rules.go:401).",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Round 1 gap 6: on the first detect, do the per-folder runs cover the proposed projects?",
+      "ruling": "Yes: the runs cover the listed projects and the projects proposed in the same run; --add writes both together.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D20",
+      "decision": "Round 1 gap 7: 24 detect scripts in repo/tools/*/scripts/detect say bootstrap detect runs them in the root.",
+      "ruling": "U4 owns repo/tools/*/scripts/detect for that comment line only; the new text says: in the root, and in each project folder.",
+      "rejected": "Out of scope.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D21",
+      "decision": "Round 1 gap 8: a deleted project folder also gives no-match link warnings.",
+      "ruling": "Report only the code 2 finding for the missing folder; no link warning for that project.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D22",
+      "decision": "Round 2 gap 1: a D14 link never gives match when its detect script runs in the project folder, so check warns on every run.",
+      "ruling": "check tests a D14 link the way detect made it: the tool still matches at the root, and the workspace manifest in its evidence still names the folder. It does not run the script in the project folder.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D23",
+      "decision": "Round 2 gap 2: D14 links to the root project, which does not exist in a monorepo (D15).",
+      "ruling": "With no root project, a D14 tool with no workspace manifest in its evidence gets no link.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D24",
+      "decision": "Round 2 gap 3: aube's evidence aube-workspace.yaml is not a D8 step 1 manifest.",
+      "ruling": "D8 step 1 and D14 also read aube-workspace.yaml (packages).",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D25",
+      "decision": "Round 2 gap 4: D14 links repo-wide tools (git, github, gitleaks, dprint, mise) to the root project.",
+      "ruling": "The D14 root fallback links only tools of the categories languages and package-managers. A tool that matches in a project folder links by D4, whatever its category.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D26",
+      "decision": "Round 3 gap 1: docker is root_only, but its detect script matches in a project folder; D4 links it and D7 makes the link code 2.",
+      "ruling": "detect never links a root_only tool, and check skips it.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D27",
+      "decision": "Round 3 gap 2: the android, apko, docker, java, kotlin and melange scripts search with find -maxdepth, so the walk matches in a parent folder.",
+      "ruling": "A match in the walk or in a project folder counts only when one of its evidence paths sits in that folder itself (the path has no /).",
+      "rejected": "Walk deepest-first.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D28",
+      "decision": "Round 3 gap 3: a workspace manifest can name the root itself.",
+      "ruling": "A step 1 member equal to . is dropped; the root is a project only by D8 step 3.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D29",
+      "decision": "Round 3 gap 4: the manifests also exclude folders, and a member can name a missing folder or a file.",
+      "ruling": "Apply the pnpm and aube ! patterns and the Cargo and uv exclude lists; keep only folders that exist; apply the D8 nesting and gitignore rules to the step 1 folders too.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D30",
+      "decision": "Round 4 gap 1: a root project's folder is ., so repo-wide tools link by D4 and undo D25.",
+      "ruling": "A project with folder . gets D4 links only from tools of the categories languages and package-managers.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D31",
+      "decision": "Round 4 gap 2: tools.toml stores only names, so check cannot tell a D14 link from a D4 link.",
+      "ruling": "A link passes when either test holds: the script matches in the folder (with D27), or the D22 root-and-manifest test (D22 only for languages and package-managers tools). check warns only when both fail.",
+      "rejected": "",
+      "units": [
+        "U1"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}

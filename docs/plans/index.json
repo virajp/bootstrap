@@ -127,6 +127,23 @@
         "B28"
       ],
       "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-15-projects",
+      "folder": "docs/plans/2026-11-15-projects",
+      "kind": "change",
+      "title": "R2d — projects in bootstrap: [projects.<name>] in repo.toml, a projects list per tool, found by detect",
+      "target_repo": null,
+      "priority": 110,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-14-plugins-setup-ai"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
     }
   ]
 }
