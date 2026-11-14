@@ -17,7 +17,11 @@ func index(t *testing.T, toml string) *source.Index {
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(p, []byte(toml), 0o644); err != nil {
+	// Each tool needs a summary and a category of the categories file.
+	if err := os.WriteFile(p, []byte("summary = \"A tool\"\ncategory = \"core\"\n"+toml), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "macos", "categories.toml"), []byte("[category.core]\ntitle = \"Core\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	x, err := source.Source{Root: root, Side: source.Macos}.Open()

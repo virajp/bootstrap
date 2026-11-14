@@ -1,8 +1,10 @@
 # The init-stage tool of the fixture repo; only config/init/ selects it. Its
 # dependency initdep is in the init stage too.
 
+category = "dev"
 depends = [ "initdep" ]
 stage = "init"
+summary = "The init-stage tool of the fixture repo"
 
 [defaults]
 greeting = "hello"

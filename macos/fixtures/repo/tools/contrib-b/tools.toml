@@ -1,5 +1,8 @@
 # Contributes a list that overlaps the one of contrib-a, and a nested key.
 
+category = "dev"
+summary = "Contributes an overlapping list to owner"
+
 [contributes.owner]
 includes = [ "~/c", "~/b" ]
 

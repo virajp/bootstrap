@@ -32,6 +32,13 @@ question = "D?"
 example = "pd"
 `
 
+// catalogKeys holds the keys that each tool needs: a summary and a category
+// of catalogFile, the categories file of the clone.
+const (
+	catalogKeys = "summary = \"A tool\"\ncategory = \"core\"\n"
+	catalogFile = "[category.core]\ntitle = \"Core\"\n"
+)
+
 // askIndex gives the Mac index of the tool t with the questions of askTOML,
 // and of the tool u that needs t.
 func askIndex(t *testing.T, tools map[string]string) *source.Index {
@@ -42,9 +49,12 @@ func askIndex(t *testing.T, tools map[string]string) *source.Index {
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(p, []byte(text), 0o644); err != nil {
+		if err := os.WriteFile(p, []byte(catalogKeys+text), 0o644); err != nil {
 			t.Fatal(err)
 		}
+	}
+	if err := os.WriteFile(filepath.Join(root, "macos", "categories.toml"), []byte(catalogFile), 0o644); err != nil {
+		t.Fatal(err)
 	}
 	x, err := source.Source{Root: root, Side: source.Macos}.Open()
 	if err != nil {
@@ -277,7 +287,7 @@ func TestQuestionsText(t *testing.T) {
 
 func TestWarnNotSelectable(t *testing.T) {
 	root := t.TempDir()
-	for name, text := range map[string]string{"base": "selectable = false\n", "u": "depends = [\"base\"]\n"} {
+	for name, text := range map[string]string{"base": catalogKeys + "selectable = false\n", "u": catalogKeys + "depends = [\"base\"]\n"} {
 		p := filepath.Join(root, "macos", "tools", name, "tools.toml")
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 			t.Fatal(err)

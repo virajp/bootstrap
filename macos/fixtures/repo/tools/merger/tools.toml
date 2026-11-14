@@ -1,6 +1,9 @@
 # A tool with a shared file of each format; only the merge config selects it.
 description = "The shared files of the fixture repo"
 
+category = "dev"
+summary = "The shared files of the fixture repo"
+
 [defaults]
 items = [ "a" ]
 

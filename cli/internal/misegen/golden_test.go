@@ -62,6 +62,8 @@ func (c mcase) build(t *testing.T) string {
 	if err := os.MkdirAll(filepath.Join(dir, "clone", "macos", "tools"), 0o755); err != nil {
 		t.Fatal(err)
 	}
+	// The categories file names the category of macosTool.
+	writeFile(t, filepath.Join(dir, "clone", "macos", "categories.toml"), "[category.core]\ntitle = \"Core\"\n")
 	switch {
 	case c.mode == "full":
 		if err := os.MkdirAll(filepath.Join(dir, "config"), 0o755); err != nil {

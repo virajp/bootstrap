@@ -1,5 +1,8 @@
 # A JSON, a YAML and a TOML target that do not parse.
 
+category = "dev"
+summary = "Targets that do not parse"
+
 # The files of the tool, below files/.
 [files.".config/badparse/bad.json"]
 mode = "template"

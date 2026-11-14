@@ -44,8 +44,46 @@ func writeTree(t *testing.T, files tree) string {
 
 const devHead = "default_envs = [ \"dev\" ]\ndepends = []\nroot_only = false\n"
 
+// catalogHead holds the keys that each tool needs on both sides: a summary
+// and a category of the categories file of the clone.
+const catalogHead = "summary = \"A tool\"\ncategory = \"core\"\n"
+
+// categories is the categories file of each side of a clone.
+const categories = "[category.core]\ntitle = \"Core\"\n"
+
 // rt gives a repo tools.toml.
-func rt(extra string) string { return devHead + extra }
+func rt(extra string) string { return devHead + catalogHead + extra }
+
+// mt gives a Mac tools.toml.
+func mt(extra string) string { return catalogHead + extra }
+
+// withCatalog adds summary and category to each tools.toml of <over> that
+// leaves one out.
+func withCatalog(over tree) tree {
+	out := tree{}
+	for p, v := range over {
+		if strings.Contains(p, "/tools/") && strings.HasSuffix(p, "/tools.toml") && v != "-" && !strings.HasPrefix(v, "RAW:") {
+			v = catalogKeys(v)
+		}
+		out[p] = v
+	}
+	return out
+}
+
+// catalogKeys adds the keys of catalogHead that <text> leaves out.
+func catalogKeys(text string) string {
+	head := ""
+	for _, kv := range strings.SplitAfter(catalogHead, "\n") {
+		if kv == "" {
+			continue
+		}
+		key := kv[:strings.Index(kv, " ")]
+		if !strings.Contains("\n"+text, "\n"+key+" =") {
+			head += kv
+		}
+	}
+	return head + text
+}
 
 // A small repo clone: three packs, four tools.
 var repoBase = tree{
@@ -63,6 +101,7 @@ c = {}
 	"repo/tools/b/tools.toml": rt(""),
 	"repo/tools/c/tools.toml": rt(""),
 	"repo/tools/d/tools.toml": rt(""),
+	"repo/categories.toml":    categories,
 }
 
 const repoValues = "environments = [ \"dev\" ]\n"
@@ -77,11 +116,12 @@ m1 = { default = true }
 m2 = { default = true }
 m3 = {}
 `,
-	"macos/tools/macos-setup/tools.toml": "description = \"setup\"\n",
-	"macos/tools/m1/tools.toml":          "description = \"one\"\n",
-	"macos/tools/m2/tools.toml":          "description = \"two\"\n",
-	"macos/tools/m3/tools.toml":          "description = \"three\"\n",
-	"macos/tools/m4/tools.toml":          "description = \"four\"\n",
+	"macos/tools/macos-setup/tools.toml": mt("description = \"setup\"\n"),
+	"macos/tools/m1/tools.toml":          mt("description = \"one\"\n"),
+	"macos/tools/m2/tools.toml":          mt("description = \"two\"\n"),
+	"macos/tools/m3/tools.toml":          mt("description = \"three\"\n"),
+	"macos/tools/m4/tools.toml":          mt("description = \"four\"\n"),
+	"macos/categories.toml":              categories,
 }
 
 type repoCase struct {
@@ -129,7 +169,7 @@ var repoCases = []repoCase{
 		"repo/tools/a/tools.toml": rt("[mise.tools.ta]\nversion = \"1\"\n"),
 		"repo/tools/b/tools.toml": rt("[mise.tools.ta]\nversion = \"2\"\n"),
 	}, values: repoValues},
-	{name: "missing-key", over: tree{"repo/tools/d/tools.toml": "RAW:default_envs = [ \"dev\" ]\ndepends = []\n"}, values: repoValues},
+	{name: "missing-key", over: tree{"repo/tools/d/tools.toml": "RAW:default_envs = [ \"dev\" ]\ndepends = []\n" + catalogHead}, values: repoValues},
 	{name: "no-dev", over: tree{"repo/tools/d/tools.toml": "default_envs = [ \"ci\" ]\n"}, values: repoValues},
 	{name: "bad-default-env", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\", \"qa\" ]\n"}, values: repoValues},
 	{name: "late-folder", over: tree{"repo/tools/zz-repo/tools.toml": rt("")}, values: repoValues},
@@ -225,7 +265,7 @@ func TestRepoCases(t *testing.T) {
 				}
 				over[p] = v
 			}
-			clone := writeTree(t, repoBase.with(over))
+			clone := writeTree(t, repoBase.with(withCatalog(over)))
 			vdir := writeTree(t, tree{"bootstrap.toml": c.values})
 			check(t, pcase{name: "repo-" + c.name, side: source.Repo, clone: clone,
 				values: filepath.Join(vdir, "bootstrap.toml"), shown: "bootstrap.toml", sub: c.sub})
@@ -307,7 +347,7 @@ var macosCases = []macosCase{
 func TestMacosCases(t *testing.T) {
 	for _, c := range macosCases {
 		t.Run(c.name, func(t *testing.T) {
-			clone := writeTree(t, macosBase.with(c.over))
+			clone := writeTree(t, macosBase.with(withCatalog(c.over)))
 			cfg := t.TempDir()
 			switch c.values {
 			case "-":

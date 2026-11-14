@@ -20,8 +20,11 @@ func TestToolValuesGroup(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	const toml = "default_envs = [\"dev\"]\ndepends = []\nroot_only = false\n[questions.a]\nquestion = \"A?\"\ngroup = \"g\"\n[questions.b]\nquestion = \"B?\"\ngroup = \"g\"\n[questions.d]\nquestion = \"D?\"\n"
+	const toml = "default_envs = [\"dev\"]\ndepends = []\nroot_only = false\nsummary = \"A tool\"\ncategory = \"core\"\n[questions.a]\nquestion = \"A?\"\ngroup = \"g\"\n[questions.b]\nquestion = \"B?\"\ngroup = \"g\"\n[questions.d]\nquestion = \"D?\"\n"
 	if err := os.WriteFile(p, []byte(toml), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "repo", "categories.toml"), []byte("[category.core]\ntitle = \"Core\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	src := source.Source{Root: root, Side: source.Repo}

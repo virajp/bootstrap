@@ -1,4 +1,7 @@
 # Sets the scalar that contrib-a sets, to another value.
 
+category = "dev"
+summary = "Sets the scalar of contrib-a again"
+
 [contributes.owner]
 agent = "agent-c"

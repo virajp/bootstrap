@@ -250,11 +250,11 @@
         "U2"
       ],
       "waits": "The engine stops the sync for a real tool without the keys, so U1 and U2 must write them first.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T01:49:49.834Z",
+      "ended": "2026-11-14T01:57:14.926Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -355,8 +355,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T01:49:49.796Z",
       "ended": ""
     },
     {
@@ -424,7 +424,15 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U3",
+      "stage": "",
+      "text": "R2 docs finding: docs/design/tools.md:146 (a missing categories file is not an error) is falsified and U3 did not report it · handed to the docs unit U6 as a DOCS FALSIFIED line; U6 already owns docs/design/",
+      "state": "closed"
+    }
+  ],
   "overrides": [
     {
       "id": "O1",

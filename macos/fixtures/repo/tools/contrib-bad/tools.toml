@@ -1,4 +1,7 @@
 # Contributes to a name that is not a tool of the repo.
 
+category = "dev"
+summary = "Contributes to a tool that is not there"
+
 [contributes.nope]
 x = 1
