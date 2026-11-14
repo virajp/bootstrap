@@ -1,0 +1,446 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "The catalog data: categories, texts, selectable, hosts and the Mac git emails",
+  "requires": [
+    "docs/plans/2026-11-12-catalog-engine"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "execution": "teams",
+  "status": {
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-14 — 721c207 b6ce242 3734305 fd5090a a5bd8a8"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Build the engine from the worktree (`cd cli && go build -o <tmp>/bootstrap ./cmd/bootstrap`). In the main checkout of this repository, run `<tmp>/bootstrap check --clone <worktree>`. Then run `<tmp>/bootstrap mac sync --dry-run --clone <worktree>` on this Mac. --clone uses the worktree as the clone, as it is (docs/design/cli.md:422).",
+        "pass": "Each command exits 0, with no problem for a missing summary or category. The Mac dry run shows no change of the git files when both emails have a value."
+      }
+    ]
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "plan-management archive docs/plans/2026-11-12-catalog-data",
+      "mode": "run",
+      "notes": "Archive the plan folder, only when its gaps list has no open entry. With an open gap, skip this step and report the gaps."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "New behavior: the engine stops the sync for a tool without summary or category, and the catalog data is new. The user tags the release by hand after the landing."
+    }
+  ],
+  "dependencies": [],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "The categories of each side and the category of each tool.",
+      "ruling": "Ruling of the user (2026-11-12): repo/categories.toml has 10 categories (core, format-lint, editor-ai, languages, package-managers, security, secrets, containers, cloud, forge) and macos/categories.toml has 14 (system, shell, cli, dev, editors, ai, browsers, passwords, productivity, office, notes, media, chat, disk), in that order; the file order is the order of the TUI. Each of the 36 repo tools and each of the 109 Mac tools has one category, as texts.md gives it: the accepted mapping of plan 1a, plus the addition of 2026-11-12 (cli += bat, coreutils, curl, doggo, eza, fzf, gping, httping, ipcalc, jq, prettyping, ripgrep, zoxide; dev += lazygit, ruby, uv, worktrunk; passwords += age; fonts stays in system).",
+      "rejected": "One categories file for both sides. A category key in each tools.toml with no categories file.",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "The texts: summary, description and the pack descriptions.",
+      "ruling": "Ruling of the user (2026-11-12): the texts of texts.md, which the planner wrote and the user accepted. The units copy them as they are and write no text of their own. Each repo tool gets summary and description; each Mac tool gets summary, and its description stays as it is; each pack of both sides gets description (the reserved key of plan 1a). The first line of the header comment of a repo tools.toml stays as it is.",
+      "rejected": "Units that write the texts at the run. A summary for a pack.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "selectable and hosts.",
+      "ruling": "Ruling of the user (2026-11-12): selectable = false on repo/tools/_security_base only (gitleaks, grype and osv-scanner depend on it). hosts = [\"macos\"] on repo/tools/swift only. No Mac tool gets either key.",
+      "rejected": "A hidden key. hosts = [\"darwin\"] (the engine uses the mise OS names).",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "The Mac git tool: one email is enough.",
+      "ruling": "Ruling of the user (2026-11-12): email_github and email_gitlab of macos/tools/git/tools.toml get group = \"email\"; email_github gets note = \"Give at least one email. The SSH key that signs your commits is the same for GitHub and GitLab.\"; email_gitlab gets no note. The templates drop required on the two emails: identity.tmpl writes email = email_github when it is not empty, else email_gitlab; github.config.tmpl writes no email line when email_github is empty; gitlab.config.tmpl writes no email line when email_gitlab is empty; allowed_signers.tmpl writes no line for an empty email. name and signing_key keep required. A missing key and \"\" are the same empty value in a template.",
+      "rejected": "required on one email (a user has GitHub, GitLab or both). A note on each email question (the text then shows two times).",
+      "units": [
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "summary and category become necessary keys.",
+      "ruling": "Ruling of the user (2026-11-12): on both sides, a tools.toml with no summary, or with no category, stops the sync with code 2. The message has the form of the existing messages of check.go: \"<tools.toml shown>: summary is missing\" and \"<tools.toml shown>: category is missing\". Each other rule of plan 1a stays: 47 characters or fewer, a string, a known category id.",
+      "rejected": "Keys that stay optional (a new tool then has no row text in the TUI).",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "The units, the order, the teams and the review unit.",
+      "ruling": "Ruling of the user (2026-11-12): W1 U1 repo data and U2 Mac data, in parallel (teams: they own disjoint folders); W2 U3 engine; W3 U4 tests; W4 U5 review; W5 U6 docs; W6 U7 gates. The data comes first, because the engine of U3 stops the sync for a real tool without the keys. The tests are a unit of their own, because each scratch tool of test:repo and test:mac and each fixture of macos/fixtures/ needs the keys. U3 and U4 change runnable code (Go and bash), so the plan has one review unit. Model opus for each unit.",
+      "rejected": "The plan 1 order (engine first, no tests unit): each fixture then fails.",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6",
+        "U7"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "The precondition of the engine version.",
+      "ruling": "Ruling of the user (2026-11-12, the split of plan 1): this plan lands after the user tags bootstrap@2.1.0, the release of plan 1a. The first step of U1 and of U2 reads cli/VERSION; if it is below 2.1.0, the unit stops and changes nothing, and reports \"cli/VERSION is <v>; plan 1b needs 2.1.0 or later\". A consumer with an older engine refuses the new keys, so the data needs the released engine.",
+      "rejected": "Land the data with the engine in one plan (the release rule of docs/design/cli.md refuses it).",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "No tool literal in the engine.",
+      "ruling": "Assumed by the planner from D7 of plan 1a: U3 reads the keys generically. No string literal of the engine names a tool. TestEngineNamesNoTool stays green with no new entry in its allow list.",
+      "rejected": "",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "The migration item.",
+      "ruling": "Assumed by the planner from the standing rule that a contract change needs a migrate.md item: U6 adds the item M37 to docs/sync/migrate.md. A values file that names [tools._security_base] directly gets the warning of check; remove the table, because gitleaks, grype or osv-scanner selects the tool. A macos.toml needs no change: an empty email is now valid.",
+      "rejected": "No migrate item (no consumer of today names _security_base, but a consumer can).",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "The gaps of rulings review round 1 (2026-11-12).",
+      "ruling": "Assumed by the planner from D1-D6 and the rule of the simplest consistent CLI rule: (a) U3 owns macos/fixtures/ as well as cli/: it gives each fixture tool the keys, adds the categories file of each fixture clone, and then writes cli/internal/source/testdata/toml-yq.golden again, which hashes the fixtures (cli/internal/source/toml_test.go:17-49); U4 owns the test tasks only. (b) Each categories.toml starts with a plain comment, in the form of the comment of packs.toml (the sync never copies the file, so it has no Synced header); texts.md gives the text. (c) The git cases of D4 run in test:macos-tools, which syncs the real macos/tools/ with a copy of macos/examples/macos.toml: one case with email_gitlab = \"\", one with email_github = \"\", one with both empty (code 2). (d) summary = \"\" and category = \"\" count as missing: code 2 with the message of D5.",
+      "rejected": "A fixture git tool (it does not test the templates of U2). A Synced header on categories.toml (the sync never copies it). An empty summary as valid (a tool then has no row text in the TUI).",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "The gaps of rulings review round 2 (2026-11-12).",
+      "ruling": "Assumed by the planner from D1, D2 and D10: (a) A scratch tool of test:repo names a real id of the copied repo/categories.toml (for example core); U4 never writes or replaces that file. A scratch tool of test:mac names an id of the categories file of its fixture clone, which U3 writes. (b) The first comment lines of repo/packs.toml and macos/packs.toml change to the text that texts.md gives (\"The comments of the packs files\"), because the key description is not a member; U1 and U2 copy it. (c) toml-yq.golden hashes each .toml below repo/ and macos/ (cli/internal/source/toml_test.go:36), so the edits of U1 and U2 change it too; U3 writes it again after U1, U2 and its own fixture edits. (d) \"allowed_signers has one line\" means one signer line; the two Synced header lines do not count.",
+      "rejected": "",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "The gaps of rulings review round 3 (2026-11-12).",
+      "ruling": "Assumed by the planner from D6 and D11: (a) test:repo and test:mac can fail between W1 and W3: the cases of plan 1a for the categories file and each scratch tool without the new keys meet the data of U1 and U2 and the rule of U3. U1 and U2 do not run them; the plan gate runs them after U4. (b) D11 a applies to the shared setup of the test tasks. A case that tests the categories file itself (no file, an unknown id, a bad table, a valid file) may delete or overwrite the copy of the file inside its own clone, and no other. U4 never changes repo/categories.toml or a file of macos/fixtures/ in the working tree. Each case of plan 1a for the categories file stays, rewritten that way.",
+      "rejected": "U1 owns the test cases (two units of one wave then edit one file). Dropping the categories cases of plan 1a.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "No change of the packs files in this plan.",
+      "ruling": "Ruling of the user (2026-11-13), which replaces the pack parts of D2 and D11 b: this plan does not change repo/packs.toml or macos/packs.toml. It writes no pack description and no new comment there. The user reshaped the packs on the local branch packs-shortcut (420e3e6): new names, members with no default key, and a base whose members are mostly required. The engine of today refuses that form, so the branch lands with plan 2, which also writes the descriptions of the new packs. The sections \"The comments of the packs files\" and \"The pack descriptions\" of texts.md are not used.",
+      "rejected": "Pack descriptions in this plan: six of its 17 packs are renamed or removed on the branch. Removing the optional members in this plan: the branch already changes them, in a form that needs the engine of plan 2.",
+      "units": [
+        "U1",
+        "U2",
+        "U6"
+      ]
+    }
+  ],
+  "units": [
+    {
+      "id": "U1",
+      "title": "Repo data: categories, texts, selectable and hosts",
+      "wave": 1,
+      "file": "01-repo-data.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-14T01:41:50.533Z",
+      "ended": "2026-11-14T01:45:05.423Z",
+      "commit": "721c207",
+      "rounds": 1
+    },
+    {
+      "id": "U2",
+      "title": "Mac data: categories, texts and the git tool",
+      "wave": 1,
+      "file": "02-mac-data.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "macos/tools/",
+        "macos/packs.toml",
+        "macos/categories.toml",
+        "macos/examples/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-14T01:41:50.607Z",
+      "ended": "2026-11-14T01:45:05.490Z",
+      "commit": "b6ce242",
+      "rounds": 1
+    },
+    {
+      "id": "U3",
+      "title": "Engine: summary and category become necessary, with the Go tests and the fixtures",
+      "wave": 2,
+      "file": "03-engine.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/",
+        "macos/fixtures/"
+      ],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "The engine stops the sync for a real tool without the keys, so U1 and U2 must write them first.",
+      "status": "green",
+      "started": "2026-11-14T01:49:49.834Z",
+      "ended": "2026-11-14T01:57:14.926Z",
+      "commit": "3734305",
+      "rounds": 1
+    },
+    {
+      "id": "U4",
+      "title": "Tests: the keys in each scratch tool and fixture",
+      "wave": 3,
+      "file": "04-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/"
+      ],
+      "depends_on": [
+        "U3"
+      ],
+      "waits": "The cases assert the messages of U3, and each scratch tool needs the keys that U3 makes necessary.",
+      "status": "green",
+      "started": "2026-11-14T02:00:48.817Z",
+      "ended": "2026-11-14T02:27:05.143Z",
+      "commit": "fd5090a",
+      "rounds": 1
+    },
+    {
+      "id": "U5",
+      "title": "Review: the engine change and the test tasks",
+      "wave": 4,
+      "file": "05-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U3",
+        "U4"
+      ],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-14T02:30:22.990Z",
+      "ended": "2026-11-14T02:31:44.918Z",
+      "commit": "",
+      "rounds": 1,
+      "range": {
+        "from": "ee623c3",
+        "to": "69f722c"
+      }
+    },
+    {
+      "id": "U6",
+      "title": "Docs",
+      "wave": 5,
+      "file": "06-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/",
+        "docs/sync/",
+        "docs/setup/"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5"
+      ],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-14T02:32:35.394Z",
+      "ended": "2026-11-14T02:35:08.516Z",
+      "commit": "a5bd8a8",
+      "rounds": 2
+    },
+    {
+      "id": "U7",
+      "title": "Gates",
+      "wave": 6,
+      "file": "07-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U6"
+      ],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-14T02:40:39.924Z",
+      "ended": "2026-11-14T02:41:41.996Z",
+      "commit": "",
+      "rounds": 1
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "green",
+      "started": "2026-11-14T01:41:50.492Z",
+      "ended": "2026-11-14T01:49:32.317Z"
+    },
+    {
+      "id": "W2",
+      "status": "green",
+      "started": "2026-11-14T01:49:49.796Z",
+      "ended": "2026-11-14T02:00:35.863Z"
+    },
+    {
+      "id": "W3",
+      "status": "green",
+      "started": "2026-11-14T02:00:48.782Z",
+      "ended": "2026-11-14T02:30:02.645Z"
+    },
+    {
+      "id": "W4",
+      "status": "green",
+      "started": "2026-11-14T02:30:22.956Z",
+      "ended": "2026-11-14T02:32:12.539Z"
+    },
+    {
+      "id": "W5",
+      "status": "green",
+      "started": "2026-11-14T02:32:35.358Z",
+      "ended": "2026-11-14T02:40:18.503Z"
+    },
+    {
+      "id": "W6",
+      "status": "green",
+      "started": "2026-11-14T02:40:39.888Z",
+      "ended": "2026-11-14T02:42:13.168Z"
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "README.md, CLAUDE.md, docs/**",
+      "why": "each human-facing doc",
+      "owner": "U6"
+    },
+    {
+      "id": "S2",
+      "file": "texts.md of this folder",
+      "why": "the data that U1 and U2 copy; read only",
+      "owner": "orchestrator"
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice, acceptance criteria or Screens contract",
+      "started": "",
+      "ended": "2026-11-14T02:32:34.768Z"
+    },
+    "acceptance": {
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice, acceptance criteria or Screens contract",
+      "started": "",
+      "ended": "2026-11-14T02:32:34.870Z"
+    },
+    "ux": {
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice, acceptance criteria or Screens contract",
+      "started": "",
+      "ended": "2026-11-14T02:32:34.970Z"
+    },
+    "reconcile": {
+      "state": "skipped",
+      "detail": "skipped: no covers (no stamps, registry or environment to reconcile) and no code unit (nothing to persist); no Reconcile commit",
+      "started": "2026-11-14T02:32:35.106Z",
+      "ended": "2026-11-14T02:32:35.141Z"
+    }
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U3",
+      "stage": "",
+      "text": "R2 docs finding: docs/design/tools.md:146 (a missing categories file is not an error) is falsified and U3 did not report it · handed to the docs unit U6 as a DOCS FALSIFIED line; U6 already owns docs/design/",
+      "state": "closed"
+    }
+  ],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-13-1753"
+    }
+  ],
+  "run": {
+    "worktree": ".worktrees/all-2026-11-13-1753",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-12-catalog-data.jsonl"
+  }
+}
