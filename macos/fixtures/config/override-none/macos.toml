@@ -1,2 +1,8 @@
+format = 2
+
 [overrides.mise.shell_alias]
 fixture = "echo fixture"
+
+[tools.core]
+
+[tools.mise]

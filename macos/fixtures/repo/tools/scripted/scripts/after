@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
-# The after script of the fixture: a restart when ~/.restart exists.
+# The after script of the fixture: a restart when ~/.restart exists, and a
+# failure when ~/.after-fail exists.
 set -euo pipefail
 cat > /dev/null
+if [[ -e $HOME/.after-fail ]]; then
+  echo "scripted: the after script failed" >&2
+  exit 1
+fi
 if [[ -e $HOME/.restart ]]; then
   echo '{"restart": "a new shell"}'
 fi

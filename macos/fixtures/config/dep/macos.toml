@@ -1,7 +1,13 @@
 # A list for the dependency tool initdep appends its new items, also when a
 # [tools.initdep] table selects initdep too.
 
+format = 2
+
 [tools.init]
 
 [tools.initdep]
 items = [ "y", "x", "a" ]
+
+[tools.core]
+
+[tools.mise]

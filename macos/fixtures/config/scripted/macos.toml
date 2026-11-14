@@ -1,4 +1,10 @@
 # The selection of the scripted fixture config.
 
+format = 2
+
 [tools.scripted]
 word = "user"
+
+[tools.core]
+
+[tools.mise]

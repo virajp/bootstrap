@@ -1,2 +1,8 @@
+format = 2
+
 [tools.init]
 greeting = "hi"
+
+[tools.core]
+
+[tools.mise]

@@ -1,1 +1,7 @@
+format = 2
+
 [tools.merger]
+
+[tools.core]
+
+[tools.mise]

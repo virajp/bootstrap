@@ -1,6 +1,8 @@
 # The selection of the ok fixture config.
 # A second header comment line.
 
+format = 2
+
 [tools.core]
 items = [ "x" ]
 name = "override-name"
@@ -10,3 +12,5 @@ left = "file-left"
 
 [tools.opt]
 extra = "extra-value"
+
+[tools.mise]

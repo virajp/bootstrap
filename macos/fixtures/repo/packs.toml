@@ -1,9 +1,9 @@
 # The packs of the test:mac fixture repo.
 
 [pack.base]
-core = { default = true }
-mise = { default = true, required = true }
+core = { required = true }
+mise = { required = true }
 
 [pack.extra]
 merger = {}
-opt = { default = true }
+opt = {}

@@ -386,6 +386,43 @@
       "units": [
         "U3"
       ]
+    },
+    {
+      "id": "D29",
+      "decision": "Q6: macos/packs.toml has [pack.1password] and the tool folder macos/tools/1password/ exists, so the engine stops (pack is also a tool folder). Rename the pack, or drop the rule?",
+      "ruling": "Rename the pack in macos/packs.toml, for example to 1password-apps (recommended) — test:macos-tools passes that check, and the docs name the new pack.",
+      "rejected": "Drop the pack-name rule in selection, because the kind words now keep packs and tools apart",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D30",
+      "decision": "Q7: Mac init of an old-form values file puts macos.toml back when its sync stops with code 4 (the init stage changed). Should Apply treat code 4 as a successful sync and keep the values file?",
+      "ruling": "Yes, put the file back only on codes other than 0 and 4, in cli/internal/core/apply.go (recommended) — the init case of test:macos-tools passes.",
+      "rejected": "Keep the restore on code 4 and change the test case to expect it",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D31",
+      "decision": "Q8: A Mac sync that creates macos.toml (AddTables) loses the blank line after the header, so RecordCommit puts bootstrap_commit on line 1 above the header. Should a new macos.toml keep the header on line 1?",
+      "ruling": "Yes, AddTables keeps a blank line after the header comments (recommended) — the line-1 check of case_values_missing in test:mac can come back.",
+      "rejected": "Accept bootstrap_commit on line 1 — the case keeps its looser check",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D32",
+      "decision": "Q9: A clone with no packs.toml, or a packs.toml with no [pack.base], synced with exit 0 under the selection model (the old sync stopped with code 3). Should sync stop when packs.toml or [pack.base] is missing?",
+      "ruling": "The user: \"`base` pack is mandatory and will be the least thing configured in `packs.toml` so it automatically makes the file mandatory\". Keep a stop, code 3 \"base is not a bootstrap pack (named in <packs file>)\", when packs.toml or [pack.base] is missing, and restore the two test cases to expect it: packs.toml must exist and must hold at least [pack.base].",
+      "rejected": "Accept exit 0 as built — no engine change, but a clone without base installs no required tool, with no message",
+      "units": [
+        "U1",
+        "U5"
+      ]
     }
   ],
   "units": [
@@ -405,7 +442,7 @@
       "status": "green",
       "started": "2026-11-14T02:58:57.628Z",
       "ended": "2026-11-14T03:46:55.132Z",
-      "commit": "5604218",
+      "commit": "6a72517",
       "rounds": 1
     },
     {
@@ -430,7 +467,7 @@
       "status": "green",
       "started": "2026-11-14T02:58:57.709Z",
       "ended": "2026-11-14T03:46:55.205Z",
-      "commit": "e36fb3e",
+      "commit": "7ec006f",
       "rounds": 1
     },
     {
@@ -450,7 +487,7 @@
       "status": "green",
       "started": "2026-11-14T03:55:19.159Z",
       "ended": "2026-11-14T04:28:39.782Z",
-      "commit": "caec1e0",
+      "commit": "ba8f5c0",
       "rounds": 2
     },
     {
@@ -491,11 +528,11 @@
         "U4"
       ],
       "waits": "The cases assert the messages of U1 and U4 and use the data of U2.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T04:46:24.563Z",
+      "ended": "2026-11-14T07:58:48.023Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -591,8 +628,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T04:46:24.520Z",
       "ended": ""
     },
     {

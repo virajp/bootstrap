@@ -17,7 +17,9 @@
 # both sides of repo/tools/ and macos/tools/ has one version and one `depends`, a
 # mise setting on both sides has one value, and a fixture proves that the check
 # finds a difference. Case 4: `bootstrap mac init` migrates the example in its
-# old form ([tools.macos-setup]), then `bootstrap mac sync` runs. Case 5: the
+# old form ([tools.macos-setup] and no format = 2), then `bootstrap mac sync`
+# runs. The example has format = 2 and a table for each required member of the
+# pack base, so the sync of case 1 writes no table into it. Case 5: the
 # git tool needs one email only: with email_gitlab or email_github empty, the
 # sync exits 0, identity has the other email, the config of the empty one has
 # no email line, and allowed_signers has one signer line; with both empty, the
@@ -207,6 +209,11 @@ if [[ -z $missing ]]; then
 else
   fail "macos/examples/macos.toml does not select:$missing"
 fi
+if grep -qF '] added to ' "$log"; then
+  fail "the sync writes a table of a required member into macos/examples/macos.toml"
+else
+  pass "macos/examples/macos.toml has a table for each required member of the pack base"
+fi
 
 run_real
 check_exit 0
@@ -263,7 +270,7 @@ fi
 # ---- case 4: mac init migrates the old form, then mac sync runs ----------------
 
 setup_case "init" init
-sed 's/^\[tools\.mise\]$/[tools.macos-setup]/' "$example" > "$MACOS_SETUP_REPO_PATH/macos.toml"
+sed -e 's/^\[tools\.mise\]$/[tools.macos-setup]/' -e '/^format = 2$/d' "$example" > "$MACOS_SETUP_REPO_PATH/macos.toml"
 commit_config
 runs=$((runs + 1))
 log="$dir/run-$runs.txt"
@@ -274,6 +281,11 @@ if grep -qxF '[tools.mise]' "$MACOS_SETUP_REPO_PATH/macos.toml" && ! grep -qF 'm
   pass "[tools.macos-setup] becomes [tools.mise]"
 else
   fail "macos.toml still has the old form"
+fi
+if grep -qxF 'format = 2' "$MACOS_SETUP_REPO_PATH/macos.toml"; then
+  pass "the migration writes format = 2"
+else
+  fail "macos.toml has no format = 2 after mac init"
 fi
 commit_config
 run_real

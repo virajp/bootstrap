@@ -1,2 +1,8 @@
+format = 2
+
 [overrides.mise.env]
 NOPE = "1"
+
+[tools.core]
+
+[tools.mise]

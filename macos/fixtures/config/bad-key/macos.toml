@@ -1,1 +1,7 @@
+format = 2
+
 colour = "blue"
+
+[tools.core]
+
+[tools.mise]
