@@ -673,28 +673,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-14T08:26:31.428Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-14T08:26:31.541Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-14T08:26:31.655Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
-      "started": "",
-      "ended": ""
+      "state": "skipped",
+      "detail": "no covers and no code unit: no stamps, no persist; no Reconcile commit",
+      "started": "2026-11-14T08:26:31.802Z",
+      "ended": "2026-11-14T08:26:31.855Z"
     }
   },
   "gaps": [
