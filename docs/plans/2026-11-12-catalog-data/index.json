@@ -273,7 +273,7 @@
       "status": "green",
       "started": "2026-11-14T02:00:48.817Z",
       "ended": "2026-11-14T02:27:05.143Z",
-      "commit": "",
+      "commit": "fd5090a",
       "rounds": 1
     },
     {
@@ -361,9 +361,9 @@
     },
     {
       "id": "W3",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-14T02:00:48.782Z",
-      "ended": ""
+      "ended": "2026-11-14T02:30:02.645Z"
     },
     {
       "id": "W4",
