@@ -5,8 +5,8 @@
 ## Ruling
 
 The plan names no generator. No unit bumps `cli/VERSION`: the release
-workflow writes it when the user tags `bootstrap@4.0.0` at once after this
-plan lands (D69).
+workflow writes it when the user tags `bootstrap@4.0.0` once R1a, R1b, R1c
+and R2 all land (D92).
 
 ### Rulings review, round 2
 
@@ -19,11 +19,10 @@ These rulings override any earlier text of this file that they contradict.
 
 These rulings override any earlier text of this file that they contradict.
 
-- **D69** — bootstrap@4.0.0 is tagged at once after R1a lands, as the selection
-  model does for 3.0.0. R1b, R1c and R2 become minor releases (4.1, 4.2, 4.3);
-  R2 keeps the old task names as aliases for one release, as the design says, so
-  it does not break. R3 waits for the release that carries the contract. D36 and
-  D40 are superseded on the tag.
+- **D92** (supersedes D69) — bootstrap@4.0.0 is tagged once, after R1a, R1b,
+  R1c and R2 all land (R1b D16); until then the user tests with a local binary.
+  No tag after R1a; R1b, R1c and R2 are not 4.x minors. D36 and D40 hold again.
+  Whether R2 keeps alias task names is for the R2 interview.
 
 ## Edits
 

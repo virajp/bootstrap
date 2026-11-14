@@ -37,11 +37,10 @@ These rulings override any earlier text of this file that they contradict.
 
 These rulings override any earlier text of this file that they contradict.
 
-- **D69** — bootstrap@4.0.0 is tagged at once after R1a lands, as the selection
-  model does for 3.0.0. R1b, R1c and R2 become minor releases (4.1, 4.2, 4.3);
-  R2 keeps the old task names as aliases for one release, as the design says, so
-  it does not break. R3 waits for the release that carries the contract. D36 and
-  D40 are superseded on the tag.
+- **D92** (supersedes D69) — bootstrap@4.0.0 is tagged once, after R1a, R1b,
+  R1c and R2 all land (R1b D16); until then the user tests with a local binary.
+  No tag after R1a; R1b, R1c and R2 are not 4.x minors. D36 and D40 hold again.
+  Whether R2 keeps alias task names is for the R2 interview.
 
 ### Rulings review, round 4
 
@@ -88,10 +87,10 @@ no longer has a version check (D84).
     section "Amendments 2026-11-14 (R1a planning)" that records D1 (4.0.0
     after 3.1.0; R3 waits for 4.0.0), D3 (the old `config` command becomes
     `settings`), D5 (the overrides merge into `tools.toml`), D10
-    (`releases.yaml` moves in R3), D2 (R1 is three plans) and D69
-    (`bootstrap@4.0.0` is tagged at once after R1a; R1b, R1c and R2 ship as
-    4.x minors, R2 with alias task names; R3 waits for the release that
-    carries the contract). Fix the phase table and every 3.0.0 reference to
+    (`releases.yaml` moves in R3), D2 (R1 is three plans) and D92
+    (one `bootstrap@4.0.0` tag after R1a, R1b, R1c and R2 all land;
+    local-binary tests until then; R3 waits for 4.0.0). Fix the phase table and
+    every 3.0.0 reference to
     match (D36). Do not rewrite the rest of the record.
 
 ## Verification

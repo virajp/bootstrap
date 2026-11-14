@@ -53,7 +53,7 @@
     {
       "id": "bootstrap",
       "level": "MAJOR",
-      "reason": "Breaking: the values files move into .config/bootstrap/ (format = 3), the branch keys become one landing key, [member.*] becomes [members.*], the old config command becomes settings, and BOOTSTRAP_VALUES names a folder. The user tags bootstrap@4.0.0 by hand at once after this plan lands (D69)."
+      "reason": "Breaking: the values files move into .config/bootstrap/ (format = 3), the branch keys become one landing key, [member.*] becomes [members.*], the old config command becomes settings, and BOOTSTRAP_VALUES names a folder. The user tags bootstrap@4.0.0 by hand once R1a, R1b, R1c and R2 all land (D92)."
     }
   ],
   "dependencies": [],
@@ -1184,6 +1184,16 @@
       "units": [
         "U7",
         "U8"
+      ]
+    },
+    {
+      "id": "D92",
+      "decision": "Amendment after R1b planning (2026-11-14): when is bootstrap@4.0.0 tagged? Supersedes D69.",
+      "ruling": "R1b D16, the user: \"Keep the release to 4.0.0 since we will be doing all these changes and only then releasing\" and \"all, we will be building a local binary and testing it\". bootstrap@4.0.0 is tagged once, after R1a, R1b, R1c and R2 all land; until then the user tests with a local binary. No tag after R1a; R1b, R1c and R2 are not 4.x minors. D36 and D40 hold again. Whether R2 keeps alias task names is for the R2 interview.",
+      "rejected": "D69: tag 4.0.0 at once after R1a, with R1b, R1c and R2 as 4.1, 4.2, 4.3.",
+      "units": [
+        "U8",
+        "U9"
       ]
     }
   ],
