@@ -16,7 +16,6 @@ dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:@dprint/type
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:dprint-plugin-markup@"}
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:dprint-plugin-tailwindcss@"}
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:dprint-plugin-yaml@"}
-dprint	dprint.jsonc	{"kind":"key","path":["exec","commands"]}
 dprint	dprint.jsonc	{"kind":"key","path":["json","jsonTrailingCommaFiles"]}
 dprint	dprint.jsonc	{"kind":"key","path":["json","preferSingleLine"]}
 dprint	dprint.jsonc	{"kind":"key","path":["json","trailingCommas"]}
