@@ -445,8 +445,12 @@ func (s *state) toolValues() fail.Code {
 		return s.logAll(err)
 	}
 	if missing := questions.Missing(s.idx, s.res.Tools, s.values.User, over); len(missing) > 0 {
-		for _, q := range missing {
-			s.log("the question %s has no answer in %s - %s", q.Name(), valuesName, oldform.MacHint)
+		for _, g := range missing {
+			what := "question"
+			if g.Group {
+				what = "group"
+			}
+			s.log("the %s %s has no answer in %s - %s", what, g.Name(), valuesName, oldform.MacHint)
 		}
 		return fail.Usage
 	}

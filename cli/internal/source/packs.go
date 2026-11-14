@@ -40,7 +40,16 @@ type Packs struct {
 	DefaultTrue map[string]bool
 	// Required holds `<pack>/<key>` for each member with `required = true`.
 	Required map[string]bool
+	// Descriptions holds the `description` of each pack that has one.
+	Descriptions map[string]string
+	// BadDescriptions holds the packs whose `description` is not a string,
+	// sorted.
+	BadDescriptions []string
 }
+
+// DescriptionKey is the reserved key of a `[pack.<name>]` table: the text of
+// the pack, not a member.
+const DescriptionKey = "description"
 
 // IsDefaultTrue tells if the member table has `default = true`.
 func (p *Packs) IsDefaultTrue(pack, key string) bool { return p.DefaultTrue[pack+"/"+key] }
@@ -99,7 +108,7 @@ func kindOf(v any) string {
 // ReadPacks reads the packs file. A missing file gives no pack. It returns the
 // message `cannot read <shown>` (code 2) when the file does not parse.
 func (s Source) ReadPacks() (*Packs, error) {
-	p := &Packs{Shown: s.PacksShown(), DefaultTrue: map[string]bool{}, Required: map[string]bool{}}
+	p := &Packs{Shown: s.PacksShown(), DefaultTrue: map[string]bool{}, Required: map[string]bool{}, Descriptions: map[string]string{}}
 	file := s.PacksFile()
 	st, err := os.Stat(file)
 	if err != nil || !st.Mode().IsRegular() {
@@ -123,6 +132,14 @@ func (s Source) ReadPacks() (*Packs, error) {
 			}
 			for _, key := range table.Keys() {
 				v := table.Get(key)
+				if key == DescriptionKey {
+					if d, ok := v.(string); ok {
+						p.Descriptions[name] = d
+					} else {
+						p.BadDescriptions = append(p.BadDescriptions, name)
+					}
+					continue
+				}
 				e, ok := v.(*Obj)
 				if !ok {
 					p.Bad = append(p.Bad, BadValue{name, key, kindOf(v)})

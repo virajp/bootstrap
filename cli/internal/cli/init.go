@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/field"
 	"github.com/virajp/bootstrap/cli/internal/format"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/questions"
@@ -137,6 +138,16 @@ func (a *app) init(mac bool, o opts) fail.Code {
 	c, code := a.openClone(mac, true)
 	defer c.cleanup()
 	if code != fail.OK {
+		return code
+	}
+	// The named tools that init cannot select. A problem of the clone shows
+	// in the plan.
+	side := source.Repo
+	if mac {
+		side = source.Macos
+	}
+	idx, _ := source.Source{Root: c.dir, Side: side}.Open()
+	if code := a.refuse(idx, o.names); code != fail.OK {
 		return code
 	}
 
@@ -422,9 +433,13 @@ func (a *app) keptSeeds(seeds []string) {
 }
 
 // ask gives the answer of each question of the selected tools that has no
-// answer, and of each --answer, as (tool, key, value). With --yes, a question
-// without an --answer is an error. Without a terminal, too. With <only>, it
-// asks only the questions of those tools.
+// answer, and of each --answer, as (tool, key, value). An empty --answer is
+// only for an optional or a group question. With --yes, a question without a
+// key and an --answer is an error, and a group without an answer that is not
+// empty, too. Without a terminal, too. In a terminal, it asks each such
+// question in a field that starts with its proposal, and each question of a
+// group without an answer that is not empty, until the group has one. With
+// <only>, it asks only the questions of those tools.
 func (a *app) ask(mac bool, sel *selected, o opts, only map[string]bool) ([][3]string, fail.Code) {
 	all := questions.Of(sel.idx, sel.tools)
 	byName := map[string]questions.Question{}
@@ -435,8 +450,14 @@ func (a *app) ask(mac bool, sel *selected, o opts, only map[string]bool) ([][3]s
 	rc := fail.OK
 	for _, ans := range o.answers {
 		name, value, ok := strings.Cut(ans, "=")
-		if _, known := byName[name]; !ok || !known {
+		qq, known := byName[name]
+		if !ok || !known {
 			a.fail(fmt.Sprintf("--answer %s: no question %s of the selected tools", ans, name), "the form is <tool>.<key>=<value>")
+			rc = fail.Usage
+			continue
+		}
+		if value == "" && qq.Necessary() {
+			a.fail(fmt.Sprintf("--answer %s: an empty answer is only for an optional or a group question", ans), fmt.Sprintf("give it with --answer %s=<value>", name))
 			rc = fail.Usage
 			continue
 		}
@@ -446,46 +467,113 @@ func (a *app) ask(mac bool, sel *selected, o opts, only map[string]bool) ([][3]s
 		return nil, rc
 	}
 	dir := sel.root(a, mac)
-	var out [][3]string
-	for _, qq := range all {
-		if v, ok := given[qq.Name()]; ok {
-			out = append(out, [3]string{qq.Tool, qq.Key, v})
-			continue
+	terminal := !o.yes && a.interactive()
+	// The answers that the command writes: the flags, then the fields.
+	answers := map[string]string{}
+	for name, v := range given {
+		answers[name] = v
+	}
+	filled := func(q questions.Question) bool {
+		if v, ok := answers[q.Name()]; ok {
+			return v != ""
 		}
-		if _, ok := questions.Answer(sel.user, sel.over, qq); ok {
-			continue
+		v, ok := questions.Answer(sel.user, sel.over, q)
+		return ok && !questions.Empty(v)
+	}
+	groupEmpty := func(q questions.Question) bool {
+		for _, m := range questions.Members(all, q) {
+			if filled(m) {
+				return false
+			}
 		}
+		return true
+	}
+	// The groups without an answer that is not empty in the files and the
+	// flags, and the last question of each group.
+	open := map[string]bool{}
+	last := map[string]int{}
+	for i, qq := range all {
+		if qq.Group != "" {
+			open[qq.GroupName()] = groupEmpty(qq)
+			last[qq.GroupName()] = i
+		}
+	}
+	for i, qq := range all {
 		if only != nil && !only[qq.Tool] {
 			continue
 		}
-		if o.yes || !a.interactive() {
-			a.fail(fmt.Sprintf("the question %s has no answer", qq.Name()), fmt.Sprintf("give it with --answer %s=<value>", qq.Name()))
+		name := qq.Name()
+		inOpen := qq.Group != "" && open[qq.GroupName()]
+		_, flagged := given[name]
+		_, inFiles := questions.Answer(sel.user, sel.over, qq)
+		if !flagged && (!inFiles || inOpen) {
+			switch {
+			case terminal:
+				v, code := a.askField(qq, dir)
+				if code != fail.OK {
+					return nil, code
+				}
+				answers[name] = v
+			case !inOpen:
+				hint := fmt.Sprintf("give it with --answer %s=<value>", name)
+				if !qq.Necessary() {
+					hint += fmt.Sprintf(", or leave it empty with --answer %s=", name)
+				}
+				a.fail(fmt.Sprintf("the question %s has no answer", name), hint)
+				rc = fail.Usage
+			}
+		}
+		if !inOpen || last[qq.GroupName()] != i {
+			continue
+		}
+		members := questions.Members(all, qq)
+		var keys []string
+		for _, m := range members {
+			keys = append(keys, m.Key)
+		}
+		if !terminal {
+			a.fail(fmt.Sprintf("the group %s has no answer", qq.GroupName()), "give at least one with --answer <tool>.<key>=<value>: "+strings.Join(keys, ", "))
 			rc = fail.Usage
 			continue
 		}
-		proposal, _ := questions.Proposal(qq, dir)
-		for {
-			if proposal != "" {
-				fmt.Fprintf(a.stdout, "? %s (%s)\n  [%s]: ", qq.Text, qq.Name(), proposal)
-			} else {
-				fmt.Fprintf(a.stdout, "? %s (%s)\n  : ", qq.Text, qq.Name())
-			}
-			line, ok := a.readLine()
-			if !ok {
-				a.errorf("the question %s has no answer", qq.Name())
-				return nil, fail.Usage
-			}
-			line = strings.TrimSpace(line)
-			if line == "" {
-				line = proposal
-			}
-			if line != "" {
-				out = append(out, [3]string{qq.Tool, qq.Key, line})
-				break
+		for groupEmpty(qq) {
+			fmt.Fprintf(a.stdout, "Give at least one answer: %s\n", strings.Join(keys, ", "))
+			for _, m := range members {
+				v, code := a.askField(m, dir)
+				if code != fail.OK {
+					return nil, code
+				}
+				answers[m.Name()] = v
 			}
 		}
 	}
-	return out, rc
+	if rc != fail.OK {
+		return nil, rc
+	}
+	var out [][3]string
+	for _, qq := range all {
+		if v, ok := answers[qq.Name()]; ok {
+			out = append(out, [3]string{qq.Tool, qq.Key, v})
+		}
+	}
+	return out, fail.OK
+}
+
+// askField asks <qq> in a field that starts with its proposal. An interrupt
+// gives code 2.
+func (a *app) askField(qq questions.Question, dir string) (string, fail.Code) {
+	proposal, _ := questions.Proposal(qq, dir)
+	spec := field.Spec{Question: qq.Text + " (" + qq.Name() + ")", Note: qq.Note, Proposal: proposal, Necessary: qq.Necessary()}
+	ask := a.prompt
+	if ask == nil {
+		ask = func(s field.Spec) (string, error) { return field.Ask(a.stdin, a.stdout, s) }
+	}
+	v, err := ask(spec)
+	if err != nil {
+		a.errorf("the question %s has no answer", qq.Name())
+		return "", fail.Usage
+	}
+	return v, fail.OK
 }
 
 // root gives the folder where a detect command runs: $HOME on the Mac, else
@@ -549,6 +637,12 @@ func (a *app) questions(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
+	return a.printQuestions(mac, sel, o)
+}
+
+// printQuestions prints the questions of the tools of <sel>, or of the tools
+// that <o> names, as JSON or as text.
+func (a *app) printQuestions(mac bool, sel *selected, o opts) fail.Code {
 	tools := sel.tools
 	if len(o.names) > 0 {
 		for _, n := range o.names {
@@ -566,11 +660,28 @@ func (a *app) questions(mac bool, o opts) fail.Code {
 		Proposal *string `json:"proposal"`
 		Source   *string `json:"source"`
 		Answer   any     `json:"answer"`
+		Group    string  `json:"group"`
+		Note     string  `json:"note"`
+		Optional bool    `json:"optional"`
+		// state is the text state of a question without an answer that is
+		// not an error: "optional" or "group".
+		state string
+		// gone: a question of a group without an answer that is not empty.
+		gone bool
 	}
 	rows := []row{}
 	dir := sel.root(a, mac)
-	for _, qq := range questions.Of(sel.idx, tools) {
-		r := row{Tool: qq.Tool, Key: qq.Key, Question: qq.Text}
+	all := questions.Of(sel.idx, tools)
+	for _, qq := range all {
+		r := row{Tool: qq.Tool, Key: qq.Key, Question: qq.Text, Group: qq.Group, Note: qq.Note, Optional: qq.Optional}
+		if qq.Group != "" {
+			r.gone = !questions.GroupAnswered(all, qq, sel.user, sel.over)
+			if !r.gone {
+				r.state = "group"
+			}
+		} else if qq.Optional {
+			r.state = "optional"
+		}
 		if v, from := questions.Proposal(qq, dir); from != "" {
 			r.Proposal, r.Source = &v, &from
 		}
@@ -594,7 +705,7 @@ func (a *app) questions(mac bool, o opts) fail.Code {
 		width = max(width, utf8.RuneCountInString(r.Key))
 	}
 	pad := strings.Repeat(" ", width+5)
-	tool, answered := "", 0
+	tool, answered, others := "", 0, 0
 	for _, r := range rows {
 		if r.Tool != tool {
 			if tool != "" {
@@ -605,11 +716,22 @@ func (a *app) questions(mac bool, o opts) fail.Code {
 		}
 		fmt.Fprintf(a.stdout, "  %-*s   %s\n", width, r.Key, r.Question)
 		answer := ""
-		if r.Answer != nil {
+		switch {
+		case r.Answer != nil && !r.gone:
 			answered++
 			answer = fmt.Sprint(r.Answer)
-			fmt.Fprintf(a.stdout, "%s%s %s\n", pad, report.Glyph("ok", a.styled), shortValue(answer))
-		} else {
+			line := pad + report.Glyph("ok", a.styled)
+			if answer != "" {
+				line += " " + shortValue(answer)
+			}
+			fmt.Fprintln(a.stdout, line)
+		case r.state == "optional":
+			others++
+			fmt.Fprintf(a.stdout, "%s%s no answer (optional)\n", pad, report.Glyph("info", a.styled))
+		case r.state == "group":
+			others++
+			fmt.Fprintf(a.stdout, "%s%s no answer (group %s has an answer)\n", pad, report.Glyph("info", a.styled), r.Group)
+		default:
 			fmt.Fprintf(a.stdout, "%s%s no answer\n", pad, report.Glyph("error", a.styled))
 		}
 		if r.Proposal != nil && *r.Proposal != answer {
@@ -621,8 +743,8 @@ func (a *app) questions(mac bool, o opts) fail.Code {
 	if answered > 0 {
 		text += fmt.Sprintf(" · %d answered", answered)
 	}
-	if answered < len(rows) {
-		text += fmt.Sprintf(" · %d without an answer", len(rows)-answered)
+	if without := len(rows) - answered - others; without > 0 {
+		text += fmt.Sprintf(" · %d without an answer", without)
 	}
 	out.Info(text)
 	return fail.OK

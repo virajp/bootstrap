@@ -20,6 +20,7 @@ import (
 	"syscall"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/field"
 	"github.com/virajp/bootstrap/cli/internal/macos"
 	"github.com/virajp/bootstrap/cli/internal/repo"
 	"github.com/virajp/bootstrap/cli/internal/report"
@@ -70,7 +71,8 @@ Flags
                        selected exits 1
   --answer <tool>.<key>=<value>
                        init, add, replace, detect: the answer of a question
-                       (repeatable)
+                       (repeatable); --answer <tool>.<key>= writes an empty
+                       answer for an optional or a group question
   --json               questions, mac questions: JSON output
   --no-bootstrap       mac init, mac sync, mac check: skip mise bootstrap
   --jobs <n>           the jobs at a time (default: 2 x the CPU count)
@@ -134,6 +136,11 @@ type app struct {
 	pwd            string
 	settings       settings // The settings of the command and their sources.
 	reasons        []string // Why a command has nothing to add: the end line shows them.
+	// prompt asks a question in a field; nil is the field of the terminal.
+	// Tests replace it.
+	prompt func(field.Spec) (string, error)
+	// terminal makes interactive true. Tests set it with prompt.
+	terminal bool
 }
 
 // opts are the flags and the arguments of a command.
@@ -588,9 +595,34 @@ func (a *app) check(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
+	a.warnNotSelectable(mac, c.dir, w.values)
 	if mac {
 		o.dryRun = true
 		return macos.Run(syncArgs(true, o), a.stdout, a.stderr)
 	}
 	return repo.Run([]string{"--check"}, a.stdout, a.stderr)
+}
+
+// warnNotSelectable prints a warning for each tool with selectable = false
+// that the values file <file> names in its [tools] table. A problem of the
+// clone or of the file shows in the check itself.
+func (a *app) warnNotSelectable(mac bool, dir, file string) {
+	side := source.Repo
+	if mac {
+		side = source.Macos
+	}
+	raw, err := source.ReadTOML(file)
+	if err != nil {
+		return
+	}
+	tools, ok := raw.Get("tools").(*source.Obj)
+	if !ok {
+		return
+	}
+	idx, _ := source.Source{Root: dir, Side: side}.Open()
+	for _, t := range tools.Keys() {
+		if m := idx.Manifests[t]; m != nil && !m.Selectable {
+			a.warnf("%s is not selectable - remove [tools.%s] from %s; a tool that needs it selects it", t, t, a.show(file))
+		}
+	}
 }

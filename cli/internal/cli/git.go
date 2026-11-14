@@ -119,6 +119,9 @@ func (a *app) warnDirty(dirty []string) {
 
 // interactive tells if stdin and stdout are terminals.
 func (a *app) interactive() bool {
+	if a.terminal {
+		return true
+	}
 	in, ok1 := a.stdin.(*os.File)
 	out, ok2 := a.stdout.(*os.File)
 	return ok1 && ok2 && report.IsTerminal(in) && report.IsTerminal(out)

@@ -22,6 +22,15 @@ var formCases = []formCase{
 	{name: "repo-pack-entry-keys", side: source.Repo,
 		over: tree{"repo/packs.toml": "[pack.base]\na = { default = true, env = 1 }\n"},
 		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.base] a has the entry key 'env' - the entry keys are default and required\n--- stdout\n"},
+	{name: "repo-pack-description", side: source.Repo,
+		over: tree{"repo/packs.toml": "[pack.base]\ndescription = \"The base.\"\na = { default = true }\n"},
+		want: "rc=0\n--- stderr\n--- stdout\ntools: a\nsel:\na - default\ndeps:\nvalues:\n{\"a\":{}}\n"},
+	{name: "repo-pack-description-type", side: source.Repo,
+		over: tree{"repo/packs.toml": "[pack.base]\ndescription = 1\na = { default = true }\n"},
+		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.base] description must be a string\n--- stdout\n"},
+	{name: "repo-pack-string-member", side: source.Repo,
+		over: tree{"repo/packs.toml": "[pack.base]\ndescription = \"The base.\"\na = \"x\"\n"},
+		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.base] a must be a table, { default = true } or {}\n--- stdout\n"},
 	{name: "repo-required-ok", side: source.Repo,
 		over: tree{"repo/packs.toml": "[pack.base]\na = { default = true, required = true }\n"},
 		want: "rc=0\n--- stderr\n--- stdout\ntools: a\nsel:\na - default\ndeps:\nvalues:\n{\"a\":{}}\n"},
@@ -129,7 +138,7 @@ var formCases = []formCase{
 		over: tree{"macos/tools/m1/tools.toml": "description = 1\nparent = \"m2\"\nfoo = 1\n[tasks.\"x\"]\nsource = \"x\"\nrequires_found = [ \"a\" ]\n", "macos/tools/m1/tasks/x": "x"},
 		want: "rc=2\n--- stderr\n" +
 			"bootstrap: macos/tools/m1/tools.toml: description must be a string\n" +
-			"bootstrap: macos/tools/m1/tools.toml: foo is not a key of tools.toml - the keys are description, stage, depends, parent, [defaults], [questions], [contributes], [files], [tasks] and [mise]\n" +
+			"bootstrap: macos/tools/m1/tools.toml: foo is not a key of tools.toml - the keys are description, summary, category, selectable, stage, depends, parent, [defaults], [questions], [contributes], [files], [tasks] and [mise]\n" +
 			"bootstrap: macos/tools/m1/tools.toml: [tasks.\"x\"] requires_found is for repo tools only\n" +
 			"--- stdout\n"},
 }

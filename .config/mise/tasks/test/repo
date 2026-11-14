@@ -2356,7 +2356,7 @@ check_engine_keys() {
 }
 check_two_values_errors() {
   check_that "two errors in two tools: the question" log_has \
-    'repo/tools/vtest/tools.toml: [questions.q] foo is not a key of a question - the keys are question, detect and example'
+    'repo/tools/vtest/tools.toml: [questions.q] foo is not a key of a question - the keys are question, detect, example, group, note and optional'
 }
 
 vtest_values='environments = [ "dev" ]
@@ -2408,7 +2408,7 @@ items = [ \"b\" ]" values_empty_nested_member '+vtest config={"items":["b"]}'
 run_case "questions: no question" 2 "$vtest_values" values_question_none \
   'repo/tools/vtest/tools.toml: [questions.q] needs a question string'
 run_case "questions: the key foo" 2 "$vtest_values" values_question_key \
-  'repo/tools/vtest/tools.toml: [questions.q] foo is not a key of a question - the keys are question, detect and example'
+  'repo/tools/vtest/tools.toml: [questions.q] foo is not a key of a question - the keys are question, detect, example, group, note and optional'
 run_case "questions: detect = 1" 2 "$vtest_values" values_question_detect \
   'repo/tools/vtest/tools.toml: [questions.q] detect must be a string (a shell command)'
 run_case "questions: a valid question with its answer" 0 "$vtest_values
@@ -3365,6 +3365,253 @@ CASE_CALL=replace_dirty run_case "replace: a work tree with changes that are not
 [tools.pnpm]" pnpm_files 'the work tree has changes that are not committed' check_replace_dirty
 replace_one() { synced && "$bin" replace --yes pnpm; }
 CASE_CALL=replace_one run_case "replace with one tool" 2 "$dev_values" '' 'replace needs two tools'
+
+# The catalog keys: summary, category, selectable, description and hosts of a
+# tool, the categories file, the description of a pack, and the keys group,
+# note and optional of a question. A change function writes the scratch tool
+# vtest.
+# cat_tool <tool> <depends> [<line>...]: a tool with no file, the items
+# <depends> in its depends list, and these lines after its top-level keys.
+cat_tool() {
+  local tool=$1 depends=$2
+  shift 2
+  mkdir -p -- "$clone/repo/tools/$tool"
+  printf '%s\n' 'default_envs = [ "dev" ]' "depends = [ $depends ]" 'root_only = false' "$@" \
+    > "$clone/repo/tools/$tool/tools.toml"
+}
+# first_line <tool> <line>: a top-level line before the other lines of a
+# tools.toml of the clone.
+first_line() {
+  local toml=$clone/repo/tools/$1/tools.toml
+  printf '%s\n' "$2" | cat - "$toml" > "$toml.new"
+  mv -- "$toml.new" "$toml"
+}
+vtest_at='repo/tools/vtest/tools.toml: '
+summary_47=$(printf '%047d' 0 | tr 0 x)
+
+# summary, category, selectable and description of a tool (D1).
+cat_summary_long() { cat_tool vtest '' "summary = \"${summary_47}y\""; }
+cat_summary_number() { cat_tool vtest '' 'summary = 1'; }
+cat_category_number() { cat_tool vtest '' 'category = 1'; }
+cat_selectable_string() { cat_tool vtest '' 'selectable = "no"'; }
+cat_description_number() { cat_tool vtest '' 'description = 1'; }
+cat_texts() {
+  cat_tool vtest '' "summary = \"$summary_47\"" 'description = "The scratch tool of the catalog cases."' \
+    'selectable = true'
+}
+run_case "catalog: a summary of 48 characters" 2 "$vtest_values" cat_summary_long \
+  "${vtest_at}summary must be a string of 47 characters or fewer"
+run_case "catalog: a summary that is not a string" 2 "$vtest_values" cat_summary_number \
+  "${vtest_at}summary must be a string of 47 characters or fewer"
+run_case "catalog: a category that is not a string" 2 "$vtest_values" cat_category_number \
+  "${vtest_at}category must be a string"
+run_case "catalog: selectable that is not a boolean" 2 "$vtest_values" cat_selectable_string \
+  "${vtest_at}selectable must be true or false"
+run_case "catalog: a description that is not a string" 2 "$vtest_values" cat_description_number \
+  "${vtest_at}description must be a string"
+run_case "catalog: a summary of 47 characters and a description" 0 "$vtest_values" cat_texts 'Dry run: '
+
+# The categories file repo/categories.toml (D2).
+categories_file() { printf '%s\n' "$@" > "$clone/repo/categories.toml"; }
+cat_category_no_file() {
+  rm -f -- "$clone/repo/categories.toml"
+  cat_tool vtest '' 'category = "lang"'
+}
+cat_category_unknown() {
+  categories_file '[category.lang]' 'title = "Languages"'
+  cat_tool vtest '' 'category = "nope"'
+}
+cat_category_key() { categories_file '[category.lang]' 'color = "red"' 'title = "Languages"'; }
+cat_category_no_title() { categories_file '[category.lang]'; }
+cat_category_title_number() { categories_file '[category.lang]' 'title = 1'; }
+cat_category_top_key() { categories_file 'title = "x"' '' '[category.lang]' 'title = "Languages"'; }
+cat_category_valid() {
+  categories_file '[category.lang]' 'title = "Languages"' '' '[category.tool]' 'title = "Tools"'
+  cat_tool vtest '' 'category = "tool"'
+}
+run_case "categories: a category and no repo/categories.toml" 2 "$vtest_values" cat_category_no_file \
+  "${vtest_at}category lang needs the file repo/categories.toml"
+run_case "categories: an unknown category" 2 "$vtest_values" cat_category_unknown \
+  "${vtest_at}category nope is not a category of repo/categories.toml"
+run_case "categories: a key other than title" 2 "$no_tool_values" cat_category_key \
+  'repo/categories.toml: [category.lang] color is not a key of a category - the only key is title'
+run_case "categories: a category with no title" 2 "$no_tool_values" cat_category_no_title \
+  'repo/categories.toml: [category.lang] needs a title string'
+run_case "categories: a title that is not a string" 2 "$no_tool_values" cat_category_title_number \
+  'repo/categories.toml: [category.lang] title must be a string'
+run_case "categories: a top-level key" 2 "$no_tool_values" cat_category_top_key \
+  'repo/categories.toml: title is not a key of the categories file - each entry is [category.<id>] with a title'
+run_case "categories: a valid file and category" 0 "$vtest_values" cat_category_valid 'Dry run: '
+
+# The description of a pack (D3). packs_member_string above keeps its message.
+packs_description() { packs_lines '[pack.odd]' 'description = "The odd tools."' 'node = {}'; }
+packs_description_number() { packs_lines '[pack.odd]' 'description = 1' 'node = {}'; }
+run_case "[pack.*], a description" 0 "$no_tool_values" packs_description 'Dry run: '
+run_case "[pack.*], a description that is not a string" 2 "$no_tool_values" packs_description_number \
+  'repo/packs.toml: [pack.odd] description must be a string'
+
+# hosts (D4). The tool names a host other than the host of the test, so the
+# cases do not depend on the machine. The engine names darwin macos.
+this_host=$(uname -s | tr '[:upper:]' '[:lower:]')
+[[ $this_host != darwin ]] || this_host=macos
+other_host=macos
+[[ $this_host != macos ]] || other_host=linux
+msg_host="vtest needs the host $other_host - this host is $this_host"
+host_other() { cat_tool vtest '' "hosts = [ \"$other_host\" ]"; }
+host_bad() { cat_tool vtest '' 'hosts = [ "darwin" ]'; }
+host_empty() { cat_tool vtest '' 'hosts = []'; }
+host_child() { cat_tool vtest '"node"' 'parent = "node"' "hosts = [ \"$other_host\" ]"; }
+add_vtest() { synced && "$bin" add --yes vtest; }
+init_vtest() { "$bin" init --yes vtest; }
+replace_pnpm_vtest() { synced && "$bin" replace --yes pnpm vtest; }
+check_vtest_kept() { check_that "the values file does not select vtest" not_grep 'vtest' "$values"; }
+CASE_CALL=add_vtest run_case "hosts: add of a tool for another host" 2 "$dev_values" host_other "$msg_host" \
+  check_vtest_kept
+CASE_CALL=init_vtest run_case "hosts: init of a tool for another host" 2 "$dev_values" host_other "$msg_host" \
+  check_vtest_kept
+run_case "hosts: sync of a values file that names a tool for another host" 0 "$vtest_values" host_other 'Dry run: '
+run_case "hosts: a name that is not a mise OS name" 2 "$vtest_values" host_bad \
+  "${vtest_at}hosts must be a list of macos, linux and windows"
+run_case "hosts: an empty list" 2 "$vtest_values" host_empty "${vtest_at}hosts must name at least one host"
+CASE_CALL=replace_pnpm_vtest run_case "hosts: replace with a new tool for another host" 2 "$dev_values
+[tools.pnpm]" host_child "$msg_host"
+
+# selectable = false (D5).
+not_selectable() { cat_tool vtest '' 'selectable = false'; }
+not_selectable_needed() {
+  not_selectable
+  cat_tool vneed '"vtest"'
+  cat_tool vuse '"vtest"'
+}
+not_selectable_child() { cat_tool vtest '"node"' 'parent = "node"' 'selectable = false'; }
+msg_not_selectable='vtest is not selectable. Select vneed or vuse.'
+check_short_message() { check_that "selectable = false: no tool to select" log_lacks 'Select '; }
+check_vtest() { synced && "$bin" check; }
+check_warning_file() {
+  check_that "check: the warning names the values file" \
+    log_has "from $consumer/.config/bootstrap.toml; a tool that needs it selects it"
+}
+CASE_CALL=add_vtest run_case "selectable: add of a tool with selectable = false" 2 "$dev_values" not_selectable_needed \
+  "$msg_not_selectable" check_vtest_kept
+CASE_CALL=init_vtest run_case "selectable: init of a tool with selectable = false" 2 "$dev_values" \
+  not_selectable_needed "$msg_not_selectable" check_vtest_kept
+CASE_CALL=add_vtest run_case "selectable: a tool that no tool needs" 2 "$dev_values" not_selectable \
+  'vtest is not selectable.' check_short_message
+run_case "selectable: sync of a values file that names it" 0 "$vtest_values" not_selectable_needed 'Dry run: '
+CASE_CALL=check_vtest run_case "selectable: check of a values file that names it" 0 "$vtest_values" \
+  not_selectable_needed 'vtest is not selectable - remove [tools.vtest] from ' check_warning_file
+CASE_CALL=replace_pnpm_vtest run_case "selectable: replace with a new tool with selectable = false" 2 "$dev_values
+[tools.pnpm]" not_selectable_child 'vtest is not selectable.'
+
+# detect does not offer a tool with selectable = false or for another host.
+pnpm_not_selectable() {
+  pnpm_files
+  first_line pnpm 'selectable = false'
+}
+pnpm_other_host() {
+  pnpm_files
+  first_line pnpm "hosts = [ \"$other_host\" ]"
+}
+check_no_pnpm() {
+  check_that "detect: pnpm is not offered" not_grep -E '\[NEW\] pnpm|pnpm is found' "$log"
+  check_that "detect: the values file stays" not_grep 'pnpm' "$values"
+}
+CASE_CALL=detect_dry run_case "detect: a tool with selectable = false" 0 "$dev_values" pnpm_not_selectable '' \
+  check_no_pnpm
+CASE_CALL=detect_dry run_case "detect: a tool for another host" 0 "$dev_values" pnpm_other_host '' check_no_pnpm
+
+# group, note and optional of a question (D6, D14, D15).
+group_tool() {
+  cat_tool vtest '' '[questions.a]' 'group = "email"' 'note = "One answer of the group is enough."' \
+    'question = "Which a?"' '' '[questions.b]' 'group = "email"' 'question = "Which b?"'
+}
+optional_tool() { cat_tool vtest '' '[questions.q]' 'example = "x"' 'optional = true' 'question = "Which q?"'; }
+necessary_tool() { cat_tool vtest '' '[questions.q]' 'question = "Which q?"'; }
+group_optional() { cat_tool vtest '' '[questions.a]' 'group = "email"' 'optional = true' 'question = "Which a?"'; }
+group_not_optional() {
+  cat_tool vtest '' '[questions.a]' 'group = "email"' 'optional = false' 'question = "Which a?"'
+}
+questions_tool() {
+  group_tool
+  printf '%s\n' '' '[questions.q]' 'example = "x"' 'optional = true' 'question = "Which q?"' \
+    '' '[questions.r]' 'optional = true' 'question = "Which r?"' >> "$clone/repo/tools/vtest/tools.toml"
+}
+msg_group='the group vtest.email has no answer in '
+check_group_file() {
+  check_that "the group message names the values file" log_has "in $values - run bootstrap init"
+}
+msg_group_flag='the group vtest.email has no answer - give at least one with --answer <tool>.<key>=<value>: a, b'
+run_case "questions: a group with no answer" 2 "$vtest_values" group_tool "$msg_group" check_group_file
+run_case "questions: a group with empty answers" 2 "$vtest_values
+a = \"\"
+b = \"\"" group_tool "$msg_group" check_group_file
+run_case "questions: a group with one answer" 0 "$vtest_values
+a = \"x\"" group_tool 'Dry run: '
+run_case "questions: an optional question with no answer" 0 "$vtest_values" optional_tool 'Dry run: '
+run_case "questions: an empty answer of a question" 0 "$vtest_values
+q = \"\"" necessary_tool 'Dry run: '
+run_case "questions: a question with a group and optional = true" 2 "$vtest_values" group_optional \
+  "${vtest_at}[questions.a] has a group, so it cannot be optional"
+run_case "questions: a question with a group and optional = false" 0 "$vtest_values
+a = \"x\"" group_not_optional 'Dry run: '
+
+init_yes() { "$bin" init --yes; }
+check_no_question_line() { check_that "init: only the group error" log_lacks 'the question vtest.'; }
+CASE_CALL=init_yes run_case "init --yes: a group with no answer" 2 "$vtest_values" group_tool "$msg_group_flag" \
+  check_no_question_line
+init_group_empty() { "$bin" init --yes --answer vtest.a= --answer vtest.b=; }
+CASE_CALL=init_group_empty run_case "init --yes: empty answers of each question of a group" 2 "$vtest_values" \
+  group_tool "$msg_group_flag" check_no_question_line
+init_group_twice() {
+  "$bin" init --yes --answer vtest.a=x --answer vtest.b= || exit
+  commit_consumer
+  "$bin" init --yes
+}
+check_group_answers() {
+  check_that "init: the answer of the group" tomlq '.tools.vtest.a == "x"'
+  check_that "init: the empty answer of the group" tomlq '.tools.vtest.b == ""'
+}
+CASE_CALL=init_group_twice run_case "init --yes again on a values file that answers a group" 0 "$vtest_values" \
+  group_tool 'Nothing to change' check_group_answers
+CASE_CALL=init_yes run_case "init --yes: an optional question with no flag" 2 "$vtest_values" optional_tool \
+  'the question vtest.q has no answer - give it with --answer vtest.q=<value>, or leave it empty with --answer vtest.q='
+init_empty_twice() {
+  "$bin" init --yes --answer vtest.q= || exit
+  commit_consumer
+  "$bin" init --yes
+}
+check_empty_answer() { check_that "the empty answer" tomlq '.tools.vtest.q == ""'; }
+CASE_CALL=init_empty_twice run_case "init --answer <q>= of an optional question, then init --yes" 0 "$vtest_values" \
+  optional_tool 'Nothing to change' check_empty_answer
+init_empty_answer() { "$bin" init --yes --answer vtest.q=; }
+CASE_CALL=init_empty_answer run_case "init --answer <q>= of a necessary question" 2 "$vtest_values" necessary_tool \
+  '--answer vtest.q=: an empty answer is only for an optional or a group question - give it with --answer vtest.q=<value>'
+add_empty_answer() { synced && "$bin" add --yes --answer vtest.q= vtest; }
+CASE_CALL=add_empty_answer run_case "add --answer <q>= of an optional question" 0 "$dev_values" optional_tool \
+  'Synced: ' check_empty_answer
+init_skip_answer() { "$bin" init --yes --skip-answer vtest.q; }
+CASE_CALL=init_skip_answer run_case "init --skip-answer is not a flag" 2 "$vtest_values" optional_tool \
+  'init has no flag --skip-answer'
+
+questions_json() { "$bin" questions --json; }
+check_questions_json() {
+  check_that "questions --json: the group" log_has '"group": "email"'
+  check_that "questions --json: the note" log_has '"note": "One answer of the group is enough."'
+  check_that "questions --json: optional" log_has '"optional": true'
+  check_that "questions --json: not optional" log_has '"optional": false'
+}
+CASE_CALL=questions_json run_case "questions --json: group, note and optional" 0 "$vtest_values" questions_tool \
+  '"key": "r"' check_questions_json
+questions_text() { "$bin" questions; }
+check_questions_text() {
+  check_that "questions: an empty answer is the ok glyph alone" grep -qE '^ +\[OK\]$' "$log"
+  check_that "questions: an optional question with no answer" log_has '[INFO] no answer (optional)'
+  check_that "questions: a group question with no answer" log_has '[INFO] no answer (group email has an answer)'
+  check_that "questions: no question without an answer" log_lacks 'without an answer'
+}
+CASE_CALL=questions_text run_case "questions: optional and group questions, and an empty answer" 0 "$vtest_values
+a = \"x\"
+r = \"\"" questions_tool 'Which r?' check_questions_text
 
 while ((${#case_pids[@]})); do
   collect_case

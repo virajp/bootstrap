@@ -220,9 +220,12 @@ func shapeMessages(shown, tool string, t *source.Obj) []string {
 					continue
 				}
 				for _, k := range e.Keys() {
-					if k != "question" && k != "detect" && k != "example" {
-						out = append(out, fmt.Sprintf("%s[questions.%s] %s is not a key of a question - the keys are question, detect and example", at, q, k))
+					if !source.QuestionKey(k) {
+						out = append(out, fmt.Sprintf("%s[questions.%s] %s is not a key of a question - the keys are %s", at, q, k, source.QuestionKeys))
 					}
+				}
+				for _, text := range source.QuestionTypes(q, e) {
+					out = append(out, at+text)
 				}
 				if !e.Has("question") {
 					out = append(out, fmt.Sprintf("%s[questions.%s] needs a question string", at, q))

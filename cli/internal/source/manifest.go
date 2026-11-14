@@ -50,6 +50,18 @@ type Manifest struct {
 	Tool        string
 	Raw         *Obj // The whole file, with sorted keys.
 	Description string
+	// Summary is the one-line text of the tool (47 characters or fewer), or
+	// empty.
+	Summary string
+	// Category is the id of a category of the categories file of the side,
+	// or empty.
+	Category string
+	// Selectable is false when the tool has `selectable = false`: a command
+	// does not select it by its name, only as a dependency.
+	Selectable bool
+	// Hosts are the hosts of `hosts` (repo side): macos, linux or windows.
+	// Nil means each host.
+	Hosts       []string
 	Stage       string   // Mac side: "init", or empty.
 	Depends     []string // The tool names of `depends`.
 	DefaultEnvs []string // Repo side.
@@ -120,9 +132,25 @@ func (s Source) LoadManifest(tool string) (*Manifest, error) {
 	if err != nil {
 		return nil, bad
 	}
-	m := &Manifest{Tool: tool, Raw: raw}
+	m := &Manifest{Tool: tool, Raw: raw, Selectable: true}
 	if v, ok := raw.Get("description").(string); ok {
 		m.Description = v
+	}
+	if v, ok := raw.Get("summary").(string); ok {
+		m.Summary = v
+	}
+	if v, ok := raw.Get("category").(string); ok {
+		m.Category = v
+	}
+	if v, ok := raw.Get("selectable").(bool); ok {
+		m.Selectable = v
+	}
+	if l, ok := raw.Get("hosts").([]any); ok {
+		for _, e := range l {
+			if h, ok := e.(string); ok {
+				m.Hosts = append(m.Hosts, h)
+			}
+		}
 	}
 	if v, ok := raw.Get("stage").(string); ok {
 		m.Stage = v

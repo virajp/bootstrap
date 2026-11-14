@@ -28,6 +28,8 @@ type Index struct {
 	MiseOwner map[string]string
 	// StageInit is the set of the tools with `stage = "init"` (Mac side).
 	StageInit map[string]bool
+	// Categories is the categories file of the side.
+	Categories *Categories
 }
 
 // Has tells if the index has the tool <name>.
@@ -86,7 +88,8 @@ func (s Source) openRepo() (*Index, error) {
 		// loop above stops at that file.
 		return x, loadErr
 	}
-	var probs []*fail.Error
+	cats, probs := s.ReadCategories()
+	x.Categories = cats
 	for _, tool := range x.Names {
 		m := x.Manifests[tool]
 		hasDev := false
@@ -107,6 +110,8 @@ func (s Source) openRepo() (*Index, error) {
 			x.MiseOwner[mt.Name] = tool
 		}
 		probs = append(probs, x.repoRules(tool, m)...)
+		probs = append(probs, x.catalogRules(tool)...)
+		probs = append(probs, x.categoryRule(tool)...)
 		probs = append(probs, m.probs...)
 		probs = append(probs, x.parentRule(tool)...)
 	}
@@ -189,9 +194,12 @@ func (s Source) openMacos() (*Index, error) {
 		}
 		x.Manifests[name] = m
 	}
-	var probs []*fail.Error
+	cats, probs := s.ReadCategories()
+	x.Categories = cats
 	for _, name := range x.Names {
 		probs = append(probs, x.macosRules(name)...)
+		probs = append(probs, x.catalogRules(name)...)
+		probs = append(probs, x.categoryRule(name)...)
 		probs = append(probs, x.Manifests[name].probs...)
 		probs = append(probs, x.parentRule(name)...)
 	}
@@ -241,6 +249,8 @@ func (x *Index) macosRules(tool string) []*fail.Error {
 			if _, ok := v.(string); !ok {
 				bad("description must be a string")
 			}
+		case "summary", "category", "selectable":
+			// See catalogRules.
 		case "defaults":
 			if _, ok := v.(*Obj); !ok {
 				bad("[defaults] must be a table")
@@ -262,9 +272,12 @@ func (x *Index) macosRules(tool string) []*fail.Error {
 					continue
 				}
 				for _, qk := range e.Keys() {
-					if qk != "question" && qk != "detect" && qk != "example" {
-						bad("[questions.%s] %s is not a key of a question - the keys are question, detect and example", q, qk)
+					if !QuestionKey(qk) {
+						bad("[questions.%s] %s is not a key of a question - the keys are %s", q, qk, QuestionKeys)
 					}
+				}
+				for _, text := range QuestionTypes(q, e) {
+					bad("%s", text)
 				}
 				if !e.Has("question") {
 					bad("[questions.%s] needs a question string", q)
@@ -298,10 +311,10 @@ func (x *Index) macosRules(tool string) []*fail.Error {
 			bad("seed is the old key - write a [files.\"<target>\"] table with mode = \"seed\" for each seed")
 		case "seed_requires":
 			bad("[seed_requires] is the old table - write requires = [...] in the [files.\"<target>\"] table of the seed")
-		case "default_envs", "root_only", "mise_env", "formatter":
+		case "default_envs", "root_only", "mise_env", "formatter", "hosts":
 			bad("%s is for repo tools only", k)
 		default:
-			bad("%s is not a key of tools.toml - the keys are description, stage, depends, parent, [defaults], [questions], [contributes], [files], [tasks] and [mise]", k)
+			bad("%s is not a key of tools.toml - the keys are description, summary, category, selectable, stage, depends, parent, [defaults], [questions], [contributes], [files], [tasks] and [mise]", k)
 		}
 	}
 	return out
@@ -319,4 +332,43 @@ func (x *Index) parentRule(tool string) []*fail.Error {
 		return []*fail.Error{fail.New(fail.Usage, "%s: parent must be the name of another tool of %s", x.Source.ManifestShown(tool), x.Source.ToolsShown())}
 	}
 	return nil
+}
+
+// QuestionKeys names the keys of a `[questions.<key>]` table, as a message
+// lists them.
+const QuestionKeys = "question, detect, example, group, note and optional"
+
+// QuestionKey tells if <k> is a key of a `[questions.<key>]` table.
+func QuestionKey(k string) bool {
+	switch k {
+	case "question", "detect", "example", "group", "note", "optional":
+		return true
+	}
+	return false
+}
+
+// QuestionTypes gives a message for each wrong value of the keys group,
+// note and optional of the question <q>, and for a question that has a
+// group and optional = true.
+func QuestionTypes(q string, e *Obj) []string {
+	var out []string
+	if e.Has("group") {
+		if _, ok := e.Get("group").(string); !ok {
+			out = append(out, fmt.Sprintf("[questions.%s] group must be a string", q))
+		}
+	}
+	if e.Has("note") {
+		if _, ok := e.Get("note").(string); !ok {
+			out = append(out, fmt.Sprintf("[questions.%s] note must be a string", q))
+		}
+	}
+	if e.Has("optional") {
+		b, ok := e.Get("optional").(bool)
+		if !ok {
+			out = append(out, fmt.Sprintf("[questions.%s] optional must be true or false", q))
+		} else if b && e.Has("group") {
+			out = append(out, fmt.Sprintf("[questions.%s] has a group, so it cannot be optional", q))
+		}
+	}
+	return out
 }
