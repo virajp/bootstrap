@@ -949,15 +949,21 @@ Do these steps in each repository, after the release `bootstrap@3.0.0`:
 
 1. Upgrade the CLI: `mise use -g github:virajp/bootstrap`.
 2. Run `bootstrap init --dry-run`. It writes a `[tools.<name>]` table for each
-   tool of the old pack `base` and of each `[packs.*]` table, with the `env` of
-   its pack, removes the `[packs.*]` tables, and writes `format = 2`. Examine
-   the change list.
+   required tool of the old pack `base` and for each tool of each `[packs.*]`
+   table, with the `env` of its pack, removes the `[packs.*]` tables, and
+   writes `format = 2`. It writes no table for `vscode`, because `vscode` is
+   not a required member of `base`. Examine the change list.
 3. If the user agrees, run `bootstrap init --yes`. The sync gives the same
-   tools as before.
-4. Change each script and each doc of the repository that runs
+   tools as before, but without `vscode`.
+4. Add `vscode` again with `bootstrap add tool vscode`, in the correct
+   repository:
+   - In a monorepo or a polyrepo, add it in that repository.
+   - In a repository with members (git submodules or siblings), add it in the
+     root repository only. Do not add it in a member.
+5. Change each script and each doc of the repository that runs
    `bootstrap add`, `bootstrap remove`, `bootstrap replace` without a kind
    word, `bootstrap init` with tool names, or `bootstrap detect --no`.
-5. Do the same in each git submodule.
+6. Do steps 2, 3 and 5 in each git submodule.
 
 On the Mac, run `bootstrap mac init --dry-run`, then `bootstrap mac init --yes`,
 in the repository of `macos.toml`. It also removes `[tools.devtools]` and lists
