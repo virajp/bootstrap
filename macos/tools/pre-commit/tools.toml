@@ -1,0 +1,11 @@
+# The pre-commit tool: pre-commit through mise, with a shared cache. The
+# [mise.*] tables become ~/.config/mise/conf.d/pre-commit/mise.toml.
+category = "dev"
+depends = [ "python" ]
+summary = "pre-commit through mise, with a shared cache"
+
+[mise.tools.pre-commit]
+version = "latest"
+
+[mise.env]
+PRE_COMMIT_HOME = "$HOME/.cache/pre-commit"

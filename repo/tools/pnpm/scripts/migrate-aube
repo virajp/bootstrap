@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The migrate script of the pnpm tool for the aube tool. bootstrap replace
+# The migrate script of the pnpm tool for the aube tool. bootstrap replace tool
 # aube pnpm runs it in the root of the repository, and never copies it. It
 # moves aube-workspace.yaml to pnpm-workspace.yaml, and writes pnpm-lock.yaml
 # in place of aube-lock.yaml. A problem is a line on stderr, and then the exit

@@ -1,142 +1,125 @@
-# The packs of the Mac tools in macos/tools/. A pack has no files of its own;
-# each key of its table is a member: `<tool> = { default = true }` or
-# `<tool> = {}`, and a nested pack is `"pack:<name>"`. The Mac sync sorts the
-# tools by name in each stage, so the member order does not change the sync. The
-# sync always adds the pack `base`. `required = true` marks a member of `base`
-# that each Mac must have.
+# The packs of the Mac tools in macos/tools/. A pack has no files of its own; it
+# is a shortcut of `bootstrap mac add pack`, and the values file keeps no record
+# of it. Each key of its table is a member, `<tool> = {}`, and each member is a
+# default; a nested pack is `"pack:<name>" = {}`. In `base` only,
+# `required = true` marks a member that a Mac cannot remove. The key
+# `description` is the text of the pack. See docs/design/packs.md.
 [pack.base]
-mise = { default = true, required = true }
-homebrew = { default = true }
-bash = { default = true }
-zsh = { default = true }
-fish = { default = true }
-git = { default = true }
-ssh = { default = true }
-cli = { default = true }
-fnox = { default = true }
-node = { default = true }
-touchid-sudo = { default = true }
-starship = { default = true }
-network = { default = true }
-macos-defaults = { default = true }
-gh = { default = true }
-python = { default = true }
-ruby = { default = true }
-fonts = { default = true }
-mas = { default = true }
-age = { default = true }
-bat = { default = true }
-coreutils = { default = true }
-curl = { default = true }
-doggo = { default = true }
-eza = { default = true }
-fzf = { default = true }
-gping = { default = true }
-httping = { default = true }
-ipcalc = { default = true }
-jq = { default = true }
-lazygit = { default = true }
-prettyping = { default = true }
-ripgrep = { default = true }
-uv = { default = true }
-worktrunk = { default = true }
-zoxide = { default = true }
+description = "The tools of each Mac: mise, Homebrew, the shells, git and its tools, ssh, the fonts, Python and the command-line tools, which a Mac cannot remove, and VS Code and uv."
+mise = { required = true }
+homebrew = { required = true }
+bash = { required = true }
+zsh = { required = true }
+fish = { required = true }
+git = { required = true }
+git-tools = { required = true }
+ssh = { required = true }
+cli = { required = true }
+fnox = { required = true }
+node = { required = true }
+touchid-sudo = { required = true }
+starship = { required = true }
+network = { required = true }
+macos-defaults = { required = true }
+gh = { required = true }
+ruby = { required = true }
+fonts = { required = true }
+mas = { required = true }
+age = { required = true }
+bat = { required = true }
+coreutils = { required = true }
+curl = { required = true }
+doggo = { required = true }
+eza = { required = true }
+fzf = { required = true }
+gping = { required = true }
+httping = { required = true }
+ipcalc = { required = true }
+jq = { required = true }
+lazygit = { required = true }
+prettyping = { required = true }
+ripgrep = { required = true }
+zoxide = { required = true }
+diff-so-fancy = { required = true }
+glab = { required = true }
+btop = { required = true }
+pstree = { required = true }
+tree = { required = true }
+watch = { required = true }
+wget = { required = true }
+yq = { required = true }
+vorssaint = { required = true }
+pre-commit = { required = true }
+visual-studio-code = {}
+python = { required = true }
+uv = {}
 
-[pack.ai]
-claude-desktop = { default = true }
+[pack.claude]
+description = "Claude: the desktop app, Claude Code, its status line, and codeburn, the cost report of the AI tools."
+claude-desktop = {}
 claude-cli = {}
 claude-status = {}
 codeburn = {}
-opencode = {}
-openwhispr = {}
-orca = {}
-zed-delta = {}
 
 [pack.essentials]
-alfred = { default = true }
-vorssaint = { default = true }
-easyfind = { default = true }
-the-unarchiver = { default = true }
-brave-browser = { default = true }
-github-desktop = { default = true }
+description = "The daily apps: Alfred, EasyFind, The Unarchiver, Brave and Chrome, GitHub Desktop, Tailscale, TaskExplorer, Battery Health and Setapp."
+alfred = {}
+easyfind = {}
+the-unarchiver = {}
+brave-browser = {}
+github-desktop = {}
 google-chrome = {}
 tailscale = {}
-magnet = {}
-sill = {}
 taskexplorer = {}
 battery-health = {}
 setapp = {}
-diff-so-fancy = {}
-git-tools = {}
-glab = {}
 
-[pack.security]
+[pack.1password]
+description = "1Password: the app, its CLI and its Safari extension."
 1password = {}
 1password-cli = {}
 1password-safari = {}
-bitwarden = {}
 
 [pack.dev]
-devtools = { default = true }
-dprint = { default = true }
-visual-studio-code = { default = true }
+description = "More development tools: lcov, OrbStack, superfile and Sublime Text."
 lcov = {}
 orbstack = {}
-gcloud = {}
 superfile = {}
-zed = {}
 sublime-text = {}
 
 [pack.terminal]
-ghostty = { default = true }
+description = "The terminal apps Ghostty and Warp."
+ghostty = {}
 warp = {}
 
-[pack.apple-dev]
-xcode = { default = true }
+[pack.mobile-dev]
+description = "The tools for Apple and Android apps: Xcode, Developer, TestFlight, Transporter and Android Studio."
+xcode = {}
 developer = {}
 testflight = {}
 transporter = {}
 android-studio = {}
 
 [pack.iwork]
-keynote = { default = true }
-numbers = { default = true }
-pages = { default = true }
+description = "The iWork apps: Keynote, Numbers and Pages."
+keynote = {}
+numbers = {}
+pages = {}
 
 [pack.ms-office]
-microsoft-excel = { default = true }
-microsoft-powerpoint = { default = true }
-microsoft-word = { default = true }
+description = "The Microsoft Office apps: Excel, PowerPoint and Word."
+microsoft-excel = {}
+microsoft-powerpoint = {}
+microsoft-word = {}
 
 [pack.disk]
-daisydisk = { default = true }
+description = "The disk tools: DaisyDisk, Disk Doctor, Disk Map and Duplicate Detective."
+daisydisk = {}
 disk-doctor = {}
 disk-map = {}
 duplicate-detective = {}
 
 [pack.media]
-vlc = { default = true }
-final-cut-pro = {}
+description = "The media apps VLC and HandBrake."
+vlc = {}
 handbrake = {}
-
-[pack.chat]
-telegram = { default = true }
-whatsapp = { default = true }
-
-[pack.notes]
-notion = { default = true }
-obsidian = { default = true }
-kindle = {}
-cardhop = {}
-pdf-protector = {}
-pdf-squeezer = {}
-
-[pack.cli-extras]
-btop = { default = true }
-dasel = { default = true }
-imagemagick = { default = true }
-pstree = { default = true }
-tree = { default = true }
-watch = { default = true }
-wget = { default = true }
-yq = { default = true }

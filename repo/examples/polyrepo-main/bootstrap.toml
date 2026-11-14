@@ -5,6 +5,7 @@
 bootstrap_commit = ""
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
+format = 2
 repo_name = "billing-cli"
 # The web URL of the repository, for the github tool.
 repo_url = "https://github.com/example/billing-cli"
@@ -17,6 +18,17 @@ commit_scopes = [ "cli", "docs" ]
 # The gitignored files to copy into a new worktree.
 worktree_files = [ ".config/mise.local.toml" ]
 
+[tools.pre-commit]
+
+[tools.dprint]
+
+[tools.linter]
+
+[tools.gitleaks]
+
+[tools.grype]
+
+[tools.osv-scanner]
 # A feature branch merges into main, through a pull request. The branch
 # gh-pages never merges into main.
 [tools.git.branch.main]
