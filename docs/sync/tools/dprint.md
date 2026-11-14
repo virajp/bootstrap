@@ -33,6 +33,10 @@ into the file item by item:
 - It removes an old `extends` key. The file has all its settings now.
 - The top-level settings, and the keys of each plugin block, for example
   `markdown` or `toml`. A key that the file has keeps its value.
+- Each command of the `exec` plugin block, found by its `exts`. The sync writes
+  the command of each selected tool again, adds a new one, and removes the
+  command of a tool that went. A command that the repository adds for other
+  `exts` stays.
 - Each item of `excludes`.
 - Each item of `plugins`, found by its name with any version. Thus the
   version that `setup:dprint` writes stays.

@@ -14,11 +14,29 @@ path = [ "extends" ]
 kind = "keys"
 value = <% .config.settings | data.ToTOMLInline %>
 <% end -%>
+<%- /* The commands of the exec plugin are a list of tables. Each command is
+   a block, found by its exts: a new command is added, the command of a tool
+   that went is removed, and a command that the user adds stays. The other
+   keys of exec are keys, as in each other block. */ -%>
 <% range $name, $block := .config.blocks %>
+<% $keys := $block -%>
+<% if and (eq $name "exec") (has $block "commands") %><% $keys = coll.Omit "commands" $block %><% end -%>
+<% if $keys %>
 [[item]]
 kind = "keys"
 path = [ <% $name | data.ToTOMLInline %> ]
-value = <% $block | data.ToTOMLInline %>
+value = <% $keys | data.ToTOMLInline %>
+<% end -%>
+<% if and (eq $name "exec") (has $block "commands") %>
+<% range $block.commands %>
+[[item]]
+kind = "block"
+path = [ "exec", "commands" ]
+id = <% conv.Join .exts "," | data.ToTOMLInline %>
+match = [ "exts" ]
+value = <% . | data.ToTOMLInline %>
+<% end -%>
+<% end -%>
 <% end -%>
 <% range .config.excludes %>
 [[item]]
