@@ -5,6 +5,7 @@ go 1.27.3
 require (
 	charm.land/bubbles/v2 v2.2.1
 	charm.land/bubbletea/v2 v2.1.1
+	charm.land/lipgloss/v2 v2.1.0
 	github.com/BurntSushi/toml v1.6.0
 	github.com/mikefarah/yq/v4 v4.54.2
 	github.com/tailscale/hujson v0.0.0-20260727124030-b80ff77dac4f
@@ -12,7 +13,6 @@ require (
 )
 
 require (
-	charm.land/lipgloss/v2 v2.0.5 // indirect
 	github.com/a8m/envsubst v1.4.3 // indirect
 	github.com/agext/levenshtein v1.2.1 // indirect
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect

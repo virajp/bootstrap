@@ -13,13 +13,22 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/questions"
 	"github.com/virajp/bootstrap/cli/internal/report"
 	"github.com/virajp/bootstrap/cli/internal/source"
+	"github.com/virajp/bootstrap/cli/internal/tui"
 )
 
-// init is `bootstrap [mac] init [--no-tui]`. It takes the path of --no-tui
-// in a terminal too, until the TUI lands: it migrates an old form, or
-// creates the values file with a table for each member of the pack base,
-// asks the questions without an answer, and syncs.
+// init is `bootstrap [mac] init [--no-tui]`. In a terminal, it opens the
+// TUI. With --no-tui, --yes, --dry-run or --answer (they come from an agent
+// or a script), or with no terminal, it migrates an old form, or creates the
+// values file with a table for each member of the pack base, asks the
+// questions without an answer, and syncs.
 func (a *app) init(mac bool, o opts) fail.Code {
+	if a.interactive() && !o.noTUI && !o.yes && !o.dryRun && len(o.answers) == 0 {
+		sd, code := a.prepare(mac, true)
+		if code != fail.OK {
+			return code
+		}
+		return a.runTUI(sd, o, true)
+	}
 	sd, c, code := a.side(mac, true, mac)
 	if c != nil {
 		defer c.Cleanup()
@@ -28,6 +37,49 @@ func (a *app) init(mac bool, o opts) fail.Code {
 		return code
 	}
 	return a.finish(sd, o, core.List{Init: true})
+}
+
+// tui is `bootstrap [mac] tui`: the TUI on the values file of the side. It
+// needs a terminal. mac tui finds macos.toml with --repo-path, then
+// MACOS_SETUP_REPO_PATH, then in the current folder.
+func (a *app) tui(mac bool, o opts) fail.Code {
+	if !a.interactive() {
+		a.fail(cmdName(mac, "tui")+" needs a terminal", "use: "+cmdName(mac, "init")+" --no-tui")
+		return fail.Usage
+	}
+	getenv := a.getenv
+	if mac {
+		getenv = func(k string) string {
+			if v := a.getenv(k); v != "" || k != "MACOS_SETUP_REPO_PATH" {
+				return v
+			}
+			return a.pwd
+		}
+	}
+	sd, err := core.Prepare(mac, false, a.pwd, getenv)
+	if err != nil {
+		return a.logErr(err)
+	}
+	return a.runTUI(sd, o, false)
+}
+
+// runTUI takes the clone of the side <sd> and runs the TUI on it. With
+// <initCmd>, a missing values file or its old form is the first change.
+func (a *app) runTUI(sd core.Side, o opts, initCmd bool) fail.Code {
+	c, code := a.openClone(sd.Mac, false)
+	defer c.Cleanup()
+	if code != fail.OK {
+		return code
+	}
+	sd.Clone = c.Dir
+	code, err := tui.Run(tui.Options{
+		Side: sd, Init: initCmd, NoBootstrap: o.noBootstrap,
+		Home: a.getenv("HOME"), Stdin: a.stdin, Stdout: a.stdout,
+	})
+	if err != nil {
+		a.printErr(err)
+	}
+	return code
 }
 
 // side does the preflight of a command of the side and takes its clone. The

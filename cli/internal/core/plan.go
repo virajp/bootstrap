@@ -428,6 +428,24 @@ func (p *PlanResult) initValues() error {
 	return nil
 }
 
+// InitChange gives the change that init makes before each other change of
+// the list: the new values file with the members of the pack base, or the
+// migration of an old form. A values file of the new form gives "". It writes
+// nothing. The TUI shows the change on its change list.
+func InitChange(sd Side) (string, error) {
+	if !Exists(sd.Values) {
+		return "create the values file with " + selection.BasePack, nil
+	}
+	p := &PlanResult{Side: sd}
+	if err := p.initValues(); err != nil {
+		return "", err
+	}
+	if len(p.Changes) > 0 || !bytes.Equal(p.Next, p.Cur) {
+		return fmt.Sprintf("migrate the values file to %s %d", oldform.FormatKey, oldform.Format), nil
+	}
+	return "", nil
+}
+
 // planner applies the items of a change list to the state of the values
 // file. added and removed hold the changes of the items before, so an item
 // sees them.

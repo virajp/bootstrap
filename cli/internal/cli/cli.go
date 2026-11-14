@@ -1,10 +1,11 @@
-// Package cli is the command line of `bootstrap`: the commands init, sync,
-// check, questions, add, remove, replace, detect and list of the repo side and of the Mac side (`bootstrap mac
-// <command>`), and version. It is the shell of the command line: it parses
-// the arguments, takes the clone and its lock, checks the version, calls
-// internal/core (the preflight, Plan, Apply, Detect and the clean-target
-// rule), prints the results and the errors, and asks the questions and the
-// consent. The front-ends internal/repo and internal/macos do the sync itself.
+// Package cli is the command line of `bootstrap`: the commands init, tui,
+// sync, check, questions, add, remove, replace, detect and list of the repo
+// side and of the Mac side (`bootstrap mac <command>`), and version. It is the
+// shell of the command line: it parses the arguments, takes the clone and its
+// lock, checks the version, calls internal/core (the preflight, Plan, Apply,
+// Detect and the clean-target rule), prints the results and the errors, and
+// asks the questions and the consent, or starts the TUI of internal/tui. The
+// front-ends internal/repo and internal/macos do the sync itself.
 //
 // Contract: docs/design/cli.md.
 package cli
@@ -32,9 +33,12 @@ import (
 const Usage = `usage: bootstrap <command> [flags]
 
 Repository
-  init                 migrate an old form, or create the values file with
-                       the members of the pack base, ask the questions
-                       without an answer, then sync
+  init                 in a terminal, open the TUI; with --no-tui, --yes,
+                       --dry-run or --answer, or with no terminal, migrate an
+                       old form, or create the values file with the members
+                       of the pack base, ask the questions without an answer,
+                       then sync
+  tui                  open the TUI on the values file of the repository
   sync                 sync the repository of the current folder
   check                examine the values file of the repository
   questions [tool...]  list the questions of the tools, with their proposals
@@ -59,6 +63,7 @@ Repository
 Mac
   mac init             init for the Mac, in the current folder (the
                        repository of macos.toml)
+  mac tui              open the TUI on macos.toml
   mac sync             sync the Mac from MACOS_SETUP_REPO_PATH
   mac check            show what mac sync changes, and write nothing
   mac questions [tool...]
@@ -72,8 +77,7 @@ Flags
                        changes, and write nothing
   --yes, -y            init, add, remove, replace, detect --add: write the
                        changes without a prompt
-  --no-tui             init: select no tool on a screen; init takes this
-                       path in each case for now
+  --no-tui             init: do not open the TUI in a terminal
   --add                detect: add each matched tool that is not selected,
                        after the consent
   --exclude <member>   add pack: leave out a member of the pack, as
@@ -192,6 +196,7 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 	}
 	allowed := map[string]string{
 		"init":      "dry-run yes no-tui answer jobs verbose",
+		"tui":       "jobs verbose",
 		"sync":      "dry-run jobs verbose",
 		"check":     "jobs verbose",
 		"questions": "json",
@@ -271,6 +276,8 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		return a.check(mac, o)
 	case "init":
 		return a.init(mac, o)
+	case "tui":
+		return a.tui(mac, o)
 	case "add":
 		return a.add(mac, o)
 	case "remove":

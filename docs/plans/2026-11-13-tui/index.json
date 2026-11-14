@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-13 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-14 14:54 in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.worktrees/all-2026-11-13-1753"
   },
   "consent": {
     "merge": true,
@@ -79,11 +79,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T09:25:01.817Z",
+      "ended": "2026-11-14T09:52:33.586Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -264,8 +264,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T09:25:01.781Z",
       "ended": ""
     },
     {
@@ -364,7 +364,12 @@
     }
   },
   "gaps": [],
-  "overrides": [],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-13-1753"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/all-2026-11-13-1753",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-13-tui.jsonl"
@@ -537,6 +542,15 @@
         "U5",
         "U7",
         "U8"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Q1: On a light terminal background, should the TUI keep the design's dark-look accent colors on the terminal's own background, or paint the whole 100x25 screen with the design's dark background #15191a?",
+      "ruling": "Keep the terminal background (as built) — plain text and titles read on both themes, but the light accent colors (#9be37f, #e3c06b) are weak on white.",
+      "rejected": "Paint #15191a behind every cell — the same dark look in both themes, as the design shows, but the TUI ignores the user's terminal theme",
+      "units": [
+        "U1"
       ]
     }
   ]
