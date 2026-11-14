@@ -1,0 +1,592 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "R2a — the git:* tasks",
+  "requires": [
+    "docs/plans/2026-11-14-task-ports"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "execution": "teams",
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-14 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint",
+      "mise x -- mise run test:go"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Export BOOTSTRAP_BIN=<tmp>/bootstrap, the worktree build (D33). Build the worktree engine (go build -o <tmp>/bootstrap ./cmd/bootstrap in cli/). In a new scratch git repo with a commit on main and a develop branch, run env -u MISE_PROJECT_ROOT BOOTSTRAP_CONFIG=/nonexistent <tmp>/bootstrap init --no-tui --yes --clone <worktree>, commit, mise trust, then mise tasks ls; then mise run git:worktree:create x --no-setup, mise run git:worktree:delete x; then <tmp>/bootstrap describe --json --clone <worktree>.",
+        "pass": "mise tasks ls lists git:merge:main, git:merge:develop, git:worktree:create, git:worktree:setup, git:worktree:delete and git:worktree:list, and no code:merge, setup:worktree or code:worktrees. After create and delete, git worktree list shows only the main worktree and branch x is gone. describe reports git:merge:<branch> present with tasks git:merge:main and git:merge:develop, and git:worktree:create, setup and delete present."
+      },
+      {
+        "id": "K2",
+        "check": "Export BOOTSTRAP_BIN=<tmp>/bootstrap, the worktree build (D33). In a second scratch git repo with main only, run the same init, commit and mise trust; make a branch feat with one commit; run mise run git:merge:main feat.",
+        "pass": "mise tasks ls lists git:merge:main and no git:merge:develop. The merge lands feat on main with a merge commit (landing direct-merge, the default)."
+      }
+    ]
+  },
+  "after_landing": [],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MAJOR",
+      "reason": "Breaking: code:merge, code:merge:<b>, setup:worktree and code:worktrees are renamed to git:merge:<branch>, git:worktree:setup and git:worktree:list with no aliases. New: git:worktree:create and git:worktree:delete. All of it goes into the one bootstrap@4.0.0 tag (R1b D16)."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The git tool: git:merge per core branch and the worktree tasks",
+      "wave": 1,
+      "file": "01-git-tool.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/git/",
+        "repo/tools/github/tools.toml",
+        "repo/tools/gitlab/tools.toml"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "The mise tool: worktree setup and list under git:worktree",
+      "wave": 1,
+      "file": "02-mise-tool.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/mise/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Tests",
+      "wave": 2,
+      "file": "03-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo",
+        "cli/internal/manifest/",
+        "repo/examples/"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U7"
+      ],
+      "waits": "The cases run the tasks of U1 and U2.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Review: the git tasks and the tests",
+      "wave": 3,
+      "file": "04-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U7"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U5",
+      "title": "Docs",
+      "wave": 4,
+      "file": "05-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/",
+        "docs/sync/",
+        "docs/memory/decisions/2026-11-14-bootstrap-plugins-split.md"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U7"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U6",
+      "title": "Gates",
+      "wave": 5,
+      "file": "06-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U7",
+      "title": "init renames setup:worktree in wt.toml and worktree_install",
+      "wave": 1,
+      "file": "07-init-rename.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "every human-facing doc (README.md, CLAUDE.md, docs/**)",
+      "why": "U1 and U2 falsify every passage that names the old task names",
+      "owner": "U5"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Do the old names (code:merge, code:merge:<b>, setup:worktree, code:worktrees) stay as aliases?",
+      "ruling": "No aliases (Recommended): R2a renames outright; the sync removes the old task files through the manifest. One bootstrap@4.0.0 tag covers R1a to R2, so no release ships between. A reversal of the design text (and the handoff) that kept the old names as aliases for one release; U5 records it.",
+      "rejected": "Aliases for one release.",
+      "units": [
+        "U1",
+        "U2",
+        "U5"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "The shape of git:merge:<branch>.",
+      "ruling": "One task per core branch (Recommended): the git tool ships git/merge/main and git/merge/develop, each with a when that is true only when that branch is in repo.core_branches. <branch> is always the destination. Each takes an optional source: for main, default develop when develop is a core branch, else the current branch; for develop, the current branch. The library and its landing (pr | direct-merge | direct-commit) do not change. mise's code/merge/_default goes away.",
+      "rejected": "One task git:merge <destination> [source].",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "How do git:worktree:create and git:worktree:delete work?",
+      "ruling": "Raw git, as land.mjs (Recommended): create <branch> [--from <base>] runs git worktree add in .worktrees/<branch> of the main checkout (worktrees/ only when .worktrees/ is absent and worktrees/ exists), with -b for a new branch and base default the current branch; then mise trust and git:worktree:setup in the new worktree (D13, D14, D16, D21, D25). delete <branch> runs git worktree remove (git refuses a dirty tree; code 1), then the branch rule of D22 (git branch -D only after it proves the branch is merged into a core branch; else exit 1 and print the -D command). See D15 for the refusals.",
+      "rejected": "Through worktrunk (wt switch -c, wt remove).",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "Does R2a rename the lister code:worktrees?",
+      "ruling": "Rename to git:worktree:list (Recommended); the shell alias worktrees runs mise run git:worktree:list. Its content does not change.",
+      "rejected": "Keep code:worktrees.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "Where does git:worktree:setup live, and what else changes name?",
+      "ruling": "Stated by the planner, confirmed at the shape gate: setup:worktree becomes git:worktree:setup (git/worktree/setup) and stays in the mise tool, because it runs setup:mise and the setup parts; its content does not change. wt.toml pre-start runs mise run git:worktree:setup. code:git-config keeps its name.",
+      "rejected": "Move it to the git tool.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "What does R2a require?",
+      "ruling": "R1c (docs/plans/2026-11-14-task-ports), which requires R1a and R1b: R1a U4, R1b and R1c edit the same tool files and cli/. Priority 80 (10 + 70, the R1c row).",
+      "rejected": "R1a only.",
+      "units": []
+    },
+    {
+      "id": "D7",
+      "decision": "Does this change plan need a review unit?",
+      "ruling": "Yes, one, after the tests: the plan lands task scripts that merge, push and delete worktrees and branches.",
+      "rejected": "No review unit.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "The execution mode.",
+      "ruling": "teams: wave 1 holds three edit units (U1, U2 and U7).",
+      "rejected": "solo.",
+      "units": []
+    },
+    {
+      "id": "D9",
+      "decision": "R2 is three plans; where does backlog item B28 go?",
+      "ruling": "User: three plans, a→b→c (Recommended): R2a git tasks (this plan), R2b LSP, R2c plugins and setup:ai, chained by requires. B28 (install a Claude marketplace and plugins, identify LSP servers) is a piece of R2b and is finished by R2c; it is not in R2a.",
+      "rejected": "One R2 plan; two plans.",
+      "units": []
+    },
+    {
+      "id": "D10",
+      "decision": "Round 1 gap 1: repo/tools/github/tools.toml and repo/tools/gitlab/tools.toml name code:merge in comments.",
+      "ruling": "U1 also owns these two files, for the comments only.",
+      "rejected": "Leave them stale.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "Round 1 gap 2: cli/internal/source/inventory.go and form_test.go use git.branch_pair as the when example.",
+      "ruling": "Keep branch_pair in derive, and add the flags has_main and has_develop. No cli/ change.",
+      "rejected": "Remove branch_pair and widen an owns to cli/.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "Round 1 gap 3: the default source can equal the destination.",
+      "ruling": "No new rule: the library already refuses a source equal to the destination (merge, about line 254); the entry task passes its code on.",
+      "rejected": "A new usage error in the entry task.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Round 1 gap 4: create with an existing path, a branch only on origin, and the base folder.",
+      "ruling": ".worktrees/ is relative to the main checkout, as in land.mjs. An existing path exits 1. A branch that exists only on origin is checked out as a local branch that tracks origin/<branch>; --from is then a usage error (code 2).",
+      "rejected": "Relative to the current worktree; refuse a remote-only branch.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Round 1 gap 5: git:worktree:setup fails after git worktree add.",
+      "ruling": "Keep the worktree and exit 1; print the command that runs the setup again and the delete command.",
+      "rejected": "Remove the worktree.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Round 1 gap 6: delete with no worktree, from inside the worktree it removes, or of a core branch.",
+      "ruling": "No worktree for the branch: exit 1. Run from inside the worktree it removes: exit 2, run it from another worktree. A core branch (repo.core_branches): exit 2; it never deletes main or develop.",
+      "rejected": "Handle each silently.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "Round 1 gap 7: create runs git:worktree:setup, which can use the network, but the tests must not.",
+      "ruling": "create takes --no-setup, which skips the setup step. The tests and K1 use it; the docs name it.",
+      "rejected": "An env var.",
+      "units": [
+        "U1",
+        "U3",
+        "U5"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Round 1 gap 8: R1a U5 replaces repo/examples/repo-submodules/bootstrap.toml.",
+      "ruling": "U3 edits the member's worktree_install value in the file R1a U5 leaves: repo.toml under [members.<name>].",
+      "rejected": "Edit the old file.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "Round 1 gap 9: regenerating the golden files with UPDATE_GOLDEN=1 against the rule a unit never runs a generator.",
+      "ruling": "A recorded exception: U3 may run the test's own UPDATE_GOLDEN=1 for cli/internal/manifest, then reviews every changed golden file; twelve golden files edited by hand are easy to get wrong.",
+      "rejected": "Edit the golden files by hand.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Round 1 gap 10: how git:merge:main reads repo.core_branches at run time.",
+      "ruling": "Through ${BOOTSTRAP_BIN:-mise x -- bootstrap} config get repo.core_branches --format json, with the D85 exit-2 rule of R1a U4 when no engine is installed.",
+      "rejected": "Read the file with yq.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D20",
+      "decision": "Round 2 gap 1: .config/wt.toml is a seed file the sync never rewrites, and a member worktree_install can still run mise run setup:worktree; both break with no alias.",
+      "ruling": "init rewrites mise run setup:worktree to mise run git:worktree:setup in .config/wt.toml and in each [members.<name>].worktree_install of .config/bootstrap/repo.toml, as one change labelled rename setup:worktree. check and sync report an old name there with code 2 and → Run bootstrap init. A new unit U7 owns cli/ in wave 1.",
+      "rejected": "A migrate item for a hand edit; accept the breakage.",
+      "units": [
+        "U7",
+        "U3",
+        "U5"
+      ]
+    },
+    {
+      "id": "D21",
+      "decision": "Round 2 gap 2: the mise config of a new worktree is not trusted when setup runs.",
+      "ruling": "create runs mise trust in the new worktree before git:worktree:setup, as wt.toml does.",
+      "rejected": "Leave trust to the user.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D22",
+      "decision": "Round 2 gap 3: git branch -d checks merged against the HEAD of the checkout it runs in.",
+      "ruling": "Merged into any core branch: delete tests git merge-base --is-ancestor <branch> <core> for each branch of repo.core_branches; if one passes, it deletes the branch with -D, which is safe after that proof; else it exits 1 and prints the -D command. This replaces the D3 text never runs -D.",
+      "rejected": "Merged into the current HEAD; into the base it was cut from.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D23",
+      "decision": "Round 2 gap 4: the merge library runs pre-commit over hook repos from GitHub (network).",
+      "ruling": "The bash cases test only the entry tasks, with a stub _scripts/merge in the scratch repo that prints its arguments (the destination and the source of each model). K2, run by the orchestrator, covers a real merge and may use the network.",
+      "rejected": "Accept the network in the bash cases; a test-only knob in the library.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D24",
+      "decision": "Round 2 gap 5: code-merge-main refuses to run unless the current branch is develop.",
+      "ruling": "Drop that rule. The library's merge_from default already lets only develop merge into main when develop exists; a repo can change it in repo.toml.",
+      "rejected": "Keep the on-develop rule.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D25",
+      "decision": "Round 2 gap 6: create of a core branch, or of a branch another worktree has checked out.",
+      "ruling": "A core branch: exit 2, as delete (D15). A branch another worktree has checked out: git refuses; create exits 1 with git's message.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D26",
+      "decision": "Round 3 gap 1: how create and delete read repo.core_branches.",
+      "ruling": "The same way as D19: ${BOOTSTRAP_BIN:-mise x -- bootstrap} config get repo.core_branches --format json, with the D85 exit-2 rule when no engine is installed.",
+      "rejected": "Another read.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D27",
+      "decision": "Round 3 gap 2: a core branch that exists only on origin makes git merge-base --is-ancestor fail.",
+      "ruling": "For each core branch, test against the local ref when it exists, else against origin/<core> when it exists, else skip that core branch.",
+      "rejected": "Exit with an error.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D28",
+      "decision": "Round 3 gap 3: how delete finds the worktree.",
+      "ruling": "It looks up the branch in git worktree list --porcelain, so it finds a worktree at any path (also one that wt or a person made), and removes that path.",
+      "rejected": "Check only .worktrees/<branch>.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D29",
+      "decision": "Round 3 gap 4: does --no-setup also skip mise trust?",
+      "ruling": "No: --no-setup skips only git:worktree:setup; mise trust always runs (local, no network).",
+      "rejected": "Skip both.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D30",
+      "decision": "Round 3 gap 5: U5's grep check against the D20 text that must name setup:worktree.",
+      "ruling": "Widen the exception: the migrate item and the D20 passages in docs/design/cli.md and docs/sync/tools/git.md may name setup:worktree.",
+      "rejected": "Avoid the literal name.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D31",
+      "decision": "Round 4 gap 1: the handoff still says R2 keeps aliases for one release.",
+      "ruling": "Out of scope: the handoff is a session record that the next /vwf:handoff replaces (as R1b D36, R1c D17).",
+      "rejected": "Widen U5 owns to the handoff.",
+      "units": []
+    },
+    {
+      "id": "D32",
+      "decision": "Round 4 gap 2: Out of scope names this repo's own .config/, but U3 owns .config/mise/tasks/test/repo.",
+      "ruling": "Out of scope names the exception: .config/mise/tasks/test/ holds bootstrap's own tests, not synced copies, so U3 owns test/repo.",
+      "rejected": "Move the tests.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D33",
+      "decision": "Round 4 gap 3: the tasks read the core branches through ${BOOTSTRAP_BIN:-mise x -- bootstrap}; in the tests BOOTSTRAP_BIN is unset.",
+      "ruling": "The U3 cases and K1 and K2 export BOOTSTRAP_BIN=<the worktree build>.",
+      "rejected": "Rely on the released engine.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D34",
+      "decision": "Round 4 gap 4: D30 lets docs/sync/tools/git.md name setup:worktree, but no edit writes a D20 passage there.",
+      "ruling": "U5 adds a short D20 passage to docs/sync/tools/git.md (the doc of wt.toml): init renames the old command there.",
+      "rejected": "Drop the exception.",
+      "units": [
+        "U5"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}

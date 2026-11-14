@@ -89,6 +89,23 @@
       ],
       "backlog": [],
       "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-14-git-tasks",
+      "folder": "docs/plans/2026-11-14-git-tasks",
+      "kind": "change",
+      "title": "R2a — the git:* tasks",
+      "target_repo": null,
+      "priority": 80,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-14-task-ports"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
     }
   ]
 }
