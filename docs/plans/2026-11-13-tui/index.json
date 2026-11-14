@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "BLOCKED",
-    "detail": "BLOCKED at landing — every unit green and every gate green; code:merge refused by its hook safety net (lint hook, code:lint:60-bootstrap, G3); the re-run with SKIP=lint that D24 rules was denied by the session's permission system; branch all-2026-11-13-1753 is ready to land by hand in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.worktrees/all-2026-11-13-1753"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-14 — c4f9c52 50167b6 66db4b5 b58fcbf 8ac378b 23062e0 06a2197; landed by hand in e1fb0a1 with SKIP=lint (D24); G3 open"
   },
   "consent": {
     "merge": true,
