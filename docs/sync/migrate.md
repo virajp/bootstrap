@@ -34,6 +34,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | `version_prefix = "cli-v"` or `version_prefix="cli-v"` in a file of the repository            | M35, before the next sync.                                                                                                                              |
 | A Mac with `[tools.gem]` or `[packs.security]` in `macos.toml`                                | M36, before the next Mac sync.                                                                                                                          |
 | `[tools._security_base]` in the values file                                                   | M37.                                                                                                                                                    |
+| A values file without `format = 2`, or with `[packs.*]`, also `macos.toml`                    | M38, after the release `bootstrap@3.0.0`.                                                                                                               |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -911,3 +912,53 @@ tool that needs it selects it`.
 
 A Mac needs no change. The Mac git tool now needs one email only, so an empty
 `email_github` or `email_gitlab` in `macos.toml` is valid.
+
+## M38: The values file holds tools, and the grammar has a kind word
+
+`bootstrap@3.0.0` changes the form of the values file and the grammar of the
+CLI. An engine older than `3.0.0` stops with code 2 on the new packs files.
+
+- The values file has the top-level key `format = 2`, and one
+  `[tools.<name>]` table for each selected tool, also for each member of the
+  `base` pack. It has no `[packs.<name>]` table: a pack is only a shortcut of
+  `bootstrap add pack`. A file without `format = 2`, or with a `[packs.*]`
+  table, is an old form: `sync` and `check` stop with code 2 and "run
+  bootstrap init".
+- The commands have a kind word: `bootstrap add tool <tool…>`,
+  `bootstrap add pack <pack…> [--exclude <member>]`,
+  `bootstrap remove tool <tool…>` and `bootstrap replace tool <old> <new>`.
+  The same on the Mac: `bootstrap mac add tool <tool…>`. A command without the
+  kind word stops with code 2.
+- `bootstrap init` takes no tool names.
+- `bootstrap detect` without a flag only lists. `bootstrap detect --add` adds
+  each detected tool. `--no` is gone.
+- The repo packs `security` and `container-build` are gone. `gitleaks`,
+  `grype` and `osv-scanner` are required members of `base`, and so are
+  `dprint` and `linter`. `vscode` is a member of `base` that a repository can
+  remove.
+- The Mac packs are now `base`, `claude`, `essentials`, `1password-apps`,
+  `dev`, `terminal`, `mobile-dev`, `iwork`, `ms-office`, `disk` and `media`.
+  See `macos/packs.toml`.
+- The Mac tool `devtools` is gone. Its `PRE_COMMIT_HOME` is in the new Mac tool
+  `pre-commit`, a required member of the Mac `base`. Its
+  `DOTNET_CLI_TELEMETRY_OPTOUT` is gone: a later .NET tool brings it. Its
+  `RUNTIME_ENV` is gone: each repository sets it, and no bootstrap tool sets
+  it.
+
+Do these steps in each repository, after the release `bootstrap@3.0.0`:
+
+1. Upgrade the CLI: `mise use -g github:virajp/bootstrap`.
+2. Run `bootstrap init --dry-run`. It writes a `[tools.<name>]` table for each
+   tool of the old pack `base` and of each `[packs.*]` table, with the `env` of
+   its pack, removes the `[packs.*]` tables, and writes `format = 2`. Examine
+   the change list.
+3. If the user agrees, run `bootstrap init --yes`. The sync gives the same
+   tools as before.
+4. Change each script and each doc of the repository that runs
+   `bootstrap add`, `bootstrap remove`, `bootstrap replace` without a kind
+   word, `bootstrap init` with tool names, or `bootstrap detect --no`.
+5. Do the same in each git submodule.
+
+On the Mac, run `bootstrap mac init --dry-run`, then `bootstrap mac init --yes`,
+in the repository of `macos.toml`. It also removes `[tools.devtools]` and lists
+it. Then run `mise run updateall:configs`.

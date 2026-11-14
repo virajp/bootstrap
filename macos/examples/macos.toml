@@ -2,10 +2,11 @@
 # This file is at the root of the private macos-setup clone.
 # MACOS_SETUP_REPO_PATH names the folder of that clone.
 # Each [tools.<name>] table selects a tool and gives its values.
-# Each [packs.<name>] table adds the default = true members of the pack.
+# The file holds tools only: it has no [packs.<name>] table.
 
 # The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
+format = 2
 
 [tools.1password]
 # The answer to the question ssh_vault of 1password.
@@ -15,9 +16,15 @@ ssh_vault = "Sample"
 
 [tools.1password-safari]
 
+[tools.age]
+
 [tools.alfred]
 
 [tools.android-studio]
+
+[tools.bash]
+
+[tools.bat]
 
 [tools.battery-health]
 
@@ -35,7 +42,13 @@ ssh_vault = "Sample"
 
 [tools.claude-status]
 
+[tools.cli]
+
 [tools.codeburn]
+
+[tools.coreutils]
+
+[tools.curl]
 
 [tools.daisydisk]
 
@@ -43,14 +56,13 @@ ssh_vault = "Sample"
 
 [tools.developer]
 
-[tools.devtools]
-
 [tools.diff-so-fancy]
-# This table selects the tool, because it is not a base tool.
 
 [tools.disk-doctor]
 
 [tools.disk-map]
+
+[tools.doggo]
 
 [tools.dprint]
 
@@ -58,7 +70,17 @@ ssh_vault = "Sample"
 
 [tools.easyfind]
 
+[tools.eza]
+
 [tools.final-cut-pro]
+
+[tools.fish]
+
+[tools.fnox]
+
+[tools.fonts]
+
+[tools.fzf]
 
 [tools.gcloud]
 
@@ -86,13 +108,25 @@ signing_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAISampleKeyForTestsOnly sample
 
 [tools.google-chrome]
 
+[tools.gping]
+
 [tools.handbrake]
 
+[tools.homebrew]
+
+[tools.httping]
+
 [tools.imagemagick]
+
+[tools.ipcalc]
+
+[tools.jq]
 
 [tools.keynote]
 
 [tools.kindle]
+
+[tools.lazygit]
 
 [tools.lcov]
 
@@ -101,6 +135,8 @@ signing_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAISampleKeyForTestsOnly sample
 dock_orientation = "right"
 
 [tools.magnet]
+
+[tools.mas]
 
 [tools.microsoft-excel]
 
@@ -111,6 +147,10 @@ dock_orientation = "right"
 [tools.mise]
 # The answer to the question config_path of mise.
 config_path = "~/Projects/github.com/janedoe/macos-setup"
+
+[tools.network]
+
+[tools.node]
 
 [tools.notion]
 
@@ -132,7 +172,17 @@ config_path = "~/Projects/github.com/janedoe/macos-setup"
 
 [tools.pdf-squeezer]
 
+[tools.pre-commit]
+
+[tools.prettyping]
+
 [tools.pstree]
+
+[tools.python]
+
+[tools.ripgrep]
+
+[tools.ruby]
 
 [tools.setapp]
 
@@ -141,6 +191,8 @@ config_path = "~/Projects/github.com/janedoe/macos-setup"
 [tools.ssh]
 # The answer to the question user of ssh.
 user = "sampleuser"
+
+[tools.starship]
 
 [tools.sublime-text]
 
@@ -156,9 +208,13 @@ user = "sampleuser"
 
 [tools.the-unarchiver]
 
+[tools.touchid-sudo]
+
 [tools.transporter]
 
 [tools.tree]
+
+[tools.uv]
 
 [tools.visual-studio-code]
 
@@ -174,6 +230,8 @@ user = "sampleuser"
 
 [tools.whatsapp]
 
+[tools.worktrunk]
+
 [tools.xcode]
 
 [tools.yq]
@@ -181,3 +239,7 @@ user = "sampleuser"
 [tools.zed]
 
 [tools.zed-delta]
+
+[tools.zoxide]
+
+[tools.zsh]

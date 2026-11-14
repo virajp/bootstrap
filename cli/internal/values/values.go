@@ -125,7 +125,7 @@ type Macos struct {
 	User *source.Obj
 }
 
-const macosKeys = "bootstrap_commit, [tools.<name>], [packs.<name>], [overrides.mise.<path>] and [mise.*]"
+const macosKeys = "bootstrap_commit, format, [tools.<name>], [overrides.mise.<path>] and [mise.*]"
 
 // ReadMacos reads the Mac values file <path> if it exists, as `_ss_read_values`
 // does. <shown> is the path as a message names it. The error holds each message
@@ -170,6 +170,8 @@ func ReadMacos(path, shown string) (*Macos, error) {
 			if _, ok := x.(string); !ok {
 				typeBad(k)
 			}
+		case "format":
+			// The package oldform examines its value.
 		case "tools":
 			t, ok := x.(*source.Obj)
 			if !ok {

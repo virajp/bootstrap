@@ -1,381 +1,155 @@
 package cli
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-	"sort"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/virajp/bootstrap/cli/internal/core"
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/field"
-	"github.com/virajp/bootstrap/cli/internal/format"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/questions"
 	"github.com/virajp/bootstrap/cli/internal/report"
-	"github.com/virajp/bootstrap/cli/internal/scripts"
-	"github.com/virajp/bootstrap/cli/internal/selection"
 	"github.com/virajp/bootstrap/cli/internal/source"
-	"github.com/virajp/bootstrap/cli/internal/target"
-	"github.com/virajp/bootstrap/cli/internal/values"
 )
 
-// The first line of a new values file.
-const (
-	repoHeader = "# The values of bootstrap for this repository. See docs/sync/index.md of bootstrap."
-	macHeader  = "# The values of the Mac sync of bootstrap. See docs/setup/index.md."
-)
-
-func realPath(p string) (string, error) { return filepath.EvalSymlinks(p) }
-
-// q is a string as a yq string literal.
-func q(s string) string {
-	b, _ := json.Marshal(s)
-	return string(b)
-}
-
-// editTOML runs the yq expressions <exprs> on the TOML text <in>, so its
-// comments stay.
-func editTOML(in []byte, exprs []string) ([]byte, error) {
-	if len(exprs) == 0 {
-		return in, nil
-	}
-	dir, err := os.MkdirTemp("", "bootstrap-init.")
-	if err != nil {
-		return nil, fail.New(fail.Other, "cannot create a temp folder")
-	}
-	defer os.RemoveAll(dir)
-	p := dir + "/values.toml"
-	if err := os.WriteFile(p, in, 0o600); err != nil {
-		return nil, fail.New(fail.Other, "cannot write a temp file")
-	}
-	out, stderr, err := format.YQ("-p", "toml", "-o", "toml", strings.Join(exprs, " | "), p)
-	if err != nil {
-		return nil, fail.New(fail.Usage, "cannot change the values file: %s", strings.TrimSpace(stderr))
-	}
-	// yq drops the comments of a file that has no key: keep its first
-	// comment lines.
-	var head strings.Builder
-	for _, line := range strings.SplitAfter(string(in), "\n") {
-		if !strings.HasPrefix(line, "#") {
-			break
-		}
-		head.WriteString(line)
-	}
-	if h := head.String(); h != "" && !strings.HasPrefix(out, h) {
-		out = h + "\n" + out
-	}
-	return []byte(out), nil
-}
-
-// selected is the selection of a values file of the side.
-type selected struct {
-	idx   *source.Index
-	tools []string
-	user  *source.Obj // The [tools.<name>] tables of the values file.
-	over  *source.Obj // The [tools.<name>] tables of its overrides file.
-	res   *selection.Resolved
-	items []values.Item // The [tools.*] and [packs.*] entries of the values file.
-}
-
-// selectionOf reads the values file <file> (the overrides file is next to
-// <overridesOf>) and resolves its tools from the clone <dir>.
-func (a *app) selectionOf(mac bool, dir, root, file, overridesOf string) (*selected, fail.Code) {
-	side := source.Repo
-	if mac {
-		side = source.Macos
-	}
-	idx, err := source.Source{Root: dir, Side: side}.Open()
-	if err != nil {
-		return nil, a.logErr(err)
-	}
-	s := &selected{idx: idx}
-	shown := a.show(file)
-	var res *selection.Resolved
-	if mac {
-		v, err := values.ReadMacos(file, shown)
-		if err != nil {
-			return nil, a.logErr(err)
-		}
-		s.user, s.items = v.User, v.Sel
-		res, err = selection.ResolveMacos(idx, v)
-		if err != nil {
-			return nil, a.logErr(err)
-		}
-	} else {
-		v := &values.Repo{Path: file, Raw: source.NewObj(), User: source.NewObj()}
-		if exists(file) {
-			if v, err = values.ReadRepo(file, shown); err != nil {
-				return nil, a.logErr(err)
-			}
-		}
-		s.user, s.items = v.User, v.Sel
-		sub, _ := git("-C", root, "rev-parse", "--show-superproject-working-tree")
-		res, err = selection.ResolveRepo(idx, v, sub != "")
-		if err != nil {
-			return nil, a.logErr(err)
-		}
-	}
-	s.tools, s.res = res.Tools, res
-	ov := values.OverridesPath(overridesOf)
-	s.over, err = values.ReadOverrides(ov, a.show(ov))
-	if err != nil {
-		return nil, a.logErr(err)
-	}
-	return s, fail.OK
-}
-
-// init is `bootstrap [mac] init [tool...]`.
+// init is `bootstrap [mac] init [--no-tui]`. It takes the path of --no-tui
+// in a terminal too, until the TUI lands: it migrates an old form, or
+// creates the values file with a table for each member of the pack base,
+// asks the questions without an answer, and syncs.
 func (a *app) init(mac bool, o opts) fail.Code {
-	w, code := a.prepare(mac, true)
+	sd, c, code := a.side(mac, true, mac)
+	if c != nil {
+		defer c.Cleanup()
+	}
 	if code != fail.OK {
 		return code
 	}
-	c, code := a.openClone(mac, true)
-	defer c.cleanup()
+	return a.finish(sd, o, core.List{Init: true})
+}
+
+// side does the preflight of a command of the side and takes its clone. The
+// caller defers c.Cleanup when c is not nil. With <hold>, the lock of the
+// clone stays held to the end.
+func (a *app) side(mac, initCmd, hold bool) (core.Side, *core.Clone, fail.Code) {
+	sd, code := a.prepare(mac, initCmd)
 	if code != fail.OK {
-		return code
+		return sd, nil, code
 	}
-	// The named tools that init cannot select. A problem of the clone shows
-	// in the plan.
-	side := source.Repo
-	if mac {
-		side = source.Macos
-	}
-	idx, _ := source.Source{Root: c.dir, Side: side}.Open()
-	if code := a.refuse(idx, o.names); code != fail.OK {
-		return code
-	}
+	c, code := a.openClone(hold, true)
+	sd.Clone = c.Dir
+	return sd, c, code
+}
 
-	// The values file: new, or migrated from its old form.
-	cur, err := os.ReadFile(w.values)
-	existed := err == nil
-	next := cur
-	var notes []string
-	var changes []oldform.Change
-	if !existed {
-		if mac {
-			next = []byte(macHeader + "\n")
-		} else {
-			// The templates need repo_name: the name of the folder.
-			next = []byte(repoHeader + "\n\nenvironments = [ \"dev\" ]\nrepo_name = " + q(filepath.Base(w.root)) + "\n")
-		}
-		notes = append(notes, "create the values file")
-	} else {
-		var migs []oldform.Change
-		if mac {
-			ch, err := oldform.MigrateMac(w.values)
-			if err != nil {
-				return a.logErr(err)
-			}
-			if ch != nil {
-				migs = append(migs, *ch)
-			}
-		} else {
-			migs, err = oldform.MigrateRepo(w.root, w.values)
-			if err != nil {
-				return a.logErr(err)
-			}
-		}
-		for _, ch := range migs {
-			if ch.Path == w.values {
-				next = ch.Content
-				notes = append(notes, ch.Note)
-			} else {
-				changes = append(changes, ch)
-			}
-		}
+// finish plans the change list <l> with core.Plan, asks the questions
+// without an answer, shows the change list, and after the consent applies it
+// with core.Apply: it writes the changes and syncs.
+func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
+	for _, ans := range o.answers {
+		l.Answers = append(l.Answers, core.FlagAnswer(ans))
 	}
-
-	// The named tools.
-	raw := source.NewObj()
-	if len(next) > 0 {
-		if r, err := readTOMLText(next); err == nil {
-			raw = r
-		}
+	opt := core.Options{DryRun: o.dryRun, NoBootstrap: o.noBootstrap, Stdout: a.stdout, Stderr: a.stderr}
+	p, err := core.Plan(sd, l, opt)
+	for _, w := range p.Warnings {
+		a.warnf("%s", w)
 	}
-	tools, _ := raw.Get("tools").(*source.Obj)
-	var exprs []string
-	for _, name := range o.names {
-		if tools == nil || !tools.Has(name) {
-			exprs = append(exprs, ".tools["+q(name)+"] = {}")
-			notes = append(notes, "select "+name)
-		}
-	}
-	if next, err = editTOML(next, exprs); err != nil {
+	if err != nil {
 		return a.logErr(err)
 	}
-
-	return a.finish(mac, o, &change{w: w, c: c, cur: cur, existed: existed, next: next, notes: notes, changes: changes, migrating: true})
-}
-
-// change is the change of a writing command: the values file before and
-// after, the other changes, and a script that runs after the consent.
-type change struct {
-	w         where
-	c         *clone
-	cur       []byte // The values file before the command.
-	existed   bool
-	next      []byte // The values file after the command, without the answers.
-	notes     []string
-	exprs     []string // yq expressions for next, before the answers.
-	changes   []oldform.Change
-	migrating bool            // init: the plan accepts the old form of the targets.
-	askOnly   map[string]bool // The tools whose questions the command asks; nil for each tool.
-	before    *script         // A script that runs after the consent, before the writes.
-	seeds     []string        // The seeds of the removed tools that stay.
-}
-
-// script is one script of a tool that a command runs.
-type script struct {
-	runner scripts.Runner
-	job    scripts.Job
-	note   string
-}
-
-// finish asks the questions, plans the sync with the new values file, shows
-// the change list, and after the consent writes the changes and syncs.
-func (a *app) finish(mac bool, o opts, ch *change) fail.Code {
-	w, c, cur, existed, next, notes, changes := ch.w, ch.c, ch.cur, ch.existed, ch.next, ch.notes, ch.changes
-	var err error
-	// A temporary copy of the values file, with its overrides file, for the
-	// selection and the plan.
-	tmp, err := os.MkdirTemp(tmpDir(a.getenv), "bootstrap-init.")
-	if err != nil {
-		a.errorf("cannot create a temp folder")
-		return fail.Other
-	}
-	defer os.RemoveAll(tmp)
-	tmpValues := tmp + "/" + filepath.Base(w.values)
-	if err := os.WriteFile(tmpValues, next, 0o644); err != nil {
-		a.errorf("cannot write a temp file")
-		return fail.Other
-	}
-	if b, err := os.ReadFile(values.OverridesPath(w.values)); err == nil {
-		_ = os.WriteFile(values.OverridesPath(tmpValues), b, 0o644)
-	}
-
-	// The questions.
-	sel, code := a.selectionOf(mac, c.dir, w.root, tmpValues, w.values)
-	if code != fail.OK {
-		return code
-	}
-	answered, code := a.ask(mac, sel, o, ch.askOnly)
-	if code != fail.OK {
-		return code
-	}
-	if len(answered) > 0 {
-		var exprs []string
-		for _, ans := range answered {
-			exprs = append(exprs, ".tools["+q(ans[0])+"]["+q(ans[1])+"] = "+q(ans[2]))
-			notes = append(notes, "answer "+ans[0]+"."+ans[1])
+	if len(p.Pending) > 0 {
+		answered, code := a.ask(sd.Mac, p.Sel, o, p.AskOnly)
+		if code != fail.OK {
+			return code
 		}
-		if next, err = editTOML(next, exprs); err != nil {
+		l.Answers = nil
+		for _, ans := range answered {
+			l.Answers = append(l.Answers, core.Answer{Name: ans[0] + "." + ans[1], Value: ans[2]})
+		}
+		if p, err = core.Plan(sd, l, opt); err != nil {
 			return a.logErr(err)
 		}
-		if err := os.WriteFile(tmpValues, next, 0o644); err != nil {
-			a.errorf("cannot write a temp file")
-			return fail.Other
-		}
 	}
-	if !existed || !bytes.Equal(next, cur) {
-		changes = append([]oldform.Change{{Path: w.values, Content: next, Note: strings.Join(notes, "; ")}}, changes...)
+	a.reasons = append(a.reasons, p.Reasons...)
+	for _, s := range p.Skipped {
+		a.infof("%s", skipText(s))
 	}
 
-	// The plan of the sync, with the new values file.
-	run := frontEndOf(mac)
-	envKey, envVal := "BOOTSTRAP_VALUES", tmpValues
-	if mac {
-		envKey, envVal = "MACOS_SETUP_REPO_PATH", tmp
-	}
-	old, had := os.LookupEnv(envKey)
-	_ = os.Setenv(envKey, envVal)
-	oldform.Migrating = ch.migrating
-	planned, pc := run(syncArgs(mac, opts{dryRun: true, noBootstrap: o.noBootstrap}), io.Discard, io.Discard)
-	if pc != fail.OK {
-		// Again, with the output, so the messages show.
-		_, pc = run(syncArgs(mac, opts{dryRun: true, noBootstrap: o.noBootstrap}), a.stdout, a.stderr)
-	}
-	oldform.Migrating = false
-	if had {
-		_ = os.Setenv(envKey, old)
-	} else {
-		_ = os.Unsetenv(envKey)
-	}
-	if pc != fail.OK {
-		return pc
-	}
-	var syncs []target.Planned
-	seen := map[string]bool{}
-	for _, p := range planned {
-		if strings.HasPrefix(p.Path, tmp+"/") || seen[p.Path] {
-			continue
-		}
-		seen[p.Path] = true
-		syncs = append(syncs, p)
-	}
-	sort.Slice(syncs, func(i, j int) bool { return syncs[i].Path < syncs[j].Path })
-
-	if len(changes) == 0 && len(syncs) == 0 && ch.before == nil {
+	if p.Empty() {
 		a.nothingToChange()
 		return fail.OK
 	}
 	var entries []entry
-	if ch.before != nil {
-		entries = append(entries, entry{step: true, path: ch.before.runner.ShownPath(ch.before.job.Tool, ch.before.job.Name), note: ch.before.note})
+	if p.Before != nil {
+		entries = append(entries, entry{step: true, path: p.Before.Shown(), note: p.Before.Note})
 	}
-	for _, c := range changes {
+	for _, c := range p.Changes {
 		kind := report.Changed
 		switch {
 		case c.Remove:
 			kind = report.Removed
-		case !exists(c.Path):
+		case !core.Exists(c.Path):
 			kind = report.New
 		}
 		entries = append(entries, entry{kind: kind, path: a.show(c.Path), note: c.Note})
 	}
-	for _, p := range syncs {
-		entries = append(entries, entry{kind: p.Kind, path: a.show(p.Path)})
+	for _, f := range p.Files {
+		entries = append(entries, entry{kind: f.Kind, path: a.show(f.Path)})
 	}
 	for _, r := range a.reasons {
 		a.infof("%s", r)
 	}
 	a.printChanges(entries)
-	paths := append(oldform.Paths(changes), planPaths(syncs)...)
 	if o.dryRun {
-		a.warnDirty(dirtyTargets(paths, nil))
-		a.keptSeeds(ch.seeds)
+		a.warnDirty(p.Dirty())
+		a.keptSeeds(p.Seeds)
 		a.printer().Success("Dry run: " + count(len(entries), "change") + ", nothing written")
 		return fail.OK
 	}
-	if code := a.stopDirty(dirtyTargets(paths, nil)); code != fail.OK {
+	if code := a.stopDirty(p.Dirty()); code != fail.OK {
 		return code
 	}
-	if done, code := a.consent(o.yes || o.confirmed, len(entries)); done {
+	if done, code := a.consent(o.yes, len(entries)); done {
 		return code
 	}
-	if ch.before != nil {
-		if code := a.runScript(ch.before); code != fail.OK {
-			return code
-		}
+	opt.Step = a.step
+	code, putBack, err := core.Apply(p, opt)
+	if err != nil {
+		a.logErr(err)
+		return code
 	}
-	if err := oldform.Apply(changes); err != nil {
-		return a.logErr(err)
+	if putBack {
+		a.infof("Put back %s as it was before the command", a.show(p.Values))
 	}
-	for _, ch := range changes {
-		if ch.Remove {
-			a.infof("Removed %s", a.show(ch.Path))
-		} else {
-			a.infof("Wrote %s", a.show(ch.Path))
-		}
-	}
-	_, code = run(syncArgs(mac, opts{noBootstrap: o.noBootstrap}), a.stdout, a.stderr)
-	a.keptSeeds(ch.seeds)
+	a.keptSeeds(p.Seeds)
 	return code
+}
+
+// skipText gives the line of a member of a pack that the command leaves out.
+func skipText(s core.Skip) string {
+	switch s.Why {
+	case "hosts":
+		return s.Tool + " is left out: its hosts leave out this host"
+	case "selectable":
+		return s.Tool + " is left out: it is not selectable; a tool that needs it selects it"
+	case "root_only":
+		return s.Tool + " is left out: it is root_only, and this repository is a submodule"
+	}
+	return s.Tool + " is left out"
+}
+
+// step prints a step of core.Apply.
+func (a *app) step(s core.Step) {
+	switch s.Kind {
+	case core.Ran:
+		a.stderr.Write(s.Stderr)
+		a.infof("Ran %s", s.Path)
+	case core.Wrote:
+		a.infof("Wrote %s", a.show(s.Path))
+	case core.Removed:
+		a.infof("Removed %s", a.show(s.Path))
+	}
 }
 
 // entry is one line of the change list.
@@ -425,7 +199,7 @@ func (a *app) nothingToChange() {
 // keptSeeds lists each seed of a removed tool: the seed stays.
 func (a *app) keptSeeds(seeds []string) {
 	for _, p := range seeds {
-		if !exists(p) {
+		if !core.Exists(p) {
 			continue
 		}
 		a.infof("kept seed %s of a removed tool - it is yours now; remove it when you do not need it", a.show(p))
@@ -440,33 +214,18 @@ func (a *app) keptSeeds(seeds []string) {
 // question in a field that starts with its proposal, and each question of a
 // group without an answer that is not empty, until the group has one. With
 // <only>, it asks only the questions of those tools.
-func (a *app) ask(mac bool, sel *selected, o opts, only map[string]bool) ([][3]string, fail.Code) {
-	all := questions.Of(sel.idx, sel.tools)
-	byName := map[string]questions.Question{}
-	for _, qq := range all {
-		byName[qq.Name()] = qq
-	}
-	given := map[string]string{}
-	rc := fail.OK
+func (a *app) ask(mac bool, sel *core.Selected, o opts, only map[string]bool) ([][3]string, fail.Code) {
+	all := questions.Of(sel.Idx, sel.Tools)
+	var flags []core.Answer
 	for _, ans := range o.answers {
-		name, value, ok := strings.Cut(ans, "=")
-		qq, known := byName[name]
-		if !ok || !known {
-			a.fail(fmt.Sprintf("--answer %s: no question %s of the selected tools", ans, name), "the form is <tool>.<key>=<value>")
-			rc = fail.Usage
-			continue
-		}
-		if value == "" && qq.Necessary() {
-			a.fail(fmt.Sprintf("--answer %s: an empty answer is only for an optional or a group question", ans), fmt.Sprintf("give it with --answer %s=<value>", name))
-			rc = fail.Usage
-			continue
-		}
-		given[name] = value
+		flags = append(flags, core.FlagAnswer(ans))
 	}
-	if rc != fail.OK {
-		return nil, rc
+	given, err := core.CheckAnswers(sel, flags)
+	if err != nil {
+		return nil, a.logErr(err)
 	}
-	dir := sel.root(a, mac)
+	rc := fail.OK
+	dir := a.home(mac)
 	terminal := !o.yes && a.interactive()
 	// The answers that the command writes: the flags, then the fields.
 	answers := map[string]string{}
@@ -477,7 +236,7 @@ func (a *app) ask(mac bool, sel *selected, o opts, only map[string]bool) ([][3]s
 		if v, ok := answers[q.Name()]; ok {
 			return v != ""
 		}
-		v, ok := questions.Answer(sel.user, sel.over, q)
+		v, ok := questions.Answer(sel.User, sel.Over, q)
 		return ok && !questions.Empty(v)
 	}
 	groupEmpty := func(q questions.Question) bool {
@@ -505,7 +264,7 @@ func (a *app) ask(mac bool, sel *selected, o opts, only map[string]bool) ([][3]s
 		name := qq.Name()
 		inOpen := qq.Group != "" && open[qq.GroupName()]
 		_, flagged := given[name]
-		_, inFiles := questions.Answer(sel.user, sel.over, qq)
+		_, inFiles := questions.Answer(sel.User, sel.Over, qq)
 		if !flagged && (!inFiles || inOpen) {
 			switch {
 			case terminal:
@@ -576,77 +335,53 @@ func (a *app) askField(qq questions.Question, dir string) (string, fail.Code) {
 	return v, fail.OK
 }
 
-// root gives the folder where a detect command runs: $HOME on the Mac, else
-// the repository.
-func (s *selected) root(a *app, mac bool) string {
+// home gives the folder where the proposals of the questions come from:
+// $HOME on the Mac, else the repository.
+func (a *app) home(mac bool) string {
 	if mac {
 		return a.getenv("HOME")
 	}
 	return a.getenv("MISE_PROJECT_ROOT")
 }
 
-// readTOMLText reads TOML text.
-func readTOMLText(b []byte) (*source.Obj, error) {
-	f, err := os.CreateTemp("", "bootstrap-values.*.toml")
-	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(f.Name())
-	if _, err := f.Write(b); err != nil {
-		f.Close()
-		return nil, err
-	}
-	f.Close()
-	return source.ReadTOML(f.Name())
-}
-
-func tmpDir(getenv func(string) string) string {
-	if d := getenv("TMPDIR"); d != "" {
-		return d
-	}
-	return "/tmp"
-}
-
 // questions is `bootstrap [mac] questions [tool...]`.
 func (a *app) questions(mac bool, o opts) fail.Code {
-	w, code := a.prepare(mac, false)
+	sd, c, code := a.side(mac, false, false)
+	if c != nil {
+		defer c.Cleanup()
+	}
 	if code != fail.OK {
 		return code
 	}
-	c, code := a.openClone(false, true)
-	defer c.cleanup()
-	if code != fail.OK {
-		return code
-	}
-	if exists(w.values) {
-		raw, err := source.ReadTOML(w.values)
+	if core.Exists(sd.Values) {
+		raw, err := source.ReadTOML(sd.Values)
 		if err != nil {
-			a.errorf("cannot read %s", a.show(w.values))
+			a.errorf("cannot read %s", a.show(sd.Values))
 			return fail.Usage
 		}
 		if mac {
-			err = oldform.Mac(raw, a.show(w.values))
+			err = oldform.Mac(raw, a.show(sd.Values))
 		} else {
-			err = oldform.Repo(w.root, raw, a.show(w.values))
+			err = oldform.Repo(sd.Root, raw, a.show(sd.Values))
 		}
 		if err != nil {
 			return a.logErr(err)
 		}
 	}
-	sel, code := a.selectionOf(mac, c.dir, w.root, w.values, w.values)
-	if code != fail.OK {
-		return code
+	sel, err := core.SelectionOf(sd, sd.Values, sd.Values)
+	if err != nil {
+		return a.logErr(err)
 	}
 	return a.printQuestions(mac, sel, o)
 }
 
 // printQuestions prints the questions of the tools of <sel>, or of the tools
 // that <o> names, as JSON or as text.
-func (a *app) printQuestions(mac bool, sel *selected, o opts) fail.Code {
-	tools := sel.tools
+func (a *app) printQuestions(mac bool, sel *core.Selected, o opts) fail.Code {
+	tools := sel.Tools
 	if len(o.names) > 0 {
 		for _, n := range o.names {
-			if sel.idx.Manifests[n] == nil {
+			if sel.Idx.Manifests[n] == nil {
 				a.errorf("%s is not a bootstrap tool", n)
 				return fail.Missing
 			}
@@ -670,12 +405,12 @@ func (a *app) printQuestions(mac bool, sel *selected, o opts) fail.Code {
 		gone bool
 	}
 	rows := []row{}
-	dir := sel.root(a, mac)
-	all := questions.Of(sel.idx, tools)
+	dir := a.home(mac)
+	all := questions.Of(sel.Idx, tools)
 	for _, qq := range all {
 		r := row{Tool: qq.Tool, Key: qq.Key, Question: qq.Text, Group: qq.Group, Note: qq.Note, Optional: qq.Optional}
 		if qq.Group != "" {
-			r.gone = !questions.GroupAnswered(all, qq, sel.user, sel.over)
+			r.gone = !questions.GroupAnswered(all, qq, sel.User, sel.Over)
 			if !r.gone {
 				r.state = "group"
 			}
@@ -685,7 +420,7 @@ func (a *app) printQuestions(mac bool, sel *selected, o opts) fail.Code {
 		if v, from := questions.Proposal(qq, dir); from != "" {
 			r.Proposal, r.Source = &v, &from
 		}
-		if v, ok := questions.Answer(sel.user, sel.over, qq); ok {
+		if v, ok := questions.Answer(sel.User, sel.Over, qq); ok {
 			r.Answer = v
 		}
 		rows = append(rows, r)

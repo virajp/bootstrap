@@ -1,3 +1,10 @@
 # A number over the string level of the opt-in tool opt.
+
+format = 2
+
 [tools.opt]
 level = 3
+
+[tools.core]
+
+[tools.mise]

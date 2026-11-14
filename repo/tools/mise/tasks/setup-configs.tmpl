@@ -37,8 +37,8 @@ fi
 sync_repo() {
   local rc=0
   print_header "Syncing the shared files from bootstrap ..."
-  # The tools come from the pack base and from the [tools.*] and [packs.*]
-  # tables of .config/bootstrap.toml.
+  # The tools come from the [tools.*] tables of .config/bootstrap.toml and from
+  # the required members of the pack base.
   # shellcheck disable=SC2086
   (cd -- "$1" && MISE_PROJECT_ROOT=$1 "${BOOTSTRAP_BIN:-bootstrap}" sync ${DRY_RUN}) || rc=$?
   ((rc == 0)) || exit "${rc}"

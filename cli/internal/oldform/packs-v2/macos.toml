@@ -1,0 +1,142 @@
+# The packs of the Mac tools in macos/tools/. A pack has no files of its own;
+# each key of its table is a member: `<tool> = { default = true }` or
+# `<tool> = {}`, and a nested pack is `"pack:<name>"`. The Mac sync sorts the
+# tools by name in each stage, so the member order does not change the sync. The
+# sync always adds the pack `base`. `required = true` marks a member of `base`
+# that each Mac must have.
+[pack.base]
+mise = { default = true, required = true }
+homebrew = { default = true }
+bash = { default = true }
+zsh = { default = true }
+fish = { default = true }
+git = { default = true }
+ssh = { default = true }
+cli = { default = true }
+fnox = { default = true }
+node = { default = true }
+touchid-sudo = { default = true }
+starship = { default = true }
+network = { default = true }
+macos-defaults = { default = true }
+gh = { default = true }
+python = { default = true }
+ruby = { default = true }
+fonts = { default = true }
+mas = { default = true }
+age = { default = true }
+bat = { default = true }
+coreutils = { default = true }
+curl = { default = true }
+doggo = { default = true }
+eza = { default = true }
+fzf = { default = true }
+gping = { default = true }
+httping = { default = true }
+ipcalc = { default = true }
+jq = { default = true }
+lazygit = { default = true }
+prettyping = { default = true }
+ripgrep = { default = true }
+uv = { default = true }
+worktrunk = { default = true }
+zoxide = { default = true }
+
+[pack.ai]
+claude-desktop = { default = true }
+claude-cli = {}
+claude-status = {}
+codeburn = {}
+opencode = {}
+openwhispr = {}
+orca = {}
+zed-delta = {}
+
+[pack.essentials]
+alfred = { default = true }
+vorssaint = { default = true }
+easyfind = { default = true }
+the-unarchiver = { default = true }
+brave-browser = { default = true }
+github-desktop = { default = true }
+google-chrome = {}
+tailscale = {}
+magnet = {}
+sill = {}
+taskexplorer = {}
+battery-health = {}
+setapp = {}
+diff-so-fancy = {}
+git-tools = {}
+glab = {}
+
+[pack.security]
+1password = {}
+1password-cli = {}
+1password-safari = {}
+bitwarden = {}
+
+[pack.dev]
+devtools = { default = true }
+dprint = { default = true }
+visual-studio-code = { default = true }
+lcov = {}
+orbstack = {}
+gcloud = {}
+superfile = {}
+zed = {}
+sublime-text = {}
+
+[pack.terminal]
+ghostty = { default = true }
+warp = {}
+
+[pack.apple-dev]
+xcode = { default = true }
+developer = {}
+testflight = {}
+transporter = {}
+android-studio = {}
+
+[pack.iwork]
+keynote = { default = true }
+numbers = { default = true }
+pages = { default = true }
+
+[pack.ms-office]
+microsoft-excel = { default = true }
+microsoft-powerpoint = { default = true }
+microsoft-word = { default = true }
+
+[pack.disk]
+daisydisk = { default = true }
+disk-doctor = {}
+disk-map = {}
+duplicate-detective = {}
+
+[pack.media]
+vlc = { default = true }
+final-cut-pro = {}
+handbrake = {}
+
+[pack.chat]
+telegram = { default = true }
+whatsapp = { default = true }
+
+[pack.notes]
+notion = { default = true }
+obsidian = { default = true }
+kindle = {}
+cardhop = {}
+pdf-protector = {}
+pdf-squeezer = {}
+
+[pack.cli-extras]
+btop = { default = true }
+dasel = { default = true }
+imagemagick = { default = true }
+pstree = { default = true }
+tree = { default = true }
+watch = { default = true }
+wget = { default = true }
+yq = { default = true }

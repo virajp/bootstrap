@@ -1,10 +1,10 @@
 rc=0
 --- stderr
 --- stdout
-tools: m1 m2 macos-setup
+tools: m1 macos-setup
 init:
 keep:
 macos-setup
 m1
 values:
-{"m1":{},"m2":{},"macos-setup":{}}
+{"m1":{},"macos-setup":{}}

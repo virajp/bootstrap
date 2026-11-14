@@ -1,1 +1,7 @@
+format = 2
+
 [tools.context]
+
+[tools.core]
+
+[tools.mise]

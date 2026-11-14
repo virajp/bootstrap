@@ -397,10 +397,8 @@ The sync calculates the environments of each tool in this sequence. Each
 mise tool gets the environments of its tool.
 
 1. A tool of a `[tools.<folder>]` entry gets its `env`, else the
-   `default_envs` of its `tools.toml`. A tool of a `[packs.<name>]` entry gets
-   the `env` of that entry, else its own `default_envs`. Each tool of the
-   `base` pack gets its own `default_envs`. A tool that is selected more than
-   once gets each of these environments. An `env` name that is not in
+   `default_envs` of its `tools.toml`. A required member of the `base` pack
+   without a table gets its own `default_envs`. An `env` name that is not in
    `environments`, an empty `env`, or an `env` item with a space stops the sync.
 2. Each dependency gets the environments of the tool that needs it: a tool of
    the `depends` key. The sync repeats this step until nothing changes.

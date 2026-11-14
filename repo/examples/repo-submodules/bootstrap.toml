@@ -6,6 +6,7 @@
 bootstrap_commit = ""
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
+format = 2
 # The product name, for the fnox keychain service. Each submodule has the
 # same value.
 product_name = "acme"
@@ -22,6 +23,17 @@ commit_scopes = [ "backend", "frontend", "iac", "docs" ]
 # The gitignored files to copy into a new worktree.
 worktree_files = [ ".config/mise.local.toml", "docs/memory/handoff" ]
 
+[tools.pre-commit]
+
+[tools.dprint]
+
+[tools.linter]
+
+[tools.gitleaks]
+
+[tools.grype]
+
+[tools.osv-scanner]
 # A feature branch merges into develop. main never merges into develop.
 [tools.git.branch.develop]
 merge_model = "direct"

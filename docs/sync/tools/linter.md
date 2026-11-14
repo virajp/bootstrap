@@ -1,8 +1,8 @@
 # The `linter` tool
 
 The house linter and ShellCheck, `code:lint:05-linter` and `setup:linter`.
-The `base` pack adds it with `default = true`. `bootstrap remove` refuses
-it, because only a pack selects it.
+A required member of the `base` pack. `bootstrap remove tool <tool…>` refuses
+it.
 
 | Property     | Value   |
 | ------------ | ------- |
@@ -14,8 +14,8 @@ it, because only a pack selects it.
 
 ## When the tool is relevant
 
-Always. The `base` pack adds this tool. Do not select it in the values file.
-A `[tools.linter]` table gives values.
+Always. The `base` pack adds this tool, and the sync writes an empty
+`[tools.linter]` table for it. The table gives values.
 
 ## What the tool ships
 

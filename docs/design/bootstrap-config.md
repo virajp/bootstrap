@@ -16,6 +16,7 @@ The exit code of each rule that stops the sync or the render is in
 
 ```toml
 environments = [ "dev", "ci" ]
+format = 2
 product_name = "my-product"
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
@@ -24,6 +25,8 @@ repo_url = "https://github.com/me/my-repo"
 
 [tools.claude.plugins.project]
 "vwf@my-marketplace" = "github:me/claude-plugins"
+
+[tools.dprint]
 
 [tools.fnox]
 
@@ -41,11 +44,23 @@ merge_never = [ "main" ]
 
 [tools.github]
 
+[tools.gitleaks]
+
+[tools.grype]
+
+[tools.linter]
+
 [tools.mise]
 worktree_files = [ ".config/mise.local.toml" ]
 
 [tools.node]
 env = [ "dev", "ci" ]
+
+[tools.osv-scanner]
+
+[tools.pre-commit]
+
+[tools.vscode]
 
 [member.web]
 folder = "projects/web"
@@ -60,8 +75,7 @@ label = "Web"
 | `[tools.<folder>].env`                      | List of strings | No        | The sync                                                                         |
 | `[tools.<folder>].<key>`                    | Any             | No        | The templates and the scripts of the tools                                       |
 | `[tools.<folder>.files."<target>"]`         | Table           | No        | The sync: the overrides of a shared file                                         |
-| `[packs.<name>]`                            | Table           | No        | The sync                                                                         |
-| `[packs.<name>].env`                        | List of strings | No        | The sync                                                                         |
+| `format`                                    | Integer         | Yes       | The sync: `2`, the form of the file                                              |
 | `environments`                              | List of strings | No        | The sync                                                                         |
 | `repo_name`                                 | String          | Yes       | `mise.toml`, `gitleaks.toml`, `fnox.toml`                                        |
 | `product_name`                              | String          | No        | `fnox.toml`                                                                      |
@@ -84,7 +98,7 @@ label = "Web"
 | `bootstrap_commit`                          | String          | No        | The sync writes it                                                               |
 
 A key of a question is a `[tools.<folder>].<key>`: `bootstrap init` and
-`bootstrap add` write the answer there. See
+`bootstrap add tool <tool…>` write the answer there. See
 [cli.md](cli.md#the-questions).
 
 The gate `code:lint:60-bootstrap` runs `bootstrap check` at each commit that
@@ -97,15 +111,17 @@ repository.
 
 ### `[tools.<folder>]`
 
-One table for each tool of the repository. Each key is a folder
-`repo/tools/<folder>/` of `bootstrap`. Do not select the tools of the `base`
-pack: the sync always adds the `base` pack. `bootstrap add` and
-`bootstrap remove` change these tables. A table for a base tool gives
-values. An `env` in that table can only add environments, and the sync examines
-it. See
-[packs.md](packs.md#the-base-pack).
-A table for a dependency also selects the tool, and its values follow the rule
-of a base or dependency tool in `[tools.<folder>].<key>`.
+One table for each selected tool of the repository, also for each required
+member of the `base` pack and each dependency, so that a user can write values
+in it. Each key is a folder `repo/tools/<folder>/` of `bootstrap`.
+`bootstrap add tool <tool…>`, `bootstrap add pack <pack…>` and
+`bootstrap remove tool <tool…>` change these tables. The sync writes an empty
+table for each required member of `base` that has none, also when the user
+deleted it by hand. See [cli.md](cli.md#the-tables-of-the-required-members). An
+`env` in the table of a required tool can only add environments, and the sync
+examines it. See [packs.md](packs.md#the-base-pack). A table for a dependency
+also selects the tool, and its values follow the rule of a base or dependency
+tool in `[tools.<folder>].<key>`.
 
 - `env` selects the environments, and each other key is a value of the tool. See
   `[tools.<folder>].<key>`
@@ -116,7 +132,8 @@ of a base or dependency tool in `[tools.<folder>].<key>`.
 - The `envs` of a dependency must include each environment of its parent. If
   not, the sync stops. See
   [mise.md](mise.md#the-environments-of-a-mise-tool)
-- Without `[tools]` and `[packs]`, the repository gets only the `base` pack
+- Without `[tools]`, the repository gets only the required members of the
+  `base` pack, and the sync writes their tables
 - A list, `tools = [...]`, is the old format. It stops the sync, and the
   message names the table format
 - A folder that is not in `bootstrap` stops the sync
@@ -146,21 +163,11 @@ of the selected tools and the derived values, and a template reads the result
 as `.config` or `.all`. See
 [cli.md](cli.md#the-values-of-a-tool).
 
-### `[packs.<name>]`
+### `format`
 
-One table for each pack of the repository. Each key is a pack of
-`repo/packs.toml`, without the prefix `pack:`. Do not write `base`. See
-[packs.md](packs.md)
-
-- The only key of an entry is `env`. Another key stops the sync
-- A list, `packs = [...]`, is the old format. It stops the sync
-- A pack that is not in `repo/packs.toml` stops the sync
-
-### `[packs.<name>].env`
-
-The environments of each tool of the pack, with the same rules as
-`[tools.<folder>].env`. Without the key, each tool of the pack gets its own
-`default_envs`.
+The form of the values file. The value is `2`. `bootstrap init` writes it in a
+new file and in a migrated file. A file without it is an old form. Another
+value stops the sync with code 2.
 
 ### `environments`
 
@@ -360,8 +367,28 @@ input of the sync, not the value that the templates get.
 kept. Each other command stops with code 2 and the message "run bootstrap
 init". A dry run of `init` shows the migration and writes nothing.
 
+A file without `format = 2`, or with a `[packs.<name>]` table, is an old form.
+`init` expands each `[packs.<name>]` table and the old implicit pack `base`
+with a frozen copy of the packs files of before `format = 2` (only the
+`default = true` members, and the nested packs). It writes a
+`[tools.<name>]` table for each such tool and each new dependency that has no
+table, removes the `[packs.*]` tables, and writes `format = 2`. A new table
+gets the `env` of its old pack. A tool that already has a table keeps its own
+`env`. When two old packs give one tool different `env` lists, the table gets
+both. When one source has no `env`, the table has no `env`. A tool of the
+frozen copy that the clone no longer has gets no table. A `[tools.<name>]`
+table of a tool that the clone no longer has (for example `devtools` on the
+Mac) is removed, and the change list names it. A file with `format = 2` and a
+`[packs.*]` table gets only the tables of its packs, not the members of
+`base` again. A `[packs.<name>]` table of a pack that the frozen copy does not
+have stops `init` with code 3 and the message
+`<pack> is not a bootstrap pack (named in <file>)`, as the old sync did. The
+user fixes the values file by hand, then runs `init` again.
+
 | Old form                        | `bootstrap init` moves it to                                                                       |
 | ------------------------------- | -------------------------------------------------------------------------------------------------- |
+| No `format = 2`                 | `format = 2`, and a table for each tool of the old pack `base`                                     |
+| `[packs.<name>]`                | A `[tools.<name>]` table for each tool of the old pack, with the `env` of the pack                 |
 | `commit_scopes`                 | `[tools.git].commit_scopes`                                                                        |
 | `[branch.<branch>]`             | `[tools.git.branch.<branch>]`                                                                      |
 | `worktree_files`                | `[tools.mise].worktree_files`                                                                      |

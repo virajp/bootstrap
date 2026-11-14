@@ -7,33 +7,38 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/virajp/bootstrap/cli/internal/core"
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/report"
-	"github.com/virajp/bootstrap/cli/internal/selection"
 )
 
-// listRoot is a root of the tree of `list`: a pack or the direct selection.
+// listRoot is a root of a tree: a title with its tools below it. A root
+// without a title draws each of its tools as a root.
 type listRoot struct {
 	name  string
 	tools []string
 }
 
 // list is `bootstrap [mac] list` (and `ls`): the selected tools as a tree. A
-// root is each pack that selects a tool, then the tools of the values file,
-// and a tool shows its dependencies below it. It writes nothing.
+// root is each selected tool that no selected tool needs, and a tool shows its
+// dependencies below it. It writes nothing.
 func (a *app) list(mac bool) fail.Code {
-	s, code := a.open(mac)
-	if s != nil && s.c != nil {
-		defer s.c.cleanup()
+	sd, c, code := a.side(mac, false, mac)
+	if c != nil {
+		defer c.Cleanup()
 	}
 	if code != fail.OK {
 		return code
+	}
+	s, err := core.Open(sd)
+	if err != nil {
+		return a.logErr(err)
 	}
 	roots := listRoots(s)
 	deps := depsOf(s)
 	style := a.styled
 	opt := treeOpts{style: style, arrowCell: true, cell: func(tool string) (cell, string) {
-		if !s.required(tool) {
+		if !s.Required(tool) {
 			return cell{}, ""
 		}
 		g := report.Glyph("required", style)
@@ -41,13 +46,7 @@ func (a *app) list(mac bool) fail.Code {
 	}}
 	out, arrows := renderTree(roots, deps, opt)
 	fmt.Fprint(a.stdout, out)
-	packs := 0
-	for _, r := range roots {
-		if strings.HasSuffix(r.name, " (pack)") {
-			packs++
-		}
-	}
-	text := count(len(s.res.Tools), "tool") + " · " + count(packs, "pack")
+	text := count(len(s.Res.Tools), "tool")
 	if arrows {
 		text += " · " + report.Arrow(style) + " = the subtree shows above"
 	}
@@ -57,60 +56,33 @@ func (a *app) list(mac bool) fail.Code {
 }
 
 // depsOf gives the dependencies of each selected tool.
-func depsOf(s *side) map[string][]string {
+func depsOf(s *core.State) map[string][]string {
 	deps := map[string][]string{}
-	for _, d := range s.res.Deps {
+	for _, d := range s.Res.Deps {
 		deps[d.Tool] = d.Deps
 	}
 	return deps
 }
 
-// listRoots gives the roots of the tree of the selection of <s>: each pack
-// that selects a tool, then the tools of the values file.
-func listRoots(s *side) []listRoot {
-	direct := "tools (selected directly)"
-	base := selection.BasePack + " (pack)"
-	var roots []listRoot
-	at := map[string]int{}
-	root := func(name string) *listRoot {
-		i, ok := at[name]
-		if !ok {
-			i = len(roots)
-			at[name] = i
-			roots = append(roots, listRoot{name: name})
-		}
-		return &roots[i]
-	}
-	for _, e := range s.res.Sel {
-		var r *listRoot
-		switch {
-		case strings.HasPrefix(e.Src, "tools."):
-			r = root(direct)
-		case e.Src == "default":
-			r = root(base)
-		case strings.HasPrefix(e.Src, "packs."):
-			r = root(strings.TrimPrefix(e.Src, "packs.") + " (pack)")
-		default:
-			continue
-		}
-		r.tools = append(r.tools, e.Tool)
-	}
-	sort.SliceStable(roots, func(i, j int) bool {
-		rank := func(n string) int {
-			switch n {
-			case base:
-				return 0
-			case direct:
-				return 2
+// listRoots gives the roots of the tree of the selection of <s>: each tool of
+// a [tools.<name>] table, and each required member of the pack base, that no
+// selected tool needs.
+func listRoots(s *core.State) []listRoot {
+	needed := map[string]bool{}
+	for _, d := range s.Res.Deps {
+		for _, t := range d.Deps {
+			if t != d.Tool {
+				needed[t] = true
 			}
-			return 1
 		}
-		if ri, rj := rank(roots[i].name), rank(roots[j].name); ri != rj {
-			return ri < rj
+	}
+	var tools []string
+	for _, e := range s.Res.Sel {
+		if !needed[e.Tool] {
+			tools = append(tools, e.Tool)
 		}
-		return roots[i].name < roots[j].name
-	})
-	return roots
+	}
+	return []listRoot{{tools: tools}}
 }
 
 // cell is the result column of a row of the tree: the visible text, its
@@ -182,11 +154,14 @@ func renderTree(roots []listRoot, deps map[string][]string, opt treeOpts) (strin
 		memo[tool] = v
 		return v
 	}
-	var walk func(tool, prefix string, last bool, path map[string]bool)
-	walk = func(tool, prefix string, last bool, path map[string]bool) {
+	var walk func(tool, prefix string, last, top bool, path map[string]bool)
+	walk = func(tool, prefix string, last, top bool, path map[string]bool) {
 		branch, next := "├── ", "│   "
 		if last {
 			branch, next = "└── ", "    "
+		}
+		if top {
+			branch, next = "", ""
 		}
 		var kids []string
 		for _, d := range deps[tool] {
@@ -212,7 +187,7 @@ func renderTree(roots []listRoot, deps map[string][]string, opt treeOpts) (strin
 		lines = append(lines, l)
 		path[tool] = true
 		for i, d := range kids {
-			walk(d, prefix+next, i == len(kids)-1, path)
+			walk(d, prefix+next, i == len(kids)-1, false, path)
 		}
 		delete(path, tool)
 	}
@@ -229,9 +204,11 @@ func renderTree(roots []listRoot, deps map[string][]string, opt treeOpts) (strin
 		if len(shown) == 0 {
 			continue
 		}
-		lines = append(lines, line{text: r.name, root: true})
+		if r.name != "" {
+			lines = append(lines, line{text: r.name, root: true})
+		}
 		for i, t := range shown {
-			walk(t, "", i == len(shown)-1, map[string]bool{})
+			walk(t, "", i == len(shown)-1, r.name == "", map[string]bool{})
 		}
 	}
 	if len(opt.group) > 0 {

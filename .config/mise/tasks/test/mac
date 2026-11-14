@@ -219,6 +219,9 @@ commit_config() {
   _git -C "$MACOS_SETUP_REPO_PATH" add -A
   _git -C "$MACOS_SETUP_REPO_PATH" commit --quiet --no-verify --allow-empty -m "config"
 }
+# values_file [<line>...]: a macos.toml of the new form: format = 2, the tables
+# of the required members core and mise of the fixture pack base, then <line>s.
+values_file() { printf '%s\n' 'format = 2' '' '[tools.core]' '' '[tools.mise]' '' "$@" > "$values"; }
 
 # case_tree <function>: a copy of the tree for this case only, after <function>
 # changed its macos/ folder, "$work".
@@ -328,14 +331,15 @@ expect() {
 
 add_bad_tool() { cp -R -- "$fixtures/repo/tools/bad" "$work/tools/bad"; }
 no_packs() { rm -- "$work/packs.toml"; }
-no_base() { printf '%s\n' '[pack.extra]' 'opt = { default = true }' > "$work/packs.toml"; }
-required_not_default() { printf '%s\n' '[pack.base]' 'core = { required = true }' > "$work/packs.toml"; }
-pack_is_tool() { printf '\n%s\n%s\n' '[pack.core]' 'init = { default = true }' >> "$work/packs.toml"; }
-pack_unknown() { printf '\n%s\n%s\n' '[pack.more]' 'nope = { default = true }' >> "$work/packs.toml"; }
+no_base() { printf '%s\n' '[pack.extra]' 'opt = {}' > "$work/packs.toml"; }
+required_outside_base() { printf '\n%s\n%s\n' '[pack.more]' 'opt = { required = true }' >> "$work/packs.toml"; }
+default_key() { printf '\n%s\n%s\n' '[pack.more]' 'opt = { default = true }' >> "$work/packs.toml"; }
+pack_is_tool() { printf '\n%s\n%s\n' '[pack.core]' 'init = {}' >> "$work/packs.toml"; }
+pack_unknown() { printf '\n%s\n%s\n' '[pack.more]' 'nope = {}' >> "$work/packs.toml"; }
 pack_old_key() { printf '\n%s\n%s\n' '[pack.more]' 'depends = [ "opt" ]' >> "$work/packs.toml"; }
 pack_entry_key() { printf '\n%s\n%s\n' '[pack.more]' 'opt = { tag = true }' >> "$work/packs.toml"; }
 pack_not_table() { printf '\n%s\n%s\n' '[pack.more]' 'tools = "init"' >> "$work/packs.toml"; }
-pack_two() { printf '\n%s\n%s\n' '[pack.more]' 'opt = { default = true }' >> "$work/packs.toml"; }
+pack_two() { printf '\n%s\n%s\n' '[pack.more]' 'opt = {}' >> "$work/packs.toml"; }
 # prepend_key <tool> <line>: a top-level line before the tables of a tools.toml.
 prepend_key() {
   printf '%s\n' "$2" "$(cat -- "$work/tools/$1/tools.toml")" > "$work/$1.toml"
@@ -402,8 +406,8 @@ catalog_no_category() { drop_key opt category; }
 catalog_summary_empty() { set_key opt summary 'summary = ""'; }
 catalog_category_key() { printf '%s\n' '[category.dev]' 'color = "red"' 'title = "Development"' > "$work/categories.toml"; }
 catalog_hosts() { prepend_key opt 'hosts = [ "macos" ]'; }
-pack_description() { printf '\n%s\n%s\n%s\n' '[pack.more]' 'description = "More tools."' 'opt = { default = true }' >> "$work/packs.toml"; }
-pack_description_number() { printf '\n%s\n%s\n%s\n' '[pack.more]' 'description = 1' 'opt = { default = true }' >> "$work/packs.toml"; }
+pack_description() { printf '\n%s\n%s\n%s\n' '[pack.more]' 'description = "More tools."' 'opt = {}' >> "$work/packs.toml"; }
+pack_description_number() { printf '\n%s\n%s\n%s\n' '[pack.more]' 'description = 1' 'opt = {}' >> "$work/packs.toml"; }
 group_question() {
   append_lines opt '[questions.email_a]' 'group = "email"' 'note = "One answer is enough."' 'question = "Which a?"' \
     '' '[questions.email_b]' 'group = "email"' 'question = "Which b?"'
@@ -452,33 +456,140 @@ case_tools_list() {
   check "merger (pack extra, not listed) is not rendered" not test -e "$home/.config/merger"
 }
 
-# A [packs.<name>] table adds only its default = true members.
-case_packs_table() {
-  use_config packs-table
-  run_real
-  check_exit 0
-  check_output "tools: core mise opt"
-  check "opt (default = true) is rendered" test -f "$home/.config/opt/opt.txt"
-  check "merger (default = false) is not rendered" not test -e "$home/.config/merger"
+# The packs of the fixture tree that the cases of add pack use: a nested pack,
+# a pack whose member init needs its member initdep, and base with merger, a
+# member that is not required.
+more_packs() {
+  printf '\n%s\n%s\n' '[pack.outer]' '"pack:extra" = {}' >> "$work/packs.toml"
+  printf '\n%s\n%s\n%s\n' '[pack.dev]' 'initdep = {}' 'init = {}' >> "$work/packs.toml"
 }
 
-# A default = false member arrives only with [tools.<name>].
-case_packs_member() {
-  use_config packs-member
+# add pack writes a table for each member that is not selected, and each
+# member once: opt of the ok config keeps its one table.
+case_add_pack() {
+  use_config ok
   run_real
+  commit_config
+  mac_run add pack --yes --no-bootstrap extra
   check_exit 0
-  check_output "tools: core merger mise opt"
+  check_output "select merger"
+  check "merger is selected" grep -qxF '[tools.merger]' "$values"
+  check "opt has one table" test "$(grep -cxF '[tools.opt]' "$values")" = 1
+  check "no [packs.*] table" not grep -q '^\[packs\.' "$values"
   check "merger is rendered" test -f "$home/.config/merger/plain.txt"
 }
 
-# A tool in two packs is selected once.
-case_packs_two() {
-  use_config packs-two
-  case_tree pack_two
+case_add_pack_exclude() {
+  use_config mise-user
+  mac_run add pack --yes --no-bootstrap extra --exclude merger
+  check_exit 0
+  check "opt is selected" grep -qxF '[tools.opt]' "$values"
+  check "the excluded merger is not selected" not grep -qF '[tools.merger]' "$values"
+}
+
+case_add_pack_nested() {
+  use_config mise-user
+  case_tree more_packs
+  mac_run add pack --yes --no-bootstrap outer
+  check_exit 0
+  check "merger of the nested pack extra is selected" grep -qxF '[tools.merger]' "$values"
+  check "opt of the nested pack extra is selected" grep -qxF '[tools.opt]' "$values"
+}
+
+# add_pack_refused <args> <message>: add pack stops with code 2, and
+# macos.toml stays.
+add_pack_refused() {
+  local before
+  use_config ok
+  case_tree more_packs
+  before=$(cat -- "$values")
+  # shellcheck disable=SC2086
+  mac_run add pack --yes --no-bootstrap $1
+  check_exit 2
+  check_output "$2"
+  check "macos.toml is unchanged" test "$(cat -- "$values")" = "$before"
+}
+case_add_pack_two() {
+  use_config mise-user
+  mac_run add pack --yes --no-bootstrap extra base
+  check_exit 0
+  check_output "base is already selected"
+  check "merger is selected" grep -qxF '[tools.merger]' "$values"
+  check "opt is selected" grep -qxF '[tools.opt]' "$values"
+}
+
+# ---- the old form of macos.toml and its migration -----------------------------
+
+case_sync_no_format() {
+  use_config old-packs
+  run_dry
+  check_exit 2
+  check_output "[packs.essentials] in config/macos.toml is the old form - run bootstrap mac init"
+  check_output "config/macos.toml without format = 2 is the old form - run bootstrap mac init"
+  mac_run check
+  check_exit 2
+  check_output "without format = 2 is the old form - run bootstrap mac init"
+}
+
+# The tool alfred of the pack essentials of the frozen copy, and merger in the
+# new pack base, a member that is not required.
+migrate_tree() {
+  mkdir -p -- "$work/tools/alfred"
+  printf '%s\n' 'summary = "The alfred tool of the fixture repo"' 'category = "dev"' > "$work/tools/alfred/tools.toml"
+  printf '\n%s\n%s\n%s\n%s\n' '[pack.base]' 'core = { required = true }' 'mise = { required = true }' 'merger = {}' > "$work/base.toml"
+  sed -n '/^\[pack\.extra\]/,$p' "$work/packs.toml" >> "$work/base.toml"
+  mv -- "$work/base.toml" "$work/packs.toml"
+}
+
+# init migrates [packs.essentials] with the frozen copy of macos/packs.toml:
+# its member alfred gets a table, the member that the clone does not have
+# gets none; the table of a tool that bootstrap no longer has goes; a
+# member of the new base that is not required gets no table.
+case_init_migrate_packs() {
+  use_config old-packs
+  case_tree migrate_tree
+  mac_run init --yes --no-bootstrap
+  check_exit 0
+  check_output "[packs.essentials] removed"
+  check_output "[tools.devtools] removed: bootstrap no longer has the tool"
+  check "format = 2" grep -qxF 'format = 2' "$values"
+  check "no [packs.*] table" not grep -q '^\[packs\.' "$values"
+  check "no [tools.devtools]" not grep -qF '[tools.devtools]' "$values"
+  check "alfred of the frozen pack essentials is selected" grep -qxF '[tools.alfred]' "$values"
+  check "mise of the frozen pack base is selected" grep -qxF '[tools.mise]' "$values"
+  check "core, a required member, has a table" grep -qxF '[tools.core]' "$values"
+  check "merger, a member of the new base that is not required, has no table" not grep -qF '[tools.merger]' "$values"
+  check "the table of opt keeps its value" grep -qxF 'level = "migrated"' "$values"
+  commit_config
+  run_dry
+  check_exit 0
+}
+
+# ---- the required members of the pack base -------------------------------------
+
+# sync writes the table of a required member that has none, and logs it; a
+# dry run and check list it and write nothing.
+case_required_table() {
+  local before
+  use_config -
+  printf '%s\n' 'format = 2' '' '[tools.core]' > "$values"
+  commit_config
+  before=$(cat -- "$values")
+  run_dry
+  check_exit 0
+  check_output "[tools.mise] would be added to config/macos.toml"
+  check "a dry run writes no table" test "$(cat -- "$values")" = "$before"
+  mac_run check
+  check_exit 0
+  check_output "[tools.mise] would be added to"
+  check "check writes no table" test "$(cat -- "$values")" = "$before"
   run_real
   check_exit 0
-  check_output "tools: core mise opt"
-  check "the manifest has the file once" test "$(grep -cF .config/opt/opt.txt "$manifest")" = 1
+  check_output "[tools.mise] added to config/macos.toml"
+  check "the table of mise is written" grep -qxF '[tools.mise]' "$values"
+  run_real
+  check_exit 0
+  check_no_output "added to config/macos.toml"
 }
 
 # ---- mise (the check of the install) ------------------------------------------
@@ -625,7 +736,7 @@ case_values_dependency() {
   check_exit 4
   check_file "$items" "$head
 items=a,b,y,x,"
-  printf '%s\n' '[tools.init]' '[tools.initdep]' 'items = [ "x", "a" ]' > "$values"
+  values_file '[tools.init]' '[tools.initdep]' 'items = [ "x", "a" ]'
   run_real
   check_exit 4
   check_file "$items" "$head
@@ -996,6 +1107,8 @@ case_values_missing() {
   run_real
   check_exit 0
   check "macos.toml starts with the header" test "$(head -n 1 "$values")" = "# The values of the Mac sync of bootstrap. See docs/setup/index.md."
+  check "format = 2" grep -qxF 'format = 2' "$values"
+  check "the tables of the required members" grep -qxF '[tools.mise]' "$values"
   check "it has the commit line" grep -qxF "bootstrap_commit = \"$tree_commit\"" "$values"
 }
 
@@ -1020,7 +1133,7 @@ case_commit() {
 
 case_commit_link() {
   use_config -
-  printf '%s\n' '[tools.opt]' > "$user/real.toml"
+  printf '%s\n' 'format = 2' '[tools.core]' '[tools.mise]' '[tools.opt]' > "$user/real.toml"
   ln -s -- "$user/real.toml" "$values"
   run_real
   check_exit 0
@@ -1139,7 +1252,7 @@ case_contrib_deselect() {
   run_real
   check_exit 0
   check_file "$home/.config/owner/seed.txt" "agent=agent-a"
-  printf '%s\n' '[tools.contrib-b]' '[tools.owner]' 'token = "token-1"' > "$values"
+  values_file '[tools.contrib-b]' '[tools.owner]' 'token = "token-1"'
   run_real
   check_exit 0
   check_file "$home/.config/owner/config" "$(owner_config "Include ~/a" "Include ~/c" "Include ~/b" "" "Host *" \
@@ -1490,9 +1603,9 @@ case_merge_spec_bad() {
 # an override that matches no item stops the file.
 case_merge_overrides() {
   use_config merge
-  printf '%s\n' '[tools.merger]' \
+  values_file '[tools.merger]' \
     '[tools.merger.files.".config/merger/m.json"]' 'scalar = "own"' 'kind = { "$skip" = true }' \
-    '[tools.merger.files.".config/merger/m.json".list]' 'b = { "$mode" = "remove" }' > "$values"
+    '[tools.merger.files.".config/merger/m.json".list]' 'b = { "$mode" = "remove" }'
   live json '{"list": ["b", "x"]}'
   run_real
   check_exit 0
@@ -1500,7 +1613,7 @@ case_merge_overrides() {
   check "a skipped key is not added" not grep -qF '"kind"' "$(m_dir)/m.json"
   check "a removed item goes" \
     test "$(tr -d ' \n' < "$(m_dir)/m.json" | sed 's/.*"list":\(\[[^]]*\]\).*/\1/')" = '["x"]'
-  printf '%s\n' '[tools.merger]' '[tools.merger.files.".config/merger/m.json"]' 'nope = 1' > "$values"
+  values_file '[tools.merger]' '[tools.merger.files.".config/merger/m.json"]' 'nope = 1'
   run_real
   check_exit 2
   check_output "the override nope has no item of bootstrap - remove it"
@@ -1526,12 +1639,12 @@ case_merge_link() {
 # goes; a deselected tool leaves its shared files in place.
 case_merge_contrib() {
   use_config merge
-  printf '%s\n' '[tools.merger]' '[tools.merge-contrib]' > "$values"
+  values_file '[tools.merger]' '[tools.merge-contrib]'
   run_real
   check_exit 0
   check "the contribution reaches the shared file" \
     test "$(tr -d ' \n' < "$(m_dir)/m.json" | sed 's/.*"items":\(\[[^]]*\]\).*/\1/')" = '["a","z"]'
-  printf '%s\n' '[tools.merger]' > "$values"
+  values_file '[tools.merger]'
   run_real
   check_exit 0
   check "the item of a tool that went is removed" \
@@ -1569,7 +1682,7 @@ entry_setup() {
   repo="$BOOTSTRAP_CACHE/repo"
   lock="$BOOTSTRAP_CACHE/lock"
   old_cache="$XDG_CACHE_HOME/macos-setup"
-  : > "$values"
+  values_file
 }
 
 entry_run() {
@@ -1951,7 +2064,7 @@ case_init_migrate() {
   old_mac_values
   mac_run init --yes --no-bootstrap
   check_exit 0
-  check_output "migrate the old form: [tools.macos-setup] to [tools.mise]"
+  check_output "[tools.macos-setup] to [tools.mise]"
   check "no [tools.macos-setup]" not grep -qF 'macos-setup]' "$values"
   check "config_path in [tools.mise]" grep -qxF 'config_path = "~/macos-setup"' "$values"
   check "the [tools.mise] table" grep -qxF '[tools.mise]' "$values"
@@ -1972,13 +2085,27 @@ case_init_dirty_values() {
   check "the old form stays" grep -qF '[tools.macos-setup]' "$values"
 }
 
+# A new macos.toml: format = 2 and a table for each member of the pack base.
 case_init_new() {
   use_config -
-  mac_run init --yes --no-bootstrap opt
+  case_tree migrate_tree
+  mac_run init --yes --no-bootstrap
   check_exit 0
   check "the header line" grep -qxF '# The values of the Mac sync of bootstrap. See docs/setup/index.md.' "$values"
-  check "opt is selected" grep -qxF '[tools.opt]' "$values"
-  check "init synced the files" test -f "$home/.config/opt/opt.txt"
+  check "format = 2" grep -qxF 'format = 2' "$values"
+  check "core is selected" grep -qxF '[tools.core]' "$values"
+  check "mise is selected" grep -qxF '[tools.mise]' "$values"
+  check "merger, a member of base that is not required, is selected" grep -qxF '[tools.merger]' "$values"
+  check "opt is not selected" not grep -qF '[tools.opt]' "$values"
+  check "init synced the files" test -f "$home/.config/core/values.txt"
+}
+
+case_init_names() {
+  use_config -
+  mac_run init --yes --no-bootstrap opt
+  check_exit 2
+  check_output "mac init takes no tool names - use: bootstrap mac add tool opt"
+  check "no macos.toml" not test -e "$values"
 }
 
 case_init_not_git() {
@@ -2028,7 +2155,7 @@ fake_packages() {
 case_mac_detect() {
   use_config ok
   fake_packages
-  mac_run detect --no --no-bootstrap
+  mac_run detect --no-bootstrap
   check_exit 1
   check_output "pkgtool is found, but it is not selected"
   check_output "brew:pkgfmla, +1 more: installed"
@@ -2044,7 +2171,7 @@ case_mac_detect() {
 case_mac_detect_yes() {
   use_config ok
   fake_packages
-  mac_run detect --yes --no-bootstrap
+  mac_run detect --add --yes --no-bootstrap
   check_exit 0
   check "macos.toml selects pkgtool" grep -qxF '[tools.pkgtool]' "$values"
   check "macos.toml selects appcmd for the mas: app" grep -qxF '[tools.appcmd]' "$values"
@@ -2052,15 +2179,15 @@ case_mac_detect_yes() {
   check "macos.toml has the cask" grep -qxF '"brew-cask:loosecask" = "latest"' "$values"
   check "macos.toml has the app" grep -qxF '"mas:123" = "latest"' "$values"
   check "macos.toml has the mise tool" grep -qxF '[mise.tools.loosetool]' "$values"
-  mac_run detect --no --no-bootstrap
+  commit_config
+  mac_run detect --no-bootstrap
   check_exit 0
-  check_output "No tool to add"
 }
 
 case_mac_detect_nobrew() {
   use_config ok
   fake_packages nobrew
-  mac_run detect --no --no-bootstrap
+  mac_run detect --no-bootstrap
   check_exit 1
   check_output "brew is not installed, so Homebrew packages are not scanned"
   check_output "mas is not installed, so App Store apps are not scanned"
@@ -2073,18 +2200,29 @@ case_mac_detect_not_selectable() {
   use_config ok
   case_tree pkgtool_not_selectable
   fake_packages
-  mac_run detect --yes --dry-run --no-bootstrap
+  mac_run detect --add --yes --dry-run --no-bootstrap
   check_exit 0
   check_no_output "select pkgtool"
   check_no_output "[NEW] pkgtool"
   check "macos.toml does not select pkgtool" not grep -qF '[tools.pkgtool]' "$values"
 }
 
+# The flags of mac detect: --no is gone, --yes needs --add.
+case_mac_detect_flags() {
+  use_config ok
+  mac_run detect --no --no-bootstrap
+  check_exit 2
+  check_output "mac detect has no flag --no"
+  mac_run detect --yes --no-bootstrap
+  check_exit 2
+  check_output "mac detect --yes needs --add - add --add"
+}
+
 case_mac_add() {
   use_config ok
   run_real
   commit_config
-  mac_run add --yes --no-bootstrap merger
+  mac_run add tool --yes --no-bootstrap merger
   check_exit 0
   check_output "select merger"
   check "merger is selected" grep -qxF '[tools.merger]' "$values"
@@ -2095,7 +2233,7 @@ case_mac_remove() {
   run_real
   check "opt synced" test -f "$home/.config/opt/opt.txt"
   commit_config
-  mac_run remove --yes --no-bootstrap opt
+  mac_run remove tool --yes --no-bootstrap opt
   check_exit 0
   check "opt is not selected" not grep -qF '[tools.opt]' "$values"
   check "the file of opt is gone" test ! -e "$home/.config/opt/opt.txt"
@@ -2103,17 +2241,51 @@ case_mac_remove() {
 
 case_mac_remove_refused() {
   use_config ok
-  mac_run remove --yes --no-bootstrap mise
+  mac_run remove tool --yes --no-bootstrap mise
   check_exit 2
   check_output "mise is required by the base pack, so mac remove cannot remove it"
-  mac_run remove --yes --no-bootstrap merger
+  mac_run remove tool --yes --no-bootstrap merger
   check_exit 2
   check_output "merger is not selected"
+  use_config dep
+  mac_run remove tool --yes --no-bootstrap initdep
+  check_exit 2
+  check_output "initdep is needed by init - remove init first"
+  check "the table of initdep stays" grep -qxF '[tools.initdep]' "$values"
+}
+
+# The grammar without a kind word stops with code 2 and the hint of the new
+# form.
+case_mac_old_grammar() {
+  use_config ok
+  mac_run add --yes --no-bootstrap merger
+  check_exit 2
+  check_output "mac add needs the kind word tool or pack before the names - use: bootstrap mac add tool merger"
+  mac_run remove --yes --no-bootstrap opt
+  check_exit 2
+  check_output "mac remove needs the kind word tool before the names - use: bootstrap mac remove tool opt"
+  mac_run replace --yes --no-bootstrap opt merger
+  check_exit 2
+  check_output "mac replace needs the kind word tool before the names - use: bootstrap mac replace tool opt merger"
+  check "macos.toml is unchanged" cmp -s "$fixtures/config/ok/macos.toml" "$values"
+}
+
+# A sync that fails after add tool puts macos.toml back.
+case_mac_add_fails() {
+  local before
+  use_config mise-user
+  before=$(cat -- "$values")
+  : > "$home/.after-fail"
+  mac_run add tool --yes --no-bootstrap scripted
+  check_exit 2
+  check_output "scripted/scripts/after failed with exit code 1"
+  check_output "Put back macos.toml as it was before the command"
+  check "macos.toml is as it was" test "$(cat -- "$values")" = "$before"
 }
 
 case_mac_replace_refused() {
   use_config ok
-  mac_run replace --yes --no-bootstrap opt merger
+  mac_run replace tool --yes --no-bootstrap opt merger
   check_exit 2
   check_output "mac replace works only between two tools with the same parent"
 }
@@ -2126,7 +2298,7 @@ run_case "config: MACOS_SETUP_REPO_PATH unset" case_config_unset
 run_case "config: an unknown flag, with the usage" case_unknown_flag
 run_case "config: an unknown tool in a [tools.<name>] table" expect unknown-tool 3 "nope is not a bootstrap tool"
 run_case "config: an [overrides.mise.<path>] that no selected tool has" expect unknown-override 2 "no selected tool has"
-run_case "config: a packs list, the old format" expect old-packs-list 2 "packs in config/macos.toml must be [packs.<name>] tables - the top-level keys are"
+run_case "config: a packs list, the old format" expect old-packs-list 2 "packs in config/macos.toml is the old form - run bootstrap mac init"
 run_case "config: a tools key that is a string, the old format" expect tools-string 2 "tools = [...] is the old format"
 run_case "config: a tools item that is not a name, the old format" expect tools-number 2 "tools = [...] is the old format"
 run_case "config: a tools list, the old format" expect tools-list 2 "tools = [...] is the old format"
@@ -2135,9 +2307,10 @@ run_case "config: an [overrides.<tool>] table" expect bad-override 2 "[overrides
 run_case "config: a [tools.<name>] table with env" expect env-opt 2 "[tools.opt] env is for repo tools only"
 run_case "config: an [overrides.mise_env.<env>.<path>] table" expect override-env 2 "[overrides.mise_env] in config/macos.toml: the Mac side has no environments"
 run_case "config: a tool folder with no tools.toml" expect ok 2 "macos/tools/bad has no tools.toml" add_bad_tool
-run_case "config: a repo with no macos/packs.toml" expect ok 3 "base is not a bootstrap pack" no_packs
-run_case "config: a packs.toml with no [pack.base]" expect ok 3 "base is not a bootstrap pack" no_base
-run_case "config: a required member without default = true" expect ok 2 "macos/packs.toml: [pack.base] core: required = true is only for a member of pack base with default = true" required_not_default
+run_case "config: a repo with no macos/packs.toml" expect ok 3 "base is not a bootstrap pack (named in macos/packs.toml)" no_packs
+run_case "config: a packs.toml with no [pack.base]" expect ok 3 "base is not a bootstrap pack (named in macos/packs.toml)" no_base
+run_case "config: required = true in a pack other than base" expect ok 2 "macos/packs.toml: [pack.more] opt: required = true is only for a tool of pack base" required_outside_base
+run_case "config: the old member key default" expect ok 2 "macos/packs.toml: [pack.more] opt has the entry key 'default', the old form - each member is a default: write opt = {}" default_key
 run_case "config: an unknown key in a tools.toml" expect ok 2 "macos/tools/opt/tools.toml: depend is not a key of tools.toml - the keys are description, summary, category, selectable, stage, depends, parent, [defaults], [questions], [contributes], [files], [tasks] and [mise]" bad_manifest_key
 run_case "config: a stage that is not init" expect ok 2 'macos/tools/opt/tools.toml: stage = "login" - the only stage is "init"' bad_stage
 run_case "config: the old stage = shell" expect ok 2 'macos/tools/opt/tools.toml: stage = "shell" is the old name - write stage = "init"' old_stage
@@ -2175,9 +2348,17 @@ run_case "config: two contributors that set one scalar" expect conflict 2 "macos
 run_case "config: a scalar over a list of a base tool" expect type-list 2 "[tools.core] of macos.toml sets items to a string, but it is a list in the base or dependency tool core"
 run_case "config: a scalar over a table of a base tool" expect type-table 2 "[tools.core] of macos.toml sets table to a string, but it is a table in the base or dependency tool core"
 run_case "selection: a [tools.<name>] table selects one tool of a pack" case_tools_list
-run_case "packs: a [packs.<name>] table adds its default = true members" case_packs_table
-run_case "packs: a default = false member arrives only with [tools.<name>]" case_packs_member
-run_case "packs: a tool in two packs is selected once" case_packs_two
+run_case "packs: add pack writes a table for each member not selected" case_add_pack
+run_case "packs: add pack --exclude" case_add_pack_exclude
+run_case "packs: add pack of a nested pack" case_add_pack_nested
+run_case "packs: add pack of two packs" case_add_pack_two
+run_case "packs: --exclude of a required member" add_pack_refused "base --exclude mise" "mise is required in the pack base, so mac add pack cannot exclude it"
+run_case "packs: --exclude of a name that is not a member" add_pack_refused "extra --exclude core" "core is not a member of the pack extra"
+run_case "packs: --exclude with two packs" add_pack_refused "extra outer --exclude opt" "--exclude needs exactly one pack name - run bootstrap mac add pack once for each pack"
+run_case "packs: --exclude of a member that another member needs" add_pack_refused "dev --exclude initdep" "initdep is needed by init - exclude init too, or keep initdep"
+run_case "old form: sync and check stop on a file without format" case_sync_no_format
+run_case "old form: init migrates [packs.*] with the frozen copy" case_init_migrate_packs
+run_case "base: sync writes the table of a required member" case_required_table
 run_case "mise check: a mise that is not ~/.local/bin/mise" case_mise_elsewhere
 run_case "mise check: a ~/.local/bin/mise link into another folder" case_mise_link
 run_case "mise: the [mise.env] of a tool, rendered" case_mise_tool
@@ -2246,13 +2427,16 @@ run_case "merge: the old key remove" expect merge 2 'macos/tools/merger/tools.to
 run_case "questions: sync stops on a question without an answer" case_question_missing
 run_case "questions: mac questions, --json and text" case_questions_json
 run_case "selection: mac detect offers the installed packages" case_mac_detect
-run_case "selection: mac detect --yes adds the tools and the packages" case_mac_detect_yes
+run_case "selection: mac detect --add --yes adds the tools and the packages" case_mac_detect_yes
 run_case "selection: mac detect without brew and mas" case_mac_detect_nobrew
 run_case "selection: mac detect does not offer a tool with selectable = false" case_mac_detect_not_selectable
+run_case "selection: mac detect --no and --yes without --add" case_mac_detect_flags
 run_case "selection: mac add" case_mac_add
 run_case "selection: mac remove" case_mac_remove
-run_case "selection: mac remove refuses a required tool and a tool that is not selected" case_mac_remove_refused
+run_case "selection: mac remove refuses a required tool, a needed tool and a tool that is not selected" case_mac_remove_refused
 run_case "selection: mac replace refuses tools without the same parent" case_mac_replace_refused
+run_case "selection: the old grammar without a kind word" case_mac_old_grammar
+run_case "selection: a sync that fails after mac add tool puts macos.toml back" case_mac_add_fails
 run_case "init: --answer answers a question, then the sync" case_init_answer
 run_case "init: --yes and a question without an answer" case_init_yes_missing
 run_case "init: no --yes and no terminal" case_init_no_yes
@@ -2261,6 +2445,7 @@ run_case "init: sync stops on the old form" case_sync_old_form
 run_case "init: migrates [tools.macos-setup], then sync" case_init_migrate
 run_case "init: a macos.toml with changes that are not committed" case_init_dirty_values
 run_case "init: a new macos.toml" case_init_new
+run_case "init: tool names" case_init_names
 run_case "init: a folder that is not a git repository" case_init_not_git
 run_case "init: nothing to change" case_init_nothing
 

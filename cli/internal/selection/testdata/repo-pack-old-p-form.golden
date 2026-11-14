@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-repo-sync: repo/packs.toml: [pack.base] "p:extra" is the old form - write "pack:extra" = { default = true }
+repo-sync: repo/packs.toml: [pack.base] "p:extra" is the old form - write "pack:extra" = {}
 --- stdout

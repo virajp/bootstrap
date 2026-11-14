@@ -81,9 +81,10 @@ product. A `repository:` line before the block gives the path of the
 repository from the root of the base repository: `.` for the base, the path
 of a git submodule, or the path of a sibling, for example `../acme-api`. The
 block is the draft of the `.config/bootstrap.toml` of that repository, in the
-format of `repo/examples/` of the clone. It also holds the tools, the packs and
-the plugins, as `[tools.*]`, `[packs.*]` and `[tools.claude.plugins.*]`
-tables. It has no `bootstrap_commit`: `bootstrap sync` writes it:
+format of `repo/examples/` of the clone. It also holds the tools and the
+plugins, as `[tools.*]` and `[tools.claude.plugins.*]` tables. A `[packs.*]`
+table of a block names a pack to add with `bootstrap add pack <pack…>`. It has
+no `bootstrap_commit`: `bootstrap sync` writes it:
 
 ````text
 bootstrap: init
@@ -143,10 +144,12 @@ file. If a check stops, change nothing, and give its message to the caller.
 | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
 | A tools or a plugins instruction, and the repository has no `.config/bootstrap.toml`.      | The repository did not adopt `bootstrap`. Send `bootstrap: init` first. |
 | A name is not a folder in `repo/tools/` of the clone, and not a pack of `repo/packs.toml`. | `<name>` is not a tool or a pack of `bootstrap`.                        |
-| A name is `base`, or a tool or a pack that the `base` pack adds.                           | `<tool>` is in the `base` pack. The sync always adds it.                |
+| A name of `add` is `base`, or a required tool of the `base` pack.                          | `<tool>` is in the `base` pack. The sync always adds it.                |
+| A name of `remove` is a pack.                                                              | `<name>` is a pack. `bootstrap` has no remove pack: name its tools.     |
 
-`bootstrap add` and `bootstrap remove` do the other checks of a tool. For
-example, `bootstrap remove` refuses a tool that another selected tool needs,
+`bootstrap add tool <tool…>`, `bootstrap add pack <pack…>` and
+`bootstrap remove tool <tool…>` do the other checks. For example,
+`bootstrap remove tool <tool…>` refuses a tool that another selected tool needs,
 and names that tool. Give each message of a command that stops to the caller.
 
 An init instruction has these checks too:
@@ -175,7 +178,7 @@ These cases are not a stop:
 - `init` with a path that does not exist. The agent asks whether to clone or
   to initialize that repository, or to skip it.
 - `add` of a tool that is already selected changes nothing for that name.
-  `bootstrap add` tells so.
+  `bootstrap add tool <tool…>` tells so.
 - `add` of a plugin that the table of that scope already has replaces its
   source.
 
@@ -196,12 +199,14 @@ The instruction is the consent, so give `--yes` after the dry run.
 2. Use the order of "A product with more than one repository" of `index.md`:
    the deepest submodules first, the siblings, then the base repository.
 3. For each repository, use its values block as the defaults: of the tools
-   and the packs in step 1, of the branch model in step 2, and of the values
-   in step 6. Ask each question of `index.md`, also when the block has the
+   in step 1, of the branch model in step 2, and of the values in step 6. Ask
+   each question of `index.md`, also when the block has the
    answer. Only the user can skip a question.
-4. Give the `[tools.*]` names of the block to `bootstrap init <tool…>` in
-   step 5 of `index.md`. Write the `[packs.*]` tables and the other values
-   of the block in its step 6.
+4. In step 5 of `index.md`, give the `[tools.*]` names of the block that are
+   not in the `base` pack to `bootstrap add tool <tool…>`, and the
+   `[packs.*]` names to `bootstrap add pack <pack…>`. Write the other values
+   of the block in its step 6. Do not write a `[packs.*]` table: it is an old
+   form.
 5. For a repository that already has `.config/bootstrap.toml`, start with "A
    repository that already has `.config/bootstrap.toml`" of `index.md`.
 6. A repository without a block gets no defaults. Ask the user whether to
@@ -219,39 +224,38 @@ The instruction is the consent, so give `--yes` after the dry run.
    bootstrap questions <tool…> --json
    ```
 
-3. Run `bootstrap add <tool…> --answer <tool>.<key>=<value> --dry-run`.
-   `bootstrap add` adds each tool and each tool of its `depends`, asks the
-   questions of the new tools, and syncs. Examine the change list.
+3. Run `bootstrap add tool <tool…> --answer <tool>.<key>=<value> --dry-run`.
+   `bootstrap add tool <tool…>` adds each tool and each tool of its `depends`,
+   asks the questions of the new tools, and syncs. Examine the change list.
 4. Run the same command with `--yes` in place of `--dry-run`.
 
-For a pack, `bootstrap add` does not apply. Read
-`docs/sync/packs/<pack>.md`, and do its items. Then write a `[packs.<pack>]`
-table in `.config/bootstrap.toml`, and run `mise run setup:configs`. Without
-an `env` key, each tool gets its `default_envs`.
+For a pack, read `docs/sync/packs/<pack>.md`, and do its items. Then do steps
+3 and 4 with `bootstrap add pack <pack> --answer <tool>.<key>=<value>`. It
+writes a `[tools.<name>]` table for each member of the pack that is not
+selected, and for each new dependency. The values file keeps no record of the
+pack. Each new tool gets its `default_envs`.
 
 ## Remove
 
-1. Run `bootstrap remove <tool…> --dry-run`. Examine the change list.
+1. Run `bootstrap remove tool <tool…> --dry-run`. Examine the change list.
 2. Run the same command with `--yes` in place of `--dry-run`.
 
-`bootstrap remove` removes the `[tools.<tool>]` table of each tool, and each
-dependency that no other selected tool needs. The sync then removes the files
-of these tools that `.config/repo-generated.tsv` lists, and their items in the
-shared files. A seed of a removed tool stays: `bootstrap remove` lists it.
-Ask the user whether to delete it.
+`bootstrap remove tool <tool…>` removes the `[tools.<tool>]` table of each tool,
+and each dependency that no other selected tool needs. The sync then removes the
+files of these tools that `.config/repo-generated.tsv` lists, and their items in
+the shared files. A seed of a removed tool stays:
+`bootstrap remove tool <tool…>` lists it. Ask the user whether to delete it.
 
-`bootstrap remove` refuses a `required` tool, a tool that only a pack
-selects, and a tool that another selected tool needs. Give its message to the
-caller. To remove a tool that another tool needs, put both tools in one
-instruction.
+`bootstrap remove tool <tool…>` refuses a `required` tool and a tool that
+another selected tool needs. Give its message to the caller. To remove a tool
+that another tool needs, put both tools in one instruction.
 
-For a pack, remove its `[packs.<pack>]` table from `.config/bootstrap.toml`,
-and run `mise run setup:configs`.
+`bootstrap` has no remove pack: the values file keeps no record of a pack.
+Remove the tools of the pack with `bootstrap remove tool <tool…>`.
 
 ## Add plugins
 
-1. If no selected tool or pack adds the `claude` tool, do "Add" for `claude`
-   first.
+1. If the `claude` tool is not selected, do "Add" for `claude` first.
 2. In `.config/bootstrap.toml`, add each plugin to
    `[tools.claude.plugins.user]` or `[tools.claude.plugins.project]`, the
    table of the scope: `"<name>@<marketplace>" = "<source>"`. Make the table

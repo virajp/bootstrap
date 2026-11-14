@@ -108,7 +108,8 @@ case_dirs=()
 # `CASE_CLONE=none` sets no BOOTSTRAP_CLONE, so bootstrap fetches its clone
 # into the cache of the case. `CASE_CALL` names a function that the case runs
 # instead of bootstrap. `CASE_DIRTY=1` does not commit the consumer before the
-# run.
+# run. `CASE_NO_FORMAT=1` leaves `format = 2` out of the common keys, for a case
+# of the old form of the values file.
 run_case() {
   local dir
   case_count=$((case_count + 1))
@@ -149,6 +150,7 @@ case_body() {
   _git clone --quiet -- "$base_clone" "$clone"
   cp -R -- "$base_consumer" "$consumer"
   {
+    [[ -n ${CASE_NO_FORMAT:-} ]] || printf '%s\n' 'format = 2'
     printf '%s\n' 'repo_name = "test"' 'repo_url = "https://example.com/test"'
     printf '%s\n' "$body"
   } > "$values"
@@ -287,6 +289,17 @@ commit_consumer() {
   _git -C "$consumer" commit --quiet --no-verify --allow-empty -m "case" > /dev/null 2>&1 || true
 }
 
+# The values of a case with no tool table, and the predicates of a check.
+dev_values='environments = [ "dev" ]'
+not_grep() { ! grep -q "$@"; }
+tomlq() { [[ $(mise x -- yq -p toml -o json "$1" "$values") == true ]]; }
+# synced: a case of a selection command first syncs and commits the consumer,
+# so the command starts from a clean work tree.
+synced() {
+  "$bin" sync > /dev/null 2>&1 || exit
+  commit_consumer
+}
+
 # run_check: run_case with `bootstrap check`.
 run_check() { case_args=--check run_case "$@"; }
 
@@ -326,9 +339,9 @@ header_file() {
     '# The next sync writes it again, and each change in this file is lost.' > "$consumer/$1"
 }
 
-# The tools of the pack base. _security_base arrives through the depends of the
-# scanners. The first case checks that each one syncs a file.
-base_tools="mise git pre-commit dprint linter vscode _security_base gitleaks grype osv-scanner"
+# The required tools of the pack base. _security_base arrives through the
+# depends of the scanners. The first case checks that each one syncs a file.
+base_tools="mise git pre-commit dprint linter _security_base gitleaks grype osv-scanner"
 
 check_base_files() {
   local tool path found missing=''
@@ -362,12 +375,11 @@ check_base_files() {
 }
 
 pack_loop() {
-  printf '%s\n' '' '[pack.a]' '"pack:b" = { default = true }' '' '[pack.b]' '"pack:a" = { default = true }' \
-    >> "$clone/repo/packs.toml"
+  printf '%s\n' '' '[pack.a]' '"pack:b" = {}' '' '[pack.b]' '"pack:a" = {}' >> "$clone/repo/packs.toml"
 }
 
 pack_named_like_tool() {
-  printf '%s\n' '' '[pack.node]' 'node = { default = true }' >> "$clone/repo/packs.toml"
+  printf '%s\n' '' '[pack.node]' 'node = {}' >> "$clone/repo/packs.toml"
 }
 
 node_needs_pulumi() {
@@ -415,10 +427,9 @@ run_case "[tools.node] env dev, ci" 0 'environments = [ "dev", "ci" ]
 env = [ "dev", "ci" ]'
 run_case "tools = [\"node\"], the old list" 2 'environments = [ "dev" ]
 tools = [ "node" ]' '' 'is a list, the old format'
-run_case "a pack loop a -> b -> a" 2 'environments = [ "dev" ]
-[packs.a]' pack_loop 'a pack loop: a -> b -> a'
-run_case "a pack named like a tool folder" 2 'environments = [ "dev" ]
-[packs.node]' pack_named_like_tool "pack 'node' is also a tool folder"
+run_case "a pack loop a -> b -> a" 2 'environments = [ "dev" ]' pack_loop 'a pack loop: a -> b -> a'
+run_case "a pack named like a tool folder" 2 'environments = [ "dev" ]' pack_named_like_tool \
+  "pack 'node' is also a tool folder"
 run_case "[tools.git.branch.main], the merge config of the repo" 0 'environments = [ "dev" ]
 [tools.git.branch.main]
 merge_model = "pr"
@@ -439,8 +450,6 @@ run_case "[member.web], an unknown type" 2 'environments = [ "dev" ]
 [member.web]
 folder = "projects/web"
 type = "repo"' member_folder "has the type 'repo'"
-run_case "[packs.nope], an unknown pack" 3 'environments = [ "dev" ]
-[packs.nope]' '' "nope is not a bootstrap pack"
 run_case "env ci on a tool whose mise tool allows dev only" 2 'environments = [ "dev", "ci" ]
 [tools.pulumi]
 env = [ "dev", "ci" ]' '' "mise tool 'pulumi' of repo/tools/pulumi allows only dev"
@@ -834,7 +843,7 @@ consumer_with_submodule() {
 sub_repo_name() {
   consumer_with_submodule
   mkdir -p -- "$consumer/sub/.config" "$consumer/projects/web"
-  printf '%s\n' "repo_name = \"$1\"" > "$consumer/sub/.config/bootstrap.toml"
+  printf '%s\n' 'format = 2' "repo_name = \"$1\"" > "$consumer/sub/.config/bootstrap.toml"
 }
 sub_named_web() { sub_repo_name web; }
 sub_named_bad() { sub_repo_name bad.name; }
@@ -888,7 +897,7 @@ run_check "--check, env empty" 2 'environments = [ "dev" ]
 [tools.node]
 env = []' '' 'is empty - name an environment'
 run_check "--check, env with prod" 2 'environments = [ "dev" ]
-[packs.security]
+[tools.node]
 env = [ "dev", "prod" ]' '' "'prod' is not one of dev, ci"
 run_check "--check, env ci not in environments dev" 2 'environments = [ "dev" ]
 [tools.node]
@@ -1807,46 +1816,49 @@ run_case "merge: a source that is not a merge spec" 2 "$no_tool_values" merge_no
 run_case "merge: the old key remove" 2 "$no_tool_values" remove_old_key \
   'fixture/tools.toml: [files.".config/merger/m.json"] remove is not a key of a files entry'
 
-# The merged packs model. A change function appends to, or rewrites, the packs
-# of the scratch clone. The values file does not select the pack of a shape
-# case: the sync examines each pack of the file.
+# The packs model: each member of a pack is a default, and a pack is a
+# shortcut of add (D2, D4). A change function appends to, or rewrites, the
+# packs of the scratch clone. The sync examines each pack of the file.
 packs_lines() { printf '%s\n' '' "$@" >> "$clone/repo/packs.toml"; }
 packs_old_depends() { packs_lines '[pack.odd]' 'depends = [ "p:security" ]'; }
 packs_old_required() { packs_lines '[pack.odd]' 'required = [ "_security_base" ]'; }
 packs_old_tools() { packs_lines '[pack.odd]' 'tools = [ "node" ]'; }
 packs_old_default() { packs_lines '[pack.odd]' 'default = [ "node" ]'; }
-packs_old_prefix() { packs_lines '[pack.odd]' '"p:x" = { default = true }'; }
+packs_old_prefix() { packs_lines '[pack.odd]' '"p:x" = {}'; }
 packs_entry_key() { packs_lines '[pack.odd]' 'node = { version = "1" }'; }
-packs_default_string() { packs_lines '[pack.odd]' 'node = { default = "yes" }'; }
+packs_default_true() { packs_lines '[pack.odd]' 'node = { default = true }'; }
+packs_required_outside_base() { packs_lines '[pack.odd]' 'node = { required = true }'; }
 packs_member_string() { packs_lines '[pack.odd]' 'node = "x"'; }
 packs_empty_loop() { packs_lines '[pack.x]' '"pack:y" = {}' '' '[pack.y]' '"pack:x" = {}'; }
 packs_unknown_tool() { packs_lines '[pack.odd]' 'nope = {}'; }
 packs_unknown_pack() { packs_lines '[pack.odd]' '"pack:nope" = {}'; }
-packs_two_lines() { packs_lines '[pack.odd]' 'node = {' '  default = true' '}'; }
-packs_subtable() { packs_lines '[pack.odd.node]' 'default = true'; }
+packs_two_lines() { packs_lines '[pack.odd]' 'node = {' '}'; }
+packs_subtable() { packs_lines '[pack.odd.node]'; }
 
-old_format='is the old format - write each member as <tool> = { default = true } or <tool> = {}'
-run_case "[pack.*], the old depends in a pack that is not selected" 2 "$no_tool_values" packs_old_depends \
+old_format='is the old format - write each member as <tool> = {}'
+run_case "[pack.*], the old depends" 2 "$no_tool_values" packs_old_depends \
   "repo/packs.toml: [pack.odd] depends $old_format"
-run_case "[pack.*], the old required in a pack that is not selected" 2 "$no_tool_values" packs_old_required \
+run_case "[pack.*], the old required" 2 "$no_tool_values" packs_old_required \
   "repo/packs.toml: [pack.odd] required $old_format"
-run_case "[pack.*], the old tools in a pack that is not selected" 2 "$no_tool_values" packs_old_tools \
+run_case "[pack.*], the old tools" 2 "$no_tool_values" packs_old_tools \
   "repo/packs.toml: [pack.odd] tools $old_format"
-run_case "[pack.*], the old default list in a pack that is not selected" 2 "$no_tool_values" packs_old_default \
+run_case "[pack.*], the old default list" 2 "$no_tool_values" packs_old_default \
   "repo/packs.toml: [pack.odd] default $old_format"
 run_case "[pack.*], a key with the old prefix p:" 2 "$no_tool_values" packs_old_prefix \
-  'repo/packs.toml: [pack.odd] "p:x" is the old form - write "pack:x" = { default = true }'
-run_case "[pack.*], an entry key other than default" 2 "$no_tool_values" packs_entry_key \
-  "repo/packs.toml: [pack.odd] node has the entry key 'version' - the entry keys are default and required"
-run_case "[pack.*], default that is not a boolean" 2 "$no_tool_values" packs_default_string \
-  'repo/packs.toml: [pack.odd] node: default must be true or false, not string'
+  'repo/packs.toml: [pack.odd] "p:x" is the old form - write "pack:x" = {}'
+run_case "[pack.*], an entry key other than required" 2 "$no_tool_values" packs_entry_key \
+  "repo/packs.toml: [pack.odd] node has the entry key 'version' - a member is {}, or { required = true } in pack base"
+run_case "[pack.*], the key default" 2 "$no_tool_values" packs_default_true \
+  "repo/packs.toml: [pack.odd] node has the entry key 'default', the old form - each member is a default: write node = {}"
+run_case "[pack.*], required = true in a pack other than base" 2 "$no_tool_values" packs_required_outside_base \
+  'repo/packs.toml: [pack.odd] node: required = true is only for a tool of pack base'
 run_case "[pack.*], a member that is a string" 2 "$no_tool_values" packs_member_string \
-  'repo/packs.toml: [pack.odd] node must be a table, { default = true } or {}'
-run_case "[pack.*], a loop through {} members in packs that are not selected" 2 "$no_tool_values" packs_empty_loop \
+  'repo/packs.toml: [pack.odd] node must be a table, {} or { required = true }'
+run_case "[pack.*], a loop through nested packs" 2 "$no_tool_values" packs_empty_loop \
   'repo/packs.toml: a pack loop: x -> y -> x'
-run_case "[pack.*], an unknown tool in a pack that is not selected" 3 "$no_tool_values" packs_unknown_tool \
+run_case "[pack.*], an unknown tool in a pack" 3 "$no_tool_values" packs_unknown_tool \
   "nope is not a bootstrap tool (named in pack odd)"
-run_case "[pack.*], an unknown pack in a pack that is not selected" 3 "$no_tool_values" packs_unknown_pack \
+run_case "[pack.*], an unknown pack in a pack" 3 "$no_tool_values" packs_unknown_pack \
   "nope is not a bootstrap pack (named in pack odd)"
 run_case "[pack.*], a member on two lines" 2 "$no_tool_values" packs_two_lines \
   'repo/packs.toml: [pack.odd] node must be on one line'
@@ -1857,73 +1869,109 @@ run_case "[pack.*], a member as its own table" 2 "$no_tool_values" packs_subtabl
 tools_has() { grep -F 'bootstrap: tools:' "$log" | grep -qw -- "$1"; }
 tools_lacks() { ! tools_has "$1"; }
 
-# The members of the pack `extra` are outside the pack base and its depends.
-packs_extra() { packs_lines '[pack.extra]' 'java = {}' 'pulumi = { default = true }'; }
-check_extra() {
-  check_that "[packs.extra]: a default member is selected" tools_has pulumi
-  check_that "[packs.extra]: a {} member is not selected" tools_lacks java
+# add pack: a table for each member that is not selected and for its new
+# dependencies; --exclude leaves out a member (D2, D16 e, D17 f). The members
+# of the pack extra are outside the pack base and its depends. No tool is
+# selected by a pack only: a sync of a values file without their tables does
+# not select them.
+packs_extra() { packs_lines '[pack.extra]' 'java = {}' 'pulumi = {}'; }
+packs_outer() { packs_extra && packs_lines '[pack.outer]' 'go = {}' '"pack:extra" = {}'; }
+packs_flutter() { packs_lines '[pack.mobile]' 'flutter = {}' 'android = {}' 'go = {}'; }
+add_pack() { synced && "$bin" add pack --yes "$@"; }
+add_pack_args() {
+  # shellcheck disable=SC2086
+  add_pack $ADD_PACK_ARGS
 }
-check_extra_tool() {
-  check_that "[packs.extra], [tools.java]: a default member is selected" tools_has pulumi
-  check_that "[packs.extra], [tools.java]: the {} member is selected" tools_has java
+check_extra_not_selected() {
+  check_that "a pack: its members are not selected by a sync" tools_lacks pulumi
+  check_that "a pack: no table of its member" not_grep 'pulumi' "$values"
 }
-run_case "[packs.extra], a default member and a {} member" 0 'environments = [ "dev" ]
-[packs.extra]' packs_extra '' check_extra
-run_case "[packs.extra] and [tools.java], the {} member" 0 'environments = [ "dev" ]
-[packs.extra]
-[tools.java]' packs_extra '' check_extra_tool
+run_case "a pack is not a selection" 0 "$dev_values" packs_extra '' check_extra_not_selected
+check_add_pack_extra() {
+  check_that "add pack extra: the table of java" tomlq '.tools | has("java")'
+  check_that "add pack extra: the table of pulumi" tomlq '.tools | has("pulumi")'
+  check_that "add pack extra: no table of a pack" not_grep '^\[packs\.' "$values"
+}
+ADD_PACK_ARGS=extra CASE_CALL=add_pack_args run_case "add pack extra" 0 "$dev_values" packs_extra 'Synced: ' \
+  check_add_pack_extra
+check_add_pack_exclude() {
+  check_that "add pack --exclude: no table of java" not_grep 'java' "$values"
+  check_that "add pack --exclude: the table of pulumi" tomlq '.tools | has("pulumi")'
+}
+ADD_PACK_ARGS='extra --exclude java' CASE_CALL=add_pack_args run_case "add pack extra --exclude java" 0 "$dev_values" \
+  packs_extra 'Synced: ' check_add_pack_exclude
+check_add_pack_again() {
+  check_that "add pack again: java keeps its env" tomlq '.tools.java.env[0] == "dev"'
+  check_that "add pack again: the table of pulumi" tomlq '.tools | has("pulumi")'
+}
+ADD_PACK_ARGS=extra CASE_CALL=add_pack_args run_case "add pack again adds only the members that are not selected" 0 \
+  "$dev_values
+[tools.java]
+env = [ \"dev\" ]" packs_extra 'Synced: ' check_add_pack_again
+check_add_pack_nested() {
+  check_that "add pack outer: the table of go" tomlq '.tools | has("go")'
+  check_that "add pack outer: the nested pack: java" tomlq '.tools | has("java")'
+  check_that "add pack outer: the nested pack: pulumi" tomlq '.tools | has("pulumi")'
+}
+ADD_PACK_ARGS=outer CASE_CALL=add_pack_args run_case "add pack: a nested pack" 0 "$dev_values" packs_outer 'Synced: ' \
+  check_add_pack_nested
+check_add_pack_no_nested() {
+  check_that "add pack --exclude pack:extra: the table of go" tomlq '.tools | has("go")'
+  check_that "add pack --exclude pack:extra: no table of java" not_grep 'java' "$values"
+}
+ADD_PACK_ARGS='outer --exclude pack:extra' CASE_CALL=add_pack_args run_case "add pack --exclude of a nested pack" 0 \
+  "$dev_values" packs_outer 'Synced: ' check_add_pack_no_nested
+check_add_pack_nested_member() {
+  check_that "add pack --exclude of a member of a nested pack: no table of java" not_grep 'java' "$values"
+  check_that "add pack --exclude of a member of a nested pack: the table of pulumi" tomlq '.tools | has("pulumi")'
+}
+ADD_PACK_ARGS='outer --exclude java' CASE_CALL=add_pack_args run_case "add pack --exclude of a member of a nested pack" \
+  0 "$dev_values" packs_outer 'Synced: ' check_add_pack_nested_member
+check_add_pack_kept() { check_that "add pack: the values file stays" not_grep 'pulumi' "$values"; }
+ADD_PACK_ARGS='extra --exclude nope' CASE_CALL=add_pack_args run_case "add pack --exclude of a name that is not a member" \
+  2 "$dev_values" packs_extra 'nope is not a member of the pack extra' check_add_pack_kept
+ADD_PACK_ARGS='base --exclude mise' CASE_CALL=add_pack_args run_case "add pack --exclude of a required member" 2 \
+  "$dev_values" '' 'mise is required in the pack base, so add pack cannot exclude it'
+ADD_PACK_ARGS='extra outer --exclude java' CASE_CALL=add_pack_args run_case "add pack of two packs with --exclude" 2 \
+  "$dev_values" packs_outer '--exclude needs exactly one pack name - run bootstrap add pack once for each pack' \
+  check_add_pack_kept
+check_add_two_packs() {
+  check_that "add pack of two packs: the table of go" tomlq '.tools | has("go")'
+  check_that "add pack of two packs: the table of pulumi once" \
+    [ "$(grep -cxF '[tools.pulumi]' "$values")" = 1 ]
+}
+ADD_PACK_ARGS='extra outer' CASE_CALL=add_pack_args run_case "add pack of two packs without --exclude" 0 "$dev_values" \
+  packs_outer 'Synced: ' check_add_two_packs
+ADD_PACK_ARGS='mobile --exclude android' CASE_CALL=add_pack_args run_case "add pack --exclude of a member that another member needs" \
+  2 "$dev_values" packs_flutter 'android is needed by flutter - exclude flutter too, or keep android'
+ADD_PACK_ARGS=nope CASE_CALL=add_pack_args run_case "add pack of an unknown pack" 3 "$dev_values" '' \
+  'nope is not a bootstrap pack'
+add_pack_none() { synced && "$bin" add pack; }
+CASE_CALL=add_pack_none run_case "add pack without a pack" 2 "$dev_values" '' 'add pack needs at least one pack'
 
-# The scratch pack base without "pack:security", so a scanner comes only from
-# the case.
+# The scratch pack base without the scanners, so a scanner comes only from the
+# case.
 base_lacks_security() {
-  grep -vF '"pack:security"' "$clone/repo/packs.toml" > "$tmp/packs.toml"
+  grep -vE '^(gitleaks|grype|osv-scanner) = ' "$clone/repo/packs.toml" > "$tmp/packs.toml"
   cp -- "$tmp/packs.toml" "$clone/repo/packs.toml"
 }
-packs_outer_empty() {
-  base_lacks_security
-  packs_lines '[pack.outer]' '"pack:security" = {}'
-}
-packs_outer_default() {
-  base_lacks_security
-  packs_lines '[pack.outer]' '"pack:security" = { default = true }'
-}
-check_outer_empty() { check_that "a nested {} pack: its tools are not selected" tools_lacks gitleaks; }
-check_outer_default() { check_that "a nested default pack: its tools are selected" tools_has gitleaks; }
-run_case "a nested pack with {} does not expand" 0 'environments = [ "dev" ]
-[packs.outer]' packs_outer_empty '' check_outer_empty
-run_case "a nested pack with default = true expands" 0 'environments = [ "dev" ]
-[packs.outer]' packs_outer_default '' check_outer_default
 
-# A tool in two selected packs.
-packs_two_with_fixture() {
-  fixture_txt
-  packs_lines '[pack.one]' 'fixture = { default = true }' '' '[pack.two]' 'fixture = { default = true }'
-}
-tools_once() { [[ $(grep -F 'bootstrap: tools:' "$log" | grep -ow -- "$1" | wc -l | tr -d ' ') == 1 ]]; }
-check_two_packs() {
-  check_that "a tool in two selected packs: its file once" log_count "would update $consumer/a.txt" 1
-  check_that "a tool in two selected packs: the tool once" tools_once fixture
-}
-run_case "a tool in two selected packs" 0 'environments = [ "dev" ]
-[packs.one]
-[packs.two]' packs_two_with_fixture '' check_two_packs
-
-# One scanner brings _security_base through its depends, without a pack.
+# One scanner brings _security_base through its depends, without the others.
 check_one_scanner() {
-  check_that "[tools.gitleaks], no pack security: a file of _security_base" \
+  check_that "[tools.gitleaks], no scanner in base: a file of _security_base" \
     log_has "would update $consumer/.config/mise/tasks/code/sec/_default"
-  check_that "[tools.gitleaks], no pack security: no other scanner" tools_lacks grype
+  check_that "[tools.gitleaks], no scanner in base: no other scanner" tools_lacks grype
 }
-check_no_scanner() { check_that "no scanner, no pack security: no _security_base" tools_lacks _security_base; }
-run_case "[tools.gitleaks], a pack base without the pack security" 0 'environments = [ "dev" ]
+check_no_scanner() { check_that "no scanner in base: no _security_base" tools_lacks _security_base; }
+run_case "[tools.gitleaks], a pack base without the scanners" 0 'environments = [ "dev" ]
 [tools.gitleaks]' base_lacks_security '' check_one_scanner
-run_case "no scanner, a pack base without the pack security" 0 "$no_tool_values" base_lacks_security '' check_no_scanner
+run_case "no scanner, a pack base without the scanners" 0 "$no_tool_values" base_lacks_security '' check_no_scanner
 
 # The tool order, as at 3b199d2, the commit before the merged packs model. The
 # tools before the security tools stay. At that commit _security_base came
 # after the scanners; it now comes before them, as a dependency of each one.
 # The hook order does not matter: a hook that changes a file fails the commit.
-order_tools='mise git python pre-commit dprint node linter vscode _security_base gitleaks grype osv-scanner'
+order_tools='mise git python pre-commit dprint node linter _security_base gitleaks grype osv-scanner'
 tool_order_is() { grep -qxF "bootstrap: tools: $order_tools" "$log"; }
 check_order() { check_that "the order of the pack base: the tools" tool_order_is; }
 run_case "the tool order does not change" 0 "$no_tool_values" '' '' check_order
@@ -2455,9 +2503,10 @@ config = "mine"
 [all]
 leak = "mine"
 [tools.vtest]' values_defaults '+vtest config={"key":"default"}' check_engine_keys
-run_case "values: [packs.security] with a key other than env" 2 "$no_tool_values
+check_packs_security_named() { check_that "[packs.security] with format = 2: the table is named" log_has '[packs.security] in '; }
+run_case "values: [packs.security] with format = 2 is the old form" 2 "$no_tool_values
 [packs.security]
-foo = 1" '' "'foo' is not a key of a pack entry; the only key of a pack entry is env, a list"
+env = [ \"dev\" ]" '' '.config/bootstrap.toml is the old form - run bootstrap init' check_packs_security_named
 run_case "values: [tools.node] with a key other than env" 0 "$no_tool_values
 [tools.node]
 version = \"1\""
@@ -2938,18 +2987,20 @@ check_init_migrated() {
   check_that "init: the old hook file is gone" test ! -e "$consumer/.config/repo-sync/pre-commit.yaml"
   check_that "init: bootstrap_commit" grep -q '^bootstrap_commit = "[0-9a-f]\{40\}"' "$values"
   check_that "init: the sync after init" log_has 'Synced: '
+  check_that "init: format = 2" tomlq '.format == 2'
+  check_that "init: the tables of the members of base" tomlq '.tools | (has("dprint") and has("gitleaks"))'
+  check_that "init: no table of a member of base that is not required" tomlq '.tools | has("vscode") | not'
+  check_that "init: no table for _security_base" tomlq '.tools | has("_security_base") | not'
 }
-not_grep() { ! grep -q "$@"; }
-tomlq() { [[ $(mise x -- yq -p toml -o json "$1" "$values") == true ]]; }
-CASE_CALL=init_then_sync run_case "init migrates the old form, then sync runs" 0 "$old_values" old_files '' \
-  check_init_migrated
+CASE_NO_FORMAT=1 CASE_CALL=init_then_sync run_case "init migrates the old form, then sync runs" 0 "$old_values" \
+  old_files '' check_init_migrated
 
 check_values_unchanged() {
   check_that "the old form stays" grep -q '^commit_scopes' "$values"
   check_that "the old hook file stays" test -e "$consumer/.config/repo-sync/pre-commit.yaml"
 }
 init_no_yes() { "$bin" init < /dev/null; }
-CASE_CALL=init_no_yes run_case "init without --yes and without a terminal" 2 "$old_values" old_files \
+CASE_NO_FORMAT=1 CASE_CALL=init_no_yes run_case "init without --yes and without a terminal" 2 "$old_values" old_files \
   'changes need --yes' check_values_unchanged
 init_dry_run() { "$bin" init --dry-run; }
 check_init_dry_run() {
@@ -2957,29 +3008,33 @@ check_init_dry_run() {
   check_that "init --dry-run: the values file in the list" grep -qE 'consumer/\.config/bootstrap\.toml +migrate the old form' "$log"
   check_that "init --dry-run: the old hook file in the list" grep -qE 'consumer/\.config/repo-sync/pre-commit\.yaml +its hooks move' "$log"
 }
-CASE_CALL=init_dry_run run_case "init --dry-run" 0 "$old_values" old_files 'changes, nothing written' \
+CASE_NO_FORMAT=1 CASE_CALL=init_dry_run run_case "init --dry-run" 0 "$old_values" old_files 'changes, nothing written' \
   check_init_dry_run
 sync_old_form() { "$bin" sync; }
-CASE_CALL=sync_old_form run_case "sync on the old form: run bootstrap init" 2 "$old_values" old_files \
+CASE_NO_FORMAT=1 CASE_CALL=sync_old_form run_case "sync on the old form: run bootstrap init" 2 "$old_values" old_files \
   'is the old form - run bootstrap init' check_values_unchanged
 check_old_form() { "$bin" check; }
-CASE_CALL=check_old_form run_case "check on the old form: run bootstrap init" 2 "$old_values" old_files \
+CASE_NO_FORMAT=1 CASE_CALL=check_old_form run_case "check on the old form: run bootstrap init" 2 "$old_values" old_files \
   '[tools.repo-sync] in '
 init_dirty_values() {
   printf '%s\n' '# a change that is not committed' >> "$values"
   "$bin" init --yes
 }
-CASE_CALL=init_dirty_values run_case "init stops on a values file with changes that are not committed" 2 "$old_values" \
+CASE_NO_FORMAT=1 CASE_CALL=init_dirty_values run_case "init stops on a values file with changes that are not committed" 2 "$old_values" \
   old_files '.config/bootstrap.toml has changes that are not committed' check_values_unchanged
 
-# init in a repository without a values file: base and the named tools.
+# init in a repository without a values file: format = 2 and a table for each
+# member of base.
 init_new() {
   rm -f -- "$values"
   commit_consumer
-  "$bin" init --yes node
+  "$bin" init --yes
 }
 check_init_new() {
-  check_that "init: the new values file selects node" tomlq '.tools | has("node")'
+  check_that "init: the new values file has format = 2" tomlq '.format == 2'
+  check_that "init: the new values file has the members of base" \
+    tomlq '.tools | (has("mise") and has("dprint") and has("vscode") and has("osv-scanner"))'
+  check_that "init: no table for _security_base" tomlq '.tools | has("_security_base") | not'
   check_that "init: the sync wrote the mise config" test -f "$consumer/.config/mise.toml"
 }
 CASE_CALL=init_new run_case "init without a values file" 0 'environments = [ "dev" ]' '' 'Synced: ' check_init_new
@@ -2998,8 +3053,117 @@ CASE_CALL=init_twice run_case "init with nothing to change" 0 'environments = [ 
 init_unknown_answer() { "$bin" init --yes --answer nope.key=1; }
 CASE_CALL=init_unknown_answer run_case "init --answer of an unknown question" 2 'environments = [ "dev" ]' '' \
   '--answer nope.key=1: no question nope.key of the selected tools'
-init_unknown_tool() { "$bin" init --yes nope; }
-CASE_CALL=init_unknown_tool run_case "init of an unknown tool" 3 'environments = [ "dev" ]' '' 'nope'
+init_names() { "$bin" init --yes node; }
+CASE_CALL=init_names run_case "init with a tool name" 2 'environments = [ "dev" ]' '' \
+  'init takes no tool names - use: bootstrap add tool node'
+
+# The migration of [packs.*] tables with the frozen packs of the engine (D5,
+# D16 b, D18 a). A tool of the pack gets a table with the env of the pack; a
+# tool with a table keeps its env; a table of a tool that bootstrap no longer
+# has goes; a member of the new pack base without required = true gets no
+# table.
+packs_values='environments = [ "dev", "ci" ]
+
+[packs.container-build]
+env = [ "dev" ]
+
+[tools.cosign]
+env = [ "dev", "ci" ]
+
+[tools.devtools]'
+init_no_tui() { "$bin" init --no-tui --yes; }
+check_packs_migrated() {
+  check_that "migration: format = 2" tomlq '.format == 2'
+  check_that "migration: no [packs.*] table" not_grep '^\[packs\.' "$values"
+  check_that "migration: a tool of the pack gets the env of the pack" tomlq '(.tools.apko.env | join(",")) == "dev"'
+  check_that "migration: a tool with a table keeps its env" tomlq '(.tools.cosign.env | join(",")) == "dev,ci"'
+  check_that "migration: the removed tool goes" not_grep 'devtools' "$values"
+  check_that "migration: the removed tool is listed" log_has '[tools.devtools] removed: bootstrap no longer has the tool'
+  check_that "migration: a tool of the frozen pack base" tomlq '.tools | (has("dprint") and has("pre-commit"))'
+  check_that "migration: no table of a member of base that is not required" not_grep 'vscode' "$values"
+  check_that "migration: no table for _security_base" not_grep '_security_base' "$values"
+}
+CASE_NO_FORMAT=1 CASE_CALL=init_no_tui run_case "init --no-tui migrates the [packs.*] tables" 0 "$packs_values" '' \
+  'Synced: ' check_packs_migrated
+CASE_NO_FORMAT=1 CASE_CALL=init_no_tui run_case "init of an old values file with an unknown pack" 3 \
+  'environments = [ "dev" ]
+[packs.nope]' '' 'nope is not a bootstrap pack (named in '
+check_format_packs_migrated() {
+  check_that "a [packs.*] table with format = 2: the table of apko" tomlq '.tools | has("apko")'
+  check_that "a [packs.*] table with format = 2: no [packs.*] table" not_grep '^\[packs\.' "$values"
+  check_that "a [packs.*] table with format = 2: no table of vscode" not_grep 'vscode' "$values"
+}
+CASE_CALL=init_no_tui run_case "init migrates a [packs.*] table of a values file with format = 2" 0 \
+  'environments = [ "dev" ]
+[packs.container-build]' '' 'Synced: ' check_format_packs_migrated
+check_no_vscode_again() { check_that "init again: no table of the removed vscode" not_grep 'vscode' "$values"; }
+init_again() { synced && "$bin" init --no-tui --yes; }
+CASE_CALL=init_again run_case "init again does not add a removed member of base" 0 "$dev_values" '' \
+  'Nothing to change' check_no_vscode_again
+init_new_sub() {
+  consumer_submodule
+  rm -f -- "$values"
+  commit_consumer
+  "$bin" init --yes
+}
+check_init_new_sub() {
+  check_that "init in a submodule: no table of vscode" not_grep 'vscode' "$values"
+  check_that "init in a submodule: the table of dprint" tomlq '.tools | has("dprint")'
+}
+CASE_CALL=init_new_sub run_case "init in a submodule: no table of a root_only member" 0 "$dev_values" '' 'Synced: ' \
+  check_init_new_sub
+
+# The sync writes an empty table for each required member of base that has no
+# table, and logs it; a dry run and check list it and write nothing (D18 b, c).
+sync_write() { "$bin" sync; }
+check_required_tables() {
+  check_that "sync: the tables of the required members" \
+    tomlq '.tools | (has("mise") and has("dprint") and has("linter") and has("osv-scanner"))'
+  check_that "sync: no table of a member that is not required" not_grep 'vscode' "$values"
+  check_that "sync: no table of a dependency" not_grep '_security_base' "$values"
+}
+CASE_CALL=sync_write run_case "sync writes the table of a required member of base" 0 "$dev_values
+[tools.mise]" '' 'bootstrap: [tools.dprint] added to ' check_required_tables
+check_required_listed() {
+  check_that "a dry run: the values file has no new table" not_grep 'dprint' "$values"
+  check_that "a dry run: a member with a table is not listed" log_lacks '[tools.mise] would be added'
+}
+run_case "sync --dry-run lists the table of a required member and writes nothing" 0 "$dev_values
+[tools.mise]" '' '[tools.dprint] would be added to ' check_required_listed
+run_check "check lists the table of a required member and writes nothing" 0 "$dev_values
+[tools.mise]" '' '[tools.dprint] would be added to ' check_required_listed
+
+# A sync that fails after add tool puts the values file back (D9, D26). A
+# folder that the sync cannot write makes the sync fail.
+add_fail() {
+  synced
+  chmod 555 "$consumer/.config/mise/conf.d"
+  local rc=0
+  "$bin" add tool --yes go || rc=$?
+  chmod 755 "$consumer/.config/mise/conf.d"
+  return "$rc"
+}
+check_add_put_back() {
+  check_that "a failed sync: the values file does not select go" not_grep 'go\]' "$values"
+  check_that "a failed sync: the info line names the values file" log_has "Put back $values as it was"
+}
+CASE_CALL=add_fail run_case "a sync that fails after add tool puts the values file back" 1 "$dev_values" '' \
+  'as it was before the command' check_add_put_back
+
+# The grammar of today without the kind word stops with code 2 and the hint of
+# the new form (D8).
+old_grammar() {
+  # shellcheck disable=SC2086
+  "$bin" $OLD_GRAMMAR
+}
+OLD_GRAMMAR='add node' CASE_CALL=old_grammar run_case "the old grammar: add node" 2 "$dev_values" '' \
+  'add needs the kind word tool or pack before the names - use: bootstrap add tool node'
+OLD_GRAMMAR='remove node' CASE_CALL=old_grammar run_case "the old grammar: remove node" 2 "$dev_values" '' \
+  'remove needs the kind word tool before the names - use: bootstrap remove tool node'
+OLD_GRAMMAR='replace pnpm aube' CASE_CALL=old_grammar run_case "the old grammar: replace pnpm aube" 2 "$dev_values" '' \
+  'replace needs the kind word tool before the names - use: bootstrap replace tool pnpm aube'
+OLD_GRAMMAR='remove pack base' CASE_CALL=old_grammar run_case "remove pack is not a command" 2 "$dev_values" '' \
+  'remove takes the kind word tool only - there is no remove pack'
 
 # The clean-target rule: a target with changes that are not committed stops a
 # sync, which then writes nothing. The values file does not count.
@@ -3034,8 +3198,10 @@ CASE_CALL=sync_jobs run_case "sync --jobs 1" 0 'environments = [ "dev" ]' '' 'Dr
 questions_none() { "$bin" questions --json; }
 CASE_CALL=questions_none run_case "questions --json without questions" 0 'environments = [ "dev" ]' '' '[]'
 list_base() { "$bin" list; }
-CASE_CALL=list_base run_case "list: a dependency below its tool" 0 'environments = [ "dev" ]' '' '│   └── python'
-CASE_CALL=list_base run_case "list: the root of a pack" 0 'environments = [ "dev" ]' '' 'base (pack)'
+CASE_CALL=list_base run_case "list: a dependency below its tool" 0 'environments = [ "dev" ]' '' '└── python'
+check_list_no_pack() { check_that "list: no root of a pack" log_lacks '(pack)'; }
+CASE_CALL=list_base run_case "list: a required member of base with no table is a root" 0 'environments = [ "dev" ]' \
+  '' 'dprint              * required' check_list_no_pack
 ls_base() { "$bin" ls; }
 CASE_CALL=ls_base run_case "ls: a required tool" 0 'environments = [ "dev" ]' '' '* required'
 
@@ -3136,44 +3302,53 @@ CASE_CALL=config_clone run_case "clone in the config file, without BOOTSTRAP_CLO
 
 # The selection commands: detect, add, remove and replace. Each case first
 # syncs and commits the consumer, so a command starts from a clean work tree.
-dev_values='environments = [ "dev" ]'
-synced() {
-  "$bin" sync > /dev/null 2>&1 || exit
-  commit_consumer
-}
 # <name>_files: the config files of a case, in the consumer.
 pnpm_files() { printf '%s\n' '{}' > "$consumer/package.json" && printf '%s\n' 'packages: []' > "$consumer/pnpm-workspace.yaml"; }
 aube_files() { printf '%s\n' '{}' > "$consumer/package.json" && printf '%s\n' 'packages: []' > "$consumer/aube-workspace.yaml"; }
 both_files() { pnpm_files && printf '%s\n' 'packages: []' > "$consumer/aube-workspace.yaml"; }
 kotlin_java_files() { printf '%s\n' 'plugins { kotlin("jvm") version "2.0.0" }' > "$consumer/build.gradle.kts"; }
 
-detect_no() { synced && "$bin" detect --no; }
-detect_yes() { synced && "$bin" detect --yes; }
-detect_plain() { synced && "$bin" detect < /dev/null; }
-detect_dry() { synced && "$bin" detect --yes --dry-run; }
-CASE_CALL=detect_no run_case "detect --no: a tool that matches and is not selected" 1 "$dev_values" pnpm_files \
-  'pnpm is found, but it is not selected - run bootstrap add pnpm'
+# detect with no flag only lists; --add adds after the consent.
+detect_no() { synced && "$bin" detect < /dev/null; }
+detect_yes() { synced && "$bin" detect --add --yes; }
+detect_add_plain() { synced && "$bin" detect --add < /dev/null; }
+detect_dry() { synced && "$bin" detect --add --yes --dry-run; }
+detect_dry_only() { synced && "$bin" detect --dry-run; }
+CASE_CALL=detect_no run_case "detect: a tool that matches and is not selected" 1 "$dev_values" pnpm_files \
+  'pnpm is found, but it is not selected - run bootstrap add tool pnpm, or bootstrap detect --add'
+check_detect_kept() { check_that "detect: the values file stays" not_grep 'pnpm' "$values"; }
+CASE_CALL=detect_no run_case "detect with no flag writes nothing" 1 "$dev_values" pnpm_files '' check_detect_kept
 check_detect_yes() {
-  check_that "detect --yes: the values file selects pnpm" tomlq '.tools | has("pnpm")'
-  check_that "detect --yes: the mise config of pnpm" test -f "$consumer/.config/mise/conf.d/pnpm/mise.dev.toml"
+  check_that "detect --add --yes: the values file selects pnpm" tomlq '.tools | has("pnpm")'
+  check_that "detect --add --yes: the mise config of pnpm" test -f "$consumer/.config/mise/conf.d/pnpm/mise.dev.toml"
 }
-CASE_CALL=detect_yes run_case "detect --yes adds the tool that matches" 0 "$dev_values" pnpm_files 'Synced: ' check_detect_yes
+CASE_CALL=detect_yes run_case "detect --add --yes adds the tool that matches" 0 "$dev_values" pnpm_files 'Synced: ' check_detect_yes
 check_detect_dry() { check_that "detect --dry-run: the values file stays" not_grep 'pnpm' "$values"; }
-CASE_CALL=detect_dry run_case "detect --yes --dry-run" 0 "$dev_values" pnpm_files 'changes, nothing written' check_detect_dry
-CASE_CALL=detect_plain run_case "detect without --yes, --no and a terminal" 2 "$dev_values" pnpm_files \
-  'the detected tools need --yes or --no'
-check_detect_none() { check_that "detect: nothing to add" log_has 'No tool to add'; }
-CASE_CALL=detect_no run_case "detect: a selected tool that finds nothing stays" 0 "$dev_values" '' \
-  '' check_detect_none
+CASE_CALL=detect_dry run_case "detect --add --yes --dry-run" 0 "$dev_values" pnpm_files 'changes, nothing written' check_detect_dry
+CASE_CALL=detect_dry_only run_case "detect --dry-run without --add" 1 "$dev_values" pnpm_files \
+  'pnpm is found, but it is not selected' check_detect_dry
+CASE_CALL=detect_add_plain run_case "detect --add without --yes and without a terminal" 2 "$dev_values" pnpm_files \
+  'changes need --yes' check_detect_kept
+CASE_CALL=detect_no run_case "detect: each detected tool is selected" 0 "$dev_values
+[tools.pnpm]" pnpm_files
+CASE_CALL=detect_no run_case "detect: a selected tool that finds nothing stays" 0 "$dev_values"
 CASE_CALL=detect_no run_case "detect: a mismatch for a selected tool" 2 "$dev_values
 [tools.pnpm]" both_files 'pnpm is selected, but its detect script gives mismatch: aube-workspace.yaml exists'
 CASE_CALL=detect_no run_case "detect: a mismatch for a tool that is not selected" 0 "$dev_values
-[tools.aube]" both_files 'No tool to add'
+[tools.aube]" both_files
 check_same_evidence() { check_that "detect: kotlin matches" log_has 'not offered'; }
 CASE_CALL=detect_no run_case "detect: a tool with the evidence of a selected tool" 0 "$dev_values
-[tools.java]" kotlin_java_files 'No tool to add' check_same_evidence
-detect_twice() { synced && "$bin" detect --yes --no; }
-CASE_CALL=detect_twice run_case "detect --yes --no" 2 "$dev_values" '' '--yes and --no cannot be used together'
+[tools.java]" kotlin_java_files '' check_same_evidence
+detect_flag() {
+  synced
+  # shellcheck disable=SC2086
+  "$bin" detect $DETECT_FLAGS
+}
+DETECT_FLAGS=--no CASE_CALL=detect_flag run_case "detect --no: an unknown flag" 2 "$dev_values" '' 'detect has no flag --no'
+DETECT_FLAGS=--yes CASE_CALL=detect_flag run_case "detect --yes without --add" 2 "$dev_values" '' \
+  'detect --yes needs --add - add --add'
+DETECT_FLAGS='--answer go.flavor=x' CASE_CALL=detect_flag run_case "detect --answer without --add" 2 "$dev_values" '' \
+  'detect --answer needs --add - add --add'
 
 # Each detect script: a consumer with its evidence, and the match line.
 # detect_case <tool> <code> <file>...: each file is <path>=<content>.
@@ -3232,36 +3407,37 @@ DETECT_FILES=('pubspec.yaml=name: x')
 CASE_CALL=detect_no run_case "detect script of flutter: Dart only" 0 "$dev_values" detect_files '' check_no_flutter
 
 # add: the tools and their dependencies, the questions of the new tools.
-add_go() { synced && "$bin" add --yes go; }
+add_go() { synced && "$bin" add tool --yes go; }
 check_add_go() {
   check_that "add: the values file selects go" tomlq '.tools | has("go")'
   check_that "add: the go task" test -f "$consumer/.config/mise/tasks/code/lint/40-go"
   check_that "add: the go extension" grep -qF '"golang.go"' "$consumer/.vscode/extensions.json"
   check_that "add: one clone line" log_count '[INFO] bootstrap ' 1
 }
-CASE_CALL=add_go run_case "add go" 0 "$dev_values" '' 'Synced: ' check_add_go
-add_flutter() { synced && "$bin" add --yes flutter; }
+CASE_CALL=add_go run_case "add go" 0 "$dev_values
+[tools.vscode]" '' 'Synced: ' check_add_go
+add_flutter() { synced && "$bin" add tool --yes flutter; }
 check_add_flutter() {
   check_that "add: flutter" tomlq '.tools | has("flutter")'
   check_that "add: its dependency android" tomlq '.tools | has("android")'
   check_that "add: the dependency of android" tomlq '.tools | has("java")'
 }
 CASE_CALL=add_flutter run_case "add writes the dependencies" 0 "$dev_values" '' 'select java' check_add_flutter
-add_plain() { synced && "$bin" add go < /dev/null; }
+add_plain() { synced && "$bin" add tool go < /dev/null; }
 check_add_kept() { check_that "add: the values file stays" not_grep 'go' "$values"; }
 CASE_CALL=add_plain run_case "add without --yes and without a terminal" 2 "$dev_values" '' 'changes need --yes' check_add_kept
-add_dry() { synced && "$bin" add --dry-run go; }
+add_dry() { synced && "$bin" add tool --dry-run go; }
 CASE_CALL=add_dry run_case "add --dry-run" 0 "$dev_values" '' 'changes, nothing written' check_add_kept
-add_none() { synced && "$bin" add; }
-CASE_CALL=add_none run_case "add without a tool" 2 "$dev_values" '' 'add needs at least one tool'
-add_unknown() { synced && "$bin" add --yes nope; }
+add_none() { synced && "$bin" add tool; }
+CASE_CALL=add_none run_case "add tool without a tool" 2 "$dev_values" '' 'add tool needs at least one tool'
+add_unknown() { synced && "$bin" add tool --yes nope; }
 CASE_CALL=add_unknown run_case "add of an unknown tool" 3 "$dev_values" '' "nope is not a bootstrap tool"
-add_again() { synced && "$bin" add --yes dprint; }
+add_again() { synced && "$bin" add tool --yes dprint; }
 CASE_CALL=add_again run_case "add of a selected tool" 0 "$dev_values" '' 'Nothing to change'
 add_dirty() {
   synced
   printf '%s\n' '# a change that is not committed' >> "$values"
-  "$bin" add --yes go
+  "$bin" add tool --yes go
 }
 CASE_CALL=add_dirty run_case "add stops on a values file with changes that are not committed" 2 "$dev_values" '' \
   '.config/bootstrap.toml has changes that are not committed'
@@ -3270,36 +3446,37 @@ go_question() {
 }
 CASE_CALL=add_go run_case "add --yes: a question without an answer" 2 "$dev_values" go_question \
   'the question go.flavor has no answer - give it with --answer go.flavor=<value>'
-add_answer() { synced && "$bin" add --yes --answer go.flavor=sweet go; }
+add_answer() { synced && "$bin" add tool --yes --answer go.flavor=sweet go; }
 check_add_answer() { check_that "add: the answer" tomlq '.tools.go.flavor == "sweet"'; }
 CASE_CALL=add_answer run_case "add --answer" 0 "$dev_values" go_question 'answer go.flavor' check_add_answer
 add_no_values() {
   rm -f -- "$values"
   commit_consumer
-  "$bin" add --yes go
+  "$bin" add tool --yes go
 }
 CASE_CALL=add_no_values run_case "add without a values file" 2 "$dev_values" '' 'is not there - run bootstrap init first'
-add_old_form() { "$bin" add --yes go; }
-CASE_CALL=add_old_form run_case "add on the old form: run bootstrap init" 2 "$old_values" old_files \
+add_old_form() { "$bin" add tool --yes go; }
+CASE_NO_FORMAT=1 CASE_CALL=add_old_form run_case "add on the old form: run bootstrap init" 2 "$old_values" old_files \
   'is the old form - run bootstrap init'
 
 # remove: the files and the shared items of the tool go; a seed stays.
-remove_go() { synced && "$bin" remove --yes go; }
+remove_go() { synced && "$bin" remove tool --yes go; }
 check_remove_go() {
   check_that "remove: the values file without go" not_grep 'go\]' "$values"
   check_that "remove: the go task is gone" no_file "$consumer/.config/mise/tasks/code/lint/40-go"
   check_that "remove: the go extension is gone" lacks_in_file '"golang.go"' "$consumer/.vscode/extensions.json"
 }
 CASE_CALL=remove_go run_case "remove go" 0 "$dev_values
+[tools.vscode]
 [tools.go]" '' 'Synced: ' check_remove_go
-remove_pnpm() { synced && "$bin" remove --yes pnpm; }
+remove_pnpm() { synced && "$bin" remove tool --yes pnpm; }
 check_remove_seed() {
   check_that "remove: the seed stays" test -f "$consumer/pnpm-workspace.yaml"
   check_that "remove: the mise config of pnpm is gone" no_file "$consumer/.config/mise/conf.d/pnpm/mise.dev.toml"
 }
 CASE_CALL=remove_pnpm run_case "remove keeps a seed and lists it" 0 "$dev_values
 [tools.pnpm]" pnpm_files 'pnpm-workspace.yaml of a removed tool' check_remove_seed
-remove_flutter() { synced && "$bin" remove --yes flutter; }
+remove_flutter() { synced && "$bin" remove tool --yes flutter; }
 check_remove_deps() {
   check_that "remove: android goes" not_grep 'android' "$values"
   check_that "remove: java goes" not_grep 'java' "$values"
@@ -3310,17 +3487,18 @@ CASE_CALL=remove_flutter run_case "remove: the dependencies that no tool needs g
 [tools.android]
 [tools.java]
 [tools.go]" '' 'remove java (a dependency that no tool needs)' check_remove_deps
-remove_android() { synced && "$bin" remove --yes android; }
+remove_android() { synced && "$bin" remove tool --yes android; }
 CASE_CALL=remove_android run_case "remove: a tool that another selected tool needs" 2 "$dev_values
 [tools.flutter]
 [tools.android]" '' 'android is needed by flutter - remove flutter first'
-remove_named() { synced && "$bin" remove --yes "$REMOVE_TOOL"; }
+remove_named() { synced && "$bin" remove tool --yes "$REMOVE_TOOL"; }
 REMOVE_TOOL=mise CASE_CALL=remove_named run_case "remove: a required tool" 2 "$dev_values" '' \
   'mise is required by the base pack, so remove cannot remove it'
-REMOVE_TOOL=dprint CASE_CALL=remove_named run_case "remove: a tool of a pack" 2 "$dev_values" '' \
-  'dprint comes from the base pack, so remove cannot remove it'
-REMOVE_TOOL=gitleaks CASE_CALL=remove_named run_case "remove: a tool of a nested pack" 2 "$dev_values" '' \
-  'gitleaks comes from the base pack'
+REMOVE_TOOL=gitleaks CASE_CALL=remove_named run_case "remove: a required scanner of the pack base" 2 "$dev_values" '' \
+  'gitleaks is required by the base pack, so remove cannot remove it'
+check_vscode_gone() { check_that "remove: the table of vscode is gone" not_grep 'vscode' "$values"; }
+REMOVE_TOOL=vscode CASE_CALL=remove_named run_case "remove: a member of the pack base that is not required" 0 "$dev_values
+[tools.vscode]" '' 'Synced: ' check_vscode_gone
 REMOVE_TOOL=go CASE_CALL=remove_named run_case "remove: a tool that is not selected" 2 "$dev_values" '' \
   'go is not selected'
 REMOVE_TOOL=nope CASE_CALL=remove_named run_case "remove: an unknown tool" 3 "$dev_values" '' \
@@ -3342,7 +3520,7 @@ EOF
 }
 pnpm_lock_files() { pnpm_files && printf '%s\n' "lockfileVersion: '9.0'" > "$consumer/pnpm-lock.yaml" && fake_aube; }
 aube_lock_files() { aube_files && printf '%s\n' 'lockfileVersion: aube' > "$consumer/aube-lock.yaml" && fake_aube; }
-replace_tools() { synced && PATH="$tmp/fakebin:$PATH" "$bin" replace --yes "$@"; }
+replace_tools() { synced && PATH="$tmp/fakebin:$PATH" "$bin" replace tool --yes "$@"; }
 replace_pnpm_aube() { replace_tools pnpm aube; }
 check_replace_pnpm_aube() {
   check_that "replace: the values file selects aube" tomlq '.tools | has("aube") and (has("pnpm") | not)'
@@ -3366,14 +3544,14 @@ check_replace_aube_pnpm() {
 }
 CASE_CALL=replace_aube_pnpm run_case "replace aube pnpm" 0 "$dev_values
 [tools.aube]" aube_lock_files 'review its diff' check_replace_aube_pnpm
-replace_dry() { synced && "$bin" replace --dry-run pnpm aube; }
+replace_dry() { synced && "$bin" replace tool --dry-run pnpm aube; }
 check_replace_dry() {
   check_that "replace --dry-run: pnpm-workspace.yaml stays" test -f "$consumer/pnpm-workspace.yaml"
   check_that "replace --dry-run: the values file stays" tomlq '.tools | has("pnpm")'
 }
 CASE_CALL=replace_dry run_case "replace --dry-run" 0 "$dev_values
 [tools.pnpm]" pnpm_files 'run     repo/tools/aube/scripts/migrate-pnpm' check_replace_dry
-replace_parent() { synced && "$bin" replace --yes pnpm go; }
+replace_parent() { synced && "$bin" replace tool --yes pnpm go; }
 CASE_CALL=replace_parent run_case "replace: tools without the same parent" 2 "$dev_values
 [tools.pnpm]" '' "works only between two tools with the same parent (pnpm has the parent 'node', go has '')"
 yarn_tool() {
@@ -3381,23 +3559,23 @@ yarn_tool() {
   printf '%s\n' 'default_envs = [ "dev" ]' 'depends = [ "node" ]' 'parent = "node"' 'root_only = false' \
     > "$clone/repo/tools/yarn/tools.toml"
 }
-replace_no_script() { synced && "$bin" replace --yes pnpm yarn; }
+replace_no_script() { synced && "$bin" replace tool --yes pnpm yarn; }
 CASE_CALL=replace_no_script run_case "replace: no migrate script" 2 "$dev_values
 [tools.pnpm]" yarn_tool 'yarn has no script repo/tools/yarn/scripts/migrate-pnpm, so replace cannot replace pnpm with it'
-replace_selected() { synced && "$bin" replace --yes pnpm aube; }
+replace_selected() { synced && "$bin" replace tool --yes pnpm aube; }
 CASE_CALL=replace_selected run_case "replace: the new tool is selected" 2 "$dev_values
 [tools.pnpm]
 [tools.aube]" '' 'aube is already selected'
 replace_dirty() {
   synced
   printf '%s\n' 'x' > "$consumer/untracked.txt"
-  "$bin" replace --yes pnpm aube
+  "$bin" replace tool --yes pnpm aube
 }
 check_replace_dirty() { check_that "replace: pnpm-workspace.yaml stays" test -f "$consumer/pnpm-workspace.yaml"; }
 CASE_CALL=replace_dirty run_case "replace: a work tree with changes that are not committed" 2 "$dev_values
 [tools.pnpm]" pnpm_files 'the work tree has changes that are not committed' check_replace_dirty
-replace_one() { synced && "$bin" replace --yes pnpm; }
-CASE_CALL=replace_one run_case "replace with one tool" 2 "$dev_values" '' 'replace needs two tools'
+replace_one() { synced && "$bin" replace tool --yes pnpm; }
+CASE_CALL=replace_one run_case "replace with one tool" 2 "$dev_values" '' 'replace tool needs two tools'
 
 # The catalog keys: summary, category, selectable, description and hosts of a
 # tool, the categories file, the description of a pack, and the keys group,
@@ -3514,14 +3692,22 @@ host_other() { cat_tool vtest '' "hosts = [ \"$other_host\" ]"; }
 host_bad() { cat_tool vtest '' 'hosts = [ "darwin" ]'; }
 host_empty() { cat_tool vtest '' 'hosts = []'; }
 host_child() { cat_tool vtest '"node"' 'parent = "node"' "hosts = [ \"$other_host\" ]"; }
-add_vtest() { synced && "$bin" add --yes vtest; }
-init_vtest() { "$bin" init --yes vtest; }
-replace_pnpm_vtest() { synced && "$bin" replace --yes pnpm vtest; }
+add_vtest() { synced && "$bin" add tool --yes vtest; }
+replace_pnpm_vtest() { synced && "$bin" replace tool --yes pnpm vtest; }
 check_vtest_kept() { check_that "the values file does not select vtest" not_grep 'vtest' "$values"; }
 CASE_CALL=add_vtest run_case "hosts: add of a tool for another host" 2 "$dev_values" host_other "$msg_host" \
   check_vtest_kept
-CASE_CALL=init_vtest run_case "hosts: init of a tool for another host" 2 "$dev_values" host_other "$msg_host" \
+# add pack leaves out, with an info line, a member for another host and a
+# member with selectable = false (D17 g).
+pack_vtest() { printf '%s\n' '' '[pack.extra]' 'vtest = {}' 'go = {}' >> "$clone/repo/packs.toml"; }
+host_other_pack() { host_other && pack_vtest; }
+add_pack_extra() { synced && "$bin" add pack --yes extra; }
+check_pack_skips_vtest() {
   check_vtest_kept
+  check_that "add pack: the other member is selected" tomlq '.tools | has("go")'
+}
+CASE_CALL=add_pack_extra run_case "hosts: add pack leaves out a member for another host" 0 "$dev_values" \
+  host_other_pack 'vtest is left out: its hosts leave out this host' check_pack_skips_vtest
 run_case "hosts: sync of a values file that names a tool for another host" 0 "$vtest_values" host_other 'Dry run: '
 run_case "hosts: a name that is not a mise OS name" 2 "$vtest_values" host_bad \
   "${vtest_at}hosts must be a list of macos, linux and windows"
@@ -3546,8 +3732,9 @@ check_warning_file() {
 }
 CASE_CALL=add_vtest run_case "selectable: add of a tool with selectable = false" 2 "$dev_values" not_selectable_needed \
   "$msg_not_selectable" check_vtest_kept
-CASE_CALL=init_vtest run_case "selectable: init of a tool with selectable = false" 2 "$dev_values" \
-  not_selectable_needed "$msg_not_selectable" check_vtest_kept
+not_selectable_pack() { not_selectable && pack_vtest; }
+CASE_CALL=add_pack_extra run_case "selectable: add pack leaves out a member with selectable = false" 0 "$dev_values" \
+  not_selectable_pack 'vtest is left out: it is not selectable; a tool that needs it selects it' check_pack_skips_vtest
 CASE_CALL=add_vtest run_case "selectable: a tool that no tool needs" 2 "$dev_values" not_selectable \
   'vtest is not selectable.' check_short_message
 run_case "selectable: sync of a values file that names it" 0 "$vtest_values" not_selectable_needed 'Dry run: '
@@ -3639,7 +3826,7 @@ CASE_CALL=init_empty_twice run_case "init --answer <q>= of an optional question,
 init_empty_answer() { "$bin" init --yes --answer vtest.q=; }
 CASE_CALL=init_empty_answer run_case "init --answer <q>= of a necessary question" 2 "$vtest_values" necessary_tool \
   '--answer vtest.q=: an empty answer is only for an optional or a group question - give it with --answer vtest.q=<value>'
-add_empty_answer() { synced && "$bin" add --yes --answer vtest.q= vtest; }
+add_empty_answer() { synced && "$bin" add tool --yes --answer vtest.q= vtest; }
 CASE_CALL=add_empty_answer run_case "add --answer <q>= of an optional question" 0 "$dev_values" optional_tool \
   'Synced: ' check_empty_answer
 init_skip_answer() { "$bin" init --yes --skip-answer vtest.q; }
@@ -3761,7 +3948,7 @@ remote="$tmp/remote"
 _git clone --quiet -- "$base_clone" "$remote"
 clone_consumer="$tmp/clone-consumer"
 cp -R -- "$base_consumer" "$clone_consumer"
-printf '%s\n' 'repo_name = "test"' 'environments = [ "dev" ]' > "$clone_consumer/.config/bootstrap.toml"
+printf '%s\n' 'format = 2' 'repo_name = "test"' 'environments = [ "dev" ]' > "$clone_consumer/.config/bootstrap.toml"
 _git -C "$clone_consumer" add -A
 _git -C "$clone_consumer" commit --quiet --no-verify -m "values"
 
@@ -3987,7 +4174,7 @@ gate_cache="$tmp/gate-cache"
 cp -R -- "$base_consumer" "$gate_root"
 mkdir -p -- "$gate_root/.config/mise/tasks/_scripts"
 cp -- "$root/.config/mise/tasks/_scripts/helpers" "$gate_root/.config/mise/tasks/_scripts/helpers"
-printf '%s\n' 'repo_name = "test"' 'repo_url = "https://example.com/test"' 'environments = [ "dev" ]' \
+printf '%s\n' 'format = 2' 'repo_name = "test"' 'repo_url = "https://example.com/test"' 'environments = [ "dev" ]' \
   > "$gate_root/.config/bootstrap.toml"
 
 run_gate() {

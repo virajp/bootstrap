@@ -4,7 +4,7 @@ rc=0
 tools: a b d
 sel:
 a - default
-b - packs.extra
+b - tools.b
 d - tools.d
 deps:
 values:

@@ -1,0 +1,24 @@
+# The packs. A pack has no files of its own; each key of its table is a member:
+# `<tool> = { default = true }` or `<tool> = {}`, and a nested pack is
+# `"pack:<name>"`. The member order is the sync order, so keep it.
+# The sync always adds the pack `base`. `required = true` marks a member of
+# `base` that each repository must have. See docs/design/packs.md.
+[pack.base]
+mise = { default = true, required = true }
+git = { default = true, required = true }
+pre-commit = { default = true, required = true }
+dprint = { default = true }
+linter = { default = true }
+vscode = { default = true }
+"pack:security" = { default = true }
+
+[pack.security]
+gitleaks = { default = true }
+grype = { default = true }
+osv-scanner = { default = true }
+
+[pack.container-build]
+apko = { default = true }
+melange = { default = true }
+cosign = { default = true }
+crane = { default = true }

@@ -1,7 +1,6 @@
 # The `melange` tool
 
-melange, which builds apk packages from a declarative pipeline. It is a member
-of the `container-build` pack.
+melange, which builds apk packages from a declarative pipeline.
 
 | Property     | Value   |
 | ------------ | ------- |

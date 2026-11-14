@@ -1,8 +1,9 @@
 # The `vscode` tool
 
 The VS Code settings, and the shared `extensions.json` with the extensions of
-the selected tools. The `base` pack adds it with `default = true`.
-`bootstrap remove` refuses it, because only a pack selects it.
+the selected tools. A member of the `base` pack that is not required:
+`bootstrap init` writes its table in a new values file, and
+`bootstrap remove tool vscode` removes it.
 
 | Property     | Value |
 | ------------ | ----- |
@@ -14,10 +15,9 @@ the selected tools. The `base` pack adds it with `default = true`.
 
 ## When the tool is relevant
 
-Always in a root repository: the `base` pack adds it. Do not select it in the
-values file. A `[tools.vscode]` table gives values. VS Code opens the root
-repository. In a git submodule, the sync skips the tool, and a
-`[tools.vscode]` table in a submodule stops the sync with code 2.
+Always in a root repository: the `base` pack adds it. VS Code opens the root
+repository. In a git submodule, `bootstrap init` writes no table for the tool,
+and a `[tools.vscode]` table in a submodule stops the sync with code 2.
 
 ## What the tool ships
 

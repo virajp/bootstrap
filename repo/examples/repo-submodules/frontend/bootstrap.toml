@@ -5,6 +5,7 @@
 bootstrap_commit = ""
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
+format = 2
 # The product name, for the fnox keychain service.
 product_name = "acme"
 repo_name = "acme-frontend"
@@ -18,6 +19,18 @@ commit_scopes = [ "app", "l10n" ]
 [tools.mise]
 # The gitignored files to copy into a new worktree.
 worktree_files = [ ".config/mise.local.toml" ]
+
+[tools.pre-commit]
+
+[tools.dprint]
+
+[tools.linter]
+
+[tools.gitleaks]
+
+[tools.grype]
+
+[tools.osv-scanner]
 
 [tools.flutter]
 env = [ "dev", "ci" ]

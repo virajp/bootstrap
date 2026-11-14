@@ -1,24 +1,24 @@
 // Package cli is the command line of `bootstrap`: the commands init, sync,
 // check, questions, add, remove, replace, detect and list of the repo side and of the Mac side (`bootstrap mac
-// <command>`), and version. It does the steps that each command shares: the
-// preflight, the clone and its lock, the version check, the change list, the
-// clean-target rule and the consent. The front-ends internal/repo and
-// internal/macos do the sync itself.
+// <command>`), and version. It is the shell of the command line: it parses
+// the arguments, takes the clone and its lock, checks the version, calls
+// internal/core (the preflight, Plan, Apply, Detect and the clean-target
+// rule), prints the results and the errors, and asks the questions and the
+// consent. The front-ends internal/repo and internal/macos do the sync itself.
 //
 // Contract: docs/design/cli.md.
 package cli
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 
+	"github.com/virajp/bootstrap/cli/internal/core"
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/field"
 	"github.com/virajp/bootstrap/cli/internal/macos"
@@ -32,47 +32,56 @@ import (
 const Usage = `usage: bootstrap <command> [flags]
 
 Repository
-  init [tool...]       select base and the named tools, migrate an old form,
-                       ask the questions without an answer, then sync
+  init                 migrate an old form, or create the values file with
+                       the members of the pack base, ask the questions
+                       without an answer, then sync
   sync                 sync the repository of the current folder
   check                examine the values file of the repository
   questions [tool...]  list the questions of the tools, with their proposals
                        and their answers
-  add <tool...>        select the tools and their dependencies, ask their
+  add tool <tool...>   select the tools and their dependencies, ask their
                        questions, then sync
-  remove <tool...>     remove the tools and the dependencies that no other
+  add pack <pack...>   select each member of the packs that is not selected,
+                       and their dependencies, ask their questions, then sync
+  remove tool <tool...>
+                       remove the tools and the dependencies that no other
                        tool needs, then sync
-  replace <old> <new>  run the migrate script of <new> for <old>, swap the
+  replace tool <old> <new>
+                       run the migrate script of <new> for <old>, swap the
                        tools, then sync
-  detect               run the detect scripts, and offer to add each tool
-                       that matches
+  detect               run the detect scripts and list the tools that match;
+                       exit 1 when a tool that matches is not selected
   list, ls             print the selected tools as a tree
   config               print each setting of the engine, with its value and
                        its source
   version, --version   print the version
 
 Mac
-  mac init [tool...]   init for the Mac, in the current folder (the
+  mac init             init for the Mac, in the current folder (the
                        repository of macos.toml)
   mac sync             sync the Mac from MACOS_SETUP_REPO_PATH
   mac check            show what mac sync changes, and write nothing
   mac questions [tool...]
                        the questions of the Mac tools
-  mac add, mac remove, mac replace, mac detect
+  mac add tool|pack, mac remove tool, mac replace tool, mac detect
                        the selection commands for macos.toml
   mac list, mac ls     print the selected Mac tools as a tree
 
 Flags
   --dry-run            init, sync, add, remove, replace, detect: show the
                        changes, and write nothing
-  --yes, -y            init, add, remove, replace, detect: write the changes
-                       without a prompt; detect: add each matched tool
-  --no                 detect: add nothing; a matched tool that is not
-                       selected exits 1
+  --yes, -y            init, add, remove, replace, detect --add: write the
+                       changes without a prompt
+  --no-tui             init: select no tool on a screen; init takes this
+                       path in each case for now
+  --add                detect: add each matched tool that is not selected,
+                       after the consent
+  --exclude <member>   add pack: leave out a member of the pack, as
+                       packs.toml writes it (repeatable; one pack only)
   --answer <tool>.<key>=<value>
-                       init, add, replace, detect: the answer of a question
-                       (repeatable); --answer <tool>.<key>= writes an empty
-                       answer for an optional or a group question
+                       init, add, replace, detect --add: the answer of a
+                       question (repeatable); --answer <tool>.<key>= writes
+                       an empty answer for an optional or a group question
   --json               questions, mac questions: JSON output
   --no-bootstrap       mac init, mac sync, mac check: skip mise bootstrap
   --jobs <n>           the jobs at a time (default: 2 x the CPU count)
@@ -90,14 +99,14 @@ Flags
 
 // argsOf gives the arguments of a command in its usage line.
 var argsOf = map[string]string{
-	"init": " [tool...]", "questions": " [tool...]", "add": " <tool...>",
-	"remove": " <tool...>", "replace": " <old> <new>",
+	"questions": " [tool...]", "add": " tool|pack <name...>",
+	"remove": " tool <tool...>", "replace": " tool <old> <new>",
 }
 
 // flagUsage gives each flag of a usage line, by the name of the flag.
 var flagUsage = map[string]string{
 	"answer": "[--answer <tool>.<key>=<value>]", "jobs": "[--jobs <n>]",
-	"repo-path": "[--repo-path <path>]",
+	"repo-path": "[--repo-path <path>]", "exclude": "[--exclude <member>]",
 }
 
 // usageLine gives the usage line of a command: its arguments and its own
@@ -118,12 +127,7 @@ func usageLine(mac bool, cmd, flags string) string {
 	return b
 }
 
-func cmdWord(mac bool, cmd string) string {
-	if mac {
-		return "mac " + cmd
-	}
-	return cmd
-}
+func cmdWord(mac bool, cmd string) string { return core.CmdWord(mac, cmd) }
 
 // app is the state of one command.
 type app struct {
@@ -145,12 +149,13 @@ type app struct {
 
 // opts are the flags and the arguments of a command.
 type opts struct {
-	dryRun, yes, no, json, noBootstrap, help bool
-	verbose                                  bool
-	confirmed                                bool // The user said yes to the changes at a prompt.
-	answers                                  []string
-	names                                    []string
-	values                                   map[string]string // The value flags of the settings, by flag name.
+	dryRun, yes, json, noBootstrap, help bool
+	verbose, noTUI, add                  bool
+	answers                              []string
+	kind                                 string            // add, remove, replace: the kind word, tool or pack.
+	names                                []string          // The names after the kind word.
+	exclude                              []string          // add pack: the members of --exclude.
+	values                               map[string]string // The value flags of the settings, by flag name.
 }
 
 // Run runs the command of <args> and gives its exit code.
@@ -186,14 +191,14 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		cmd = "list"
 	}
 	allowed := map[string]string{
-		"init":      "dry-run yes answer jobs verbose",
+		"init":      "dry-run yes no-tui answer jobs verbose",
 		"sync":      "dry-run jobs verbose",
 		"check":     "jobs verbose",
 		"questions": "json",
-		"add":       "dry-run yes answer jobs verbose",
+		"add":       "dry-run yes exclude answer jobs verbose",
 		"remove":    "dry-run yes jobs verbose",
 		"replace":   "dry-run yes answer jobs verbose",
-		"detect":    "dry-run yes no answer jobs verbose",
+		"detect":    "dry-run add yes answer jobs verbose",
 		"list":      "",
 		"config":    "jobs repo-path",
 		"version":   "",
@@ -234,8 +239,19 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		fmt.Fprint(stdout, Usage)
 		return fail.OK
 	}
-	if (cmd == "add" || cmd == "remove") && len(o.names) == 0 {
-		a.usageErr(cmdWord(mac, cmd)+" needs at least one tool", usageLine(mac, cmd, own))
+	if code := a.kindWord(mac, cmd, own, &o); code != fail.OK {
+		return code
+	}
+	if cmd == "init" && len(o.names) > 0 {
+		a.fail(cmdWord(mac, "init")+" takes no tool names", "use: "+cmdName(mac, "add tool")+" "+strings.Join(o.names, " "))
+		return fail.Usage
+	}
+	if cmd == "detect" && !o.add && (o.yes || len(o.answers) > 0) {
+		flag := "--yes"
+		if !o.yes {
+			flag = "--answer"
+		}
+		a.fail(cmdWord(mac, "detect")+" "+flag+" needs --add", "add --add")
 		return fail.Usage
 	}
 	if cmd == "version" {
@@ -270,6 +286,44 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 	}
 }
 
+// kindWord takes the kind word of add, remove and replace from the names of
+// <o>: add takes tool or pack, remove and replace take tool. A name with no
+// kind word is the old form (code 2, with the hint of the new form).
+// --exclude is only for add pack.
+func (a *app) kindWord(mac bool, cmd, own string, o *opts) fail.Code {
+	if cmd != "add" && cmd != "remove" && cmd != "replace" {
+		return fail.OK
+	}
+	kinds := "tool"
+	if cmd == "add" {
+		kinds = "tool or pack"
+	}
+	usage := usageLine(mac, cmd, own)
+	if len(o.names) == 0 {
+		a.usageErr(cmdWord(mac, cmd)+" needs the kind word "+kinds, usage)
+		return fail.Usage
+	}
+	switch kind := o.names[0]; {
+	case kind == "tool" || (kind == "pack" && cmd == "add"):
+		o.kind, o.names = kind, o.names[1:]
+	case kind == "pack":
+		a.usageErr(cmdWord(mac, cmd)+" takes the kind word tool only - there is no "+cmd+" pack", usage)
+		return fail.Usage
+	default:
+		a.fail(cmdWord(mac, cmd)+" needs the kind word "+kinds+" before the names", "use: "+cmdName(mac, cmd+" tool")+" "+strings.Join(o.names, " "))
+		return fail.Usage
+	}
+	if len(o.exclude) > 0 && o.kind != "pack" {
+		a.usageErr("--exclude is only for "+cmdWord(mac, "add pack"), usage)
+		return fail.Usage
+	}
+	if len(o.names) == 0 && cmd != "replace" {
+		a.usageErr(cmdWord(mac, cmd+" "+o.kind)+" needs at least one "+o.kind, usage)
+		return fail.Usage
+	}
+	return fail.OK
+}
+
 // parse reads the flags of <flags> (names without dashes) and, with
 // <names>, the arguments.
 func parse(cmd string, args []string, flags string, names bool) (opts, error) {
@@ -298,7 +352,7 @@ func parse(cmd string, args []string, flags string, names bool) (opts, error) {
 		if !has[name] {
 			return o, fmt.Errorf("%s has no flag %s", cmd, arg)
 		}
-		takes := name == "answer" || name == "jobs" || name == "config" || name == "cache-dir" ||
+		takes := name == "answer" || name == "exclude" || name == "jobs" || name == "config" || name == "cache-dir" ||
 			name == "url" || name == "clone" || name == "repo-path"
 		if takes && !withValue {
 			if i+1 >= len(args) {
@@ -314,8 +368,15 @@ func parse(cmd string, args []string, flags string, names bool) (opts, error) {
 			o.dryRun = true
 		case "yes":
 			o.yes = true
-		case "no":
-			o.no = true
+		case "no-tui":
+			o.noTUI = true
+		case "add":
+			o.add = true
+		case "exclude":
+			if value == "" {
+				return o, fmt.Errorf("--exclude needs a value")
+			}
+			o.exclude = append(o.exclude, value)
 		case "json":
 			o.json = true
 		case "no-bootstrap":
@@ -366,91 +427,60 @@ func (a *app) usageErr(problem, usage string) {
 	p.Fix("Run bootstrap --help for all commands")
 }
 
-// logErr prints each message of <err> and gives its code.
+// logErr prints each message of <err> and gives its code. A problem of core
+// prints its message and its fix; a problem with no message prints nothing,
+// because the output of the sync shows it.
 func (a *app) logErr(err error) fail.Code {
 	if err == nil {
 		return fail.OK
 	}
+	a.printErr(err)
+	return fail.CodeOf(err)
+}
+
+func (a *app) printErr(err error) {
+	if j, ok := err.(interface{ Unwrap() []error }); ok {
+		for _, e := range j.Unwrap() {
+			a.printErr(e)
+		}
+		return
+	}
+	var p *core.Problem
+	if errors.As(err, &p) {
+		if p.Msg != "" {
+			a.fail(p.Msg, p.Fix)
+		}
+		return
+	}
 	for _, m := range source.Messages(err) {
 		a.printer().Error(m.Error())
 	}
-	return fail.CodeOf(err)
 }
 
 // show gives <p> relative to the current folder when it is below it.
 func (a *app) show(p string) string { return target.Show(p, a.pwd) }
 
-// where is the folder and the values file of a command.
-type where struct {
-	root   string // The repository; on the Mac, the repository of macos.toml.
-	values string
-}
-
 // prepare does the preflight of a command of the side, and finds its
 // folder and its values file.
-func (a *app) prepare(mac, initCmd bool) (where, fail.Code) {
-	var w where
-	if _, err := exec.LookPath("mise"); err != nil {
-		a.fail("mise is not available", "install it from https://mise.run")
-		return w, fail.Usage
+func (a *app) prepare(mac, initCmd bool) (core.Side, fail.Code) {
+	sd, err := core.Prepare(mac, initCmd, a.pwd, a.getenv)
+	if err != nil {
+		return sd, a.logErr(err)
 	}
-	if mac {
-		dir := a.getenv("MACOS_SETUP_REPO_PATH")
-		if initCmd {
-			dir = a.pwd
-		} else if dir == "" {
-			a.fail("MACOS_SETUP_REPO_PATH is not set", "set it to the repository of macos.toml, or run bootstrap mac init in that repository")
-			return w, fail.Usage
-		}
-		if _, ok := toplevel(dir); !ok {
-			if initCmd {
-				a.fail(dir+" is not a git repository", "create one with git init, then run bootstrap mac init again")
-			} else {
-				a.errorf("MACOS_SETUP_REPO_PATH %s is not a git repository", dir)
-			}
-			return w, fail.Usage
-		}
-		_ = os.Setenv("MACOS_SETUP_REPO_PATH", dir)
-		w.root, w.values = dir, strings.TrimSuffix(dir, "/")+"/macos.toml"
-		return w, fail.OK
-	}
-	root := a.getenv("MISE_PROJECT_ROOT")
-	dir := root
-	if dir == "" {
-		dir = a.pwd
-	}
-	top, ok := toplevel(dir)
-	if !ok {
-		if initCmd {
-			a.fail(dir+" is not a git repository", "create one with git init, then run bootstrap init again")
-		} else {
-			a.errorf("%s is not a git repository", dir)
-		}
-		return w, fail.Usage
-	}
-	if root == "" {
-		root = top
-		_ = os.Setenv("MISE_PROJECT_ROOT", root)
-	}
-	w.root = root
-	w.values = a.getenv("BOOTSTRAP_VALUES")
-	if w.values == "" {
-		w.values = root + "/.config/bootstrap.toml"
-	}
-	return w, fail.OK
+	return sd, fail.OK
 }
 
 // cloneText gives the clone line of a command: the short commit of the
 // clone and its folder, with the home folder as `~`. The commands sync and
 // mac check print their own line.
-func (a *app) cloneText(c *clone) string {
-	commit, ok := git("-C", c.dir, "rev-parse", "--short", "HEAD")
+func (a *app) cloneText(c *core.Clone) string {
+	commit, ok := core.Git("-C", c.Dir, "rev-parse", "--short", "HEAD")
 	if !ok || commit == "" {
 		commit = "an unknown commit"
 	}
-	where := c.repo
+	where := c.Repo
 	if where == "" {
-		where = c.dir
+		where = c.Dir
 	}
 	if home := a.getenv("HOME"); home != "" && (where == home || strings.HasPrefix(where, home+"/")) {
 		where = "~" + strings.TrimPrefix(where, home)
@@ -458,78 +488,26 @@ func (a *app) cloneText(c *clone) string {
 	return "bootstrap " + commit + " · " + where
 }
 
-// openClone takes the clone of the command and checks its version. The
-// caller defers cleanup. With <hold>, the lock stays held to the end.
-func (a *app) openClone(hold, line bool) (*clone, fail.Code) {
-	c, code := a.acquireClone()
-	if code != fail.OK {
-		return c, code
+// openClone takes the clone of the command with core.OpenClone, and prints
+// its notes and its errors. The caller defers Cleanup. With <hold>, the lock
+// stays held to the end. With <line>, it prints the clone line.
+func (a *app) openClone(hold, line bool) (*core.Clone, fail.Code) {
+	c, err := core.OpenClone(core.CloneOptions{
+		Getenv:  a.getenv,
+		Version: a.version,
+		Hold:    hold,
+		Note:    func(s string) { a.infof("%s", s) },
+		Stderr:  a.stderr,
+	})
+	if err != nil {
+		return c, a.logErr(err)
 	}
-	if !hold {
-		c.unlock()
-	}
-	// A signal removes the lock and the copy.
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		got := <-sig
-		c.cleanup()
-		if got == syscall.SIGINT {
-			os.Exit(130)
-		}
-		os.Exit(143)
-	}()
-	if code := a.checkVersion(c.dir); code != fail.OK {
-		return c, code
-	}
-	_ = os.Setenv("BOOTSTRAP_CLONE", c.dir)
 	if line {
 		a.printer().Clone(a.cloneText(c))
 		// The sync of the command does not print a second clone line.
 		report.CloneShown = true
 	}
 	return c, fail.OK
-}
-
-// frontEnd is the sync of a side, with its change list.
-type frontEnd func(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Code)
-
-// planPaths gives the path of each file of a change list.
-func planPaths(list []target.Planned) []string {
-	paths := make([]string, len(list))
-	for i, p := range list {
-		paths[i] = p.Path
-	}
-	return paths
-}
-
-func frontEndOf(mac bool) frontEnd {
-	if mac {
-		return macos.RunWith
-	}
-	return repo.RunWith
-}
-
-// syncArgs are the arguments of the front-end.
-func syncArgs(mac bool, o opts) []string {
-	var args []string
-	if o.dryRun {
-		args = append(args, "--dry-run")
-	}
-	if mac && o.noBootstrap {
-		args = append(args, "--no-bootstrap")
-	}
-	return args
-}
-
-// valuesSkip gives the values file and its real path: sync writes only
-// bootstrap_commit there, so the clean-target rule skips it.
-func valuesSkip(values string) map[string]bool {
-	skip := map[string]bool{values: true}
-	if r, err := realPath(values); err == nil {
-		skip[r] = true
-	}
-	return skip
 }
 
 // sync is `bootstrap [mac] sync`.
@@ -539,24 +517,24 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 		return code
 	}
 	c, code := a.openClone(mac && !o.dryRun, false)
-	defer c.cleanup()
+	defer c.Cleanup()
 	if code != fail.OK {
 		return code
 	}
-	run := frontEndOf(mac)
-	args := syncArgs(mac, o)
-	skip := valuesSkip(w.values)
+	run := core.FrontEndOf(mac)
+	args := core.SyncArgs(mac, o.dryRun, o.noBootstrap)
+	skip := core.ValuesSkip(w.Values)
 	if o.dryRun {
 		planned, code := run(args, a.stdout, a.stderr)
-		a.warnDirty(dirtyTargets(planPaths(planned), skip))
+		a.warnDirty(core.DirtyTargets(core.PlanPaths(planned), skip))
 		return code
 	}
 	// The plan, then the write. A repository without a change that is not
 	// committed needs no plan.
-	if mac || a.dirtyBesides(w.root, skip) {
+	if mac || core.DirtyBesides(w.Root, skip) {
 		planned, code := run(append(args, "--dry-run"), io.Discard, io.Discard)
 		if code == fail.OK {
-			if code := a.stopDirty(dirtyTargets(planPaths(planned), skip)); code != fail.OK {
+			if code := a.stopDirty(core.DirtyTargets(core.PlanPaths(planned), skip)); code != fail.OK {
 				return code
 			}
 		}
@@ -565,40 +543,21 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 	return code
 }
 
-// dirtyBesides tells if the work tree of <root> has a change that is not
-// committed in a path that is not in <skip>.
-func (a *app) dirtyBesides(root string, skip map[string]bool) bool {
-	top, ok := toplevel(root)
-	if !ok {
-		return false
-	}
-	if r, err := realPath(top); err == nil {
-		top = r
-	}
-	for p := range statusSet(top) {
-		if !skip[top+"/"+p] {
-			return true
-		}
-	}
-	return false
-}
-
 // check is `bootstrap [mac] check`.
 func (a *app) check(mac bool, o opts) fail.Code {
 	w, code := a.prepare(mac, false)
 	if code != fail.OK {
 		return code
 	}
-	_ = w
 	c, code := a.openClone(false, !mac)
-	defer c.cleanup()
+	defer c.Cleanup()
 	if code != fail.OK {
 		return code
 	}
-	a.warnNotSelectable(mac, c.dir, w.values)
+	a.warnNotSelectable(mac, c.Dir, w.Values)
 	if mac {
 		o.dryRun = true
-		return macos.Run(syncArgs(true, o), a.stdout, a.stderr)
+		return macos.Run(core.SyncArgs(true, o.dryRun, o.noBootstrap), a.stdout, a.stderr)
 	}
 	return repo.Run([]string{"--check"}, a.stdout, a.stderr)
 }

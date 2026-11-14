@@ -5,6 +5,7 @@
 bootstrap_commit = ""
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
+format = 2
 repo_name = "search-indexer"
 # The web URL of the repository, for the github tool.
 repo_url = "https://github.com/example/search-indexer"
@@ -17,6 +18,17 @@ commit_scopes = [ "indexer", "schema" ]
 # The gitignored files to copy into a new worktree.
 worktree_files = [ ".config/mise.local.toml" ]
 
+[tools.pre-commit]
+
+[tools.dprint]
+
+[tools.linter]
+
+[tools.gitleaks]
+
+[tools.grype]
+
+[tools.osv-scanner]
 # A feature branch merges into develop. main never merges into develop.
 [tools.git.branch.develop]
 merge_model = "direct"

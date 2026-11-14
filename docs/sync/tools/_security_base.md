@@ -1,7 +1,7 @@
 # The `_security_base` tool
 
-The common tool of the `security` pack: the `sec` hook. Each scanner of the
-`security` pack has it in its `depends`, so the `base` pack adds it.
+The common tool of the scanners: the `sec` hook. Each scanner of the `base`
+pack has it in its `depends`, so each repository gets it.
 
 | Property     | Value   |
 | ------------ | ------- |
@@ -14,12 +14,12 @@ The common tool of the `security` pack: the `sec` hook. Each scanner of the
 
 ## When the tool is relevant
 
-Always. A scanner of the `security` pack (`gitleaks`, `grype` or
-`osv-scanner`) adds this tool. The tool has `selectable = false`:
-`bootstrap init` and `bootstrap add` refuse it by name with code 2, and
-`bootstrap detect` does not propose it. Select a scanner instead. `sync`
-accepts a values file with a `[tools._security_base]` table, and `check` shows
-a warning for it. Remove the table (M37 of `migrate.md`).
+Always. A scanner (`gitleaks`, `grype` or `osv-scanner`) adds this tool. The
+tool has `selectable = false`: `bootstrap add tool <tool…>` refuses it by name
+with code 2, `bootstrap add pack <pack…>` writes no table for it, and
+`bootstrap detect` does not propose it. Select a scanner instead. `sync` accepts
+a values file with a `[tools._security_base]` table, and `check` shows a warning
+for it. Remove the table (M37 of `migrate.md`).
 
 ## What the tool ships
 

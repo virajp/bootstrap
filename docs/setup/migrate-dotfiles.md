@@ -88,14 +88,15 @@ Ask the owner about each change, one at a time. Put each change in one row:
 
 | The change                         | Where it goes in `macos.toml`                                      |
 | ---------------------------------- | ------------------------------------------------------------------ |
-| A pack or a tool to select         | `[packs.<name>]` or `[tools.<name>]`                               |
+| A tool to select                   | `[tools.<name>]`, also for each member of a pack that it wants     |
 | A value of a tool                  | A key of `[tools.<name>]`                                          |
 | A change to the generated mise     | `[overrides.mise.*]`. It can change a key, and it cannot add a key |
 | An own addition to the mise config | `[mise.*]`. The sync generates it into `conf.d/zz-macos/mise.toml` |
 | A file that no tool ships          | [Step 3](#step-3-classify-the-files-that-no-tool-ships)            |
 
 `macos/packs.toml` holds the packs, and [`tools.md`](tools.md) holds the tools.
-The pack `base` is always selected.
+`macos.toml` keeps no record of a pack: write a table for each tool. The
+required members of the pack `base` are always selected.
 
 **Pass:** Each change has one row and the answer of the owner.
 
@@ -164,7 +165,8 @@ in each entry.
 ## Step 4: Write `macos.toml`
 
 Write `macos.toml` at the root of `<clone>`. Use `macos/examples/macos.toml` as
-the model. Use the answers of steps 2 and 3. The migration writes this file by
+the model, with its `format = 2` and the tables of the members of `base`. Use
+the answers of steps 2 and 3. The migration writes this file by
 hand, because step 6 needs it before the first `bootstrap mac init`. Move the
 values of `[vars]` of
 `dotfiles/.config/mise/conf.d/identity.toml` to these keys:

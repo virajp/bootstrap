@@ -1,4 +1,0 @@
-rc=3
---- stderr
-repo-sync: nope is not a bootstrap pack
---- stdout

@@ -10,6 +10,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/format"
 	"github.com/virajp/bootstrap/cli/internal/misegen"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
+	"github.com/virajp/bootstrap/cli/internal/selection"
 	"github.com/virajp/bootstrap/cli/internal/source"
 	"github.com/virajp/bootstrap/cli/internal/tmpl"
 	"github.com/virajp/bootstrap/cli/internal/values"
@@ -437,8 +438,29 @@ func (s *state) checkScripts() fail.Code {
 	if code := s.resolve(); code != fail.OK {
 		return code
 	}
+	if code := s.requiredTables(true); code != fail.OK {
+		return code
+	}
 	if code := s.toolValues(); code != fail.OK {
 		return code
 	}
 	return s.checks()
+}
+
+// requiredTables writes an empty [tools.<name>] table into the values file
+// for each required member of the pack base that has no table, so a user can
+// add values to it. A dry run, and <listOnly> (check), write nothing and list
+// the tables.
+func (s *state) requiredTables(listOnly bool) fail.Code {
+	named := map[string]bool{}
+	for _, it := range s.vals.Sel {
+		if it.Kind == "tools" {
+			named[it.Name] = true
+		}
+	}
+	names, err := selection.MissingTables(s.idx, selection.BasePack, named, s.inSubmodule())
+	if err != nil {
+		return s.logAll(err)
+	}
+	return s.e.AddTables(s.values, names, "", listOnly)
 }

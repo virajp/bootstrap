@@ -6,3 +6,6 @@ summary = "The Brave web browser"
 
 [mise.bootstrap.packages]
 "brew-cask:brave-browser" = "latest" # Brave Browser
+
+[mise.env]
+CHROME_EXECUTABLE = "${HOME}/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"

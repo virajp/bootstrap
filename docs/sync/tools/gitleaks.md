@@ -1,8 +1,7 @@
 # The `gitleaks` tool
 
-gitleaks: the secret scanner, and `code:sec:10-gitleaks`. A member of the
-`security` pack, with `default = true`. `bootstrap remove` refuses it, because
-only a pack selects it.
+gitleaks: the secret scanner, and `code:sec:10-gitleaks`. A
+required member of the `base` pack. `bootstrap remove tool <tool…>` refuses it.
 
 | Property     | Value                   |
 | ------------ | ----------------------- |
@@ -14,8 +13,8 @@ only a pack selects it.
 
 ## When the tool is relevant
 
-Always. The `base` pack adds this tool, through the `security` pack. Do not
-select it in the values file. A `[tools.gitleaks]` table gives values.
+Always. The `base` pack adds this tool, and the sync writes an empty
+`[tools.gitleaks]` table for it. The table gives values.
 
 ## What the tool ships
 

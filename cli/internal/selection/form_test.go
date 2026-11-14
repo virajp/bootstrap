@@ -3,6 +3,7 @@ package selection
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/virajp/bootstrap/cli/internal/source"
@@ -20,28 +21,28 @@ type formCase struct {
 
 var formCases = []formCase{
 	{name: "repo-pack-entry-keys", side: source.Repo,
-		over: tree{"repo/packs.toml": "[pack.base]\na = { default = true, env = 1 }\n"},
-		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.base] a has the entry key 'env' - the entry keys are default and required\n--- stdout\n"},
+		over: tree{"repo/packs.toml": "[pack.base]\na = { required = true, env = 1 }\n"},
+		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.base] a has the entry key 'env' - a member is {}, or { required = true } in pack base\n--- stdout\n"},
+	{name: "repo-pack-default-key", side: source.Repo,
+		over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\n"},
+		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.base] a has the entry key 'default', the old form - each member is a default: write a = {}\n--- stdout\n"},
 	{name: "repo-pack-description", side: source.Repo,
-		over: tree{"repo/packs.toml": "[pack.base]\ndescription = \"The base.\"\na = { default = true }\n"},
+		over: tree{"repo/packs.toml": "[pack.base]\ndescription = \"The base.\"\na = { required = true }\n"},
 		want: "rc=0\n--- stderr\n--- stdout\ntools: a\nsel:\na - default\ndeps:\nvalues:\n{\"a\":{}}\n"},
 	{name: "repo-pack-description-type", side: source.Repo,
-		over: tree{"repo/packs.toml": "[pack.base]\ndescription = 1\na = { default = true }\n"},
+		over: tree{"repo/packs.toml": "[pack.base]\ndescription = 1\na = { required = true }\n"},
 		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.base] description must be a string\n--- stdout\n"},
 	{name: "repo-pack-string-member", side: source.Repo,
 		over: tree{"repo/packs.toml": "[pack.base]\ndescription = \"The base.\"\na = \"x\"\n"},
-		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.base] a must be a table, { default = true } or {}\n--- stdout\n"},
+		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.base] a must be a table, {} or { required = true }\n--- stdout\n"},
 	{name: "repo-required-ok", side: source.Repo,
-		over: tree{"repo/packs.toml": "[pack.base]\na = { default = true, required = true }\n"},
+		over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\nb = {}\n"},
 		want: "rc=0\n--- stderr\n--- stdout\ntools: a\nsel:\na - default\ndeps:\nvalues:\n{\"a\":{}}\n"},
 	{name: "repo-required-not-base", side: source.Repo,
-		over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\n[pack.p]\nb = { default = true, required = true }\n"},
-		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.p] b: required = true is only for a member of pack base with default = true\n--- stdout\n"},
-	{name: "repo-required-not-default", side: source.Repo,
-		over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\n"},
-		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.base] a: required = true is only for a member of pack base with default = true\n--- stdout\n"},
+		over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\n[pack.p]\nb = { required = true }\n"},
+		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.p] b: required = true is only for a tool of pack base\n--- stdout\n"},
 	{name: "repo-required-type", side: source.Repo,
-		over: tree{"repo/packs.toml": "[pack.base]\na = { default = true, required = 1 }\n"},
+		over: tree{"repo/packs.toml": "[pack.base]\na = { required = 1 }\n"},
 		want: "rc=2\n--- stderr\nrepo-sync: repo/packs.toml: [pack.base] a: required must be true or false, not int64\n--- stdout\n"},
 	{name: "repo-entries-ok", side: source.Repo,
 		over: tree{
@@ -129,11 +130,14 @@ var formCases = []formCase{
 			"repo-sync: repo/tools/a/tools.toml: scripts/build is not a script of a tool - the scripts are scripts/derive, scripts/check, scripts/after, scripts/detect and scripts/migrate-<tool>\n" +
 			"--- stdout\n"},
 	{name: "macos-no-macos-setup", side: source.Macos,
-		over: tree{"macos/packs.toml": "[pack.base]\nm1 = { default = true }\n"},
+		over: tree{"macos/packs.toml": "[pack.base]\nm1 = { required = true }\n"},
 		want: "rc=0\n--- stderr\n--- stdout\ntools: m1\ninit:\nkeep:\nm1\nvalues:\n{\"m1\":{}}\n"},
 	{name: "macos-required-ok", side: source.Macos,
-		over: tree{"macos/packs.toml": "[pack.base]\nmacos-setup = { default = true, required = true }\nm1 = { default = true }\n"},
+		over: tree{"macos/packs.toml": "[pack.base]\nmacos-setup = { required = true }\nm1 = { required = true }\nm2 = {}\n"},
 		want: "rc=0\n--- stderr\n--- stdout\ntools: m1 macos-setup\ninit:\nkeep:\nmacos-setup\nm1\nvalues:\n{\"m1\":{},\"macos-setup\":{}}\n"},
+	{name: "macos-required-not-base", side: source.Macos,
+		over: tree{"macos/packs.toml": "[pack.base]\nm1 = { required = true }\n[pack.p]\nm2 = { required = true }\n"},
+		want: "rc=2\n--- stderr\nbootstrap: macos/packs.toml: [pack.p] m2: required = true is only for a tool of pack base\n--- stdout\n"},
 	{name: "macos-manifest-keys", side: source.Macos,
 		over: tree{"macos/tools/m1/tools.toml": "description = 1\nparent = \"m2\"\nfoo = 1\n[tasks.\"x\"]\nsource = \"x\"\nrequires_found = [ \"a\" ]\n", "macos/tools/m1/tasks/x": "x"},
 		want: "rc=2\n--- stderr\n" +
@@ -164,5 +168,37 @@ func TestFormCases(t *testing.T) {
 				t.Errorf("%s:\n--- got\n%s\n--- want\n%s", c.name, got, c.want)
 			}
 		})
+	}
+}
+
+func TestMissingTables(t *testing.T) {
+	clone := writeTree(t, repoBase.with(withCatalog(tree{
+		"repo/packs.toml": "[pack.base]\na = { required = true }\nb = { required = true }\nc = { required = true }\nd = { required = true }\n" +
+			"\"pack:p\" = {}\n\n[pack.p]\ne = {}\n",
+		"repo/tools/b/tools.toml": rt("selectable = false\n"),
+		"repo/tools/c/tools.toml": rt("hosts = [ \"windows\", \"linux\" ]\n"),
+		"repo/tools/d/tools.toml": "default_envs = [ \"dev\" ]\ndepends = []\nroot_only = true\n",
+		"repo/tools/e/tools.toml": rt(""),
+	})))
+	idx, err := source.Source{Root: clone, Side: source.Repo}.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := source.GOOS
+	source.GOOS = "darwin"
+	defer func() { source.GOOS = old }()
+	for _, c := range []struct {
+		named map[string]bool
+		sub   bool
+		want  string
+	}{
+		{nil, false, "a d"},
+		{map[string]bool{"a": true}, false, "d"},
+		{nil, true, "a"},
+	} {
+		got, err := MissingTables(idx, BasePack, c.named, c.sub)
+		if err != nil || strings.Join(got, " ") != c.want {
+			t.Errorf("named %v sub %v: %v %v, want %s", c.named, c.sub, got, err, c.want)
+		}
 	}
 }

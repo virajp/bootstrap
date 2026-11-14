@@ -1,3 +1,8 @@
 # A scalar over the list items of the base tool core.
+
+format = 2
+
 [tools.core]
 items = "x"
+
+[tools.mise]

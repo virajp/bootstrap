@@ -1,3 +1,9 @@
 # The selection of the sshdir fixture config.
 
+format = 2
+
 [tools.sshdir]
+
+[tools.core]
+
+[tools.mise]

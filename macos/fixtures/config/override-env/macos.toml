@@ -1,2 +1,8 @@
+format = 2
+
 [overrides.mise_env.dev.env]
 CORE_NAME = "x"
+
+[tools.core]
+
+[tools.mise]

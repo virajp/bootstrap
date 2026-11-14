@@ -3,13 +3,13 @@
 aube, the package manager of a repository that selects it. A repository with a
 `package.json` selects this tool or the [`pnpm`](pnpm.md) tool, not both.
 
-| Property     | Value                                                                    |
-| ------------ | ------------------------------------------------------------------------ |
-| Root only    | No                                                                       |
-| Depends      | `node`                                                                   |
-| Parent       | `node`. `bootstrap replace` changes a tool for another with that parent. |
-| Default envs | dev, ci                                                                  |
-| Seeds        | `aube-workspace.yaml`, only with a `package.json`                        |
+| Property     | Value                                                                                     |
+| ------------ | ----------------------------------------------------------------------------------------- |
+| Root only    | No                                                                                        |
+| Depends      | `node`                                                                                    |
+| Parent       | `node`. `bootstrap replace tool <old> <new>` changes a tool for another with that parent. |
+| Default envs | dev, ci                                                                                   |
+| Seeds        | `aube-workspace.yaml`, only with a `package.json`                                         |
 
 ## When the tool is relevant
 
@@ -47,12 +47,13 @@ selected.
 The sync and the CLI run the scripts of the tool from the clone, and never
 copy them.
 
-| Script                 | Kind    | Use                                                                                                                                                                 |
-| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripts/detect`       | detect  | `match` with an `aube-workspace.yaml`, else `none`.                                                                                                                 |
-| `scripts/migrate-pnpm` | migrate | For `bootstrap replace pnpm aube`. It renames `pnpm-workspace.yaml` to `aube-workspace.yaml`, and converts `pnpm-lock.yaml` to `aube-lock.yaml` with `aube import`. |
+| Script                 | Kind    | Use                                                                                                                                                                      |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `scripts/detect`       | detect  | `match` with an `aube-workspace.yaml`, else `none`.                                                                                                                      |
+| `scripts/migrate-pnpm` | migrate | For `bootstrap replace tool pnpm aube`. It renames `pnpm-workspace.yaml` to `aube-workspace.yaml`, and converts `pnpm-lock.yaml` to `aube-lock.yaml` with `aube import`. |
 
-`bootstrap replace` works only between two tools with the same parent, and
+`bootstrap replace tool <old> <new>` works only between two tools with the same
+parent, and
 only in a work tree without changes that are not committed. `aube import` reads
 `pnpm-lock.yaml` at lockfile version 9 only. For an older version, run a current
 `pnpm install` one time first.
@@ -97,8 +98,8 @@ in the seed:
    exist, `aube-workspace.yaml` wins, so the seed can replace the settings of
    the repository without a message.
 2. To move an adopted repository from pnpm to aube, run
-   `bootstrap replace pnpm aube`. Its migrate script moves the workspace file
-   and the lockfile.
+   `bootstrap replace tool pnpm aube`. Its migrate script moves the workspace
+   file and the lockfile.
 3. Keep an existing `pnpm-lock.yaml` when the user does not want the
    conversion. Do not create `aube-lock.yaml` next to it.
 4. Do not use pnpm and aube on the same `node_modules`. The package manager that

@@ -1,3 +1,5 @@
+format = 2
+
 [tools.contrib-a]
 
 [tools.contrib-c]
@@ -5,3 +7,7 @@
 [tools.owner]
 # The answer to the question token of owner.
 token = "token-1"
+
+[tools.core]
+
+[tools.mise]

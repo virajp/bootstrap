@@ -1,2 +1,8 @@
+format = 2
+
 [overrides.mise.env]
 CORE_NAME = "from-override"
+
+[tools.core]
+
+[tools.mise]

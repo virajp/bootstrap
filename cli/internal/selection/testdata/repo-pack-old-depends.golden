@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-repo-sync: repo/packs.toml: [pack.base] depends is the old format - write each member as <tool> = { default = true } or <tool> = {}
+repo-sync: repo/packs.toml: [pack.base] depends is the old format - write each member as <tool> = {}
 --- stdout

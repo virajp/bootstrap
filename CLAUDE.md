@@ -78,8 +78,9 @@ the adoption. After the adoption, `setup:configs` (`bootstrap sync`) keeps the
 consumer in sync.
 
 - `docs/sync/index.md`: the adoption prompt. It runs
-  `bootstrap questions --json`, then `bootstrap init <tool…> --answer …`, and
-  it brings an adopted repository up to date with `bootstrap init`.
+  `bootstrap questions --json`, then `bootstrap init --answer …` and
+  `bootstrap add tool <tool…> --answer …`, and it brings an adopted
+  repository up to date with `bootstrap init`.
 - `docs/sync/migrate.md`: the items for a repository with older copies.
 - `docs/sync/kotlin-dsl.md`: the static prompt that migrates a Gradle build
   from the Groovy DSL to the Kotlin DSL. `vwf.md` and the "Migration"
@@ -284,20 +285,21 @@ changes a case. See `docs/design/cli.md` ("The config file").
   `bootstrap check` and, for a case that compares a written file,
   `bootstrap sync`, built from the working tree's `cli/`, with the
   working tree's `repo/` and `cli/` against scratch values files and
-  scratch consumers. The init cases run `bootstrap init` on an old values
-  file, and the clone cases run the binary against a local origin. The entry
-  cases run the rendered task `setup:configs` with a fake engine. The config
-  cases point `BOOTSTRAP_CONFIG` or `--config` at a file of the case, or at a
-  missing file. Most of them run `bootstrap config`. The cases of a `verbose`
-  key and of the key `clone` run `bootstrap sync --dry-run`. A case of the
-  default output also runs `bootstrap sync --verbose`. With
-  `BOOTSTRAP_BIN` set to an absolute path, it tests that binary and does not
-  build one. It
-  compares the exit code and the message of each case. It needs no network when
-  gomplate, jq and yq are installed. Before its
-  first `git` call, it unsets the `GIT_*` variables of a git hook, so its
-  scratch repositories never write to this repository. It runs the cases in
-  parallel, one job for each CPU, and each case in its own folder.
+  scratch consumers. The init cases run `bootstrap init` on a new and on an old
+  values file, the selection cases run `bootstrap add tool <tool…>`,
+  `bootstrap add pack <pack…>`, `bootstrap remove tool <tool…>`,
+  `bootstrap replace tool <old> <new>` and `bootstrap detect --add`, and the
+  clone cases run the binary against a local origin. The entry cases run the
+  rendered task `setup:configs` with a fake engine. The config cases point
+  `BOOTSTRAP_CONFIG` or `--config` at a file of the case, or at a missing file.
+  Most of them run `bootstrap config`. The cases of a `verbose` key and of the
+  key `clone` run `bootstrap sync --dry-run`. A case of the default output also
+  runs `bootstrap sync --verbose`. With `BOOTSTRAP_BIN` set to an absolute path,
+  it tests that binary and does not build one. It compares the exit code and the
+  message of each case. It needs no network when gomplate, jq and yq are
+  installed. Before its first `git` call, it unsets the `GIT_*` variables of a
+  git hook, so its scratch repositories never write to this repository. It runs
+  the cases in parallel, one job for each CPU, and each case in its own folder.
 - `test:mac` is the task of this repository in
   `.config/mise/tasks/test/mac`. It runs `bootstrap mac sync`, built
   from the working tree's `cli/`, against the fixtures in

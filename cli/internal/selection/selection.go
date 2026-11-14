@@ -13,9 +13,8 @@ import (
 )
 
 // Entry is one selected tool: `<tool> <env,...|-> <source>`. Src is `default`
-// for the pack base, `packs.<name>` for a tool that a selected pack adds, and
-// `tools.<name>` for a tool that the values file names. A tool can be in the
-// list more than once.
+// for a required member of the pack base, and `tools.<name>` for a tool that
+// the values file names. A tool can be in the list more than once.
 type Entry struct {
 	Tool, Envs, Src string
 }
@@ -28,9 +27,11 @@ func missing(format string, args ...any) *fail.Error {
 	return fail.New(fail.Missing, format, args...)
 }
 
-// Select is `_se_selected`: the tools of the pack <base>, of each `packs` item
-// of <sel>, and of each `tools` item of <sel>. It examines every pack of the
-// packs file first. The error is one message, with code 2 or 3.
+// Select is `_se_selected`: the required members of the pack <base>, then
+// each `tools` item of <sel>. The values file keeps no record of a pack, so a
+// `packs` item adds nothing. It examines every pack of the packs file first.
+// A packs file without the pack <base>, or no packs file, stops it with code
+// 3. The error is one message, with code 2 or 3.
 func Select(src source.Source, base string, sel []values.Item) ([]Entry, error) {
 	packs, err := src.ReadPacks()
 	if err != nil {
@@ -39,19 +40,12 @@ func Select(src source.Source, base string, sel []values.Item) ([]Entry, error) 
 	if err := CheckPacks(src, packs); err != nil {
 		return nil, err
 	}
-	out, err := Expand(packs, base, "-", "default")
-	if err != nil {
-		return nil, err
+	if !packs.HasPack(base) {
+		return nil, missing("%s is not a bootstrap pack (named in %s)", base, packs.Shown)
 	}
-	for _, it := range sel {
-		if it.Kind != "packs" {
-			continue
-		}
-		more, err := Expand(packs, it.Name, it.Envs, "packs."+it.Name)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, more...)
+	var out []Entry
+	for _, t := range Required(packs, base) {
+		out = append(out, Entry{t, "-", "default"})
 	}
 	for _, it := range sel {
 		if it.Kind == "tools" {
@@ -61,16 +55,28 @@ func Select(src source.Source, base string, sel []values.Item) ([]Entry, error) 
 	return out, nil
 }
 
-// Expand is `_se_pack`: the tools of the pack <name> as entries: its
-// `default = true` members in file order, a `pack:<x>` member expanded in turn.
-// Code 3 for an unknown pack.
+// Required gives the members of the pack <base> with `required = true`, in
+// file order.
+func Required(p *source.Packs, base string) []string {
+	var out []string
+	for _, o := range p.Order {
+		if o.Pack == base && p.Required[base+"/"+o.Key] {
+			out = append(out, o.Key)
+		}
+	}
+	return out
+}
+
+// Expand is `_se_pack`: the tools of the pack <name> as entries: each member
+// in file order, a `pack:<x>` member expanded in turn. Code 3 for an unknown
+// pack.
 func Expand(p *source.Packs, name, envs, srcName string) ([]Entry, error) {
 	if !p.HasPack(name) {
 		return nil, missing("%s is not a bootstrap pack", name)
 	}
 	var out []Entry
 	for _, o := range p.Order {
-		if o.Pack != name || !p.HasMember(name, o.Key, "true") {
+		if o.Pack != name || !p.HasMember(name, o.Key) {
 			continue
 		}
 		if rest, ok := strings.CutPrefix(o.Key, "pack:"); ok {
@@ -122,27 +128,27 @@ func CheckPacks(src source.Source, p *source.Packs) error {
 	for _, b := range p.Bad {
 		switch b.Key + ":" + b.Kind {
 		case "depends:slice", "required:slice", "tools:slice", "default:slice":
-			return usage("%s: [pack.%s] %s is the old format - write each member as <tool> = { default = true } or <tool> = {}", shown, b.Pack, b.Key)
+			return usage("%s: [pack.%s] %s is the old format - write each member as <tool> = {}", shown, b.Pack, b.Key)
 		}
-		return usage("%s: [pack.%s] %s must be a table, { default = true } or {}", shown, b.Pack, b.Key)
+		return usage("%s: [pack.%s] %s must be a table, {} or { required = true }", shown, b.Pack, b.Key)
 	}
 	for _, m := range p.Members {
 		if rest, ok := strings.CutPrefix(m.Key, "p:"); ok {
-			return usage("%s: [pack.%s] \"%s\" is the old form - write \"pack:%s\" = { default = true }", shown, m.Pack, m.Key, rest)
+			return usage("%s: [pack.%s] \"%s\" is the old form - write \"pack:%s\" = {}", shown, m.Pack, m.Key, rest)
 		}
 	}
 	for _, m := range p.Members {
 		if v, ok := strings.CutPrefix(m.State, "bad:key "); ok {
-			return usage("%s: [pack.%s] %s has the entry key '%s' - the entry keys are default and required", shown, m.Pack, m.Key, v)
-		}
-		if v, ok := strings.CutPrefix(m.State, "bad:default "); ok {
-			return usage("%s: [pack.%s] %s: default must be true or false, not %s", shown, m.Pack, m.Key, v)
+			if v == "default" {
+				return usage("%s: [pack.%s] %s has the entry key 'default', the old form - each member is a default: write %s = {}", shown, m.Pack, m.Key, m.Key)
+			}
+			return usage("%s: [pack.%s] %s has the entry key '%s' - a member is {}, or { required = true } in pack %s", shown, m.Pack, m.Key, v, BasePack)
 		}
 		if v, ok := strings.CutPrefix(m.State, "bad:required "); ok {
 			return usage("%s: [pack.%s] %s: required must be true or false, not %s", shown, m.Pack, m.Key, v)
 		}
-		if p.Required[m.Pack+"/"+m.Key] && (m.Pack != BasePack || m.State != "true") {
-			return usage("%s: [pack.%s] %s: required = true is only for a member of pack %s with default = true", shown, m.Pack, m.Key, BasePack)
+		if p.Required[m.Pack+"/"+m.Key] && (m.Pack != BasePack || strings.HasPrefix(m.Key, "pack:")) {
+			return usage("%s: [pack.%s] %s: required = true is only for a tool of pack %s", shown, m.Pack, m.Key, BasePack)
 		}
 	}
 	for _, m := range p.Members {
@@ -235,7 +241,8 @@ func entryTools(sel []Entry) []string {
 	return out
 }
 
-// keepTools gives the base tools (source `default`) and each dependency.
+// keepTools gives the required base tools (source `default`) and each
+// dependency.
 func keepTools(sel []Entry, deps []DepRow) []string {
 	var out []string
 	for _, e := range sel {
@@ -247,4 +254,26 @@ func keepTools(sel []Entry, deps []DepRow) []string {
 		out = append(out, r.Deps...)
 	}
 	return out
+}
+
+// MissingTables gives the required members of the pack <base> that have no
+// `[tools.<name>]` table in <named>, in file order: the tables that a sync
+// writes into the values file. It skips a member whose hosts leave out this
+// host, a member with `selectable = false`, and, when <sub> is true (a git
+// submodule), a `root_only` member.
+func MissingTables(idx *source.Index, base string, named map[string]bool, sub bool) ([]string, error) {
+	packs, err := idx.Source.ReadPacks()
+	if err != nil {
+		return nil, err
+	}
+	host := source.HostName()
+	var out []string
+	for _, t := range Required(packs, base) {
+		m := idx.Manifests[t]
+		if named[t] || m == nil || !m.Selectable || !m.RunsOn(host) || (sub && m.RootOnly) {
+			continue
+		}
+		out = append(out, t)
+	}
+	return out, nil
 }
