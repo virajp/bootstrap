@@ -743,13 +743,13 @@ items=a,b,y,x,"
 items=a,b,x,"
 }
 
-# An opt-in tool: a list in [tools.<name>] replaces the defaults and the
-# contributions.
+# An opt-in tool: a list in [tools.<name>] adds its new items to the defaults
+# and the contributions.
 case_values_opt_in() {
   use_config replace
   run_real
   check_exit 0
-  check_file "$home/.config/owner/config" "$(owner_config "Include ~/z" "" "Host *" \
+  check_file "$home/.config/owner/config" "$(owner_config "Include ~/a" "Include ~/b" "Include ~/z" "" "Host *" \
     "  IdentityAgent agent-a" "nested=default," "# again: agent-a")"
 }
 
@@ -2371,7 +2371,7 @@ run_case "blockers: a file with the header where a folder must be" case_blocker_
 run_case "blockers: a file without the header where a folder must be" case_blocker_plain
 run_case "values: the merge order, a base tool list appends" case_values
 run_case "values: a dependency tool list appends" case_values_dependency
-run_case "values: an opt-in tool list replaces" case_values_opt_in
+run_case "values: an opt-in tool list appends" case_values_opt_in
 run_case "values: an opt-in tool value of another type replaces" case_values_opt_in_type
 run_case "render: ~/.config/mise/** first" case_render_order
 run_case "render: the output equals the source" case_render_exact

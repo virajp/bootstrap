@@ -90,8 +90,9 @@ func replaceMerge(a, b any) any {
 	return b
 }
 
-// contributionMerge: the contributions over [defaults]. Tables merge, lists
-// append, else <b> wins.
+// contributionMerge: the contributions over [defaults], and the user values of
+// a tool that is not a base or dependency tool. Tables merge, lists append,
+// else <b> wins.
 func contributionMerge(a, b any) any {
 	ao, ok1 := a.(*source.Obj)
 	bo, ok2 := b.(*source.Obj)
@@ -415,7 +416,9 @@ func Merge(in Input) (*Result, error) {
 			}
 			v = asObj(kv)
 		} else {
-			v = asObj(replaceMerge(b, user))
+			// Tables merge, a list appends its new items, and any other value
+			// replaces the merged one.
+			v = asObj(contributionMerge(b, user))
 		}
 		// The overrides file wins over all.
 		if in.Overrides != nil && in.Overrides.Has(x.n) {

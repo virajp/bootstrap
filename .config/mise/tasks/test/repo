@@ -2478,14 +2478,14 @@ items = \"b\"" values_vdep 'sets items to a string, but it is a list in the base
 run_case "values: a tool of a mise depends, a list appends" 0 "$vtest_values
 [tools.vdep]
 items = [ \"b\" ]" values_mise_vdep '+vdep config={"items":["a","b"]}'
-run_case "values: another tool, a list replaces and a table merges" 0 "$vtest_values
+run_case "values: another tool, a list appends and a table merges" 0 "$vtest_values
 items = [ \"b\" ]
 [tools.vtest.t]
-b = \"3\"" values_replace '+vtest config={"items":["b"],"t":{"a":"1","b":"3"}}'
-run_case "values: a {} member of pack base, a list replaces" 0 "$vtest_values
-items = [ \"b\" ]" values_empty_base_member '+vtest config={"items":["b"]}'
-run_case "values: a {} member of a nested default pack, a list replaces" 0 "$vtest_values
-items = [ \"b\" ]" values_empty_nested_member '+vtest config={"items":["b"]}'
+b = \"3\"" values_replace '+vtest config={"items":["a","b"],"t":{"a":"1","b":"3"}}'
+run_case "values: a {} member of pack base, a list appends" 0 "$vtest_values
+items = [ \"b\" ]" values_empty_base_member '+vtest config={"items":["a","b"]}'
+run_case "values: a {} member of a nested default pack, a list appends" 0 "$vtest_values
+items = [ \"b\" ]" values_empty_nested_member '+vtest config={"items":["a","b"]}'
 run_case "questions: no question" 2 "$vtest_values" values_question_none \
   'repo/tools/vtest/tools.toml: [questions.q] needs a question string'
 run_case "questions: the key foo" 2 "$vtest_values" values_question_key \

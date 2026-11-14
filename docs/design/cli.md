@@ -1119,8 +1119,11 @@ A value of `[tools.<name>]` of the values file depends on the tool:
   adds included. For such a tool, a list
   appends its new items, tables merge key by key, and a value whose type
   differs from the merged value stops the sync.
-- For any other tool, a value replaces the merged one, and tables merge key by
-  key.
+- For any other tool, a list appends its new items, tables merge key by key,
+  and any other value replaces the merged one.
+
+So a list of the values file never removes an item of `[defaults]` or of a
+contribution. To replace a list, give it in the overrides file.
 
 The overrides file is `<values file name>.overrides.toml` next to the values
 file: `.config/bootstrap.overrides.toml` or `macos.overrides.toml`. It holds
