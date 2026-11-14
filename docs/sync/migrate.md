@@ -1012,15 +1012,18 @@ no `.rs` and no `.go` files in a repository without `rustfmt.toml`.
 
 Now the sync finds each command by its `exts`, and the rustfmt command has no
 `cacheKeyFiles`. The first sync after this change removes the old list, and
-the second sync writes each command again.
+the second sync writes each command again. Commit the first sync before the
+second one.
 
 Do these steps in each repository with an `exec` block in `dprint.jsonc`:
 
 1. Copy the list `exec.commands` of `dprint.jsonc`.
-2. Run `mise run setup:configs` two times.
-3. Make sure that `exec.commands` has one command for each selected tool with
+2. Run `mise run setup:configs`, then commit the result. The next sync does
+   not write a file with changes that are not committed.
+3. Run `mise run setup:configs` again.
+4. Make sure that `exec.commands` has one command for each selected tool with
    a formatter through exec, for example `gofmt` for `go` and `rustfmt` for
    `rust`.
-4. If the copy of step 1 had a command that the repository added, add it
+5. If the copy of step 1 had a command that the repository added, add it
    again. The sync keeps it from now on.
-5. Run `mise run code:format`, then commit the result.
+6. Run `mise run code:format`, then commit the result.
