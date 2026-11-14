@@ -95,6 +95,12 @@ type Model struct {
 	query  string
 	// hints are the categories with a proposal of the detection.
 	hints map[string]bool
+	// det is the last detection of the Detected tab. detecting tells that
+	// the dialog "Detecting ..." shows, and detSeq drops a result that
+	// arrives after esc (D12 d).
+	det       *core.Detection
+	detecting bool
+	detSeq    int
 
 	tabs  []*tab
 	cur   int    // The tab that shows.
@@ -139,7 +145,12 @@ type (
 		state *core.State
 		err   error
 	}
-	tickMsg struct{}
+	tickMsg   struct{}
+	detectMsg struct {
+		seq int
+		d   *core.Detection
+		err error
+	}
 )
 
 // Init is a part of tea.Model. The TUI waits for the size of the terminal.
@@ -225,7 +236,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.tickCmd()
 	case tickMsg:
 		m.tick++
+		if m.detecting && m.modal != nil {
+			m.modal.body = m.detectingBody()
+		}
 		return m, m.tickCmd()
+	case detectMsg:
+		m.detected(msg)
+		return m, nil
 	case tea.KeyPressMsg:
 		if m.phase != ready {
 			if msg.String() == "ctrl+c" {
@@ -262,6 +279,12 @@ func (m *Model) mainKey(msg tea.KeyPressMsg) tea.Cmd {
 		}
 		defer m.afterPacksKey(msg)
 	}
+	if m.cur == detectedTab {
+		if cmd, done := m.detectedKey(msg); done {
+			return cmd
+		}
+		defer m.afterDetectedKey(msg)
+	}
 	switch {
 	case key.Matches(msg, m.keys.Quit):
 		return m.quit()
@@ -284,7 +307,11 @@ func (m *Model) mainKey(msg tea.KeyPressMsg) tea.Cmd {
 		t.onRight = msg.String() == "right"
 		m.tick = 0
 	case key.Matches(msg, m.keys.Tab):
-		m.cur = (m.cur + 1) % len(m.tabs)
+		next := (m.cur + 1) % len(m.tabs)
+		if next == detectedTab {
+			return m.startDetect()
+		}
+		m.cur = next
 		m.tick = 0
 	}
 	return nil
@@ -317,7 +344,7 @@ func (m *Model) quit() tea.Cmd {
 // each key, with the full view of the help component (D4).
 func (m *Model) helpModal() *modal {
 	var body []line
-	for _, l := range strings.Split(m.help.FullHelpView(m.keys.FullHelp()), "\n") {
+	for _, l := range strings.Split(m.help.FullHelpView(m.keys.keysFor(m.cur).FullHelp()), "\n") {
 		body = append(body, line{{text: l, raw: true}})
 	}
 	return &modal{
@@ -412,7 +439,7 @@ func (m *Model) screen() []line {
 	out = append(out, line{styled(strings.Repeat("─", leftW)+"┴"+strings.Repeat("─", rightW), stDim)})
 	out = append(out, t.bottomLines()...)
 	out = append(out, line{styled(strings.Repeat("─", screenW), stDim)})
-	keys := line{{text: m.help.ShortHelpView(m.keys.ShortHelp()), raw: true}}
+	keys := line{{text: m.help.ShortHelpView(m.keys.keysFor(m.cur).ShortHelp()), raw: true}}
 	if m.cur == toolsTab && m.search {
 		keys = line{styled("type to search  ↑↓ move  space select  esc close search", stDim)}
 	}

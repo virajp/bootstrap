@@ -159,8 +159,8 @@
         "U4"
       ],
       "waits": "U5 opens the form from the select of U2 and reviews the changes of the Tools, Packs and Detected tabs of U2, U3 and U4; one unit writes cli/ at a time.",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T11:26:09.180Z",
       "ended": "",
       "commit": "",
       "rounds": 0
@@ -288,8 +288,8 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T11:26:09.136Z",
       "ended": ""
     },
     {

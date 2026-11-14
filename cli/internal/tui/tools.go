@@ -479,13 +479,7 @@ func (m *Model) toolDetail(t string) []line {
 	if len(mf.DefaultEnvs) > 0 {
 		pairs = append(pairs, [2]string{"Envs", strings.Join(mf.DefaultEnvs, ", ")})
 	}
-	for i := 0; i < len(pairs); i += 2 {
-		l := line{styled(" "+fit(pairs[i][0], kvKeyW), stDim), text(fit(pairs[i][1], kvValW))}
-		if i+1 < len(pairs) {
-			l = append(l, styled(" "+fit(pairs[i+1][0], kvKeyW), stDim), text(pairs[i+1][1]))
-		}
-		out = append(out, l)
-	}
+	out = append(out, pairLines(pairs)...)
 	mk, _ := m.markOf(t)
 	switch {
 	case mk == markLocked:
@@ -495,6 +489,19 @@ func (m *Model) toolDetail(t string) []line {
 	}
 	if same := m.sameAs(t); same != "" {
 		out = append(out, line{styled(" Same as: "+same, stDim)})
+	}
+	return out
+}
+
+// pairLines gives the details <pairs> of the bottom pane, two on a line.
+func pairLines(pairs [][2]string) []line {
+	var out []line
+	for i := 0; i < len(pairs); i += 2 {
+		l := line{styled(" "+fit(pairs[i][0], kvKeyW), stDim), text(fit(pairs[i][1], kvValW))}
+		if i+1 < len(pairs) {
+			l = append(l, styled(" "+fit(pairs[i+1][0], kvKeyW), stDim), text(pairs[i+1][1]))
+		}
+		out = append(out, l)
 	}
 	return out
 }
@@ -668,6 +675,7 @@ func (m *Model) setItems(items []core.Item) bool {
 		return false
 	}
 	m.list.Items, m.eff = items, eff
+	m.refreshDetected()
 	m.refreshTools()
 	m.refreshPacks()
 	return true
