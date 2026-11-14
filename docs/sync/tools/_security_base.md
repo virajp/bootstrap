@@ -9,12 +9,17 @@ The common tool of the `security` pack: the `sec` hook. Each scanner of the
 | Depends      | None    |
 | Parent       | None    |
 | Default envs | dev, ci |
+| Selectable   | No      |
 | Seeds        | None    |
 
 ## When the tool is relevant
 
-Always. A scanner of the `security` pack adds this tool. Do not select it in
-the values file. A `[tools._security_base]` table gives values.
+Always. A scanner of the `security` pack (`gitleaks`, `grype` or
+`osv-scanner`) adds this tool. The tool has `selectable = false`:
+`bootstrap init` and `bootstrap add` refuse it by name with code 2, and
+`bootstrap detect` does not propose it. Select a scanner instead. `sync`
+accepts a values file with a `[tools._security_base]` table, and `check` shows
+a warning for it. Remove the table (M37 of `migrate.md`).
 
 ## What the tool ships
 

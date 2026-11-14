@@ -33,6 +33,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | A `setup:configs` that does not run `bootstrap sync`, or an old form that `bootstrap` reports | M34, before the next sync.                                                                                                                              |
 | `version_prefix = "cli-v"` or `version_prefix="cli-v"` in a file of the repository            | M35, before the next sync.                                                                                                                              |
 | A Mac with `[tools.gem]` or `[packs.security]` in `macos.toml`                                | M36, before the next Mac sync.                                                                                                                          |
+| `[tools._security_base]` in the values file                                                   | M37.                                                                                                                                                    |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -892,3 +893,21 @@ The member `1password` of the pack `security` is now `{}`. Thus
    app, add `[tools.1password]`, with its answer `ssh_vault`. Ask the owner
    first.
 3. Run `mise run updateall:configs`.
+
+## M37: `_security_base` is not selectable
+
+The tool `_security_base` now has `selectable = false`. `gitleaks`, `grype` or
+`osv-scanner` selects it, because each of them has it in its `depends`.
+`bootstrap init` and `bootstrap add` refuse it by name with code 2. `sync`
+accepts a values file that names it, and `check` shows this warning:
+`_security_base is not selectable - remove [tools._security_base] from <file>; a
+tool that needs it selects it`.
+
+1. If the values file has a `[tools._security_base]` table, show the user the
+   table, and remove it if the user agrees. If the table has an `env` that the
+   scanners do not have, tell the user first.
+2. Run `mise run setup:configs`. The sync gives the same result.
+3. Do the same in each git submodule.
+
+A Mac needs no change. The Mac git tool now needs one email only, so an empty
+`email_github` or `email_gitlab` in `macos.toml` is valid.
