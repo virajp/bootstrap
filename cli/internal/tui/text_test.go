@@ -79,3 +79,19 @@ func TestWrap(t *testing.T) {
 		t.Errorf("wrap of nothing = %q", got)
 	}
 }
+
+func TestAndList(t *testing.T) {
+	for _, c := range []struct {
+		in   []string
+		want string
+	}{
+		{nil, ""},
+		{[]string{"a"}, "a"},
+		{[]string{"a", "b"}, "a and b"},
+		{[]string{"a", "b", "c"}, "a, b and c"},
+	} {
+		if got := andList(c.in); got != c.want {
+			t.Errorf("andList(%v) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}

@@ -186,3 +186,11 @@ func wrap(s string, w int) []string {
 
 // itoa gives <n> as a decimal text.
 func itoa(n int) string { return strconv.Itoa(n) }
+
+// andList gives the names <l> joined with ", " and a last " and ".
+func andList(l []string) string {
+	if len(l) < 2 {
+		return strings.Join(l, "")
+	}
+	return strings.Join(l[:len(l)-1], ", ") + " and " + l[len(l)-1]
+}

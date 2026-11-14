@@ -273,3 +273,27 @@ func (r macScan) appStoreTool() string {
 func (p Package) IsApp() bool {
 	return p.Kind == kindPackage && strings.HasPrefix(p.Key, prefixApp)
 }
+
+// AppKind is the kind of a Mac tool: what its packages install.
+type AppKind int
+
+// The kinds of a Mac tool.
+const (
+	ConfigOnly  AppKind = iota // No package.
+	TerminalApp                // A brew: key, or a key of [mise.tools].
+	DesktopApp                 // A brew-cask: or a mas: key; also a tool with both kinds.
+)
+
+// KindOf gives the kind of the Mac tool of the tools.toml <raw>.
+func KindOf(raw *source.Obj) AppKind {
+	k := ConfigOnly
+	for _, p := range packageKeys(raw) {
+		switch {
+		case p.Kind == kindTool, strings.HasPrefix(p.Key, prefixFormula):
+			k = TerminalApp
+		case strings.HasPrefix(p.Key, prefixCask), strings.HasPrefix(p.Key, prefixApp):
+			return DesktopApp
+		}
+	}
+	return k
+}

@@ -179,11 +179,11 @@
         "U5"
       ],
       "waits": "U6 adds the Kind line to the bottom pane of U2 and the uninstall notes to the review of U5.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T12:31:33.751Z",
+      "ended": "2026-11-14T12:34:33.331Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U7",
@@ -294,8 +294,8 @@
     },
     {
       "id": "W6",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T12:31:33.713Z",
       "ended": ""
     },
     {

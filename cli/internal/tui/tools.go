@@ -458,6 +458,9 @@ func (m *Model) toolDetail(t string) []line {
 	out = append(out, line{})
 	_, status := m.markOf(t)
 	pairs := [][2]string{{"Status", status}, {"Category", m.categoryTitle(mf.Category)}}
+	if m.opt.Side.Mac {
+		pairs = append(pairs, [2]string{"Kind", kindName(core.KindOf(mf.Raw))})
+	}
 	needs := "nothing"
 	if len(mf.Depends) > 0 {
 		var l []string
@@ -491,6 +494,17 @@ func (m *Model) toolDetail(t string) []line {
 		out = append(out, line{styled(" Same as: "+same, stDim)})
 	}
 	return out
+}
+
+// kindName gives the text of the kind <k> of a Mac tool (ruling 41).
+func kindName(k core.AppKind) string {
+	switch k {
+	case core.TerminalApp:
+		return "terminal app"
+	case core.DesktopApp:
+		return "desktop app"
+	}
+	return "config only"
 }
 
 // pairLines gives the details <pairs> of the bottom pane, two on a line.

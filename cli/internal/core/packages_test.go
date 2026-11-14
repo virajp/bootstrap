@@ -104,3 +104,29 @@ func TestPkgMatch(t *testing.T) {
 		}
 	}
 }
+
+func TestKindOf(t *testing.T) {
+	for _, c := range []struct {
+		body string
+		want AppKind
+	}{
+		{"", ConfigOnly},
+		{"[mise.bootstrap.packages]\n\"brew:bat\" = \"latest\"\n", TerminalApp},
+		{"[mise.tools.uv]\nversion = \"latest\"\n", TerminalApp},
+		{"[mise.bootstrap.packages]\n\"brew-cask:vlc\" = \"latest\"\n", DesktopApp},
+		{"[mise.bootstrap.packages]\n\"mas:409183694\" = \"latest\"\n", DesktopApp},
+		{"[mise.bootstrap.packages]\n\"brew:x\" = \"latest\"\n\"brew-cask:y\" = \"latest\"\n", DesktopApp},
+	} {
+		path := filepath.Join(t.TempDir(), "tools.toml")
+		if err := os.WriteFile(path, []byte("summary = \"x\"\n"+c.body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		raw, err := source.ReadTOML(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := KindOf(raw); got != c.want {
+			t.Errorf("KindOf(%q) = %v, want %v", c.body, got, c.want)
+		}
+	}
+}

@@ -370,12 +370,15 @@ func (m *Model) changeLines() (packs, tools, pkgs []line) {
 			packs = append(packs, changeLine("+", stAdd, strings.Join(it.Names, ", "), "adds "+listOr(added)))
 		case it.Kind == core.RemoveTool && it.Pack != "":
 			packs = append(packs, changeLine("-", stRemove, it.Pack, "removes "+listOr(removed)))
+			packs = append(packs, m.uninstallNotes(removed)...)
 		case it.Kind == core.AddTool:
 			tools = append(tools, m.toolLines("+", stAdd, it.Names, added)...)
 		case it.Kind == core.RemoveTool:
 			tools = append(tools, m.toolLines("-", stRemove, it.Names, removed)...)
+			tools = append(tools, m.uninstallNotes(removed)...)
 		case it.Kind == core.Replace:
 			tools = append(tools, changeLine("-", stRemove, it.Old, "replaced by "+it.New))
+			tools = append(tools, m.uninstallNotes(removed)...)
 			tools = append(tools, changeLine("+", stAdd, it.New, "replaces "+it.Old+"; its migrate script runs first"))
 		case it.Kind == core.AddPackage:
 			pkgs = append(pkgs, changeLine("+", stAdd, it.Package.Key, it.Package.Table()))
@@ -392,6 +395,8 @@ func (m *Model) toolLines(sign string, st lipgloss.Style, names, all []string) [
 		note := ""
 		if keys := m.answerKeys(n); len(keys) > 0 {
 			note = "answers: " + strings.Join(keys, ", ")
+		} else if sign == "-" && m.opt.Side.Mac {
+			note = kindName(core.KindOf(m.manifest(n).Raw))
 		}
 		out = append(out, changeLine(sign, st, n, note))
 	}
@@ -400,6 +405,47 @@ func (m *Model) toolLines(sign string, st lipgloss.Style, names, all []string) [
 			continue
 		}
 		out = append(out, line{styled("     └─ ", stDim), styled(fit(d, chgW-2), st), styled("dependency", stDim)})
+	}
+	return out
+}
+
+// uninstallNotes gives the lines under a change that removes the Mac tools
+// <removed> (ruling 42): the Mac sync uninstalls no app, so a desktop app
+// stays installed, and a terminal app leaves at the next upgrade:brew. A
+// config-only tool and the repo side get no line.
+func (m *Model) uninstallNotes(removed []string) []line {
+	if !m.opt.Side.Mac {
+		return nil
+	}
+	var desk, term []string
+	for _, t := range removed {
+		switch core.KindOf(m.manifest(t).Raw) {
+		case core.DesktopApp:
+			desk = append(desk, t)
+		case core.TerminalApp:
+			term = append(term, t)
+		}
+	}
+	var notes []string
+	switch len(desk) {
+	case 0:
+	case 1:
+		notes = append(notes, desk[0]+" is a desktop app. It stays installed. Uninstall it yourself.")
+	default:
+		notes = append(notes, andList(desk)+" are desktop apps. They stay installed. Uninstall them yourself.")
+	}
+	switch len(term) {
+	case 0:
+	case 1:
+		notes = append(notes, term[0]+" stays installed until the next upgrade:brew, which prunes it.")
+	default:
+		notes = append(notes, andList(term)+" stay installed until the next upgrade:brew, which prunes them.")
+	}
+	var out []line
+	for _, n := range notes {
+		for _, l := range wrap(n, screenW-7) {
+			out = append(out, line{styled("     "+l, stDim)})
+		}
 	}
 	return out
 }
