@@ -9,6 +9,14 @@ summary = "Claude Code, its settings and its tasks"
 # Claude Code rewrites CLAUDE.md, so it is a seed: written once and then owned
 # by the user. settings.json is a shared file: bootstrap adds the keys and list
 # items of its merge spec, and Claude Code owns the rest.
+
+# The own settings of the user, in [tools.claude-cli] of macos.toml. settings
+# is a table of keys for settings.json. lists maps a dotted path, for example
+# "permissions.allow", to the items that the sync adds to that list.
+[defaults]
+lists = {}
+settings = {}
+
 # The claude-cli tool: Claude Code and its aliases.
 [mise.bootstrap.packages]
 "brew-cask:claude-code@latest" = "latest" # Claude Code latest version
