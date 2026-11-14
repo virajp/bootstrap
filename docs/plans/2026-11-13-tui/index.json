@@ -644,6 +644,13 @@
       "units": [
         "U5"
       ]
+    },
+    {
+      "id": "D24",
+      "decision": "Q10: The landing code:merge refuses because its hook safety net fails only the lint hook, on code:lint:60-bootstrap (the inherited failure of G3). May the landing re-run code:merge with SKIP=lint, so the branch merges into main and is pushed?",
+      "ruling": "Re-run code:merge with SKIP=lint — the plan lands and main is pushed; every other lint step (05-linter, 40-go, 90-uv) already passed on this tree, and G3 stays open.",
+      "rejected": "Stop here — nothing merges; the folder goes BLOCKED, the branch all-2026-11-13-1753 waits to be landed by hand once code:lint:60-bootstrap passes, and the all run ends",
+      "units": []
     }
   ]
 }
