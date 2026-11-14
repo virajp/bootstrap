@@ -1,6 +1,8 @@
 # The dprint tool.
 
+category = "dev"
 description = "dprint, the code formatter, and its global config"
+summary = "dprint, the formatter, and its global config"
 
 # The base of the global dprint.jsonc: the top-level settings, the excludes,
 # the blocks of the base formats and their plugins. The global config formats

@@ -1,6 +1,8 @@
 # The obsidian tool: Knowledge base that works on top Markdown files.
 
+category = "notes"
 description = "Knowledge base that works on top Markdown files"
+summary = "Obsidian, notes in Markdown files"
 
 [mise.bootstrap.packages]
 "brew-cask:obsidian" = "latest" # Knowledge base that works on top Markdown files

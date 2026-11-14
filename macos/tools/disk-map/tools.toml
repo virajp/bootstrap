@@ -1,7 +1,9 @@
 # The disk-map tool: Disk Map, from the Mac App Store.
 
+category = "disk"
 depends = [ "mas" ]
 description = "Disk Map, from the Mac App Store"
+summary = "Disk Map, the disk space map"
 
 [mise.bootstrap.packages]
 "mas:715464874" = "latest" # Disk Map

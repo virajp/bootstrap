@@ -1,7 +1,9 @@
 # The final-cut-pro tool: Final Cut Pro, from the Mac App Store.
 
+category = "media"
 depends = [ "mas" ]
 description = "Final Cut Pro, from the Mac App Store"
+summary = "Final Cut Pro, the video editor"
 
 [mise.bootstrap.packages]
 "mas:424389933" = "latest" # Final Cut Pro

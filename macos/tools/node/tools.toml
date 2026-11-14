@@ -2,7 +2,9 @@
 # tables (node LTS through mise, its settings and environment) become
 # ~/.config/mise/conf.d/node/mise.toml. A repository selects its own package
 # manager, so this tool has no pnpm and no pnpm settings.
+category = "dev"
 description = "Node.js (LTS), and the user config of the aube that mise embeds"
+summary = "Node.js (LTS)"
 
 [mise.settings]
 # NodeJS settings

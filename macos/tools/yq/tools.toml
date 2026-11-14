@@ -1,6 +1,8 @@
 # The yq tool: yq, the YAML, JSON and TOML processor.
 
+category = "cli"
 description = "yq, the YAML processor"
+summary = "yq, the YAML processor"
 
 [mise.bootstrap.packages]
 "brew:yq" = "latest" # YAML processor

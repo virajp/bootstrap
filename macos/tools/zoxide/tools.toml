@@ -2,7 +2,9 @@
 # fish, and the cd alias. The [mise.*] tables become
 # ~/.config/mise/conf.d/zoxide/mise.toml.
 
+category = "cli"
 description = "zoxide, the fast directory jumper, its shell init and the cd alias"
+summary = "zoxide, the fast directory jumper"
 
 [mise.bootstrap.packages]
 "brew:zoxide" = "latest" # Fast directory jumper

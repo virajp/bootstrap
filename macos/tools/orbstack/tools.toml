@@ -1,6 +1,8 @@
 # The orbstack tool.
 
+category = "dev"
 description = "OrbStack (Docker and Kubernetes), its env, the docker and kubectl aliases, its fish and zsh init and its ssh Include"
+summary = "OrbStack, for Docker and Kubernetes"
 
 # OrbStack's `orb` SSH host: an Include at the top of ~/.ssh/config, before any
 # Host block. The ssh tool's template places it.

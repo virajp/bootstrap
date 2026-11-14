@@ -1,8 +1,10 @@
 # The ghostty tool. Its config uses the MesloLGS Nerd Font, so it depends on
 # fonts.
 
+category = "shell"
 depends = [ "fonts" ]
 description = "Ghostty, the terminal emulator, and its config"
+summary = "Ghostty, the terminal emulator"
 
 [mise.bootstrap.packages]
 "brew-cask:ghostty" = "latest" # Terminal emulator

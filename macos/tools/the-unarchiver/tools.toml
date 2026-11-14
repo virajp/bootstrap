@@ -1,7 +1,9 @@
 # The the-unarchiver tool: The Unarchiver, from the Mac App Store.
 
+category = "productivity"
 depends = [ "mas" ]
 description = "The Unarchiver, from the Mac App Store"
+summary = "The Unarchiver, which opens archives"
 
 [mise.bootstrap.packages]
 "mas:425424353" = "latest" # The Unarchiver

@@ -1,7 +1,9 @@
 # The vorssaint tool: Menu bar toolkit with keep-awake, system monitor and
 # volume mixer.
 
+category = "productivity"
 description = "Menu bar toolkit with keep-awake, system monitor and volume mixer"
+summary = "Vorssaint, the menu bar toolkit"
 
 [mise.bootstrap.packages]
 "brew-cask:vorssaint" = "latest" # Menu bar toolkit with keep-awake, system monitor and volume mixer

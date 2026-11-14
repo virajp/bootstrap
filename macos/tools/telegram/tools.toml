@@ -1,7 +1,9 @@
 # The telegram tool: Telegram, from the Mac App Store.
 
+category = "chat"
 depends = [ "mas" ]
 description = "Telegram, from the Mac App Store"
+summary = "Telegram, the chat app"
 
 [mise.bootstrap.packages]
 "mas:747648890" = "latest" # Telegram

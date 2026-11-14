@@ -7,8 +7,10 @@
 # It also ships the entry of the Mac sync: the task `updateall:configs`, which
 # runs `bootstrap mac sync`, the task `updateall` and the upgrade tasks, into
 # `~/.config/mise/tasks/`.
+category = "system"
 depends = [ "cli" ]
 description = "mise: its user-level config, its activation in bash, zsh and fish, ~/.zprofile, and the entry tasks of the Mac sync"
+summary = "mise, its config and the Mac sync tasks"
 
 [questions.config_path]
 example = "~/Projects/github.com/janedoe/macos-setup"

@@ -1,6 +1,8 @@
 # The whatsapp tool: Native desktop client for WhatsApp.
 
+category = "chat"
 description = "Native desktop client for WhatsApp"
+summary = "WhatsApp, the chat app"
 
 [mise.bootstrap.packages]
 "brew-cask:whatsapp" = "latest" # Native desktop client for WhatsApp

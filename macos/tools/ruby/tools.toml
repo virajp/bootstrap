@@ -2,7 +2,9 @@
 # uses Ruby to run the hooks of some casks and to build a formula without a
 # bottle. The [mise.*] tables become ~/.config/mise/conf.d/ruby/mise.toml.
 
+category = "dev"
 description = "Ruby through mise, and the RubyGems config (~/.gemrc): no documentation on install and update"
+summary = "Ruby and the RubyGems config"
 
 [mise.tools.ruby]
 version = "latest"

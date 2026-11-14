@@ -1,6 +1,8 @@
 # The httping tool: httping, which pings a web server over HTTP, and the hping alias.
 
+category = "cli"
 description = "httping, which pings a web server over HTTP, and the hping alias"
+summary = "httping, ping over HTTP"
 
 [mise.bootstrap.packages]
 "brew:httping" = "latest" # Ping a web server over HTTP

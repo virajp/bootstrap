@@ -1,6 +1,8 @@
 # The mas tool: the Mac App Store command-line interface. The [mise.*] tables
 # become ~/.config/mise/conf.d/mas/mise.toml.
+category = "system"
 description = "Mac App Store command-line interface"
+summary = "mas, the Mac App Store CLI"
 
 [mise.bootstrap.packages]
 "brew:mas" = "latest" # Mac App Store command-line interface

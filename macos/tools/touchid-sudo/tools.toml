@@ -2,7 +2,9 @@
 # target is outside $HOME, so it is a [bootstrap.files] entry. `mise bootstrap`
 # applies it. The [mise.*] tables become
 # ~/.config/mise/conf.d/touchid-sudo/mise.toml.
+category = "system"
 description = "Touch ID for sudo (/etc/pam.d/sudo_local)"
+summary = "Touch ID for sudo"
 
 # Touch ID for sudo. /etc/pam.d/sudo is overwritten by every macOS update;
 # sudo_local is the drop-in it includes and survives them.

@@ -1,7 +1,9 @@
 # The pstree tool: pstree (shows the process tree), the func:myps task and its
 # myps alias.
 
+category = "cli"
 description = "pstree, the process tree, with the func:myps task and its myps alias"
+summary = "pstree, the process tree"
 
 [mise.bootstrap.packages]
 "brew:pstree" = "latest" # Display process tree

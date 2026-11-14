@@ -3,8 +3,10 @@
 # a tool of its own. The task ips:remoteip runs doggo, so this tool depends on
 # doggo. The [mise.*] tables become ~/.config/mise/conf.d/network/mise.toml.
 
+category = "system"
 depends = [ "doggo" ]
 description = "the ips:* tasks and the IP, DNS and routing aliases"
+summary = "The ips:* tasks and the network aliases"
 
 [mise.shell_alias]
 # IP related shortcuts

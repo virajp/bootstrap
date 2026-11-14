@@ -1,7 +1,9 @@
 # The daisydisk tool: DaisyDisk, from the Mac App Store.
 
+category = "disk"
 depends = [ "mas" ]
 description = "DaisyDisk, from the Mac App Store"
+summary = "DaisyDisk, the disk space analyzer"
 
 [mise.bootstrap.packages]
 "mas:411643860" = "latest" # DaisyDisk

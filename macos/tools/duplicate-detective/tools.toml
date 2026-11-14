@@ -1,7 +1,9 @@
 # The duplicate-detective tool: Duplicate Detective, from the Mac App Store.
 
+category = "disk"
 depends = [ "mas" ]
 description = "Duplicate Detective, from the Mac App Store"
+summary = "Duplicate Detective, the duplicate finder"
 
 [mise.bootstrap.packages]
 "mas:686428787" = "latest" # Duplicate Detective

@@ -1,7 +1,9 @@
 # The magnet tool: Magnet, from the Mac App Store.
 
+category = "productivity"
 depends = [ "mas" ]
 description = "Magnet, from the Mac App Store"
+summary = "Magnet, the window manager"
 
 [mise.bootstrap.packages]
 "mas:441258766" = "latest" # Magnet

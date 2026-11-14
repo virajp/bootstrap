@@ -1,7 +1,9 @@
 # The devtools tool: the development env. lcov is the tool lcov, and the edit
 # alias is in the tool sublime-text.
 
+category = "dev"
 description = "The development env (browser for tests, telemetry opt-out, pre-commit cache, runtime env)"
+summary = "The env of development tools"
 
 # The devtools tool: the development env.
 [mise.env]

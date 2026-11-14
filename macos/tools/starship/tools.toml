@@ -2,7 +2,9 @@
 # files for fish (conf.d/51-prompt.fish) and zsh (02b-starship.zsh, after
 # 02a-zoxide.zsh of cli). bash gets no starship init. The [mise.*] tables become
 # ~/.config/mise/conf.d/starship/mise.toml.
+category = "shell"
 description = "starship prompt, its config and the fish and zsh init drop-ins"
+summary = "starship, the shell prompt"
 
 [mise.bootstrap.packages]
 "brew:starship" = "latest" # Cross-shell prompt

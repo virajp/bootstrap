@@ -6,7 +6,7 @@
 [user]
 	name = <% index .config "name" | required "git: set name in [tools.git] of macos.toml" %>
 	signingkey = <% index .config "signing_key" | required "git: set signing_key in [tools.git] of macos.toml" %>
-	email = <% index .config "email_github" | required "git: set email_github in [tools.git] of macos.toml" %>
+	email = <% or (index .config "email_github" | default "") (index .config "email_gitlab" | default "") %>
 
 # Identity for GitHub
 [includeIf "hasconfig:remote.*.url:https://github.com/**"]

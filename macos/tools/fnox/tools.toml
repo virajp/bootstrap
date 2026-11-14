@@ -1,7 +1,9 @@
 # The fnox tool: fnox and the fnox config (secrets in the macOS
 # Keychain, one profile for each consumer: brew, fnox). The [mise.*] tables
 # become ~/.config/mise/conf.d/fnox/mise.toml.
+category = "passwords"
 description = "fnox: secrets from the macOS Keychain, with a profile per consumer"
+summary = "fnox, secrets from the macOS Keychain"
 
 [mise.bootstrap.packages]
 "brew:fnox" = "latest" # Secret management tool

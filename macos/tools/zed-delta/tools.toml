@@ -1,6 +1,8 @@
 # The zed-delta tool: Multiplayer environment for coding with agents.
 
+category = "ai"
 description = "Multiplayer environment for coding with agents"
+summary = "Zed Delta, coding with AI agents"
 
 [mise.bootstrap.packages]
 "brew-cask:zed-delta" = "latest" # Multiplayer environment for coding with agents

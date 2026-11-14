@@ -1,8 +1,10 @@
 # The superfile tool. Its config previews code with bat and uses zoxide, so it
 # depends on bat and zoxide.
 
+category = "cli"
 depends = [ "bat", "zoxide" ]
 description = "superfile, the terminal file manager, and its config"
+summary = "superfile, the terminal file manager"
 
 # superfile rewrites its config, so it is a shared file: the spec adds only
 # the keys of bootstrap. sidebar_sections is a block, so bootstrap owns the

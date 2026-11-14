@@ -1,6 +1,8 @@
 # The jq tool: jq, the command-line JSON processor.
 
+category = "cli"
 description = "jq, the command-line JSON processor"
+summary = "jq, the JSON processor"
 
 [mise.bootstrap.packages]
 "brew:jq" = "latest" # Command-line JSON processor

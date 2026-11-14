@@ -1,6 +1,8 @@
 # The btop tool: btop, the resource monitor for the terminal.
 
+category = "cli"
 description = "btop, the resource monitor for the terminal"
+summary = "btop, the resource monitor"
 
 [mise.bootstrap.packages]
 "brew:btop" = "latest" # Resource monitor for the terminal

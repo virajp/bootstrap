@@ -1,6 +1,8 @@
 # The opencode tool.
 
+category = "ai"
 description = "OpenCode, the AI coding agent, and its alias"
+summary = "OpenCode, the AI coding agent"
 
 [mise.bootstrap.packages]
 "brew:opencode" = "latest" # OpenCode

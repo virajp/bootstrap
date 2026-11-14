@@ -1,7 +1,9 @@
 # The keynote tool: Keynote, from the Mac App Store.
 
+category = "office"
 depends = [ "mas" ]
 description = "Keynote, from the Mac App Store"
+summary = "Keynote, the presentation app"
 
 [mise.bootstrap.packages]
 "mas:361285480" = "latest" # Keynote

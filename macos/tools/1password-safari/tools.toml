@@ -1,7 +1,9 @@
 # The 1password-safari tool: 1Password for Safari, from the Mac App Store.
 
+category = "passwords"
 depends = [ "mas", "1password" ]
 description = "1Password for Safari, from the Mac App Store"
+summary = "1Password for Safari"
 
 [mise.bootstrap.packages]
 "mas:1569813296" = "latest" # 1Password for Safari

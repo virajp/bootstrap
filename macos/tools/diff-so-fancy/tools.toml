@@ -1,6 +1,8 @@
 # The diff-so-fancy tool: diff-so-fancy, the git diff formatter. The [mise.*]
 # tables become ~/.config/mise/conf.d/diff-so-fancy/mise.toml.
+category = "cli"
 description = "diff-so-fancy, the git diff formatter (the pager of the git config)"
+summary = "diff-so-fancy, the git diff formatter"
 
 [mise.bootstrap.packages]
 "brew:diff-so-fancy" = "latest" # Enhances git diff output

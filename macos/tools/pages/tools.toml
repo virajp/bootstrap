@@ -1,7 +1,9 @@
 # The pages tool: Pages, from the Mac App Store.
 
+category = "office"
 depends = [ "mas" ]
 description = "Pages, from the Mac App Store"
+summary = "Pages, the word processor"
 
 [mise.bootstrap.packages]
 "mas:361309726" = "latest" # Pages
