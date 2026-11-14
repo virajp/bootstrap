@@ -617,5 +617,8 @@
   },
   "gaps": [],
   "overrides": [],
-  "run": {}
+  "run": {
+    "worktree": ".worktrees/all-2026-11-13-1753",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-13-selection-model.jsonl"
+  }
 }
