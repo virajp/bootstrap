@@ -202,14 +202,14 @@
         "U6"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T12:39:10.019Z",
+      "ended": "2026-11-14T12:40:35.143Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "8b28be9",
+        "to": "43f3a25"
       }
     },
     {
@@ -300,9 +300,9 @@
     },
     {
       "id": "W7",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T12:39:09.979Z",
+      "ended": "2026-11-14T12:41:34.050Z"
     },
     {
       "id": "W8",
