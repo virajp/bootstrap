@@ -1,7 +1,10 @@
 # gitleaks: the secret scanner, and code:sec:10-gitleaks.
+category = "security"
 default_envs = [ "dev", "ci" ]
 depends = [ "_security_base" ]
+description = "gitleaks scans the code and the git history for secrets. It adds the code:sec:10-gitleaks task."
 root_only = false
+summary = "Scans the code for secrets"
 
 # The mise config, generated into .config/mise/conf.d/gitleaks/mise.<env>.toml.
 # In dev and ci, because CI runs `code:sec` too.

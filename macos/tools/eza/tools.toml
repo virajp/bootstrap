@@ -1,6 +1,8 @@
 # The eza tool: eza, a modern replacement for ls, and the ls and tree aliases.
 
+category = "cli"
 description = "eza, a modern replacement for ls, and the ls and tree aliases"
+summary = "eza, a modern ls, and its aliases"
 
 [mise.bootstrap.packages]
 "brew:eza" = "latest" # Modern replacement for 'ls'

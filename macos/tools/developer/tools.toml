@@ -1,7 +1,9 @@
 # The developer tool: Developer, from the Mac App Store.
 
+category = "dev"
 depends = [ "mas" ]
 description = "Developer, from the Mac App Store"
+summary = "Developer, the Apple developer app"
 
 [mise.bootstrap.packages]
 "mas:640199958" = "latest" # Developer

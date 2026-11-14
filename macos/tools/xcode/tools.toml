@@ -1,7 +1,9 @@
 # The xcode tool: Xcode, from the Mac App Store.
 
+category = "dev"
 depends = [ "mas" ]
 description = "Xcode, from the Mac App Store"
+summary = "Xcode, for Apple apps"
 
 [mise.bootstrap.packages]
 "mas:497799835" = "latest" # Xcode

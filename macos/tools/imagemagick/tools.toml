@@ -1,6 +1,8 @@
 # The imagemagick tool: ImageMagick, the image manipulation tool.
 
+category = "cli"
 description = "ImageMagick, the image manipulation tool"
+summary = "ImageMagick, the image tool"
 
 [mise.bootstrap.packages]
 "brew:imagemagick" = "latest" # Image manipulation tool

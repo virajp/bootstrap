@@ -3,8 +3,10 @@
 # contributes its agent socket to the ssh config and its signing program to
 # the git config. The vault that holds the SSH keys is a question.
 
+category = "passwords"
 depends = [ "ssh", "git" ]
 description = "1Password (the app) as SSH agent and git commit signer"
+summary = "1Password, the SSH agent and the commit signer"
 
 [questions.ssh_vault]
 detect = "op vault list --format json | jq -r '.[0].name'"

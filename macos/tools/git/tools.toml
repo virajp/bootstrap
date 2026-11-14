@@ -3,8 +3,10 @@
 # includes is `projects_dir` of the cli tool. The [mise.*] tables become
 # ~/.config/mise/conf.d/git/mise.toml.
 
+category = "dev"
 depends = [ "cli", "diff-so-fancy" ]
 description = "git, its global config, the commit identity per forge (GitHub, GitLab) and the git aliases"
+summary = "git, its config and the identity per forge"
 
 [defaults]
 core_editor = "$HOMEBREW_PREFIX/bin/code" # core.editor of .config/git/config
@@ -17,10 +19,13 @@ question = "Which full name signs your git commits?"
 [questions.email_github]
 detect = "gh api user --jq '\"\\(.id)+\\(.login)@users.noreply.github.com\"'"
 example = "1234567+janedoe@users.noreply.github.com"
+group = "email"
+note = "Give at least one email. The SSH key that signs your commits is the same for GitHub and GitLab."
 question = "Which email do your GitHub commits use (your GitHub noreply address keeps your mail private)?"
 
 [questions.email_gitlab]
 example = "12345-janedoe@users.noreply.gitlab.com"
+group = "email"
 question = "Which email do your GitLab commits use (your GitLab noreply address keeps your mail private)?"
 
 [questions.signing_key]

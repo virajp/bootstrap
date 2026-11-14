@@ -1,6 +1,8 @@
 # The openwhispr tool: Voice-to-text dictation with AI agents, and its hotkey.
 
+category = "ai"
 description = "Voice-to-text dictation with AI agents, and its hotkey"
+summary = "OpenWhispr, voice-to-text dictation"
 
 # OpenWhispr rewrites .env at each start, so it is a seed: written once and
 # then owned by the app. The app reads only DICTATION_KEY and ACTIVATION_MODE

@@ -1,6 +1,8 @@
 # The gping tool: gping, ping with a graph.
 
+category = "cli"
 description = "gping, ping with a graph"
+summary = "gping, ping with a graph"
 
 [mise.bootstrap.packages]
 "brew:gping" = "latest" # Ping with a graph

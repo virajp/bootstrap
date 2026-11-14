@@ -1,7 +1,9 @@
 # The disk-doctor tool: Disk Doctor, from the Mac App Store.
 
+category = "disk"
 depends = [ "mas" ]
 description = "Disk Doctor, from the Mac App Store"
+summary = "Disk Doctor, the disk cleaner"
 
 [mise.bootstrap.packages]
 "mas:455970963" = "latest" # Disk Doctor

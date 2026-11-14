@@ -1,8 +1,10 @@
 # The gh tool: the GitHub CLI and its config file. The editor that gh runs is
 # a question. The [mise.*] tables become ~/.config/mise/conf.d/gh/mise.toml.
 
+category = "dev"
 depends = [ "git" ]
 description = "the GitHub CLI (gh) and its config: ssh as git protocol, the editor, the aliases"
+summary = "The GitHub CLI and its config"
 
 [questions.editor]
 detect = "git config --global core.editor"

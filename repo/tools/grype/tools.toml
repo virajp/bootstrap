@@ -1,7 +1,10 @@
 # grype: the dependency scanner, and code:sec:20-grype.
+category = "security"
 default_envs = [ "dev", "ci" ]
 depends = [ "_security_base" ]
+description = "grype scans the dependencies for known vulnerabilities. It adds the code:sec:20-grype task."
 root_only = false
+summary = "Scans the dependencies for vulnerabilities"
 
 # The mise config, generated into .config/mise/conf.d/grype/mise.<env>.toml.
 # In dev and ci, because CI runs `code:sec` too.

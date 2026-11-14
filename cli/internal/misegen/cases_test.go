@@ -15,9 +15,11 @@ func join(maps ...map[string]string) map[string]string {
 	return out
 }
 
-// macosTool gives the tools.toml of a Mac tool of the clone.
+// macosTool gives the tools.toml of a Mac tool of the clone, with the
+// summary and the category that each tool needs.
 func macosTool(name string, lines ...string) map[string]string {
-	return map[string]string{"clone/macos/tools/" + name + "/tools.toml": strings.Join(lines, "\n") + "\n"}
+	head := []string{`summary = "A tool"`, `category = "core"`}
+	return map[string]string{"clone/macos/tools/" + name + "/tools.toml": strings.Join(append(head, lines...), "\n") + "\n"}
 }
 
 // TestMacosCases: the cases of the Mac side, each one a direct call of the

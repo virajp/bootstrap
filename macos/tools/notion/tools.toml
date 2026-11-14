@@ -1,6 +1,8 @@
 # The notion tool: App to write, plan, collaborate, and get organised.
 
+category = "notes"
 description = "App to write, plan, collaborate, and get organised"
+summary = "Notion, the notes and planning app"
 
 [mise.bootstrap.packages]
 "brew-cask:notion" = "latest" # App to write, plan, collaborate, and get organised

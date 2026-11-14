@@ -502,6 +502,19 @@ git aliases.
 - **Question `signing_key`:**
   [`macos/tools/git/tools.toml`](../../macos/tools/git/tools.toml)
 
+`name` and `signing_key` need an answer. `email_github` and `email_gitlab` are
+in the group `email`: give at least one email. The note of `email_github` tells
+the owner that the SSH key that signs the commits is the same for GitHub and
+GitLab. With both emails empty, the sync stops with code 2 and the message
+`the group git.email has no answer in macos.toml`. An empty email changes these
+files:
+
+- `~/.config/git/identity`: `email` is `email_github` when it is not empty,
+  else `email_gitlab`.
+- `~/.config/git/github.config`: no `email` line when `email_github` is empty.
+- `~/.config/git/gitlab.config`: no `email` line when `email_gitlab` is empty.
+- `~/.config/git/allowed_signers`: no signer line for an empty email.
+
 ### `git-tools`
 
 git-tools, more git commands.

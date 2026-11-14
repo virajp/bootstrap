@@ -1,6 +1,8 @@
 # The python tool: Python through mise. uv is the tool uv. The [mise.*] tables
 # become ~/.config/mise/conf.d/python/mise.toml.
+category = "dev"
 description = "Python through mise"
+summary = "Python, through mise"
 
 [mise.settings]
 # Python settings

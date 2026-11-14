@@ -1,6 +1,8 @@
 # The git-tools tool: git-tools, more git commands.
 
+category = "dev"
 description = "git-tools, more git commands"
+summary = "git-tools, more git commands"
 
 [mise.bootstrap.packages]
 "brew:git-tools" = "latest" # Additional Git utilities

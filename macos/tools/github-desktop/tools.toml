@@ -1,6 +1,8 @@
 # The github-desktop tool: GitHub Desktop, the desktop client for GitHub.
 
+category = "dev"
 description = "GitHub Desktop"
+summary = "GitHub Desktop"
 
 [mise.bootstrap.packages]
 "brew-cask:github" = "latest" # Desktop client for GitHub repositories

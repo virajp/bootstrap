@@ -1,7 +1,10 @@
 # git: the shared .gitignore and .gitattributes, the commit convention, the git-config check, the merge tasks and worktrunk.
+category = "core"
 default_envs = [ "dev" ]
 depends = []
+description = "The shared .gitignore and .gitattributes, the commit convention, the git-config check, the merge tasks and worktrunk. Each repository has it."
 root_only = false
+summary = "The shared git config and the merge tasks"
 
 # Git worktree manager (wt).
 [mise.tools.worktrunk]

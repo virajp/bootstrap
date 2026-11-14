@@ -1,6 +1,8 @@
 # The claude-desktop tool: Claude Desktop, the desktop app.
 
+category = "ai"
 description = "Claude Desktop"
+summary = "The Claude desktop app"
 
 [mise.bootstrap.packages]
 "brew-cask:claude" = "latest" # Claude Desktop app

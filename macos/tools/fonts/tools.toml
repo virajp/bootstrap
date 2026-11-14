@@ -1,6 +1,8 @@
 # The fonts tool: the Nerd Fonts casks. The [mise.*] tables become
 # ~/.config/mise/conf.d/fonts/mise.toml.
+category = "system"
 description = "The Nerd Fonts casks (Fira Code, Hack, Iosevka, Iosevka Term, Meslo LG)"
+summary = "The Nerd Fonts for the terminal"
 
 [mise.bootstrap.packages]
 # Font family designed for developers, with a high number of glyphs (e.g. icons from popular 'Nerd Fonts' and 'Font Awesome' sets)

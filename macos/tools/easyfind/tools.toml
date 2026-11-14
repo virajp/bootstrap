@@ -1,6 +1,8 @@
 # The easyfind tool: Find files, folders, or contents in any file.
 
+category = "productivity"
 description = "Find files, folders, or contents in any file"
+summary = "EasyFind, the file search app"
 
 [mise.bootstrap.packages]
 "brew-cask:easyfind" = "latest" # Find files, folders, or contents in any file

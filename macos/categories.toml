@@ -1,0 +1,45 @@
+# The categories of the Mac tools. Each [category.<id>] table has one key,
+# title. The file order is the order of the TUI. Each tools.toml of macos/tools/
+# names one id in its key category. The sync never copies this file. See
+# docs/design/tools.md.
+[category.system]
+title = "System"
+
+[category.shell]
+title = "Shell and terminal"
+
+[category.cli]
+title = "CLI tools"
+
+[category.dev]
+title = "Development"
+
+[category.editors]
+title = "Editors"
+
+[category.ai]
+title = "AI"
+
+[category.browsers]
+title = "Browsers"
+
+[category.passwords]
+title = "Passwords and secrets"
+
+[category.productivity]
+title = "Productivity"
+
+[category.office]
+title = "Office"
+
+[category.notes]
+title = "Notes and reading"
+
+[category.media]
+title = "Media"
+
+[category.chat]
+title = "Chat"
+
+[category.disk]
+title = "Disk"

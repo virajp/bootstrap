@@ -3,8 +3,10 @@
 # `brew` alias runs brew through fnox, so this tool depends on fnox. The
 # [mise.*] tables (the HOMEBREW_* environment and the alias) become
 # ~/.config/mise/conf.d/homebrew/mise.toml.
+category = "system"
 depends = [ "fnox" ]
 description = "Homebrew: its environment, the brew alias, the Brewfile, its upgrade task and its shellenv in bash, zsh and fish"
+summary = "Homebrew, the Brewfile and its upgrade task"
 
 [mise.env]
 # Homebrew behaviour (HOMEBREW_PREFIX stays in shell config: `brew shellenv`

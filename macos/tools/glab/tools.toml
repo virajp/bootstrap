@@ -1,6 +1,8 @@
 # The glab tool: glab, the GitLab CLI.
 
+category = "dev"
 description = "glab, the GitLab CLI"
+summary = "glab, the GitLab CLI"
 
 [mise.bootstrap.packages]
 "brew:glab" = "latest" # GitLab CLI tool

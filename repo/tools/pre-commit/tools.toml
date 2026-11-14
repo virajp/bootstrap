@@ -1,7 +1,10 @@
 # pre-commit: the shared pre-commit config, its setup task and code:precommit.
+category = "core"
 default_envs = [ "dev" ]
 depends = [ "python" ]
+description = "The shared pre-commit config, its setup task and code:precommit. Each repository has it. It needs the python tool."
 root_only = false
+summary = "The shared pre-commit config and its hooks"
 
 # The first items of the top-level `exclude` of the rendered config.
 [defaults]

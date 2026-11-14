@@ -1,8 +1,11 @@
 # Node. A repository with a package.json also selects one package manager: the
 # pnpm or the aube tool.
+category = "languages"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "The Node.js runtime. A repository with a package.json also selects one package manager: pnpm or aube."
 root_only = false
+summary = "The Node.js runtime"
 
 # The VS Code extensions of the tool, in .vscode/extensions.json.
 [contributes.vscode]

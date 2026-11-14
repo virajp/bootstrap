@@ -1,6 +1,8 @@
 # The tree tool: tree, which shows the directory tree.
 
+category = "cli"
 description = "tree, the directory tree"
+summary = "tree, the directory tree"
 
 [mise.bootstrap.packages]
 "brew:tree" = "latest" # Display directory tree

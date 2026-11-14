@@ -313,14 +313,20 @@ changes a case. See `docs/design/cli.md` ("The config file").
   `.config/mise/tasks/test/macos-tools`. It runs `bootstrap mac sync`, built
   from the working tree's `cli/`, with each tool of `macos/tools/` and
   a copy of
-  `macos/examples/macos.toml`, in a temporary `HOME`. It examines four items:
+  `macos/examples/macos.toml`, in a temporary `HOME`. It examines five items:
   no `[files]` table gives `mode = "seed"` to a JSON, YAML or TOML target, the
   example selects each tool and each rendered file parses, an example without
-  the answer `config_path` of `mise` stops the sync with code 2, and a
+  the answer `config_path` of `mise` stops the sync with code 2, a
   mise tool on both sides of `repo/tools/` and `macos/tools/` has one version
-  and one `depends`, and a mise setting on both sides has one value. To change
-  such a value, change it on both sides. An intended
-  difference goes in `drift_allowed` of the task, with a reason. It needs no
+  and one `depends`, a mise setting on both sides has one value, and the
+  git tool needs one email only. To change a mise version, a `depends` or a
+  mise setting, change it on both sides. An intended
+  difference goes in `drift_allowed` of the task, with a reason. In the git
+  cases, an empty `email_github` or an empty `email_gitlab` gets a first run,
+  then a second run with exit 0. After it, `identity` has the other email, the
+  config of the empty email has no email line, and `allowed_signers` has one
+  signer line. Two empty emails stop the sync with code 2 and the message of
+  the group `git.email`. It needs no
   network when gomplate, jq and yq are installed.
 - `test:go` is the task of this repository in `.config/mise/tasks/test/go`.
   It runs `go vet`, a `gofmt` check and `go test` in the Go module of

@@ -2,6 +2,9 @@
 # contrib and conflict configs select it.
 description = "The owner of the contributions of the fixture repo"
 
+category = "dev"
+summary = "The owner of the contributions"
+
 [defaults]
 agent = "default-agent"
 includes = [ "~/a" ]

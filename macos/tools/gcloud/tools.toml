@@ -1,7 +1,9 @@
 # The gcloud tool.
 
+category = "dev"
 depends = [ "python" ]
 description = "The Google Cloud CLI (gcloud) and its env"
+summary = "The Google Cloud CLI"
 
 [mise.tools.gcloud]
 version = "latest"

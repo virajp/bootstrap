@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-12 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-14 — 721c207 b6ce242 3734305 fd5090a a5bd8a8"
   },
   "consent": {
     "merge": true,
@@ -207,11 +207,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-14T01:41:50.533Z",
+      "ended": "2026-11-14T01:45:05.423Z",
+      "commit": "721c207",
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -228,11 +228,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-14T01:41:50.607Z",
+      "ended": "2026-11-14T01:45:05.490Z",
+      "commit": "b6ce242",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -250,11 +250,11 @@
         "U2"
       ],
       "waits": "The engine stops the sync for a real tool without the keys, so U1 and U2 must write them first.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-14T01:49:49.834Z",
+      "ended": "2026-11-14T01:57:14.926Z",
+      "commit": "3734305",
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -270,11 +270,11 @@
         "U3"
       ],
       "waits": "The cases assert the messages of U3, and each scratch tool needs the keys that U3 makes necessary.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-14T02:00:48.817Z",
+      "ended": "2026-11-14T02:27:05.143Z",
+      "commit": "fd5090a",
+      "rounds": 1
     },
     {
       "id": "U5",
@@ -289,14 +289,14 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T02:30:22.990Z",
+      "ended": "2026-11-14T02:31:44.918Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "ee623c3",
+        "to": "69f722c"
       }
     },
     {
@@ -321,11 +321,11 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-14T02:32:35.394Z",
+      "ended": "2026-11-14T02:35:08.516Z",
+      "commit": "a5bd8a8",
+      "rounds": 2
     },
     {
       "id": "U7",
@@ -339,49 +339,49 @@
         "U6"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T02:40:39.924Z",
+      "ended": "2026-11-14T02:41:41.996Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T01:41:50.492Z",
+      "ended": "2026-11-14T01:49:32.317Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T01:49:49.796Z",
+      "ended": "2026-11-14T02:00:35.863Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T02:00:48.782Z",
+      "ended": "2026-11-14T02:30:02.645Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T02:30:22.956Z",
+      "ended": "2026-11-14T02:32:12.539Z"
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T02:32:35.358Z",
+      "ended": "2026-11-14T02:40:18.503Z"
     },
     {
       "id": "W6",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T02:40:39.888Z",
+      "ended": "2026-11-14T02:42:13.168Z"
     }
   ],
   "shared_files": [
@@ -400,32 +400,45 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice, acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-14T02:32:34.768Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice, acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-14T02:32:34.870Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice, acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-14T02:32:34.970Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
-      "started": "",
-      "ended": ""
+      "state": "skipped",
+      "detail": "skipped: no covers (no stamps, registry or environment to reconcile) and no code unit (nothing to persist); no Reconcile commit",
+      "started": "2026-11-14T02:32:35.106Z",
+      "ended": "2026-11-14T02:32:35.141Z"
     }
   },
-  "gaps": [],
-  "overrides": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U3",
+      "stage": "",
+      "text": "R2 docs finding: docs/design/tools.md:146 (a missing categories file is not an error) is falsified and U3 did not report it · handed to the docs unit U6 as a DOCS FALSIFIED line; U6 already owns docs/design/",
+      "state": "closed"
+    }
+  ],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-13-1753"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/all-2026-11-13-1753",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-12-catalog-data.jsonl"

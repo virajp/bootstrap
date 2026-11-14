@@ -150,7 +150,7 @@ func TestFormCases(t *testing.T) {
 			if c.side == source.Macos {
 				base = macosBase
 			}
-			clone := writeTree(t, base.with(c.over))
+			clone := writeTree(t, base.with(withCatalog(c.over)))
 			vdir := t.TempDir()
 			values, shown := filepath.Join(vdir, "bootstrap.toml"), "bootstrap.toml"
 			if c.side == source.Macos {

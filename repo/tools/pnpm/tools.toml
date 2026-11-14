@@ -1,9 +1,12 @@
 # pnpm, the package manager of a repository that selects it. Select this tool or
 # the aube tool, not both.
+category = "package-managers"
 default_envs = [ "dev", "ci" ]
 depends = [ "node" ]
+description = "pnpm, the package manager of a repository that selects it. Select this tool or the aube tool, not both. It needs the node tool."
 parent = "node"
 root_only = false
+summary = "The pnpm package manager for Node"
 
 # A repository without a package.json does not get the pnpm settings.
 # The mise config, generated into .config/mise/conf.d/pnpm/mise.<env>.toml.

@@ -1,6 +1,8 @@
 # The uv tool: uv through mise, with uv as the pipx backend. The [mise.*]
 # tables become ~/.config/mise/conf.d/uv/mise.toml.
+category = "dev"
 description = "uv through mise, with uv as the pipx backend"
+summary = "uv, the Python package manager"
 
 [mise.settings]
 # every pipx: tool installs through uv

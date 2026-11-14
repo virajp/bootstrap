@@ -53,15 +53,17 @@ func (x *Index) catalogRules(tool string) []*fail.Error {
 	at := x.Source.ManifestShown(tool)
 	var out []*fail.Error
 	bad := func(text string) { out = append(out, fail.New(fail.Usage, "%s: %s", at, text)) }
-	if v, has := m.Raw.Lookup("summary"); has {
-		if s, ok := v.(string); !ok || utf8.RuneCountInString(s) > SummaryMax {
-			bad("summary must be a string of 47 characters or fewer")
-		}
+	// A tool needs a summary and a category: a missing key and an empty
+	// string are the same problem.
+	if v, has := m.Raw.Lookup("summary"); !has || v == "" {
+		bad("summary is missing")
+	} else if s, ok := v.(string); !ok || utf8.RuneCountInString(s) > SummaryMax {
+		bad("summary must be a string of 47 characters or fewer")
 	}
-	if v, has := m.Raw.Lookup("category"); has {
-		if _, ok := v.(string); !ok {
-			bad("category must be a string")
-		}
+	if v, has := m.Raw.Lookup("category"); !has || v == "" {
+		bad("category is missing")
+	} else if _, ok := v.(string); !ok {
+		bad("category must be a string")
 	}
 	if v, has := m.Raw.Lookup("selectable"); has {
 		if _, ok := v.(bool); !ok {
@@ -191,8 +193,8 @@ func (s Source) ReadCategories() (*Categories, []*fail.Error) {
 // categoryRule examines the category of <tool> against the categories file.
 func (x *Index) categoryRule(tool string) []*fail.Error {
 	m := x.Manifests[tool]
-	if m.Category == "" && !m.Raw.Has("category") {
-		return nil
+	if m.Category == "" {
+		return nil // catalogRules names a missing category.
 	}
 	if _, ok := m.Raw.Get("category").(string); !ok {
 		return nil // catalogRules names the type.

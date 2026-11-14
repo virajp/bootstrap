@@ -1,6 +1,8 @@
 # The taskexplorer tool: Explore running tasks (processes).
 
+category = "productivity"
 description = "Explore running tasks (processes)"
+summary = "TaskExplorer, which shows the processes"
 
 [mise.bootstrap.packages]
 "brew-cask:taskexplorer" = "latest" # Explore running tasks (processes)

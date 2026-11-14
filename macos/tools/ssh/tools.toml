@@ -4,7 +4,9 @@
 # placed inside `Host *`, for example 1Password's). The ssh user is a question.
 # This tool has no [mise.*] tables.
 
+category = "system"
 description = "the ssh client config: Host * defaults, the default user, the includes and the agent that other tools contribute"
+summary = "The ssh client config"
 
 [questions.user]
 detect = "id -un"

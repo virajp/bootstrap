@@ -1,8 +1,10 @@
 # The claude-cli tool: Claude Code, its ~/.claude files (settings, CLAUDE.md,
 # output styles), the func:claude and upgrade:ai tasks and the cc* aliases.
 
+category = "ai"
 depends = [ "cli" ]
 description = "Claude Code: its settings, CLAUDE.md, output styles, the func:claude and upgrade:ai tasks and the cc* aliases"
+summary = "Claude Code, its settings and its tasks"
 
 # Claude Code rewrites CLAUDE.md, so it is a seed: written once and then owned
 # by the user. settings.json is a shared file: bootstrap adds the keys and list

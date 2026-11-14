@@ -1,6 +1,8 @@
 # The coreutils tool: coreutils, the GNU core utilities.
 
+category = "cli"
 description = "coreutils, the GNU core utilities"
+summary = "The GNU core utilities"
 
 [mise.bootstrap.packages]
 "brew:coreutils" = "latest" # GNU core utilities

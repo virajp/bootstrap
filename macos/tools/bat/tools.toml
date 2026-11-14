@@ -1,6 +1,8 @@
 # The bat tool: bat, an alternative to cat, and its alias.
 
+category = "cli"
 description = "bat, an alternative to cat, and its alias"
+summary = "bat, cat with syntax highlighting"
 
 [mise.bootstrap.packages]
 "brew:bat" = "latest" # Alternative to cat

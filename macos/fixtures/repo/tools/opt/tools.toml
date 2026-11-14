@@ -1,6 +1,9 @@
 # The opt tool of the fixture repo, in pack extra.
 depends = [ "core" ]
 
+category = "dev"
+summary = "The opt tool of the fixture repo"
+
 [defaults]
 level = "default-level"
 

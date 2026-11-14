@@ -1,4 +1,7 @@
 # Contributes an item to the merge target of merger.
 
+category = "dev"
+summary = "Contributes an item to merger"
+
 [contributes.merger]
 items = [ "z" ]

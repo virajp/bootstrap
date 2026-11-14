@@ -146,8 +146,10 @@ transitively.
   examines each `[pack.*]` table too.
 - A Mac `tools.toml` accepts the catalog keys `description`, `summary`,
   `category` and `selectable`, with the rules of
-  [tools.md](tools.md#the-catalog-keys). Its `category` names an id of
-  `macos/categories.toml`. `hosts` is for repo tools only, and it stops the
+  [tools.md](tools.md#the-catalog-keys). `summary` and `category` are
+  necessary: a tool without one of them stops the sync with code 2. Its
+  `category` names an id of `macos/categories.toml`. `hosts` is for repo tools
+  only, and it stops the
   sync with `hosts is for repo tools only`.
 - `mac init`, `mac add` and `mac replace` refuse a named tool with
   `selectable = false`, and `mac check` shows a warning for it. See

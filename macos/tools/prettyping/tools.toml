@@ -1,6 +1,8 @@
 # The prettyping tool: prettyping, an enhanced ping, and the ping alias.
 
+category = "cli"
 description = "prettyping, an enhanced ping, and the ping alias"
+summary = "prettyping, a better ping"
 
 [mise.bootstrap.packages]
 "brew:prettyping" = "latest" # Enhanced ping with visual output

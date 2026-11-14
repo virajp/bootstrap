@@ -1,6 +1,8 @@
 # The warp tool: Rust-based terminal.
 
+category = "shell"
 description = "Rust-based terminal"
+summary = "Warp, the terminal"
 
 [mise.bootstrap.packages]
 "brew-cask:warp" = "latest" # Rust-based terminal

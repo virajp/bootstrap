@@ -1,7 +1,10 @@
 # The Android SDK command-line tools.
+category = "languages"
 default_envs = [ "dev", "ci" ]
 depends = [ "java" ]
+description = "The Android SDK command-line tools. It needs the java tool."
 root_only = false
+summary = "The Android SDK command-line tools"
 
 # The mise config, generated into .config/mise/conf.d/android/mise.<env>.toml.
 [mise.tools.android-sdk]

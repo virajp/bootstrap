@@ -1,0 +1,33 @@
+# The categories of the repo tools. Each [category.<id>] table has one key,
+# title. The file order is the order of the TUI. Each tools.toml of repo/tools/
+# names one id in its key category. The sync never copies this file. See
+# docs/design/tools.md.
+[category.core]
+title = "Core"
+
+[category.format-lint]
+title = "Format and lint"
+
+[category.editor-ai]
+title = "Editor and AI"
+
+[category.languages]
+title = "Languages"
+
+[category.package-managers]
+title = "Package managers"
+
+[category.security]
+title = "Security"
+
+[category.secrets]
+title = "Secrets"
+
+[category.containers]
+title = "Containers"
+
+[category.cloud]
+title = "Cloud and deploy"
+
+[category.forge]
+title = "Forge"

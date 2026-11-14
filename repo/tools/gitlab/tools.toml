@@ -1,7 +1,10 @@
 # GitLab: the glab CLI, and the issue and merge request templates.
+category = "forge"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "The glab CLI, and the issue and merge request templates of GitLab."
 root_only = false
+summary = "The glab CLI and the GitLab templates"
 
 # `glab ci lint` asks the GitLab API, so it needs the network and `glab auth`.
 [[contributes.pre-commit.repos]]

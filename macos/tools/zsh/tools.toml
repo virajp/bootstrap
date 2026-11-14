@@ -4,9 +4,11 @@
 # mise tool. The fzf-tab plugin of 98-zinit.zsh needs fzf, so this tool depends
 # on fzf. The [mise.*] tables install Homebrew's zsh and zinit and add zsh to
 # /etc/shells. They become ~/.config/mise/conf.d/zsh/mise.toml.
+category = "shell"
 depends = [ "fzf", "homebrew", "mise" ]
 description = "zsh from Homebrew with zinit, its rc files and its drop-in folder ~/.config/zsh/"
 stage = "init"
+summary = "zsh, with zinit and its rc files"
 
 [mise.bootstrap.packages]
 "brew:zinit" = "latest" # Zsh plugin manager

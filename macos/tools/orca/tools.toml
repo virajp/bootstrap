@@ -1,6 +1,8 @@
 # The orca tool: Orchestrating AI coding agents.
 
+category = "ai"
 description = "Orchestrating AI coding agents"
+summary = "Orca, which runs AI coding agents"
 
 [mise.bootstrap.brew.taps]
 "stablyai/orca" = "https://github.com/stablyai/homebrew-orca.git"

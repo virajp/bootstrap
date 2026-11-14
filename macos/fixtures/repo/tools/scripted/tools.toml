@@ -1,6 +1,8 @@
 # The scripted tool of the fixture repo: a derive, a check and an after script.
 
+category = "dev"
 description = "a tool with scripts"
+summary = "A tool with scripts"
 
 [defaults]
 word = "default"

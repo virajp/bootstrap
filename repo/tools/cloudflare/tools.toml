@@ -1,7 +1,10 @@
 # The Cloudflare CLI (npm:cf).
+category = "cloud"
 default_envs = [ "dev", "ci" ]
 depends = [ "node" ]
+description = "The Cloudflare CLI (npm:cf). It needs the node tool."
 root_only = false
+summary = "The Cloudflare CLI"
 
 # The mise config, generated into .config/mise/conf.d/cloudflare/mise.<env>.toml.
 [mise.tools."npm:cf"]

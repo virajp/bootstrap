@@ -1,7 +1,9 @@
 # The transporter tool: Transporter, from the Mac App Store.
 
+category = "dev"
 depends = [ "mas" ]
 description = "Transporter, from the Mac App Store"
+summary = "Transporter, which uploads apps to Apple"
 
 [mise.bootstrap.packages]
 "mas:1450874784" = "latest" # Transporter

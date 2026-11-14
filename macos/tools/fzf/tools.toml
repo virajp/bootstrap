@@ -1,6 +1,8 @@
 # The fzf tool: fzf, the command-line fuzzy finder.
 
+category = "cli"
 description = "fzf, the command-line fuzzy finder"
+summary = "fzf, the fuzzy finder"
 
 [mise.bootstrap.packages]
 "brew:fzf" = "latest" # Command-line fuzzy finder

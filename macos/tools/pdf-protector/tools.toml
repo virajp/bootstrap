@@ -1,7 +1,9 @@
 # The pdf-protector tool: PDF Protector, from the Mac App Store.
 
+category = "notes"
 depends = [ "mas" ]
 description = "PDF Protector, from the Mac App Store"
+summary = "PDF Protector, which locks PDF files"
 
 [mise.bootstrap.packages]
 "mas:566631581" = "latest" # PDF Protector

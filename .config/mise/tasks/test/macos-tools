@@ -17,7 +17,11 @@
 # both sides of repo/tools/ and macos/tools/ has one version and one `depends`, a
 # mise setting on both sides has one value, and a fixture proves that the check
 # finds a difference. Case 4: `bootstrap mac init` migrates the example in its
-# old form ([tools.macos-setup]), then `bootstrap mac sync` runs.
+# old form ([tools.macos-setup]), then `bootstrap mac sync` runs. Case 5: the
+# git tool needs one email only: with email_gitlab or email_github empty, the
+# sync exits 0, identity has the other email, the config of the empty one has
+# no email line, and allowed_signers has one signer line; with both empty, the
+# sync exits 2 with the message of the group git.email.
 
 set -euo pipefail
 
@@ -274,6 +278,62 @@ fi
 commit_config
 run_real
 check_exit 0
+
+# ---- case 5: the git tool needs one email only ---------------------------------
+
+email_github=$(sed -n 's/^email_github = "\(.*\)"$/\1/p' "$example")
+email_gitlab=$(sed -n 's/^email_gitlab = "\(.*\)"$/\1/p' "$example")
+
+# empty_email <key>...: the copy of the example, with "" as the answer of each
+# <key> of [tools.git].
+empty_email() {
+  local key
+  cp -- "$example" "$dir/macos.toml"
+  for key in "$@"; do
+    sed "s/^$key = .*$/$key = \"\"/" "$dir/macos.toml" > "$dir/macos.toml.new"
+    mv -- "$dir/macos.toml.new" "$dir/macos.toml"
+  done
+  cp -- "$dir/macos.toml" "$MACOS_SETUP_REPO_PATH/macos.toml"
+  commit_config
+}
+
+# check_file <message> <command>...: pass when the command succeeds.
+check_file() {
+  local message=$1
+  shift
+  if "$@"; then pass "$message"; else fail "not: $message"; fi
+}
+has_line() { grep -qxF -- "$1" "$2"; }
+no_email_line() { ! grep -qE '^[[:space:]]*email[[:space:]]*=' "$1"; }
+# one_signer <file>: one signer line; the two header comment lines do not count.
+one_signer() { [[ $(grep -cvE '^(#|$)' "$1") == 1 ]]; }
+
+# git_email_case <name> <folder> <empty key> <email of identity> <config of the
+# empty key>: two real runs, as in case 1, with one email empty.
+git_email_case() {
+  setup_case "$1" "$2"
+  empty_email "$3"
+  run_real
+  check_exit "$first_exit"
+  run_real
+  check_exit 0
+  check_file "identity has the email $4" has_line "${tab}email = $4" "$home/.config/git/identity"
+  check_file "$5 has no email line" no_email_line "$home/.config/git/$5"
+  check_file "allowed_signers has one signer line" one_signer "$home/.config/git/allowed_signers"
+}
+tab=$'\t'
+git_email_case "git: email_gitlab empty" git-no-gitlab email_gitlab "$email_github" gitlab.config
+git_email_case "git: email_github empty" git-no-github email_github "$email_gitlab" github.config
+
+setup_case "git: both emails empty" git-no-email
+empty_email email_github email_gitlab
+run_real
+check_exit 2
+if grep -qF 'the group git.email has no answer in macos.toml' "$log"; then
+  pass "the message names the group"
+else
+  fail "the message does not name the group 'git.email'"
+fi
 
 # ---- case 3: the two sides agree on a shared mise tool and setting --------------
 

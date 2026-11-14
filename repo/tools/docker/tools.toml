@@ -1,7 +1,10 @@
 # Local services in .tools/docker-compose.yaml, run by setup:external:*.
+category = "containers"
 default_envs = [ "dev" ]
 depends = []
+description = "Local services in .tools/docker-compose.yaml. The setup:external:* tasks start and stop them."
 root_only = true
+summary = "Local services with Docker Compose"
 
 # The dprint block and plugin of Dockerfiles, in dprint.jsonc.
 [contributes.dprint]

@@ -1,6 +1,8 @@
 # The google-chrome tool: Google Chrome, the web browser.
 
+category = "browsers"
 description = "Google Chrome"
+summary = "The Google Chrome web browser"
 
 [mise.bootstrap.packages]
 "brew-cask:google-chrome" = "latest" # Google Chrome

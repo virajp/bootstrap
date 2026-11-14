@@ -1,7 +1,10 @@
 # crane, which operates on container images and registries.
+category = "containers"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "crane operates on container images and registries: it copies, examines and changes images with no Docker daemon."
 root_only = false
+summary = "Operates on container images and registries"
 
 # The mise config, generated into .config/mise/conf.d/crane/mise.<env>.toml.
 [mise.tools.crane]

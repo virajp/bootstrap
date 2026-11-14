@@ -1,5 +1,8 @@
 # The appcmd tool of the fixture repo: it installs the command of the App Store
 # apps, so mac detect adds it with a mas: app. No pack has it.
 
+category = "dev"
+summary = "The App Store command of the fixture repo"
+
 [mise.bootstrap.packages]
 "brew:mas" = "latest"

@@ -1,7 +1,9 @@
 # The testflight tool: TestFlight, from the Mac App Store.
 
+category = "dev"
 depends = [ "mas" ]
 description = "TestFlight, from the Mac App Store"
+summary = "TestFlight, for beta apps"
 
 [mise.bootstrap.packages]
 "mas:899247664" = "latest" # TestFlight

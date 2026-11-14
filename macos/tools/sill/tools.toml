@@ -1,6 +1,8 @@
 # The sill tool: Sill menu bar app.
 
+category = "productivity"
 description = "Sill menu bar app"
+summary = "Sill, the menu bar app"
 
 [mise.bootstrap.brew.taps]
 "saffsanity/sill" = "https://github.com/saffsanity/homebrew-sill.git"

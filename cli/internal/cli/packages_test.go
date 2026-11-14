@@ -45,6 +45,8 @@ func TestParseMiseTools(t *testing.T) {
 func TestPackageKeys(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tools.toml")
 	text := `description = "x"
+summary = "x"
+category = "core"
 
 [mise.bootstrap.packages]
 "brew:bat" = "latest"

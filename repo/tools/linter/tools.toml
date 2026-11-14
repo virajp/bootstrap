@@ -1,7 +1,10 @@
 # linter: the house linter and ShellCheck, code:lint and setup:linter.
+category = "format-lint"
 default_envs = [ "dev", "ci" ]
 depends = [ "node" ]
+description = "The house linter and ShellCheck, with the code:lint and setup:linter tasks. It needs the node tool."
 root_only = false
+summary = "The house linter and ShellCheck"
 
 # The gate hooks are tool-neutral: each names a task and nothing else. Which
 # linters run is decided inside the task, so a hook and CI cannot drift apart.

@@ -1,7 +1,9 @@
 # The cardhop tool: Cardhop, from the Mac App Store.
 
+category = "productivity"
 depends = [ "mas" ]
 description = "Cardhop, from the Mac App Store"
+summary = "Cardhop, the contacts app"
 
 [mise.bootstrap.packages]
 "mas:1290358394" = "latest" # Cardhop

@@ -1,7 +1,10 @@
 # Secrets from .config/fnox.toml, checked by setup:secrets:20-fnox.
+category = "secrets"
 default_envs = [ "dev" ]
 depends = []
+description = "Secrets from .config/fnox.toml. The setup:secrets:20-fnox task examines them."
 root_only = false
+summary = "Secrets from .config/fnox.toml"
 
 # The mise config, generated into .config/mise/conf.d/fnox/mise.<env>.toml.
 # Fnox resolves the repo's secrets from the providers in .config/fnox.toml.

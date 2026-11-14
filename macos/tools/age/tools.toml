@@ -1,6 +1,8 @@
 # The age tool: age, the encryption tool.
 
+category = "passwords"
 description = "age, the encryption tool"
+summary = "age, the file encryption tool"
 
 [mise.bootstrap.packages]
 "brew:age" = "latest" # Encryption tool

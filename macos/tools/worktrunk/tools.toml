@@ -1,8 +1,10 @@
 # The worktrunk tool: worktrunk, a manager of git worktrees, through mise. It
 # depends on the git tool.
 
+category = "dev"
 depends = [ "git" ]
 description = "worktrunk, a manager of git worktrees"
+summary = "worktrunk, the manager of git worktrees"
 
 [mise.tools.worktrunk]
 version = "latest"

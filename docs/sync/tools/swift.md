@@ -10,9 +10,15 @@ Xcode tasks.
 | Depends      | None                                                 |
 | Parent       | None                                                 |
 | Default envs | dev                                                  |
+| Hosts        | macos                                                |
 | Seeds        | `.config/swiftlint.yml`, `.config/swift-format.json` |
 
 ## When the tool is relevant
+
+The tool has `hosts = ["macos"]`. `bootstrap init`, `bootstrap add` and the
+new tool of `bootstrap replace` refuse it on a host that is not macOS, and
+`bootstrap detect` does not propose it there. `sync` and `check` do not examine
+`hosts`, so a Linux CI job still syncs a repository that has the tool.
 
 - The repository has `Package.swift` or an `*.xcodeproj`.
 - The repository has the `ios/` or `macos/` folder of a Flutter app.

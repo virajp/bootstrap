@@ -1,7 +1,10 @@
 # melange, which builds apk packages from a declarative pipeline.
+category = "containers"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "melange builds apk packages from a declarative pipeline, for apko images."
 root_only = false
+summary = "Builds apk packages from a pipeline"
 
 # The mise config, generated into .config/mise/conf.d/melange/mise.<env>.toml.
 [mise.tools.melange]

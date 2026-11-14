@@ -1,7 +1,9 @@
 # The pdf-squeezer tool: PDF Squeezer, from the Mac App Store.
 
+category = "notes"
 depends = [ "mas" ]
 description = "PDF Squeezer, from the Mac App Store"
+summary = "PDF Squeezer, which makes PDF files smaller"
 
 [mise.bootstrap.packages]
 "mas:1502111349" = "latest" # PDF Squeezer

@@ -1,7 +1,9 @@
 # The sshdir tool of the fixture repo: two targets below ~/.ssh, for the mode of
 # that folder.
 
+category = "dev"
 description = "two targets below the ssh folder"
+summary = "Two targets below the ssh folder"
 
 # The files of the tool, below files/.
 [files.".ssh/config"]

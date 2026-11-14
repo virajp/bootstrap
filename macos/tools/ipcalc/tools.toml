@@ -1,6 +1,8 @@
 # The ipcalc tool: ipcalc, the IP address calculator.
 
+category = "cli"
 description = "ipcalc, the IP address calculator"
+summary = "ipcalc, the IP address calculator"
 
 [mise.bootstrap.packages]
 "brew:ipcalc" = "latest" # IP address calculator

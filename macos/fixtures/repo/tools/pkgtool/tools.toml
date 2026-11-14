@@ -1,6 +1,9 @@
 # The pkgtool tool of the fixture repo: a formula, a cask and a mise tool, for
 # the package scan of mac detect. No pack has it.
 
+category = "dev"
+summary = "The package scan tool of the fixture repo"
+
 [mise.bootstrap.packages]
 "brew-cask:pkgcask" = "latest"
 "brew:pkgfmla" = "latest"

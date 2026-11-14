@@ -3,7 +3,9 @@
 # become ~/.config/mise/conf.d/cli/mise.toml. `projects_dir` is the projects
 # folder that git and mise read too. Each command-line package is a tool of its
 # own (packs base and cli-extras).
+category = "cli"
 description = "the projects folder, the generic aliases and the func:*, cleanupDS and keychain:delete tasks"
+summary = "The projects folder, the aliases and func:*"
 
 [defaults]
 projects_dir = "~/Projects" # holds github.com/<user>/<repo>, gitlab.com/…

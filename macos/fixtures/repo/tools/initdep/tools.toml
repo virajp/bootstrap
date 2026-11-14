@@ -1,6 +1,9 @@
 # A tool with no stage of its own; it is in the init stage because the init
 # tool depends on it.
 
+category = "dev"
+summary = "The dependency of the init tool"
+
 [defaults]
 items = [ "a", "b" ]
 

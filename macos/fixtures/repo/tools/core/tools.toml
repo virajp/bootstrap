@@ -1,5 +1,8 @@
 # The core tool of the fixture repo, in pack base.
 
+category = "dev"
+summary = "The core tool of the fixture repo"
+
 [defaults]
 items = [ "a", "b" ]
 name = "default-name"

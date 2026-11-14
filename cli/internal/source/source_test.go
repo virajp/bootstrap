@@ -23,7 +23,9 @@ func write(t *testing.T, root string, files map[string]string) {
 func TestEntries(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, map[string]string{
-		"macos/tools/a/tools.toml": `
+		"macos/categories.toml": "[category.core]\ntitle = \"Core\"\n",
+		"macos/tools/a/tools.toml": `summary = "A"
+category = "core"
 [files."x.txt"]
 source = "x.txt"
 [files.".config/y.json"]
@@ -48,7 +50,8 @@ source = "run-it"
 		"macos/tools/a/files/s.md":        "s",
 		"macos/tools/a/tasks/lib":         "l",
 		"macos/tools/a/tasks/run-it":      "r",
-		"macos/tools/b/tools.toml": `
+		"macos/tools/b/tools.toml": `summary = "B"
+category = "core"
 [files."x"]
 source = "x"
 mode = "copy"

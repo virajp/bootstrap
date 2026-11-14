@@ -1,7 +1,10 @@
 # Flutter and Dart. Needs android-sdk, from the android tool.
+category = "languages"
 default_envs = [ "dev", "ci" ]
 depends = [ "android" ]
+description = "Flutter and Dart. It needs the android tool for the Android SDK."
 root_only = false
+summary = "Flutter and Dart"
 
 # The VS Code extensions of the tool, in .vscode/extensions.json.
 [contributes.vscode]

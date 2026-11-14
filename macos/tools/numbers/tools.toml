@@ -1,7 +1,9 @@
 # The numbers tool: Numbers, from the Mac App Store.
 
+category = "office"
 depends = [ "mas" ]
 description = "Numbers, from the Mac App Store"
+summary = "Numbers, the spreadsheet app"
 
 [mise.bootstrap.packages]
 "mas:361304891" = "latest" # Numbers

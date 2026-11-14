@@ -1,7 +1,10 @@
 # apko, which builds OCI images from apk packages.
+category = "containers"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "apko builds OCI container images from apk packages, from a declarative config."
 root_only = false
+summary = "Builds OCI images from apk packages"
 
 # The mise config, generated into .config/mise/conf.d/apko/mise.<env>.toml.
 [mise.tools.apko]

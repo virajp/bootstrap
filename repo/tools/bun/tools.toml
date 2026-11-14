@@ -1,7 +1,10 @@
 # Bun, with a bunfig.toml that the repository owns.
+category = "languages"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "The Bun runtime and package manager. The repository owns its bunfig.toml."
 root_only = false
+summary = "The Bun runtime and package manager"
 
 # The dprint blocks and plugins of TypeScript, markup and Tailwind CSS, in
 # dprint.jsonc.
