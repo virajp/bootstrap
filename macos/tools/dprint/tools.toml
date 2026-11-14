@@ -64,6 +64,10 @@ spaceRedirects = true
 switchCaseIndent = true
 useTabs = false
 
+# The VS Code extensions of the tool, when visual-studio-code is selected.
+[contributes.visual-studio-code]
+extensions = [ "dprint.dprint" ]
+
 [mise.tools.dprint]
 version = "latest"
 

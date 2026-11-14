@@ -8,6 +8,10 @@ description = "bash from Homebrew, its rc files and its drop-in folder ~/.config
 stage = "init"
 summary = "bash, with its rc files"
 
+# The VS Code extensions of the tool, when visual-studio-code is selected.
+[contributes.visual-studio-code]
+extensions = [ "foxundermoon.shell-format" ]
+
 [mise.bootstrap.packages]
 "brew:bash" = "latest"
 

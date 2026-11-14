@@ -150,6 +150,7 @@ bash from Homebrew, its rc files and its drop-in folder ~/.config/bash/.
   - `~/.bash_profile` — copy
   - `~/.bashrc` — copy
   - `~/.config/bash/00-bootstrap.bash` — copy
+- **Contributes to `visual-studio-code`:** `extensions`
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.dotfiles]`
 
 ### `bat`
@@ -356,6 +357,7 @@ dprint, the code formatter, and its global config.
 - **Files:**
   - `~/.config/dprint/dprint.jsonc` — merge
 - **Defaults:** `settings`, `blocks`, `excludes`, `plugins`
+- **Contributes to `visual-studio-code`:** `extensions`
 - **Mise sections:** `[mise.tools]`
 - **Plugins:** The global config extends no other config. The sync finds a
   plugin by its name, so it keeps the version in the file. `updateall` runs
@@ -411,6 +413,7 @@ login shell.
   - `~/.config/fish/config.fish` — copy
   - `~/.config/fish/functions/fish_title.fish` — seed
 - **Defaults:** `login_shell`
+- **Contributes to `visual-studio-code`:** `extensions`
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.bootstrap.user]`,
   `[mise.dotfiles]`
 
@@ -568,7 +571,7 @@ its shellenv in bash, zsh and fish.
 - **Depends:** `fnox`
 - **Files:**
   - `~/.config/bash/01a-homebrew.bash` — copy
-  - `~/.config/brewfile` — copy
+  - `~/.config/brewfile` — template
   - `~/.config/fish/conf.d/05-homebrew.fish` — copy
   - `~/.config/zsh/01a-homebrew.zsh` — copy
 - **Tasks:**
@@ -719,6 +722,7 @@ and the entry tasks of the Mac sync.
   - `~/.config/mise/tasks/upgrade/macos/download`
   - `~/.config/mise/tasks/upgrade/macos/upgrade`
   - `~/.config/mise/tasks/upgrade/power`
+- **Contributes to `visual-studio-code`:** `extensions`
 - **Mise sections:** `[mise.env]`, `[mise.tools]`, `[mise.bootstrap.packages]`,
   `[mise.shell_alias]`
 - **CA certificates:** `[mise.bootstrap.packages]` installs
@@ -777,6 +781,7 @@ pnpm and no `PNPM_HOME`, because a repository selects its own package manager.
   - `~/.config/aube/config.toml` — copy
 - **Tasks:**
   - `~/.config/mise/tasks/upgrade/npm`
+- **Contributes to `visual-studio-code`:** `extensions`
 - **Mise sections:** `[mise.settings]`, `[mise.tools]`, `[mise.env]`
 
 ### `notion`
@@ -1075,6 +1080,8 @@ Open-source code editor.
 
 - **Packs:** `base`
 - **Files:** none
+- **Defaults:** `extensions`, the VS Code extensions of
+  `~/.config/brewfile` (homebrew). Each tool adds its own.
 - **Mise sections:** `[mise.bootstrap.packages]`
 
 ### `vlc`
