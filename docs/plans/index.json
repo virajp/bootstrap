@@ -54,6 +54,23 @@
       ],
       "backlog": [],
       "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-14-config-folder",
+      "folder": "docs/plans/2026-11-14-config-folder",
+      "kind": "change",
+      "title": "R1a — the .config/bootstrap/ folder, the key schema and the config verb",
+      "target_repo": null,
+      "priority": 50,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-13-tui"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
     }
   ]
 }

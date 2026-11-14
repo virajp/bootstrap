@@ -1,0 +1,1219 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "R1a — the .config/bootstrap/ folder, the key schema and the config verb",
+  "requires": [
+    "docs/plans/2026-11-13-tui"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "execution": "teams",
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-14 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint",
+      "mise x -- mise run test:go"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Build the worktree engine (go build -o <tmp>/bootstrap ./cmd/bootstrap in cli/). Copy the main checkout of this repo, with its .git (D72), to a temp folder (its .config/bootstrap.toml is the old form). Run env -u MISE_PROJECT_ROOT BOOTSTRAP_CONFIG=/nonexistent <tmp>/bootstrap init --no-tui --dry-run --clone <worktree> in the copy.",
+        "pass": "The change list shows .config/bootstrap/repo.toml and .config/bootstrap/tools.toml as new, .config/bootstrap.toml removed, .config/repo-generated.tsv moved to .config/bootstrap/repo-generated.tsv, and format = 3. It does not touch .config/releases.yaml."
+      },
+      {
+        "id": "K2",
+        "check": "In a second temp copy, run the same init without --dry-run, with --yes. Then run <tmp>/bootstrap config get repo.repo_name --format json, <tmp>/bootstrap config show --format toml, and <tmp>/bootstrap config set repo.unknown_key 1.",
+        "pass": "get prints {\"key\":\"repo.repo_name\",\"value\":\"bootstrap\",\"source\":\"file\"} (D38); show prints the files; set exits 2 and names the unknown key. <tmp>/bootstrap settings prints the engine settings."
+      },
+      {
+        "id": "K3",
+        "check": "In a third temp copy that keeps the old .config/bootstrap.toml, run <tmp>/bootstrap sync --dry-run --clone <worktree>.",
+        "pass": "It exits 2, and its fix line says to run bootstrap init."
+      }
+    ]
+  },
+  "after_landing": [],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MAJOR",
+      "reason": "Breaking: the values files move into .config/bootstrap/ (format = 3), the branch keys become one landing key, [member.*] becomes [members.*], the old config command becomes settings, and BOOTSTRAP_VALUES names a folder. The user tags bootstrap@4.0.0 by hand at once after this plan lands (D69)."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The folder model and the key schema",
+      "wave": 1,
+      "file": "01-folder-schema.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "The init migration, the config verb and settings",
+      "wave": 2,
+      "file": "02-migration-config-verb.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "It edits the cli/ packages U1 creates: the paths constants and internal/schema.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Members: siblings, url and the home back-link",
+      "wave": 3,
+      "file": "03-members.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [
+        "U2"
+      ],
+      "waits": "It edits the schema and the migration U1 and U2 write in cli/.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Tool scripts read through bootstrap config get",
+      "wave": 3,
+      "file": "04-tool-readers.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/"
+      ],
+      "depends_on": [
+        "U2"
+      ],
+      "waits": "Its Verification runs the config verb U2 adds.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Examples in the new folder form",
+      "wave": 4,
+      "file": "05-examples.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/examples/"
+      ],
+      "depends_on": [
+        "U2",
+        "U3"
+      ],
+      "waits": "It migrates the examples with U3's [member.*] hook and checks them against U3's members schema (D45).",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U6",
+      "title": "Tests",
+      "wave": 5,
+      "file": "06-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/"
+      ],
+      "depends_on": [
+        "U3",
+        "U4",
+        "U5"
+      ],
+      "waits": "The bash cases test the finished engine, the tool scripts and the examples of wave 3.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U7",
+      "title": "Review: the engine, the tool scripts, the examples and the tests",
+      "wave": 6,
+      "file": "07-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U8",
+      "title": "Docs",
+      "wave": 7,
+      "file": "08-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/",
+        "docs/sync/",
+        "docs/setup/",
+        "docs/memory/decisions/2026-11-14-bootstrap-plugins-split.md"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6",
+        "U7"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U9",
+      "title": "Gates",
+      "wave": 8,
+      "file": "09-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U8"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W6",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W7",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W8",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "every human-facing doc (README.md, CLAUDE.md, docs/**)",
+      "why": "every unit falsifies passages that name the values file path or the config command",
+      "owner": "U8"
+    },
+    {
+      "id": "S2",
+      "file": "cli/ (the engine, its tests and testdata)",
+      "why": "U1, U2 and U3 each edit the engine; they run in waves 1, 2 and 3, one at a time",
+      "owner": "U1"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Reversal of design D2: the running selection-model plan has the user tag bootstrap@3.0.0 at once when it lands, because consumers break until then. Which release carries R1?",
+      "ruling": "4.0.0 after 3.1.0 (Recommended): 3.0.0 (selection model) and 3.1.0 (TUI) ship as planned. R1 moves the values files, a breaking change, so it is MAJOR: bootstrap@4.0.0. R3 in claude-plugins waits for 4.0.0, not 3.0.0. The design record is amended.",
+      "rejected": "R1 before the TUI (4.0.0, TUI as 4.1.0); hold the 3.0.0 tag until R1 lands.",
+      "units": [
+        "U8"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Is R1 one plan, or several plans chained by requires (all inside 4.0.0)?",
+      "ruling": "Three plans (Recommended): R1a: the .config/bootstrap/ folder, the repo.toml schema, the init migration and the config verb. R1b: contract, describe, catalog, check --json, and --json on add/remove/init; requires R1a. R1c: the task ports as no-op defaults; requires R1a. Each plan is a reviewable size, and 4.0.0 is tagged after the last one.",
+      "rejected": "One plan; two plans.",
+      "units": []
+    },
+    {
+      "id": "D3",
+      "decision": "bootstrap config already exists (it prints the engine's user settings). What does the repo-config verb from the design use?",
+      "ruling": "Rename old to settings (Recommended): The engine-settings command becomes `bootstrap settings` (MAJOR release, so the rename is allowed). `bootstrap config get|set|unset|show` is the repo-config verb, as the design and the decision record name it.",
+      "rejected": "Subcommands of config with two meanings; a new verb name such as values.",
+      "units": [
+        "U2",
+        "U8"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "How does an existing repo move from .config/bootstrap.toml to .config/bootstrap/?",
+      "ruling": "init migrates, others stop (Recommended): The same rule as every old form today: `bootstrap init` splits the file into repo.toml and tools.toml, moves repo-generated.tsv and .config/releases.yaml, and deletes the old file. `sync`, `check` and every other command stop with code 2 and \"run bootstrap init\". The new files carry `format = 3`. D10 later removes the releases.yaml move from this ruling.",
+      "rejected": "Any command migrates at once.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "Where does the overrides file (.config/bootstrap.overrides.toml, [tools.<name>] overrides only) go?",
+      "ruling": "Merge into tools.toml: Its [tools.*] overrides move into tools.toml, under an [overrides.tools.*] table. One file fewer, but tools.toml mixes selection and overrides.",
+      "rejected": "A separate .config/bootstrap/overrides.toml.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "How do bootstrap's own tool scripts (the git merge task, derive, check, setup-ai) read repo.toml and tools.toml after the move?",
+      "ruling": "Through bootstrap config get (Recommended): Each script calls `bootstrap config get <file>.<key> --format json` instead of a yq read of a file path. One reader, schema-checked; the path can move again without touching tools. The scripts already run where the engine is installed.",
+      "rejected": "yq reads on the new paths.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "How much of the members change is in R1a?",
+      "ruling": "All of it in R1a (Recommended): [member.*] becomes [members.*] with `url` and `type = \"sibling\"`, each member gets a [home] back-link, and code:worktrees and the --<member>/--all flags read repo.toml, never vwf.yaml. bootstrap then names no vwf file for topology, which R4 needs.",
+      "rejected": "Move only; siblings, url and [home] in a later plan.",
+      "units": [
+        "U3",
+        "U4",
+        "U5"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "How is the key schema of the .config/bootstrap/ files defined?",
+      "ruling": "Go table + tool catalog (Recommended): repo.toml and releases.toml: one Go table in a new package internal/schema (key path, type, enum values, required). tools.toml: a key is valid when the tool exists in the clone's catalog and the key is one of its questions, defaults or env; overrides keep today's rules. `check` uses the same schema, so an unknown key in repo.toml is now code 2.",
+      "rejected": "Embedded JSON Schema files and a schema library.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "What does bootstrap config set (and unset) do after it writes a value?",
+      "ruling": "Write only: It writes the value and prints \"run bootstrap sync\" when the key affects generated files. Simpler, but the repo is out of step until the next sync.",
+      "rejected": "Sync through core.Plan/Apply like add.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "What does R1a do with release levels, given that vwf writes .config/releases.yaml until R3?",
+      "ruling": "Schema now, move later (Recommended): R1a defines releases.toml (one key per project: NONE|PATCH|MINOR|MAJOR; `config set releases.<p>` keeps the higher level, `unset` clears) but init does NOT move .config/releases.yaml. R3 switches vwf and the release tasks to `bootstrap config`, and its migration moves the file.",
+      "rejected": "init moves releases.yaml now.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "How do merge_model and direct_commit map to the one landing key (design CF1)?",
+      "ruling": "[tools.git.branch.<b>] becomes [branches.<b>] in repo.toml, with landing = \"pr\" | \"direct-merge\" | \"direct-commit\". The migration maps merge_model = \"pr\" to pr; merge_model = \"direct\" (or absent) with direct_commit = true to direct-commit; any other direct to direct-merge. merge_from and merge_never move unchanged. core_branches at the root of repo.toml lists the branches in that order. The meaning: pr lands only through a PR; direct-merge merges without a PR and allows no direct commit; direct-commit allows direct commits and direct merges.",
+      "rejected": "None; the user approved CF1.",
+      "units": [
+        "U1",
+        "U2",
+        "U4",
+        "U5"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "What does BOOTSTRAP_VALUES name after the move?",
+      "ruling": "The .config/bootstrap/ folder. Its files keep their fixed names inside it.",
+      "rejected": "A new variable name.",
+      "units": [
+        "U1",
+        "U8"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Execution mode.",
+      "ruling": "teams (Recommended), revised by D81: wave 3 has two edit units (U3 members in cli/, U4 tool readers in repo/tools/) that align the new key names in teams mode; U5 (wave 4) uses the names they committed.",
+      "rejected": "solo.",
+      "units": [
+        "U3",
+        "U4",
+        "U5"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Is a review unit needed?",
+      "ruling": "Yes, one review unit in wave 6 over U1-U6 (D81): the engine is Go code that ships, and the tool scripts are bash that runs in every consumer repo.",
+      "rejected": "No review unit.",
+      "units": [
+        "U7"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Which key goes to which file (design B1-B4, K2, K3, K13, RT1, VY1)?",
+      "ruling": "repo.toml: format, repo_name, product_name, repo_url, core_branches, [branches.<b>] (landing, merge_from, merge_never), [commits] (style, scopes; was [tools.git].commit_scopes), environments, bootstrap_commit, [worktree] files (was [tools.mise].worktree_files), topology, topology_reason, [members.<name>] (folder, type submodule|folder|sibling, url, label, worktree_install), [home] (folder, url) in a member, release_env, [deploy.<env>] (<project> = <url>). tools.toml: format, [tools.<name>] (env and tool values, files overrides), [overrides.tools.*] (was the overrides file), [overrides.mise.*], [overrides.mise_env.*]. releases.toml: format, <project> = NONE|PATCH|MINOR|MAJOR. repo-generated.tsv: unchanged content. Keys are snake case.",
+      "rejected": "Kebab-case keys.",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U5"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "Round 1 gap 1: where does core_branches come from, and what if it is absent?",
+      "ruling": "The migration takes main and develop, in that order, but only the branches that exist in git (locally or on origin), the rule of docs/sync Step 2. core_branches is a required key of repo.toml. With neither branch, init stops with code 2.",
+      "rejected": "Tables only; always [main, develop].",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Round 1 gap 2: the default of an absent landing key.",
+      "ruling": "direct-merge, today's default (direct with no direct commit).",
+      "rejected": "direct-commit.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "Round 1 gap 3: overrides of keys that move to repo.toml (direct_commit, commit_scopes, worktree_files).",
+      "ruling": "User: \"No overrides for keys in `repo.toml`, changes must be made directly in that file (ideally using bootstrap cli)\". The migration writes such an override's value directly into repo.toml (the override wins over the old file's value). [overrides.tools.*] keeps only keys that stay in [tools.*]; the schema refuses an [overrides.tools.*] entry for a key that lives in repo.toml.",
+      "rejected": "Copy to [overrides.tools.*].",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Round 1 gap 4: config get inside the engine and during a migration.",
+      "ruling": "config reads the BOOTSTRAP_VALUES folder when it is set. During init and sync the engine points BOOTSTRAP_VALUES at the temp folder of the planned layout, so scripts read the new keys even mid-migration. With BOOTSTRAP_VALUES set, config skips the old-form stop.",
+      "rejected": "config refuses during a migration.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D20",
+      "decision": "Round 1 gap 5: which engine binary the tool scripts call.",
+      "ruling": "The engine exports BOOTSTRAP_BIN (its own executable path) to every script and task it runs. A task mise runs uses ${BOOTSTRAP_BIN:-mise x -- bootstrap}, today's pattern. With no engine, a script that needs a value exits 2 with an install hint (D85). There is no version check: an old engine answers config get with a usage error (exit 2), and the task stops with the install hint (D84).",
+      "rejected": "A bare bootstrap on PATH.",
+      "units": [
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D21",
+      "decision": "Round 1 gap 6: config get of a key that is not set.",
+      "ruling": "User: \"A config get is not a failure so it must emit either the default (with status showing default) or the actual value but never an error code. Other verbs/commands will continue raising error of missing config\". config get of a valid key exits 0 and prints {\"key\": <path>, \"value\": <v>, \"source\": \"file\" | \"default\"} (the same three fields in toml and yaml); a key with no schema default prints value null with source default. Only an invalid key (code 2) or a read failure (code 1) is an error. Scripts read .value.",
+      "rejected": "Exit 1 or 3 for an unset key.",
+      "units": [
+        "U1",
+        "U2",
+        "U4",
+        "U6"
+      ]
+    },
+    {
+      "id": "D22",
+      "decision": "Round 1 gap 7: config get of a table, and scalar output per format.",
+      "ruling": "get returns a whole table too. The value field of the D21 envelope holds an object, an array or a scalar; the envelope is printed in every format (D41).",
+      "rejected": "Scalars only.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D23",
+      "decision": "Round 1 gap 8: the catalog for tools.* keys.",
+      "ruling": "get never needs the clone; it checks only the key path. set and unset of a tools.* key use the cached clone, like other write commands. User: \"we should add a TTL on cache clone (like 7 days) after which we consider it as stale or absent\": for these catalog reads, a cached clone older than 7 days (by its last fetch) counts as absent and is fetched again; stale or absent and offline exits 5. Hooks and the merge task only get.",
+      "rejected": "No TTL.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D24",
+      "decision": "Round 1 gap 9: config on an absent file.",
+      "ruling": "set creates releases.toml with format = 3 when it is absent. With no .config/bootstrap/ at all, every config subcommand exits 2 with the fix line \"Run bootstrap init\" (unless BOOTSTRAP_VALUES is set, D19). show of an absent releases.toml prints an empty table; get of a releases key prints its default per D21.",
+      "rejected": "set refuses an absent file.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D25",
+      "decision": "Round 1 gap 10: config set tools.<name>.<key> for a tool that is not selected.",
+      "ruling": "Exit 2 with the fix line \"Run bootstrap add tool <name>\".",
+      "rejected": "Create the table.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D26",
+      "decision": "Round 1 gap 11: does a tools.* write print the sync line?",
+      "ruling": "Yes, always: every tool value feeds a sync.",
+      "rejected": "Never.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D27",
+      "decision": "Round 1 gap 12: unset of a required key or a table, and cross-key rules.",
+      "ruling": "unset of a required key exits 2. A whole table (members.<n>, branches.<b>) may be unset. Any set or unset whose result breaks a schema rule, the cross-key rules of D31 included, exits 2 and writes nothing.",
+      "rejected": "Allow and let check catch it.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D28",
+      "decision": "Round 1 gap 13: which commands work on an old-form repo.",
+      "ruling": "version, settings, init and every mac command. All others stop with code 2, tui included (as the TUI plan says).",
+      "rejected": "Only init.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D29",
+      "decision": "Round 1 gap 14: both the old file and the folder exist.",
+      "ruling": "Code 2 for every command, init included, with the fix line \"Remove one: compare .config/bootstrap.toml with .config/bootstrap/\".",
+      "rejected": "init merges them.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D30",
+      "decision": "Round 1 gap 15: the back-link into a member with no folder or the old form.",
+      "ruling": "Write [home] only into a member that has .config/bootstrap/. A member with no folder or the old form is skipped with the warning \"member <name>: run bootstrap init there\".",
+      "rejected": "Create or migrate the member.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D31",
+      "decision": "Round 1 gap 16: the rules of git/scripts/check for landing and core_branches.",
+      "ruling": "Each core branch must exist (locally or on origin). Each [branches.<b>] must name a core branch. If main is direct-commit, develop (when it is a core branch) must be direct-commit too, today's rule in the new terms. The schema enforces the second and third as cross-key rules (D27).",
+      "rejected": "Drop the rules.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D32",
+      "decision": "Round 1 gap 17: [commits].style.",
+      "ruling": "An enum with one value, conventional, the default. Nothing reads it in R1a; it is the place for the commit model the user named in the design review.",
+      "rejected": "Drop the key.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D33",
+      "decision": "Round 1 gap 18: U1's citations.",
+      "ruling": "U1 cites the selection model's code it builds on: cli/internal/core/core.go:123-125 (the values path) and cli/internal/core/plan.go:314 and :383 (the temp values copy), beside the main-checkout lines.",
+      "rejected": "None.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D34",
+      "decision": "Round 1 gap 19: the layout of the examples.",
+      "ruling": "Flat, as today: repo/examples/<x>/repo.toml and repo/examples/<x>/tools.toml. U6 (test/repo:2780) and U8 (CLAUDE.md:59) follow it.",
+      "rejected": "repo/examples/<x>/.config/bootstrap/.",
+      "units": [
+        "U5",
+        "U6",
+        "U8"
+      ]
+    },
+    {
+      "id": "D35",
+      "decision": "Round 1 gap 20: how U5 checks an example.",
+      "ruling": "Each temp copy is laid out as .config/bootstrap/ from the flat files and made a git repo, starting with git init -b <the first branch its example names> (D66), one commit, then any other branch the example names, and then bootstrap check runs.",
+      "rejected": "Skip the check.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D36",
+      "decision": "Round 1 gap 21: the design record's 3.0.0 references and when 4.0.0 is tagged.",
+      "ruling": "U8 may fix every 3.0.0 reference in the record, the phase table and D2's text. bootstrap@4.0.0 is tagged after R1a, R1b, R1c and R2 land, because R2 renames tasks to git:*, also breaking. R3 waits for 4.0.0.",
+      "rejected": "Tag after R1c only.",
+      "units": [
+        "U8"
+      ]
+    },
+    {
+      "id": "D37",
+      "decision": "Round 1 gap 22: this repo's synced root files that name the old path.",
+      "ruling": "U4 changes their sources under repo/tools/ (for example git/files/gitignore.merge.toml, the dprint and vscode merge specs). This repo's synced copies (.gitignore, dprint.jsonc, .vscode/extensions.json) stay out of scope until the user's hand migration.",
+      "rejected": "Edit the copies.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D38",
+      "decision": "Round 2 gap 1: K2's pass text.",
+      "ruling": "K2 passes when `config get repo.repo_name --format json` prints {\"key\":\"repo.repo_name\",\"value\":\"bootstrap\",\"source\":\"file\"}.",
+      "rejected": "The reviewer's other options.",
+      "units": []
+    },
+    {
+      "id": "D39",
+      "decision": "Round 2 gap 2: the get exit codes in the review focus and cli.md.",
+      "ruling": "D21 wins: 0 for any valid key (set or default), 1 for a read failure, 2 for an invalid key.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U7",
+        "U8"
+      ]
+    },
+    {
+      "id": "D40",
+      "decision": "Round 2 gap 3: U9's tag text.",
+      "ruling": "bootstrap@4.0.0 is tagged after R1a, R1b, R1c and R2 (D36).",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U9"
+      ]
+    },
+    {
+      "id": "D41",
+      "decision": "Round 2 gap 4: get output in toml and yaml.",
+      "ruling": "The envelope (key, value, source) is printed in every format: a TOML document or a YAML map. D22 defines only what the value field holds (a table, a list or a scalar).",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D42",
+      "decision": "Round 2 gap 5: the binary in the tool scripts.",
+      "ruling": "D20 wins: ${BOOTSTRAP_BIN:-mise x -- bootstrap}.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D43",
+      "decision": "Round 2 gap 6: a local build that reports version dev.",
+      "ruling": "dev counts as 4 or newer, the same rule as CheckVersion (cli/internal/core/clone.go).",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D44",
+      "decision": "Round 2 gap 7: U4's check binary.",
+      "ruling": "U4's Verification sets BOOTSTRAP_BIN to the worktree build.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D45",
+      "decision": "Round 2 gap 8: U5 needs U3's members hook and schema.",
+      "ruling": "U5 depends on U3 and moves to wave 4; tests to wave 5, the review to 6, docs to 7, gates to 8.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D46",
+      "decision": "Round 2 gap 9: branches in U5's temp repos.",
+      "ruling": "Superseded by D82.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D47",
+      "decision": "Round 2 gap 10: a branch table for a branch that is not main or develop, or not in git.",
+      "ruling": "init stops with code 2, naming the table, with the fix line \"remove the table or create the branch\". The migration never drops it silently.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U2",
+        "U6"
+      ]
+    },
+    {
+      "id": "D48",
+      "decision": "Round 2 gap 11: init in a new repo with an unborn HEAD.",
+      "ruling": "The unborn branch of HEAD counts as existing, so a fresh init writes core_branches = [\"<that branch>\"].",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D49",
+      "decision": "Round 2 gap 12: a key segment that contains a dot.",
+      "ruling": "A segment with a dot is double-quoted, as in yq: repo.branches.\"release.1\".landing. Scripts always quote the branch segment.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D50",
+      "decision": "Round 2 gap 13: get of an unset or unknown tools key.",
+      "ruling": "get of an unset tools.* key prints null with source default, without the catalog; an unknown tool gives null too. Only set and unset validate against the catalog.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D51",
+      "decision": "Round 2 gap 14: the default of a releases key.",
+      "ruling": "\"NONE\".",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D52",
+      "decision": "Round 2 gap 15: where the 7-day TTL reads the fetch time.",
+      "ruling": "After each successful fetch the engine writes the fetch time to a file in the cache root. config set and unset of tools.* skip the fetch while that time is under 7 days old. Under --clone or BOOTSTRAP_CLONE there is no TTL; the clone is used as it is. Other write commands still fetch every time.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D53",
+      "decision": "Round 2 gap 16: version, settings and mac when both the old file and the folder exist.",
+      "ruling": "They still work (D28). Every other command exits 2 (D29).",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D54",
+      "decision": "Round 2 gap 17: sync --all and init --all with an old-form member.",
+      "ruling": "sync --all skips an old-form member with the warning \"member <name>: run bootstrap init there\" and continues. init --all migrates each present member.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D55",
+      "decision": "Round 2 gap 18: folder members of a monorepo.",
+      "ruling": "No [home] and no warning; only submodule and sibling members get one.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D56",
+      "decision": "Round 2 gap 19: [home] when the home has no repo_url.",
+      "ruling": "[home] has only folder; url is optional in [home].",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D57",
+      "decision": "Round 2 gap 20: root_only tools in a sibling member.",
+      "ruling": "[home] also records the member's type. root_only tools are skipped in a submodule member only; a sibling member is its own root, so they run there.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D58",
+      "decision": "Round 2 gap 21: the design record in the run's worktree.",
+      "ruling": "It is committed with this plan's approval commit.",
+      "rejected": "The reviewer's other options.",
+      "units": []
+    },
+    {
+      "id": "D59",
+      "decision": "Round 2 gap 22: U9's build writes a binary into the tree.",
+      "ruling": "U9 builds with -o to a temp path.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U9"
+      ]
+    },
+    {
+      "id": "D60",
+      "decision": "Round 2 gap 23: the required keys of repo.toml.",
+      "ruling": "format, repo_name and core_branches.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D61",
+      "decision": "Round 3 gap 1: what U6 asserts for get of an unset key.",
+      "ruling": "Exit 0 with the default (D21).",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D62",
+      "decision": "Round 3 gap 2: --all and --<member>.",
+      "ruling": "They are flags of the setup:configs task, not of the engine. There is no init --all: the user runs bootstrap init in each member. D54 reads: setup:configs --all skips an old-form member with the warning \"member <name>: run bootstrap init there\" and continues.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U3",
+        "U4",
+        "U6"
+      ]
+    },
+    {
+      "id": "D63",
+      "decision": "Round 3 gap 3: who writes [home].",
+      "ruling": "The member's own bootstrap sync. setup:configs passes BOOTSTRAP_HOME=<path to the home repo> when it runs in a member; the engine then writes [home] folder, url and type from it (type from the home's [members.<name>].type).",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D64",
+      "decision": "Round 3 gap 4: who changes the member loop of the tasks.",
+      "ruling": "U4: repo/tools/mise/tasks/setup-configs.tmpl, setup.tmpl and the helpers library. members() reads `config get repo.members` (submodule and sibling members); the task skips an old-form member and continues; it passes BOOTSTRAP_HOME.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D65",
+      "decision": "Round 3 gap 5: does derive read overrides?",
+      "ruling": "Not for repo.toml keys (D18). derive reads the branch keys from repo.toml only.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D66",
+      "decision": "Round 3 gap 6: the first branch of a temp example repo.",
+      "ruling": "Each temp repo starts with git init -b <the first branch its example names>; polyrepo-develop has only develop. This replaces the \"git init -b main\" of D35.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D67",
+      "decision": "Round 3 gap 7: members in U5's temp copies.",
+      "ruling": "U5 creates the member folders and submodules before check, as test/repo example_consumer does.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D68",
+      "decision": "Round 3 gap 8: where K1 runs.",
+      "ruling": "K1 needs U4's scripts in the clone, so U4's Verification runs K1, and U2's runs K3 only. The plan keeps K1 at the end.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D69",
+      "decision": "Round 3 gap 9 — reversal of D36: consumers on a 3.x engine sync the new tool scripts from main and break until 4.0.0 is tagged.",
+      "ruling": "bootstrap@4.0.0 is tagged at once after R1a lands, as the selection model does for 3.0.0. R1b, R1c and R2 become minor releases (4.1, 4.2, 4.3); R2 keeps the old task names as aliases for one release, as the design says, so it does not break. R3 waits for the release that carries the contract. D36 and D40 are superseded on the tag.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U8",
+        "U9"
+      ]
+    },
+    {
+      "id": "D70",
+      "decision": "Round 3 gap 10: a partial init.",
+      "ruling": "The migration is atomic: it writes the folder to a temp path, renames it into place, then removes the old file. If the sync then fails, core.Apply's restore puts the old file back and removes the folder, so a failed init never leaves both forms.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D71",
+      "decision": "Round 3 gap 11: the TUI and the folder migration.",
+      "ruling": "The TUI shows the folder migration as one change, \"migrate to .config/bootstrap/\", applied by the same core migration; every write goes to the new files, the TUI's Apply included (U1 Edit 3).",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D72",
+      "decision": "Round 3 gap 12: K1's copy.",
+      "ruling": "K1 copies the main checkout with its .git.",
+      "rejected": "The reviewer's other options.",
+      "units": []
+    },
+    {
+      "id": "D73",
+      "decision": "Round 3 gap 13: the stale cli.go citation.",
+      "ruling": "cli/internal/core/core.go:123-125 replaces \"cli/internal/cli/cli.go (prepare, about line 438)\".",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D74",
+      "decision": "Round 3 gap 14: a format line in the manifest.",
+      "ruling": "None. repo-generated.tsv keeps its content; only the three TOML files carry format = 3.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D75",
+      "decision": "Round 3 gap 15: get output per format.",
+      "ruling": "U2 prints the envelope in every format (D41); the old wording of D22 in the unit file is replaced.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D76",
+      "decision": "Round 4 gap 1: which rule writes core_branches.",
+      "ruling": "D16. The old wording \"the branches that had a table, main first\" is removed.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D77",
+      "decision": "Round 4 gap 2: commands that still run on an old form.",
+      "ruling": "U2 Edit 1 matches D28 and D53: version, settings and every mac command run; every other command stops with code 2.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D78",
+      "decision": "Round 4 gap 3: the stale D22 sentence.",
+      "ruling": "Removed; the envelope is printed in every format (D41).",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D79",
+      "decision": "Round 4 gap 4: root_only tools in a member.",
+      "ruling": "D57: root_only tools are skipped only in a submodule member.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D80",
+      "decision": "Round 4 gap 5: U5's quote of D35.",
+      "ruling": "U5 quotes the current D35 and D66.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D81",
+      "decision": "Round 4 gap 6: teams mode after U5 moved to wave 4.",
+      "ruling": "D13 now reads: wave 3 has two edit units (U3, U4) that align key names in teams mode; U5 uses the names they committed. D14 now reads: the review unit is in wave 6.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U3",
+        "U4",
+        "U5"
+      ]
+    },
+    {
+      "id": "D82",
+      "decision": "Round 4 gap 7: branches of the example temp repos.",
+      "ruling": "Each example gets only the branches its tables or comments name: repo-submodules and its iac member get develop; repo-siblings gets main; an example that names none gets main and develop. This replaces D46.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D83",
+      "decision": "Round 4 gap 8: restore after a failed sync during a migration.",
+      "ruling": "core.Apply's restore also puts back .config/bootstrap.overrides.toml and the old .config/repo-generated.tsv, and removes .config/bootstrap/. U2 changes cli/internal/core/apply.go.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D84",
+      "decision": "Round 4 gap 9: the version check of D20 fails in test:repo.",
+      "ruling": "D20's version check is removed. A script calls config get; when an old engine answers with a usage error (exit 2), the task stops with the install hint. No version comparison.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U4",
+        "U6"
+      ]
+    },
+    {
+      "id": "D85",
+      "decision": "Round 4 gap 10: scripts with no engine in CI.",
+      "ruling": "The exit-2 rule applies only to scripts that need a value: git merge, derive, check, setup-ai, code-worktrees and setup-configs. code-lint-bootstrap keeps today's silent exit 0 when no engine exists.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D86",
+      "decision": "Round 4 gap 11: tools.toml keys that are not questions or defaults.",
+      "ruling": "env and files.* are always valid. U4 declares plugins.user and plugins.project as defaults (empty tables) in repo/tools/claude/tools.toml, so the catalog rule covers them.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D87",
+      "decision": "Round 4 gap 12: a fresh init with neither main nor develop.",
+      "ruling": "A fresh init writes the main and develop that exist; with neither, the current branch, born or unborn, of any name. D48 allows any name.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D88",
+      "decision": "Round 4 gap 13: a folder with repo.toml or tools.toml missing.",
+      "ruling": "Every command except init exits 2 with \"Run bootstrap init\"; init creates the missing file.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D89",
+      "decision": "Round 4 gap 14: how a member finds its own [members.<name>] entry.",
+      "ruling": "setup:configs also passes BOOTSTRAP_MEMBER=<name>; the engine reads the type from the home's [members.<name>].",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D90",
+      "decision": "Round 4 gap 15: which keys carry the \"a sync reads it\" flag.",
+      "ruling": "Every repo.toml key except deploy.*, release_env, topology, topology_reason, bootstrap_commit and format. No releases.* key.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D91",
+      "decision": "Round 4 gap 16: the exit code when the folder is absent.",
+      "ruling": "cli.md and the review focus also name D24's exit 2 when .config/bootstrap/ is absent.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U7",
+        "U8"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
