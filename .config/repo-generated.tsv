@@ -125,3 +125,6 @@ pre-commit	.config/mise/tasks/setup/precommit
 python	.config/mise/conf.d/python/mise.dev.toml
 python	.config/mise/tasks/code/lint/90-uv
 python	.config/mise/tasks/setup/deps/50-python
+vscode	.config/mise/conf.d/vscode/mise.dev.toml
+vscode	.config/mise/tasks/setup/vscode
+vscode	.vscode/settings.json
