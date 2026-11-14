@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-14 14:54 in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.worktrees/all-2026-11-13-1753"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-14 — c4f9c52 50167b6 66db4b5 b58fcbf 8ac378b 23062e0 06a2197"
   },
   "consent": {
     "merge": true,
