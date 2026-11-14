@@ -609,11 +609,11 @@
         "U7"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T09:04:26.102Z",
+      "ended": "2026-11-14T09:05:26.767Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -655,9 +655,9 @@
     },
     {
       "id": "W7",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T09:04:26.061Z",
+      "ended": "2026-11-14T09:05:58.286Z"
     }
   ],
   "shared_files": [
