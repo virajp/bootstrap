@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-12 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-14 07:11 in .worktrees/all-2026-11-13-1753"
   },
   "consent": {
     "merge": true,
@@ -207,11 +207,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T01:41:50.533Z",
+      "ended": "2026-11-14T01:45:05.423Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -228,11 +228,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T01:41:50.607Z",
+      "ended": "2026-11-14T01:45:05.490Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -349,8 +349,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T01:41:50.492Z",
       "ended": ""
     },
     {
@@ -425,7 +425,12 @@
     }
   },
   "gaps": [],
-  "overrides": [],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-13-1753"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/all-2026-11-13-1753",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-12-catalog-data.jsonl"

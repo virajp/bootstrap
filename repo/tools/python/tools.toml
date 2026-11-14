@@ -1,8 +1,11 @@
 # Python and uv. In a repository with a pyproject.toml, also ruff and pyrefly,
 # with their code:lint and code:format tasks.
+category = "languages"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "Python and uv. In a repository with a pyproject.toml, also ruff and pyrefly, with their code:lint and code:format tasks."
 root_only = false
+summary = "Python and uv, with ruff and pyrefly"
 
 # The VS Code extensions of the tool, in .vscode/extensions.json.
 [contributes.vscode]

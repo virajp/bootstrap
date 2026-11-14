@@ -1,7 +1,10 @@
 # The Google Cloud CLI, for a repository that deploys to Google Cloud.
+category = "cloud"
 default_envs = [ "dev", "ci" ]
 depends = [ "python" ]
+description = "The Google Cloud CLI, for a repository that deploys to Google Cloud. It needs the python tool."
 root_only = false
+summary = "The Google Cloud CLI"
 
 # The mise config, generated into .config/mise/conf.d/gcloud/mise.<env>.toml.
 [mise.tools.gcloud]

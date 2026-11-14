@@ -1,7 +1,10 @@
 # Rust and the zola site generator.
+category = "languages"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "Rust and the zola site generator."
 root_only = false
+summary = "Rust and the zola site generator"
 
 # The dprint block and plugin of Rust (rustfmt through exec), in dprint.jsonc.
 [contributes.dprint]

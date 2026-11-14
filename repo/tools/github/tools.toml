@@ -1,7 +1,10 @@
 # GitHub: the gh CLI, actionlint, and the issue and pull request templates.
+category = "forge"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "The gh CLI, actionlint for the GitHub Actions workflows, and the issue and pull request templates."
 root_only = false
+summary = "The gh CLI, actionlint and GitHub templates"
 
 [[contributes.pre-commit.repos]]
 id = "actionlint"

@@ -1,9 +1,12 @@
 # mise: the shared mise config, the task library, the setup and code
 # orchestrators, and the entry of the sync: setup:configs and the gate
 # code:lint:60-bootstrap.
+category = "core"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "The shared mise config, the task library, the setup and code orchestrators, and the entry of the sync: setup:configs and the gate code:lint:60-bootstrap. Each repository has it."
 root_only = false
+summary = "The mise config, the tasks and the sync entry"
 
 # The VS Code extensions of the tool, in .vscode/extensions.json.
 [contributes.vscode]

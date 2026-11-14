@@ -1,7 +1,10 @@
 # The Java development kit (JDK), for Gradle and the Android SDK.
+category = "languages"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "The Java development kit (JDK), for Gradle and the Android SDK."
 root_only = false
+summary = "The Java development kit (JDK)"
 
 # The mise config, generated into .config/mise/conf.d/java/mise.<env>.toml.
 [mise.tools.java]

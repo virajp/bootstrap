@@ -1,8 +1,11 @@
 # dprint: the formatter of the sync and of code:format, the shared dprint.jsonc
 # and setup:dprint.
+category = "format-lint"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "dprint, the formatter of the sync and of code:format, with the shared dprint.jsonc and the setup:dprint task."
 root_only = false
+summary = "The formatter and the shared dprint.jsonc"
 
 # The base of the shared dprint.jsonc: the top-level settings, the generic
 # excludes, the blocks of the base formats and their plugins. A tool adds

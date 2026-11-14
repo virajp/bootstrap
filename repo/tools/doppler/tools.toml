@@ -1,8 +1,11 @@
 # The Doppler CLI and setup:secrets:10-doppler. A repository selects it only when
 # it keeps its secrets in Doppler.
+category = "secrets"
 default_envs = [ "dev" ]
 depends = []
+description = "The Doppler CLI and the setup:secrets:10-doppler task. Select it only when the repository keeps its secrets in Doppler."
 root_only = false
+summary = "Secrets from Doppler"
 
 # The mise config, generated into .config/mise/conf.d/doppler/mise.<env>.toml.
 # Only dev: ci has its own secret management.

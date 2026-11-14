@@ -1,7 +1,10 @@
 # Go, with the gofmt and go vet gates.
+category = "languages"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "Go, with the gofmt and go vet gates."
 root_only = false
+summary = "Go, with the gofmt and go vet gates"
 
 # The VS Code extensions of the tool, in .vscode/extensions.json.
 [contributes.vscode]

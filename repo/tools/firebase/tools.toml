@@ -1,7 +1,10 @@
 # The Firebase CLI only. The repository owns its Firebase config files.
+category = "cloud"
 default_envs = [ "dev", "ci" ]
 depends = [ "node" ]
+description = "The Firebase CLI only. The repository owns its Firebase config files. It needs the node tool."
 root_only = false
+summary = "The Firebase CLI"
 
 # The mise config, generated into .config/mise/conf.d/firebase/mise.<env>.toml.
 [mise.tools."npm:firebase-tools"]

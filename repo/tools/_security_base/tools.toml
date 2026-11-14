@@ -1,7 +1,11 @@
 # _security_base: the code:sec orchestrator and the sec hook of the security pack.
+category = "security"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "The code:sec task, which runs each scanner of the security pack, and the sec hook of pre-commit. gitleaks, grype and osv-scanner need it, and you cannot select it alone."
 root_only = false
+selectable = false
+summary = "The code:sec task and the sec hook"
 
 # The gate hooks are tool-neutral: each names a task and nothing else. Which
 # scanners run is decided inside the task, so a hook and CI cannot drift apart.

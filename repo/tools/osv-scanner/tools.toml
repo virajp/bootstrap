@@ -1,7 +1,10 @@
 # osv-scanner: the dependency scanner, and code:sec:30-osv-scanner.
+category = "security"
 default_envs = [ "dev", "ci" ]
 depends = [ "_security_base" ]
+description = "osv-scanner examines the dependencies against the OSV vulnerability database. It adds the code:sec:30-osv-scanner task."
 root_only = false
+summary = "Scans the dependencies with the OSV database"
 
 # The mise config, generated into .config/mise/conf.d/osv-scanner/mise.<env>.toml.
 # In dev and ci, because CI runs `code:sec` too.

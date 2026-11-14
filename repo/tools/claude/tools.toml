@@ -1,7 +1,10 @@
 # AI tools: setup:ai. In a git submodule, setup:ai skips itself.
+category = "editor-ai"
 default_envs = [ "dev" ]
 depends = []
+description = "The setup:ai task, which installs and updates the Claude Code plugins of the repository. In a git submodule, setup:ai does nothing."
 root_only = false
+summary = "Claude Code plugins, with setup:ai"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.

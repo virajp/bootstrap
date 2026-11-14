@@ -1,9 +1,12 @@
 # VS Code settings, and the shared extensions.json with the extensions of the
 # selected tools. Root only: VS Code opens the root repository. The root does
 # not list the extensions of its git submodules.
+category = "editor-ai"
 default_envs = [ "dev" ]
 depends = []
+description = "The VS Code settings, and the shared extensions.json with the extensions of the selected tools. Root only: the root does not list the extensions of its git submodules."
 root_only = true
+summary = "The VS Code settings and the extensions"
 
 # The extensions of the tool. Each selected tool adds its own in
 # [contributes.vscode].

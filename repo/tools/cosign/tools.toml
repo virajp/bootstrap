@@ -1,7 +1,10 @@
 # cosign, which signs and verifies container images.
+category = "containers"
 default_envs = [ "dev", "ci" ]
 depends = []
+description = "cosign signs and verifies container images and other artifacts in an OCI registry."
 root_only = false
+summary = "Signs and verifies container images"
 
 # The mise config, generated into .config/mise/conf.d/cosign/mise.<env>.toml.
 [mise.tools.cosign]

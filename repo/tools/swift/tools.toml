@@ -1,9 +1,13 @@
 # Swift and SwiftPM from the host (macOS only): Xcode for a root with an
 # .xcodeproj, else the Command Line Tools. Also the SwiftLint and swift-format
 # gates, and the Xcode and simulator lookup of _scripts/xcode.
+category = "languages"
 default_envs = [ "dev" ]
 depends = []
+description = "Swift and SwiftPM from the host: Xcode for a root with an .xcodeproj, else the Command Line Tools. Also the SwiftLint and swift-format gates. macOS only."
+hosts = [ "macos" ]
 root_only = false
+summary = "Swift, SwiftLint and swift-format (macOS)"
 
 # The VS Code extensions of the tool, in .vscode/extensions.json.
 [contributes.vscode]

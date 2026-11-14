@@ -1,7 +1,10 @@
 # Pulumi. A repository that deploys to Google Cloud also selects gcloud.
+category = "cloud"
 default_envs = [ "dev" ]
 depends = []
+description = "Pulumi, for infrastructure as code. A repository that deploys to Google Cloud also selects gcloud."
 root_only = false
+summary = "Infrastructure as code with Pulumi"
 
 # The mise config, generated into .config/mise/conf.d/pulumi/mise.<env>.toml.
 [mise.tools.pulumi]

@@ -1,7 +1,10 @@
 # The Kotlin language server (dev only), and the ktlint and detekt gates.
+category = "languages"
 default_envs = [ "dev" ]
 depends = [ "java" ]
+description = "The Kotlin language server (dev only), and the ktlint and detekt gates. It needs the java tool."
 root_only = false
+summary = "Kotlin, with the ktlint and detekt gates"
 
 # The mise config, generated into .config/mise/conf.d/kotlin/mise.<env>.toml.
 # ktlint is the layout gate, and detekt the correctness gate. detekt-cli runs
