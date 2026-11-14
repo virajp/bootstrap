@@ -74,7 +74,7 @@ taskexplorer = {}
 battery-health = {}
 setapp = {}
 
-[pack.1password]
+[pack.1password-apps]
 description = "1Password: the app, its CLI and its Safari extension."
 1password = {}
 1password-cli = {}
