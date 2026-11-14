@@ -138,6 +138,7 @@ var repoCases = []repoCase{
 	{name: "tool-member-empty", values: repoValues + "[tools.c]\n[tools.d]\n"},
 	{name: "unknown-tool", values: repoValues + "[tools.nope]\n"},
 	{name: "no-packs-file", over: tree{"repo/packs.toml": "-"}, values: repoValues},
+	{name: "no-base-pack", over: tree{"repo/packs.toml": "[pack.extra]\na = {}\n"}, values: repoValues},
 	{name: "packs-syntax-error", over: tree{"repo/packs.toml": "[pack.base\n"}, values: repoValues},
 	{name: "tool-syntax-error", over: tree{"repo/tools/b/tools.toml": "default_envs = [\n"}, values: repoValues},
 	{name: "values-syntax-error", values: "environments = [\n"},
@@ -329,6 +330,8 @@ var macosCases = []macosCase{
 	{name: "late-folder", over: tree{"macos/tools/zz-macos/tools.toml": ""}, values: "-"},
 	{name: "late-folder-after", over: tree{"macos/tools/zzz/tools.toml": ""}, values: "-"},
 	{name: "no-tools", over: tree{"macos/tools/macos-setup/tools.toml": "-", "macos/tools/m1/tools.toml": "-", "macos/tools/m2/tools.toml": "-", "macos/tools/m3/tools.toml": "-", "macos/tools/m4/tools.toml": "-", "macos/tools/.keep": ""}, values: "-"},
+	{name: "no-packs-file", over: tree{"macos/packs.toml": "-"}, values: "-"},
+	{name: "no-base-pack", over: tree{"macos/packs.toml": "[pack.p]\nm2 = {}\n"}, values: "-"},
 	{name: "pack-is-tool", over: tree{"macos/packs.toml": "[pack.base]\nmacos-setup = { required = true }\n[pack.m2]\nm1 = {}\n"}, values: "-"},
 	{name: "merge-contribute", over: tree{
 		"macos/tools/m1/tools.toml": "[defaults]\nlist = [ 1 ]\nk = 1\n[contributes.m2]\nlist = [ 2 ]\n",

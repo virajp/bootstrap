@@ -470,7 +470,7 @@ question = "B?"
 group = "g"
 [questions.d]
 question = "D?"
-`}, "", "format = 2\n[tools.t]\nd = \"v\"\n")
+`}, "[pack.base]\n", "format = 2\n[tools.t]\nd = \"v\"\n")
 	sel, err := SelectionOf(x, x.Values, x.Values)
 	if err != nil {
 		t.Fatal(err)

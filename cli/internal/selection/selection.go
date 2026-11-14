@@ -30,7 +30,8 @@ func missing(format string, args ...any) *fail.Error {
 // Select is `_se_selected`: the required members of the pack <base>, then
 // each `tools` item of <sel>. The values file keeps no record of a pack, so a
 // `packs` item adds nothing. It examines every pack of the packs file first.
-// The error is one message, with code 2 or 3.
+// A packs file without the pack <base>, or no packs file, stops it with code
+// 3. The error is one message, with code 2 or 3.
 func Select(src source.Source, base string, sel []values.Item) ([]Entry, error) {
 	packs, err := src.ReadPacks()
 	if err != nil {
@@ -38,6 +39,9 @@ func Select(src source.Source, base string, sel []values.Item) ([]Entry, error) 
 	}
 	if err := CheckPacks(src, packs); err != nil {
 		return nil, err
+	}
+	if !packs.HasPack(base) {
+		return nil, missing("%s is not a bootstrap pack (named in %s)", base, packs.Shown)
 	}
 	var out []Entry
 	for _, t := range Required(packs, base) {

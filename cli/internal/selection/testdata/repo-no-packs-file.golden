@@ -1,8 +1,4 @@
-rc=0
+rc=3
 --- stderr
+repo-sync: base is not a bootstrap pack (named in repo/packs.toml)
 --- stdout
-tools:
-sel:
-deps:
-values:
-{}

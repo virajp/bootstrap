@@ -1,0 +1,4 @@
+rc=3
+--- stderr
+bootstrap: base is not a bootstrap pack (named in macos/packs.toml)
+--- stdout
