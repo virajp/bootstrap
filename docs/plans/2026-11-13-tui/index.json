@@ -99,11 +99,11 @@
         "U1"
       ],
       "waits": "U2 adds the Tools tab to the model and the layout that U1 creates in cli/internal/tui.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T09:58:07.612Z",
+      "ended": "2026-11-14T10:24:49.969Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U3",
@@ -270,8 +270,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T09:58:07.568Z",
       "ended": ""
     },
     {
@@ -363,7 +363,15 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U2",
+      "stage": "",
+      "text": "R2 completeness finding: U2 added core.InitState and the init load path, which 02-tools.md does not name · kept in U2: the Tools tab needs the post-init selection under init (D11 b, D14 c), the change is inside cli/ and the Goal, writes only to a temp folder",
+      "state": "closed"
+    }
+  ],
   "overrides": [
     {
       "id": "O1",
@@ -551,6 +559,15 @@
       "rejected": "Paint #15191a behind every cell — the same dark look in both themes, as the design shows, but the TUI ignores the user's terminal theme",
       "units": [
         "U1"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "Q2: The long way of a replace (no migrate script, ruling 27) puts two changes on the TUI change list, remove the old tool then add the new one, so the counter goes up by 2, though Edit 6 says each action is one change. Should it be one change?",
+      "ruling": "Keep two changes (as built) — they match the two CLI commands (remove tool and add tool), the review can show them as two lines, and undo works per tool.",
+      "rejected": "Add an item kind to core (for example a Replace with no script, or a flag on Replace) — one change in the counter and the review, but core's Plan and Apply get a new item kind, which U5 must then handle",
+      "units": [
+        "U2"
       ]
     }
   ]

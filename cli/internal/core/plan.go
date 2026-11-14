@@ -455,6 +455,9 @@ type planner struct {
 	o              Options
 	exprs          []string
 	added, removed map[string]bool
+	// direct holds the tools that an item names and that it selects, when
+	// it is not nil (Effect).
+	direct map[string]bool
 }
 
 func (pl *planner) selected(t string) bool {
@@ -511,6 +514,9 @@ func (pl *planner) add(names []string, reason bool) {
 	named := map[string]bool{}
 	for _, n := range names {
 		named[n] = true
+		if pl.direct != nil {
+			pl.direct[n] = true
+		}
 		if reason && pl.selected(n) {
 			pl.p.Reasons = append(pl.p.Reasons, n+" is already selected")
 		}
@@ -790,6 +796,7 @@ func (pl *planner) remove(names, extra []string) error {
 	for _, t := range gone {
 		pl.removed[t] = true
 		delete(pl.added, t)
+		delete(pl.direct, t)
 	}
 	// The seeds of the removed tools stay; the command lists them.
 	root := st.Home()

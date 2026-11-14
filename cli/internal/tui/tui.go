@@ -88,6 +88,14 @@ type Model struct {
 	// state is the values file and its selection, when it has the new form.
 	state *core.State
 
+	// eff is what the items of the list do to the selection of state.
+	eff *core.Effect
+	// search is the search of the Tools tab, with its text.
+	search bool
+	query  string
+	// hints are the categories with a proposal of the detection.
+	hints map[string]bool
+
 	tabs  []*tab
 	cur   int    // The tab that shows.
 	modal *modal // The modal dialog over the screen, or nil.
@@ -144,12 +152,22 @@ func (m *Model) load() tea.Msg {
 	sd := m.opt.Side
 	if m.opt.Init {
 		text, err := core.InitChange(sd)
-		if err != nil || text != "" {
-			return loadedMsg{fixed: text, err: err}
+		if err != nil {
+			return loadedMsg{err: err}
+		}
+		if text != "" {
+			return m.loadInit(text)
 		}
 	}
 	st, err := core.Open(sd)
 	return loadedMsg{state: st, err: err}
+}
+
+// loadInit reads the values file of init: the state after the first change
+// of the list, when it has one.
+func (m *Model) loadInit(text string) tea.Msg {
+	st, err := core.InitState(m.opt.Side)
+	return loadedMsg{fixed: text, state: st, err: err}
 }
 
 func (m *Model) tickCmd() tea.Cmd {
@@ -202,6 +220,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.state = msg.state
 		m.phase = ready
+		m.refreshTools()
 		return m, m.tickCmd()
 	case tickMsg:
 		m.tick++
@@ -230,6 +249,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // mainKey handles a key of the main screen.
 func (m *Model) mainKey(msg tea.KeyPressMsg) tea.Cmd {
 	t := m.tabs[m.cur]
+	if m.cur == toolsTab {
+		if cmd, done := m.toolsKey(msg); done {
+			return cmd
+		}
+		defer m.afterKey(msg)
+	}
 	switch {
 	case key.Matches(msg, m.keys.Quit):
 		return m.quit()
@@ -380,7 +405,11 @@ func (m *Model) screen() []line {
 	out = append(out, line{styled(strings.Repeat("─", leftW)+"┴"+strings.Repeat("─", rightW), stDim)})
 	out = append(out, t.bottomLines()...)
 	out = append(out, line{styled(strings.Repeat("─", screenW), stDim)})
-	out = append(out, line{text(" "), {text: m.help.ShortHelpView(m.keys.ShortHelp()), raw: true}})
+	keys := line{{text: m.help.ShortHelpView(m.keys.ShortHelp()), raw: true}}
+	if m.cur == toolsTab && m.search {
+		keys = line{styled("type to search  ↑↓ move  space select  esc close search", stDim)}
+	}
+	out = append(out, append(line{text(" ")}, keys...))
 	return out
 }
 

@@ -63,3 +63,19 @@ func TestPaneMove(t *testing.T) {
 		t.Errorf("cursor %d", p.cursor)
 	}
 }
+
+func TestWrap(t *testing.T) {
+	got := wrap("one two three  four", 9)
+	want := []string{"one two", "three", "four"}
+	if len(got) != len(want) {
+		t.Fatalf("wrap = %q", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("wrap = %q, want %q", got, want)
+		}
+	}
+	if got := wrap("", 5); len(got) != 0 {
+		t.Errorf("wrap of nothing = %q", got)
+	}
+}

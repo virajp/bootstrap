@@ -13,6 +13,7 @@ import (
 // dialog.
 type modal struct {
 	title   string
+	warn    bool // The title has the color of a warning.
 	width   int
 	body    []line
 	top     int  // The first body line that shows.
@@ -48,8 +49,12 @@ func (d *modal) scroll(n int) {
 func (d *modal) box() []line {
 	w := d.width
 	edge := func(s string) seg { return styled(s, stHead) }
+	titleSt := stHead
+	if d.warn {
+		titleSt = stLock.Bold(true)
+	}
 	out := []line{{
-		edge("┌─ "), styled(d.title, stHead),
+		edge("┌─ "), styled(d.title, titleSt),
 		edge(" " + strings.Repeat("─", max(0, w-5-len([]rune(d.title)))) + "┐"),
 	}}
 	blank := line{edge("│"), text(strings.Repeat(" ", w-2)), edge("│")}

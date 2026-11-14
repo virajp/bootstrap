@@ -161,3 +161,28 @@ func plural(n int, noun string) string {
 	}
 	return strconv.Itoa(n) + " " + noun + "s"
 }
+
+// wrap gives the words of <s> in lines of <w> columns or fewer. A word
+// longer than <w> is a line of its own.
+func wrap(s string, w int) []string {
+	var out []string
+	cur := ""
+	for _, word := range strings.Fields(s) {
+		switch {
+		case cur == "":
+			cur = word
+		case len([]rune(cur))+1+len([]rune(word)) > w:
+			out = append(out, cur)
+			cur = word
+		default:
+			cur += " " + word
+		}
+	}
+	if cur != "" {
+		out = append(out, cur)
+	}
+	return out
+}
+
+// itoa gives <n> as a decimal text.
+func itoa(n int) string { return strconv.Itoa(n) }
