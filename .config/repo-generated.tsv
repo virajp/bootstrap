@@ -3,6 +3,7 @@ claude	.config/mise/tasks/setup/ai
 dprint	.config/mise/conf.d/dprint/mise.dev.toml
 dprint	.config/mise/tasks/code/format/05-dprint
 dprint	.config/mise/tasks/setup/dprint
+dprint	dprint.jsonc	{"kind":"block","path":["exec","commands"],"id":"go","find":{"exts":["go"]}}
 dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/*-lock.yaml"}
 dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/*.svg"}
 dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/package-lock.json"}
