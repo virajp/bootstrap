@@ -484,10 +484,10 @@ func (m *Model) toolDetail(t string) []line {
 	}
 	out = append(out, pairLines(pairs)...)
 	mk, _ := m.markOf(t)
-	switch {
-	case mk == markLocked:
+	switch mk {
+	case markLocked:
 		out = append(out, line{styled(" ! "+t+" is required by the pack "+m.requiredBy(t)+". You cannot remove it.", stLock)})
-	case mk == markNotHere:
+	case markNotHere:
 		out = append(out, line{styled(" · "+m.notHere(t)+".", stDim)})
 	}
 	if same := m.sameAs(t); same != "" {

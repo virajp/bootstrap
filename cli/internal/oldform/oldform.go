@@ -125,7 +125,7 @@ func editTOML(in []byte, exprs []string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 	p := filepath.Join(dir, "values.toml")
 	if err := os.WriteFile(p, in, 0o600); err != nil {
 		return nil, err
@@ -391,11 +391,11 @@ func Apply(changes []Change) error {
 		}
 		tmp := c.Path + ".bootstrap-new"
 		if err := os.WriteFile(tmp, c.Content, mode); err != nil {
-			os.Remove(tmp)
+			_ = os.Remove(tmp)
 			return fail.New(fail.Other, "cannot write %s", c.Path)
 		}
 		if err := os.Rename(tmp, c.Path); err != nil {
-			os.Remove(tmp)
+			_ = os.Remove(tmp)
 			return fail.New(fail.Other, "cannot write %s", c.Path)
 		}
 	}

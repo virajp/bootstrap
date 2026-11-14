@@ -115,7 +115,7 @@ func (t *Temps) create(dir, pattern string) (string, error) {
 	}
 	name := f.Name()
 	if err := f.Close(); err != nil {
-		os.Remove(name)
+		_ = os.Remove(name)
 		return "", err
 	}
 	t.Add(name)
@@ -127,7 +127,7 @@ func (t *Temps) create(dir, pattern string) (string, error) {
 // (exit 143), as the traps of common do.
 func (t *Temps) Cleanup() {
 	for _, p := range t.paths {
-		os.RemoveAll(p)
+		_ = os.RemoveAll(p)
 	}
 	t.paths = nil
 }

@@ -164,7 +164,7 @@ func (r *runner) macos(c mcase) {
 	src := source.Source{Root: clone, Side: source.Macos}
 	confd := filepath.Join(r.dir, "out", "conf.d")
 	g := &Generator{Side: source.Macos, ToolsDir: src.ToolsDir(), Shown: src.ToolsShown(), Getenv: r.getenv}
-	defer g.Close()
+	defer func() { _ = g.Close() }()
 	var tools []string
 	switch c.mode {
 	case "full":

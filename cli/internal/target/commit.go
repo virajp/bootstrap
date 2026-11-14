@@ -100,7 +100,7 @@ func (e *Env) RecordCommit(file, key, commit, comment, header string) fail.Code 
 	mode := os.FileMode(0o644)
 	var out strings.Builder
 	if isFile && readErr != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return cannot()
 	}
 	if isFile {
@@ -116,15 +116,15 @@ func (e *Env) RecordCommit(file, key, commit, comment, header string) fail.Code 
 		out.WriteString(line + "\n")
 	}
 	if err := os.WriteFile(tmp, []byte(out.String()), 0o600); err != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return cannot()
 	}
 	if err := os.Chmod(tmp, mode); err != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return cannot()
 	}
 	if err := Move(tmp, real); err != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return cannot()
 	}
 	if r.Verbose() {

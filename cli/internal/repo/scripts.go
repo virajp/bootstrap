@@ -66,7 +66,7 @@ func (s *state) derive(tools []string, base map[string]*source.Obj) (map[string]
 			continue
 		}
 		if res.Ran && len(res.Stderr) > 0 {
-			s.stderr.Write(res.Stderr)
+			_, _ = s.stderr.Write(res.Stderr)
 		}
 		if o == nil {
 			continue
@@ -109,7 +109,7 @@ func (s *state) checks() fail.Code {
 			continue
 		}
 		if res.Ran && len(res.Stderr) > 0 {
-			s.stderr.Write(res.Stderr)
+			_, _ = s.stderr.Write(res.Stderr)
 		}
 		if res.Ran && s.listChecks {
 			s.r.Success("check script of " + res.Tool)

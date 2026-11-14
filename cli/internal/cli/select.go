@@ -151,12 +151,12 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 		}
 	}
 	tree, _ := renderTree(listRoots(s), depsOf(s), opt)
-	fmt.Fprint(a.stdout, tree)
+	_, _ = fmt.Fprint(a.stdout, tree)
 	if code != fail.OK {
 		return code
 	}
 	if len(d.Offers) == 0 && len(d.Unknown) == 0 {
-		fmt.Fprintln(a.stdout)
+		_, _ = fmt.Fprintln(a.stdout)
 		report.NewPrinter(a.stdout, style).Success("No tool to add")
 		return fail.OK
 	}

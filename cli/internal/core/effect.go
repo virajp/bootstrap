@@ -45,7 +45,7 @@ func InitState(sd Side) (*State, error) {
 	if err != nil {
 		return nil, problem(fail.Other, "cannot create a temp folder", "")
 	}
-	defer os.RemoveAll(tmp)
+	defer func() { _ = os.RemoveAll(tmp) }()
 	tmpValues := tmp + "/" + filepath.Base(sd.Values)
 	read := func() (*State, error) {
 		if err := os.WriteFile(tmpValues, p.Next, 0o644); err != nil {

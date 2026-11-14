@@ -65,13 +65,13 @@ func write(mode, content, dest, fileMode string, check bool, explicit string, me
 		show := e.Show(path)
 		if !e.DryRun {
 			d = target.Dirname(path)
-			os.MkdirAll(d, 0o777)
+			_ = os.MkdirAll(d, 0o777)
 		}
 		tmp, err := e.Temps.Create(d)
 		if err != nil {
 			return 99
 		}
-		os.WriteFile(tmp, []byte(content), 0o600)
+		_ = os.WriteFile(tmp, []byte(content), 0o600)
 		if check {
 			if _, rc := e.Check(tmp, path, explicit, merge, show); rc != 0 {
 				e.Abort(tmp, path, show)
@@ -99,10 +99,10 @@ func writeReal(mode, content, rel string) op {
 		d := h.tmp
 		if !e.DryRun {
 			d = target.Dirname(dest)
-			os.MkdirAll(d, 0o777)
+			_ = os.MkdirAll(d, 0o777)
 		}
 		tmp, _ := e.Temps.Create(d)
-		os.WriteFile(tmp, []byte(content), 0o600)
+		_ = os.WriteFile(tmp, []byte(content), 0o600)
 		return int(e.Finish(os.FileMode(m), tmp, dest, "~/"+rel, "generated"))
 	}}
 }
@@ -279,7 +279,7 @@ func finishResult(t *testing.T, base, stdout, stderr string) result {
 	}
 	var tree strings.Builder
 	var paths []string
-	filepath.WalkDir(base, func(p string, d fs.DirEntry, err error) error {
+	_ = filepath.WalkDir(base, func(p string, d fs.DirEntry, err error) error {
 		if p != base {
 			paths = append(paths, p)
 		}
@@ -301,7 +301,7 @@ func finishResult(t *testing.T, base, stdout, stderr string) result {
 			// A read-only folder of a case: open it again, so the test can
 			// remove it.
 			if info.Mode().Perm()&0o200 == 0 {
-				os.Chmod(p, 0o755)
+				_ = os.Chmod(p, 0o755)
 			}
 		default:
 			b, _ := os.ReadFile(p)

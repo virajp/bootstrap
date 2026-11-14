@@ -260,7 +260,7 @@ func (s *state) renderTemplate(tool, src, tmp string) bool {
 
 // gomplateError prints <msg> as the JSON log line of a failed gomplate.
 func (s *state) gomplateError(msg string) {
-	fmt.Fprintf(s.stderr, `{"time":"%s","level":"ERROR","msg":"","err":%s}`+"\n",
+	_, _ = fmt.Fprintf(s.stderr, `{"time":"%s","level":"ERROR","msg":"","err":%s}`+"\n",
 		time.Now().Format("2006-01-02T15:04:05.999999Z07:00"), source.JSON(msg))
 }
 

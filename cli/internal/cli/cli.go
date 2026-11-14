@@ -213,7 +213,7 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		switch cmd {
 		case "-h", "-help", "--help", "help":
 			if !mac {
-				fmt.Fprint(stdout, Usage)
+				_, _ = fmt.Fprint(stdout, Usage)
 				return fail.OK
 			}
 		}
@@ -241,7 +241,7 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		return fail.Usage
 	}
 	if o.help {
-		fmt.Fprint(stdout, Usage)
+		_, _ = fmt.Fprint(stdout, Usage)
 		return fail.OK
 	}
 	if code := a.kindWord(mac, cmd, own, &o); code != fail.OK {
@@ -260,7 +260,7 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		return fail.Usage
 	}
 	if cmd == "version" {
-		fmt.Fprintln(stdout, version)
+		_, _ = fmt.Fprintln(stdout, version)
 		return fail.OK
 	}
 	// The config file, before any other work.
@@ -429,7 +429,7 @@ func (a *app) usageErr(problem, usage string) {
 	p := a.printer()
 	p.ErrorFix(problem, "")
 	if usage != "" {
-		fmt.Fprintf(a.stderr, "  usage: %s\n", usage)
+		_, _ = fmt.Fprintf(a.stderr, "  usage: %s\n", usage)
 	}
 	p.Fix("Run bootstrap --help for all commands")
 }

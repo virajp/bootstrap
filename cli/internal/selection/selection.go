@@ -125,7 +125,8 @@ func CheckPacks(src source.Source, p *source.Packs) error {
 	if len(p.BadDescriptions) > 0 {
 		return usage("%s: [pack.%s] description must be a string", shown, p.BadDescriptions[0])
 	}
-	for _, b := range p.Bad {
+	if len(p.Bad) > 0 {
+		b := p.Bad[0]
 		switch b.Key + ":" + b.Kind {
 		case "depends:slice", "required:slice", "tools:slice", "default:slice":
 			return usage("%s: [pack.%s] %s is the old format - write each member as <tool> = {}", shown, b.Pack, b.Key)

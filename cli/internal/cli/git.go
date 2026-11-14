@@ -63,7 +63,7 @@ func (a *app) consent(yes bool, n int) (done bool, code fail.Code) {
 		a.fail("changes need --yes", "run the command in a terminal, or add --yes")
 		return true, fail.Usage
 	}
-	fmt.Fprintf(a.stdout, "? Write %s? [y/N] ", count(n, "change"))
+	_, _ = fmt.Fprintf(a.stdout, "? Write %s? [y/N] ", count(n, "change"))
 	line, _ := a.readLine()
 	switch strings.ToLower(strings.TrimSpace(line)) {
 	case "y", "yes":

@@ -26,50 +26,6 @@ func (s *state) fileMode(key string) string {
 	return "generated"
 }
 
-// spared is `_rs_spared`: <path> is a seed or a merge target of a tool of
-// this run.
-func (s *state) spared(path string) bool {
-	for _, p := range s.spare {
-		if p == path {
-			return true
-		}
-	}
-	return false
-}
-
-// remove is `_rs_remove`: it removes the file <path> of the tool from this
-// repo, if it exists.
-func (s *state) remove(path string) fail.Code {
-	if s.spared(path) {
-		return fail.OK
-	}
-	dest := s.root + "/" + path
-	show := s.path(dest)
-	if !exists(dest) {
-		return fail.OK
-	}
-	if s.e.DryRun {
-		s.e.Plan(dest, report.Removed)
-		s.r.Outcome(report.Removed, show, "", "would remove "+show)
-		return fail.OK
-	}
-	// rm -f: a folder is not removed.
-	info, err := os.Lstat(dest)
-	if err == nil && info.IsDir() {
-		err = errors.New("is a directory")
-	} else if err == nil {
-		if err = os.Remove(dest); os.IsNotExist(err) {
-			err = nil
-		}
-	}
-	if err != nil {
-		s.r.Outcome(report.Failed, show, "cannot remove", "cannot remove "+show)
-		return fail.Other
-	}
-	s.r.Outcome(report.Removed, show, "", "removed    "+show)
-	return fail.OK
-}
-
 // skipRequired is `_rs_skip_required`: the target of the file <path> of
 // <tool> is not written, because an item of its `requires` or
 // `requires_found` is not there. A seed that exists stays, as with no

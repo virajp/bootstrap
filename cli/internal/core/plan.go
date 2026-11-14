@@ -160,7 +160,7 @@ func EditTOML(in []byte, exprs []string) ([]byte, error) {
 	if err != nil {
 		return nil, fail.New(fail.Other, "cannot create a temp folder")
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 	p := dir + "/values.toml"
 	if err := os.WriteFile(p, in, 0o600); err != nil {
 		return nil, fail.New(fail.Other, "cannot write a temp file")
@@ -218,7 +218,7 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 	if err != nil {
 		return p, problem(fail.Other, "cannot create a temp folder", "")
 	}
-	defer os.RemoveAll(tmp)
+	defer func() { _ = os.RemoveAll(tmp) }()
 	tmpValues := tmp + "/" + filepath.Base(sd.Values)
 	write := func() error {
 		if err := os.WriteFile(tmpValues, p.Next, 0o644); err != nil {

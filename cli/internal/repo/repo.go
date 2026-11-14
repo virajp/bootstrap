@@ -254,7 +254,7 @@ func (s *state) sync(dryRun bool) fail.Code {
 	}
 
 	cleanup := func(code fail.Code) fail.Code {
-		os.RemoveAll(dir)
+		_ = os.RemoveAll(dir)
 		return code
 	}
 	if code := s.readEnvs(); code != fail.OK {
@@ -308,7 +308,7 @@ func (s *state) sync(dryRun bool) fail.Code {
 			return false
 		},
 	}
-	defer g.Close()
+	defer func() { _ = g.Close() }()
 	for _, step := range []func() fail.Code{
 		func() fail.Code { return s.overrides(g, false) },
 		func() fail.Code { _, code := s.memberList("template context"); return code },
@@ -419,9 +419,9 @@ func (s *state) sync(dryRun bool) fail.Code {
 		worst = max(worst, rc)
 	}
 	if s.stage != "" {
-		os.RemoveAll(s.stage)
+		_ = os.RemoveAll(s.stage)
 	}
-	os.RemoveAll(dir)
+	_ = os.RemoveAll(dir)
 
 	// Only a sync without a failure removes stale files and writes the
 	// manifest, so a failure here leaves the old manifest for the next clean
@@ -514,7 +514,7 @@ func (s *state) check() fail.Code {
 		ProjectRoot: s.root,
 		Getenv:      s.getenv,
 	}
-	defer g.Close()
+	defer func() { _ = g.Close() }()
 	add(s.overrides(g, true))
 	_, code := s.memberList(strings.TrimPrefix(s.values, s.root+"/"))
 	add(code)

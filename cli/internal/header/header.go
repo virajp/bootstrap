@@ -80,7 +80,7 @@ func HasFile(path string) bool {
 	if err != nil {
 		return false
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	var buf bytes.Buffer
 	r := bufio.NewReader(f)
 	for n := 0; n < 3; n++ {

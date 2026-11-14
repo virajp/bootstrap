@@ -146,7 +146,7 @@ func (r *Report) Verbose() bool { return r.opt.Verbose }
 
 // Log prints a log line with the prefix.
 func (r *Report) Log(msg string) {
-	fmt.Fprintf(r.w, "%s: %s\n", r.opt.Prefix, msg)
+	_, _ = fmt.Fprintf(r.w, "%s: %s\n", r.opt.Prefix, msg)
 }
 
 // Outcome reports one target: it counts <kind> and prints its line. <text> is
@@ -185,16 +185,16 @@ func (r *Report) listLine(kind Kind, path, text string) {
 	}
 	if !r.opt.Style {
 		if kind == Failed {
-			fmt.Fprintf(r.w, "%s %s: %s\n", word, path, text)
+			_, _ = fmt.Fprintf(r.w, "%s %s: %s\n", word, path, text)
 		} else {
-			fmt.Fprintf(r.w, "%s %s\n", word, path)
+			_, _ = fmt.Fprintf(r.w, "%s %s\n", word, path)
 		}
 		return
 	}
 	if kind == Failed {
-		fmt.Fprintf(r.w, "%s%s %-*s %s: %s%s\n", k.color, k.glyph, width, word, path, text, reset)
+		_, _ = fmt.Fprintf(r.w, "%s%s %-*s %s: %s%s\n", k.color, k.glyph, width, word, path, text, reset)
 	} else {
-		fmt.Fprintf(r.w, "%s%s %-*s %s%s\n", k.color, k.glyph, width, word, path, reset)
+		_, _ = fmt.Fprintf(r.w, "%s%s %-*s %s%s\n", k.color, k.glyph, width, word, path, reset)
 	}
 }
 

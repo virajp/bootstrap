@@ -125,27 +125,6 @@ func readTabs(line string) (a, b, c string) {
 	return a, b, line
 }
 
-// readWords is `read -r a b c` with the default IFS: c keeps the rest of the
-// line, without the blanks at its start and its end.
-func readWords(line string) (a, b, c string) {
-	blank := func(r rune) bool { return r == ' ' || r == '\t' }
-	line = strings.TrimFunc(line, blank)
-	field := func() string {
-		i := strings.IndexFunc(line, blank)
-		if i < 0 {
-			f := line
-			line = ""
-			return f
-		}
-		f := line[:i]
-		line = strings.TrimLeftFunc(line[i:], blank)
-		return f
-	}
-	a = field()
-	b = field()
-	return a, b, line
-}
-
 // copyFile is `cp -- <src> <dst>`: the content of <src> into <dst>. An
 // existing <dst> keeps its mode.
 func copyFile(src, dst string) bool {
@@ -163,6 +142,6 @@ func copyFile(src, dst string) bool {
 
 // gomplateError prints <msg> as the JSON log line of a failed gomplate.
 func gomplateError(w io.Writer, msg string) {
-	fmt.Fprintf(w, `{"time":"%s","level":"ERROR","msg":"","err":%s}`+"\n",
+	_, _ = fmt.Fprintf(w, `{"time":"%s","level":"ERROR","msg":"","err":%s}`+"\n",
 		time.Now().Format("2006-01-02T15:04:05.999999Z07:00"), source.JSON(msg))
 }

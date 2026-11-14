@@ -45,12 +45,12 @@ func (a *app) list(mac bool) fail.Code {
 		return cell{vis: g + " required", colored: g + " required"}, ""
 	}}
 	out, arrows := renderTree(roots, deps, opt)
-	fmt.Fprint(a.stdout, out)
+	_, _ = fmt.Fprint(a.stdout, out)
 	text := count(len(s.Res.Tools), "tool")
 	if arrows {
 		text += " · " + report.Arrow(style) + " = the subtree shows above"
 	}
-	fmt.Fprintln(a.stdout)
+	_, _ = fmt.Fprintln(a.stdout)
 	report.NewPrinter(a.stdout, style).Info(text)
 	return fail.OK
 }

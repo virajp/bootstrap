@@ -179,11 +179,11 @@ func (s *state) run(args []string) fail.Code {
 		case "--no-bootstrap":
 			bootstrap = false
 		case "-h", "--help":
-			fmt.Fprint(s.stdout, Usage)
+			_, _ = fmt.Fprint(s.stdout, Usage)
 			return fail.OK
 		default:
 			s.log("unknown flag '%s'", arg)
-			fmt.Fprint(s.stderr, Usage)
+			_, _ = fmt.Fprint(s.stderr, Usage)
 			return fail.Usage
 		}
 	}
@@ -265,7 +265,7 @@ func (s *state) run(args []string) fail.Code {
 		Tools:       s.res.Tools,
 		Derived:     s.derived,
 	}
-	defer g.Close()
+	defer func() { _ = g.Close() }()
 	if s.valFile != "" {
 		if err := g.Overrides(s.res.Tools, nil, false); err != nil {
 			return s.logAll(err)
