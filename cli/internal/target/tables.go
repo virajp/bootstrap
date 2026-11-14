@@ -92,8 +92,16 @@ func (e *Env) AddTables(file string, names []string, head string, listOnly bool)
 		}
 		lead.WriteString(l)
 	}
-	if h := lead.String(); h != "" && !strings.HasPrefix(out, h) {
-		out = h + "\n" + out
+	// yq also drops the blank line that ends them, and bootstrap_commit
+	// goes after the header comments only when a blank line ends them.
+	if h := lead.String(); h != "" {
+		blank := strings.HasPrefix(strings.TrimLeft(string(in)[len(h):], " \t"), "\n")
+		switch {
+		case !strings.HasPrefix(out, h):
+			out = h + "\n" + out
+		case blank && !strings.HasPrefix(out[len(h):], "\n"):
+			out = h + "\n" + out[len(h):]
+		}
 	}
 	if err := os.WriteFile(tmp, []byte(out), 0o600); err != nil {
 		os.Remove(tmp)

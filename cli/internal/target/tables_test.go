@@ -59,8 +59,17 @@ func TestAddTablesNewFile(t *testing.T) {
 		t.Fatalf("code %d: %s", code, b.String())
 	}
 	got, _ := os.ReadFile(file)
-	if !strings.HasPrefix(string(got), "# New.\n") || !strings.Contains(string(got), "format = 2") || !strings.Contains(string(got), "[tools.m]") {
+	// The blank line after the header stays, so bootstrap_commit goes after
+	// the header and the header stays on line 1.
+	if !strings.HasPrefix(string(got), "# New.\n\nformat = 2\n") || !strings.Contains(string(got), "[tools.m]") {
 		t.Errorf("new file = %q", got)
+	}
+	if code := e.RecordCommit(file, "bootstrap_commit", "abc", "", ""); code != fail.OK {
+		t.Fatalf("record: code %d: %s", code, b.String())
+	}
+	got, _ = os.ReadFile(file)
+	if !strings.HasPrefix(string(got), "# New.\n\nbootstrap_commit = \"abc\"\n") {
+		t.Errorf("after record = %q", got)
 	}
 	// Without a head, a missing file is an error.
 	if code := e.AddTables(filepath.Join(dir, "nope.toml"), []string{"m"}, "", false); code != fail.Other {
