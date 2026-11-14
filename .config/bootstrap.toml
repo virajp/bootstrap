@@ -17,3 +17,4 @@ repo_url = "https://github.com/virajp/bootstrap"
 [tools.pre-commit]
 [tools.node]
 [tools.python]
+[tools.vscode]
