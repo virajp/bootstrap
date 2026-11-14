@@ -15,7 +15,10 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/source"
 )
 
-// init is `bootstrap [mac] init [tool...]`.
+// init is `bootstrap [mac] init [--no-tui]`. It takes the path of --no-tui
+// in a terminal too, until the TUI lands: it migrates an old form, or
+// creates the values file with a table for each member of the pack base,
+// asks the questions without an answer, and syncs.
 func (a *app) init(mac bool, o opts) fail.Code {
 	sd, c, code := a.side(mac, true, mac)
 	if c != nil {
@@ -24,7 +27,7 @@ func (a *app) init(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
-	return a.finish(sd, o, core.List{Init: true, InitNames: o.names})
+	return a.finish(sd, o, core.List{Init: true})
 }
 
 // side does the preflight of a command of the side and takes its clone. The
@@ -69,6 +72,9 @@ func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
 		}
 	}
 	a.reasons = append(a.reasons, p.Reasons...)
+	for _, s := range p.Skipped {
+		a.infof("%s", skipText(s))
+	}
 
 	if p.Empty() {
 		a.nothingToChange()
@@ -104,7 +110,7 @@ func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
 	if code := a.stopDirty(p.Dirty()); code != fail.OK {
 		return code
 	}
-	if done, code := a.consent(o.yes || o.confirmed, len(entries)); done {
+	if done, code := a.consent(o.yes, len(entries)); done {
 		return code
 	}
 	opt.Step = a.step
@@ -118,6 +124,19 @@ func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
 	}
 	a.keptSeeds(p.Seeds)
 	return code
+}
+
+// skipText gives the line of a member of a pack that the command leaves out.
+func skipText(s core.Skip) string {
+	switch s.Why {
+	case "hosts":
+		return s.Tool + " is left out: its hosts leave out this host"
+	case "selectable":
+		return s.Tool + " is left out: it is not selectable; a tool that needs it selects it"
+	case "root_only":
+		return s.Tool + " is left out: it is root_only, and this repository is a submodule"
+	}
+	return s.Tool + " is left out"
 }
 
 // step prints a step of core.Apply.

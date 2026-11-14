@@ -467,11 +467,11 @@
         "U3"
       ],
       "waits": "The commands build a change list for Plan and Apply of U3.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T04:34:01.736Z",
+      "ended": "2026-11-14T04:40:13.859Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -585,8 +585,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T04:34:01.698Z",
       "ended": ""
     },
     {

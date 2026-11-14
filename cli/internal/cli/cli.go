@@ -32,47 +32,56 @@ import (
 const Usage = `usage: bootstrap <command> [flags]
 
 Repository
-  init [tool...]       select base and the named tools, migrate an old form,
-                       ask the questions without an answer, then sync
+  init                 migrate an old form, or create the values file with
+                       the members of the pack base, ask the questions
+                       without an answer, then sync
   sync                 sync the repository of the current folder
   check                examine the values file of the repository
   questions [tool...]  list the questions of the tools, with their proposals
                        and their answers
-  add <tool...>        select the tools and their dependencies, ask their
+  add tool <tool...>   select the tools and their dependencies, ask their
                        questions, then sync
-  remove <tool...>     remove the tools and the dependencies that no other
+  add pack <pack...>   select each member of the packs that is not selected,
+                       and their dependencies, ask their questions, then sync
+  remove tool <tool...>
+                       remove the tools and the dependencies that no other
                        tool needs, then sync
-  replace <old> <new>  run the migrate script of <new> for <old>, swap the
+  replace tool <old> <new>
+                       run the migrate script of <new> for <old>, swap the
                        tools, then sync
-  detect               run the detect scripts, and offer to add each tool
-                       that matches
+  detect               run the detect scripts and list the tools that match;
+                       exit 1 when a tool that matches is not selected
   list, ls             print the selected tools as a tree
   config               print each setting of the engine, with its value and
                        its source
   version, --version   print the version
 
 Mac
-  mac init [tool...]   init for the Mac, in the current folder (the
+  mac init             init for the Mac, in the current folder (the
                        repository of macos.toml)
   mac sync             sync the Mac from MACOS_SETUP_REPO_PATH
   mac check            show what mac sync changes, and write nothing
   mac questions [tool...]
                        the questions of the Mac tools
-  mac add, mac remove, mac replace, mac detect
+  mac add tool|pack, mac remove tool, mac replace tool, mac detect
                        the selection commands for macos.toml
   mac list, mac ls     print the selected Mac tools as a tree
 
 Flags
   --dry-run            init, sync, add, remove, replace, detect: show the
                        changes, and write nothing
-  --yes, -y            init, add, remove, replace, detect: write the changes
-                       without a prompt; detect: add each matched tool
-  --no                 detect: add nothing; a matched tool that is not
-                       selected exits 1
+  --yes, -y            init, add, remove, replace, detect --add: write the
+                       changes without a prompt
+  --no-tui             init: select no tool on a screen; init takes this
+                       path in each case for now
+  --add                detect: add each matched tool that is not selected,
+                       after the consent
+  --exclude <member>   add pack: leave out a member of the pack, as
+                       packs.toml writes it (repeatable; one pack only)
   --answer <tool>.<key>=<value>
-                       init, add, replace, detect: the answer of a question
-                       (repeatable); --answer <tool>.<key>= writes an empty
-                       answer for an optional or a group question
+                       init, add, replace, detect --add: the answer of a
+                       question (repeatable); --answer <tool>.<key>= writes
+                       an empty answer for an optional or a group question
   --json               questions, mac questions: JSON output
   --no-bootstrap       mac init, mac sync, mac check: skip mise bootstrap
   --jobs <n>           the jobs at a time (default: 2 x the CPU count)
@@ -90,14 +99,14 @@ Flags
 
 // argsOf gives the arguments of a command in its usage line.
 var argsOf = map[string]string{
-	"init": " [tool...]", "questions": " [tool...]", "add": " <tool...>",
-	"remove": " <tool...>", "replace": " <old> <new>",
+	"questions": " [tool...]", "add": " tool|pack <name...>",
+	"remove": " tool <tool...>", "replace": " tool <old> <new>",
 }
 
 // flagUsage gives each flag of a usage line, by the name of the flag.
 var flagUsage = map[string]string{
 	"answer": "[--answer <tool>.<key>=<value>]", "jobs": "[--jobs <n>]",
-	"repo-path": "[--repo-path <path>]",
+	"repo-path": "[--repo-path <path>]", "exclude": "[--exclude <member>]",
 }
 
 // usageLine gives the usage line of a command: its arguments and its own
@@ -140,12 +149,13 @@ type app struct {
 
 // opts are the flags and the arguments of a command.
 type opts struct {
-	dryRun, yes, no, json, noBootstrap, help bool
-	verbose                                  bool
-	confirmed                                bool // The user said yes to the changes at a prompt.
-	answers                                  []string
-	names                                    []string
-	values                                   map[string]string // The value flags of the settings, by flag name.
+	dryRun, yes, json, noBootstrap, help bool
+	verbose, noTUI, add                  bool
+	answers                              []string
+	kind                                 string            // add, remove, replace: the kind word, tool or pack.
+	names                                []string          // The names after the kind word.
+	exclude                              []string          // add pack: the members of --exclude.
+	values                               map[string]string // The value flags of the settings, by flag name.
 }
 
 // Run runs the command of <args> and gives its exit code.
@@ -181,14 +191,14 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		cmd = "list"
 	}
 	allowed := map[string]string{
-		"init":      "dry-run yes answer jobs verbose",
+		"init":      "dry-run yes no-tui answer jobs verbose",
 		"sync":      "dry-run jobs verbose",
 		"check":     "jobs verbose",
 		"questions": "json",
-		"add":       "dry-run yes answer jobs verbose",
+		"add":       "dry-run yes exclude answer jobs verbose",
 		"remove":    "dry-run yes jobs verbose",
 		"replace":   "dry-run yes answer jobs verbose",
-		"detect":    "dry-run yes no answer jobs verbose",
+		"detect":    "dry-run add yes answer jobs verbose",
 		"list":      "",
 		"config":    "jobs repo-path",
 		"version":   "",
@@ -229,8 +239,19 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		fmt.Fprint(stdout, Usage)
 		return fail.OK
 	}
-	if (cmd == "add" || cmd == "remove") && len(o.names) == 0 {
-		a.usageErr(cmdWord(mac, cmd)+" needs at least one tool", usageLine(mac, cmd, own))
+	if code := a.kindWord(mac, cmd, own, &o); code != fail.OK {
+		return code
+	}
+	if cmd == "init" && len(o.names) > 0 {
+		a.fail(cmdWord(mac, "init")+" takes no tool names", "use: "+cmdName(mac, "add tool")+" "+strings.Join(o.names, " "))
+		return fail.Usage
+	}
+	if cmd == "detect" && !o.add && (o.yes || len(o.answers) > 0) {
+		flag := "--yes"
+		if !o.yes {
+			flag = "--answer"
+		}
+		a.fail(cmdWord(mac, "detect")+" "+flag+" needs --add", "add --add")
 		return fail.Usage
 	}
 	if cmd == "version" {
@@ -265,6 +286,44 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 	}
 }
 
+// kindWord takes the kind word of add, remove and replace from the names of
+// <o>: add takes tool or pack, remove and replace take tool. A name with no
+// kind word is the old form (code 2, with the hint of the new form).
+// --exclude is only for add pack.
+func (a *app) kindWord(mac bool, cmd, own string, o *opts) fail.Code {
+	if cmd != "add" && cmd != "remove" && cmd != "replace" {
+		return fail.OK
+	}
+	kinds := "tool"
+	if cmd == "add" {
+		kinds = "tool or pack"
+	}
+	usage := usageLine(mac, cmd, own)
+	if len(o.names) == 0 {
+		a.usageErr(cmdWord(mac, cmd)+" needs the kind word "+kinds, usage)
+		return fail.Usage
+	}
+	switch kind := o.names[0]; {
+	case kind == "tool" || (kind == "pack" && cmd == "add"):
+		o.kind, o.names = kind, o.names[1:]
+	case kind == "pack":
+		a.usageErr(cmdWord(mac, cmd)+" takes the kind word tool only - there is no "+cmd+" pack", usage)
+		return fail.Usage
+	default:
+		a.fail(cmdWord(mac, cmd)+" needs the kind word "+kinds+" before the names", "use: "+cmdName(mac, cmd+" tool")+" "+strings.Join(o.names, " "))
+		return fail.Usage
+	}
+	if len(o.exclude) > 0 && o.kind != "pack" {
+		a.usageErr("--exclude is only for "+cmdWord(mac, "add pack"), usage)
+		return fail.Usage
+	}
+	if len(o.names) == 0 && cmd != "replace" {
+		a.usageErr(cmdWord(mac, cmd+" "+o.kind)+" needs at least one "+o.kind, usage)
+		return fail.Usage
+	}
+	return fail.OK
+}
+
 // parse reads the flags of <flags> (names without dashes) and, with
 // <names>, the arguments.
 func parse(cmd string, args []string, flags string, names bool) (opts, error) {
@@ -293,7 +352,7 @@ func parse(cmd string, args []string, flags string, names bool) (opts, error) {
 		if !has[name] {
 			return o, fmt.Errorf("%s has no flag %s", cmd, arg)
 		}
-		takes := name == "answer" || name == "jobs" || name == "config" || name == "cache-dir" ||
+		takes := name == "answer" || name == "exclude" || name == "jobs" || name == "config" || name == "cache-dir" ||
 			name == "url" || name == "clone" || name == "repo-path"
 		if takes && !withValue {
 			if i+1 >= len(args) {
@@ -309,8 +368,15 @@ func parse(cmd string, args []string, flags string, names bool) (opts, error) {
 			o.dryRun = true
 		case "yes":
 			o.yes = true
-		case "no":
-			o.no = true
+		case "no-tui":
+			o.noTUI = true
+		case "add":
+			o.add = true
+		case "exclude":
+			if value == "" {
+				return o, fmt.Errorf("--exclude needs a value")
+			}
+			o.exclude = append(o.exclude, value)
 		case "json":
 			o.json = true
 		case "no-bootstrap":

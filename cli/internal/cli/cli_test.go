@@ -269,7 +269,9 @@ func TestUsageLine(t *testing.T) {
 		want       string
 	}{
 		{false, "sync", "dry-run jobs verbose", "bootstrap sync [--dry-run] [--jobs <n>] [--verbose]"},
-		{true, "add", "dry-run yes answer jobs verbose no-bootstrap", "bootstrap mac add <tool...> [--dry-run] [--yes] [--answer <tool>.<key>=<value>] [--jobs <n>] [--verbose] [--no-bootstrap]"},
+		{true, "add", "dry-run yes exclude answer jobs verbose no-bootstrap", "bootstrap mac add tool|pack <name...> [--dry-run] [--yes] [--exclude <member>] [--answer <tool>.<key>=<value>] [--jobs <n>] [--verbose] [--no-bootstrap]"},
+		{false, "replace", "dry-run", "bootstrap replace tool <old> <new> [--dry-run]"},
+		{false, "init", "no-tui", "bootstrap init [--no-tui]"},
 		{false, "list", "", "bootstrap list"},
 	} {
 		if got := usageLine(c.mac, c.cmd, c.flags); got != c.want {

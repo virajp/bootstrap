@@ -476,3 +476,58 @@ question = "D?"
 		t.Errorf("pending %q", got)
 	}
 }
+
+// TestPlanInit: init on a new values file writes format = 2 and a table for
+// each member of base (add pack base; D6, D16 c). init on a file with format
+// = 2 adds no member of base that is not required again.
+func TestPlanInit(t *testing.T) {
+	tools := map[string]string{"a": "", "b": "depends = [ \"e\" ]\n", "e": "", "h": "selectable = false\n"}
+	const packs = "[pack.base]\na = { required = true }\nb = {}\nh = {}\n"
+	sd := fixture(t, source.Macos, tools, packs, "")
+	(&fakeSync{}).install(t, sd)
+	p, err := Plan(sd, List{Init: true}, Options{})
+	if err != nil {
+		t.Fatal(problems(err))
+	}
+	// a is selected as a required member already: the table of a required
+	// member comes from requiredTables.
+	if want := []string{"create the values file", "select e", "select b", "add [tools.a] (required by the base pack)"}; !reflect.DeepEqual(p.Notes, want) {
+		t.Errorf("notes = %v, want %v", p.Notes, want)
+	}
+	next := string(p.Next)
+	if !strings.HasPrefix(next, MacHeader+"\n") || !strings.Contains(next, "format = 2") {
+		t.Errorf("next:\n%s", next)
+	}
+	for _, tbl := range []string{"[tools.a]", "[tools.b]", "[tools.e]"} {
+		if !strings.Contains(next, tbl) {
+			t.Errorf("next lacks %s:\n%s", tbl, next)
+		}
+	}
+	if strings.Contains(next, "[tools.h]") || !reflect.DeepEqual(p.Skipped, []Skip{{"h", "selectable"}}) {
+		t.Errorf("h: skipped %v next:\n%s", p.Skipped, next)
+	}
+	if p.AskOnly != nil {
+		t.Errorf("askOnly = %v", p.AskOnly)
+	}
+
+	// The repo side: format = 2 next to the keys of a new file.
+	rd := fixture(t, source.Repo, map[string]string{"a": "default_envs = [ \"dev\" ]\ndepends = []\nroot_only = false\n"},
+		"[pack.base]\na = { required = true }\n", "")
+	(&fakeSync{}).install(t, rd)
+	if p, err = Plan(rd, List{Init: true}, Options{}); err != nil {
+		t.Fatal(problems(err))
+	}
+	if next := string(p.Next); !strings.Contains(next, "format = 2") || !strings.Contains(next, "repo_name") || !strings.Contains(next, "[tools.a]") {
+		t.Errorf("repo next:\n%s", next)
+	}
+
+	// A file with format = 2 without the member b: init does not add it.
+	sd2 := fixture(t, source.Macos, tools, packs, "format = 2\n\n[tools.a]\n")
+	(&fakeSync{}).install(t, sd2)
+	if p, err = Plan(sd2, List{Init: true}, Options{}); err != nil {
+		t.Fatal(problems(err))
+	}
+	if len(p.Changes) != 0 || strings.Contains(string(p.Next), "[tools.b]") {
+		t.Errorf("changes %v next:\n%s", p.Changes, p.Next)
+	}
+}

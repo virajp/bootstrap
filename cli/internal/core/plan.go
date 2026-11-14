@@ -75,13 +75,11 @@ func FlagAnswer(text string) Answer {
 // List is the change list of a command.
 type List struct {
 	// Init creates the values file, or migrates its old form, and asks the
-	// questions of each selected tool.
-	Init bool
-	// InitNames are the tools of `init [tool...]`: each one without a table
-	// gets an empty table.
-	InitNames []string
-	Items     []Item
-	Answers   []Answer
+	// questions of each selected tool. A new values file gets the key format
+	// and a table for each member of the pack base (add pack base).
+	Init    bool
+	Items   []Item
+	Answers []Answer
 }
 
 // Skip is a member of a pack that add pack leaves out, and why: "hosts"
@@ -183,21 +181,6 @@ func EditTOML(in []byte, exprs []string) ([]byte, error) {
 	return []byte(out), nil
 }
 
-// readTOMLText reads TOML text.
-func readTOMLText(b []byte) (*source.Obj, error) {
-	f, err := os.CreateTemp("", "bootstrap-values.*.toml")
-	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(f.Name())
-	if _, err := f.Write(b); err != nil {
-		f.Close()
-		return nil, err
-	}
-	f.Close()
-	return source.ReadTOML(f.Name())
-}
-
 func tmpDir() string {
 	if d := os.Getenv("TMPDIR"); d != "" {
 		return d
@@ -214,7 +197,7 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 	p := &PlanResult{Side: sd}
 	var st *State
 	if l.Init {
-		if err := p.initValues(l.InitNames); err != nil {
+		if err := p.initValues(); err != nil {
 			return p, err
 		}
 	} else {
@@ -245,7 +228,9 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 	}
 	copyOverrides(sd.Values, tmpValues)
 
-	if len(l.Items) > 0 {
+	items := l.Items
+	newFile := l.Init && !p.Existed
+	if len(items) > 0 || newFile {
 		if st == nil {
 			raw, err := source.ReadTOML(tmpValues)
 			if err != nil {
@@ -255,8 +240,13 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 				return p, err
 			}
 		}
+		// A new values file gets the members of base, as add pack base does
+		// (D6, D16 c).
+		if newFile && st.Packs.HasPack(selection.BasePack) {
+			items = append([]Item{{Kind: AddPack, Names: []string{selection.BasePack}}}, items...)
+		}
 		pl := &planner{st: st, p: p, o: o, added: map[string]bool{}, removed: map[string]bool{}}
-		for _, it := range l.Items {
+		for _, it := range items {
 			if err := pl.item(it); err != nil {
 				return p, err
 			}
@@ -395,74 +385,47 @@ func copyOverrides(file, to string) {
 	}
 }
 
-// initValues gives the values file of init: a new file, or the file
-// migrated from its old form, with a table for each name of <names>.
-func (p *PlanResult) initValues(names []string) error {
+// initValues gives the values file of init: a new file with the key
+// format, or the file migrated from its old form.
+func (p *PlanResult) initValues() error {
 	sd := p.Side
-	// The named tools that init cannot select. A problem of the clone shows
-	// in the plan.
-	side := source.Repo
-	if sd.Mac {
-		side = source.Macos
-	}
-	if idx, _ := (source.Source{Root: sd.Clone, Side: side}).Open(); idx != nil {
-		if err := Refuse(idx, names); err != nil {
-			return err
-		}
-	}
 	cur, err := os.ReadFile(sd.Values)
 	p.Cur, p.Existed = cur, err == nil
 	p.Next = cur
 	if !p.Existed {
+		format := fmt.Sprintf("%s = %d\n", oldform.FormatKey, oldform.Format)
 		if sd.Mac {
-			p.Next = []byte(MacHeader + "\n")
+			p.Next = []byte(MacHeader + "\n\n" + format)
 		} else {
 			// The templates need repo_name: the name of the folder.
-			p.Next = []byte(RepoHeader + "\n\nenvironments = [ \"dev\" ]\nrepo_name = " + q(filepath.Base(sd.Root)) + "\n")
+			p.Next = []byte(RepoHeader + "\n\n" + format + "environments = [ \"dev\" ]\nrepo_name = " + q(filepath.Base(sd.Root)) + "\n")
 		}
 		p.Notes = append(p.Notes, "create the values file")
+		return nil
+	}
+	var migs []oldform.Change
+	if sd.Mac {
+		ch, err := oldform.MigrateMac(sd.Values)
+		if err != nil {
+			return err
+		}
+		if ch != nil {
+			migs = append(migs, *ch)
+		}
 	} else {
-		var migs []oldform.Change
-		if sd.Mac {
-			ch, err := oldform.MigrateMac(sd.Values)
-			if err != nil {
-				return err
-			}
-			if ch != nil {
-				migs = append(migs, *ch)
-			}
+		if migs, err = oldform.MigrateRepo(sd.Root, sd.Values); err != nil {
+			return err
+		}
+	}
+	for _, ch := range migs {
+		if ch.Path == sd.Values {
+			p.Next = ch.Content
+			p.Notes = append(p.Notes, ch.Note)
 		} else {
-			if migs, err = oldform.MigrateRepo(sd.Root, sd.Values); err != nil {
-				return err
-			}
-		}
-		for _, ch := range migs {
-			if ch.Path == sd.Values {
-				p.Next = ch.Content
-				p.Notes = append(p.Notes, ch.Note)
-			} else {
-				p.Changes = append(p.Changes, ch)
-			}
+			p.Changes = append(p.Changes, ch)
 		}
 	}
-
-	// The named tools.
-	raw := source.NewObj()
-	if len(p.Next) > 0 {
-		if r, err := readTOMLText(p.Next); err == nil {
-			raw = r
-		}
-	}
-	tools, _ := raw.Get("tools").(*source.Obj)
-	var exprs []string
-	for _, name := range names {
-		if tools == nil || !tools.Has(name) {
-			exprs = append(exprs, ".tools["+q(name)+"] = {}")
-			p.Notes = append(p.Notes, "select "+name)
-		}
-	}
-	p.Next, err = EditTOML(p.Next, exprs)
-	return err
+	return nil
 }
 
 // planner applies the items of a change list to the state of the values
