@@ -1,0 +1,601 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "R2b — the LSP blocks, bootstrap lsp and code:lsp:check",
+  "requires": [
+    "docs/plans/2026-11-14-git-tasks"
+  ],
+  "source": [
+    "B28"
+  ],
+  "backlog": [],
+  "backlog_pieces": [
+    "B28"
+  ],
+  "gaps_of": [],
+  "execution": "teams",
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-14 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint",
+      "mise x -- mise run test:go"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Build the worktree engine (go build -o <tmp>/bootstrap ./cmd/bootstrap in cli/) and export BOOTSTRAP_BIN=<tmp>/bootstrap. In a new scratch git repo, run env -u MISE_PROJECT_ROOT BOOTSTRAP_CONFIG=/nonexistent <tmp>/bootstrap init --no-tui --yes --clone <worktree>, add the go and node tools (<tmp>/bootstrap add tool go --yes --clone <worktree>, the same for node), commit, mise trust. Run <tmp>/bootstrap lsp --json --clone <worktree>; then MISE_ENV=dev mise run code:lsp:check; then MISE_ENV=dev mise install; then MISE_ENV=dev mise run code:lsp:check again.",
+        "pass": "lsp --json lists gopls and typescript-lsp, each with command mise, args starting x, --, and extensionToLanguage as D4 says. The first code:lsp:check exits 1 and names the missing servers with mise install; after mise install it exits 0."
+      },
+      {
+        "id": "K2",
+        "check": "In a scratch repo that selects kotlin and java, run MISE_ENV=dev mise install.",
+        "pass": "kotlin-lsp and jdtls install from their http pins; MISE_ENV=dev mise which jdtls prints a path, and MISE_ENV=dev mise x -- jdtls --help runs (D17)."
+      },
+      {
+        "id": "K3",
+        "check": "In a scratch repo that selects rust, run MISE_ENV=dev mise install, then MISE_ENV=dev mise which rust-analyzer.",
+        "pass": "The path is under the aqua install of rust-analyzer, not the rustup proxy of core:rust (D25)."
+      },
+      {
+        "id": "K4",
+        "check": "In a scratch repo that selects flutter, python (with a pyproject.toml) and go, with BOOTSTRAP_BIN=<tmp>/bootstrap, run MISE_ENV=dev mise install, then MISE_ENV=dev mise run code:lsp:check.",
+        "pass": "code:lsp:check exits 0: dart-lsp, pyrefly and gopls resolve (D31)."
+      }
+    ]
+  },
+  "after_landing": [],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MINOR",
+      "reason": "New behaviour with no break: [lsp] blocks and dev pins in eight language tools, bootstrap lsp, describe's lsp field (additive) and code:lsp:check. It goes into the one bootstrap@4.0.0 tag (R1b D16)."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The engine: the [lsp] block, bootstrap lsp and describe's lsp field",
+      "wave": 1,
+      "file": "01-engine-lsp.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "The [lsp] blocks and the server pins of the language tools",
+      "wave": 1,
+      "file": "02-tool-blocks.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/go/tools.toml",
+        "repo/tools/node/tools.toml",
+        "repo/tools/python/tools.toml",
+        "repo/tools/kotlin/tools.toml",
+        "repo/tools/swift/tools.toml",
+        "repo/tools/flutter/tools.toml",
+        "repo/tools/rust/tools.toml",
+        "repo/tools/java/tools.toml"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "The code:lsp:check task",
+      "wave": 2,
+      "file": "03-lsp-check.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/mise/"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "The task reads the bootstrap lsp --json output that U1 adds.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Tests",
+      "wave": 3,
+      "file": "04-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "The cases run the engine of U1, the tool blocks of U2 and the task of U3 (D27).",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Review: the engine, the tool blocks, the check and the tests",
+      "wave": 4,
+      "file": "05-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U6",
+      "title": "Docs",
+      "wave": 5,
+      "file": "06-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/",
+        "docs/sync/",
+        "docs/memory/decisions/2026-11-14-bootstrap-plugins-split.md"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U7",
+      "title": "Gates",
+      "wave": 6,
+      "file": "07-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U6"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W6",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "every human-facing doc (README.md, CLAUDE.md, docs/**)",
+      "why": "U1 to U3 falsify the tool, command and task docs",
+      "owner": "U6"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Which language tools get an [lsp] block?",
+      "ruling": "User: every language tool: kotlin, swift, flutter, node, go, python, rust and java.",
+      "rejected": "The four stackgen serves (kotlin, swift, flutter, node); kotlin only.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "The Python LSP server.",
+      "ruling": "pyrefly (Recommended): pyrefly lsp, from the pipx:pyrefly pin the python tool has today.",
+      "rejected": "basedpyright.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "The Java LSP server (jdtls is not in the mise registry).",
+      "ruling": "jdtls by http pin (Recommended): a dev-only http:jdtls pin of the Eclipse jdtls milestone archive, in the form of kotlin-lsp. The unit verifies the URLs and stops with a question if they do not resolve.",
+      "rejected": "No Java server yet.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "The shape of the [lsp] block and of bootstrap lsp --json.",
+      "ruling": "Claude-ready output (Recommended): [lsp.<server>] with command, args, extensions (\".ext\" = \"language\"), startup_timeout (optional) and source (a mise tool this tool pins, or \"host\"). bootstrap lsp --json prints data = {servers: {<server>: {command: mise, args: [x, --, <command>, <args>...], extensionToLanguage, startupTimeout}}} for the repo's selected tools, so stackgen copies each entry verbatim.",
+      "rejected": "Raw data only, formatted by stackgen.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "What does code:lsp:check check?",
+      "ruling": "Each server resolves (Recommended): the mise tool ships code/lsp/check; it reads bootstrap lsp --json and tests that each server's command resolves under mise x -- in the dev env. It starts no server. A missing server prints one line with the fix; exit 1 if any is missing, 0 if all resolve or the repo has none.",
+      "rejected": "Each server starts (an LSP initialize).",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "The lsp command and describe's lsp field.",
+      "ruling": "Stated by the planner, confirmed at the shape gate: bootstrap lsp lists the servers of the repo's selected tools, one line each, or in the R1b envelope with --json. describe --json gets an lsp field with the same servers object (additive, R1b D7). contract lists lsp in commands. Outside a repo, or with no .config/bootstrap/, lsp exits 2 like describe (R1b D28).",
+      "rejected": "None with a reasonable case.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "What does check refuse in an [lsp] block?",
+      "ruling": "Stated by the planner, confirmed at the shape gate: code 2 for a block with no command, or no or empty extensions; one server name in two tools; a source that is neither \"host\" nor a mise tool that the same tool pins.",
+      "rejected": "None with a reasonable case.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "Where do the new server pins go?",
+      "ruling": "Stated by the planner, confirmed at the shape gate: every new pin is dev-only, as kotlin-lsp is: go:golang.org/x/tools/gopls (go), npm:typescript-language-server and npm:typescript (node), aqua:rust-lang/rust-analyzer (rust), http:jdtls (java). Verified 2026-11-14: only rust-analyzer is in the mise registry (aqua:rust-lang/rust-analyzer).",
+      "rejected": "Pins in every env.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "Backlog item B28 (install a Claude marketplace and plugins, identify LSP servers).",
+      "ruling": "Stated by the planner, confirmed at the shape gate: R2b lands one piece of B28 (identify the LSP servers); R2c (plugins and setup:ai) finishes it.",
+      "rejected": "B28 in one plan.",
+      "units": []
+    },
+    {
+      "id": "D10",
+      "decision": "What does R2b require?",
+      "ruling": "Stated by the planner, confirmed at the shape gate: R2a (docs/plans/2026-11-14-git-tasks), the end of the chain on cli/ and repo/tools/. Priority 90 (10 + 80).",
+      "rejected": "None with a reasonable case.",
+      "units": []
+    },
+    {
+      "id": "D11",
+      "decision": "The review unit and the execution mode.",
+      "ruling": "One review unit, after the tests: the plan lands engine Go code, download pins and a task script. teams: wave 1 holds U1 and U2, and wave 2 holds U3 and U4.",
+      "rejected": "No review; solo.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "Round 1 gap 1: the pipx:pyrefly pin has requires_found = [pyproject.toml].",
+      "ruling": "A server follows the requires_found of its source pin: when the pin is not active in the repo, bootstrap lsp, describe and code:lsp:check leave that server out.",
+      "rejected": "List it and fail the check.",
+      "units": [
+        "U1",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Round 1 gap 2: node has two new pins, but source holds one string.",
+      "ruling": "source names the pin that provides the command: npm:typescript-language-server. npm:typescript is a support pin that no rule names.",
+      "rejected": "A list of sources.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Round 1 gap 3: stackgen's swift pack sets startupTimeout 1000.",
+      "ruling": "Match stackgen: startup_timeout = 1000 for sourcekit-lsp, so the vwf-tools entry does not change when stackgen switches.",
+      "rejected": "No startup_timeout.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Round 1 gap 4: the typescript pack also maps .tsx and .jsx and sets startupTimeout 60000.",
+      "ruling": "Keep them: U2 copies the extension map and the startupTimeout of claude-plugins stacks/language/typescript/pack.yaml verbatim.",
+      "rejected": "Drop them.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "Round 1 gap 5: command -v passes for any binary on PATH.",
+      "ruling": "For a pinned server the check uses MISE_ENV=dev mise which <command>, which resolves only a mise-managed binary; for a host server it uses xcrun --find sourcekit-lsp. K1 then gives the same result on each machine.",
+      "rejected": "command -v.",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Round 1 gap 6: bin/jdtls is a Python launcher; the java tool pins no Python; the http backend bin path is not recorded.",
+      "ruling": "The launcher uses the host python3 (macOS Xcode CLT and the Linux CI have it); the java tool gets no Python dependency. U2 verifies that the http pin exposes bin/jdtls (for example with the backend's bin-path option) and stops with a question if it cannot. K2 checks that mise which jdtls resolves and jdtls --help runs.",
+      "rejected": "Make java depend on python.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "Round 2 gap 1: bun and android are also language tools.",
+      "ruling": "Both are out on purpose: android code uses the kotlin tool's server; a bun-only repo has no TypeScript server in R2b (parked for a later plan).",
+      "rejected": "A second TypeScript server in bun.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Round 2 gap 2: a tool only in ci never gets its [mise_env.dev.tools] pin.",
+      "ruling": "The D12 rule: a server follows its source pin; a dev-only pin is active only when the tool's envs include dev; otherwise lsp, describe and the check leave the server out.",
+      "rejected": "List it and fail the check.",
+      "units": [
+        "U1",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D20",
+      "decision": "Round 2 gap 3: how the bash case stubs mise which with no network.",
+      "ruling": "The case runs the task file directly with bash, not through mise run, with a PATH shim for mise that answers which, and a BOOTSTRAP_BIN stub.",
+      "rejected": "A real installed binary; an env hook in the task.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D21",
+      "decision": "Round 2 gap 4: the node tool installs npm packages through aube.",
+      "ruling": "U2 verifies in a scratch repo with node: MISE_ENV=dev mise install, then mise which typescript-language-server; if it fails, U2 stops with a question. K1 also covers it.",
+      "rejected": "Assume it works.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D22",
+      "decision": "Round 2 gap 5: the fix line for a missing sourcekit-lsp.",
+      "ruling": "install the Xcode Command Line Tools (xcode-select --install) or Xcode.",
+      "rejected": "install Xcode.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D23",
+      "decision": "Round 2 gap 6: a broken sentence in 03-lsp-check.md and the case order in 04-tests.md.",
+      "ruling": "Correct the sentence and the order.",
+      "rejected": "None.",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D24",
+      "decision": "Round 3 gap 1: each lsp --json entry has command mise and no source, so the check cannot find the real command or tell a host server.",
+      "ruling": "bootstrap lsp --json data gets a second map beside servers: checks = {<server>: {command: <the first word of the [lsp] command>, source: <the source>}}. The servers entries stay verbatim Claude entries (D4); checks is additive. code:lsp:check reads checks.",
+      "rejected": "Hard-code sourcekit-lsp; add fields to the Claude entries.",
+      "units": [
+        "U1",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D25",
+      "decision": "Round 3 gap 2: rustup puts a rust-analyzer proxy on the path.",
+      "ruling": "U2 verifies in a scratch repo with rust that MISE_ENV=dev mise which rust-analyzer prints a path under the aqua install; if it prints the proxy, U2 stops with a question. K3 checks the same.",
+      "rejected": "Assume the aqua pin wins.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D26",
+      "decision": "Round 3 gap 3: the kotlin-lsp pin has macOS URLs only.",
+      "ruling": "Out of scope: dev hosts are macOS only (the repo rule); code:lsp:check is a dev check, and CI does not run it.",
+      "rejected": "Leave kotlin-lsp out on Linux.",
+      "units": []
+    },
+    {
+      "id": "D27",
+      "decision": "Round 4 gap 1: U4 runs U3's task but shares wave 2 with it.",
+      "ruling": "U4 depends on U3 and moves to wave 3; the review, the docs and the gates move to waves 4, 5 and 6.",
+      "rejected": "Keep U4 in wave 2.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D28",
+      "decision": "Round 4 gap 2: active is not defined for a pin in both dev and ci, or a host server, when the tool's envs leave out dev.",
+      "ruling": "One rule for every server: it is listed only when the tool's envs include dev and its source pin's requires_found is met (a host source has no requires_found). This replaces D12 and D19 as the full rule.",
+      "rejected": "Per-source rules.",
+      "units": [
+        "U1",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D29",
+      "decision": "Round 4 gap 3: code:lsp:check when bootstrap lsp --json fails.",
+      "ruling": "Exit 2 from lsp goes through as exit 2, with its fix line; any other failure exits 1.",
+      "rejected": "Exit 0.",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D30",
+      "decision": "Round 4 gap 4: can command hold spaces?",
+      "ruling": "No: command is one binary; the rest goes in args (pyrefly [lsp]; dart [language-server, --protocol=lsp]; kotlin-lsp and typescript-language-server [--stdio]). check refuses a command with whitespace (added to D7).",
+      "rejected": "A command string with spaces.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D31",
+      "decision": "Round 4 gap 5: nothing verifies dart under flutter, pyrefly under pipx, or the gopls install.",
+      "ruling": "Keep K4: a scratch repo selects flutter, python (with a pyproject.toml) and go; MISE_ENV=dev mise install runs; then code:lsp:check exits 0.",
+      "rejected": "No verification.",
+      "units": []
+    },
+    {
+      "id": "D32",
+      "decision": "Round 4 gap 6: a test of R1b or R1c can assert that code:lsp:check is not present.",
+      "ruling": "U4 searches test/repo, and U1 the cli/ tests, for an assertion that code:lsp:check is not present, and updates it; if none exists, nothing changes.",
+      "rejected": "Leave it.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
