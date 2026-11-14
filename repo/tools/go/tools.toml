@@ -1,18 +1,42 @@
-# Go, with the gofmt and go vet gates.
+# Go. In a repository with a go.mod, also golangci-lint and govulncheck, for
+# code:lint:40-go and setup:deps:25-go. dprint formats the Go files with gofmt.
 category = "languages"
 default_envs = [ "dev", "ci" ]
 depends = []
-description = "Go, with the gofmt and go vet gates."
+description = "Go, with golangci-lint, the go.mod check, setup:deps:25-go with govulncheck, and gofmt through dprint."
 root_only = false
-summary = "Go, with the gofmt and go vet gates"
+summary = "Go, with golangci-lint, govulncheck and gofmt"
 
 # The VS Code extensions of the tool, in .vscode/extensions.json.
 [contributes.vscode]
 extensions = [ "golang.go" ]
 
+# The dprint block and plugin of Go (gofmt through exec), in dprint.jsonc.
+# gofmt reads stdin and writes stdout. No cacheKeyFiles: gofmt has no config
+# file.
+[contributes.dprint]
+plugins = [ "npm:@dprint/exec@0.8.0/plugin.json@9d6234ea05810c775f388c2a4cce82b9116b69294b65e0e1e9d64f1446283ef3" ]
+
+[[contributes.dprint.blocks.exec.commands]]
+command = "mise x -- gofmt"
+exts = [ "go" ]
+
 # The mise config, generated into .config/mise/conf.d/go/mise.<env>.toml.
 [mise.tools.go]
 envs = [ "dev", "ci" ]
+version = "latest"
+
+# The tools of a Go project, and their tasks, only when requires_found finds
+# a go.mod.
+[mise.tools.golangci-lint]
+envs = [ "dev", "ci" ]
+requires_found = [ "go.mod" ]
+version = "latest"
+
+# Not in the mise registry: the go backend builds it with the Go of mise.
+[mise.tools."go:golang.org/x/vuln/cmd/govulncheck"]
+envs = [ "dev", "ci" ]
+requires_found = [ "go.mod" ]
 version = "latest"
 
 [mise.env]
@@ -22,8 +46,13 @@ GOTOOLCHAIN = "local"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."code/format/20-gofmt"]
-source = "code-format-gofmt"
-
 [tasks."code/lint/40-go"]
+requires_found = [ "go.mod" ]
 source = "code-lint-go"
+
+[tasks."code/lint/45-gomod"]
+source = "code-lint-gomod"
+
+[tasks."setup/deps/25-go"]
+requires_found = [ "go.mod" ]
+source = "setup-deps-go"

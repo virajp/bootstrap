@@ -301,6 +301,7 @@ repository: keep it.
 | `.config/repo-sync/gitignore`                                                                                                                                                        | Move its lines to `.gitignore` (M18). |
 | `.config/repo-sync/pre-commit.yaml`                                                                                                                                                  | `bootstrap init` moves it (M34).      |
 | The files of the old `repo-sync` tool: `.config/mise/tasks/_scripts/repo-sync`, `.config/mise/tasks/code/lint/60-repo-sync` and `.config/mise/conf.d/repo-sync/`                     | Delete them (M34).                    |
+| `.config/mise/tasks/code/format/20-gofmt`                                                                                                                                            | Delete it (M39).                      |
 
 The sync removes these old paths itself, so they need no step:
 
