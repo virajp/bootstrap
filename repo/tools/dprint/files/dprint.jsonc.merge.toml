@@ -17,11 +17,12 @@ value = <% .config.settings | data.ToTOMLInline %>
 <%- /* The commands of the exec plugin are a list of tables. Each command is
    a block, found by its exts: a new command is added, the command of a tool
    that went is removed, and a command that the user adds stays. The other
-   keys of exec are keys, as in each other block. */ -%>
+   keys of exec are keys, as in each other block. A block without keys, for
+   example tailwindcss, still gets its keys item, so the file keeps it. */ -%>
 <% range $name, $block := .config.blocks %>
 <% $keys := $block -%>
 <% if and (eq $name "exec") (has $block "commands") %><% $keys = coll.Omit "commands" $block %><% end -%>
-<% if $keys %>
+<% if or (ne $name "exec") $keys %>
 [[item]]
 kind = "keys"
 path = [ <% $name | data.ToTOMLInline %> ]
