@@ -104,6 +104,9 @@ This file holds the instructions. Each rule of the sync has one place in
 - A command of `bootstrap` that writes shows the change list first. An AI
   agent has no terminal, so it gives `--yes` after the user agrees to the
   list. Run the command with `--dry-run` first to get the list.
+- In a terminal, `bootstrap init` opens the TUI, which is for a person. The
+  CLI is for an agent: `--no-tui`, `--yes`, `--dry-run` and `--answer` each
+  keep `bootstrap init` on the CLI path. Do not run `bootstrap tui`.
 - `bootstrap` writes no file that has changes that are not committed. It
   stops with code 2 and names the file. Thus commit or discard the changes of
   each target before a command that writes. Ask the user before each commit.

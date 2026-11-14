@@ -21,7 +21,8 @@ clone. Each `mac` command needs that repository.
 - Each other `mac` command runs from any folder, and uses `--repo-path <path>`
   or `MACOS_SETUP_REPO_PATH`. The flag sets the variable for the run. A path
   that is not set, or that does not name a git repository, stops the command
-  with code 2.
+  with code 2. The one exception is `mac tui`: without a path, it uses the
+  current folder.
 
 The Mac tool `mise` writes `MACOS_SETUP_REPO_PATH` in its `[mise.env]`, from
 the answer `config_path` of `[tools.mise]`. `~` at the start becomes `$HOME`.

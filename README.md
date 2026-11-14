@@ -12,21 +12,22 @@ mise installs the CLI from the GitHub releases of this repository:
 mise use -g github:virajp/bootstrap
 ```
 
-| Command                                      | Job                                                                             |
-| -------------------------------------------- | ------------------------------------------------------------------------------- |
-| `bootstrap init`                             | Migrate an old form, or create the values file with the `base` pack, ask, sync. |
-| `bootstrap sync`                             | Sync the repository of the current folder. `setup:configs` runs it.             |
-| `bootstrap check`                            | Examine the values file, and run the check scripts of the tools.                |
-| `bootstrap questions [tool…]`                | List the questions, their proposals and their answers. `--json` for an agent.   |
-| `bootstrap detect [--add]`                   | Run the detect scripts, and list each tool that matches. `--add` adds them.     |
-| `bootstrap add tool <tool…>`                 | Add the tools and their dependencies, then sync.                                |
-| `bootstrap add pack <pack…> [--exclude <m>]` | Add each member of the packs that is not selected, then sync.                   |
-| `bootstrap remove tool <tool…>`              | Remove the tools and the dependencies that no tool needs, then sync.            |
-| `bootstrap replace tool <old> <new>`         | Move from one tool to another with the same parent, then sync.                  |
-| `bootstrap list`, `bootstrap ls`             | List the selected tools as a tree of tools and dependencies.                    |
-| `bootstrap config`                           | Print the config file and each setting, with its value and its source.          |
-| `bootstrap --version`                        | Print the version.                                                              |
-| `bootstrap mac <command>`                    | The same commands for the Mac, with `macos.toml`. There is no `mac config`.     |
+| Command                                      | Job                                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------------------ |
+| `bootstrap init`                             | Open the TUI in a terminal. Else migrate or create the values file, ask, sync. |
+| `bootstrap tui`                              | Open the TUI: select tools and packs, review the changes, then sync.           |
+| `bootstrap sync`                             | Sync the repository of the current folder. `setup:configs` runs it.            |
+| `bootstrap check`                            | Examine the values file, and run the check scripts of the tools.               |
+| `bootstrap questions [tool…]`                | List the questions, their proposals and their answers. `--json` for an agent.  |
+| `bootstrap detect [--add]`                   | Run the detect scripts, and list each tool that matches. `--add` adds them.    |
+| `bootstrap add tool <tool…>`                 | Add the tools and their dependencies, then sync.                               |
+| `bootstrap add pack <pack…> [--exclude <m>]` | Add each member of the packs that is not selected, then sync.                  |
+| `bootstrap remove tool <tool…>`              | Remove the tools and the dependencies that no tool needs, then sync.           |
+| `bootstrap replace tool <old> <new>`         | Move from one tool to another with the same parent, then sync.                 |
+| `bootstrap list`, `bootstrap ls`             | List the selected tools as a tree of tools and dependencies.                   |
+| `bootstrap config`                           | Print the config file and each setting, with its value and its source.         |
+| `bootstrap --version`                        | Print the version.                                                             |
+| `bootstrap mac <command>`                    | The same commands for the Mac, with `macos.toml`. There is no `mac config`.    |
 
 Each writing command shows its change list first. `--dry-run` writes nothing,
 and `--yes` writes without a prompt.

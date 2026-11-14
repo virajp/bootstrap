@@ -77,6 +77,10 @@ An agent has no terminal for a prompt of the CLI. Thus give each answer with
 the change list. Without `--yes`, a command that writes stops with exit 2
 (`changes need --yes`).
 
+In a terminal, `bootstrap mac init` opens the TUI, which is for a person. The
+CLI is for an agent: `--no-tui`, `--yes`, `--dry-run` and `--answer` each keep
+`bootstrap mac init` on the CLI path. Do not run `bootstrap mac tui`.
+
 ## Rules
 
 - Each decision of the owner is one question. Ask one question at a time. Before
