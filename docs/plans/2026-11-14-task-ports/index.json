@@ -1,0 +1,492 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "R1c — the test ports as group dispatchers",
+  "requires": [
+    "docs/plans/2026-11-14-config-folder",
+    "docs/plans/2026-11-14-contract-commands"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "execution": "teams",
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-14 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint",
+      "mise x -- mise run test:go"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Build the worktree engine (go build -o <tmp>/bootstrap ./cmd/bootstrap in cli/). In a new scratch git repo, run env -u MISE_PROJECT_ROOT BOOTSTRAP_CONFIG=/nonexistent <tmp>/bootstrap init --no-tui --yes --clone <worktree>, then mise trust, then mise run test, mise run test:e2e and mise run test:golden, then <tmp>/bootstrap describe --json --clone <worktree>. Then add an executable part .config/mise/tasks/test/golden/10-echo that prints its arguments, and run mise run test:golden --update 'a b'.",
+        "pass": "Each of the first three mise runs exits 0 and prints the no-part line. describe reports test, test:e2e and test:golden with present true. The 10-echo part prints --update and a b as two arguments (D24)."
+      },
+      {
+        "id": "K2",
+        "check": "Copy the main checkout of this repo, with its .git, to a temp folder. Run env -u MISE_PROJECT_ROOT BOOTSTRAP_CONFIG=/nonexistent <tmp>/bootstrap init --no-tui --yes --clone <worktree> in the copy; if it stops on a question, give each answer with --answer, the value the old .config/bootstrap.toml holds. Then run mise tasks ls in the copy.",
+        "pass": ".config/mise/tasks/test/50-local holds the old test/_default of this repo; test/_default is the new dispatcher; mise tasks ls still lists test:go, test:repo, test:mac and test:macos-tools, and lists test:50-local."
+      }
+    ]
+  },
+  "after_landing": [],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MAJOR",
+      "reason": "Breaking: own_tasks skips a part with no NN- name, and init moves a repo's own test, test/_default, test/e2e or test/golden file into a 50-local part. New behaviour: the test, test:e2e and test:golden ports. All of it goes into the one bootstrap@4.0.0 tag (R1b D16)."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The test dispatchers and the NN- filter",
+      "wave": 1,
+      "file": "01-test-dispatchers.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/mise/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "The init move and the dispatcher-path rule",
+      "wave": 1,
+      "file": "02-init-move.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Tests",
+      "wave": 2,
+      "file": "03-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo"
+      ],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "The bash cases run the dispatchers of U1 and the engine of U2.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Review: the dispatchers, the init move and the tests",
+      "wave": 3,
+      "file": "04-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U5",
+      "title": "Docs",
+      "wave": 4,
+      "file": "05-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/",
+        "docs/sync/",
+        "docs/memory/decisions/2026-11-14-bootstrap-plugins-split.md"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U6",
+      "title": "Gates",
+      "wave": 5,
+      "file": "06-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "every human-facing doc (README.md, CLAUDE.md, docs/**)",
+      "why": "U1 and U2 falsify the task tables and the init text",
+      "owner": "U5"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Which of the 14 ports of R1b D3 does R1c make exist?",
+      "ruling": "Non-R2 ports only (Recommended): R1c makes test, test:e2e and test:golden exist. R2 makes git:merge:<branch>, git:worktree:create|setup|delete and code:lsp:check with real work. code:format, code:lint, code:sec, code:precommit and setup already exist in every shaped repo through the required base tools (mise, pre-commit, gitleaks, grype, osv-scanner), and do not change. No release comes between R1c and R2 (R1b D16).",
+      "rejected": "All 14 ports, with git:* and code:lsp:check as no-ops or wrappers that R2 replaces.",
+      "units": [
+        "U1",
+        "U5"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "The shape of test, test:e2e and test:golden.",
+      "ruling": "Group dispatchers (Recommended): the mise tool ships test/_default, test/e2e/_default and test/golden/_default, each a dispatcher that loops own_tasks, as code:format does. A tool or the repo adds NN-<name> parts. With no part, a dispatcher prints one line and exits 0.",
+      "rejected": "#PLACEHOLDER files that a stack replaces at the same path.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Does mise run test also run test:e2e and test:golden?",
+      "ruling": "No, parts only (Recommended): test runs only its own NN- parts; test:e2e and test:golden each run by name.",
+      "rejected": "test runs all three.",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "stackgen packs copy test/e2e and test/golden as files, where the D2 dispatchers need folders.",
+      "ruling": "Dispatchers; packs ship parts (Recommended): own_tasks takes only executable files whose name matches NN-<name>, and skips folders. init moves a stray test/e2e or test/golden file (not in the manifest) to test/e2e/50-local or test/golden/50-local. check and sync report a file that the manifest does not list at a dispatcher path with code 2 and the fix line → Run bootstrap init. A claude-plugins plan changes the packs to ship NN- parts (parked).",
+      "rejected": "A sync mode that writes a default only when no file exists; packs own test:e2e and test:golden.",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "The patterned port p:<id>:deploy: bootstrap knows no project ids.",
+      "ruling": "Nothing in R1c (Recommended): R1c ships no p:<id>:deploy. A patterned port has no default; it exists for an id only when a task for that id exists, which R1b's describe reports. An amendment of the design record's rule that every port exists in every shaped repo; U5 records it. Per-project ids in bootstrap go with R5.",
+      "rejected": "A dispatcher per project id from repo.toml.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "What does R1c require?",
+      "ruling": "R1a and R1b (Recommended): R1c runs on R1b's code, so no two plans edit cli/ at once, and K1 can run describe. Priority 70 (10 + 60, the R1b row).",
+      "rejected": "R1a only.",
+      "units": []
+    },
+    {
+      "id": "D7",
+      "decision": "A repo can already have its own test task (a test file or a test/_default the manifest does not list), as this repo does.",
+      "ruling": "Move it to a part (Recommended): init moves the repo's own test file or test/_default to test/50-local, then writes the dispatcher; mise run test runs it as a part, and its depends and task names do not change. check and sync report it with code 2 and → Run bootstrap init until then. In this repo the move happens when the user runs bootstrap init after 4.0.0.",
+      "rejected": "Keep the repo's own task and skip the dispatcher.",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "The target <group>/50-local already exists.",
+      "ruling": "Stated by the planner, confirmed at the shape gate: init stops with code 2 and names both paths.",
+      "rejected": "None with a reasonable case.",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "Does this change plan need a review unit?",
+      "ruling": "Yes, one, after the tests: the plan lands engine Go code and task scripts that run in every shaped repo.",
+      "rejected": "No review unit.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "The execution mode.",
+      "ruling": "teams: wave 1 holds two edit units (U1 and U2).",
+      "rejected": "solo.",
+      "units": []
+    },
+    {
+      "id": "D11",
+      "decision": "New dependencies.",
+      "ruling": "None.",
+      "rejected": "None.",
+      "units": []
+    },
+    {
+      "id": "D12",
+      "decision": "Round 1 gap 1: a repo's own test/e2e/_default or test/golden/_default that the manifest does not list.",
+      "ruling": "The init table has six paths: it also moves a repo's own test/e2e/_default and test/golden/_default to <group>/50-local, by the D7 rule.",
+      "rejected": "Let sync overwrite it.",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Round 1 gap 2: member flags and arguments of the test dispatchers.",
+      "ruling": "The same as code-format.tmpl: the same member flags (--all, --<member>), and the arguments and flags go to each part.",
+      "rejected": "No flags and no arguments.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Round 1 gap 3: a repo's own test task in mise.toml [tasks.test] or in another task folder.",
+      "ruling": "Out of scope for the move. docs/sync/migrate.md gets one line: move such a task by hand into .config/mise/tasks/test/50-local.",
+      "rejected": "init moves it; check reports it.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Round 1 gap 4: a repo's own part without an NN- name stops running in code:format, code:lint, code:sec, setup:deps, setup:secrets and the test ports.",
+      "ruling": "check reports each executable file without an NN- name in a dispatcher folder (code/format, code/lint, code/sec, setup/deps, setup/secrets, test, test/e2e, test/golden) as a warning (code 0), with the fix rename it to NN-<name>. docs/sync/migrate.md gets a rename item.",
+      "rejected": "Accept the silent skip.",
+      "units": [
+        "U2",
+        "U3",
+        "U5"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "Round 1 gap 5: D2 (a dispatcher with no part prints one line) against docs/design/mise.md:637 (a task that does not apply prints nothing).",
+      "ruling": "D2 holds for dispatchers, as code:format already prints a success line with no parts. U5 amends the rule at mise.md:637: a task script that does not apply prints nothing; a dispatcher with no part prints one line.",
+      "rejected": "Dispatchers print nothing.",
+      "units": [
+        "U1",
+        "U5"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Round 1 gap 6: docs/memory/handoff/bootstrap-plugins-split.md contradicts D1, D2 and D5.",
+      "ruling": "Out of scope: the handoff is a session record that the next /vwf:handoff replaces (as R1b D36).",
+      "rejected": "Widen U5 owns to the handoff.",
+      "units": []
+    },
+    {
+      "id": "D18",
+      "decision": "Round 2 gap 1: after the move, this repo's test/go, mac, macos-tools and repo have no NN- name but run through the depends of test/50-local.",
+      "ruling": "A file whose task name the #MISE depends of another file in the same folder names is not a part, and gets no D15 warning.",
+      "rejected": "Warn forever; accept the warning.",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Round 2 gap 2: the #USAGE of the test dispatchers, and what reaches a part.",
+      "ruling": "They declare the member flags of code-format.tmpl and no other flag, plus one variadic argument, which goes unchanged to each part. A part with no #USAGE gets the arguments as plain positional arguments.",
+      "rejected": "--debug or --fix flags; no arguments.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D20",
+      "decision": "Round 2 gap 3: one table entry hits an existing 50-local while another must move.",
+      "ruling": "init examines every entry first; if any target exists, it stops with code 2 before it moves a file (D8).",
+      "rejected": "Move some files, then restore them.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D21",
+      "decision": "Round 2 gap 4: how the bash case makes an unlisted test/_default, and check on a never-shaped repo.",
+      "ruling": "The case uses an unshaped scratch repo: a git repo with its own test/_default and a stray test/e2e, and no .config/bootstrap/. check exits 2 by R1a's rule for a missing folder (→ Run bootstrap init); init then moves the files.",
+      "rejected": "A manifest edited by hand.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D22",
+      "decision": "Round 2 gap 5: the citation of the rule A task that does not apply prints nothing.",
+      "ruling": "It is at about docs/design/mise.md:638.",
+      "rejected": "636-637.",
+      "units": [
+        "U1",
+        "U5"
+      ]
+    },
+    {
+      "id": "D23",
+      "decision": "Who ships the test parts of a stack after R5 (stack without packs)?",
+      "ruling": "Not decided in R1c. User asked for a parked record: docs/memory/gaps/2026-11-14-r5-test-parts-owner-parked.md. R1c rules only the dispatchers (bootstrap) and the 50-local move.",
+      "rejected": "Decide it in R1c.",
+      "units": []
+    },
+    {
+      "id": "D24",
+      "decision": "Round 3 gap 1: can a part's own flag (for example --update of a golden part) reach the part through a dispatcher that declares only the member flags and one variadic argument?",
+      "ruling": "Yes, verified on mise 2026.11.7: mise run t --update a and mise run t -- --update a both put --update a into the variadic argument, and a declared --all is parsed as a flag. The dispatcher passes the raw arguments to each part unchanged, after it removes the member flags; it does not use the joined usage_args string, which loses the quoting of an argument with spaces. K1 checks that mise run test:golden --update gives --update to a part.",
+      "rejected": "Declare part flags in the dispatcher; require --; call the part directly.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D25",
+      "decision": "Round 4 gap 1: how init shows the 50-local move in its change list and in the TUI.",
+      "ruling": "One change, labelled move own test tasks into 50-local parts; its detail lists each file and its target. It cannot be removed alone, because without the move check and sync give code 2; to decline it, decline the init run. The same pattern as R1a's one folder-migration change.",
+      "rejected": "One change per file; a change the user can remove alone.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D26",
+      "decision": "Round 4 gap 2: a file at a table path with bootstrap's Synced from bootstrap header that the manifest does not list (a lost manifest entry).",
+      "ruling": "Such a file is bootstrap's own: init and sync overwrite it with the new dispatcher and do not move it, and check gives no code 2 for it. Only a file without that header is the repo's own and moves. This prevents a moved dispatcher that loops own_tasks test again.",
+      "rejected": "Move it; stop.",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
