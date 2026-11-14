@@ -1,0 +1,769 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "R1b — the contract commands and the JSON envelope",
+  "requires": [
+    "docs/plans/2026-11-14-config-folder"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "execution": "solo",
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-14 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint",
+      "mise x -- mise run test:go"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Build the worktree engine (go build -o <tmp>/bootstrap ./cmd/bootstrap in cli/). In an empty temp folder, run env -u MISE_PROJECT_ROOT BOOTSTRAP_CONFIG=/nonexistent <tmp>/bootstrap contract --json (D43).",
+        "pass": "stdout is one compact JSON line with the D1 keys (contract, command, ok, code, data, errors, warnings); contract is 1, code is 0, ok is true; data.versions is [1]; data.ports lists the 14 port names of D3 (no present flag, D24); data.cli_version is dev (D25); the exit code is 0."
+      },
+      {
+        "id": "K2",
+        "check": "Copy the main checkout of this repo, with its .git, to a temp folder. Run env -u MISE_PROJECT_ROOT BOOTSTRAP_CONFIG=/nonexistent <tmp>/bootstrap init --no-tui --yes --clone <worktree> in the copy, as R1a keep K2 does; if it stops on a question, give each answer with --answer, the value the old .config/bootstrap.toml holds (D43). Commit the copy (git add -A && git commit -m baseline) as the baseline (D34). Add the line unknown_key = 1 to .config/bootstrap/repo.toml by hand. Then run <tmp>/bootstrap check --json --clone <worktree>.",
+        "pass": "The envelope has code 2 and ok false; data.valid is false; data.checks lists the stages of check() in order, the stage that reads the values files has status fail with one finding whose message names unknown_key and whose path is .config/bootstrap/repo.toml; every later stage that needs that input has status skipped; the exit code is 2."
+      },
+      {
+        "id": "K3",
+        "check": "In a second temp copy made as in K2, up to its baseline commit, run <tmp>/bootstrap add tool <a tool the repo does not select> --json --clone <worktree> with no --yes and no --dry-run, then the same command with --dry-run.",
+        "pass": "The first run exits 2 with the envelope, ok false, and one error that names --yes or --dry-run; it writes no file. The second run exits 0; data holds the plan (changes, files, skipped, pending, notes) and no outcomes. After both runs, git status of the copy shows no change against the baseline commit."
+      },
+      {
+        "id": "K4",
+        "check": "In the K3 copy, run <tmp>/bootstrap questions --json --clone <worktree>.",
+        "pass": "stdout is the D1 envelope with command questions and the question array in data; the exit code is 0."
+      }
+    ]
+  },
+  "after_landing": [],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MAJOR",
+      "reason": "Breaking against 3.1.0: questions --json changes from a bare array to the envelope (D2). New behaviour: contract, describe, catalog, check --json and --json on config and the write commands. No tag comes between R1a and R1b; the highest recorded level gives the one bootstrap@4.0.0 tag after R1a, R1b, R1c and R2 (D16)."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The envelope, contract, and --json on questions and config",
+      "wave": 1,
+      "file": "01-envelope-contract.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "check --json",
+      "wave": 2,
+      "file": "02-check-json.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "It edits cli/ and prints through the envelope package that U1 adds.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "--json on the write commands",
+      "wave": 3,
+      "file": "03-write-json.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "It edits cli/, which U2 edits in wave 2, and prints through the envelope package that U1 adds.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "The fetch rule, catalog and describe",
+      "wave": 4,
+      "file": "04-catalog-describe.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [
+        "U1",
+        "U3"
+      ],
+      "waits": "It edits cli/, which U3 edits in wave 3, and reports the port table that U1 adds.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Tests",
+      "wave": 5,
+      "file": "05-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo",
+        ".config/mise/tasks/test/mac"
+      ],
+      "depends_on": [
+        "U2",
+        "U3",
+        "U4"
+      ],
+      "waits": "The bash cases run the finished engine of waves 1 to 4.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U6",
+      "title": "Review: the engine and the tests",
+      "wave": 6,
+      "file": "06-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U7",
+      "title": "Docs",
+      "wave": 7,
+      "file": "07-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/",
+        "docs/sync/",
+        "docs/setup/",
+        "docs/memory/decisions/2026-11-14-bootstrap-plugins-split.md"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U8",
+      "title": "Gates",
+      "wave": 8,
+      "file": "08-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U7"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W6",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W7",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W8",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "every human-facing doc (README.md, CLAUDE.md, docs/**)",
+      "why": "every engine unit falsifies passages that describe the output of a command or questions --json",
+      "owner": "U7"
+    },
+    {
+      "id": "S2",
+      "file": "cli/ (the engine, its tests and testdata)",
+      "why": "U1 to U4 each edit the engine; they run in waves 1 to 4, one at a time",
+      "owner": "U1"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "The JSON shape of the contract: one envelope for every command, or bare data per command?",
+      "ruling": "One envelope (Recommended): every --json command prints one object on stdout: {\"contract\": 1, \"command\", \"ok\", \"code\", \"data\", \"errors\", \"warnings\"}. All human lines go to stderr. data is the per-command payload.",
+      "rejected": "Bare data per command, with the version only from bootstrap contract; a line stream (NDJSON) of events.",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U7"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "questions --json prints a bare array today (cli/internal/cli/init.go, about line 380). What does R1b do with it?",
+      "ruling": "Wrap it in the envelope (Recommended): questions --json prints the D1 envelope with the array in data. This breaks a caller of the bare array; no file in claude-plugins/plugins or claude-plugins/.claude calls it (examined 2026-11-14). bootstrap's docs and the bash cases of .config/mise/tasks/test/repo and test/mac name it, and this plan updates them (D20, D26).",
+      "rejected": "Keep the bare array outside the contract; both forms behind a flag.",
+      "units": [
+        "U1",
+        "U5",
+        "U7"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Who defines the task port names that contract and describe report?",
+      "ruling": "R1b defines the table (Recommended): one Go table of port names, taken from the design record: code:format, code:lint, code:sec, code:precommit, git:merge:<branch>, git:worktree:create, git:worktree:setup, git:worktree:delete, code:lsp:check, setup, test, test:e2e, test:golden, p:<id>:deploy. contract reports the names; describe reports each port with present for this repo. R1c makes each missing port exist; it changes values, not the shape.",
+      "rejected": "R1c adds the table and the ports field.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "How does --json behave on the write commands (add, remove, replace, init, detect, sync)?",
+      "ruling": "No prompt, report all (Recommended): with --json a command never prompts. It must also get --yes or --dry-run, else it stops with code 2. data holds the plan (changes, files, skipped, pending, as core.PlanResult has them) and, after an apply, one outcome per target. This needs an observer on report.Outcome, and RunWith must return the outcomes.",
+      "rejected": "No prompt, plan only (no per-target outcomes); prompts on stderr when a TTY is present.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "How do catalog and the tool list of describe treat the age of the cached clone?",
+      "ruling": "User: \"Fetch when the last fetch is >30mins and if the fetch fails then use the existing clone cache if it's <7days old; otherwise return with an error (exit 5)\". So: (1) if the last successful fetch is 30 minutes old or less, use the cached clone with no fetch; (2) if it is older, or no fetch time is recorded, fetch; (3) if that fetch fails, use the cached clone when its last successful fetch is less than 7 days old, with a warning in the envelope; (4) else stop with code 5. The fetch time is the file R1a D52 writes in the cache root. Under --clone or BOOTSTRAP_CLONE there is no fetch and no age rule (as R1a D52); the clone is used as it is.",
+      "rejected": "R1a's 7-day skip; never fetch and report the age; fetch every time.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "R1a D23/D52 gives config set and unset of tools.* keys a 7-day skip. Does R1b change it to the D5 rule?",
+      "ruling": "Yes, one rule (Recommended): one shared function applies D5 to config set, config unset, catalog and describe. A reversal of R1a D23 and D52 for config set and unset; U7 records it in the design record and in docs/design/cli.md. The other write commands still fetch every time, as R1a D52 says.",
+      "rejected": "Keep R1a's 7-day rule for config set and unset, and two cache rules in the CLI.",
+      "units": [
+        "U4",
+        "U7"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "What rule changes the contract version?",
+      "ruling": "Integer, raise on break (Recommended): one integer, 1 in this plan. A new field, command or enum value keeps it. A removed or renamed field, or a changed type or meaning, raises it. bootstrap contract lists the versions this CLI supports in data.versions.",
+      "rejected": "A major.minor string; the CLI version.",
+      "units": [
+        "U1",
+        "U7"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "The shape of the check --json findings.",
+      "ruling": "Stages with findings (Recommended): data is {\"valid\": bool, \"checks\": [...]}. checks has one entry per stage of check() in cli/internal/repo/repo.go, in order, as the code is after R1a: {\"name\", \"status\": \"pass\"|\"fail\"|\"skipped\", \"findings\": [{\"code\", \"severity\": \"error\"|\"warning\", \"message\", \"path\"}]}. A fail.Collector per stage collects the findings. A stage that check() skips because its input failed has status skipped. The stage name is the kebab-case name of what the stage examines; the stages of today are envs, values, old-forms, env-rules, overrides, members and scripts, and a stage R1a adds takes a name the same way. path is \"\" when no file is known. The envelope code is the highest stage code, as check() returns today.",
+      "rejected": "A flat findings list with no stage names; only the envelope errors and warnings.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "Does R1b bring the config verb of R1a into the D1 envelope?",
+      "ruling": "Add --json with the envelope (Recommended): config get, show, set and unset take --json, which prints the D1 envelope with R1a's output object in data. --format without --json stays as R1a made it, so hooks and tool scripts that read config get do not change. --json and --format together is a usage error (code 2).",
+      "rejected": "Leave config outside the envelope; replace R1a's output with the envelope.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "What does describe report in this plan? The design record lists tools, members, LSP and ports, but LSP is R2 work.",
+      "ruling": "Without LSP (Recommended): describe reports data = {\"repo\": the repo.toml values, \"tools\": the selected tools with their values from tools.toml, \"members\": each [members.<name>] with its type, folder, url and present (the folder exists), \"ports\": D3 with present}. R2 adds an lsp field; by D7 that is additive and the contract stays 1.",
+      "rejected": "An lsp field that is always empty until R2; move the LSP work into R1b.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "The items of the envelope's errors and warnings lists.",
+      "ruling": "Object with code (Recommended): each item is {\"code\", \"message\", \"path\"}: code is the fail.Code (a warning has 0), message is the text a person sees, path is the file when one is known and is left out otherwise.",
+      "rejected": "Plain strings.",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "The exit code and ok with --json.",
+      "ruling": "Stated by the planner, confirmed at the shape gate: with --json the process exit code equals the envelope code, and ok is true only when code is 0. A usage error (an unknown flag, a missing argument, --json and --format together) also prints the envelope, with code 2 and command set to the command name, or \"\" when no command was parsed.",
+      "rejected": "None with a reasonable case.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "The data of bootstrap contract.",
+      "ruling": "Stated by the planner, confirmed at the shape gate: data = {\"versions\": [1], \"cli_version\": main.version (D25; a local build reports dev), \"commands\": the names of every command that takes --json, \"ports\": the D3 names only, with no present flag (D24)}. contract takes no repo and works outside one.",
+      "rejected": "None with a reasonable case.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "The data of bootstrap catalog.",
+      "ruling": "Stated by the planner, confirmed at the shape gate: data = {\"fetched_at\": the time of the last successful fetch as ISO-8601 UTC, or \"\" under --clone or BOOTSTRAP_CLONE, \"categories\": source.Categories, \"tools\": one entry per tool of source.Manifest and source.Index with its name, category, description, questions and defaults, \"packs\": source.Packs}. The field names follow the Go source of the clone after R1a; the unit names each field in snake case.",
+      "rejected": "None with a reasonable case.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "New dependencies.",
+      "ruling": "None. JSON uses the Go standard library encoding/json.",
+      "rejected": "A JSON schema library.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "R1b's release: D2 breaks the bare array that 4.0.0 would ship if R1a is tagged at once (R1a D69).",
+      "ruling": "User: \"Keep the release to 4.0.0 since we will be doing all these changes and only then releasing\", and for the scope: \"all, we will be building a local binary and testing it\". So R1a, R1b, R1c and R2 land before one bootstrap@4.0.0 tag; until then the user tests with a local binary. R1b records MAJOR; with no tag between, the highest level gives 4.0.0. A reversal of R1a D69 (tag 4.0.0 at once after R1a; R1b, R1c and R2 as 4.1, 4.2, 4.3); it restores R1a D36. U7 records it in the design record.",
+      "rejected": "4.1.0 MINOR with the break accepted; 5.0.0; keep the bare array.",
+      "units": [
+        "U7"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Does this change plan need a review unit?",
+      "ruling": "Yes, one, after the tests: the plan lands Go engine code that ships in the binary, and a bash test case. U6 covers U1 to U5.",
+      "rejected": "No review unit (the wave review only).",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "The execution mode.",
+      "ruling": "solo: no wave holds two edit units, so teams adds nothing.",
+      "rejected": "teams.",
+      "units": []
+    },
+    {
+      "id": "D19",
+      "decision": "How does describe find present for a port, and how are the patterned ports (git:merge:<branch>, p:<id>:deploy) reported?",
+      "ruling": "Assumed by the planner, for the rulings review to confirm: the engine runs mise tasks ls --json in the repo root once and matches the task names. A plain port is {\"name\", \"present\": bool}. A patterned port is {\"name\": the pattern, \"present\": true when one task matches, \"tasks\": the matching task names}, where <branch> and <id> match one colon-free segment. If mise cannot list the tasks, describe stops with code 1 and an error that names mise.",
+      "rejected": "Read the task files under .config/mise/tasks/ and the [tasks] tables directly (misses tasks that mise includes from other places).",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D20",
+      "decision": "Round 1 gap 1: the Mac side shares printQuestions and the flag table. Which side does catalog read?",
+      "ruling": "mac questions --json also prints the envelope (one function, one shape). --json on the mac write commands is refused with code 2 in R1b; the contract is repo-side. U5 also owns .config/mise/tasks/test/mac and updates its two bare-array cases (about lines 1992 and 2428, D41). catalog reads the repo side (source.Repo).",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U1",
+        "U3",
+        "U4",
+        "U5"
+      ]
+    },
+    {
+      "id": "D21",
+      "decision": "Round 1 gap 2: sync takes no --yes and applies with no consent today.",
+      "ruling": "sync is exempt: sync --json applies with no --yes, as today, and --dry-run still works. The --yes-or---dry-run rule of D4 applies to add, remove, replace, init and detect.",
+      "rejected": "Give sync a --yes flag.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D22",
+      "decision": "Round 1 gap 3: under --json --yes the plan can have questions with no answer (p.Pending).",
+      "ruling": "The command stops with code 2 and writes nothing. data.plan.pending lists the questions, and one error names them. The plugin gives the answers with config set and runs the command again.",
+      "rejected": "Apply with no answers.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D23",
+      "decision": "Round 1 gap 4: which PlanResult fields go into data.plan, and the JSON shape of the nested types and outcomes.",
+      "ruling": "data.plan = {changes, files, skipped, pending, notes}. The plan warnings go to the envelope warnings (D11). Side, Cur/Next, Sel, AskOnly, Before, Seeds and Reasons stay out. Each nested field (oldform.Change, target.Planned) is the Go field in snake case; each enum such as Kind is a lower-case string. One outcome item per report.Outcome call: {kind, path, message}.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D24",
+      "decision": "Round 1 gap 5: K1 said data.ports carries present.",
+      "ruling": "D3 and D13 are correct: contract lists the 14 port names only; present belongs to describe. K1 is fixed.",
+      "rejected": "present in contract.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D25",
+      "decision": "Round 1 gap 6: the binary does not embed cli/VERSION.",
+      "ruling": "cli_version is main.version (cli/cmd/bootstrap/main.go, set by ldflags); a local build reports \"dev\". Supersedes that part of D13.",
+      "rejected": "Embed cli/VERSION.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D26",
+      "decision": "Round 1 gap 7: main_test.go holds only usage strings; the bare-array assertions are in test/repo. Compact or indented output?",
+      "ruling": "U5 rewrites the bare-array cases at about .config/mise/tasks/test/repo:3198-3199 and :3836-3844 (D41). The envelope is compact: one line, then a newline.",
+      "rejected": "Indented output.",
+      "units": [
+        "U1",
+        "U5"
+      ]
+    },
+    {
+      "id": "D27",
+      "decision": "Round 1 gap 8: mise tasks ls --json lists global tasks and leaves out hidden ones; an untrusted config fails.",
+      "ruling": "describe runs mise tasks ls --json --no-global --hidden: a port is a task of this repo. If mise fails (for example an untrusted config), describe stops with code 1 and an error that names mise trust.",
+      "rejected": "Include global tasks; leave out hidden tasks.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D28",
+      "decision": "Round 1 gap 9: describe and catalog outside a repo or with no .config/bootstrap/.",
+      "ruling": "describe stops with code 2 and the fix line → Run bootstrap init, as other repo commands do after R1a. catalog needs only the clone and works outside a repo.",
+      "rejected": "describe works with empty data.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D29",
+      "decision": "Round 1 gap 10: wrong paths, and Packs and Categories are types.",
+      "ruling": "The paths are cli/internal/source/. catalog calls Source.Open() (the Index), Source.ReadCategories() and Source.ReadPacks() on the repo side.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D30",
+      "decision": "Round 2 gap 1: detect with no --add only reports; detect --yes needs --add.",
+      "ruling": "A plain detect --json is a read: it needs no --yes or --dry-run, and data = {\"detected\": [...]}, one entry per tool detect reports today, its fields in snake case. detect --add --json follows D4: it needs --yes or --dry-run, and its data is the plan form of D23.",
+      "rejected": "Make plain detect --json need --dry-run.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D31",
+      "decision": "Round 2 gap 2: the shared flag table also allows mac check --json.",
+      "ruling": "mac check --json is refused with code 2, as the mac write commands are (D20).",
+      "rejected": "A mac check envelope.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D32",
+      "decision": "Round 2 gap 3: check can fail in prepare or openClone before any stage runs.",
+      "ruling": "data = {\"valid\": false, \"checks\": []}, and the cause goes in errors. The data shape is always the same.",
+      "rejected": "No data on an early failure.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D33",
+      "decision": "Round 2 gap 4: the command value for subcommands.",
+      "ruling": "command is the full command words joined by one space: \"config get\", \"mac questions\". contract lists the same full forms in commands.",
+      "rejected": "The first word only.",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D34",
+      "decision": "Round 2 gap 5: add needs the kind word, and K1 init leaves files that are not committed.",
+      "ruling": "K3 and U5 use add tool <name>. After init, the K1 copy is committed (git add -A && git commit) as the baseline; no change means no change against that commit.",
+      "rejected": "The reviewer's other options.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D35",
+      "decision": "Round 2 gap 6: no edit adds check to the commands list of contract.",
+      "ruling": "check is listed; U2 adds it.",
+      "rejected": "Leave it out.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D36",
+      "decision": "Round 2 gap 7: docs/memory/handoff/bootstrap-plugins-split.md says R1b is 4.1.0 MINOR, against D16.",
+      "ruling": "Out of scope: the handoff is a session record that the next /vwf:handoff replaces. D16 and docs/memory/gaps/2026-11-14-one-4-0-0-tag-parked.md hold the current rule.",
+      "rejected": "Widen U7 owns to the handoff.",
+      "units": []
+    },
+    {
+      "id": "D37",
+      "decision": "Round 3 gap 1: an empty list, and data when a command fails.",
+      "ruling": "A list in the envelope is always [], never null (a nil slice is written as []). When a command fails before it has a result, data is null. D22 and D32 keep their own forms.",
+      "rejected": "null for an empty list; {} or no data on a failure.",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D38",
+      "decision": "Round 3 gap 2: --json on a command that does not take it, and --json when the parse fails early.",
+      "ruling": "Before the parse, the engine looks for a literal --json anywhere in the arguments. If it finds one, every usage error prints the envelope with code 2, with command \"\" when no command is known. --json on a command that does not take it (list, tui) is such a usage error.",
+      "rejected": "The human usage error.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D39",
+      "decision": "Round 3 gap 3: present of a patterned port.",
+      "ruling": "present is true when at least one task matches; tasks lists every match (for example git:merge:main and git:merge:develop).",
+      "rejected": "Exactly one.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D40",
+      "decision": "Round 3 gap 4: describe without --json.",
+      "ruling": "Human lines on stdout, one section per part (repo, tools, members, ports); each port shows present or missing. The same style as list.",
+      "rejected": "No human output.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D41",
+      "decision": "Round 3 gap 5: the line numbers of the bare-array cases moved.",
+      "ruling": "Cite about test/repo:3198-3199 and :3836-3844, and test/mac:1992 and :2428. The word about stays, because R1a and the TUI plan move them again.",
+      "rejected": "Keep the old numbers.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D42",
+      "decision": "Round 3 gap 6: docs/scratchpad/tool-model/index.html describes questions --json.",
+      "ruling": "Out of scope: a design draft in the scratchpad, not a user doc.",
+      "rejected": "Widen U7 owns to the scratchpad.",
+      "units": []
+    },
+    {
+      "id": "D43",
+      "decision": "Round 3 gap 7: does init --no-tui --yes complete on a copy of this repo with no TTY?",
+      "ruling": "K1 runs contract --json in an empty temp folder, with no init. K2 and K3 use the init --no-tui --yes call that R1a keep K2 proves on this repo. If it stops on a question, the orchestrator gives each answer with --answer, the value the old .config/bootstrap.toml holds; then the baseline commit (D34).",
+      "rejected": "init --dry-run only.",
+      "units": []
+    },
+    {
+      "id": "D44",
+      "decision": "Round 3 gap 8: a cached clone with no fetch-time file, and the fetch fails.",
+      "ruling": "Exit with code 5. The cache is used only when it is less than 7 days old, and a clone with no recorded fetch time cannot prove that.",
+      "rejected": "Use the clone with a warning.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D45",
+      "decision": "Round 4 gap 1: finish() calls ask() for pending questions also under --dry-run. What does --json --dry-run do with them?",
+      "ruling": "Exit 0 and do not call ask(). data.plan.pending lists the questions, and one warning names them. A dry run writes nothing, so it tells the plugin which answers it needs before --yes.",
+      "rejected": "Stop with code 2.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D46",
+      "decision": "Round 4 gap 2: the shared flag table makes mac detect --json, mac catalog, mac describe and mac contract reachable.",
+      "ruling": "On the Mac side only mac questions accepts --json (D20). Every other mac command with --json exits 2 with the envelope (D38). catalog, describe and contract are repo-side commands only; under mac each is an unknown command, a usage error with code 2. U1 adds this to the flag table; U5 adds one case for mac describe --json.",
+      "rejected": "Answer with the envelope on the Mac side.",
+      "units": [
+        "U1",
+        "U5"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
