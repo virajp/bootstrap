@@ -38,6 +38,12 @@ ssh_vault = "Sample"
 
 [tools.claude-cli]
 
+[tools.claude-cli.settings]
+model = "opus"
+
+[tools.claude-cli.lists]
+"permissions.allow" = [ "Read" ]
+
 [tools.claude-desktop]
 
 [tools.claude-status]

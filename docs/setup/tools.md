@@ -217,7 +217,13 @@ upgrade:ai tasks and the cc* aliases.
 - **Tasks:**
   - `~/.config/mise/tasks/func/claude`
   - `~/.config/mise/tasks/upgrade/ai`
+- **Defaults:** `settings`, `lists`
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
+- **Settings:** The merge spec adds only `$schema`, the install keys of `env`
+  and, with `claude-status`, its status lines and hook. The own keys of the
+  user are in `settings` of `[tools.claude-cli]`. `lists` maps a dotted path,
+  for example `"permissions.allow"`, to the items that the sync adds to that
+  list. The `CLAUDE.md` seed is a short generic file.
 
 ### `claude-desktop`
 
