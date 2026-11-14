@@ -28,8 +28,8 @@
       "title": "The TUI: bootstrap tui and bootstrap mac tui",
       "target_repo": null,
       "priority": 40,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-14T09:23:28.924Z",
       "ended": "",
       "gaps": null,
       "requires": [
