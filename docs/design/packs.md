@@ -53,7 +53,11 @@ claude-desktop = { default = true }
   `"pack:<name>" = {}` does not expand: that pack arrives only through its own
   `[packs.<name>]`.
 - A tool can be in several packs. The sync adds it once.
-- A pack has no pack-level keys. The keys of a member are `default` and
+- `description` is the one reserved key of a `[pack.<name>]` table: a string
+  value at the key `description` is the text of the pack, not a member, for
+  example `description = "The AI tools."`. A `description` that is not a
+  string stops the sync with code 2. A string at another key also stops the
+  sync. A pack has no `summary`. The keys of a member are `default` and
   `required`, each a boolean. Each member is on one line.
 - `required = true` marks a tool that each consumer must have. It is valid only
   for a member of `base` with `default = true`, for example

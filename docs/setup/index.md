@@ -68,7 +68,8 @@ of `bootstrap` in `~/.cache/bootstrap/`. This file uses these commands:
 that variable inline. The user config file of the CLI has no key for this path.
 
 An agent has no terminal for a prompt of the CLI. Thus give each answer with
-`--answer <tool>.<key>=<value>`, and give `--yes` after the owner agrees with
+`--answer <tool>.<key>=<value>`, also an empty answer with
+`--answer <tool>.<key>=`, and give `--yes` after the owner agrees with
 the change list. Without `--yes`, a command that writes stops with exit 2
 (`changes need --yes`).
 
@@ -175,8 +176,9 @@ MACOS_SETUP_REPO_PATH="$PWD" bootstrap mac questions --json
 MACOS_SETUP_REPO_PATH="$PWD" bootstrap mac questions <tool…> --json
 ```
 
-Each row has `tool`, `key`, `question`, `proposal`, `source` and `answer`. For
-each row with no answer, do these items:
+Each row has `tool`, `key`, `question`, `proposal`, `source`, `answer`,
+`group`, `note` and `optional`. An `answer` of `""` means no answer, and the
+row is answered. For each row with no answer, do these items:
 
 1. If `source` is `detect`, show `proposal` as the proposal. If `source` is
    `example`, show it only as the form of the answer. Do not use it as an
@@ -184,9 +186,15 @@ each row with no answer, do these items:
 2. For `mise.config_path`, propose the path of the clone:
    `git rev-parse --show-toplevel`. The sync writes this answer to the mise env
    as `MACOS_SETUP_REPO_PATH`.
-3. Ask the `question`.
+3. Ask the `question`. Show the `note`, when it is not empty, under the
+   question.
+4. The owner can leave a row with `optional` = `true` empty. Give it as
+   `--answer <tool>.<key>=`.
+5. The rows with the same `tool` and a `group` that is not empty need at
+   least one answer that is not empty. Give each empty answer of the group as
+   `--answer <tool>.<key>=`.
 
-Pass: each row has an answer that is not empty.
+Pass: each other row has an answer that is not empty.
 
 ### Step 3: Write the tables that `bootstrap mac init` does not write
 
@@ -227,8 +235,11 @@ bootstrap mac init <tool…> --answer <tool>.<key>=<value> … --dry-run
 ```
 
 A tool in `depends` can add a question that step 2 did not show. Then the
-command names it: `the question <tool>.<key> has no answer`. Ask that question
-as in step 2, add its `--answer`, and run the command again.
+command names it: `the question <tool>.<key> has no answer`. For a group, the
+command names the group: `the group <tool>.<group> has no answer`, with the
+hint `give at least one with --answer <tool>.<key>=<value>: <key>, <key>`. Ask
+that question, or the questions of that group, as in step 2, add each
+`--answer`, and run the command again.
 
 Read the change list with the owner. If it replaces a file that the owner wants
 to keep, stop, and ask the owner where to put that content (see "Rules").

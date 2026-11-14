@@ -426,14 +426,20 @@ bootstrap questions --json
 bootstrap questions <tool…> --json
 ```
 
-Each item has `tool`, `key`, `question`, `proposal`, `source` and `answer`.
-`proposal` is the value that `bootstrap` finds in the repository, and `source`
-tells where it comes from. `answer` is the value of the values file, or
-`null`.
+Each item has `tool`, `key`, `question`, `proposal`, `source`, `answer`,
+`group`, `note` and `optional`. `proposal` is the value that `bootstrap` finds
+in the repository, and `source` tells where it comes from. `answer` is the
+value of the values file, or `null`. An `answer` of `""` means no answer, and
+the question is answered. `note` is a line to show under the question.
 
 1. For each item with a `null` answer, ask the user the question. Show the
    proposal as the default.
 2. Keep each answer for step 5, as `--answer <tool>.<key>=<value>`.
+3. The user can leave an item with `optional` = `true` empty. Keep it as
+   `--answer <tool>.<key>=`, so a later `bootstrap init` does not ask it.
+4. The items with the same `tool` and a `group` that is not empty need at
+   least one answer that is not empty. Keep each empty answer of the group as
+   `--answer <tool>.<key>=`. Another item needs an answer that is not empty.
 
 Without questions, the command prints `[]`.
 
@@ -589,7 +595,7 @@ failure does not change an existing file. The full list is in
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | 2    | An old form of the values file. The message ends with `run bootstrap init`                                                         | Run `bootstrap init` (step 5)                                                     |
 | 2    | A target has changes that are not committed                                                                                        | Commit or discard the changes of the target                                       |
-| 2    | A question without an answer, with `--yes` or without a terminal                                                                   | Give the answer with `--answer <tool>.<key>=<value>` (step 3)                     |
+| 2    | A question without an answer, or a group without an answer that is not empty, with `--yes` or without a terminal                   | Give the answer with `--answer <tool>.<key>=<value>` (step 3)                     |
 | 2    | `changes need --yes`                                                                                                               | Ask the user, then run the command with `--yes`                                   |
 | 2    | A bad key or value of the values file, a root-only tool in a submodule, or a check script that failed. The message names the cause | Correct the values file, or the repository                                        |
 | 2    | A bad `tools.toml`, packs file or merge spec of `bootstrap`                                                                        | Tell the `bootstrap` owner                                                        |

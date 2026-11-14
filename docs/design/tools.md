@@ -46,7 +46,11 @@ sync.
 | `default_envs`         | Necessary | Refused  | A list: the environments of the tool when the values file gives it no `env`, for example `["dev"]`. It must include `dev`.       |
 | `depends`              | Optional  | Optional | The tools that the sync adds with this one, transitively. On the repo side, each gets the environments of this tool.             |
 | `root_only`            | Optional  | Refused  | `true`: the tool is not for a git submodule. See [repo.md](repo.md#root_only).                                                   |
-| `description`          | Optional  | Optional | A string: one line that tells the adopting AI what the tool is.                                                                  |
+| `description`          | Optional  | Optional | A string: the text that tells the adopting AI, and later the TUI, what the tool is. A value that is not a string stops the sync. |
+| `summary`              | Optional  | Optional | A string of 47 characters or fewer: one short line about the tool, for the TUI.                                                  |
+| `category`             | Optional  | Optional | A string: the id of a category of the categories file of the side. See [The categories file](#the-categories-file).              |
+| `selectable`           | Optional  | Optional | A boolean, `true` when the key is missing. `false`: a command does not select the tool by its name, only as a dependency.        |
+| `hosts`                | Optional  | Refused  | A list of the mise OS names `macos`, `linux` and `windows`: the hosts where a command can select the tool. No key: each host.    |
 | `parent`               | Optional  | Optional | The name of another tool, for example `parent = "node"` in `pnpm` and `aube`. Tools with the same parent can replace each other. |
 | `stage`                | Not read  | Optional | `"init"` puts the tool in the init stage. See [mac.md](mac.md#stages-and-exit-4).                                                |
 | `[files."<target>"]`   | Optional  | Optional | The source, the mode and the condition of one config file. See [The `[files]` table](#the-files-table).                          |
@@ -79,6 +83,68 @@ stops the sync. See
 `default_envs` without `dev` stops the sync, also for a tool that
 the values
 file does not select.
+
+### The catalog keys
+
+`summary`, `category`, `selectable`, `description` and `hosts` are the catalog
+keys: they tell a person or an AI what a tool is, and where a command can
+select it. These stop the sync with code 2, on both sides:
+
+- A `summary` that is not a string, or that has more than 47 characters.
+- A `category` that is not a string, or that is not an id of the categories
+  file of the side. See [The categories file](#the-categories-file).
+- A `selectable` that is not `true` or `false`.
+- A `description` that is not a string.
+- On the repo side, a `hosts` that is not a list of `macos`, `linux` and
+  `windows`, and `hosts = []` ("hosts must name at least one host"). On the Mac
+  side, each `hosts` stops the sync with `is for repo tools only`.
+
+`summary` and `category` are optional now. A later change makes them necessary,
+after each tool has them.
+
+`selectable = false` is for a tool that other tools need, for example
+`_security_base`. `init` and `add` refuse a tool with `selectable = false` that
+the command names, with code 2. `replace` refuses it as its new tool only. The
+message names the tools of the side whose `depends` name it, for example
+`_security_base is not selectable. Select gitleaks, grype or osv-scanner.`
+Without such a tool, the message is only `<tool> is not selectable.` `detect`
+does not propose the tool. `sync` accepts a values file that names it, and
+`check` shows a warning only. See [cli.md](cli.md#the-command-line).
+
+`hosts` names the hosts where a command can select the tool, with the OS names
+of mise, for example `hosts = ["macos"]`. The engine gives the host the name
+`macos` for the Go name `darwin`. Another Go name stays as it is, so on such a
+host each tool with `hosts` is refused. `init`, `add` and the new tool of
+`replace` refuse a tool that the command names when its `hosts` do not name
+the host, with code 2 and the message
+`<tool> needs the host <hosts> - this host is <host>`. `detect` does not
+propose the tool. `sync` and `check` do not examine `hosts`, so a CI job on
+Linux still syncs a repository that has a macOS-only tool. These commands
+examine `selectable` and `hosts` only for the names that the command gives,
+not for their dependencies.
+
+### The categories file
+
+Each side has one categories file: `repo/categories.toml` and
+`macos/categories.toml`. Each entry is a `[category.<id>]` table with the key
+`title`, a string. The order of the entries in the file is the order in the
+TUI. A tool names one id with `category = "<id>"`.
+
+```toml
+[category.languages]
+title = "Languages"
+```
+
+These stop the sync with code 2:
+
+- A tool names an id that is not in the file of its side.
+- A tool names a category, and the file of its side is missing.
+- A top-level key or table other than `[category]`.
+- A `[category.<id>]` that is not a table, that has another key, that has no
+  `title`, or whose `title` is not a string.
+
+A missing file, with no `category` in a tool, is not an error. The sync never
+copies the categories file.
 
 ### The folder rules
 
@@ -291,11 +357,11 @@ question = "Which team owns this repository?"
 settings = [ "editor.formatOnSave" ]
 ```
 
-| Table                  | Keys                                                                              | Meaning                           |
-| ---------------------- | --------------------------------------------------------------------------------- | --------------------------------- |
-| `[defaults]`           | Any key                                                                           | The values of the tool.           |
-| `[questions.<key>]`    | `question` (necessary, a string), `detect` (a string, a shell command), `example` | The question for one value.       |
-| `[contributes.<tool>]` | Any key                                                                           | Values for another selected tool. |
+| Table                  | Keys                                                                                                                                             | Meaning                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| `[defaults]`           | Any key                                                                                                                                          | The values of the tool.           |
+| `[questions.<key>]`    | `question` (necessary, a string), `detect` (a string, a shell command), `example`, `group` (a string), `note` (a string), `optional` (a boolean) | The question for one value.       |
+| `[contributes.<tool>]` | Any key                                                                                                                                          | Values for another selected tool. |
 
 The repo side examines these tables for each selected tool, and the Mac side for
 each tool of the clone. These stop the sync:
@@ -306,12 +372,32 @@ each tool of the clone. These stop the sync:
 - A `[questions.<key>]` has another key, has no `question`, or has a `question`
   or a
   `detect` that is not a string.
+- A `[questions.<key>]` has a `group` or a `note` that is not a string, or an
+  `optional` that is not `true` or `false`.
+- A `[questions.<key>]` has a `group` and `optional = true`. `optional = false`
+  with a `group` is valid.
+
+`group`, `note` and `optional` change the answer that a question needs:
+
+- `group` gives the name of a group of questions of the tool, for example
+  `group = "email"`. A group needs at least one answer that is not empty. A
+  question of a group needs no key in the values file.
+- `optional = true`: the question can have no answer.
+- `note` is a line that `bootstrap init` shows under the question.
+- An empty string `""` is a valid answer, and it means no answer. `init`
+  writes `""` for an optional or a group question that the user leaves empty,
+  so a later `init` does not ask it again.
 
 `bootstrap init` and `bootstrap add` ask the questions, and `detect` of a
 question gives the proposal. See
 [cli.md](cli.md#the-questions). `sync` and `check` stop with
 code 2 for a question of a selected tool without an answer: run
-`bootstrap init`. A template that needs a value without a question uses
+`bootstrap init`. A question with no `group` and no `optional = true` needs a
+key, and `""` is an answer. An optional question can have no key or `""`. A
+group whose answers are all empty or missing also stops `sync` and `check`
+with code 2, for example
+`the group git.email has no answer in macos.toml - run bootstrap mac init`.
+A template that needs a value without a question uses
 `required`, which fails that file with its message.
 
 ## Tools and packs

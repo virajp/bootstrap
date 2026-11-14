@@ -197,8 +197,10 @@ Then list the questions of the selected tools:
 MACOS_SETUP_REPO_PATH=<clone> bootstrap mac questions --json
 ```
 
-**Pass:** The command exits 0, and each row has an `answer` that is not `null`.
-For a row with no answer, ask the owner, and write the answer in `macos.toml`.
+**Pass:** The command exits 0. Each row has an `answer` that is not `null`,
+except a row with `optional` = `true`, and a row of a `group` that has an
+answer that is not empty. For a row with no answer, ask the owner, and write
+the answer in `macos.toml`.
 
 ## Step 5: Make the repo private
 

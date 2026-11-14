@@ -144,6 +144,14 @@ transitively.
   whitespace or a `/`, or a name that starts with a dot, is such a name.
 - The sync examines each `tools.toml` of `macos/tools/`, selected or not. It
   examines each `[pack.*]` table too.
+- A Mac `tools.toml` accepts the catalog keys `description`, `summary`,
+  `category` and `selectable`, with the rules of
+  [tools.md](tools.md#the-catalog-keys). Its `category` names an id of
+  `macos/categories.toml`. `hosts` is for repo tools only, and it stops the
+  sync with `hosts is for repo tools only`.
+- `mac init`, `mac add` and `mac replace` refuse a named tool with
+  `selectable = false`, and `mac check` shows a warning for it. See
+  [cli.md](cli.md#named-tools-that-a-command-refuses).
 - The tools are sorted by name in each stage. See [packs.md](packs.md).
 
 ## The template context
@@ -175,7 +183,11 @@ Two Mac sources do not follow this rule, each from its old copy:
    `macos.toml`.
 2. It reads `macos.toml` and each `tools.toml`, and it resolves the selection.
 3. It merges the values of the tools, with the derive scripts. A question of a
-   selected tool without an answer stops the run.
+   selected tool without an answer stops the run with code 2. An optional
+   question can have no answer. A question of a group needs no answer, but its
+   group needs one answer that is not empty, else the run stops with code 2.
+   The message names the question or the group, and the hint is
+   `run bootstrap mac init`.
 4. It runs the check scripts.
 5. It examines `[overrides.mise*]`, and generates the mise config of each tool
    and of `macos.toml` into a work folder.
