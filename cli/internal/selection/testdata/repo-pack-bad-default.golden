@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-repo-sync: repo/packs.toml: [pack.base] a: default must be true or false, not string
+repo-sync: repo/packs.toml: [pack.base] a has the entry key 'default', the old form - each member is a default: write a = {}
 --- stdout

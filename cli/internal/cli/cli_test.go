@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/selection"
 )
 
 func TestNormalizeURL(t *testing.T) {
@@ -140,6 +141,40 @@ tools (selected directly)
 	only := treeOpts{include: func(tool string) bool { return tool == "node" }}
 	if got, _ := renderTree(roots[:1], deps, only); got != "base (pack)\n└── linter\n    └── node\n" {
 		t.Errorf("include: %s", got)
+	}
+}
+
+// TestListRoots: the roots of list are the tools, with no pack root. A
+// tool that a selected tool needs is not a root; a required member of base
+// without a table is one.
+func TestListRoots(t *testing.T) {
+	s := &side{res: &selection.Resolved{
+		Sel: []selection.Entry{
+			{Tool: "mise", Envs: "-", Src: "default"},
+			{Tool: "git", Envs: "-", Src: "default"},
+			{Tool: "python", Envs: "-", Src: "tools.python"},
+			{Tool: "uv", Envs: "-", Src: "tools.uv"},
+		},
+		Deps: []selection.DepRow{{Tool: "python", Deps: []string{"uv"}}},
+	}}
+	roots := listRoots(s)
+	if len(roots) != 1 || roots[0].name != "" || strings.Join(roots[0].tools, " ") != "mise git python" {
+		t.Fatalf("roots = %v", roots)
+	}
+	required := func(tool string) (cell, string) {
+		if tool == "git" || tool == "mise" {
+			return cell{vis: "* required", colored: "* required"}, ""
+		}
+		return cell{}, ""
+	}
+	got, _ := renderTree(roots, depsOf(s), treeOpts{cell: required})
+	want := `git     * required
+mise    * required
+python
+└── uv
+`
+	if got != want {
+		t.Errorf("got:\n%s\nwant:\n%s", got, want)
 	}
 }
 

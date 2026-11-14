@@ -268,6 +268,9 @@ func (s *state) sync(dryRun bool) fail.Code {
 	if code := s.resolve(); code != fail.OK {
 		return cleanup(code)
 	}
+	if code := s.requiredTables(false); code != fail.OK {
+		return cleanup(code)
+	}
 	tools := s.res.Tools
 	if s.r.Verbose() {
 		s.r.Log("tools: " + strings.Join(tools, " "))

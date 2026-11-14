@@ -73,6 +73,7 @@ func Repo(root string, raw *source.Obj, shown string) error {
 		if o, ok := raw.Get("overrides").(*source.Obj); ok && o.Has("gitignore") {
 			probs = append(probs, usage("[overrides.gitignore] in %s is the old form - %s", shown, Hint))
 		}
+		probs = append(probs, formatProblems(raw, shown, Hint)...)
 	}
 	if !Migrating && isFile(root+"/"+OldPrecommit) {
 		probs = append(probs, usage("%s is the old form - %s", OldPrecommit, Hint))
@@ -92,10 +93,15 @@ func Mac(raw *source.Obj, shown string) error {
 	if raw == nil {
 		return nil
 	}
+	var probs []*fail.Error
 	if t, ok := raw.Get("tools").(*source.Obj); ok && t.Has(OldMacTool) {
-		return source.Problems([]*fail.Error{usage("[tools.%s] in %s is the old form - %s", OldMacTool, shown, MacHint)})
+		probs = append(probs, usage("[tools.%s] in %s is the old form - %s", OldMacTool, shown, MacHint))
 	}
-	return nil
+	probs = append(probs, formatProblems(raw, shown, MacHint)...)
+	if len(probs) == 0 {
+		return nil
+	}
+	return source.Problems(probs)
 }
 
 // Change is one file of a migration: its new content, or its removal.
@@ -144,7 +150,8 @@ func strList(v any) []string {
 }
 
 // MigrateRepo gives the changes that move the repository <root> with the
-// values file <values> to the new form. No change: an empty list.
+// values file <values> to the new form. No change: an empty list. The tables
+// of the packs need the clone of BOOTSTRAP_CLONE (see tablesOf).
 func MigrateRepo(root, values string) ([]Change, error) {
 	in, err := os.ReadFile(values)
 	if err != nil {
@@ -154,7 +161,11 @@ func MigrateRepo(root, values string) ([]Change, error) {
 	if err != nil {
 		return nil, usage("cannot read %s", values)
 	}
-	var exprs, notes []string
+	// The tables of the packs first: a later move adds keys to a table.
+	exprs, notes, err := cloneTables(raw, values, source.Repo, root)
+	if err != nil {
+		return nil, err
+	}
 	var out []Change
 	if raw.Has("commit_scopes") {
 		exprs = append(exprs, ".tools.git.commit_scopes = .commit_scopes", "del(.commit_scopes)")
@@ -231,28 +242,37 @@ func MigrateRepo(root, values string) ([]Change, error) {
 }
 
 // MigrateMac gives the change that moves the Mac values file <values> to the
-// new form, or nil.
+// new form, or nil. The tables of the packs need the clone of BOOTSTRAP_CLONE
+// (see tablesOf).
 func MigrateMac(values string) (*Change, error) {
 	raw, err := source.ReadTOML(values)
 	if err != nil {
 		return nil, usage("cannot read %s", values)
 	}
-	t, ok := raw.Get("tools").(*source.Obj)
-	if !ok || !t.Has(OldMacTool) {
+	// The tables of the packs first: the move of the old tool adds keys to a
+	// table.
+	exprs, notes, err := cloneTables(raw, values, source.Macos, "")
+	if err != nil {
+		return nil, err
+	}
+	if t, ok := raw.Get("tools").(*source.Obj); ok && t.Has(OldMacTool) {
+		exprs = append(exprs,
+			".tools.mise = ((.tools.mise // {}) * .tools["+q(OldMacTool)+"])",
+			"del(.tools["+q(OldMacTool)+"])")
+		notes = append(notes, "[tools."+OldMacTool+"] to [tools.mise]")
+	}
+	if len(exprs) == 0 {
 		return nil, nil
 	}
 	in, err := os.ReadFile(values)
 	if err != nil {
 		return nil, usage("cannot read %s", values)
 	}
-	next, err := editTOML(in, []string{
-		".tools.mise = ((.tools.mise // {}) * .tools[" + q(OldMacTool) + "])",
-		"del(.tools[" + q(OldMacTool) + "])",
-	})
+	next, err := editTOML(in, exprs)
 	if err != nil {
 		return nil, err
 	}
-	return &Change{Path: values, Content: next, Note: "migrate the old form: [tools." + OldMacTool + "] to [tools.mise]"}, nil
+	return &Change{Path: values, Content: next, Note: "migrate the old form: " + strings.Join(notes, "; ")}, nil
 }
 
 // addLines gives the text file <path> with each line of <lines> that it does

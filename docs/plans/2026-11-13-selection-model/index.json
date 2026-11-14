@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-13 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-14 08:28 in .worktrees/all-2026-11-13-1753"
   },
   "consent": {
     "merge": true,
@@ -341,6 +341,24 @@
         "U6",
         "U7"
       ]
+    },
+    {
+      "id": "D24",
+      "decision": "Q1: When an old values file names a pack that the frozen packs copy does not have (for example [packs.nope]), should the init migration stop or drop the table?",
+      "ruling": "Stop with code 3 \"<pack> is not a bootstrap pack (named in <file>)\", as the old sync did (this is what is built now) — the user fixes the file by hand, then runs init again.",
+      "rejected": "Remove the table and list it in the change list, like a [tools.<name>] table of an unknown tool — init always finishes",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D25",
+      "decision": "Q2: macos/examples/macos.toml keeps the comment \"This table selects the tool, because it is not a base tool.\" under [tools.diff-so-fancy], but diff-so-fancy is now a required member of the Mac base. What should happen to that comment?",
+      "ruling": "Remove the comment (recommended) — the table becomes one of the plain base tables and needs no text of its own.",
+      "rejected": "Rewrite it to say the table holds the overrides of a required base tool — new text the unit writes from this ruling; Keep it — the example states something false",
+      "units": [
+        "U2"
+      ]
     }
   ],
   "units": [
@@ -357,11 +375,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T02:58:57.628Z",
+      "ended": "2026-11-14T03:46:55.132Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -382,11 +400,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T02:58:57.709Z",
+      "ended": "2026-11-14T03:46:55.205Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -528,8 +546,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T02:58:57.590Z",
       "ended": ""
     },
     {
@@ -615,8 +633,28 @@
       "ended": ""
     }
   },
-  "gaps": [],
-  "overrides": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U2",
+      "stage": "",
+      "text": "Wave review R1: macos/examples/macos.toml lost [tools.uv] and [tools.worktrunk] (only the implicit old base selected them), so test:macos-tools would fail · settled by the CLAUDE.md rule that the example selects every Mac tool; U2 added both empty tables",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U2",
+      "stage": "",
+      "text": "Wave review R1: no blank line after the empty [tools.osv-scanner] in five repo examples · settled by the formatter: dprint removes a blank line after an empty table, so the files stay as dprint writes them",
+      "state": "closed"
+    }
+  ],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-13-1753"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/all-2026-11-13-1753",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-13-selection-model.jsonl"

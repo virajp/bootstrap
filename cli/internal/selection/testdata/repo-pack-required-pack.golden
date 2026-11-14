@@ -1,0 +1,4 @@
+rc=2
+--- stderr
+repo-sync: repo/packs.toml: [pack.base] pack:extra: required = true is only for a tool of pack base
+--- stdout

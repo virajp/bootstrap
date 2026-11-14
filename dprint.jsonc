@@ -3,10 +3,14 @@
 // sync, unless .config/bootstrap.toml has an override for it.
 {
   "excludes": [
-    // The member order of the packs is the sync order, and the TOML plugin
-    // sorts keys.
+    // The repo sync takes the required members of the pack base in the order
+    // of repo/packs.toml, then the [tools.*] tables in name order, and the
+    // TOML plugin sorts keys.
     "repo/packs.toml",
     "macos/packs.toml",
+    // The frozen copies of the packs files of the migration stay byte for
+    // byte.
+    "cli/internal/oldform/packs-v2/",
     // A merge spec of a tool is a template, not TOML, until the sync
     // renders it.
     "**/*.merge.toml",

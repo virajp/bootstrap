@@ -1,4 +1,8 @@
-rc=3
+rc=0
 --- stderr
-repo-sync: base is not a bootstrap pack
 --- stdout
+tools:
+sel:
+deps:
+values:
+{}

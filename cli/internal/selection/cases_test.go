@@ -85,17 +85,18 @@ func catalogKeys(text string) string {
 	return head + text
 }
 
-// A small repo clone: three packs, four tools.
+// A small repo clone: three packs, four tools. The pack base has one
+// required member.
 var repoBase = tree{
 	"repo/packs.toml": `[pack.base]
-a = { default = true }
+a = { required = true }
 
 [pack.extra]
-b = { default = true }
+b = {}
 c = {}
 
 [pack.nested]
-"pack:extra" = { default = true }
+"pack:extra" = {}
 `,
 	"repo/tools/a/tools.toml": rt(""),
 	"repo/tools/b/tools.toml": rt(""),
@@ -109,11 +110,11 @@ const repoValues = "environments = [ \"dev\" ]\n"
 // A small Mac clone.
 var macosBase = tree{
 	"macos/packs.toml": `[pack.base]
-macos-setup = { default = true }
-m1 = { default = true }
+macos-setup = { required = true }
+m1 = { required = true }
 
 [pack.p]
-m2 = { default = true }
+m2 = {}
 m3 = {}
 `,
 	"macos/tools/macos-setup/tools.toml": mt("description = \"setup\"\n"),
@@ -133,10 +134,8 @@ type repoCase struct {
 
 var repoCases = []repoCase{
 	{name: "plain", values: repoValues},
-	{name: "pack", values: repoValues + "[packs.extra]\n"},
-	{name: "pack-nested", values: repoValues + "[packs.nested]\nenv = [ \"dev\" ]\n"},
+	{name: "pack-not-selected", values: repoValues + "[packs.extra]\n"},
 	{name: "tool-member-empty", values: repoValues + "[tools.c]\n[tools.d]\n"},
-	{name: "unknown-pack", values: repoValues + "[packs.nope]\n"},
 	{name: "unknown-tool", values: repoValues + "[tools.nope]\n"},
 	{name: "no-packs-file", over: tree{"repo/packs.toml": "-"}, values: repoValues},
 	{name: "packs-syntax-error", over: tree{"repo/packs.toml": "[pack.base\n"}, values: repoValues},
@@ -147,20 +146,22 @@ var repoCases = []repoCase{
 	{name: "values-tool-not-table", values: repoValues + "[tools]\na = 1\n"},
 	{name: "values-env-not-list", values: repoValues + "[tools.c]\nenv = \"dev\"\n"},
 	{name: "values-pack-key", values: repoValues + "[packs.extra]\nfoo = 1\n"},
-	{name: "pack-unknown-member", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\nzzz = { default = true }\n"}, values: repoValues},
-	{name: "pack-unknown-nested", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\n\"pack:zzz\" = { default = true }\n"}, values: repoValues},
-	{name: "pack-loop", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\n\n[pack.x]\n\"pack:y\" = { default = true }\n\n[pack.y]\n\"pack:z\" = {}\n\n[pack.z]\n\"pack:x\" = { default = true }\n"}, values: repoValues},
-	{name: "pack-self-loop", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\n\"pack:base\" = {}\n"}, values: repoValues},
-	{name: "pack-old-list", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\ntools = [ \"b\" ]\n"}, values: repoValues},
-	{name: "pack-old-depends", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\ndepends = [ \"b\" ]\n"}, values: repoValues},
-	{name: "pack-bool-member", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\nb = true\n"}, values: repoValues},
-	{name: "pack-old-p-form", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\n\"p:extra\" = { default = true }\n"}, values: repoValues},
+	{name: "pack-unknown-member", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\nzzz = {}\n"}, values: repoValues},
+	{name: "pack-unknown-nested", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\n\"pack:zzz\" = {}\n"}, values: repoValues},
+	{name: "pack-loop", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\n\n[pack.x]\n\"pack:y\" = {}\n\n[pack.y]\n\"pack:z\" = {}\n\n[pack.z]\n\"pack:x\" = {}\n"}, values: repoValues},
+	{name: "pack-self-loop", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\n\"pack:base\" = {}\n"}, values: repoValues},
+	{name: "pack-old-list", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\ntools = [ \"b\" ]\n"}, values: repoValues},
+	{name: "pack-old-depends", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\ndepends = [ \"b\" ]\n"}, values: repoValues},
+	{name: "pack-bool-member", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\nb = true\n"}, values: repoValues},
+	{name: "pack-old-p-form", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\n\"p:extra\" = {}\n"}, values: repoValues},
 	{name: "pack-bad-default", over: tree{"repo/packs.toml": "[pack.base]\na = { default = \"yes\" }\n"}, values: repoValues},
-	{name: "pack-multiline-member", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\n\n[pack.base.b]\ndefault = true\n"}, values: repoValues},
-	{name: "pack-is-tool-folder", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\n\n[pack.d]\nb = { default = true }\n"}, values: repoValues},
-	{name: "pack-empty-table", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\n\n[pack.e]\n"}, values: repoValues + "[packs.e]\n"},
-	{name: "pack-comment-and-quotes", over: tree{"repo/packs.toml": "# top\n[pack.base] # base\n  a   =   { default = true }   # a\n'b' = { default = true }\n\"c\" = {}\n"}, values: repoValues},
-	{name: "pack-default-false", over: tree{"repo/packs.toml": "[pack.base]\na = { default = true }\nb = { default = false }\n"}, values: repoValues},
+	{name: "pack-multiline-member", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\n\n[pack.base.b]\nrequired = true\n"}, values: repoValues},
+	{name: "pack-is-tool-folder", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\n\n[pack.d]\nb = {}\n"}, values: repoValues},
+	{name: "pack-empty-table", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\n\n[pack.e]\n"}, values: repoValues},
+	{name: "pack-comment-and-quotes", over: tree{"repo/packs.toml": "# top\n[pack.base] # base\n  a   =   { required = true }   # a\n'b' = { required = true }\n\"c\" = {}\n"}, values: repoValues},
+	{name: "pack-default-key", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\nb = { default = false }\n"}, values: repoValues},
+	{name: "pack-required-false", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\nb = { required = false }\n"}, values: repoValues},
+	{name: "pack-required-pack", over: tree{"repo/packs.toml": "[pack.base]\na = { required = true }\n\"pack:extra\" = { required = true }\n\n[pack.extra]\nb = {}\n"}, values: repoValues},
 	{name: "depends", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"b\", \"c\" ]\nroot_only = false\n", "repo/tools/b/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"c\" ]\nroot_only = false\n"}, values: repoValues},
 	{name: "depends-cycle", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"b\" ]\n", "repo/tools/b/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"a\" ]\n"}, values: repoValues},
 	{name: "depends-unknown", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"zzz\" ]\n"}, values: repoValues},
@@ -174,8 +175,8 @@ var repoCases = []repoCase{
 	{name: "bad-default-env", over: tree{"repo/tools/a/tools.toml": "default_envs = [ \"dev\", \"qa\" ]\n"}, values: repoValues},
 	{name: "late-folder", over: tree{"repo/tools/zz-repo/tools.toml": rt("")}, values: repoValues},
 	{name: "late-folder-after", over: tree{"repo/tools/zzz/tools.toml": rt("")}, values: repoValues},
-	{name: "root-only", over: tree{"repo/tools/c/tools.toml": "default_envs = [ \"dev\" ]\nroot_only = true\n", "repo/packs.toml": "[pack.base]\na = { default = true }\nc = { default = true }\n"}, values: repoValues},
-	{name: "root-only-sub", sub: true, over: tree{"repo/tools/c/tools.toml": "default_envs = [ \"dev\" ]\nroot_only = true\n", "repo/packs.toml": "[pack.base]\na = { default = true }\nc = { default = true }\n"}, values: repoValues},
+	{name: "root-only", over: tree{"repo/tools/c/tools.toml": "default_envs = [ \"dev\" ]\nroot_only = true\n", "repo/packs.toml": "[pack.base]\na = { required = true }\nc = { required = true }\n"}, values: repoValues},
+	{name: "root-only-sub", sub: true, over: tree{"repo/tools/c/tools.toml": "default_envs = [ \"dev\" ]\nroot_only = true\n", "repo/packs.toml": "[pack.base]\na = { required = true }\nc = { required = true }\n"}, values: repoValues},
 	{name: "root-only-sub-tools", sub: true, over: tree{"repo/tools/c/tools.toml": "default_envs = [ \"dev\" ]\nroot_only = true\n"}, values: repoValues + "[tools.c]\n"},
 	{name: "root-only-dep-sub", sub: true, over: tree{"repo/tools/c/tools.toml": "default_envs = [ \"dev\" ]\nroot_only = true\n", "repo/tools/a/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"c\" ]\n"}, values: repoValues},
 	{name: "old-keys", over: tree{"repo/tools/a/tools.toml": rt("seed = [ \"x\" ]\n[seed_requires]\nx = 1\n[mise.tools.ta]\nrequires = \"f\"\nfiles = [ \"g\" ]\nrequires_found = [ \"a/b\" ]\n[mise.tools.tb]\nrequires = \"h\"\nrequires_found = []\n[mise_env.ci.tools.ta]\nrequires_found = [ \"x\" ]\n")}, values: repoValues},
@@ -183,7 +184,7 @@ var repoCases = []repoCase{
 		"repo/tools/a/tools.toml": rt("[defaults]\nlist = [ 1, 2 ]\nflag = false\n[defaults.t]\nk = 1\n\n[contributes.d]\nlist = [ 2, 3 ]\n[contributes.d.t]\nj = 2\n"),
 		"repo/tools/b/tools.toml": rt("[contributes.d]\nlist = [ 4 ]\nname = \"x\"\n"),
 		"repo/tools/d/tools.toml": rt("[defaults]\nlist = [ 0 ]\nname = \"d\"\nflag = true\n"),
-	}, values: repoValues + "[packs.extra]\n[tools.d]\n"},
+	}, values: repoValues + "[tools.b]\n[tools.d]\n"},
 	{name: "merge-contribute-ignored", over: tree{
 		"repo/tools/a/tools.toml": rt("[contributes.d]\nx = 1\n"),
 		"repo/tools/d/tools.toml": rt(""),
@@ -192,23 +193,23 @@ var repoCases = []repoCase{
 		"repo/tools/a/tools.toml": rt("[contributes.d]\nname = \"a\"\n[contributes.d.t]\nk = 1\n"),
 		"repo/tools/b/tools.toml": rt("[contributes.d]\nname = \"b\"\n[contributes.d.t]\nk = 2\n"),
 		"repo/tools/d/tools.toml": rt(""),
-	}, values: repoValues + "[packs.extra]\n[tools.d]\n"},
+	}, values: repoValues + "[tools.b]\n[tools.d]\n"},
 	{name: "merge-contribute-conflict3", over: tree{
 		"repo/tools/a/tools.toml": rt("[contributes.d]\nname = \"a\"\n"),
 		"repo/tools/b/tools.toml": rt("[contributes.d]\nother = 1\n"),
 		"repo/tools/c/tools.toml": rt("[contributes.d]\nname = \"c\"\n"),
 		"repo/tools/d/tools.toml": rt(""),
-	}, values: repoValues + "[packs.extra]\n[tools.c]\n[tools.d]\n"},
+	}, values: repoValues + "[tools.b]\n[tools.c]\n[tools.d]\n"},
 	{name: "merge-contribute-type", over: tree{
 		"repo/tools/a/tools.toml": rt("[contributes.d]\nx = [ 1 ]\n"),
 		"repo/tools/b/tools.toml": rt("[contributes.d]\nx = 1\n"),
 		"repo/tools/d/tools.toml": rt(""),
-	}, values: repoValues + "[packs.extra]\n[tools.d]\n"},
+	}, values: repoValues + "[tools.b]\n[tools.d]\n"},
 	{name: "merge-contribute-same", over: tree{
 		"repo/tools/a/tools.toml": rt("[contributes.d]\nx = 1\n"),
 		"repo/tools/b/tools.toml": rt("[contributes.d]\nx = 1\n"),
 		"repo/tools/d/tools.toml": rt(""),
-	}, values: repoValues + "[packs.extra]\n[tools.d]\n"},
+	}, values: repoValues + "[tools.b]\n[tools.d]\n"},
 	{name: "merge-contribute-unknown", over: tree{"repo/tools/a/tools.toml": rt("[contributes.zzz]\nx = 1\n")}, values: repoValues},
 	{name: "merge-shape", over: tree{"repo/tools/a/tools.toml": rt("defaults = 1\n")}, values: repoValues},
 	{name: "merge-shape-questions", over: tree{"repo/tools/a/tools.toml": rt("[questions.q1]\nquestion = 1\ndetect = 2\nfoo = 3\n[questions.q2]\nexample = \"x\"\n[questions]\nq3 = 1\n")}, values: repoValues},
@@ -229,7 +230,7 @@ var repoCases = []repoCase{
 	}, values: repoValues + "[tools.d]\nn = \"s\"\n"},
 	{name: "merge-user-member-not-base", over: tree{
 		"repo/tools/c/tools.toml": rt("[defaults]\nn = 1\n"),
-		"repo/packs.toml":         "[pack.base]\na = { default = true }\nc = {}\n",
+		"repo/packs.toml":         "[pack.base]\na = { required = true }\nc = {}\n",
 	}, values: repoValues + "[tools.c]\nn = \"s\"\n"},
 	{name: "merge-ordered-keys", over: tree{
 		"repo/tools/a/tools.toml": rt("[defaults]\nz = 1\nb = 2\n[contributes.a]\nm = 3\naa = 4\n"),
@@ -282,10 +283,9 @@ type macosCase struct {
 var macosCases = []macosCase{
 	{name: "plain", values: "-"},
 	{name: "empty-file", values: ""},
-	{name: "pack", values: "[packs.p]\n"},
+	{name: "pack-not-selected", values: "[packs.p]\n"},
 	{name: "tool", values: "[tools.m3]\nk = 1\n"},
 	{name: "unknown-tool", values: "[tools.nope]\n"},
-	{name: "unknown-pack", values: "[packs.nope]\n"},
 	{name: "bad-names", values: "[tools.\"a/b\"]\n[packs.\".x\"]\n[tools.\"a b\"]\n"},
 	{name: "values-syntax-error", values: "[tools\n"},
 	{name: "values-is-dir", values: "dir"},
@@ -316,7 +316,7 @@ var macosCases = []macosCase{
 	{name: "stage-init", over: tree{
 		"macos/tools/m2/tools.toml": "stage = \"init\"\ndepends = [ \"m4\" ]\n",
 		"macos/tools/m4/tools.toml": "depends = [ \"m3\" ]\n",
-	}, values: "[packs.p]\n"},
+	}, values: "[tools.m2]\n"},
 	{name: "stage-init-unselected", over: tree{"macos/tools/m3/tools.toml": "stage = \"init\"\n"}, values: "-"},
 	{name: "stage-shell", over: tree{"macos/tools/m1/tools.toml": "stage = \"shell\"\n"}, values: "-"},
 	{name: "stage-other", over: tree{"macos/tools/m1/tools.toml": "stage = \"late\"\n", "macos/tools/m2/tools.toml": "stage = 1\n"}, values: "-"},
@@ -329,16 +329,16 @@ var macosCases = []macosCase{
 	{name: "late-folder", over: tree{"macos/tools/zz-macos/tools.toml": ""}, values: "-"},
 	{name: "late-folder-after", over: tree{"macos/tools/zzz/tools.toml": ""}, values: "-"},
 	{name: "no-tools", over: tree{"macos/tools/macos-setup/tools.toml": "-", "macos/tools/m1/tools.toml": "-", "macos/tools/m2/tools.toml": "-", "macos/tools/m3/tools.toml": "-", "macos/tools/m4/tools.toml": "-", "macos/tools/.keep": ""}, values: "-"},
-	{name: "pack-is-tool", over: tree{"macos/packs.toml": "[pack.base]\nmacos-setup = { default = true }\n[pack.m2]\nm1 = { default = true }\n"}, values: "-"},
+	{name: "pack-is-tool", over: tree{"macos/packs.toml": "[pack.base]\nmacos-setup = { required = true }\n[pack.m2]\nm1 = {}\n"}, values: "-"},
 	{name: "merge-contribute", over: tree{
 		"macos/tools/m1/tools.toml": "[defaults]\nlist = [ 1 ]\nk = 1\n[contributes.m2]\nlist = [ 2 ]\n",
 		"macos/tools/m2/tools.toml": "[defaults]\nlist = [ 0 ]\nk = 2\n",
-	}, values: "[packs.p]\n"},
+	}, values: "[tools.m2]\n"},
 	{name: "merge-contribute-unknown", over: tree{"macos/tools/m1/tools.toml": "[contributes.zzz]\nk = 1\n"}, values: "-"},
 	{name: "merge-contribute-conflict", over: tree{
 		"macos/tools/m1/tools.toml": "[contributes.m2]\nk = 1\n",
 		"macos/tools/m3/tools.toml": "[contributes.m2]\nk = 2\n",
-	}, values: "[packs.p]\n[tools.m3]\n"},
+	}, values: "[tools.m2]\n[tools.m3]\n"},
 	{name: "merge-user", over: tree{"macos/tools/m3/tools.toml": "[defaults]\nk = 1\nl = [ 1 ]\n"}, values: "[tools.m3]\nk = \"s\"\nl = \"s\"\n"},
 	{name: "merge-user-base", over: tree{"macos/tools/m1/tools.toml": "[defaults]\nk = 1\nl = [ 1 ]\n"}, values: "[tools.m1]\nk = 2\nl = [ 2 ]\nz = 1\n"},
 	{name: "merge-user-base-type", over: tree{"macos/tools/m1/tools.toml": "[defaults]\nk = 1\n[defaults.t]\na = 1\n"}, values: "[tools.m1]\nk = \"s\"\nt = 1\n"},

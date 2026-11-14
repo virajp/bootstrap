@@ -1,0 +1,4 @@
+rc=2
+--- stderr
+repo-sync: repo/packs.toml: [pack.base] b has the entry key 'default', the old form - each member is a default: write b = {}
+--- stdout

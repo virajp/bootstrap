@@ -296,6 +296,14 @@ func (s *state) run(args []string) fail.Code {
 		}
 		s.r.Clone("bootstrap " + short + " · " + strconv.Itoa(len(s.res.Tools)) + " tools")
 	}
+	// The tables of the required members of the pack base, before the files.
+	s.e.DryRun = dryRun
+	code := s.requiredTables()
+	s.e.DryRun = false
+	if code != fail.OK {
+		s.r.Summary(int(code))
+		return code
+	}
 	s.oldRows, _ = manifest.Read(s.e, manifest.Macos, manifestFile, "")
 	s.merged = map[string]bool{}
 
@@ -576,7 +584,26 @@ func (s *state) stale(stage string) fail.Code {
 
 // recordCommit is `_ss_record_commit`.
 func (s *state) recordCommit(commit string) fail.Code {
-	return s.e.RecordCommit(s.config+"/"+valuesName, "bootstrap_commit", commit, "", valuesHeader)
+	return s.e.RecordCommit(s.config+"/"+valuesName, "bootstrap_commit", commit, "", newValues)
+}
+
+// newValues is the start of a macos.toml that a sync creates: the header and
+// the key format of the new form.
+var newValues = valuesHeader + "\n\n" + oldform.FormatKey + " = " + strconv.Itoa(oldform.Format)
+
+// requiredTables writes an empty [tools.<name>] table into macos.toml for
+// each required member of the pack base that has no table, so a user can add
+// values to it. A dry run writes nothing and lists the tables.
+func (s *state) requiredTables() fail.Code {
+	named := map[string]bool{}
+	for _, n := range values.Names(s.values.Sel, "tools") {
+		named[n] = true
+	}
+	names, err := selection.MissingTables(s.idx, selection.BasePack, named, false)
+	if err != nil {
+		return s.logAll(err)
+	}
+	return s.e.AddTables(s.config+"/"+valuesName, names, newValues+"\n", false)
 }
 
 // reportFailed is `_ss_report_failed`.

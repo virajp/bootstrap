@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-repo-sync: repo/packs.toml: [pack.base] b must be a table, { default = true } or {}
+repo-sync: repo/packs.toml: [pack.base] b must be a table, {} or { required = true }
 --- stdout
