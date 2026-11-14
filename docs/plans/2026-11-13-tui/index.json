@@ -139,11 +139,11 @@
         "U3"
       ],
       "waits": "U4 adds the Detected tab to the model of U2 and U3 in cli/internal/tui; one unit writes cli/ at a time.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T10:59:17.203Z",
+      "ended": "2026-11-14T11:17:11.984Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -282,9 +282,9 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T10:59:17.163Z",
+      "ended": "2026-11-14T11:25:14.306Z"
     },
     {
       "id": "W5",
@@ -377,6 +377,13 @@
       "stage": "",
       "text": "R3 rulings finding and question: pack deselect removes a member a non-required outside tool needs, against the exception clause of ruling 48 · settled by D17 (the user answered Q3 as built); not re-asked",
       "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "",
+      "stage": "",
+      "text": "code:lint:60-bootstrap fails from wave 4 on: the released engine bootstrap 2.1.0 rejects main's repo/packs.toml (plan 2026-11-13-selection-model) in ~/.cache/bootstrap/repo (\"[pack.base] dprint: required = true is only for a member of pack base with default = true\"); inherited from main, not this branch · per D22 the wave and plan gates count green when every other code:lint step passes; open until a 3.x engine release",
+      "state": "open"
     }
   ],
   "overrides": [
@@ -594,6 +601,40 @@
       "units": [
         "U3"
       ]
+    },
+    {
+      "id": "D19",
+      "decision": "Q5: The Mac scan returns notes from Detection.Notes (for example brew is not installed). Should the TUI Detected tab show them?",
+      "ruling": "Show them as dim lines in the bottom pane on a category, and under \"No tool detected\" — the user learns why a package is missing; it adds lines the design does not show.",
+      "rejected": "Drop them — matches the design, but a Mac without brew or mas silently gets fewer proposals",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D20",
+      "decision": "Q6: Should a (accept all) on the Detected tab also accept the remove proposals (red [?])?",
+      "ruling": "Adds only, as built — matches \"Same as: bootstrap detect --add\", which only adds; red [?] rows still need space one at a time, with the cascade dialog.",
+      "rejected": "Also removals — matches the wording \"Accept all proposals\", but one keypress could open several cascade or locked dialogs in a row",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D21",
+      "decision": "Q7: Screen 2a shows a counter and a progress bar in the Detecting dialog; core.Detect reports no progress. Should a progress callback be added?",
+      "ruling": "Spinner only, as built — no change to core or the scripts runner; the dialog does not match screen 2a.",
+      "rejected": "Add a progress callback to core.DetectState and scripts.Runner.Run — the dialog matches the design, but the core and scripts APIs change",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D22",
+      "decision": "Q8: The wave gate code:lint fails in code:lint:60-bootstrap because the released engine 2.1.0 rejects main's repo/packs.toml in the cache clone (inherited, not this plan). How should the run treat that line for the rest of the run?",
+      "ruling": "Treat code:lint:60-bootstrap as inherited from main: count the wave gate green when every other code:lint step passes, record one open gap naming it, and continue — the plan lands; the gap stays open until a 3.x engine release, so the folder is not archived.",
+      "rejected": "Stop the run here (STOPPED) until a new engine is released or the clone is fixed; Mark wave 4 failed as the rules say for an unattributed red line",
+      "units": []
     }
   ]
 }
