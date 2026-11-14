@@ -1,5 +1,5 @@
 # The bootstrap commit of the last sync. repo-sync writes it.
-bootstrap_commit = "99f4b5f756ad7f91e23688d21ec77cadede3de99"
+bootstrap_commit = "aa8c2e062f85295e26e0e40c4f41b78900bab442"
 environments = [ "dev" ]
 format = 2
 repo_name = "bootstrap"
