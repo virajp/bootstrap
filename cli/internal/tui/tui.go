@@ -221,6 +221,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = msg.state
 		m.phase = ready
 		m.refreshTools()
+		m.refreshPacks()
 		return m, m.tickCmd()
 	case tickMsg:
 		m.tick++
@@ -254,6 +255,12 @@ func (m *Model) mainKey(msg tea.KeyPressMsg) tea.Cmd {
 			return cmd
 		}
 		defer m.afterKey(msg)
+	}
+	if m.cur == packsTab {
+		if cmd, done := m.packsKey(msg); done {
+			return cmd
+		}
+		defer m.afterPacksKey(msg)
 	}
 	switch {
 	case key.Matches(msg, m.keys.Quit):

@@ -669,6 +669,7 @@ func (m *Model) setItems(items []core.Item) bool {
 	}
 	m.list.Items, m.eff = items, eff
 	m.refreshTools()
+	m.refreshPacks()
 	return true
 }
 
@@ -731,23 +732,24 @@ func (m *Model) unselect(t string) tea.Cmd {
 		m.setItems(items)
 		return nil
 	}
-	m.modal = m.cascadeModal(t, deps, extra, items)
+	m.modal = m.cascadeModal(t, []string{t}, deps, extra, items)
 	return nil
 }
 
 // The dialogs of the tab.
 
-// cascadeModal asks to remove <t> with the tools <deps> that need it, and
-// the dependencies <extra> that no tool needs after the change.
-func (m *Model) cascadeModal(t string, deps, extra []string, items []core.Item) *modal {
-	gone := append([]string{t}, deps...)
+// cascadeModal asks to remove <t>, a tool or a pack: the tools <gone> leave
+// with the tools <deps> that need one of them, and the dependencies <extra>
+// that no tool needs after the change. For a tool, <gone> is the tool alone.
+func (m *Model) cascadeModal(t string, gone, deps, extra []string, items []core.Item) *modal {
+	all := append(slices.Clone(gone), deps...)
 	var body []line
 	if len(deps) > 0 {
 		body = append(body, line{text("These selected tools need " + t + ". They leave too:")}, line{})
 		for _, d := range deps {
-			need := t
+			need := gone[0]
 			for _, x := range m.manifest(d).Depends {
-				if slices.Contains(gone, x) {
+				if slices.Contains(all, x) {
 					need = x
 					break
 				}
@@ -771,7 +773,7 @@ func (m *Model) cascadeModal(t string, deps, extra []string, items []core.Item) 
 		warn:  true,
 		width: 64,
 		body:  body,
-		keys:  "y remove the " + itoa(n+1) + " tools  any other key keeps " + t,
+		keys:  "y remove the " + itoa(n+len(gone)) + " tools  any other key keeps " + t,
 		onKey: func(m *Model, k tea.KeyPressMsg) tea.Cmd {
 			m.modal = nil
 			if k.String() == "y" {

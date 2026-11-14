@@ -55,6 +55,9 @@ type Item struct {
 	Exclude  []string // AddPack: the member keys that the pack does not add.
 	Old, New string   // Replace.
 	Package  Package  // AddPackage.
+	// Pack is the pack whose deselect a RemoveTool item is, or empty. Plan
+	// does not read it; the TUI shows the item as one change of the pack.
+	Pack string
 }
 
 // Answer is the answer of a question <tool>.<key>; "" is an empty answer.

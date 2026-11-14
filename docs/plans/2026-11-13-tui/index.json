@@ -119,11 +119,11 @@
         "U2"
       ],
       "waits": "U3 uses the cascade modal and the change list of U2; one unit writes cli/ at a time.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T10:29:13.616Z",
+      "ended": "2026-11-14T10:51:59.109Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 3
     },
     {
       "id": "U4",
@@ -276,8 +276,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T10:29:13.577Z",
       "ended": ""
     },
     {
@@ -369,6 +369,13 @@
       "unit": "U2",
       "stage": "",
       "text": "R2 completeness finding: U2 added core.InitState and the init load path, which 02-tools.md does not name · kept in U2: the Tools tab needs the post-init selection under init (D11 b, D14 c), the change is inside cli/ and the Goal, writes only to a temp folder",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U3",
+      "stage": "",
+      "text": "R3 rulings finding and question: pack deselect removes a member a non-required outside tool needs, against the exception clause of ruling 48 · settled by D17 (the user answered Q3 as built); not re-asked",
       "state": "closed"
     }
   ],
@@ -568,6 +575,24 @@
       "rejected": "Add an item kind to core (for example a Replace with no script, or a flag on Replace) — one change in the counter and the review, but core's Plan and Apply get a new item kind, which U5 must then handle",
       "units": [
         "U2"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Q3: When a pack is deselected and a selected tool outside the pack needs one of its members, does that member stay, or does the outside tool leave too after the cascade dialog?",
+      "ruling": "Member stays only when a required tool needs it; any other outside tool that needs a leaving member leaves too, after the cascade [y/N] (as built) — both clauses apply, and the cascade can actually open.",
+      "rejected": "Member stays whenever any selected tool outside the pack needs it — no outside tool ever leaves, so the cascade modal never opens for a pack and the second clause has no effect",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "Q4: What does space do on a [~] pack (some members selected): select the missing members, or deselect the pack?",
+      "ruling": "Select: one AddPack item that adds the missing members, shown as [+] (as built) — a [~] pack cannot be deselected until it is [x]; the user removes single tools on the Tools tab.",
+      "rejected": "Deselect: one RemoveTool item for the selected members, shown as [-] — a [~] pack can only be completed by selecting its missing tools on the Tools tab",
+      "units": [
+        "U3"
       ]
     }
   ]
