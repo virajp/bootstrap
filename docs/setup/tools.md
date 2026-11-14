@@ -19,25 +19,25 @@ that command.
 
 `macos.toml`, at the root of the private `macos-setup` clone, selects the tools:
 
-- `[packs.<name>]`: an empty table. It adds each default member of the pack.
-- `[tools.<name>]`: a table. It adds the tool. A table for a tool of the pack
-  `base` only gives values.
+- `format = 2`: the form of the file.
+- `[tools.<name>]`: a table. It adds the tool. A table for a required tool of
+  the pack `base` only gives values.
 
-The sync also adds the pack `base` and each tool in `depends`, transitively.
-`bootstrap mac add`, `bootstrap mac remove`, `bootstrap mac replace` and
-`bootstrap mac detect` change the `[tools.<name>]` tables. `bootstrap mac
-detect`
-also adds an installed package that no tool has to `[mise.bootstrap.packages]`
-or `[mise.tools]` of `macos.toml`. No command of the CLI changes a
-`[packs.<name>]` table.
+`macos.toml` keeps no record of a pack. The sync also adds the required members
+of the pack `base` and each tool in `depends`, transitively.
+`bootstrap mac add tool <tool…>`, `bootstrap mac add pack <pack…>`,
+`bootstrap mac remove tool <tool…>`, `bootstrap mac replace tool <old> <new>`
+and `bootstrap mac detect --add` change the `[tools.<name>]` tables.
+`bootstrap mac detect --add` also adds an installed package that no tool has to
+`[mise.bootstrap.packages]` or `[mise.tools]` of `macos.toml`.
 
 A key of `[tools.<name>]` sets a value of that tool. It answers a question of
 the tool, or it replaces a key of `[defaults]` of its `tools.toml`.
 
 Each section below gives these items for one tool:
 
-- **Packs:** the packs that hold the tool. `(default)` marks a default member.
-  `(required)` marks a member of `base` that each Mac must have.
+- **Packs:** the packs that hold the tool, or none. `(required)` marks a
+  member of `base` that each Mac must have.
 - **Stage:** `init` for a tool of the init stage. A tool without this item has
   no stage of its own. See [`docs/design/mac.md`](../design/mac.md).
 - **Depends:** the tools that the sync adds with this tool.
@@ -62,25 +62,24 @@ Each section below gives these items for one tool:
 
 ## The packs
 
-`macos/packs.toml` holds the 14 packs. The pack `base` is always added. A tool
-can be in more than one pack. The member `mise` of `base` has `required = true`.
+`macos/packs.toml` holds the 11 packs. Each member of a pack is a default:
+`bootstrap mac add pack <pack>` writes a table for each one.
+`bootstrap mac init` adds the pack `base` to a new `macos.toml`. A tool can be
+in more than one pack, or in no pack. Only a member of `base` can be required.
 
-| Pack         | Default members                                                                                                                                                                                                                                                                                                                                | Other members                                                                                                                    |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `base`       | `mise`, `homebrew`, `bash`, `zsh`, `fish`, `git`, `ssh`, `cli`, `fnox`, `node`, `touchid-sudo`, `starship`, `network`, `macos-defaults`, `gh`, `python`, `ruby`, `fonts`, `mas`, `age`, `bat`, `coreutils`, `curl`, `doggo`, `eza`, `fzf`, `gping`, `httping`, `ipcalc`, `jq`, `lazygit`, `prettyping`, `ripgrep`, `uv`, `worktrunk`, `zoxide` | —                                                                                                                                |
-| `ai`         | `claude-desktop`                                                                                                                                                                                                                                                                                                                               | `claude-cli`, `claude-status`, `codeburn`, `opencode`, `openwhispr`, `orca`, `zed-delta`                                         |
-| `essentials` | `alfred`, `vorssaint`, `easyfind`, `the-unarchiver`, `brave-browser`, `github-desktop`                                                                                                                                                                                                                                                         | `google-chrome`, `tailscale`, `magnet`, `sill`, `taskexplorer`, `battery-health`, `setapp`, `diff-so-fancy`, `git-tools`, `glab` |
-| `security`   | —                                                                                                                                                                                                                                                                                                                                              | `1password`, `1password-cli`, `1password-safari`, `bitwarden`                                                                    |
-| `dev`        | `devtools`, `dprint`, `visual-studio-code`                                                                                                                                                                                                                                                                                                     | `lcov`, `orbstack`, `gcloud`, `superfile`, `zed`, `sublime-text`                                                                 |
-| `terminal`   | `ghostty`                                                                                                                                                                                                                                                                                                                                      | `warp`                                                                                                                           |
-| `apple-dev`  | `xcode`                                                                                                                                                                                                                                                                                                                                        | `developer`, `testflight`, `transporter`, `android-studio`                                                                       |
-| `iwork`      | `keynote`, `numbers`, `pages`                                                                                                                                                                                                                                                                                                                  | —                                                                                                                                |
-| `ms-office`  | `microsoft-excel`, `microsoft-powerpoint`, `microsoft-word`                                                                                                                                                                                                                                                                                    | —                                                                                                                                |
-| `disk`       | `daisydisk`                                                                                                                                                                                                                                                                                                                                    | `disk-doctor`, `disk-map`, `duplicate-detective`                                                                                 |
-| `media`      | `vlc`                                                                                                                                                                                                                                                                                                                                          | `final-cut-pro`, `handbrake`                                                                                                     |
-| `chat`       | `telegram`, `whatsapp`                                                                                                                                                                                                                                                                                                                         | —                                                                                                                                |
-| `notes`      | `notion`, `obsidian`                                                                                                                                                                                                                                                                                                                           | `kindle`, `cardhop`, `pdf-protector`, `pdf-squeezer`                                                                             |
-| `cli-extras` | `btop`, `dasel`, `imagemagick`, `pstree`, `tree`, `watch`, `wget`, `yq`                                                                                                                                                                                                                                                                        | —                                                                                                                                |
+| Pack             | Required members                                                                                                                                                                                                                                                                                                                                                                                                                              | Other members                                                                                                                                       |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `base`           | `mise`, `homebrew`, `bash`, `zsh`, `fish`, `git`, `git-tools`, `ssh`, `cli`, `fnox`, `node`, `touchid-sudo`, `starship`, `network`, `macos-defaults`, `gh`, `ruby`, `fonts`, `mas`, `age`, `bat`, `coreutils`, `curl`, `doggo`, `eza`, `fzf`, `gping`, `httping`, `ipcalc`, `jq`, `lazygit`, `prettyping`, `ripgrep`, `zoxide`, `diff-so-fancy`, `glab`, `btop`, `pstree`, `tree`, `watch`, `wget`, `yq`, `vorssaint`, `pre-commit`, `python` | `visual-studio-code`, `uv`                                                                                                                          |
+| `claude`         | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `claude-desktop`, `claude-cli`, `claude-status`, `codeburn`                                                                                         |
+| `essentials`     | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `alfred`, `easyfind`, `the-unarchiver`, `brave-browser`, `github-desktop`, `google-chrome`, `tailscale`, `taskexplorer`, `battery-health`, `setapp` |
+| `1password-apps` | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `1password`, `1password-cli`, `1password-safari`                                                                                                    |
+| `dev`            | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `lcov`, `orbstack`, `superfile`, `sublime-text`                                                                                                     |
+| `terminal`       | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `ghostty`, `warp`                                                                                                                                   |
+| `mobile-dev`     | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `xcode`, `developer`, `testflight`, `transporter`, `android-studio`                                                                                 |
+| `iwork`          | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `keynote`, `numbers`, `pages`                                                                                                                       |
+| `ms-office`      | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `microsoft-excel`, `microsoft-powerpoint`, `microsoft-word`                                                                                         |
+| `disk`           | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `daisydisk`, `disk-doctor`, `disk-map`, `duplicate-detective`                                                                                       |
+| `media`          | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `vlc`, `handbrake`                                                                                                                                  |
 
 ## The tools
 
@@ -88,7 +87,7 @@ can be in more than one pack. The member `mise` of `base` has `required = true`.
 
 1Password (the app) as SSH agent and git commit signer.
 
-- **Packs:** `security`
+- **Packs:** `1password-apps`
 - **Depends:** `ssh`, `git`
 - **Files:**
   - `~/.config/1Password/ssh/agent.toml` — template
@@ -102,7 +101,7 @@ can be in more than one pack. The member `mise` of `base` has `required = true`.
 
 The 1Password CLI (op).
 
-- **Packs:** `security`
+- **Packs:** `1password-apps`
 - **Depends:** `1password`
 - **Files:** none
 - **Mise sections:** `[mise.tools]`
@@ -111,7 +110,7 @@ The 1Password CLI (op).
 
 1Password for Safari, from the Mac App Store.
 
-- **Packs:** `security`
+- **Packs:** `1password-apps`
 - **Depends:** `mas`, `1password`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -120,7 +119,7 @@ The 1Password CLI (op).
 
 age, the encryption tool.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -128,7 +127,7 @@ age, the encryption tool.
 
 Application launcher and productivity software.
 
-- **Packs:** `essentials` (default)
+- **Packs:** `essentials`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -136,7 +135,7 @@ Application launcher and productivity software.
 
 Tools for building Android applications.
 
-- **Packs:** `apple-dev`
+- **Packs:** `mobile-dev`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -144,7 +143,7 @@ Tools for building Android applications.
 
 bash from Homebrew, its rc files and its drop-in folder ~/.config/bash/.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Stage:** `init`
 - **Depends:** `homebrew`, `mise`
 - **Files:**
@@ -157,7 +156,7 @@ bash from Homebrew, its rc files and its drop-in folder ~/.config/bash/.
 
 bat, an alternative to cat, and its alias.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
 
@@ -174,7 +173,7 @@ Battery Health 2, from the Mac App Store.
 
 Bitwarden, the password manager.
 
-- **Packs:** `security`
+- **Packs:** none
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -182,7 +181,7 @@ Bitwarden, the password manager.
 
 Brave Browser.
 
-- **Packs:** `essentials` (default)
+- **Packs:** `essentials`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -190,7 +189,7 @@ Brave Browser.
 
 btop, the resource monitor for the terminal.
 
-- **Packs:** `cli-extras` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -198,7 +197,7 @@ btop, the resource monitor for the terminal.
 
 Cardhop, from the Mac App Store.
 
-- **Packs:** `notes`
+- **Packs:** none
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -208,7 +207,7 @@ Cardhop, from the Mac App Store.
 Claude Code: its settings, CLAUDE.md, output styles, the func:claude and
 upgrade:ai tasks and the cc* aliases.
 
-- **Packs:** `ai`
+- **Packs:** `claude`
 - **Depends:** `cli`
 - **Files:**
   - `~/.claude/CLAUDE.md` — seed
@@ -224,7 +223,7 @@ upgrade:ai tasks and the cc* aliases.
 
 Claude Desktop.
 
-- **Packs:** `ai` (default)
+- **Packs:** `claude`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -235,7 +234,7 @@ selected, the merge spec of `~/.claude/settings.json` of `claude-cli` adds
 `statusLine`, `subagentStatusLine` and the `PostToolUse` hook of
 `claude-status`.
 
-- **Packs:** `ai`
+- **Packs:** `claude`
 - **Depends:** `claude-cli`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.brew]`, `[mise.bootstrap.packages]`
@@ -245,7 +244,7 @@ selected, the merge spec of `~/.claude/settings.json` of `claude-cli` adds
 the projects folder, the generic aliases and the func:*, cleanupDS and
 keychain:delete tasks. Each command-line package is a tool of its own.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Tasks:**
   - `~/.config/mise/tasks/cleanupDS`
@@ -261,7 +260,7 @@ keychain:delete tasks. Each command-line package is a tool of its own.
 
 codeburn, the usage and cost report of the AI tools, and its aistats alias.
 
-- **Packs:** `ai`
+- **Packs:** `claude`
 - **Depends:** `claude-cli`, `node`
 - **Files:** none
 - **Mise sections:** `[mise.tools]`, `[mise.shell_alias]`
@@ -270,7 +269,7 @@ codeburn, the usage and cost report of the AI tools, and its aistats alias.
 
 coreutils, the GNU core utilities.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -278,7 +277,7 @@ coreutils, the GNU core utilities.
 
 curl, which transfers data with URLs.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -286,7 +285,7 @@ curl, which transfers data with URLs.
 
 DaisyDisk, from the Mac App Store.
 
-- **Packs:** `disk` (default)
+- **Packs:** `disk`
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -295,7 +294,7 @@ DaisyDisk, from the Mac App Store.
 
 dasel, the query tool for JSON, YAML and TOML, and its fish completion.
 
-- **Packs:** `cli-extras` (default)
+- **Packs:** none
 - **Files:**
   - `~/.config/fish/conf.d/53-dasel.fish` — copy
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -304,25 +303,16 @@ dasel, the query tool for JSON, YAML and TOML, and its fish completion.
 
 Developer, from the Mac App Store.
 
-- **Packs:** `apple-dev`
+- **Packs:** `mobile-dev`
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
-
-### `devtools`
-
-The development env (browser for tests, telemetry opt-out, pre-commit cache,
-runtime env).
-
-- **Packs:** `dev` (default)
-- **Files:** none
-- **Mise sections:** `[mise.env]`
 
 ### `diff-so-fancy`
 
 diff-so-fancy, the git diff formatter (the pager of the git config).
 
-- **Packs:** `essentials`
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -348,7 +338,7 @@ Disk Map, from the Mac App Store.
 
 doggo, the DNS lookup utility, and the dig alias.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
 
@@ -356,7 +346,7 @@ doggo, the DNS lookup utility, and the dig alias.
 
 dprint, the code formatter, and its global config.
 
-- **Packs:** `dev` (default)
+- **Packs:** none
 - **Files:**
   - `~/.config/dprint/dprint.jsonc` — merge
 - **Defaults:** `settings`, `blocks`, `excludes`, `plugins`
@@ -378,7 +368,7 @@ Duplicate Detective, from the Mac App Store.
 
 Find files, folders, or contents in any file.
 
-- **Packs:** `essentials` (default)
+- **Packs:** `essentials`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -386,7 +376,7 @@ Find files, folders, or contents in any file.
 
 eza, a modern replacement for ls, and the ls and tree aliases.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
 
@@ -394,7 +384,7 @@ eza, a modern replacement for ls, and the ls and tree aliases.
 
 Final Cut Pro, from the Mac App Store.
 
-- **Packs:** `media`
+- **Packs:** none
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -404,7 +394,7 @@ Final Cut Pro, from the Mac App Store.
 fish from Homebrew, its config, drop-in folder conf.d/ and functions, and the
 login shell.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Stage:** `init`
 - **Depends:** `homebrew`, `mise`
 - **Files:**
@@ -422,7 +412,7 @@ login shell.
 
 fnox: secrets from the macOS Keychain, with a profile per consumer.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:**
   - `~/.config/fnox/config.toml` — copy
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -431,7 +421,7 @@ fnox: secrets from the macOS Keychain, with a profile per consumer.
 
 fzf, the command-line fuzzy finder.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -439,7 +429,7 @@ fzf, the command-line fuzzy finder.
 
 The Nerd Fonts casks (Fira Code, Hack, Iosevka, Iosevka Term, Meslo LG).
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -448,7 +438,7 @@ The Nerd Fonts casks (Fira Code, Hack, Iosevka, Iosevka Term, Meslo LG).
 The Google Cloud CLI (gcloud) and its env. `CLOUDSDK_PYTHON` names the Python
 3.14 of the `python` tool.
 
-- **Packs:** `dev`
+- **Packs:** none
 - **Depends:** `python`
 - **Files:** none
 - **Mise sections:** `[mise.tools]`, `[mise.env]`
@@ -458,7 +448,7 @@ The Google Cloud CLI (gcloud) and its env. `CLOUDSDK_PYTHON` names the Python
 the GitHub CLI (gh) and its config: ssh as git protocol, the editor, the
 aliases.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Depends:** `git`
 - **Files:**
   - `~/.config/gh/config.yml` — merge
@@ -470,7 +460,7 @@ aliases.
 
 Ghostty, the terminal emulator, and its config.
 
-- **Packs:** `terminal` (default)
+- **Packs:** `terminal`
 - **Depends:** `fonts`
 - **Files:**
   - `~/.config/ghostty/config` — copy
@@ -481,7 +471,7 @@ Ghostty, the terminal emulator, and its config.
 git, its global config, the commit identity per forge (GitHub, GitLab) and the
 git aliases.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Depends:** `cli`, `diff-so-fancy`
 - **Files:**
   - `~/.config/git/allowed_signers` — template
@@ -519,7 +509,7 @@ files:
 
 git-tools, more git commands.
 
-- **Packs:** `essentials`
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -527,7 +517,7 @@ git-tools, more git commands.
 
 GitHub Desktop.
 
-- **Packs:** `essentials` (default)
+- **Packs:** `essentials`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -535,7 +525,7 @@ GitHub Desktop.
 
 glab, the GitLab CLI.
 
-- **Packs:** `essentials`
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -551,7 +541,7 @@ Google Chrome.
 
 gping, ping with a graph.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -568,7 +558,7 @@ Open-source video transcoder.
 Homebrew: its environment, the brew alias, the Brewfile, its upgrade task and
 its shellenv in bash, zsh and fish.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Depends:** `fnox`
 - **Files:**
   - `~/.config/bash/01a-homebrew.bash` — copy
@@ -584,7 +574,7 @@ its shellenv in bash, zsh and fish.
 
 httping, which pings a web server over HTTP, and the hping alias.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
 
@@ -592,7 +582,7 @@ httping, which pings a web server over HTTP, and the hping alias.
 
 ImageMagick, the image manipulation tool.
 
-- **Packs:** `cli-extras` (default)
+- **Packs:** none
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -600,7 +590,7 @@ ImageMagick, the image manipulation tool.
 
 ipcalc, the IP address calculator.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -608,7 +598,7 @@ ipcalc, the IP address calculator.
 
 jq, the command-line JSON processor.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -616,7 +606,7 @@ jq, the command-line JSON processor.
 
 Keynote, from the Mac App Store.
 
-- **Packs:** `iwork` (default)
+- **Packs:** `iwork`
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -625,7 +615,7 @@ Keynote, from the Mac App Store.
 
 Kindle, from the Mac App Store.
 
-- **Packs:** `notes`
+- **Packs:** none
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -634,7 +624,7 @@ Kindle, from the Mac App Store.
 
 lazygit, a simple terminal UI for git.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Depends:** `git`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -652,7 +642,7 @@ lcov, the code coverage tool.
 macOS settings: Finder, Dock, Mission Control, window management, menu bar clock
 and trackpad.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.macos]`, `[mise.bootstrap.hooks]`
 - **Question `dock_orientation`:**
@@ -662,7 +652,7 @@ and trackpad.
 
 Magnet, from the Mac App Store.
 
-- **Packs:** `essentials`
+- **Packs:** none
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -671,7 +661,7 @@ Magnet, from the Mac App Store.
 
 Mac App Store command-line interface.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -679,7 +669,7 @@ Mac App Store command-line interface.
 
 Microsoft Excel, from the Mac App Store.
 
-- **Packs:** `ms-office` (default)
+- **Packs:** `ms-office`
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -688,7 +678,7 @@ Microsoft Excel, from the Mac App Store.
 
 Microsoft PowerPoint, from the Mac App Store.
 
-- **Packs:** `ms-office` (default)
+- **Packs:** `ms-office`
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -697,7 +687,7 @@ Microsoft PowerPoint, from the Mac App Store.
 
 Microsoft Word, from the Mac App Store.
 
-- **Packs:** `ms-office` (default)
+- **Packs:** `ms-office`
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -707,7 +697,7 @@ Microsoft Word, from the Mac App Store.
 mise: its user-level config, its activation in bash, zsh and fish, ~/.zprofile,
 and the entry tasks of the Mac sync.
 
-- **Packs:** `base` (default, required)
+- **Packs:** `base` (required)
 - **Depends:** `cli`
 - **Files:**
   - `~/.config/bash/01b-mise.bash` — template
@@ -759,7 +749,7 @@ and the entry tasks of the Mac sync.
 the ips:* tasks and the IP, DNS and routing aliases. Each network package is a
 tool of its own.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Depends:** `doggo` (the task `ips:remoteip` runs it)
 - **Files:** none
 - **Tasks:**
@@ -776,7 +766,7 @@ tool of its own.
 Node.js (LTS), and the user config of the aube that mise embeds. The tool has no
 pnpm and no `PNPM_HOME`, because a repository selects its own package manager.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:**
   - `~/.config/aube/config.toml` — copy
 - **Tasks:**
@@ -787,7 +777,7 @@ pnpm and no `PNPM_HOME`, because a repository selects its own package manager.
 
 App to write, plan, collaborate, and get organised.
 
-- **Packs:** `notes` (default)
+- **Packs:** none
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -795,7 +785,7 @@ App to write, plan, collaborate, and get organised.
 
 Numbers, from the Mac App Store.
 
-- **Packs:** `iwork` (default)
+- **Packs:** `iwork`
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -804,7 +794,7 @@ Numbers, from the Mac App Store.
 
 Knowledge base that works on top Markdown files.
 
-- **Packs:** `notes` (default)
+- **Packs:** none
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -812,7 +802,7 @@ Knowledge base that works on top Markdown files.
 
 OpenCode, the AI coding agent, and its alias.
 
-- **Packs:** `ai`
+- **Packs:** none
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
 
@@ -820,7 +810,7 @@ OpenCode, the AI coding agent, and its alias.
 
 Voice-to-text dictation with AI agents, and its hotkey.
 
-- **Packs:** `ai`
+- **Packs:** none
 - **Files:**
   - `~/Library/Application Support/open-whispr/.env` — seed, with the hotkey
     `Alt+S` and the `push` activation mode
@@ -847,7 +837,7 @@ fish and zsh init and its ssh Include.
 
 Orchestrating AI coding agents.
 
-- **Packs:** `ai`
+- **Packs:** none
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.brew]`, `[mise.bootstrap.packages]`
 
@@ -855,7 +845,7 @@ Orchestrating AI coding agents.
 
 Pages, from the Mac App Store.
 
-- **Packs:** `iwork` (default)
+- **Packs:** `iwork`
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -864,7 +854,7 @@ Pages, from the Mac App Store.
 
 PDF Protector, from the Mac App Store.
 
-- **Packs:** `notes`
+- **Packs:** none
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -873,16 +863,26 @@ PDF Protector, from the Mac App Store.
 
 PDF Squeezer, from the Mac App Store.
 
-- **Packs:** `notes`
+- **Packs:** none
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
+
+### `pre-commit`
+
+pre-commit through mise, with a shared cache in `~/.cache/pre-commit`
+(`PRE_COMMIT_HOME`).
+
+- **Packs:** `base` (required)
+- **Depends:** `python`
+- **Files:** none
+- **Mise sections:** `[mise.tools]`, `[mise.env]`
 
 ### `prettyping`
 
 prettyping, an enhanced ping, and the ping alias.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
 
@@ -890,7 +890,7 @@ prettyping, an enhanced ping, and the ping alias.
 
 pstree, the process tree, with the func:myps task and its myps alias.
 
-- **Packs:** `cli-extras` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Tasks:**
   - `~/.config/mise/tasks/func/myps`
@@ -900,7 +900,7 @@ pstree, the process tree, with the func:myps task and its myps alias.
 
 Python through mise. uv is the tool `uv`.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.settings]`, `[mise.tools]`, `[mise.env]`
 
@@ -908,7 +908,7 @@ Python through mise. uv is the tool `uv`.
 
 ripgrep, the fast search tool.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -918,7 +918,7 @@ Ruby through mise, and the RubyGems config (~/.gemrc): no documentation on
 install and update. mise uses Ruby to run the hooks of some casks and to build
 a formula without a bottle.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:**
   - `~/.gemrc` — merge
 - **Mise sections:** `[mise.tools]`
@@ -935,7 +935,7 @@ Collection of apps available by subscription.
 
 Sill menu bar app.
 
-- **Packs:** `essentials`
+- **Packs:** none
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.brew]`, `[mise.bootstrap.packages]`
 
@@ -944,7 +944,7 @@ Sill menu bar app.
 the ssh client config: Host * defaults, the default user, the includes and the
 agent that other tools contribute.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:**
   - `~/.ssh/config` — template, format `text`, `dir_perm` `700`
   - `~/.ssh/config.identity` — template, `dir_perm` `700`
@@ -956,7 +956,7 @@ agent that other tools contribute.
 
 starship prompt, its config and the fish and zsh init drop-ins.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:**
   - `~/.config/fish/conf.d/51-prompt.fish` — copy
   - `~/.config/starship.toml` — copy
@@ -1005,7 +1005,7 @@ Explore running tasks (processes).
 
 Telegram, from the Mac App Store.
 
-- **Packs:** `chat` (default)
+- **Packs:** none
 - **Depends:** `mas`
 - **Files:** none
 - **Tasks:**
@@ -1016,7 +1016,7 @@ Telegram, from the Mac App Store.
 
 TestFlight, from the Mac App Store.
 
-- **Packs:** `apple-dev`
+- **Packs:** `mobile-dev`
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -1025,7 +1025,7 @@ TestFlight, from the Mac App Store.
 
 The Unarchiver, from the Mac App Store.
 
-- **Packs:** `essentials` (default)
+- **Packs:** `essentials`
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -1034,7 +1034,7 @@ The Unarchiver, from the Mac App Store.
 
 Touch ID for sudo (/etc/pam.d/sudo_local).
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.files]`
 
@@ -1042,7 +1042,7 @@ Touch ID for sudo (/etc/pam.d/sudo_local).
 
 Transporter, from the Mac App Store.
 
-- **Packs:** `apple-dev`
+- **Packs:** `mobile-dev`
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -1051,7 +1051,7 @@ Transporter, from the Mac App Store.
 
 tree, the directory tree.
 
-- **Packs:** `cli-extras` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -1059,7 +1059,7 @@ tree, the directory tree.
 
 uv through mise, with uv as the pipx backend.
 
-- **Packs:** `base` (default)
+- **Packs:** `base`
 - **Files:** none
 - **Mise sections:** `[mise.settings]`, `[mise.tools]`, `[mise.env]`
 
@@ -1067,7 +1067,7 @@ uv through mise, with uv as the pipx backend.
 
 Open-source code editor.
 
-- **Packs:** `dev` (default)
+- **Packs:** `base`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -1075,7 +1075,7 @@ Open-source code editor.
 
 Multimedia player.
 
-- **Packs:** `media` (default)
+- **Packs:** `media`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -1083,7 +1083,7 @@ Multimedia player.
 
 Menu bar toolkit with keep-awake, system monitor and volume mixer.
 
-- **Packs:** `essentials` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.bootstrap.macos]`
 - **Compare:** in the bootstrap repository,
@@ -1103,7 +1103,7 @@ Rust-based terminal.
 
 watch, which runs a command again and again.
 
-- **Packs:** `cli-extras` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -1111,7 +1111,7 @@ watch, which runs a command again and again.
 
 wget, the network downloader.
 
-- **Packs:** `cli-extras` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -1119,7 +1119,7 @@ wget, the network downloader.
 
 Native desktop client for WhatsApp.
 
-- **Packs:** `chat` (default)
+- **Packs:** none
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -1127,7 +1127,7 @@ Native desktop client for WhatsApp.
 
 worktrunk, a manager of git worktrees.
 
-- **Packs:** `base` (default)
+- **Packs:** none
 - **Depends:** `git`
 - **Files:** none
 - **Mise sections:** `[mise.tools]`
@@ -1136,7 +1136,7 @@ worktrunk, a manager of git worktrees.
 
 Xcode, from the Mac App Store.
 
-- **Packs:** `apple-dev` (default)
+- **Packs:** `mobile-dev`
 - **Depends:** `mas`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
@@ -1145,7 +1145,7 @@ Xcode, from the Mac App Store.
 
 yq, the YAML processor.
 
-- **Packs:** `cli-extras` (default)
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -1153,7 +1153,7 @@ yq, the YAML processor.
 
 Multiplayer code editor.
 
-- **Packs:** `dev`
+- **Packs:** none
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -1161,7 +1161,7 @@ Multiplayer code editor.
 
 Multiplayer environment for coding with agents.
 
-- **Packs:** `ai`
+- **Packs:** none
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
@@ -1169,7 +1169,7 @@ Multiplayer environment for coding with agents.
 
 zoxide, the fast directory jumper, its shell init and the cd alias.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Files:**
   - `~/.config/fish/conf.d/52-zoxide.fish` — copy
   - `~/.config/zsh/02a-zoxide.zsh` — copy
@@ -1180,7 +1180,7 @@ zoxide, the fast directory jumper, its shell init and the cd alias.
 zsh from Homebrew with zinit, its rc files and its drop-in folder
 ~/.config/zsh/.
 
-- **Packs:** `base` (default)
+- **Packs:** `base` (required)
 - **Stage:** `init`
 - **Depends:** `fzf`, `homebrew`, `mise`
 - **Files:**

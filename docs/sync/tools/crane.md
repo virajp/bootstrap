@@ -1,7 +1,6 @@
 # The `crane` tool
 
-crane, which operates on container images and registries. It is a member of the
-`container-build` pack.
+crane, which operates on container images and registries.
 
 | Property     | Value   |
 | ------------ | ------- |

@@ -40,30 +40,31 @@ submodule: each submodule runs its own sync.
 `cli/` is not a tool. The sync never copies it to a consumer. It is the
 Go module `github.com/virajp/bootstrap/cli`.
 
-| Path                 | Job                                                                                                                                                                   |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VERSION`            | The minimum version of the engine that a clone of `main` needs. See [The version check](#the-version-check).                                                          |
-| `go.mod`             | The module.                                                                                                                                                           |
-| `cmd/bootstrap`      | The command `bootstrap`. It calls `internal/cli`. `version` prints `main.version`, which the release build sets. A local build has `dev`.                             |
-| `internal/cli`       | The command line: the preflight, the clone and its lock, the version check, the change list, the clean-target rule, the consent and each command.                     |
-| `internal/config`    | The user config file of the engine: its path, its keys and its checks. See [The config file](#the-config-file).                                                       |
-| `internal/oldform`   | The old forms of a values file, and their migration. It is the one place of the old names.                                                                            |
-| `internal/questions` | The questions of the selected tools, their proposals and their answers.                                                                                               |
-| `internal/field`     | The text field of a question: the question, its note, and a field that starts with the proposal. It uses Bubble Tea v2 and the `textinput` of Bubbles v2.             |
-| `internal/scripts`   | The run of the scripts of a tool. See [The scripts of a tool](#the-scripts-of-a-tool).                                                                                |
-| `internal/fail`      | The typed errors of the exit codes, and a collector where the highest code wins. See [The exit codes](#the-exit-codes).                                               |
-| `internal/report`    | The output of a run. See [The output of a run](#the-output-of-a-run).                                                                                                 |
-| `internal/source`    | The read of the clone: the packs file, the categories file, the `tools.toml` of each tool, the entries and the files of a tool folder, and the checks of these files. |
-| `internal/values`    | The values files and the overrides files of both sides, and the values merge. See [The values of a tool](#the-values-of-a-tool).                                      |
-| `internal/selection` | The pack expansion, the checks of the packs, the depth-first walk of the `depends`, and the stages of the Mac.                                                        |
-| `internal/tmpl`      | `text/template` with the delimiters `<%` and `%>`, and our own copy of the gomplate functions that the templates use. It does not import gomplate.                    |
-| `internal/format`    | The parse check, and the merge of a shared file: JSON, JSONC, YAML, TOML and text. See [Shared files](#shared-files).                                                 |
-| `internal/header`    | The header of a synced file and of a shared file, and its detection. See [The header](#the-header).                                                                   |
-| `internal/target`    | The write of one target, the modes, and `bootstrap_commit`. See [The write of one target](#the-write-of-one-target).                                                  |
-| `internal/manifest`  | The manifest and the stale rule, in the link modes `repo` and `macos`. See [The manifest](#the-manifest-and-the-stale-rule).                                          |
-| `internal/misegen`   | The mise config generator of both sides. See [mise.md](mise.md).                                                                                                      |
-| `internal/repo`      | The repo front-end, the sync of `bootstrap sync`. See [repo.md](repo.md).                                                                                             |
-| `internal/macos`     | The Mac front-end, the sync of `bootstrap mac sync`. See [mac.md](mac.md).                                                                                            |
+| Path                 | Job                                                                                                                                                                                 |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VERSION`            | The minimum version of the engine that a clone of `main` needs. See [The version check](#the-version-check).                                                                        |
+| `go.mod`             | The module.                                                                                                                                                                         |
+| `cmd/bootstrap`      | The command `bootstrap`. It calls `internal/cli`. `version` prints `main.version`, which the release build sets. A local build has `dev`.                                           |
+| `internal/cli`       | The command line: it parses the arguments, calls `internal/core`, prints the results and the errors, and asks the questions and the consent.                                        |
+| `internal/core`      | The preflight, the clone and its lock, the version check, the change list with `Plan` and `Apply`, the scan of `detect`, and the clean-target rule. It never prints and never asks. |
+| `internal/config`    | The user config file of the engine: its path, its keys and its checks. See [The config file](#the-config-file).                                                                     |
+| `internal/oldform`   | The old forms of a values file, and their migration. It is the one place of the old names.                                                                                          |
+| `internal/questions` | The questions of the selected tools, their proposals and their answers.                                                                                                             |
+| `internal/field`     | The text field of a question: the question, its note, and a field that starts with the proposal. It uses Bubble Tea v2 and the `textinput` of Bubbles v2.                           |
+| `internal/scripts`   | The run of the scripts of a tool. See [The scripts of a tool](#the-scripts-of-a-tool).                                                                                              |
+| `internal/fail`      | The typed errors of the exit codes, and a collector where the highest code wins. See [The exit codes](#the-exit-codes).                                                             |
+| `internal/report`    | The output of a run. See [The output of a run](#the-output-of-a-run).                                                                                                               |
+| `internal/source`    | The read of the clone: the packs file, the categories file, the `tools.toml` of each tool, the entries and the files of a tool folder, and the checks of these files.               |
+| `internal/values`    | The values files and the overrides files of both sides, and the values merge. See [The values of a tool](#the-values-of-a-tool).                                                    |
+| `internal/selection` | The checks of the packs, the required members of `base`, the depth-first walk of the `depends`, and the stages of the Mac.                                                          |
+| `internal/tmpl`      | `text/template` with the delimiters `<%` and `%>`, and our own copy of the gomplate functions that the templates use. It does not import gomplate.                                  |
+| `internal/format`    | The parse check, and the merge of a shared file: JSON, JSONC, YAML, TOML and text. See [Shared files](#shared-files).                                                               |
+| `internal/header`    | The header of a synced file and of a shared file, and its detection. See [The header](#the-header).                                                                                 |
+| `internal/target`    | The write of one target, the modes, `bootstrap_commit`, and the tables of the required members of `base`. See [The write of one target](#the-write-of-one-target).                  |
+| `internal/manifest`  | The manifest and the stale rule, in the link modes `repo` and `macos`. See [The manifest](#the-manifest-and-the-stale-rule).                                                        |
+| `internal/misegen`   | The mise config generator of both sides. See [mise.md](mise.md).                                                                                                                    |
+| `internal/repo`      | The repo front-end, the sync of `bootstrap sync`. See [repo.md](repo.md).                                                                                                           |
+| `internal/macos`     | The Mac front-end, the sync of `bootstrap mac sync`. See [mac.md](mac.md).                                                                                                          |
 
 The task `test:go` of this repository runs `go vet`, a `gofmt` check and
 `go test` in the module. Some unit tests compare the output of a case with a
@@ -76,34 +77,41 @@ template functions and the inline templates.
 ## The command line
 
 ```text
-bootstrap <command> [flags]
-bootstrap mac <command> [flags]
+bootstrap <command> [<kind>] [<name>…] [flags]
+bootstrap mac <command> [<kind>] [<name>…] [flags]
 ```
 
 The group `mac` names the Mac side. Thus a folder with both `macos.toml` and
 `.config/bootstrap.toml` has no doubt. Each command without `mac` is for the
-repository of the current folder.
+repository of the current folder. The `mac` commands have the same grammar.
 
-| Command                | Job                                                                                                                                                  |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `init [tool…]`         | Selects `base` and the named tools, migrates an old form, asks each question without an answer, then syncs. See [`init`](#init).                     |
-| `sync`                 | The sync of the side. `setup:configs` and `updateall:configs` run it.                                                                                |
-| `check`                | Examines the values file and runs the check scripts. On the Mac, a dry run of the sync.                                                              |
-| `questions [tool…]`    | Lists the questions, their proposals and their answers. Without names, the questions of the selected tools. `--json` prints one JSON array.          |
-| `add <tool…>`          | Selects the tools and their dependencies, asks their questions, then syncs.                                                                          |
-| `remove <tool…>`       | Removes the tools, and each dependency that the user named and that no other tool needs, then syncs. Each seed of a removed tool stays, with a line. |
-| `replace <old> <new>`  | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                              |
-| `detect`               | Runs the detect scripts, or on the Mac the package scan, and offers to add each tool that matches. See [`detect`](#detect).                          |
-| `list`, `ls`           | Prints the selected tools as a tree. See [`list`](#list). It writes nothing.                                                                         |
-| `config`               | Prints the config file and each setting, with its value and its source. See [The config file](#the-config-file). There is no `mac config`.           |
-| `version`, `--version` | Prints the version. There is no `mac version`.                                                                                                       |
+The kind word tells what the names are: `tool` or `pack`. `add` takes `tool` or
+`pack`. `remove` and `replace` take `tool` only. The other commands take no
+kind word.
+
+| Command                    | Job                                                                                                                                                             |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init`                     | Migrates an old form, or creates the values file with a table for each member of `base`, asks each question without an answer, then syncs. See [`init`](#init). |
+| `sync`                     | The sync of the side. `setup:configs` and `updateall:configs` run it.                                                                                           |
+| `check`                    | Examines the values file and runs the check scripts. On the Mac, a dry run of the sync.                                                                         |
+| `questions [tool…]`        | Lists the questions, their proposals and their answers. Without names, the questions of the selected tools. `--json` prints one JSON array.                     |
+| `add tool <tool…>`         | Selects the tools and their dependencies, asks their questions, then syncs.                                                                                     |
+| `add pack <pack…>`         | Selects each member of the packs that is not selected, and their dependencies, asks their questions, then syncs. See [`add` and `remove`](#add-and-remove).     |
+| `remove tool <tool…>`      | Removes the tools, and each dependency that no other tool needs, then syncs. Each seed of a removed tool stays, with a line.                                    |
+| `replace tool <old> <new>` | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                                         |
+| `detect`                   | Runs the detect scripts, or on the Mac the package scan, and lists each tool that matches. See [`detect`](#detect).                                             |
+| `list`, `ls`               | Prints the selected tools as a tree. See [`list`](#list). It writes nothing.                                                                                    |
+| `config`                   | Prints the config file and each setting, with its value and its source. See [The config file](#the-config-file). There is no `mac config`.                      |
+| `version`, `--version`     | Prints the version. There is no `mac version`.                                                                                                                  |
 
 | Flag                            | Commands                                                      | Effect                                                                                                                                   |
 | ------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `--dry-run`                     | `init`, `sync`, `add`, `remove`, `replace`, `detect`          | Prints the change list, and writes nothing.                                                                                              |
-| `--yes`, `-y`                   | `init`, `add`, `remove`, `replace`, `detect`                  | Writes the changes without a prompt. `detect`: adds each matched tool.                                                                   |
-| `--no`                          | `detect`                                                      | Adds nothing. A matched tool that is not selected exits 1.                                                                               |
-| `--answer <tool>.<key>=<value>` | `init`, `add`, `replace`, `detect`                            | The answer of a question. The flag can repeat. `--answer <tool>.<key>=` gives an empty answer, only for an optional or a group question. |
+| `--yes`, `-y`                   | `init`, `add`, `remove`, `replace`, `detect --add`            | Writes the changes without a prompt.                                                                                                     |
+| `--no-tui`                      | `init`                                                        | Selects no tool on a screen. Until the TUI is there, `init` takes this path in each case.                                                |
+| `--add`                         | `detect`                                                      | Adds each matched tool that is not selected, after the consent.                                                                          |
+| `--exclude <member>`            | `add pack`                                                    | Leaves out a member of the pack, as the packs file writes it. The flag can repeat. It needs exactly one pack name.                       |
+| `--answer <tool>.<key>=<value>` | `init`, `add`, `replace`, `detect --add`                      | The answer of a question. The flag can repeat. `--answer <tool>.<key>=` gives an empty answer, only for an optional or a group question. |
 | `--json`                        | `questions`                                                   | JSON output, for an AI agent.                                                                                                            |
 | `--no-bootstrap`                | each `mac` command except `questions`                         | Skips each `mise bootstrap` step.                                                                                                        |
 | `--jobs <n>`                    | each command except `questions`, `list` and `version`         | The jobs at a time. The default is 2 × the CPU count.                                                                                    |
@@ -119,9 +127,12 @@ A flag of a repo command also applies to the same `mac` command, for example
 `--flag=value`. An empty value is a usage error. The one exception is the
 empty answer `--answer <tool>.<key>=`. See [The questions](#the-questions).
 
-A flag that a command does not take, an unknown command, and `add` or `remove`
-without a tool name are usage errors (code 2). A usage error prints the problem,
-the usage line of that command only, and a pointer to the help. See
+A flag that a command does not take, an unknown command, and `add`, `remove`
+or `replace` without a name are usage errors (code 2). `add`, `remove` and
+`replace` without a kind word stop with code 2 and the hint of the new form,
+for example `use: bootstrap add tool node`. `init` with names stops with code 2
+and the hint `use: bootstrap add tool <names>`. A usage error prints the
+problem, the usage line of that command only, and a pointer to the help. See
 [The output of a run](#the-output-of-a-run). `bootstrap --help` and
 `bootstrap <command> --help` print the full help on stdout, in the groups
 `Repository`, `Mac` and `Flags`.
@@ -159,10 +170,25 @@ The warning does not change the exit code. `mac check` does the same.
 
 ### The change list
 
-Each writing command (`init`, `add`, `remove`, `replace`, `detect`) builds the
-full change list in memory first: the writes of the values file, the
-migrations, and each file that the sync writes, changes or removes. The sync
-part comes from a quiet dry run of the front-end with the new values file.
+Each writing command (`init`, `add`, `remove`, `replace`, `detect --add`)
+builds one change list: the items `add tool`, `add pack` (with its
+`--exclude` members), `remove tool`, `replace tool` and the answers, and on the
+Mac the packages of `mac detect --add`. `internal/core` has two functions for
+it, and the TUI calls the same functions:
+
+- `Plan` applies the items in order to a temporary copy of the values file,
+  examines the answers, finds the questions without an answer, and runs a
+  quiet dry run of the front-end with the new values file. It gives the new
+  values file, the migrations, and each file that the sync writes, changes or
+  removes. It writes nothing. A command that changes the values file also adds
+  the missing tables of the required members of `base`, so the values file
+  gets one write.
+- `Apply` runs the script that comes before the writes, writes the values file
+  and the migrations, and runs the sync. Thus each command writes one time
+  and syncs one time. When the sync fails, `Apply` puts the values file back
+  as it was before the command, or removes it when it did not exist. The other
+  files stay as the sync left them. The one exception is code 4 of the Mac
+  (the stage `init` changed): the sync did its work, so the values file stays.
 
 - An empty change list prints `✔ Nothing to change` and exits 0. When the
   command has a reason, for example that a tool is already selected, the line
@@ -193,32 +219,33 @@ writes nothing.
 - The rule applies only to a target inside a git work tree.
 - `--dry-run` never stops. It names each dirty target in a warning line.
 - `sync` does not apply the rule to the values file, because it writes only
-  `bootstrap_commit` there. `init` applies the rule to the values file.
+  `bootstrap_commit` and the missing tables of the required members of `base`
+  there. `init` applies the rule to the values file.
 - `replace` needs a clean work tree, because its migrate script can change any
   file.
 
 ### `init`
 
 `init` is the first adoption, and also the update of an adopted repository or
-Mac.
+Mac. It takes no tool or pack names: `add tool` and `add pack` select tools.
 
-1. A new values file starts with a header comment. On the repo side, it also
-   gets `environments = [ "dev" ]` and `repo_name`, the name of the folder,
-   because the templates need it.
+1. A new values file starts with a header comment and `format = 2`. On the
+   repo side, it also gets `environments = [ "dev" ]` and `repo_name`, the name
+   of the folder, because the templates need it. It gets a table for each
+   member of `base`, as `add pack base` does.
 2. An existing values file gets the migration of each old form, with its
    comments kept. See [bootstrap-config.md](bootstrap-config.md) for the old
    forms. Only `init` migrates: `sync` and `check` stop with code 2 and
    "run bootstrap init" ("run bootstrap mac init" on the Mac) when they find
-   an old form.
-3. Each named tool that is not selected gets an empty `[tools.<name>]` table.
-   `init` refuses with code 2 a named tool with `selectable = false`, and a
-   named tool whose `hosts` do not name the host. See
-   [Named tools that a command refuses](#named-tools-that-a-command-refuses).
-4. The command asks each question of a selected tool that has no answer. See
+   an old form. A later `init` on a file with `format = 2` does not add a
+   removed member of `base` again.
+3. The command asks each question of a selected tool that has no answer. See
    [The questions](#the-questions).
-5. It plans the sync, shows the change list, and after the consent writes the
+4. It plans the sync, shows the change list, and after the consent writes the
    changes and syncs.
 
+With a terminal, `init` will open the TUI. Until the TUI is there, `init`
+takes the `--no-tui` path in each case: it selects no tool on a screen.
 `init` does not run the detect scripts.
 
 ### The questions
@@ -302,29 +329,45 @@ git
 
 ### `add` and `remove`
 
-`add` writes an empty `[tools.<name>]` table for each named tool and each
+`add tool` writes an empty `[tools.<name>]` table for each named tool and each
 dependency that is not selected yet. It refuses some named tools: see
 [Named tools that a command refuses](#named-tools-that-a-command-refuses). A
-tool that is already selected, also
-through a pack, gets no table. The reason `<tool> is already selected` shows in
-the last line when the command has nothing else to do.
+tool that is already selected gets no table. The reason
+`<tool> is already selected` shows in the last line when the command has
+nothing else to do.
 
-`remove` acts only on `[tools.<name>]` tables. It refuses each of these with
-code 2:
+`add pack <pack…>` writes a table for each member of the packs that is not
+selected yet, and for each new dependency. A nested pack `pack:<name>`
+expands the same way. The values file keeps no record of the pack. See
+[packs.md](packs.md).
 
-- A tool that a pack marks `required = true`.
-- A tool that only a pack selects. The message names the pack.
+- `--exclude <member>` leaves out a member, with its key as the packs file
+  writes it, also a nested pack (`pack:<name>`) or a tool that a nested pack
+  adds. The flag needs exactly one pack name. A name that is not a member, a
+  required member, and a member that another added member needs stop the
+  command with code 2.
+- It leaves out, with an info line, a member whose `hosts` do not name the
+  host, a member with `selectable = false`, and in a git submodule a member
+  with `root_only`.
+- A pack whose members are all selected writes nothing:
+  `<pack> is already selected`.
+- There is no `remove pack`.
+
+`remove tool` acts only on `[tools.<name>]` tables. It refuses each of these
+with code 2:
+
+- A required member of `base`.
 - A tool that is not selected.
 - A tool that another selected tool needs.
 
 It also removes each dependency of a removed tool that has a
 `[tools.<name>]` table and that no other selected tool needs. An empty
-`[tools]` table goes too. An unknown tool name is code 3 for `add` and
-`remove`.
+`[tools]` table goes too. An unknown tool name is code 3 for `add tool` and
+`remove tool`, and an unknown pack name is code 3 for `add pack`.
 
 #### Named tools that a command refuses
 
-`init`, `add` and `replace` refuse a tool that the command names, with code 2,
+`add tool` and `replace tool` refuse a tool that the command names, with code 2,
 when the tool has `selectable = false` or when its `hosts` do not name the
 host. `replace` examines only its new tool: the old tool can be one that a
 values file names directly. The command examines only the names, not their
@@ -343,8 +386,8 @@ it.
 
 ### `replace`
 
-`replace <old> <new>` works only between two tools with the same `parent`, for
-example `pnpm` and `aube` with `parent = "node"`. The new tool must have the
+`replace tool <old> <new>` works only between two tools with the same `parent`,
+for example `pnpm` and `aube` with `parent = "node"`. The new tool must have the
 script `scripts/migrate-<old>`. `replace` refuses a new tool that is already
 selected, and an old tool that another tool needs. It refuses a new tool with
 `selectable = false`, or whose `hosts` do not name the host. See
@@ -356,32 +399,29 @@ table gets only the `env` of the old table.
 
 ### `list`
 
-`list` prints a tree. It writes nothing. Each root is `<pack> (pack)` for a pack
-that selects a tool, `base` first and then the other packs by name. The last
-root is `tools (selected directly)` for the tools of `[tools.<name>]`, and it
-is absent when there are none. With the style on, the root names are bold.
+`list` prints a tree. It writes nothing. Each root is a selected tool that no
+selected tool needs: a tool of a `[tools.<name>]` table, or a required member
+of `base`, also without a table. The tree has no pack roots, because the
+values file keeps no record of a pack.
 
-Below a root are its tools, sorted by name. Below a tool are its dependencies,
-sorted by name, and a dependency of a dependency goes one level lower. The
-subtree of a tool shows in full at its first copy only, in the order of the
-print. Each later copy of a tool that has dependencies shows `<name> ↑` and no
-children. A required tool has the marker `● required`, also on a later copy,
-and all markers are in one column. The last line counts the tools and the packs.
-It adds
-` · ↑ = the subtree shows above` only when the tree has an arrow.
+Below a root are its dependencies, sorted by name, and a dependency of a
+dependency goes one level lower. The subtree of a tool shows in full at its
+first copy only, in the order of the print. Each later copy of a tool that has
+dependencies shows `<name> ↑` and no children. A required tool has the marker
+`● required`, also on a later copy, and all markers are in one column. The
+last line counts the tools. It adds ` · ↑ = the subtree shows above` only when
+the tree has an arrow.
 
 ```text
-base (pack)
-├── bash
-│   └── mise          ● required
-│       └── cli
-├── fish
-│   └── mise ↑        ● required
-└── vscode
-tools (selected directly)
-└── claude
+bash
+└── mise          ● required
+    └── cli
+claude
+fish
+└── mise ↑        ● required
+vscode
 
-· 6 tools · 1 pack · ↑ = the subtree shows above
+· 6 tools · ↑ = the subtree shows above
 ```
 
 ### `detect`
@@ -394,12 +434,12 @@ same roots and the same order. It shows only a tool that has a detect script,
 and the path from its root to it. The result of each script is in one column,
 and the evidence and the reason follow:
 
-| Result     | Column                                                                                                         |
-| ---------- | -------------------------------------------------------------------------------------------------------------- |
-| `match`    | `✔ found`, then `<evidence>: <reason>`. A list of more than one evidence shows the first and `+N more`.        |
-| `none`     | `· nothing found` (dim) for a tool that a pack selects, also as a dependency. It is part of the pack.          |
-| `none`     | `○ nothing found` (yellow) for a tool selected directly with a `[tools.<name>]` table. The user can remove it. |
-| `mismatch` | `✗ mismatch`. A `mismatch` of a selected tool is an error.                                                     |
+| Result     | Column                                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------------------- |
+| `match`    | `✔ found`, then `<evidence>: <reason>`. A list of more than one evidence shows the first and `+N more`. |
+| `none`     | `· nothing found` (dim) for a required tool or a dependency. The user cannot remove it.                 |
+| `none`     | `○ nothing found` (yellow) for a tool with a `[tools.<name>]` table. The user can remove it.            |
+| `mismatch` | `✗ mismatch`. A `mismatch` of a selected tool is an error.                                              |
 
 A tool that matches and is not selected shows after the tree, in the group
 `Found, not selected`. Its rows use the columns of the tree: the status
@@ -408,32 +448,32 @@ the evidence column.
 
 - `· <tool>  not offered  <evidence> is the evidence of <tool>`: the evidence is
   only the evidence of a selected tool that matches. The tool is not offered.
-- `✚ <tool>  offered  <evidence>: <reason>`: the command offers to add the tool.
+- `✚ <tool>  offered  <evidence>: <reason>`: `detect --add` adds the tool.
 
 A tool with `selectable = false`, or whose `hosts` do not name the host, does
-not show in `Found, not selected`, also on the Mac. Thus `detect --yes` never
+not show in `Found, not selected`, also on the Mac. Thus `detect --add` never
 stops for such a tool.
 
 ```text
-base (pack)
-└── linter
-    └── node               · nothing found   no package.json
-tools (selected directly)
-├── android                ✔ found           android/settings.gradle: the Gradle files use the Android Gradle plugin
-└── go                     ○ nothing found   no go.mod
+android                ✔ found           android/settings.gradle: the Gradle files use the Android Gradle plugin
+go                     ○ nothing found   no go.mod
+linter
+└── node               · nothing found   no package.json
 
 Found, not selected
-  · kotlin                 not offered       android/settings.gradle is the evidence of android
-  ✚ github                 offered           .github/: .github/ exists
-
-? Add github? [y/N]
+  · kotlin             not offered       android/settings.gradle is the evidence of android
+  ✚ github             offered           .github/: .github/ exists
 ```
 
-- `--yes` adds each offered tool, and `--no` adds nothing. With `--no`, each
-  offered tool prints `✗ <tool> is found, but it is not selected` with the fix
-  `Run bootstrap add <tool>`, and the command exits 1. Without both flags and
-  without a terminal, the command stops with code 2. `--yes` with `--no` is a
-  usage error.
+- Without a flag, `detect` only lists, also in a terminal, and writes nothing.
+  Each offered tool prints `✗ <tool> is found, but it is not selected` with the
+  fix `Run bootstrap add tool <tool>, or bootstrap detect --add`, and the
+  command exits 1. When each detected tool is selected, it exits 0.
+- `--add` adds each offered tool through the change list, after the consent
+  `? Write <n> changes? [y/N]`. `--yes` answers the consent. `--yes` and
+  `--answer` need `--add`, else code 2 with the hint `add --add`. `--dry-run`
+  works with or without `--add`.
+- `--no` is gone: it is an unknown flag (code 2).
 - When nothing is offered, the last line is `✔ No tool to add`.
 
 #### The package scan of `mac detect`
@@ -466,17 +506,17 @@ Mac, in `$HOME`:
   `no package installed`. The tree and the offers of tools are as above.
 - An installed key of no Mac tool, and not in the own `[mise]` tables of
   `macos.toml`, is an offered row of the group `Found, not selected`, with the
-  reason `no Mac tool has it: add it to <table> of macos.toml`. The prompt is
-  `? Add <key> to macos.toml? [y/N]`, one for each key.
+  reason `no Mac tool has it: add it to <table> of macos.toml`.
 - An accepted key goes into `[mise.bootstrap.packages]` or `[mise.tools]` of
   `macos.toml`, with the version `latest`. See [mac.md](mac.md) for the own
   config of the values file.
 - An accepted `mas:` key also adds the tool that installs `brew:mas` or the
   mise tool `mas`, when it is not selected: the own config has no `depends`.
-- With `--no`, each offered key prints
+- Without `--add`, each offered key prints
   `✗ <key> is installed, but no Mac tool has it` with the fix
-  `Add it to <table> of macos.toml`. `--yes` adds each offered tool and each
-  offered key.
+  `Add it to <table> of macos.toml, or run bootstrap mac detect --add`, and
+  `mac detect` exits 1. `--add` adds each offered tool and each offered key, in
+  one write of the values file and one sync.
 
 ## The cache and the clone
 
@@ -491,7 +531,7 @@ All the consumers of the machine and the Mac side share it.
 | `lock.takeover/`      | The short lock of the removal of a dead lock.        |
 | `macos-generated.tsv` | The manifest of the Mac side. See [mac.md](mac.md).  |
 
-Each command except `version` and `config` takes the clone in `internal/cli`.
+Each command except `version` and `config` takes the clone in `internal/core`.
 With `--clone`, `BOOTSTRAP_CLONE` or the key `clone` of the config file, the
 command uses that folder as it is: it takes no lock and makes no fetch. Else it
 takes the lock, fetches, and copies the clone to a temporary folder. The sync
@@ -696,7 +736,7 @@ from the clone, and never copies them.
 | `check`              | `sync` and `check`, before a write.             | Exit 0. Or each line of stdout is a message, and the exit code is 2.                                                                                                |
 | `after`              | Mac only: after `mise bootstrap` of each stage. | Nothing, or `{ "restart": "<reason>" }`, which asks for a new terminal (exit 4). See [mac.md](mac.md).                                                              |
 | `detect`             | Repo side, `detect` only.                       | `{ "result": "match" \| "none" \| "mismatch", "evidence": [...], "message": "..." }`.                                                                               |
-| `migrate-<old tool>` | `replace <old tool> <this tool>` only.          | Exit 0. It moves the repository from the old tool to this tool.                                                                                                     |
+| `migrate-<old tool>` | `replace tool <old tool> <this tool>` only.     | Exit 0. It moves the repository from the old tool to this tool.                                                                                                     |
 
 - The engine runs each script as `mise x -- bash
   <clone>/<side>/tools/<tool>/scripts/<name>`,
@@ -1029,9 +1069,9 @@ sync with code 3.
 
 A value of `[tools.<name>]` of the values file depends on the tool:
 
-- A base or dependency tool is a tool that the pack `base` adds, also through a
-  nested `default = true` pack, or a tool in the depends closure of a selected
-  tool, a tool that a mise `depends` adds included. For such a tool, a list
+- A base or dependency tool is a required member of the pack `base`, or a
+  tool in the depends closure of a selected tool, a tool that a mise `depends`
+  adds included. For such a tool, a list
   appends its new items, tables merge key by key, and a value whose type
   differs from the merged value stops the sync.
 - For any other tool, a value replaces the merged one, and tables merge key by
@@ -1065,7 +1105,9 @@ compares it with `main` to find what changed since the last sync.
   same value causes no write.
 - Else the key goes after the header comments, when a blank line ends them, or
   else on the first line. A comment just above a key belongs to that key.
-- Each other line stays. This is the only write of `sync` to the values file.
+- Each other line stays. `sync` writes only this key and the tables of the
+  required members of `base` to the values file. See
+  [The tables of the required members](#the-tables-of-the-required-members).
 - Through a symlink, the sync writes the real file, so the link stays.
 - A real run prints the info line `· bootstrap_commit changed to <short
   commit>`,
@@ -1075,6 +1117,23 @@ compares it with `main` to find what changed since the last sync.
   `would set bootstrap_commit <commit> in <path>`.
 - A missing `macos.toml` is created. See [mac.md](mac.md#macostoml). On the repo
   side, a missing values file stops the sync before this step.
+
+### The tables of the required members
+
+`sync`, on both sides, writes an empty `[tools.<name>]` table into the values
+file for each required member of `base` that has no table, so that the user
+can add values to it. This also applies when the user deleted the table by
+hand. It skips a member whose `hosts` do not name the host, a member with
+`selectable = false`, and in a git submodule a member with `root_only`. A
+dependency without a table gets no table: the sync installs it through
+`depends`.
+
+- The write keeps the comments of the file, and it comes before the files of
+  the tools.
+- Each table prints the info line `[tools.<name>] added to <values file>`.
+- `sync --dry-run` and `check` write nothing. They print
+  `[tools.<name>] would be added to <values file>` for each table. The line
+  does not change the exit code.
 
 ## The output of a run
 
@@ -1101,7 +1160,7 @@ wide, so the columns stay aligned.
 
 An error line is `✗ <problem>`. When the error has a fix, a second line
 `  → <fix>` follows, with an upper case first letter. The fix is a command to
-run, for example `  → Run bootstrap add github`, or a short instruction. An
+run, for example `  → Run bootstrap add tool github`, or a short instruction. An
 error that has no fix is one line.
 
 **The first line.** A command that uses the clone prints one line after the
@@ -1110,8 +1169,8 @@ clone update: `↻ bootstrap <short commit> · <cache path>`, with `$HOME` shown
 uses. `sync`, `mac sync` and `mac check` print `↻ bootstrap <short commit> ·
 <n> tools · env <environments>` in place of that line, and the Mac side has no
 env part. A command prints one clone line only: after the change list of
-`init`, `add`, `remove`, `replace` and `detect`, the sync does not print its
-own. The other lines of the clone are info lines: `· Cloning into <path>`,
+`init`, `add`, `remove`, `replace` and `detect --add`, the sync does not print
+its own. The other lines of the clone are info lines: `· Cloning into <path>`,
 `· Waiting for another sync (pid <pid>) ...` and `· Removed an old clone at
 <path>`.
 
@@ -1175,9 +1234,9 @@ other kind that is not zero, with `changed` after `failed`. For example:
 ```
 
 **The change list.** The change list of `init`, `add`, `remove`, `replace` and
-`detect` has the header `Changes`. Each line is `  <glyph> <path>` with the
-glyph of what the sync does to the file (`✎` changed, `✚` new, `❋` seeded, `✖`
-removed), and a note column that is aligned, for example `remove claude` for
+`detect --add` has the header `Changes`. Each line is `  <glyph> <path>` with
+the glyph of what the sync does to the file (`✎` changed, `✚` new, `❋` seeded,
+`✖` removed), and a note column that is aligned, for example `remove claude` for
 the values file. A script that runs before the writes has the glyph `▸`. A dry
 run ends with `✔ Dry run: <n> changes, nothing written`. Else the prompt is
 `? Write <n> changes? [y/N]`.
@@ -1190,6 +1249,11 @@ Changes
 
 ✔ Dry run: 3 changes, nothing written
 ```
+
+When the sync of the command fails, the values file goes back as it was
+before the command (see [The change list](#the-change-list)), and the info line
+`· Put back <values file> as it was before the command` follows the error of
+the sync. On the Mac, code 4 keeps the values file and prints no such line.
 
 **Errors.** Each error prints `✗ <problem>` and, when it has a fix, the line
 `  → <fix>`. The problem is a short statement, and the name of a tool has no
@@ -1210,7 +1274,10 @@ An unknown command, or a command that is missing, has no usage line:
 ```
 
 **The check.** `check` prints `✔ <values file> is valid` when the local rules of
-the values file pass. Then it prints `✔ check script of <tool>` for each check
+the values file pass. It lists each missing table of a required member of
+`base` and writes nothing. See
+[The tables of the required members](#the-tables-of-the-required-members). Then
+it prints `✔ check script of <tool>` for each check
 script that ran. A script that fails prints `✗ check script of <tool>: <text>`
 and, when the script gives a fix after `-`, the fix line. The exit codes do not
 change. The local rules are the rules that the engine checks without a tool
@@ -1230,19 +1297,19 @@ is the rule of `style_enabled` of `helpers`. The engine does not call
 `helpers`, because the local copy can be stale and the Mac side does not have
 it. The style table:
 
-| Line    | Style on                           | Style off                                   |
-| ------- | ---------------------------------- | ------------------------------------------- |
-| List    | `<glyph> <word> <path>`, color     | `<word> <path>`                             |
-| Change  | `  <glyph> <path>  <note>`, color  | `  <word> <path>  <note>`                   |
-| Success | `✔ <text>`                         | `[OK] <text>`                               |
-| Error   | `✗ <text>`, red                    | `[ERROR] <text>`                            |
-| Fix     | `  → <fix>`, dim                   | `  -> <fix>`                                |
-| Warning | `! <text>`                         | `[WARN] <text>`                             |
-| Info    | `· <text>`, dim                    | `[INFO] <text>`                             |
-| Clone   | `↻ <text>`, dim                    | `[INFO] <text>`                             |
-| Step    | `▸ <text>`, bold                   | `[INFO] <text>`                             |
-| Tree    | Bold pack names, `●`, `↑`, `✔ ○ ·` | Plain names, `*`, `^`, `[OK] [WARN] [INFO]` |
-| Prompt  | `? <text>`                         | `? <text>`                                  |
+| Line    | Style on                          | Style off                      |
+| ------- | --------------------------------- | ------------------------------ |
+| List    | `<glyph> <word> <path>`, color    | `<word> <path>`                |
+| Change  | `  <glyph> <path>  <note>`, color | `  <word> <path>  <note>`      |
+| Success | `✔ <text>`                        | `[OK] <text>`                  |
+| Error   | `✗ <text>`, red                   | `[ERROR] <text>`               |
+| Fix     | `  → <fix>`, dim                  | `  -> <fix>`                   |
+| Warning | `! <text>`                        | `[WARN] <text>`                |
+| Info    | `· <text>`, dim                   | `[INFO] <text>`                |
+| Clone   | `↻ <text>`, dim                   | `[INFO] <text>`                |
+| Step    | `▸ <text>`, bold                  | `[INFO] <text>`                |
+| Tree    | `●`, `↑`, `✔ ○ ·`                 | `*`, `^`, `[OK] [WARN] [INFO]` |
+| Prompt  | `? <text>`                        | `? <text>`                     |
 
 The usage line of a usage error and the output of `config` have no glyph. The
 verbose log lines have the prefix `bootstrap: ` with style on and with style
@@ -1275,43 +1342,48 @@ A failure of one file does not stop the other files. A run returns the highest
 code of all its failures. This section is the one place of the codes 1, 2, 3
 and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
 
-| Code | Meaning                                                                                     |
-| ---- | ------------------------------------------------------------------------------------------- |
-| 0    | Done, nothing to change, or a "no" at the consent prompt.                                   |
-| 1    | Any other failure, for example a local file system error. `detect --no` with a tool to add. |
-| 2    | A usage error, or a config that breaks a rule. See the lists below.                         |
-| 3    | A name that the clone does not have. See the lists below.                                   |
-| 5    | A failure of the network side or of the clone. See the lists below.                         |
+| Code | Meaning                                                                                                |
+| ---- | ------------------------------------------------------------------------------------------------------ |
+| 0    | Done, nothing to change, or a "no" at the consent prompt.                                              |
+| 1    | Any other failure, for example a local file system error. `detect` without `--add` with a tool to add. |
+| 2    | A usage error, or a config that breaks a rule. See the lists below.                                    |
+| 3    | A name that the clone does not have. See the lists below.                                              |
+| 5    | A failure of the network side or of the clone. See the lists below.                                    |
 
 **Code 2, of the command line:**
 
-- A bad flag or command, `add` or `remove` without a tool, `--yes` with `--no`,
-  and `--check` with `--dry-run` of the front-end.
+- A bad flag or command, `add`, `remove` or `replace` without a kind word or
+  without a name (the old grammar, with the hint of the new form), `init` with
+  names, `remove pack` and `replace pack`, `--exclude` outside `add pack` or
+  with more than one pack, and `--check` with `--dry-run` of the front-end.
 - A config file that breaks a rule: see [The config file](#the-config-file).
 - A missing `mise`, a folder outside a git repository, and a missing values
   file for each command except `init`.
-- An old form of the values file (except for `init`), a question of a
-  selected tool without an answer, and a group of questions without an answer
-  that is not empty, with the message "run bootstrap init"
+- An old form of the values file (except for `init`): also a file without
+  `format = 2`, and a `[packs.*]` table. A `format` other than `2` is not valid.
+  A question of a selected tool without an answer, and a group of questions
+  without an answer that is not empty, with the message "run bootstrap init"
   ("run bootstrap mac init" on the Mac).
 - An `--answer` for a question that no selected tool has, an empty `--answer`
   for a question that is not optional and not in a group, a question without
   an answer with `--yes` or without a terminal, a group without an answer that
   is not empty with `--yes` or without a terminal, and ctrl+c in the field of
   a question.
-- An `init`, `add` or `replace` of a named tool with `selectable = false`, or
-  whose `hosts` do not name the host. See
+- An `add tool` or `replace tool` of a named tool with `selectable = false`,
+  or whose `hosts` do not name the host. See
   [Named tools that a command refuses](#named-tools-that-a-command-refuses).
 - Changes without `--yes` and without a terminal: `changes need --yes`.
 - A dirty target: see [The clean-target rule](#the-clean-target-rule).
 - A binary that is older than `VERSION` of the clone.
-- A `remove` of a required tool, of a tool that only a pack selects, of a tool
-  that is not selected, or of a tool that another tool needs.
+- A `remove tool` of a required tool, of a tool that is not selected, or of a
+  tool that another tool needs.
+- An `add pack --exclude` of a name that is not a member of the pack, of a
+  required member, or of a member that another added member needs.
 - A `replace` between tools without the same `parent`, without a migrate
   script, of a new tool that is already selected, or of an old tool that
   another tool needs.
-- A `detect` without `--yes` or `--no` and without a terminal, and a
-  `mismatch` of a selected tool.
+- A `detect --yes` or `detect --answer` without `--add`, and a `mismatch` of a
+  selected tool.
 
 **Code 2, on both sides:**
 
@@ -1319,13 +1391,12 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
   the cache root with another `origin` or no `origin`.
 - A `tools.toml` that cannot be read or that breaks a rule, also an old key.
 - A `[pack.*]` table that breaks a rule: an old key, a member that is not a
-  table or is not on one line, another key in a member, a `default` that is not
-  a boolean, a `description` that is not a string, a pack name that is also a
-  tool folder, and a pack loop.
+  table or is not on one line, the key `default` in a member (the old form),
+  another key in a member, a `description` that is not a string, a pack name
+  that is also a tool folder, and a pack loop.
 - A catalog key of a tool that breaks a rule, and a categories file that breaks
   a rule. See [tools.md](tools.md#the-catalog-keys).
-- A `required` member of a pack that is not a `default = true` member of
-  `base`.
+- A `required` key outside the pack `base`, or on a nested pack.
 - A tool folder that is named `zz-repo` or `zz-macos` for its side, or whose
   name sorts after that name.
 - A file of a tool folder outside `files/`, `tasks/` and `scripts/` (the old
@@ -1350,8 +1421,7 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
 
 **Code 2, only on the repo side:**
 
-- A values file in the old list format (`tools = [...]`, `packs = [...]`), and
-  another key than `env` in a `[packs.<name>]` entry.
+- A values file in the old list format (`tools = [...]`, `packs = [...]`).
 - A bad `environments`: an unknown name, or a list without `dev`.
 - A bad `env`: a name that is not in `environments`, a list without `dev`, an
   empty list, or an item with a space.
@@ -1387,10 +1457,16 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
 
 **Code 3:**
 
-- A tool or a pack that is not in the clone, also a member of a pack that is not
-  a tool folder or a pack, and a tool in a `depends`.
-- A tool name of `add`, `remove`, `replace` or `questions` that is not in the
-  clone.
+- A tool that is not in the clone, also a member of a pack that is not a tool
+  folder or a pack, and a tool in a `depends`.
+- A packs file that is missing or has no `[pack.base]`:
+  `base is not a bootstrap pack (named in <side>/packs.toml)`.
+- A tool name of `add tool`, `remove tool`, `replace tool` or `questions`, or a
+  pack name of `add pack`, that is not in the clone.
+- An old values file that names a pack that the frozen copy of the migration
+  does not have: `init` stops with
+  `<pack> is not a bootstrap pack (named in <file>)`. See
+  [bootstrap-config.md](bootstrap-config.md#old-forms).
 - A contribution of a selected tool to a tool that is not in the clone.
 
 **Code 5:**

@@ -1,8 +1,7 @@
 # The `grype` tool
 
-grype: the dependency scanner, and `code:sec:20-grype`. A member of the
-`security` pack, with `default = true`. `bootstrap remove` refuses it, because
-only a pack selects it.
+grype: the dependency scanner, and `code:sec:20-grype`. A
+required member of the `base` pack. `bootstrap remove tool <tool…>` refuses it.
 
 | Property     | Value                |
 | ------------ | -------------------- |
@@ -14,8 +13,8 @@ only a pack selects it.
 
 ## When the tool is relevant
 
-Always. The `base` pack adds this tool, through the `security` pack. Do not
-select it in the values file. A `[tools.grype]` table gives values.
+Always. The `base` pack adds this tool, and the sync writes an empty
+`[tools.grype]` table for it. The table gives values.
 
 ## What the tool ships
 

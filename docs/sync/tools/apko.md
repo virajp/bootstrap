@@ -1,7 +1,6 @@
 # The `apko` tool
 
-apko, which builds OCI images from apk packages. It is a member of the
-`container-build` pack.
+apko, which builds OCI images from apk packages.
 
 | Property     | Value   |
 | ------------ | ------- |

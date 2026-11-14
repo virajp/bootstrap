@@ -61,10 +61,12 @@ the generated mise config into the copy.
 overrides file `.config/bootstrap.overrides.toml`. The keys are in
 [bootstrap-config.md](bootstrap-config.md).
 
-- It adds the pack `base`. Its name is fixed in the engine. See
-  [packs.md](packs.md).
-- It expands each pack to its default members, adds the `depends` of each tool
-  and the tool of each mise `depends`, depth first, and copies each file of
+- It adds the required members of the pack `base`. The name `base` is fixed in
+  the engine. See [packs.md](packs.md). It writes an empty table for each
+  required member that has none. See
+  [cli.md](cli.md#the-tables-of-the-required-members).
+- It adds the tool of each `[tools.<name>]` table, adds the `depends` of each
+  tool and the tool of each mise `depends`, depth first, and copies each file of
   each tool. A dependency comes before the tool that needs it.
 - The values file is necessary. A missing file stops the sync. The old name
   `.config/repo-config.toml` is read, with a message: rename it.
@@ -90,8 +92,9 @@ A member is a git submodule or a folder below the root. The keys are in
 
 ### `root_only`
 
-A `root_only` tool is not for a git submodule. In a submodule, the sync skips it
-when a pack adds it, and stops when a `[tools.*]` entry names it.
+A `root_only` tool is not for a git submodule. In a submodule, `init`,
+`add pack` and the migration of an old form skip it, and the sync stops when a
+`[tools.*]` entry names it.
 
 ## The template context
 
@@ -105,7 +108,7 @@ names are in [bootstrap-config.md](bootstrap-config.md#reserved-names).
 | `.member_folders` | A map from each name to its folder (`folder`, default the name).                                                                                                                                                                                                         |
 | `.member_types`   | A map from each name to `submodule` or `folder` (`type`, default from the folder).                                                                                                                                                                                       |
 | `.submodules`     | The list of the git submodules only, nested ones included. It is empty in a repository without submodules.                                                                                                                                                               |
-| `.tools`          | The list of the selected tools, with the packs expanded and the dependencies added.                                                                                                                                                                                      |
+| `.tools`          | The list of the selected tools, with the required members of `base` and the dependencies added.                                                                                                                                                                          |
 | `.cli_dir`        | The absolute path of the `cli/` folder of the clone copy of the run.                                                                                                                                                                                                     |
 | `.config`, `.all` | The values of the tools. See [cli.md](cli.md#templates).                                                                                                                                                                                                                 |
 

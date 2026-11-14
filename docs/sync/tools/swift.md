@@ -15,10 +15,11 @@ Xcode tasks.
 
 ## When the tool is relevant
 
-The tool has `hosts = ["macos"]`. `bootstrap init`, `bootstrap add` and the
-new tool of `bootstrap replace` refuse it on a host that is not macOS, and
-`bootstrap detect` does not propose it there. `sync` and `check` do not examine
-`hosts`, so a Linux CI job still syncs a repository that has the tool.
+The tool has `hosts = ["macos"]`. `bootstrap add tool <tool…>` and the new tool
+of `bootstrap replace tool <old> <new>` refuse it on a host that is not macOS,
+`bootstrap add pack <pack…>` leaves it out there, and `bootstrap detect` does
+not propose it there. `sync` and `check` do not examine `hosts`, so a Linux CI
+job still syncs a repository that has the tool.
 
 - The repository has `Package.swift` or an `*.xcodeproj`.
 - The repository has the `ios/` or `macos/` folder of a Flutter app.

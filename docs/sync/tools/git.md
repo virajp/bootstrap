@@ -2,7 +2,7 @@
 
 The shared `.gitignore` and `.gitattributes`, the commit convention, the
 git-config check, the merge tasks and worktrunk. The `base` pack adds it with
-`required = true`, so `bootstrap remove` refuses it.
+`required = true`, so `bootstrap remove tool <tool…>` refuses it.
 
 | Property     | Value             |
 | ------------ | ----------------- |

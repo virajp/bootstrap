@@ -1,9 +1,8 @@
 # The `dprint` tool
 
 dprint: the formatter of the sync and of `code:format`, the shared
-`dprint.jsonc` and `setup:dprint`. The `base` pack adds it with
-`default = true`. `bootstrap remove` refuses it, because only a pack selects
-it.
+`dprint.jsonc` and `setup:dprint`. A required member of the `base` pack.
+`bootstrap remove tool <tool…>` refuses it.
 
 | Property     | Value   |
 | ------------ | ------- |
@@ -15,8 +14,8 @@ it.
 
 ## When the tool is relevant
 
-Always. The `base` pack adds this tool. Do not select it in the values file.
-A `[tools.dprint]` table gives values.
+Always. The `base` pack adds this tool, and the sync writes an empty
+`[tools.dprint]` table for it. The table gives values.
 
 ## What the tool ships
 

@@ -34,12 +34,15 @@ various tools that it supports.
 - **AI, for the non-deterministic part.** A user opens an AI session in the
   consumer repository with the prompt of `README.md`. The AI reads
   `docs/sync/index.md`, selects the tools, and gets the answers of their
-  questions. Then it runs `bootstrap init <tool…> --answer …`, which writes
-  `.config/bootstrap.toml` and syncs.
+  questions. Then it runs `bootstrap init --answer …`, which writes
+  `.config/bootstrap.toml` with the `base` pack, and
+  `bootstrap add tool <tool…> --answer …`, which adds the other tools. Each
+  command syncs.
 - **CLI, for the deterministic part.** After the adoption, the repository has
   the `setup:configs` task in mise. The task runs `bootstrap sync`, which reads
   `.config/bootstrap.toml` and syncs the files of the selected tools.
-  `bootstrap add`, `remove` and `replace` change the selection later.
+  `bootstrap add tool <tool…>`, `add pack`, `remove tool` and `replace tool`
+  change the selection later.
 
 A Mac uses the same two parts. The AI reads `docs/setup/index.md`, and runs
 `bootstrap mac init`, which writes `macos.toml`. After that, the

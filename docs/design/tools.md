@@ -107,8 +107,8 @@ Each tool must have a `summary` and a `category`. `<tools.toml>` in the
 messages is the `tools.toml` path that the sync shows.
 
 `selectable = false` is for a tool that other tools need, for example
-`_security_base`. `init` and `add` refuse a tool with `selectable = false` that
-the command names, with code 2. `replace` refuses it as its new tool only. The
+`_security_base`. `add tool` refuses a tool with `selectable = false` that the
+command names, with code 2. `replace tool` refuses it as its new tool only. The
 message names the tools of the side whose `depends` name it, for example
 `_security_base is not selectable. Select gitleaks, grype or osv-scanner.`
 Without such a tool, the message is only `<tool> is not selectable.` `detect`
@@ -118,9 +118,9 @@ does not propose the tool. `sync` accepts a values file that names it, and
 `hosts` names the hosts where a command can select the tool, with the OS names
 of mise, for example `hosts = ["macos"]`. The engine gives the host the name
 `macos` for the Go name `darwin`. Another Go name stays as it is, so on such a
-host each tool with `hosts` is refused. `init`, `add` and the new tool of
-`replace` refuse a tool that the command names when its `hosts` do not name
-the host, with code 2 and the message
+host each tool with `hosts` is refused. `add tool` and the new tool of
+`replace tool` refuse a tool that the command names when its `hosts` do not
+name the host, with code 2 and the message
 `<tool> needs the host <hosts> - this host is <host>`. `detect` does not
 propose the tool. `sync` and `check` do not examine `hosts`, so a CI job on
 Linux still syncs a repository that has a macOS-only tool. These commands
@@ -408,8 +408,9 @@ A template that needs a value without a question uses
 
 A tool, for example `claude`, is a set of config for mise and for other CLIs.
 
-A pack groups tools, for example the pack `security`. A tool never selects a
-group of tools: a pack does. The config, the tasks and the files that all the
+A pack groups tools, for example the pack `base`. A tool never selects a
+group of tools: `add pack` writes a table for each member of a pack. The config,
+the tasks and the files that all the
 packs of one kind use are in one tool that each of these packs names as a
 member, for example `flutter` for the Flutter packs, or in a common tool
 `_<name>` that each member tool names in `depends`, for example

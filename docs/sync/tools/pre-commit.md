@@ -2,7 +2,7 @@
 
 pre-commit: the shared pre-commit config, its setup task and
 `code:precommit`. The `base` pack adds it with `required = true`, so
-`bootstrap remove` refuses it.
+`bootstrap remove tool <tool…>` refuses it.
 
 | Property     | Value    |
 | ------------ | -------- |

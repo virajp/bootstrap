@@ -57,13 +57,17 @@ hides the release, use the version of `cli/VERSION` in place of `latest`.
 In this file, `bootstrap` is short for this command. The CLI gets its own clone
 of `bootstrap` in `~/.cache/bootstrap/`. This file uses these commands:
 
-| Command                                  | Use                                                                                                                        |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `bootstrap mac questions [tool…] --json` | Lists the questions of the tools, with the proposal and the answer of each. Without a tool, it uses the selected tools.    |
-| `bootstrap mac init [tool…]`             | Runs in the clone. Writes `macos.toml` with `base` and the named tools, moves an old form, asks the questions, then syncs. |
-| `bootstrap mac sync`                     | Syncs the Mac. The task `updateall:configs` runs it.                                                                       |
+| Command                                         | Use                                                                                                                        |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `bootstrap mac questions [tool…] --json`        | Lists the questions of the tools, with the proposal and the answer of each. Without a tool, it uses the selected tools.    |
+| `bootstrap mac init`                            | Runs in the clone. Writes `macos.toml` with the members of `base`, or moves an old form, asks the questions, then syncs.   |
+| `bootstrap mac add pack <pack> [--exclude <m>]` | Writes a `[tools.<name>]` table for each member of the pack that is not selected, and for each new dependency, then syncs. |
+| `bootstrap mac add tool <tool…>`                | Writes a `[tools.<name>]` table for each tool and each new dependency, then syncs.                                         |
+| `bootstrap mac remove tool <tool…>`             | Removes the tables of the tools, and of each dependency that no other tool needs, then syncs.                              |
+| `bootstrap mac sync`                            | Syncs the Mac. The task `updateall:configs` runs it.                                                                       |
 
-`bootstrap mac questions` and `bootstrap mac sync` find `macos.toml` through
+`bootstrap mac init` takes no tool names. The other `mac` commands find
+`macos.toml` through
 `MACOS_SETUP_REPO_PATH`, or `--repo-path <path>`. Before the first sync, give
 that variable inline. The user config file of the CLI has no key for this path.
 
@@ -82,8 +86,10 @@ the change list. Without `--yes`, a command that writes stops with exit 2
 - Do not edit a file that the sync writes. That file has the header
   `Synced from bootstrap`, and the next sync replaces it. Put each change in
   `macos.toml`.
-- Let `bootstrap mac init` write the `[tools.<name>]` tables and the answers.
-  Write by hand only `[packs.<name>]`, `[overrides.mise.*]` and `[mise.*]`.
+- Let `bootstrap mac init`, `bootstrap mac add` and `bootstrap mac remove`
+  write the `[tools.<name>]` tables and the answers. Write by hand only
+  `[overrides.mise.*]` and `[mise.*]`. `macos.toml` keeps no record of a pack:
+  do not write a `[packs.<name>]` table.
 - Do not write a secret in `macos.toml`. It holds names, public keys and paths,
   and the owner commits it.
 - A command that writes stops when a file that it changes has changes that are
@@ -147,29 +153,30 @@ Do each command of these steps in the clone.
 
 Read `"$tmp"/macos/packs.toml` and `"$tmp"/docs/setup/tools.md`.
 
-The pack `base` is always added. Do not select it, and do not ask about it. Show
-its members to the owner. A tool of `base` cannot go away.
+`bootstrap mac init` writes a table for each member of the pack `base`. Show
+its members to the owner. A required member cannot go away. Ask whether the
+owner wants each member that is not required, for example
+`visual-studio-code` and `uv`.
 
-For each other pack, in the order of the file, show the description of each
-member. Mark the `default = true` members. Ask these two questions, one at a
-time:
+For each other pack, in the order of the file, show its description and the
+description of each member. Each member is a default: `mac add pack` adds
+each one. Ask these two questions, one at a time:
 
-1. Do you want this pack? `[packs.<name>]` adds only the default members. It
-   adds all or none of them.
-2. Which other members of this pack do you want? Each one is a tool of the list.
-   If the owner wants only some default members, do not select the pack: put
-   each of them on the list of tools.
+1. Do you want this pack?
+2. Which members of this pack do you not want? Step 5 gives each of them as
+   `--exclude <member>`.
 
-Then ask whether the owner wants a tool of `tools.md` that is not on the list.
-The sync adds the `depends` of each tool. Show the tools that this adds.
+Then ask whether the owner wants a tool of `tools.md` that is not in a pack of
+the list. The sync adds the `depends` of each tool. Show the tools that this
+adds.
 
 Pass: the owner agrees with the full list of the packs and the tools.
 
 ### Step 2: Ask the questions
 
 Get the questions of `base`, then of the tools of step 1. In the second
-command, name each tool of step 1 and each default member of each pack of
-step 1:
+command, name each tool of step 1 and each member of each pack of step 1 that
+the owner did not leave out:
 
 ```text
 MACOS_SETUP_REPO_PATH="$PWD" bootstrap mac questions --json
@@ -196,42 +203,12 @@ row is answered. For each row with no answer, do these items:
 
 Pass: each other row has an answer that is not empty.
 
-### Step 3: Write the tables that `bootstrap mac init` does not write
+### Step 3: Do a dry run of `bootstrap mac init`
 
-`bootstrap mac init` writes only `[tools.<name>]` tables and their answers. Do
-this step when the owner selected a pack in step 1, or wants an own mise
-config. Write `macos.toml` at the root of the clone, with a header line and
-these tables:
-
-| Table                     | Write                                                                             |
-| ------------------------- | --------------------------------------------------------------------------------- |
-| `[packs.<name>]`          | An empty table for each pack of step 1. No `base`.                                |
-| `[overrides.mise.<path>]` | A different default of a tool, if the owner asks for it. It cannot add a key.     |
-| `[mise.*]`                | The own mise config of the owner, if any. It goes to `conf.d/zz-macos/mise.toml`. |
+Give one `--answer` for each answer of step 2 of a tool of `base`:
 
 ```text
-# The values of the Mac sync of bootstrap. See docs/setup/index.md.
-
-[packs.<name>]
-```
-
-Do not write a value for `bootstrap_commit`, or a key that
-[`docs/design/mac.md`](../design/mac.md) does not give.
-
-`bootstrap mac init` stops when `macos.toml` has changes that are not
-committed. Thus show the file to the owner, then commit it in the clone as
-`ops: start macos.toml`. Do not push.
-
-Pass: `mise x yq@latest -- yq -p toml '.' macos.toml` exits 0, and
-`git status --short -- macos.toml` shows nothing.
-
-### Step 4: Do a dry run
-
-Name each tool of step 1 that is not a default member of a pack of step 1. Give
-one `--answer` for each answer of step 2:
-
-```text
-bootstrap mac init <tool…> --answer <tool>.<key>=<value> … --dry-run
+bootstrap mac init --answer <tool>.<key>=<value> … --dry-run
 ```
 
 A tool in `depends` can add a question that step 2 did not show. Then the
@@ -247,13 +224,13 @@ to keep, stop, and ask the owner where to put that content (see "Rules").
 Pass: exit 0, and the last line has `Dry run:`. A dry run never stops with
 exit 4.
 
-### Step 5: Do the real run
+### Step 4: Do the real run of `bootstrap mac init`
 
 Ask the owner whether to run the sync. Then run the same command with `--yes`
 in place of `--dry-run`:
 
 ```text
-bootstrap mac init <tool…> --answer <tool>.<key>=<value> … --yes
+bootstrap mac init --answer <tool>.<key>=<value> … --yes
 ```
 
 On a first run, exit 4 is usual: the init stage changed the shells, Homebrew or
@@ -265,7 +242,42 @@ mise. Ask the owner to open a new terminal (the login shell changed). Then run
 Pass: exit 0, and `bootstrap_commit` of `macos.toml` is not empty. A failed run
 does not set it.
 
-### Step 6: Commit `macos.toml`
+### Step 5: Add the packs and the tools
+
+Do each command with `--dry-run` first, read the change list with the owner,
+then run it again with `--yes` in place of `--dry-run`. Give the answers of
+step 2 of the tools that the command adds:
+
+```text
+bootstrap mac add pack <pack> --exclude <member> … --answer <tool>.<key>=<value> … --dry-run
+bootstrap mac add tool <tool…> --answer <tool>.<key>=<value> … --dry-run
+bootstrap mac remove tool <tool…> --dry-run
+```
+
+Run `mac add pack` one time for each pack of step 1: `--exclude` needs exactly
+one pack name. Run `mac add tool` for the other tools of step 1, and
+`mac remove tool` for each member of `base` that the owner does not want.
+
+Pass: each command exits 0.
+
+### Step 6: Write the tables that the CLI does not write
+
+Do this step only when the owner wants a different default of a tool, or an
+own mise config. Add these tables to `macos.toml`:
+
+| Table                     | Write                                                                             |
+| ------------------------- | --------------------------------------------------------------------------------- |
+| `[overrides.mise.<path>]` | A different default of a tool, if the owner asks for it. It cannot add a key.     |
+| `[mise.*]`                | The own mise config of the owner, if any. It goes to `conf.d/zz-macos/mise.toml`. |
+
+Do not write a value for `bootstrap_commit`, or a key that
+[`docs/design/mac.md`](../design/mac.md) does not give. Show the file to the
+owner, then run `mise run updateall:configs`.
+
+Pass: `mise x yq@latest -- yq -p toml '.' macos.toml` exits 0, and the sync
+exits 0.
+
+### Step 7: Commit `macos.toml`
 
 Show `git status --short` of the clone to the owner. Commit `macos.toml` in the
 clone as `ops: sync bootstrap`. Ask the owner before you push.
@@ -277,7 +289,7 @@ Pass: `git status --short -- macos.toml` shows nothing.
 Do each command of these items in the clone.
 
 1. Do the requirements. Then read `bootstrap_commit` of `macos.toml`. If it is
-   empty, no sync completed: do step 1 to step 6 of the first adoption.
+   empty, no sync completed: do step 1 to step 7 of the first adoption.
 2. Find what changed. Command:
 
    ```text
@@ -286,22 +298,25 @@ Do each command of these items in the clone.
 
    Pass: the command exits 0. If it prints nothing, tell the owner that the
    tools are up to date. Then ask whether to do a sync, and go to item 5.
-3. For each new tool, and each new member of a selected pack, ask whether the
-   owner wants it. A new default member of a selected pack comes with its pack.
-   Put each other new tool on the list of tools.
+3. For each new tool, and each new member of a pack, ask whether the owner
+   wants it. `macos.toml` keeps no record of a pack, so a new member of a pack
+   comes only with `mac add tool` or `mac add pack`. Put each new tool that the
+   owner wants on the list of tools.
 4. Get the questions, as in step 2 of the first adoption. Name the new tools of
    item 3 in the second command. Ask each question with no answer. If the
    command stops with `run bootstrap mac init`, `macos.toml` has an old form.
    Then
    go to item 5: the dry run names each question with no answer.
-5. Do a dry run: `bootstrap mac init <new tool…> --answer … --dry-run`. It also
-   moves an old form, for example the table of the old Mac entry tool to
-   `[tools.mise]` (see `docs/sync/migrate.md`). Read
-   the change list with the owner. Pass: exit 0.
+5. Do a dry run: `bootstrap mac init --answer … --dry-run`. It also moves an
+   old form, for example a file without `format = 2`, the `[packs.*]` tables,
+   or the table of the old Mac entry tool to `[tools.mise]` (see
+   `docs/sync/migrate.md`). Read the change list with the owner. Pass: exit 0.
 6. Ask the owner whether to run the sync. Then do the real run: the same command
    with `--yes` in place of `--dry-run`. Pass: exit 0. On exit 4, the owner
    opens
-   a new terminal, and you run `mise run updateall:configs`.
+   a new terminal, and you run `mise run updateall:configs`. Then add the new
+   tools of item 3 with `bootstrap mac add tool <tool…> --answer … --dry-run`,
+   and the same command with `--yes`.
 7. Each sync with a new commit changes `macos.toml`. On a Mac that
    [`migrate-dotfiles.md`](migrate-dotfiles.md) moved, the links stay, so each
    sync also writes through them into `dotfiles/` of the clone. That folder is
@@ -317,7 +332,7 @@ Do each command of these items in the clone.
 | 0    | Done, or nothing to change.                    | Continue.                                                                                                                            |
 | 1    | Another failure, for example a file error.     | Read the lines on stderr.                                                                                                            |
 | 2    | A usage error, or a config that breaks a rule. | Read the message. Correct `macos.toml`, or tell the `bootstrap` owner about a bad tool. For `run bootstrap mac init`, do the update. |
-| 3    | A tool or a pack that `macos/` does not have.  | Correct the `[tools.*]` and `[packs.*]` tables.                                                                                      |
+| 3    | A tool or a pack that `macos/` does not have.  | Correct the `[tools.*]` tables, or the names of the command.                                                                         |
 | 4    | The init stage changed.                        | Open a new terminal, then run `mise run updateall:configs`.                                                                          |
 | 5    | The clone or the fetch failed.                 | Examine the network and the access.                                                                                                  |
 

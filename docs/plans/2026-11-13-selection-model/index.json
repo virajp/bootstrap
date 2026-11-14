@@ -423,6 +423,15 @@
         "U1",
         "U5"
       ]
+    },
+    {
+      "id": "D33",
+      "decision": "Q10: In docs/sync/vwf.md, how should an agent handle a pack in a plugin instruction, now that the values file keeps no pack record and there is no remove pack?",
+      "ruling": "As U7 wrote it: \"bootstrap: add [<pack>]\" and a [packs.*] table of an init block run `bootstrap add pack`, and \"bootstrap: remove [<pack>]\" stops with \"<name> is a pack. bootstrap has no remove pack: name its tools.\" (recommended) — the plugins keep their format, and removing a pack needs the tool names.",
+      "rejected": "Refuse a pack name in any vwf instruction and in an init block — the plugins in claude-plugins must change to send only tool names",
+      "units": [
+        "U7"
+      ]
     }
   ],
   "units": [
@@ -582,11 +591,11 @@
         "U6"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T08:26:55.965Z",
+      "ended": "2026-11-14T09:03:20.109Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U8",
@@ -640,8 +649,8 @@
     },
     {
       "id": "W6",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T08:26:55.926Z",
       "ended": ""
     },
     {

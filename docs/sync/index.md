@@ -28,7 +28,8 @@ A repository uses `bootstrap` in two ways, in this sequence:
    agent makes sure that each rule is relevant to the repository: it selects
    only the tools that the repository needs, it keeps the repository-owned
    content, and it asks the user about each difference. The agent runs
-   `bootstrap init` to write the values file and to do the first sync.
+   `bootstrap init` to write the values file and to do the first sync, and
+   `bootstrap add tool <tool…>` to add the other tools.
 2. **Sync, each time after that, by `setup:configs`.** The `mise` tool ships
    the task `setup:configs`. The task runs `bootstrap sync`, which copies the
    newest shared files of the selected tools into the repository.
@@ -36,8 +37,9 @@ A repository uses `bootstrap` in two ways, in this sequence:
 The adoption makes sure that the repository is ready for the sync. The sync
 then keeps the repository equal to `bootstrap`, without an agent.
 
-After the adoption, `bootstrap add <tool…>`, `bootstrap remove <tool…>` and
-`bootstrap replace <old> <new>` change the tools. See [`vwf.md`](vwf.md).
+After the adoption, `bootstrap add tool <tool…>`, `bootstrap add pack <pack…>`,
+`bootstrap remove tool <tool…>` and `bootstrap replace tool <old> <new>` change
+the tools. See [`vwf.md`](vwf.md).
 
 ## Files in this folder
 
@@ -60,8 +62,7 @@ The tool files in `tools/` are `_security_base.md`, `android.md`, `apko.md`,
 tool is `claude-tool.md`, because a file system that ignores case reads
 `claude.md` as `CLAUDE.md`, and AI agents load that name as instructions.
 
-The pack files in `packs/` are `base.md`, `container-build.md` and
-`security.md`.
+The pack file in `packs/` is `base.md`.
 
 ## Where the rules are
 
@@ -70,7 +71,7 @@ This file holds the instructions. Each rule of the sync has one place in
 
 - Read [`docs/design/bootstrap-config.md`](../design/bootstrap-config.md) before
   you write a key of `.config/bootstrap.toml`.
-- Read [`docs/design/packs.md`](../design/packs.md) before you select a pack.
+- Read [`docs/design/packs.md`](../design/packs.md) before you add a pack.
 - Read [`docs/design/tools.md`](../design/tools.md) before you read a
   `tools.toml`: its keys, the `[files]` and `[tasks]` tables, the shared
   files, the scripts, the seeds and the header.
@@ -96,9 +97,10 @@ This file holds the instructions. Each rule of the sync has one place in
 - The shared files are grouped by tool. Each tool is a folder
   `repo/tools/<tool>/` in `bootstrap`. Its `tools.toml` gives the path in the
   consumer repository of each file of its `files/` and `tasks/` folders.
-- The values file `.config/bootstrap.toml` lists the tools and the packs of
-  the repository. `bootstrap sync` always adds the `base` pack, and it syncs
-  all the files of these tools.
+- The values file `.config/bootstrap.toml` has one `[tools.<name>]` table for
+  each tool of the repository, and no pack. `bootstrap sync` always adds the
+  required tools of the `base` pack, and it syncs all the files of these
+  tools.
 - A command of `bootstrap` that writes shows the change list first. An AI
   agent has no terminal, so it gives `--yes` after the user agrees to the
   list. Run the command with `--dry-run` first to get the list.
@@ -212,11 +214,11 @@ The base repository has the members as git submodules, for example
 4. In the base repository, write a `[member.<name>]` table for each
    submodule, with its `label`.
 
-A tool with `root_only = true` is for the base repository only. The sync
-refuses it in a submodule. A `root_only` tool of a pack, for example `vscode`
-of `base`, is skipped in a submodule. When a submodule is in its root
-checkout, mise also loads the tools of the root. Thus a nested submodule also
-finds the tools of the root.
+A tool with `root_only = true` is for the base repository only. The sync refuses
+it in a submodule. `bootstrap init` and `bootstrap add pack <pack…>` skip a
+`root_only` member of a pack in a submodule, for example `vscode` of `base`.
+When a submodule is in its root checkout, mise also loads the tools of the root.
+Thus a nested submodule also finds the tools of the root.
 
 ### Siblings
 
@@ -239,7 +241,9 @@ Do not stop. Find whether the repository is up to date, then do only the
 steps that are not. Show the result of each check to the user before you
 change a file. `bootstrap init` on an existing values file is the update: it
 examines the version, migrates each old form of the values file, asks each
-new question, then syncs.
+new question, then syncs. A values file without `format = 2`, or with a
+`[packs.*]` table, is an old form: `bootstrap init` moves it to a
+`[tools.<name>]` table for each tool (M38 of `migrate.md`).
 
 1. Make the clone of step 1, and get the newest commit of `bootstrap`:
    `git -C "$tmp" rev-parse HEAD`.
@@ -265,7 +269,7 @@ new question, then syncs.
    | No path of "Files that bootstrap no longer ships" exists.                                                                  | bootstrap  | Step 4              |
    | `bootstrap init --dry-run` shows no change. It shows the migration of an old form, a new question and each file to sync.   | bootstrap  | Step 3, then step 5 |
    | `bootstrap check` shows no error in the values file.                                                                       | repository | Step 6              |
-   | `bootstrap detect --no` exits 0: each tool that a detect script finds is selected.                                         | repository | Step 1              |
+   | `bootstrap detect` exits 0: each tool that a detect script finds is selected.                                              | repository | Step 1              |
    | The selected tools agree with the signs of their tool files: no tool is missing, and no tool is selected without a reason. | repository | Step 1              |
    | Each value that you can find agrees with the file, for example `repo_url` and `origin`, or the members and `.gitmodules`.  | repository | Step 6              |
    | Each file of "Files the repository supplies" of a selected tool exists.                                                    | repository | Step 7              |
@@ -273,8 +277,8 @@ new question, then syncs.
 5. If all the checks pass, tell the user that the repository is up to date,
    and stop.
 
-For an update, step 5 runs `bootstrap init` without tool names. Add a new
-tool with `bootstrap add <tool…>`.
+For an update, step 5 runs `bootstrap init`. Add a new tool with
+`bootstrap add tool <tool…>`.
 
 ### Files that bootstrap no longer ships
 
@@ -308,7 +312,7 @@ The sync removes these old paths itself, so they need no step:
 When a change removes a shipped file from `repo/tools/`, add its path to this
 table and to an item of `migrate.md`.
 
-## Step 1: Select the tools and the packs
+## Step 1: Select the tools
 
 Clone `bootstrap` into a temporary directory to read its docs. Keep it until
 all repositories are complete. `--filter=blob:none` gets all the commits, for
@@ -322,17 +326,18 @@ git clone --quiet --filter=blob:none https://github.com/virajp/bootstrap.git "$t
 Read `"$tmp"/repo/tools/*/tools.toml`, `"$tmp"/repo/packs.toml`,
 `"$tmp"/docs/sync/tools/<tool>.md` and `"$tmp"/docs/sync/packs/<pack>.md`.
 Examine the repository for the signs in "When the tool is relevant" of each
-tool file. Show the user each tool and each pack with its description and the
-result. Then ask which tools and packs the repository needs. Ask the questions
-of each pack file. In a repository with a values file, `bootstrap detect --no`
-also lists each tool that a detect script finds and that is not selected.
+tool file. Show the user each tool with its description and the result. Then
+ask which tools the repository needs. In a repository with a values file,
+`bootstrap detect` also lists each tool that a detect script finds and that is
+not selected.
 
-The `base` pack is always added: `bootstrap sync` adds it, and the values file
-does not list it. Its tools are `mise`, `git`, `pre-commit`, `dprint`,
-`linter`, `vscode`, and the tools of the `security` pack. Do not select a tool
-of the `base` pack: a `[tools.<name>]` table for it gives values. An `env` in
-that table can only add environments, and the sync examines it. See
-[`packs/base.md`](packs/base.md).
+The `base` pack is the one pack of `repo/packs.toml`. `bootstrap init` writes a
+table for each of its members in a new values file. Its tools are `mise`,
+`git`, `pre-commit`, `dprint`, `linter`, `gitleaks`, `grype`, `osv-scanner`
+and `vscode`. Each of them except `vscode` is required: the repository cannot
+remove it, and its table gives values. An `env` in that table can only add
+environments, and the sync examines it. Ask whether the repository needs
+`vscode`. See [`packs/base.md`](packs/base.md).
 
 A repository with a `package.json` must select one package manager: `pnpm` or
 `aube`. If it selects none, or both, `setup:deps:40-node` stops the setup. See
@@ -461,18 +466,19 @@ files, skip this step.
 5. `bootstrap` writes no target that has changes that are not committed.
    Thus ask the user to commit the changes of this step before step 5.
 
-## Step 5: Run `bootstrap init`
+## Step 5: Run `bootstrap init` and `bootstrap add tool <tool…>`
 
 1. If mise says that the config files are not trusted, ask the user to run
    `mise trust`.
-2. Run `bootstrap init` with the selected tools and the answers of step 3:
+2. Run `bootstrap init` with the answers of step 3 for the tools of the `base`
+   pack:
 
    ```text
-   bootstrap init <tool…> --answer <tool>.<key>=<value> --dry-run
+   bootstrap init --answer <tool>.<key>=<value> --dry-run
    ```
 
-   For an update, give no tool names. `bootstrap init` takes tool names only:
-   write a `[packs.<name>]` table in step 6.
+   `bootstrap init` takes no tool names. For an update, this is the only command
+   of this step.
 3. Examine the change list, and the diff of each file that already exists in
    the repository.
 4. If the dry run replaces repository-owned content, stop. Move that content
@@ -482,11 +488,22 @@ files, skip this step.
    changes for review.
 6. If the user agrees, run the same command with `--yes` in place of
    `--dry-run`.
+7. Do items 3 to 6 again with `bootstrap add tool <tool…>`, the other selected
+   tools of step 1, and their answers of step 3:
 
-Without a values file, `bootstrap init` writes it with `environments` and
-`repo_name`, the name of the folder. It adds a `[tools.<name>]` table for each
-named tool and each answer, then syncs. A sync without a failure removes the
-stale files, writes `.config/repo-generated.tsv` and sets `bootstrap_commit`
+   ```text
+   bootstrap add tool <tool…> --answer <tool>.<key>=<value> --dry-run
+   ```
+
+   If the repository does not need `vscode`, also run
+   `bootstrap remove tool vscode`.
+
+Without a values file, `bootstrap init` writes it with `format = 2`,
+`environments` and `repo_name`, the name of the folder. It adds a
+`[tools.<name>]` table for each member of the `base` pack and each answer, then
+syncs. `bootstrap add tool <tool…>` adds a table for each named tool and each
+new dependency, and each answer, then syncs. A sync without a failure removes
+the stale files, writes `.config/repo-generated.tsv` and sets `bootstrap_commit`
 in the values file.
 
 ## Step 6: Write the other values and sync again
@@ -500,7 +517,7 @@ in the values file.
    | `repo_url`                         | `origin`, as an `https://` URL.                                                                                     |
    | `product_name`                     | `product.name` of `.config/vwf.yaml`, or the value of the other repositories of the product.                        |
    | `environments`                     | Step 1.                                                                                                             |
-   | `env` of `[tools.*]`, `[packs.*]`  | Step 1.                                                                                                             |
+   | `env` of `[tools.*]`               | Step 1.                                                                                                             |
    | `[tools.git.branch.<branch>]`      | Step 2. Without a sign, `merge_model = "direct"` and no `direct_commit`.                                            |
    | `[member.<name>]`                  | `.gitmodules`, and the member folders of a monorepo.                                                                |
    | `commit_scopes` of `[tools.git]`   | The scopes of the existing commits, `git log --format=%s`. Else the members.                                        |
@@ -526,8 +543,8 @@ Read it, and write the file with these instructions:
 - Do not write `bootstrap_commit`, and do not copy it from an example: each
   example has an empty value. `bootstrap sync` writes the `bootstrap` commit
   of each sync without a failure.
-- Write one `[packs.<name>]` table for each pack from step 1, without the
-  prefix `pack:`. Do not write `base`.
+- Do not write a `[packs.<name>]` table: it is an old form. Keep the
+  `[tools.<name>]` tables and `format = 2` of step 5.
 - A tool value goes into the `[tools.<name>]` table of that tool, next to `env`.
   The top-level keys of the values file stay at the top level.
 - Set `product_name` in each repository of a product with members, the root
@@ -591,19 +608,19 @@ If a command of `bootstrap` fails, read its messages and its exit code. A
 failure does not change an existing file. The full list is in
 [`docs/design/cli.md`](../design/cli.md).
 
-| Code | Cause                                                                                                                              | Action                                                                            |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| 2    | An old form of the values file. The message ends with `run bootstrap init`                                                         | Run `bootstrap init` (step 5)                                                     |
-| 2    | A target has changes that are not committed                                                                                        | Commit or discard the changes of the target                                       |
-| 2    | A question without an answer, or a group without an answer that is not empty, with `--yes` or without a terminal                   | Give the answer with `--answer <tool>.<key>=<value>` (step 3)                     |
-| 2    | `changes need --yes`                                                                                                               | Ask the user, then run the command with `--yes`                                   |
-| 2    | A bad key or value of the values file, a root-only tool in a submodule, or a check script that failed. The message names the cause | Correct the values file, or the repository                                        |
-| 2    | A bad `tools.toml`, packs file or merge spec of `bootstrap`                                                                        | Tell the `bootstrap` owner                                                        |
-| 2    | `bootstrap` is older than the version that the clone needs                                                                         | Run `mise use -g github:virajp/bootstrap`                                         |
-| 2    | Not a git repository, or mise is not available                                                                                     | Run `git init`, or install mise                                                   |
-| 3    | A tool or a pack that is not in `bootstrap`                                                                                        | Correct the `[tools.*]` and `[packs.*]` entries, or the tool names of the command |
-| 5    | The clone or the fetch failed, or `cli/VERSION` of the clone is not `MAJOR.MINOR.PATCH`                                            | Examine the network and the access                                                |
-| 1    | A local file system error. `bootstrap detect --no` also exits 1 for a detected tool that is not selected                           | Read the `bootstrap:` lines on stderr                                             |
+| Code | Cause                                                                                                                              | Action                                                        |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| 2    | An old form of the values file, also a file without `format = 2`. The message ends with `run bootstrap init`                       | Run `bootstrap init` (step 5)                                 |
+| 2    | A target has changes that are not committed                                                                                        | Commit or discard the changes of the target                   |
+| 2    | A question without an answer, or a group without an answer that is not empty, with `--yes` or without a terminal                   | Give the answer with `--answer <tool>.<key>=<value>` (step 3) |
+| 2    | `changes need --yes`                                                                                                               | Ask the user, then run the command with `--yes`               |
+| 2    | A bad key or value of the values file, a root-only tool in a submodule, or a check script that failed. The message names the cause | Correct the values file, or the repository                    |
+| 2    | A bad `tools.toml`, packs file or merge spec of `bootstrap`                                                                        | Tell the `bootstrap` owner                                    |
+| 2    | `bootstrap` is older than the version that the clone needs                                                                         | Run `mise use -g github:virajp/bootstrap`                     |
+| 2    | Not a git repository, or mise is not available                                                                                     | Run `git init`, or install mise                               |
+| 3    | A tool or a pack that is not in `bootstrap`                                                                                        | Correct the `[tools.*]` entries, or the names of the command  |
+| 5    | The clone or the fetch failed, or `cli/VERSION` of the clone is not `MAJOR.MINOR.PATCH`                                            | Examine the network and the access                            |
+| 1    | A local file system error. `bootstrap detect` also exits 1 for a detected tool that is not selected                                | Read the `bootstrap:` lines on stderr                         |
 
 ## Step 7: Supply the files that `bootstrap` does not have
 

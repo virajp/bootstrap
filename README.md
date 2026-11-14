@@ -12,20 +12,21 @@ mise installs the CLI from the GitHub releases of this repository:
 mise use -g github:virajp/bootstrap
 ```
 
-| Command                          | Job                                                                              |
-| -------------------------------- | -------------------------------------------------------------------------------- |
-| `bootstrap init [tool…]`         | Select `base` and the named tools, migrate an old form, ask the questions, sync. |
-| `bootstrap sync`                 | Sync the repository of the current folder. `setup:configs` runs it.              |
-| `bootstrap check`                | Examine the values file, and run the check scripts of the tools.                 |
-| `bootstrap questions [tool…]`    | List the questions, their proposals and their answers. `--json` for an agent.    |
-| `bootstrap detect`               | Run the detect scripts, and offer to add each tool that matches.                 |
-| `bootstrap add <tool…>`          | Add the tools and their dependencies, then sync.                                 |
-| `bootstrap remove <tool…>`       | Remove the tools and the dependencies that no tool needs, then sync.             |
-| `bootstrap replace <old> <new>`  | Move from one tool to another with the same parent, then sync.                   |
-| `bootstrap list`, `bootstrap ls` | List the selected tools as a tree of packs, tools and dependencies.              |
-| `bootstrap config`               | Print the config file and each setting, with its value and its source.           |
-| `bootstrap --version`            | Print the version.                                                               |
-| `bootstrap mac <command>`        | The same commands for the Mac, with `macos.toml`. There is no `mac config`.      |
+| Command                                      | Job                                                                             |
+| -------------------------------------------- | ------------------------------------------------------------------------------- |
+| `bootstrap init`                             | Migrate an old form, or create the values file with the `base` pack, ask, sync. |
+| `bootstrap sync`                             | Sync the repository of the current folder. `setup:configs` runs it.             |
+| `bootstrap check`                            | Examine the values file, and run the check scripts of the tools.                |
+| `bootstrap questions [tool…]`                | List the questions, their proposals and their answers. `--json` for an agent.   |
+| `bootstrap detect [--add]`                   | Run the detect scripts, and list each tool that matches. `--add` adds them.     |
+| `bootstrap add tool <tool…>`                 | Add the tools and their dependencies, then sync.                                |
+| `bootstrap add pack <pack…> [--exclude <m>]` | Add each member of the packs that is not selected, then sync.                   |
+| `bootstrap remove tool <tool…>`              | Remove the tools and the dependencies that no tool needs, then sync.            |
+| `bootstrap replace tool <old> <new>`         | Move from one tool to another with the same parent, then sync.                  |
+| `bootstrap list`, `bootstrap ls`             | List the selected tools as a tree of tools and dependencies.                    |
+| `bootstrap config`                           | Print the config file and each setting, with its value and its source.          |
+| `bootstrap --version`                        | Print the version.                                                              |
+| `bootstrap mac <command>`                    | The same commands for the Mac, with `macos.toml`. There is no `mac config`.     |
 
 Each writing command shows its change list first. `--dry-run` writes nothing,
 and `--yes` writes without a prompt.
@@ -40,13 +41,13 @@ A repository uses this repository in two ways, in this sequence:
    tells the agent how to apply the rules of this repository to a consumer
    repository, the first time and each time that the repository is not up to
    date. The agent selects the tools, gets the answers of their questions, and
-   runs `bootstrap init`. `docs/sync/index.md` has the general steps,
-   `migrate.md` has the items for a repository with older copies, one file for
-   each tool in `docs/sync/tools/` tells when the tool is relevant and how to
-   use it, and one file for each pack is in `docs/sync/packs/`.
-   `docs/sync/vwf.md` is the entry point for the vwf and stackgen plugins: they
-   give it the `init`, `add`, `remove`, `add plugins` and `remove plugins`
-   instructions.
+   runs `bootstrap init` and `bootstrap add tool <tool…>`. `docs/sync/index.md`
+   has the general steps, `migrate.md` has the items for a repository with older
+   copies, one file for each tool in `docs/sync/tools/` tells when the tool is
+   relevant and how to use it, and one file for each pack is in
+   `docs/sync/packs/`. `docs/sync/vwf.md` is the entry point for the vwf and
+   stackgen plugins: they give it the `init`, `add`, `remove`, `add plugins` and
+   `remove plugins` instructions.
 2. **Sync, each time after that, by `bootstrap sync`.** The adoption installs
    the `setup:configs` task, which runs `bootstrap sync` and keeps the shared
    files equal to this repository.
@@ -89,28 +90,28 @@ The code of the CLI is in `cli/`: the Go module (`cmd/` and
 This folder is not a tool, so the sync does not copy it to a repository.
 
 A pack is a named group of tools in `repo/packs.toml`. It has no files of its
-own. The sync always adds the `base` pack:
+own, and it is a shortcut of `bootstrap add pack <pack…>`: the values file keeps
+no record of it. `bootstrap init` adds the `base` pack to a new values file:
 
 <!-- dprint-ignore -->
 ```toml
 [pack.base]
-mise = { default = true, required = true }
-git = { default = true, required = true }
-pre-commit = { default = true, required = true }
-dprint = { default = true }
-linter = { default = true }
-vscode = { default = true }
-"pack:security" = { default = true }
-
-[pack.security]
-gitleaks = { default = true }
-grype = { default = true }
-osv-scanner = { default = true }
+description = "The tools of each repository: ..."
+mise = { required = true }
+git = { required = true }
+pre-commit = { required = true }
+dprint = { required = true }
+linter = { required = true }
+gitleaks = { required = true }
+grype = { required = true }
+osv-scanner = { required = true }
+vscode = {}
 ```
 
-`[packs.<name>]` of a values file adds each `default = true` member. A member
-with `{}` arrives only with `[tools.<name>]`. A key with the prefix `pack:` is a
-nested pack. `required = true` marks a tool that `bootstrap remove` refuses.
+Each member is a default: `bootstrap add pack <pack…>` writes a `[tools.<name>]`
+table for each one. A key with the prefix `pack:` is a nested pack. In `base`
+only, `required = true` marks a tool that `bootstrap remove tool <tool…>`
+refuses, and that the sync always adds.
 [`docs/design/packs.md`](docs/design/packs.md) has the rules.
 
 Each tool folder has a `tools.toml` manifest:
@@ -122,7 +123,7 @@ default_envs = [
   "ci",
 ] # the environments when the values file gives no env
 depends = [ "java" ] # tools added with this one
-root_only = false # true: refused in a submodule; skipped there from a pack
+root_only = false # true: refused in a submodule; add pack skips it there
 
 # The mise config, in mise syntax. The sync generates
 # .config/mise/conf.d/android/mise.<env>.toml.
@@ -173,9 +174,9 @@ of the `[files]` and `[tasks]` tables, and the scripts.
    `https://github.com/virajp/bootstrap.git` into a shared clone in the cache
    `${XDG_CACHE_HOME:-~/.cache}/bootstrap/`, copies that clone, and stops when
    the CLI is older than `cli/VERSION` of the clone.
-2. It reads the `[tools.*]` and `[packs.*]` tables of the repository's
-   `.config/bootstrap.toml`, and adds the `base` pack and the `depends` of each
-   tool.
+2. It reads the `[tools.*]` tables of the repository's `.config/bootstrap.toml`,
+   and adds the required members of the `base` pack and the `depends` of each
+   tool. It writes an empty table for each required member that has none.
 3. It merges the values of each tool, runs the derive and check scripts, and
    generates the mise config of each tool.
 4. It writes each file of each tool. An owned file changes on each sync, a seed

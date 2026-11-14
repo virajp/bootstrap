@@ -16,7 +16,7 @@ rules and the other exit codes, [packs.md](packs.md), [tools.md](tools.md) and
 `macos.toml` is in a git repository of the user: the private `macos-setup`
 clone. Each `mac` command needs that repository.
 
-- `bootstrap mac init [tool…]` runs in the current folder, which must be a git
+- `bootstrap mac init` runs in the current folder, which must be a git
   repository. Else it tells the user to create one with `git init`.
 - Each other `mac` command runs from any folder, and uses `--repo-path <path>`
   or `MACOS_SETUP_REPO_PATH`. The flag sets the variable for the run. A path
@@ -109,38 +109,44 @@ overrides file is `macos.overrides.toml` next to it. See
 
 | Key                       | Meaning                                                                                                                          |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `format`                  | The integer `2`, the form of the file. A file without it is an old form: run `bootstrap mac init`.                               |
 | `bootstrap_commit`        | A string. The commit of the last clean run. The sync writes it. See [cli.md](cli.md#bootstrap_commit).                           |
 | `[tools.<name>]`          | A table. It selects the tool, and each key is a value of the tool. See [cli.md](cli.md#the-values-of-a-tool).                    |
-| `[packs.<name>]`          | An empty table. It adds each `default = true` member of the pack. See [packs.md](packs.md).                                      |
 | `[overrides.mise.<path>]` | It changes the generated mise config. See [mise.md](mise.md#the-overrides).                                                      |
 | `[mise.*]`                | The own mise config of the user. It goes to `conf.d/zz-macos/mise.toml`. See [mise.md](mise.md#the-own-config-of-a-values-file). |
 
 These stop the sync:
 
 - Any other top-level key.
-- `tools = [...]`, the old format, and a `packs` key that is not a table.
+- `tools = [...]`, the old format.
 - `env` in a `[tools.<name>]` table: the Mac side has no environments.
-- A key in a `[packs.<name>]` table.
+- A `format` other than `2`.
 - `[overrides.mise_env]`, and any other key of `[overrides]`.
 - A `[tools.<name>]` that is not a table, a `[mise]` that is not a table, and a
   `bootstrap_commit` that is not a string.
-- The table of the old Mac entry tool, an old form: run `bootstrap mac init`,
-  which moves its values to `[tools.mise]`. `docs/sync/migrate.md` names the
-  old tool.
+- An old form: run `bootstrap mac init`. The old forms are a file without
+  `format = 2`, a `[packs.<name>]` table or a `packs` key, and the table of
+  the old Mac entry tool, whose values go to `[tools.mise]`.
+  `docs/sync/migrate.md` names the old tool. `mac init` migrates them as on
+  the repo side: see
+  [bootstrap-config.md](bootstrap-config.md#old-forms).
 
-Without `macos.toml`, the selection is empty: only the pack `base` and the
-`depends`. A clean real run creates a missing file with a header comment and
+Without `macos.toml`, the selection is only the required members of the pack
+`base` and their `depends`. A clean real run creates a missing file with a
+header comment, `format = 2`, a table for each required member of `base`, and
 the `bootstrap_commit` line.
 
 ## The selection
 
-The selected tools are the pack `base`, the `default = true` members of each
-`[packs.<name>]`, each `[tools.<name>]`, then the `depends` of each,
-transitively.
+The selected tools are the required members of the pack `base`, each
+`[tools.<name>]`, then the `depends` of each, transitively. The values file
+keeps no record of a pack: `mac add pack` writes the tables of its members.
 
 - The pack `base` is fixed by name. Its member `mise` has
-  `required = true`, because each Mac needs the entry tasks.
-- A tool or a pack that `macos/` does not have stops the sync. A name with
+  `required = true`, because each Mac needs the entry tasks. The sync writes
+  an empty table for each required member that has none. See
+  [cli.md](cli.md#the-tables-of-the-required-members).
+- A tool that `macos/` does not have stops the sync. A name with
   whitespace or a `/`, or a name that starts with a dot, is such a name.
 - The sync examines each `tools.toml` of `macos/tools/`, selected or not. It
   examines each `[pack.*]` table too.
@@ -151,7 +157,7 @@ transitively.
   `category` names an id of `macos/categories.toml`. `hosts` is for repo tools
   only, and it stops the
   sync with `hosts is for repo tools only`.
-- `mac init`, `mac add` and `mac replace` refuse a named tool with
+- `mac add tool` and `mac replace tool` refuse a named tool with
   `selectable = false`, and `mac check` shows a warning for it. See
   [cli.md](cli.md#named-tools-that-a-command-refuses).
 - The tools are sorted by name in each stage. See [packs.md](packs.md).
@@ -312,8 +318,9 @@ selected is not in the init stage, so the main stage examines its rows.
 
 - `$HOME`, and the sources that its symlinks point to.
 - The cache: the clone, the lock and `macos-generated.tsv`.
-- `macos.toml`: `bootstrap_commit`, and the writes of `mac init`, `mac add`,
-  `mac remove` and `mac replace`.
+- `macos.toml`: `bootstrap_commit`, the tables of the required members of
+  `base`, and the writes of `mac init`, `mac add`, `mac remove`,
+  `mac replace` and `mac detect --add`.
 - Temp folders, which it removes on exit.
 
 `mise bootstrap` writes where mise writes.

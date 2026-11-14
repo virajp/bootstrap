@@ -3,7 +3,7 @@
 The shared mise config, the task library, the `setup` and `code`
 orchestrators, and the entry of the sync: `setup:configs` and the gate
 `code:lint:60-bootstrap`. The `base` pack adds it with `required = true`, so
-`bootstrap remove` refuses it.
+`bootstrap remove tool <tool…>` refuses it.
 
 | Property     | Value                                         |
 | ------------ | --------------------------------------------- |

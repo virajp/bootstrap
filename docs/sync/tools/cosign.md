@@ -1,7 +1,6 @@
 # The `cosign` tool
 
-cosign, which signs and verifies container images. It is a member of the
-`container-build` pack.
+cosign, which signs and verifies container images.
 
 | Property     | Value   |
 | ------------ | ------- |
