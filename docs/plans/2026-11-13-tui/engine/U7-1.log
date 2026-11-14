@@ -1,5 +1,0 @@
-# /security-review engine — loop U7, round 1, range 8b28be9..43f3a25 (cli/)
-
-No findings.
-
-The engine's own diff read the main checkout (empty); its analysis sub-task ran over git diff 8b28be9..43f3a25 -- cli/ in the run's worktree. Checked: no new process execution or file write in cli/internal/tui (all writes through core.Plan/core.Apply inside tea.Exec after the consent modal); form answers follow the --answer path; core.InitState writes only into an os.MkdirTemp folder; tui flags limited to jobs and verbose; terminal output comes from the trusted clone and the user's own scans; go.mod only moves lipgloss/v2 to a direct v2.1.0 dependency.
