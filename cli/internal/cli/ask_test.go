@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/virajp/bootstrap/cli/internal/core"
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/field"
 	"github.com/virajp/bootstrap/cli/internal/source"
@@ -98,7 +99,7 @@ type askRun struct {
 
 func runAsk(t *testing.T, r askRun) ([][3]string, fail.Code, *asker, string, string) {
 	t.Helper()
-	sel := &selected{idx: askIndex(t, map[string]string{"t": askTOML}), tools: []string{"t"}, user: userOf(r.user)}
+	sel := &core.Selected{Idx: askIndex(t, map[string]string{"t": askTOML}), Tools: []string{"t"}, User: userOf(r.user)}
 	var stdout, stderr bytes.Buffer
 	k := &asker{texts: r.texts}
 	a := &app{stdout: &stdout, stderr: &stderr, getenv: func(string) string { return "" }, terminal: r.terminal, prompt: k.prompt}
@@ -204,7 +205,7 @@ func TestRefuse(t *testing.T) {
 	x.Manifests["w"].Hosts = []string{"macos"}
 	var stderr bytes.Buffer
 	a := &app{stderr: &stderr}
-	if code := a.refuse(x, []string{"u", "base", "w"}); code != fail.Usage {
+	if code := a.logErr(core.Refuse(x, []string{"u", "base", "w"})); code != fail.Usage {
 		t.Errorf("code %d", code)
 	}
 	for _, w := range []string{"base is not selectable. Select u or v.", "w needs the host macos - this host is linux"} {
@@ -212,17 +213,17 @@ func TestRefuse(t *testing.T) {
 			t.Errorf("stderr lacks %q: %s", w, stderr.String())
 		}
 	}
-	if code := a.refuse(x, []string{"u", "v"}); code != fail.OK {
+	if code := a.logErr(core.Refuse(x, []string{"u", "v"})); code != fail.OK {
 		t.Errorf("code %d", code)
 	}
-	if proposable(x.Manifests["base"]) || proposable(x.Manifests["w"]) || !proposable(x.Manifests["u"]) {
+	if core.Proposable(x.Manifests["base"]) || core.Proposable(x.Manifests["w"]) || !core.Proposable(x.Manifests["u"]) {
 		t.Error("proposable")
 	}
 }
 
 func runQuestions(t *testing.T, user map[string]any, json bool) string {
 	t.Helper()
-	sel := &selected{idx: askIndex(t, map[string]string{"t": askTOML}), tools: []string{"t"}, user: userOf(user)}
+	sel := &core.Selected{Idx: askIndex(t, map[string]string{"t": askTOML}), Tools: []string{"t"}, User: userOf(user)}
 	var stdout, stderr bytes.Buffer
 	a := &app{stdout: &stdout, stderr: &stderr, getenv: func(string) string { return "" }}
 	if code := a.printQuestions(true, sel, opts{json: json}); code != fail.OK {

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/virajp/bootstrap/cli/internal/core"
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/report"
 )
@@ -22,18 +23,22 @@ type listRoot struct {
 // root is each selected tool that no selected tool needs, and a tool shows its
 // dependencies below it. It writes nothing.
 func (a *app) list(mac bool) fail.Code {
-	s, code := a.open(mac)
-	if s != nil && s.c != nil {
-		defer s.c.cleanup()
+	sd, c, code := a.side(mac, false, mac)
+	if c != nil {
+		defer c.Cleanup()
 	}
 	if code != fail.OK {
 		return code
+	}
+	s, err := core.Open(sd)
+	if err != nil {
+		return a.logErr(err)
 	}
 	roots := listRoots(s)
 	deps := depsOf(s)
 	style := a.styled
 	opt := treeOpts{style: style, arrowCell: true, cell: func(tool string) (cell, string) {
-		if !s.required(tool) {
+		if !s.Required(tool) {
 			return cell{}, ""
 		}
 		g := report.Glyph("required", style)
@@ -41,7 +46,7 @@ func (a *app) list(mac bool) fail.Code {
 	}}
 	out, arrows := renderTree(roots, deps, opt)
 	fmt.Fprint(a.stdout, out)
-	text := count(len(s.res.Tools), "tool")
+	text := count(len(s.Res.Tools), "tool")
 	if arrows {
 		text += " · " + report.Arrow(style) + " = the subtree shows above"
 	}
@@ -51,9 +56,9 @@ func (a *app) list(mac bool) fail.Code {
 }
 
 // depsOf gives the dependencies of each selected tool.
-func depsOf(s *side) map[string][]string {
+func depsOf(s *core.State) map[string][]string {
 	deps := map[string][]string{}
-	for _, d := range s.res.Deps {
+	for _, d := range s.Res.Deps {
 		deps[d.Tool] = d.Deps
 	}
 	return deps
@@ -62,9 +67,9 @@ func depsOf(s *side) map[string][]string {
 // listRoots gives the roots of the tree of the selection of <s>: each tool of
 // a [tools.<name>] table, and each required member of the pack base, that no
 // selected tool needs.
-func listRoots(s *side) []listRoot {
+func listRoots(s *core.State) []listRoot {
 	needed := map[string]bool{}
-	for _, d := range s.res.Deps {
+	for _, d := range s.Res.Deps {
 		for _, t := range d.Deps {
 			if t != d.Tool {
 				needed[t] = true
@@ -72,7 +77,7 @@ func listRoots(s *side) []listRoot {
 		}
 	}
 	var tools []string
-	for _, e := range s.res.Sel {
+	for _, e := range s.Res.Sel {
 		if !needed[e.Tool] {
 			tools = append(tools, e.Tool)
 		}

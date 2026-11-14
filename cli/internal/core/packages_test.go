@@ -1,4 +1,4 @@
-package cli
+package core
 
 import (
 	"os"
@@ -63,7 +63,7 @@ version = "latest"
 		t.Fatal(err)
 	}
 	got := packageKeys(raw)
-	want := []pkg{{kindPackage, "brew-cask:vlc"}, {kindPackage, "brew:bat"}, {kindTool, "uv"}}
+	want := []Package{{kindPackage, "brew-cask:vlc"}, {kindPackage, "brew:bat"}, {kindTool, "uv"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("packageKeys = %v, want %v", got, want)
 	}
@@ -74,29 +74,29 @@ version = "latest"
 
 func TestPkgExpr(t *testing.T) {
 	cases := []struct {
-		p           pkg
+		p           Package
 		expr, table string
 	}{
-		{pkg{kindPackage, "brew-cask:htop"}, `.mise.bootstrap.packages["brew-cask:htop"] = "latest"`, "[mise.bootstrap.packages]"},
-		{pkg{kindTool, "npm:codeburn"}, `.mise.tools["npm:codeburn"].version = "latest"`, "[mise.tools]"},
+		{Package{kindPackage, "brew-cask:htop"}, `.mise.bootstrap.packages["brew-cask:htop"] = "latest"`, "[mise.bootstrap.packages]"},
+		{Package{kindTool, "npm:codeburn"}, `.mise.tools["npm:codeburn"].version = "latest"`, "[mise.tools]"},
 	}
 	for _, c := range cases {
 		if got := c.p.expr(); got != c.expr {
 			t.Errorf("%v.expr() = %s, want %s", c.p, got, c.expr)
 		}
-		if got := c.p.table(); got != c.table {
+		if got := c.p.Table(); got != c.table {
 			t.Errorf("%v.table() = %s, want %s", c.p, got, c.table)
 		}
 	}
 }
 
 func TestPkgMatch(t *testing.T) {
-	cases := []struct{ in, want pkg }{
-		{pkg{kindPackage, "brew-cask:stablyai/orca/orca"}, pkg{kindPackage, "brew-cask:orca"}},
-		{pkg{kindPackage, "brew:virajp/tap/claude-status"}, pkg{kindPackage, "brew:claude-status"}},
-		{pkg{kindPackage, "brew:bat"}, pkg{kindPackage, "brew:bat"}},
-		{pkg{kindPackage, "mas:497799835"}, pkg{kindPackage, "mas:497799835"}},
-		{pkg{kindTool, "github:virajp/bootstrap"}, pkg{kindTool, "github:virajp/bootstrap"}},
+	cases := []struct{ in, want Package }{
+		{Package{kindPackage, "brew-cask:stablyai/orca/orca"}, Package{kindPackage, "brew-cask:orca"}},
+		{Package{kindPackage, "brew:virajp/tap/claude-status"}, Package{kindPackage, "brew:claude-status"}},
+		{Package{kindPackage, "brew:bat"}, Package{kindPackage, "brew:bat"}},
+		{Package{kindPackage, "mas:497799835"}, Package{kindPackage, "mas:497799835"}},
+		{Package{kindTool, "github:virajp/bootstrap"}, Package{kindTool, "github:virajp/bootstrap"}},
 	}
 	for _, c := range cases {
 		if got := c.in.match(); got != c.want {

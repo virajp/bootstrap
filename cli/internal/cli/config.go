@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/virajp/bootstrap/cli/internal/config"
+	"github.com/virajp/bootstrap/cli/internal/core"
 	"github.com/virajp/bootstrap/cli/internal/fail"
 )
 
@@ -90,14 +91,14 @@ func (a *app) defaultOf(name string) string {
 		// The default of the script runner: internal/scripts/scripts.go (Run).
 		return strconv.Itoa(2 * runtime.NumCPU())
 	case "cache_dir":
-		// The default of acquireClone in clone.go.
+		// The default of core.OpenClone in internal/core/clone.go.
 		xdg := a.getenv("XDG_CACHE_HOME")
 		if xdg == "" {
 			xdg = a.getenv("HOME") + "/.cache"
 		}
 		return xdg + "/bootstrap"
 	case "url":
-		return defaultURL
+		return core.DefaultURL
 	}
 	return "-"
 }

@@ -1,4 +1,4 @@
-package cli
+package core
 
 // The package scan of `bootstrap mac detect`. The Mac side runs no detect
 // script. It lists the installed packages of the Mac and maps each one to the
@@ -13,7 +13,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/source"
 )
 
@@ -24,23 +23,23 @@ const (
 	kindTool    = "tool"
 )
 
-// pkg is one installed package: its kind and its key.
-type pkg struct{ kind, key string }
+// Package is one installed package: its kind and its key.
+type Package struct{ Kind, Key string }
 
-// table gives the [mise] table of macos.toml that holds <p>.
-func (p pkg) table() string {
-	if p.kind == kindTool {
+// Table gives the [mise] table of macos.toml that holds <p>.
+func (p Package) Table() string {
+	if p.Kind == kindTool {
 		return "[mise.tools]"
 	}
 	return "[mise.bootstrap.packages]"
 }
 
 // expr gives the yq expression that adds <p> to macos.toml.
-func (p pkg) expr() string {
-	if p.kind == kindTool {
-		return ".mise.tools[" + q(p.key) + "].version = \"latest\""
+func (p Package) expr() string {
+	if p.Kind == kindTool {
+		return ".mise.tools[" + q(p.Key) + "].version = \"latest\""
 	}
-	return ".mise.bootstrap.packages[" + q(p.key) + "] = \"latest\""
+	return ".mise.bootstrap.packages[" + q(p.Key) + "] = \"latest\""
 }
 
 // The prefixes of the keys of [mise.bootstrap.packages] that the scan lists.
@@ -53,11 +52,11 @@ const (
 // match gives the form of <p> that the scan compares. brew prints a formula
 // or a cask of a tap without its tap, so a brew: or brew-cask: key keeps only
 // the part after its last "/".
-func (p pkg) match() pkg {
-	if p.kind == kindPackage {
+func (p Package) match() Package {
+	if p.Kind == kindPackage {
 		for _, pre := range []string{prefixFormula, prefixCask} {
-			if name, ok := strings.CutPrefix(p.key, pre); ok {
-				return pkg{p.kind, pre + name[strings.LastIndex(name, "/")+1:]}
+			if name, ok := strings.CutPrefix(p.Key, pre); ok {
+				return Package{p.Kind, pre + name[strings.LastIndex(name, "/")+1:]}
 			}
 		}
 	}
@@ -69,8 +68,8 @@ const appStoreCommand = "mas"
 
 // packageKeys gives the keys of the [mise.bootstrap.packages] and the
 // [mise.tools] tables of a tools.toml or of the values file.
-func packageKeys(raw *source.Obj) []pkg {
-	var out []pkg
+func packageKeys(raw *source.Obj) []Package {
+	var out []Package
 	m, _ := raw.Get("mise").(*source.Obj)
 	if m == nil {
 		return nil
@@ -78,13 +77,13 @@ func packageKeys(raw *source.Obj) []pkg {
 	if b, ok := m.Get("bootstrap").(*source.Obj); ok {
 		if p, ok := b.Get("packages").(*source.Obj); ok {
 			for _, k := range p.Keys() {
-				out = append(out, pkg{kindPackage, k})
+				out = append(out, Package{kindPackage, k})
 			}
 		}
 	}
 	if t, ok := m.Get("tools").(*source.Obj); ok {
 		for _, k := range t.Keys() {
-			out = append(out, pkg{kindTool, k})
+			out = append(out, Package{kindTool, k})
 		}
 	}
 	return out
@@ -146,73 +145,73 @@ func run(dir, name string, args ...string) ([]byte, error) {
 	return out, nil
 }
 
-// installedPackages lists the installed packages of the Mac. A package
-// manager that is not installed is skipped, with an info line. <deps> are the
-// other installed formulae: a dependency, or a formula of a tap that brew
-// does not trust. They match a Mac tool, but they are never an offer.
-func (a *app) installedPackages() (out, deps []pkg, code fail.Code) {
-	home := a.getenv("HOME")
+// installedPackages lists the installed packages of the Mac, in the folder
+// <home>. A package manager that is not installed is skipped, with a note.
+// <deps> are the other installed formulae: a dependency, or a formula of a
+// tap that brew does not trust. They match a Mac tool, but they are never an
+// offer.
+func installedPackages(home string) (out, deps []Package, notes []string, err error) {
 	add := func(kind string, keys []string) {
 		for _, k := range keys {
-			out = append(out, pkg{kind, k})
+			out = append(out, Package{kind, k})
 		}
 	}
 	if _, err := exec.LookPath("brew"); err != nil {
-		a.infof("brew is not installed, so Homebrew packages are not scanned")
+		notes = append(notes, "brew is not installed, so Homebrew packages are not scanned")
 	} else {
 		f, err := run(home, "brew", "leaves", "--installed-on-request")
 		if err != nil {
-			return nil, nil, a.logErr(err)
+			return nil, nil, notes, err
 		}
 		add(kindPackage, parseLines(string(f), prefixFormula))
 		all, err := run(home, "brew", "list", "--formula")
 		if err != nil {
-			return nil, nil, a.logErr(err)
+			return nil, nil, notes, err
 		}
 		for _, k := range parseLines(string(all), prefixFormula) {
-			deps = append(deps, pkg{kindPackage, k})
+			deps = append(deps, Package{kindPackage, k})
 		}
 		c, err := run(home, "brew", "list", "--cask")
 		if err != nil {
-			return nil, nil, a.logErr(err)
+			return nil, nil, notes, err
 		}
 		add(kindPackage, parseLines(string(c), prefixCask))
 	}
 	if _, err := exec.LookPath(appStoreCommand); err != nil {
-		a.infof("%s is not installed, so App Store apps are not scanned", appStoreCommand)
+		notes = append(notes, appStoreCommand+" is not installed, so App Store apps are not scanned")
 	} else {
 		m, err := run(home, appStoreCommand, "list")
 		if err != nil {
-			return nil, nil, a.logErr(err)
+			return nil, nil, notes, err
 		}
 		add(kindPackage, parseAppStore(string(m)))
 	}
 	j, err := run(home, "mise", "ls", "--global", "--installed", "--json")
 	if err != nil {
-		return nil, nil, a.logErr(err)
+		return nil, nil, notes, err
 	}
 	names, err := parseMiseTools(j)
 	if err != nil {
-		return nil, nil, a.logErr(fmt.Errorf("mise ls --global --installed --json did not print a JSON object: %w", err))
+		return nil, nil, notes, fmt.Errorf("mise ls --global --installed --json did not print a JSON object: %w", err)
 	}
 	add(kindTool, names)
-	return out, deps, fail.OK
+	return out, deps, notes, nil
 }
 
 // macScan is the result of the package scan.
 type macScan struct {
 	tools   []string            // The Mac tools with a package key, sorted.
-	found   map[string]detected // The result of each tool of tools.
-	unknown []pkg               // The installed packages of no tool and of no [mise] table of macos.toml.
-	owner   map[pkg]string      // The tool of each package key.
+	found   map[string]Detected // The result of each tool of tools.
+	unknown []Package           // The installed packages of no tool and of no [mise] table of macos.toml.
+	owner   map[Package]string  // The tool of each package key.
 }
 
 // scanMac maps the installed packages <inst> and <deps> to the Mac tools of
 // <s>. Only <inst> gives the offers of the packages of no tool.
-func scanMac(s *side, inst, deps []pkg) macScan {
-	r := macScan{found: map[string]detected{}, owner: map[pkg]string{}}
-	keys := map[string][]pkg{}
-	for t, m := range s.sel.idx.Manifests {
+func scanMac(s *State, inst, deps []Package) macScan {
+	r := macScan{found: map[string]Detected{}, owner: map[Package]string{}}
+	keys := map[string][]Package{}
+	for t, m := range s.Sel.Idx.Manifests {
 		if ks := packageKeys(m.Raw); len(ks) > 0 {
 			keys[t] = ks
 			r.tools = append(r.tools, t)
@@ -223,29 +222,29 @@ func scanMac(s *side, inst, deps []pkg) macScan {
 		}
 	}
 	sort.Strings(r.tools)
-	own := map[pkg]bool{}
-	for _, k := range packageKeys(s.raw) {
+	own := map[Package]bool{}
+	for _, k := range packageKeys(s.Raw) {
 		own[k.match()] = true
 	}
-	have := map[pkg]bool{}
-	for _, p := range append(append([]pkg(nil), inst...), deps...) {
+	have := map[Package]bool{}
+	for _, p := range append(append([]Package(nil), inst...), deps...) {
 		have[p.match()] = true
 	}
 	for _, t := range r.tools {
 		var ev []string
 		for _, k := range keys[t] {
 			if have[k.match()] {
-				ev = append(ev, k.key)
+				ev = append(ev, k.Key)
 			}
 		}
 		if len(ev) == 0 {
-			r.found[t] = detected{Result: "none", Message: "no package installed"}
+			r.found[t] = Detected{Result: "none", Message: "no package installed"}
 			continue
 		}
 		sort.Strings(ev)
-		r.found[t] = detected{Result: "match", Evidence: ev, Message: "installed"}
+		r.found[t] = Detected{Result: "match", Evidence: ev, Message: "installed"}
 	}
-	seen := map[pkg]bool{}
+	seen := map[Package]bool{}
 	for _, p := range inst {
 		m := p.match()
 		if _, ok := r.owner[m]; ok || own[m] || seen[m] {
@@ -254,17 +253,23 @@ func scanMac(s *side, inst, deps []pkg) macScan {
 		seen[m] = true
 		r.unknown = append(r.unknown, p)
 	}
-	sort.Slice(r.unknown, func(i, j int) bool { return r.unknown[i].key < r.unknown[j].key })
+	sort.Slice(r.unknown, func(i, j int) bool { return r.unknown[i].Key < r.unknown[j].Key })
 	return r
 }
 
 // appStoreTool gives the tool that installs the command of the App Store
 // apps, or "".
 func (r macScan) appStoreTool() string {
-	for _, p := range []pkg{{kindPackage, prefixFormula + appStoreCommand}, {kindTool, appStoreCommand}} {
+	for _, p := range []Package{{kindPackage, prefixFormula + appStoreCommand}, {kindTool, appStoreCommand}} {
 		if t, ok := r.owner[p]; ok {
 			return t
 		}
 	}
 	return ""
+}
+
+// IsApp tells if <p> is an App Store app: a mas: key of
+// [mise.bootstrap.packages].
+func (p Package) IsApp() bool {
+	return p.Kind == kindPackage && strings.HasPrefix(p.Key, prefixApp)
 }

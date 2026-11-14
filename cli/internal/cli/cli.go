@@ -1,24 +1,24 @@
 // Package cli is the command line of `bootstrap`: the commands init, sync,
 // check, questions, add, remove, replace, detect and list of the repo side and of the Mac side (`bootstrap mac
-// <command>`), and version. It does the steps that each command shares: the
-// preflight, the clone and its lock, the version check, the change list, the
-// clean-target rule and the consent. The front-ends internal/repo and
-// internal/macos do the sync itself.
+// <command>`), and version. It is the shell of the command line: it parses
+// the arguments, takes the clone and its lock, checks the version, calls
+// internal/core (the preflight, Plan, Apply, Detect and the clean-target
+// rule), prints the results and the errors, and asks the questions and the
+// consent. The front-ends internal/repo and internal/macos do the sync itself.
 //
 // Contract: docs/design/cli.md.
 package cli
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 
+	"github.com/virajp/bootstrap/cli/internal/core"
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/field"
 	"github.com/virajp/bootstrap/cli/internal/macos"
@@ -118,12 +118,7 @@ func usageLine(mac bool, cmd, flags string) string {
 	return b
 }
 
-func cmdWord(mac bool, cmd string) string {
-	if mac {
-		return "mac " + cmd
-	}
-	return cmd
-}
+func cmdWord(mac bool, cmd string) string { return core.CmdWord(mac, cmd) }
 
 // app is the state of one command.
 type app struct {
@@ -366,91 +361,60 @@ func (a *app) usageErr(problem, usage string) {
 	p.Fix("Run bootstrap --help for all commands")
 }
 
-// logErr prints each message of <err> and gives its code.
+// logErr prints each message of <err> and gives its code. A problem of core
+// prints its message and its fix; a problem with no message prints nothing,
+// because the output of the sync shows it.
 func (a *app) logErr(err error) fail.Code {
 	if err == nil {
 		return fail.OK
 	}
+	a.printErr(err)
+	return fail.CodeOf(err)
+}
+
+func (a *app) printErr(err error) {
+	if j, ok := err.(interface{ Unwrap() []error }); ok {
+		for _, e := range j.Unwrap() {
+			a.printErr(e)
+		}
+		return
+	}
+	var p *core.Problem
+	if errors.As(err, &p) {
+		if p.Msg != "" {
+			a.fail(p.Msg, p.Fix)
+		}
+		return
+	}
 	for _, m := range source.Messages(err) {
 		a.printer().Error(m.Error())
 	}
-	return fail.CodeOf(err)
 }
 
 // show gives <p> relative to the current folder when it is below it.
 func (a *app) show(p string) string { return target.Show(p, a.pwd) }
 
-// where is the folder and the values file of a command.
-type where struct {
-	root   string // The repository; on the Mac, the repository of macos.toml.
-	values string
-}
-
 // prepare does the preflight of a command of the side, and finds its
 // folder and its values file.
-func (a *app) prepare(mac, initCmd bool) (where, fail.Code) {
-	var w where
-	if _, err := exec.LookPath("mise"); err != nil {
-		a.fail("mise is not available", "install it from https://mise.run")
-		return w, fail.Usage
+func (a *app) prepare(mac, initCmd bool) (core.Side, fail.Code) {
+	sd, err := core.Prepare(mac, initCmd, a.pwd, a.getenv)
+	if err != nil {
+		return sd, a.logErr(err)
 	}
-	if mac {
-		dir := a.getenv("MACOS_SETUP_REPO_PATH")
-		if initCmd {
-			dir = a.pwd
-		} else if dir == "" {
-			a.fail("MACOS_SETUP_REPO_PATH is not set", "set it to the repository of macos.toml, or run bootstrap mac init in that repository")
-			return w, fail.Usage
-		}
-		if _, ok := toplevel(dir); !ok {
-			if initCmd {
-				a.fail(dir+" is not a git repository", "create one with git init, then run bootstrap mac init again")
-			} else {
-				a.errorf("MACOS_SETUP_REPO_PATH %s is not a git repository", dir)
-			}
-			return w, fail.Usage
-		}
-		_ = os.Setenv("MACOS_SETUP_REPO_PATH", dir)
-		w.root, w.values = dir, strings.TrimSuffix(dir, "/")+"/macos.toml"
-		return w, fail.OK
-	}
-	root := a.getenv("MISE_PROJECT_ROOT")
-	dir := root
-	if dir == "" {
-		dir = a.pwd
-	}
-	top, ok := toplevel(dir)
-	if !ok {
-		if initCmd {
-			a.fail(dir+" is not a git repository", "create one with git init, then run bootstrap init again")
-		} else {
-			a.errorf("%s is not a git repository", dir)
-		}
-		return w, fail.Usage
-	}
-	if root == "" {
-		root = top
-		_ = os.Setenv("MISE_PROJECT_ROOT", root)
-	}
-	w.root = root
-	w.values = a.getenv("BOOTSTRAP_VALUES")
-	if w.values == "" {
-		w.values = root + "/.config/bootstrap.toml"
-	}
-	return w, fail.OK
+	return sd, fail.OK
 }
 
 // cloneText gives the clone line of a command: the short commit of the
 // clone and its folder, with the home folder as `~`. The commands sync and
 // mac check print their own line.
-func (a *app) cloneText(c *clone) string {
-	commit, ok := git("-C", c.dir, "rev-parse", "--short", "HEAD")
+func (a *app) cloneText(c *core.Clone) string {
+	commit, ok := core.Git("-C", c.Dir, "rev-parse", "--short", "HEAD")
 	if !ok || commit == "" {
 		commit = "an unknown commit"
 	}
-	where := c.repo
+	where := c.Repo
 	if where == "" {
-		where = c.dir
+		where = c.Dir
 	}
 	if home := a.getenv("HOME"); home != "" && (where == home || strings.HasPrefix(where, home+"/")) {
 		where = "~" + strings.TrimPrefix(where, home)
@@ -458,78 +422,26 @@ func (a *app) cloneText(c *clone) string {
 	return "bootstrap " + commit + " · " + where
 }
 
-// openClone takes the clone of the command and checks its version. The
-// caller defers cleanup. With <hold>, the lock stays held to the end.
-func (a *app) openClone(hold, line bool) (*clone, fail.Code) {
-	c, code := a.acquireClone()
-	if code != fail.OK {
-		return c, code
+// openClone takes the clone of the command with core.OpenClone, and prints
+// its notes and its errors. The caller defers Cleanup. With <hold>, the lock
+// stays held to the end. With <line>, it prints the clone line.
+func (a *app) openClone(hold, line bool) (*core.Clone, fail.Code) {
+	c, err := core.OpenClone(core.CloneOptions{
+		Getenv:  a.getenv,
+		Version: a.version,
+		Hold:    hold,
+		Note:    func(s string) { a.infof("%s", s) },
+		Stderr:  a.stderr,
+	})
+	if err != nil {
+		return c, a.logErr(err)
 	}
-	if !hold {
-		c.unlock()
-	}
-	// A signal removes the lock and the copy.
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		got := <-sig
-		c.cleanup()
-		if got == syscall.SIGINT {
-			os.Exit(130)
-		}
-		os.Exit(143)
-	}()
-	if code := a.checkVersion(c.dir); code != fail.OK {
-		return c, code
-	}
-	_ = os.Setenv("BOOTSTRAP_CLONE", c.dir)
 	if line {
 		a.printer().Clone(a.cloneText(c))
 		// The sync of the command does not print a second clone line.
 		report.CloneShown = true
 	}
 	return c, fail.OK
-}
-
-// frontEnd is the sync of a side, with its change list.
-type frontEnd func(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Code)
-
-// planPaths gives the path of each file of a change list.
-func planPaths(list []target.Planned) []string {
-	paths := make([]string, len(list))
-	for i, p := range list {
-		paths[i] = p.Path
-	}
-	return paths
-}
-
-func frontEndOf(mac bool) frontEnd {
-	if mac {
-		return macos.RunWith
-	}
-	return repo.RunWith
-}
-
-// syncArgs are the arguments of the front-end.
-func syncArgs(mac bool, o opts) []string {
-	var args []string
-	if o.dryRun {
-		args = append(args, "--dry-run")
-	}
-	if mac && o.noBootstrap {
-		args = append(args, "--no-bootstrap")
-	}
-	return args
-}
-
-// valuesSkip gives the values file and its real path: sync writes only
-// bootstrap_commit there, so the clean-target rule skips it.
-func valuesSkip(values string) map[string]bool {
-	skip := map[string]bool{values: true}
-	if r, err := realPath(values); err == nil {
-		skip[r] = true
-	}
-	return skip
 }
 
 // sync is `bootstrap [mac] sync`.
@@ -539,24 +451,24 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 		return code
 	}
 	c, code := a.openClone(mac && !o.dryRun, false)
-	defer c.cleanup()
+	defer c.Cleanup()
 	if code != fail.OK {
 		return code
 	}
-	run := frontEndOf(mac)
-	args := syncArgs(mac, o)
-	skip := valuesSkip(w.values)
+	run := core.FrontEndOf(mac)
+	args := core.SyncArgs(mac, o.dryRun, o.noBootstrap)
+	skip := core.ValuesSkip(w.Values)
 	if o.dryRun {
 		planned, code := run(args, a.stdout, a.stderr)
-		a.warnDirty(dirtyTargets(planPaths(planned), skip))
+		a.warnDirty(core.DirtyTargets(core.PlanPaths(planned), skip))
 		return code
 	}
 	// The plan, then the write. A repository without a change that is not
 	// committed needs no plan.
-	if mac || a.dirtyBesides(w.root, skip) {
+	if mac || core.DirtyBesides(w.Root, skip) {
 		planned, code := run(append(args, "--dry-run"), io.Discard, io.Discard)
 		if code == fail.OK {
-			if code := a.stopDirty(dirtyTargets(planPaths(planned), skip)); code != fail.OK {
+			if code := a.stopDirty(core.DirtyTargets(core.PlanPaths(planned), skip)); code != fail.OK {
 				return code
 			}
 		}
@@ -565,40 +477,21 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 	return code
 }
 
-// dirtyBesides tells if the work tree of <root> has a change that is not
-// committed in a path that is not in <skip>.
-func (a *app) dirtyBesides(root string, skip map[string]bool) bool {
-	top, ok := toplevel(root)
-	if !ok {
-		return false
-	}
-	if r, err := realPath(top); err == nil {
-		top = r
-	}
-	for p := range statusSet(top) {
-		if !skip[top+"/"+p] {
-			return true
-		}
-	}
-	return false
-}
-
 // check is `bootstrap [mac] check`.
 func (a *app) check(mac bool, o opts) fail.Code {
 	w, code := a.prepare(mac, false)
 	if code != fail.OK {
 		return code
 	}
-	_ = w
 	c, code := a.openClone(false, !mac)
-	defer c.cleanup()
+	defer c.Cleanup()
 	if code != fail.OK {
 		return code
 	}
-	a.warnNotSelectable(mac, c.dir, w.values)
+	a.warnNotSelectable(mac, c.Dir, w.Values)
 	if mac {
 		o.dryRun = true
-		return macos.Run(syncArgs(true, o), a.stdout, a.stderr)
+		return macos.Run(core.SyncArgs(true, o.dryRun, o.noBootstrap), a.stdout, a.stderr)
 	}
 	return repo.Run([]string{"--check"}, a.stdout, a.stderr)
 }

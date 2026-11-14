@@ -359,6 +359,33 @@
       "units": [
         "U2"
       ]
+    },
+    {
+      "id": "D26",
+      "decision": "Q3: When the sync of Apply fails and Apply puts the values file back, should the command print a line about it?",
+      "ruling": "Print an info line \"Put back <values file> as it was before the command\" after the sync error (recommended) — the user sees why the file did not change, and the U5 cases show the line.",
+      "rejected": "Print nothing — output stays as built; the \"Wrote\" line is then misleading",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D27",
+      "decision": "Q4: Should the clone acquisition (lock, fetch, temp copy, version check) move into cli/internal/core now, so the TUI of plan 2c can take a clone without importing cli/internal/cli?",
+      "ruling": "Move it into core in this unit, with its \"Waiting for another sync\" and \"Cloning into\" lines returned as notes or a callback (recommended) — plan 2c moves no code, as D23 wants, and clone.go and its allow-list entry (\"github\") move too.",
+      "rejected": "Keep it in cli as built — core needs only the clone folder; plan 2c must then move or duplicate it",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D28",
+      "decision": "Q5: Plan and Apply run the sync front-end, which prints. May they write its output to the Stdout/Stderr writers the caller passes in Options, given D23 says no function of core prints?",
+      "ruling": "Yes, keep the caller's writers (recommended) — the sync output streams live, and the TUI can pass its own buffers.",
+      "rejected": "No, buffer the front-end output and return it as a value — a long sync shows nothing until it ends",
+      "units": [
+        "U3"
+      ]
     }
   ],
   "units": [
@@ -420,11 +447,11 @@
         "U1"
       ],
       "waits": "U1 changes the selection (no implicit base, the new packs form) that Plan reads, and both units change cli/.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T03:55:19.159Z",
+      "ended": "2026-11-14T04:28:39.782Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U4",
@@ -552,8 +579,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T03:55:19.121Z",
       "ended": ""
     },
     {
