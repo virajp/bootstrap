@@ -6,6 +6,7 @@ dprint	.config/mise/tasks/setup/dprint
 dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/*-lock.yaml"}
 dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/*.svg"}
 dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/package-lock.json"}
+dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:@dprint/exec@"}
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:@dprint/json@"}
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:@dprint/markdown@"}
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:@dprint/ruff@"}
@@ -15,6 +16,7 @@ dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:@dprint/type
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:dprint-plugin-markup@"}
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:dprint-plugin-tailwindcss@"}
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:dprint-plugin-yaml@"}
+dprint	dprint.jsonc	{"kind":"key","path":["exec","commands"]}
 dprint	dprint.jsonc	{"kind":"key","path":["json","jsonTrailingCommaFiles"]}
 dprint	dprint.jsonc	{"kind":"key","path":["json","preferSingleLine"]}
 dprint	dprint.jsonc	{"kind":"key","path":["json","trailingCommas"]}
@@ -91,8 +93,9 @@ git	.gitignore	{"kind":"item","path":[],"value":".impeccable/"}
 gitleaks	.config/mise/conf.d/gitleaks/mise.dev.toml
 gitleaks	.config/mise/tasks/code/sec/10-gitleaks
 go	.config/mise/conf.d/go/mise.dev.toml
-go	.config/mise/tasks/code/format/20-gofmt
 go	.config/mise/tasks/code/lint/40-go
+go	.config/mise/tasks/code/lint/45-gomod
+go	.config/mise/tasks/setup/deps/25-go
 grype	.config/mise/conf.d/grype/mise.dev.toml
 grype	.config/mise/tasks/code/sec/20-grype
 linter	.config/mise/conf.d/linter/mise.dev.toml
