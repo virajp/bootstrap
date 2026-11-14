@@ -1,0 +1,571 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "R2c — contributed merge items, the virajp-plugins tool and a declarative setup:ai",
+  "requires": [
+    "docs/plans/2026-11-14-lsp"
+  ],
+  "source": [
+    "B28"
+  ],
+  "backlog": [
+    "B28"
+  ],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "execution": "teams",
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-14 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint",
+      "mise x -- mise run test:go"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Build the worktree engine (go build -o <tmp>/bootstrap ./cmd/bootstrap in cli/) and export BOOTSTRAP_BIN=<tmp>/bootstrap and BOOTSTRAP_CLONE=<worktree> (D27). In a new scratch git repo, run env -u MISE_PROJECT_ROOT BOOTSTRAP_CONFIG=/nonexistent <tmp>/bootstrap init --no-tui --yes --clone <worktree>; then <tmp>/bootstrap add tool virajp-plugins --yes --clone <worktree>; then <tmp>/bootstrap config get tools.claude.plugins.user --format json --clone <worktree>.",
+        "pass": "Before the add, .gitignore has no docs/memory/handoff/ line; after it, .gitignore has the vwf lines once, and the claude tool's plugins.user value has vwf@virajp-plugins = virajp/claude-plugins."
+      },
+      {
+        "id": "K2",
+        "check": "In the K1 repo, with BOOTSTRAP_BIN and BOOTSTRAP_CLONE still exported, a hermetic CLAUDE_CONFIG_DIR=<tmp>/claude-config and the real claude CLI: set tools.claude.plugins.project to one plugin of the virajp-plugins marketplace (for example stackgen@virajp-plugins = virajp/claude-plugins); run mise run setup:ai; run it again; then remove that plugin from plugins.project and run mise run setup:ai.",
+        "pass": "The first run installs vwf@virajp-plugins at user scope and the project plugin at project scope, and plugins.installed lists the project plugin. The second run makes no change (claude plugin list --json is the same). The third run uninstalls the project plugin at project scope and empties plugins.installed; vwf stays installed at user scope."
+      }
+    ]
+  },
+  "after_landing": [],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MAJOR",
+      "reason": "Breaking: setup:ai no longer installs vwf through pnpx, and the git tool no longer writes vwf's .gitignore lines; a vwf repo now adds the virajp-plugins tool. setup:ai no longer updates plugins on a plain run. New: contributed merge items, the virajp-plugins tool, removal of recorded project plugins. All of it goes into the one bootstrap@4.0.0 tag (R1b D16)."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The engine: contributed merge items",
+      "wave": 1,
+      "file": "01-contributed-items.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "The virajp-plugins tool and the move of the vwf lines",
+      "wave": 1,
+      "file": "02-virajp-plugins-tool.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/virajp-plugins/",
+        "repo/tools/git/files/gitignore.merge.toml"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "A declarative setup:ai",
+      "wave": 1,
+      "file": "03-setup-ai.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/claude/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Tests",
+      "wave": 2,
+      "file": "04-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "The cases run the engine of U1, the tool of U2 and the task of U3.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Review: the engine, the tool, setup:ai and the tests",
+      "wave": 3,
+      "file": "05-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U6",
+      "title": "Docs",
+      "wave": 4,
+      "file": "06-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/",
+        "docs/sync/",
+        "docs/memory/decisions/2026-11-14-bootstrap-plugins-split.md"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U7",
+      "title": "Gates",
+      "wave": 5,
+      "file": "07-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U6"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "every human-facing doc (README.md, CLAUDE.md, docs/**)",
+      "why": "U1 to U3 falsify the tool, merge and setup:ai docs",
+      "owner": "U6"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "How does virajp-plugins carry vwf's .gitignore lines, which sit in the git tool's merge file?",
+      "ruling": "Engine: contributed items (Recommended): a tool may contribute item lines to another tool's merge-mode file through [[contributes_items.<owner>.\"<target>\".item]] (D11); the owner stays the one owner. The vwf lines (docs/memory/handoff/, docs/memory/doctor/, docs/memory/runs/, docs/scratchpad/, and !docs/plans/**/*.log) move from the git tool's gitignore.merge.toml into virajp-plugins.",
+      "rejected": "A second merge owner of .gitignore; keep the lines in git.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "What replaces the hardcoded vwf block (pnpx @virajp.dev/claude-plugins) in setup:ai?",
+      "ruling": "Declared by virajp-plugins (Recommended): remove the block; virajp-plugins contributes plugins.user.\"vwf@virajp-plugins\" = \"virajp/claude-plugins\" to the claude tool's values, and setup:ai installs it like any declared plugin. setup:ai and the engine name no vwf plugin.",
+      "rejected": "Keep the pnpx path in a virajp-plugins task.",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "How does setup:ai know that a plugin left the list?",
+      "ruling": "Record what it installed (Recommended): setup:ai keeps a record of the project-scope plugins it installed; a recorded plugin no longer in plugins.project is uninstalled at project scope and dropped from the record. A plugin installed by hand, and user scope, are never touched.",
+      "rejected": "Remove every unlisted project plugin.",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "Does setup:ai update plugins on every run?",
+      "ruling": "Update only on a flag (Recommended): a plain run installs what is missing and does D3, and nothing else; a second run changes nothing. mise run setup:ai --update also runs claude plugin marketplace update and claude plugin update for the listed plugins.",
+      "rejected": "Always update, as today.",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "Where is the D3 record?",
+      "ruling": "Stated by the planner, confirmed at the shape gate: the claude tool's key plugins.installed, a list of <plugin>@<marketplace>, default empty in repo/tools/claude/tools.toml (the R1a D86 pattern), read and written through bootstrap config get|set tools.claude.plugins.installed.",
+      "rejected": "A file outside .config/bootstrap/.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "The virajp-plugins tool.",
+      "ruling": "Stated by the planner, confirmed at the shape gate: a selectable tool, not in the base pack, depending on claude and git, that contributes the vwf .gitignore lines (D1) and the vwf plugin entry (D2). No engine file and no other tool names vwf. A vwf repo adds it with bootstrap add tool virajp-plugins; claude-plugins R3 makes /vwf:init do that.",
+      "rejected": "A base-pack tool.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "The rules of contributed merge items.",
+      "ruling": "Stated by the planner, confirmed at the shape gate: items are added after the owner's own items, in the order of the contributing tools' names, with no duplicates; the owner's override table applies to them. check refuses (code 2) an item for a target the owner does not declare as merge-mode, and a [contributes.<owner>] whose owner tool does not exist in the catalog. A contribution to an owner that is not selected adds nothing.",
+      "rejected": "None with a reasonable case.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "Backlog item B28 and the Mac side.",
+      "ruling": "Stated by the planner, confirmed at the shape gate: R2c finishes B28 (R2b landed its LSP piece). The Mac side is out of scope: plugin installs are per repo.",
+      "rejected": "None with a reasonable case.",
+      "units": []
+    },
+    {
+      "id": "D9",
+      "decision": "What does R2c require?",
+      "ruling": "Stated by the planner, confirmed at the shape gate: R2b (docs/plans/2026-11-14-lsp). Priority 100 (10 + 90).",
+      "rejected": "None with a reasonable case.",
+      "units": []
+    },
+    {
+      "id": "D10",
+      "decision": "The review unit and the execution mode.",
+      "ruling": "One review unit, after the tests: the plan lands engine Go code and a task that installs and uninstalls plugins. teams: wave 1 holds three edit units.",
+      "rejected": "No review; solo.",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "Round 1 gap 1: the values merge already folds all of [contributes.git] into git's values, so a files subtree there lands in the override table.",
+      "ruling": "Contributed items use a separate top-level key that the values merge does not read: [[contributes_items.<owner>.\"<target>\".item]], in the item format of the owner's merge file. D1 and D7 use this key.",
+      "rejected": "Skip the files subtree in the values merge.",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "Round 1 gap 2: docs/sync/tools/claude.md does not exist.",
+      "ruling": "U6 edits docs/sync/tools/claude-tool.md (the pnpx text at about lines 42-44). The new doc is docs/sync/tools/virajp-plugins.md.",
+      "rejected": "Rename the file.",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Round 1 gap 3: the record when an install or an uninstall fails.",
+      "ruling": "A plugin is recorded only after its install succeeds. If an uninstall fails, the plugin stays in the record, so the next run tries again. The failed step gives exit 1, as today.",
+      "rejected": "Record before the install.",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Round 1 gap 4: no ruling says bootstrap config set takes a list value.",
+      "ruling": "U3 uses the list syntax of R1a's config set, read from its usage; if R1a's config set cannot write a list, U3 stops with a question.",
+      "rejected": "Write the file directly.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Round 1 gap 5: does config get return values that another tool contributes?",
+      "ruling": "U1 makes config get of a tools.* key return the merged value (the file, the defaults and the contributions); a value that comes only from a contribution has source \"contributed\", additive to R1a's file and default. U4 tests it.",
+      "rejected": "setup:ai reads the contributions itself.",
+      "units": [
+        "U1",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "Round 1 gap 6: the comment above the negation sits above *.log, which stays; the item format has no comment field.",
+      "ruling": "Remove the vwf sentence of that comment from the git file; in virajp-plugins/tools.toml, a TOML comment above the item says why the plan logs stay tracked.",
+      "rejected": "Move the whole comment.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Round 2 gap 1: an override that names a contributed line — known or unused?",
+      "ruling": "An override key that names a line that any catalog tool contributes to that owner and target counts as known, not unused, also when the contributing tool is not selected. U1 owns this rule.",
+      "rejected": "Count it as unused when the contributor is not selected.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "Round 2 gap 2: a recorded project plugin that is no longer installed.",
+      "ruling": "setup:ai drops a recorded plugin that is not installed at project scope from the record, with no uninstall call.",
+      "rejected": "Call uninstall and let it fail.",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Round 2 gap 3: a listed project plugin that is already installed but not recorded.",
+      "ruling": "setup:ai records each listed project plugin that is already installed at project scope, on first sight, so that D3 can remove it later.",
+      "rejected": "Record only the plugins that setup:ai installs.",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D20",
+      "decision": "Round 2 gap 4: the source of a merged value that has file or default entries and contributed entries.",
+      "ruling": "source is \"file\", \"contributed\" or \"default\" for the value as a whole, as R1a and D15 say; when a contribution adds entries, the result also has contributed_by, the list of the contributing tool names.",
+      "rejected": "A source per entry.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D21",
+      "decision": "Round 2 gap 5: D6 says no engine file and no other tool names vwf, but other files name it.",
+      "ruling": "Narrow D6 to the files that R2c touches: setup:ai, the git .gitignore merge file and the claude tool. Park repo/tools/mise/tasks/placeholder:64, macos/tools/claude-cli/files/.claude/settings.json.merge.toml:41 and cli/internal/oldform/oldform_test.go:63. R1a U4 already removes the vwf reads of code-worktrees.",
+      "rejected": "Remove every vwf mention in this plan.",
+      "units": [
+        "U2",
+        "U3",
+        "U5"
+      ]
+    },
+    {
+      "id": "D22",
+      "decision": "Round 2 gap 6: R1a does not say how config set writes a list.",
+      "ruling": "U1 makes config set <key> <value> --format json parse the value as JSON, a list included. If R1a already does this, U1 changes nothing for it. U3 writes plugins.installed with that form. This replaces the stop-and-ask of D14.",
+      "rejected": "Stop and ask at run time.",
+      "units": [
+        "U1",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D23",
+      "decision": "Round 3 gap 1: R1a D23 says get never needs the clone, but contributed entries and the D86 defaults come from the catalog.",
+      "ruling": "config get reads the cached clone when one exists and never fetches. With no cache, it returns the file value alone, with no contributed_by.",
+      "rejected": "get fetches; get exits when no cache exists.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D24",
+      "decision": "Round 3 gap 2: R1a has no --format on set, and set already types a list given as JSON.",
+      "ruling": "Replace D22: U1 adds nothing to set. U3 writes the record with config set tools.claude.plugins.installed '<JSON list>', with no flag.",
+      "rejected": "Add --format to set.",
+      "units": [
+        "U1",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D25",
+      "decision": "Round 3 gap 3: set of a tools.* key prints a sync line, and exits 5 offline with a cache older than 7 days.",
+      "ruling": "setup:ai ignores the stdout of set. A failed record write is a failed step and gives exit 1. On the next run, D18 and D19 correct the record.",
+      "rejected": "Stop the run on a failed record write.",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D26",
+      "decision": "Round 3 gap 4: the order of the D18 drop and the install pass.",
+      "ruling": "setup:ai reads the installed list once, at the start, then does: 1. the D18 drop, 2. the install pass with D19 and recording, 3. the D3 uninstall.",
+      "rejected": "Read the installed list again before each pass.",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D27",
+      "decision": "Round 4 gap 1: the tests read the published cached clone, which has no virajp-plugins.",
+      "ruling": "config get also accepts --clone and BOOTSTRAP_CLONE as its catalog, with no fetch and no TTL. The U4 cases and K1 export BOOTSTRAP_CLONE=<worktree>.",
+      "rejected": "Test against the published cached clone.",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D28",
+      "decision": "Round 4 gap 2: with no catalog, contributed entries look unlisted, and D3 can uninstall a listed plugin.",
+      "ruling": "The get envelope has \"catalog\": false when get reads no catalog. On catalog false, setup:ai installs only: it skips the D18 drop and the D3 uninstall, and gives a warning. setup:ai reads an absent plugins.installed as an empty list.",
+      "rejected": "setup:ai stops; accept the uninstall.",
+      "units": [
+        "U1",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D29",
+      "decision": "Round 4 gap 3: with no autoremove, a D3 uninstall leaves auto-installed dependencies.",
+      "ruling": "The D3 uninstall runs claude plugin uninstall --scope project --prune -y.",
+      "rejected": "Leave the dependencies.",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D30",
+      "decision": "Round 4 gap 4: this repo's own .config/mise/tasks/setup/ai and root .gitignore keep the pnpx block and the vwf lines.",
+      "ruling": "Out of scope: this repo's own .config files are the user's hand edits. After the plan lands, re-sync this repo and add virajp-plugins.",
+      "rejected": "A unit re-syncs this repo.",
+      "units": []
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
