@@ -55,6 +55,9 @@ type Item struct {
 	Exclude  []string // AddPack: the member keys that the pack does not add.
 	Old, New string   // Replace.
 	Package  Package  // AddPackage.
+	// Pack is the pack whose deselect a RemoveTool item is, or empty. Plan
+	// does not read it; the TUI shows the item as one change of the pack.
+	Pack string
 }
 
 // Answer is the answer of a question <tool>.<key>; "" is an empty answer.
@@ -428,6 +431,24 @@ func (p *PlanResult) initValues() error {
 	return nil
 }
 
+// InitChange gives the change that init makes before each other change of
+// the list: the new values file with the members of the pack base, or the
+// migration of an old form. A values file of the new form gives "". It writes
+// nothing. The TUI shows the change on its change list.
+func InitChange(sd Side) (string, error) {
+	if !Exists(sd.Values) {
+		return "create the values file with " + selection.BasePack, nil
+	}
+	p := &PlanResult{Side: sd}
+	if err := p.initValues(); err != nil {
+		return "", err
+	}
+	if len(p.Changes) > 0 || !bytes.Equal(p.Next, p.Cur) {
+		return fmt.Sprintf("migrate the values file to %s %d", oldform.FormatKey, oldform.Format), nil
+	}
+	return "", nil
+}
+
 // planner applies the items of a change list to the state of the values
 // file. added and removed hold the changes of the items before, so an item
 // sees them.
@@ -437,6 +458,9 @@ type planner struct {
 	o              Options
 	exprs          []string
 	added, removed map[string]bool
+	// direct holds the tools that an item names and that it selects, when
+	// it is not nil (Effect).
+	direct map[string]bool
 }
 
 func (pl *planner) selected(t string) bool {
@@ -493,6 +517,9 @@ func (pl *planner) add(names []string, reason bool) {
 	named := map[string]bool{}
 	for _, n := range names {
 		named[n] = true
+		if pl.direct != nil {
+			pl.direct[n] = true
+		}
 		if reason && pl.selected(n) {
 			pl.p.Reasons = append(pl.p.Reasons, n+" is already selected")
 		}
@@ -772,6 +799,7 @@ func (pl *planner) remove(names, extra []string) error {
 	for _, t := range gone {
 		pl.removed[t] = true
 		delete(pl.added, t)
+		delete(pl.direct, t)
 	}
 	// The seeds of the removed tools stay; the command lists them.
 	root := st.Home()

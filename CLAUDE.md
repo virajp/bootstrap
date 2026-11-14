@@ -31,9 +31,9 @@ files are for this repository only:
 - `cli/`: the engine of the sync. It is not a tool, so the sync never
   copies it to a consumer. It is the Go module
   `github.com/virajp/bootstrap/cli` (`go.mod`, `cmd/bootstrap/` and
-  `internal/`), the CLI `bootstrap` with the commands `init`, `check`, `sync`,
-  `questions`, `detect`, `add`, `remove`, `replace`, `list`, `config` and the
-  group `mac`.
+  `internal/`), the CLI `bootstrap` with the commands `init`, `tui`, `check`,
+  `sync`, `questions`, `detect`, `add`, `remove`, `replace`, `list`, `config`
+  and the group `mac`.
   No Go
   file of the engine names a tool: `TestEngineNamesNoTool` examines this rule.
 - `docs/design/`: the contract of the sync, one place for each rule (see "Where

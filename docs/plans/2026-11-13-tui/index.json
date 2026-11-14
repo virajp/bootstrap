@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-13 by the user"
+    "state": "BLOCKED",
+    "detail": "BLOCKED at landing — every unit green and every gate green; code:merge refused by its hook safety net (lint hook, code:lint:60-bootstrap, G3); the re-run with SKIP=lint that D24 rules was denied by the session's permission system; branch all-2026-11-13-1753 is ready to land by hand in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.worktrees/all-2026-11-13-1753"
   },
   "consent": {
     "merge": true,
@@ -79,11 +79,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-14T09:25:01.817Z",
+      "ended": "2026-11-14T09:52:33.586Z",
+      "commit": "c4f9c52",
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -99,11 +99,11 @@
         "U1"
       ],
       "waits": "U2 adds the Tools tab to the model and the layout that U1 creates in cli/internal/tui.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-14T09:58:07.612Z",
+      "ended": "2026-11-14T10:24:49.969Z",
+      "commit": "50167b6",
+      "rounds": 2
     },
     {
       "id": "U3",
@@ -119,11 +119,11 @@
         "U2"
       ],
       "waits": "U3 uses the cascade modal and the change list of U2; one unit writes cli/ at a time.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-14T10:29:13.616Z",
+      "ended": "2026-11-14T10:51:59.109Z",
+      "commit": "66db4b5",
+      "rounds": 3
     },
     {
       "id": "U4",
@@ -139,11 +139,11 @@
         "U3"
       ],
       "waits": "U4 adds the Detected tab to the model of U2 and U3 in cli/internal/tui; one unit writes cli/ at a time.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-14T10:59:17.203Z",
+      "ended": "2026-11-14T11:17:11.984Z",
+      "commit": "b58fcbf",
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -159,11 +159,11 @@
         "U4"
       ],
       "waits": "U5 opens the form from the select of U2 and reviews the changes of the Tools, Packs and Detected tabs of U2, U3 and U4; one unit writes cli/ at a time.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-14T11:26:09.180Z",
+      "ended": "2026-11-14T11:45:32.138Z",
+      "commit": "8ac378b",
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -179,11 +179,11 @@
         "U5"
       ],
       "waits": "U6 adds the Kind line to the bottom pane of U2 and the uninstall notes to the review of U5.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-14T12:31:33.751Z",
+      "ended": "2026-11-14T12:34:33.331Z",
+      "commit": "23062e0",
+      "rounds": 1
     },
     {
       "id": "U7",
@@ -202,14 +202,14 @@
         "U6"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T12:39:10.019Z",
+      "ended": "2026-11-14T12:40:35.143Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "8b28be9",
+        "to": "43f3a25"
       }
     },
     {
@@ -236,11 +236,11 @@
         "U7"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-14T12:42:42.605Z",
+      "ended": "2026-11-14T12:46:44.489Z",
+      "commit": "06a2197",
+      "rounds": 2
     },
     {
       "id": "U9",
@@ -254,67 +254,67 @@
         "U8"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T12:56:06.926Z",
+      "ended": "2026-11-14T13:29:10.377Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T09:25:01.781Z",
+      "ended": "2026-11-14T09:57:05.724Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T09:58:07.568Z",
+      "ended": "2026-11-14T10:28:18.525Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T10:29:13.577Z",
+      "ended": "2026-11-14T10:58:19.861Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T10:59:17.163Z",
+      "ended": "2026-11-14T11:25:14.306Z"
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T11:26:09.136Z",
+      "ended": "2026-11-14T12:30:36.055Z"
     },
     {
       "id": "W6",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T12:31:33.713Z",
+      "ended": "2026-11-14T12:38:05.951Z"
     },
     {
       "id": "W7",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T12:39:09.979Z",
+      "ended": "2026-11-14T12:41:34.050Z"
     },
     {
       "id": "W8",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T12:42:42.565Z",
+      "ended": "2026-11-14T12:55:15.607Z"
     },
     {
       "id": "W9",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T12:56:06.891Z",
+      "ended": "2026-11-14T13:30:26.813Z"
     }
   ],
   "shared_files": [
@@ -339,32 +339,59 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers (no blueprint slice to verify against)",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-14T12:42:34.648Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers (no blueprint slice to verify against)",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-14T12:42:34.411Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: the plan has no covers (no blueprint slice to verify against)",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-14T12:42:34.530Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers (no stamps) and no code unit (nothing to persist); no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-14T12:42:34.802Z"
     }
   },
-  "gaps": [],
-  "overrides": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U2",
+      "stage": "",
+      "text": "R2 completeness finding: U2 added core.InitState and the init load path, which 02-tools.md does not name · kept in U2: the Tools tab needs the post-init selection under init (D11 b, D14 c), the change is inside cli/ and the Goal, writes only to a temp folder",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U3",
+      "stage": "",
+      "text": "R3 rulings finding and question: pack deselect removes a member a non-required outside tool needs, against the exception clause of ruling 48 · settled by D17 (the user answered Q3 as built); not re-asked",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "",
+      "stage": "",
+      "text": "code:lint:60-bootstrap fails from wave 4 on: the released engine bootstrap 2.1.0 rejects main's repo/packs.toml (plan 2026-11-13-selection-model) in ~/.cache/bootstrap/repo (\"[pack.base] dprint: required = true is only for a member of pack base with default = true\"); inherited from main, not this branch · per D22 the wave and plan gates count green when every other code:lint step passes; open until a 3.x engine release",
+      "state": "open"
+    }
+  ],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-13-1753"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/all-2026-11-13-1753",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-13-tui.jsonl"
@@ -538,6 +565,92 @@
         "U7",
         "U8"
       ]
+    },
+    {
+      "id": "D15",
+      "decision": "Q1: On a light terminal background, should the TUI keep the design's dark-look accent colors on the terminal's own background, or paint the whole 100x25 screen with the design's dark background #15191a?",
+      "ruling": "Keep the terminal background (as built) — plain text and titles read on both themes, but the light accent colors (#9be37f, #e3c06b) are weak on white.",
+      "rejected": "Paint #15191a behind every cell — the same dark look in both themes, as the design shows, but the TUI ignores the user's terminal theme",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "Q2: The long way of a replace (no migrate script, ruling 27) puts two changes on the TUI change list, remove the old tool then add the new one, so the counter goes up by 2, though Edit 6 says each action is one change. Should it be one change?",
+      "ruling": "Keep two changes (as built) — they match the two CLI commands (remove tool and add tool), the review can show them as two lines, and undo works per tool.",
+      "rejected": "Add an item kind to core (for example a Replace with no script, or a flag on Replace) — one change in the counter and the review, but core's Plan and Apply get a new item kind, which U5 must then handle",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Q3: When a pack is deselected and a selected tool outside the pack needs one of its members, does that member stay, or does the outside tool leave too after the cascade dialog?",
+      "ruling": "Member stays only when a required tool needs it; any other outside tool that needs a leaving member leaves too, after the cascade [y/N] (as built) — both clauses apply, and the cascade can actually open.",
+      "rejected": "Member stays whenever any selected tool outside the pack needs it — no outside tool ever leaves, so the cascade modal never opens for a pack and the second clause has no effect",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "Q4: What does space do on a [~] pack (some members selected): select the missing members, or deselect the pack?",
+      "ruling": "Select: one AddPack item that adds the missing members, shown as [+] (as built) — a [~] pack cannot be deselected until it is [x]; the user removes single tools on the Tools tab.",
+      "rejected": "Deselect: one RemoveTool item for the selected members, shown as [-] — a [~] pack can only be completed by selecting its missing tools on the Tools tab",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Q5: The Mac scan returns notes from Detection.Notes (for example brew is not installed). Should the TUI Detected tab show them?",
+      "ruling": "Show them as dim lines in the bottom pane on a category, and under \"No tool detected\" — the user learns why a package is missing; it adds lines the design does not show.",
+      "rejected": "Drop them — matches the design, but a Mac without brew or mas silently gets fewer proposals",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D20",
+      "decision": "Q6: Should a (accept all) on the Detected tab also accept the remove proposals (red [?])?",
+      "ruling": "Adds only, as built — matches \"Same as: bootstrap detect --add\", which only adds; red [?] rows still need space one at a time, with the cascade dialog.",
+      "rejected": "Also removals — matches the wording \"Accept all proposals\", but one keypress could open several cascade or locked dialogs in a row",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D21",
+      "decision": "Q7: Screen 2a shows a counter and a progress bar in the Detecting dialog; core.Detect reports no progress. Should a progress callback be added?",
+      "ruling": "Spinner only, as built — no change to core or the scripts runner; the dialog does not match screen 2a.",
+      "rejected": "Add a progress callback to core.DetectState and scripts.Runner.Run — the dialog matches the design, but the core and scripts APIs change",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D22",
+      "decision": "Q8: The wave gate code:lint fails in code:lint:60-bootstrap because the released engine 2.1.0 rejects main's repo/packs.toml in the cache clone (inherited, not this plan). How should the run treat that line for the rest of the run?",
+      "ruling": "Treat code:lint:60-bootstrap as inherited from main: count the wave gate green when every other code:lint step passes, record one open gap naming it, and continue — the plan lands; the gap stays open until a 3.x engine release, so the folder is not archived.",
+      "rejected": "Stop the run here (STOPPED) until a new engine is released or the clone is fixed; Mark wave 4 failed as the rules say for an unattributed red line",
+      "units": []
+    },
+    {
+      "id": "D23",
+      "decision": "Q9: 05-apply.md Edit 3 says the review ends with [y/N], screen 8 shows only enter apply with Apply/Back. Which wins?",
+      "ruling": "Add a \"Write <n> changes? [y/N]\" modal after enter — it matches 05-apply.md Edit 3 and the CLI consent (\"? Write <n> changes? [y/N]\", docs/design/cli.md \"The consent\"), but adds a step that screen 8 does not show.",
+      "rejected": "Keep enter as the consent, as built — it matches screen 8, and the [y/N] of Edit 3 becomes a wording slip in the unit file, with no code change",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D24",
+      "decision": "Q10: The landing code:merge refuses because its hook safety net fails only the lint hook, on code:lint:60-bootstrap (the inherited failure of G3). May the landing re-run code:merge with SKIP=lint, so the branch merges into main and is pushed?",
+      "ruling": "Re-run code:merge with SKIP=lint — the plan lands and main is pushed; every other lint step (05-linter, 40-go, 90-uv) already passed on this tree, and G3 stays open.",
+      "rejected": "Stop here — nothing merges; the folder goes BLOCKED, the branch all-2026-11-13-1753 waits to be landed by hand once code:lint:60-bootstrap passes, and the all run ends",
+      "units": []
     }
   ]
 }
