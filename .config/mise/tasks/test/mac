@@ -371,18 +371,35 @@ repo_mise_env() { append_lines opt '[mise_env.dev.tools]' 'jq = "latest"'; }
 repo_requires_found() { append_lines opt '[files.".config/opt/opt.txt"]' 'requires_found = [ "x" ]'; }
 # The catalog keys of a Mac tool, the categories file and the description of a
 # pack.
+# Each fixture tool has a summary and the category dev of the categories file
+# of the fixture clone. A case changes only the copy of that file in its own
+# tree (D12 b).
 categories_file() { printf '%s\n' '[category.dev]' 'title = "Development"' > "$work/categories.toml"; }
+# drop_key <tool> <key>: a tools.toml without its top-level line of <key>.
+drop_key() {
+  local toml=$work/tools/$1/tools.toml
+  awk -v k="$2" '
+    /^[[:space:]]*\[/ { tables = 1 }
+    !tables && $1 == k && $2 == "=" { next }
+    { print }' "$toml" > "$toml.new"
+  mv -- "$toml.new" "$toml"
+}
+# set_key <tool> <key> <line>: <line> in place of the top-level line of <key>.
+set_key() {
+  drop_key "$1" "$2"
+  prepend_key "$1" "$3"
+}
 catalog_keys() {
-  prepend_key opt 'summary = "The opt tool of the fixture repo"'
-  prepend_key opt 'category = "dev"'
+  set_key opt summary 'summary = "The opt tool of the fixture repo"'
+  set_key opt category 'category = "dev"'
   prepend_key opt 'selectable = true'
   categories_file
 }
-catalog_unknown_category() {
-  prepend_key opt 'category = "nope"'
-  categories_file
-}
-catalog_no_categories() { prepend_key opt 'category = "dev"'; }
+catalog_unknown_category() { set_key opt category 'category = "nope"'; }
+catalog_no_categories() { rm -- "$work/categories.toml"; }
+catalog_no_summary() { drop_key opt summary; }
+catalog_no_category() { drop_key opt category; }
+catalog_summary_empty() { set_key opt summary 'summary = ""'; }
 catalog_category_key() { printf '%s\n' '[category.dev]' 'color = "red"' 'title = "Development"' > "$work/categories.toml"; }
 catalog_hosts() { prepend_key opt 'hosts = [ "macos" ]'; }
 pack_description() { printf '\n%s\n%s\n%s\n' '[pack.more]' 'description = "More tools."' 'opt = { default = true }' >> "$work/packs.toml"; }
@@ -393,11 +410,11 @@ group_question() {
 }
 tool_zz_macos() {
   mkdir -p -- "$work/tools/zz-macos"
-  printf '%s\n' 'description = "x"' > "$work/tools/zz-macos/tools.toml"
+  printf '%s\n' 'description = "x"' 'summary = "x"' 'category = "dev"' > "$work/tools/zz-macos/tools.toml"
 }
 tool_after_zz_macos() {
   mkdir -p -- "$work/tools/zzz"
-  printf '%s\n' 'description = "x"' > "$work/tools/zzz/tools.toml"
+  printf '%s\n' 'description = "x"' 'summary = "x"' 'category = "dev"' > "$work/tools/zzz/tools.toml"
 }
 ships_conf_d() {
   mkdir -p -- "$work/tools/core/.config/mise/conf.d"
@@ -2146,6 +2163,9 @@ run_case "catalog: summary, category and selectable" pass_tree catalog_keys
 run_case "catalog: an unknown category" expect ok 2 "macos/tools/opt/tools.toml: category nope is not a category of macos/categories.toml" catalog_unknown_category
 run_case "catalog: a category and no macos/categories.toml" expect ok 2 "macos/tools/opt/tools.toml: category dev needs the file macos/categories.toml" catalog_no_categories
 run_case "catalog: a key other than title in macos/categories.toml" expect ok 2 "macos/categories.toml: [category.dev] color is not a key of a category - the only key is title" catalog_category_key
+run_case "catalog: a tool with no summary" expect ok 2 "macos/tools/opt/tools.toml: summary is missing" catalog_no_summary
+run_case "catalog: a tool with no category" expect ok 2 "macos/tools/opt/tools.toml: category is missing" catalog_no_category
+run_case "catalog: a tool with summary = \"\"" expect ok 2 "macos/tools/opt/tools.toml: summary is missing" catalog_summary_empty
 run_case "catalog: hosts on a Mac tool" expect ok 2 "macos/tools/opt/tools.toml: hosts is for repo tools only" catalog_hosts
 run_case "catalog: a pack description" pass_tree pack_description
 run_case "catalog: a pack description that is not a string" expect ok 2 "macos/packs.toml: [pack.more] description must be a string" pack_description_number

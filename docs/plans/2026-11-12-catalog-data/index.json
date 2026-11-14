@@ -270,11 +270,11 @@
         "U3"
       ],
       "waits": "The cases assert the messages of U3, and each scratch tool needs the keys that U3 makes necessary.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T02:00:48.817Z",
+      "ended": "2026-11-14T02:27:05.143Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U5",
@@ -361,8 +361,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-14T02:00:48.782Z",
       "ended": ""
     },
     {

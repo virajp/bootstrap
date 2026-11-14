@@ -155,6 +155,7 @@ case_body() {
   if [[ -n $change ]]; then
     "$change"
   fi
+  catalog_keys_all
   [[ -n ${CASE_OLD_FORM:-} ]] || new_form_all
   # The clean-target rule: a target with changes that are not committed stops
   # a sync, so the case commits its consumer first.
@@ -245,6 +246,38 @@ new_form_all() {
   local d
   for d in "$clone"/repo/tools/*/; do
     new_form "${d%/}"
+  done
+}
+
+# catalog_keys <tools.toml> <tool>: each tool needs a summary and a category,
+# so this gives a scratch tool the one that it lacks, before its other lines: a
+# summary that names the tool, and the category core of the copied
+# repo/categories.toml. A key that the tool has stays as it is.
+catalog_keys() {
+  local toml=$1 tool=$2 missing
+  missing=$(awk -v tool="$tool" '
+    BEGIN { top = 1 }
+    /^[[:space:]]*\[/ { top = 0 }
+    top && /^summary[[:space:]]*=/ { s = 1 }
+    top && /^category[[:space:]]*=/ { c = 1 }
+    END {
+      if (!s) print "summary = \"The scratch tool " tool ".\""
+      if (!c) print "category = \"core\""
+    }' "$toml") || missing=''
+  [[ -n $missing ]] || return 0
+  printf '%s\n' "$missing" | cat - "$toml" > "$toml.new"
+  mv -- "$toml.new" "$toml"
+}
+# catalog_keys_all: catalog_keys for each tool of the clone of the case. The
+# tools that `CASE_KEYS_AS_WRITTEN` names (a list with spaces) keep their keys
+# as the case writes them, for a case that tests a missing key.
+catalog_keys_all() {
+  local d tool
+  for d in "$clone"/repo/tools/*/; do
+    tool=$(basename -- "$d")
+    [[ -f $d/tools.toml ]] || continue
+    [[ " ${CASE_KEYS_AS_WRITTEN:-} " != *" $tool "* ]] || continue
+    catalog_keys "$d/tools.toml" "$tool"
   done
 }
 
@@ -3411,8 +3444,28 @@ run_case "catalog: a description that is not a string" 2 "$vtest_values" cat_des
   "${vtest_at}description must be a string"
 run_case "catalog: a summary of 47 characters and a description" 0 "$vtest_values" cat_texts 'Dry run: '
 
-# The categories file repo/categories.toml (D2).
-categories_file() { printf '%s\n' "$@" > "$clone/repo/categories.toml"; }
+# A tool with no summary or no category, or with category = "" (D5, D10 d).
+# catalog_keys_all leaves vtest as the case writes it.
+cat_no_summary() { cat_tool vtest '' 'category = "core"'; }
+cat_no_category() { cat_tool vtest '' 'summary = "The scratch tool vtest."'; }
+cat_category_empty() { cat_tool vtest '' 'summary = "The scratch tool vtest."' 'category = ""'; }
+CASE_KEYS_AS_WRITTEN=vtest run_case "catalog: a tool with no summary" 2 "$vtest_values" cat_no_summary \
+  "${vtest_at}summary is missing"
+CASE_KEYS_AS_WRITTEN=vtest run_case "catalog: a tool with no category" 2 "$vtest_values" cat_no_category \
+  "${vtest_at}category is missing"
+CASE_KEYS_AS_WRITTEN=vtest run_case "catalog: a tool with category = \"\"" 2 "$vtest_values" cat_category_empty \
+  "${vtest_at}category is missing"
+
+# The categories file repo/categories.toml (D2). A case changes only the copy
+# of the file in its own clone (D12 b): categories_file adds tables after the
+# categories of the copy, which each tool of the copy names, and
+# categories_first writes lines before them.
+categories_file() { printf '%s\n' '' "$@" >> "$clone/repo/categories.toml"; }
+categories_first() {
+  local file=$clone/repo/categories.toml
+  printf '%s\n' "$@" | cat - "$file" > "$file.new"
+  mv -- "$file.new" "$file"
+}
 cat_category_no_file() {
   rm -f -- "$clone/repo/categories.toml"
   cat_tool vtest '' 'category = "lang"'
@@ -3424,7 +3477,7 @@ cat_category_unknown() {
 cat_category_key() { categories_file '[category.lang]' 'color = "red"' 'title = "Languages"'; }
 cat_category_no_title() { categories_file '[category.lang]'; }
 cat_category_title_number() { categories_file '[category.lang]' 'title = 1'; }
-cat_category_top_key() { categories_file 'title = "x"' '' '[category.lang]' 'title = "Languages"'; }
+cat_category_top_key() { categories_first 'title = "x"' ''; }
 cat_category_valid() {
   categories_file '[category.lang]' 'title = "Languages"' '' '[category.tool]' 'title = "Tools"'
   cat_tool vtest '' 'category = "tool"'
