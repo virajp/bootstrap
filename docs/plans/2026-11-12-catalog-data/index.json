@@ -339,11 +339,11 @@
         "U6"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-14T02:40:39.924Z",
+      "ended": "2026-11-14T02:41:41.996Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -379,9 +379,9 @@
     },
     {
       "id": "W6",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-14T02:40:39.888Z",
+      "ended": "2026-11-14T02:42:13.168Z"
     }
   ],
   "shared_files": [
