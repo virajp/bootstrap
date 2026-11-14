@@ -135,11 +135,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-13T19:06:29.647Z",
+      "ended": "2026-11-13T19:11:58.262Z",
+      "commit": "89144ad",
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -181,9 +181,9 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-13T19:06:29.609Z",
+      "ended": "2026-11-14T01:07:06.672Z"
     },
     {
       "id": "W5",
@@ -369,32 +369,41 @@
       "units": [
         "U1"
       ]
+    },
+    {
+      "id": "D17",
+      "decision": "Q2: The wave-4 closing fix left docs/design/cli.md:277 with only \"question has a\" on its line. Rewrap the rest of the paragraph, or keep the wrap?",
+      "ruling": "Rewrap the rest of the paragraph (the reviewer's recommendation) — one targeted fix and one narrow check; no words change.",
+      "rejected": "Keep the wrap as it is",
+      "units": [
+        "U4"
+      ]
     }
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no blueprint slice, acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-13T19:06:23.529Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no blueprint slice, acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-13T19:06:23.646Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no blueprint slice, acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-13T19:06:23.758Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers and no code unit: no stamps and nothing to persist; no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-13T19:06:23.912Z"
     }
   },
   "gaps": [],
