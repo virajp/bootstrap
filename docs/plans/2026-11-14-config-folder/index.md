@@ -105,8 +105,8 @@ answer, then returns all its open questions in one block.
 - R1b and R1c are planned next, each requiring this folder.
 - The claude-plugins copy of the design record needs the same amendments as
   U8 makes here.
-- **Hand steps for the user:** tag `bootstrap@4.0.0` at once after this plan
-  lands (D69); then run
+- **Hand steps for the user:** tag `bootstrap@4.0.0` once R1a, R1b, R1c and
+  R2 all land (D92); then run
   `bootstrap init` in this repo and in each consumer repo.
 
 ## Launch
