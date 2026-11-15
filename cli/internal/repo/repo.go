@@ -330,8 +330,9 @@ func (s *state) sync(dryRun bool) fail.Code {
 	g.All = s.all
 	g.Derived = s.derived
 	// The rows of the last run: the items that bootstrap added to each
-	// shared file.
-	s.oldRows, s.oldCode = manifest.Read(s.e, manifest.Repo, s.root+"/"+manifestPath, s.root)
+	// shared file. They are in the values folder, so the plan of a
+	// migration reads the old manifest from its temp folder (D94).
+	s.oldRows, s.oldCode = manifest.Read(s.e, manifest.Repo, values.ManifestFile(s.values), s.root)
 	s.items = manifest.Items(s.oldRows)
 	s.newItems = map[string][]string{}
 	// The files of each tool: the files of its entries, and the mise files

@@ -55,7 +55,7 @@ func InitState(sd Side) (*State, error) {
 		return p.tmpState(tmpValues)
 	}
 	st, err := read()
-	if err != nil || p.Existed || !st.Packs.HasPack(selection.BasePack) {
+	if err != nil || p.Existed || p.Migrated || !st.Packs.HasPack(selection.BasePack) {
 		return st, err
 	}
 	// A new values file gets the members of base, as Plan does.

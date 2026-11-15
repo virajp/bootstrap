@@ -170,7 +170,7 @@ func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
 		return code
 	}
 	if putBack {
-		a.infof("Put back %s as it was before the command", a.show(p.EditFile()))
+		a.infof("Put back %s as it was before the command", a.show(p.RestoredFile()))
 	}
 	a.keptSeeds(p.Seeds)
 	return code

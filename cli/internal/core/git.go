@@ -146,11 +146,8 @@ func ValuesSkip(vals string) map[string]bool {
 func CoreBranches(root string) ([]string, error) {
 	var out []string
 	for _, b := range []string{"main", "develop"} {
-		for _, ref := range []string{"refs/heads/" + b, "refs/remotes/origin/" + b} {
-			if _, ok := Git("-C", root, "rev-parse", "--verify", "--quiet", ref); ok {
-				out = append(out, b)
-				break
-			}
+		if BranchExists(root, b) {
+			out = append(out, b)
 		}
 	}
 	if len(out) > 0 {
@@ -160,6 +157,17 @@ func CoreBranches(root string) ([]string, error) {
 		return []string{b}, nil
 	}
 	return nil, problem(fail.Usage, root+" has no branch main or develop, and HEAD is not on a branch", "check out a branch, then run bootstrap init again")
+}
+
+// BranchExists tells if the branch <b> of the repository <root> exists,
+// locally or on origin.
+func BranchExists(root, b string) bool {
+	for _, ref := range []string{"refs/heads/" + b, "refs/remotes/origin/" + b} {
+		if _, ok := Git("-C", root, "rev-parse", "--verify", "--quiet", ref); ok {
+			return true
+		}
+	}
+	return false
 }
 
 // statusSet gives the paths with changes that are not committed in the work

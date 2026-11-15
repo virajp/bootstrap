@@ -31,6 +31,27 @@ type CloneOptions struct {
 	Note func(string)
 	// Stderr takes the output of git and cp on stderr. Nil discards it.
 	Stderr io.Writer
+	// MaxAge, when above 0, skips the fetch while the last fetch of the
+	// cache clone is younger than it (D52). BOOTSTRAP_CLONE has no age.
+	MaxAge time.Duration
+}
+
+// FetchedName is the file in the cache root that holds the time of the last
+// successful fetch of the cache clone.
+const FetchedName = "fetched"
+
+// CatalogAge is the age after which a cached clone is stale for the catalog
+// reads of config set and config unset (D23, D52).
+const CatalogAge = 7 * 24 * time.Hour
+
+// fresh tells if the last fetch of the cache <cache> is younger than <age>.
+func fresh(cache string, age time.Duration) bool {
+	b, err := os.ReadFile(cache + "/" + FetchedName)
+	if err != nil {
+		return false
+	}
+	t, err := time.Parse(time.RFC3339, strings.TrimSpace(string(b)))
+	return err == nil && time.Since(t) < age
 }
 
 // Clone is the bootstrap clone of one command: BOOTSTRAP_CLONE, else a
@@ -110,9 +131,12 @@ func acquireClone(o CloneOptions) (*Clone, error) {
 	if err := c.takeLock(); err != nil {
 		return c, err
 	}
-	if err := c.fetch(); err != nil {
-		c.Cleanup()
-		return c, err
+	if o.MaxAge <= 0 || !fresh(c.Cache, o.MaxAge) || !c.sameOrigin() {
+		if err := c.fetch(); err != nil {
+			c.Cleanup()
+			return c, err
+		}
+		_ = os.WriteFile(c.Cache+"/"+FetchedName, []byte(time.Now().UTC().Format(time.RFC3339)+"\n"), 0o644)
 	}
 	tmp := o.Getenv("TMPDIR")
 	if tmp == "" {
@@ -200,6 +224,15 @@ func staleLock(lock string) bool {
 	return stale
 }
 
+// sameOrigin tells if the cache clone exists and its origin is the URL.
+func (c *Clone) sameOrigin() bool {
+	if !Exists(c.Repo + "/.git") {
+		return false
+	}
+	origin, _ := Git("-C", c.Repo, "config", "--get", "remote.origin.url")
+	return origin != "" && normalizeURL(origin) == normalizeURL(c.url)
+}
+
 // Unlock releases the lock when this run holds it.
 func (c *Clone) Unlock() {
 	if c.held {
@@ -262,7 +295,7 @@ func (c *Clone) fetch() error {
 		entries, _ := os.ReadDir(c.Cache)
 		for _, e := range entries {
 			switch e.Name() {
-			case "repo", "lock", "lock.takeover", "macos-generated.tsv":
+			case "repo", "lock", "lock.takeover", "macos-generated.tsv", FetchedName:
 				continue
 			}
 			_ = os.RemoveAll(filepath.Join(c.Cache, e.Name()))

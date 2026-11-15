@@ -90,11 +90,11 @@
         "U1"
       ],
       "waits": "It edits the cli/ packages U1 creates: the paths constants and internal/schema.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T12:33:58.162Z",
+      "ended": "2026-11-15T13:01:27.588Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 3
     },
     {
       "id": "U3",
@@ -265,8 +265,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-15T12:33:58.121Z",
       "ended": ""
     },
     {
@@ -1204,6 +1204,24 @@
       "units": [
         "U1"
       ]
+    },
+    {
+      "id": "D94",
+      "decision": "Q2: Should a migration's dry run (init --dry-run, init's plan step) see the old manifest rows, given the front-end reads .config/bootstrap/repo-generated.tsv which does not exist yet?",
+      "ruling": "Make the repo front-end read the manifest from $BOOTSTRAP_VALUES/repo-generated.tsv, and copy the old manifest into the temp values folder of a migration's plan (a small internal/repo change inside cli/) — init --dry-run then lists exactly what init does",
+      "rejected": "Accept the gap and have U8 document it — no code change, but a migration's dry run lists fewer removals than the real run, and K1 may show extra rows",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D95",
+      "decision": "Q3: TOML has no null; is leaving out the value key the intended TOML form of a config get envelope for a key with no default?",
+      "ruling": "Accept leaving it out, and have U8 write in docs/design/cli.md that a TOML envelope without value means null — no code change",
+      "rejected": "Print a fixed marker, such as a # value: null comment line — a person reading the output sees the null, a TOML parser still sees no value, and the code changes",
+      "units": [
+        "U2"
+      ]
     }
   ],
   "stages": {
@@ -1232,7 +1250,22 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U2",
+      "stage": "",
+      "text": "Wave 2 review round 2: D94 not met for a linked manifest (copyManifest symlink outside the root not detected by manifest.Read) · resolved in the closing pass: manifest.Read stops on a symlinked manifest outside the root, test case added",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U2",
+      "stage": "",
+      "text": "Wave 2 review round 2: cli/internal/cli/config.go:64 comment line not folded · resolved in the closing pass: folded at 76 columns",
+      "state": "closed"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".worktrees/config-folder",

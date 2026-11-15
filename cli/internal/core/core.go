@@ -14,10 +14,12 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/macos"
+	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/repo"
 	"github.com/virajp/bootstrap/cli/internal/target"
 	"github.com/virajp/bootstrap/cli/internal/values"
@@ -138,7 +140,33 @@ func Prepare(mac, initCmd bool, pwd string, getenv func(string) string) (Side, e
 	if sd.Values == "" {
 		sd.Values = values.FolderOf(root)
 	}
-	return sd, nil
+	return sd, CheckLayout(sd, initCmd)
+}
+
+// CheckLayout examines the values of the repo side <sd> (D28, D29, D88):
+// the old values file next to the values folder stops each command; the old
+// file alone, and a values folder without repo.toml or tools.toml, stop each
+// command but init, which migrates the file or creates the missing file.
+func CheckLayout(sd Side, initCmd bool) error {
+	if sd.Mac {
+		return nil
+	}
+	old := OldValuesOf(sd.Root)
+	switch hasOld, hasFolder := Exists(old), Exists(sd.Values); {
+	case hasOld && hasFolder:
+		return problem(fail.Usage, sd.Show(old)+" and "+sd.Show(sd.Values)+" both hold the values of the repository", oldform.FolderHint)
+	case initCmd:
+		return nil
+	case hasOld:
+		return problem(fail.Usage, sd.Show(old)+" is the old form of the values of the repository", "run bootstrap init")
+	case hasFolder:
+		for _, f := range []string{values.RepoFile(sd.Values), values.ToolsFile(sd.Values)} {
+			if !Exists(f) {
+				return problem(fail.Usage, sd.Show(sd.Values)+" has no "+filepath.Base(f), "run bootstrap init")
+			}
+		}
+	}
+	return nil
 }
 
 // Options are the options of Plan and Apply.

@@ -13,6 +13,7 @@ import (
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/format"
+	"github.com/virajp/bootstrap/cli/internal/manifest"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/questions"
 	"github.com/virajp/bootstrap/cli/internal/scripts"
@@ -109,7 +110,13 @@ type PlanResult struct {
 	Next    []byte // The edited file after the command, with the answers.
 	// RepoNew is the new repo.toml of init, or nil when it exists.
 	RepoNew []byte
-	Notes   []string
+	// Migrated: init moves the old values file .config/bootstrap.toml into
+	// the values folder. Apply writes the folder in one rename, and its
+	// restore puts back Old and removes the folder.
+	Migrated bool
+	// Old holds each old file of the migration, with its content.
+	Old   []oldform.Change
+	Notes []string
 	// Changes are the writes before the sync: the values file first, then
 	// the changes of a migration.
 	Changes []oldform.Change
@@ -237,7 +244,7 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 	}
 
 	items := l.Items
-	newFile := l.Init && !p.Existed
+	newFile := l.Init && !p.Existed && !p.Migrated
 	if len(items) > 0 || newFile {
 		if st == nil {
 			if st, err = p.tmpState(tmpValues); err != nil {
@@ -344,7 +351,12 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 	if r, err := filepath.EvalSymlinks(tmp); err == nil {
 		realTmp = r
 	}
+	// A file of the changes (the manifest that a migration moves) shows
+	// once.
 	seen := map[string]bool{}
+	for _, ch := range p.Changes {
+		seen[ch.Path] = true
+	}
 	for _, f := range planned {
 		if strings.HasPrefix(f.Path, tmp+"/") || strings.HasPrefix(f.Path, realTmp+"/") || seen[f.Path] {
 			continue
@@ -419,7 +431,35 @@ func (p *PlanResult) layout(tmp string) (string, string, error) {
 	if b, err := os.ReadFile(values.ReleasesFile(sd.Values)); err == nil {
 		_ = os.WriteFile(values.ReleasesFile(dir), b, 0o644)
 	}
+	p.copyManifest(dir)
 	return dir, values.ToolsFile(dir), nil
+}
+
+// copyManifest puts the manifest of the last run into the temp values
+// folder <dir>, where the dry run of the sync reads it (D94): the manifest
+// that a migration moves, or the one of the values folder. A manifest that
+// is a link, below a linked folder or not a regular file stays one in the
+// copy, so the dry run stops as the sync does.
+func (p *PlanResult) copyManifest(dir string) {
+	from, to := values.ManifestFile(p.Values), values.ManifestFile(dir)
+	for _, ch := range p.Changes {
+		if ch.Path == from && !ch.Remove {
+			_ = os.WriteFile(to, ch.Content, 0o644)
+			return
+		}
+	}
+	root := strings.TrimSuffix(p.Root, "/")
+	if manifest.Linked(root, strings.TrimPrefix(from, root+"/")) {
+		_ = os.Symlink(from, to)
+		return
+	}
+	if info, err := os.Stat(from); err == nil && !info.Mode().IsRegular() {
+		_ = os.Mkdir(to, 0o777)
+		return
+	}
+	if b, err := os.ReadFile(from); err == nil {
+		_ = os.WriteFile(to, b, 0o644)
+	}
 }
 
 // tmpState gives the state of the temporary values <tmpValues> of layout,
@@ -444,6 +484,9 @@ func (p *PlanResult) initValues() error {
 	p.Cur, p.Existed = cur, err == nil
 	p.Next = cur
 	if !sd.Mac {
+		if !Exists(sd.Values) && Exists(OldValuesOf(sd.Root)) {
+			return p.migrateFolder()
+		}
 		return p.initFolder()
 	}
 	if !p.Existed {
@@ -500,11 +543,83 @@ func (p *PlanResult) initFolder() error {
 	return nil
 }
 
+// OldValuesOf gives the old values file of the repository <root>.
+func OldValuesOf(root string) string { return strings.TrimSuffix(root, "/") + "/" + oldform.OldValues }
+
+// migrateFolder gives the migration of the old values file of the repo to
+// the values folder (D4, D5, D10, D70): first the migration of each older
+// form of the file to format = 2, then the split into repo.toml and
+// tools.toml with format = 3, the move of the old manifest, and the removal
+// of the old values file and its overrides file.
+func (p *PlanResult) migrateFolder() error {
+	sd := p.Side
+	root := strings.TrimSuffix(sd.Root, "/")
+	oldValues := OldValuesOf(root)
+	in, err := os.ReadFile(oldValues)
+	if err != nil {
+		return problem(fail.Usage, "cannot read "+sd.Show(oldValues), "")
+	}
+	p.Old = append(p.Old, oldform.Change{Path: oldValues, Content: in})
+	migs, err := oldform.MigrateRepo(root, oldValues)
+	if err != nil {
+		return err
+	}
+	var others []oldform.Change
+	for _, ch := range migs {
+		if ch.Path == oldValues {
+			in = ch.Content
+			p.Notes = append(p.Notes, ch.Note)
+		} else {
+			others = append(others, ch)
+		}
+	}
+	overrides := root + "/" + oldform.OldOverrides
+	split, err := oldform.SplitRepo(in, sd.Show(oldValues), overrides, func(b string) bool { return BranchExists(root, b) })
+	if err != nil {
+		return err
+	}
+	p.Notes = append(p.Notes, "split "+oldform.OldValues+" into "+values.RepoName+" and "+values.ToolsName)
+	p.Notes = append(p.Notes, split.Notes...)
+	p.Migrated, p.Existed, p.Cur = true, false, nil
+	p.Next = toolsHead(split.Tools)
+	p.RepoNew = split.Repo
+	p.Changes = append(p.Changes, oldform.Change{Path: values.RepoFile(sd.Values), Content: p.RepoNew, Note: "split from " + oldform.OldValues})
+	gone := []oldform.Change{{Path: oldValues, Remove: true, Note: "moved to " + values.Folder + "/"}}
+	if b, err := os.ReadFile(overrides); err == nil {
+		p.Old = append(p.Old, oldform.Change{Path: overrides, Content: b})
+		gone = append(gone, oldform.Change{Path: overrides, Remove: true, Note: "moved to [overrides.tools.*] of " + values.ToolsName})
+	}
+	oldManifest := root + "/" + oldform.OldManifest
+	if b, err := os.ReadFile(oldManifest); err == nil {
+		p.Old = append(p.Old, oldform.Change{Path: oldManifest, Content: b})
+		p.Changes = append(p.Changes, oldform.Change{Path: values.ManifestFile(sd.Values), Content: b, Note: "moved from " + oldform.OldManifest})
+		gone = append(gone, oldform.Change{Path: oldManifest, Remove: true, Note: "moved to " + values.Folder + "/" + values.ManifestName})
+	}
+	p.Changes = append(append(p.Changes, gone...), others...)
+	return nil
+}
+
+// toolsHead gives the tools.toml <text> of a migration with the header of
+// tools.toml in place of its first comment lines: they are the header of the
+// old file, or the comment of its first key, and repo.toml keeps them.
+func toolsHead(text []byte) []byte {
+	lines := strings.SplitAfter(string(text), "\n")
+	i := 0
+	for i < len(lines) && strings.HasPrefix(lines[i], "#") {
+		i++
+	}
+	rest := strings.TrimLeft(strings.Join(lines[i:], ""), "\n")
+	return []byte(ToolsHeader + "\n\n" + rest)
+}
+
 // InitChange gives the change that init makes before each other change of
 // the list: the new values file with the members of the pack base, or the
 // migration of an old form. A values file of the new form gives "". It writes
 // nothing. The TUI shows the change on its change list.
 func InitChange(sd Side) (string, error) {
+	if !sd.Mac && !Exists(sd.Values) && Exists(OldValuesOf(sd.Root)) {
+		return "migrate to " + values.Folder + "/", nil
+	}
 	if !sd.Mac && (!Exists(sd.EditFile()) || !Exists(values.RepoFile(sd.Values))) {
 		if !Exists(sd.EditFile()) {
 			return "create the values folder with " + selection.BasePack, nil

@@ -61,11 +61,11 @@ func (a *app) applySettings(o opts) fail.Code {
 	return fail.OK
 }
 
-// config is `bootstrap config`: it prints the config file and each key, with
-// its value and its source. It changes nothing. Run gives it <o>, as each
-// other command; applySettings already recorded the values of the flags of
-// <o> in a.settings.
-func (a *app) config(o opts) fail.Code {
+// printSettings is `bootstrap settings`: it prints the config file and each
+// key, with its value and its source. It changes nothing. Run gives it <o>,
+// as each other command; applySettings already recorded the values of the
+// flags of <o> in a.settings.
+func (a *app) printSettings(o opts) fail.Code {
 	s := a.settings
 	w := tabwriter.NewWriter(a.stdout, 0, 0, 2, ' ', 0)
 	path := s.path
