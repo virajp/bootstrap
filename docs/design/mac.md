@@ -31,7 +31,7 @@ sync, `mac init` sets it for its own run.
 
 The config file of the engine has no key for the repository of `macos.toml`.
 The mise env exports `MACOS_SETUP_REPO_PATH` in each shell, so the variable
-always comes before a key of the file. `bootstrap config` shows the line
+always comes before a key of the file. `bootstrap settings` shows the line
 `mac.repo_path` with the value of `--repo-path` or of the variable. See
 [cli.md](cli.md#the-config-file).
 

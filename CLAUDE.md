@@ -33,7 +33,8 @@ files are for this repository only:
   `github.com/virajp/bootstrap/cli` (`go.mod`, `cmd/bootstrap/` and
   `internal/`), the CLI `bootstrap` with the commands `init`, `tui`, `check`,
   `sync`, `questions`, `detect`, `add`, `remove`, `replace`, `list`, `config`
-  and the group `mac`.
+  (`get`, `set`, `unset` and `show` of a value of `.config/bootstrap/`),
+  `settings` and the group `mac`.
   No Go
   file of the engine names a tool: `TestEngineNamesNoTool` examines this rule.
 - `docs/design/`: the contract of the sync, one place for each rule (see "Where
@@ -56,11 +57,12 @@ files are for this repository only:
   when the tool needs a value or a selection, because `test:macos-tools` fails
   for an unselected tool.
 
-`repo/examples/<example>/` holds sample values files (`bootstrap.toml`), one
-folder for each repository shape: `polyrepo`, `polyrepo-main`,
+`repo/examples/<example>/` holds sample values files (`repo.toml` and
+`tools.toml`, the files of `.config/bootstrap/`), one folder for each
+repository shape: `polyrepo`, `polyrepo-main`,
 `polyrepo-develop`, `monorepo`, `repo-submodules` and `repo-siblings`.
-`repo-submodules` also has one file in each submodule folder, and
-`repo-siblings` has one file in each sibling folder only. The sync never
+`repo-submodules` also has the two files in each submodule folder, and
+`repo-siblings` has them in each sibling folder only. The sync never
 copies or generates them. `docs/sync/index.md` and `docs/sync/vwf.md`
 use them as the model of a values file, so a change to the contract of the
 values file changes the examples in the same commit.
@@ -69,8 +71,8 @@ Each example has an empty `bootstrap_commit`, so a consumer that copies an
 example gets no wrong value: the sync replaces the empty line with the
 commit of its sync. `test:repo` runs `bootstrap sync --dry-run` with each
 example, in a consumer with its members. That case finds an unknown tool, a
-wrong member and a wrong shape. It does not find an unknown key, because
-`bootstrap sync` accepts one.
+wrong member, a wrong shape and an unknown key, because the schema of the
+values refuses one.
 
 `docs/sync/` tells an AI agent how to adopt `bootstrap` in a consumer
 repository, how to bring it up to date, and how to add and remove tools after
@@ -109,7 +111,9 @@ copies this folder.
   each folder in `macos/tools/`.
 
 This repository is also a consumer of its own `base` pack and of the `claude`
-tool. Its values file is `.config/bootstrap.toml`, and `setup:configs` writes
+tool. Its values file is still the old `.config/bootstrap.toml` until the user
+migrates it with `bootstrap init` after the `bootstrap@4.0.0` tag; the engine
+of this branch reads `.config/bootstrap/`. `setup:configs` writes
 the synced copies at the root (`.config/`, `.vscode/`, `.gitignore`,
 `.gitattributes`). Do not edit a synced copy. Change the
 file in `repo/tools/<tool>/`, push it, then run `mise run setup:configs` here
@@ -131,7 +135,7 @@ change the path:
   `tools.toml`. `docs/design/mise.md` also holds
   `cli/internal/misegen`.
 - Read `docs/design/bootstrap-config.md` before you change the keys of
-  `.config/bootstrap.toml`.
+  `.config/bootstrap/` or `cli/internal/schema`.
 - Read `docs/design/fnox.md` before you change fnox.
 - Read `docs/sync/index.md` before you change `docs/sync/`.
 - Read `docs/setup/index.md` before you change the Mac adoption.
@@ -158,8 +162,15 @@ table").
 - `_scripts/` contains libraries, not tasks. Each task sources them through
   `${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/<name>`.
   - `helpers`: the print functions (`print_header`, `print_success`,
-    `print_wait`, and others), `members`, and `shell_files_in_scope`. Use these
-    functions for all task output.
+    `print_wait`, and others), `bootstrap_get`, `members`, and
+    `shell_files_in_scope`. Use these functions for all task output.
+    `bootstrap_get <key>` is the one reader of a value of
+    `.config/bootstrap/`: it prints the JSON answer of `bootstrap config get`
+    (read `.value`), with `BOOTSTRAP_BIN`, else `mise x -- bootstrap`. A read
+    failure stops the task with code 1, and no engine that answers (none, or
+    one older than 4.0.0) with code 2. `members` lists the submodule and
+    sibling members of `[members.*]` through it. Call both as
+    `VAR=$(bootstrap_get <key>) || exit $?`.
   - `checks`: git predicates. They return an exit status only and print
     nothing. The one exception is `get_main_worktree_path`, which prints the
     path of the main worktree.
@@ -189,10 +200,13 @@ table").
   with `command -v`. `mise x` finds only the tools of a config file, and a
   repository before its first sync, or a shell without `MISE_ENV=dev`, has no
   config that names them. The tools are `github:virajp/bootstrap` in
-  `setup:configs`, `pre-commit` in `setup:precommit` and `code:precommit`,
-  `pre-commit` and `yq` in the `code:merge` tasks, `yq` in `code:worktrees`,
-  and `dprint` in `setup:dprint`. The tool calls of the engine in `cli/`
-  are in
+  `setup:configs`, `yq` in `setup:configs` and `setup`, `pre-commit` in
+  `setup:precommit` and `code:precommit`, `pre-commit` and `yq` in the
+  `code:merge` tasks, `yq` in `code:worktrees`, and `dprint` in
+  `setup:dprint`. The engine is the exception to this exception: `helpers`
+  (`bootstrap_get`) and the scripts of the tools call it as `BOOTSTRAP_BIN`,
+  else `mise x -- bootstrap`, and find it with `mise x -- which bootstrap`.
+  The tool calls of the engine in `cli/` are in
   `docs/design/cli.md` ("The tool calls").
 - To find whether the repository has an optional task, use `has_own_task` and
   `own_tasks` from `helpers`. Do not use `mise tasks info` or a wildcard
@@ -203,14 +217,16 @@ table").
 - Tasks use `#MISE` and `#USAGE` header comments for metadata and flags. A
   `#USAGE flag "--fix"` is available in the script as `usage_fix`.
 - Under `set -e`, write a command substitution that can fail as
-  `VAR=$(cmd) || VAR=''`. The existing scripts explain this in comments.
+  `VAR=$(cmd) || VAR=''`. The existing scripts explain this in comments. The
+  one exception is `bootstrap_get` and `members`: pass their code on with
+  `VAR=$(bootstrap_get <key>) || exit $?`.
 - Only the `init` task is in mise config (`[mise.tasks.init]` of
   `repo/tools/mise/tools.toml`, always dev). It makes the task scripts
   executable. The task files load in every environment.
 - A gate of a language is a `code:lint:<gate>` or `code:format:<gate>` task
   in the tool of that language, for example `code:lint:70-ruff` in `python`.
-  `code:lint:60-bootstrap` of `mise` follows the same rules for the values
-  file `.config/bootstrap.toml`:
+  `code:lint:60-bootstrap` of `mise` follows the same rules for the files of
+  the values folder `.config/bootstrap/`:
   - Without its tool (`mise x -- which <tool>`) or without a file of its
     language, the gate prints nothing and exits 0. Some gates examine a
     project file instead, for example `pubspec.yaml` for dart and `gradlew`
@@ -285,14 +301,17 @@ changes a case. See `docs/design/cli.md` ("The config file").
   `bootstrap check` and, for a case that compares a written file,
   `bootstrap sync`, built from the working tree's `cli/`, with the
   working tree's `repo/` and `cli/` against scratch values files and
-  scratch consumers. The init cases run `bootstrap init` on a new and on an old
-  values file, the selection cases run `bootstrap add tool <tool…>`,
+  scratch consumers. The init cases run `bootstrap init` on a new values
+  folder, on an old values file and on its migration to `.config/bootstrap/`,
+  the selection cases run `bootstrap add tool <tool…>`,
   `bootstrap add pack <pack…>`, `bootstrap remove tool <tool…>`,
   `bootstrap replace tool <old> <new>` and `bootstrap detect --add`, and the
   clone cases run the binary against a local origin. The entry cases run the
-  rendered task `setup:configs` with a fake engine. The config cases point
+  rendered task `setup:configs` with a fake engine and with the real engine,
+  and the rendered `code:merge` task. The config verb cases run
+  `bootstrap config get|set|unset|show`. The settings cases point
   `BOOTSTRAP_CONFIG` or `--config` at a file of the case, or at a missing file.
-  Most of them run `bootstrap config`. The cases of a `verbose` key and of the
+  Most of them run `bootstrap settings`. The cases of a `verbose` key and of the
   key `clone` run `bootstrap sync --dry-run`. A case of the default output also
   runs `bootstrap sync --verbose`. With `BOOTSTRAP_BIN` set to an absolute path,
   it tests that binary and does not build one. It compares the exit code and the
@@ -362,9 +381,10 @@ changes a case. See `docs/design/cli.md` ("The config file").
 3. Commit on a local work branch. Land it on `main` with
    `mise run code:merge <branch>`, which merges and pushes.
 4. In this repository and in each consumer repository, run
-   `mise run setup:configs`, then commit the result. This repository sets no
-   `direct_commit`, so the `no-commit-to-branch` hook refuses a commit on
-   `main`. Thus in this
+   `mise run setup:configs`, then commit the result. This repository allows no
+   direct commit on `main` (no `direct_commit`, which `bootstrap init` makes
+   `landing = "direct-merge"`), so the `no-commit-to-branch` hook refuses a
+   commit on `main`. Thus in this
    repository, sync on a local `sync-<name>` branch, commit
    `ops: sync bootstrap with <change>`, and land it with
    `mise run code:merge sync-<name>`. The sync also updates

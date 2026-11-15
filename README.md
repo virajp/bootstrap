@@ -12,22 +12,23 @@ mise installs the CLI from the GitHub releases of this repository:
 mise use -g github:virajp/bootstrap
 ```
 
-| Command                                      | Job                                                                            |
-| -------------------------------------------- | ------------------------------------------------------------------------------ |
-| `bootstrap init`                             | Open the TUI in a terminal. Else migrate or create the values file, ask, sync. |
-| `bootstrap tui`                              | Open the TUI: select tools and packs, review the changes, then sync.           |
-| `bootstrap sync`                             | Sync the repository of the current folder. `setup:configs` runs it.            |
-| `bootstrap check`                            | Examine the values file, and run the check scripts of the tools.               |
-| `bootstrap questions [tool…]`                | List the questions, their proposals and their answers. `--json` for an agent.  |
-| `bootstrap detect [--add]`                   | Run the detect scripts, and list each tool that matches. `--add` adds them.    |
-| `bootstrap add tool <tool…>`                 | Add the tools and their dependencies, then sync.                               |
-| `bootstrap add pack <pack…> [--exclude <m>]` | Add each member of the packs that is not selected, then sync.                  |
-| `bootstrap remove tool <tool…>`              | Remove the tools and the dependencies that no tool needs, then sync.           |
-| `bootstrap replace tool <old> <new>`         | Move from one tool to another with the same parent, then sync.                 |
-| `bootstrap list`, `bootstrap ls`             | List the selected tools as a tree of tools and dependencies.                   |
-| `bootstrap config`                           | Print the config file and each setting, with its value and its source.         |
-| `bootstrap --version`                        | Print the version.                                                             |
-| `bootstrap mac <command>`                    | The same commands for the Mac, with `macos.toml`. There is no `mac config`.    |
+| Command                                      | Job                                                                                |
+| -------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `bootstrap init`                             | Open the TUI in a terminal. Else migrate or create the values, ask, sync.          |
+| `bootstrap tui`                              | Open the TUI: select tools and packs, review the changes, then sync.               |
+| `bootstrap sync`                             | Sync the repository of the current folder. `setup:configs` runs it.                |
+| `bootstrap check`                            | Examine the values against their schema, and run the check scripts.                |
+| `bootstrap questions [tool…]`                | List the questions, their proposals and their answers. `--json` for an agent.      |
+| `bootstrap detect [--add]`                   | Run the detect scripts, and list each tool that matches. `--add` adds them.        |
+| `bootstrap add tool <tool…>`                 | Add the tools and their dependencies, then sync.                                   |
+| `bootstrap add pack <pack…> [--exclude <m>]` | Add each member of the packs that is not selected, then sync.                      |
+| `bootstrap remove tool <tool…>`              | Remove the tools and the dependencies that no tool needs, then sync.               |
+| `bootstrap replace tool <old> <new>`         | Move from one tool to another with the same parent, then sync.                     |
+| `bootstrap list`, `bootstrap ls`             | List the selected tools as a tree of tools and dependencies.                       |
+| `bootstrap config get\|set\|unset\|show`     | Read and write a value of `.config/bootstrap/`. `--format json\|yaml\|toml`.       |
+| `bootstrap settings`                         | Print the config file and each setting, with its value and its source.             |
+| `bootstrap --version`                        | Print the version.                                                                 |
+| `bootstrap mac <command>`                    | The same commands for the Mac, with `macos.toml`. No `mac config`, `mac settings`. |
 
 Each writing command shows its change list first. `--dry-run` writes nothing,
 and `--yes` writes without a prompt.
@@ -175,7 +176,8 @@ of the `[files]` and `[tasks]` tables, and the scripts.
    `https://github.com/virajp/bootstrap.git` into a shared clone in the cache
    `${XDG_CACHE_HOME:-~/.cache}/bootstrap/`, copies that clone, and stops when
    the CLI is older than `cli/VERSION` of the clone.
-2. It reads the `[tools.*]` tables of the repository's `.config/bootstrap.toml`,
+2. It reads the values folder `.config/bootstrap/` of the repository: the
+   facts of `repo.toml` and the `[tools.*]` tables of `tools.toml`,
    and adds the required members of the `base` pack and the `depends` of each
    tool. It writes an empty table for each required member that has none.
 3. It merges the values of each tool, runs the derive and check scripts, and
@@ -184,31 +186,34 @@ of the `[files]` and `[tasks]` tables, and the scripts.
    is written only when it is missing, and a shared file gets the bootstrap
    items and keeps the changes of the user.
 5. After a sync without a failure, it removes each stale file, it writes
-   `.config/repo-generated.tsv`, and it sets `bootstrap_commit` of the values
-   file to the commit of its clone.
+   `.config/bootstrap/repo-generated.tsv`, and it sets `bootstrap_commit` of
+   `repo.toml` to the commit of its clone.
 
 Between two syncs, the gate `code:lint:60-bootstrap` runs `bootstrap check` at
-each commit that changes `.config/bootstrap.toml`.
+each commit that changes a file of `.config/bootstrap/`. `bootstrap config get
+<key>` reads one value, and `bootstrap config set <key> <value>` writes one,
+checked against the schema.
 
 The sync needs `mise` and a git repository. It lists only the files that
 changed, and it ends with one line of counts. Use `--dry-run` to see the changes
 without writing them. Use `--verbose` of `setup:configs` to list each file,
 also an unchanged one. The user config file `~/.config/bootstrap/config.toml`
 sets the defaults of the CLI: the jobs, the cache, the URL and the clone.
-`bootstrap config` shows each setting and its source. The rules are in
+`bootstrap settings` shows each setting and its source. The rules are in
 `docs/design/`:
 
 - [`cli.md`](docs/design/cli.md): the command line, the clone,
   the scripts, the write of one file, shared files, the header, the manifest and
   the stale rule, the values, `bootstrap_commit` and the exit codes.
 - [`repo.md`](docs/design/repo.md): the entry tasks, members, the branch model,
-  `direct_commit`, the pre-commit config, `bootstrap check` and its gate.
+  the protected branches, the pre-commit config, `bootstrap check` and its gate.
 - [`mise.md`](docs/design/mise.md): the generated mise config, the environments
   and `[overrides.mise*]`.
-- [`bootstrap-config.md`](docs/design/bootstrap-config.md): the keys of
-  `.config/bootstrap.toml`, and its old forms.
+- [`bootstrap-config.md`](docs/design/bootstrap-config.md): the files and keys
+  of `.config/bootstrap/`, their schema, and the old forms.
 
-A repository with an older form of the values file runs `bootstrap init` once:
+A repository with an older form of the values, also the old file
+`.config/bootstrap.toml`, runs `bootstrap init` once:
 it migrates each old form. `docs/sync/migrate.md` has the manual items.
 
 ## Templates
@@ -217,19 +222,48 @@ A file with `mode = "template"` is a template. `bootstrap sync` renders it with
 Go `text/template` and its own copy of the [gomplate](https://docs.gomplate.ca)
 functions. The delimiters are `<% %>`. mise uses `{{ }}` and bash uses `[[ ]]`,
 so both reach the output unchanged. The values come from the tools and from the
-repository's `.config/bootstrap.toml`.
+repository's `.config/bootstrap/`.
 [`docs/design/cli.md`](docs/design/cli.md#templates) has the
 rules, and
 [`docs/design/repo.md`](docs/design/repo.md#the-template-context) has each value
 of the context.
 
-Example values file:
+Example values, `.config/bootstrap/repo.toml`:
 
 ```toml
+core_branches = [ "main", "develop" ]
 environments = [ "dev", "ci" ]
+format = 3
 product_name = "my-product"
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"
+
+# The merge config of this repository.
+[branches.main]
+landing = "pr"
+merge_from = [ "develop" ]
+
+[branches.develop]
+# direct-commit allows a direct commit to develop. main can allow it only when
+# develop does.
+landing = "direct-merge"
+
+[commits]
+scopes = [ "backend", "web" ]
+
+[worktree]
+files = [ ".config/mise.local.toml" ]
+
+[members.backend]
+folder = "projects/backend" # optional; the default is the name
+label = "Backend"
+type = "folder"
+```
+
+and `.config/bootstrap/tools.toml`:
+
+```toml
+format = 3
 
 [tools.claude]
 # The Claude Code plugins that setup:ai of the claude tool installs.
@@ -239,28 +273,13 @@ repo_url = "https://github.com/me/my-repo"
 [tools.fnox]
 
 [tools.git]
-commit_scopes = [ "backend", "web" ]
-
-# The merge config of this repository.
-[tools.git.branch.main]
-merge_from = [ "develop" ]
-merge_model = "pr"
-
-[tools.git.branch.develop]
-# Allow a direct commit to develop. main can allow it only when develop does.
-# direct_commit = true
 
 [tools.github]
 
 [tools.mise]
-worktree_files = [ ".config/mise.local.toml" ]
 
 [tools.node]
 env = [ "dev", "ci" ] # optional; without it, the default_envs of the tool
-
-[member.backend]
-folder = "projects/backend" # optional; the default is the name
-label = "Backend"
 ```
 
 ## Shared files
@@ -269,7 +288,7 @@ label = "Backend"
 `.vscode/extensions.json` are shared files. The sync adds the items of the
 selected tools, and keeps each item that you add to the file: own lines, own
 hook blocks, own excludes, own extensions. A removed bootstrap item comes back
-at the next sync, unless the values file has an override for it:
+at the next sync, unless `tools.toml` has an override for it:
 
 ```toml
 [tools.git.files.".gitignore"]

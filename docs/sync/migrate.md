@@ -7,6 +7,11 @@ They are for a repository that has files from an older version of
 
 This file is temporary. Remove an item when all repositories have done it.
 
+The items before M41 name the old values file `.config/bootstrap.toml`, its
+overrides file and `.config/repo-generated.tsv`, with their old keys. Do such
+an item on the old file, before M41: `bootstrap init` (M41) then moves each key
+into `.config/bootstrap/`.
+
 ## Find the items that apply
 
 | The repository has                                                                            | Do                                                                                                                                                      |
@@ -37,6 +42,7 @@ This file is temporary. Remove an item when all repositories have done it.
 | A values file without `format = 2`, or with `[packs.*]`, also `macos.toml`                    | M38, after the release `bootstrap@3.0.0`.                                                                                                               |
 | `[tools.go]`, or `.config/mise/tasks/code/format/20-gofmt`                                    | M39, after the sync.                                                                                                                                    |
 | An `exec` block in `dprint.jsonc`, for example from `[tools.rust]` or `[tools.go]`            | M40, after the sync.                                                                                                                                    |
+| `.config/bootstrap.toml`, `.config/bootstrap.overrides.toml` or `.config/repo-generated.tsv`  | M41, after the release `bootstrap@4.0.0`, and after each other item.                                                                                    |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -505,18 +511,18 @@ when they are missing. Thus it does not change the old files.
 ## M22: Allow direct commits on a core branch (optional)
 
 The `no-commit-to-branch` hook protects only the core branches (`main`,
-`develop`) that exist and do not allow direct commits. The key
-`direct_commit` of `[tools.git.branch.main]` and `[tools.git.branch.develop]`
-is new. No old form
-of it exists.
+`develop`) that exist and do not allow direct commits. Before M41 the key was
+`direct_commit = true` of `[tools.git.branch.main]` and
+`[tools.git.branch.develop]`. With `.config/bootstrap/`, it is
+`landing = "direct-commit"` of `[branches.<branch>]` in `repo.toml`.
 
 1. If the repository does not want direct commits on a core branch, do
    nothing. At the next sync, a repository with one core branch gets only
    `--branch <its branch>` in the hook.
-2. To allow direct commits on a core branch, set `direct_commit = true` in its
-   `[tools.git.branch.<branch>]` table. With `main` and `develop`, `main` can
-   allow them only when `develop` allows them too. See "Step 2: Select the
-   branch model" of `index.md`.
+2. To allow direct commits on a core branch, run
+   `bootstrap config set repo.branches.<branch>.landing direct-commit`. With
+   `main` and `develop`, `main` can allow them only when `develop` allows them
+   too. See "Step 2: Select the branch model" of `index.md`.
 3. Run `mise run setup:configs`.
 
 ## M23: `code:lint:repo-sync` validates the values file at each commit
@@ -710,9 +716,9 @@ run writes the new `_default`.
    before the sync, the stale rule removed it. Else delete
    `.config/mise/tasks/setup/configs/sync` when it starts with the bootstrap
    header. A file without the header belongs to the repository: keep it.
-3. Do the same in each git submodule. A submodule without
-   `.config/bootstrap.toml` now stops `setup:configs --all` with code 2: adopt
-   `bootstrap` in it first.
+3. Do the same in each git submodule. `setup:configs --all` skips a member
+   without `.config/bootstrap/` with a warning: adopt `bootstrap` in it
+   first.
 
 ## M32: The engine is the command `bootstrap`
 
@@ -1027,3 +1033,82 @@ Do these steps in each repository with an `exec` block in `dprint.jsonc`:
 5. If the copy of step 1 had a command that the repository added, add it
    again. The sync keeps it from now on.
 6. Run `mise run code:format`, then commit the result.
+
+## M41: The values move into the folder `.config/bootstrap/`
+
+`bootstrap@4.0.0` moves the values of a repository from one file into the
+folder `.config/bootstrap/`. An engine older than `4.0.0` cannot read it, and
+the tool scripts of `bootstrap` stop with code 2 on an older engine.
+
+- `repo.toml` holds the facts of the repository: `repo_name`, `product_name`,
+  `repo_url`, `environments`, `bootstrap_commit`, the new key `core_branches`,
+  `[branches.<branch>]`, `[commits]`, `[worktree]` and `[members.<name>]`.
+- `tools.toml` holds the `[tools.<name>]` tables and `[overrides.*]`.
+- `releases.toml` is new and optional. `.config/releases.yaml` stays where it
+  is: a later release moves it.
+- `repo-generated.tsv` is the manifest, moved from `.config/`.
+- Each TOML file has `format = 3`. An unknown key now stops each command with
+  code 2.
+- These keys move or change:
+
+  | Old key                                                       | New key                                    |
+  | ------------------------------------------------------------- | ------------------------------------------ |
+  | `[tools.git].commit_scopes`                                   | `[commits].scopes` of `repo.toml`          |
+  | `[tools.git.branch.<b>]`                                      | `[branches.<b>]` of `repo.toml`            |
+  | `merge_model = "pr"`                                          | `landing = "pr"`                           |
+  | `merge_model = "direct"` or none, with `direct_commit = true` | `landing = "direct-commit"`                |
+  | Each other branch table                                       | `landing = "direct-merge"`, the default    |
+  | `[tools.mise].worktree_files`                                 | `[worktree].files` of `repo.toml`          |
+  | `[member.<name>]`                                             | `[members.<name>]`, with a required `type` |
+  | `.config/bootstrap.overrides.toml`                            | `[overrides.tools.<name>]` of `tools.toml` |
+
+- A key of the overrides file that moves to `repo.toml` goes into `repo.toml`
+  directly, and wins over the value of the old file. `repo.toml` has no
+  overrides.
+- A member can now be a sibling repository: `type = "sibling"`, with `folder`
+  (for example `../acme-api`) and `url`. Each submodule and sibling member gets
+  `[home]` in its own `repo.toml`, the back-link that the sync of the member
+  writes. No bootstrap task reads `.config/vwf.yaml` or
+  `.config/vwf-membership.yaml` any more: `code:worktrees` and the member
+  flags read `[members.*]` and `[home]`.
+- `code:format` and `code:lint` have no member flags (`--all`, `--<member>`)
+  any more: each repository and each submodule runs its own.
+- `bootstrap config` is now the reader and writer of the values:
+  `bootstrap config get|set|unset|show`. The old `bootstrap config`, which
+  printed the settings of the engine, is now `bootstrap settings`.
+- Each other command stops with code 2 and "run bootstrap init" on the old
+  file. With both the old file and the folder, each command stops with code 2.
+
+Do these steps in each repository, after the release `bootstrap@4.0.0`, and
+after each other item of this file that applies:
+
+1. Upgrade the CLI: `mise use -g github:virajp/bootstrap`.
+2. Make sure that `main` or `develop` exists, locally or on `origin`. Without
+   both, `bootstrap init` stops with code 2. A `[tools.git.branch.<b>]` table
+   of another branch, or of a branch that does not exist, also stops it: remove
+   the table, or create the branch.
+3. Run `bootstrap init --dry-run`. It lists the split of
+   `.config/bootstrap.toml` into `.config/bootstrap/repo.toml` and
+   `.config/bootstrap/tools.toml`, the move of the overrides file and of
+   `.config/repo-generated.tsv`, the removal of the old files, and the files
+   that the sync changes. Examine the change list.
+4. If the user agrees, run `bootstrap init --yes`. The comments of a table that
+   moves to `repo.toml`, for example `[tools.git.branch.main]`, are lost: tell
+   the user, and write them again in `repo.toml` if the user wants them. A
+   member table without `type` gets `submodule` when its folder is in
+   `.gitmodules`, else `folder`.
+5. For a product with sibling repositories, write a `[members.<name>]` table
+   for each sibling in the base repository:
+   `bootstrap config set repo.members.<name>
+   '{"type":"sibling","folder":"../<name>","url":"<url>"}'`.
+6. Change each script and each doc of the repository that reads
+   `.config/bootstrap.toml`, `.config/bootstrap.overrides.toml` or
+   `.config/repo-generated.tsv`, or a key that moved. A script reads a value
+   with `bootstrap config get <key> --format json` and its `.value`. Change
+   each call of `bootstrap config` that printed the settings to
+   `bootstrap settings`.
+7. Do steps 2 to 6 in each member, then run `mise run setup:configs --all` in
+   the base repository. The sync of each submodule and sibling member writes its
+   `[home]`. `setup:configs --all` skips a member that has not done this item,
+   with the warning `member <name>: run bootstrap init there`.
+8. Commit `.config/bootstrap/` and the removal of the old files.

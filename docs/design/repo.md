@@ -9,7 +9,8 @@ gate.
 
 See also: [cli.md](cli.md) for the command line, the shared
 rules and the exit codes, [bootstrap-config.md](bootstrap-config.md) for the
-keys of the values file, [packs.md](packs.md), [tools.md](tools.md),
+keys of the values folder `.config/bootstrap/`, [packs.md](packs.md),
+[tools.md](tools.md),
 [mise.md](mise.md) and [fnox.md](fnox.md).
 
 ## The entry tasks
@@ -18,13 +19,13 @@ The `mise` tool of `repo/tools/` ships the entry of the sync, so each
 repository has it. The tool also has the mise tool `github:virajp/bootstrap`
 in `[mise_env.dev.tools]`.
 
-| Task                     | Job                                                                                  |
-| ------------------------ | ------------------------------------------------------------------------------------ |
-| `setup:configs`          | Runs `bootstrap sync` in the repository, and in each selected submodule.             |
-| `code:lint:60-bootstrap` | Hidden. The gate of the values file. See [The gate](#the-gate-codelint60-bootstrap). |
+| Task                     | Job                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `setup:configs`          | Runs `bootstrap sync` in the repository, and in each selected member.           |
+| `code:lint:60-bootstrap` | Hidden. The gate of the values. See [The gate](#the-gate-codelint60-bootstrap). |
 
 `setup:configs` (`setup/configs/_default`) has
-`#MISE tools."github:virajp/bootstrap"="latest"`,
+`#MISE tools."github:virajp/bootstrap"="latest"` and `#MISE tools.yq="latest"`,
 so it runs also before the
 first sync. With `BOOTSTRAP_BIN` set, it runs that file in place of the
 `bootstrap` of mise. Its order is:
@@ -32,22 +33,28 @@ first sync. With `BOOTSTRAP_BIN` set, it runs that file in place of the
 1. It prints the header `Syncing the shared files from bootstrap ...`. Then it
    runs `bootstrap sync` in the root of the repository, with
    `MISE_PROJECT_ROOT` set to the root.
-2. For each selected submodule, it prints the header `Syncing <label> ...`.
-   Then it does step 1 in the folder of the submodule, with
-   `MISE_PROJECT_ROOT` set to that folder.
+2. With a member flag, it reads the members with `members` of `helpers`
+   (`bootstrap config get repo.members`). For each selected member, it prints
+   the header `Syncing <label> ...`. Then it does step 1 in the folder of the
+   member, with `MISE_PROJECT_ROOT` set to that folder, `BOOTSTRAP_HOME` set to
+   the root and `BOOTSTRAP_MEMBER` set to the name of the member, so the sync
+   of the member writes its `[home]`.
 
 The first failure stops the task, and the exit code of the engine is the exit
 code of the task. `bootstrap sync` takes the clone, examines its version and
 syncs: see [cli.md](cli.md#the-cache-and-the-clone).
 
-| Flag                | Effect                                                                                          |
-| ------------------- | ----------------------------------------------------------------------------------------------- |
-| `--dry-run`         | Shows the changes. Writes nothing.                                                              |
-| `--verbose`         | Sets `BOOTSTRAP_VERBOSE=1`. The task does not pass the flag to the engine.                      |
-| `--all`, `--<name>` | Also syncs each submodule member, or the named one. Only a repository with submodules has them. |
+| Flag                | Effect                                                                                                                                             |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--dry-run`         | Shows the changes. Writes nothing.                                                                                                                 |
+| `--verbose`         | Sets `BOOTSTRAP_VERBOSE=1`. The task does not pass the flag to the engine.                                                                         |
+| `--all`, `--<name>` | Also syncs each submodule and sibling member, or the named one. Only a repository with such a member that has a `[members.<name>]` table has them. |
 
-A submodule is a separate repository with its own values file. A submodule
-without a values file stops the engine with code 2.
+A submodule or sibling member is a separate repository with its own
+`.config/bootstrap/`. The task skips, with a warning, a member that is not on
+the machine (`member <name>: <folder> is not on this machine`) and a member
+without `.config/bootstrap/`, or with only the old form
+(`member <name>: run bootstrap init there`), and goes on.
 
 By default, the sync starts with one line:
 `↻ bootstrap <short commit> · <n> tools · env <environments>`.
@@ -55,10 +62,11 @@ By default, the sync starts with one line:
 `bootstrap sync` makes its own private copy of the clone, because it writes
 the generated mise config into the copy.
 
-## The values file and the selection
+## The values folder and the selection
 
-`bootstrap sync` reads the consumer file `.config/bootstrap.toml`, and its
-overrides file `.config/bootstrap.overrides.toml`. The keys are in
+`bootstrap sync` reads the values folder `.config/bootstrap/` of the consumer:
+`repo.toml` and `tools.toml`, with the overrides in `[overrides.tools.*]` of
+`tools.toml`. The keys and their schema are in
 [bootstrap-config.md](bootstrap-config.md).
 
 - It adds the required members of the pack `base`. The name `base` is fixed in
@@ -68,49 +76,65 @@ overrides file `.config/bootstrap.overrides.toml`. The keys are in
 - It adds the tool of each `[tools.<name>]` table, adds the `depends` of each
   tool and the tool of each mise `depends`, depth first, and copies each file of
   each tool. A dependency comes before the tool that needs it.
-- The values file is necessary. A missing file stops the sync. The old name
-  `.config/repo-config.toml` is read, with a message: rename it.
+- The values folder is necessary. A missing folder, `repo.toml` or
+  `tools.toml` stops the sync with code 2 and "run bootstrap init". An unknown
+  key stops it with code 2.
 - It examines the `tools.toml` of each tool of the clone, selected or not. See
   [tools.md](tools.md).
-- An old form of the values file stops the sync with "run bootstrap init". See
+- An old form of the values stops the sync with "run bootstrap init". See
   [bootstrap-config.md](bootstrap-config.md#old-forms).
 
 ## Members and submodules
 
-A member is a git submodule or a folder below the root. The keys are in
-[`[member.<name>]`](bootstrap-config.md#membername).
+A member is a git submodule, a folder below the root, or a sibling repository
+next to it. The keys are in
+[`[members.<name>]`](bootstrap-config.md#membersname). No bootstrap file reads
+a vwf file for the members.
 
-- The member flags (`--all`, `--<name>`) of `setup`, `setup:configs`,
-  `code:format` and `code:lint` are only for the submodules. A folder member is
-  part of the root tree.
+- The member flags (`--all`, `--<name>`) of `setup` and `setup:configs` are
+  only for the submodule and sibling members that have a `[members.<name>]`
+  table. A folder member is part of the root tree. `code:format` and
+  `code:lint` have no member flags: each repository and each submodule runs its
+  own, and a task runs in a member only through `mise run --cd`.
 - A task that runs in a member uses its folder.
-- A submodule is a separate repository, with its own values file and its own
-  manifest. The sync never writes a file of a submodule.
+- A submodule or sibling member is a separate repository, with its own values
+  folder and its own manifest. The sync never writes a file of a member, except
+  the `[home]` of its own `repo.toml` when `setup:configs` of the home runs its
+  sync. See [`[home]`](bootstrap-config.md#home).
+- A sibling member whose folder is not there is left out, with an info line.
 - The members are in the input of each script: `repo.members`. See
   [cli.md](cli.md#the-scripts-of-a-tool). The derive script of
-  `mise` makes the aliases `setup-all` and `setup-<member>` from them.
+  `mise` makes the aliases `setup-all` and `setup-<member>` for the submodule
+  and sibling members that have a `[members.<name>]` table: it reads the
+  tables with `bootstrap config get repo.members`.
 
 ### `root_only`
 
-A `root_only` tool is not for a git submodule. In a submodule, `init`,
-`add pack` and the migration of an old form skip it, and the sync stops when a
-`[tools.*]` entry names it.
+A `root_only` tool is not for a submodule member: a repository whose `[home]`
+has `type = "submodule"`, or, without `[home].type`, a git submodule. In such a
+member, `init`, `add pack` and the migration of an old form skip it, and the
+sync stops when a `[tools.*]` entry names it. A sibling member is its own root,
+so it keeps them.
 
 ## The template context
 
-The context of a template is the values file, with these values merged over it.
-A key of the same name in the values file does not replace them. The reserved
+The context of a template is the values: the keys of `repo.toml`, then the
+`[tools.*]` and `[overrides.*]` tables of `tools.toml` without
+`[overrides.tools.*]`, and `member`, the old name of `[members.*]`. These
+values are merged over it. A key of the same name in the values does not
+replace them. The reserved
 names are in [bootstrap-config.md](bootstrap-config.md#reserved-names).
 
-| Value             | Content                                                                                                                                                                                                                                                                  |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `.members`        | The list of member names: the git submodules (the key of the `[member.<name>]` table whose `folder` is the submodule path, else the `repo_name` of the values file of the submodule, else the path with each `/` changed to `_`), then each other `[member.<name>]` key. |
-| `.member_folders` | A map from each name to its folder (`folder`, default the name).                                                                                                                                                                                                         |
-| `.member_types`   | A map from each name to `submodule` or `folder` (`type`, default from the folder).                                                                                                                                                                                       |
-| `.submodules`     | The list of the git submodules only, nested ones included. It is empty in a repository without submodules.                                                                                                                                                               |
-| `.tools`          | The list of the selected tools, with the required members of `base` and the dependencies added.                                                                                                                                                                          |
-| `.cli_dir`        | The absolute path of the `cli/` folder of the clone copy of the run.                                                                                                                                                                                                     |
-| `.config`, `.all` | The values of the tools. See [cli.md](cli.md#templates).                                                                                                                                                                                                                 |
+| Value             | Content                                                                                                                                                                                                                                                                                                                     |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.members`        | The list of member names: the git submodules (the key of the `[members.<name>]` table whose `folder` is the submodule path, else the `repo_name` of the `repo.toml` of the submodule, else the path with each `/` changed to `_`), then each other `[members.<name>]` key. A sibling whose folder is not there is left out. |
+| `.member_folders` | A map from each name to its folder (`folder`, default the name).                                                                                                                                                                                                                                                            |
+| `.member_types`   | A map from each name to `submodule`, `folder` or `sibling`.                                                                                                                                                                                                                                                                 |
+| `.member_tables`  | The list of the members that have a `[members.<name>]` table. A git submodule without one is a member, but gets no flag of a task.                                                                                                                                                                                          |
+| `.submodules`     | The list of the git submodules only, nested ones included. It is empty in a repository without submodules.                                                                                                                                                                                                                  |
+| `.tools`          | The list of the selected tools, with the required members of `base` and the dependencies added.                                                                                                                                                                                                                             |
+| `.cli_dir`        | The absolute path of the `cli/` folder of the clone copy of the run.                                                                                                                                                                                                                                                        |
+| `.config`, `.all` | The values of the tools. See [cli.md](cli.md#templates).                                                                                                                                                                                                                                                                    |
 
 A name has only letters, digits, `-` and `_`, and two members never have the
 same name. If not, the sync stops.
@@ -119,15 +143,20 @@ same name. If not, the sync stops.
 
 The `git` tool holds the branch model. The engine has no branch rule.
 
-- The derive script of `git` gives `branch_pair` (true when the repository has
-  both `main` and `develop`, locally or on `origin`) and `protected_branches`
-  (`main` and `develop`, without each one with `direct_commit = true`). It reads
-  `direct_commit` from the values file and its overrides file.
+- The derive script of `git` gives `branch_pair` (true when `core_branches` of
+  `repo.toml` has both `main` and `develop`) and `protected_branches` (each core
+  branch whose `landing` is not `direct-commit`). It reads `core_branches` and
+  `[branches.*]` with `bootstrap config get` (`BOOTSTRAP_BIN`, else the
+  `bootstrap` of mise). `repo.toml` has no overrides.
 - The tasks `code:merge:develop` and `code:merge:main` of `git` have
   `when = "git.branch_pair"`. The task `code:merge` (`code/merge/_default`) of
   `mise` has `when = "!git.branch_pair"`. Thus the sync writes the merge tasks
   of the model that it finds, and the stale rule removes the others.
-- The check script of `git` stops the sync when neither branch exists.
+- The check script of `git` stops the sync when a branch of `core_branches`
+  does not exist, locally or on `origin`, and is not the unborn branch that
+  HEAD names. A detached HEAD names no branch. Without an engine that answers
+  `bootstrap config get`, for example one older than 4.0.0, it stops the sync
+  with code 2.
 
 | Branches             | Tasks                                                                                                                                                                  |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -137,28 +166,33 @@ The `git` tool holds the branch model. The engine has no branch rule.
 - Merges use `--no-ff`. A hook pass over all files runs first as a safety net,
   with `SKIP=no-commit-to-branch`: that hook guards a commit, and the safety net
   makes none. Thus `code:merge:main` also runs from a protected `develop`.
-- The merge tasks read `[tools.git.branch.<destination>]` of the repository's
-  own `.config/bootstrap.toml` when they run, with `yq`: the root and each
-  submodule read their own file.
+- The merge tasks read `[branches.<destination>]` of the repository's own
+  `.config/bootstrap/repo.toml` when they run, with `bootstrap_get` of
+  `helpers` (`bootstrap config get`): the root and each member read their own
+  values. A read failure stops the merge with code 1. Without an engine that
+  answers, for example one older than 4.0.0, the merge stops with code 2.
 - A merge task stops before it touches a branch when the git top level of
   `MISE_ORIGINAL_CWD` is not the git top level of `MISE_PROJECT_ROOT`. In a
   submodule without that task, mise runs the root's task in the root folder,
   and the task would land a branch of the root.
-- `merge_model` selects `direct` (local merge and push, the default) or `pr`
-  (push and open a pull request with `gh` or `glab`). Any other value reads as
-  `direct`. Without an `origin` remote, `direct` merges locally and skips the
-  pull and the push, and `pr` stops before the hook pass. The `github` and
-  `gitlab` tools install these CLIs.
+- `landing` selects `direct-merge` (local merge and push, the default),
+  `direct-commit` (the same merge) or `pr` (push and open a pull request with
+  `gh` or `glab`). The schema allows no other value. The header names the
+  landing: `Landing <source> on <destination> (<landing>) ...`. Without an
+  `origin` remote, a direct landing merges locally and skips the pull and the
+  push, and `pr` stops before the hook pass, with the fix
+  `bootstrap config set 'repo.branches."<branch>".landing' direct-merge`. The
+  `github` and `gitlab` tools install these CLIs.
 - `merge_from` lists the only source branches, and `merge_never` the forbidden
   ones. A table with both stops the merge. Without both, the defaults are: into
   `main` with `develop`, only from `develop`; into another branch, never from
   `main`.
 
-### `direct_commit`
+### The protected branches
 
-`direct_commit = true` in `[tools.git.branch.main]` or
-`[tools.git.branch.develop]` lets a direct commit to that branch. The sync reads
-it through the scripts of `git`, and the merge tasks do not read it.
+`landing = "direct-commit"` in `[branches.main]` or `[branches.develop]` lets a
+direct commit to that branch. The sync reads it through the scripts of `git`.
+The merge tasks merge the same way for `direct-merge` and `direct-commit`.
 
 The `no-commit-to-branch` hook of the `git` tool protects only the core branches
 in `protected_branches`. The pre-commit spec gives the hook one
@@ -166,26 +200,29 @@ in `protected_branches`. The pre-commit spec gives the hook one
 branch is left, because without `--branch` the hook protects `main` and
 `master`.
 
-| Core branches of the repository | `direct_commit = true` in         | Hook args                         |
-| ------------------------------- | --------------------------------- | --------------------------------- |
-| `main` only                     | `[tools.git.branch.main]`         | No hook                           |
-| `develop` only                  | `[tools.git.branch.develop]`      | No hook                           |
-| `main` and `develop`            | `[tools.git.branch.develop]` only | `--branch main`                   |
-| `main` and `develop`            | Both tables                       | No hook                           |
-| `main` and `develop`            | `[tools.git.branch.main]` only    | The sync stops                    |
-| `main` and `develop`            | No table                          | `--branch main --branch develop`  |
-| `main` only, or `develop` only  | No table                          | `--branch <branch>` of the branch |
+| `core_branches`      | `landing = "direct-commit"` in | Hook args                         |
+| -------------------- | ------------------------------ | --------------------------------- |
+| `main` only          | `[branches.main]`              | No hook                           |
+| `develop` only       | `[branches.develop]`           | No hook                           |
+| `main` and `develop` | `[branches.develop]` only      | `--branch main`                   |
+| `main` and `develop` | Both tables                    | No hook                           |
+| `main` and `develop` | `[branches.main]` only         | The command stops                 |
+| `main` and `develop` | No table                       | `--branch main --branch develop`  |
+| One branch           | No table                       | `--branch <branch>` of the branch |
 
-The check script of `git` examines the key before the sync writes a file, also
-when it is `false`. These values stop the sync:
+The schema of `repo.toml` examines the tables before the sync writes a file,
+and each command that reads the values stops with code 2 on these:
 
-- A value that is not a boolean: `direct_commit must be true or false`.
-- The key in a `[tools.git.branch.*]` table other than `main` and `develop`.
-- The key for a core branch that does not exist, locally or on `origin`. The
-  message names the table and the branch: create the branch, or remove the key.
-- With `main` and `develop`, `direct_commit = true` for `main` but not for
+- A `[branches.<b>]` table for a branch that is not in `core_branches`.
+- A `landing` that is not `pr`, `direct-merge` or `direct-commit`.
+- With `main` and `develop`, `landing = "direct-commit"` for `main` but not for
   `develop`. A repository with both branches never lets a direct commit to
   `main` and refuses it on `develop`.
+
+The check script of `git` stops the sync when a branch of `core_branches` does
+not exist, locally or on `origin`, and is not the unborn branch that HEAD
+names: create the branch, or remove it from
+`core_branches`.
 
 ## The pre-commit config
 
@@ -201,7 +238,7 @@ See [cli.md](cli.md#shared-files).
   calls `pre-commit`.
 - The top-level `exclude` comes from `.config.exclude`, the list of the values
   of the tool: `[defaults]`, then `[contributes.pre-commit]` of each selected
-  tool, then `[tools.pre-commit]` of the values file. pre-commit reads one
+  tool, then `[tools.pre-commit]` of `tools.toml`. pre-commit reads one
   regular expression, so the spec joins the items with `|`.
 - The own hooks of a repository are blocks that the user writes directly in
   the file. The sync never touches them.
@@ -229,12 +266,13 @@ not look in git submodules, because a submodule has its own sync. A name has no
 
 ## `bootstrap check`
 
-`bootstrap check` examines the values file. It writes no file and does not set
+`bootstrap check` examines the values folder. It writes no file and does not set
 `bootstrap_commit`. It runs each check and prints each message, so each error
 shows at once.
 
-1. The local rules: the old forms, `environments`, `env`, the structure of
-   `[overrides]` and of `[member.*]`.
+1. The local rules: the old forms, the schema of `repo.toml`, `tools.toml` and
+   `releases.toml` (an unknown key is code 2), `environments`, `env`, the
+   structure of `[overrides]` and the members.
 2. With a clone, the rules of the clone: the selection, the values of the tools
    (with the derive scripts), the questions without an answer, and the check
    script of each selected tool.
@@ -252,8 +290,8 @@ It prints nothing and exits 0 in these cases:
 
 - Without `bootstrap` (`mise x -- which bootstrap`), and without
   `BOOTSTRAP_BIN`.
-- With a list of files that does not include `.config/bootstrap.toml`, or with
-  no list and no values file.
+- With a list of files that has no file in `.config/bootstrap/`, or with no
+  list and no values folder.
 - The cache has no clone with `cli/VERSION`.
 - The raw `origin` of `<cache>/repo` is not one of five literal forms of the
   default URL. Thus the gate never uses code of another repository at commit
@@ -265,14 +303,18 @@ Thus the gate takes no lock and never fetches. A binary that is older than
 
 ## The manifest
 
-The manifest is `.config/repo-generated.tsv`. It is committed, and each git
-submodule has its own. Its shape and the stale rule are in
+The manifest is `.config/bootstrap/repo-generated.tsv`, in the values folder
+(`$BOOTSTRAP_VALUES/repo-generated.tsv`). It is committed, and each git
+submodule has its own. The plan of a migration copies the old
+`.config/repo-generated.tsv` into its temporary values folder, so a dry run of
+`init` lists the same removals as `init`. Its shape and the stale rule are in
 [cli.md](cli.md#the-manifest-and-the-stale-rule).
 
 After a clean run, the order is the stale rule, the write of the manifest, then
 `bootstrap_commit`. A run with a failure runs no stale rule and writes no
 manifest. A manifest that the sync cannot read fails the run: it logs
-`FAILED: .config/repo-generated.tsv`, and it skips the stale rule, the write of
+`FAILED: .config/bootstrap/repo-generated.tsv`, and it skips the stale rule, the
+write of
 the manifest and `bootstrap_commit`.
 
 Handled paths are the files of the selected tools and their dependencies, also
@@ -298,8 +340,9 @@ path, the sync refuses to remove such a path and fails that file.
 ## The Claude plugins
 
 The sync does not read `[tools.claude.plugins.user]` and
-`[tools.claude.plugins.project]` of the values file. `setup:ai` of the `claude`
-tool reads them when it runs, as the merge tasks read `[tools.git.branch.*]`.
+`[tools.claude.plugins.project]` of `tools.toml`. `setup:ai` of the `claude`
+tool reads them with `bootstrap config get` when it runs, as the merge tasks
+read `[branches.*]`. Both are `[defaults]` of the tool, empty by default.
 Each key is `"<plugin>@<marketplace>" = "<source>"`. It adds a missing
 marketplace from the source, installs each plugin that is missing at that
 scope, and updates the marketplaces and the plugins.

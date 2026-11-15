@@ -77,7 +77,8 @@ them. See [`docs/design/tools.md`](../../design/tools.md).
 
 `bootstrap sync` and `bootstrap check` run the check script. The gate
 `code:lint:60-bootstrap` runs `bootstrap check` only when a commit changes
-`.config/bootstrap.toml`. Thus a commit that changes only `.config/fnox.toml`
+a file of `.config/bootstrap/`. Thus a commit that changes only
+`.config/fnox.toml`
 does not run the check. The next sync does.
 
 ## Contributions

@@ -13,8 +13,8 @@ steps in this repository." The `bootstrap: init` instruction of
 
 Use this file for the first adoption, and also later, to bring a repository
 up to date with `bootstrap`. For a repository that already has
-`.config/bootstrap.toml`, start with
-"A repository that already has `.config/bootstrap.toml`".
+`.config/bootstrap/`, or the old `.config/bootstrap.toml`, start with
+"A repository that already has its values".
 
 A Mac uses [`docs/setup/index.md`](../setup/index.md), not this prompt.
 
@@ -70,7 +70,7 @@ This file holds the instructions. Each rule of the sync has one place in
 `docs/design/` of the clone of step 1. Read the doc when a step needs the rule:
 
 - Read [`docs/design/bootstrap-config.md`](../design/bootstrap-config.md) before
-  you write a key of `.config/bootstrap.toml`.
+  you write a key of `.config/bootstrap/`.
 - Read [`docs/design/packs.md`](../design/packs.md) before you add a pack.
 - Read [`docs/design/tools.md`](../design/tools.md) before you read a
   `tools.toml`: its keys, the `[files]` and `[tasks]` tables, the shared
@@ -97,8 +97,11 @@ This file holds the instructions. Each rule of the sync has one place in
 - The shared files are grouped by tool. Each tool is a folder
   `repo/tools/<tool>/` in `bootstrap`. Its `tools.toml` gives the path in the
   consumer repository of each file of its `files/` and `tasks/` folders.
-- The values file `.config/bootstrap.toml` has one `[tools.<name>]` table for
-  each tool of the repository, and no pack. `bootstrap sync` always adds the
+- The values are in the folder `.config/bootstrap/`: `repo.toml` holds the
+  facts of the repository (names, branches, commits, members), and
+  `tools.toml` has one `[tools.<name>]` table for each tool of the repository,
+  and no pack. Read and write a value with `bootstrap config get|set|unset`.
+  `bootstrap sync` always adds the
   required tools of the `base` pack, and it syncs all the files of these
   tools.
 - A command of `bootstrap` that writes shows the change list first. An AI
@@ -113,7 +116,7 @@ This file holds the instructions. Each rule of the sync has one place in
 - Do not edit a synced file in the consumer repository. The next sync replaces
   it. Put repository-owned content in the places that the sync never writes:
   - a different default of a mise tool, for example a version, a mise setting
-    or an env value: `[overrides.mise*]` of the values file (see step 6).
+    or an env value: `[overrides.mise*]` of `tools.toml` (see step 6).
   - mise config and environment variables that no tool has: the seeds
     `.config/mise/conf.d/zz-repo/mise.<env>.toml`, one for each environment.
     mise loads the folders of `conf.d/` in name order, and a later folder
@@ -131,7 +134,7 @@ This file holds the instructions. Each rule of the sync has one place in
   `.config/pre-commit-config.yaml`, extensions in `.vscode/extensions.json`,
   and keys, excludes and plugins in `dprint.jsonc`. To change or remove an
   item of `bootstrap`, write an override in
-  `[tools.<tool>.files."<path>"]` of the values file (see step 6).
+  `[tools.<tool>.files."<path>"]` of `tools.toml` (see step 6).
 - A seed file is different too. The sync writes it only if it is missing.
   After that, the repository owns it.
 - To change a shared file of `bootstrap`, change it in `bootstrap`, push it to
@@ -150,7 +153,7 @@ This file holds the instructions. Each rule of the sync has one place in
 - The machine can reach `https://github.com/virajp/bootstrap.git`.
   `bootstrap` clones this URL into `~/.cache/bootstrap/`, and needs no SSH
   key. `BOOTSTRAP_CACHE`, or the key `cache_dir` of the user config file
-  `~/.config/bootstrap/config.toml`, changes the folder. `bootstrap config`
+  `~/.config/bootstrap/config.toml`, changes the folder. `bootstrap settings`
   shows each setting of the CLI and its source. See
   [The config file](../design/cli.md#the-config-file).
 - When `bootstrap` is older than the version that the clone needs, it stops.
@@ -214,11 +217,14 @@ The base repository has the members as git submodules, for example
    `git submodule update --init <path>`, or to skip it.
 3. Do the steps in each included submodule. Start with the deepest
    submodules. Do the base repository last.
-4. In the base repository, write a `[member.<name>]` table for each
-   submodule, with its `label`.
+4. In the base repository, write a `[members.<name>]` table for each
+   submodule, with `type = "submodule"`, its `url` and its `label`. Then
+   `mise run setup:configs --all` syncs each submodule, and the sync of each
+   one writes its `[home]`.
 
 A tool with `root_only = true` is for the base repository only. The sync refuses
-it in a submodule. `bootstrap init` and `bootstrap add pack <pack…>` skip a
+it in a submodule member. `bootstrap init` and `bootstrap add pack <pack…>` skip
+a
 `root_only` member of a pack in a submodule, for example `vscode` of `base`.
 When a submodule is in its root checkout, mise also loads the tools of the root.
 Thus a nested submodule also finds the tools of the root.
@@ -226,32 +232,37 @@ Thus a nested submodule also finds the tools of the root.
 ### Siblings
 
 The members are separate checkouts next to the base repository, for example
-`../acme-api` and `../acme-app`. They are not submodules. vwf names this
-shape `linkage: siblings`, and lists the paths in `members:` of
-`.config/vwf.yaml`.
+`../acme-api` and `../acme-app`. They are not submodules.
 
-1. Get the paths of the members from `members:` of `.config/vwf.yaml`, or ask
-   the user for them. Show the list to the user. Ask which members to include.
+1. Get the paths of the members from the `sibling` members of
+   `bootstrap config get repo.members` in the base repository, or ask the user
+   for them. Show the list to the user. Ask which members to include.
 2. If a member checkout is missing, ask whether to clone it to its path, or
    to skip it.
 3. Do the steps in each included member, then in the base repository.
-4. Do not write a `[member.<name>]` table for a sibling. A member table names
-   a folder below the root, and a sibling is not below the root.
+4. In the base repository, write a `[members.<name>]` table for each sibling,
+   with `type = "sibling"`, its `folder` relative to the base repository (for
+   example `../acme-api`), its `url` and its `label`. Then
+   `mise run setup:configs --all` syncs each sibling, and the sync of each one
+   writes its `[home]`.
 
-## A repository that already has `.config/bootstrap.toml`
+## A repository that already has its values
 
 Do not stop. Find whether the repository is up to date, then do only the
 steps that are not. Show the result of each check to the user before you
-change a file. `bootstrap init` on an existing values file is the update: it
-examines the version, migrates each old form of the values file, asks each
-new question, then syncs. A values file without `format = 2`, or with a
-`[packs.*]` table, is an old form: `bootstrap init` moves it to a
+change a file. `bootstrap init` on existing values is the update: it
+examines the version, migrates each old form of the values, asks each
+new question, then syncs. The old values file `.config/bootstrap.toml` is an
+old form: `bootstrap init` splits it into `.config/bootstrap/` (M41 of
+`migrate.md`). A values file without `format = 2`, or with a `[packs.*]`
+table, is an older form: `bootstrap init` also moves it to a
 `[tools.<name>]` table for each tool (M38 of `migrate.md`).
 
 1. Make the clone of step 1, and get the newest commit of `bootstrap`:
    `git -C "$tmp" rev-parse HEAD`.
-2. Read `bootstrap_commit` of the values file. `bootstrap sync` writes it
-   after each sync without a failure.
+2. Read `bootstrap_commit`: `bootstrap config get repo.bootstrap_commit`, or
+   the top-level key of the old `.config/bootstrap.toml`. `bootstrap sync`
+   writes it after each sync without a failure.
 3. Use `bootstrap_commit` to select the checks of step 4:
 
    | `bootstrap_commit` | The checks of the kind `bootstrap`                                                                                             | The checks of the kind `repository` |
@@ -271,7 +282,7 @@ new question, then syncs. A values file without `format = 2`, or with a
    | No item of `migrate.md` applies, and no "Migration" item of a selected tool applies.                                       | bootstrap  | Step 4              |
    | No path of "Files that bootstrap no longer ships" exists.                                                                  | bootstrap  | Step 4              |
    | `bootstrap init --dry-run` shows no change. It shows the migration of an old form, a new question and each file to sync.   | bootstrap  | Step 3, then step 5 |
-   | `bootstrap check` shows no error in the values file.                                                                       | repository | Step 6              |
+   | `bootstrap check` shows no error in the values.                                                                            | repository | Step 6              |
    | `bootstrap detect` exits 0: each tool that a detect script finds is selected.                                              | repository | Step 1              |
    | The selected tools agree with the signs of their tool files: no tool is missing, and no tool is selected without a reason. | repository | Step 1              |
    | Each value that you can find agrees with the file, for example `repo_url` and `origin`, or the members and `.gitmodules`.  | repository | Step 6              |
@@ -290,23 +301,25 @@ Step 4 deletes them with the item of `migrate.md`. Delete a file only when it
 starts with the bootstrap header. A file without the header belongs to the
 repository: keep it.
 
-| Path                                                                                                                                                                                 | Do                                    |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------- |
-| `.graphifyignore`                                                                                                                                                                    | Delete it (M24).                      |
-| `.config/mise/tasks/code/graph`                                                                                                                                                      | Delete it (M24).                      |
-| The `post-commit` and `post-merge` git hooks                                                                                                                                         | Uninstall them with pre-commit (M24). |
-| `.config/mise/conf.d/_repo/`                                                                                                                                                         | Rename it to `conf.d/zz-repo/` (M17). |
-| A `.config/mise/conf.d/*/mise*.toml` that `.config/repo-generated.tsv` does not list and the sync did not write, for example in `conf.d/_base/`, `conf.d/_env/` and `conf.d/claude/` | Delete it (M29).                      |
-| `.config/mise/tasks/setup/configs/sync`                                                                                                                                              | Delete it (M31, M34).                 |
-| `.config/repo-sync/gitignore`                                                                                                                                                        | Move its lines to `.gitignore` (M18). |
-| `.config/repo-sync/pre-commit.yaml`                                                                                                                                                  | `bootstrap init` moves it (M34).      |
-| The files of the old `repo-sync` tool: `.config/mise/tasks/_scripts/repo-sync`, `.config/mise/tasks/code/lint/60-repo-sync` and `.config/mise/conf.d/repo-sync/`                     | Delete them (M34).                    |
-| `.config/mise/tasks/code/format/20-gofmt`                                                                                                                                            | Delete it (M39).                      |
+| Path                                                                                                                                                                 | Do                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `.graphifyignore`                                                                                                                                                    | Delete it (M24).                      |
+| `.config/mise/tasks/code/graph`                                                                                                                                      | Delete it (M24).                      |
+| The `post-commit` and `post-merge` git hooks                                                                                                                         | Uninstall them with pre-commit (M24). |
+| `.config/mise/conf.d/_repo/`                                                                                                                                         | Rename it to `conf.d/zz-repo/` (M17). |
+| A `.config/mise/conf.d/*/mise*.toml` that the manifest does not list and the sync did not write, for example in `conf.d/_base/`, `conf.d/_env/` and `conf.d/claude/` | Delete it (M29).                      |
+| `.config/mise/tasks/setup/configs/sync`                                                                                                                              | Delete it (M31, M34).                 |
+| `.config/repo-sync/gitignore`                                                                                                                                        | Move its lines to `.gitignore` (M18). |
+| `.config/repo-sync/pre-commit.yaml`                                                                                                                                  | `bootstrap init` moves it (M34).      |
+| The files of the old `repo-sync` tool: `.config/mise/tasks/_scripts/repo-sync`, `.config/mise/tasks/code/lint/60-repo-sync` and `.config/mise/conf.d/repo-sync/`     | Delete them (M34).                    |
+| `.config/mise/tasks/code/format/20-gofmt`                                                                                                                            | Delete it (M39).                      |
+| `.config/bootstrap.toml`, `.config/bootstrap.overrides.toml` and `.config/repo-generated.tsv`                                                                        | `bootstrap init` moves them (M41).    |
 
 The sync removes these old paths itself, so they need no step:
 
-- A file with the bootstrap header that `.config/repo-generated.tsv` lists and
-  the sync does not write. The first sync has no manifest, so it removes
+- A file with the bootstrap header that `.config/bootstrap/repo-generated.tsv`
+  lists and the sync does not write. The first sync has no manifest, so it
+  removes
   nothing.
 - A synced file at a path where the sync now needs a folder, for example the
   old `code/format`, `code/lint`, `code/sec` and `setup/configs` files.
@@ -393,7 +406,17 @@ exists locally or on `origin`.
 | -------------------- | --------------------------------------- | ------------------------------------------------------------------------- |
 | `main` and `develop` | `code:merge:develop`, `code:merge:main` | Feature branches merge into `develop`. Only `develop` merges into `main`. |
 | only one of them     | `code:merge`                            | Any feature branch merges into that branch.                               |
-| neither              | none                                    | The check script of the `git` tool stops the sync with code 2.            |
+
+The branches are `core_branches` of `.config/bootstrap/repo.toml`. A new
+`repo.toml` gets the `main` and `develop` that exist, in that order. With
+neither, a fresh `bootstrap init` writes the current branch, born or unborn,
+of any name, and it stops with code 2 only when HEAD is not on a branch. A
+migration of older copies stops with code 2 when it finds neither. The check
+script of the `git` tool stops the sync with code 2 when a core branch does
+not exist locally or on `origin`, and is not the unborn branch that HEAD names.
+In a repository whose only core branch is neither `main` nor `develop`,
+`code:merge` refuses to merge until `main` or `develop` exists. The `git:*`
+tasks of a later plan (R2) will port this rule.
 
 1. Find the branches:
 
@@ -407,28 +430,28 @@ exists locally or on `origin`.
 2. Show the result to the user.
 3. If a branch is missing, ask the user whether to create it. If the user
    agrees, create it from the existing branch, and ask before you push it.
-4. Ask the user whether a core branch allows a direct commit. If it does, step
-   6 sets `direct_commit = true` in its `[tools.git.branch.<branch>]` table.
-   With both branches, `main` can allow it only when `develop` allows it too.
-   Without a sign, do not write the key.
-5. Ask the user for the merge model of each core branch: `direct` (the
-   default) or `pr`. Step 6 writes it as `merge_model`.
+4. Ask the user how a branch lands on each core branch: `direct-merge` (the
+   default: a local merge, and no direct commit), `direct-commit` (the same
+   merge, and a direct commit to the branch is allowed) or `pr` (a pull
+   request). Step 6 writes it as `landing` of `[branches.<branch>]`. With both
+   branches, `main` can be `direct-commit` only when `develop` is too. Without
+   a sign, do not write the key.
 
 `bootstrap sync` does not ask. It writes the merge tasks of the model that it
 finds, and removes the merge tasks of the other model. If the branches change
 later, run `setup:configs` again.
 
 The `no-commit-to-branch` hook of the `git` tool protects only the core
-branches that exist and do not allow direct commits. The rules of
-`direct_commit` and of the merge keys are in
+branches that are not `direct-commit`. The rules of `landing` and of the
+merge keys are in
 [`docs/design/repo.md`](../design/repo.md) and
 [`tools/git.md`](tools/git.md).
 
 ## Step 3: Answer the questions
 
 A tool can have questions. Their answers are keys of its `[tools.<tool>]`
-table. Get the questions of the tools that the values file selects (without a
-values file, the tools of the `base` pack), then of the tools of step 1:
+table. Get the questions of the tools that the values select (without
+values, the tools of the `base` pack), then of the tools of step 1:
 
 ```text
 bootstrap questions --json
@@ -438,7 +461,7 @@ bootstrap questions <tool…> --json
 Each item has `tool`, `key`, `question`, `proposal`, `source`, `answer`,
 `group`, `note` and `optional`. `proposal` is the value that `bootstrap` finds
 in the repository, and `source` tells where it comes from. `answer` is the
-value of the values file, or `null`. An `answer` of `""` means no answer, and
+value of `tools.toml`, or `null`. An `answer` of `""` means no answer, and
 the question is answered. `note` is a line to show under the question.
 
 1. For each item with a `null` answer, ask the user the question. Show the
@@ -460,7 +483,7 @@ tool of the `base` pack. If the repository has no mise config and no task
 files, skip this step.
 
 1. Find the items that apply. For an update, find only the items of the
-   checks of "A repository that already has `.config/bootstrap.toml`".
+   checks of "A repository that already has its values".
 2. Show the user the list, with the files that each item changes.
 3. Ask one question: do all the items? The user can name the items to leave
    out.
@@ -502,59 +525,67 @@ files, skip this step.
    If the repository does not need `vscode`, also run
    `bootstrap remove tool vscode`.
 
-Without a values file, `bootstrap init` writes it with `format = 2`,
-`environments` and `repo_name`, the name of the folder. It adds a
+Without values, `bootstrap init` writes `.config/bootstrap/repo.toml` with
+`format = 3`, `core_branches`, `environments` and `repo_name`, the name of the
+folder, and `.config/bootstrap/tools.toml` with `format = 3` and a
 `[tools.<name>]` table for each member of the `base` pack and each answer, then
 syncs. `bootstrap add tool <tool…>` adds a table for each named tool and each
 new dependency, and each answer, then syncs. A sync without a failure removes
-the stale files, writes `.config/repo-generated.tsv` and sets `bootstrap_commit`
-in the values file.
+the stale files, writes `.config/bootstrap/repo-generated.tsv` and sets
+`bootstrap_commit` in `repo.toml`.
 
 ## Step 6: Write the other values and sync again
 
 1. Find each value of the table below that you can. These are the usual
    places:
 
-   | Value                              | Where to find it                                                                                                    |
-   | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-   | `repo_name`                        | The last part of the path of `origin`, without `.git`. Else the folder name, but not the name of a worktree folder. |
-   | `repo_url`                         | `origin`, as an `https://` URL.                                                                                     |
-   | `product_name`                     | `product.name` of `.config/vwf.yaml`, or the value of the other repositories of the product.                        |
-   | `environments`                     | Step 1.                                                                                                             |
-   | `env` of `[tools.*]`               | Step 1.                                                                                                             |
-   | `[tools.git.branch.<branch>]`      | Step 2. Without a sign, `merge_model = "direct"` and no `direct_commit`.                                            |
-   | `[member.<name>]`                  | `.gitmodules`, and the member folders of a monorepo.                                                                |
-   | `commit_scopes` of `[tools.git]`   | The scopes of the existing commits, `git log --format=%s`. Else the members.                                        |
-   | `worktree_files` of `[tools.mise]` | Gitignored files that a new worktree needs, for example `.config/mise.local.toml`.                                  |
-   | `[tools.claude.plugins.*]`         | The plugins of `.claude/settings.json` (project scope).                                                             |
+   | Value                            | Where to find it                                                                                                    |
+   | -------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+   | `repo.repo_name`                 | The last part of the path of `origin`, without `.git`. Else the folder name, but not the name of a worktree folder. |
+   | `repo.repo_url`                  | `origin`, as an `https://` URL.                                                                                     |
+   | `repo.product_name`              | `product.name` of `.config/vwf.yaml`, or the value of the other repositories of the product.                        |
+   | `repo.environments`              | Step 1.                                                                                                             |
+   | `tools.<tool>.env`               | Step 1.                                                                                                             |
+   | `repo.branches.<branch>.landing` | Step 2. Without a sign, no key: the default is `direct-merge`.                                                      |
+   | `repo.members.<name>`            | `.gitmodules`, the member folders of a monorepo, and the siblings (see "A product with more than one repository").  |
+   | `repo.commits.scopes`            | The scopes of the existing commits, `git log --format=%s`. Else the names of the members.                           |
+   | `repo.worktree.files`            | Gitignored files that a new worktree needs, for example `.config/mise.local.toml`.                                  |
+   | `tools.claude.plugins.<scope>`   | The plugins of `.claude/settings.json` (project scope).                                                             |
 
 2. Use the example of `repo/examples/` with the shape of the repository as the
    model (see "A product with more than one repository").
-3. Show the user the full draft of `.config/bootstrap.toml`. Ask whether the
-   user wants to change a value.
+3. Show the user the full draft of `.config/bootstrap/repo.toml` and
+   `.config/bootstrap/tools.toml`. Ask whether the user wants to change a
+   value.
 4. If the result of step 5 is not committed, ask the user to commit it now.
    The sync writes no target that has changes that are not committed. The
-   values file is not a target.
-5. Write the file with the values of the user.
+   values folder is not a target.
+5. Write each value of the user with `bootstrap config set <key> <value>`, for
+   example `bootstrap config set repo.repo_url https://github.com/me/my-repo`.
+   A list or a table is JSON:
+   `bootstrap config set repo.commits.scopes '["api","web"]'`. The command
+   refuses a key or a value that the schema does not allow.
 6. Run `bootstrap check`. It must show no error.
 7. Run `bootstrap sync --dry-run`, and examine the diff. Then run
    `mise run setup:configs`.
 
 The keys are in
 [`docs/design/bootstrap-config.md`](../design/bootstrap-config.md).
-Read it, and write the file with these instructions:
+Read it, and write the values with these instructions:
 
 - Do not write `bootstrap_commit`, and do not copy it from an example: each
   example has an empty value. `bootstrap sync` writes the `bootstrap` commit
   of each sync without a failure.
 - Do not write a `[packs.<name>]` table: it is an old form. Keep the
-  `[tools.<name>]` tables and `format = 2` of step 5.
-- A tool value goes into the `[tools.<name>]` table of that tool, next to `env`.
-  The top-level keys of the values file stay at the top level.
+  `[tools.<name>]` tables and `format = 3` of step 5.
+- A tool value goes into the `[tools.<name>]` table of that tool in
+  `tools.toml`, next to `env`: `tools.<tool>.<key>`. A fact of the repository
+  goes into `repo.toml`: `repo.<key>`.
 - Set `product_name` in each repository of a product with members, the root
   included. See `tools/fnox.md`.
-- Write one `[member.<name>]` table for each member folder.
-- Do not set `merge_from` with `merge_never`. For `direct_commit`, see step 2.
+- Write one `[members.<name>]` table for each member, with its `type`
+  (`submodule`, `folder` or `sibling`). A sibling also needs its `url`.
+- Do not set `merge_from` with `merge_never`. For `landing`, see step 2.
 - For the format of `[tools.claude.plugins.*]`, see `tools/claude-tool.md`.
 
 ### Overrides of a mise default
@@ -582,8 +613,9 @@ UV_NO_CACHE = false
 ```
 
 An override cannot add a key. Put a new key in
-`conf.d/zz-repo/mise.<env>.toml`. The only keys of `[overrides]` are `mise`
-and `mise_env`. The other rules are in
+`conf.d/zz-repo/mise.<env>.toml`. The only keys of `[overrides]` are `tools`
+(the local values of a tool, `[overrides.tools.<tool>]`), `mise` and
+`mise_env`. The other rules are in
 [`docs/design/mise.md`](../design/mise.md).
 
 ### Overrides of an item of a shared file
@@ -612,19 +644,19 @@ If a command of `bootstrap` fails, read its messages and its exit code. A
 failure does not change an existing file. The full list is in
 [`docs/design/cli.md`](../design/cli.md).
 
-| Code | Cause                                                                                                                              | Action                                                        |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| 2    | An old form of the values file, also a file without `format = 2`. The message ends with `run bootstrap init`                       | Run `bootstrap init` (step 5)                                 |
-| 2    | A target has changes that are not committed                                                                                        | Commit or discard the changes of the target                   |
-| 2    | A question without an answer, or a group without an answer that is not empty, with `--yes` or without a terminal                   | Give the answer with `--answer <tool>.<key>=<value>` (step 3) |
-| 2    | `changes need --yes`                                                                                                               | Ask the user, then run the command with `--yes`               |
-| 2    | A bad key or value of the values file, a root-only tool in a submodule, or a check script that failed. The message names the cause | Correct the values file, or the repository                    |
-| 2    | A bad `tools.toml`, packs file or merge spec of `bootstrap`                                                                        | Tell the `bootstrap` owner                                    |
-| 2    | `bootstrap` is older than the version that the clone needs                                                                         | Run `mise use -g github:virajp/bootstrap`                     |
-| 2    | Not a git repository, or mise is not available                                                                                     | Run `git init`, or install mise                               |
-| 3    | A tool or a pack that is not in `bootstrap`                                                                                        | Correct the `[tools.*]` entries, or the names of the command  |
-| 5    | The clone or the fetch failed, or `cli/VERSION` of the clone is not `MAJOR.MINOR.PATCH`                                            | Examine the network and the access                            |
-| 1    | A local file system error. `bootstrap detect` also exits 1 for a detected tool that is not selected                                | Read the `bootstrap:` lines on stderr                         |
+| Code | Cause                                                                                                                                            | Action                                                           |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| 2    | An old form of the values, also the old file `.config/bootstrap.toml`, or no `.config/bootstrap/`. The message ends with `run bootstrap init`    | Run `bootstrap init` (step 5)                                    |
+| 2    | A target has changes that are not committed                                                                                                      | Commit or discard the changes of the target                      |
+| 2    | A question without an answer, or a group without an answer that is not empty, with `--yes` or without a terminal                                 | Give the answer with `--answer <tool>.<key>=<value>` (step 3)    |
+| 2    | `changes need --yes`                                                                                                                             | Ask the user, then run the command with `--yes`                  |
+| 2    | An unknown key, or a bad key or value of the values, a root-only tool in a submodule, or a check script that failed. The message names the cause | Correct the value with `bootstrap config set`, or the repository |
+| 2    | A bad `tools.toml`, packs file or merge spec of `bootstrap`                                                                                      | Tell the `bootstrap` owner                                       |
+| 2    | `bootstrap` is older than the version that the clone needs                                                                                       | Run `mise use -g github:virajp/bootstrap`                        |
+| 2    | Not a git repository, or mise is not available                                                                                                   | Run `git init`, or install mise                                  |
+| 3    | A tool or a pack that is not in `bootstrap`                                                                                                      | Correct the `[tools.*]` entries, or the names of the command     |
+| 5    | The clone or the fetch failed, or `cli/VERSION` of the clone is not `MAJOR.MINOR.PATCH`                                                          | Examine the network and the access                               |
+| 1    | A local file system error. `bootstrap detect` also exits 1 for a detected tool that is not selected                                              | Read the `bootstrap:` lines on stderr                            |
 
 ## Step 7: Supply the files that `bootstrap` does not have
 
@@ -657,8 +689,7 @@ If the user chose to leave the changes for review in step 5, show
 `git status --short` in each repository, and stop. Else commit these files:
 
 - The synced files, the shared files and the seed files.
-- `.config/bootstrap.toml`.
-- `.config/repo-generated.tsv`.
+- `.config/bootstrap/`, with `repo-generated.tsv`.
 - The repository-owned files from step 4 and step 7.
 
 Commit in each submodule before you commit in the repository that contains

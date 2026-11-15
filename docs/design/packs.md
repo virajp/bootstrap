@@ -26,10 +26,10 @@ Each side has one file. It is not in a tool folder, so the sync does not copy
 it. The file must exist, and it must have at least `[pack.base]`. Else the sync
 stops with code 3: `base is not a bootstrap pack (named in <side>/packs.toml)`.
 
-| Side    | Packs file         | Tools            | Values file              |
-| ------- | ------------------ | ---------------- | ------------------------ |
-| `repo`  | `repo/packs.toml`  | `repo/tools/*/`  | `.config/bootstrap.toml` |
-| `macos` | `macos/packs.toml` | `macos/tools/*/` | `macos.toml`             |
+| Side    | Packs file         | Tools            | Values file                    |
+| ------- | ------------------ | ---------------- | ------------------------------ |
+| `repo`  | `repo/packs.toml`  | `repo/tools/*/`  | `.config/bootstrap/tools.toml` |
+| `macos` | `macos/packs.toml` | `macos/tools/*/` | `macos.toml`                   |
 
 Each pack is a `[pack.<name>]` table:
 
@@ -90,13 +90,15 @@ answers.
 
 ## The values file holds tools
 
-The values file has one `[tools.<name>]` table for each selected tool, also
-for each required member of `base` and each dependency, so that a user can
+The values file (`tools.toml` of `.config/bootstrap/` on the repo side,
+`macos.toml` on the Mac) has one `[tools.<name>]` table for each selected tool,
+also for each required member of `base` and each dependency, so that a user can
 write values in it. It has no `[packs.<name>]` table: that is an old form. See
-[bootstrap-config.md](bootstrap-config.md#old-forms).
+[bootstrap-config.md](bootstrap-config.md#old-forms). An example of the repo
+side:
 
 ```toml
-format = 2
+format = 3
 
 [tools.dprint]
 
@@ -159,7 +161,7 @@ osv-scanner = { required = true }
 vscode = {}
 ```
 
-In a git submodule, the repo side skips a `root_only` tool of a pack. See
+In a submodule member, the repo side skips a `root_only` tool of a pack. See
 [repo.md](repo.md#root_only).
 
 The Mac `base` pack is in `macos/packs.toml`. Its required members are `mise`,

@@ -88,7 +88,7 @@ YAML syntax, private keys, end of file, trailing whitespace and line endings.
 
 ## Values
 
-The keys of `[tools.pre-commit]` in `.config/bootstrap.toml`:
+The keys of `[tools.pre-commit]` in `.config/bootstrap/tools.toml`:
 
 | Key                                                         | Use                                                                                                                      |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
