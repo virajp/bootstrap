@@ -280,9 +280,9 @@
     },
     {
       "id": "W7",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-15T20:04:54.538Z",
-      "ended": ""
+      "ended": "2026-11-15T20:20:31.296Z"
     },
     {
       "id": "W8",
