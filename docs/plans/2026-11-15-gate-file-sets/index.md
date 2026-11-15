@@ -125,6 +125,11 @@ and answers; the resumed unit applies them and returns the whole block again
 
 ## Parked
 
+- B30: this plan adds the first Python file of the tasks (`gate_files.py`, the
+  file logic of the gates). The gates, the orchestrators and every other mise
+  task stay in bash (D5); their move to Python with PEP 723 inline
+  dependencies is still open.
+
 - The built-in ignore list of `@virajp.dev/linter` duplicates the `#FILES`
   header of `code-lint-linter`. An option in the linter repository that turns
   off the list, or `warnIgnored: false`, lets the helper hold the only list.
