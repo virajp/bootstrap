@@ -12,6 +12,7 @@ import (
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
+	"github.com/virajp/bootstrap/cli/internal/report"
 	"github.com/virajp/bootstrap/cli/internal/source"
 	"github.com/virajp/bootstrap/cli/internal/target"
 	"github.com/virajp/bootstrap/cli/internal/values"
@@ -81,7 +82,7 @@ func (f *fakeSync) install(t *testing.T, sd Side) {
 	t.Cleanup(func() { frontEnd = old })
 	f.value = sd.EditFile()
 	frontEnd = func(bool) FrontEnd {
-		return func(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Code) {
+		return func(args []string, stdout, stderr io.Writer) ([]target.Planned, []report.Result, fail.Code) {
 			f.runs++
 			dry := len(args) > 0 && args[0] == "--dry-run"
 			f.dry = append(f.dry, dry)
@@ -94,9 +95,9 @@ func (f *fakeSync) install(t *testing.T, sd Side) {
 			if !dry && f.code != fail.OK {
 				// The sync fails after it wrote the values file.
 				_ = os.WriteFile(f.value, []byte("broken\n"), 0o644)
-				return nil, f.code
+				return nil, nil, f.code
 			}
-			return []target.Planned{{Path: f.file, Kind: 1}}, fail.OK
+			return []target.Planned{{Path: f.file, Kind: 1}}, nil, fail.OK
 		}
 	}
 }
@@ -347,9 +348,9 @@ func TestPlanSyncFails(t *testing.T) {
 	old := frontEnd
 	t.Cleanup(func() { frontEnd = old })
 	frontEnd = func(bool) FrontEnd {
-		return func(_ []string, stdout, _ io.Writer) ([]target.Planned, fail.Code) {
+		return func(_ []string, stdout, _ io.Writer) ([]target.Planned, []report.Result, fail.Code) {
 			_, _ = io.WriteString(stdout, "the reason\n")
-			return nil, fail.Missing
+			return nil, nil, fail.Missing
 		}
 	}
 	var out strings.Builder
@@ -370,7 +371,7 @@ func TestApply(t *testing.T) {
 		t.Fatal(problems(err))
 	}
 	var steps []Step
-	code, putBack, err := Apply(p, Options{Step: func(s Step) { steps = append(steps, s) }})
+	code, putBack, _, err := Apply(p, Options{Step: func(s Step) { steps = append(steps, s) }})
 	if code != fail.OK || putBack || err != nil {
 		t.Fatalf("code %d put back %v err %v", code, putBack, err)
 	}
@@ -388,7 +389,7 @@ func TestApply(t *testing.T) {
 	if p, err = Plan(sd, List{Items: []Item{{Kind: AddTool, Names: []string{"c"}}}}, Options{}); err != nil {
 		t.Fatal(problems(err))
 	}
-	code, putBack, err = Apply(p, Options{})
+	code, putBack, _, err = Apply(p, Options{})
 	if code != fail.Network || !putBack || err != nil {
 		t.Fatalf("code %d put back %v err %v", code, putBack, err)
 	}
@@ -407,7 +408,7 @@ func TestApply(t *testing.T) {
 	if p, err = Plan(sd, List{Items: []Item{{Kind: AddTool, Names: []string{"c"}}}}, Options{}); err != nil {
 		t.Fatal(problems(err))
 	}
-	if code, putBack, err = Apply(p, Options{}); code != fail.Terminal || putBack || err != nil {
+	if code, putBack, _, err = Apply(p, Options{}); code != fail.Terminal || putBack || err != nil {
 		t.Fatalf("code %d put back %v err %v", code, putBack, err)
 	}
 	if b, _ := os.ReadFile(sd.Values); string(b) != "broken\n" {
@@ -421,7 +422,7 @@ func TestApply(t *testing.T) {
 	if p, err = Plan(sd, List{Init: true}, Options{}); err != nil {
 		t.Fatal(problems(err))
 	}
-	if code, putBack, err = Apply(p, Options{}); code != fail.Network || !putBack || err != nil {
+	if code, putBack, _, err = Apply(p, Options{}); code != fail.Network || !putBack || err != nil {
 		t.Fatalf("code %d put back %v err %v", code, putBack, err)
 	}
 	if _, err := os.Stat(sd.Values); !os.IsNotExist(err) {

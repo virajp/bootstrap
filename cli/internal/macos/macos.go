@@ -116,13 +116,14 @@ type state struct {
 // Run runs `bootstrap mac sync <args>` and gives its exit code. The usage of
 // -h goes to <stdout>; each other line goes to <stderr>.
 func Run(args []string, stdout, stderr io.Writer) fail.Code {
-	_, code := RunWith(args, stdout, stderr)
+	_, _, code := RunWith(args, stdout, stderr)
 	return code
 }
 
 // RunWith is Run, and it also gives the change list of a dry run: the
-// absolute path of each file that the run would write, change or remove.
-func RunWith(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Code) {
+// absolute path of each file that the run would write, change or remove; and
+// the outcomes of the run: one for each call of report.Outcome, in order.
+func RunWith(args []string, stdout, stderr io.Writer) ([]target.Planned, []report.Result, fail.Code) {
 	s := &state{stdout: stdout, stderr: stderr, getenv: os.Getenv, dirDone: map[string]bool{}, derived: map[string]*source.Obj{}}
 	isTerm := false
 	if f, ok := stderr.(*os.File); ok {
@@ -133,6 +134,8 @@ func RunWith(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Co
 		Style:   report.StyleFromEnv(s.getenv, isTerm),
 		Verbose: report.VerboseFromEnv(s.getenv),
 	})
+	var outcomes []report.Result
+	s.r.ObserveOutcome = func(o report.Result) { outcomes = append(outcomes, o) }
 	s.pwd = pwd(s.getenv)
 	s.e = &target.Env{Report: s.r, Stderr: stderr, Pwd: s.pwd}
 
@@ -157,7 +160,7 @@ func RunWith(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Co
 	}()
 	defer s.e.Temps.Cleanup()
 	code := s.run(args)
-	return s.e.Planned, code
+	return s.e.Planned, outcomes, code
 }
 
 // log prints an error message: the problem and, after " - ", its fix.

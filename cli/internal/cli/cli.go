@@ -99,8 +99,10 @@ Flags
                        question (repeatable); --answer <tool>.<key>= writes
                        an empty answer for an optional or a group question
   --json               contract, check, questions, mac questions, config
-                       get|set|unset|show: print one JSON envelope on
-                       stdout, and each other line on stderr
+                       get|set|unset|show, init, sync, add, remove, replace,
+                       detect: print one JSON envelope on stdout, and each
+                       other line on stderr; init, add, remove, replace and
+                       detect --add also need --yes or --dry-run
   --format json|yaml|toml
                        config get, config show: the output format (default:
                        json when stdout is not a terminal, else toml)
@@ -155,15 +157,15 @@ func cmdWord(mac bool, cmd string) string { return core.CmdWord(mac, cmd) }
 // allowed gives the own flags of each command; a name that it does not have
 // is not a command. The Mac side takes json only on questions.
 var allowed = map[string]string{
-	"init":      "dry-run yes no-tui answer jobs verbose",
+	"init":      "dry-run yes no-tui answer jobs verbose json",
 	"tui":       "jobs verbose",
-	"sync":      "dry-run jobs verbose",
+	"sync":      "dry-run jobs verbose json",
 	"check":     "jobs verbose json",
 	"questions": "json",
-	"add":       "dry-run yes exclude answer jobs verbose",
-	"remove":    "dry-run yes jobs verbose",
-	"replace":   "dry-run yes answer jobs verbose",
-	"detect":    "dry-run add yes answer jobs verbose",
+	"add":       "dry-run yes exclude answer jobs verbose json",
+	"remove":    "dry-run yes jobs verbose json",
+	"replace":   "dry-run yes answer jobs verbose json",
+	"detect":    "dry-run add yes answer jobs verbose json",
 	"list":      "",
 	"settings":  "jobs repo-path",
 	"config":    "format json",
@@ -175,6 +177,18 @@ var allowed = map[string]string{
 var commandOrder = []string{
 	"contract", "init", "tui", "sync", "check", "questions", "add", "remove",
 	"replace", "detect", "list", "config", "settings", "version",
+}
+
+// writeCommands are the commands that plan and write changes: with --json,
+// each human line of them goes to stderr.
+var writeCommands = map[string]bool{
+	"init": true, "sync": true, "add": true, "remove": true, "replace": true, "detect": true,
+}
+
+// writes tells if the command <cmd> with <o> writes after a consent: init,
+// add, remove, replace and detect --add. sync writes with no consent.
+func writes(cmd string, o opts) bool {
+	return writeCommands[cmd] && cmd != "sync" && (cmd != "detect" || o.add)
 }
 
 // configSubs are the subcommands of config.
@@ -379,6 +393,16 @@ func (a *app) run(args []string) fail.Code {
 		}
 		a.fail(cmdWord(mac, "detect")+" "+flag+" needs --add", "add --add")
 		return fail.Usage
+	}
+	if o.json && writes(cmd, o) && !o.yes && !o.dryRun {
+		// --json never prompts (D4); sync applies with no consent (D21).
+		a.fail(cmdWord(mac, cmd)+" --json needs --yes or --dry-run", "add --yes to write the changes, or --dry-run to show them")
+		return fail.Usage
+	}
+	if o.json && writeCommands[cmd] {
+		// stdout holds the envelope only: the change list, the trees and the
+		// output of the sync go to stderr.
+		a.stdout = a.stderr
 	}
 	if cmd == "version" {
 		_, _ = fmt.Fprintln(stdout, version)
@@ -734,22 +758,35 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 	args := core.SyncArgs(mac, o.dryRun, o.noBootstrap)
 	skip := core.ValuesSkip(w.Values)
 	if o.dryRun {
-		planned, code := run(args, a.stdout, a.stderr)
+		planned, _, code := run(args, a.stdout, a.stderr)
+		a.syncData(o, planned, nil)
 		a.warnDirty(core.DirtyTargets(core.PlanPaths(planned), skip))
 		return code
 	}
 	// The plan, then the write. A repository without a change that is not
-	// committed needs no plan.
-	if mac || core.DirtyBesides(w.Root, skip) {
-		planned, code := run(append(args, "--dry-run"), io.Discard, io.Discard)
+	// committed needs no plan, except for the plan of --json.
+	var planned []target.Planned
+	if o.json || mac || core.DirtyBesides(w.Root, skip) {
+		var code fail.Code
+		planned, _, code = run(append(args, "--dry-run"), io.Discard, io.Discard)
+		a.syncData(o, planned, nil)
 		if code == fail.OK {
 			if code := a.stopDirty(core.DirtyTargets(core.PlanPaths(planned), skip)); code != fail.OK {
 				return code
 			}
 		}
 	}
-	_, code = run(args, a.stdout, a.stderr)
+	_, outcomes, code := run(args, a.stdout, a.stderr)
+	a.syncData(o, planned, outcomes)
 	return code
+}
+
+// syncData keeps the data of sync --json: the files of the plan in
+// data.plan, and the outcomes of the run.
+func (a *app) syncData(o opts, planned []target.Planned, outcomes []report.Result) {
+	if o.json {
+		a.data = writeData{Plan: planDataOf(&core.PlanResult{Files: planned}), Outcomes: outcomesOf(outcomes)}
+	}
 }
 
 // checkData is the data of check --json: valid is true only when the code

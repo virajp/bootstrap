@@ -100,7 +100,8 @@ func (a *app) side(mac, initCmd, hold bool) (core.Side, *core.Clone, fail.Code) 
 
 // finish plans the change list <l> with core.Plan, asks the questions
 // without an answer, shows the change list, and after the consent applies it
-// with core.Apply: it writes the changes and syncs.
+// with core.Apply: it writes the changes and syncs. With --json, it keeps the
+// plan and the outcomes in the data of the envelope, and asks nothing.
 func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
 	for _, ans := range o.answers {
 		l.Answers = append(l.Answers, core.FlagAnswer(ans))
@@ -112,6 +113,12 @@ func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
 	}
 	if err != nil {
 		return a.logErr(err)
+	}
+	if o.json {
+		a.data = writeData{Plan: planDataOf(p), Outcomes: outcomesOf(nil)}
+		if len(p.Pending) > 0 {
+			return a.pendingJSON(p, o)
+		}
 	}
 	if len(p.Pending) > 0 {
 		answered, code := a.ask(sd.Mac, p.Sel, o, p.AskOnly)
@@ -169,7 +176,10 @@ func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
 		return code
 	}
 	opt.Step = a.step
-	code, putBack, err := core.Apply(p, opt)
+	code, putBack, outcomes, err := core.Apply(p, opt)
+	if o.json {
+		a.data = writeData{Plan: planDataOf(p), Outcomes: outcomesOf(outcomes)}
+	}
 	if err != nil {
 		a.logErr(err)
 		return code

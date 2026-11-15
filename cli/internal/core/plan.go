@@ -330,11 +330,11 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 	_ = os.Setenv(envKey, envVal)
 	oldform.Migrating = l.Init
 	args := SyncArgs(sd.Mac, true, o.NoBootstrap)
-	planned, pc := run(args, io.Discard, io.Discard)
+	planned, _, pc := run(args, io.Discard, io.Discard)
 	if pc != fail.OK {
 		// Again, with the output, so the messages show.
 		out, errw := o.writers()
-		_, pc = run(args, out, errw)
+		_, _, pc = run(args, out, errw)
 	}
 	oldform.Migrating = false
 	if had {

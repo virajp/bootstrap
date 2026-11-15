@@ -116,11 +116,11 @@
         "U2"
       ],
       "waits": "It edits cli/, which U2 edits in wave 2, and prints through the envelope package that U1 adds.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T18:58:51.757Z",
+      "ended": "2026-11-15T19:08:44.805Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -256,8 +256,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-15T18:58:51.713Z",
       "ended": ""
     },
     {
@@ -761,6 +761,15 @@
       "rejected": "A warning finding in the values stage; An envelope warning; Leave it out of the JSON (as now)",
       "units": [
         "U2"
+      ]
+    },
+    {
+      "id": "D50",
+      "decision": "Q4: How should a real sync --json (no --dry-run) fill data.plan.files, given the sync records its plan only in a dry run?",
+      "ruling": "Always run the planning dry run under --json and report its files — one extra dry run per sync --json and nothing more written; the existing dirty-target stop now runs on every sync --json",
+      "rejected": "Report data.plan.files as [] for a real sync, plan only under --dry-run; Report the files only when the dirty-check dry run already ran, else []",
+      "units": [
+        "U3"
       ]
     }
   ],

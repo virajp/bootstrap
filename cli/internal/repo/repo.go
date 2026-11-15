@@ -124,16 +124,19 @@ type state struct {
 // <stderr>; <stdout> gets only the output of the commands that bash lets
 // through.
 func Run(args []string, stdout, stderr io.Writer) fail.Code {
-	_, code := RunWith(args, stdout, stderr)
+	_, _, code := RunWith(args, stdout, stderr)
 	return code
 }
 
 // RunWith is Run, and it also gives the change list of a dry run: the
-// absolute path of each file that the run would write, change or remove.
-func RunWith(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Code) {
+// absolute path of each file that the run would write, change or remove; and
+// the outcomes of the run: one for each call of report.Outcome, in order.
+func RunWith(args []string, stdout, stderr io.Writer) ([]target.Planned, []report.Result, fail.Code) {
 	s := newState(stdout, stderr)
+	var outcomes []report.Result
+	s.r.ObserveOutcome = func(o report.Result) { outcomes = append(outcomes, o) }
 	code := s.trapped(args)
-	return s.e.Planned, code
+	return s.e.Planned, outcomes, code
 }
 
 // Check runs `bootstrap check` as Run does, with the same lines, and gives
