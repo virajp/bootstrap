@@ -105,6 +105,8 @@ type Model struct {
 	det       *core.Detection
 	detecting bool
 	detSeq    int
+	// planning tells that the dialog "Planning ..." shows.
+	planning bool
 
 	tabs  []*tab
 	cur   int    // The tab that shows.
@@ -262,10 +264,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.detecting && m.modal != nil {
 			m.modal.body = m.detectingBody()
 		}
+		if m.planning && m.modal != nil {
+			m.modal.body = m.planningBody()
+		}
 		return m, m.tickCmd()
 	case detectMsg:
 		m.detected(msg)
 		return m, nil
+	case planMsg:
+		return m, m.planned(msg)
 	case appliedMsg:
 		m.afterApply(msg)
 		return m, nil

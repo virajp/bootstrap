@@ -295,6 +295,11 @@ change list.
 - The key line starts with `r apply`, bright green when the change list has a
   change. `r` opens the review, and the review starts its key line with
   `enter apply`, also bright green.
+- A slow step shows a spinner. Before the TUI opens, the fetch of the clone
+  shows `Updating the clone of bootstrap ...` on stderr (not with
+  `BOOTSTRAP_CLONE`). The plan of the review, and the plan again after the
+  questions of Apply, show the dialog `Planning ...`. It takes no key but
+  `ctrl+c`, which quits.
 - `tui` without a values file stops with code 2: `<file> is not there`, with
   the hint `run bootstrap init first`. A values file in an old form stops it
   with code 2, as it stops `sync`.
