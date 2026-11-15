@@ -78,7 +78,8 @@ type Model struct {
 	help  help.Model
 	phase phase
 	w, h  int
-	err   error // The problem that stops the TUI before it opens.
+	lay   layout // The size of the screen: the terminal, at least screenW × screenH.
+	err   error  // The problem that stops the TUI before it opens.
 
 	// The change list of core: init, the items and the answers.
 	list core.List
@@ -129,7 +130,6 @@ func newModel(o Options) *Model {
 	h.Styles.ShortKey, h.Styles.ShortDesc, h.Styles.ShortSeparator = stDim, stDim, stDim
 	h.Styles.FullKey, h.Styles.FullDesc, h.Styles.FullSeparator = stHint, stPlain, stDim
 	h.Styles.Ellipsis = stDim
-	h.SetWidth(screenW - 2)
 	m := &Model{opt: o, keys: newKeyMap(), help: h, list: core.List{Init: o.Init}}
 	for _, n := range tabNames {
 		t := &tab{name: n}
@@ -196,6 +196,20 @@ func (m *Model) tickCmd() tea.Cmd {
 // small tells if the terminal is smaller than the screen.
 func (m *Model) small() bool { return m.w < screenW || m.h < screenH }
 
+// resize gives the screen the size of the terminal, and builds the panes
+// again, so that a long text wraps at the new width.
+func (m *Model) resize() {
+	m.lay = layoutFor(m.w, m.h)
+	// The key line: a space, the key of Review, two spaces, the help.
+	m.help.SetWidth(m.lay.w - 3 - m.applyKey().width())
+	for _, t := range m.tabs {
+		t.left.height, t.right.height = m.lay.paneH, m.lay.paneH
+	}
+	if m.phase == ready {
+		m.refreshAll()
+	}
+}
+
 // sizeText gives the first line of the size message of <cmd>.
 func (m *Model) sizeText(cmd string) string {
 	return fmt.Sprintf("%s needs a terminal of %d × %d or larger. This terminal is %d × %d.", cmd, screenW, screenH, m.w, m.h)
@@ -214,6 +228,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.w, m.h = msg.Width, msg.Height
+		m.resize()
 		if m.phase != starting {
 			return m, nil
 		}
@@ -318,9 +333,9 @@ func (m *Model) mainKey(msg tea.KeyPressMsg) tea.Cmd {
 		return m.openReview()
 	case key.Matches(msg, m.keys.Scroll):
 		if msg.String() == "shift+up" {
-			t.scrollBottom(-1)
+			t.scrollBottom(-1, m.lay.bottom)
 		} else {
-			t.scrollBottom(1)
+			t.scrollBottom(1, m.lay.bottom)
 		}
 	case key.Matches(msg, m.keys.Move):
 		if msg.String() == "up" {
@@ -412,7 +427,7 @@ func (m *Model) View() tea.View {
 			lines = m.reviewScreen()
 		}
 		if m.modal != nil {
-			lines = m.modal.over(lines)
+			lines = m.modal.over(lines, m.lay)
 		}
 	}
 	out := make([]string, len(lines))
@@ -447,11 +462,12 @@ func (m *Model) smallLines() []line {
 	}
 }
 
-// screen gives the 25 lines of the main screen.
+// screen gives the lines of the main screen.
 func (m *Model) screen() []line {
 	t := m.tabs[m.cur]
+	lw, rw := m.lay.left, m.lay.right
 	out := m.header()
-	out = append(out, line{styled(strings.Repeat("─", leftW)+"┬"+strings.Repeat("─", rightW), stDim)})
+	out = append(out, line{styled(strings.Repeat("─", lw)+"┬"+strings.Repeat("─", rw), stDim)})
 	titleStyle := func(on bool) lipgloss.Style {
 		if on {
 			return stHead
@@ -459,26 +475,38 @@ func (m *Model) screen() []line {
 		return stDim
 	}
 	out = append(out, line{
-		styled(" "+fit(t.left.title, leftW-1), titleStyle(!t.onRight)),
+		styled(" "+fit(t.left.title, lw-1), titleStyle(!t.onRight)),
 		styled("│", stDim),
-		styled(" "+fit(t.right.title, rightW-1), titleStyle(t.onRight)),
+		styled(" "+fit(t.right.title, rw-1), titleStyle(t.onRight)),
 	})
-	left := t.left.lines(leftW, !t.onRight, m.tick)
-	right := t.right.lines(rightW, t.onRight, m.tick)
-	for i := range paneH {
+	left := t.left.lines(lw, !t.onRight, m.tick)
+	right := t.right.lines(rw, t.onRight, m.tick)
+	for i := range m.lay.paneH {
 		l := append(line{}, left[i]...)
 		l = append(l, styled("│", stDim))
 		out = append(out, append(l, right[i]...))
 	}
-	out = append(out, line{styled(strings.Repeat("─", leftW)+"┴"+strings.Repeat("─", rightW), stDim)})
-	out = append(out, t.bottomLines()...)
-	out = append(out, line{styled(strings.Repeat("─", screenW), stDim)})
-	keys := line{{text: m.help.ShortHelpView(m.keys.keysFor(m.cur).ShortHelp()), raw: true}}
+	out = append(out, line{styled(strings.Repeat("─", lw)+"┴"+strings.Repeat("─", rw), stDim)})
+	out = append(out, t.bottomLines(m.lay.w, m.lay.bottom)...)
+	out = append(out, line{styled(strings.Repeat("─", m.lay.w), stDim)})
+	keys := append(m.applyKey(), text("  "), seg{text: m.help.ShortHelpView(m.keys.keysFor(m.cur).ShortHelp()), raw: true})
 	if m.cur == toolsTab && m.search {
 		keys = line{styled("type to search  ↑↓ move  space select  esc close search", stDim)}
 	}
 	out = append(out, append(line{text(" ")}, keys...))
 	return out
+}
+
+// applyKey gives the key of Review and Apply, the first key of the key line:
+// bright green when the change list has a change, else dim, as r then does
+// nothing.
+func (m *Model) applyKey() line {
+	h := m.keys.Review.Help()
+	st := stDim
+	if m.changes() > 0 {
+		st = stAdd
+	}
+	return line{styled(h.Key+" "+h.Desc, st)}
 }
 
 // header gives the two lines of the header: the command, the folder and
@@ -498,8 +526,9 @@ func (m *Model) header() []line {
 		right = plural(n, "change") + " "
 	}
 	// A long folder is cut, so the count of the changes shows.
-	left = strings.TrimRight(fit(left, min(len([]rune(left)), screenW-len([]rune(right))-1)), " ")
-	gap := max(1, screenW-len([]rune(left))-len([]rune(right)))
+	w := m.lay.w
+	left = strings.TrimRight(fit(left, min(len([]rune(left)), w-len([]rune(right))-1)), " ")
+	gap := max(1, w-len([]rune(left))-len([]rune(right)))
 	first := line{styled(left, stHead), text(strings.Repeat(" ", gap)), styled(right, stAdd)}
 
 	tabs := line{text(" ")}
@@ -514,9 +543,9 @@ func (m *Model) header() []line {
 		}
 	}
 	file := strings.TrimPrefix(strings.TrimPrefix(sd.Values, strings.TrimSuffix(sd.Root, "/")), "/") + " "
-	gap = max(1, screenW-tabs.width()-len([]rune(file)))
+	gap = max(1, w-tabs.width()-len([]rune(file)))
 	tabs = append(tabs, text(strings.Repeat(" ", gap)), styled(file, stDim))
-	return []line{clip(first, screenW), clip(tabs, screenW)}
+	return []line{clip(first, w), clip(tabs, w)}
 }
 
 // home gives <p> with the home folder as ~.

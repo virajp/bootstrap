@@ -27,10 +27,9 @@ const nextRepo = "MISE_ENV=dev mise run setup"
 
 // The review screen.
 const (
-	reviewH  = screenH - 5 // The body: the screen without the header, two rules and the key line.
-	filesMax = 6           // The files that show before f.
-	opW      = 7           // The column of the kind of a file.
-	chgW     = 18          // The column of the name of a change.
+	filesMax = 6  // The files that show before f.
+	opW      = 7  // The column of the kind of a file.
+	chgW     = 18 // The column of the name of a change.
 )
 
 // review is the state of the review screen.
@@ -93,7 +92,7 @@ func (m *Model) reviewKey(k tea.KeyPressMsg) tea.Cmd {
 	case "up":
 		r.top = max(r.top-1, 0)
 	case "down":
-		r.top = min(r.top+1, max(len(m.reviewBody())-reviewH, 0))
+		r.top = min(r.top+1, max(len(m.reviewBody())-m.reviewH(), 0))
 	}
 	return nil
 }
@@ -272,27 +271,32 @@ func (m *Model) appliedView() string {
 
 // The lines of the review.
 
-// reviewScreen gives the 25 lines of the review.
+// reviewH gives the lines of the body of the review: the screen without
+// the header, two rules and the key line.
+func (m *Model) reviewH() int { return m.lay.h - 5 }
+
+// reviewScreen gives the lines of the review.
 func (m *Model) reviewScreen() []line {
+	w, h := m.lay.w, m.reviewH()
 	out := m.header()
-	out = append(out, line{styled(strings.Repeat("─", screenW), stDim)})
+	out = append(out, line{styled(strings.Repeat("─", w), stDim)})
 	body := m.reviewBody()
 	r := m.review
-	r.top = min(r.top, max(len(body)-reviewH, 0))
-	for i := range reviewH {
+	r.top = min(r.top, max(len(body)-h, 0))
+	for i := range h {
 		var l line
 		if n := r.top + i; n < len(body) {
 			l = body[n]
 		}
-		l = clip(l, screenW-1).pad(screenW - 1)
-		out = append(out, append(l, scrollMark(i, reviewH, r.top > 0, r.top+reviewH < len(body))))
+		l = clip(l, w-1).pad(w - 1)
+		out = append(out, append(l, scrollMark(i, h, r.top > 0, r.top+h < len(body))))
 	}
-	out = append(out, line{styled(strings.Repeat("─", screenW), stDim)})
-	keys := "enter apply  f all files  ↑↓ scroll  esc back"
-	if len(r.dirty) > 0 {
-		keys = "f all files  ↑↓ scroll  esc back"
+	out = append(out, line{styled(strings.Repeat("─", w), stDim)})
+	keys := line{text(" ")}
+	if len(r.dirty) == 0 {
+		keys = append(keys, styled("enter apply", stAdd), text("  "))
 	}
-	return append(out, line{styled(" "+keys, stDim)})
+	return append(out, append(keys, styled("f all files  ↑↓ scroll  esc back", stDim)))
 }
 
 // reviewBody gives the lines of the body of the review.
@@ -443,7 +447,7 @@ func (m *Model) uninstallNotes(removed []string) []line {
 	}
 	var out []line
 	for _, n := range notes {
-		for _, l := range wrap(n, screenW-7) {
+		for _, l := range wrap(n, m.lay.w-7) {
 			out = append(out, line{styled("     "+l, stDim)})
 		}
 	}
