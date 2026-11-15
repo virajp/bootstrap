@@ -1,8 +1,8 @@
 GAP 2026-11-14 ★4 | plan:2026-11-14-config-folder,
 plan:2026-11-14-contract-commands,
 decision:2026-11-14-bootstrap-plugins-split | one bootstrap@4.0.0 tag after R1a,
-R1b, R1c and R2 | parked: the R1a folder and the claude-plugins copy of the
-design record still name the old tag points
+R1b, R1c and R2 | resolved 2026-11-15: R1a D92 and the claude-plugins copy
+of the design record (Amendments 2026-11-14) name the one 4.0.0 tag
 
 **Source** The R1b interview of `docs/plans/2026-11-14-contract-commands/`
 (decision D16). The user ruled: "Keep the release to 4.0.0 since we will be
