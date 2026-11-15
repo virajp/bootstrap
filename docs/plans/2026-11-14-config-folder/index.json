@@ -133,7 +133,7 @@
       "status": "green",
       "started": "2026-11-15T13:04:56.710Z",
       "ended": "2026-11-15T16:51:24.631Z",
-      "commit": "c719faf",
+      "commit": "23944ce",
       "rounds": 5
     },
     {
@@ -196,14 +196,14 @@
         "U6"
       ],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-15T16:35:47.602Z",
-      "ended": "",
+      "ended": "2026-11-15T16:55:10.583Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 2,
       "range": {
-        "from": "480fb60",
-        "to": "4998817"
+        "from": "4998817",
+        "to": "23944ce"
       }
     },
     {
@@ -289,9 +289,9 @@
     },
     {
       "id": "W6",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-15T16:35:47.566Z",
-      "ended": ""
+      "ended": "2026-11-15T16:56:10.321Z"
     },
     {
       "id": "W7",
