@@ -57,14 +57,14 @@ hides the release, use the version of `cli/VERSION` in place of `latest`.
 In this file, `bootstrap` is short for this command. The CLI gets its own clone
 of `bootstrap` in `~/.cache/bootstrap/`. This file uses these commands:
 
-| Command                                         | Use                                                                                                                        |
-| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `bootstrap mac questions [tool…] --json`        | Lists the questions of the tools, with the proposal and the answer of each. Without a tool, it uses the selected tools.    |
-| `bootstrap mac init`                            | Runs in the clone. Writes `macos.toml` with the members of `base`, or moves an old form, asks the questions, then syncs.   |
-| `bootstrap mac add pack <pack> [--exclude <m>]` | Writes a `[tools.<name>]` table for each member of the pack that is not selected, and for each new dependency, then syncs. |
-| `bootstrap mac add tool <tool…>`                | Writes a `[tools.<name>]` table for each tool and each new dependency, then syncs.                                         |
-| `bootstrap mac remove tool <tool…>`             | Removes the tables of the tools, and of each dependency that no other tool needs, then syncs.                              |
-| `bootstrap mac sync`                            | Syncs the Mac. The task `updateall:configs` runs it.                                                                       |
+| Command                                         | Use                                                                                                                                                         |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bootstrap mac questions [tool…] --json`        | Prints a JSON envelope whose `data` lists the questions of the tools, with the proposal and the answer of each. Without a tool, it uses the selected tools. |
+| `bootstrap mac init`                            | Runs in the clone. Writes `macos.toml` with the members of `base`, or moves an old form, asks the questions, then syncs.                                    |
+| `bootstrap mac add pack <pack> [--exclude <m>]` | Writes a `[tools.<name>]` table for each member of the pack that is not selected, and for each new dependency, then syncs.                                  |
+| `bootstrap mac add tool <tool…>`                | Writes a `[tools.<name>]` table for each tool and each new dependency, then syncs.                                                                          |
+| `bootstrap mac remove tool <tool…>`             | Removes the tables of the tools, and of each dependency that no other tool needs, then syncs.                                                               |
+| `bootstrap mac sync`                            | Syncs the Mac. The task `updateall:configs` runs it.                                                                                                        |
 
 `bootstrap mac init` takes no tool names. The other `mac` commands find
 `macos.toml` through
@@ -187,6 +187,7 @@ MACOS_SETUP_REPO_PATH="$PWD" bootstrap mac questions --json
 MACOS_SETUP_REPO_PATH="$PWD" bootstrap mac questions <tool…> --json
 ```
 
+Each command prints one JSON envelope, and `data` is the list of the rows.
 Each row has `tool`, `key`, `question`, `proposal`, `source`, `answer`,
 `group`, `note` and `optional`. An `answer` of `""` means no answer, and the
 row is answered. For each row with no answer, do these items:

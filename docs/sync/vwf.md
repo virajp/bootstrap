@@ -26,12 +26,31 @@ The plugin never reads or edits a file of `.config/bootstrap/` itself. It reads
 and writes each value of a repository with `bootstrap config`, and the agent
 that reads this file changes the tools with `bootstrap`.
 
-| Job                       | Command                                                                                |
-| ------------------------- | -------------------------------------------------------------------------------------- |
-| Read one value            | `bootstrap config get <key> --format json`; the answer is `{"key", "value", "source"}` |
-| Read all the values       | `bootstrap config show --format json`                                                  |
-| Write one value           | `bootstrap config set <key> <value>`                                                   |
-| Remove one value or table | `bootstrap config unset <key>`                                                         |
+| Job                       | Command                                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Check the contract        | `bootstrap contract --json`; `data.versions` must hold the version the plugin reads                             |
+| Read the repository       | `bootstrap describe --json`: the values, tools, members and task ports                                          |
+| Read the tool catalog     | `bootstrap catalog --json`: the categories, tools and packs of the clone                                        |
+| Read one value            | `bootstrap config get <key> --json`; `data` is `{"key", "value", "source"}`                                     |
+| Read all the values       | `bootstrap config show --json`                                                                                  |
+| Write one value           | `bootstrap config set <key> <value> --json`; `data` is `{"key", "value"}`                                       |
+| Remove one value or table | `bootstrap config unset <key> --json`; `data` is `{"key"}`                                                      |
+| Change the tools          | `bootstrap add`, `remove`, `replace`, `init` or `detect --add` with `--json` and `--dry-run`, then with `--yes` |
+
+Each `--json` command prints one JSON envelope on stdout, on one line, and
+each other line on stderr:
+
+```text
+{"contract":1,"command":"config get","ok":true,"code":0,"data":{"key":"repo.repo_name","value":"app","source":"file"},"errors":[],"warnings":[]}
+```
+
+The exit code is `code`, and `ok` is `true` only when `code` is `0`. Each item
+of `errors` and `warnings` is `{"code", "message", "path"}`. A write command
+with `--json` never prompts: without `--yes` or `--dry-run` it stops with code
+2, and with `--yes` a question without an answer stops it with code 2 and lists
+the question in `data.plan.pending`. `config get --format json` still prints
+the bare `{"key", "value", "source"}` for a script. The full contract is
+"The JSON contract" of `docs/design/cli.md` in the clone.
 
 A key starts with the file: `repo.<key>` for a fact of the repository,
 `tools.<tool>.<key>` for a value of a tool, and `releases.<project>` for a

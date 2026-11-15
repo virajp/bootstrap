@@ -34,7 +34,9 @@ files are for this repository only:
   `internal/`), the CLI `bootstrap` with the commands `init`, `tui`, `check`,
   `sync`, `questions`, `detect`, `add`, `remove`, `replace`, `list`, `config`
   (`get`, `set`, `unset` and `show` of a value of `.config/bootstrap/`),
-  `settings` and the group `mac`.
+  `settings`, `contract`, `catalog`, `describe` and the group `mac`. A plugin
+  reads and drives it through the JSON envelope of `--json`: see
+  `docs/design/cli.md` ("The JSON contract").
   No Go
   file of the engine names a tool: `TestEngineNamesNoTool` examines this rule.
 - `docs/design/`: the contract of the sync, one place for each rule (see "Where
@@ -80,7 +82,8 @@ the adoption. After the adoption, `setup:configs` (`bootstrap sync`) keeps the
 consumer in sync.
 
 - `docs/sync/index.md`: the adoption prompt. It runs
-  `bootstrap questions --json`, then `bootstrap init --answer …` and
+  `bootstrap questions --json` (the questions are in `.data` of the
+  envelope), then `bootstrap init --answer …` and
   `bootstrap add tool <tool…> --answer …`, and it brings an adopted
   repository up to date with `bootstrap init`.
 - `docs/sync/migrate.md`: the items for a repository with older copies.
@@ -309,7 +312,10 @@ changes a case. See `docs/design/cli.md` ("The config file").
   clone cases run the binary against a local origin. The entry cases run the
   rendered task `setup:configs` with a fake engine and with the real engine,
   and the rendered `code:merge` task. The config verb cases run
-  `bootstrap config get|set|unset|show`. The settings cases point
+  `bootstrap config get|set|unset|show`. The JSON cases run `--json` on
+  `contract`, `catalog`, `describe`, `questions`, `config`, `check` and
+  `add`, and compare the
+  envelope on stdout. The settings cases point
   `BOOTSTRAP_CONFIG` or `--config` at a file of the case, or at a missing file.
   Most of them run `bootstrap settings`. The cases of a `verbose` key and of the
   key `clone` run `bootstrap sync --dry-run`. A case of the default output also
