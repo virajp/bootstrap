@@ -113,7 +113,7 @@
       "status": "green",
       "started": "2026-11-15T13:04:56.671Z",
       "ended": "2026-11-15T16:39:56.433Z",
-      "commit": "0c720f2",
+      "commit": "ef371f6",
       "rounds": 2
     },
     {
@@ -130,9 +130,9 @@
         "U2"
       ],
       "waits": "Its Verification runs the config verb U2 adds.",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-15T13:04:56.710Z",
-      "ended": "",
+      "ended": "2026-11-15T16:51:24.631Z",
       "commit": "c719faf",
       "rounds": 5
     },

@@ -67,6 +67,9 @@ if [[ "${WANT}" == "true" ]]; then
 fi
 while IFS=$'\t' read -r NAME FOLDER LABEL _ <&3; do
   [[ -n "${NAME}" ]] || continue
+  # A name outside the member grammar never reaches the indirect expansion
+  # below: bash would run a command in an array subscript of it.
+  [[ "${NAME}" =~ ^[A-Za-z0-9_-]+$ ]] || continue
   FLAG="usage_${NAME//-/_}"
   [[ "${usage_all:-false}" == "true" || "${!FLAG:-false}" == "true" ]] || continue
   print_header "Syncing ${LABEL} ..."
