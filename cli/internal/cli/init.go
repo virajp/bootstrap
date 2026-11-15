@@ -64,7 +64,13 @@ func (a *app) tui(mac bool, o opts) fail.Code {
 // runTUI takes the clone of the side <sd> and runs the TUI on it. With
 // <initCmd>, a missing values file or its old form is the first change.
 func (a *app) runTUI(sd core.Side, o opts, initCmd bool) fail.Code {
+	// The fetch of the clone can take some seconds before the TUI opens.
+	stop := func() {}
+	if a.getenv("BOOTSTRAP_CLONE") == "" {
+		stop = a.spin("Updating the clone of bootstrap ...")
+	}
 	c, code := a.openClone(sd.Mac, false)
+	stop()
 	defer c.Cleanup()
 	if code != fail.OK {
 		return code

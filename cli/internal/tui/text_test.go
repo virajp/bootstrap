@@ -111,3 +111,31 @@ func TestLayoutFor(t *testing.T) {
 		}
 	}
 }
+
+func TestRowsFillThePane(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		r    row
+		left bool
+	}{
+		{"category", catRow{title: "Passwords and secrets", count: "5/6"}, true},
+		{"pack", packRow{name: "base", mark: packOn, count: "3/3"}, true},
+		{"tool", toolRow{tool: "1password-safari", mark: "[x]", summary: "1Password for Safari"}, false},
+		{"dependency", toolRow{tool: "diff-so-fancy", glyphs: "   └─ ", summary: "diff-so-fancy, the git diff formatter"}, false},
+		{"member", memberRow{tool: "1password-safari", summary: "1Password for Safari", status: "selected"}, false},
+	} {
+		for _, screen := range []int{screenW, 160, 250} {
+			lay := layoutFor(screen, screenH)
+			w := lay.right - 1
+			if c.left {
+				w = lay.left - 1
+			}
+			if got := c.r.render(w, false, -1).width(); got != w {
+				t.Errorf("%s at a screen of %d: width %d, want %d", c.name, screen, got, w)
+			}
+		}
+	}
+	if got := scaled(nameW, 2*rightRowW); got != 2*nameW {
+		t.Errorf("scaled = %d, want %d", got, 2*nameW)
+	}
+}

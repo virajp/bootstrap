@@ -85,6 +85,9 @@ bootstrap mac <command> [<kind>] [<name>…] [flags]
 The group `mac` names the Mac side. Thus a folder with both `macos.toml` and
 `.config/bootstrap.toml` has no doubt. Each command without `mac` is for the
 repository of the current folder. The `mac` commands have the same grammar.
+The current folder is `PWD` when it names the current folder, else the physical
+path, as `$PWD` of bash. A parent that changes the folder and keeps its own
+`PWD`, for example `mise x --cd=<dir>`, thus gives `<dir>`.
 
 The kind word tells what the names are: `tool` or `pack`. `add` takes `tool` or
 `pack`. `remove` and `replace` take `tool` only. The other commands take no
@@ -289,10 +292,17 @@ change list.
   larger`.
 - The screen fills the terminal. A terminal larger than 100 × 25 keeps the
   proportions of the panes: the left pane keeps 30 % of the width, and the top
-  panes and the bottom pane share the extra lines 11 to 7.
+  panes and the bottom pane share the extra lines 11 to 7. In a row of the
+  left pane, the name gets the extra columns, and the counter stays at the
+  right edge. The columns of a row of the right pane keep their proportions.
 - The key line starts with `r apply`, bright green when the change list has a
   change. `r` opens the review, and the review starts its key line with
   `enter apply`, also bright green.
+- A slow step shows a spinner. Before the TUI opens, the fetch of the clone
+  shows `Updating the clone of bootstrap ...` on stderr (not with
+  `BOOTSTRAP_CLONE`). The plan of the review, and the plan again after the
+  questions of Apply, show the dialog `Planning ...`. It takes no key but
+  `ctrl+c`, which quits.
 - `tui` without a values file stops with code 2: `<file> is not there`, with
   the hint `run bootstrap init first`. A values file in an old form stops it
   with code 2, as it stops `sync`.

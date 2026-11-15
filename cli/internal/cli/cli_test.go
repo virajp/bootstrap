@@ -242,7 +242,9 @@ func TestConfigErrors(t *testing.T) {
 func TestVerboseFlag(t *testing.T) {
 	setupEnv(t, "/nonexistent/bootstrap/config.toml")
 	// A folder that is not a git repository: check stops at the preflight.
-	t.Setenv("PWD", t.TempDir())
+	dir := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("PWD", dir)
 	t.Setenv("MISE_PROJECT_ROOT", "")
 	var stdout, stderr bytes.Buffer
 	if code := Run("dev", []string{"check", "--verbose"}, strings.NewReader(""), &stdout, &stderr); code != fail.Usage {
