@@ -160,11 +160,11 @@
         "U4"
       ],
       "waits": "The bash cases run the finished engine of waves 1 to 4.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T19:21:31.578Z",
+      "ended": "2026-11-15T20:00:11.085Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U6",
@@ -268,8 +268,8 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-15T19:21:31.535Z",
       "ended": ""
     },
     {

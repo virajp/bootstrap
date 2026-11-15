@@ -1994,17 +1994,36 @@ case_questions_json() {
   no_token
   mac_run questions --json
   check_exit 0
-  check_output '"tool": "owner"'
-  check_output '"key": "token"'
-  check_output '"question": "Which token does the owner use?"'
-  check_output '"proposal": "token"'
-  check_output '"source": "detect"'
-  check_output '"answer": null'
+  check_output '{"contract":1,"command":"mac questions","ok":true,"code":0,"data":[{'
+  check_output '"tool":"owner"'
+  check_output '"key":"token"'
+  check_output '"question":"Which token does the owner use?"'
+  check_output '"proposal":"token"'
+  check_output '"source":"detect"'
+  check_output '"answer":null'
   use_config contrib
   mac_run questions owner
   check_exit 0
   check_output "token   Which token does the owner use?"
   check_output "[OK] token-1"
+}
+
+# The contract is repo-side: on the Mac side only mac questions takes --json
+# (D20, D46). Each other --json is a usage error, with the envelope.
+case_mac_json_refused() {
+  use_config ok
+  mac_run add tool --json --no-bootstrap merger
+  check_exit 2
+  check_output '{"contract":1,"command":"mac add","ok":false,"code":2,'
+  check_output '"message":"mac add has no flag --json"'
+  mac_run check --json
+  check_exit 2
+  check_output '{"contract":1,"command":"mac check","ok":false,"code":2,'
+  check_output '"message":"mac check has no flag --json"'
+  mac_run describe --json
+  check_exit 2
+  check_output '{"contract":1,"command":"","ok":false,"code":2,'
+  check_output '"message":"mac describe is not a command"'
 }
 
 case_init_answer() {
@@ -2426,6 +2445,7 @@ run_case "merge: the old key remove" expect merge 2 'macos/tools/merger/tools.to
 
 run_case "questions: sync stops on a question without an answer" case_question_missing
 run_case "questions: mac questions, --json and text" case_questions_json
+run_case "questions: --json on mac add, mac check and mac describe" case_mac_json_refused
 run_case "selection: mac detect offers the installed packages" case_mac_detect
 run_case "selection: mac detect --add --yes adds the tools and the packages" case_mac_detect_yes
 run_case "selection: mac detect without brew and mas" case_mac_detect_nobrew

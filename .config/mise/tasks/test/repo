@@ -3432,7 +3432,8 @@ CASE_CALL=sync_dirty_values run_case "sync with a values file with changes that 
 sync_jobs() { "$bin" sync --dry-run --jobs 1; }
 CASE_CALL=sync_jobs run_case "sync --jobs 1" 0 'environments = [ "dev" ]' '' 'Dry run: '
 questions_none() { "$bin" questions --json; }
-CASE_CALL=questions_none run_case "questions --json without questions" 0 'environments = [ "dev" ]' '' '[]'
+CASE_CALL=questions_none run_case "questions --json without questions" 0 'environments = [ "dev" ]' '' \
+  '{"contract":1,"command":"questions","ok":true,"code":0,"data":[],"errors":[],"warnings":[]}'
 list_base() { "$bin" list; }
 CASE_CALL=list_base run_case "list: a dependency below its tool" 0 'environments = [ "dev" ]' '' '└── python'
 check_list_no_pack() { check_that "list: no root of a pack" log_lacks '(pack)'; }
@@ -4273,13 +4274,14 @@ CASE_CALL=init_skip_answer run_case "init --skip-answer is not a flag" 2 "$vtest
 
 questions_json() { "$bin" questions --json; }
 check_questions_json() {
-  check_that "questions --json: the group" log_has '"group": "email"'
-  check_that "questions --json: the note" log_has '"note": "One answer of the group is enough."'
-  check_that "questions --json: optional" log_has '"optional": true'
-  check_that "questions --json: not optional" log_has '"optional": false'
+  check_that "questions --json: the envelope" log_has '{"contract":1,"command":"questions","ok":true,"code":0,"data":[{'
+  check_that "questions --json: the group" log_has '"group":"email"'
+  check_that "questions --json: the note" log_has '"note":"One answer of the group is enough."'
+  check_that "questions --json: optional" log_has '"optional":true'
+  check_that "questions --json: not optional" log_has '"optional":false'
 }
 CASE_CALL=questions_json run_case "questions --json: group, note and optional" 0 "$vtest_values" questions_tool \
-  '"key": "r"' check_questions_json
+  '"key":"r"' check_questions_json
 questions_text() { "$bin" questions; }
 check_questions_text() {
   check_that "questions: an empty answer is the ok glyph alone" grep -qE '^ +\[OK\]$' "$log"
@@ -4290,6 +4292,74 @@ check_questions_text() {
 CASE_CALL=questions_text run_case "questions: optional and group questions, and an empty answer" 0 "$vtest_values
 a = \"x\"
 r = \"\"" questions_tool 'Which r?' check_questions_text
+
+# The JSON contract (D1, D12, D26): each --json command prints one compact
+# envelope line on stdout, and its exit code is the envelope code. The human
+# lines go to stderr, so a case that reads the envelope alone drops them.
+json_lines() { [[ $(wc -l < "$log" | tr -d ' ') == 1 ]]; }
+contract_outside() {
+  mkdir -p -- "$tmp/outside"
+  cd "$tmp/outside" || exit
+  unset BOOTSTRAP_VALUES MISE_PROJECT_ROOT BOOTSTRAP_CLONE
+  "$bin" contract --json 2> /dev/null
+}
+check_contract() {
+  check_that "contract --json: one line" json_lines
+  check_that "contract --json: the 14 ports" log_has '"ports":["code:format","code:lint","code:sec","code:precommit","git:merge:<branch>","git:worktree:create","git:worktree:setup","git:worktree:delete","code:lsp:check","setup","test","test:e2e","test:golden","p:<id>:deploy"]'
+}
+CASE_CALL=contract_outside run_case "contract --json outside a repository" 0 "$dev_values" '' \
+  '{"contract":1,"command":"contract","ok":true,"code":0,"data":{"versions":[1],' check_contract
+config_json() {
+  # shellcheck disable=SC2086
+  "$bin" config $CONFIG_ARGS 2> /dev/null
+}
+config_get_json() {
+  check_that "config get --json: the envelope" log_is '{"contract":1,"command":"config get","ok":true,"code":0,"data":{"key":"repo.repo_name","value":"test","source":"file"},"errors":[],"warnings":[]}'
+}
+CONFIG_ARGS='get repo.repo_name --json' CASE_CALL=config_json run_case "config get --json" 0 "$dev_values" '' \
+  '' config_get_json
+CONFIG_ARGS='get repo.repo_name --json --format toml' CASE_CALL=config_json run_case "config get --json --format toml" 2 \
+  "$dev_values" '' '{"contract":1,"command":"config get","ok":false,"code":2,"data":null,"errors":[{"code":2,"message":"config get takes --json or --format, not both"}]'
+check_json() { "$bin" check --json 2> /dev/null; }
+check_json_skipped() {
+  check_that "check --json: the path of the finding" log_has '/repo.toml is not a key of repo.toml","path":".config/bootstrap/repo.toml"}]}'
+  check_that "check --json: a skipped stage" log_has '{"name":"old-forms","status":"skipped","findings":[]}'
+  check_that "check --json: one line" json_lines
+}
+CASE_CALL=check_json run_case "check --json: an unknown key in repo.toml" 2 "$dev_values
+bogus = 1" '' '{"name":"values","status":"fail","findings":[{"code":2,"severity":"error","message":"bogus in ' \
+  check_json_skipped
+add_json() { "$bin" add tool --json go; }
+no_git_change() { [[ -z $(_git -C "$consumer" status --porcelain) ]]; }
+check_no_git_change() { check_that "add --json: no change in git" no_git_change; }
+CASE_CALL=add_json run_case "add tool --json without --yes or --dry-run" 2 "$dev_values" '' \
+  '{"contract":1,"command":"add","ok":false,"code":2,"data":null,"errors":[{"code":2,"message":"add --json needs --yes or --dry-run' \
+  check_no_git_change
+add_json_dry() { "$bin" add tool --json --dry-run go 2> /dev/null; }
+check_add_json_dry() {
+  check_that "add --json --dry-run: a plan" log_has '"data":{"plan":{"changes":['
+  check_that "add --json --dry-run: no outcomes" log_has '"outcomes":[]}'
+  check_no_git_change
+}
+CASE_CALL=add_json_dry run_case "add tool --json --dry-run" 0 "$dev_values" '' \
+  '{"contract":1,"command":"add","ok":true,"code":0,' check_add_json_dry
+catalog_json() {
+  unset BOOTSTRAP_CLONE
+  "$bin" catalog --json --clone "$clone" 2> /dev/null
+}
+CASE_CALL=catalog_json run_case "catalog --json --clone" 0 "$dev_values" '' \
+  '{"contract":1,"command":"catalog","ok":true,"code":0,"data":{"fetched_at":"",'
+describe_json() { "$bin" describe --json 2> /dev/null; }
+check_describe_json() {
+  check_that "describe --json: tools" log_has '"tools":['
+  check_that "describe --json: members" log_has '"members":['
+  check_that "describe --json: ports" log_has '"ports":[{"name":"code:format","present":'
+}
+CASE_CALL=describe_json run_case "describe --json" 0 "$dev_values" '' \
+  '{"contract":1,"command":"describe","ok":true,"code":0,"data":{"repo":{' check_describe_json
+flag_json() { "$bin" sync --bogus --json 2> /dev/null; }
+CASE_CALL=flag_json run_case "an unknown flag with --json" 2 "$dev_values" '' \
+  '{"contract":1,"command":"sync","ok":false,"code":2,"data":null,"errors":[{"code":2,"message":"sync has no flag --bogus"}],"warnings":[]}'
 
 # setup:configs --all with the real engine (D54, D62, D63): the sibling api is
 # a repository next to the consumer with its own .config/bootstrap/, so its
