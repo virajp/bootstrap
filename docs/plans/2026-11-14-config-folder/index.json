@@ -132,9 +132,9 @@
       "waits": "Its Verification runs the config verb U2 adds.",
       "status": "green",
       "started": "2026-11-15T13:04:56.710Z",
-      "ended": "2026-11-15T14:19:15.560Z",
+      "ended": "2026-11-15T14:29:11.958Z",
       "commit": "2f74dfe",
-      "rounds": 3
+      "rounds": 4
     },
     {
       "id": "U5",
@@ -151,11 +151,11 @@
         "U3"
       ],
       "waits": "It migrates the examples with U3's [member.*] hook and checks them against U3's members schema (D45).",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T14:22:59.540Z",
+      "ended": "2026-11-15T14:27:36.724Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U6",
@@ -277,8 +277,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-15T14:22:59.505Z",
       "ended": ""
     },
     {

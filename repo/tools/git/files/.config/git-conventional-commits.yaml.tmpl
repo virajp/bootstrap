@@ -20,7 +20,7 @@ convention:
   # One scope per project, from `scopes` of [commits] in .config/bootstrap/repo.toml,
   # else the names of the [members.*] tables.
   # A scope that stops existing stays listed: deleting it invalidates its commits.
-  commitScopes:<% $scopes := coll.Slice %><% if has . "member" %><% $scopes = coll.Sort (coll.Keys .member) %><% end %><% if and (has . "commits") (has .commits "scopes") (gt (len .commits.scopes) 0) %><% $scopes = .commits.scopes %><% end %><% if gt (len $scopes) 0 %>
+  commitScopes:<% $scopes := coll.Slice %><% if has . "member" %><% range $name, $_ := .member %><% $scopes = coll.Append $name $scopes %><% end %><% end %><% if and (has . "commits") (has .commits "scopes") (gt (len .commits.scopes) 0) %><% $scopes = .commits.scopes %><% end %><% if gt (len $scopes) 0 %>
 <% range $scopes %>    - '<% strings.ReplaceAll "'" "''" . %>'
 <% end %><% else %> []
 <% end %>
