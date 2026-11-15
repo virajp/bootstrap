@@ -170,10 +170,7 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		isTerm = report.IsTerminal(f)
 	}
 	a.styled = report.StyleFromEnv(a.getenv, isTerm)
-	a.pwd = a.getenv("PWD")
-	if wd, err := os.Getwd(); a.pwd == "" && err == nil {
-		a.pwd = wd
-	}
+	a.pwd = currentDir(a.getenv)
 	if len(args) == 0 {
 		a.usageErr("no command given", "")
 		return fail.Usage
@@ -591,4 +588,22 @@ func (a *app) warnNotSelectable(mac bool, dir, file string) {
 			a.warnf("%s is not selectable - remove [tools.%s] from %s; a tool that needs it selects it", t, t, a.show(file))
 		}
 	}
+}
+
+// currentDir is $PWD of bash: the PWD variable when it names the current
+// folder, else the physical path of the current folder. A parent can change
+// the folder and keep its own PWD, for example `mise x --cd=<dir>`.
+func currentDir(getenv func(string) string) string {
+	p := getenv("PWD")
+	if strings.HasPrefix(p, "/") {
+		a, errA := os.Stat(p)
+		b, errB := os.Stat(".")
+		if errA == nil && errB == nil && os.SameFile(a, b) {
+			return p
+		}
+	}
+	if wd, err := os.Getwd(); err == nil {
+		return wd
+	}
+	return p
 }

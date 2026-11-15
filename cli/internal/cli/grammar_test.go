@@ -141,6 +141,7 @@ func detectRepo(t *testing.T) (string, string, func(args ...string) (fail.Code, 
 	}
 	t.Setenv("MISE_PROJECT_ROOT", root)
 	t.Setenv("BOOTSTRAP_VALUES", "")
+	t.Chdir(root)
 	t.Setenv("PWD", root)
 	return values, text, func(args ...string) (fail.Code, string, string) {
 		var stdout, stderr bytes.Buffer
@@ -253,6 +254,7 @@ func TestMacDetectAdd(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(home, ".cache"))
 	t.Setenv("MACOS_SETUP_REPO_PATH", cfg)
+	t.Chdir(cfg)
 	t.Setenv("PWD", cfg)
 	run := func(args ...string) (fail.Code, string, string) {
 		var stdout, stderr bytes.Buffer

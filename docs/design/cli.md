@@ -85,6 +85,9 @@ bootstrap mac <command> [<kind>] [<name>…] [flags]
 The group `mac` names the Mac side. Thus a folder with both `macos.toml` and
 `.config/bootstrap.toml` has no doubt. Each command without `mac` is for the
 repository of the current folder. The `mac` commands have the same grammar.
+The current folder is `PWD` when it names the current folder, else the physical
+path, as `$PWD` of bash. A parent that changes the folder and keeps its own
+`PWD`, for example `mise x --cd=<dir>`, thus gives `<dir>`.
 
 The kind word tells what the names are: `tool` or `pack`. `add` takes `tool` or
 `pack`. `remove` and `replace` take `tool` only. The other commands take no
