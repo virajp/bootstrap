@@ -14,6 +14,10 @@ summary = "fish, with its config and the login shell"
 # The path of the login shell. Write the path of another shell to keep it.
 login_shell = "/opt/homebrew/bin/fish"
 
+# The VS Code extensions of the tool, when visual-studio-code is selected.
+[contributes.visual-studio-code]
+extensions = [ "bmalehorn.vscode-fish" ]
+
 [mise.bootstrap.packages]
 "brew:fish" = "latest"
 

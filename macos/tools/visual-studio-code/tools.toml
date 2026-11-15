@@ -4,5 +4,11 @@ category = "editors"
 description = "Open-source code editor"
 summary = "Visual Studio Code, the code editor"
 
+# The extensions that ~/.config/brewfile installs. Each tool adds its own
+# extensions in [contributes.visual-studio-code], and a user adds more in
+# extensions of [tools.visual-studio-code].
+[defaults]
+extensions = []
+
 [mise.bootstrap.packages]
 "brew-cask:visual-studio-code" = "latest" # Open-source code editor

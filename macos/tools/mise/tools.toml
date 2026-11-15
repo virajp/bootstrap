@@ -16,6 +16,10 @@ summary = "mise, its config and the Mac sync tasks"
 example = "~/Projects/github.com/janedoe/macos-setup"
 question = "Which folder holds your macos.toml (the root of your private macos-setup clone)?"
 
+# The VS Code extensions of the tool, when visual-studio-code is selected.
+[contributes.visual-studio-code]
+extensions = [ "hverlin.mise-vscode", "redhat.vscode-yaml", "tamasfe.even-better-toml" ]
+
 [mise.env]
 MACOS_SETUP_REPO_PATH = "<% index .config `config_path` | required `mise: set config_path in [tools.mise] of macos.toml` | regexp.Replace `^~` .env.HOME %>"
 

@@ -31,6 +31,7 @@ brew = "fnox -c $HOME/.config/fnox/config.toml exec -P brew -- brew"
 source = ".config/bash/01a-homebrew.bash"
 
 [files.".config/brewfile"]
+mode = "template"
 source = ".config/brewfile"
 
 [files.".config/fish/conf.d/05-homebrew.fish"]

@@ -6,6 +6,10 @@ category = "dev"
 description = "Node.js (LTS), and the user config of the aube that mise embeds"
 summary = "Node.js (LTS)"
 
+# The VS Code extensions of the tool, when visual-studio-code is selected.
+[contributes.visual-studio-code]
+extensions = [ "christian-kohler.npm-intellisense", "meganrogge.template-string-converter" ]
+
 [mise.settings]
 # NodeJS settings
 node.compile = false
