@@ -29,7 +29,8 @@ const (
 	ownTitle = "Own packages"
 )
 
-// The frames of the spinner of the dialog "Detecting ...".
+// The frames of the spinner of the dialogs "Detecting ..." and
+// "Planning ...".
 const spinFrames = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 
 // proposal is one proposal of the detection: a tool to add, a selected tool

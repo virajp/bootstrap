@@ -46,11 +46,11 @@ type applied struct {
 	lines []line
 }
 
-// planOf plans the change list with core.Plan. The output of a dry run that
-// fails is the message of its problem.
-func (m *Model) planOf() (*core.PlanResult, error) {
+// planOf plans the change list <list> of the side <sd> with core.Plan. The
+// output of a dry run that fails is the message of its problem.
+func planOf(sd core.Side, list core.List, noBootstrap bool) (*core.PlanResult, error) {
 	var out bytes.Buffer
-	p, err := core.Plan(m.opt.Side, m.list, core.Options{NoBootstrap: m.opt.NoBootstrap, Stdout: &out, Stderr: &out})
+	p, err := core.Plan(sd, list, core.Options{NoBootstrap: noBootstrap, Stdout: &out, Stderr: &out})
 	if err != nil && err.Error() == "" {
 		msg := strings.TrimSpace(stripStyle(out.String()))
 		if msg == "" {
@@ -61,19 +61,65 @@ func (m *Model) planOf() (*core.PlanResult, error) {
 	return p, err
 }
 
-// openReview plans the change list and shows the review. A problem of
-// core shows in a dialog, and the change list stays (D13 b).
+// planMsg is the end of core.Plan: the plan, or its problem, and the step
+// that takes the plan.
+type planMsg struct {
+	p    *core.PlanResult
+	err  error
+	then func(m *Model, p *core.PlanResult) tea.Cmd
+}
+
+// startPlan plans the change list in the background, and shows the dialog
+// "Planning ..." with a spinner until the plan is done. Then <then> takes
+// the plan. A problem of core shows in a dialog, and the change list stays
+// (D13 b). The dialog takes no key but ctrl+c, which quits.
+func (m *Model) startPlan(then func(m *Model, p *core.PlanResult) tea.Cmd) tea.Cmd {
+	m.planning = true
+	m.modal = &modal{
+		title: "Planning ...",
+		width: 56,
+		body:  m.planningBody(),
+		keys:  "ctrl+c quit",
+		onKey: func(_ *Model, k tea.KeyPressMsg) tea.Cmd {
+			if k.String() == "ctrl+c" {
+				return tea.Quit
+			}
+			return nil
+		},
+	}
+	sd, list, nb := m.opt.Side, m.list, m.opt.NoBootstrap
+	return func() tea.Msg {
+		p, err := planOf(sd, list, nb)
+		return planMsg{p: p, err: err, then: then}
+	}
+}
+
+// planningBody gives the body of the dialog "Planning ...", with the frame
+// of the spinner of the tick.
+func (m *Model) planningBody() []line {
+	f := []rune(spinFrames)
+	return []line{{styled(string(f[m.tick%len(f)])+" Running the dry run of the sync", stPlain)}}
+}
+
+// planned takes the end of core.Plan.
+func (m *Model) planned(msg planMsg) tea.Cmd {
+	m.planning, m.modal = false, nil
+	if msg.err != nil {
+		m.modal = errModal(msg.err)
+		return nil
+	}
+	return msg.then(m, msg.p)
+}
+
+// openReview plans the change list and shows the review.
 func (m *Model) openReview() tea.Cmd {
 	if m.changes() == 0 {
 		return nil
 	}
-	p, err := m.planOf()
-	if err != nil {
-		m.modal = errModal(err)
+	return m.startPlan(func(m *Model, p *core.PlanResult) tea.Cmd {
+		m.review = &review{plan: p, dirty: p.Dirty()}
 		return nil
-	}
-	m.review = &review{plan: p, dirty: p.Dirty()}
-	return nil
+	})
 }
 
 // reviewKey handles a key of the review.
@@ -115,13 +161,10 @@ func (m *Model) apply() tea.Cmd {
 		func(tool string, n int) string { return "Apply · " + tool + " needs " + plural(n, "value") },
 		func(m *Model, a []core.Answer) { m.setAnswers(a) },
 		func(m *Model) tea.Cmd {
-			p, err := m.planOf()
-			if err != nil {
-				m.modal = errModal(err)
-				return nil
-			}
-			m.review = &review{plan: p, dirty: p.Dirty(), all: r.all}
-			return m.apply()
+			return m.startPlan(func(m *Model, p *core.PlanResult) tea.Cmd {
+				m.review = &review{plan: p, dirty: p.Dirty(), all: r.all}
+				return m.apply()
+			})
 		},
 		func(m *Model) tea.Cmd {
 			m.review = nil
