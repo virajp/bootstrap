@@ -115,12 +115,13 @@ Flags
   --jobs <n>           the jobs at a time (default: 2 x the CPU count)
   --verbose            init, sync, check, add, remove, replace, detect: print
                        the log line of each target
-  --config <path>      each command except version: the config file (default:
-                       ~/.config/bootstrap/config.toml)
-  --cache-dir <path>   each command except version: the cache folder
-  --url <url>          each command except version: the clone URL
-  --clone <path>       each command except version: a clone of bootstrap, with
-                       no fetch
+  --config <path>      each command except version and contract: the config
+                       file (default: ~/.config/bootstrap/config.toml)
+  --cache-dir <path>   each command except version and contract: the cache
+                       folder
+  --url <url>          each command except version and contract: the clone URL
+  --clone <path>       each command except version and contract: a clone of
+                       bootstrap, with no fetch
   --repo-path <path>   each mac command except mac init, and settings: the
                        repository of macos.toml
 `
