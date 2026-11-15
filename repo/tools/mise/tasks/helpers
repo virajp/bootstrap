@@ -263,35 +263,70 @@ own_tasks() {
   done
 }
 
-# The repo's members, one repo-relative path per line.
+# bootstrap_get <key> [<repo>]
 #
-# Two sources, and which one answers depends on how the members are LINKED:
+# The answer of `bootstrap config get <key> --format json` as one line of JSON:
+# `{"key": …, "value": …, "source": "file" | "default"}`. Read `.value`: a key
+# that is not set gives its default, or null. <key> is a key of the values in
+# `.config/bootstrap/`, for example `repo.core_branches`; a segment with a dot
+# is double-quoted, as in `repo.branches."release.1".landing`. With <repo>, it
+# reads the values of that repository instead of this one.
 #
-#   submodules  `.gitmodules` exists, so git already holds the list. Keeping a
-#               second copy of it in the config would only let the two disagree.
-#   siblings    no `.gitmodules`, so the list is `MEMBERS` — the marked position
-#               in `.config/mise.toml` that the orchestrator shaping this repo
-#               fills, space separated, each path relative to the repo root.
-#
-# Defined ONCE here rather than in each caller, which is the whole point: every
-# task that walks the members — `setup --all`, `code:worktrees` — walks the
-# same list, so a repo that changes how it links its members changes it in one
-# place. A single-project repo has neither source and this prints nothing but
-# blank output; every caller already skips empty lines.
-#
-# `$displaypath` is git's own variable and stays single-quoted so git, not this
-# shell, expands it.
-# shellcheck disable=SC2016
-members() {
-  if [ -f "${MISE_PROJECT_ROOT}/.gitmodules" ]; then
-    git -C "${MISE_PROJECT_ROOT}" submodule --quiet foreach --recursive 'echo $displaypath' 2> /dev/null || true
-  else
-    # Unquoted ON PURPOSE: the value is one space-separated string — TOML `[env]`
-    # values are strings, never arrays — and word splitting is what turns it back
-    # into a list.
-    # shellcheck disable=SC2086
-    printf '%s\n' ${MEMBERS:-}
+# BOOTSTRAP_BIN, a local build or the engine of a sync, replaces the bootstrap
+# of mise. A read failure (code 1) stops the task with code 1, after the
+# message of the engine. Without an engine that answers, for example no
+# bootstrap or one older than 4.0.0, the task stops with code 2. Call it as
+# `VAR=$(bootstrap_get <key>) || exit $?`, never with `|| VAR=''`: a command
+# substitution does not inherit `set -e`, so the caller passes the code on.
+bootstrap_get() {
+  local key="$1" repo="${2:-}" out rc=0
+  local bin=(mise x -- bootstrap)
+  if [ -n "${BOOTSTRAP_BIN:-}" ]; then
+    bin=("${BOOTSTRAP_BIN}")
+  elif ! mise x -- which bootstrap > /dev/null 2>&1; then
+    # mise x answers a missing command with code 1, the code of a read failure.
+    rc=2
   fi
+  if [ "${rc}" -eq 0 ]; then
+    if [ -n "${repo}" ]; then
+      out=$(cd -- "${repo}" && env -u BOOTSTRAP_VALUES MISE_PROJECT_ROOT="${repo}" "${bin[@]}" config get "${key}" --format json) || rc=$?
+    else
+      out=$("${bin[@]}" config get "${key}" --format json) || rc=$?
+    fi
+  fi
+  if [ "${rc}" -eq 0 ]; then
+    printf '%s\n' "${out}"
+    return 0
+  fi
+  [ "${rc}" -ne 1 ] || exit 1
+  print_error "bootstrap config get ${key} failed${repo:+ in ${repo}}."
+  print_warn "- it needs bootstrap 4.0.0 or newer: mise use -g github:virajp/bootstrap" >&2
+  print_warn "- when the message above says so, run bootstrap init${repo:+ in ${repo}}" >&2
+  exit 2
+}
+
+# members [<repo>]
+#
+# The members of the repo that are separate repositories: each submodule and
+# sibling member of `[members.<name>]` in `.config/bootstrap/repo.toml`, one
+# line each, `<name><TAB><folder><TAB><label><TAB><url>`. <folder> is relative
+# to the repo root, and a sibling's starts with `../`. <label> is the name when
+# the member has none, and <url>, last because `read` joins empty tab fields, is
+# empty when the member has none. A `folder`
+# member is part of this tree, so it is not in the list. With <repo>, the
+# members of that repository. Nothing when the repo has no members.
+#
+# Defined ONCE here rather than in each caller: every task that walks the
+# members — `setup:configs --all`, `code:worktrees` — walks the same list.
+# It reads the members with `bootstrap_get`, so call it the same way:
+# `LIST=$(members) || exit $?`.
+# It parses the answer with yq: a task that calls it has
+# `#MISE tools.yq="latest"`.
+members() {
+  local answer
+  answer=$(bootstrap_get repo.members "${1:-}") || exit $?
+  yq -p json -o tsv '(.value // {}) | to_entries | map(select(.value.type == "submodule" or .value.type == "sibling"))
+    | .[] | [.key, (.value.folder // .key), (.value.label // .key), (.value.url // "")]' <<< "${answer}"
 }
 
 # The shell files in scope, one path per line: the paths given as arguments

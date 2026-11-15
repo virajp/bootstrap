@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 # The derive script of the mise tool. The sync runs it in the root of the
-# repository, and never copies it. In a repository with git submodules, it
-# gives the dev aliases setup-all and setup-<member>, one for each submodule
-# member, as mise.shell_alias.
+# repository, and never copies it. In a repository with submodule or sibling
+# members, it gives the dev aliases setup-all and setup-<member>, one for each
+# member that also has a [members.<name>] table in
+# .config/bootstrap/repo.toml: the members of the flags of the setup task. The
+# input has no keys of repo.toml, so the script reads repo.members with
+# `bootstrap config get`, which reads the values folder of the sync
+# (BOOTSTRAP_VALUES).
 
 set -euo pipefail
 
@@ -17,8 +21,39 @@ jq_() {
   fi
 }
 
-jq_ -c '[.repo.members[] | select(.type == "submodule") | .name] as $subs
-  | if ($subs | length) == 0 then {}
+# The engine of the sync (BOOTSTRAP_BIN), else the bootstrap of mise.
+bin=(mise x -- bootstrap)
+[[ -z ${BOOTSTRAP_BIN:-} ]] || bin=("${BOOTSTRAP_BIN}")
+
+# get <key>: the value of <key> as JSON. Without an engine that answers, the
+# script stops with code 2; a read failure stops it with code 1.
+get() {
+  local out rc=0
+  if [[ -z ${BOOTSTRAP_BIN:-} ]] && ! mise x -- which bootstrap > /dev/null 2>&1; then
+    rc=2
+  else
+    out=$("${bin[@]}" config get "$1" --format json) || rc=$?
+  fi
+  if ((rc == 0)); then
+    jq_ -c '.value' <<< "${out}"
+    return 0
+  fi
+  ((rc != 1)) || exit 1
+  printf '%s\n' "bootstrap config get $1 failed - it needs bootstrap 4.0.0 or newer: mise use -g github:virajp/bootstrap" >&2
+  exit 2
+}
+
+# Without a submodule or sibling member, no alias and no read.
+subs=$(jq_ -c '[.repo.members[] | select(.type == "submodule" or .type == "sibling") | .name]' <<< "${input}")
+if [[ ${subs} == "[]" ]]; then
+  printf '{}\n'
+  exit 0
+fi
+tables=$(get repo.members) || exit $?
+
+jq_ -cn --argjson subs "${subs}" --argjson tables "${tables}" '
+  [$subs[] | . as $n | select($tables // {} | has($n))] as $s
+  | if ($s | length) == 0 then {}
     else {mise: {shell_alias: ({"setup-all": "mise run setup --all"}
-      + ([$subs[] | {key: "setup-\(.)", value: "mise run setup --\(.)"}] | from_entries))}}
-    end' <<< "${input}"
+      + ([$s[] | {key: "setup-\(.)", value: "mise run setup --\(.)"}] | from_entries))}}
+    end'

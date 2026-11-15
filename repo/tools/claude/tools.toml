@@ -6,6 +6,11 @@ description = "The setup:ai task, which installs and updates the Claude Code plu
 root_only = false
 summary = "Claude Code plugins, with setup:ai"
 
+# The plugins of setup:ai, by scope: `"<plugin>@<marketplace>" = "<source>"`.
+# None by default.
+[defaults.plugins.user]
+
+[defaults.plugins.project]
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
 [tasks."setup/ai"]

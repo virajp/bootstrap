@@ -4,12 +4,15 @@
 
 #MISE description="Sync the shared files of this repository's tools from bootstrap"
 #MISE tools."github:virajp/bootstrap"="latest"
+#MISE tools.yq="latest"
 
 #USAGE flag "--dry-run" help="show the changes without writing them"
 #USAGE flag "--verbose" help="list each file, also an unchanged one"
-<%/* The member flags are only for the submodules: a folder of a monorepo is
-   part of this tree. */ -%>
-<% $subs := coll.Slice %><% range .members %><% if eq (index $.member_types .) "submodule" %><% $subs = coll.Append . $subs %><% end %><% end -%>
+<%/* The member flags are only for the submodule and sibling members, each a
+   separate repository: a folder of a monorepo is part of this tree. A git
+   submodule with no [members.<name>] table gets no flag, as members() of
+   helpers skips it. */ -%>
+<% $subs := coll.Slice %><% range .members %><% $t := index $.member_types . %><% if and (coll.Has $.member_tables .) (or (eq $t "submodule") (eq $t "sibling")) %><% $subs = coll.Append . $subs %><% end %><% end -%>
 <% $last := math.Sub (len $subs) 1 -%>
 <% if $subs -%>
 #USAGE flag "--all" help="Also sync all members: <% range $i, $m := $subs %><% if $i %><% if eq $i $last %> and <% else %>, <% end %><% end %><% $m %><% end %>"
@@ -37,8 +40,8 @@ fi
 sync_repo() {
   local rc=0
   print_header "Syncing the shared files from bootstrap ..."
-  # The tools come from the [tools.*] tables of .config/bootstrap.toml and from
-  # the required members of the pack base.
+  # The tools come from the [tools.*] tables of .config/bootstrap/tools.toml
+  # and from the required members of the pack base.
   # shellcheck disable=SC2086
   (cd -- "$1" && MISE_PROJECT_ROOT=$1 "${BOOTSTRAP_BIN:-bootstrap}" sync ${DRY_RUN}) || rc=$?
   ((rc == 0)) || exit "${rc}"
@@ -46,18 +49,35 @@ sync_repo() {
 
 sync_repo "${MISE_PROJECT_ROOT}"
 <% if $subs %>
-# Each member is a separate repository. The first failure stops the task: the
-# last header names the repository that failed.
-# A member is a separate repository with its own values file. Without that
-# file, the engine stops with code 2.
-sync_member() {
-  print_header "Syncing $1 ..."
-  sync_repo "${MISE_PROJECT_ROOT}/$2"
-}
+# Each member is a separate repository with its own .config/bootstrap/. The
+# members come from [members.*] of .config/bootstrap/repo.toml, read after the
+# sync above. A member that is not on this machine, or that has no
+# .config/bootstrap/ (no values, or the old form), is skipped with a warning.
+# The list is read only when a member flag is given. The first failure of a
+# sync stops the task: the last header names the
+# repository that failed. BOOTSTRAP_HOME and BOOTSTRAP_MEMBER tell the sync of
+# the member its home repository and its name, so it writes [home].
+WANT=${usage_all:-false}
+<% range $subs -%>
+[[ "${usage_<% . | strings.ReplaceAll "-" "_" %>:-false}" != "true" ]] || WANT=true
 <% end -%>
-<% range $subs %>
-<% $x := dict %><% if and (has $ "member") (has $.member .) %><% $x = index $.member . %><% end -%>
-if [[ "${usage_all:-false}" == "true" || "${usage_<% . | strings.ReplaceAll "-" "_" %>:-false}" == "true" ]]; then
-  sync_member "<% index $x "label" | default . %>" "<% index $.member_folders . %>"
+MEMBER_LIST=''
+if [[ "${WANT}" == "true" ]]; then
+  MEMBER_LIST=$(members) || exit $?
 fi
+while IFS=$'\t' read -r NAME FOLDER LABEL _ <&3; do
+  [[ -n "${NAME}" ]] || continue
+  FLAG="usage_${NAME//-/_}"
+  [[ "${usage_all:-false}" == "true" || "${!FLAG:-false}" == "true" ]] || continue
+  print_header "Syncing ${LABEL} ..."
+  if [[ ! -d "${MISE_PROJECT_ROOT}/${FOLDER}" ]]; then
+    print_warn "member ${NAME}: ${FOLDER} is not on this machine"
+    continue
+  fi
+  if [[ ! -d "${MISE_PROJECT_ROOT}/${FOLDER}/.config/bootstrap" ]]; then
+    print_warn "member ${NAME}: run bootstrap init there"
+    continue
+  fi
+  BOOTSTRAP_HOME="${MISE_PROJECT_ROOT}" BOOTSTRAP_MEMBER="${NAME}" sync_repo "${MISE_PROJECT_ROOT}/${FOLDER}"
+done 3<<< "${MEMBER_LIST}"
 <% end -%>

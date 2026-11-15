@@ -25,7 +25,7 @@ path = [ "default_stages" ]
 value = [ "pre-commit" ]
 
 # No hook reads these paths: the `exclude` values of this tool, the selected
-# tools and `[tools.pre-commit]` of `.config/bootstrap.toml`, merged.
+# tools and `[tools.pre-commit]` of `.config/bootstrap/tools.toml`, merged.
 # pre-commit reads one regular expression.
 [[item]]
 kind = "block"
