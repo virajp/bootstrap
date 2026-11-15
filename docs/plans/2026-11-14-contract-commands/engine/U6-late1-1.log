@@ -1,5 +1,0 @@
-/security-review over bff5ef8..8a2f0d1 (worktree contract-commands), loop U6-late1, round 1
-
-No high-confidence vulnerabilities found.
-
-The change edits only the help text in cli/internal/cli/cli.go: the descriptions of --config, --cache-dir, --url and --clone now say that the contract command, like version, does not take these flags. No code runs differently.
