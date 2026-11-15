@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-repo-sync: tools in bootstrap.toml is a list, the old format - write one table for each entry, for example [tools.node] env = ["dev"]; the pack base is always added
+repo-sync: tools in bootstrap/tools.toml is a list, the old format - write one table for each entry, for example [tools.node] env = ["dev"]; the pack base is always added
 --- stdout

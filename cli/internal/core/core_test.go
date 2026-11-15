@@ -4,14 +4,17 @@ import (
 	"errors"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/source"
 	"github.com/virajp/bootstrap/cli/internal/target"
+	"github.com/virajp/bootstrap/cli/internal/values"
 )
 
 // The keys that each tool needs, and the categories file of the clone.
@@ -21,7 +24,9 @@ const (
 )
 
 // fixture is a clone with the tools <tools> and the packs file <packs> on
-// the side <side>, and a folder with the values file <values>.
+// the side <side>, and a folder with the values file <values>. On the repo
+// side, the folder is a git repository on main, and <values> is its
+// tools.toml, next to a repo.toml with the required keys.
 func fixture(t *testing.T, side source.Side, tools map[string]string, packs, values string) Side {
 	t.Helper()
 	clone, root := t.TempDir(), t.TempDir()
@@ -45,10 +50,16 @@ func fixture(t *testing.T, side source.Side, tools map[string]string, packs, val
 	if sd.Mac {
 		sd.Values = filepath.Join(root, "macos.toml")
 	} else {
-		sd.Values = filepath.Join(root, ".config", "bootstrap.toml")
+		sd.Values = filepath.Join(root, ".config", "bootstrap")
+		if out, err := exec.Command("git", "-C", root, "init", "-q", "-b", "main").CombinedOutput(); err != nil {
+			t.Fatalf("git init: %s", out)
+		}
+		if values != "" {
+			write(filepath.Join(sd.Values, "repo.toml"), "format = 3\nrepo_name = \"x\"\ncore_branches = [ \"main\" ]\n")
+		}
 	}
 	if values != "" {
-		write(sd.Values, values)
+		write(sd.EditFile(), values)
 	}
 	return sd
 }
@@ -68,7 +79,7 @@ func (f *fakeSync) install(t *testing.T, sd Side) {
 	t.Helper()
 	old := frontEnd
 	t.Cleanup(func() { frontEnd = old })
-	f.value = sd.Values
+	f.value = sd.EditFile()
 	frontEnd = func(bool) FrontEnd {
 		return func(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Code) {
 			f.runs++
@@ -425,7 +436,7 @@ func TestDetect(t *testing.T) {
 		"b": repoKeys,
 		"c": repoKeys,
 		"d": repoKeys,
-	}, "[pack.base]\na = { required = true }\n", "format = 2\nrepo_name = \"x\"\n")
+	}, "[pack.base]\na = { required = true }\n", "format = 3\n")
 	scripts := map[string]string{
 		"a": `{"result":"match","evidence":["f"],"message":"m"}`,
 		"b": `{"result":"match","evidence":["f"],"message":"m"}`,
@@ -526,15 +537,26 @@ func TestPlanInit(t *testing.T) {
 		t.Errorf("askOnly = %v", p.AskOnly)
 	}
 
-	// The repo side: format = 2 next to the keys of a new file.
+	// The repo side: a new tools.toml with format = 3 and the tables, and a
+	// new repo.toml with format = 3, the required keys and the unborn branch
+	// main as its core branch (D48).
 	rd := fixture(t, source.Repo, map[string]string{"a": "default_envs = [ \"dev\" ]\ndepends = []\nroot_only = false\n"},
 		"[pack.base]\na = { required = true }\n", "")
 	(&fakeSync{}).install(t, rd)
 	if p, err = Plan(rd, List{Init: true}, Options{}); err != nil {
 		t.Fatal(problems(err))
 	}
-	if next := string(p.Next); !strings.Contains(next, "format = 2") || !strings.Contains(next, "repo_name") || !strings.Contains(next, "[tools.a]") {
+	if next := string(p.Next); !strings.HasPrefix(next, ToolsHeader+"\n") || !strings.Contains(next, "format = 3") || !strings.Contains(next, "[tools.a]") {
 		t.Errorf("repo next:\n%s", next)
+	}
+	repoNew := string(p.RepoNew)
+	for _, want := range []string{"format = 3", `repo_name = "`, `core_branches = [ "main" ]`, `environments = [ "dev" ]`} {
+		if !strings.Contains(repoNew, want) {
+			t.Errorf("repo.toml lacks %s:\n%s", want, repoNew)
+		}
+	}
+	if paths := oldform.Paths(p.Changes); !reflect.DeepEqual(paths, []string{values.RepoFile(rd.Values), values.ToolsFile(rd.Values)}) {
+		t.Errorf("repo changes = %v", paths)
 	}
 
 	// A file with format = 2 without the member b: init does not add it.

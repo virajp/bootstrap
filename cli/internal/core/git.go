@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/values"
 )
 
 // GitEnv is the environment of a git call: without the variables of a git
@@ -118,13 +121,45 @@ func DirtyBesides(root string, skip map[string]bool) bool {
 }
 
 // ValuesSkip gives the values file and its real path: sync writes only
-// bootstrap_commit there, so the clean-target rule skips it.
-func ValuesSkip(values string) map[string]bool {
-	skip := map[string]bool{values: true}
-	if r, err := filepath.EvalSymlinks(values); err == nil {
-		skip[r] = true
+// bootstrap_commit and the tables of the required tools there, so the
+// clean-target rule skips it. For a values folder, it gives its repo.toml and
+// tools.toml.
+func ValuesSkip(vals string) map[string]bool {
+	files := []string{vals}
+	if st, err := os.Stat(vals); err == nil && st.IsDir() {
+		files = []string{values.RepoFile(vals), values.ToolsFile(vals)}
+	}
+	skip := map[string]bool{}
+	for _, f := range files {
+		skip[f] = true
+		if r, err := filepath.EvalSymlinks(f); err == nil {
+			skip[r] = true
+		}
 	}
 	return skip
+}
+
+// CoreBranches gives the core branches of a new repo.toml of the repository
+// <root>: main and develop, in that order, when each exists locally or on
+// origin; with neither, the current branch, born or unborn. A HEAD that is
+// not on a branch gives a problem with code 2.
+func CoreBranches(root string) ([]string, error) {
+	var out []string
+	for _, b := range []string{"main", "develop"} {
+		for _, ref := range []string{"refs/heads/" + b, "refs/remotes/origin/" + b} {
+			if _, ok := Git("-C", root, "rev-parse", "--verify", "--quiet", ref); ok {
+				out = append(out, b)
+				break
+			}
+		}
+	}
+	if len(out) > 0 {
+		return out, nil
+	}
+	if b, ok := Git("-C", root, "symbolic-ref", "--quiet", "--short", "HEAD"); ok && b != "" {
+		return []string{b}, nil
+	}
+	return nil, problem(fail.Usage, root+" has no branch main or develop, and HEAD is not on a branch", "check out a branch, then run bootstrap init again")
 }
 
 // statusSet gives the paths with changes that are not committed in the work

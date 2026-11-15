@@ -24,8 +24,9 @@ import (
 
 // The first line of a new values file.
 const (
-	RepoHeader = "# The values of bootstrap for this repository. See docs/sync/index.md of bootstrap."
-	MacHeader  = "# The values of the Mac sync of bootstrap. See docs/setup/index.md."
+	RepoHeader  = "# The values of bootstrap for this repository. See docs/sync/index.md of bootstrap."
+	ToolsHeader = "# The tools of bootstrap for this repository, and their values. See docs/sync/index.md of bootstrap."
+	MacHeader   = "# The values of the Mac sync of bootstrap. See docs/setup/index.md."
 )
 
 // ItemKind is the kind of an item of the change list.
@@ -103,9 +104,11 @@ func (s *Script) Shown() string { return s.Runner.ShownPath(s.Job.Tool, s.Job.Na
 // PlanResult is the result of Plan.
 type PlanResult struct {
 	Side
-	Cur     []byte // The values file before the command.
+	Cur     []byte // The edited file (Side.EditFile) before the command.
 	Existed bool
-	Next    []byte // The values file after the command, with the answers.
+	Next    []byte // The edited file after the command, with the answers.
+	// RepoNew is the new repo.toml of init, or nil when it exists.
+	RepoNew []byte
 	Notes   []string
 	// Changes are the writes before the sync: the values file first, then
 	// the changes of a migration.
@@ -212,16 +215,19 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 		p.AskOnly = map[string]bool{}
 	}
 
-	// A temporary copy of the values file, with its overrides file, for the
-	// selection and the plan.
+	// A temporary copy of the values, with the overrides, for the selection
+	// and the plan.
 	tmp, err := os.MkdirTemp(tmpDir(), "bootstrap-init.")
 	if err != nil {
 		return p, problem(fail.Other, "cannot create a temp folder", "")
 	}
 	defer func() { _ = os.RemoveAll(tmp) }()
-	tmpValues := tmp + "/" + filepath.Base(sd.Values)
+	tmpValues, tmpEdit, err := p.layout(tmp)
+	if err != nil {
+		return p, err
+	}
 	write := func() error {
-		if err := os.WriteFile(tmpValues, p.Next, 0o644); err != nil {
+		if err := os.WriteFile(tmpEdit, p.Next, 0o644); err != nil {
 			return problem(fail.Other, "cannot write a temp file", "")
 		}
 		return nil
@@ -229,17 +235,12 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 	if err := write(); err != nil {
 		return p, err
 	}
-	copyOverrides(sd.Values, tmpValues)
 
 	items := l.Items
 	newFile := l.Init && !p.Existed
 	if len(items) > 0 || newFile {
 		if st == nil {
-			raw, err := source.ReadTOML(tmpValues)
-			if err != nil {
-				return p, problem(fail.Usage, "cannot read "+sd.Show(sd.Values), "")
-			}
-			if st, err = stateOf(sd, tmpValues, p.Next, raw); err != nil {
+			if st, err = p.tmpState(tmpValues); err != nil {
 				return p, err
 			}
 		}
@@ -309,7 +310,7 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 		}
 	}
 	if !p.Existed || !bytes.Equal(p.Next, p.Cur) {
-		p.Changes = append([]oldform.Change{{Path: sd.Values, Content: p.Next, Note: strings.Join(p.Notes, "; ")}}, p.Changes...)
+		p.Changes = append([]oldform.Change{{Path: sd.EditFile(), Content: p.Next, Note: strings.Join(p.Notes, "; ")}}, p.Changes...)
 	}
 
 	// The plan of the sync, with the new values file.
@@ -388,37 +389,76 @@ func copyOverrides(file, to string) {
 	}
 }
 
-// initValues gives the values file of init: a new file with the key
-// format, or the file migrated from its old form.
+// layout writes the values of the plan into the temp folder <tmp>, all but
+// the edited file, and gives the values there (macos.toml, or the values
+// folder) and the path of the edited file. On the Mac, the overrides file
+// comes along; on the repo side, repo.toml (RepoNew when init creates it) and
+// releases.toml.
+func (p *PlanResult) layout(tmp string) (string, string, error) {
+	sd := p.Side
+	if sd.Mac {
+		v := tmp + "/" + filepath.Base(sd.Values)
+		copyOverrides(sd.Values, v)
+		return v, v, nil
+	}
+	dir := tmp + "/bootstrap"
+	if err := os.MkdirAll(dir, 0o777); err != nil {
+		return "", "", problem(fail.Other, "cannot create a temp folder", "")
+	}
+	repoText := p.RepoNew
+	if repoText == nil {
+		b, err := os.ReadFile(values.RepoFile(sd.Values))
+		if err != nil {
+			return "", "", problem(fail.Usage, "cannot read "+sd.Show(values.RepoFile(sd.Values)), "run bootstrap init")
+		}
+		repoText = b
+	}
+	if err := os.WriteFile(values.RepoFile(dir), repoText, 0o644); err != nil {
+		return "", "", problem(fail.Other, "cannot write a temp file", "")
+	}
+	if b, err := os.ReadFile(values.ReleasesFile(sd.Values)); err == nil {
+		_ = os.WriteFile(values.ReleasesFile(dir), b, 0o644)
+	}
+	return dir, values.ToolsFile(dir), nil
+}
+
+// tmpState gives the state of the temporary values <tmpValues> of layout,
+// with the edited text p.Next.
+func (p *PlanResult) tmpState(tmpValues string) (*State, error) {
+	var raw *source.Obj
+	if p.Mac {
+		var err error
+		if raw, err = source.ReadTOML(tmpValues); err != nil {
+			return nil, problem(fail.Usage, "cannot read "+p.Show(p.Values), "")
+		}
+	}
+	return stateOf(p.Side, tmpValues, p.Next, raw)
+}
+
+// initValues gives the values of init: on the Mac, a new file with the key
+// format, or the file migrated from its old form; on the repo side, each
+// file of the values folder that is not there, with the key format.
 func (p *PlanResult) initValues() error {
 	sd := p.Side
-	cur, err := os.ReadFile(sd.Values)
+	cur, err := os.ReadFile(sd.EditFile())
 	p.Cur, p.Existed = cur, err == nil
 	p.Next = cur
+	if !sd.Mac {
+		return p.initFolder()
+	}
 	if !p.Existed {
 		format := fmt.Sprintf("%s = %d\n", oldform.FormatKey, oldform.Format)
-		if sd.Mac {
-			p.Next = []byte(MacHeader + "\n\n" + format)
-		} else {
-			// The templates need repo_name: the name of the folder.
-			p.Next = []byte(RepoHeader + "\n\n" + format + "environments = [ \"dev\" ]\nrepo_name = " + q(filepath.Base(sd.Root)) + "\n")
-		}
+		p.Next = []byte(MacHeader + "\n\n" + format)
 		p.Notes = append(p.Notes, "create the values file")
 		return nil
 	}
 	var migs []oldform.Change
-	if sd.Mac {
-		ch, err := oldform.MigrateMac(sd.Values)
-		if err != nil {
-			return err
-		}
-		if ch != nil {
-			migs = append(migs, *ch)
-		}
-	} else {
-		if migs, err = oldform.MigrateRepo(sd.Root, sd.Values); err != nil {
-			return err
-		}
+	ch, err := oldform.MigrateMac(sd.Values)
+	if err != nil {
+		return err
+	}
+	if ch != nil {
+		migs = append(migs, *ch)
 	}
 	for _, ch := range migs {
 		if ch.Path == sd.Values {
@@ -431,11 +471,46 @@ func (p *PlanResult) initValues() error {
 	return nil
 }
 
+// initFolder gives the files of the values folder that init creates:
+// tools.toml (p.Next) and repo.toml (p.RepoNew), each with format = 3. A new
+// repo.toml has the name of the folder as repo_name, dev as its environment,
+// and the core branches of CoreBranches.
+func (p *PlanResult) initFolder() error {
+	sd := p.Side
+	format := fmt.Sprintf("%s = %d\n", oldform.FormatKey, values.Format)
+	if !p.Existed {
+		p.Next = []byte(ToolsHeader + "\n\n" + format)
+		p.Notes = append(p.Notes, "create "+values.ToolsName)
+	}
+	repoFile := values.RepoFile(sd.Values)
+	if Exists(repoFile) {
+		return nil
+	}
+	branches, err := CoreBranches(sd.Root)
+	if err != nil {
+		return err
+	}
+	list := make([]string, len(branches))
+	for i, b := range branches {
+		list[i] = q(b)
+	}
+	// The templates need repo_name: the name of the folder.
+	p.RepoNew = []byte(RepoHeader + "\n\n" + format + "core_branches = [ " + strings.Join(list, ", ") + " ]\nenvironments = [ \"dev\" ]\nrepo_name = " + q(filepath.Base(sd.Root)) + "\n")
+	p.Changes = append(p.Changes, oldform.Change{Path: repoFile, Content: p.RepoNew, Note: "create " + values.RepoName})
+	return nil
+}
+
 // InitChange gives the change that init makes before each other change of
 // the list: the new values file with the members of the pack base, or the
 // migration of an old form. A values file of the new form gives "". It writes
 // nothing. The TUI shows the change on its change list.
 func InitChange(sd Side) (string, error) {
+	if !sd.Mac && (!Exists(sd.EditFile()) || !Exists(values.RepoFile(sd.Values))) {
+		if !Exists(sd.EditFile()) {
+			return "create the values folder with " + selection.BasePack, nil
+		}
+		return "create " + values.RepoName, nil
+	}
 	if !Exists(sd.Values) {
 		return "create the values file with " + selection.BasePack, nil
 	}

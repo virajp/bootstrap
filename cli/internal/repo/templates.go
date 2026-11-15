@@ -3,8 +3,8 @@ package repo
 // The inline templates of the bash engine, byte for byte. Each one runs
 // through internal/tmpl, as bash runs it through gomplate.
 
-// tmplMembers is _rs_members: the `[member.<name>]` tables as `<name><TAB><folder><TAB><type>` lines.
-const tmplMembers = `<% if has .v "member" %><% range $k, $x := .v.member %><% $k %>	<% if has $x "folder" %><% $x.folder %><% else %><% $k %><% end %>	<% if has $x "type" %><% $x.type %><% end %>
+// tmplMembers is _rs_members: the `[members.<name>]` tables as `<name><TAB><folder><TAB><type>` lines.
+const tmplMembers = `<% if has .v "members" %><% range $k, $x := .v.members %><% $k %>	<% if has $x "folder" %><% $x.folder %><% else %><% $k %><% end %>	<% if has $x "type" %><% $x.type %><% end %>
 <% end %><% end %>`
 
 // tmplRepoName is `repo_name` of a values file (_rs_members).

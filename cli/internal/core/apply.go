@@ -8,6 +8,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/scripts"
+	"github.com/virajp/bootstrap/cli/internal/values"
 )
 
 // StepKind is the kind of a step of Apply.
@@ -80,20 +81,32 @@ func Apply(p *PlanResult, o Options) (fail.Code, bool, error) {
 	return code, false, nil
 }
 
-// restore puts the values file back as it was before Apply.
+// restore puts the edited values file back as it was before Apply, and
+// removes a repo.toml that init created, and then the values folder when it
+// is empty.
 func (p *PlanResult) restore() error {
+	file := p.EditFile()
+	if p.RepoNew != nil {
+		repoFile := values.RepoFile(p.Values)
+		if err := os.Remove(repoFile); err != nil && !os.IsNotExist(err) {
+			return problem(fail.Other, "cannot remove "+p.Show(repoFile), "")
+		}
+	}
 	if !p.Existed {
-		if err := os.Remove(p.Values); err != nil && !os.IsNotExist(err) {
-			return problem(fail.Other, "cannot remove "+p.Show(p.Values), "")
+		if err := os.Remove(file); err != nil && !os.IsNotExist(err) {
+			return problem(fail.Other, "cannot remove "+p.Show(file), "")
+		}
+		if !p.Mac {
+			_ = os.Remove(p.Values)
 		}
 		return nil
 	}
 	mode := os.FileMode(0o644)
-	if st, err := os.Stat(p.Values); err == nil {
+	if st, err := os.Stat(file); err == nil {
 		mode = st.Mode().Perm()
 	}
-	if err := os.WriteFile(p.Values, p.Cur, mode); err != nil {
-		return problem(fail.Other, "cannot write "+p.Show(p.Values)+" back", "")
+	if err := os.WriteFile(file, p.Cur, mode); err != nil {
+		return problem(fail.Other, "cannot write "+p.Show(file)+" back", "")
 	}
 	return nil
 }

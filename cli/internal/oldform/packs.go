@@ -103,7 +103,7 @@ func IsFormat(raw *source.Obj) bool {
 
 // formatProblems gives the messages of the key format and of the
 // `[packs.<name>]` tables of the values file <raw>, shown as <shown>.
-func formatProblems(raw *source.Obj, shown, hint string) []*fail.Error {
+func formatProblems(raw *source.Obj, shown, hint string, want int64) []*fail.Error {
 	var probs []*fail.Error
 	if p, ok := raw.Get("packs").(*source.Obj); ok {
 		for _, name := range p.Keys() {
@@ -113,11 +113,12 @@ func formatProblems(raw *source.Obj, shown, hint string) []*fail.Error {
 		probs = append(probs, usage("packs in %s is the old form - %s", shown, hint))
 	}
 	v, ok := raw.Lookup(FormatKey)
+	n, isInt := v.(int64)
 	switch {
 	case !ok:
-		probs = append(probs, usage("%s without %s = %d is the old form - %s", shown, FormatKey, Format, hint))
-	case !IsFormat(raw):
-		probs = append(probs, usage("%s = %s in %s is not valid - the %s of a values file is %d", FormatKey, strings.TrimSpace(source.JSON(v)), shown, FormatKey, Format))
+		probs = append(probs, usage("%s without %s = %d is the old form - %s", shown, FormatKey, want, hint))
+	case !isInt || n != want:
+		probs = append(probs, usage("%s = %s in %s is not valid - the %s of a values file is %d", FormatKey, strings.TrimSpace(source.JSON(v)), shown, FormatKey, want))
 	}
 	return probs
 }

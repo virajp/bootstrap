@@ -1,8 +1,6 @@
 package selection
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -155,13 +153,12 @@ func TestFormCases(t *testing.T) {
 				base = macosBase
 			}
 			clone := writeTree(t, base.with(withCatalog(c.over)))
-			vdir := t.TempDir()
-			values, shown := filepath.Join(vdir, "bootstrap.toml"), "bootstrap.toml"
+			values, shown := "", "bootstrap"
 			if c.side == source.Macos {
 				// The Mac side reads <values>/macos.toml; this case has none.
-				values, shown = vdir, "config/macos.toml"
-			} else if err := os.WriteFile(values, []byte(repoValues), 0o644); err != nil {
-				t.Fatal(err)
+				values, shown = t.TempDir(), "config/macos.toml"
+			} else {
+				values = repoFolder(t, repoValues)
 			}
 			got := pcase{name: c.name, side: c.side, clone: clone, values: values, shown: shown}.golang()
 			if got != c.want {

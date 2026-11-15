@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-repo-sync: cannot read bootstrap.toml
+repo-sync: cannot read bootstrap/tools.toml
 --- stdout

@@ -36,8 +36,8 @@ func TestToolValuesGroup(t *testing.T) {
 		user map[string]any
 		want string
 	}{
-		{map[string]any{"a": "", "d": ""}, "[ERROR] the group t.g has no answer in .config/bootstrap.toml\n  -> Run bootstrap init\n"},
-		{map[string]any{"a": "x"}, "[ERROR] the question t.d has no answer in .config/bootstrap.toml\n  -> Run bootstrap init\n"},
+		{map[string]any{"a": "", "d": ""}, "[ERROR] the group t.g has no answer in .config/bootstrap/tools.toml\n  -> Run bootstrap init\n"},
+		{map[string]any{"a": "x"}, "[ERROR] the question t.d has no answer in .config/bootstrap/tools.toml\n  -> Run bootstrap init\n"},
 		{map[string]any{"b": "x", "d": ""}, ""},
 	} {
 		tt := source.NewObj()
@@ -49,7 +49,7 @@ func TestToolValuesGroup(t *testing.T) {
 		var buf bytes.Buffer
 		r := report.NewReport(&buf, report.Options{Prefix: Prefix})
 		s := &state{stderr: &buf, r: r, e: &target.Env{Report: r, Pwd: root}, root: root, dir: root, src: src, idx: idx,
-			values: filepath.Join(root, ".config", "bootstrap.toml"), show: ".config/bootstrap.toml",
+			values: filepath.Join(root, ".config", "bootstrap"), show: ".config/bootstrap", showTools: ".config/bootstrap/tools.toml",
 			vals: &values.Repo{Raw: source.NewObj(), User: user}, membersRead: true, res: &selection.Resolved{Tools: []string{"t"}}}
 		code := s.toolValues()
 		if buf.String() != c.want || (code == fail.OK) != (c.want == "") {

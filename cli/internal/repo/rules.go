@@ -10,6 +10,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/format"
 	"github.com/virajp/bootstrap/cli/internal/misegen"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
+	"github.com/virajp/bootstrap/cli/internal/schema"
 	"github.com/virajp/bootstrap/cli/internal/selection"
 	"github.com/virajp/bootstrap/cli/internal/source"
 	"github.com/virajp/bootstrap/cli/internal/tmpl"
@@ -42,16 +43,55 @@ func load(d ds) (any, error) {
 	return tmpl.DecodeTOML(b)
 }
 
-// valuesDS gives the values file as the datasource of a gomplate call. The
-// file is read once.
+// valuesDS gives the values folder as the datasource of a gomplate call: the
+// keys of repo.toml, then the [tools.*] and [overrides.*] tables of
+// tools.toml without [overrides.tools.*], and `member`, the old name of
+// [members.*], which the templates read. The files are read once.
 func (s *state) valuesDS() (any, error) {
 	if s.valDS == nil && s.valErr == nil {
-		s.valDS, s.valErr = load(ds{"v", s.values, "toml"})
-		if s.valErr == nil && s.valDS == nil {
-			s.valDS = map[string]any{}
-		}
+		s.valDS, s.valErr = valuesOf(s.values)
 	}
 	return s.valDS, s.valErr
+}
+
+// valuesOf reads the values folder <dir> as valuesDS gives it.
+func valuesOf(dir string) (map[string]any, error) {
+	out := map[string]any{}
+	repo, err := load(ds{"v", values.RepoFile(dir), "toml"})
+	if err != nil {
+		return nil, err
+	}
+	if m, ok := repo.(map[string]any); ok {
+		for k, v := range m {
+			out[k] = v
+		}
+	}
+	tools, err := load(ds{"v", values.ToolsFile(dir), "toml"})
+	if err != nil {
+		return nil, err
+	}
+	if m, ok := tools.(map[string]any); ok {
+		if t, ok := m["tools"]; ok {
+			out["tools"] = t
+		}
+		if o, ok := m["overrides"].(map[string]any); ok {
+			rest := map[string]any{}
+			for k, v := range o {
+				if k != "tools" {
+					rest[k] = v
+				}
+			}
+			if len(rest) > 0 {
+				out["overrides"] = rest
+			}
+		} else if o, ok := m["overrides"]; ok {
+			out["overrides"] = o
+		}
+	}
+	if m, ok := out["members"]; ok {
+		out["member"] = m
+	}
+	return out, nil
 }
 
 // gomplate is `_se_gomplate -c <sources> -i <text>`: it renders the inline
@@ -123,13 +163,13 @@ func (s *state) readEnvs() fail.Code {
 		return fail.Usage
 	}
 	if strings.Trim(list, "\n ") == "" {
-		s.r.Warn(s.show + " lists no environments - using dev only; add environments = [\"dev\", ...]")
+		s.r.Warn(s.showRepo + " lists no environments - using dev only; add environments = [\"dev\", ...]")
 		list = "dev"
 	}
 	names := fields(list)
 	for _, name := range names {
 		if name != "dev" && name != "ci" {
-			s.log("environment '" + name + "' in " + s.show + " is not one of dev, ci")
+			s.log("environment '" + name + "' in " + s.showRepo + " is not one of dev, ci")
 			return fail.Usage
 		}
 	}
@@ -142,7 +182,7 @@ func (s *state) readEnvs() fail.Code {
 		return false
 	}
 	if !has("dev") {
-		s.log("environments in " + s.show + " must include dev")
+		s.log("environments in " + s.showRepo + " must include dev")
 		return fail.Usage
 	}
 	s.envs = nil
@@ -164,13 +204,10 @@ func (s *state) hasEnv(env string) bool {
 }
 
 // readSel is `_rs_values_sel`: the `[tools.*]` and `[packs.*]` entries of
-// the values file.
+// the values folder, after the schema of its files.
 func (s *state) readSel() ([]values.Item, error) {
 	v, err := values.ReadRepo(s.values, s.show)
 	if err != nil {
-		if _, derr := s.valuesDS(); derr != nil {
-			gomplateError(s.stderr, "failed to read datasource v ("+s.values+"): "+derr.Error())
-		}
 		return nil, err
 	}
 	s.vals = v
@@ -188,23 +225,23 @@ func (s *state) envRules(sel []values.Item) fail.Code {
 			continue
 		}
 		if envs == "" {
-			s.log("env of [" + it.Kind + "." + it.Name + "] in " + s.show + " is empty - name an environment, or remove env to use default_envs")
+			s.log("env of [" + it.Kind + "." + it.Name + "] in " + s.showTools + " is empty - name an environment, or remove env to use default_envs")
 			return fail.Usage
 		}
 		hasDev := strings.Contains(","+envs+",", ",dev,")
 		// Split on commas only, so an item with a space fails the name check.
 		for _, env := range strings.Split(envs, ",") {
 			if !misegen.EnvName(env) {
-				s.log("env of [" + it.Kind + "." + it.Name + "] in " + s.show + ": '" + env + "' is not one of " + strings.Join(misegen.EnvNames, ", "))
+				s.log("env of [" + it.Kind + "." + it.Name + "] in " + s.showTools + ": '" + env + "' is not one of " + strings.Join(misegen.EnvNames, ", "))
 				return fail.Usage
 			}
 			if !s.hasEnv(env) {
-				s.log("env '" + env + "' of [" + it.Kind + "." + it.Name + "] in " + s.show + " is not in environments: " + strings.Join(s.envs, " "))
+				s.log("env '" + env + "' of [" + it.Kind + "." + it.Name + "] in " + s.showTools + " is not in environments: " + strings.Join(s.envs, " "))
 				return fail.Usage
 			}
 		}
 		if !hasDev {
-			s.log("env of [" + it.Kind + "." + it.Name + "] in " + s.show + " has no dev - each tool must be in dev, for example env = [\"dev\", \"ci\"]")
+			s.log("env of [" + it.Kind + "." + it.Name + "] in " + s.showTools + " has no dev - each tool must be in dev, for example env = [\"dev\", \"ci\"]")
 			return fail.Usage
 		}
 	}
@@ -222,13 +259,13 @@ func (s *state) overrides(g *misegen.Generator, local bool) fail.Code {
 	v, err := s.valuesDS()
 	if err != nil {
 		gomplateError(s.stderr, "failed to read datasource o ("+s.values+"): "+err.Error())
-		s.log("cannot read [overrides] of " + s.show)
+		s.log("cannot read [overrides] of " + s.showTools)
 		return fail.Usage
 	}
 	if m, ok := v.(map[string]any); ok && m["overrides"] != nil {
 		o, isMap := m["overrides"].(map[string]any)
 		if !isMap {
-			s.log("overrides in " + s.show + " must be a table")
+			s.log("overrides in " + s.showTools + " must be a table")
 			rc = fail.Usage
 		}
 		var keys []string
@@ -238,15 +275,15 @@ func (s *state) overrides(g *misegen.Generator, local bool) fail.Code {
 		sort.Strings(keys)
 		for _, k := range keys {
 			switch k {
-			case "mise", "mise_env":
+			case "mise", "mise_env", "tools":
 			case "gitignore":
-				s.log("[overrides.gitignore] in " + s.show + " is the old form - " + oldform.Hint)
+				s.log("[overrides.gitignore] in " + s.showTools + " is the old form - " + oldform.Hint)
 				rc = fail.Usage
 			case "graphifyignore":
-				s.log("overrides." + k + " in " + s.show + " is no longer used: bootstrap does not ship .graphifyignore - remove the table (M24 of docs/sync/migrate.md)")
+				s.log("overrides." + k + " in " + s.showTools + " is no longer used: bootstrap does not ship .graphifyignore - remove the table (M24 of docs/sync/migrate.md)")
 				rc = fail.Usage
 			default:
-				s.log("overrides." + k + " in " + s.show + ": the only keys of [overrides] are mise and mise_env")
+				s.log("overrides." + k + " in " + s.showTools + ": the only keys of [overrides] are tools, mise and mise_env")
 				rc = fail.Usage
 			}
 		}
@@ -266,7 +303,7 @@ func (s *state) overrides(g *misegen.Generator, local bool) fail.Code {
 func (s *state) coreTools() {
 	old, ok := s.list("core_tools")
 	if ok && strings.Trim(old, "\n ") != "" {
-		s.log("core_tools in " + s.show + " is no longer used - delete it; the env of each [tools.*] entry, else default_envs, decides its environments")
+		s.log("core_tools in " + s.showRepo + " is no longer used - delete it; the env of each [tools.*] entry, else default_envs, decides its environments")
 	}
 }
 
@@ -297,7 +334,7 @@ func lineIn(s, list string) bool {
 type member struct{ name, folder, kind string }
 
 // members is `_rs_members`: the members of the repo, the git submodules
-// first, then the other `[member.<name>]` tables. <name> starts each message.
+// first, then the other `[members.<name>]` tables of repo.toml. <name> starts each message.
 // It gives 2, after a message, when a member breaks a rule.
 func (s *state) members(name string) ([]member, fail.Code) {
 	submodules := ""
@@ -313,34 +350,34 @@ func (s *state) members(name string) ([]member, fail.Code) {
 		key, folder, kind := readTabs(line)
 		rows = append(rows, member{key, folder, kind})
 	}
-	show := s.show
+	show := s.showRepo
 	for _, r := range rows {
 		if r.name == "" {
 			continue
 		}
 		folder := strings.TrimSuffix(r.folder, "/")
 		if folder == "." || folder == "" {
-			s.log(name + ": [member." + r.name + "] in " + show + " has the folder of the repo itself - a member is a submodule or a folder below the root")
+			s.log(name + ": [members." + r.name + "] in " + show + " has the folder of the repo itself - a member is a submodule or a folder below the root")
 			return nil, fail.Usage
 		}
 		switch r.kind {
 		case "", "submodule", "folder":
 		default:
-			s.log(name + ": [member." + r.name + "] in " + show + " has the type '" + r.kind + "' - use submodule or folder")
+			s.log(name + ": [members." + r.name + "] in " + show + " has the type '" + r.kind + "' - use submodule or folder")
 			return nil, fail.Usage
 		}
 		switch {
 		case lineIn(folder, submodules):
 			if r.kind == "folder" {
-				s.log(name + ": [member." + r.name + "] in " + show + " has type folder, but " + folder + " is a submodule")
+				s.log(name + ": [members." + r.name + "] in " + show + " has type folder, but " + folder + " is a submodule")
 				return nil, fail.Usage
 			}
 		case r.kind == "submodule":
-			s.log(name + ": [member." + r.name + "] in " + show + " has type submodule, but " + folder + " is not in .gitmodules")
+			s.log(name + ": [members." + r.name + "] in " + show + " has type submodule, but " + folder + " is not in .gitmodules")
 			return nil, fail.Usage
 		default:
 			if info, err := os.Stat(s.root + "/" + folder); err != nil || !info.IsDir() {
-				s.log(name + ": [member." + r.name + "] in " + show + " is not a submodule or a folder of the repo")
+				s.log(name + ": [members." + r.name + "] in " + show + " is not a submodule or a folder of the repo")
 				return nil, fail.Usage
 			}
 		}
@@ -358,7 +395,7 @@ func (s *state) members(name string) ([]member, fail.Code) {
 				found = r.name
 			}
 		}
-		sub := s.root + "/" + path + "/.config/bootstrap.toml"
+		sub := values.RepoFile(values.FolderOf(s.root + "/" + path))
 		if found == "" && isFile(sub) {
 			found, _ = s.gomplate(tmplRepoName, nil, []ds{{"v", sub, "toml"}}, nil, false)
 		}
@@ -386,11 +423,11 @@ func (s *state) members(name string) ([]member, fail.Code) {
 			continue
 		}
 		if !memberNameRe.MatchString(m.name) {
-			s.log(name + ": the member " + m.folder + " has the name '" + m.name + "' - a member name has only letters, digits, - and _; use a [member.<name>] table with such a name in " + show)
+			s.log(name + ": the member " + m.folder + " has the name '" + m.name + "' - a member name has only letters, digits, - and _; use a [members.<name>] table with such a name in " + show)
 			return nil, fail.Usage
 		}
 		if seen[m.name] {
-			s.log(name + ": two members have the name '" + m.name + "' - write a [member.<name>] table with another name for one of them in " + show)
+			s.log(name + ": two members have the name '" + m.name + "' - write a [members.<name>] table with another name for one of them in " + show)
 			return nil, fail.Usage
 		}
 		seen[m.name] = true
@@ -447,7 +484,7 @@ func (s *state) checkScripts() fail.Code {
 	return s.checks()
 }
 
-// requiredTables writes an empty [tools.<name>] table into the values file
+// requiredTables writes an empty [tools.<name>] table into tools.toml
 // for each required member of the pack base that has no table, so a user can
 // add values to it. A dry run, and <listOnly> (check), write nothing and list
 // the tables.
@@ -462,5 +499,20 @@ func (s *state) requiredTables(listOnly bool) fail.Code {
 	if err != nil {
 		return s.logAll(err)
 	}
-	return s.e.AddTables(s.values, names, "", listOnly)
+	return s.e.AddTables(values.ToolsFile(s.values), names, "", listOnly)
+}
+
+// releases examines releases.toml of the values folder with its schema, when
+// the file exists. It gives 2, after a message for each problem.
+func (s *state) releases() fail.Code {
+	p := values.ReleasesFile(s.values)
+	if !isFile(p) {
+		return fail.OK
+	}
+	raw, err := source.ReadTOML(p)
+	if err != nil {
+		s.log("cannot read " + s.path(p))
+		return fail.Usage
+	}
+	return s.logAll(schema.CheckReleases(raw, s.path(p)))
 }

@@ -1,7 +1,7 @@
-// Package values reads the values files (`.config/bootstrap.toml` of a repo and
-// `macos.toml` of the Mac) as far as the engine reads them, and merges the
-// values of the selected tools: defaults, then contributes, then the values
-// file. Contract: docs/design/cli.md ("The values of a tool").
+// Package values reads the values files (the folder `.config/bootstrap/` of
+// a repo and `macos.toml` of the Mac) as far as the engine reads them, and
+// merges the values of the selected tools: defaults, then contributes, then
+// the values file. Contract: docs/design/cli.md ("The values of a tool").
 package values
 
 import (
@@ -9,8 +9,36 @@ import (
 	"strings"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/schema"
 	"github.com/virajp/bootstrap/cli/internal/source"
 )
+
+// The values of a repo are the files of the folder Folder, below the root of
+// the repo. BOOTSTRAP_VALUES names another folder.
+const (
+	Folder       = ".config/bootstrap"
+	RepoName     = "repo.toml"     // The repo-level facts.
+	ToolsName    = "tools.toml"    // The tool selection, the tool values and the overrides.
+	ReleasesName = "releases.toml" // The release level of each project.
+	ManifestName = "repo-generated.tsv"
+	// Format is the value of the key format of each TOML file of the folder.
+	Format = schema.Format
+)
+
+// FolderOf gives the values folder of the repo <root>.
+func FolderOf(root string) string { return strings.TrimSuffix(root, "/") + "/" + Folder }
+
+// RepoFile gives the file repo.toml of the values folder <dir>.
+func RepoFile(dir string) string { return dir + "/" + RepoName }
+
+// ToolsFile gives the file tools.toml of the values folder <dir>.
+func ToolsFile(dir string) string { return dir + "/" + ToolsName }
+
+// ReleasesFile gives the file releases.toml of the values folder <dir>.
+func ReleasesFile(dir string) string { return dir + "/" + ReleasesName }
+
+// ManifestFile gives the sync manifest of the values folder <dir>.
+func ManifestFile(dir string) string { return dir + "/" + ManifestName }
 
 // Item is one `[tools.<name>]` or `[packs.<name>]` entry of a values file.
 type Item struct {
@@ -23,29 +51,79 @@ type Item struct {
 	Env []string
 }
 
-// Repo is the values file of a repo, `.config/bootstrap.toml`.
+// Repo is the values of a repo: the files repo.toml and tools.toml of its
+// values folder.
 type Repo struct {
-	Path string
-	Raw  *source.Obj // The whole file, with sorted keys.
+	Path string // The values folder.
+	// Raw holds the keys of repo.toml, and the [tools.*] and [overrides.*]
+	// tables of tools.toml without [overrides.tools.*], with sorted keys.
+	Raw *source.Obj
 	// Sel holds the `[tools.*]` entries and then the `[packs.*]` entries, each
 	// group in name order.
 	Sel []Item
-	// User holds each `[tools.<name>]` table without `env`.
+	// User holds each `[tools.<name>]` table without `env`, with the keys of
+	// repo.toml that a tool reads under their old names (see compat).
 	User *source.Obj
+	// Over holds the `[overrides.tools.<name>]` tables of tools.toml, or nil.
+	Over *source.Obj
 }
 
 func usage(format string, args ...any) *fail.Error { return fail.New(fail.Usage, format, args...) }
 
-// ReadRepo reads a repo values file and checks the shape of its `[tools]` and
-// `[packs]` tables, as `_rs_values_sel` does. <shown> is the path as a message
-// names it. The error is the first problem, with code 2. The `env` names are
-// not checked here: they need the environments of the repo.
-func ReadRepo(path, shown string) (*Repo, error) {
-	raw, err := source.ReadTOML(path)
-	if err != nil {
-		return nil, usage("cannot read %s", shown)
+// ReadFolder reads the files repo.toml and tools.toml of the values folder
+// <dir>, shown as <shown>, and examines them with the schema (repo.toml) and
+// the shape rules (tools.toml). Each file must exist and have format = 3.
+// The error holds a message (code 2) for each problem.
+func ReadFolder(dir, shown string) (repo, tools *source.Obj, err error) {
+	var probs []*fail.Error
+	var raws [2]*source.Obj
+	for i, name := range []string{RepoName, ToolsName} {
+		p := dir + "/" + name
+		if st, err := os.Stat(p); err != nil || !st.Mode().IsRegular() {
+			probs = append(probs, usage("%s has no %s - run bootstrap init", shown, name))
+			continue
+		}
+		raw, err := source.ReadTOML(p)
+		if err != nil {
+			probs = append(probs, usage("cannot read %s/%s", shown, name))
+			continue
+		}
+		raws[i] = raw
 	}
-	v := &Repo{Path: path, Raw: raw, User: source.NewObj()}
+	if len(probs) > 0 {
+		return nil, nil, source.Problems(probs)
+	}
+	repo, tools = raws[0], raws[1]
+	repoShown, toolsShown := shown+"/"+RepoName, shown+"/"+ToolsName
+	if _, ok := repo.Lookup("format"); !ok {
+		probs = append(probs, usage("%s without format = %d is not valid - run bootstrap init", repoShown, Format))
+	}
+	if _, ok := tools.Lookup("format"); !ok {
+		probs = append(probs, usage("%s without format = %d is not valid - run bootstrap init", toolsShown, Format))
+	}
+	if len(probs) > 0 {
+		return nil, nil, source.Problems(probs)
+	}
+	err = source.Problems(append(source.Messages(schema.CheckRepo(repo, repoShown)), source.Messages(schema.CheckToolsShape(tools, toolsShown))...))
+	if err != nil {
+		return nil, nil, err
+	}
+	return repo, tools, nil
+}
+
+// ReadRepo reads the values folder <dir> of a repo (see ReadFolder) and
+// checks the shape of the `[tools]` and `[packs]` tables of tools.toml, as
+// `_rs_values_sel` does. <shown> is the folder as a message names it. The
+// error is the first problem, with code 2. The `env` names are not checked
+// here: they need the environments of the repo.
+func ReadRepo(dir, shown string) (*Repo, error) {
+	repo, tools, err := ReadFolder(dir, shown)
+	if err != nil {
+		return nil, err
+	}
+	shown += "/" + ToolsName
+	v := &Repo{Path: dir, Raw: Combine(repo, tools), User: source.NewObj()}
+	raw := tools
 	for _, kind := range []string{"tools", "packs"} {
 		if !raw.Has(kind) {
 			continue
@@ -90,7 +168,93 @@ func ReadRepo(path, shown string) (*Repo, error) {
 			}
 		}
 	}
+	if o, ok := tools.Get("overrides").(*source.Obj); ok {
+		v.Over, _ = o.Get("tools").(*source.Obj)
+	}
+	compat(v.User, repo)
 	return v, nil
+}
+
+// Combine gives the keys of the repo.toml <repo>, then the [tools.*] and
+// [overrides.*] tables of the tools.toml <tools>, without
+// [overrides.tools.*].
+func Combine(repo, tools *source.Obj) *source.Obj {
+	out := repo.Clone()
+	if tools.Has("tools") {
+		out.Set("tools", tools.Get("tools"))
+	}
+	if o, ok := tools.Get("overrides").(*source.Obj); ok {
+		rest := source.NewObj()
+		for _, k := range o.Keys() {
+			if k != "tools" {
+				rest.Set(k, o.Get(k))
+			}
+		}
+		if rest.Len() > 0 {
+			out.Set("overrides", rest)
+		}
+	} else if tools.Has("overrides") {
+		out.Set("overrides", tools.Get("overrides"))
+	}
+	out.Sort()
+	return out
+}
+
+// compat gives the tools the keys of repo.toml <repo> that they read in
+// their tables before the values folder, under their old names, so their
+// templates and scripts read them as before: [commits].scopes as
+// [tools.git].commit_scopes, [branches.<b>] as [tools.git.branch.<b>] (with
+// merge_model and direct_commit from landing), and [worktree].files as
+// [tools.mise].worktree_files.
+func compat(user, repo *source.Obj) {
+	table := func(tool string) *source.Obj {
+		t, ok := user.Get(tool).(*source.Obj)
+		if !ok {
+			t = source.NewObj()
+			user.Set(tool, t)
+			user.Sort()
+		}
+		return t
+	}
+	defer func() {
+		for _, k := range user.Keys() {
+			if t, ok := user.Get(k).(*source.Obj); ok {
+				t.Sort()
+			}
+		}
+	}()
+	if c, ok := repo.Get("commits").(*source.Obj); ok && c.Has("scopes") {
+		table("git").Set("commit_scopes", c.Get("scopes"))
+	}
+	if bs, ok := repo.Get("branches").(*source.Obj); ok && bs.Len() > 0 {
+		out := source.NewObj()
+		for _, b := range bs.Keys() {
+			t, _ := bs.Get(b).(*source.Obj)
+			e := source.NewObj()
+			if t != nil {
+				for _, k := range []string{"merge_from", "merge_never"} {
+					if t.Has(k) {
+						e.Set(k, t.Get(k))
+					}
+				}
+				switch l, _ := t.Get("landing").(string); l {
+				case schema.LandingPR:
+					e.Set("merge_model", "pr")
+				case schema.LandingDirectMerge:
+					e.Set("merge_model", "direct")
+				case schema.LandingDirectCommit:
+					e.Set("merge_model", "direct")
+					e.Set("direct_commit", true)
+				}
+			}
+			e.Sort()
+			out.Set(b, e)
+		}
+		table("git").Set("branch", out)
+	}
+	if w, ok := repo.Get("worktree").(*source.Obj); ok && w.Has("files") {
+		table("mise").Set("worktree_files", w.Get("files"))
+	}
 }
 
 func omit(o *source.Obj, key string) {
@@ -247,9 +411,9 @@ func Names(items []Item, kind string) []string {
 	return out
 }
 
-// OverridesPath gives the overrides file of the values file <path>: the
+// OverridesPath gives the overrides file of the Mac values file <path>: the
 // same folder and name, with `.overrides.toml` in place of `.toml`, for
-// example `.config/bootstrap.overrides.toml`.
+// example `macos.overrides.toml`. A repo has its overrides in tools.toml.
 func OverridesPath(path string) string {
 	return strings.TrimSuffix(path, ".toml") + ".overrides.toml"
 }

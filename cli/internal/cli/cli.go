@@ -561,7 +561,7 @@ func (a *app) check(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
-	a.warnNotSelectable(mac, c.Dir, w.Values)
+	a.warnNotSelectable(mac, c.Dir, w.EditFile())
 	if mac {
 		o.dryRun = true
 		return macos.Run(core.SyncArgs(true, o.dryRun, o.noBootstrap), a.stdout, a.stderr)

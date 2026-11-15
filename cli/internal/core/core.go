@@ -20,6 +20,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/macos"
 	"github.com/virajp/bootstrap/cli/internal/repo"
 	"github.com/virajp/bootstrap/cli/internal/target"
+	"github.com/virajp/bootstrap/cli/internal/values"
 )
 
 // Problem is a failure with its exit code, its message and the line of its
@@ -49,10 +50,23 @@ func problem(code fail.Code, msg, fix string) *Problem {
 type Side struct {
 	Mac    bool
 	Root   string // The repository; on the Mac, the repository of macos.toml.
-	Values string // The values file.
+	Values string // The values file macos.toml; on the repo side, the values folder.
 	Clone  string // The folder of the clone of bootstrap.
 	Pwd    string // The current folder: a message shows a path relative to it.
 }
+
+// EditFile gives the file that a selection command edits: macos.toml on the
+// Mac, else tools.toml of the values folder.
+func (sd Side) EditFile() string {
+	if sd.Mac {
+		return sd.Values
+	}
+	return values.ToolsFile(sd.Values)
+}
+
+// Present tells if the values of the side exist: macos.toml on the Mac, else
+// the values folder.
+func (sd Side) Present() bool { return Exists(sd.Values) }
 
 // Show gives <p> relative to the current folder when it is below it.
 func (sd Side) Show(p string) string { return target.Show(p, sd.Pwd) }
@@ -120,9 +134,9 @@ func Prepare(mac, initCmd bool, pwd string, getenv func(string) string) (Side, e
 		_ = os.Setenv("MISE_PROJECT_ROOT", root)
 	}
 	sd.Root = root
-	sd.Values = getenv("BOOTSTRAP_VALUES")
+	sd.Values = strings.TrimSuffix(getenv("BOOTSTRAP_VALUES"), "/")
 	if sd.Values == "" {
-		sd.Values = root + "/.config/bootstrap.toml"
+		sd.Values = values.FolderOf(root)
 	}
 	return sd, nil
 }

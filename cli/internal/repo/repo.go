@@ -42,7 +42,7 @@ const Usage = "usage: bootstrap sync [--dry-run] | bootstrap check"
 // The names of the repo side.
 const (
 	toolsShown   = "repo/tools"
-	manifestPath = ".config/repo-generated.tsv"
+	manifestPath = values.Folder + "/" + values.ManifestName
 	commitNote   = "# The bootstrap commit of the last sync. The sync writes it."
 )
 
@@ -69,10 +69,12 @@ type state struct {
 	pwd            string
 	root           string // MISE_PROJECT_ROOT
 
-	values string // The values file, absolute.
-	show   string // The values file in a message.
-	valDS  any    // The values file as gomplate reads it.
-	valErr error
+	values    string // The values folder, absolute.
+	show      string // The values folder in a message.
+	showRepo  string // Its repo.toml in a message.
+	showTools string // Its tools.toml in a message.
+	valDS     any    // The values as gomplate reads them.
+	valErr    error
 
 	dir  string // The clone copy.
 	src  source.Source
@@ -189,30 +191,36 @@ func (s *state) run(args []string) fail.Code {
 	if base == "" {
 		base = s.pwd
 	}
-	valuesFile := s.getenv("BOOTSTRAP_VALUES")
-	if valuesFile == "" {
-		valuesFile = base + "/.config/bootstrap.toml"
+	valuesDir := s.getenv("BOOTSTRAP_VALUES")
+	if valuesDir == "" {
+		valuesDir = values.FolderOf(base)
 	}
-	// `.config/repo-config.toml` is the old name, from before this
-	// repository was renamed to bootstrap.
-	old := base + "/.config/repo-config.toml"
-	if s.getenv("BOOTSTRAP_VALUES") == "" && !isFile(valuesFile) && isFile(old) {
-		s.r.Warn(s.path(old) + " is the old name of the values file - rename it to .config/bootstrap.toml")
-		valuesFile = old
+	valuesDir = strings.TrimSuffix(valuesDir, "/")
+	if !exists(valuesDir) {
+		s.log("values folder " + s.path(valuesDir) + " not found - run bootstrap init")
+		return fail.Usage
 	}
-	if !isFile(valuesFile) {
-		s.log("values file " + s.path(valuesFile) + " not found - it lists the tools to sync")
+	missing := false
+	for _, f := range []string{values.RepoFile(valuesDir), values.ToolsFile(valuesDir)} {
+		if !isFile(f) {
+			s.log(s.path(f) + " not found - run bootstrap init")
+			missing = true
+		}
+	}
+	if missing {
 		return fail.Usage
 	}
 	if lookPath("mise", s.getenv("PATH")) == "" {
 		s.log("mise is not available - install it from https://mise.run")
 		return fail.Usage
 	}
-	if !strings.HasPrefix(valuesFile, "/") {
-		valuesFile = s.pwd + "/" + valuesFile
+	if !strings.HasPrefix(valuesDir, "/") {
+		valuesDir = s.pwd + "/" + valuesDir
 	}
-	s.values = valuesFile
-	s.show = s.path(valuesFile)
+	s.values = valuesDir
+	s.show = s.path(valuesDir)
+	s.showRepo = s.path(values.RepoFile(valuesDir))
+	s.showTools = s.path(values.ToolsFile(valuesDir))
 	if check {
 		return s.check()
 	}
@@ -292,8 +300,8 @@ func (s *state) sync(dryRun bool) fail.Code {
 		Side:        source.Repo,
 		ToolsDir:    s.src.ToolsDir(),
 		Shown:       toolsShown,
-		Values:      s.values,
-		ValuesShown: s.show,
+		Values:      values.ToolsFile(s.values),
+		ValuesShown: s.showTools,
 		ProjectRoot: s.root,
 		Envs:        envs,
 		Getenv:      s.getenv,
@@ -448,7 +456,7 @@ func (s *state) sync(dryRun bool) fail.Code {
 		// Only a sync without a failure records its commit: then each file
 		// is at that commit, and an agent can compare it with main of
 		// bootstrap.
-		if commit != "" && s.e.RecordCommit(s.values, "bootstrap_commit", commit, commitNote, "") != fail.OK {
+		if commit != "" && s.e.RecordCommit(values.RepoFile(s.values), "bootstrap_commit", commit, commitNote, "") != fail.OK {
 			s.r.Summary(1)
 			return fail.Other
 		}
@@ -509,15 +517,16 @@ func (s *state) check() fail.Code {
 		Side:        source.Repo,
 		ToolsDir:    "/" + toolsShown,
 		Shown:       toolsShown,
-		Values:      s.values,
-		ValuesShown: s.show,
+		Values:      values.ToolsFile(s.values),
+		ValuesShown: s.showTools,
 		ProjectRoot: s.root,
 		Getenv:      s.getenv,
 	}
 	defer func() { _ = g.Close() }()
 	add(s.overrides(g, true))
-	_, code := s.memberList(strings.TrimPrefix(s.values, s.root+"/"))
+	_, code := s.memberList(strings.TrimPrefix(values.RepoFile(s.values), s.root+"/"))
 	add(code)
+	add(s.releases())
 	if rc == fail.OK {
 		s.r.Success(s.show + " is valid")
 		s.listChecks = true

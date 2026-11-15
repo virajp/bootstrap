@@ -1,11 +1,12 @@
 == stdout ==
 rc=0
 == stderr ==
-bootstrap: would write .config/repo-generated.tsv
+bootstrap: would write .config/bootstrap/repo-generated.tsv
 [OK] Dry run: 1 file would change
 == tree ==
 d 755 root
 d 755 root/.config
-l root/.config/repo-generated.tsv -> ../out.tsv
+d 755 root/.config/bootstrap
+l root/.config/bootstrap/repo-generated.tsv -> ../../out.tsv
 f 644 root/out.tsv "x\n"
 d 755 tmp

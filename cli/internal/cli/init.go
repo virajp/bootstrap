@@ -9,10 +9,8 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/core"
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/field"
-	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/questions"
 	"github.com/virajp/bootstrap/cli/internal/report"
-	"github.com/virajp/bootstrap/cli/internal/source"
 	"github.com/virajp/bootstrap/cli/internal/tui"
 )
 
@@ -172,7 +170,7 @@ func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
 		return code
 	}
 	if putBack {
-		a.infof("Put back %s as it was before the command", a.show(p.Values))
+		a.infof("Put back %s as it was before the command", a.show(p.EditFile()))
 	}
 	a.keptSeeds(p.Seeds)
 	return code
@@ -405,18 +403,8 @@ func (a *app) questions(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
-	if core.Exists(sd.Values) {
-		raw, err := source.ReadTOML(sd.Values)
-		if err != nil {
-			a.errorf("cannot read %s", a.show(sd.Values))
-			return fail.Usage
-		}
-		if mac {
-			err = oldform.Mac(raw, a.show(sd.Values))
-		} else {
-			err = oldform.Repo(sd.Root, raw, a.show(sd.Values))
-		}
-		if err != nil {
+	if sd.Present() {
+		if _, err := core.ReadRaw(sd, sd.Values); err != nil {
 			return a.logErr(err)
 		}
 	}

@@ -18,13 +18,17 @@ type Selected struct {
 	Idx   *source.Index
 	Tools []string
 	User  *source.Obj // The [tools.<name>] tables of the values file.
-	Over  *source.Obj // The [tools.<name>] tables of its overrides file.
+	Over  *source.Obj // The [tools.<name>] tables of its overrides ([overrides.tools.*] of a repo).
+	Raw   *source.Obj // The repo side: the values, values.Combine of the folder.
 	Res   *selection.Resolved
 	Items []values.Item // The [tools.*] and [packs.*] entries of the values file.
 }
 
-// SelectionOf reads the values file <file> of the side <sd> (the overrides
-// file is next to <overridesOf>) and resolves its tools from the clone.
+// SelectionOf reads the values <file> of the side <sd> and resolves its
+// tools from the clone. On the Mac, <file> is the values file and the
+// overrides file is next to <overridesOf>; on the repo side, <file> is the
+// values folder, which holds the overrides, and a folder that is not there
+// gives an empty selection.
 func SelectionOf(sd Side, file, overridesOf string) (*Selected, error) {
 	side := source.Repo
 	if sd.Mac {
@@ -53,10 +57,12 @@ func SelectionOf(sd Side, file, overridesOf string) (*Selected, error) {
 				return nil, err
 			}
 		}
-		s.User, s.Items = v.User, v.Sel
+		s.User, s.Items, s.Over, s.Raw = v.User, v.Sel, v.Over, v.Raw
 		if res, err = selection.ResolveRepo(idx, v, InSubmodule(sd.Root)); err != nil {
 			return nil, err
 		}
+		s.Tools, s.Res = res.Tools, res
+		return s, nil
 	}
 	s.Tools, s.Res = res.Tools, res
 	ov := values.OverridesPath(overridesOf)
@@ -70,42 +76,64 @@ func SelectionOf(sd Side, file, overridesOf string) (*Selected, error) {
 // selection.
 type State struct {
 	Side
-	Cur   []byte // The values file.
-	Raw   *source.Obj
+	Cur   []byte      // The file that the command edits (Side.EditFile).
+	Raw   *source.Obj // The values file; on the repo side, values.Combine of the folder.
 	Sel   *Selected
 	Res   *selection.Resolved
 	Named map[string]bool // The [tools.<name>] tables of the values file.
 	Packs *source.Packs
 }
 
-// Open reads the values file of <sd> and its selection. The values file must
-// exist and have the new form.
+// Open reads the values of <sd> and its selection. The values must exist and
+// have the new form.
 func Open(sd Side) (*State, error) {
-	cur, err := os.ReadFile(sd.Values)
-	if err != nil {
+	if !sd.Present() {
 		return nil, problem(fail.Usage, sd.Show(sd.Values)+" is not there", "run "+CmdName(sd.Mac, "init")+" first")
 	}
-	raw, err := source.ReadTOML(sd.Values)
-	if err != nil {
-		return nil, problem(fail.Usage, "cannot read "+sd.Show(sd.Values), "")
-	}
-	if sd.Mac {
-		err = oldform.Mac(raw, sd.Show(sd.Values))
-	} else {
-		err = oldform.Repo(sd.Root, raw, sd.Show(sd.Values))
-	}
+	raw, err := ReadRaw(sd, sd.Values)
 	if err != nil {
 		return nil, err
+	}
+	cur, err := os.ReadFile(sd.EditFile())
+	if err != nil {
+		return nil, problem(fail.Usage, sd.Show(sd.EditFile())+" is not there", "run "+CmdName(sd.Mac, "init")+" first")
 	}
 	return stateOf(sd, sd.Values, cur, raw)
 }
 
-// stateOf gives the state of the values text <cur> in the file <file>, with
-// the overrides file of the values file of <sd>.
+// ReadRaw reads the values <file> of <sd> (the values folder of a repo) and
+// gives a problem for each old form.
+func ReadRaw(sd Side, file string) (*source.Obj, error) {
+	if !sd.Mac {
+		v, err := values.ReadRepo(file, sd.Show(file))
+		if err != nil {
+			return nil, err
+		}
+		if err := oldform.Repo(sd.Root, v.Raw, sd.Show(file)); err != nil {
+			return nil, err
+		}
+		return v.Raw, nil
+	}
+	raw, err := source.ReadTOML(file)
+	if err != nil {
+		return nil, problem(fail.Usage, "cannot read "+sd.Show(file), "")
+	}
+	if err := oldform.Mac(raw, sd.Show(file)); err != nil {
+		return nil, err
+	}
+	return raw, nil
+}
+
+// stateOf gives the state of the edited text <cur> of the values <file>,
+// with the overrides file of the values file of <sd> on the Mac. <raw> can
+// be nil on the repo side: the selection gives it.
 func stateOf(sd Side, file string, cur []byte, raw *source.Obj) (*State, error) {
 	sel, err := SelectionOf(sd, file, sd.Values)
 	if err != nil {
 		return nil, err
+	}
+	if !sd.Mac {
+		raw = sel.Raw
 	}
 	s := &State{Side: sd, Cur: cur, Raw: raw, Sel: sel, Res: sel.Res, Named: map[string]bool{}}
 	for _, it := range sel.Items {
@@ -198,13 +226,13 @@ func (s *State) Input(tool, from string) []byte {
 }
 
 // repoInput gives the repo object of a script input: the root, the
-// repo_name, and the [member.<name>] tables.
+// repo_name, and the [members.<name>] tables of repo.toml.
 func (s *State) repoInput() *scripts.Repo {
 	r := &scripts.Repo{Root: s.Root, Name: filepath.Base(s.Root), Members: []scripts.Member{}}
 	if n, ok := s.Raw.Get("repo_name").(string); ok && n != "" {
 		r.Name = n
 	}
-	if m, ok := s.Raw.Get("member").(*source.Obj); ok {
+	if m, ok := s.Raw.Get("members").(*source.Obj); ok {
 		for _, name := range m.Keys() {
 			e, _ := m.Get(name).(*source.Obj)
 			mem := scripts.Member{Name: name, Folder: name}

@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-repo-sync: [tools.a] in bootstrap.toml: must be a table
+repo-sync: [tools.a] in bootstrap/tools.toml: must be a table
 --- stdout

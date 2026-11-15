@@ -43,8 +43,8 @@ func TestMergeOrder(t *testing.T) {
 
 func TestReadOverrides(t *testing.T) {
 	dir := t.TempDir()
-	values := filepath.Join(dir, "bootstrap.toml")
-	if got := OverridesPath(values); got != filepath.Join(dir, "bootstrap.overrides.toml") {
+	values := filepath.Join(dir, "macos.toml")
+	if got := OverridesPath(values); got != filepath.Join(dir, "macos.overrides.toml") {
 		t.Errorf("OverridesPath = %s", got)
 	}
 	if o, err := ReadOverrides(OverridesPath(values), "x"); o != nil || err != nil {

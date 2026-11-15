@@ -1,9 +1,4 @@
-rc=0
+rc=2
 --- stderr
+repo-sync: packs is not a key of bootstrap/tools.toml - the top-level keys are format, [tools.<name>] and [overrides.*]
 --- stdout
-tools: a
-sel:
-a - default
-deps:
-values:
-{"a":{}}

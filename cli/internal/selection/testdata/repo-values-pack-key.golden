@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-repo-sync: [packs.extra] in bootstrap.toml: 'foo' is not a key of a pack entry; the only key of a pack entry is env, a list
+repo-sync: packs is not a key of bootstrap/tools.toml - the top-level keys are format, [tools.<name>] and [overrides.*]
 --- stdout

@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-repo-sync: [tools.a] of bootstrap.toml sets list to a string, but it is a list in the base or dependency tool a - write a list there (a list adds its items)
+repo-sync: [tools.a] of bootstrap/tools.toml sets list to a string, but it is a list in the base or dependency tool a - write a list there (a list adds its items)
 --- stdout

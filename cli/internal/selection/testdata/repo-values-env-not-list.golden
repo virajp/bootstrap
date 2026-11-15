@@ -1,4 +1,4 @@
 rc=2
 --- stderr
-repo-sync: [tools.c] in bootstrap.toml: env must be a list, for example env = ["dev"]
+repo-sync: [tools.c] in bootstrap/tools.toml: env must be a list, for example env = ["dev"]
 --- stdout

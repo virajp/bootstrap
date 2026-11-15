@@ -14,18 +14,14 @@ import (
 // tools. The user values are each `[tools.<name>]` table of the values file
 // without `env`. It gives the code of the merge, after its messages.
 func (s *state) toolValues() fail.Code {
-	overrides := values.OverridesPath(s.values)
-	over, err := values.ReadOverrides(overrides, s.path(overrides))
-	if err != nil {
-		return s.logAll(err)
-	}
+	over := s.vals.Over
 	m, err := values.Merge(values.Input{
 		Index:       s.idx,
 		Selected:    s.res.Tools,
 		Keep:        s.res.Keep,
 		User:        s.vals.User,
 		ShownRoot:   toolsShown,
-		ShownValues: s.show,
+		ShownValues: s.showTools,
 		Overrides:   over,
 		Derive:      s.derive,
 	})
@@ -38,7 +34,7 @@ func (s *state) toolValues() fail.Code {
 			if g.Group {
 				what = "the group "
 			}
-			s.log(what + g.Name() + " has no answer in " + s.show + " - run bootstrap init")
+			s.log(what + g.Name() + " has no answer in " + s.showTools + " - run bootstrap init")
 		}
 		return fail.Usage
 	}

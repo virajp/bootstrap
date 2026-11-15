@@ -6,5 +6,6 @@ rc=0
 == tree ==
 d 755 root
 d 755 root/.config
-f 640 root/.config/bootstrap.toml "# Synced values\n# more\n\n# The bootstrap commit of the last sync. repo-sync writes it.\nbootstrap_commit = \"0123456789abcdef0123456789abcdef01234567\"\nenvironments = [\"dev\"]\n\n[tools.x]\na = 1\n"
+d 755 root/.config/bootstrap
+f 640 root/.config/bootstrap/repo.toml "# Synced values\n# more\n\n# The bootstrap commit of the last sync. repo-sync writes it.\nbootstrap_commit = \"0123456789abcdef0123456789abcdef01234567\"\nenvironments = [\"dev\"]\n\n[tools.x]\na = 1\n"
 d 755 tmp

@@ -219,7 +219,7 @@ func (m *Model) afterApply(msg appliedMsg) {
 	case msg.c.code != fail.OK && msg.c.code != fail.Terminal:
 		out = append(out, line{styled("  ✗ ", stRemove), text(fmt.Sprintf("%s: exit code %d", sync, msg.c.code))})
 		if msg.c.putBack {
-			out = append(out, line{styled("  ↺ ", stLock), text("put " + sd.Show(sd.Values) + " back as it was before Apply")})
+			out = append(out, line{styled("  ↺ ", stLock), text("put " + sd.Show(sd.EditFile()) + " back as it was before Apply")})
 		}
 	default:
 		ok = true

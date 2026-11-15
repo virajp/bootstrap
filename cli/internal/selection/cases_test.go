@@ -107,6 +107,18 @@ c = {}
 
 const repoValues = "environments = [ \"dev\" ]\n"
 
+// repoFolder writes a values folder for the values text <text>: repoValues
+// at its start goes to repo.toml, with the required keys, and the rest to
+// tools.toml.
+func repoFolder(t *testing.T, text string) string {
+	t.Helper()
+	repo := "format = 3\nrepo_name = \"r\"\ncore_branches = [ \"main\" ]\n"
+	if rest, ok := strings.CutPrefix(text, repoValues); ok {
+		repo, text = repo+repoValues, rest
+	}
+	return writeTree(t, tree{"repo.toml": repo, "tools.toml": "format = 3\n" + text})
+}
+
 // A small Mac clone.
 var macosBase = tree{
 	"macos/packs.toml": `[pack.base]
@@ -268,9 +280,8 @@ func TestRepoCases(t *testing.T) {
 				over[p] = v
 			}
 			clone := writeTree(t, repoBase.with(withCatalog(over)))
-			vdir := writeTree(t, tree{"bootstrap.toml": c.values})
 			check(t, pcase{name: "repo-" + c.name, side: source.Repo, clone: clone,
-				values: filepath.Join(vdir, "bootstrap.toml"), shown: "bootstrap.toml", sub: c.sub})
+				values: repoFolder(t, c.values), shown: "bootstrap", sub: c.sub})
 		})
 	}
 }

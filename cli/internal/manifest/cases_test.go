@@ -169,7 +169,7 @@ func cases() []pcase {
 	add(both("bad-path", nil, bp...))
 
 	// The read of a manifest.
-	const mf = ".config/repo-generated.tsv"
+	const mf = ".config/bootstrap/repo-generated.tsv"
 	rowsFile := FirstLine + "\n" +
 		"git\t.config/mise/tasks/code/merge\n" +
 		"\n" +
@@ -190,11 +190,11 @@ func cases() []pcase {
 		both("read-repo-missing", nil, read(Repo, mf, "")),
 		both("read-repo-link", func(r string) {
 			mkfile(r, "outside.tsv", rowsFile, 0o644)
-			mklink(r, mf, "../outside.tsv")
+			mklink(r, mf, "../../outside.tsv")
 		}, read(Repo, mf, ""), read(Macos, mf, "")),
 		both("read-repo-dangling", func(r string) { mklink(r, mf, "none") }, read(Repo, mf, ""), read(Macos, mf, "")),
 		both("read-repo-below-link", func(r string) {
-			mkfile(r, "out/repo-generated.tsv", rowsFile, 0o644)
+			mkfile(r, "out/bootstrap/repo-generated.tsv", rowsFile, 0o644)
 			mklink(r, ".config", "out")
 		}, read(Repo, mf, ""), read(Repo, mf, "/")),
 		both("read-repo-folder", func(r string) { mkdir(r, mf) }, read(Repo, mf, ""), read(Macos, mf, "")),
@@ -266,14 +266,14 @@ func cases() []pcase {
 			writeManifest(mf, []string{"a\ty"})),
 		both("write-link", func(r string) {
 			mkfile(r, "out.tsv", "x\n", 0o644)
-			mklink(r, mf, "../out.tsv")
+			mklink(r, mf, "../../out.tsv")
 		}, writeManifest(mf, []string{"a\ty"})),
 		both("write-blocked", func(r string) { mkfile(r, ".config", "file\n", 0o644) },
 			writeManifest(mf, []string{"a\ty"})),
 	)
 
 	// bootstrap_commit.
-	const vf = ".config/bootstrap.toml"
+	const vf = ".config/bootstrap/repo.toml"
 	add(
 		both("commit-set", func(r string) {
 			mkfile(r, vf, "# Synced values\n# more\n\nenvironments = [\"dev\"]\n\n[tools.x]\na = 1\n", 0o640)
@@ -304,7 +304,7 @@ func cases() []pcase {
 			mkfile(r, vf, "# h\r\n\r\nbootstrap_commit = \""+sha+"\"\r\na = 1\r\n", 0o644)
 		}, commit(vf, "bootstrap_commit", sha, commentLine, "")),
 		both("commit-missing-no-header", nil, commit(vf, "bootstrap_commit", sha, commentLine, "")),
-		both("commit-missing-header", func(r string) { mkdir(r, ".config") },
+		both("commit-missing-header", func(r string) { mkdir(r, ".config/bootstrap") },
 			commit(vf, "bootstrap_commit", sha, "", macHeader)),
 		both("commit-missing-folder", nil, commit(vf, "bootstrap_commit", sha, "", macHeader)),
 		both("commit-link", func(r string) {

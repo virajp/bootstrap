@@ -6,6 +6,7 @@ import (
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
+	"github.com/virajp/bootstrap/cli/internal/schema"
 	"github.com/virajp/bootstrap/cli/internal/selection"
 )
 
@@ -18,6 +19,9 @@ func (s *state) resolve() fail.Code {
 		return s.logAll(err)
 	}
 	if err := oldform.Repo(s.root, s.vals.Raw, s.show); err != nil {
+		return s.logAll(err)
+	}
+	if err := schema.CheckTools(s.idx, s.vals.Raw, s.showTools); err != nil {
 		return s.logAll(err)
 	}
 	if code := s.envRules(sel); code != fail.OK {

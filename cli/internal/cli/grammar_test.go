@@ -108,8 +108,8 @@ func TestParseKind(t *testing.T) {
 
 // detectRepo makes the fixture of the detect tests: a clone with the tools a
 // (a required member of base) and c, whose detect scripts match, and a
-// repository whose values file selects a. It gives the values file, its
-// first text and a function that runs bootstrap with the clone.
+// repository whose values folder selects a. It gives the tools.toml of the
+// folder, its first text and a function that runs bootstrap with the clone.
 func detectRepo(t *testing.T) (string, string, func(args ...string) (fail.Code, string, string)) {
 	t.Helper()
 	if _, err := exec.LookPath("mise"); err != nil {
@@ -128,8 +128,10 @@ func detectRepo(t *testing.T) (string, string, func(args ...string) (fail.Code, 
 		writeFile(t, filepath.Join(clone, "repo", "tools", tool, "tools.toml"), keys, 0o644)
 		writeFile(t, filepath.Join(clone, "repo", "tools", tool, "scripts", "detect"), "#!/bin/bash\necho '"+out+"'\n", 0o755)
 	}
-	values := filepath.Join(root, ".config", "bootstrap.toml")
-	const text = "format = 2\nrepo_name = \"x\"\n\n[tools.a]\n"
+	dir := filepath.Join(root, ".config", "bootstrap")
+	writeFile(t, filepath.Join(dir, "repo.toml"), "format = 3\nrepo_name = \"x\"\ncore_branches = [ \"main\" ]\n", 0o644)
+	values := filepath.Join(dir, "tools.toml")
+	const text = "format = 3\n\n[tools.a]\n"
 	writeFile(t, values, text, 0o644)
 	// The sync copies a clone with a commit, and writes only to a clean tree.
 	for _, dir := range []string{clone, root} {

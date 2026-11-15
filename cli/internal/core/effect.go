@@ -2,11 +2,9 @@ package core
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/selection"
-	"github.com/virajp/bootstrap/cli/internal/source"
 )
 
 // Effect is what the items of a change list do to the selection of a state,
@@ -46,18 +44,16 @@ func InitState(sd Side) (*State, error) {
 		return nil, problem(fail.Other, "cannot create a temp folder", "")
 	}
 	defer func() { _ = os.RemoveAll(tmp) }()
-	tmpValues := tmp + "/" + filepath.Base(sd.Values)
+	tmpValues, tmpEdit, err := p.layout(tmp)
+	if err != nil {
+		return nil, err
+	}
 	read := func() (*State, error) {
-		if err := os.WriteFile(tmpValues, p.Next, 0o644); err != nil {
+		if err := os.WriteFile(tmpEdit, p.Next, 0o644); err != nil {
 			return nil, problem(fail.Other, "cannot write a temp file", "")
 		}
-		raw, err := source.ReadTOML(tmpValues)
-		if err != nil {
-			return nil, problem(fail.Usage, "cannot read "+sd.Show(sd.Values), "")
-		}
-		return stateOf(sd, tmpValues, p.Next, raw)
+		return p.tmpState(tmpValues)
 	}
-	copyOverrides(sd.Values, tmpValues)
 	st, err := read()
 	if err != nil || p.Existed || !st.Packs.HasPack(selection.BasePack) {
 		return st, err

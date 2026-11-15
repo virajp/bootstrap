@@ -47,6 +47,9 @@ func (o *Obj) Set(key string, v any) {
 	o.m[key] = v
 }
 
+// Sort puts the keys in name order, as ReadTOML gives them.
+func (o *Obj) Sort() { slices.Sort(o.keys) }
+
 // Clone gives a copy of the object. The values are shared.
 func (o *Obj) Clone() *Obj {
 	c := &Obj{keys: slices.Clone(o.keys), m: make(map[string]any, len(o.m))}

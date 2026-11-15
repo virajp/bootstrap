@@ -1,7 +1,7 @@
 == stdout ==
 rc=0
 == stderr ==
-would add .config/repo-generated.tsv
+would add .config/bootstrap/repo-generated.tsv
 [OK] Dry run: 1 file would change · 1 new
 == tree ==
 d 755 root

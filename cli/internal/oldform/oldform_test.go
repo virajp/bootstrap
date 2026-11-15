@@ -83,8 +83,12 @@ remove = [ "*.log" ]
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Repo(root, raw, "v.toml"); err != nil {
-		t.Errorf("an old form stays: %v", err)
+	// The migrated file has format = 2: the values folder (format = 3) is
+	// the next step, so only the format message stays.
+	for _, m := range source.Messages(Repo(root, raw, "v.toml")) {
+		if !strings.HasPrefix(m.Error(), "format = 2 in v.toml is not valid") {
+			t.Errorf("an old form stays: %v", m)
+		}
 	}
 	tools := raw.Get("tools").(*source.Obj)
 	git := tools.Get("git").(*source.Obj)
@@ -219,12 +223,13 @@ func macClone(t *testing.T) string {
 }
 
 func TestFormatKey(t *testing.T) {
-	cases := []struct{ text, want string }{
-		{"format = 2\n[tools.a]\n", ""},
-		{"[tools.a]\n", "v.toml without format = 2 is the old form - run bootstrap init"},
-		{"format = 3\n", "format = 3 in v.toml is not valid - the format of a values file is 2"},
-		{"format = \"2\"\n", "format = \"2\" in v.toml is not valid - the format of a values file is 2"},
-		{"format = 2\n[packs.security]\n", "[packs.security] in v.toml is the old form - run bootstrap init"},
+	// The repo side has format = 3 (the values folder), the Mac side 2.
+	cases := []struct{ text, want, mac string }{
+		{"format = 3\n[tools.a]\n", "", "format = 3 in v.toml is not valid - the format of a values file is 2"},
+		{"format = 2\n[tools.a]\n", "format = 2 in v.toml is not valid - the format of a values file is 3", ""},
+		{"[tools.a]\n", "v.toml without format = 3 is the old form - run bootstrap init", "v.toml without format = 2 is the old form - run bootstrap mac init"},
+		{"format = \"2\"\n", "format = \"2\" in v.toml is not valid - the format of a values file is 3", "format = \"2\" in v.toml is not valid - the format of a values file is 2"},
+		{"format = 3\n[packs.security]\n", "[packs.security] in v.toml is the old form - run bootstrap init", "[packs.security] in v.toml is the old form - run bootstrap mac init\nformat = 3 in v.toml is not valid - the format of a values file is 2"},
 	}
 	for _, c := range cases {
 		values := t.TempDir() + "/v.toml"
@@ -245,8 +250,8 @@ func TestFormatKey(t *testing.T) {
 		for _, m := range source.Messages(Mac(raw, "v.toml")) {
 			mac = append(mac, m.Error())
 		}
-		if want := strings.ReplaceAll(c.want, "run bootstrap init", MacHint); strings.Join(mac, "\n") != want {
-			t.Errorf("%q: Mac messages = %q, want %q", c.text, mac, want)
+		if strings.Join(mac, "\n") != c.mac {
+			t.Errorf("%q: Mac messages = %q, want %q", c.text, mac, c.mac)
 		}
 	}
 }
