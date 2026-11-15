@@ -69,17 +69,18 @@ var Repo = []Key{
 	{Path: "bootstrap_commit", Type: String},
 	{Path: "worktree", Type: Table, Sync: true},
 	{Path: "worktree.files", Type: StringList, Sync: true},
-	{Path: "topology", Type: String},
+	{Path: "topology", Type: String, Enum: []string{"repo", "monorepo", "multi-repo"}},
 	{Path: "topology_reason", Type: String},
 	{Path: "members", Type: Table, Sync: true},
 	{Path: "members.*", Type: Table, Sync: true},
 	{Path: "members.*.folder", Type: String, Sync: true},
-	{Path: "members.*.type", Type: String, Enum: []string{"submodule", "folder", "sibling"}, Sync: true},
+	{Path: "members.*.type", Type: String, Enum: []string{"submodule", "folder", "sibling"}, Required: true, Sync: true},
 	{Path: "members.*.url", Type: String, Sync: true},
 	{Path: "members.*.label", Type: String, Sync: true},
 	{Path: "members.*.worktree_install", Type: String, Sync: true},
 	{Path: "home", Type: Table, Sync: true},
 	{Path: "home.folder", Type: String, Sync: true},
+	{Path: "home.type", Type: String, Enum: []string{"submodule", "sibling"}, Sync: true},
 	{Path: "home.url", Type: String, Sync: true},
 	{Path: "release_env", Type: String},
 	{Path: "deploy", Type: Table},
@@ -222,7 +223,7 @@ func check(keys []Key, raw *source.Obj, file, shown string) []*fail.Error {
 func CheckRepo(raw *source.Obj, shown string) error {
 	probs := check(Repo, raw, "repo.toml", shown)
 	if len(probs) == 0 {
-		probs = branchRules(raw, shown)
+		probs = append(branchRules(raw, shown), memberRules(raw, shown)...)
 	}
 	return source.Problems(probs)
 }
@@ -259,6 +260,38 @@ func branchRules(raw *source.Obj, shown string) []*fail.Error {
 	}
 	if core["main"] && core["develop"] && Landing(raw, "main") == LandingDirectCommit && Landing(raw, "develop") != LandingDirectCommit {
 		probs = append(probs, usage("[branches.main] in %s has landing = %q, but [branches.develop] does not - set landing = %q for develop too, or change main", shown, LandingDirectCommit, LandingDirectCommit))
+	}
+	return probs
+}
+
+// memberRules are the rules between the keys of the members and of
+// [home]: each member has a type, a sibling member has a url, and [home]
+// has a folder and a type.
+// The folder of a sibling is relative to the root of this repo, so it may
+// start with ../.
+func memberRules(raw *source.Obj, shown string) []*fail.Error {
+	var probs []*fail.Error
+	if ms, ok := raw.Get("members").(*source.Obj); ok {
+		for _, n := range ms.Keys() {
+			m, _ := ms.Get(n).(*source.Obj)
+			if m == nil {
+				continue
+			}
+			if !m.Has("type") {
+				probs = append(probs, usage("[members.%s] in %s has no type - set type to submodule, folder or sibling", n, shown))
+				continue
+			}
+			if t, _ := m.Get("type").(string); t == "sibling" && !m.Has("url") {
+				probs = append(probs, usage("[members.%s] in %s has type sibling, but no url - add the url of its repo", n, shown))
+			}
+		}
+	}
+	if h, ok := raw.Get("home").(*source.Obj); ok {
+		for _, k := range []string{"folder", "type"} {
+			if !h.Has(k) {
+				probs = append(probs, usage("[home] in %s has no %s - run bootstrap sync from the home repo, which writes [home]", shown, k))
+			}
+		}
 	}
 	return probs
 }

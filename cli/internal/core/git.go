@@ -159,6 +159,22 @@ func CoreBranches(root string) ([]string, error) {
 	return nil, problem(fail.Usage, root+" has no branch main or develop, and HEAD is not on a branch", "check out a branch, then run bootstrap init again")
 }
 
+// Gitmodules gives the paths of the git submodules in the .gitmodules file
+// of the repository <root>, or none when it has no such file.
+func Gitmodules(root string) map[string]bool {
+	out := map[string]bool{}
+	text, ok := Git("-C", root, "config", "--file", ".gitmodules", "--get-regexp", `^submodule\..*\.path$`)
+	if !ok {
+		return out
+	}
+	for _, l := range strings.Split(text, "\n") {
+		if _, path, ok := strings.Cut(l, " "); ok && path != "" {
+			out[strings.TrimSuffix(path, "/")] = true
+		}
+	}
+	return out
+}
+
 // BranchExists tells if the branch <b> of the repository <root> exists,
 // locally or on origin.
 func BranchExists(root, b string) bool {

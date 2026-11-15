@@ -27,7 +27,7 @@ func (s *state) resolve() fail.Code {
 	if code := s.envRules(sel); code != fail.OK {
 		return code
 	}
-	res, err := selection.ResolveRepo(s.idx, s.vals, s.inSubmodule())
+	res, err := selection.ResolveRepo(s.idx, s.vals, s.asSubmodule())
 	if err != nil {
 		return s.logAll(err)
 	}

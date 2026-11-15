@@ -37,8 +37,10 @@ type Split struct {
 // text <in>), and its overrides file <overrides> when it exists, into
 // repo.toml and tools.toml with format = 3, so the comments of the keys that
 // stay in place, and of most moved keys, stay (D4, D5, D11, D16, D17, D18,
-// D32, D47). <exists> tells if a branch exists in git, locally or on origin.
-func SplitRepo(in []byte, values, overrides string, exists func(string) bool) (*Split, error) {
+// D32, D47). <exists> tells if a branch exists in git, locally or on origin,
+// and <submodule> tells if a folder is the path of a git submodule in
+// .gitmodules.
+func SplitRepo(in []byte, values, overrides string, exists, submodule func(string) bool) (*Split, error) {
 	dir, err := os.MkdirTemp("", "bootstrap-split.")
 	if err != nil {
 		return nil, fail.New(fail.Other, "cannot create a temp folder")
@@ -142,7 +144,7 @@ func SplitRepo(in []byte, values, overrides string, exists func(string) bool) (*
 		exprs = append(exprs, ".worktree.files = .tools.mise.worktree_files")
 		s.Notes = append(s.Notes, "[tools.mise].worktree_files to [worktree].files")
 	}
-	exprs = append(exprs, membersExprs(raw)...)
+	exprs = append(exprs, membersExprs(raw, submodule)...)
 	exprs = append(exprs, "del(.tools)", "del(.overrides)", "."+FormatKey+" = "+itoa(schema.Format))
 	if s.Repo, err = editTOML(in, exprs); err != nil {
 		return nil, err
@@ -192,13 +194,33 @@ func SplitRepo(in []byte, values, overrides string, exists func(string) bool) (*
 }
 
 // membersExprs moves the [member.<name>] tables of the old file <raw> to
-// [members.<name>] of repo.toml, with their keys as they are. U3 of the plan
-// 2026-11-14-config-folder adds url and the sibling type here.
-func membersExprs(raw *source.Obj) []string {
-	if !raw.Has("member") {
+// [members.<name>] of repo.toml, with their keys as they are. A table
+// without a type gets the type the old engine gave it (D99): submodule when
+// its folder (default the name) is a git submodule in .gitmodules
+// (<submodule>), else folder. The migration reads no vwf file: a sibling
+// member, with its url, is added later with bootstrap config set.
+func membersExprs(raw *source.Obj, submodule func(string) bool) []string {
+	ms, ok := raw.Get("member").(*source.Obj)
+	if !ok {
 		return nil
 	}
-	return []string{".members = .member", "del(.member)"}
+	out := []string{".members = .member", "del(.member)"}
+	for _, n := range ms.Keys() {
+		m, ok := ms.Get(n).(*source.Obj)
+		if !ok || m.Has("type") {
+			continue
+		}
+		folder := n
+		if f, ok := m.Get("folder").(string); ok {
+			folder = f
+		}
+		kind := "folder"
+		if submodule(strings.TrimSuffix(folder, "/")) {
+			kind = "submodule"
+		}
+		out = append(out, ".members["+q(n)+"].type = "+q(kind))
+	}
+	return out
 }
 
 // Landing gives the landing of an old [tools.git.branch.<b>] table <t>

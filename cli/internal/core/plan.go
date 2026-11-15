@@ -378,7 +378,7 @@ func (p *PlanResult) requiredTables(sel *Selected, write func() error) error {
 			named[it.Name] = true
 		}
 	}
-	names, err := selection.MissingTables(sel.Idx, selection.BasePack, named, !p.Mac && InSubmodule(p.Root))
+	names, err := selection.MissingTables(sel.Idx, selection.BasePack, named, !p.Mac && values.SubmoduleMember(sel.Raw, func() bool { return InSubmodule(p.Root) }))
 	if err != nil || len(names) == 0 {
 		return err
 	}
@@ -574,7 +574,8 @@ func (p *PlanResult) migrateFolder() error {
 		}
 	}
 	overrides := root + "/" + oldform.OldOverrides
-	split, err := oldform.SplitRepo(in, sd.Show(oldValues), overrides, func(b string) bool { return BranchExists(root, b) })
+	subs := Gitmodules(root)
+	split, err := oldform.SplitRepo(in, sd.Show(oldValues), overrides, func(b string) bool { return BranchExists(root, b) }, func(f string) bool { return subs[f] })
 	if err != nil {
 		return err
 	}
@@ -792,7 +793,7 @@ func (pl *planner) addPack(names, exclude []string) error {
 		ex[m] = true
 	}
 	host := source.HostName()
-	sub := !st.Mac && InSubmodule(st.Root)
+	sub := !st.Mac && values.SubmoduleMember(st.Raw, func() bool { return InSubmodule(st.Root) })
 	for _, name := range names {
 		e := &expansion{keys: map[string]string{}}
 		e.walk(st.Packs, name, ex, false, map[string]bool{})

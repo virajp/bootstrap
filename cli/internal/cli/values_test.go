@@ -116,7 +116,7 @@ func TestConfigSet(t *testing.T) {
 		t.Errorf("repo.toml:\n%s", r)
 	}
 	// A key without a sync: no sync line (D90).
-	if code, _, errText := run("config", "set", "repo.topology", "polyrepo"); code != fail.OK || strings.Contains(errText, "sync") {
+	if code, _, errText := run("config", "set", "repo.topology", "multi-repo"); code != fail.OK || strings.Contains(errText, "sync") {
 		t.Errorf("set topology: %d %s", code, errText)
 	}
 	if code, _, _ := run("config", "set", "repo.core_branches", `["main","develop"]`); code != fail.OK {

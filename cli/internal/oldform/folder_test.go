@@ -84,7 +84,7 @@ jobs = 2
 `
 	over := filepath.Join(t.TempDir(), "o.toml")
 	write(t, over, "[tools.git]\ncommit_scopes = [ \"cli\" ]\n\n[tools.git.branch.develop]\nmerge_model = \"direct\"\n\n[tools.node]\nversion = \"24\"\n")
-	s, err := SplitRepo([]byte(in), "v.toml", over, func(string) bool { return true })
+	s, err := SplitRepo([]byte(in), "v.toml", over, func(string) bool { return true }, noSubmodule)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ jobs = 2
 
 func TestSplitRepoComments(t *testing.T) {
 	in := "format = 2\nrepo_name = \"x\"\n\n[tools.git]\n# The scopes.\ncommit_scopes = [ \"api\" ]\n"
-	s, err := SplitRepo([]byte(in), "v.toml", "", func(b string) bool { return b == "main" })
+	s, err := SplitRepo([]byte(in), "v.toml", "", func(b string) bool { return b == "main" }, noSubmodule)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,6 +139,32 @@ func TestSplitRepoComments(t *testing.T) {
 	}
 	if !strings.Contains(string(s.Repo), `core_branches = ["main"]`) {
 		t.Errorf("core branches:\n%s", s.Repo)
+	}
+}
+
+// noSubmodule is a repo without git submodules.
+func noSubmodule(string) bool { return false }
+
+func TestSplitRepoMembers(t *testing.T) {
+	in := "format = 2\nrepo_name = \"x\"\n\n[member.api]\nfolder = \"services/api\"\ntype = \"submodule\"\nlabel = \"API\"\nworktree_install = \"pnpm install\"\n\n[member.docs]\n\n[member.web]\nfolder = \"web/\"\n"
+	// A typeless member gets the type of the old engine (D99): submodule
+	// when its folder is in .gitmodules, else folder.
+	sub := func(f string) bool { return f == "web" }
+	s, err := SplitRepo([]byte(in), "v.toml", "", func(b string) bool { return b == "main" }, sub)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := read(t, s.Repo)
+	if err := schema.CheckRepo(raw, "repo.toml"); err != nil {
+		t.Fatalf("%v:\n%s", err, s.Repo)
+	}
+	if raw.Has("member") {
+		t.Errorf("[member.*] stays:\n%s", s.Repo)
+	}
+	got := source.JSON(raw.Get("members"))
+	want := `{"api":{"folder":"services/api","label":"API","type":"submodule","worktree_install":"pnpm install"},"docs":{"type":"folder"},"web":{"folder":"web/","type":"submodule"}}`
+	if strings.TrimSpace(got) != want {
+		t.Errorf("members = %s, want %s", got, want)
 	}
 }
 
@@ -153,12 +179,12 @@ func TestSplitRepoStops(t *testing.T) {
 		{"no main and no develop", "format = 2\n", func(string) bool { return false }, "no branch main or develop"},
 	}
 	for _, c := range cases {
-		_, err := SplitRepo([]byte(c.in), "v.toml", "", c.exists)
+		_, err := SplitRepo([]byte(c.in), "v.toml", "", c.exists, noSubmodule)
 		if fail.CodeOf(err) != fail.Usage || !strings.Contains(err.Error(), c.msg) {
 			t.Errorf("%s: %v", c.name, err)
 		}
 	}
-	_, err := SplitRepo([]byte("format = 2\n[tools.git.branch.x]\n"), "v.toml", "", func(string) bool { return true })
+	_, err := SplitRepo([]byte("format = 2\n[tools.git.branch.x]\n"), "v.toml", "", func(string) bool { return true }, noSubmodule)
 	if err == nil || !strings.Contains(err.Error(), "remove the table or create the branch") {
 		t.Errorf("fix: %v", err)
 	}

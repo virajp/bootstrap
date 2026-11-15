@@ -68,7 +68,9 @@ func (c *contexts) of(tool string) (any, error) {
 }
 
 // contexts is `_rs_context`: the values of the values file, with `members`,
-// `member_folders`, `member_types`, `submodules`, `tools`, `extensions`,
+// `member_folders`, `member_types`, `member_tables` (the members that have a
+// [members.<name>] table: a git submodule without one is a member too, but
+// gets no flag of a task), `submodules`, `tools`, `extensions`,
 // `cli_dir`, `precommit` and `all` merged in first, so a key of the same
 // name in the values file cannot replace them. The keys `all` and `config` of
 // the values file do not go in. It gives nil, after the messages, when the
@@ -105,6 +107,7 @@ func (s *state) contexts() *contexts {
 		"BOOTSTRAP_MEMBERS":        strings.Join(names, "\n"),
 		"BOOTSTRAP_MEMBER_FOLDERS": strings.Join(folders, "\n"),
 		"BOOTSTRAP_MEMBER_TYPES":   strings.Join(kinds, "\n"),
+		"BOOTSTRAP_MEMBER_TABLES":  strings.Join(memberTables(rows, v), "\n"),
 		"BOOTSTRAP_SUBMODULES":     submodules,
 		"BOOTSTRAP_TOOLS":          strings.Join(s.res.Tools, "\n"),
 	}
@@ -113,4 +116,19 @@ func (s *state) contexts() *contexts {
 		return nil
 	}
 	return &contexts{shared: []byte(out)}
+}
+
+// memberTables gives the names of the members of <rows> that have a
+// [members.<name>] table in the values <v>, in the order of <rows>. A git
+// submodule without a table is a member, but not one of these (D99).
+func memberTables(rows []member, v any) []string {
+	m, _ := v.(map[string]any)
+	tables, _ := m["members"].(map[string]any)
+	var out []string
+	for _, r := range rows {
+		if _, ok := tables[r.name]; ok {
+			out = append(out, r.name)
+		}
+	}
+	return out
 }

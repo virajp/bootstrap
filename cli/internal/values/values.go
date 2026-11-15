@@ -200,6 +200,22 @@ func Combine(repo, tools *source.Obj) *source.Obj {
 	return out
 }
 
+// SubmoduleMember tells if the repo with the values <raw> (the keys of
+// repo.toml) leaves out its root_only tools: its [home] has type submodule.
+// A sibling member is its own root, so it keeps them. A repo without
+// [home].type gives <git>, the git test of a submodule (D57, D79).
+func SubmoduleMember(raw *source.Obj, git func() bool) bool {
+	if raw == nil {
+		return git()
+	}
+	if h, ok := raw.Get("home").(*source.Obj); ok {
+		if t, ok := h.Get("type").(string); ok {
+			return t == "submodule"
+		}
+	}
+	return git()
+}
+
 // compat gives the tools the keys of repo.toml <repo> that they read in
 // their tables before the values folder, under their old names, so their
 // templates and scripts read them as before: [commits].scopes as

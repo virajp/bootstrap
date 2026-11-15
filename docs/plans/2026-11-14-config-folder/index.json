@@ -110,11 +110,11 @@
         "U2"
       ],
       "waits": "It edits the schema and the migration U1 and U2 write in cli/.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T13:04:56.671Z",
+      "ended": "2026-11-15T13:52:10.406Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U4",
@@ -130,11 +130,11 @@
         "U2"
       ],
       "waits": "Its Verification runs the config verb U2 adds.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T13:04:56.710Z",
+      "ended": "2026-11-15T14:19:15.560Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 3
     },
     {
       "id": "U5",
@@ -271,8 +271,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-15T13:04:56.632Z",
       "ended": ""
     },
     {
@@ -1222,6 +1222,135 @@
       "units": [
         "U2"
       ]
+    },
+    {
+      "id": "D96",
+      "decision": "Q4: Should root_only tools be skipped in a git submodule with no [home] yet, or only when [home].type is submodule?",
+      "ruling": "Keep the git test as a fallback when [home] has no type (what U3 built)",
+      "rejected": "[home].type only — follows the ruling word for word, but a submodule with no [home] runs root_only tools, and the test:repo submodule cases (U6) must set [home]",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D97",
+      "decision": "Q5: Should the default commit scopes come from the [members.*] table keys rather than .members, which leaves out an uncloned sibling?",
+      "ruling": "U4 changes the git template to use the keys of .member (the [members.*] alias) when [commits].scopes is absent — the scopes stay stable, and the engine needs no change",
+      "rejected": "Keep .members — no change, but the scopes depend on which siblings are cloned; The engine keeps missing siblings in .members — the scopes stay stable, but MEMBERS and the cd loops of setup and code:lint would enter folders that are not there",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D98",
+      "decision": "Q6: After a migration the shared-file header keeps the old .config/bootstrap.toml override line beside the new tools.toml line; who fixes it?",
+      "ruling": "U3 fixes the header merge in cli/ so the old line is replaced — the synced headers stay correct",
+      "rejected": "Accept it; the user deletes the stale line by hand after the migration — no code change, but every consumer gets a duplicated header line",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D99",
+      "decision": "Q7: Which member list should setup:configs and setup walk for a git submodule with no [members.<name>] table, or a table with no type?",
+      "ruling": "Require type on every [members.*] table, have the migration write type = \"submodule\" for a typeless old member in .gitmodules, and have the template drop the flags of untyped or untabled submodules — a schema change in cli/ (U3/U2), but the member list keeps a single source",
+      "rejected": "members() also treats a missing type as submodule when the folder is in .gitmodules, and adds the .gitmodules submodules that have no table, as the engine member discovery does — the flags and the loop agree, and only U4 helpers change",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D100",
+      "decision": "Q8: Should code:lint and code:format use the same .member_tables filter (tabled submodule or sibling) for their member flags?",
+      "ruling": "No, every repo/submodule get's independent code-lint & code-format. base repo must exclude the submodules from all of the tasks. If a task wants to run in a submodule, they must use `--cd` flag of mise",
+      "rejected": "Apply the same filter (tabled submodule or sibling) in code-lint.tmpl and code-format.tmpl — every member flag of every task names the one set that helpers members() walks; Leave them on the engine submodule list — they keep working for untabled submodules, but --<name> means a different set in each task, and siblings get no lint or format flag",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D101",
+      "decision": "Q9: How should base-repo code:format and code:lint gates that scan their project themselves leave out the submodules (D100)?",
+      "ruling": "When no files are given, pass each tool the `git ls-files` list of its language — the submodules drop out automatically, but this reverses the CLAUDE.md rule that a self-scanning tool uses the list only to see whether a file exists, and a large tree may hit the argument-length limit (the rule in CLAUDE.md Task scripts changes with it)",
+      "rejected": "Pass each tool its own exclude flag for the submodule paths, found with git submodule foreach --recursive; Leave them and have consumers add the submodule folders to each seed config by hand",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D102",
+      "decision": "Q10: Does D100 also remove the member flags and loop of setup and setup:configs?",
+      "ruling": "Keep them, as D7/D64/D99 rule — they run in a member only when asked and only through --cd, which D100 allows; only lint and format lose their flags",
+      "rejected": "Remove the flags and loops from both; Keep setup:configs flags and remove setup flags",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D103",
+      "decision": "Q11: Which members should get a setup-<name> dev alias from the derive script?",
+      "ruling": "The same set as setup.tmpl (tabled submodule or sibling), with derive reading repo.members through `bootstrap config get` — the alias and the flag always agree, and cli/ does not change",
+      "rejected": "The engine derive input carries only tabled members or a tabled field (cli/ change); Drop the aliases and setup-all; Each alias becomes mise run --cd <folder> setup with no flag",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D104",
+      "decision": "Q12: Should setup:worktree keep entering the members, and the stale $.member read?",
+      "ruling": "Keep the checkout and the member walk through --cd (D100 allows --cd), and fix $.member to $.members — a fresh worktree is still ready in one command",
+      "rejected": "Keep only the submodule checkout and drop the member walk; Walk only folder members and fix $.member for the folder case",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D105",
+      "decision": "Q13: Should code:worktrees stay product-wide under D100?",
+      "ruling": "Keep it product-wide — it only reads git state, runs no task in a member, and the vwf agents rely on its member rows",
+      "rejected": "Limit it to the base repo and its own worktrees",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D106",
+      "decision": "Withdraw D101 and narrow D100: the gate file lists and the exclusion of submodule folders from base-repo gate scans leave this plan",
+      "ruling": "D101 is withdrawn; gates keep their file lists as on main. D100 keeps only the removal of the member flags (--all, --<name>) and member loop from code:lint and code:format; each repo and submodule runs its own, and a task runs in a member only through mise --cd; the base-repo submodule exclusion is not done in this plan. User: \"the wider discussion is over about formatters and linters. We need mechanism where by default only uncommitted (or staged) files are formatted and lint'ed. This is to optimize performance. There can be `--all` flag to include all files from the repo. Now this will require a deeper discussion and possibly migration from bash scripts to python so that these scripts can be programmed to manage the excludes, etc\" — approved (\"yes, send it\") to take the gate changes out of this plan.",
+      "rejected": "D101 as recorded (pass each self-scanning tool the git ls-files list of its language)",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D107",
+      "decision": "Q14: a D101 gate-list follow-up (pyrefly, linter, dart generated files)",
+      "ruling": "withdrawn with D101 — no change in this plan",
+      "rejected": "every option offered",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D108",
+      "decision": "Q15: a D101 gate-list follow-up (pyrefly, linter, dart generated files)",
+      "ruling": "withdrawn with D101 — no change in this plan",
+      "rejected": "every option offered",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D109",
+      "decision": "Q16: a D101 gate-list follow-up (pyrefly, linter, dart generated files)",
+      "ruling": "withdrawn with D101 — no change in this plan",
+      "rejected": "every option offered",
+      "units": [
+        "U4"
+      ]
     }
   ],
   "stages": {
@@ -1263,6 +1392,20 @@
       "unit": "U2",
       "stage": "",
       "text": "Wave 2 review round 2: cli/internal/cli/config.go:64 comment line not folded · resolved in the closing pass: folded at 76 columns",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "",
+      "stage": "",
+      "text": "The new gate mechanism: code:format and code:lint check only changed (uncommitted or staged) files by default, an --all flag checks every file of the repo, the base repo excludes submodule folders from each gate scan, and the gate scripts may move from bash to Python to manage the excludes. It needs its own design discussion and plan (D106) · open",
+      "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "U4",
+      "stage": "",
+      "text": "Wave 3 review round 2: mise derive built setup-<name> aliases for untabled submodules that setup.tmpl gives no flag · resolved in the closing pass by D103 (aliases for tabled submodule or sibling members only)",
       "state": "closed"
     }
   ],

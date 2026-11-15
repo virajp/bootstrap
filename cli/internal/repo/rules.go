@@ -333,9 +333,21 @@ func lineIn(s, list string) bool {
 // member is one member of the repo: a line of `_rs_members`.
 type member struct{ name, folder, kind string }
 
+// memberURL gives the url of the [members.<name>] table of repo.toml, or "".
+func (s *state) memberURL(name string) string {
+	v, _ := s.valuesDS()
+	m, _ := v.(map[string]any)
+	ms, _ := m["members"].(map[string]any)
+	e, _ := ms[name].(map[string]any)
+	u, _ := e["url"].(string)
+	return u
+}
+
 // members is `_rs_members`: the members of the repo, the git submodules
-// first, then the other `[members.<name>]` tables of repo.toml. <name> starts each message.
-// It gives 2, after a message, when a member breaks a rule.
+// first, then the other `[members.<name>]` tables of repo.toml: the folder
+// members and the sibling members, each in its own folder. A sibling member
+// whose folder is not there is left out, after an info line. <name> starts
+// each message. It gives 2, after a message, when a member breaks a rule.
 func (s *state) members(name string) ([]member, fail.Code) {
 	submodules := ""
 	if isFile(s.root + "/.gitmodules") {
@@ -351,30 +363,38 @@ func (s *state) members(name string) ([]member, fail.Code) {
 		rows = append(rows, member{key, folder, kind})
 	}
 	show := s.showRepo
+	missing := map[string]bool{}
 	for _, r := range rows {
 		if r.name == "" {
 			continue
 		}
 		folder := strings.TrimSuffix(r.folder, "/")
 		if folder == "." || folder == "" {
-			s.log(name + ": [members." + r.name + "] in " + show + " has the folder of the repo itself - a member is a submodule or a folder below the root")
+			s.log(name + ": [members." + r.name + "] in " + show + " has the folder of the repo itself - a member is a submodule, a folder below the root or a sibling repo")
 			return nil, fail.Usage
 		}
 		switch r.kind {
-		case "", "submodule", "folder":
+		case "", "submodule", "folder", "sibling":
 		default:
-			s.log(name + ": [members." + r.name + "] in " + show + " has the type '" + r.kind + "' - use submodule or folder")
+			s.log(name + ": [members." + r.name + "] in " + show + " has the type '" + r.kind + "' - use submodule, folder or sibling")
 			return nil, fail.Usage
 		}
 		switch {
 		case lineIn(folder, submodules):
-			if r.kind == "folder" {
-				s.log(name + ": [members." + r.name + "] in " + show + " has type folder, but " + folder + " is a submodule")
+			if r.kind == "folder" || r.kind == "sibling" {
+				s.log(name + ": [members." + r.name + "] in " + show + " has type " + r.kind + ", but " + folder + " is a submodule")
 				return nil, fail.Usage
 			}
 		case r.kind == "submodule":
 			s.log(name + ": [members." + r.name + "] in " + show + " has type submodule, but " + folder + " is not in .gitmodules")
 			return nil, fail.Usage
+		case r.kind == "sibling":
+			// The folder of a sibling is relative to the root, and may
+			// start with ../.
+			if info, err := os.Stat(s.root + "/" + folder); err != nil || !info.IsDir() {
+				s.r.Info("member " + r.name + " skipped: " + folder + " is not there - clone " + s.memberURL(r.name) + " into it")
+				missing[r.name] = true
+			}
 		default:
 			if info, err := os.Stat(s.root + "/" + folder); err != nil || !info.IsDir() {
 				s.log(name + ": [members." + r.name + "] in " + show + " is not a submodule or a folder of the repo")
@@ -404,16 +424,20 @@ func (s *state) members(name string) ([]member, fail.Code) {
 		}
 		out = append(out, member{found, path, "submodule"})
 	}
-	// Then the folder members.
+	// Then the folder and the sibling members.
 	for _, r := range rows {
-		if r.name == "" {
+		if r.name == "" || missing[r.name] {
 			continue
 		}
 		folder := strings.TrimSuffix(r.folder, "/")
 		if lineIn(folder, submodules) {
 			continue
 		}
-		out = append(out, member{r.name, folder, "folder"})
+		kind := "folder"
+		if r.kind == "sibling" {
+			kind = "sibling"
+		}
+		out = append(out, member{r.name, folder, kind})
 	}
 	// A name is a flag (`--<name>`) and a part of a shell variable of the
 	// tasks.
@@ -449,8 +473,7 @@ func (s *state) hasFile(name string) bool {
 	return false
 }
 
-// inSubmodule is the test of `_rs_resolve` and `_rs_extensions`: this repo
-// is a git submodule.
+// inSubmodule is the git test of asSubmodule: this repo is a git submodule.
 func (s *state) inSubmodule() bool {
 	out, _ := git(s.root, "rev-parse", "--show-superproject-working-tree")
 	return out != ""
@@ -495,7 +518,7 @@ func (s *state) requiredTables(listOnly bool) fail.Code {
 			named[it.Name] = true
 		}
 	}
-	names, err := selection.MissingTables(s.idx, selection.BasePack, named, s.inSubmodule())
+	names, err := selection.MissingTables(s.idx, selection.BasePack, named, s.asSubmodule())
 	if err != nil {
 		return s.logAll(err)
 	}

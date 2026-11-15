@@ -58,7 +58,7 @@ func SelectionOf(sd Side, file, overridesOf string) (*Selected, error) {
 			}
 		}
 		s.User, s.Items, s.Over, s.Raw = v.User, v.Sel, v.Over, v.Raw
-		if res, err = selection.ResolveRepo(idx, v, InSubmodule(sd.Root)); err != nil {
+		if res, err = selection.ResolveRepo(idx, v, values.SubmoduleMember(v.Raw, func() bool { return InSubmodule(sd.Root) })); err != nil {
 			return nil, err
 		}
 		s.Tools, s.Res = res.Tools, res

@@ -40,7 +40,7 @@ func TestCheckRepo(t *testing.T) {
 repo_url = "https://example.com/r"
 environments = [ "dev", "ci" ]
 bootstrap_commit = ""
-topology = "polyrepo"
+topology = "multi-repo"
 topology_reason = "one repo"
 release_env = "prod"
 
@@ -60,7 +60,7 @@ scopes = [ "api" ]
 files = [ ".config/mise.local.toml" ]
 
 [members.web]
-folder = "projects/web"
+folder = "../web"
 type = "sibling"
 url = "https://example.com/web"
 label = "Web"
@@ -68,6 +68,7 @@ worktree_install = "pnpm install"
 
 [home]
 folder = ".."
+type = "submodule"
 url = "https://example.com/home"
 
 [deploy.prod]
@@ -77,6 +78,13 @@ web = "https://web.example.com"
 		{"unknown nested key", head + "[branches.main]\nmerge_model = \"pr\"\n", "branches.main.merge_model in repo.toml is not a key of repo.toml"},
 		{"bad enum", head + "[branches.main]\nlanding = \"merge\"\n", `branches.main.landing = "merge" in repo.toml is not one of pr, direct-merge, direct-commit`},
 		{"bad member type", head + "[members.x]\ntype = \"repo\"\n", `members.x.type = "repo" in repo.toml is not one of submodule, folder, sibling`},
+		{"bad topology", head + "topology = \"polyrepo\"\n", `topology = "polyrepo" in repo.toml is not one of repo, monorepo, multi-repo`},
+		{"sibling without url", head + "[members.web]\nfolder = \"../web\"\ntype = \"sibling\"\n", "[members.web] in repo.toml has type sibling, but no url - add the url of its repo"},
+		{"submodule without url", head + "[members.web]\ntype = \"submodule\"\n", ""},
+		{"member without type", head + "[members.web]\nfolder = \"web\"\n", "[members.web] in repo.toml has no type - set type to submodule, folder or sibling"},
+		{"home without url", head + "[home]\nfolder = \"../home\"\ntype = \"sibling\"\n", ""},
+		{"home without folder and type", head + "[home]\nurl = \"u\"\n", "[home] in repo.toml has no folder - run bootstrap sync from the home repo, which writes [home]\n[home] in repo.toml has no type - run bootstrap sync from the home repo, which writes [home]"},
+		{"home of a folder member", head + "[home]\nfolder = \"..\"\ntype = \"folder\"\n", `home.type = "folder" in repo.toml is not one of submodule, sibling`},
 		{"bad format", "format = 2\nrepo_name = \"r\"\ncore_branches = [ \"main\" ]\n", "format = 2 in repo.toml is not one of 3"},
 		{"wrong type", head + "repo_url = 1\n", "repo_url in repo.toml must be a string"},
 		{"wrong list type", "format = 3\nrepo_name = \"r\"\ncore_branches = \"main\"\n", "core_branches in repo.toml must be a list of strings"},

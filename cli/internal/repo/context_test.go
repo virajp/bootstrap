@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
@@ -55,5 +56,21 @@ func TestToolValuesGroup(t *testing.T) {
 		if buf.String() != c.want || (code == fail.OK) != (c.want == "") {
 			t.Errorf("%v: code %d, output %q, want %q", c.user, code, buf.String(), c.want)
 		}
+	}
+}
+
+func TestMemberTables(t *testing.T) {
+	rows := []member{{"api", "api", "submodule"}, {"libs_core", "libs/core", "submodule"}, {"docs", "docs", "folder"}, {"web", "../web", "sibling"}}
+	v := map[string]any{"members": map[string]any{
+		"api":  map[string]any{"type": "submodule"},
+		"docs": map[string]any{"type": "folder"},
+		"web":  map[string]any{"type": "sibling", "folder": "../web", "url": "u"},
+	}}
+	// libs/core is a git submodule without a table: no flag (D99).
+	if got, want := memberTables(rows, v), []string{"api", "docs", "web"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("member_tables = %v, want %v", got, want)
+	}
+	if got := memberTables(rows, map[string]any{}); got != nil {
+		t.Errorf("no tables: %v", got)
 	}
 }

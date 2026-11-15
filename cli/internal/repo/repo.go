@@ -108,6 +108,8 @@ type state struct {
 	memberRows  []member
 	membersCode fail.Code
 	membersRead bool
+
+	home *source.Obj // The [home] of this member that the run writes, or nil.
 }
 
 // Run runs `bootstrap sync <args>` and gives its exit code. Each line goes to
@@ -268,6 +270,7 @@ func (s *state) sync(dryRun bool) fail.Code {
 	if code := s.readEnvs(); code != fail.OK {
 		return cleanup(code)
 	}
+	s.home = s.homeLink()
 	idx, err := s.src.Open()
 	s.idx = idx
 	if err != nil {
@@ -454,6 +457,10 @@ func (s *state) sync(dryRun bool) fail.Code {
 	}
 
 	if len(failed) == 0 {
+		if s.writeHome() != fail.OK {
+			s.r.Summary(1)
+			return fail.Other
+		}
 		// Only a sync without a failure records its commit: then each file
 		// is at that commit, and an agent can compare it with main of
 		// bootstrap.
