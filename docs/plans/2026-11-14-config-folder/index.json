@@ -1225,5 +1225,8 @@
   },
   "gaps": [],
   "overrides": [],
-  "run": {}
+  "run": {
+    "worktree": ".worktrees/config-folder",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-14-config-folder.jsonl"
+  }
 }
