@@ -3,45 +3,31 @@
 
 # The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
+# The core branches, in order. Each one exists in git.
+core_branches = [ "main" ]
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
-format = 2
+format = 3
 # The product name, for the fnox keychain service.
 product_name = "acme"
 repo_name = "acme-app"
 # The web URL of the repository, for the github tool.
 repo_url = "https://github.com/example/acme-app"
 
-[tools.git]
-# The commit scopes of git-conventional-commits.
-commit_scopes = [ "ui", "l10n" ]
-
-[tools.mise]
-# The gitignored files to copy into a new worktree.
-worktree_files = [ ".config/mise.local.toml" ]
-
-[tools.pre-commit]
-
-[tools.dprint]
-
-[tools.linter]
-
-[tools.gitleaks]
-
-[tools.grype]
-
-[tools.osv-scanner]
-
-[tools.claude]
-
-[tools.github]
-
-[tools.node]
-env = [ "dev", "ci" ]
-
-[tools.pnpm]
-env = [ "dev", "ci" ]
-
 # A feature branch merges into main through a pull request.
-[tools.git.branch.main]
-merge_model = "pr"
+[branches.main]
+landing = "pr"
+
+[commits]
+# The commit scopes of git-conventional-commits.
+scopes = [ "ui", "l10n" ]
+
+[worktree]
+# The gitignored files to copy into a new worktree.
+files = [ ".config/mise.local.toml" ]
+
+# The home repository of this sibling. The sync of the home writes it.
+[home]
+folder = "../acme-product"
+type = "sibling"
+url = "https://github.com/example/acme-product"

@@ -1,0 +1,27 @@
+# Example: the tools of the submodule iac. Its repo facts are in repo.toml.
+
+format = 3
+
+[tools.git]
+
+[tools.mise]
+
+[tools.pre-commit]
+
+[tools.dprint]
+
+[tools.linter]
+
+[tools.gitleaks]
+
+[tools.grype]
+
+[tools.osv-scanner]
+# pulumi is for dev only: its mise tool does not allow ci.
+[tools.pulumi]
+env = [ "dev" ]
+
+# Pin pulumi instead of latest. The path after overrides is the path in
+# repo/tools/pulumi/tools.toml.
+[overrides.mise.tools.pulumi]
+version = "3"

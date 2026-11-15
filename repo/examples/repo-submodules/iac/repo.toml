@@ -1,0 +1,34 @@
+# Example: the submodule iac. It is a pulumi polyrepo with the branch develop
+# only.
+
+# The bootstrap commit of the last sync. The sync writes it.
+bootstrap_commit = ""
+# The core branches, in order. Each one exists in git.
+core_branches = [ "develop" ]
+# The mise environments: dev (necessary) and ci.
+environments = [ "dev", "ci" ]
+format = 3
+# The product name, for the fnox keychain service.
+product_name = "acme"
+repo_name = "acme-iac"
+# The web URL of the repository, for the github tool.
+repo_url = "https://github.com/example/acme-iac"
+
+# A feature branch merges into develop. main never merges into develop.
+[branches.develop]
+landing = "direct-merge"
+merge_never = [ "main" ]
+
+[commits]
+# The commit scopes of git-conventional-commits.
+scopes = [ "network", "storage" ]
+
+[worktree]
+# The gitignored files to copy into a new worktree.
+files = [ ".config/mise.local.toml" ]
+
+# The home repository of this submodule. The sync of the home writes it.
+[home]
+folder = ".."
+type = "submodule"
+url = "https://github.com/example/acme"

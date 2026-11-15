@@ -1,0 +1,29 @@
+# Example: the tools of the sibling acme-app. Its repo facts are in repo.toml.
+
+format = 3
+
+[tools.git]
+
+[tools.mise]
+
+[tools.pre-commit]
+
+[tools.dprint]
+
+[tools.linter]
+
+[tools.gitleaks]
+
+[tools.grype]
+
+[tools.osv-scanner]
+
+[tools.claude]
+
+[tools.github]
+
+[tools.node]
+env = [ "dev", "ci" ]
+
+[tools.pnpm]
+env = [ "dev", "ci" ]

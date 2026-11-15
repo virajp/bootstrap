@@ -3,35 +3,26 @@
 
 # The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
+# The core branches, in order. Each one exists in git.
+core_branches = [ "develop" ]
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
-format = 2
+format = 3
 repo_name = "search-indexer"
 # The web URL of the repository, for the github tool.
 repo_url = "https://github.com/example/search-indexer"
 
-[tools.git]
-# The commit scopes of git-conventional-commits.
-commit_scopes = [ "indexer", "schema" ]
-
-[tools.mise]
-# The gitignored files to copy into a new worktree.
-worktree_files = [ ".config/mise.local.toml" ]
-
-[tools.pre-commit]
-
-[tools.dprint]
-
-[tools.linter]
-
-[tools.gitleaks]
-
-[tools.grype]
-
-[tools.osv-scanner]
 # A feature branch merges into develop. main never merges into develop.
-[tools.git.branch.develop]
-merge_model = "direct"
+# landing = "direct-commit" allows a direct commit to develop. The sync then
+# removes the branch hook.
+[branches.develop]
+landing = "direct-merge"
 merge_never = [ "main" ]
-# Allow a direct commit to develop. The sync then removes the branch hook.
-# direct_commit = true
+
+[commits]
+# The commit scopes of git-conventional-commits.
+scopes = [ "indexer", "schema" ]
+
+[worktree]
+# The gitignored files to copy into a new worktree.
+files = [ ".config/mise.local.toml" ]

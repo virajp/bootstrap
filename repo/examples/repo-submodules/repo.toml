@@ -4,9 +4,11 @@
 
 # The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
+# The core branches, in order. Each one exists in git.
+core_branches = [ "develop" ]
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
-format = 2
+format = 3
 # The product name, for the fnox keychain service. Each submodule has the
 # same value.
 product_name = "acme"
@@ -14,44 +16,36 @@ repo_name = "acme"
 # The web URL of the repository, for the github tool.
 repo_url = "https://github.com/example/acme"
 
-[tools.git]
-# The commit scopes of git-conventional-commits. The default is the member
-# list.
-commit_scopes = [ "backend", "frontend", "iac", "docs" ]
-
-[tools.mise]
-# The gitignored files to copy into a new worktree.
-worktree_files = [ ".config/mise.local.toml", "docs/memory/handoff" ]
-
-[tools.pre-commit]
-
-[tools.dprint]
-
-[tools.linter]
-
-[tools.gitleaks]
-
-[tools.grype]
-
-[tools.osv-scanner]
 # A feature branch merges into develop. main never merges into develop.
-[tools.git.branch.develop]
-merge_model = "direct"
+[branches.develop]
+landing = "direct-merge"
 merge_never = [ "main" ]
 
-# The submodule members. setup:worktree runs worktree_install in each
-# submodule.
-[member.backend]
+[commits]
+# The commit scopes of git-conventional-commits. The default is the names of
+# the [members.*] tables.
+scopes = [ "backend", "frontend", "iac", "docs" ]
+
+[worktree]
+# The gitignored files to copy into a new worktree.
+files = [ ".config/mise.local.toml", "docs/memory/handoff" ]
+
+# The submodule members, each with the url of its repository.
+# setup:worktree runs worktree_install in each submodule.
+[members.backend]
 label = "Backend"
 type = "submodule"
+url = "https://github.com/example/acme-backend"
 worktree_install = "mise run setup:worktree"
 
-[member.frontend]
+[members.frontend]
 label = "Frontend"
 type = "submodule"
+url = "https://github.com/example/acme-frontend"
 worktree_install = "mise run setup:worktree"
 
-[member.iac]
+[members.iac]
 label = "Infrastructure"
 type = "submodule"
+url = "https://github.com/example/acme-iac"
 worktree_install = "mise run setup:worktree"

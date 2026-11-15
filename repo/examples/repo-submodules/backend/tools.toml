@@ -1,0 +1,31 @@
+# Example: the tools of the submodule backend. Its repo facts are in
+# repo.toml.
+
+format = 3
+
+[tools.git]
+
+[tools.mise]
+
+[tools.pre-commit]
+
+[tools.dprint]
+
+[tools.linter]
+
+[tools.gitleaks]
+
+[tools.grype]
+
+[tools.osv-scanner]
+
+[tools.node]
+env = [ "dev", "ci" ]
+
+[tools.pnpm]
+env = [ "dev", "ci" ]
+
+# Override the defaults of the tools. The path after overrides is the path in
+# repo/tools/<tool>/tools.toml.
+[overrides.mise.tools.node]
+version = "22"

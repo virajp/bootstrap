@@ -3,34 +3,25 @@
 
 # The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
+# The core branches, in order. Each one exists in git.
+core_branches = [ "main" ]
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
-format = 2
+format = 3
 repo_name = "billing-cli"
 # The web URL of the repository, for the github tool.
 repo_url = "https://github.com/example/billing-cli"
 
-[tools.git]
-# The commit scopes of git-conventional-commits.
-commit_scopes = [ "cli", "docs" ]
-
-[tools.mise]
-# The gitignored files to copy into a new worktree.
-worktree_files = [ ".config/mise.local.toml" ]
-
-[tools.pre-commit]
-
-[tools.dprint]
-
-[tools.linter]
-
-[tools.gitleaks]
-
-[tools.grype]
-
-[tools.osv-scanner]
 # A feature branch merges into main, through a pull request. The branch
 # gh-pages never merges into main.
-[tools.git.branch.main]
-merge_model = "pr"
+[branches.main]
+landing = "pr"
 merge_never = [ "gh-pages" ]
+
+[commits]
+# The commit scopes of git-conventional-commits.
+scopes = [ "cli", "docs" ]
+
+[worktree]
+# The gitignored files to copy into a new worktree.
+files = [ ".config/mise.local.toml" ]

@@ -1,0 +1,23 @@
+# Example: the tools of the submodule frontend. Its repo facts are in
+# repo.toml.
+
+format = 3
+
+[tools.git]
+
+[tools.mise]
+
+[tools.pre-commit]
+
+[tools.dprint]
+
+[tools.linter]
+
+[tools.gitleaks]
+
+[tools.grype]
+
+[tools.osv-scanner]
+
+[tools.flutter]
+env = [ "dev", "ci" ]
