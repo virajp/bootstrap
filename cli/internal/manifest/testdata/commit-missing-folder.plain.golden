@@ -1,7 +1,7 @@
 == stdout ==
 rc=1
 == stderr ==
-[ERROR] cannot write .config/bootstrap.toml
+[ERROR] cannot write .config/bootstrap/repo.toml
 [OK] Synced: no file changed
 == tree ==
 d 755 root

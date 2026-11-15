@@ -2,7 +2,7 @@
 # The sync adds each missing line at the end of the file, in this order. A
 # line that the user adds stays. To remove a line of bootstrap, write
 # "<line>" = { "$mode" = "remove" } in [tools.git.files.".gitignore"] of
-# .config/bootstrap.toml. A later line wins, so a repository can also negate
+# .config/bootstrap/tools.toml. A later line wins, so a repository can also negate
 # a pattern here with its own line.
 format = "text"
 comment = "#"

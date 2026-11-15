@@ -144,7 +144,7 @@ func configLines(t *testing.T, args ...string) map[string][]string {
 	return lines
 }
 
-func TestConfigSources(t *testing.T) {
+func TestSettingsSources(t *testing.T) {
 	file := writeConfig(t, "jobs = 3\ncache_dir = \"~/x\"\n")
 	want := func(lines map[string][]string, key, value, source string) {
 		t.Helper()
@@ -155,7 +155,7 @@ func TestConfigSources(t *testing.T) {
 	}
 	t.Run("default", func(t *testing.T) {
 		setupEnv(t, "/nonexistent/bootstrap/config.toml")
-		lines := configLines(t, "config")
+		lines := configLines(t, "settings")
 		want(lines, "file", "/nonexistent/bootstrap/config.toml (missing)", "variable BOOTSTRAP_CONFIG")
 		want(lines, "jobs", strconv.Itoa(2*runtime.NumCPU()), "default")
 		want(lines, "cache_dir", "/xc/bootstrap", "default")
@@ -165,7 +165,7 @@ func TestConfigSources(t *testing.T) {
 	})
 	t.Run("file", func(t *testing.T) {
 		setupEnv(t, file)
-		lines := configLines(t, "config")
+		lines := configLines(t, "settings")
 		want(lines, "file", file, "variable BOOTSTRAP_CONFIG")
 		want(lines, "jobs", "3", "file")
 		want(lines, "cache_dir", "/h/x", "file")
@@ -178,7 +178,7 @@ func TestConfigSources(t *testing.T) {
 		t.Setenv("BOOTSTRAP_JOBS", "abc")
 		t.Setenv("BOOTSTRAP_CACHE", "/c")
 		t.Setenv("MACOS_SETUP_REPO_PATH", "/r")
-		lines := configLines(t, "config")
+		lines := configLines(t, "settings")
 		want(lines, "jobs", "abc", "variable BOOTSTRAP_JOBS")
 		want(lines, "cache_dir", "/c", "variable BOOTSTRAP_CACHE")
 		want(lines, "mac.repo_path", "/r", "variable MACOS_SETUP_REPO_PATH")
@@ -187,7 +187,7 @@ func TestConfigSources(t *testing.T) {
 		setupEnv(t, "/nonexistent/bootstrap/config.toml")
 		t.Setenv("BOOTSTRAP_JOBS", "4")
 		t.Setenv("BOOTSTRAP_CACHE", "/c")
-		lines := configLines(t, "config", "--config", file, "--jobs", "5", "--cache-dir=/f",
+		lines := configLines(t, "settings", "--config", file, "--jobs", "5", "--cache-dir=/f",
 			"--url", "/u", "--clone", "/k", "--repo-path", "/r")
 		want(lines, "file", file, "flag --config")
 		want(lines, "jobs", "5", "flag --jobs")
@@ -208,11 +208,16 @@ func TestConfigErrors(t *testing.T) {
 		body string
 		msg  string
 	}{
-		{"unknown key", []string{"config"}, "verbose = true\n", ": verbose: unknown key"},
+		{"unknown key", []string{"settings"}, "verbose = true\n", ": verbose: unknown key"},
 		{"unknown key before the preflight", []string{"sync"}, "[mac]\nverbose = 1\n", ": mac.verbose: unknown key"},
 		{"mac config", []string{"mac", "config"}, "", "mac config is not a command"},
-		{"empty url", []string{"config", "--url="}, "", "--url needs a value"},
-		{"verbose of config", []string{"config", "--verbose"}, "", "config has no flag --verbose"},
+		{"mac settings", []string{"mac", "settings"}, "", "mac settings is not a command"},
+		{"empty url", []string{"settings", "--url="}, "", "--url needs a value"},
+		{"verbose of settings", []string{"settings", "--verbose"}, "", "settings has no flag --verbose"},
+		{"config without a subcommand", []string{"config"}, "", "config needs get, set, unset or show; the settings of the engine are bootstrap settings"},
+		{"config with an unknown subcommand", []string{"config", "list"}, "", "config has no subcommand list"},
+		{"format of config set", []string{"config", "set", "repo.repo_name", "x", "--format", "json"}, "", "config set has no flag --format"},
+		{"a bad format", []string{"config", "get", "repo.repo_name", "--format", "xml"}, "", "--format needs json, yaml or toml, not xml"},
 		{"repo-path of mac init", []string{"mac", "init", "--repo-path", "/r"}, "", "mac init has no flag --repo-path"},
 		{"config of version", []string{"version", "--config", "/c"}, "", "version has no flag --config"},
 	}

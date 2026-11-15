@@ -45,10 +45,26 @@ func (e *Env) AddTables(file string, names []string, head string, listOnly bool)
 		}
 		return fail.OK
 	}
-	cannot := func() fail.Code {
+	var exprs []string
+	for _, n := range names {
+		b, _ := json.Marshal(n)
+		exprs = append(exprs, ".tools["+string(b)+"] = (.tools["+string(b)+"] // {})")
+	}
+	if !e.editTOML(file, head, exprs) {
 		r.Error("cannot write " + show)
 		return fail.Other
 	}
+	for _, n := range names {
+		line(n, "added to")
+	}
+	return fail.OK
+}
+
+// editTOML applies the yq expressions <exprs> to the TOML file <file>, so
+// its comments stay. A <file> that is not there is created from <head>;
+// without <head>, that is an error. Through a symlink, the real file is
+// written. It tells if the write succeeded.
+func (e *Env) editTOML(file, head string, exprs []string) bool {
 	real := file
 	if p, err := filepath.EvalSymlinks(file); err == nil {
 		real = p
@@ -59,29 +75,24 @@ func (e *Env) AddTables(file string, names []string, head string, listOnly bool)
 	case os.IsNotExist(err) && head != "":
 		in = []byte(head)
 	case err != nil:
-		return cannot()
+		return false
 	default:
 		if m, err := Mode(real); err == nil {
 			mode = m
 		}
 	}
-	var exprs []string
-	for _, n := range names {
-		b, _ := json.Marshal(n)
-		exprs = append(exprs, ".tools["+string(b)+"] = (.tools["+string(b)+"] // {})")
-	}
 	tmp, err := e.Temps.CreateNext(real)
 	if err != nil {
-		return cannot()
+		return false
 	}
 	if err := os.WriteFile(tmp, in, 0o600); err != nil {
 		_ = os.Remove(tmp)
-		return cannot()
+		return false
 	}
 	out, _, err := format.YQ("-p", "toml", "-o", "toml", strings.Join(exprs, " | "), tmp)
 	if err != nil {
 		_ = os.Remove(tmp)
-		return cannot()
+		return false
 	}
 	// yq drops the comments of a file that has no key: keep its first
 	// comment lines.
@@ -105,18 +116,47 @@ func (e *Env) AddTables(file string, names []string, head string, listOnly bool)
 	}
 	if err := os.WriteFile(tmp, []byte(out), 0o600); err != nil {
 		_ = os.Remove(tmp)
-		return cannot()
+		return false
 	}
 	if err := os.Chmod(tmp, mode); err != nil {
 		_ = os.Remove(tmp)
-		return cannot()
+		return false
 	}
 	if err := Move(tmp, real); err != nil {
 		_ = os.Remove(tmp)
-		return cannot()
+		return false
 	}
-	for _, n := range names {
-		line(n, "added to")
+	return true
+}
+
+// SetTable sets the top-level table <key> of the TOML file <file> to the
+// JSON object <value>, so the comments of the file stay. It logs one line.
+// With a dry run, it writes nothing and plans the file. It gives 1, after a
+// log line, when it cannot write.
+func (e *Env) SetTable(file, key, value string) fail.Code {
+	r := e.Report
+	show := e.Show(file)
+	line := func(verb string) {
+		text := "[" + key + "] " + verb + " in " + show
+		if r.Verbose() {
+			r.Log(text)
+		} else {
+			r.Info(text)
+		}
 	}
+	if e.DryRun {
+		real := file
+		if p, err := filepath.EvalSymlinks(file); err == nil {
+			real = p
+		}
+		e.Plan(real, report.Changed)
+		line("would change")
+		return fail.OK
+	}
+	if !e.editTOML(file, "", []string{"." + key + " = " + value}) {
+		r.Error("cannot write " + show)
+		return fail.Other
+	}
+	line("changed")
 	return fail.OK
 }

@@ -19,6 +19,11 @@ import (
 var version = "dev"
 
 func main() {
+	// Each script and task that the engine runs finds the engine itself in
+	// BOOTSTRAP_BIN (D20).
+	if exe, err := os.Executable(); err == nil {
+		_ = os.Setenv("BOOTSTRAP_BIN", exe)
+	}
 	os.Exit(int(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr)))
 }
 

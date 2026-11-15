@@ -1,0 +1,52 @@
+# Example: the tools of the node monorepo shop-platform. Its repo facts are in
+# repo.toml.
+
+format = 3
+
+[tools.git]
+
+[tools.mise]
+
+[tools.pre-commit]
+
+[tools.dprint]
+
+[tools.linter]
+
+[tools.gitleaks]
+
+[tools.grype]
+
+[tools.osv-scanner]
+
+[tools.claude]
+
+[tools.node]
+env = [ "dev", "ci" ]
+
+[tools.pnpm]
+env = [ "dev", "ci" ]
+
+# Override the defaults of the tools. The path after overrides is the path in
+# repo/tools/<tool>/tools.toml. Node 24 in dev, and Node 22 in CI.
+[overrides.mise.tools.node]
+version = "24"
+
+[overrides.mise_env.ci.tools.node]
+version = "22"
+
+# Override a mise setting of the node tool.
+[overrides.mise.settings]
+node.compile = true
+
+# Remove a line of the shared .gitignore. The repository's own lines go
+# directly into .gitignore, and the sync keeps them.
+[tools.git.files.".gitignore"]
+"*.log" = { "$mode" = "remove" }
+
+# The Claude Code plugins that setup:ai installs. The key is the plugin, and
+# the value is the source of its marketplace. Each table can be empty.
+[tools.claude.plugins.user]
+"taste-skill@taste-skill" = "Leonxlnx/taste-skill"
+
+[tools.claude.plugins.project]

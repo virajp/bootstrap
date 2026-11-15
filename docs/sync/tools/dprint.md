@@ -96,7 +96,7 @@ Other tools contribute blocks, plugins and excludes to `dprint.jsonc` in
 
 ## Values
 
-The keys of `[tools.dprint]` in `.config/bootstrap.toml`:
+The keys of `[tools.dprint]` in `.config/bootstrap/tools.toml`:
 
 | Key                                   | Use                                                                                          |
 | ------------------------------------- | -------------------------------------------------------------------------------------------- |

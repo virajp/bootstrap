@@ -1,0 +1,43 @@
+# Example: the base repository of a product with two sibling repositories,
+# ../acme-api and ../acme-app. They are separate checkouts next to it, not
+# submodules. See the folders of the siblings for their own values files.
+
+# The bootstrap commit of the last sync. The sync writes it.
+bootstrap_commit = ""
+# The core branches, in order. Each one exists in git.
+core_branches = [ "main" ]
+# The mise environments: dev (necessary) and ci.
+environments = [ "dev" ]
+format = 3
+# The product name, for the fnox keychain service. Each sibling has the same
+# value.
+product_name = "acme"
+repo_name = "acme-product"
+# The web URL of the repository, for the github tool.
+repo_url = "https://github.com/example/acme-product"
+
+# Only main exists. A feature branch merges into main through a pull request.
+[branches.main]
+landing = "pr"
+
+[commits]
+# The commit scopes of git-conventional-commits. The default is the names of
+# the [members.*] tables.
+scopes = [ "blueprint", "docs" ]
+
+[worktree]
+# The gitignored files to copy into a new worktree.
+files = [ ".config/mise.local.toml", "docs/memory/handoff" ]
+
+# The sibling members. A sibling is a separate checkout next to this
+# repository, so its folder starts with ../, and it needs the url of its
+# repository. Each sibling has a [home] table that points back here.
+[members.acme-api]
+folder = "../acme-api"
+type = "sibling"
+url = "https://github.com/example/acme-api"
+
+[members.acme-app]
+folder = "../acme-app"
+type = "sibling"
+url = "https://github.com/example/acme-app"

@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # The check script of the git tool. The sync runs it in the root of the
-# repository before it writes a file, and never copies it. It examines the
-# branches and direct_commit of [tools.git.branch.<name>] in the values file.
-# Each problem is a line on stdout, and then the exit code is 2.
+# repository before it writes a file, and never copies it. It examines that
+# each branch of core_branches in .config/bootstrap/repo.toml exists here or on
+# origin, or is the unborn branch of HEAD. The schema of the values examines
+# the [branches.<name>] tables. Each problem is a line on stdout, and then the
+# exit code is 2.
 
 set -euo pipefail
 
-input=$(cat)
-values=.config/bootstrap.toml
+# Read stdin, so the writer of the input never blocks.
+cat > /dev/null
+values=.config/bootstrap/repo.toml
 
 # jq of the PATH, else the jq of mise.
 jq_() {
@@ -18,51 +21,44 @@ jq_() {
   fi
 }
 
-# A branch that exists here or on origin.
+# The engine of the sync (BOOTSTRAP_BIN), else the bootstrap of mise.
+bin=(mise x -- bootstrap)
+[[ -z ${BOOTSTRAP_BIN:-} ]] || bin=("${BOOTSTRAP_BIN}")
+
+# A branch that exists here or on origin, or the unborn branch of HEAD in a
+# repository with no commit.
 branch_exists() {
-  git show-ref --verify --quiet "refs/heads/$1" ||
-    git show-ref --verify --quiet "refs/remotes/origin/$1"
+  local head
+  if git show-ref --verify --quiet "refs/heads/$1" ||
+    git show-ref --verify --quiet "refs/remotes/origin/$1"; then
+    return 0
+  fi
+  head=$(git symbolic-ref --quiet --short HEAD) || return 1
+  [[ ${head} == "$1" ]]
 }
 
-main=false
-develop=false
-branch_exists main && main=true
-branch_exists develop && develop=true
+# The branches of core_branches, one on each line. Without an engine that
+# answers, the problem is the message, with code 2; a read failure stops the
+# script with code 1.
+rc=0
+if [[ -z ${BOOTSTRAP_BIN:-} ]] && ! mise x -- which bootstrap > /dev/null 2>&1; then
+  rc=2
+else
+  out=$("${bin[@]}" config get repo.core_branches --format json) || rc=$?
+fi
+((rc != 1)) || exit 1
+if ((rc != 0)); then
+  printf '%s\n' "bootstrap config get repo.core_branches failed - it needs bootstrap 4.0.0 or newer: mise use -g github:virajp/bootstrap"
+  exit 2
+fi
+core=$(jq_ -r '(.value // [])[]' <<< "${out}")
 
 rc=0
-if [[ ${main} == false && ${develop} == false ]]; then
-  printf '%s\n' "the repo has neither 'main' nor 'develop' - create one, then sync again"
-  rc=2
-fi
-
-# <branch><TAB>true|false|bad for each [tools.git.branch.<name>] table with
-# direct_commit.
-rows=$(jq_ -r '(.values.branch // {}) | if type == "object" then to_entries[]
-  | select((.value | type) == "object" and (.value | has("direct_commit")))
-  | "\(.key)\t\(.value.direct_commit | if type == "boolean" then tostring else "bad" end)"
-  else empty end' <<< "${input}")
-
-main_true=false
-develop_true=false
-while IFS=$'\t' read -r name value; do
+while IFS= read -r name; do
   [[ -n ${name} ]] || continue
-  table="[tools.git.branch.${name}] in ${values}"
-  if [[ ${name} != main && ${name} != develop ]]; then
-    printf '%s\n' "${table}: direct_commit is a key of [tools.git.branch.main] and [tools.git.branch.develop] only"
+  if ! branch_exists "${name}"; then
+    printf '%s\n' "core_branches in ${values} has '${name}', but the branch does not exist - create it, or remove it from core_branches"
     rc=2
-  elif [[ ${value} == bad ]]; then
-    printf '%s\n' "${table}: direct_commit must be true or false"
-    rc=2
-  elif ! branch_exists "${name}"; then
-    printf '%s\n' "${table} has direct_commit, but the branch '${name}' does not exist - create it, or remove the key"
-    rc=2
-  elif [[ ${value} == true ]]; then
-    if [[ ${name} == main ]]; then main_true=true; else develop_true=true; fi
   fi
-done <<< "${rows}"
-
-if [[ ${main} == true && ${develop} == true && ${main_true} == true && ${develop_true} == false ]]; then
-  printf '%s\n' "[tools.git.branch.main] in ${values} has direct_commit = true, but [tools.git.branch.develop] does not - with main and develop, set direct_commit = true for develop too, or remove it from main"
-  rc=2
-fi
+done <<< "${core}"
 exit "${rc}"

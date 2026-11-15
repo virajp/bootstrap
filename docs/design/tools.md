@@ -45,7 +45,7 @@ sync.
 | ---------------------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `default_envs`         | Necessary | Refused   | A list: the environments of the tool when the values file gives it no `env`, for example `["dev"]`. It must include `dev`.       |
 | `depends`              | Optional  | Optional  | The tools that the sync adds with this one, transitively. On the repo side, each gets the environments of this tool.             |
-| `root_only`            | Optional  | Refused   | `true`: the tool is not for a git submodule. See [repo.md](repo.md#root_only).                                                   |
+| `root_only`            | Optional  | Refused   | `true`: the tool is not for a submodule member. See [repo.md](repo.md#root_only).                                                |
 | `description`          | Optional  | Optional  | A string: the text that tells the adopting AI, and later the TUI, what the tool is. A value that is not a string stops the sync. |
 | `summary`              | Necessary | Necessary | A string of 47 characters or fewer: one short line about the tool, for the TUI.                                                  |
 | `category`             | Necessary | Necessary | A string: the id of a category of the categories file of the side. See [The categories file](#the-categories-file).              |

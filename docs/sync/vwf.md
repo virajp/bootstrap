@@ -22,8 +22,36 @@ with `mise use -g github:virajp/bootstrap`.
    file.
 4. Remove the clone after the agent completes: `rm -rf "$tmp"`.
 
-The plugin never edits `.config/bootstrap.toml` itself. The agent that reads
-this file does, with `bootstrap`.
+The plugin never reads or edits a file of `.config/bootstrap/` itself. It reads
+and writes each value of a repository with `bootstrap config`, and the agent
+that reads this file changes the tools with `bootstrap`.
+
+| Job                       | Command                                                                                |
+| ------------------------- | -------------------------------------------------------------------------------------- |
+| Read one value            | `bootstrap config get <key> --format json`; the answer is `{"key", "value", "source"}` |
+| Read all the values       | `bootstrap config show --format json`                                                  |
+| Write one value           | `bootstrap config set <key> <value>`                                                   |
+| Remove one value or table | `bootstrap config unset <key>`                                                         |
+
+A key starts with the file: `repo.<key>` for a fact of the repository,
+`tools.<tool>.<key>` for a value of a tool, and `releases.<project>` for a
+release level (`NONE`, `PATCH`, `MINOR` or `MAJOR`). The keys a plugin uses
+most:
+
+| Key                            | Value                                                                                          |
+| ------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `repo.core_branches`           | The core branches, in order, for example `["main", "develop"]`.                                |
+| `repo.branches.<b>.landing`    | How a branch lands on `<b>`: `pr`, `direct-merge` (the default) or `direct-commit`.            |
+| `repo.commits.scopes`          | The commit scopes. The default is the names of the members.                                    |
+| `repo.members.<name>`          | A member: `type` (`submodule`, `folder` or `sibling`), `folder`, `url`, `label`.               |
+| `repo.home`                    | In a member: the back-link to its home, `folder`, `type` and `url`. The sync writes it.        |
+| `repo.topology`                | `repo`, `monorepo` or `multi-repo`, with `repo.topology_reason`. Bootstrap does not read them. |
+| `tools.claude.plugins.<scope>` | The Claude Code plugins of the scope `user` or `project`.                                      |
+
+`get` of a key that is not set exits 0 and prints its default with
+`"source": "default"`, or `null`. A key segment with a dot is double-quoted:
+`repo.branches."release.1".landing`. The keys and their rules are in
+`docs/design/bootstrap-config.md` of the clone.
 
 In this file, "the clone" is that temporary directory. Each path in
 `docs/sync/` and `repo/` is a path in the clone. The CLI `bootstrap` uses its
@@ -80,11 +108,13 @@ An init instruction has one values block for each repository of the
 product. A `repository:` line before the block gives the path of the
 repository from the root of the base repository: `.` for the base, the path
 of a git submodule, or the path of a sibling, for example `../acme-api`. The
-block is the draft of the `.config/bootstrap.toml` of that repository, in the
-format of `repo/examples/` of the clone. It also holds the tools and the
-plugins, as `[tools.*]` and `[tools.claude.plugins.*]` tables. A `[packs.*]`
-table of a block names a pack to add with `bootstrap add pack <pack…>`. It has
-no `bootstrap_commit`: `bootstrap sync` writes it:
+block is the draft of the values of that repository in one TOML document: the
+keys of `repo.toml` at the top level and in their tables (`[branches.*]`,
+`[commits]`, `[members.*]`), and the tools and the plugins as `[tools.*]` and
+`[tools.claude.plugins.*]` tables, in the format of `repo.toml` and
+`tools.toml` of `repo/examples/` of the clone. A `[packs.*]` table of a block
+names a pack to add with `bootstrap add pack <pack…>`. It has no `format` and
+no `bootstrap_commit`: `bootstrap` writes them:
 
 ````text
 bootstrap: init
@@ -107,10 +137,15 @@ product_name = "acme"
 repo_name = "acme-product"
 repo_url = "https://github.com/example/acme-product"
 
-[tools.claude]
+[branches.main]
+landing = "pr"
 
-[tools.git.branch.main]
-merge_model = "pr"
+[members.acme-api]
+folder = "../acme-api"
+type = "sibling"
+url = "https://github.com/example/acme-api"
+
+[tools.claude]
 ```
 repository: ../acme-api
 ```toml
@@ -126,9 +161,9 @@ repo_url = "https://github.com/example/acme-api"
 ```
 ````
 
-A `[tools.git.branch.main]` or `[tools.git.branch.develop]` table of a block
-can also have `direct_commit = true`, to allow a direct commit to that
-branch. See "Step 2: Select the branch model" of `index.md`.
+A `[branches.main]` or `[branches.develop]` table of a block can also have
+`landing = "direct-commit"`, to allow a direct commit to that branch. See
+"Step 2: Select the branch model" of `index.md`.
 
 The instruction is the consent. The plugin asked the user before it sent the
 instruction. Do not ask the user again to apply it. An init instruction is
@@ -142,7 +177,7 @@ file. If a check stops, change nothing, and give its message to the caller.
 
 | Condition                                                                                  | Message                                                                 |
 | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| A tools or a plugins instruction, and the repository has no `.config/bootstrap.toml`.      | The repository did not adopt `bootstrap`. Send `bootstrap: init` first. |
+| A tools or a plugins instruction, and the repository has no `.config/bootstrap/`.          | The repository did not adopt `bootstrap`. Send `bootstrap: init` first. |
 | A name is not a folder in `repo/tools/` of the clone, and not a pack of `repo/packs.toml`. | `<name>` is not a tool or a pack of `bootstrap`.                        |
 | A name of `add` is `base`, or a required tool of the `base` pack.                          | `<tool>` is in the `base` pack. The sync always adds it.                |
 | A name of `remove` is a pack.                                                              | `<name>` is a pack. `bootstrap` has no remove pack: name its tools.     |
@@ -172,9 +207,9 @@ A plugins instruction has one more check:
 
 These cases are not a stop:
 
-- `init` for a repository that already has `.config/bootstrap.toml`. The
-  agent finds whether that repository is up to date, and does only the steps
-  that are not.
+- `init` for a repository that already has `.config/bootstrap/`, or the old
+  `.config/bootstrap.toml`. The agent finds whether that repository is up to
+  date, and does only the steps that are not.
 - `init` with a path that does not exist. The agent asks whether to clone or
   to initialize that repository, or to skip it.
 - `add` of a tool that is already selected changes nothing for that name.
@@ -206,9 +241,10 @@ The instruction is the consent, so give `--yes` after the dry run.
    not in the `base` pack to `bootstrap add tool <tool…>`, and the
    `[packs.*]` names to `bootstrap add pack <pack…>`. Write the other values
    of the block in its step 6. Do not write a `[packs.*]` table: it is an old
-   form.
-5. For a repository that already has `.config/bootstrap.toml`, start with "A
-   repository that already has `.config/bootstrap.toml`" of `index.md`.
+   form. Write each value with `bootstrap config set`: a top-level key or a
+   table of `repo.toml` as `repo.<key>`, a tool value as `tools.<tool>.<key>`.
+5. For a repository that already has its values, start with "A repository
+   that already has its values" of `index.md`.
 6. A repository without a block gets no defaults. Ask the user whether to
    include it.
 
@@ -242,7 +278,8 @@ pack. Each new tool gets its `default_envs`.
 
 `bootstrap remove tool <tool…>` removes the `[tools.<tool>]` table of each tool,
 and each dependency that no other selected tool needs. The sync then removes the
-files of these tools that `.config/repo-generated.tsv` lists, and their items in
+files of these tools that the manifest `.config/bootstrap/repo-generated.tsv`
+lists, and their items in
 the shared files. A seed of a removed tool stays:
 `bootstrap remove tool <tool…>` lists it. Ask the user whether to delete it.
 
@@ -256,15 +293,17 @@ Remove the tools of the pack with `bootstrap remove tool <tool…>`.
 ## Add plugins
 
 1. If the `claude` tool is not selected, do "Add" for `claude` first.
-2. In `.config/bootstrap.toml`, add each plugin to
-   `[tools.claude.plugins.user]` or `[tools.claude.plugins.project]`, the
-   table of the scope: `"<name>@<marketplace>" = "<source>"`. Make the table
-   if it is missing. Keep the keys sorted.
+2. Add each plugin to the table of the scope with `bootstrap config set`:
+   `bootstrap config set 'tools.claude.plugins.<scope>."<name>@<marketplace>"'
+   <source>`.
+   The key segment of a plugin has a dot or an `@`, so quote it.
 3. Run `mise run setup:ai`. It installs each missing plugin.
 
 ## Remove plugins
 
-1. Remove each plugin from the table of the scope in `.config/bootstrap.toml`.
+1. Remove each plugin from the table of the scope:
+   `bootstrap config unset
+   'tools.claude.plugins.<scope>."<name>@<marketplace>"'`.
    Keep the table, also when it is empty.
 2. Uninstall each plugin at that scope:
    `claude plugin uninstall --scope <scope> <name>@<marketplace>`. `setup:ai`

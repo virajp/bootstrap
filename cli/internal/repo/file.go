@@ -15,6 +15,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/source"
 	"github.com/virajp/bootstrap/cli/internal/target"
 	"github.com/virajp/bootstrap/cli/internal/tmpl"
+	"github.com/virajp/bootstrap/cli/internal/values"
 )
 
 // fileMode is `_rs_file_mode`: the mode of the target <tool>/<target>;
@@ -320,12 +321,13 @@ func (s *state) fileFinish(tool string, f source.File, tmp string) fail.Code {
 	return fail.OK
 }
 
-// valuesInRepo gives the values file below the root of the repository, as
-// the header of a shared file names it. A values file outside the repository
-// (the plan of `bootstrap init`) is named as the default values file.
+// valuesInRepo gives the tools.toml of the values folder below the root of
+// the repository, the file of the overrides of a shared file, as the header
+// of a shared file names it. A values folder outside the repository (the
+// plan of `bootstrap init`) is named as the default values folder.
 func (s *state) valuesInRepo() string {
-	if rel, ok := strings.CutPrefix(s.values, s.root+"/"); ok {
+	if rel, ok := strings.CutPrefix(values.ToolsFile(s.values), s.root+"/"); ok {
 		return rel
 	}
-	return ".config/bootstrap.toml"
+	return values.ToolsFile(values.Folder)
 }

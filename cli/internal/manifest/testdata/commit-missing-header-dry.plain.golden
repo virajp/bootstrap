@@ -6,4 +6,5 @@ rc=0
 == tree ==
 d 755 root
 d 755 root/.config
+d 755 root/.config/bootstrap
 d 755 tmp

@@ -23,8 +23,8 @@ type pcase struct {
 	name   string
 	side   source.Side
 	clone  string // The clone copy.
-	values string // The values file (repo) or the config folder (macos).
-	shown  string // The values file as a message names it.
+	values string // The values folder (repo) or the config folder (macos).
+	shown  string // The values folder (repo) or file (macos) as a message names it.
 	sub    bool   // Repo: the repo is a git submodule.
 }
 
@@ -70,7 +70,7 @@ func runRepo(c pcase, log source.Logger) (int, string) {
 		return int(source.LogAll(log, err)), ""
 	}
 	m, err := values.Merge(values.Input{Index: idx, Selected: res.Tools, Keep: res.Keep, User: v.User,
-		ShownRoot: src.ToolsShown(), ShownValues: c.shown})
+		ShownRoot: src.ToolsShown(), ShownValues: c.shown + "/" + values.ToolsName})
 	if err != nil {
 		return int(source.LogAll(log, err)), ""
 	}

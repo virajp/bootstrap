@@ -3,6 +3,7 @@ package format
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -309,6 +310,18 @@ const ownedPrefix = "Synced from bootstrap: "
 // HeaderPrefix starts the first line of the header of a shared file.
 const HeaderPrefix = "Shared with bootstrap: "
 
+// overrideLine is the line of a shared header that names the values file of
+// the overrides. The name of that file changes (the old .config/bootstrap.toml
+// is .config/bootstrap/tools.toml now), so a line with another name is also
+// a line of the header.
+var overrideLine = regexp.MustCompile(`^sync, unless .+ has an override for it\.$`)
+
+// sameHeaderLine reports whether <line> of a live file is the header line
+// <want>, or <want> with another values file.
+func sameHeaderLine(line, want string) bool {
+	return line == want || overrideLine.MatchString(line) && overrideLine.MatchString(want)
+}
+
 // stripHeader removes the shared header from the top of <b>: a line that
 // starts with HeaderPrefix, and each next line that is the next line of
 // <header>.
@@ -334,7 +347,11 @@ func stripHeader(b []byte, marker string, header []string) []byte {
 		return b
 	}
 	end := start + 1
-	for i := 1; i < len(header) && end < len(lines) && strings.TrimRight(lines[end], "\r\n") == marker+" "+header[i]; i++ {
+	for i := 1; i < len(header) && end < len(lines); i++ {
+		line, ok := strings.CutPrefix(strings.TrimRight(lines[end], "\r\n"), marker+" ")
+		if !ok || !sameHeaderLine(line, header[i]) {
+			break
+		}
 		end++
 	}
 	return []byte(strings.Join(lines[:start], "") + strings.Join(lines[end:], ""))

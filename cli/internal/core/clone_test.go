@@ -2,9 +2,11 @@ package core
 
 import (
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 )
@@ -83,5 +85,49 @@ func TestStaleLock(t *testing.T) {
 	}
 	if staleLock(lock) || !Exists(lock) {
 		t.Error("the lock of a live holder is removed")
+	}
+}
+
+func TestCloneAge(t *testing.T) {
+	cache := t.TempDir()
+	url := "file://" + cache + "/no-origin"
+	repo := cache + "/repo"
+	if out, err := exec.Command("git", "init", "-q", repo).CombinedOutput(); err != nil {
+		t.Fatalf("git init: %s", out)
+	}
+	if out, err := exec.Command("git", "-C", repo, "remote", "add", "origin", url).CombinedOutput(); err != nil {
+		t.Fatalf("git remote: %s", out)
+	}
+	env := map[string]string{"BOOTSTRAP_CACHE": cache, "BOOTSTRAP_URL": url, "TMPDIR": t.TempDir()}
+	getenv := func(k string) string { return env[k] }
+	stamp := func(at time.Time) {
+		if err := os.WriteFile(cache+"/"+FetchedName, []byte(at.UTC().Format(time.RFC3339)+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// A fetch younger than the age: no fetch, so the origin that does not
+	// exist does not matter.
+	stamp(time.Now().Add(-time.Hour))
+	c, err := acquireClone(CloneOptions{Getenv: getenv, MaxAge: CatalogAge})
+	if err != nil {
+		t.Fatalf("fresh: %v", err)
+	}
+	c.Cleanup()
+	// A stale fetch fetches again; offline, that is code 5.
+	stamp(time.Now().Add(-8 * 24 * time.Hour))
+	c, err = acquireClone(CloneOptions{Getenv: getenv, MaxAge: CatalogAge})
+	c.Cleanup()
+	if fail.CodeOf(err) != fail.Network {
+		t.Errorf("stale: %v", err)
+	}
+	// Without MaxAge, each command fetches.
+	stamp(time.Now())
+	c, err = acquireClone(CloneOptions{Getenv: getenv})
+	c.Cleanup()
+	if fail.CodeOf(err) != fail.Network {
+		t.Errorf("no age: %v", err)
+	}
+	if fresh(cache, 0) || !fresh(cache, time.Hour) {
+		t.Error("fresh")
 	}
 }

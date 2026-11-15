@@ -1,0 +1,5 @@
+/security-review engine, loop U7, round 2, range 4998817..23944ce
+
+No vulnerabilities found.
+
+Noted (not a finding): bootstrap config get (cli/internal/cli/values.go:277, readValues) reads the TOML without CheckRepo, so helpers members() can still return a name that is not valid; the bash guard of 23944ce covers it.

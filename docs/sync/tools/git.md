@@ -19,17 +19,17 @@ A `[tools.git]` table gives values.
 
 ## What the tool ships
 
-| Path in the repository                  | Kind      | Use                                                                                                           |
-| --------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------- |
-| `.gitignore`                            | Shared    | The shared ignore lines. See below.                                                                           |
-| `.gitattributes`                        | Synced    | LF line endings, the generated lockfiles, and the binary files of each stack.                                 |
-| `.config/git-conventional-commits.yaml` | Template  | The commit types, and the scopes from `commit_scopes`, else the members of the repository.                    |
-| `.config/wt.toml`                       | Seed      | The worktrunk config: the `pre-start` steps and the commit convention (see "worktrunk").                      |
-| `.config/mise/tasks/_scripts/merge`     | Library   | `merge_to_destination_branch`, which the merge tasks use.                                                     |
-| `.config/mise/tasks/code/git-config`    | Synced    | The task `code:git-config`.                                                                                   |
-| `.config/mise/tasks/code/merge/develop` | Synced    | The task `code:merge:develop`. Only with `when = "git.branch_pair"`: the repository has `main` and `develop`. |
-| `.config/mise/tasks/code/merge/main`    | Synced    | The task `code:merge:main`. Only with `when = "git.branch_pair"`.                                             |
-| `.config/mise/conf.d/git/mise.dev.toml` | Generated | The mise config of this tool.                                                                                 |
+| Path in the repository                  | Kind      | Use                                                                                                            |
+| --------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------- |
+| `.gitignore`                            | Shared    | The shared ignore lines. See below.                                                                            |
+| `.gitattributes`                        | Synced    | LF line endings, the generated lockfiles, and the binary files of each stack.                                  |
+| `.config/git-conventional-commits.yaml` | Template  | The commit types, and the scopes from `[commits].scopes`, else the names of the `[members.*]` tables.          |
+| `.config/wt.toml`                       | Seed      | The worktrunk config: the `pre-start` steps and the commit convention (see "worktrunk").                       |
+| `.config/mise/tasks/_scripts/merge`     | Library   | `merge_to_destination_branch`, which the merge tasks use.                                                      |
+| `.config/mise/tasks/code/git-config`    | Synced    | The task `code:git-config`.                                                                                    |
+| `.config/mise/tasks/code/merge/develop` | Synced    | The task `code:merge:develop`. Only with `when = "git.branch_pair"`: `core_branches` has `main` and `develop`. |
+| `.config/mise/tasks/code/merge/main`    | Synced    | The task `code:merge:main`. Only with `when = "git.branch_pair"`.                                              |
+| `.config/mise/conf.d/git/mise.dev.toml` | Generated | The mise config of this tool.                                                                                  |
 
 `.gitignore` is a shared file. The spec `files/gitignore.merge.toml` merges
 into it line by line: the sync adds each missing line of `bootstrap` at the
@@ -89,15 +89,19 @@ The `mise` tool ships `code:merge <branch>` for a repository with one of
 of each merge task selects the tasks of the branch model. The sync removes
 the merge tasks of the other model.
 
-The merge tasks read `[tools.git.branch.<destination>]` of the
-`.config/bootstrap.toml` of the repository, with `yq`. Its `merge_model`
-selects `direct` (the default) or `pr`. Its `merge_from` or `merge_never`
+The merge tasks read `[branches.<destination>]` of the
+`.config/bootstrap/repo.toml` of the repository, with `bootstrap config get`.
+They need `bootstrap` 4.0.0 or newer: without an engine that answers, a merge
+stops with code 2. Its `landing` selects `direct-merge` (the default),
+`direct-commit` (the same local merge) or `pr`. Its `merge_from` or
+`merge_never`
 limits the source branches. Without both lists, only `develop` merges into
 `main` when `develop` exists, and nothing merges from `main`. A table with
 both lists stops the merge. The `pr` model needs the CLI of the forge, from
 the `github` or the `gitlab` tool. In a repository without an `origin`
-remote, `direct` merges locally without the pull and the push, and `pr` stops
-before the hooks run. Before a merge, the merge tasks run the hooks over all
+remote, a direct landing merges locally without the pull and the push, and
+`pr` stops before the hooks run. Before a merge, the merge tasks run the hooks
+over all
 files, with `SKIP=no-commit-to-branch`.
 
 A merge task stops when the repository of `MISE_ORIGINAL_CWD` is not the
@@ -110,10 +114,10 @@ submodule to get its own merge tasks.
 
 The sync runs these scripts from the clone, and never copies them.
 
-| Script           | Kind   | Use                                                                                                                                                                                       |
-| ---------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripts/derive` | derive | It gives `branch_pair` (the repository has `main` and `develop`) and `protected_branches` (`main` and `develop`, without each branch with `direct_commit = true`).                        |
-| `scripts/check`  | check  | It examines the branches and `direct_commit`. Neither `main` nor `develop`, a bad `direct_commit`, or `direct_commit` on `main` only when both branches exist stops the sync with code 2. |
+| Script           | Kind   | Use                                                                                                                                                                                                                                                                          |
+| ---------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/derive` | derive | It gives `branch_pair` (`core_branches` has `main` and `develop`) and `protected_branches` (each core branch whose `landing` is not `direct-commit`). It reads them with `bootstrap config get`.                                                                             |
+| `scripts/check`  | check  | A branch of `core_branches` that does not exist, locally or on `origin`, and is not the unborn branch that HEAD names, stops the sync with code 2. So does an engine that cannot answer `bootstrap config get`. The schema of the values examines the `[branches.*]` tables. |
 
 The `no-commit-to-branch` hook gets one `--branch` pair for each branch of
 `protected_branches`. Without a protected branch, the sync removes the hook.
@@ -128,17 +132,22 @@ The tools that add lines to `.gitignore` say so in their own tool file.
 
 ## Values
 
-The keys of `[tools.git]` in `.config/bootstrap.toml`:
+The keys of `[tools.git]` in `.config/bootstrap/tools.toml`:
 
-| Key                                         | Use                                                                               |
-| ------------------------------------------- | --------------------------------------------------------------------------------- |
-| `env`                                       | The environments of the tool.                                                     |
-| `commit_scopes`                             | The scopes of the commit convention. The default is the member list.              |
-| `[tools.git.branch.<name>]` `direct_commit` | `true` allows a direct commit to `main` or `develop`. See "Step 2" of `index.md`. |
-| `[tools.git.branch.<name>]` `merge_model`   | `direct` or `pr`.                                                                 |
-| `[tools.git.branch.<name>]` `merge_from`    | The only branches that merge into the branch.                                     |
-| `[tools.git.branch.<name>]` `merge_never`   | The branches that never merge into the branch.                                    |
-| `[tools.git.files.".gitignore"]`            | The overrides of the shared lines (see "What the tool ships").                    |
+| Key                              | Use                                                            |
+| -------------------------------- | -------------------------------------------------------------- |
+| `env`                            | The environments of the tool.                                  |
+| `[tools.git.files.".gitignore"]` | The overrides of the shared lines (see "What the tool ships"). |
+
+The tool reads these keys of `.config/bootstrap/repo.toml`:
+
+| Key                               | Use                                                                                                              |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `core_branches`                   | The core branches, in order. Each one must exist.                                                                |
+| `[branches.<name>]` `landing`     | `pr`, `direct-merge` (the default) or `direct-commit`, which allows a direct commit. See "Step 2" of `index.md`. |
+| `[branches.<name>]` `merge_from`  | The only branches that merge into the branch.                                                                    |
+| `[branches.<name>]` `merge_never` | The branches that never merge into the branch.                                                                   |
+| `[commits]` `scopes`              | The scopes of the commit convention. The default is the names of the `[members.*]` tables, sorted.               |
 
 No questions. The rules of the keys are in
 [`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
@@ -151,8 +160,8 @@ None.
 
 1. Select the branch model ("Step 2: Select the branch model" of
    [`index.md`](../index.md)).
-2. Set `commit_scopes` in `[tools.git]` ("Step 6: Write the other values and
-   sync again").
+2. Set `[commits].scopes` with `bootstrap config set repo.commits.scopes`
+   ("Step 6: Write the other values and sync again").
 3. Keep the ignore lines of the repository in `.gitignore`. For each shared
    line that the repository must not ignore, write a `"$mode" = "remove"`
    override.
@@ -167,3 +176,8 @@ None.
   and `[branch.*]` into `[tools.git]`. It moves the `add` lines of
   `[overrides.gitignore]` into `.gitignore`, and its `remove` lines into
   `[tools.git.files.".gitignore"]`.
+- M41 of `migrate.md`: `bootstrap init` moves `commit_scopes` to
+  `[commits].scopes`
+  and `[tools.git.branch.*]` to `[branches.*]` of `repo.toml`, with `landing`
+  in place of `merge_model` and `direct_commit`. The merge tasks and the
+  scripts need `bootstrap` 4.0.0 or newer.

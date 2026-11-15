@@ -326,6 +326,26 @@ func TestSharedOldHeader(t *testing.T) {
 	})
 }
 
+func TestSharedOldValuesHeader(t *testing.T) {
+	// The header line of the old values file goes: the file ends with the new
+	// header alone.
+	h := []string{
+		"Shared with bootstrap: x.",
+		"A change in this file stays. A removed bootstrap item comes back at the next",
+		"sync, unless .config/bootstrap/tools.toml has an override for it.",
+	}
+	spec := []byte("format = \"text\"\ncomment = \"#\"\n[[item]]\nvalue = \"a\"\n")
+	live := "# " + h[0] + "\n# " + h[1] + "\n# sync, unless .config/bootstrap.toml has an override for it.\n\n# mine\na\n"
+	want := "# " + h[0] + "\n# " + h[1] + "\n# " + h[2] + "\n\n# mine\na\n"
+	res, fl := MergeShared(SharedInput{Spec: spec, Live: []byte(live), Target: ".gitignore", Header: h, Show: ".gitignore", SpecShow: "spec"})
+	if fl != nil {
+		t.Fatal(fl.Line, fl.Stderr)
+	}
+	if string(res.Out) != want {
+		t.Errorf("output differs\ngot:\n%s\nwant:\n%s", res.Out, want)
+	}
+}
+
 func TestSpecErrors(t *testing.T) {
 	for spec, want := range map[string]string{
 		"foo = 1":                           "foo is not a key",

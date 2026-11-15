@@ -24,7 +24,8 @@ text in the `bootstrap` repo and in the `claude-plugins` repo.
 ## The contract (D1, D2, CT2)
 
 - The plugins call the installed `bootstrap` CLI. Each command has `--json`
-  and a contract version. Contract v1 ships inside bootstrap 3.0.0.
+  and a contract version. Contract v1 ships inside bootstrap 4.0.0 (amended
+  2026-11-14, see below).
 - Commands: `contract`, `describe` (tools, members, LSP, ports), `config`
   (`get`, `set`, `unset`, `show`), `catalog`, `add` and `remove` (tool,
   plugin), `init --values`, `check`, `lsp`.
@@ -111,17 +112,46 @@ file, for example `repo.branches.main.landing` or `releases.vwf`. Reads take
 
 ## Phases
 
-| Phase | Repo           | Content                                                                |
-| ----- | -------------- | ---------------------------------------------------------------------- |
-| P0    | claude-plugins | Fix the drift against today's bootstrap key names, paths and verbs     |
-| R1    | bootstrap      | Config folder, `config` verb, contract v1, task ports (3.0.0)          |
-| R2    | bootstrap      | `git:*` tasks, LSP blocks and check, `virajp-plugins` tool, `setup:ai` |
-| —     | bootstrap      | Release 3.0.0, with the user's consent                                 |
-| R3    | claude-plugins | Plugins use the contract; `git-workflow` over `git:*`                  |
-| R4    | claude-plugins | `vwf.yaml` format 27 and its migration                                 |
-| R5    | claude-plugins | Stack without packs                                                    |
-| R6    | both           | One release in each repo; each plan carries its own docs               |
+| Phase | Repo           | Content                                                                                     |
+| ----- | -------------- | ------------------------------------------------------------------------------------------- |
+| P0    | claude-plugins | Fix the drift against today's bootstrap key names, paths and verbs                          |
+| R1    | bootstrap      | Config folder, `config` verb, contract v1, task ports (4.0.0), as three plans R1a, R1b, R1c |
+| R2    | bootstrap      | `git:*` tasks, LSP blocks and check, `virajp-plugins` tool, `setup:ai`                      |
+| —     | bootstrap      | Release 4.0.0, with the user's consent, after R1a, R1b, R1c and R2                          |
+| R3    | claude-plugins | Plugins use the contract; `git-workflow` over `git:*`                                       |
+| R4    | claude-plugins | `vwf.yaml` format 27 and its migration                                                      |
+| R5    | claude-plugins | Stack without packs                                                                         |
+| R6    | both           | One release in each repo; each plan carries its own docs                                    |
 
 A vwf plan runs only in its own repo, and `requires` cannot name a plan in the
-other repo. R3 starts only after the bootstrap 3.0.0 release. The user
+other repo. R3 starts only after the bootstrap 4.0.0 release. The user
 confirms that release by hand.
+
+## Amendments 2026-11-14 (R1a planning)
+
+The planning of R1a (`docs/plans/2026-11-14-config-folder` of bootstrap)
+changed these points. They win over the text above.
+
+- **The release (D1, reverses D2).** bootstrap 3.0.0 (the selection model) and
+  3.1.0 (the TUI) ship as planned. R1 moves the values files, a breaking
+  change, so it ships as the MAJOR release `bootstrap@4.0.0`, not inside
+  3.0.0. R3 in claude-plugins waits for 4.0.0, not 3.0.0.
+- **R1 is three plans (D2).** R1a: the `.config/bootstrap/` folder, the
+  `repo.toml` schema, the `init` migration and the `config` verb. R1b:
+  `contract`, `describe`, `catalog`, `check --json`, and `--json` on `add`,
+  `remove` and `init`; it requires R1a. R1c: the task ports as no-op
+  defaults; it requires R1a.
+- **One tag (D92).** `bootstrap@4.0.0` is tagged once, after R1a, R1b, R1c and
+  R2 all land. Until then the user tests with a local binary. R1b, R1c and R2
+  are not 4.x minor releases. R3 waits for 4.0.0.
+- **`settings` (D3).** The old `bootstrap config`, which printed the settings
+  of the engine, is now `bootstrap settings`. `bootstrap config
+  get|set|unset|show`
+  is the verb of the values.
+- **The overrides (D5).** `.config/bootstrap.overrides.toml` merges into
+  `tools.toml`, under `[overrides.tools.*]`. A key of `repo.toml` has no
+  override.
+- **`releases.toml` (D10).** R1a defines the schema of `releases.toml` and the
+  `config` keys `releases.<project>`, but `init` does not move
+  `.config/releases.yaml`. R3 switches vwf and the release tasks to
+  `bootstrap config`, and its migration moves the file.

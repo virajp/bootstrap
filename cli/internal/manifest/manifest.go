@@ -82,16 +82,18 @@ func exists(path string) bool { _, err := os.Stat(path); return err == nil }
 
 // Read is _se_manifest_read: it gives each valid row of the manifest <file>.
 // A missing file gives no row. A row without a TAB, with an empty tool or
-// with a bad path is skipped, with a log line. In Repo mode, <file> is below
-// <root>, and it must be a regular file with no symlink between <root> and
-// it: else it gives no row and code 2, after a log line. Another <mode> gives
-// code 2, after a usage line.
+// with a bad path is skipped, with a log line. In Repo mode, <file> must be a
+// regular file with no symlink between <root> and it: else it gives no row
+// and code 2, after a log line. A <file> outside <root>, as the copy in the
+// temp values folder of a dry run, must not be a symlink itself. Another
+// <mode> gives code 2, after a usage line.
 func Read(e *target.Env, mode LinkMode, file, root string) ([]Row, fail.Code) {
 	r := e.Report
 	switch mode {
 	case Repo:
 		root = strings.TrimSuffix(root, "/")
-		if Linked(root, strings.TrimPrefix(file, root+"/")) {
+		rest, below := strings.CutPrefix(file, root+"/")
+		if below && Linked(root, rest) || !below && isLink(file) {
 			r.Warn(e.Show(file) + ": the manifest is a link or is below a linked folder - not read")
 			return nil, fail.Usage
 		}

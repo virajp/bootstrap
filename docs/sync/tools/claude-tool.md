@@ -43,9 +43,10 @@ None.
    `pnpx @virajp.dev/claude-plugins@latest --all`, which installs it at user
    scope. Without `pnpx`, it prints a warning with the command.
 2. It installs each plugin of `[tools.claude.plugins.user]` and
-   `[tools.claude.plugins.project]` of `.config/bootstrap.toml` that is missing
-   at
-   that scope. If no scope has the marketplace of the plugin, it first adds
+   `[tools.claude.plugins.project]` of `.config/bootstrap/tools.toml`, read with
+   `bootstrap config get`, that is missing at that scope. Without an engine
+   that answers, for example one older than 4.0.0, the task stops with code 2.
+   If no scope has the marketplace of the plugin, it first adds
    the marketplace from the value, at the same scope.
 3. It updates the marketplaces: `claude plugin marketplace update`.
 4. It updates each plugin at user scope, and each plugin at project scope of
@@ -70,7 +71,7 @@ None.
 
 ## Values
 
-The keys of `[tools.claude]` in `.config/bootstrap.toml`:
+The keys of `[tools.claude]` in `.config/bootstrap/tools.toml`:
 
 | Key                              | Use                                                    |
 | -------------------------------- | ------------------------------------------------------ |
@@ -80,7 +81,9 @@ The keys of `[tools.claude]` in `.config/bootstrap.toml`:
 
 Each key is a plugin, `<name>@<marketplace>`. Its value is the source of the
 marketplace for `claude plugin marketplace add`: a GitHub repository, a URL or
-a path. Both tables are optional, and they can be empty:
+a path. Both tables are `[defaults]` of the tool, empty by default, so
+`bootstrap config set` accepts them. Both tables are optional, and they can be
+empty:
 
 ```toml
 [tools.claude.plugins.user]
@@ -89,7 +92,8 @@ a path. Both tables are optional, and they can be empty:
 [tools.claude.plugins.project]
 ```
 
-The sync does not use these tables. `setup:ai` reads them when it runs. No
+The sync does not use these tables. `setup:ai` reads them with
+`bootstrap config get tools.claude.plugins.<scope>` when it runs. No
 questions. The rules of the keys are in
 [`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
@@ -109,3 +113,5 @@ None.
 - Delete an old `conf.d/ai/` (M7 of `migrate.md`).
 - M34 of `migrate.md`: `bootstrap init` moves the old top-level
   `[claude.plugins.*]` tables into `[tools.claude.plugins.*]`.
+- M41 of `migrate.md`: the tables are in `.config/bootstrap/tools.toml`, and
+  `setup:ai` needs `bootstrap` 4.0.0 or newer.

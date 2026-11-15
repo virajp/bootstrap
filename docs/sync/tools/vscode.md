@@ -76,7 +76,7 @@ None. Other tools contribute extensions to `.vscode/extensions.json` in
 
 ## Values
 
-The keys of `[tools.vscode]` in `.config/bootstrap.toml`:
+The keys of `[tools.vscode]` in `.config/bootstrap/tools.toml`:
 
 | Key                                              | Use                                                                                                                                                               |
 | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |

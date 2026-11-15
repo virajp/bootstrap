@@ -1,11 +1,12 @@
 // Package cli is the command line of `bootstrap`: the commands init, tui,
 // sync, check, questions, add, remove, replace, detect and list of the repo
-// side and of the Mac side (`bootstrap mac <command>`), and version. It is the
-// shell of the command line: it parses the arguments, takes the clone and its
-// lock, checks the version, calls internal/core (the preflight, Plan, Apply,
-// Detect and the clean-target rule), prints the results and the errors, and
-// asks the questions and the consent, or starts the TUI of internal/tui. The
-// front-ends internal/repo and internal/macos do the sync itself.
+// side and of the Mac side (`bootstrap mac <command>`), config, settings and
+// version. It is the shell of the command line: it parses the arguments,
+// takes the clone and its lock, checks the version, calls internal/core
+// (the preflight, Plan, Apply, Detect and the clean-target rule), prints the
+// results and the errors, and asks the questions and the consent, or starts
+// the TUI of internal/tui. The front-ends internal/repo and internal/macos
+// do the sync itself.
 //
 // Contract: docs/design/cli.md.
 package cli
@@ -56,7 +57,14 @@ Repository
   detect               run the detect scripts and list the tools that match;
                        exit 1 when a tool that matches is not selected
   list, ls             print the selected tools as a tree
-  config               print each setting of the engine, with its value and
+  config get <key>     print the value of a key of .config/bootstrap/, with
+                       its source (file or default)
+  config set <key> <value>
+                       write a key of .config/bootstrap/
+  config unset <key>   remove a key of .config/bootstrap/
+  config show [repo|tools|releases]
+                       print the values of .config/bootstrap/
+  settings             print each setting of the engine, with its value and
                        its source
   version, --version   print the version
 
@@ -87,6 +95,9 @@ Flags
                        question (repeatable); --answer <tool>.<key>= writes
                        an empty answer for an optional or a group question
   --json               questions, mac questions: JSON output
+  --format json|yaml|toml
+                       config get, config show: the output format (default:
+                       json when stdout is not a terminal, else toml)
   --no-bootstrap       mac init, mac sync, mac check: skip mise bootstrap
   --jobs <n>           the jobs at a time (default: 2 x the CPU count)
   --verbose            init, sync, check, add, remove, replace, detect: print
@@ -97,7 +108,7 @@ Flags
   --url <url>          each command except version: the clone URL
   --clone <path>       each command except version: a clone of bootstrap, with
                        no fetch
-  --repo-path <path>   each mac command except mac init, and config: the
+  --repo-path <path>   each mac command except mac init, and settings: the
                        repository of macos.toml
 `
 
@@ -105,12 +116,14 @@ Flags
 var argsOf = map[string]string{
 	"questions": " [tool...]", "add": " tool|pack <name...>",
 	"remove": " tool <tool...>", "replace": " tool <old> <new>",
+	"config": " get|set|unset|show [<key>] [<value>]",
 }
 
 // flagUsage gives each flag of a usage line, by the name of the flag.
 var flagUsage = map[string]string{
 	"answer": "[--answer <tool>.<key>=<value>]", "jobs": "[--jobs <n>]",
 	"repo-path": "[--repo-path <path>]", "exclude": "[--exclude <member>]",
+	"format": "[--format json|yaml|toml]",
 }
 
 // usageLine gives the usage line of a command: its arguments and its own
@@ -160,6 +173,7 @@ type opts struct {
 	names                                []string          // The names after the kind word.
 	exclude                              []string          // add pack: the members of --exclude.
 	values                               map[string]string // The value flags of the settings, by flag name.
+	format                               string            // config get, config show: --format.
 }
 
 // Run runs the command of <args> and gives its exit code.
@@ -202,11 +216,12 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		"replace":   "dry-run yes answer jobs verbose",
 		"detect":    "dry-run add yes answer jobs verbose",
 		"list":      "",
-		"config":    "jobs repo-path",
+		"settings":  "jobs repo-path",
+		"config":    "format",
 		"version":   "",
 	}
 	flags, ok := allowed[cmd]
-	if !ok || (mac && (cmd == "version" || cmd == "config")) {
+	if !ok || (mac && (cmd == "version" || cmd == "settings" || cmd == "config")) {
 		switch cmd {
 		case "-h", "-help", "--help", "help":
 			if !mac {
@@ -231,7 +246,7 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 	if mac && cmd != "init" {
 		flags += " repo-path"
 	}
-	takesNames := cmd == "init" || cmd == "questions" || cmd == "add" || cmd == "remove" || cmd == "replace"
+	takesNames := cmd == "init" || cmd == "questions" || cmd == "add" || cmd == "remove" || cmd == "replace" || cmd == "config"
 	o, err := parse(cmdWord(mac, cmd), rest, flags, takesNames)
 	if err != nil {
 		a.usageErr(err.Error(), usageLine(mac, cmd, own))
@@ -265,8 +280,10 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		return code
 	}
 	switch cmd {
+	case "settings":
+		return a.printSettings(o)
 	case "config":
-		return a.config(o)
+		return a.configCmd(o)
 	case "sync":
 		return a.sync(mac, o)
 	case "check":
@@ -357,7 +374,7 @@ func parse(cmd string, args []string, flags string, names bool) (opts, error) {
 			return o, fmt.Errorf("%s has no flag %s", cmd, arg)
 		}
 		takes := name == "answer" || name == "exclude" || name == "jobs" || name == "config" || name == "cache-dir" ||
-			name == "url" || name == "clone" || name == "repo-path"
+			name == "url" || name == "clone" || name == "repo-path" || name == "format"
 		if takes && !withValue {
 			if i+1 >= len(args) {
 				return o, fmt.Errorf("%s needs a value", arg)
@@ -383,6 +400,8 @@ func parse(cmd string, args []string, flags string, names bool) (opts, error) {
 			o.exclude = append(o.exclude, value)
 		case "json":
 			o.json = true
+		case "format":
+			o.format = value
 		case "no-bootstrap":
 			o.noBootstrap = true
 		case "verbose":
@@ -520,6 +539,10 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
+	if !mac {
+		// The scripts of the sync read the values with bootstrap config (D19).
+		_ = os.Setenv("BOOTSTRAP_VALUES", w.Values)
+	}
 	c, code := a.openClone(mac && !o.dryRun, false)
 	defer c.Cleanup()
 	if code != fail.OK {
@@ -558,7 +581,7 @@ func (a *app) check(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
-	a.warnNotSelectable(mac, c.Dir, w.Values)
+	a.warnNotSelectable(mac, c.Dir, w.EditFile())
 	if mac {
 		o.dryRun = true
 		return macos.Run(core.SyncArgs(true, o.dryRun, o.noBootstrap), a.stdout, a.stderr)

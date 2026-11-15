@@ -74,7 +74,10 @@ mise files from these tables.
 
 ```text
 .config/
-├── bootstrap.toml                  # the values file; the sync reads it
+├── bootstrap/                      # the values folder; the sync reads it
+│   ├── repo.toml                   # the facts of the repository
+│   ├── tools.toml                  # the tools and their values
+│   └── repo-generated.tsv          # the manifest
 ├── mise.toml                       # synced; the only file for every environment
 └── mise/
     ├── conf.d/
@@ -133,7 +136,8 @@ file
 for every environment.
 It holds the shared `[settings]` and the `[env]` values `REPO_NAME` and
 `MEMBERS` (the
-folders of the members, see [repo.md](repo.md#the-template-context)).
+folders of the members, see [repo.md](repo.md#the-template-context)). No task
+reads `MEMBERS`: the tasks read the members with `bootstrap config get`.
 
 | `[settings]` key                     | Value                         |
 | ------------------------------------ | ----------------------------- |
@@ -221,7 +225,8 @@ tool.
 A derive script of a tool can return a `mise` and a `mise_env` table. They merge
 into the mise config of that tool before `[overrides.mise*]`. For example, the
 derive script of `mise` returns `mise.shell_alias` with the aliases
-`setup-all` and `setup-<member>` of a repository with submodules. See
+`setup-all` and `setup-<member>` of a repository with submodule or sibling
+members that have a `[members.<name>]` table. See
 [cli.md](cli.md#the-scripts-of-a-tool).
 
 #### An example
@@ -340,7 +345,7 @@ refuses environments.
 | `requires_found` of a mise tool | Valid                                                     | A tool error                                              |
 | `[overrides.mise.*]`            | Valid                                                     | Valid. An override cannot add a key                       |
 | `[overrides.mise_env.*]`        | Valid                                                     | A values-file error                                       |
-| Override comment                | `# override: .config/bootstrap.toml`                      | `# override: macos.toml` (the file name only)             |
+| Override comment                | `# override: .config/bootstrap/tools.toml`                | `# override: macos.toml` (the file name only)             |
 
 After a tool error, the files of that tool stay, the other tools continue, and
 the run fails. A values-file error stops the whole run before any write. A
@@ -643,19 +648,19 @@ not the tasks of a parent repository.
 
 ## Shell aliases
 
-| Alias               | Command                        | Source                                                |
-| ------------------- | ------------------------------ | ----------------------------------------------------- |
-| `setup`             | `mise run setup`               | `repo/tools/mise/tools.toml`                          |
-| `precommit`         | `mise run code:precommit`      | `repo/tools/mise/tools.toml` and `pre-commit`         |
-| `worktrees`         | `mise run code:worktrees`      | `repo/tools/mise/tools.toml`                          |
-| `setup-all`         | `mise run setup --all`         | The derive script of `mise`, only with git submodules |
-| `setup-<submodule>` | `mise run setup --<submodule>` | The derive script of `mise`, one for each submodule   |
-| `npx`               | `pnpm dlx`                     | `repo/tools/pnpm/tools.toml`                          |
-| `npx`               | `aubx`                         | `repo/tools/aube/tools.toml`                          |
-| `code`              | `command code --profile ...`   | `repo/tools/vscode/tools.toml`                        |
+| Alias            | Command                      | Source                                                                                                   |
+| ---------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `setup`          | `mise run setup`             | `repo/tools/mise/tools.toml`                                                                             |
+| `precommit`      | `mise run code:precommit`    | `repo/tools/mise/tools.toml` and `pre-commit`                                                            |
+| `worktrees`      | `mise run code:worktrees`    | `repo/tools/mise/tools.toml`                                                                             |
+| `setup-all`      | `mise run setup --all`       | The derive script of `mise`, only with a submodule or sibling member that has a `[members.<name>]` table |
+| `setup-<member>` | `mise run setup --<member>`  | The derive script of `mise`, one for each such member                                                    |
+| `npx`            | `pnpm dlx`                   | `repo/tools/pnpm/tools.toml`                                                                             |
+| `npx`            | `aubx`                       | `repo/tools/aube/tools.toml`                                                                             |
+| `code`           | `command code --profile ...` | `repo/tools/vscode/tools.toml`                                                                           |
 
 All aliases are in `dev` only, because `shell_alias` is a dev-only section. The
-sync writes the aliases of `mise` and the submodule aliases in the generated
+sync writes the aliases of `mise` and the member aliases in the generated
 `mise/mise.dev.toml`.
 
 ## Observations

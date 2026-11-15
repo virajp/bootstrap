@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-14 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-15 — d941cb7..a7e1804 on config-folder; open gaps G3, G5"
   },
   "consent": {
     "merge": true,
@@ -70,11 +70,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-15T12:03:23.329Z",
+      "ended": "2026-11-15T12:19:24.880Z",
+      "commit": "d941cb7",
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -90,11 +90,11 @@
         "U1"
       ],
       "waits": "It edits the cli/ packages U1 creates: the paths constants and internal/schema.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-15T12:33:58.162Z",
+      "ended": "2026-11-15T13:01:27.588Z",
+      "commit": "a1f874a",
+      "rounds": 3
     },
     {
       "id": "U3",
@@ -110,11 +110,11 @@
         "U2"
       ],
       "waits": "It edits the schema and the migration U1 and U2 write in cli/.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-15T13:04:56.671Z",
+      "ended": "2026-11-15T16:39:56.433Z",
+      "commit": "ef371f6",
+      "rounds": 2
     },
     {
       "id": "U4",
@@ -130,11 +130,11 @@
         "U2"
       ],
       "waits": "Its Verification runs the config verb U2 adds.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-15T13:04:56.710Z",
+      "ended": "2026-11-15T17:26:26.186Z",
+      "commit": "bf626ee",
+      "rounds": 5
     },
     {
       "id": "U5",
@@ -151,11 +151,11 @@
         "U3"
       ],
       "waits": "It migrates the examples with U3's [member.*] hook and checks them against U3's members schema (D45).",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-15T14:22:59.540Z",
+      "ended": "2026-11-15T14:27:36.724Z",
+      "commit": "f066bec",
+      "rounds": 1
     },
     {
       "id": "U6",
@@ -173,11 +173,11 @@
         "U5"
       ],
       "waits": "The bash cases test the finished engine, the tool scripts and the examples of wave 3.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-15T14:32:38.419Z",
+      "ended": "2026-11-15T17:42:28.213Z",
+      "commit": "9f17ab7",
+      "rounds": 3
     },
     {
       "id": "U7",
@@ -196,14 +196,14 @@
         "U6"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T16:35:47.602Z",
+      "ended": "2026-11-15T16:55:10.583Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 2,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "4998817",
+        "to": "23944ce"
       }
     },
     {
@@ -231,11 +231,11 @@
         "U7"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-15T16:57:33.174Z",
+      "ended": "2026-11-15T17:27:53.233Z",
+      "commit": "9261425",
+      "rounds": 2
     },
     {
       "id": "U9",
@@ -249,61 +249,61 @@
         "U8"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T17:46:07.126Z",
+      "ended": "2026-11-15T17:58:02.134Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-15T12:03:23.293Z",
+      "ended": "2026-11-15T12:33:40.880Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-15T12:33:58.121Z",
+      "ended": "2026-11-15T13:04:44.025Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-15T13:04:56.632Z",
+      "ended": "2026-11-15T14:22:43.352Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-15T14:22:59.505Z",
+      "ended": "2026-11-15T14:32:13.674Z"
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-15T14:32:38.384Z",
+      "ended": "2026-11-15T16:35:23.040Z"
     },
     {
       "id": "W6",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-15T16:35:47.566Z",
+      "ended": "2026-11-15T16:56:10.321Z"
     },
     {
       "id": "W7",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-15T16:57:33.136Z",
+      "ended": "2026-11-15T17:45:46.058Z"
     },
     {
       "id": "W8",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-15T17:46:07.088Z",
+      "ended": "2026-11-15T17:58:36.630Z"
     }
   ],
   "shared_files": [
@@ -1195,35 +1195,254 @@
         "U8",
         "U9"
       ]
+    },
+    {
+      "id": "D93",
+      "decision": "Q1: On a fresh bootstrap init in a repo with no main or develop and a detached HEAD (no current branch), what goes into core_branches?",
+      "ruling": "Keep exit code 2 with the hint (what U1 built) — init never writes an empty or made-up core_branches, and the user checks out a branch first",
+      "rejected": "Write the branch that HEAD's commit is on, or \"main\" — init always succeeds, but core_branches may name a branch that does not exist, which breaks the D31 rule that every core branch must exist",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D94",
+      "decision": "Q2: Should a migration's dry run (init --dry-run, init's plan step) see the old manifest rows, given the front-end reads .config/bootstrap/repo-generated.tsv which does not exist yet?",
+      "ruling": "Make the repo front-end read the manifest from $BOOTSTRAP_VALUES/repo-generated.tsv, and copy the old manifest into the temp values folder of a migration's plan (a small internal/repo change inside cli/) — init --dry-run then lists exactly what init does",
+      "rejected": "Accept the gap and have U8 document it — no code change, but a migration's dry run lists fewer removals than the real run, and K1 may show extra rows",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D95",
+      "decision": "Q3: TOML has no null; is leaving out the value key the intended TOML form of a config get envelope for a key with no default?",
+      "ruling": "Accept leaving it out, and have U8 write in docs/design/cli.md that a TOML envelope without value means null — no code change",
+      "rejected": "Print a fixed marker, such as a # value: null comment line — a person reading the output sees the null, a TOML parser still sees no value, and the code changes",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D96",
+      "decision": "Q4: Should root_only tools be skipped in a git submodule with no [home] yet, or only when [home].type is submodule?",
+      "ruling": "Keep the git test as a fallback when [home] has no type (what U3 built)",
+      "rejected": "[home].type only — follows the ruling word for word, but a submodule with no [home] runs root_only tools, and the test:repo submodule cases (U6) must set [home]",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D97",
+      "decision": "Q5: Should the default commit scopes come from the [members.*] table keys rather than .members, which leaves out an uncloned sibling?",
+      "ruling": "U4 changes the git template to use the keys of .member (the [members.*] alias) when [commits].scopes is absent — the scopes stay stable, and the engine needs no change",
+      "rejected": "Keep .members — no change, but the scopes depend on which siblings are cloned; The engine keeps missing siblings in .members — the scopes stay stable, but MEMBERS and the cd loops of setup and code:lint would enter folders that are not there",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D98",
+      "decision": "Q6: After a migration the shared-file header keeps the old .config/bootstrap.toml override line beside the new tools.toml line; who fixes it?",
+      "ruling": "U3 fixes the header merge in cli/ so the old line is replaced — the synced headers stay correct",
+      "rejected": "Accept it; the user deletes the stale line by hand after the migration — no code change, but every consumer gets a duplicated header line",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D99",
+      "decision": "Q7: Which member list should setup:configs and setup walk for a git submodule with no [members.<name>] table, or a table with no type?",
+      "ruling": "Require type on every [members.*] table, have the migration write type = \"submodule\" for a typeless old member in .gitmodules, and have the template drop the flags of untyped or untabled submodules — a schema change in cli/ (U3/U2), but the member list keeps a single source",
+      "rejected": "members() also treats a missing type as submodule when the folder is in .gitmodules, and adds the .gitmodules submodules that have no table, as the engine member discovery does — the flags and the loop agree, and only U4 helpers change",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D100",
+      "decision": "Q8: Should code:lint and code:format use the same .member_tables filter (tabled submodule or sibling) for their member flags?",
+      "ruling": "No, every repo/submodule get's independent code-lint & code-format. base repo must exclude the submodules from all of the tasks. If a task wants to run in a submodule, they must use `--cd` flag of mise",
+      "rejected": "Apply the same filter (tabled submodule or sibling) in code-lint.tmpl and code-format.tmpl — every member flag of every task names the one set that helpers members() walks; Leave them on the engine submodule list — they keep working for untabled submodules, but --<name> means a different set in each task, and siblings get no lint or format flag",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D101",
+      "decision": "Q9: How should base-repo code:format and code:lint gates that scan their project themselves leave out the submodules (D100)?",
+      "ruling": "When no files are given, pass each tool the `git ls-files` list of its language — the submodules drop out automatically, but this reverses the CLAUDE.md rule that a self-scanning tool uses the list only to see whether a file exists, and a large tree may hit the argument-length limit (the rule in CLAUDE.md Task scripts changes with it)",
+      "rejected": "Pass each tool its own exclude flag for the submodule paths, found with git submodule foreach --recursive; Leave them and have consumers add the submodule folders to each seed config by hand",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D102",
+      "decision": "Q10: Does D100 also remove the member flags and loop of setup and setup:configs?",
+      "ruling": "Keep them, as D7/D64/D99 rule — they run in a member only when asked and only through --cd, which D100 allows; only lint and format lose their flags",
+      "rejected": "Remove the flags and loops from both; Keep setup:configs flags and remove setup flags",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D103",
+      "decision": "Q11: Which members should get a setup-<name> dev alias from the derive script?",
+      "ruling": "The same set as setup.tmpl (tabled submodule or sibling), with derive reading repo.members through `bootstrap config get` — the alias and the flag always agree, and cli/ does not change",
+      "rejected": "The engine derive input carries only tabled members or a tabled field (cli/ change); Drop the aliases and setup-all; Each alias becomes mise run --cd <folder> setup with no flag",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D104",
+      "decision": "Q12: Should setup:worktree keep entering the members, and the stale $.member read?",
+      "ruling": "Keep the checkout and the member walk through --cd (D100 allows --cd), and fix $.member to $.members — a fresh worktree is still ready in one command",
+      "rejected": "Keep only the submodule checkout and drop the member walk; Walk only folder members and fix $.member for the folder case",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D105",
+      "decision": "Q13: Should code:worktrees stay product-wide under D100?",
+      "ruling": "Keep it product-wide — it only reads git state, runs no task in a member, and the vwf agents rely on its member rows",
+      "rejected": "Limit it to the base repo and its own worktrees",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D106",
+      "decision": "Withdraw D101 and narrow D100: the gate file lists and the exclusion of submodule folders from base-repo gate scans leave this plan",
+      "ruling": "D101 is withdrawn; gates keep their file lists as on main. D100 keeps only the removal of the member flags (--all, --<name>) and member loop from code:lint and code:format; each repo and submodule runs its own, and a task runs in a member only through mise --cd; the base-repo submodule exclusion is not done in this plan. User: \"the wider discussion is over about formatters and linters. We need mechanism where by default only uncommitted (or staged) files are formatted and lint'ed. This is to optimize performance. There can be `--all` flag to include all files from the repo. Now this will require a deeper discussion and possibly migration from bash scripts to python so that these scripts can be programmed to manage the excludes, etc\" — approved (\"yes, send it\") to take the gate changes out of this plan.",
+      "rejected": "D101 as recorded (pass each self-scanning tool the git ls-files list of its language)",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D107",
+      "decision": "Q14: a D101 gate-list follow-up (pyrefly, linter, dart generated files)",
+      "ruling": "withdrawn with D101 — no change in this plan",
+      "rejected": "every option offered",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D108",
+      "decision": "Q15: a D101 gate-list follow-up (pyrefly, linter, dart generated files)",
+      "ruling": "withdrawn with D101 — no change in this plan",
+      "rejected": "every option offered",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D109",
+      "decision": "Q16: a D101 gate-list follow-up (pyrefly, linter, dart generated files)",
+      "ruling": "withdrawn with D101 — no change in this plan",
+      "rejected": "every option offered",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D110",
+      "decision": "Q17: Should the comments of tables the init migration moves survive the migration?",
+      "ruling": "Accept the loss (what the engine does now; the check is removed) — no code change, and a migrated repo loses those comments",
+      "rejected": "Make cli/internal/oldform carry each moved table's comments into repo.toml — the comments stay, the engine changes, and U6 adds the check back",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D111",
+      "decision": "Q18: Should a leftover .config/bootstrap.overrides.toml next to .config/bootstrap/ stop sync and check?",
+      "ruling": "Accept it (what the engine does now) — no change, but an override that no longer applies goes unnoticed",
+      "rejected": "Stop every command except version, settings and mac with code 2, as D29 does for the old values file",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D112",
+      "decision": "Q19: What should code:merge do in a repo whose only core branch is neither main nor develop?",
+      "ruling": "Document the current behavior in docs/sync/index.md Step 2 (the merge task refuses until main or develop exists) and leave the task's port to R2's git:* tasks — no code change in this plan",
+      "rejected": "Make code:merge land on the single entry of core_branches now — a change to repo/tools/mise/tasks/code-merge (U4), with a test in test:repo (U6)",
+      "units": [
+        "U8"
+      ]
     }
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-15T16:56:22.785Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-15T16:56:22.565Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-15T16:56:22.674Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers and no code unit (edit units alone); no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-15T16:56:29.662Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U2",
+      "stage": "",
+      "text": "Wave 2 review round 2: D94 not met for a linked manifest (copyManifest symlink outside the root not detected by manifest.Read) · resolved in the closing pass: manifest.Read stops on a symlinked manifest outside the root, test case added",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U2",
+      "stage": "",
+      "text": "Wave 2 review round 2: cli/internal/cli/config.go:64 comment line not folded · resolved in the closing pass: folded at 76 columns",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "",
+      "stage": "",
+      "text": "The new gate mechanism: code:format and code:lint check only changed (uncommitted or staged) files by default, an --all flag checks every file of the repo, the base repo excludes submodule folders from each gate scan, and the gate scripts may move from bash to Python to manage the excludes. It needs its own design discussion and plan (D106) · open",
+      "state": "open"
+    },
+    {
+      "id": "G4",
+      "unit": "U4",
+      "stage": "",
+      "text": "Wave 3 review round 2: mise derive built setup-<name> aliases for untabled submodules that setup.tmpl gives no flag · resolved in the closing pass by D103 (aliases for tabled submodule or sibling members only)",
+      "state": "closed"
+    },
+    {
+      "id": "G5",
+      "unit": "U8",
+      "stage": "",
+      "text": "Outside this repo: the claude-plugins vwf and stackgen senders of the bootstrap: init instruction send [tools.git.branch.*] merge_model/direct_commit, [tools.git].commit_scopes, [tools.mise].worktree_files or [member.*], which the new schema refuses; they must send [branches.*].landing, [commits].scopes, [worktree].files and [members.*] with a type (U8 DOCS FALSIFIED) · open, for a claude-plugins change",
+      "state": "open"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".worktrees/config-folder",

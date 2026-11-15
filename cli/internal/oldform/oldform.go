@@ -20,6 +20,7 @@ import (
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/format"
+	"github.com/virajp/bootstrap/cli/internal/schema"
 	"github.com/virajp/bootstrap/cli/internal/source"
 )
 
@@ -58,7 +59,8 @@ const MacHint = "run bootstrap mac init"
 func usage(format string, args ...any) *fail.Error { return fail.New(fail.Usage, format, args...) }
 
 // Repo gives a message, with code 2, for each old form of the repository
-// <root> with the values file <raw>, shown as <shown>. <raw> can be nil.
+// <root> with the values <raw> (values.Combine of its values folder), shown
+// as <shown>. <raw> can be nil.
 func Repo(root string, raw *source.Obj, shown string) error {
 	var probs []*fail.Error
 	if raw != nil {
@@ -73,7 +75,7 @@ func Repo(root string, raw *source.Obj, shown string) error {
 		if o, ok := raw.Get("overrides").(*source.Obj); ok && o.Has("gitignore") {
 			probs = append(probs, usage("[overrides.gitignore] in %s is the old form - %s", shown, Hint))
 		}
-		probs = append(probs, formatProblems(raw, shown, Hint)...)
+		probs = append(probs, formatProblems(raw, shown, Hint, schema.Format)...)
 	}
 	if !Migrating && isFile(root+"/"+OldPrecommit) {
 		probs = append(probs, usage("%s is the old form - %s", OldPrecommit, Hint))
@@ -97,7 +99,7 @@ func Mac(raw *source.Obj, shown string) error {
 	if t, ok := raw.Get("tools").(*source.Obj); ok && t.Has(OldMacTool) {
 		probs = append(probs, usage("[tools.%s] in %s is the old form - %s", OldMacTool, shown, MacHint))
 	}
-	probs = append(probs, formatProblems(raw, shown, MacHint)...)
+	probs = append(probs, formatProblems(raw, shown, MacHint, Format)...)
 	if len(probs) == 0 {
 		return nil
 	}

@@ -34,13 +34,14 @@ various tools that it supports.
 - **AI, for the non-deterministic part.** A user opens an AI session in the
   consumer repository with the prompt of `README.md`. The AI reads
   `docs/sync/index.md`, selects the tools, and gets the answers of their
-  questions. Then it runs `bootstrap init --answer …`, which writes
-  `.config/bootstrap.toml` with the `base` pack, and
+  questions. Then it runs `bootstrap init --answer …`, which writes the values
+  folder `.config/bootstrap/` with the `base` pack, and
   `bootstrap add tool <tool…> --answer …`, which adds the other tools. Each
   command syncs.
 - **CLI, for the deterministic part.** After the adoption, the repository has
   the `setup:configs` task in mise. The task runs `bootstrap sync`, which reads
-  `.config/bootstrap.toml` and syncs the files of the selected tools.
+  `.config/bootstrap/` and syncs the files of the selected tools.
+  `bootstrap config get|set|unset|show` reads and writes one value.
   `bootstrap add tool <tool…>`, `add pack`, `remove tool` and `replace tool`
   change the selection later.
 
@@ -58,8 +59,10 @@ an adopted repository up to date.
 
 ## Bootstrap config
 
-The consumer repository gets the file `.config/bootstrap.toml`, which contains
-all the selections of the adoption. The sync reads it to bring the updates from
+The consumer repository gets the values folder `.config/bootstrap/`:
+`repo.toml` with the facts of the repository, `tools.toml` with all the
+selections of the adoption, an optional `releases.toml`, and the manifest
+`repo-generated.tsv`. The sync reads it to bring the updates from
 the `bootstrap` repository to the consumer repository. The Mac has its own
 values file, `macos.toml`.
 
@@ -71,7 +74,7 @@ values file, `macos.toml`.
   manifest and the stale rule, the values of a tool, `bootstrap_commit`, the
   exit codes and the release.
 - [repo.md](./repo.md): the repo side: the entry tasks, members, the template
-  context, the branch model, `direct_commit`, the pre-commit config,
+  context, the branch model, the protected branches, the pre-commit config,
   `bootstrap check` and its gate.
 - [mac.md](./mac.md): the Mac side: the repository of `macos.toml`, the entry
   tasks, `macos.toml` and its keys, the selection, the stages and exit 4, and
@@ -82,7 +85,7 @@ values file, `macos.toml`.
   file.
 - [mise.md](./mise.md): the mise generator, the environments,
   `[overrides.mise*]`, `zz-repo` and `zz-macos`, and the tasks.
-- [bootstrap-config.md](./bootstrap-config.md): the keys of
-  `.config/bootstrap.toml`, and its old forms.
+- [bootstrap-config.md](./bootstrap-config.md): the files and keys of
+  `.config/bootstrap/`, their schema, and the old forms.
 - [fnox.md](./fnox.md): the design of the `fnox` tool and of the tasks that use
   it.

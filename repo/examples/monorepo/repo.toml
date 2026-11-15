@@ -1,0 +1,52 @@
+# Example: a node monorepo with the branches main and develop.
+# Feature branches merge into develop. Only develop merges into main.
+
+# The bootstrap commit of the last sync. The sync writes it.
+bootstrap_commit = ""
+# The core branches, in order. Each one exists in git.
+core_branches = [ "main", "develop" ]
+# The mise environments: dev (necessary) and ci.
+environments = [ "dev", "ci" ]
+format = 3
+# The product name, for the fnox keychain service.
+product_name = "shop"
+repo_name = "shop-platform"
+# The web URL of the repository, for the github tool.
+repo_url = "https://github.com/example/shop-platform"
+
+# A feature branch merges into develop. main never merges into develop.
+# landing = "direct-commit" allows a direct commit to develop. main can allow
+# it only when develop does.
+[branches.develop]
+landing = "direct-merge"
+merge_never = [ "main" ]
+
+# Only develop merges into main, through a pull request.
+[branches.main]
+landing = "pr"
+merge_from = [ "develop" ]
+
+[commits]
+# The commit scopes of git-conventional-commits. The default is the names of
+# the [members.*] tables.
+scopes = [ "common", "deps", "service", "worker" ]
+
+[worktree]
+# The gitignored files to copy into a new worktree.
+files = [ ".config/mise.local.toml", ".env" ]
+
+# The folder members. A folder member is part of the root tree.
+[members.common]
+folder = "packages/common"
+label = "Common"
+type = "folder"
+
+[members.service]
+folder = "projects/service"
+label = "Service"
+type = "folder"
+
+[members.worker]
+folder = "projects/worker"
+label = "Worker"
+type = "folder"
