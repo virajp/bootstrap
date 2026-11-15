@@ -144,6 +144,23 @@
       ],
       "backlog": [],
       "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-15-test-parts",
+      "folder": "docs/plans/2026-11-15-test-parts",
+      "kind": "change",
+      "title": "R2e — test parts of the android and swift tools, and init removes the old stackgen copies",
+      "target_repo": null,
+      "priority": 120,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-15-projects"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
     }
   ]
 }
