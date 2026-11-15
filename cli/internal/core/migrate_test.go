@@ -110,7 +110,7 @@ func TestApplyMigrate(t *testing.T) {
 	if err != nil {
 		t.Fatal(problems(err))
 	}
-	if code, putBack, err := Apply(p, Options{}); code != fail.OK || putBack || err != nil {
+	if code, putBack, _, err := Apply(p, Options{}); code != fail.OK || putBack || err != nil {
 		t.Fatalf("apply: %d %v %v", code, putBack, err)
 	}
 	for _, f := range []string{oldform.OldValues, oldform.OldOverrides, oldform.OldManifest} {
@@ -148,7 +148,7 @@ func TestApplyMigrateRestore(t *testing.T) {
 	if err != nil {
 		t.Fatal(problems(err))
 	}
-	code, putBack, err := Apply(p, Options{})
+	code, putBack, _, err := Apply(p, Options{})
 	if code != fail.Usage || !putBack || err != nil {
 		t.Fatalf("apply: %d %v %v", code, putBack, err)
 	}
@@ -279,7 +279,7 @@ func TestMigrateStalePlanned(t *testing.T) {
 	if !reflect.DeepEqual(removed, []string{stale}) {
 		t.Errorf("planned removals = %v, want %v", removed, []string{stale})
 	}
-	if code, putBack, err := Apply(p, Options{}); code != fail.OK || putBack || err != nil {
+	if code, putBack, _, err := Apply(p, Options{}); code != fail.OK || putBack || err != nil {
 		t.Fatalf("apply: %d %v %v", code, putBack, err)
 	}
 	if Exists(stale) {

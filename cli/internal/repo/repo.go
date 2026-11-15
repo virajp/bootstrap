@@ -13,6 +13,7 @@
 package repo
 
 import (
+	"errors"
 	"io"
 	"os"
 	"os/signal"
@@ -110,19 +111,46 @@ type state struct {
 	membersRead bool
 
 	home *source.Obj // The [home] of this member that the run writes, or nil.
+
+	// The stages of Check: the stages that ended, the collector of the
+	// findings of the stage that runs, or nil, and the lines that a run
+	// printed outside a stage.
+	stages []Stage
+	cur    *fail.Collector
+	loose  []Finding
 }
 
 // Run runs `bootstrap sync <args>` and gives its exit code. Each line goes to
 // <stderr>; <stdout> gets only the output of the commands that bash lets
 // through.
 func Run(args []string, stdout, stderr io.Writer) fail.Code {
-	_, code := RunWith(args, stdout, stderr)
+	_, _, code := RunWith(args, stdout, stderr)
 	return code
 }
 
 // RunWith is Run, and it also gives the change list of a dry run: the
-// absolute path of each file that the run would write, change or remove.
-func RunWith(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Code) {
+// absolute path of each file that the run would write, change or remove; and
+// the outcomes of the run: one for each call of report.Outcome, in order.
+func RunWith(args []string, stdout, stderr io.Writer) ([]target.Planned, []report.Result, fail.Code) {
+	s := newState(stdout, stderr)
+	var outcomes []report.Result
+	s.r.ObserveOutcome = func(o report.Result) { outcomes = append(outcomes, o) }
+	code := s.trapped(args)
+	return s.e.Planned, outcomes, code
+}
+
+// Check runs `bootstrap check` as Run does, with the same lines, and gives
+// its stages in order, the error and warning lines that it printed outside a
+// stage, and its exit code. A failure before the first stage gives no stage.
+func Check(stdout, stderr io.Writer) ([]Stage, []Finding, fail.Code) {
+	s := newState(stdout, stderr)
+	s.r.Observe = s.observe
+	code := s.trapped([]string{"--check"})
+	return s.stages, s.loose, code
+}
+
+// newState gives the state of a run that writes to <stdout> and <stderr>.
+func newState(stdout, stderr io.Writer) *state {
 	s := &state{stdout: stdout, stderr: stderr, getenv: os.Getenv, derived: map[string]*source.Obj{}, dirDone: map[string]bool{}}
 	isTerm := false
 	if f, ok := stderr.(*os.File); ok {
@@ -136,8 +164,12 @@ func RunWith(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Co
 	s.pwd = pwd(s.getenv)
 	s.root = s.getenv("MISE_PROJECT_ROOT")
 	s.e = &target.Env{Report: s.r, Stderr: stderr, Pwd: s.pwd}
+	return s
+}
 
-	// The traps of common: remove the temp files, then exit 130 or 143.
+// trapped runs <args> with the traps of common: on a signal, it removes the
+// temp files, then exits 130 or 143.
+func (s *state) trapped(args []string) fail.Code {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	done := make(chan struct{})
@@ -157,8 +189,7 @@ func RunWith(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Co
 		}
 	}()
 	defer s.e.Temps.Cleanup()
-	code := s.run(args)
-	return s.e.Planned, code
+	return s.run(args)
 }
 
 // log prints an error message: the problem and, after " - ", its fix.
@@ -501,26 +532,142 @@ func (s *state) copyClone(clone, dir string) bool {
 	return ok
 }
 
+// Stage is one stage of `bootstrap check`: the kebab-case name of what it
+// examines, its status (pass, fail or skipped) and the error and warning
+// lines that it printed.
+type Stage struct {
+	Name     string    `json:"name"`
+	Status   string    `json:"status"`
+	Findings []Finding `json:"findings"`
+}
+
+// Finding is one error or warning line of a check. Code is the code of the
+// stage for an error, and 0 for a warning. Path is the file of the values
+// folder that the line names, relative to the repository, or "".
+type Finding struct {
+	Code     fail.Code `json:"code"`
+	Severity string    `json:"severity"`
+	Message  string    `json:"message"`
+	Path     string    `json:"path"`
+}
+
+// The statuses of a stage, and the severities of a finding.
+const (
+	StagePass    = "pass"
+	StageFail    = "fail"
+	StageSkipped = "skipped"
+	SevError     = "error"
+	SevWarning   = "warning"
+)
+
+// findingErr is a Finding as an error, so that the fail.Collector of a stage
+// keeps it.
+type findingErr struct{ f Finding }
+
+func (e *findingErr) Error() string { return e.f.Message }
+
+// observe is the Observe of the report of Check: it adds each error and
+// warning line to the collector of the stage that runs, else to loose. A
+// warning has the code 0, and an error the code 1 until its stage ends.
+func (s *state) observe(warn bool, msg string) {
+	f := Finding{Severity: SevError, Message: msg, Path: s.findingPath(msg)}
+	code := fail.Other
+	if warn {
+		f.Severity = SevWarning
+		code = fail.OK
+	}
+	if s.cur == nil {
+		s.loose = append(s.loose, f)
+		return
+	}
+	s.cur.Add(fail.Wrap(code, &findingErr{f}, ""))
+}
+
+// findingPath gives the file of the values folder that <msg> names first,
+// relative to the repository, or "".
+func (s *state) findingPath(msg string) string {
+	if s.values == "" {
+		return ""
+	}
+	best, at := "", -1
+	for _, f := range []string{values.RepoFile(s.values), values.ToolsFile(s.values), values.ReleasesFile(s.values)} {
+		if i := strings.Index(msg, s.path(f)); i >= 0 && (at < 0 || i < at) {
+			best, at = f, i
+		}
+	}
+	base := s.root
+	if base == "" {
+		base = s.pwd
+	}
+	return strings.TrimPrefix(best, base+"/")
+}
+
+// checkStage runs <f> as the stage <name> of check and gives its code. With
+// <run> false, it keeps the stage as skipped and gives 0: its input failed,
+// and that failure is already reported.
+func (s *state) checkStage(name string, run bool, f func() fail.Code) fail.Code {
+	st := Stage{Name: name, Status: StageSkipped, Findings: []Finding{}}
+	if !run {
+		s.stages = append(s.stages, st)
+		return fail.OK
+	}
+	var c fail.Collector
+	s.cur = &c
+	code := f()
+	s.cur = nil
+	st.Status = StagePass
+	if code != fail.OK {
+		st.Status = StageFail
+	}
+	// The code of an error finding is the code of its stage.
+	if j, ok := c.Err().(interface{ Unwrap() []error }); ok {
+		for _, err := range j.Unwrap() {
+			var fe *findingErr
+			if !errors.As(err, &fe) {
+				continue
+			}
+			if fe.f.Severity == SevError {
+				fe.f.Code = code
+			}
+			st.Findings = append(st.Findings, fe.f)
+		}
+	}
+	s.stages = append(s.stages, st)
+	return code
+}
+
 // check is `_rs_check`: each check of `repo_sync --check`, in the order of
 // the sync. A check whose input failed is skipped: its cause is already
 // reported. It gives the highest code, or 0 after a line that says the file
-// is valid.
+// is valid. Each check is a stage of Check.
 func (s *state) check() fail.Code {
 	rc := fail.OK
 	add := func(code fail.Code) bool {
 		rc = max(rc, code)
 		return code == fail.OK
 	}
-	envsOK := add(s.readEnvs())
-	sel, err := s.readSel()
-	selOK := add(s.logAll(err))
-	if selOK {
-		selOK = add(s.logAll(oldform.Repo(s.root, s.vals.Raw, s.show)))
-	}
-	if envsOK && selOK {
-		add(s.envRules(sel))
-	}
-	s.coreTools()
+	envsOK := add(s.checkStage("envs", true, s.readEnvs))
+	var sel []values.Item
+	selOK := add(s.checkStage("values", true, func() fail.Code {
+		var err error
+		sel, err = s.readSel()
+		return s.logAll(err)
+	}))
+	selOK = add(s.checkStage("old-forms", selOK, func() fail.Code {
+		return s.logAll(oldform.Repo(s.root, s.vals.Raw, s.show))
+	})) && selOK
+	add(s.checkStage("env-rules", envsOK && selOK, func() fail.Code { return s.envRules(sel) }))
+	// The line of core_tools prints as an error but never changes the
+	// code: its stage always passes, and the line is a warning finding.
+	add(s.checkStage("core-tools", true, func() fail.Code {
+		obs := s.r.Observe
+		if obs != nil {
+			s.r.Observe = func(_ bool, msg string) { obs(true, msg) }
+		}
+		s.coreTools()
+		s.r.Observe = obs
+		return fail.OK
+	}))
 	g := &misegen.Generator{
 		Side:        source.Repo,
 		ToolsDir:    "/" + toolsShown,
@@ -531,14 +678,17 @@ func (s *state) check() fail.Code {
 		Getenv:      s.getenv,
 	}
 	defer func() { _ = g.Close() }()
-	add(s.overrides(g, true))
-	_, code := s.memberList(strings.TrimPrefix(values.RepoFile(s.values), s.root+"/"))
-	add(code)
-	add(s.releases())
-	if rc == fail.OK {
+	add(s.checkStage("overrides", true, func() fail.Code { return s.overrides(g, true) }))
+	add(s.checkStage("members", true, func() fail.Code {
+		_, code := s.memberList(strings.TrimPrefix(values.RepoFile(s.values), s.root+"/"))
+		return code
+	}))
+	add(s.checkStage("releases", true, s.releases))
+	valid := rc == fail.OK
+	if valid {
 		s.r.Success(s.show + " is valid")
 		s.listChecks = true
-		add(s.checkScripts())
 	}
+	add(s.checkStage("scripts", valid, s.checkScripts))
 	return rc
 }

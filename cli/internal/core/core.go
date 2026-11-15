@@ -21,6 +21,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/macos"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/repo"
+	"github.com/virajp/bootstrap/cli/internal/report"
 	"github.com/virajp/bootstrap/cli/internal/target"
 	"github.com/virajp/bootstrap/cli/internal/values"
 )
@@ -194,8 +195,8 @@ func (o Options) writers() (io.Writer, io.Writer) {
 	return out, errw
 }
 
-// FrontEnd is the sync of a side, with its change list.
-type FrontEnd func(args []string, stdout, stderr io.Writer) ([]target.Planned, fail.Code)
+// FrontEnd is the sync of a side, with its change list and its outcomes.
+type FrontEnd func(args []string, stdout, stderr io.Writer) ([]target.Planned, []report.Result, fail.Code)
 
 // FrontEndOf gives the sync of the side.
 func FrontEndOf(mac bool) FrontEnd {

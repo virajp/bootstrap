@@ -25,9 +25,9 @@ func TestRun(t *testing.T) {
 		{"no command", nil, fail.Usage, "", "[ERROR] no command given\n  -> Run bootstrap --help"},
 		{"unknown command", []string{"repo"}, fail.Usage, "", "[ERROR] repo is not a command\n  -> Run bootstrap --help"},
 		{"help", []string{"--help"}, fail.OK, "usage:", ""},
-		{"check and dry run", []string{"check", "--dry-run"}, fail.Usage, "", "[ERROR] check has no flag --dry-run\n  usage: bootstrap check [--jobs <n>] [--verbose]\n  -> Run"},
-		{"sync bad flag", []string{"sync", "--no-bootstrap"}, fail.Usage, "", "[ERROR] sync has no flag --no-bootstrap\n  usage: bootstrap sync [--dry-run] [--jobs <n>] [--verbose]\n  -> Run"},
-		{"sync argument", []string{"sync", "x"}, fail.Usage, "", "[ERROR] sync takes no argument x\n  usage: bootstrap sync [--dry-run] [--jobs <n>] [--verbose]\n  -> Run"},
+		{"check and dry run", []string{"check", "--dry-run"}, fail.Usage, "", "[ERROR] check has no flag --dry-run\n  usage: bootstrap check [--jobs <n>] [--verbose] [--json]\n  -> Run"},
+		{"sync bad flag", []string{"sync", "--no-bootstrap"}, fail.Usage, "", "[ERROR] sync has no flag --no-bootstrap\n  usage: bootstrap sync [--dry-run] [--jobs <n>] [--verbose] [--json]\n  -> Run"},
+		{"sync argument", []string{"sync", "x"}, fail.Usage, "", "[ERROR] sync takes no argument x\n  usage: bootstrap sync [--dry-run] [--jobs <n>] [--verbose] [--json]\n  -> Run"},
 		{"sync help", []string{"sync", "-h"}, fail.OK, "usage:", ""},
 		{"init yes value", []string{"init", "--yes=1"}, fail.Usage, "", "[ERROR] --yes=1 takes no value\n  usage: bootstrap init"},
 		{"init answer without value", []string{"init", "--answer"}, fail.Usage, "", "[ERROR] --answer needs a value\n  usage: bootstrap init"},
@@ -39,6 +39,11 @@ func TestRun(t *testing.T) {
 		{"mac version", []string{"mac", "version"}, fail.Usage, "", "[ERROR] mac version is not a command\n  -> Run bootstrap --help"},
 		{"mac no command", []string{"mac"}, fail.Usage, "", "[ERROR] mac needs a command\n  -> Run bootstrap --help"},
 		{"mac unknown command", []string{"mac", "macos"}, fail.Usage, "", "[ERROR] mac macos is not a command\n  -> Run bootstrap --help"},
+		{"contract", []string{"contract"}, fail.OK, "versions  1\nversion   dev\n", ""},
+		{"contract json", []string{"contract", "--json"}, fail.OK, `{"contract":1,"command":"contract","ok":true,"code":0,"data":{"versions":[1],"cli_version":"dev","commands":[`, ""},
+		{"json usage error", []string{"repo", "--json"}, fail.Usage, `{"contract":1,"command":"","ok":false,"code":2,"data":null,"errors":[{"code":2,"message":"repo is not a command"}],"warnings":[]}` + "\n", "[ERROR] repo is not a command\n"},
+		{"mac add json", []string{"mac", "add", "tool", "x", "--json"}, fail.Usage, `{"contract":1,"command":"mac add","ok":false,"code":2,"data":null,"errors":[{"code":2,"message":"mac add has no flag --json"}],"warnings":[]}` + "\n", "[ERROR] mac add has no flag --json\n"},
+		{"mac contract", []string{"mac", "contract"}, fail.Usage, "", "[ERROR] mac contract is not a command\n"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

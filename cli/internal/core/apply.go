@@ -8,6 +8,7 @@ import (
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
+	"github.com/virajp/bootstrap/cli/internal/report"
 	"github.com/virajp/bootstrap/cli/internal/scripts"
 	"github.com/virajp/bootstrap/cli/internal/values"
 )
@@ -39,8 +40,9 @@ type Step struct {
 // the sync and true; the other files stay as the sync left them. A sync that
 // stops with fail.Terminal (the Mac init stage changed) did its work, so the
 // values file stays and Apply gives that code and false. A problem
-// before the sync gives its code and an error.
-func Apply(p *PlanResult, o Options) (fail.Code, bool, error) {
+// before the sync gives its code and an error. It also gives the outcomes of
+// the sync, one for each call of report.Outcome, also when the sync fails.
+func Apply(p *PlanResult, o Options) (fail.Code, bool, []report.Result, error) {
 	step := func(s Step) {
 		if o.Step != nil {
 			o.Step(s)
@@ -57,7 +59,7 @@ func Apply(p *PlanResult, o Options) (fail.Code, bool, error) {
 				}
 			}
 			errs = append(errs, problem(fail.Usage, fmt.Sprintf("%s failed with exit code %d", shown, res.Code), ""))
-			return fail.Usage, false, join(errs)
+			return fail.Usage, false, nil, join(errs)
 		}
 		step(Step{Kind: Ran, Path: shown, Stderr: res.Stderr})
 	}
@@ -65,11 +67,11 @@ func Apply(p *PlanResult, o Options) (fail.Code, bool, error) {
 	if p.Migrated {
 		var err error
 		if rest, err = p.writeFolder(); err != nil {
-			return fail.CodeOf(err), false, err
+			return fail.CodeOf(err), false, nil, err
 		}
 	}
 	if err := oldform.Apply(rest); err != nil {
-		return fail.CodeOf(err), false, err
+		return fail.CodeOf(err), false, nil, err
 	}
 	for _, ch := range p.Changes {
 		if ch.Remove {
@@ -81,15 +83,15 @@ func Apply(p *PlanResult, o Options) (fail.Code, bool, error) {
 	out, errw := o.writers()
 	// The scripts of the sync read the values with bootstrap config (D19).
 	restoreEnv := setEnv("BOOTSTRAP_VALUES", p.Values, !p.Mac)
-	_, code := frontEnd(p.Mac)(SyncArgs(p.Mac, false, o.NoBootstrap), out, errw)
+	_, outcomes, code := frontEnd(p.Mac)(SyncArgs(p.Mac, false, o.NoBootstrap), out, errw)
 	restoreEnv()
 	if code != fail.OK && code != fail.Terminal {
 		if err := p.restore(); err != nil {
-			return code, false, err
+			return code, false, outcomes, err
 		}
-		return code, true, nil
+		return code, true, outcomes, nil
 	}
-	return code, false, nil
+	return code, false, outcomes, nil
 }
 
 // writeFolder writes the files of the migration below the values folder

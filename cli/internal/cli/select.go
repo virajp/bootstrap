@@ -60,6 +60,51 @@ func (a *app) change(mac bool, o opts, items ...core.Item) fail.Code {
 	return a.finish(sd, o, core.List{Items: items})
 }
 
+// detectedData is one entry of data.detected of a plain detect --json (D30):
+// a selected tool with a detect result, or a tool that matches and is not
+// selected, with the fields of core.Detected and core.Proposal.
+type detectedData struct {
+	Tool     string   `json:"tool"`
+	Selected bool     `json:"selected"`
+	Result   string   `json:"result"`
+	Evidence []string `json:"evidence"`
+	Message  string   `json:"message"`
+	Offered  bool     `json:"offered"`
+	Shared   string   `json:"shared"`
+	Of       string   `json:"of"`
+}
+
+// detectData gives the data of detect --json: data.detected for a plain
+// detect, else the plan form of a write command, with no change yet.
+func detectData(o opts, d *core.Detection) any {
+	if o.add {
+		return writeData{Plan: planDataOf(&core.PlanResult{}), Outcomes: outcomesOf(nil)}
+	}
+	out := []detectedData{}
+	if d == nil || d.NoScripts {
+		return map[string][]detectedData{"detected": out}
+	}
+	props := map[string]core.Proposal{}
+	for _, p := range d.Proposals {
+		props[p.Tool] = p
+	}
+	for _, t := range d.Tools {
+		f, found := d.Found[t]
+		p, proposed := props[t]
+		selected := d.Selected(t)
+		if !found || (!selected && !proposed) {
+			continue
+		}
+		e := detectedData{Tool: t, Selected: selected, Result: f.Result, Evidence: f.Evidence, Message: f.Message,
+			Offered: p.Offered, Shared: p.Shared, Of: p.Of}
+		if e.Evidence == nil {
+			e.Evidence = []string{}
+		}
+		out = append(out, e)
+	}
+	return map[string][]detectedData{"detected": out}
+}
+
 // detect is `bootstrap [mac] detect`. With no flag, it lists the detected
 // tools and exits 1 when one is not selected; with --add, it adds each one
 // after the consent.
@@ -79,6 +124,9 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 	}
 	if err != nil {
 		return a.logErr(err)
+	}
+	if o.json {
+		a.data = detectData(o, d)
 	}
 	if d.NoScripts {
 		a.reasons = append(a.reasons, "no tool has a detect script")

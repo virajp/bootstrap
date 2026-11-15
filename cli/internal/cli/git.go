@@ -30,8 +30,12 @@ func (a *app) warnDirty(dirty []string) {
 	}
 }
 
-// interactive tells if stdin and stdout are terminals.
+// interactive tells if stdin and stdout are terminals. With --json, a
+// command never prompts.
 func (a *app) interactive() bool {
+	if a.json {
+		return false
+	}
 	if a.terminal {
 		return true
 	}

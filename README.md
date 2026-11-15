@@ -12,26 +12,32 @@ mise installs the CLI from the GitHub releases of this repository:
 mise use -g github:virajp/bootstrap
 ```
 
-| Command                                      | Job                                                                                |
-| -------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `bootstrap init`                             | Open the TUI in a terminal. Else migrate or create the values, ask, sync.          |
-| `bootstrap tui`                              | Open the TUI: select tools and packs, review the changes, then sync.               |
-| `bootstrap sync`                             | Sync the repository of the current folder. `setup:configs` runs it.                |
-| `bootstrap check`                            | Examine the values against their schema, and run the check scripts.                |
-| `bootstrap questions [tool…]`                | List the questions, their proposals and their answers. `--json` for an agent.      |
-| `bootstrap detect [--add]`                   | Run the detect scripts, and list each tool that matches. `--add` adds them.        |
-| `bootstrap add tool <tool…>`                 | Add the tools and their dependencies, then sync.                                   |
-| `bootstrap add pack <pack…> [--exclude <m>]` | Add each member of the packs that is not selected, then sync.                      |
-| `bootstrap remove tool <tool…>`              | Remove the tools and the dependencies that no tool needs, then sync.               |
-| `bootstrap replace tool <old> <new>`         | Move from one tool to another with the same parent, then sync.                     |
-| `bootstrap list`, `bootstrap ls`             | List the selected tools as a tree of tools and dependencies.                       |
-| `bootstrap config get\|set\|unset\|show`     | Read and write a value of `.config/bootstrap/`. `--format json\|yaml\|toml`.       |
-| `bootstrap settings`                         | Print the config file and each setting, with its value and its source.             |
-| `bootstrap --version`                        | Print the version.                                                                 |
-| `bootstrap mac <command>`                    | The same commands for the Mac, with `macos.toml`. No `mac config`, `mac settings`. |
+| Command                                      | Job                                                                                                                               |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `bootstrap init`                             | Open the TUI in a terminal. Else migrate or create the values, ask, sync.                                                         |
+| `bootstrap tui`                              | Open the TUI: select tools and packs, review the changes, then sync.                                                              |
+| `bootstrap sync`                             | Sync the repository of the current folder. `setup:configs` runs it.                                                               |
+| `bootstrap check`                            | Examine the values against their schema, and run the check scripts.                                                               |
+| `bootstrap questions [tool…]`                | List the questions, their proposals and their answers.                                                                            |
+| `bootstrap detect [--add]`                   | Run the detect scripts, and list each tool that matches. `--add` adds them.                                                       |
+| `bootstrap add tool <tool…>`                 | Add the tools and their dependencies, then sync.                                                                                  |
+| `bootstrap add pack <pack…> [--exclude <m>]` | Add each member of the packs that is not selected, then sync.                                                                     |
+| `bootstrap remove tool <tool…>`              | Remove the tools and the dependencies that no tool needs, then sync.                                                              |
+| `bootstrap replace tool <old> <new>`         | Move from one tool to another with the same parent, then sync.                                                                    |
+| `bootstrap list`, `bootstrap ls`             | List the selected tools as a tree of tools and dependencies.                                                                      |
+| `bootstrap config get\|set\|unset\|show`     | Read and write a value of `.config/bootstrap/`. `--format json\|yaml\|toml`.                                                      |
+| `bootstrap settings`                         | Print the config file and each setting, with its value and its source.                                                            |
+| `bootstrap contract`                         | Print the versions of the JSON contract, its commands and the task ports.                                                         |
+| `bootstrap catalog`                          | Print the tools of the clone by category, with the categories and the packs.                                                      |
+| `bootstrap describe`                         | Print the values, the selected tools, the members and the task ports.                                                             |
+| `bootstrap --version`                        | Print the version.                                                                                                                |
+| `bootstrap mac <command>`                    | The same commands for the Mac, with `macos.toml`. No `mac config`, `mac settings`, `mac contract`, `mac catalog`, `mac describe`. |
 
 Each writing command shows its change list first. `--dry-run` writes nothing,
-and `--yes` writes without a prompt.
+and `--yes` writes without a prompt. For an agent, `--json` prints one JSON
+envelope on stdout, on each command that `bootstrap contract` names. It never
+prompts, so a writing command with `--json` needs `--yes` or `--dry-run`;
+`sync` needs neither.
 [`docs/design/cli.md`](docs/design/cli.md#the-command-line) has
 the rules.
 

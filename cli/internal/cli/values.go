@@ -44,7 +44,7 @@ func needsSync(file string, k *schema.Key) bool {
 }
 
 // configUsage is the usage line of config.
-const configUsage = "bootstrap config get <key> | set <key> <value> | unset <key> | show [repo|tools|releases] [--format json|yaml|toml]"
+const configUsage = "bootstrap config get <key> | set <key> <value> | unset <key> | show [repo|tools|releases] [--format json|yaml|toml] [--json]"
 
 // configCmd is `bootstrap config get|set|unset|show`: it reads and writes
 // the values of the repo in .config/bootstrap/ (D3, D21-D27).
@@ -60,6 +60,7 @@ func (a *app) configCmd(o opts) fail.Code {
 		a.usageErr("config has no subcommand "+sub+" - use get, set, unset or show; the settings of the engine are bootstrap settings", configUsage)
 		return fail.Usage
 	}
+	a.command = "config " + sub
 	if len(args) < n[0] || len(args) > n[1] {
 		a.usageErr("config "+sub+" takes the wrong number of arguments", configUsage)
 		return fail.Usage
@@ -68,8 +69,17 @@ func (a *app) configCmd(o opts) fail.Code {
 		a.usageErr("config "+sub+" has no flag --format", configUsage)
 		return fail.Usage
 	}
+	if o.json && o.format != "" {
+		a.usageErr("config "+sub+" takes --json or --format, not both", configUsage)
+		return fail.Usage
+	}
 	switch o.format {
 	case "":
+		if o.json {
+			// Run prints the envelope; printDoc keeps the data.
+			o.format = "json"
+			break
+		}
 		o.format = "json"
 		if f, ok := a.stdout.(*os.File); ok && report.IsTerminal(f) {
 			o.format = "toml"
@@ -331,9 +341,14 @@ func (a *app) configShow(sd core.Side, file, form string) fail.Code {
 }
 
 // printDoc prints <doc> on stdout in the format <form>. <compact> prints
-// JSON on one line.
+// JSON on one line. Under --json, <doc> is the data of the envelope.
 func (a *app) printDoc(doc *source.Obj, form string, compact bool) fail.Code {
 	text := source.JSON(doc)
+	if a.json {
+		// Run prints the envelope with <doc> in data.
+		a.data = json.RawMessage(text)
+		return fail.OK
+	}
 	if form == "json" && compact {
 		_, _ = fmt.Fprintln(a.stdout, text)
 		return fail.OK
@@ -358,16 +373,21 @@ func (a *app) printDoc(doc *source.Obj, form string, compact bool) fail.Code {
 	return fail.OK
 }
 
-// catalog opens the clone of a set or an unset of a tools.toml key: the
-// cached clone, fetched again when its last fetch is 7 days old (D23, D52).
-// The caller defers Cleanup.
-func (a *app) catalog() (*core.Clone, *source.Index, fail.Code) {
+// catalogIndex opens the clone and the index of the repo side for a catalog
+// read: a set or an unset of a tools.toml key, catalog and describe. The
+// clone follows the fetch rule of the catalog reads (D5, D6), and a fetch
+// that failed before the cached clone is a warning. The caller defers
+// Cleanup.
+func (a *app) catalogIndex() (*core.Clone, *source.Index, fail.Code) {
 	c, err := core.OpenClone(core.CloneOptions{
-		Getenv: a.getenv, Version: a.version, MaxAge: core.CatalogAge,
+		Getenv: a.getenv, Version: a.version, Catalog: true,
 		Note: func(s string) { a.infof("%s", s) }, Stderr: a.stderr,
 	})
 	if err != nil {
 		return c, nil, a.logErr(err)
+	}
+	if c.Warning != "" {
+		a.warnf("%s", c.Warning)
 	}
 	idx, err := source.Source{Root: c.Dir, Side: source.Repo}.Open()
 	if err != nil {
@@ -468,7 +488,7 @@ func (a *app) configSet(sd core.Side, text, v string) fail.Code {
 	}
 	var idx *source.Index
 	if k.file == fileTools {
-		c, ix, code := a.catalog()
+		c, ix, code := a.catalogIndex()
 		defer c.Cleanup()
 		if code != fail.OK {
 			return code
@@ -514,6 +534,8 @@ func (a *app) configSet(sd core.Side, text, v string) fail.Code {
 			o, n := rank(fmt.Sprint(old)), rank(v)
 			if o >= 0 && n >= 0 && o > n {
 				a.infof("%s stays %s: it is higher than %s", text, old, v)
+				// The file keeps the old level, so data holds it (D47).
+				a.setData(text, json.RawMessage(strings.TrimSpace(source.JSON(old))))
 				return fail.OK
 			}
 		}
@@ -531,7 +553,27 @@ func (a *app) configSet(sd core.Side, text, v string) fail.Code {
 	if needsSync(k.file, k.key) {
 		a.infof("run bootstrap sync to apply it")
 	}
+	a.setData(text, json.RawMessage(lit))
 	return fail.OK
+}
+
+// setData keeps the data of config set and config unset for the envelope
+// (D47): the key, and for a set the value the file holds after it. <value>
+// is nil for an unset.
+func (a *app) setData(key string, value json.RawMessage) {
+	if !a.json {
+		return
+	}
+	if value == nil {
+		a.data = struct {
+			Key string `json:"key"`
+		}{key}
+		return
+	}
+	a.data = struct {
+		Key   string          `json:"key"`
+		Value json.RawMessage `json:"value"`
+	}{key, value}
 }
 
 // rank gives the place of the release level <l>, or -1.
@@ -553,7 +595,7 @@ func (a *app) configUnset(sd core.Side, text string) fail.Code {
 	}
 	var idx *source.Index
 	if k.file == fileTools {
-		c, ix, code := a.catalog()
+		c, ix, code := a.catalogIndex()
 		defer c.Cleanup()
 		if code != fail.OK {
 			return code
@@ -574,6 +616,7 @@ func (a *app) configUnset(sd core.Side, text string) fail.Code {
 	}
 	if _, ok := lookup(raw, k.docPath()); !ok {
 		a.infof("%s is not set", text)
+		a.setData(text, nil)
 		return fail.OK
 	}
 	cur, err := os.ReadFile(path)
@@ -600,6 +643,7 @@ func (a *app) configUnset(sd core.Side, text string) fail.Code {
 	if needsSync(k.file, k.key) {
 		a.infof("run bootstrap sync to apply it")
 	}
+	a.setData(text, nil)
 	return fail.OK
 }
 

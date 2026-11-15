@@ -155,3 +155,28 @@ changed these points. They win over the text above.
   `config` keys `releases.<project>`, but `init` does not move
   `.config/releases.yaml`. R3 switches vwf and the release tasks to
   `bootstrap config`, and its migration moves the file.
+
+## Amendments 2026-11-14 (R1b planning)
+
+The planning of R1b (`docs/plans/2026-11-14-contract-commands` of bootstrap)
+changed these points. They win over the text above.
+
+- **One tag (D16, supersedes R1a D69).** R1a, R1b, R1c and R2 land before one
+  `bootstrap@4.0.0` tag. Until then the user tests with a local binary. R1b,
+  R1c and R2 are not 4.1, 4.2 or 4.3 releases. It restores R1a D36, and it
+  agrees with D92 above.
+- **The envelope (D1).** Each `--json` command prints one object on stdout:
+  `{"contract": 1, "command", "ok", "code", "data", "errors", "warnings"}`.
+  Each human line goes to stderr. The exit code is `code`. `questions --json`
+  also prints the envelope, with its list in `data` (D2).
+- **The version (D7).** The contract version is one integer, `1` in R1b. A new
+  field, command or enum value keeps it. A removed or renamed field, or a
+  changed type or meaning, raises it. `bootstrap contract` lists the versions
+  that the CLI supports.
+- **No LSP field yet (D10).** `describe` reports `repo`, `tools`, `members` and
+  `ports`. R2 adds the `lsp` field; by D7 that keeps contract `1`.
+- **One fetch rule (D6, reverses R1a D23 and D52).** `config set` and
+  `config unset` of a `tools.*` key, `catalog` and `describe` use the cached
+  clone when its last fetch is 30 minutes old or less, else fetch. When the
+  fetch fails, they use a cached clone less than 7 days old, with a warning,
+  else they stop with code 5 (D5).

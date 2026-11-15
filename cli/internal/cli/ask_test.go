@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/virajp/bootstrap/cli/internal/contract"
 	"github.com/virajp/bootstrap/cli/internal/core"
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/field"
@@ -225,18 +226,30 @@ func runQuestions(t *testing.T, user map[string]any, json bool) string {
 	t.Helper()
 	sel := &core.Selected{Idx: askIndex(t, map[string]string{"t": askTOML}), Tools: []string{"t"}, User: userOf(user)}
 	var stdout, stderr bytes.Buffer
-	a := &app{stdout: &stdout, stderr: &stderr, getenv: func(string) string { return "" }}
+	a := &app{stdout: &stdout, stderr: &stderr, getenv: func(string) string { return "" }, json: json}
 	if code := a.printQuestions(true, sel, opts{json: json}); code != fail.OK {
 		t.Fatalf("code %d stderr %q", code, stderr.String())
+	}
+	if json {
+		// Run prints the envelope with the data of the command.
+		contract.Write(&stdout, contract.Envelope{Command: "mac questions", Data: a.data})
 	}
 	return stdout.String()
 }
 
 func TestQuestionsJSON(t *testing.T) {
-	var rows []map[string]any
-	if err := json.Unmarshal([]byte(runQuestions(t, map[string]any{}, true)), &rows); err != nil {
+	var env struct {
+		Contract int              `json:"contract"`
+		Command  string           `json:"command"`
+		Data     []map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(runQuestions(t, map[string]any{}, true)), &env); err != nil {
 		t.Fatal(err)
 	}
+	if env.Contract != 1 || env.Command != "mac questions" {
+		t.Errorf("envelope = %+v", env)
+	}
+	rows := env.Data
 	want := []map[string]any{
 		{"key": "a", "group": "g", "note": "a note", "optional": false},
 		{"key": "b", "group": "g", "note": "", "optional": false},

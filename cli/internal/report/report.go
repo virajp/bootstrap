@@ -28,6 +28,28 @@ const (
 	nKinds
 )
 
+// names are the words of the kinds in the JSON contract.
+var names = [nKinds]string{
+	Changed: "changed", New: "new", Seeded: "seeded", Removed: "removed",
+	Unchanged: "unchanged", Kept: "kept", Skipped: "skipped", Failed: "failed",
+}
+
+// String gives the lower-case word of the kind, for example "changed".
+func (k Kind) String() string {
+	if k < 0 || k >= nKinds {
+		return "unknown"
+	}
+	return names[k]
+}
+
+// Result is one call of Report.Outcome: the kind of the target, its path as
+// the run shows it, and the reason of a failed target.
+type Result struct {
+	Kind Kind
+	Path string
+	Text string
+}
+
 const (
 	yellow = "\033[0;33m"
 	green  = "\033[0;32m"
@@ -82,6 +104,15 @@ type Options struct {
 // the stderr of the engine.
 type Report struct {
 	Printer
+	// Observe, when not nil, gets each error and warning line of the report:
+	// <warn> is true for a warning, and <msg> is the text of the line, with
+	// its fix after " - ". It changes no line.
+	Observe func(warn bool, msg string)
+	// ObserveOutcome, when not nil, gets each call of Outcome, also the
+	// second report of a target that prints only its log line. It changes no
+	// line and no count.
+	ObserveOutcome func(Result)
+
 	w      io.Writer
 	opt    Options
 	dryRun bool
@@ -144,6 +175,36 @@ func (r *Report) Count(kind Kind) int { return r.counts[kind] }
 // Verbose is true when the report prints the log line of each target.
 func (r *Report) Verbose() bool { return r.opt.Verbose }
 
+// Error prints an error message, as Printer.Error does, and gives it to
+// Observe.
+func (r *Report) Error(msg string) {
+	if r.Observe != nil {
+		r.Observe(false, msg)
+	}
+	r.Printer.Error(msg)
+}
+
+// ErrorFix prints an error line and its fix, as Printer.ErrorFix does, and
+// gives them to Observe.
+func (r *Report) ErrorFix(problem, fix string) {
+	if r.Observe != nil {
+		msg := problem
+		if fix != "" {
+			msg += " - " + fix
+		}
+		r.Observe(false, msg)
+	}
+	r.Printer.ErrorFix(problem, fix)
+}
+
+// Warn prints a warning line, as Printer.Warn does, and gives it to Observe.
+func (r *Report) Warn(text string) {
+	if r.Observe != nil {
+		r.Observe(true, text)
+	}
+	r.Printer.Warn(text)
+}
+
 // Log prints a log line with the prefix.
 func (r *Report) Log(msg string) {
 	_, _ = fmt.Fprintf(r.w, "%s: %s\n", r.opt.Prefix, msg)
@@ -155,6 +216,9 @@ func (r *Report) Log(msg string) {
 // target counts once as failed and once as removed: a later report of it
 // prints only its <line>.
 func (r *Report) Outcome(kind Kind, path, text, line string) {
+	if r.ObserveOutcome != nil {
+		r.ObserveOutcome(Result{Kind: kind, Path: path, Text: text})
+	}
 	seen := false
 	if kind == Failed || kind == Removed {
 		key := fmt.Sprintf("%d %s", kind, path)

@@ -88,7 +88,63 @@ func TestStaleLock(t *testing.T) {
 	}
 }
 
-func TestCloneAge(t *testing.T) {
+func TestCatalogRule(t *testing.T) {
+	now := time.Date(2026, 11, 14, 12, 0, 0, 0, time.UTC)
+	offline := problem(fail.Network, "Cannot fetch u: nothing synced", "")
+	cases := []struct {
+		name    string
+		age     time.Duration // The age of the last fetch; -1: no recorded time.
+		usable  bool          // The cache clone exists with the origin of the URL.
+		fetchOK bool
+		fetched bool // The rule fetches.
+		code    fail.Code
+		warn    bool
+		at      time.Time // The fetch time that the rule gives.
+	}{
+		{"10 minutes old: no fetch", 10 * time.Minute, true, false, false, fail.OK, false, now.Add(-10 * time.Minute)},
+		{"30 minutes old: no fetch", 30 * time.Minute, true, false, false, fail.OK, false, now.Add(-30 * time.Minute)},
+		{"2 hours old: fetch", 2 * time.Hour, true, true, true, fail.OK, false, now},
+		{"no cache clone: fetch", 10 * time.Minute, false, true, true, fail.OK, false, now},
+		{"fetch fails at 2 days: cache and warning", 2 * 24 * time.Hour, true, false, true, fail.OK, true, now.Add(-2 * 24 * time.Hour)},
+		{"fetch fails at 8 days: code 5", 8 * 24 * time.Hour, true, false, true, fail.Network, false, time.Time{}},
+		{"fetch fails with no cache clone: code 5", 2 * time.Hour, false, false, true, fail.Network, false, time.Time{}},
+		{"no fetch time: fetch", -1, true, true, true, fail.OK, false, now},
+		{"no fetch time and the fetch fails: code 5", -1, true, false, true, fail.Network, false, time.Time{}},
+	}
+	for _, c := range cases {
+		cache := t.TempDir()
+		if c.age >= 0 {
+			stamp(cache, now.Add(-c.age))
+		}
+		fetched := false
+		fetch := func() error {
+			fetched = true
+			if c.fetchOK {
+				return nil
+			}
+			return offline
+		}
+		at, warn, err := catalogRule(cache, now, c.usable, fetch)
+		if fetched != c.fetched {
+			t.Errorf("%s: fetched %v", c.name, fetched)
+		}
+		if fail.CodeOf(err) != c.code {
+			t.Errorf("%s: error %v", c.name, err)
+		}
+		if (warn != "") != c.warn {
+			t.Errorf("%s: warning %q", c.name, warn)
+		}
+		if !at.Equal(c.at) {
+			t.Errorf("%s: fetch time %v, want %v", c.name, at, c.at)
+		}
+		// A successful fetch records its time.
+		if got, ok := fetchedAt(cache); c.fetchOK && (!ok || !got.Equal(now)) {
+			t.Errorf("%s: recorded %v %v", c.name, got, ok)
+		}
+	}
+}
+
+func TestCloneCatalog(t *testing.T) {
 	cache := t.TempDir()
 	url := "file://" + cache + "/no-origin"
 	repo := cache + "/repo"
@@ -100,34 +156,34 @@ func TestCloneAge(t *testing.T) {
 	}
 	env := map[string]string{"BOOTSTRAP_CACHE": cache, "BOOTSTRAP_URL": url, "TMPDIR": t.TempDir()}
 	getenv := func(k string) string { return env[k] }
-	stamp := func(at time.Time) {
-		if err := os.WriteFile(cache+"/"+FetchedName, []byte(at.UTC().Format(time.RFC3339)+"\n"), 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	// A fetch younger than the age: no fetch, so the origin that does not
+	// A fetch of 10 minutes ago: no fetch, so the origin that does not
 	// exist does not matter.
-	stamp(time.Now().Add(-time.Hour))
-	c, err := acquireClone(CloneOptions{Getenv: getenv, MaxAge: CatalogAge})
-	if err != nil {
-		t.Fatalf("fresh: %v", err)
-	}
+	stamp(cache, time.Now().Add(-10*time.Minute))
+	c, err := acquireClone(CloneOptions{Getenv: getenv, Catalog: true})
 	c.Cleanup()
-	// A stale fetch fetches again; offline, that is code 5.
-	stamp(time.Now().Add(-8 * 24 * time.Hour))
-	c, err = acquireClone(CloneOptions{Getenv: getenv, MaxAge: CatalogAge})
-	c.Cleanup()
-	if fail.CodeOf(err) != fail.Network {
-		t.Errorf("stale: %v", err)
+	if err != nil || c.Fetched.IsZero() || c.Warning != "" {
+		t.Fatalf("fresh: %v %+v", err, c)
 	}
-	// Without MaxAge, each command fetches.
-	stamp(time.Now())
+	// An old fetch fetches again; offline, the cache clone of 2 days ago
+	// is used with a warning.
+	stamp(cache, time.Now().Add(-2*24*time.Hour))
+	c, err = acquireClone(CloneOptions{Getenv: getenv, Catalog: true})
+	c.Cleanup()
+	if err != nil || c.Warning == "" {
+		t.Errorf("offline at 2 days: %v %+v", err, c)
+	}
+	// Without Catalog, each command fetches.
+	stamp(cache, time.Now())
 	c, err = acquireClone(CloneOptions{Getenv: getenv})
 	c.Cleanup()
 	if fail.CodeOf(err) != fail.Network {
-		t.Errorf("no age: %v", err)
+		t.Errorf("no catalog: %v", err)
 	}
-	if fresh(cache, 0) || !fresh(cache, time.Hour) {
-		t.Error("fresh")
+	// BOOTSTRAP_CLONE: no fetch and no fetch time.
+	env["BOOTSTRAP_CLONE"] = repo
+	c, err = acquireClone(CloneOptions{Getenv: getenv, Catalog: true})
+	c.Cleanup()
+	if err != nil || c.Dir != repo || !c.Fetched.IsZero() {
+		t.Errorf("BOOTSTRAP_CLONE: %v %+v", err, c)
 	}
 }

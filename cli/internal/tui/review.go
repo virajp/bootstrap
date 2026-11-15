@@ -223,7 +223,7 @@ func (c *applyCmd) Run() error {
 			_, _ = fmt.Fprintf(c.out, "  ✓ removed %s\n", sd.Show(s.Path))
 		}
 	}}
-	c.code, c.putBack, c.err = core.Apply(c.p, opt)
+	c.code, c.putBack, _, c.err = core.Apply(c.p, opt)
 	return nil
 }
 

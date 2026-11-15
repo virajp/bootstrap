@@ -458,11 +458,13 @@ bootstrap questions --json
 bootstrap questions <tool…> --json
 ```
 
-Each item has `tool`, `key`, `question`, `proposal`, `source`, `answer`,
-`group`, `note` and `optional`. `proposal` is the value that `bootstrap` finds
-in the repository, and `source` tells where it comes from. `answer` is the
-value of `tools.toml`, or `null`. An `answer` of `""` means no answer, and
-the question is answered. `note` is a line to show under the question.
+Each command prints one JSON envelope. Its `data` is the list of the
+questions. Each item has `tool`, `key`, `question`, `proposal`, `source`,
+`answer`, `group`, `note` and `optional`. `proposal` is the value that
+`bootstrap` finds in the repository, and `source` tells where it comes from.
+`answer` is the value of `tools.toml`, or `null`. An `answer` of `""` means no
+answer, and the question is answered. `note` is a line to show under the
+question.
 
 1. For each item with a `null` answer, ask the user the question. Show the
    proposal as the default.

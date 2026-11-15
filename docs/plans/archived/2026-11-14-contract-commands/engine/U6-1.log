@@ -1,0 +1,12 @@
+/security-review over f325deb..HEAD (worktree contract-commands), loop U6, round 1
+
+No high-confidence vulnerabilities found.
+
+Dropped candidates:
+- cli/internal/cli/git.go:35-40 (with cli.go writes / --json needs --yes or --dry-run): with --json, interactive() returns false, so commands never prompt. Fail-safe: consent() refuses with code 2 when there is no terminal, writes() rejects --json without --yes or --dry-run, and init/tui treat the non-interactive case as "do not prompt". Nothing writes without consent.
+- cli/internal/core/clone.go:66-84 (catalogRule): on a failed fetch the catalog reads fall back to a cached clone up to 7 days old, with a warning. The cached clone was already trusted, the old code skipped the fetch for the same 7 days, and this path only reads metadata. Not a new exploitable path.
+- cli/internal/core/tasks.go:17 (TaskNames): runs mise tasks ls --json --no-global --hidden in the repo root with fixed arguments and no shell; mise's trust check still applies; only the name field is read.
+- cli/internal/cli/catalog.go:221-272 (describe): member folder from repo.toml is joined to the root only for os.Stat; only present/absent is reported.
+- cli/internal/cli/plandata.go:76-79, catalog.go, values.go:344-350 (printDoc under --json): the envelope carries data from the user's own files or the trusted clone to the invoking user's stdout; the same data config show and dry runs already print.
+- cli/internal/repo/repo.go:535-660, cli/internal/report/report.go, cli/internal/contract/contract.go: restructure and capture existing lines for JSON; no new exec, file write or dangerous decoding.
+- .config/mise/tasks/test/repo, .config/mise/tasks/test/mac: test-only files (hard exclusion).
