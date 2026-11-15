@@ -161,6 +161,23 @@
       ],
       "backlog": [],
       "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-15-gate-file-sets",
+      "folder": "docs/plans/2026-11-15-gate-file-sets",
+      "kind": "change",
+      "title": "The file sets of the code:format and code:lint gates",
+      "target_repo": null,
+      "priority": 130,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-15-test-parts"
+      ],
+      "backlog": [],
+      "backlog_pieces": []
     }
   ]
 }

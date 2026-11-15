@@ -1,0 +1,847 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "The file sets of the code:format and code:lint gates",
+  "requires": [
+    "docs/plans/2026-11-15-test-parts"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "execution": "teams",
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-15 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "Build the worktree engine (go build -o <tmp>/bootstrap ./cmd/bootstrap in cli/) and export BOOTSTRAP_BIN=<tmp>/bootstrap and MISE_ENV=dev. In a new scratch git repo, with env -u MISE_PROJECT_ROOT BOOTSTRAP_CONFIG=/nonexistent and --clone <worktree> on each engine call, run <tmp>/bootstrap init --no-tui --yes. Set [tools.mise] code_files.excludes = [\"vendor/**\"] in .config/bootstrap/tools.toml and run <tmp>/bootstrap sync. Write a repo gate .config/mise/tasks/code/lint/99-probe (mode 755): a bash task with #USAGE flags --all, --fix, --debug and the variadic [files] argument, a header #FILES include=\"*.py\" exclude=\".config/**\", that sources helpers, calls gate_files \"$0\" with its arguments and prints the lines of the list file. Commit everything, with a.py, b.py, c.py, vendor/v.py and a submodule sub/ (a local repo with s.py), as the baseline. Then: stage a change to a.py, change b.py without staging, delete c.py, add new.py, change vendor/v.py, change sub/s.py, and make a nested git repo sibling/ with x.py. Run mise trust, then mise run code:lint:99-probe --debug, then mise run code:lint:99-probe --all --debug, then mise run code:lint:99-probe b.py vendor/v.py sub/s.py, then mise run code:lint --all b.py (D43).",
+        "pass": "The three probe runs exit 0. The default probe run prints a.py, b.py and new.py only (D1). The --all probe run prints a.py, b.py and new.py and no other path (c.py is deleted, vendor/v.py is globally excluded). The given-files probe run prints b.py only. No run prints a path below sub/ or sibling/ (D16). In both --debug runs, stderr has drop vendor/v.py: global exclude \"vendor/**\" (D33). The last run exits 2 with a usage error (D17). The rendered .config/bootstrap/config-files.toml holds vendor/** and the mise defaults (D9)."
+      }
+    ]
+  },
+  "after_landing": [],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "MAJOR",
+      "reason": "Breaking for consumers: code:format and code:lint examine only the uncommitted files by default, --all gets a new meaning, the gates drop --force-exclude, and the tool excludes move to the new key code_files of the mise tool (a migrate.md item). The plan changes no cli/ code: consumers get it through the clone at their next sync (bootstrap_commit). If the bootstrap@4.0.0 tag is not cut yet, this change rides on it (R1b D16); else the user decides the tag by hand."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The helper, the global list and the orchestrators",
+      "wave": 1,
+      "file": "01-helper.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/mise/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "The dprint, linter and ShellCheck gates",
+      "wave": 2,
+      "file": "02-dprint-linter.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/dprint/",
+        "repo/tools/linter/"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "The gates call the gate_files function and read the code_files key that U1 creates in repo/tools/mise/.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "The language gates",
+      "wave": 2,
+      "file": "03-language-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/flutter/",
+        "repo/tools/kotlin/",
+        "repo/tools/python/",
+        "repo/tools/swift/",
+        "repo/tools/go/",
+        "repo/tools/android/"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "The gates call the gate_files function that U1 creates in repo/tools/mise/tasks/helpers.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Tests",
+      "wave": 3,
+      "file": "04-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/repo"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "waits": "The cases run the helper, the orchestrators and the gates that U1, U2 and U3 write.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Review: the helper, the gates and the tests",
+      "wave": 4,
+      "file": "05-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U6",
+      "title": "Docs",
+      "wave": 5,
+      "file": "06-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/",
+        "docs/sync/",
+        "docs/memory/decisions/2026-11-15-gate-file-sets.md"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U7",
+      "title": "Gates",
+      "wave": 6,
+      "file": "07-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U6"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W6",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "every human-facing doc (README.md, CLAUDE.md, docs/design/**, docs/sync/**)",
+      "why": "U1, U2 and U3 falsify passages in the same docs",
+      "owner": "U6"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Q1: which files does a gate examine with no files and no --all?",
+      "ruling": "The uncommitted files: the staged files (git diff --cached --name-only --diff-filter=d), the changed files that are not staged (git ls-files --modified) and the new files (git ls-files --others --exclude-standard). User: agree.",
+      "rejected": "The staged files only; the uncommitted files plus the commits of the branch since its merge base",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Q2: where is the global include and exclude list?",
+      "ruling": "A key in the values files of .config/bootstrap/, with [contributes] from the tools. The sync renders it into a file that the helper reads. User: agree.",
+      "rejected": "A separate hand-written file that the orchestrators read",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Q3: where is the include and exclude list of each gate?",
+      "ruling": "A header comment in the gate file, #FILES include=\"...\" exclude=\"...\" (and shebang=\"...\", D11). It also works for a gate of the repository. A gate with no #FILES header gets every file of the set. User: agree.",
+      "rejected": "Keys of the task entry in tools.toml, which a consumer does not get",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "Q4: how does a gate get its list?",
+      "ruling": "User: \"I will suggest a help function that can be called by any of the gates to get the list\". The orchestrator passes only the mode (--all, or the given files) and --fix and --debug to each gate; each gate calls gate_files of helpers.",
+      "rejected": "The orchestrator computes each list and passes it to the gate",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "Q5: which language holds the file logic?",
+      "ruling": "Python for the file logic (one helper file); the gate files and the orchestrators stay in bash. User: agree.",
+      "rejected": "All in bash 3.2 (no ** match, no associative arrays); the gates also in Python",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "Q6: does the orchestrator call the tools or the gate tasks?",
+      "ruling": "The gate tasks stay. A tool keeps its gate in its own tool folder, and a consumer can add a gate. User: agree.",
+      "rejected": "The tool commands move into the orchestrator",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "Q7 and Q7a: how are the excludes of the tools handled?",
+      "ruling": "User: \"I am more keen on standardizing the approach so it becomes easier to debug\". Q7a, user: yes. In a gate run the helper is the only place that removes a file: the exclude lists of the tool configs move into the global or the gate lists, and the gates drop --force-exclude and every own filter. --debug prints each removed file with its layer and pattern.",
+      "rejected": "The helper filters first and each tool also applies its config excludes; a tool flag per tool (pyrefly --project-excludes, ESLint warnIgnored)",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "Q7b: what about the callers that read the tool configs and not the helper (editors, the [formatter] of the sync, a user by hand)?",
+      "ruling": "The values key stays the one source. The sync also renders the same patterns into the tool configs that bootstrap owns (the excludes of dprint.jsonc). In a gate run the helper removes the files first, so a tool exclude never acts. A seed (for example .config/swiftlint.yml) keeps its own text. User: agree.",
+      "rejected": "The tool configs carry no excludes at all",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "The name, the owner and the rendered file of the global list.",
+      "ruling": "The mise tool owns the key code_files with two lists, includes and excludes; an empty includes means every file. Its [defaults] holds excludes = [\"**/*-lock.yaml\", \"**/*.svg\", \"**/package-lock.json\"] (the dprint defaults of today) and includes = []. Other tools add patterns with [contributes.mise]; a consumer adds patterns in [tools.mise] of .config/bootstrap/tools.toml. The sync renders the lists to .config/bootstrap/config-files.toml, a template file of the mise tool. The dprint merge spec reads the same excludes; the excludes default of the dprint tool goes. User: \"agree but the location of the file must be `.config/bootstrap/config-files.toml`\".",
+      "rejected": "The dprint tool owns the list (a repo without dprint has none); the file .config/code-files.toml",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "Q3 of the interview: the linter gate, whose ESLint warns for each ignored or unmatched given file.",
+      "ruling": "The #FILES header of code-lint-linter includes the file types of @virajp.dev/linter 2.1.0 and excludes its built-in ignore list (dist/config/ignores.js). A migrate.md item moves a consumer's .config/linter.yaml ignores into [tools.mise] code_files.excludes. The linter package does not change; the option to turn off its list is parked. User: yes.",
+      "rejected": "Change the linter package first (warnIgnored: false), so this plan waits for its release",
+      "units": [
+        "U2",
+        "U6"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "Q4 of the interview: ShellCheck, which today runs inside the linter gate and selects files by shebang.",
+      "ruling": "ShellCheck moves to its own gate code:lint:06-shellcheck in the linter tool. The #FILES header gets a shebang key: a file whose first line is #! with one of the named shells is included. Its header: include=\"*.sh *.bash\" shebang=\"sh bash dash ksh\" exclude=\"*.tmpl\". A zsh file is not in the list, so the zsh check goes. shell_files_in_scope of helpers goes. User: yes.",
+      "rejected": "The linter gate keeps both tools and calls the helper two times",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "Q5 of the interview: the #FILES header of each gate.",
+      "ruling": "User: yes, to this table. 05-dprint: no header (every file; dprint selects by its plugins). 10-dart and 20-dart: include *.dart, exclude *.g.dart *.freezed.dart *.mocks.dart. 30-ktlint and 30-detekt: include *.kt *.kts, exclude **/generated/**. 40-ruff, 50-pyrefly, 70-ruff: include *.py *.pyi. 50-swift-format and 80-swiftlint: include *.swift, exclude *.generated.swift .build/** .swiftpm/** **/Derived/** **/DerivedData/**. 05-linter: D10. 06-shellcheck: D11. 10-android: the Android sources and build files of today. 40-go and 45-gomod: include *.go go.mod go.sum. 60-bootstrap: include .config/bootstrap/repo.toml .config/bootstrap/tools.toml. 90-uv: include pyproject.toml uv.lock. A pattern has the gitignore glob form: without / it matches the file name in each folder; ** matches any number of folders. The module gates (android, go, gomod, uv) change their list into modules or projects as today: the default mode examines the modules of the changed files, --all each module.",
+      "rejected": "Keep each filter in the gate code",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Q6 of the interview: the interface of the helper.",
+      "ruling": "The mise tool ships _scripts/gate_files.py as a library; helpers gets the bash function gate_files, called by each gate as gate_files \"$0\" with the gate's flags and files. It reads the #FILES header of the gate file, applies the mode (D1, --all, or the given files), the repository filter (R2, R3), the global filter of .config/bootstrap/config-files.toml and the gate filter. It writes the list to a temporary file, one path for each line, and prints the path of that file; an empty list gives an empty file, and the gate then exits 0 with no output. dprint reads the file with --stdin-files, detekt as @file, each other tool through xargs (Q8). The function runs the helper with mise x -- python3; without Python the gate stops with an error. With --debug, the helper prints each removed file to stderr: drop <path>: <layer> <kind> \"<pattern>\". User: yes.",
+      "rejected": "The function prints the list on stdout and each gate reads it into a bash array and batches it itself",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Q8: the argument limit from a gate to its tool (1,048,576 bytes on macOS).",
+      "ruling": "The list goes in a file, one path for each line. A tool that reads a list uses it (dprint --stdin-files, detekt @file). The others get the list through xargs, which makes batches below the limit. User: agree.",
+      "rejected": "Arguments as today",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Interview question 1: which plans does this plan require?",
+      "ruling": "docs/plans/2026-11-15-test-parts, the last plan of the queue: six queued plans edit repo/tools/mise/, the android and swift gates, CLAUDE.md and docs/, and task-ports changes own_tasks to NN- names. Priority 130. User: yes.",
+      "rejected": "Require only 2026-11-14-config-folder (D100 frees --all), priority 60, and merge with the later plans",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6",
+        "U7"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "The rules of the repository filter (R2, R3 of the artifact).",
+      "ruling": "The base set has paths relative to the repository root (MISE_PROJECT_ROOT). The filter drops a gitlink (a submodule, mode 160000), a path that ends with / (a nested repository that --others lists), a path that is not a regular file (a deleted file), and a given path that git ls-files --cached --others --exclude-standard does not list (an ignored path, a path in a submodule or outside the repository). It never recurses into a submodule.",
+      "rejected": "git ls-files --recurse-submodules",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "The flags of the orchestrators and the gates.",
+      "ruling": "code:format and code:lint declare --all, --fix, --debug and the variadic [files]; they pass --all, --fix, --debug and the files to each gate. Each gate declares the same four. --all with files stops the orchestrator with a usage error, exit 2. The pre-commit hooks do not change: they pass the staged files.",
+      "rejected": "Files win over --all silently",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "Interview item 10a: a review unit.",
+      "ruling": "One review unit (U5) after U1 to U4: the plan lands runnable code (a Python helper and bash gates that each consumer runs).",
+      "rejected": "No review unit; the wave review alone",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Interview item 10b: the execution mode.",
+      "ruling": "teams: wave 2 holds two edit units (U2, U3) that call the same helper.",
+      "rejected": "solo",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D20",
+      "decision": "Reversal of the CLAUDE.md gate rule (Task scripts): \"Without files, it lists them with git ls-files ... A tool that scans its project itself (ruff, pyrefly, detekt) uses that list only to find whether a file exists.\"",
+      "ruling": "Reversed: the helper makes the list in every mode, and each tool gets only that list. The name --all comes back with a new meaning after D100 of 2026-11-14-config-folder removed the member flag. U6 writes docs/memory/decisions/2026-11-15-gate-file-sets.md.",
+      "rejected": "Keep the per-gate git ls-files rule",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D21",
+      "decision": "Non-goals.",
+      "ruling": "code:sec and its scanners keep their own file lists (code-sec-gitleaks keeps git ls-files). The shipped PR templates and CI do not change. The queued plans keep their code:lint gates. The linter package does not change (parked). The SwiftLint seed keeps its text.",
+      "rejected": "",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D22",
+      "decision": "Review gap 2: the shared dprint.jsonc sends .config/mise/tasks/** to the shell formatter shuck, and gate_files.py is below that folder.",
+      "ruling": "U2 adds \"!**/*.py\" to the shuck associations of the dprint tool. The Python file follows the formatter that code:format of this repository applies to *.py (dprint with its ruff plugin).",
+      "rejected": "Leave the associations; the .py file is formatted as shell",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D23",
+      "decision": "Review gap 5: plain xargs splits on blanks and quotes.",
+      "ruling": "Each gate that uses xargs runs tr \"\\n\" \"\\0\" < <list file> | xargs -0 <tool>, so a path with a space or a quote stays one argument. A path with a newline is not supported (git quotePath=off prints it on one line only when it has none).",
+      "rejected": "Plain xargs; paths with blanks out of scope",
+      "units": [
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D24",
+      "decision": "Review gap 6: who deletes the list file?",
+      "ruling": "The gate deletes it: right after the gate_files call, trap \"rm -f <list file>\" EXIT.",
+      "rejected": "The helper deletes it (the gate needs it after the helper exits)",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D25",
+      "decision": "Review gap 7: the pattern syntax, and the same patterns in dprint.jsonc.",
+      "ruling": "The helper uses the gitignore glob form without negation: a pattern without / (except a trailing /) matches the name in each folder; a pattern with a leading or inner / matches from the root (a leading / is removed); a trailing / matches a folder and every path below it; ** matches any number of folders; ! at the start is a malformed pattern (exit 2). The dprint merge spec renders each pattern in the dprint form: a pattern without / gets the prefix **/, and a trailing / gets ** after it.",
+      "rejected": "Leave the dprint form undefined",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D26",
+      "decision": "Review gap 8: detekt and its argument file.",
+      "ruling": "The detekt gate keeps its own argument file: it reads the list file and builds --input with the paths, as today (including the skip of a path with a comma or whitespace). D14 for detekt means the list goes through its argument file, not through argv.",
+      "rejected": "Pass the list file to detekt as @file directly",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D27",
+      "decision": "Review gap 9: a *.sh file with a zsh shebang.",
+      "ruling": "With a shebang key, the helper also drops a file that the include names match when its first line is a #! line that names a shell not in the shebang list (for example zsh). With --debug: gate shebang.",
+      "rejected": "Accept that ShellCheck fails on such a file",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D28",
+      "decision": "Review gap 10: the task code runs code:format, code:lint and code:sec.",
+      "ruling": "code declares --all and passes it to code:format and code:lint; without it, they examine the uncommitted files. code:sec does not change. Its description changes to say so.",
+      "rejected": "Only the description changes",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D29",
+      "decision": "Review gap 11: the form of a given path.",
+      "ruling": "The helper normalizes each given path before the compare: it removes ./, resolves .., makes a path relative to the current folder relative to the repository root, and makes an absolute path inside the repository relative. A path outside the repository is dropped (repo unlisted).",
+      "rejected": "Compare the given text as it is",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D30",
+      "decision": "Review gap 12: a gate run directly with --all and files.",
+      "ruling": "gate_files.py stops with exit 2 and a usage message, as the orchestrator does (D17).",
+      "rejected": "Files win; --all wins",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D31",
+      "decision": "Review gap 13: a change that only deletes files gives an empty list, so a module gate (go mod tidy -diff, uv lock --check) does not run.",
+      "ruling": "Accepted: --all covers it.",
+      "rejected": "Map deleted paths to their modules",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D32",
+      "decision": "Review gap 14: the own excludes of this repository (.config/linter.yaml, the root dprint.jsonc) and its self-sync.",
+      "ruling": "Out of scope: CLAUDE.md \"Change a shared file\" step 4 (setup:configs here, on a sync-<name> branch) is a hand step after the landing, and the migrate.md item of U6 applies to this repository then.",
+      "rejected": "An after-landing step",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D33",
+      "decision": "Review gap 15: the words of the --debug line for each layer.",
+      "ruling": "drop <path>: <layer> <kind> [\"<pattern>\"]. Layers and kinds: repo gitlink, repo nested-repo, repo deleted, repo unlisted (no pattern); global include (no pattern), global exclude \"<pattern>\"; gate include (no pattern), gate exclude \"<pattern>\", gate shebang (no pattern).",
+      "rejected": "Print only the pattern drops",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D34",
+      "decision": "Review gap 1: mise x -- python3 gives the system Python (3.9 on macOS) in a shell with no MISE_ENV and no global Python, and the helper needs tomllib (3.11+).",
+      "ruling": "The gate_files function runs mise x python@3.14 -- python3. The TOOL@VERSION argument of mise exec names the version itself, so the helper gets Python 3.14 in each environment; the version is the pin of repo/tools/python/tools.toml and changes with it. User: yes.",
+      "rejected": "A #MISE tools.python line in each gate file; accept a failure outside dev and ci",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D35",
+      "decision": "Review round 2, gap 1: the dprint merge keeps the shuck associations that an adopted dprint.jsonc already has, so D22 does not reach it.",
+      "ruling": "A migrate.md item (U6): add \"!**/*.py\" to the shuck associations of dprint.jsonc by hand. This repository does it at its next sync (D32).",
+      "rejected": "An override in the values file; accept that shuck formats the .py file",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D36",
+      "decision": "Review round 2, gap 2: dprint also applies the own excludes that a repository keeps in its dprint.jsonc, so it can drop a file silently.",
+      "ruling": "Accepted as a residual: the migrate.md item (U6) moves a repository's own dprint.jsonc excludes into [tools.mise] code_files.excludes; then the helper drops those files first, and --debug names them.",
+      "rejected": "--excludes-override on each dprint call",
+      "units": [
+        "U2",
+        "U6"
+      ]
+    },
+    {
+      "id": "D37",
+      "decision": "Review round 2, gap 3: a gate of a repository that does not declare --all gets a usage error from the orchestrator.",
+      "ruling": "The orchestrator passes --all only to a gate whose file has a #USAGE line for --all (a grep of the gate file). A gate without it gets --fix, --debug and the files as today. The migrate.md item (U6) tells a repository to add --all and gate_files to its own gates.",
+      "rejected": "Pass --all to every gate; accept the usage error",
+      "units": [
+        "U1",
+        "U6"
+      ]
+    },
+    {
+      "id": "D38",
+      "decision": "Review round 2, gap 5: with excludes gone from the dprint [defaults], a consumer value [tools.dprint] excludes becomes an unknown key and stops the sync.",
+      "ruling": "The dprint tool keeps excludes = [] in [defaults], so the key stays known. The merge spec renders .all.mise.code_files.excludes and then .config.excludes. The migrate.md item (U6) tells a consumer to move [tools.dprint] excludes into [tools.mise] code_files.excludes.",
+      "rejected": "An init migration in cli/ (no unit owns cli/); accept the stop",
+      "units": [
+        "U2",
+        "U6"
+      ]
+    },
+    {
+      "id": "D39",
+      "decision": "Review round 2, gap 6: D29 says relative to the current folder, but each gate runs in the repository root.",
+      "ruling": "The clause goes: a given path is relative to the repository root (as the pre-commit hook passes it). The helper still removes ./, resolves .., and makes an absolute path inside the repository relative.",
+      "rejected": "Read MISE_ORIGINAL_CWD",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D40",
+      "decision": "Review round 2, gap 7: the dprint form of a pattern with a leading / and of a pattern whose only / is trailing.",
+      "ruling": "A leading / is removed and the rest stays as it is (a path from the root). A pattern whose only / is trailing (build/) becomes **/build/**. A pattern with an inner / and a trailing / becomes <pattern>** (from the root).",
+      "rejected": "",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D41",
+      "decision": "Review round 2, gap 8: the Verification grep of U3 hits the setup-deps tasks, and code-lint-android has an AndroidManifest check with git ls-files.",
+      "ruling": "The grep covers the gate files only (code-format-* and code-lint-*). code-lint-android keeps its AndroidManifest check (a does-not-apply check, not a file list).",
+      "rejected": "",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D42",
+      "decision": "Review round 2, gap 9: the gates pass --fix to gate_files, but gate_files.py takes only --all and --debug.",
+      "ruling": "gate_files.py accepts --fix and ignores it.",
+      "rejected": "The gates leave --fix out",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D43",
+      "decision": "Review round 2, gap 4: in K1, 60-bootstrap runs check against the cache clone of the released engine.",
+      "ruling": "K1 runs the probe gate directly (mise run code:lint:99-probe), so no other gate runs, and runs the orchestrator only for its usage error.",
+      "rejected": "Set BOOTSTRAP_CACHE in K1",
+      "units": [
+        "U7"
+      ]
+    },
+    {
+      "id": "D44",
+      "decision": "Review round 3, gaps 1 and 2: where the #FILES line is, and what a malformed header is.",
+      "ruling": "The helper reads the top block of the gate file: every line from line 1 to the first line that is neither a comment nor blank. A #FILES line is a line of that block that starts with \"#FILES \". A gate puts it right after its #USAGE lines. No #FILES line: every file. Malformed, exit 2: two #FILES lines, a key other than include, exclude or shebang, a key twice, a value without double quotes. An empty value (include=\"\") is an empty list.",
+      "rejected": "",
+      "units": [
+        "U1",
+        "U2",
+        "U3"
+      ]
+    },
+    {
+      "id": "D45",
+      "decision": "Review round 3, gap 3: --debug drop lines before print_header, and from a gate with an empty list.",
+      "ruling": "Allowed: the drop lines go to stderr and only with --debug, a diagnostic mode that the Task output rules do not cover. Without --debug a gate with an empty list prints nothing.",
+      "rejected": "Suppress or reorder the drop lines",
+      "units": [
+        "U1",
+        "U6"
+      ]
+    },
+    {
+      "id": "D46",
+      "decision": "Review round 3, gap 4: a pattern without / such as node_modules.",
+      "ruling": "As in gitignore: it matches a file or a folder with that name at any depth, and each path below such a folder. The dprint form renders it as two patterns: **/<p> and **/<p>/**.",
+      "rejected": "Match only the base name of a file",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D47",
+      "decision": "Review round 3, gap 5: which shebang lines count for D27.",
+      "ruling": "The helper reads the interpreter of a #! line: the last path part of the first word, or after env (and its options such as -S) the first word that is not an option. Known shells: sh bash dash ksh mksh zsh fish csh tcsh. A file that the include names match is dropped only when its interpreter is a known shell that is not in the shebang list. Any other interpreter (python) or no #! line keeps it. A file that only the shebang key selects needs an interpreter in the shebang list.",
+      "rejected": "",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D48",
+      "decision": "Review round 3, gap 6: a given path that is missing and not listed; a symlink.",
+      "ruling": "The repository filter checks in this order: not listed by git (repo unlisted), then a gitlink, then a nested repository, then a symlink (repo symlink, a new kind: the helper drops each symlink, whatever its target), then not a regular file (repo deleted).",
+      "rejected": "Keep a symlink to a regular file",
+      "units": [
+        "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D49",
+      "decision": "Review round 3, gap 7: the Verification grep of U3 under zsh.",
+      "ruling": "The line is: find repo/tools/{flutter,kotlin,python,swift,go,android}/tasks -name \"code-format-*\" -o -name \"code-lint-*\" | xargs grep -n -- \"--force-exclude\\|ls-files\\|generated\".",
+      "rejected": "",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D50",
+      "decision": "Review round 4, gap 1: detekt lints every Kotlin file today when it gets any Kotlin file.",
+      "ruling": "detekt gets only the gate_files list (D7); D26 keeps only its argument file. User: yes.",
+      "rejected": "Every Kotlin file, as today",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D51",
+      "decision": "Review round 4, gap 2: code-lint-android and code-lint-detekt already set a trap on EXIT.",
+      "ruling": "One trap removes both the temporary folder and the list file. User: yes.",
+      "rejected": "",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D52",
+      "decision": "Review round 4, gap 3: one or two dprint items for a pattern without /.",
+      "ruling": "D46 applies to each pattern without /: *.svg gives **/*.svg and **/*.svg/**. User: yes.",
+      "rejected": "One item, **/<p>",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D53",
+      "decision": "Review round 4, gap 4: a header with no include key or with include=\"\".",
+      "ruling": "Every file, as an empty global includes does. User: yes.",
+      "rejected": "No file",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D54",
+      "decision": "Review round 4, gap 5: the AndroidManifest check of code-lint-android.",
+      "ruling": "It runs in each mode, as the check that decides whether the gate applies. User: yes.",
+      "rejected": "Only with --all",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D55",
+      "decision": "Review round 4, gap 6: a consumer vwf wave or plan gate runs code:lint after the units commit, and the default mode then examines nothing.",
+      "ruling": "Parked for claude-plugins: the vwf gate lines use --all (docs/memory/gaps/2026-11-15-vwf-gates-all-parked.md). This plan does not change vwf. User: yes.",
+      "rejected": "Change the vwf gate ports in this plan",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D56",
+      "decision": "Review round 4, gap 7: the header of 60-bootstrap names only repo.toml and tools.toml.",
+      "ruling": "include=\".config/bootstrap/*.toml\" exclude=\".config/bootstrap/config-files.toml\". User: yes.",
+      "rejected": "Only repo.toml and tools.toml",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D57",
+      "decision": "Review round 4, gap 8: repo/tools/python/tools.toml:28 lists the places with the same Python version.",
+      "ruling": "U3 changes that comment to also name python@3.14 in gate_files of helpers. User: yes.",
+      "rejected": "",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D58",
+      "decision": "Review round 4, gap 9: the run_gate cases copy the synced helpers at the root, which has no gate_files until the self-sync.",
+      "ruling": "The cases copy repo/tools/mise/tasks/helpers and gate_files.py and run the gate with --all. User: yes.",
+      "rejected": "",
+      "units": [
+        "U4"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
