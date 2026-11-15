@@ -2962,6 +2962,16 @@ run_case "when: main and develop give code:merge:main and develop" 0 "$both_core
   precommit_both_branches '' check_merge_pair
 run_case "the git check: a core branch that does not exist" 2 'environments = [ "dev" ]' consumer_no_core_branch \
   "core_branches in "
+# D48: in a repository with no commit, the unborn branch of HEAD is a core
+# branch that exists. The case does not commit its consumer, so HEAD stays
+# unborn.
+consumer_unborn() {
+  rm -rf -- "$consumer/.git"
+  _git -C "$consumer" init --quiet -b main
+}
+CASE_DIRTY=1 run_case "the git check: the unborn branch of HEAD" 0 'environments = [ "dev" ]' consumer_unborn
+CASE_DIRTY=1 run_check "--check, core_branches with the unborn branch of HEAD" 0 'environments = [ "dev" ]' \
+  consumer_unborn "$check_valid"
 
 # The derive script of mise: the aliases of the submodule and sibling members
 # that have a [members.<name>] table.

@@ -175,9 +175,9 @@
       "waits": "The bash cases test the finished engine, the tool scripts and the examples of wave 3.",
       "status": "green",
       "started": "2026-11-15T14:32:38.419Z",
-      "ended": "2026-11-15T16:32:22.177Z",
+      "ended": "2026-11-15T17:42:28.213Z",
       "commit": "94c1a7e",
-      "rounds": 2
+      "rounds": 3
     },
     {
       "id": "U7",
