@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "solo",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-14 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-15T23:43:46 in .worktrees/contract-commands"
   },
   "consent": {
     "merge": true,
@@ -75,11 +75,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T18:15:01.353Z",
+      "ended": "2026-11-15T18:35:52.931Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -244,8 +244,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-15T18:15:01.314Z",
       "ended": ""
     },
     {
@@ -734,6 +734,24 @@
       "units": [
         "U1",
         "U5"
+      ]
+    },
+    {
+      "id": "D47",
+      "decision": "Q1: What should config set --json and config unset --json put in the envelope data on success?",
+      "ruling": "{\"key\": <key>, \"value\": <the value as written>} for set and {\"key\": <key>} for unset — the plugin sees what changed, and data is null only on a failure, as D37 says",
+      "rejected": "data null on success too; the config get object {key, value, source} read back after the write",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D48",
+      "decision": "Q2: Should the info lines of config set and config unset also go into the envelope warnings, or only to stderr?",
+      "ruling": "stderr only — warnings keep their meaning of a warning line, and a plugin reads the outcome from data",
+      "rejected": "add them to warnings",
+      "units": [
+        "U1"
       ]
     }
   ],

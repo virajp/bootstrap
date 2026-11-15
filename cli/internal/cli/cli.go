@@ -1,12 +1,12 @@
 // Package cli is the command line of `bootstrap`: the commands init, tui,
 // sync, check, questions, add, remove, replace, detect and list of the repo
-// side and of the Mac side (`bootstrap mac <command>`), config, settings and
-// version. It is the shell of the command line: it parses the arguments,
-// takes the clone and its lock, checks the version, calls internal/core
-// (the preflight, Plan, Apply, Detect and the clean-target rule), prints the
-// results and the errors, and asks the questions and the consent, or starts
-// the TUI of internal/tui. The front-ends internal/repo and internal/macos
-// do the sync itself.
+// side and of the Mac side (`bootstrap mac <command>`), config, settings,
+// contract and version. It is the shell of the command line: it parses the
+// arguments, takes the clone and its lock, checks the version, calls
+// internal/core (the preflight, Plan, Apply, Detect and the clean-target
+// rule), prints the results and the errors, and asks the questions and the
+// consent, or starts the TUI of internal/tui. The front-ends internal/repo
+// and internal/macos do the sync itself.
 //
 // Contract: docs/design/cli.md.
 package cli
@@ -19,7 +19,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 
+	"github.com/virajp/bootstrap/cli/internal/contract"
 	"github.com/virajp/bootstrap/cli/internal/core"
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/field"
@@ -66,6 +68,8 @@ Repository
                        print the values of .config/bootstrap/
   settings             print each setting of the engine, with its value and
                        its source
+  contract             print the versions of the JSON contract, the commands
+                       that take --json, and the names of the task ports
   version, --version   print the version
 
 Mac
@@ -94,7 +98,9 @@ Flags
                        init, add, replace, detect --add: the answer of a
                        question (repeatable); --answer <tool>.<key>= writes
                        an empty answer for an optional or a group question
-  --json               questions, mac questions: JSON output
+  --json               contract, questions, mac questions, config get|set|
+                       unset|show: print one JSON envelope on stdout, and
+                       each other line on stderr
   --format json|yaml|toml
                        config get, config show: the output format (default:
                        json when stdout is not a terminal, else toml)
@@ -146,6 +152,90 @@ func usageLine(mac bool, cmd, flags string) string {
 
 func cmdWord(mac bool, cmd string) string { return core.CmdWord(mac, cmd) }
 
+// allowed gives the own flags of each command; a name that it does not have
+// is not a command. The Mac side takes json only on questions.
+var allowed = map[string]string{
+	"init":      "dry-run yes no-tui answer jobs verbose",
+	"tui":       "jobs verbose",
+	"sync":      "dry-run jobs verbose",
+	"check":     "jobs verbose",
+	"questions": "json",
+	"add":       "dry-run yes exclude answer jobs verbose",
+	"remove":    "dry-run yes jobs verbose",
+	"replace":   "dry-run yes answer jobs verbose",
+	"detect":    "dry-run add yes answer jobs verbose",
+	"list":      "",
+	"settings":  "jobs repo-path",
+	"config":    "format json",
+	"contract":  "json",
+	"version":   "",
+}
+
+// commandOrder is the order of the commands in the commands of contract.
+var commandOrder = []string{
+	"contract", "init", "tui", "sync", "check", "questions", "add", "remove",
+	"replace", "detect", "list", "config", "settings", "version",
+}
+
+// configSubs are the subcommands of config.
+var configSubs = []string{"get", "set", "unset", "show"}
+
+// repoOnly are the commands that the Mac side does not have.
+var repoOnly = map[string]bool{"version": true, "settings": true, "config": true, "contract": true}
+
+// takesJSON tells if the command <cmd> of the side takes --json: on the Mac
+// side, only questions.
+func takesJSON(mac bool, cmd string) bool {
+	if mac && cmd != "questions" {
+		return false
+	}
+	return hasWord(allowed[cmd], "json")
+}
+
+// jsonCommands gives the full words of each command that takes --json, for
+// example "config get" and "mac questions".
+func jsonCommands() []string {
+	var out []string
+	for _, cmd := range commandOrder {
+		if !takesJSON(false, cmd) {
+			continue
+		}
+		if cmd == "config" {
+			for _, sub := range configSubs {
+				out = append(out, "config "+sub)
+			}
+			continue
+		}
+		out = append(out, cmd)
+	}
+	for _, cmd := range commandOrder {
+		if takesJSON(true, cmd) {
+			out = append(out, cmdWord(true, cmd))
+		}
+	}
+	return out
+}
+
+func hasWord(list, w string) bool {
+	for _, f := range strings.Fields(list) {
+		if f == w {
+			return true
+		}
+	}
+	return false
+}
+
+// withoutWord gives <list> without the word <w>.
+func withoutWord(list, w string) string {
+	var out []string
+	for _, f := range strings.Fields(list) {
+		if f != w {
+			out = append(out, f)
+		}
+	}
+	return strings.Join(out, " ")
+}
+
 // app is the state of one command.
 type app struct {
 	version        string
@@ -162,6 +252,13 @@ type app struct {
 	prompt func(field.Spec) (string, error)
 	// terminal makes interactive true. Tests set it with prompt.
 	terminal bool
+	// json: the arguments hold --json, so the command prints the envelope on
+	// stdout and each human line on stderr. command is the full command words
+	// of the envelope, data its result, and errors and warnings its items.
+	json             bool
+	command          string
+	data             any
+	errors, warnings []contract.Item
 }
 
 // opts are the flags and the arguments of a command.
@@ -176,11 +273,34 @@ type opts struct {
 	format                               string            // config get, config show: --format.
 }
 
-// Run runs the command of <args> and gives its exit code.
+// Run runs the command of <args> and gives its exit code. With a literal
+// --json anywhere in <args>, it prints the envelope of the command on stdout,
+// also for a usage error, and its exit code is the code of the envelope.
 func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Writer) fail.Code {
 	a := &app{version: version, stdin: stdin, stdout: stdout, stderr: stderr, getenv: os.Getenv}
+	for _, arg := range args {
+		a.json = a.json || arg == "--json"
+	}
+	code := a.run(args)
+	if !a.json {
+		return code
+	}
+	for i := range a.errors {
+		// An error line does not know the code of the command that stops.
+		if a.errors[i].Code == fail.OK {
+			a.errors[i].Code = code
+		}
+	}
+	return contract.Write(stdout, contract.Envelope{
+		Command: a.command, Code: code, Data: a.data, Errors: a.errors, Warnings: a.warnings,
+	})
+}
+
+// run runs the command of <args> for Run.
+func (a *app) run(args []string) fail.Code {
+	version, stdout := a.version, a.helpOut()
 	isTerm := false
-	if f, ok := stderr.(*os.File); ok {
+	if f, ok := a.stderr.(*os.File); ok {
 		isTerm = report.IsTerminal(f)
 	}
 	a.styled = report.StyleFromEnv(a.getenv, isTerm)
@@ -205,23 +325,8 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 	if cmd == "ls" {
 		cmd = "list"
 	}
-	allowed := map[string]string{
-		"init":      "dry-run yes no-tui answer jobs verbose",
-		"tui":       "jobs verbose",
-		"sync":      "dry-run jobs verbose",
-		"check":     "jobs verbose",
-		"questions": "json",
-		"add":       "dry-run yes exclude answer jobs verbose",
-		"remove":    "dry-run yes jobs verbose",
-		"replace":   "dry-run yes answer jobs verbose",
-		"detect":    "dry-run add yes answer jobs verbose",
-		"list":      "",
-		"settings":  "jobs repo-path",
-		"config":    "format",
-		"version":   "",
-	}
 	flags, ok := allowed[cmd]
-	if !ok || (mac && (cmd == "version" || cmd == "settings" || cmd == "config")) {
+	if !ok || (mac && repoOnly[cmd]) {
 		switch cmd {
 		case "-h", "-help", "--help", "help":
 			if !mac {
@@ -236,11 +341,15 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 		a.usageErr(name+" is not a command", "")
 		return fail.Usage
 	}
+	a.command = cmdWord(mac, cmd)
+	if mac && !takesJSON(mac, cmd) {
+		flags = withoutWord(flags, "json")
+	}
 	own := flags
 	if mac && cmd != "questions" {
 		flags += " no-bootstrap"
 	}
-	if cmd != "version" {
+	if cmd != "version" && cmd != "contract" {
 		flags += " config cache-dir url clone"
 	}
 	if mac && cmd != "init" {
@@ -274,6 +383,10 @@ func Run(version string, args []string, stdin io.Reader, stdout, stderr io.Write
 	if cmd == "version" {
 		_, _ = fmt.Fprintln(stdout, version)
 		return fail.OK
+	}
+	if cmd == "contract" {
+		// It takes no repository and no config file.
+		return a.contractCmd(o)
 	}
 	// The config file, before any other work.
 	if code := a.applySettings(o); code != fail.OK {
@@ -425,23 +538,90 @@ func parse(cmd string, args []string, flags string, names bool) (opts, error) {
 	return o, nil
 }
 
+// helpOut gives the writer of the help: stdout, or stderr under --json,
+// where stdout holds the envelope only.
+func (a *app) helpOut() io.Writer {
+	if a.json {
+		return a.stderr
+	}
+	return a.stdout
+}
+
+// contractCmd is `bootstrap contract`: the versions of the JSON contract,
+// the version of the engine, the commands that take --json and the names of
+// the task ports.
+func (a *app) contractCmd(o opts) fail.Code {
+	commands := jsonCommands()
+	if o.json {
+		a.data = struct {
+			Versions   []int    `json:"versions"`
+			CLIVersion string   `json:"cli_version"`
+			Commands   []string `json:"commands"`
+			Ports      []string `json:"ports"`
+		}{contract.Supported, a.version, commands, contract.Ports}
+		return fail.OK
+	}
+	versions := make([]string, len(contract.Supported))
+	for i, v := range contract.Supported {
+		versions[i] = strconv.Itoa(v)
+	}
+	w := tabwriter.NewWriter(a.stdout, 0, 0, 2, ' ', 0)
+	_, _ = fmt.Fprintf(w, "versions\t%s\n", strings.Join(versions, " "))
+	_, _ = fmt.Fprintf(w, "version\t%s\n", a.version)
+	_, _ = fmt.Fprintf(w, "commands\t%s\n", strings.Join(commands, ", "))
+	_, _ = fmt.Fprintf(w, "ports\t%s\n", strings.Join(contract.Ports, ", "))
+	_ = w.Flush()
+	return fail.OK
+}
+
+// record keeps an error (<warn> false) or a warning of the envelope. An
+// error with code 0 takes the code of the command.
+func (a *app) record(warn bool, code fail.Code, msg string) {
+	if !a.json {
+		return
+	}
+	if warn {
+		a.warnings = append(a.warnings, contract.Item{Message: msg})
+		return
+	}
+	a.errors = append(a.errors, contract.Item{Code: code, Message: msg})
+}
+
 // printer gives the Printer of the command: it writes to stderr.
 func (a *app) printer() report.Printer { return report.NewPrinter(a.stderr, a.styled) }
 
 // errorf prints an error line, with no fix.
 func (a *app) errorf(format string, args ...any) {
-	a.printer().ErrorFix(fmt.Sprintf(format, args...), "")
+	msg := fmt.Sprintf(format, args...)
+	a.record(false, fail.OK, msg)
+	a.printer().ErrorFix(msg, "")
 }
 
 // fail prints an error line with the line of its fix.
-func (a *app) fail(problem, fix string) { a.printer().ErrorFix(problem, fix) }
+func (a *app) fail(problem, fix string) {
+	a.record(false, fail.OK, withFix(problem, fix))
+	a.printer().ErrorFix(problem, fix)
+}
+
+// withFix gives the message of an error and its fix as one line.
+func withFix(problem, fix string) string {
+	if fix == "" {
+		return problem
+	}
+	return problem + " - " + fix
+}
 
 func (a *app) infof(format string, args ...any) { a.printer().Info(fmt.Sprintf(format, args...)) }
-func (a *app) warnf(format string, args ...any) { a.printer().Warn(fmt.Sprintf(format, args...)) }
+func (a *app) warnf(format string, args ...any) {
+	msg := fmt.Sprintf(format, args...)
+	a.record(true, fail.OK, msg)
+	a.printer().Warn(msg)
+}
 
 // usageErr prints a usage error: the problem, the usage line of the command
 // when it has one, and the pointer to the help.
 func (a *app) usageErr(problem, usage string) {
+	a.record(false, fail.Usage, problem)
 	p := a.printer()
 	p.ErrorFix(problem, "")
 	if usage != "" {
@@ -471,11 +651,13 @@ func (a *app) printErr(err error) {
 	var p *core.Problem
 	if errors.As(err, &p) {
 		if p.Msg != "" {
-			a.fail(p.Msg, p.Fix)
+			a.record(false, p.Code, withFix(p.Msg, p.Fix))
+			a.printer().ErrorFix(p.Msg, p.Fix)
 		}
 		return
 	}
 	for _, m := range source.Messages(err) {
+		a.record(false, fail.CodeOf(m), m.Error())
 		a.printer().Error(m.Error())
 	}
 }

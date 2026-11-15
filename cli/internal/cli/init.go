@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"unicode/utf8"
@@ -472,8 +471,8 @@ func (a *app) printQuestions(mac bool, sel *core.Selected, o opts) fail.Code {
 		rows = append(rows, r)
 	}
 	if o.json {
-		b, _ := json.MarshalIndent(rows, "", "  ")
-		_, _ = fmt.Fprintln(a.stdout, string(b))
+		// Run prints the envelope with the rows in data.
+		a.data = rows
 		return fail.OK
 	}
 	out := report.NewPrinter(a.stdout, a.styled)
