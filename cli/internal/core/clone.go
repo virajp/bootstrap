@@ -31,41 +31,76 @@ type CloneOptions struct {
 	Note func(string)
 	// Stderr takes the output of git and cp on stderr. Nil discards it.
 	Stderr io.Writer
-	// MaxAge, when above 0, skips the fetch while the last fetch of the
-	// cache clone is younger than it (D52). BOOTSTRAP_CLONE has no age.
-	MaxAge time.Duration
+	// Catalog applies the fetch rule of the catalog reads (catalogRule):
+	// config set and config unset of a tools.* key, catalog and describe.
+	// Without it, each command fetches. BOOTSTRAP_CLONE has no age.
+	Catalog bool
 }
 
 // FetchedName is the file in the cache root that holds the time of the last
 // successful fetch of the cache clone.
 const FetchedName = "fetched"
 
-// CatalogAge is the age after which a cached clone is stale for the catalog
-// reads of config set and config unset (D23, D52).
-const CatalogAge = 7 * 24 * time.Hour
-
-// fresh tells if the last fetch of the cache <cache> is younger than <age>.
-func fresh(cache string, age time.Duration) bool {
+// fetchedAt gives the time of the last successful fetch of the cache
+// <cache>, and false when no time is recorded.
+func fetchedAt(cache string) (time.Time, bool) {
 	b, err := os.ReadFile(cache + "/" + FetchedName)
 	if err != nil {
-		return false
+		return time.Time{}, false
 	}
 	t, err := time.Parse(time.RFC3339, strings.TrimSpace(string(b)))
-	return err == nil && time.Since(t) < age
+	return t, err == nil
+}
+
+// stamp records <at> as the time of the last successful fetch of <cache>.
+func stamp(cache string, at time.Time) {
+	_ = os.WriteFile(cache+"/"+FetchedName, []byte(at.UTC().Format(time.RFC3339)+"\n"), 0o644)
+}
+
+// catalogRule is the fetch rule of the catalog reads (D5, D6, D44), at the
+// time <now>: a last fetch of 30 minutes or less uses the cache clone with no
+// fetch; an older one, or no recorded time, fetches with <fetch>. When that
+// fetch fails, a cache clone whose last fetch is less than 7 days old is used,
+// with a warning; else the error of the fetch stops the command (code 5).
+// <usable> tells if the cache clone exists with the origin of the URL. It
+// gives the time of the last successful fetch and the warning.
+func catalogRule(cache string, now time.Time, usable bool, fetch func() error) (time.Time, string, error) {
+	const fresh, stale = 30 * time.Minute, 7 * 24 * time.Hour
+	last, known := fetchedAt(cache)
+	usable = usable && known
+	if usable && now.Sub(last) <= fresh {
+		return last, "", nil
+	}
+	err := fetch()
+	if err == nil {
+		at := now.UTC().Truncate(time.Second)
+		stamp(cache, at)
+		return at, "", nil
+	}
+	if usable && now.Sub(last) < stale {
+		return last, "the fetch of the clone failed, so the cached clone of " + last.UTC().Format(time.RFC3339) + " is used", nil
+	}
+	return time.Time{}, "", err
 }
 
 // Clone is the bootstrap clone of one command: BOOTSTRAP_CLONE, else a
 // temporary copy of the cache clone.
 type Clone struct {
-	Dir    string // The clone that the command reads.
-	Cache  string
-	Repo   string // The cache clone; empty with BOOTSTRAP_CLONE.
-	lock   string
-	url    string
-	held   bool
-	copy   string // The temporary copy, removed by Cleanup.
-	note   func(string)
-	stderr io.Writer
+	Dir   string // The clone that the command reads.
+	Cache string
+	Repo  string // The cache clone; empty with BOOTSTRAP_CLONE.
+	// Fetched is the time of the last successful fetch of a catalog read
+	// (CloneOptions.Catalog); zero with BOOTSTRAP_CLONE or without Catalog.
+	Fetched time.Time
+	// Warning is the warning of a catalog read whose fetch failed, when it
+	// uses the cache clone; empty else.
+	Warning string
+	lock    string
+	url     string
+	held    bool
+	copy    string // The temporary copy, removed by Cleanup.
+	note    func(string)
+	stderr  io.Writer
 }
 
 // OpenClone takes the clone of the command and checks its version, and sets
@@ -131,12 +166,18 @@ func acquireClone(o CloneOptions) (*Clone, error) {
 	if err := c.takeLock(); err != nil {
 		return c, err
 	}
-	if o.MaxAge <= 0 || !fresh(c.Cache, o.MaxAge) || !c.sameOrigin() {
+	if o.Catalog {
+		var err error
+		if c.Fetched, c.Warning, err = catalogRule(c.Cache, time.Now(), c.sameOrigin(), c.fetch); err != nil {
+			c.Cleanup()
+			return c, err
+		}
+	} else {
 		if err := c.fetch(); err != nil {
 			c.Cleanup()
 			return c, err
 		}
-		_ = os.WriteFile(c.Cache+"/"+FetchedName, []byte(time.Now().UTC().Format(time.RFC3339)+"\n"), 0o644)
+		stamp(c.Cache, time.Now())
 	}
 	tmp := o.Getenv("TMPDIR")
 	if tmp == "" {

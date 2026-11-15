@@ -373,16 +373,21 @@ func (a *app) printDoc(doc *source.Obj, form string, compact bool) fail.Code {
 	return fail.OK
 }
 
-// catalog opens the clone of a set or an unset of a tools.toml key: the
-// cached clone, fetched again when its last fetch is 7 days old (D23, D52).
-// The caller defers Cleanup.
-func (a *app) catalog() (*core.Clone, *source.Index, fail.Code) {
+// catalogIndex opens the clone and the index of the repo side for a catalog
+// read: a set or an unset of a tools.toml key, catalog and describe. The
+// clone follows the fetch rule of the catalog reads (D5, D6), and a fetch
+// that failed before the cached clone is a warning. The caller defers
+// Cleanup.
+func (a *app) catalogIndex() (*core.Clone, *source.Index, fail.Code) {
 	c, err := core.OpenClone(core.CloneOptions{
-		Getenv: a.getenv, Version: a.version, MaxAge: core.CatalogAge,
+		Getenv: a.getenv, Version: a.version, Catalog: true,
 		Note: func(s string) { a.infof("%s", s) }, Stderr: a.stderr,
 	})
 	if err != nil {
 		return c, nil, a.logErr(err)
+	}
+	if c.Warning != "" {
+		a.warnf("%s", c.Warning)
 	}
 	idx, err := source.Source{Root: c.Dir, Side: source.Repo}.Open()
 	if err != nil {
@@ -483,7 +488,7 @@ func (a *app) configSet(sd core.Side, text, v string) fail.Code {
 	}
 	var idx *source.Index
 	if k.file == fileTools {
-		c, ix, code := a.catalog()
+		c, ix, code := a.catalogIndex()
 		defer c.Cleanup()
 		if code != fail.OK {
 			return code
@@ -590,7 +595,7 @@ func (a *app) configUnset(sd core.Side, text string) fail.Code {
 	}
 	var idx *source.Index
 	if k.file == fileTools {
-		c, ix, code := a.catalog()
+		c, ix, code := a.catalogIndex()
 		defer c.Cleanup()
 		if code != fail.OK {
 			return code

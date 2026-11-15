@@ -137,11 +137,11 @@
         "U3"
       ],
       "waits": "It edits cli/, which U3 edits in wave 3, and reports the port table that U1 adds.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T19:10:53.752Z",
+      "ended": "2026-11-15T19:17:41.290Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -262,8 +262,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-15T19:10:53.709Z",
       "ended": ""
     },
     {
