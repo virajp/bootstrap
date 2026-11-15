@@ -79,5 +79,5 @@ while IFS=$'\t' read -r NAME FOLDER LABEL _ <&3; do
     continue
   fi
   BOOTSTRAP_HOME="${MISE_PROJECT_ROOT}" BOOTSTRAP_MEMBER="${NAME}" sync_repo "${MISE_PROJECT_ROOT}/${FOLDER}"
-done 3<<< "${MEMBER_LIST}"
+done 3< <(printf '%s\n' "${MEMBER_LIST}")
 <% end -%>

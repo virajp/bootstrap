@@ -132,9 +132,9 @@
       "waits": "Its Verification runs the config verb U2 adds.",
       "status": "green",
       "started": "2026-11-15T13:04:56.710Z",
-      "ended": "2026-11-15T14:29:11.958Z",
+      "ended": "2026-11-15T16:00:40.018Z",
       "commit": "bb79ca4",
-      "rounds": 4
+      "rounds": 5
     },
     {
       "id": "U5",
@@ -173,11 +173,11 @@
         "U5"
       ],
       "waits": "The bash cases test the finished engine, the tool scripts and the examples of wave 3.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T14:32:38.419Z",
+      "ended": "2026-11-15T16:32:22.177Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U7",
@@ -283,8 +283,8 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-15T14:32:38.384Z",
       "ended": ""
     },
     {
@@ -1350,6 +1350,24 @@
       "rejected": "every option offered",
       "units": [
         "U4"
+      ]
+    },
+    {
+      "id": "D110",
+      "decision": "Q17: Should the comments of tables the init migration moves survive the migration?",
+      "ruling": "Accept the loss (what the engine does now; the check is removed) — no code change, and a migrated repo loses those comments",
+      "rejected": "Make cli/internal/oldform carry each moved table's comments into repo.toml — the comments stay, the engine changes, and U6 adds the check back",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D111",
+      "decision": "Q18: Should a leftover .config/bootstrap.overrides.toml next to .config/bootstrap/ stop sync and check?",
+      "ruling": "Accept it (what the engine does now) — no change, but an override that no longer applies goes unnoticed",
+      "rejected": "Stop every command except version, settings and mac with code 2, as D29 does for the old values file",
+      "units": [
+        "U6"
       ]
     }
   ],

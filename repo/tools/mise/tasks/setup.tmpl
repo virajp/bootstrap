@@ -83,7 +83,7 @@ while IFS=$'\t' read -r NAME FOLDER LABEL _ <&3; do
     continue
   fi
   mise run --cd "${MISE_PROJECT_ROOT}/${FOLDER}" setup ${UPGRADE}
-done 3<<< "${MEMBER_LIST}"
+done 3< <(printf '%s\n' "${MEMBER_LIST}")
 
 <% end -%>
 line_sep1
