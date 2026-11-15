@@ -249,11 +249,11 @@
         "U8"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T17:46:07.126Z",
+      "ended": "2026-11-15T17:58:02.134Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -301,9 +301,9 @@
     },
     {
       "id": "W8",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-15T17:46:07.088Z",
+      "ended": "2026-11-15T17:58:36.630Z"
     }
   ],
   "shared_files": [
