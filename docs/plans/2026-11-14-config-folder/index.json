@@ -132,7 +132,7 @@
       "waits": "Its Verification runs the config verb U2 adds.",
       "status": "green",
       "started": "2026-11-15T13:04:56.710Z",
-      "ended": "2026-11-15T16:51:24.631Z",
+      "ended": "2026-11-15T17:26:26.186Z",
       "commit": "23944ce",
       "rounds": 5
     },
@@ -231,11 +231,11 @@
         "U7"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T16:57:33.174Z",
+      "ended": "2026-11-15T17:27:53.233Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U9",
@@ -295,8 +295,8 @@
     },
     {
       "id": "W7",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-15T16:57:33.136Z",
       "ended": ""
     },
     {
@@ -1369,6 +1369,15 @@
       "units": [
         "U6"
       ]
+    },
+    {
+      "id": "D112",
+      "decision": "Q19: What should code:merge do in a repo whose only core branch is neither main nor develop?",
+      "ruling": "Document the current behavior in docs/sync/index.md Step 2 (the merge task refuses until main or develop exists) and leave the task's port to R2's git:* tasks — no code change in this plan",
+      "rejected": "Make code:merge land on the single entry of core_branches now — a change to repo/tools/mise/tasks/code-merge (U4), with a test in test:repo (U6)",
+      "units": [
+        "U8"
+      ]
     }
   ],
   "stages": {
@@ -1425,6 +1434,13 @@
       "stage": "",
       "text": "Wave 3 review round 2: mise derive built setup-<name> aliases for untabled submodules that setup.tmpl gives no flag · resolved in the closing pass by D103 (aliases for tabled submodule or sibling members only)",
       "state": "closed"
+    },
+    {
+      "id": "G5",
+      "unit": "U8",
+      "stage": "",
+      "text": "Outside this repo: the claude-plugins vwf and stackgen senders of the bootstrap: init instruction send [tools.git.branch.*] merge_model/direct_commit, [tools.git].commit_scopes, [tools.mise].worktree_files or [member.*], which the new schema refuses; they must send [branches.*].landing, [commits].scopes, [worktree].files and [members.*] with a type (U8 DOCS FALSIFIED) · open, for a claude-plugins change",
+      "state": "open"
     }
   ],
   "overrides": [],

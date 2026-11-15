@@ -2,8 +2,9 @@
 # The check script of the git tool. The sync runs it in the root of the
 # repository before it writes a file, and never copies it. It examines that
 # each branch of core_branches in .config/bootstrap/repo.toml exists here or on
-# origin. The schema of the values examines the [branches.<name>] tables. Each
-# problem is a line on stdout, and then the exit code is 2.
+# origin, or is the unborn branch of HEAD. The schema of the values examines
+# the [branches.<name>] tables. Each problem is a line on stdout, and then the
+# exit code is 2.
 
 set -euo pipefail
 
@@ -24,10 +25,16 @@ jq_() {
 bin=(mise x -- bootstrap)
 [[ -z ${BOOTSTRAP_BIN:-} ]] || bin=("${BOOTSTRAP_BIN}")
 
-# A branch that exists here or on origin.
+# A branch that exists here or on origin, or the unborn branch of HEAD in a
+# repository with no commit.
 branch_exists() {
-  git show-ref --verify --quiet "refs/heads/$1" ||
-    git show-ref --verify --quiet "refs/remotes/origin/$1"
+  local head
+  if git show-ref --verify --quiet "refs/heads/$1" ||
+    git show-ref --verify --quiet "refs/remotes/origin/$1"; then
+    return 0
+  fi
+  head=$(git symbolic-ref --quiet --short HEAD) || return 1
+  [[ ${head} == "$1" ]]
 }
 
 # The branches of core_branches, one on each line. Without an engine that
