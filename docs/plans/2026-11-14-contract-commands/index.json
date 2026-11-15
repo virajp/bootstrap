@@ -765,5 +765,8 @@
   },
   "gaps": [],
   "overrides": [],
-  "run": {}
+  "run": {
+    "worktree": ".worktrees/contract-commands",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-14-contract-commands.jsonl"
+  }
 }
