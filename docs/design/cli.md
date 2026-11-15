@@ -289,7 +289,9 @@ change list.
   larger`.
 - The screen fills the terminal. A terminal larger than 100 × 25 keeps the
   proportions of the panes: the left pane keeps 30 % of the width, and the top
-  panes and the bottom pane share the extra lines 11 to 7.
+  panes and the bottom pane share the extra lines 11 to 7. In a row of the
+  left pane, the name gets the extra columns, and the counter stays at the
+  right edge. The columns of a row of the right pane keep their proportions.
 - The key line starts with `r apply`, bright green when the change list has a
   change. `r` opens the review, and the review starts its key line with
   `enter apply`, also bright green.

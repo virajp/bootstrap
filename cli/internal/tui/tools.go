@@ -18,7 +18,10 @@ import (
 // tree of their dependencies, and the details of the item under the cursor
 // in the bottom pane. Each text of a tool comes from the data.
 
-// The widths of the columns of a row (screens.txt, "The fixed columns").
+// The widths of the columns of a row at the smallest screen (screens.txt,
+// "The fixed columns"). A wider pane gives its extra columns to the name of
+// a category, and shares them between the columns of the right pane in the
+// same proportions (scaled).
 const (
 	catW     = 19 // The name of a category.
 	countW   = 5  // The counter of a category.
@@ -26,7 +29,14 @@ const (
 	summaryW = 47 // The summary of a tool.
 	kvKeyW   = 11 // The key of a detail of the bottom pane.
 	kvValW   = 37 // The value of the first detail of a line.
+
+	leftRowW  = leftW - 1               // A row of the left pane, without its scroll mark.
+	rightRowW = screenW - leftW - 1 - 1 // A row of the right pane, without its scroll mark.
 )
+
+// scaled gives the width of a column of <n> columns at the smallest screen,
+// in a row of the right pane of <w> columns.
+func scaled(n, w int) int { return n * max(w, rightRowW) / rightRowW }
 
 // The text of a group of alternatives (ruling 28).
 const groupText = " · select one or none"
@@ -52,7 +62,7 @@ type catRow struct {
 	hint             bool // Detection proposes a change (the Detected tab fills it).
 }
 
-func (r catRow) render(_ int, cursor bool, tick int) line {
+func (r catRow) render(w int, cursor bool, tick int) line {
 	cur := "  "
 	if cursor {
 		cur = "▸ "
@@ -61,7 +71,7 @@ func (r catRow) render(_ int, cursor bool, tick int) line {
 	if r.hint {
 		hint = styled("◆", stHint)
 	}
-	return line{text(cur), text(cell(r.title, catW, tick)), text(" " + rightAlign(r.count, countW) + " "), hint}
+	return line{text(cur), text(cell(r.title, catW+max(w-leftRowW, 0), tick)), text(" " + rightAlign(r.count, countW) + " "), hint}
 }
 
 // textRow is a row of plain text, for example the search field.
@@ -90,11 +100,12 @@ func (r toolRow) render(w int, _ bool, tick int) line {
 	if r.group != "" {
 		return line{styled(" "+fit(r.group+groupText, w-1), stDim)}
 	}
-	sum := styled(fit(r.summary, summaryW), r.sumSt)
+	name := scaled(nameW, w)
+	sum := styled(fit(r.summary, max(w, rightRowW)-rightRowW+summaryW+nameW-name), r.sumSt)
 	if r.glyphs != "" {
-		return line{text("     "), styled(cell(r.glyphs+r.tool, nameW, tick), r.nameSt), text(" "), sum, text(" ")}
+		return line{text("     "), styled(cell(r.glyphs+r.tool, name, tick), r.nameSt), text(" "), sum, text(" ")}
 	}
-	return line{text(" "), styled(r.mark, r.markSt), text(" "), styled(cell(r.tool, nameW, tick), r.nameSt), text(" "), sum, text(" ")}
+	return line{text(" "), styled(r.mark, r.markSt), text(" "), styled(cell(r.tool, name, tick), r.nameSt), text(" "), sum, text(" ")}
 }
 
 // The tools of the data.
