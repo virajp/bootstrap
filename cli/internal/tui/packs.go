@@ -277,7 +277,7 @@ func (m *Model) packsBottom() []line {
 		return nil
 	}
 	out := []line{{styled(" "+p.name, stHead)}}
-	for _, l := range wrap(m.state.Packs.Descriptions[p.name], screenW-3) {
+	for _, l := range wrap(m.state.Packs.Descriptions[p.name], m.lay.w-3) {
 		out = append(out, line{text(" " + l)})
 	}
 	out = append(out, line{})

@@ -452,7 +452,7 @@ func (m *Model) toolsBottom() []line {
 func (m *Model) toolDetail(t string) []line {
 	mf := m.manifest(t)
 	out := []line{{styled(" "+t, stHead)}}
-	for _, l := range wrap(mf.Description, screenW-3) {
+	for _, l := range wrap(mf.Description, m.lay.w-3) {
 		out = append(out, line{text(" " + l)})
 	}
 	out = append(out, line{})

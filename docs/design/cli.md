@@ -287,6 +287,12 @@ change list.
 - A terminal smaller than 100 × 25 at the start stops `tui`, `mac tui`,
   `init` and `mac init` with code 2: `<command> needs a terminal of 100 × 25 or
   larger`.
+- The screen fills the terminal. A terminal larger than 100 × 25 keeps the
+  proportions of the panes: the left pane keeps 30 % of the width, and the top
+  panes and the bottom pane share the extra lines 11 to 7.
+- The key line starts with `r apply`, bright green when the change list has a
+  change. `r` opens the review, and the review starts its key line with
+  `enter apply`, also bright green.
 - `tui` without a values file stops with code 2: `<file> is not there`, with
   the hint `run bootstrap init first`. A values file in an old form stops it
   with code 2, as it stops `sync`.

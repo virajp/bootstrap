@@ -256,7 +256,7 @@ func (m *Model) refreshDetected() {
 	t.right.title, t.right.rows = "", nil
 	if len(props) == 0 {
 		t.right.rows = []row{textRow{" No tool detected", stDim}}
-		for _, l := range m.noteLines(rightW - 2) {
+		for _, l := range m.noteLines(m.lay.right - 2) {
 			t.right.rows = append(t.right.rows, textRow{" " + l, stDim})
 		}
 	} else if c, ok := m.curDetCat(); ok {
@@ -325,7 +325,7 @@ func (m *Model) detectedBottom() []line {
 			{styled(" "+c.title, stHead)},
 			{text(" " + plural(len(props), "proposal") + " of the detection, " + itoa(on) + " on the change list.")},
 		}
-		for _, l := range m.noteLines(screenW - 2) {
+		for _, l := range m.noteLines(m.lay.w - 2) {
 			out = append(out, line{styled(" "+l, stDim)})
 		}
 		return out
@@ -382,7 +382,7 @@ func (m *Model) proposalDetail(p proposal) []line {
 		prop = action + " (not possible)"
 	}
 	out := []line{{styled(" "+t, stHead)}}
-	for _, l := range wrap(m.manifest(t).Description, screenW-3) {
+	for _, l := range wrap(m.manifest(t).Description, m.lay.w-3) {
 		out = append(out, line{text(" " + l)})
 	}
 	out = append(out, line{})

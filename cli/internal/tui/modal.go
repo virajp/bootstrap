@@ -74,15 +74,16 @@ func (d *modal) box() []line {
 	return append(out, line{edge("└" + strings.Repeat("─", w-2) + "┘")})
 }
 
-// over gives the lines of the screen <bg> with the dialog over its center:
-// the screen is dimmed, and its key line shows the keys of the dialog.
-func (d *modal) over(bg []line) []line {
+// over gives the lines of the screen <bg> of the layout <lay> with the
+// dialog over its center: the screen is dimmed, and its key line shows the
+// keys of the dialog.
+func (d *modal) over(bg []line, lay layout) []line {
 	box := d.box()
-	top := modalTop + (modalMax-len(box))/2
-	left := (screenW - d.width) / 2
+	top := modalTop + (lay.h-screenH+modalMax-len(box))/2
+	left := (lay.w - d.width) / 2
 	out := make([]line, len(bg))
 	for i, l := range bg {
-		plain := []rune(fit(l.plain(), screenW))
+		plain := []rune(fit(l.plain(), lay.w))
 		switch {
 		case i == len(bg)-1:
 			out[i] = line{styled(" "+d.keys, stDim)}

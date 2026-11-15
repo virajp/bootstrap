@@ -46,7 +46,7 @@ func TestCell(t *testing.T) {
 }
 
 func TestPaneMove(t *testing.T) {
-	p := pane{}
+	p := pane{height: paneH}
 	for range 20 {
 		p.rows = append(p.rows, nil)
 	}
@@ -92,6 +92,22 @@ func TestAndList(t *testing.T) {
 	} {
 		if got := andList(c.in); got != c.want {
 			t.Errorf("andList(%v) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}
+
+func TestLayoutFor(t *testing.T) {
+	for _, c := range []struct {
+		w, h int
+		want layout
+	}{
+		{100, 25, layout{w: 100, h: 25, left: 30, right: 69, paneH: 11, bottom: 7}},
+		{80, 20, layout{w: 100, h: 25, left: 30, right: 69, paneH: 11, bottom: 7}},
+		{200, 43, layout{w: 200, h: 43, left: 60, right: 139, paneH: 22, bottom: 14}},
+		{150, 30, layout{w: 150, h: 30, left: 45, right: 104, paneH: 14, bottom: 9}},
+	} {
+		if got := layoutFor(c.w, c.h); got != c.want {
+			t.Errorf("layoutFor(%d, %d) = %+v, want %+v", c.w, c.h, got, c.want)
 		}
 	}
 }
