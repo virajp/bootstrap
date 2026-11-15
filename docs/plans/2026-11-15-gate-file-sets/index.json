@@ -5,9 +5,13 @@
   "requires": [
     "docs/plans/2026-11-15-test-parts"
   ],
-  "source": [],
+  "source": [
+    "B30"
+  ],
   "backlog": [],
-  "backlog_pieces": [],
+  "backlog_pieces": [
+    "B30"
+  ],
   "gaps_of": [],
   "execution": "teams",
   "status": {
