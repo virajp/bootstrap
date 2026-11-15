@@ -46,12 +46,12 @@ type packRow struct {
 	name, mark, count string
 }
 
-func (r packRow) render(_ int, cursor bool, tick int) line {
+func (r packRow) render(w int, cursor bool, tick int) line {
 	cur := "  "
 	if cursor {
 		cur = "▸ "
 	}
-	return line{text(cur), styled(r.mark, packMarkStyle(r.mark)), text(" " + cell(r.name, packW, tick) + " " + rightAlign(r.count, countW) + " ")}
+	return line{text(cur), styled(r.mark, packMarkStyle(r.mark)), text(" " + cell(r.name, packW+max(w-leftRowW, 0), tick) + " " + rightAlign(r.count, countW) + " ")}
 }
 
 // packMarkStyle gives the style of the pack mark <mk>.
@@ -76,11 +76,13 @@ type memberRow struct {
 	nameSt                lipgloss.Style
 }
 
-func (r memberRow) render(_ int, _ bool, tick int) line {
+func (r memberRow) render(w int, _ bool, tick int) line {
+	name, st := scaled(nameW, w), scaled(memberStW, w)
+	sum := max(w, rightRowW) - rightRowW + memberSumW + nameW + memberStW - name - st
 	return line{
-		text("     "), styled(cell(r.tool, nameW, tick), r.nameSt), text(" "),
-		styled(fit(r.summary, memberSumW), stDim), text(" "),
-		styled(fit(r.status, memberStW), stDim), text(" "),
+		text("     "), styled(cell(r.tool, name, tick), r.nameSt), text(" "),
+		styled(fit(r.summary, sum), stDim), text(" "),
+		styled(fit(r.status, st), stDim), text(" "),
 	}
 }
 
