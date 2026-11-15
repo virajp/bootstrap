@@ -98,9 +98,9 @@ Flags
                        init, add, replace, detect --add: the answer of a
                        question (repeatable); --answer <tool>.<key>= writes
                        an empty answer for an optional or a group question
-  --json               contract, questions, mac questions, config get|set|
-                       unset|show: print one JSON envelope on stdout, and
-                       each other line on stderr
+  --json               contract, check, questions, mac questions, config
+                       get|set|unset|show: print one JSON envelope on
+                       stdout, and each other line on stderr
   --format json|yaml|toml
                        config get, config show: the output format (default:
                        json when stdout is not a terminal, else toml)
@@ -158,7 +158,7 @@ var allowed = map[string]string{
 	"init":      "dry-run yes no-tui answer jobs verbose",
 	"tui":       "jobs verbose",
 	"sync":      "dry-run jobs verbose",
-	"check":     "jobs verbose",
+	"check":     "jobs verbose json",
 	"questions": "json",
 	"add":       "dry-run yes exclude answer jobs verbose",
 	"remove":    "dry-run yes jobs verbose",
@@ -752,8 +752,19 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 	return code
 }
 
+// checkData is the data of check --json: valid is true only when the code
+// is 0, and checks has one entry for each stage of the check, in order.
+type checkData struct {
+	Valid  bool         `json:"valid"`
+	Checks []repo.Stage `json:"checks"`
+}
+
 // check is `bootstrap [mac] check`.
 func (a *app) check(mac bool, o opts) fail.Code {
+	if o.json {
+		// A failure before the first stage keeps this data.
+		a.data = checkData{Checks: []repo.Stage{}}
+	}
 	w, code := a.prepare(mac, false)
 	if code != fail.OK {
 		return code
@@ -768,7 +779,23 @@ func (a *app) check(mac bool, o opts) fail.Code {
 		o.dryRun = true
 		return macos.Run(core.SyncArgs(true, o.dryRun, o.noBootstrap), a.stdout, a.stderr)
 	}
-	return repo.Run([]string{"--check"}, a.stdout, a.stderr)
+	if !o.json {
+		return repo.Run([]string{"--check"}, a.stdout, a.stderr)
+	}
+	// stdout holds the envelope only.
+	stages, loose, code := repo.Check(a.stderr, a.stderr)
+	for _, f := range loose {
+		item := contract.Item{Code: f.Code, Message: f.Message, Path: f.Path}
+		if f.Severity == repo.SevWarning {
+			a.warnings = append(a.warnings, item)
+		} else {
+			a.errors = append(a.errors, item)
+		}
+	}
+	if stages != nil {
+		a.data = checkData{Valid: code == fail.OK, Checks: stages}
+	}
+	return code
 }
 
 // warnNotSelectable prints a warning for each tool with selectable = false

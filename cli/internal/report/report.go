@@ -82,6 +82,11 @@ type Options struct {
 // the stderr of the engine.
 type Report struct {
 	Printer
+	// Observe, when not nil, gets each error and warning line of the report:
+	// <warn> is true for a warning, and <msg> is the text of the line, with
+	// its fix after " - ". It changes no line.
+	Observe func(warn bool, msg string)
+
 	w      io.Writer
 	opt    Options
 	dryRun bool
@@ -143,6 +148,36 @@ func (r *Report) Count(kind Kind) int { return r.counts[kind] }
 
 // Verbose is true when the report prints the log line of each target.
 func (r *Report) Verbose() bool { return r.opt.Verbose }
+
+// Error prints an error message, as Printer.Error does, and gives it to
+// Observe.
+func (r *Report) Error(msg string) {
+	if r.Observe != nil {
+		r.Observe(false, msg)
+	}
+	r.Printer.Error(msg)
+}
+
+// ErrorFix prints an error line and its fix, as Printer.ErrorFix does, and
+// gives them to Observe.
+func (r *Report) ErrorFix(problem, fix string) {
+	if r.Observe != nil {
+		msg := problem
+		if fix != "" {
+			msg += " - " + fix
+		}
+		r.Observe(false, msg)
+	}
+	r.Printer.ErrorFix(problem, fix)
+}
+
+// Warn prints a warning line, as Printer.Warn does, and gives it to Observe.
+func (r *Report) Warn(text string) {
+	if r.Observe != nil {
+		r.Observe(true, text)
+	}
+	r.Printer.Warn(text)
+}
 
 // Log prints a log line with the prefix.
 func (r *Report) Log(msg string) {

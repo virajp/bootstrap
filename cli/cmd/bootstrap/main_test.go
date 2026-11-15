@@ -25,7 +25,7 @@ func TestRun(t *testing.T) {
 		{"no command", nil, fail.Usage, "", "[ERROR] no command given\n  -> Run bootstrap --help"},
 		{"unknown command", []string{"repo"}, fail.Usage, "", "[ERROR] repo is not a command\n  -> Run bootstrap --help"},
 		{"help", []string{"--help"}, fail.OK, "usage:", ""},
-		{"check and dry run", []string{"check", "--dry-run"}, fail.Usage, "", "[ERROR] check has no flag --dry-run\n  usage: bootstrap check [--jobs <n>] [--verbose]\n  -> Run"},
+		{"check and dry run", []string{"check", "--dry-run"}, fail.Usage, "", "[ERROR] check has no flag --dry-run\n  usage: bootstrap check [--jobs <n>] [--verbose] [--json]\n  -> Run"},
 		{"sync bad flag", []string{"sync", "--no-bootstrap"}, fail.Usage, "", "[ERROR] sync has no flag --no-bootstrap\n  usage: bootstrap sync [--dry-run] [--jobs <n>] [--verbose]\n  -> Run"},
 		{"sync argument", []string{"sync", "x"}, fail.Usage, "", "[ERROR] sync takes no argument x\n  usage: bootstrap sync [--dry-run] [--jobs <n>] [--verbose]\n  -> Run"},
 		{"sync help", []string{"sync", "-h"}, fail.OK, "usage:", ""},

@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -53,7 +54,7 @@ func TestContractJSON(t *testing.T) {
 	if e.Command != "contract" || e.Code != fail.OK {
 		t.Errorf("envelope = %+v", e)
 	}
-	want := `{"versions":[1],"cli_version":"dev","commands":["contract","questions","config get","config set","config unset","config show","mac questions"],` +
+	want := `{"versions":[1],"cli_version":"dev","commands":["contract","check","questions","config get","config set","config unset","config show","mac questions"],` +
 		`"ports":["code:format","code:lint","code:sec","code:precommit","git:merge:<branch>","git:worktree:create","git:worktree:setup","git:worktree:delete","code:lsp:check","setup","test","test:e2e","test:golden","p:<id>:deploy"]}`
 	if string(e.Data) != want {
 		t.Errorf("data = %s, want %s", e.Data, want)
@@ -63,7 +64,7 @@ func TestContractJSON(t *testing.T) {
 func TestContractText(t *testing.T) {
 	setupEnv(t, "/nonexistent/bootstrap/config.toml")
 	code, out, _ := runArgs("contract")
-	if code != fail.OK || !strings.HasPrefix(out, "versions  1\nversion   dev\ncommands  contract, questions,") {
+	if code != fail.OK || !strings.HasPrefix(out, "versions  1\nversion   dev\ncommands  contract, check, questions,") {
 		t.Errorf("code %d, stdout %q", code, out)
 	}
 }
@@ -205,5 +206,69 @@ func TestQuestionsRunJSON(t *testing.T) {
 	code, out, _ = run("questions", "nope", "--json")
 	if e := readEnvelope(t, out); code != fail.Missing || e.Code != fail.Missing || len(e.Errors) != 1 || e.Errors[0].Code != fail.Missing {
 		t.Errorf("code %d, envelope %+v", code, e)
+	}
+}
+
+func TestCheckJSON(t *testing.T) {
+	dir, run := valuesRepo(t)
+	code, out, errText := run("check", "--json")
+	e := readEnvelope(t, out)
+	var data struct {
+		Valid  bool `json:"valid"`
+		Checks []struct {
+			Name     string `json:"name"`
+			Status   string `json:"status"`
+			Findings []struct {
+				Code     fail.Code `json:"code"`
+				Severity string    `json:"severity"`
+				Message  string    `json:"message"`
+				Path     string    `json:"path"`
+			} `json:"findings"`
+		} `json:"checks"`
+	}
+	if err := json.Unmarshal(e.Data, &data); err != nil {
+		t.Fatalf("data %s: %v", e.Data, err)
+	}
+	if code != e.Code || e.Command != "check" || data.Valid != (code == fail.OK) || len(data.Checks) != 9 || data.Checks[0].Name != "envs" {
+		t.Errorf("code %d, envelope %+v, data %s, stderr %q", code, e, e.Data, errText)
+	}
+	// An unknown key: the values stage fails with one finding of the file.
+	writeFile(t, filepath.Join(dir, "repo.toml"), "format = 3\nrepo_name = \"x\"\ncore_branches = [ \"main\" ]\nunknown_key = 1\n", 0o644)
+	code, out, errText = run("check", "--json")
+	e = readEnvelope(t, out)
+	data.Checks = nil
+	if err := json.Unmarshal(e.Data, &data); err != nil {
+		t.Fatalf("data %s: %v", e.Data, err)
+	}
+	if code != fail.Usage || e.Code != fail.Usage || data.Valid || len(data.Checks) != 9 {
+		t.Fatalf("code %d, envelope %+v, data %s, stderr %q", code, e, e.Data, errText)
+	}
+	v := data.Checks[1]
+	if v.Name != "values" || v.Status != "fail" || len(v.Findings) != 1 || v.Findings[0].Path != ".config/bootstrap/repo.toml" ||
+		!strings.Contains(v.Findings[0].Message, "unknown_key") || v.Findings[0].Code != fail.Usage {
+		t.Errorf("values stage %+v", v)
+	}
+	for _, i := range []int{2, 3, 8} {
+		if data.Checks[i].Status != "skipped" {
+			t.Errorf("stage %+v, want skipped", data.Checks[i])
+		}
+	}
+	// Without --json, stdout stays empty and the lines stay on stderr.
+	code, out, plain := run("check")
+	if code != fail.Usage || out != "" || !strings.Contains(plain, "unknown_key") {
+		t.Errorf("code %d, stdout %q, stderr %q", code, out, plain)
+	}
+}
+
+func TestCheckJSONEarlyFailure(t *testing.T) {
+	setupEnv(t, "/nonexistent/bootstrap/config.toml")
+	root := t.TempDir()
+	t.Setenv("MISE_PROJECT_ROOT", root)
+	t.Setenv("PWD", root)
+	t.Chdir(root)
+	code, out, _ := runArgs("check", "--json")
+	e := readEnvelope(t, out)
+	if code == fail.OK || e.Command != "check" || string(e.Data) != `{"valid":false,"checks":[]}` || len(e.Errors) == 0 {
+		t.Errorf("code %d, envelope %+v, data %s", code, e, e.Data)
 	}
 }
