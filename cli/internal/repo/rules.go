@@ -2,7 +2,6 @@ package repo
 
 import (
 	"os"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -307,9 +306,6 @@ func (s *state) coreTools() {
 	}
 }
 
-// memberNameRe is the rule of a member name.
-var memberNameRe = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
-
 // submodules is `git -C <root> submodule --quiet foreach --recursive 'echo
 // $displaypath'`: the paths of the git submodules, one per line.
 func (s *state) submodules() string {
@@ -446,7 +442,7 @@ func (s *state) members(name string) ([]member, fail.Code) {
 		if m.name == "" {
 			continue
 		}
-		if !memberNameRe.MatchString(m.name) {
+		if !schema.MemberName.MatchString(m.name) {
 			s.log(name + ": the member " + m.folder + " has the name '" + m.name + "' - a member name has only letters, digits, - and _; use a [members.<name>] table with such a name in " + show)
 			return nil, fail.Usage
 		}

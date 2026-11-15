@@ -112,7 +112,7 @@
       "waits": "It edits the schema and the migration U1 and U2 write in cli/.",
       "status": "green",
       "started": "2026-11-15T13:04:56.671Z",
-      "ended": "2026-11-15T13:52:10.406Z",
+      "ended": "2026-11-15T16:39:56.433Z",
       "commit": "0c720f2",
       "rounds": 2
     },
@@ -130,9 +130,9 @@
         "U2"
       ],
       "waits": "Its Verification runs the config verb U2 adds.",
-      "status": "green",
+      "status": "running",
       "started": "2026-11-15T13:04:56.710Z",
-      "ended": "2026-11-15T16:00:40.018Z",
+      "ended": "",
       "commit": "c719faf",
       "rounds": 5
     },
@@ -196,14 +196,14 @@
         "U6"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-15T16:35:47.602Z",
       "ended": "",
       "commit": "",
       "rounds": 0,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "480fb60",
+        "to": "4998817"
       }
     },
     {
@@ -289,8 +289,8 @@
     },
     {
       "id": "W6",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-15T16:35:47.566Z",
       "ended": ""
     },
     {

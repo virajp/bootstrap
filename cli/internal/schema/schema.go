@@ -10,6 +10,7 @@ package schema
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
@@ -42,6 +43,10 @@ type Key struct {
 	// Default is the value of a key that is not set, or nil.
 	Default any
 }
+
+// MemberName is the rule of a member name: the name of a `[members.<name>]`
+// table is a flag (`--<name>`) and a part of a shell variable of the tasks.
+var MemberName = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 
 // Landing values of `[branches.<b>].landing`.
 const (
@@ -273,6 +278,9 @@ func memberRules(raw *source.Obj, shown string) []*fail.Error {
 	var probs []*fail.Error
 	if ms, ok := raw.Get("members").(*source.Obj); ok {
 		for _, n := range ms.Keys() {
+			if !MemberName.MatchString(n) {
+				probs = append(probs, usage("[members.%q] in %s has a name that is not valid - a member name has only letters, digits, - and _", n, shown))
+			}
 			m, _ := ms.Get(n).(*source.Obj)
 			if m == nil {
 				continue

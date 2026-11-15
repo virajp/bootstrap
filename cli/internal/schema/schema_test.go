@@ -81,6 +81,7 @@ web = "https://web.example.com"
 		{"bad topology", head + "topology = \"polyrepo\"\n", `topology = "polyrepo" in repo.toml is not one of repo, monorepo, multi-repo`},
 		{"sibling without url", head + "[members.web]\nfolder = \"../web\"\ntype = \"sibling\"\n", "[members.web] in repo.toml has type sibling, but no url - add the url of its repo"},
 		{"submodule without url", head + "[members.web]\ntype = \"submodule\"\n", ""},
+		{"bad member name", head + "[members.\"a[$(cmd)]\"]\ntype = \"folder\"\n", `[members."a[$(cmd)]"] in repo.toml has a name that is not valid - a member name has only letters, digits, - and _`},
 		{"member without type", head + "[members.web]\nfolder = \"web\"\n", "[members.web] in repo.toml has no type - set type to submodule, folder or sibling"},
 		{"home without url", head + "[home]\nfolder = \"../home\"\ntype = \"sibling\"\n", ""},
 		{"home without folder and type", head + "[home]\nurl = \"u\"\n", "[home] in repo.toml has no folder - run bootstrap sync from the home repo, which writes [home]\n[home] in repo.toml has no type - run bootstrap sync from the home repo, which writes [home]"},
