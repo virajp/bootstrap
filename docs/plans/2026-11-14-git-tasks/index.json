@@ -180,11 +180,11 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-16T12:46:05.112Z",
+      "ended": "2026-11-16T12:57:20.370Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U7",
@@ -232,9 +232,9 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-16T12:46:05.074Z",
+      "ended": "2026-11-16T12:58:05.735Z"
     }
   ],
   "shared_files": [
@@ -626,6 +626,13 @@
       "unit": "",
       "stage": "",
       "text": "Preflight gate line mise x -- mise run code:lint was red on main (inherited, not this plan): code:lint:60-bootstrap ran the installed engine bootstrap 3.3.1, whose lack of config get stopped repo/tools/git/scripts/derive. · settled on resume: main 0d09fe1 added the pre-4.0.0 fallback; the run branch merged main and the preflight is green",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U6",
+      "stage": "",
+      "text": "06-gates.md Edit 3 names a bare go build, which fails where go is not on PATH · settled: U6 ran mise x -- go build, the repo's tool-call rule, and the build exited 0",
       "state": "closed"
     }
   ],
