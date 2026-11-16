@@ -512,7 +512,7 @@ collect_submodules() {
       collect_repo "${abs}" "submodule" "${parent}/${default}" "${pinned}"
     else
       url="$(git config -f "${r}/.gitmodules" --get "submodule.${name}.url" 2> /dev/null)" || url=''
-      add_missing "${abs}" "submodule" "${url}" "not initialised" "mise run setup:worktree" "The submodule is not initialised."
+      add_missing "${abs}" "submodule" "${url}" "not initialised" "mise run git:worktree:setup" "The submodule is not initialised."
     fi
   done
 }
