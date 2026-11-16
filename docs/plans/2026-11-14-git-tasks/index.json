@@ -201,16 +201,16 @@
       "status": "green",
       "started": "2026-11-16T11:35:31.928Z",
       "ended": "2026-11-16T11:42:59.958Z",
-      "commit": "",
+      "commit": "00eb7fc",
       "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-16T11:35:31.748Z",
-      "ended": ""
+      "ended": "2026-11-16T11:51:24.528Z"
     },
     {
       "id": "W2",
