@@ -12,8 +12,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-14 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-16T08:59 in .worktrees/task-ports"
   },
   "consent": {
     "merge": true,
@@ -66,11 +66,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T20:49:13.562Z",
+      "ended": "2026-11-16T03:31:01.744Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -84,11 +84,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-15T20:49:13.635Z",
+      "ended": "2026-11-15T20:57:42.134Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -184,8 +184,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-15T20:49:13.526Z",
       "ended": ""
     },
     {
@@ -457,6 +457,15 @@
       "units": [
         "U2",
         "U3"
+      ]
+    },
+    {
+      "id": "D27",
+      "decision": "Q1: Which member flags, if any, should the test dispatchers (test, test:e2e, test:golden) declare, given code-format.tmpl has none?",
+      "ruling": "None, as code-format.tmpl actually has: the dispatchers stay plain files with one variadic argument, and the raw \"$@\" goes to each part; to test a member, run mise run --cd <member>.",
+      "rejected": "setup.tmpl-style --all/--<member> member flags with a gomplate member block; forward code-format.tmpl flags --debug and --fix",
+      "units": [
+        "U1"
       ]
     }
   ],
