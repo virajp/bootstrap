@@ -1393,12 +1393,11 @@ run_case "an old files in two entries" 2 "$no_tool_values" old_mise_two_entries 
 run_case "seed and [seed_requires]" 2 "$no_tool_values" old_seed_and_table "$msg_old_seed" check_old_seed_and_table
 
 # The keys that are valid only in [mise.tools], and requires_found of a mise
-# entry. The generated config already exists in the consumer, so the dry run
-# shows its diff.
+# entry, also in [mise_env.<env>.tools] (D40). The generated config already
+# exists in the consumer, so the dry run shows its diff.
 mise_env_keys() {
   fixture_tool
-  fixture_toml '[mise_env.dev.tools.fixture-x]' 'files = [ "a.txt" ]' 'requires = "x.toml"' \
-    'requires_found = [ "x.toml" ]' 'version = "latest"'
+  fixture_toml '[mise_env.dev.tools.fixture-x]' 'files = [ "a.txt" ]' 'requires = "x.toml"' 'version = "latest"'
 }
 check_mise_env_keys() {
   check_that "[mise_env.dev.tools]: requires" log_has 'fixture/tools.toml: requires of mise tool fixture-x in [mise_env.dev.tools] is valid only in [mise.tools]'
@@ -1423,17 +1422,43 @@ mise_found_two_both() {
   mise_found_two
   : > "$consumer/other.toml"
 }
-lacks_fixture_x() { check_log_lacks "requires_found of a mise entry, one of two names found" '[tools.fixture-x]'; }
+mise_env_found() {
+  fixture_tool
+  fixture_toml '[mise_env.dev.tools.fixture-x]' 'requires_found = [ "marker.toml", "other.toml" ]' 'version = "latest"'
+  mkdir -p -- "$consumer/.config/mise/conf.d/fixture"
+  printf '%s\n' '# x' > "$consumer/.config/mise/conf.d/fixture/mise.dev.toml"
+}
+mise_env_found_one() {
+  mise_env_found
+  : > "$consumer/other.toml"
+}
+mise_env_found_empty() {
+  fixture_tool
+  fixture_toml '[mise_env.dev.tools.fixture-x]' 'requires_found = []' 'version = "latest"'
+}
+lacks_env_found_line() {
+  check_log_lacks "[mise_env.dev.tools] requires_found, one of two names found" 'requires_found'
+}
+lacks_env_found_tool() { check_log_lacks "[mise_env.dev.tools] requires_found, no name found" 'fixture-x'; }
+lacks_found_line_one() { check_log_lacks "requires_found of a mise entry, one of two names found" 'requires_found'; }
 lacks_found_line() { check_log_lacks "requires_found of a mise entry, both names found" 'requires_found'; }
 
-run_case "[mise_env.dev.tools] requires_found, requires and files" 2 "$no_tool_values" mise_env_keys \
-  'fixture/tools.toml: requires_found of mise tool fixture-x in [mise_env.dev.tools] is valid only in [mise.tools]' \
-  check_mise_env_keys
+run_case "[mise_env.dev.tools] requires and files" 2 "$no_tool_values" mise_env_keys '' check_mise_env_keys
+# requires_found of a [mise_env.<env>.tools] entry (D40): any-of, and the
+# written entry has no requires_found key.
+run_case "[mise_env.dev.tools] requires_found, one of two names found" 0 "$fixture_values" mise_env_found_one \
+  '[tools.fixture-x]' lacks_env_found_line
+run_case "[mise_env.dev.tools] requires_found, no name found" 0 "$fixture_values" mise_env_found '' \
+  lacks_env_found_tool
+run_case "[mise_env.dev.tools] requires_found, an empty list" 2 "$no_tool_values" mise_env_found_empty \
+  'fixture/tools.toml: requires_found of mise tool fixture-x in [mise_env.dev.tools] must be a non-empty list of file names'
 run_case "requires_found of a mise entry, a name with a /" 2 "$no_tool_values" mise_found_slash \
   "fixture/tools.toml: requires_found of mise tool fixture-x: 'a/x.toml' must be a file name, with no /"
 run_case "requires_found of a mise entry, an empty list" 2 "$no_tool_values" mise_found_empty \
   'fixture/tools.toml: requires_found of mise tool fixture-x must be a non-empty list of file names'
-run_case "requires_found of a mise entry, one of two names found" 0 "$fixture_values" mise_found_two '' lacks_fixture_x
+# requires_found is any-of (D38): one of the two names is enough.
+run_case "requires_found of a mise entry, one of two names found" 0 "$fixture_values" mise_found_two \
+  '[tools.fixture-x]' lacks_found_line_one
 run_case "requires_found of a mise entry, both names found" 0 "$fixture_values" mise_found_two_both \
   '[tools.fixture-x]' lacks_found_line
 
@@ -4508,6 +4533,179 @@ CASE_CALL=describe_json run_case "describe --json" 0 "$dev_values" '' \
 flag_json() { "$bin" sync --bogus --json 2> /dev/null; }
 CASE_CALL=flag_json run_case "an unknown flag with --json" 2 "$dev_values" '' \
   '{"contract":1,"command":"sync","ok":false,"code":2,"data":null,"errors":[{"code":2,"message":"sync has no flag --bogus"}],"warnings":[]}'
+
+# The language servers (D4, D6, D7, D12, D28, D30): bootstrap lsp --json lists
+# the [lsp] servers of the selected tools as entries of the lspServers of
+# Claude, with the command and the source of each in checks, and describe
+# --json has the same servers in its lsp field.
+# lsp_jq <filter>: the jq filter is true for the envelope of the case.
+lsp_jq() { [[ $(mise x jq@latest -- jq -c "$1" "$log") == true ]]; }
+lsp_json() { "$bin" lsp --json 2> /dev/null; }
+lsp_and_describe() {
+  "$bin" lsp --json 2> /dev/null || exit
+  "$bin" describe --json > "$tmp/describe.json" 2> /dev/null
+}
+same_lsp_servers() {
+  [[ $(mise x jq@latest -- jq -cS .data.servers "$log") == "$(mise x jq@latest -- jq -cS .data.lsp.servers \
+    "$tmp/describe.json")" ]]
+}
+check_lsp_go_node() {
+  check_that "lsp --json: one line" json_lines
+  check_that "lsp --json: the gopls entry" lsp_jq \
+    '.data.servers.gopls == {"command":"mise","args":["x","--","gopls"],"extensionToLanguage":{".go":"go"}}'
+  check_that "lsp --json: the typescript-lsp entry" lsp_jq \
+    '.data.servers."typescript-lsp" | .command == "mise" and .args == ["x","--","typescript-language-server","--stdio"] and .startupTimeout == 60000 and .extensionToLanguage.".ts" == "typescript"'
+  check_that "lsp --json: the checks of gopls" lsp_jq \
+    '.data.checks.gopls == {"command":"gopls","source":"go:golang.org/x/tools/gopls"}'
+  check_that "lsp --json: the checks of typescript-lsp" lsp_jq \
+    '.data.checks."typescript-lsp" == {"command":"typescript-language-server","source":"npm:typescript-language-server"}'
+  check_that "describe --json: lsp.servers is the servers of lsp --json" same_lsp_servers
+}
+lsp_values='environments = [ "dev" ]
+[tools.go]
+[tools.node]'
+# typescript-lsp follows its pin, which needs a package.json or a
+# tsconfig.json (D35, D37, D38): node alone has no server and no pin.
+lsp_package_json() { printf '%s\n' '{}' > "$consumer/package.json"; }
+lsp_tsconfig() { printf '%s\n' '{}' > "$consumer/tsconfig.json"; }
+CASE_CALL=lsp_and_describe run_case "lsp --json: the servers of go and node" 0 "$lsp_values" lsp_package_json \
+  '{"contract":1,"command":"lsp","ok":true,"code":0,"data":{"servers":{' check_lsp_go_node
+check_lsp_no_typescript() {
+  check_that "lsp --json: no typescript-lsp" lsp_jq \
+    '(.data.servers | has("typescript-lsp") | not) and (.data.checks | has("typescript-lsp") | not)'
+}
+check_lsp_typescript() {
+  check_that "lsp --json: the checks of typescript-lsp" lsp_jq \
+    '.data.checks."typescript-lsp" == {"command":"typescript-language-server","source":"npm:typescript-language-server"}'
+}
+node_values='environments = [ "dev" ]
+[tools.node]'
+CASE_CALL=lsp_json run_case "lsp --json: node alone has no server" 0 "$node_values" '' \
+  '"command":"lsp","ok":true' check_lsp_no_typescript
+CASE_CALL=lsp_json run_case "lsp --json: a tsconfig.json alone lists typescript-lsp" 0 "$node_values" lsp_tsconfig \
+  '"data":{"servers":{"typescript-lsp":' check_lsp_typescript
+# The generated dev config of node already exists in the consumer, so the
+# dry run shows its diff.
+node_conf() { conf_file node dev; }
+lacks_typescript_pins() { check_log_lacks "node alone: no typescript pins" 'npm:typescript'; }
+run_case "node alone: no typescript pins in dev" 0 "$node_values" node_conf '[tools.node]' lacks_typescript_pins
+# With a package.json or a tsconfig.json, the dev config of node has both pins,
+# without the requires_found key of their [mise_env.dev.tools] entries (D40).
+node_conf_package() { node_conf && lsp_package_json; }
+node_conf_tsconfig() { node_conf && lsp_tsconfig; }
+check_node_pins() {
+  check_that "$1: the typescript pin" log_has '"npm:typescript"'
+  check_log_lacks "$1" 'requires_found'
+}
+check_node_pins_package() { check_node_pins "node and a package.json"; }
+check_node_pins_tsconfig() { check_node_pins "node and a tsconfig.json"; }
+run_case "node and a package.json: the typescript pins in dev" 0 "$node_values" node_conf_package \
+  '"npm:typescript-language-server"' check_node_pins_package
+run_case "node and a tsconfig.json: the typescript pins in dev" 0 "$node_values" node_conf_tsconfig \
+  '"npm:typescript-language-server"' check_node_pins_tsconfig
+
+# check refuses a wrong [lsp] block (D7, D30). Each change adds a table to
+# the go tool of the clone of the case.
+lsp_add() { printf '%s\n' '' "$@" >> "$clone/repo/tools/go/tools.toml"; }
+lsp_no_extensions() { lsp_add '[lsp.x]' 'command = "x"' 'source = "host"'; }
+lsp_empty_extensions() { lsp_add '[lsp.x]' 'command = "x"' 'extensions = {}' 'source = "host"'; }
+lsp_no_command() { lsp_add '[lsp.x]' 'extensions = { ".x" = "x" }' 'source = "host"'; }
+lsp_twice() { lsp_add '[lsp.typescript-lsp]' 'command = "x"' 'extensions = { ".x" = "x" }' 'source = "host"'; }
+lsp_not_pinned() { lsp_add '[lsp.x]' 'command = "x"' 'extensions = { ".x" = "x" }' 'source = "nope"'; }
+lsp_spaces() { lsp_add '[lsp.x]' 'command = "pyrefly lsp"' 'extensions = { ".x" = "x" }' 'source = "host"'; }
+run_check "[lsp.x] with no extensions" 2 "$lsp_values" lsp_no_extensions \
+  'repo/tools/go/tools.toml: [lsp.x] needs extensions, a table of ".<ext>" = "<language id>" that is not empty'
+run_check "[lsp.x] with empty extensions" 2 "$lsp_values" lsp_empty_extensions \
+  'repo/tools/go/tools.toml: [lsp.x] needs extensions, a table of ".<ext>" = "<language id>" that is not empty'
+run_check "[lsp.x] with no command" 2 "$lsp_values" lsp_no_command \
+  'repo/tools/go/tools.toml: [lsp.x] needs command, the binary of the server (a string)'
+run_check "one server name in two tools" 2 "$lsp_values" lsp_twice \
+  "language server 'typescript-lsp' is defined in repo/tools/go and in repo/tools/node - keep one"
+run_check "[lsp.x] with a source that the tool does not pin" 2 "$lsp_values" lsp_not_pinned \
+  "repo/tools/go/tools.toml: source 'nope' of [lsp.x] is not a mise tool of this tool - name its pin"
+run_check "[lsp.x] with a command with spaces" 2 "$lsp_values" lsp_spaces \
+  "repo/tools/go/tools.toml: [lsp.x] command 'pyrefly lsp' has whitespace - command is one binary; put the rest in args"
+
+# A server follows its source pin and the envs of its tool (D12, D28):
+# pyrefly needs the pyproject.toml of its pin, and a tool without dev has no
+# server. lsp does not run the rules of check, so it reads a values file in
+# which go has env ci only.
+check_lsp_no_pyrefly() { check_that "lsp --json: no pyrefly" lsp_jq '.data.servers | has("pyrefly") | not'; }
+check_lsp_pyrefly() {
+  check_that "lsp --json: the pyrefly entry" lsp_jq \
+    '.data.servers.pyrefly == {"command":"mise","args":["x","--","pyrefly","lsp"],"extensionToLanguage":{".py":"python",".pyi":"python"}}'
+  check_that "lsp --json: the checks of pyrefly" lsp_jq \
+    '.data.checks.pyrefly == {"command":"pyrefly","source":"pipx:pyrefly"}'
+}
+check_lsp_no_gopls() {
+  check_that "lsp --json: no gopls" lsp_jq \
+    '(.data.servers | has("gopls") | not) and (.data.checks | has("gopls") | not)'
+}
+CASE_CALL=lsp_json run_case "lsp --json: python without a pyproject.toml" 0 "$python_values" '' \
+  '"command":"lsp","ok":true' check_lsp_no_pyrefly
+CASE_CALL=lsp_json run_case "lsp --json: python with a pyproject.toml" 0 "$python_values" pyproject_root \
+  '"command":"lsp","ok":true' check_lsp_pyrefly
+CASE_CALL=lsp_json run_case "lsp --json: a tool without dev has no server" 0 'environments = [ "dev", "ci" ]
+[tools.go]
+env = [ "ci" ]' '' '"command":"lsp","ok":true' check_lsp_no_gopls
+
+# code:lsp:check (D16, D20, D29): the case runs the synced task file with bash,
+# not with mise run. A PATH shim for mise answers `which` with a path only in
+# MISE_ENV=dev, and fails with LSP_WHICH_FAIL=1; it runs the command of `x --`
+# itself, so jq comes from jq_dir. LSP_BIN is the engine of the task: by
+# default a stub that prints an envelope with the one server gopls, or exits
+# with LSP_STUB_CODE.
+jq_dir=$(dirname -- "$(mise x jq@latest -- which jq)")
+lsp_check_task() {
+  synced
+  mkdir -p -- "$tmp/shim"
+  cat > "$tmp/shim/mise" << 'EOF'
+#!/usr/bin/env bash
+case $1 in
+  which)
+    [[ ${MISE_ENV:-} == dev && -z ${LSP_WHICH_FAIL:-} ]] || exit 1
+    printf '%s\n' "/servers/$2"
+    ;;
+  x)
+    shift
+    [[ ${1:-} != -- ]] || shift
+    exec "$@"
+    ;;
+  *) exit 1 ;;
+esac
+EOF
+  cat > "$tmp/stub" << 'EOF'
+#!/usr/bin/env bash
+[[ $* == "lsp --json" ]] || exit 1
+if [[ -n ${LSP_STUB_CODE:-} ]]; then
+  printf '%s\n' '[ERROR] the stub fails' >&2
+  exit "$LSP_STUB_CODE"
+fi
+printf '%s\n' '{"contract":1,"command":"lsp","ok":true,"code":0,"data":{"servers":{"gopls":{"command":"mise","args":["x","--","gopls"],"extensionToLanguage":{".go":"go"}}},"checks":{"gopls":{"command":"gopls","source":"go:golang.org/x/tools/gopls"}}},"errors":[],"warnings":[]}'
+EOF
+  chmod +x "$tmp/shim/mise" "$tmp/stub"
+  (
+    cd -- "$consumer"
+    BOOTSTRAP_BIN=${LSP_BIN:-$tmp/stub} LSP_WHICH_FAIL=${LSP_WHICH_FAIL:-} LSP_STUB_CODE=${LSP_STUB_CODE:-} \
+      PATH="$tmp/shim:$jq_dir:$PATH" bash "$consumer/.config/mise/tasks/code/lsp/check"
+  )
+}
+check_lsp_header() { check_that "code:lsp:check: the header" log_has 'Checking the LSP servers ...'; }
+CASE_CALL=lsp_check_task run_case "code:lsp:check: each server resolves" 0 "$dev_values" '' \
+  'gopls: /servers/gopls' check_lsp_header
+LSP_WHICH_FAIL=1 CASE_CALL=lsp_check_task run_case "code:lsp:check: a server that does not resolve" 1 "$dev_values" '' \
+  'gopls: gopls not found - run MISE_ENV=dev mise install' check_lsp_header
+LSP_STUB_CODE=2 CASE_CALL=lsp_check_task run_case "code:lsp:check: lsp --json exits 2" 2 "$dev_values" '' \
+  'the stub fails'
+LSP_STUB_CODE=3 CASE_CALL=lsp_check_task run_case "code:lsp:check: lsp --json exits 3" 1 "$dev_values" '' \
+  'the stub fails'
+
+# A repo with no server: the task prints nothing and exits 0, with the real
+# engine. The repo has node through base, but no package.json or tsconfig.json.
+lsp_check_none() { LSP_BIN=$bin lsp_check_task; }
+empty_log() { [[ ! -s $log ]]; }
+check_lsp_silent() { check_that "code:lsp:check: no output without a server" empty_log; }
+CASE_CALL=lsp_check_none run_case "code:lsp:check: a repo with no server" 0 "$dev_values" '' '' check_lsp_silent
 
 # setup:configs --all with the real engine (D54, D62, D63): the sibling api is
 # a repository next to the consumer with its own .config/bootstrap/, so its
