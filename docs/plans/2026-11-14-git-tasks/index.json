@@ -588,5 +588,8 @@
   },
   "gaps": [],
   "overrides": [],
-  "run": {}
+  "run": {
+    "worktree": ".worktrees/git-tasks",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-14-git-tasks.jsonl"
+  }
 }
