@@ -12,8 +12,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-16T15:20 in .worktrees/task-ports"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-16 — e9a61aa, 8a4532a, 34ea7a0, ae43079, cc627d8, d6c45b4; open gap G2 (main's lint on engine 3.3.1)"
   },
   "consent": {
     "merge": true,
