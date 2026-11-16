@@ -37,6 +37,7 @@ A `[tools.mise]` table gives values.
 | `.config/mise/tasks/code/format/_default`     | Template  | The task `code:format`.                                                                                                                                                         |
 | `.config/mise/tasks/code/lint/_default`       | Template  | The task `code:lint`.                                                                                                                                                           |
 | `.config/mise/tasks/code/lint/60-bootstrap`   | Synced    | The gate `code:lint:60-bootstrap`.                                                                                                                                              |
+| `.config/mise/tasks/code/lsp/check`           | Synced    | The task `code:lsp:check`.                                                                                                                                                      |
 | `.config/mise/tasks/code/sec/_default`        | Synced    | The task `code:sec`.                                                                                                                                                            |
 | `.config/mise/tasks/git/worktree/list`        | Synced    | The task `git:worktree:list`.                                                                                                                                                   |
 | `.config/mise/tasks/test/_default`            | Synced    | The task `test`.                                                                                                                                                                |
@@ -79,6 +80,7 @@ The tool also sets:
 | `code:format`            | Run each `code:format:<name>` task in number order, on the given files, else on the whole tree. `--fix` applies the fixes.                                                                                                                                          |
 | `code:lint`              | Run each `code:lint:<name>` task in number order, on the given files, else on the whole tree. `--fix` applies the fixes.                                                                                                                                            |
 | `code:lint:60-bootstrap` | Validate the files of `.config/bootstrap/` with `bootstrap check`. Hidden. See below.                                                                                                                                                                               |
+| `code:lsp:check`         | Check that the LSP server of each selected tool resolves in the dev env. See below.                                                                                                                                                                                 |
 | `code:sec`               | Run each `code:sec:<scanner>` task. `--staged` scans only the staged changes for secrets. See [_security_base.md](_security_base.md).                                                                                                                               |
 | `git:worktree:list`      | List the worktrees and the branches of the product: the home repository (`[home]`), its submodules and its submodule and sibling members of `[members.*]`. A terminal gets a table and an HTML page. Another reader gets JSON Lines. The alias `worktrees` runs it. |
 | `test`                   | Run each `test:NN-<name>` task in number order. Each argument goes to each task unchanged, so a flag of a task needs no `--`. It does not run `test:e2e` or `test:golden`. With no task, it prints one line and exits 0.                                            |
@@ -112,6 +114,18 @@ cache `~/.cache/bootstrap/` and the output of a sync are in
 `~/.cache/bootstrap/repo`. It never fetches. Without that clone, without
 `bootstrap`, or with another `origin` in the clone, it prints nothing and
 exits 0. Thus no output does not show that the values are correct.
+
+`code:lsp:check` reads `bootstrap lsp --json` (`BOOTSTRAP_BIN`, else
+`mise x -- bootstrap`) and tests that each listed server resolves: a pinned
+server with `MISE_ENV=dev mise which <command>`, a `host` server with
+`xcrun --find <command>`. It starts no server. A missing pinned server prints
+the fix `run MISE_ENV=dev mise install`; a missing `host` server prints
+"install the Xcode Command Line Tools (xcode-select --install) or Xcode". A
+repository with no server prints nothing and exits 0; a missing server exits 1;
+code 2 of `bootstrap lsp`, or no engine, exits 2. A server is listed only when
+its tool is in `dev` and its source pin's `requires_found` is met (see
+[`docs/design/cli.md`](../../design/cli.md), "`lsp`"). No hook, orchestrator
+or CI job runs it.
 
 ## Scripts
 

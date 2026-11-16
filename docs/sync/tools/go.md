@@ -34,6 +34,7 @@ the root has a `go.mod` (see "Scripts").
 | `go`                                   | `latest` | dev, ci      |                                                                                      |
 | `golangci-lint`                        | `latest` | dev, ci      | Only when the sync finds a `go.mod` (`requires_found`).                              |
 | `go:golang.org/x/vuln/cmd/govulncheck` | `latest` | dev, ci      | Only when the sync finds a `go.mod`. The `go` backend builds it with the Go of mise. |
+| `go:golang.org/x/tools/gopls`          | `latest` | dev          | The language server. In `[mise_env.dev.tools]`. The `go` backend builds it.          |
 
 mise sets `GOBIN` to the folder of the active Go version, unless the
 environment already sets `GOBIN`. Thus `go install` puts its binaries there.
@@ -45,6 +46,13 @@ standard library as well as the compiler, assembler, and other tools". With
 another toolchain. The setting has no effect on module dependencies: they
 download as before. When the `go` line of `go.mod` or `go.work` needs a
 newer Go than the mise version, the `go` command stops with an error.
+
+The tool declares the language server `gopls` (`.go`), from the
+`go:golang.org/x/tools/gopls` pin. The pin is in `[mise_env.dev.tools]`, so it
+stays in dev and does not stop `go` in ci. The language server is in
+[`docs/design/tools.md`](../../design/tools.md) ("The `[lsp]` table").
+`bootstrap lsp` lists it, and `code:lsp:check` of the `mise` tool tests that it
+resolves.
 
 ## Tasks
 
@@ -115,6 +123,6 @@ Only `env`. No questions. The keys of the values file are in
 
 ## Migration
 
-- Remove go, golangci-lint, govulncheck and `GOTOOLCHAIN` from the
+- Remove go, golangci-lint, govulncheck, gopls and `GOTOOLCHAIN` from the
   repository-owned mise files.
 - See M39 of `migrate.md` for a repository with `code:format:20-gofmt`.

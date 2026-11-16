@@ -95,6 +95,9 @@ source = "code-lint.tmpl"
 [tasks."code/lint/60-bootstrap"]
 source = "code-lint-bootstrap"
 
+[tasks."code/lsp/check"]
+source = "code-lsp-check"
+
 [tasks."code/sec/_default"]
 source = "code-sec"
 

@@ -8,6 +8,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/schema"
 	"github.com/virajp/bootstrap/cli/internal/selection"
+	"github.com/virajp/bootstrap/cli/internal/source"
 )
 
 // resolve is `_rs_resolve`: the tools of the values file, packs expanded and
@@ -80,11 +81,23 @@ func (s *state) formatterOf() fail.Code {
 }
 
 // fileSkips is `_rs_file_skips`: it sets reqSkip to the targets with a
-// `requires` path that does not exist, or a `requires_found` name that
-// hasFile does not find. The value is the first such item, in the order of
-// the lists.
+// `requires` path that does not exist, or with a `requires_found` list of
+// which hasFile finds no name. The value is the first missing `requires`
+// path, else each name of `requires_found` as "a", "a or b" or "a, b or c"
+// (D39).
 func (s *state) fileSkips() {
 	s.reqSkip = map[string]string{}
+	found := map[string]bool{}
+	names := map[string][]string{}
+	for _, c := range s.fileConds {
+		if c.kind != "requires_found" {
+			continue
+		}
+		names[c.key] = append(names[c.key], c.item)
+		if !found[c.key] && s.hasFile(c.item) {
+			found[c.key] = true
+		}
+	}
 	for _, c := range s.fileConds {
 		if c.key == "" {
 			continue
@@ -93,13 +106,12 @@ func (s *state) fileSkips() {
 			continue
 		}
 		if c.kind == "requires" {
-			if exists(s.root + "/" + c.item) {
-				continue
+			if !exists(s.root + "/" + c.item) {
+				s.reqSkip[c.key] = c.item
 			}
-		} else if s.hasFile(c.item) {
-			continue
+		} else if !found[c.key] {
+			s.reqSkip[c.key] = source.OrList(names[c.key])
 		}
-		s.reqSkip[c.key] = c.item
 	}
 }
 

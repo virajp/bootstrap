@@ -455,11 +455,14 @@ func (s *state) members(name string) ([]member, fail.Code) {
 	return out, fail.OK
 }
 
-// hasFile is `_rs_has_file`: this repo has a file named <name>, at the root
+// hasFile is `_rs_has_file`: see HasFile.
+func (s *state) hasFile(name string) bool { return HasFile(s.root, name) }
+
+// HasFile tells if the repository <root> has a file named <name>, at the root
 // or down to 4 folders below it, that git tracks or does not ignore. A git
-// submodule is not searched.
-func (s *state) hasFile(name string) bool {
-	out, _ := git(s.root, "ls-files", "--cached", "--others", "--exclude-standard", "--", name, "*/"+name)
+// submodule is not searched. It is the test of `requires_found`.
+func HasFile(root, name string) bool {
+	out, _ := git(root, "ls-files", "--cached", "--others", "--exclude-standard", "--", name, "*/"+name)
 	for _, l := range strings.Split(out, "\n") {
 		parts := strings.Split(l, "/")
 		if l != "" && parts[len(parts)-1] == name && len(parts) <= 5 {

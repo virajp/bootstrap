@@ -68,6 +68,28 @@ version = "lts"
 [mise.env]
 _.path = { path = "node_modules/.bin", tools = true }
 
+# The language server is for an editor, so it is in dev only, and only in a
+# repository with a package.json or a tsconfig.json: node alone gets no
+# server. As a [mise_env.dev] entry, it does not stop the node tool in ci.
+# typescript-language-server needs the typescript package.
+[mise_env.dev.tools."npm:typescript"]
+requires_found = [ "package.json", "tsconfig.json" ]
+version = "latest"
+
+[mise_env.dev.tools."npm:typescript-language-server"]
+requires_found = [ "package.json", "tsconfig.json" ]
+version = "latest"
+
+# The language server of the tool, for bootstrap lsp and code:lsp:check. It
+# follows the requires_found of its source pin, so it needs a package.json or
+# a tsconfig.json.
+[lsp.typescript-lsp]
+args = [ "--stdio" ]
+command = "typescript-language-server"
+extensions = { ".cjs" = "javascript", ".cts" = "typescript", ".js" = "javascript", ".jsx" = "javascriptreact", ".mjs" = "javascript", ".mts" = "typescript", ".ts" = "typescript", ".tsx" = "typescriptreact" }
+source = "npm:typescript-language-server"
+startup_timeout = 60000
+
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
 [tasks."setup/deps/40-node"]

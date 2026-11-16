@@ -190,12 +190,13 @@ func (a *app) title(s string) string {
 
 // describeData is the data of describe --json (D10): the values of
 // repo.toml, the selected tools with their values of tools.toml, the
-// members and the task ports.
+// members, the task ports and the language servers (the data of lsp).
 type describeData struct {
 	Repo    json.RawMessage `json:"repo"`
 	Tools   []describeTool  `json:"tools"`
 	Members []describeMem   `json:"members"`
 	Ports   []portData      `json:"ports"`
+	LSP     lspData         `json:"lsp"`
 }
 
 // describeTool is a selected tool and its [tools.<name>] table, {} when the
@@ -253,9 +254,13 @@ func (a *app) describe(o opts) fail.Code {
 	if err != nil {
 		return a.logErr(err)
 	}
+	servers, err := lspOf(sd.Root, sel)
+	if err != nil {
+		return a.logErr(err)
+	}
 	d := describeData{
 		Repo: json.RawMessage(source.JSON(repoRaw)), Tools: []describeTool{},
-		Members: []describeMem{}, Ports: []portData{},
+		Members: []describeMem{}, Ports: []portData{}, LSP: servers,
 	}
 	for _, t := range sel.Tools {
 		v := "{}"

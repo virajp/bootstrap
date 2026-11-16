@@ -35,9 +35,26 @@ are in [`docs/design/mise.md`](../../design/mise.md).
 
 ## mise tools
 
-| mise tool | Version | Environments |
-| --------- | ------- | ------------ |
-| `node`    | `lts`   | dev, ci      |
+| mise tool                        | Version  | Environments | Note                                                                      |
+| -------------------------------- | -------- | ------------ | ------------------------------------------------------------------------- |
+| `node`                           | `lts`    | dev, ci      |                                                                           |
+| `npm:typescript`                 | `latest` | dev          | For the language server. Only with a `package.json` or a `tsconfig.json`. |
+| `npm:typescript-language-server` | `latest` | dev          | The language server. Only with a `package.json` or a `tsconfig.json`.     |
+
+The two npm pins are in `[mise_env.dev.tools]` with
+`requires_found = ["package.json", "tsconfig.json"]`: the sync writes them
+only when it finds one of the two files, and they do not stop `node` in ci.
+Thus node alone, for example as a dependency of the `linter` tool, gets no
+server and no pins. If the repository adds its first `package.json` or
+`tsconfig.json` later, run `mise run setup:configs` again.
+
+The tool declares the language server `typescript-lsp`
+(`typescript-language-server --stdio`, for `.ts`, `.tsx`, `.mts`, `.cts`,
+`.js`, `.jsx`, `.mjs` and `.cjs`), from the `npm:typescript-language-server`
+pin, so it is listed only with a `package.json` or a `tsconfig.json`. The
+language server is in [`docs/design/tools.md`](../../design/tools.md) ("The
+`[lsp]` table"). `bootstrap lsp` lists it, and `code:lsp:check` of the `mise`
+tool tests that it resolves.
 
 The tool also sets:
 
@@ -106,14 +123,17 @@ Only `env`. No questions. The keys of the values file are in
 2. If the repository uses `typescript` or `tsx`, keep them as
    `devDependencies` in `package.json`. `bootstrap` ships no tool for them,
    because each package can need its own version, and other packages need
-   `typescript` as a peer.
+   `typescript` as a peer. The dev pin `npm:typescript` of this tool is only
+   for the language server.
 
 ## Migration
 
 - Remove node from the repository-owned mise files.
 - If a repository-owned mise file has `npm:typescript` or `npm:tsx`, move it to
   `devDependencies` in `package.json`. Then make sure that the scripts that
-  call it still find it.
+  call it still find it. Also remove a repository-owned
+  `npm:typescript-language-server`: with a `package.json` or a
+  `tsconfig.json`, this tool pins both in dev.
 - If the old files pin a different version, tell the user. For example, a
   repository pins node `26` (M6 of `migrate.md`).
 - Do the "Migration" items of the package manager that the repository selects.

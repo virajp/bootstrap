@@ -26,16 +26,18 @@ The plugin never reads or edits a file of `.config/bootstrap/` itself. It reads
 and writes each value of a repository with `bootstrap config`, and the agent
 that reads this file changes the tools with `bootstrap`.
 
-| Job                       | Command                                                                                                         |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Check the contract        | `bootstrap contract --json`; `data.versions` must hold the version the plugin reads                             |
-| Read the repository       | `bootstrap describe --json`: the values, tools, members and task ports                                          |
-| Read the tool catalog     | `bootstrap catalog --json`: the categories, tools and packs of the clone                                        |
-| Read one value            | `bootstrap config get <key> --json`; `data` is `{"key", "value", "source"}`                                     |
-| Read all the values       | `bootstrap config show --json`                                                                                  |
-| Write one value           | `bootstrap config set <key> <value> --json`; `data` is `{"key", "value"}`                                       |
-| Remove one value or table | `bootstrap config unset <key> --json`; `data` is `{"key"}`                                                      |
-| Change the tools          | `bootstrap add`, `remove`, `replace`, `init` or `detect --add` with `--json` and `--dry-run`, then with `--yes` |
+| Job                       | Command                                                                                                                                                                                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Check the contract        | `bootstrap contract --json`; `data.versions` must hold the version the plugin reads                                                                                                                                                          |
+| Read the repository       | `bootstrap describe --json`: the values, tools, members, task ports and LSP servers (`lsp`)                                                                                                                                                  |
+| Read the LSP servers      | `bootstrap lsp --json`; `data.servers` holds each server as a verbatim entry of Claude's `lspServers`                                                                                                                                        |
+| Check the LSP servers     | `mise run code:lsp:check`: each server resolves in the dev env; exit 1 names the fix (`MISE_ENV=dev mise install` for a pinned server, the Xcode Command Line Tools (`xcode-select --install`) or Xcode for the host server `sourcekit-lsp`) |
+| Read the tool catalog     | `bootstrap catalog --json`: the categories, tools and packs of the clone                                                                                                                                                                     |
+| Read one value            | `bootstrap config get <key> --json`; `data` is `{"key", "value", "source"}`                                                                                                                                                                  |
+| Read all the values       | `bootstrap config show --json`                                                                                                                                                                                                               |
+| Write one value           | `bootstrap config set <key> <value> --json`; `data` is `{"key", "value"}`                                                                                                                                                                    |
+| Remove one value or table | `bootstrap config unset <key> --json`; `data` is `{"key"}`                                                                                                                                                                                   |
+| Change the tools          | `bootstrap add`, `remove`, `replace`, `init` or `detect --add` with `--json` and `--dry-run`, then with `--yes`                                                                                                                              |
 
 Each `--json` command prints one JSON envelope on stdout, on one line, and
 each other line on stderr:

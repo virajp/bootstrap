@@ -34,7 +34,8 @@ files are for this repository only:
   `internal/`), the CLI `bootstrap` with the commands `init`, `tui`, `check`,
   `sync`, `questions`, `detect`, `add`, `remove`, `replace`, `list`, `config`
   (`get`, `set`, `unset` and `show` of a value of `.config/bootstrap/`),
-  `settings`, `contract`, `catalog`, `describe` and the group `mac`. A plugin
+  `settings`, `contract`, `catalog`, `describe`, `lsp` and the group `mac`. A
+  plugin
   reads and drives it through the JSON envelope of `--json`: see
   `docs/design/cli.md` ("The JSON contract").
   No Go
@@ -212,7 +213,8 @@ part, and with no part it prints one line and exits 0. See
   `git:merge:<branch>` tasks, `yq` in `git:worktree:list`,
   `git:worktree:create` and `git:worktree:delete`, and `dprint` in
   `setup:dprint`. The engine is the exception to this exception: `helpers`
-  (`bootstrap_get`) and the scripts of the tools call it as `BOOTSTRAP_BIN`,
+  (`bootstrap_get`), `code:lsp:check` and the scripts of the tools call it as
+  `BOOTSTRAP_BIN`,
   else `mise x -- bootstrap`, and find it with `mise x -- which bootstrap`.
   The tool calls of the engine in `cli/` are in
   `docs/design/cli.md` ("The tool calls").
@@ -324,9 +326,11 @@ changes a case. See `docs/design/cli.md` ("The config file").
   `bootstrap init` with the repo's own test tasks, and `mise run test`,
   `test:e2e` and `test:golden` in a scratch consumer. The config verb cases run
   `bootstrap config get|set|unset|show`. The JSON cases run `--json` on
-  `contract`, `catalog`, `describe`, `questions`, `config`, `check` and
-  `add`, and compare the
-  envelope on stdout. The settings cases point
+  `contract`, `catalog`, `describe`, `lsp`, `questions`, `config`, `check`
+  and `add`, and compare the
+  envelope on stdout. The LSP cases run the rendered task `code:lsp:check`
+  with bash, with a stub engine in `BOOTSTRAP_BIN` and a `mise` shim on the
+  path. The settings cases point
   `BOOTSTRAP_CONFIG` or `--config` at a file of the case, or at a missing file.
   Most of them run `bootstrap settings`. The cases of a `verbose` key and of the
   key `clone` run `bootstrap sync --dry-run`. A case of the default output also

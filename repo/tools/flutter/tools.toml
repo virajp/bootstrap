@@ -15,6 +15,15 @@ extensions = [ "dart-code.dart-code", "dart-code.flutter" ]
 envs = [ "dev", "ci" ]
 version = "3"
 
+# The language server of the tool, for bootstrap lsp and code:lsp:check. The
+# dart command comes with flutter.
+[lsp.dart-lsp]
+args = [ "language-server", "--protocol=lsp" ]
+command = "dart"
+extensions = { ".dart" = "dart" }
+source = "flutter"
+startup_timeout = 60000
+
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
 [tasks."code/format/10-dart"]

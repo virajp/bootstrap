@@ -25,6 +25,9 @@ type Index struct {
 	Manifests map[string]*Manifest
 	// MiseOwner maps a mise tool name to the tool that defines it (repo side).
 	MiseOwner map[string]string
+	// LSPOwner maps an [lsp.<server>] name to the tool that defines it (repo
+	// side).
+	LSPOwner map[string]string
 	// StageInit is the set of the tools with `stage = "init"` (Mac side).
 	StageInit map[string]bool
 	// Categories is the categories file of the side.
@@ -59,7 +62,7 @@ func firstFrom(names []string, limit string) string {
 }
 
 func (s Source) openRepo() (*Index, error) {
-	x := &Index{Source: s, Manifests: map[string]*Manifest{}, MiseOwner: map[string]string{}}
+	x := &Index{Source: s, Manifests: map[string]*Manifest{}, MiseOwner: map[string]string{}, LSPOwner: map[string]string{}}
 	shown := s.ToolsShown()
 	folders, err := s.ToolFolders()
 	if err != nil {
@@ -108,6 +111,13 @@ func (s Source) openRepo() (*Index, error) {
 			}
 			x.MiseOwner[mt.Name] = tool
 		}
+		for _, srv := range m.LSP {
+			if other, dup := x.LSPOwner[srv.Name]; dup {
+				probs = append(probs, fail.New(fail.Usage, "language server '%s' is defined in %s/%s and in %s/%s - keep one", srv.Name, shown, other, shown, tool))
+				continue
+			}
+			x.LSPOwner[srv.Name] = tool
+		}
 		probs = append(probs, x.repoRules(tool, m)...)
 		probs = append(probs, x.catalogRules(tool)...)
 		probs = append(probs, x.categoryRule(tool)...)
@@ -117,8 +127,9 @@ func (s Source) openRepo() (*Index, error) {
 	return x, Problems(probs)
 }
 
-// repoRules is `_rs_manifest_rules`: the old keys, the `[files]` tables and
-// `requires_found` of a mise entry of one tool.
+// repoRules is `_rs_manifest_rules`: the old keys, the `[files]` tables,
+// `requires_found` of a mise entry and the source of each [lsp] server of
+// one tool.
 func (x *Index) repoRules(tool string, m *Manifest) []*fail.Error {
 	at := x.Source.ManifestShown(tool)
 	var out []*fail.Error
@@ -153,6 +164,11 @@ func (x *Index) repoRules(tool string, m *Manifest) []*fail.Error {
 			if l.b == "" || strings.Contains(l.b, "/") {
 				add("%s: requires_found of mise tool %s: '%s' must be a file name, with no /", at, l.a, l.b)
 			}
+		}
+	}
+	for _, srv := range m.LSP {
+		if srv.Source != "host" && !m.PinsMise(srv.Source) {
+			add("%s: source '%s' of [lsp.%s] is not a mise tool of this tool - name its pin of [mise.tools] or [mise_env.<env>.tools], or write \"host\"", at, srv.Source, srv.Name)
 		}
 	}
 	return out

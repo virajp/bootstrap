@@ -297,11 +297,15 @@ of the design is in [fnox.md](fnox.md).
 
 ## `requires_found`
 
-The `[files]` and `[tasks]` key `requires_found` and the same key of a mise tool
-hold a list of file names. The sync must find each name at the root or down to
+The `[files]` and `[tasks]` key `requires_found` and the same key of a
+`[mise.tools]` or a `[mise_env.<env>.tools]` entry hold a list of file names.
+The list is met when the sync finds any one of the names at the root or down to
 4 folders below it, in a file that git tracks or does not ignore. The sync does
 not look in git submodules, because a submodule has its own sync. A name has no
-`/`. A target with `requires` and `requires_found` needs each entry of both.
+`/`. A target with `requires` and `requires_found` needs each `requires` path
+and one name of `requires_found`. The line of a skipped target names the first
+missing `requires` path, else each name of `requires_found`: `(no a)`,
+`(no a or b)`, `(no a, b or c)`.
 
 ## `bootstrap check`
 

@@ -231,16 +231,16 @@ func (x *Index) NotSelectable(tool string) string {
 	if len(by) == 0 {
 		return tool + " is not selectable."
 	}
-	return tool + " is not selectable. Select " + orList(by) + "."
+	return tool + " is not selectable. Select " + OrList(by) + "."
 }
 
 // HostMessage gives the message of a tool whose hosts leave out <host>.
 func (m *Manifest) HostMessage(host string) string {
-	return m.Tool + " needs the host " + orList(m.Hosts) + " - this host is " + host
+	return m.Tool + " needs the host " + OrList(m.Hosts) + " - this host is " + host
 }
 
-// orList gives "a", "a or b", "a, b or c".
-func orList(l []string) string {
+// OrList gives "a", "a or b", "a, b or c".
+func OrList(l []string) string {
 	if len(l) <= 1 {
 		return strings.Join(l, "")
 	}

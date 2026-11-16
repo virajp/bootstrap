@@ -61,6 +61,13 @@ The tool also sets:
 
 The `gcloud` tool uses the same Python minor version. Change both together.
 
+The tool declares the language server `pyrefly` (`pyrefly lsp`, for `.py` and
+`.pyi`), from the `pipx:pyrefly` pin, so it is listed only with a
+`pyproject.toml`. The language server is in
+[`docs/design/tools.md`](../../design/tools.md) ("The `[lsp]` table").
+`bootstrap lsp` lists it, and `code:lsp:check` of the `mise` tool tests that it
+resolves.
+
 ## Tasks
 
 | Task                   | Use                                                                                   |

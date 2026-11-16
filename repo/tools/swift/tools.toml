@@ -26,6 +26,14 @@ version = "latest"
 [mise_env.ci.settings]
 os = "macos"
 
+# The language server of the tool, for bootstrap lsp and code:lsp:check.
+# sourcekit-lsp comes with the Swift toolchain of the host.
+[lsp.sourcekit-lsp]
+command = "sourcekit-lsp"
+extensions = { ".swift" = "swift" }
+source = "host"
+startup_timeout = 1000
+
 # The files of the tool, below files/.
 [files.".config/swift-format.json"]
 mode = "seed"
