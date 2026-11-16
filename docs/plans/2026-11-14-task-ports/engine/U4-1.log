@@ -1,0 +1,3 @@
+/security-review engine, loop U4, round 1, range b65277a..0dee100 (the Skill invocation ran in the main checkout and saw an empty diff, so the engine prompt was run as a subagent over the worktree delta)
+
+No high-confidence vulnerabilities found.

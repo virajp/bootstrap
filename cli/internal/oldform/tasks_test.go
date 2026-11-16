@@ -194,6 +194,84 @@ func TestMovesFileToFolderAndBack(t *testing.T) {
 	}
 }
 
+func TestOwnTasksLinked(t *testing.T) {
+	// The engine follows no symlink: a tasks folder or a test folder that is a
+	// link to a folder outside the repo, and a task file that is a link, give
+	// no move and no problem, and the outside folder stays as it is.
+	outside := t.TempDir()
+	if err := os.WriteFile(filepath.Join(outside, "e2e"), []byte("own\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A tasks folder whose test folder is the outside folder.
+	tasks := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(tasks, "test")); err != nil {
+		t.Fatal(err)
+	}
+	for linked, target := range map[string]string{TasksDir: tasks, TasksDir + "/test": outside} {
+		root := t.TempDir()
+		p := filepath.Join(root, linked)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(target, p); err != nil {
+			t.Fatal(err)
+		}
+		moves, err := PlanMoves(root, nil, show)
+		if err != nil || len(moves) != 0 {
+			t.Errorf("%s: moves %v, err %v", linked, moves, err)
+		}
+		if err := TaskProblems(root, filepath.Join(root, "missing.tsv"), show); err != nil {
+			t.Errorf("%s: %v", linked, err)
+		}
+	}
+	if b, err := os.ReadFile(filepath.Join(outside, "e2e")); err != nil || string(b) != "own\n" {
+		t.Errorf("outside file: %q %v", b, err)
+	}
+	root := t.TempDir()
+	real := taskFile(t, root, "real", "own\n", 0o755)
+	if err := os.MkdirAll(filepath.Join(root, TasksDir, "test"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(real, filepath.Join(root, TasksDir, "test", "e2e")); err != nil {
+		t.Fatal(err)
+	}
+	if got := OwnTasks(root, nil); len(got) != 0 {
+		t.Errorf("a linked task file: %v", got)
+	}
+}
+
+func TestPlanMovesTempNameExists(t *testing.T) {
+	// A file at the temp name of a move gives code 2, and nothing moves.
+	root := t.TempDir()
+	from := taskFile(t, root, "test/e2e", "own\n", 0o755)
+	taskFile(t, root, "test/e2e.bootstrap-move", "keep\n", 0o644)
+	moves, err := PlanMoves(root, nil, show)
+	if moves != nil || fail.CodeOf(err) != fail.Usage || !strings.Contains(err.Error(), from+".bootstrap-move") {
+		t.Fatalf("moves %v, err %v", moves, err)
+	}
+	// move and UndoMoves never replace a file at the temp name.
+	m := []Move{{From: from, To: from + "/50-local"}}
+	if err := ApplyMoves(m); err == nil {
+		t.Fatal("ApplyMoves replaced the file at the temp name")
+	}
+	if b, _ := os.ReadFile(from); string(b) != "own\n" {
+		t.Errorf("from = %q", b)
+	}
+	if b, _ := os.ReadFile(from + ".bootstrap-move"); string(b) != "keep\n" {
+		t.Errorf("temp = %q", b)
+	}
+	undo := []Move{{From: filepath.Join(root, "gone"), To: from}}
+	if err := os.WriteFile(filepath.Join(root, "gone.bootstrap-move"), []byte("keep\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := UndoMoves(undo); err == nil {
+		t.Fatal("UndoMoves replaced the file at the temp name")
+	}
+	if b, _ := os.ReadFile(from); string(b) != "own\n" {
+		t.Errorf("from after undo = %q", b)
+	}
+}
+
 func TestUnnamedParts(t *testing.T) {
 	root := t.TempDir()
 	// D15: an executable part without an NN- name.

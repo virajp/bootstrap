@@ -94,12 +94,18 @@ func ListedFile(root, file string) map[string]bool {
 // OwnTasks gives each path of TaskPorts below <root> (relative) that is a
 // regular file, that <listed> does not name and that has no bootstrap header:
 // a task of the repo, at the place of a dispatcher. A file with the header is
-// bootstrap's own: the sync overwrites it (D26).
+// bootstrap's own: the sync overwrites it (D26). The engine follows no
+// symlink: a path that is a link, or is below a linked folder, and a path
+// whose target is, stay (manifest.Linked); the sync then fails the target
+// below the link by its own rule.
 func OwnTasks(root string, listed map[string]bool) []Move {
 	root = strings.TrimSuffix(root, "/")
 	var out []Move
 	for _, m := range TaskPorts {
 		if listed[m.From] {
+			continue
+		}
+		if manifest.Linked(root, m.From) || manifest.Linked(root, m.To) {
 			continue
 		}
 		p := root + "/" + m.From
@@ -114,7 +120,8 @@ func OwnTasks(root string, listed map[string]bool) []Move {
 // PlanMoves gives the moves of init for the repo <root>, with absolute paths:
 // OwnTasks with <listed>. When the target of any of them exists, it moves
 // nothing and gives a problem with code 2 for each, which names both paths
-// (D8, D20). <show> gives a path in a message.
+// (D8, D20). The same holds for the temp name of a move (TempName) that
+// exists: the move would replace it. <show> gives a path in a message.
 func PlanMoves(root string, listed map[string]bool, show func(string) string) ([]Move, error) {
 	root = strings.TrimSuffix(root, "/")
 	var out []Move
@@ -123,6 +130,10 @@ func PlanMoves(root string, listed map[string]bool, show func(string) string) ([
 		from, to := root+"/"+m.From, root+"/"+m.To
 		if _, err := os.Lstat(to); err == nil {
 			probs = append(probs, usage("%s is a task of this repo at the place of a dispatcher of bootstrap, and %s exists - join the two tasks in %s, then run bootstrap init again", show(from), show(to), show(to)))
+			continue
+		}
+		if _, err := os.Lstat(TempName(from)); err == nil {
+			probs = append(probs, usage("%s exists, and bootstrap init moves %s through it - move it away, then run bootstrap init again", show(TempName(from)), show(from)))
 			continue
 		}
 		out = append(out, Move{From: from, To: to})
@@ -258,8 +269,8 @@ func UndoMoves(moves []Move) error {
 		if _, err := os.Lstat(m.To); err != nil {
 			continue
 		}
-		tmp := m.From + ".bootstrap-move"
-		if err := os.Rename(m.To, tmp); err != nil {
+		tmp := TempName(m.From)
+		if err := renameFree(m.To, tmp); err != nil {
 			return fail.New(fail.Other, "cannot move %s back to %s", m.To, m.From)
 		}
 		if info, err := os.Lstat(m.From); err == nil && info.IsDir() {
@@ -274,10 +285,22 @@ func UndoMoves(moves []Move) error {
 	return nil
 }
 
-// move moves the file <from> to <to>, through <from>.bootstrap-move.
+// TempName is the temp name of a move of the file <from>, next to it.
+func TempName(from string) string { return from + ".bootstrap-move" }
+
+// renameFree renames <from> to <to> only when <to> does not exist, so a
+// rename never replaces a file.
+func renameFree(from, to string) error {
+	if _, err := os.Lstat(to); err == nil {
+		return os.ErrExist
+	}
+	return os.Rename(from, to)
+}
+
+// move moves the file <from> to <to>, through TempName.
 func move(from, to string) error {
-	tmp := from + ".bootstrap-move"
-	if err := os.Rename(from, tmp); err != nil {
+	tmp := TempName(from)
+	if err := renameFree(from, tmp); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(filepath.Dir(to), 0o777); err != nil {
