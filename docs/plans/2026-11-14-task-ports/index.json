@@ -84,11 +84,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-15T20:49:13.635Z",
-      "ended": "",
-      "commit": "34ea7a0",
-      "rounds": 2
+      "ended": "2026-11-16T08:32:10.249Z",
+      "commit": "cc627d8",
+      "rounds": 3
     },
     {
       "id": "U3",
@@ -125,14 +125,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-16T08:26:45.475Z",
-      "ended": "",
+      "ended": "2026-11-16T08:33:16.836Z",
       "commit": "",
-      "rounds": 1,
+      "rounds": 2,
       "range": {
-        "from": "b65277a",
-        "to": "0dee100"
+        "from": "0dee100",
+        "to": "cc627d8"
       }
     },
     {
@@ -196,9 +196,9 @@
     },
     {
       "id": "W3",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-16T08:26:45.440Z",
-      "ended": ""
+      "ended": "2026-11-16T08:34:22.161Z"
     },
     {
       "id": "W4",
