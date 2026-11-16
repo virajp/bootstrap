@@ -1,6 +1,6 @@
 # The `mise` tool
 
-The shared mise config, the task library, the `setup` and `code`
+The shared mise config, the task library, the `setup`, `code` and `test`
 orchestrators, and the entry of the sync: `setup:configs` and the gate
 `code:lint:60-bootstrap`. The `base` pack adds it with `required = true`, so
 `bootstrap remove tool <tool…>` refuses it.
@@ -20,31 +20,36 @@ A `[tools.mise]` table gives values.
 
 ## What the tool ships
 
-| Path in the repository                        | Kind      | Use                                                                                                                                                                   |
-| --------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.config/mise.toml`                           | Template  | The shared `[settings]`, and the `[env]` values `MEMBERS` and `REPO_NAME` from `.config/bootstrap/repo.toml`.                                                         |
-| `.config/mise/conf.d/mise/mise.<env>.toml`    | Generated | The mise config of this tool, one file for each environment.                                                                                                          |
-| `.config/mise/conf.d/zz-repo/mise.<env>.toml` | Seed      | The mise config and the `[env]` values of the repository, one file for `dev` and one for `ci`. The folder name sorts last, so this config wins over each tool config. |
-| `.config/mise/tasks/_scripts/helpers`         | Library   | The print functions, `members`, `own_tasks`, `has_own_task`, `shell_files_in_scope` and `bootstrap_get`, the reader of `.config/bootstrap/`.                          |
-| `.config/mise/tasks/_scripts/checks`          | Library   | The git predicates of the merge tasks.                                                                                                                                |
-| `.config/mise/tasks/_scripts/placeholder`     | Library   | The prompt of a task that no stack fills yet.                                                                                                                         |
-| `.config/mise/tasks/_scripts/worktrees-page`  | Library   | The HTML page of `code:worktrees`.                                                                                                                                    |
-| `.config/mise/tasks/setup/_default`           | Template  | The task `setup`.                                                                                                                                                     |
-| `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`.                                                                                                                                             |
-| `.config/mise/tasks/setup/mise`               | Synced    | The task `setup:mise`.                                                                                                                                                |
-| `.config/mise/tasks/setup/worktree`           | Template  | The task `setup:worktree`.                                                                                                                                            |
-| `.config/mise/tasks/code/_default`            | Synced    | The task `code`.                                                                                                                                                      |
-| `.config/mise/tasks/code/format/_default`     | Template  | The task `code:format`.                                                                                                                                               |
-| `.config/mise/tasks/code/lint/_default`       | Template  | The task `code:lint`.                                                                                                                                                 |
-| `.config/mise/tasks/code/lint/60-bootstrap`   | Synced    | The gate `code:lint:60-bootstrap`.                                                                                                                                    |
-| `.config/mise/tasks/code/sec/_default`        | Synced    | The task `code:sec`.                                                                                                                                                  |
-| `.config/mise/tasks/code/merge/_default`      | Synced    | The task `code:merge`. Only with `when = "!git.branch_pair"`: a repository with one of `main` and `develop`. See [git.md](git.md).                                    |
-| `.config/mise/tasks/code/worktrees`           | Synced    | The task `code:worktrees`.                                                                                                                                            |
+| Path in the repository                        | Kind      | Use                                                                                                                                                                             |
+| --------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.config/mise.toml`                           | Template  | The shared `[settings]`, and the `[env]` values `MEMBERS` and `REPO_NAME` from `.config/bootstrap/repo.toml`.                                                                   |
+| `.config/mise/conf.d/mise/mise.<env>.toml`    | Generated | The mise config of this tool, one file for each environment.                                                                                                                    |
+| `.config/mise/conf.d/zz-repo/mise.<env>.toml` | Seed      | The mise config and the `[env]` values of the repository, one file for `dev` and one for `ci`. The folder name sorts last, so this config wins over each tool config.           |
+| `.config/mise/tasks/_scripts/helpers`         | Library   | The print functions, `members`, `own_tasks` (the `NN-<name>` tasks of a group), `has_own_task`, `shell_files_in_scope` and `bootstrap_get`, the reader of `.config/bootstrap/`. |
+| `.config/mise/tasks/_scripts/checks`          | Library   | The git predicates of the merge tasks.                                                                                                                                          |
+| `.config/mise/tasks/_scripts/placeholder`     | Library   | The prompt of a task that no stack fills yet.                                                                                                                                   |
+| `.config/mise/tasks/_scripts/worktrees-page`  | Library   | The HTML page of `code:worktrees`.                                                                                                                                              |
+| `.config/mise/tasks/setup/_default`           | Template  | The task `setup`.                                                                                                                                                               |
+| `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`.                                                                                                                                                       |
+| `.config/mise/tasks/setup/mise`               | Synced    | The task `setup:mise`.                                                                                                                                                          |
+| `.config/mise/tasks/setup/worktree`           | Template  | The task `setup:worktree`.                                                                                                                                                      |
+| `.config/mise/tasks/code/_default`            | Synced    | The task `code`.                                                                                                                                                                |
+| `.config/mise/tasks/code/format/_default`     | Template  | The task `code:format`.                                                                                                                                                         |
+| `.config/mise/tasks/code/lint/_default`       | Template  | The task `code:lint`.                                                                                                                                                           |
+| `.config/mise/tasks/code/lint/60-bootstrap`   | Synced    | The gate `code:lint:60-bootstrap`.                                                                                                                                              |
+| `.config/mise/tasks/code/sec/_default`        | Synced    | The task `code:sec`.                                                                                                                                                            |
+| `.config/mise/tasks/code/merge/_default`      | Synced    | The task `code:merge`. Only with `when = "!git.branch_pair"`: a repository with one of `main` and `develop`. See [git.md](git.md).                                              |
+| `.config/mise/tasks/code/worktrees`           | Synced    | The task `code:worktrees`.                                                                                                                                                      |
+| `.config/mise/tasks/test/_default`            | Synced    | The task `test`.                                                                                                                                                                |
+| `.config/mise/tasks/test/e2e/_default`        | Synced    | The task `test:e2e`.                                                                                                                                                            |
+| `.config/mise/tasks/test/golden/_default`     | Synced    | The task `test:golden`.                                                                                                                                                         |
 
 The `mise` tool ships each orchestrator `_default`. The tool of a task group
 ships its leaf tasks. A leaf task that an orchestrator runs with `own_tasks`
-has a number prefix, for example `code:lint:70-ruff`. The prefix gives the
-run order.
+must have a number prefix, for example `code:lint:70-ruff`. The prefix gives
+the run order. `own_tasks` takes only an executable file named `NN-<name>`,
+and skips each other file, `_default` and each folder. `bootstrap check` warns
+about a file without the prefix in the folder of an orchestrator.
 
 ## mise tools
 
@@ -78,12 +83,17 @@ The tool also sets:
 | `code:sec`               | Run each `code:sec:<scanner>` task. `--staged` scans only the staged changes for secrets. See [_security_base.md](_security_base.md).                                                                                                |
 | `code:merge <branch>`    | Land a branch on the only long-lived branch. See [git.md](git.md).                                                                                                                                                                   |
 | `code:worktrees`         | List the worktrees and the branches of the product: the home repository (`[home]`), its submodules and its submodule and sibling members of `[members.*]`. A terminal gets a table and an HTML page. Another reader gets JSON Lines. |
+| `test`                   | Run each `test:NN-<name>` task in number order. Each argument goes to each task unchanged, so a flag of a task needs no `--`. It does not run `test:e2e` or `test:golden`. With no task, it prints one line and exits 0.             |
+| `test:e2e`               | Run each `test:e2e:NN-<name>` task, as `test` does.                                                                                                                                                                                  |
+| `test:golden`            | Run each `test:golden:NN-<name>` task, as `test` does, for example `mise run test:golden --update`.                                                                                                                                  |
 
 `setup:configs` gets the same member flags as `setup`. Only a submodule or a
 sibling member with a `[members.<name>]` table gets a flag. A folder member of
 a monorepo is part of the root tree, so it gets no flag. `code:format` and
 `code:lint` have no member flags: each repository and each submodule runs its
-own, and a task runs in a member only through `mise run --cd`.
+own, and a task runs in a member only through `mise run --cd`. The same holds
+for `test`, `test:e2e` and `test:golden`, for example
+`mise run --cd <member> test`.
 
 `setup`, `setup:configs` and `code:worktrees` read the members with
 `bootstrap config get repo.members` through `members` of `helpers`, and

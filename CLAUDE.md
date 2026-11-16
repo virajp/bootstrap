@@ -42,9 +42,10 @@ files are for this repository only:
 - `docs/design/`: the contract of the sync, one place for each rule (see "Where
   the rules are"). `docs/plans/`: the vwf plan index.
 - `.config/mise/tasks/test/`: the tasks `test:repo` (`repo`), `test:mac`
-  (`mac`), `test:macos-tools` (`macos-tools`),
-  `test:go` (`go`) and `test` (`_default`). They are not in `repo/tools/` or
-  `macos/tools/`, so no consumer gets them.
+  (`mac`), `test:macos-tools` (`macos-tools`) and
+  `test:go` (`go`), and the runner of this repository that `test` runs
+  (`_default`, which `bootstrap init` moves to the part `50-local`). They are
+  not in `repo/tools/` or `macos/tools/`, so no consumer gets them.
 - `.github/workflows/release-engine.yml` and `cli/VERSION`: the release
   of the Go engine and the minimum version that a clone needs. A signed tag
   `bootstrap@X.Y.Z` on `main` starts the
@@ -158,9 +159,12 @@ consumer. mise uses that path as the task name, for example `code/merge/develop`
 is `code:merge:develop`. A `_default` file is the task for the directory name.
 The `mise` tool ships each `_default`. A leaf task of a group that an
 orchestrator runs with `own_tasks` (`code:format`, `code:lint`, `code:sec`,
-`setup:deps`, `setup:secrets`) has a number prefix for its run order, for
-example `code:lint:70-ruff`. See `docs/design/tools.md` ("The `[tasks]`
-table").
+`setup:deps`, `setup:secrets`, `test`, `test:e2e`, `test:golden`) has a
+number prefix for its run order, for example `code:lint:70-ruff`. `own_tasks`
+skips a file without the prefix. The `mise` tool ships `test`, `test:e2e` and
+`test:golden` as dispatchers: each passes its arguments unchanged to each
+part, and with no part it prints one line and exits 0. See
+`docs/design/tools.md` ("The `[tasks]` table").
 
 - `_scripts/` contains libraries, not tasks. Each task sources them through
   `${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/<name>`.
@@ -311,7 +315,9 @@ changes a case. See `docs/design/cli.md` ("The config file").
   `bootstrap replace tool <old> <new>` and `bootstrap detect --add`, and the
   clone cases run the binary against a local origin. The entry cases run the
   rendered task `setup:configs` with a fake engine and with the real engine,
-  and the rendered `code:merge` task. The config verb cases run
+  and the rendered `code:merge` task. The test-port cases run
+  `bootstrap init` with the repo's own test tasks, and `mise run test`,
+  `test:e2e` and `test:golden` in a scratch consumer. The config verb cases run
   `bootstrap config get|set|unset|show`. The JSON cases run `--json` on
   `contract`, `catalog`, `describe`, `questions`, `config`, `check` and
   `add`, and compare the
@@ -362,7 +368,9 @@ changes a case. See `docs/design/cli.md` ("The config file").
   `cli/`"). `TestEngineNamesNoTool` fails when a string literal of the
   engine code names a tool, outside its allow list. The task runs the Go of the
   `go` tool, which this repository selects.
-- `test` (`test/_default`) runs each test task in parallel. No hook and no
+- `test` runs the four test tasks in parallel: the runner of this repository,
+  `test/_default`, which `bootstrap init` moves to the part `test/50-local`,
+  depends on them. No hook and no
   `code:merge` task runs a test, because the tests are slow and a consumer does
   not have them. Run the tests by hand before you commit:
   - A change to `cli/`: `mise run test`.

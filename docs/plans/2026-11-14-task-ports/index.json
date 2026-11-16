@@ -13,7 +13,7 @@
   "execution": "teams",
   "status": {
     "state": "RUNNING",
-    "detail": "RUNNING — wave 2 waits on Q4 (W2: scratch-cache commit for D29) in .worktrees/task-ports; U2 fix and U3 green, uncommitted"
+    "detail": "RUNNING since 2026-11-16T15:20 in .worktrees/task-ports"
   },
   "consent": {
     "merge": true,
@@ -156,11 +156,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-16T08:34:46.095Z",
+      "ended": "2026-11-16T08:39:18.862Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 4
     },
     {
       "id": "U6",
@@ -202,8 +202,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-16T08:34:46.062Z",
       "ended": ""
     },
     {
@@ -488,32 +488,41 @@
       "ruling": "8abecac, main before the config-folder merge and so before the derive change; matches what D29 meant.",
       "rejected": "f325deb as D29 names it; stop the run here",
       "units": []
+    },
+    {
+      "id": "D31",
+      "decision": "Q5: Should U5 reword CLAUDE.md:44-46, CLAUDE.md:370 and README.md:333, which describe this repo's own test/_default, now that the mise tool ships a test/_default dispatcher and init moves this repo's runner to test/50-local?",
+      "ruling": "U5 rewords them now so they read true both before and after the move, for example: test runs the four test tasks in parallel: this repo's own task, test/_default, which bootstrap init moves to the part test/50-local.",
+      "rejected": "Leave them for the person who runs bootstrap init here after 4.0.0",
+      "units": [
+        "U5"
+      ]
     }
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no acceptance criteria and no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-16T08:34:40.519Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no acceptance criteria and no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-16T08:34:40.617Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no acceptance criteria and no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-16T08:34:40.717Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers (no stamps) and no code unit (nothing to persist); no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-16T08:34:40.847Z"
     }
   },
   "gaps": [

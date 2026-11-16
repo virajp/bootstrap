@@ -585,7 +585,9 @@ files load in each environment.
 An orchestrator runs each task of a group with `own_tasks <group>` from
 `helpers`. A tool adds a step to an orchestrator when it ships a task in that
 group. The orchestrator finds only the task files of the repository itself,
-not the tasks of a parent repository.
+not the tasks of a parent repository. A task of a group is an executable file
+named `NN-<name>`, for example `code/lint/70-ruff`. `own_tasks` skips each
+other file, `_default` and each folder.
 
 | Orchestrator     | Groups that it runs                                       | Other steps                                                                                                              |
 | ---------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -595,34 +597,43 @@ not the tasks of a parent repository.
 | `code:format`    | `code:format:*` (with `--fix` and the files)              | Each selected member                                                                                                     |
 | `code:lint`      | `code:lint:*` (with `--fix` and the files)                | Each selected member                                                                                                     |
 | `code:sec`       | `code:sec:*` (with `--staged` and `--debug`)              | First, it stops if `code:sec:10-gitleaks`, `code:sec:20-grype` or `code:sec:30-osv-scanner` is missing or not executable |
+| `test`           | `test:*` (with each argument, unchanged)                  | None. It does not run `test:e2e` or `test:golden`                                                                        |
+| `test:e2e`       | `test:e2e:*` (with each argument, unchanged)              | None                                                                                                                     |
+| `test:golden`    | `test:golden:*` (with each argument, unchanged)           | None                                                                                                                     |
 
 `has_own_task` finds an optional task, for example `setup:ai` or
 `setup:external:update`.
 
+The test dispatchers `test`, `test:e2e` and `test:golden` declare no flag. Each
+part gets the arguments of the dispatcher unchanged, with their quoting, so a
+flag of a part (`mise run test:golden --update`) needs no `--`. With no part, a
+dispatcher prints one line and exits 0. To test a member, run
+`mise run --cd <member> test`.
+
 ### The tasks of each tool
 
-| Tool          | Tasks                                                                                                                                                                           |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mise`        | `setup`, `setup:configs`, `setup:mise`, `setup:worktree`, `code`, `code:format`, `code:lint`, `code:lint:60-bootstrap`, `code:sec`, `code:merge` (one branch), `code:worktrees` |
-| `git`         | `code:git-config`, `code:merge:develop` and `code:merge:main` (both branches)                                                                                                   |
-| `pre-commit`  | `setup:precommit`, `code:precommit`                                                                                                                                             |
-| `dprint`      | `code:format:05-dprint`, `setup:dprint`                                                                                                                                         |
-| `linter`      | `code:lint:05-linter`, `setup:linter`                                                                                                                                           |
-| `gitleaks`    | `code:sec:10-gitleaks`                                                                                                                                                          |
-| `grype`       | `code:sec:20-grype`                                                                                                                                                             |
-| `osv-scanner` | `code:sec:30-osv-scanner`                                                                                                                                                       |
-| `android`     | `setup:deps:10-android`, `code:lint:10-android`                                                                                                                                 |
-| `claude`      | `setup:ai`                                                                                                                                                                      |
-| `docker`      | `setup:external:check`, `setup:external:pull`, `setup:external:start`, `setup:external:stop`, `setup:external:update`                                                           |
-| `doppler`     | `setup:secrets:10-doppler`                                                                                                                                                      |
-| `flutter`     | `setup:deps:20-flutter`, `code:format:10-dart`, `code:lint:20-dart`                                                                                                             |
-| `fnox`        | `setup:secrets:20-fnox`                                                                                                                                                         |
-| `go`          | `setup:deps:25-go`, `code:lint:40-go`, `code:lint:45-gomod`                                                                                                                     |
-| `kotlin`      | `setup:deps:30-kotlin`, `code:format:30-ktlint`, `code:lint:30-detekt`                                                                                                          |
-| `node`        | `setup:deps:40-node`                                                                                                                                                            |
-| `python`      | `setup:deps:50-python`, `code:format:40-ruff`, `code:lint:70-ruff`, `code:lint:50-pyrefly`, `code:lint:90-uv`                                                                   |
-| `swift`       | `setup:deps:60-swift`, `code:format:50-swift-format`, `code:lint:80-swiftlint`                                                                                                  |
-| `vscode`      | `setup:vscode`                                                                                                                                                                  |
+| Tool          | Tasks                                                                                                                                                                                                              |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `mise`        | `setup`, `setup:configs`, `setup:mise`, `setup:worktree`, `code`, `code:format`, `code:lint`, `code:lint:60-bootstrap`, `code:sec`, `code:merge` (one branch), `code:worktrees`, `test`, `test:e2e`, `test:golden` |
+| `git`         | `code:git-config`, `code:merge:develop` and `code:merge:main` (both branches)                                                                                                                                      |
+| `pre-commit`  | `setup:precommit`, `code:precommit`                                                                                                                                                                                |
+| `dprint`      | `code:format:05-dprint`, `setup:dprint`                                                                                                                                                                            |
+| `linter`      | `code:lint:05-linter`, `setup:linter`                                                                                                                                                                              |
+| `gitleaks`    | `code:sec:10-gitleaks`                                                                                                                                                                                             |
+| `grype`       | `code:sec:20-grype`                                                                                                                                                                                                |
+| `osv-scanner` | `code:sec:30-osv-scanner`                                                                                                                                                                                          |
+| `android`     | `setup:deps:10-android`, `code:lint:10-android`                                                                                                                                                                    |
+| `claude`      | `setup:ai`                                                                                                                                                                                                         |
+| `docker`      | `setup:external:check`, `setup:external:pull`, `setup:external:start`, `setup:external:stop`, `setup:external:update`                                                                                              |
+| `doppler`     | `setup:secrets:10-doppler`                                                                                                                                                                                         |
+| `flutter`     | `setup:deps:20-flutter`, `code:format:10-dart`, `code:lint:20-dart`                                                                                                                                                |
+| `fnox`        | `setup:secrets:20-fnox`                                                                                                                                                                                            |
+| `go`          | `setup:deps:25-go`, `code:lint:40-go`, `code:lint:45-gomod`                                                                                                                                                        |
+| `kotlin`      | `setup:deps:30-kotlin`, `code:format:30-ktlint`, `code:lint:30-detekt`                                                                                                                                             |
+| `node`        | `setup:deps:40-node`                                                                                                                                                                                               |
+| `python`      | `setup:deps:50-python`, `code:format:40-ruff`, `code:lint:70-ruff`, `code:lint:50-pyrefly`, `code:lint:90-uv`                                                                                                      |
+| `swift`       | `setup:deps:60-swift`, `code:format:50-swift-format`, `code:lint:80-swiftlint`                                                                                                                                     |
+| `vscode`      | `setup:vscode`                                                                                                                                                                                                     |
 
 ### The libraries in `_scripts/`
 
@@ -642,7 +653,8 @@ not the tasks of a parent repository.
 - `mise x -- which <tool>` finds a tool, not `command -v`.
 - The shell is for bash 3.2 and bash 5.x.
 - `#MISE` and `#USAGE` header comments give the metadata and the flags.
-- A task that does not apply prints nothing and exits 0.
+- A task that does not apply prints nothing and exits 0. A dispatcher with no
+  part prints one line and exits 0.
 - The output rules are in "Task output: headers and subheaders" of
   `CLAUDE.md`.
 

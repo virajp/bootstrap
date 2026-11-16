@@ -42,7 +42,7 @@ The `mise` tool ships the orchestrator `code:lint`.
 | `setup:linter`        | Write the linter config files, if they are missing.                                                                                                                                                        |
 
 `code:lint` of the `mise` tool runs `code:lint:05-linter` first, then the
-other `code:lint:<name>` tasks.
+other `code:lint:NN-<name>` tasks.
 
 ## Scripts
 
@@ -65,7 +65,7 @@ None.
 
 ## Adapt to the repository
 
-1. Move each linter step of the repository to a task `code:lint:<name>`.
+1. Move each linter step of the repository to a task `code:lint:NN-<name>`.
 
 ## Migration
 

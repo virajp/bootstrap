@@ -124,10 +124,12 @@ This file holds the instructions. Each rule of the sync has one place in
     the config of each tool.
   - shell functions: `.config/mise/tasks/_scripts/local`.
   - tasks: any task name that no tool ships.
-  - formatters and linters: a task `code:format:<name>` or `code:lint:<name>`
-    (`.config/mise/tasks/code/format/<name>`). `code:format` and `code:lint`
-    run each of them with the same `--fix` and files. A pre-commit hook only
-    calls a task, so do not call a formatter or a linter from a hook.
+  - formatters and linters: a task `code:format:NN-<name>` or
+    `code:lint:NN-<name>` (`.config/mise/tasks/code/format/NN-<name>`).
+    `code:format` and `code:lint` run each of them in number order with the
+    same `--fix` and files. They skip a task without the `NN-` prefix. A
+    pre-commit hook only calls a task, so do not call a formatter or a linter
+    from a hook.
 - A shared file is different. The sync merges the items of the selected tools
   into it, and it keeps the other items. Thus put the repository-owned items
   directly in the file: ignore lines in `.gitignore`, hooks in
@@ -256,7 +258,10 @@ new question, then syncs. The old values file `.config/bootstrap.toml` is an
 old form: `bootstrap init` splits it into `.config/bootstrap/` (M41 of
 `migrate.md`). A values file without `format = 2`, or with a `[packs.*]`
 table, is an older form: `bootstrap init` also moves it to a
-`[tools.<name>]` table for each tool (M38 of `migrate.md`).
+`[tools.<name>]` table for each tool (M38 of `migrate.md`). A task of the
+repository at the place of `test`, `test:e2e` or `test:golden` is an old form
+too: `bootstrap init` moves it to the part `50-local` of its group (M42 of
+`migrate.md`).
 
 1. Make the clone of step 1, and get the newest commit of `bootstrap`:
    `git -C "$tmp" rev-parse HEAD`.

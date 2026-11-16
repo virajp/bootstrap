@@ -330,7 +330,9 @@ parses, and it needs no network when gomplate, jq and yq are installed.
 `mise run test:go` runs `go vet`, a `gofmt` check and `go test` in
 `cli/`. A test fails when the engine code names a tool.
 
-`mise run test` runs each test task in parallel. No hook runs a test. Run the
+`mise run test` runs the four test tasks in parallel: the runner of this
+repository, `test/_default`, which `bootstrap init` moves to the part
+`test/50-local`, depends on them. No hook runs a test. Run the
 tests by hand before you commit: `test` for a change to `cli/`,
 `test:repo` for a change to `repo/`, and `test:mac` and `test:macos-tools` for
 a change to `macos/`.

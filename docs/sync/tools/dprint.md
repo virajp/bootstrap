@@ -78,7 +78,7 @@ for example `dprint.jsonc`. See
 | `setup:dprint`          | Update the plugin versions in `dprint.jsonc` with `dprint config update`.                                                                    |
 
 `code:format` of the `mise` tool runs `code:format:05-dprint` first, then the
-other `code:format:<name>` tasks.
+other `code:format:NN-<name>` tasks.
 
 ## Scripts
 
@@ -116,7 +116,7 @@ None.
 
 ## Adapt to the repository
 
-1. Move each formatter step of the repository to a task `code:format:<name>`.
+1. Move each formatter step of the repository to a task `code:format:NN-<name>`.
 2. Keep the own excludes of the repository in `dprint.jsonc`, for example the
    submodules.
 
