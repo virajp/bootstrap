@@ -1,0 +1,5 @@
+# /security-review engine, loop U5, round 1, range 1f7b0a2..c4dd2d9
+
+No findings.
+
+Notes: [lsp] values come from trusted repo/tools manifests; lsp runs nothing; code-lsp-check quotes every value (xcrun --find, MISE_ENV=dev mise which), no eval; requires_found any-of is a logic change with names passed after --; http:jdtls has url and checksum_url over HTTPS like http:kotlin-lsp (checksum from the same origin, same as the existing pin, below threshold).
