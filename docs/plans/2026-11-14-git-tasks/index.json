@@ -130,14 +130,14 @@
         "U7"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-16T12:29:37.126Z",
       "ended": "",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "c76f8af",
+        "to": "cecece2"
       }
     },
     {
@@ -220,8 +220,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-16T12:29:37.090Z",
       "ended": ""
     },
     {

@@ -63,6 +63,8 @@ require_no_from() {
   fi
 }
 
+FROM_ORIGIN=false
+
 if git show-ref --verify --quiet "refs/heads/${BRANCH}"; then
   require_no_from
   ADD=("${WORKTREE}" "${BRANCH}")
@@ -71,6 +73,7 @@ elif git show-ref --verify --quiet "refs/remotes/origin/${BRANCH}"; then
   require_no_from origin
   ADD=(--track -b "${BRANCH}" "${WORKTREE}" "origin/${BRANCH}")
   KIND="a local branch ${BRANCH} that tracks origin/${BRANCH}"
+  FROM_ORIGIN=true
 else
   ADD=(-b "${BRANCH}" "${WORKTREE}" "${FROM:-HEAD}")
   KIND="the new branch ${BRANCH} from ${FROM:-the current branch}"
@@ -94,6 +97,11 @@ keep_worktree() {
   exit 1
 }
 
+# A branch only on origin may hold a mise config or a setup task that someone
+# else pushed: trust and setup run it as is, with no review step.
+if [ "${FROM_ORIGIN}" = true ]; then
+  print_warn "The mise config of the worktree comes from origin/${BRANCH}, and it is trusted and run as is."
+fi
 print_wait "Trusting the mise config of the worktree ... "
 TRUST_OUT=$(cd "${WORKTREE}" && mise trust 2>&1) || {
   print_error

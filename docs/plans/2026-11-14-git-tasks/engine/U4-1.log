@@ -1,0 +1,7 @@
+ENGINE /security-review, loop U4, round 1, range c76f8af..cecece2 (excluding docs/plans/)
+Note: the Skill invocation ran in the main checkout and saw an empty diff; the engine prompt was re-run as a sub-task over the worktree range.
+
+No findings.
+
+Examined: git-worktree-create, git-worktree-delete, git-merge-main, git-merge-develop, merge, scripts/derive; cli oldform/rename.go, oldform.WriteFile/Apply/Paths, core/plan.go renameWorktree/RenameChange, core/apply.go restore, repo/repo.go RenameProblems, TUI wiring; mise task edits.
+Dropped candidates: branch-name path/option injection (CLI args trusted; git ref rules); worktree delete (core refused, no --force, -D only after merge-base proof); wt.toml symlinks (Linked skip, temp+rename write); TOML/yq injection (q() quoting, source.JSON encoding).
