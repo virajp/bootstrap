@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-14 by the user"
+    "state": "BLOCKED",
+    "detail": "BLOCKED at preflight — inherited red gate line on main: mise x -- mise run code:lint (code:lint:60-bootstrap: installed bootstrap 3.3.1 lacks config get, which repo/tools/git/scripts/derive at main needs, 4.0.0+); worktree .worktrees/git-tasks"
   },
   "consent": {
     "merge": true,
@@ -586,7 +586,15 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "",
+      "stage": "",
+      "text": "Preflight gate line mise x -- mise run code:lint is red on main (inherited, not this plan): code:lint:60-bootstrap runs the installed engine bootstrap 3.3.1 against the cache clone at b65277a, whose repo/tools/git/scripts/derive calls bootstrap config get repo.core_branches, which needs bootstrap 4.0.0 or newer (exit 2). code:format and test:go were green. · no assumption taken; the run did not start a wave",
+      "state": "open"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".worktrees/git-tasks",
