@@ -43,6 +43,21 @@ get() {
   exit 2
 }
 
+# The fallback for an engine older than 4.0.0, which has no `config get`. Such
+# an engine reads the old values file .config/bootstrap.toml, and sets
+# BOOTSTRAP_VALUES to that file or not at all. Then the script gives an alias
+# for each submodule member, as before 4.0.0. Remove this fallback after the
+# release of bootstrap 4.0.0.
+legacy=${BOOTSTRAP_VALUES:-}
+if [[ -f ${legacy} ]] || [[ -z ${legacy} && ! -d .config/bootstrap && -f .config/bootstrap.toml ]]; then
+  jq_ -c '[.repo.members[] | select(.type == "submodule") | .name] as $subs
+    | if ($subs | length) == 0 then {}
+      else {mise: {shell_alias: ({"setup-all": "mise run setup --all"}
+        + ([$subs[] | {key: "setup-\(.)", value: "mise run setup --\(.)"}] | from_entries))}}
+      end' <<< "${input}"
+  exit 0
+fi
+
 # Without a submodule or sibling member, no alias and no read.
 subs=$(jq_ -c '[.repo.members[] | select(.type == "submodule" or .type == "sibling") | .name]' <<< "${input}")
 if [[ ${subs} == "[]" ]]; then
