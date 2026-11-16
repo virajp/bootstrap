@@ -26,7 +26,7 @@ version = "latest"
 [mise.shell_alias]
 precommit = "mise run code:precommit"
 setup = "mise run setup"
-worktrees = "mise run code:worktrees"
+worktrees = "mise run git:worktree:list"
 
 [mise.tasks.init]
 description = "Initialize mise tasks"
@@ -95,16 +95,15 @@ source = "code-lint.tmpl"
 [tasks."code/lint/60-bootstrap"]
 source = "code-lint-bootstrap"
 
-[tasks."code/merge/_default"]
-source = "code-merge"
-# Only with one of main and develop: see the merge tasks of the git tool.
-when = "!git.branch_pair"
-
 [tasks."code/sec/_default"]
 source = "code-sec"
 
-[tasks."code/worktrees"]
+[tasks."git/worktree/list"]
 source = "code-worktrees"
+
+[tasks."git/worktree/setup"]
+mode = "template"
+source = "setup-worktree.tmpl"
 
 [tasks."setup/_default"]
 mode = "template"
@@ -116,10 +115,6 @@ source = "setup-configs.tmpl"
 
 [tasks."setup/mise"]
 source = "setup-mise"
-
-[tasks."setup/worktree"]
-mode = "template"
-source = "setup-worktree.tmpl"
 
 [tasks."test/_default"]
 source = "test"

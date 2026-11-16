@@ -572,7 +572,7 @@ repository with a `package.json` selects the `pnpm` or the `aube` tool.
 ### Names and files
 
 mise uses the path below `.config/mise/tasks/` as the task name. For example,
-`code/merge/develop` is `code:merge:develop`. A `_default` file is the task of
+`git/merge/develop` is `git:merge:develop`. A `_default` file is the task of
 its folder. A `.tmpl` task is rendered by the sync, and the output keeps the
 git mode of the template.
 
@@ -589,17 +589,17 @@ not the tasks of a parent repository. A task of a group is an executable file
 named `NN-<name>`, for example `code/lint/70-ruff`. `own_tasks` skips each
 other file, `_default` and each folder.
 
-| Orchestrator     | Groups that it runs                                       | Other steps                                                                                                              |
-| ---------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `setup`          | `setup:secrets:*`, then `setup:deps:*` (with `--upgrade`) | `setup:mise`, `setup:precommit`; with `--upgrade`: `setup:external:update`, `setup:dprint`, `setup:ai`; then each member |
-| `setup:worktree` | `setup:secrets:*`, then `setup:deps:*`                    | `setup:mise`, `setup:precommit`; then each member                                                                        |
-| `code`           | None                                                      | `code:format`, `code:lint`, `code:sec`                                                                                   |
-| `code:format`    | `code:format:*` (with `--fix` and the files)              | Each selected member                                                                                                     |
-| `code:lint`      | `code:lint:*` (with `--fix` and the files)                | Each selected member                                                                                                     |
-| `code:sec`       | `code:sec:*` (with `--staged` and `--debug`)              | First, it stops if `code:sec:10-gitleaks`, `code:sec:20-grype` or `code:sec:30-osv-scanner` is missing or not executable |
-| `test`           | `test:*` (with each argument, unchanged)                  | None. It does not run `test:e2e` or `test:golden`                                                                        |
-| `test:e2e`       | `test:e2e:*` (with each argument, unchanged)              | None                                                                                                                     |
-| `test:golden`    | `test:golden:*` (with each argument, unchanged)           | None                                                                                                                     |
+| Orchestrator         | Groups that it runs                                       | Other steps                                                                                                              |
+| -------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `setup`              | `setup:secrets:*`, then `setup:deps:*` (with `--upgrade`) | `setup:mise`, `setup:precommit`; with `--upgrade`: `setup:external:update`, `setup:dprint`, `setup:ai`; then each member |
+| `git:worktree:setup` | `setup:secrets:*`, then `setup:deps:*`                    | `setup:mise`, `setup:precommit`; then each member                                                                        |
+| `code`               | None                                                      | `code:format`, `code:lint`, `code:sec`                                                                                   |
+| `code:format`        | `code:format:*` (with `--fix` and the files)              | Each selected member                                                                                                     |
+| `code:lint`          | `code:lint:*` (with `--fix` and the files)                | Each selected member                                                                                                     |
+| `code:sec`           | `code:sec:*` (with `--staged` and `--debug`)              | First, it stops if `code:sec:10-gitleaks`, `code:sec:20-grype` or `code:sec:30-osv-scanner` is missing or not executable |
+| `test`               | `test:*` (with each argument, unchanged)                  | None. It does not run `test:e2e` or `test:golden`                                                                        |
+| `test:e2e`           | `test:e2e:*` (with each argument, unchanged)              | None                                                                                                                     |
+| `test:golden`        | `test:golden:*` (with each argument, unchanged)           | None                                                                                                                     |
 
 `has_own_task` finds an optional task, for example `setup:ai` or
 `setup:external:update`.
@@ -612,28 +612,28 @@ dispatcher prints one line and exits 0. To test a member, run
 
 ### The tasks of each tool
 
-| Tool          | Tasks                                                                                                                                                                                                              |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `mise`        | `setup`, `setup:configs`, `setup:mise`, `setup:worktree`, `code`, `code:format`, `code:lint`, `code:lint:60-bootstrap`, `code:sec`, `code:merge` (one branch), `code:worktrees`, `test`, `test:e2e`, `test:golden` |
-| `git`         | `code:git-config`, `code:merge:develop` and `code:merge:main` (both branches)                                                                                                                                      |
-| `pre-commit`  | `setup:precommit`, `code:precommit`                                                                                                                                                                                |
-| `dprint`      | `code:format:05-dprint`, `setup:dprint`                                                                                                                                                                            |
-| `linter`      | `code:lint:05-linter`, `setup:linter`                                                                                                                                                                              |
-| `gitleaks`    | `code:sec:10-gitleaks`                                                                                                                                                                                             |
-| `grype`       | `code:sec:20-grype`                                                                                                                                                                                                |
-| `osv-scanner` | `code:sec:30-osv-scanner`                                                                                                                                                                                          |
-| `android`     | `setup:deps:10-android`, `code:lint:10-android`                                                                                                                                                                    |
-| `claude`      | `setup:ai`                                                                                                                                                                                                         |
-| `docker`      | `setup:external:check`, `setup:external:pull`, `setup:external:start`, `setup:external:stop`, `setup:external:update`                                                                                              |
-| `doppler`     | `setup:secrets:10-doppler`                                                                                                                                                                                         |
-| `flutter`     | `setup:deps:20-flutter`, `code:format:10-dart`, `code:lint:20-dart`                                                                                                                                                |
-| `fnox`        | `setup:secrets:20-fnox`                                                                                                                                                                                            |
-| `go`          | `setup:deps:25-go`, `code:lint:40-go`, `code:lint:45-gomod`                                                                                                                                                        |
-| `kotlin`      | `setup:deps:30-kotlin`, `code:format:30-ktlint`, `code:lint:30-detekt`                                                                                                                                             |
-| `node`        | `setup:deps:40-node`                                                                                                                                                                                               |
-| `python`      | `setup:deps:50-python`, `code:format:40-ruff`, `code:lint:70-ruff`, `code:lint:50-pyrefly`, `code:lint:90-uv`                                                                                                      |
-| `swift`       | `setup:deps:60-swift`, `code:format:50-swift-format`, `code:lint:80-swiftlint`                                                                                                                                     |
-| `vscode`      | `setup:vscode`                                                                                                                                                                                                     |
+| Tool          | Tasks                                                                                                                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mise`        | `setup`, `setup:configs`, `setup:mise`, `git:worktree:setup`, `git:worktree:list`, `code`, `code:format`, `code:lint`, `code:lint:60-bootstrap`, `code:sec`, `test`, `test:e2e`, `test:golden` |
+| `git`         | `code:git-config`, `git:merge:main` and `git:merge:develop` (each with its core branch), `git:worktree:create`, `git:worktree:delete`                                                          |
+| `pre-commit`  | `setup:precommit`, `code:precommit`                                                                                                                                                            |
+| `dprint`      | `code:format:05-dprint`, `setup:dprint`                                                                                                                                                        |
+| `linter`      | `code:lint:05-linter`, `setup:linter`                                                                                                                                                          |
+| `gitleaks`    | `code:sec:10-gitleaks`                                                                                                                                                                         |
+| `grype`       | `code:sec:20-grype`                                                                                                                                                                            |
+| `osv-scanner` | `code:sec:30-osv-scanner`                                                                                                                                                                      |
+| `android`     | `setup:deps:10-android`, `code:lint:10-android`                                                                                                                                                |
+| `claude`      | `setup:ai`                                                                                                                                                                                     |
+| `docker`      | `setup:external:check`, `setup:external:pull`, `setup:external:start`, `setup:external:stop`, `setup:external:update`                                                                          |
+| `doppler`     | `setup:secrets:10-doppler`                                                                                                                                                                     |
+| `flutter`     | `setup:deps:20-flutter`, `code:format:10-dart`, `code:lint:20-dart`                                                                                                                            |
+| `fnox`        | `setup:secrets:20-fnox`                                                                                                                                                                        |
+| `go`          | `setup:deps:25-go`, `code:lint:40-go`, `code:lint:45-gomod`                                                                                                                                    |
+| `kotlin`      | `setup:deps:30-kotlin`, `code:format:30-ktlint`, `code:lint:30-detekt`                                                                                                                         |
+| `node`        | `setup:deps:40-node`                                                                                                                                                                           |
+| `python`      | `setup:deps:50-python`, `code:format:40-ruff`, `code:lint:70-ruff`, `code:lint:50-pyrefly`, `code:lint:90-uv`                                                                                  |
+| `swift`       | `setup:deps:60-swift`, `code:format:50-swift-format`, `code:lint:80-swiftlint`                                                                                                                 |
+| `vscode`      | `setup:vscode`                                                                                                                                                                                 |
 
 ### The libraries in `_scripts/`
 
@@ -641,10 +641,10 @@ dispatcher prints one line and exits 0. To test a member, run
 | ---------------- | ----------------------------------------------------------------------------------- |
 | `helpers`        | The print functions, `has_own_task`, `own_tasks`, `members`, `shell_files_in_scope` |
 | `checks`         | git predicates. They return an exit status only.                                    |
-| `merge`          | `merge_to_destination_branch`, for the `code:merge` tasks                           |
+| `merge`          | `merge_to_destination_branch`, for the `git:merge:<branch>` tasks                   |
 | `placeholder`    | For a task that no stack fills yet. It always exits 0.                              |
 | `xcode`          | `require_xcode`, `find_xcodeproj` and the simulator functions, of the `swift` tool  |
-| `worktrees-page` | `write_worktrees_page`, the HTML page of `code:worktrees`, of the `mise` tool       |
+| `worktrees-page` | `write_worktrees_page`, the HTML page of `git:worktree:list`, of the `mise` tool    |
 
 ### The rules for task scripts
 
@@ -664,7 +664,7 @@ dispatcher prints one line and exits 0. To test a member, run
 | ---------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `setup`          | `mise run setup`             | `repo/tools/mise/tools.toml`                                                                             |
 | `precommit`      | `mise run code:precommit`    | `repo/tools/mise/tools.toml` and `pre-commit`                                                            |
-| `worktrees`      | `mise run code:worktrees`    | `repo/tools/mise/tools.toml`                                                                             |
+| `worktrees`      | `mise run git:worktree:list` | `repo/tools/mise/tools.toml`                                                                             |
 | `setup-all`      | `mise run setup --all`       | The derive script of `mise`, only with a submodule or sibling member that has a `[members.<name>]` table |
 | `setup-<member>` | `mise run setup --<member>`  | The derive script of `mise`, one for each such member                                                    |
 | `npx`            | `pnpm dlx`                   | `repo/tools/pnpm/tools.toml`                                                                             |

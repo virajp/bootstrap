@@ -216,6 +216,9 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 		if err := p.taskMoves(); err != nil {
 			return p, err
 		}
+		if err := p.renameWorktree(); err != nil {
+			return p, err
+		}
 	} else {
 		var err error
 		if st, err = Open(sd); err != nil {
@@ -428,6 +431,10 @@ func (p *PlanResult) layout(tmp string) (string, string, error) {
 		if err != nil {
 			return "", "", problem(fail.Usage, "cannot read "+sd.Show(values.RepoFile(sd.Values)), "run bootstrap init")
 		}
+		repoText = b
+	}
+	// The rename of init (D20) changes repo.toml after the other changes.
+	if b := p.renamedRepo(); b != nil {
 		repoText = b
 	}
 	if err := os.WriteFile(values.RepoFile(dir), repoText, 0o644); err != nil {
@@ -649,6 +656,122 @@ func manifestText(sd Side) []byte {
 	}
 	b, _ := oldform.ManifestText(root, root+"/"+oldform.OldManifest)
 	return b
+}
+
+// renameWorktree adds the change of init that renames OldWorktreeCmd to
+// NewWorktreeCmd in WtFile and in the worktree_install of each member of
+// repo.toml (D20): one change for both files, whose note lists each file and
+// key. repo.toml is the one that init writes (RepoNew), else the one on disk;
+// it changes through EditTOML, the writer of config set, so its comments
+// stay. Only the command text changes.
+func (p *PlanResult) renameWorktree() error {
+	if p.Mac {
+		return nil
+	}
+	root := strings.TrimSuffix(p.Root, "/")
+	var edits []oldform.Edit
+	var detail []string
+	if b, ok := oldform.WtText(root); ok {
+		path := root + "/" + oldform.WtFile
+		edits = append(edits, oldform.Edit{Path: path, Old: b, Content: []byte(oldform.RenameCmd(string(b)))})
+		detail = append(detail, p.Show(path))
+	}
+	repoFile := values.RepoFile(p.Values)
+	cur := p.RepoNew
+	if cur == nil {
+		if b, err := os.ReadFile(repoFile); err == nil {
+			cur = b
+		}
+	}
+	if cur != nil {
+		raw, err := rawTOML(cur, p.Show(repoFile))
+		if err != nil {
+			return err
+		}
+		names, vals := oldform.OldMembers(raw, "members")
+		if len(names) > 0 {
+			var exprs, keys []string
+			for _, n := range names {
+				exprs = append(exprs, ".members["+q(n)+"].worktree_install = "+strings.TrimSpace(source.JSON(oldform.RenameCmd(vals[n]))))
+				keys = append(keys, "members."+n+".worktree_install")
+			}
+			next, err := EditTOML(cur, exprs)
+			if err != nil {
+				return err
+			}
+			edits = append(edits, oldform.Edit{Path: repoFile, Old: cur, Content: next})
+			detail = append(detail, p.Show(repoFile)+" "+strings.Join(keys, ", "))
+		}
+	}
+	if len(edits) == 0 {
+		return nil
+	}
+	p.Changes = append(p.Changes, oldform.Change{
+		Path:  root + "/.config",
+		Edits: edits,
+		Note:  oldform.RenameNote + ": " + strings.Join(detail, "; "),
+	})
+	return nil
+}
+
+// renamedRepo gives the repo.toml of the rename of init (D20), or nil.
+func (p *PlanResult) renamedRepo() []byte {
+	repoFile := values.RepoFile(p.Values)
+	for _, ch := range p.Changes {
+		for _, e := range ch.Edits {
+			if e.Path == repoFile {
+				return e.Content
+			}
+		}
+	}
+	return nil
+}
+
+// rawTOML gives the keys of the TOML text <text>, shown as <shown>.
+func rawTOML(text []byte, shown string) (*source.Obj, error) {
+	dir, err := os.MkdirTemp("", "bootstrap-init.")
+	if err != nil {
+		return nil, problem(fail.Other, "cannot create a temp folder", "")
+	}
+	defer func() { _ = os.RemoveAll(dir) }()
+	f := dir + "/values.toml"
+	if err := os.WriteFile(f, text, 0o600); err != nil {
+		return nil, problem(fail.Other, "cannot write a temp file", "")
+	}
+	raw, err := source.ReadTOML(f)
+	if err != nil {
+		return nil, problem(fail.Usage, "cannot read "+shown, "")
+	}
+	return raw, nil
+}
+
+// RenameChange gives the change of init that renames setup:worktree (D20),
+// or "". The TUI shows it as a change that the user cannot remove. It writes
+// nothing.
+func RenameChange(sd Side) (string, error) {
+	if sd.Mac {
+		return "", nil
+	}
+	if !Exists(sd.Values) && Exists(OldValuesOf(sd.Root)) {
+		// The members are in [member.*] of the old file until init splits
+		// it.
+		if _, ok := oldform.WtText(sd.Root); ok {
+			return oldform.RenameNote, nil
+		}
+		raw, err := source.ReadTOML(OldValuesOf(sd.Root))
+		if err != nil {
+			return "", problem(fail.Usage, "cannot read "+sd.Show(OldValuesOf(sd.Root)), "")
+		}
+		if names, _ := oldform.OldMembers(raw, "member"); len(names) > 0 {
+			return oldform.RenameNote, nil
+		}
+		return "", nil
+	}
+	p := &PlanResult{Side: sd}
+	if err := p.renameWorktree(); err != nil || len(p.Changes) == 0 {
+		return "", err
+	}
+	return oldform.RenameNote, nil
 }
 
 // MoveChange gives the change of init that moves the own test tasks of the

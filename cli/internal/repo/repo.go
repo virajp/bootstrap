@@ -514,9 +514,12 @@ func (s *state) sync(dryRun bool) fail.Code {
 }
 
 // ownTasks gives a problem for each own task of the repo at the place of a
-// dispatcher (D4, D7).
+// dispatcher (D4, D7), and for each old command of the worktree setup in
+// the tree and in the members (D20).
 func (s *state) ownTasks() error {
-	return oldform.TaskProblems(s.root, values.ManifestFile(s.values), s.path)
+	return errors.Join(
+		oldform.TaskProblems(s.root, values.ManifestFile(s.values), s.path),
+		oldform.RenameProblems(s.root, s.vals.Raw, s.path(values.RepoFile(s.values)), s.path))
 }
 
 // keptItems gives the item rows of the last run for each shared file that

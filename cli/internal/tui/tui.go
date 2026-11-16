@@ -167,8 +167,9 @@ type (
 func (m *Model) Init() tea.Cmd { return nil }
 
 // load reads the values file. init takes a missing values file, or an old
-// form, as the first change of the list, and the move of the own test tasks
-// into parts as the next one; tui needs a values file of the new form.
+// form, as the first change of the list, the move of the own test tasks
+// into parts as the next one, and the rename of setup:worktree after it; tui
+// needs a values file of the new form.
 func (m *Model) load() tea.Msg {
 	sd := m.opt.Side
 	var fixed []string
@@ -183,6 +184,13 @@ func (m *Model) load() tea.Msg {
 		}
 		if move != "" {
 			fixed = append(fixed, move)
+		}
+		rename, err := core.RenameChange(sd)
+		if err != nil {
+			return loadedMsg{err: err}
+		}
+		if rename != "" {
+			fixed = append(fixed, rename)
 		}
 		if text != "" {
 			return m.loadInit(append([]string{text}, fixed...))

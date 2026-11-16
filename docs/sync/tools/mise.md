@@ -28,18 +28,17 @@ A `[tools.mise]` table gives values.
 | `.config/mise/tasks/_scripts/helpers`         | Library   | The print functions, `members`, `own_tasks` (the `NN-<name>` tasks of a group), `has_own_task`, `shell_files_in_scope` and `bootstrap_get`, the reader of `.config/bootstrap/`. |
 | `.config/mise/tasks/_scripts/checks`          | Library   | The git predicates of the merge tasks.                                                                                                                                          |
 | `.config/mise/tasks/_scripts/placeholder`     | Library   | The prompt of a task that no stack fills yet.                                                                                                                                   |
-| `.config/mise/tasks/_scripts/worktrees-page`  | Library   | The HTML page of `code:worktrees`.                                                                                                                                              |
+| `.config/mise/tasks/_scripts/worktrees-page`  | Library   | The HTML page of `git:worktree:list`.                                                                                                                                           |
 | `.config/mise/tasks/setup/_default`           | Template  | The task `setup`.                                                                                                                                                               |
 | `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`.                                                                                                                                                       |
 | `.config/mise/tasks/setup/mise`               | Synced    | The task `setup:mise`.                                                                                                                                                          |
-| `.config/mise/tasks/setup/worktree`           | Template  | The task `setup:worktree`.                                                                                                                                                      |
+| `.config/mise/tasks/git/worktree/setup`       | Template  | The task `git:worktree:setup`.                                                                                                                                                  |
 | `.config/mise/tasks/code/_default`            | Synced    | The task `code`.                                                                                                                                                                |
 | `.config/mise/tasks/code/format/_default`     | Template  | The task `code:format`.                                                                                                                                                         |
 | `.config/mise/tasks/code/lint/_default`       | Template  | The task `code:lint`.                                                                                                                                                           |
 | `.config/mise/tasks/code/lint/60-bootstrap`   | Synced    | The gate `code:lint:60-bootstrap`.                                                                                                                                              |
 | `.config/mise/tasks/code/sec/_default`        | Synced    | The task `code:sec`.                                                                                                                                                            |
-| `.config/mise/tasks/code/merge/_default`      | Synced    | The task `code:merge`. Only with `when = "!git.branch_pair"`: a repository with one of `main` and `develop`. See [git.md](git.md).                                              |
-| `.config/mise/tasks/code/worktrees`           | Synced    | The task `code:worktrees`.                                                                                                                                                      |
+| `.config/mise/tasks/git/worktree/list`        | Synced    | The task `git:worktree:list`.                                                                                                                                                   |
 | `.config/mise/tasks/test/_default`            | Synced    | The task `test`.                                                                                                                                                                |
 | `.config/mise/tasks/test/e2e/_default`        | Synced    | The task `test:e2e`.                                                                                                                                                            |
 | `.config/mise/tasks/test/golden/_default`     | Synced    | The task `test:golden`.                                                                                                                                                         |
@@ -70,22 +69,21 @@ The tool also sets:
 
 ## Tasks
 
-| Task                     | Use                                                                                                                                                                                                                                  |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `setup`                  | Install the tools, the dependencies and the hooks, and run `setup:vscode` when the repository has it. `--upgrade` also upgrades them. With members, `--all` and `--<member>` also set up those members.                              |
-| `setup:configs`          | Sync the shared files: it runs `bootstrap sync`. `--dry-run` shows the changes. `--verbose` lists each file. With members, `--all` and `--<member>` also sync those members.                                                         |
-| `setup:mise`             | Reshim, doctor and install. `--upgrade` also upgrades.                                                                                                                                                                               |
-| `setup:worktree`         | Prepare a new git worktree. It copies the `[worktree].files` of `repo.toml` from the main worktree, runs the `worktree_install` of each member, and it does less than `setup`.                                                       |
-| `code`                   | Run `code:format`, `code:lint` and `code:sec`. `--debug` goes to each of them.                                                                                                                                                       |
-| `code:format`            | Run each `code:format:<name>` task in number order, on the given files, else on the whole tree. `--fix` applies the fixes.                                                                                                           |
-| `code:lint`              | Run each `code:lint:<name>` task in number order, on the given files, else on the whole tree. `--fix` applies the fixes.                                                                                                             |
-| `code:lint:60-bootstrap` | Validate the files of `.config/bootstrap/` with `bootstrap check`. Hidden. See below.                                                                                                                                                |
-| `code:sec`               | Run each `code:sec:<scanner>` task. `--staged` scans only the staged changes for secrets. See [_security_base.md](_security_base.md).                                                                                                |
-| `code:merge <branch>`    | Land a branch on the only long-lived branch. See [git.md](git.md).                                                                                                                                                                   |
-| `code:worktrees`         | List the worktrees and the branches of the product: the home repository (`[home]`), its submodules and its submodule and sibling members of `[members.*]`. A terminal gets a table and an HTML page. Another reader gets JSON Lines. |
-| `test`                   | Run each `test:NN-<name>` task in number order. Each argument goes to each task unchanged, so a flag of a task needs no `--`. It does not run `test:e2e` or `test:golden`. With no task, it prints one line and exits 0.             |
-| `test:e2e`               | Run each `test:e2e:NN-<name>` task, as `test` does.                                                                                                                                                                                  |
-| `test:golden`            | Run each `test:golden:NN-<name>` task, as `test` does, for example `mise run test:golden --update`.                                                                                                                                  |
+| Task                     | Use                                                                                                                                                                                                                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup`                  | Install the tools, the dependencies and the hooks, and run `setup:vscode` when the repository has it. `--upgrade` also upgrades them. With members, `--all` and `--<member>` also set up those members.                                                             |
+| `setup:configs`          | Sync the shared files: it runs `bootstrap sync`. `--dry-run` shows the changes. `--verbose` lists each file. With members, `--all` and `--<member>` also sync those members.                                                                                        |
+| `setup:mise`             | Reshim, doctor and install. `--upgrade` also upgrades.                                                                                                                                                                                                              |
+| `git:worktree:setup`     | Prepare a new git worktree. `git:worktree:create` and worktrunk run it. It copies the `[worktree].files` of `repo.toml` from the main worktree, runs the `worktree_install` of each member, and it does less than `setup`.                                          |
+| `code`                   | Run `code:format`, `code:lint` and `code:sec`. `--debug` goes to each of them.                                                                                                                                                                                      |
+| `code:format`            | Run each `code:format:<name>` task in number order, on the given files, else on the whole tree. `--fix` applies the fixes.                                                                                                                                          |
+| `code:lint`              | Run each `code:lint:<name>` task in number order, on the given files, else on the whole tree. `--fix` applies the fixes.                                                                                                                                            |
+| `code:lint:60-bootstrap` | Validate the files of `.config/bootstrap/` with `bootstrap check`. Hidden. See below.                                                                                                                                                                               |
+| `code:sec`               | Run each `code:sec:<scanner>` task. `--staged` scans only the staged changes for secrets. See [_security_base.md](_security_base.md).                                                                                                                               |
+| `git:worktree:list`      | List the worktrees and the branches of the product: the home repository (`[home]`), its submodules and its submodule and sibling members of `[members.*]`. A terminal gets a table and an HTML page. Another reader gets JSON Lines. The alias `worktrees` runs it. |
+| `test`                   | Run each `test:NN-<name>` task in number order. Each argument goes to each task unchanged, so a flag of a task needs no `--`. It does not run `test:e2e` or `test:golden`. With no task, it prints one line and exits 0.                                            |
+| `test:e2e`               | Run each `test:e2e:NN-<name>` task, as `test` does.                                                                                                                                                                                                                 |
+| `test:golden`            | Run each `test:golden:NN-<name>` task, as `test` does, for example `mise run test:golden --update`.                                                                                                                                                                 |
 
 `setup:configs` gets the same member flags as `setup`. Only a submodule or a
 sibling member with a `[members.<name>]` table gets a flag. A folder member of
@@ -95,7 +93,7 @@ own, and a task runs in a member only through `mise run --cd`. The same holds
 for `test`, `test:e2e` and `test:golden`, for example
 `mise run --cd <member> test`.
 
-`setup`, `setup:configs` and `code:worktrees` read the members with
+`setup`, `setup:configs` and `git:worktree:list` read the members with
 `bootstrap config get repo.members` through `members` of `helpers`, and
 `setup` and `setup:configs` have `#MISE tools.yq="latest"`. They need
 `bootstrap` 4.0.0 or newer: without an engine that answers, they stop with
@@ -139,10 +137,10 @@ The keys of `[tools.mise]` in `.config/bootstrap/tools.toml`:
 
 The tool reads these keys of `.config/bootstrap/repo.toml`:
 
-| Key                | Use                                                                                                               |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| `[worktree].files` | The gitignored files that `setup:worktree` copies into a new worktree, for example `[".config/mise.local.toml"]`. |
-| `[members.<name>]` | The members of `setup`, `setup:configs`, `setup:worktree` and `code:worktrees`.                                   |
+| Key                | Use                                                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `[worktree].files` | The gitignored files that `git:worktree:setup` copies into a new worktree, for example `[".config/mise.local.toml"]`. |
+| `[members.<name>]` | The members of `setup`, `setup:configs`, `git:worktree:setup` and `git:worktree:list`.                                |
 
 No questions. The rules of the keys are in
 [`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
@@ -170,5 +168,5 @@ None.
   `code:lint:60-bootstrap`, which replace the tasks of an old tool.
 - M41 of `migrate.md`: `bootstrap init` moves `worktree_files` to
   `[worktree].files` of `repo.toml`. `code:format` and `code:lint` lose their
-  member flags, and `code:worktrees` no longer reads `.config/vwf.yaml` or
+  member flags, and `git:worktree:list` no longer reads `.config/vwf.yaml` or
   `.config/vwf-membership.yaml`.

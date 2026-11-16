@@ -58,9 +58,9 @@ fi
 print_header "Installing <% . %> dependencies ..."
 mise x --cd "${MISE_PROJECT_ROOT}/<% index $.member_folders . %>" -- <% $x.worktree_install %>
 <% else -%>
-if MISE_PROJECT_ROOT="${MISE_PROJECT_ROOT}/<% index $.member_folders . %>" has_own_task setup:worktree; then
+if MISE_PROJECT_ROOT="${MISE_PROJECT_ROOT}/<% index $.member_folders . %>" has_own_task git:worktree:setup; then
   print_header "Setting up the <% index $x "label" | default . %> worktree ..."
-  mise run --cd "${MISE_PROJECT_ROOT}/<% index $.member_folders . %>" setup:worktree
+  mise run --cd "${MISE_PROJECT_ROOT}/<% index $.member_folders . %>" git:worktree:setup
 fi
 <% end -%>
 

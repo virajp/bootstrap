@@ -318,7 +318,7 @@ bootstrap_get() {
 # members of that repository. Nothing when the repo has no members.
 #
 # Defined ONCE here rather than in each caller: every task that walks the
-# members — `setup:configs --all`, `code:worktrees` — walks the same list.
+# members — `setup:configs --all`, `git:worktree:list` — walks the same list.
 # It reads the members with `bootstrap_get`, so call it the same way:
 # `LIST=$(members) || exit $?`.
 # It parses the answer with yq: a task that calls it has

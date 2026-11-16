@@ -148,28 +148,32 @@ same name. If not, the sync stops.
 The `git` tool holds the branch model. The engine has no branch rule.
 
 - The derive script of `git` gives `branch_pair` (true when `core_branches` of
-  `repo.toml` has both `main` and `develop`) and `protected_branches` (each core
-  branch whose `landing` is not `direct-commit`). It reads `core_branches` and
-  `[branches.*]` with `bootstrap config get` (`BOOTSTRAP_BIN`, else the
-  `bootstrap` of mise). `repo.toml` has no overrides.
-- The tasks `code:merge:develop` and `code:merge:main` of `git` have
-  `when = "git.branch_pair"`. The task `code:merge` (`code/merge/_default`) of
-  `mise` has `when = "!git.branch_pair"`. Thus the sync writes the merge tasks
-  of the model that it finds, and the stale rule removes the others.
+  `repo.toml` has both `main` and `develop`), `has_main` and `has_develop`
+  (true when `core_branches` has `main`, or `develop`) and `protected_branches`
+  (each core branch whose `landing` is not `direct-commit`). It reads
+  `core_branches` and `[branches.*]` with `bootstrap config get`
+  (`BOOTSTRAP_BIN`, else the `bootstrap` of mise). `repo.toml` has no
+  overrides.
+- The task `git:merge:<branch>` lands a branch on `<branch>`: the name is
+  always the destination. `git` ships `git:merge:main` with
+  `when = "git.has_main"` and `git:merge:develop` with
+  `when = "git.has_develop"`. Thus the sync writes the merge task of each core
+  branch, and the stale rule removes the others. No other task merges, and the
+  old names have no alias.
 - The check script of `git` stops the sync when a branch of `core_branches`
   does not exist, locally or on `origin`, and is not the unborn branch that
   HEAD names. A detached HEAD names no branch. Without an engine that answers
   `bootstrap config get`, for example one older than 4.0.0, it stops the sync
   with code 2.
 
-| Branches             | Tasks                                                                                                                                                                  |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `main` and `develop` | Work starts on feature branches. `code:merge:develop <branch>` lands a branch on `develop`. `code:merge:main` lands `develop` on `main`, and runs only from `develop`. |
-| Only one of them     | `code:merge <branch>` lands any feature branch on that branch.                                                                                                         |
+| Branches             | Tasks                                                                                                                                                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `main` and `develop` | Work starts on feature branches. `git:merge:develop [<branch>]` lands a branch on `develop`; the default is the current branch. `git:merge:main [<branch>]` lands a branch on `main`; the default is `develop`. |
+| Only one of them     | `git:merge:<that branch> [<branch>]` lands any feature branch on that branch; the default is the current branch.                                                                                                |
 
 - Merges use `--no-ff`. A hook pass over all files runs first as a safety net,
   with `SKIP=no-commit-to-branch`: that hook guards a commit, and the safety net
-  makes none. Thus `code:merge:main` also runs from a protected `develop`.
+  makes none. Thus `git:merge:main` also runs from a protected `develop`.
 - The merge tasks read `[branches.<destination>]` of the repository's own
   `.config/bootstrap/repo.toml` when they run, with `bootstrap_get` of
   `helpers` (`bootstrap config get`): the root and each member read their own
@@ -227,6 +231,37 @@ The check script of `git` stops the sync when a branch of `core_branches` does
 not exist, locally or on `origin`, and is not the unborn branch that HEAD
 names: create the branch, or remove it from
 `core_branches`.
+
+### The worktree tasks
+
+The `git` tool ships `git:worktree:create` and `git:worktree:delete`, and the
+`mise` tool ships `git:worktree:setup` and `git:worktree:list`. They use raw
+git, not worktrunk. `create` and `delete` read `core_branches` with
+`bootstrap_get`, as the merge tasks do.
+
+- `git:worktree:create <branch> [--from <base>] [--no-setup]` adds the worktree
+  in `.worktrees/<branch>` of the main checkout. It uses `worktrees/` only when
+  `.worktrees/` is absent and `worktrees/` exists. A local branch is checked
+  out. A branch only on `origin` becomes a local branch that tracks it, and the
+  task prints a warning first: it trusts and runs the mise config of that
+  branch as is. Any other branch is new, cut from `--from`, else from the
+  current branch. Then it runs `mise trust` and `git:worktree:setup` in the new
+  worktree. `--no-setup` skips only the setup.
+- `create` stops with code 2 for a core branch, and for `--from` with a branch
+  that exists. It stops with code 1 when the path exists, or when git refuses
+  the add, for example for a branch that another worktree has checked out.
+  When the trust or the setup fails, the worktree stays: the task prints the
+  command that runs the setup again and the `delete` command, and exits 1.
+- `git:worktree:delete <branch>` finds the worktree of the branch in
+  `git worktree list`, at any path, and runs `git worktree remove` on it. git
+  refuses a worktree with changes (code 1). Then the task deletes the branch
+  with `git branch -D` only when a core branch has each of its commits: it
+  tests each core branch, the local ref, else `origin/<core>`, else none. With
+  no such core branch, the branch stays, and the task prints the `-D` command
+  and exits 1.
+- `delete` stops with code 2 for a core branch, and when it runs inside the
+  worktree that it would remove. It stops with code 1 when no worktree has the
+  branch.
 
 ## The pre-commit config
 
