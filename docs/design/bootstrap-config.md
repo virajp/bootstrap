@@ -534,7 +534,10 @@ has `member`, the old name of `[members.*]`, with the same tables.
 
 `bootstrap init` migrates each old form. Each other command stops with code 2
 and the message "run bootstrap init", except `version`, `settings` and each
-`mac` command. A dry run of `init` shows the migration and writes nothing.
+`mac` command. A dry run of `init` shows the migration and writes nothing. A
+task of the repository at the place of a test port is an old form too, though
+it is not a value. It stops only `sync`, the sync of `add`, `remove` and
+`replace`, and `check`: see [The own test tasks](#the-own-test-tasks).
 
 ### The values file `.config/bootstrap.toml`
 
@@ -631,6 +634,22 @@ items are not migrated:
 | `[overrides.graphifyignore]`               | Stops the sync: remove the table.                                                                                       |
 | `core_tools`                               | Not used. The sync prints a message: delete it. The `env` of each entry, else `default_envs`, decides the environments. |
 | `.config/repo-config.toml`                 | The oldest name of the values file. Nothing reads it: rename it to `.config/bootstrap.toml`, then run `bootstrap init`. |
+
+### The own test tasks
+
+The `mise` tool ships the dispatchers `test`, `test:e2e` and `test:golden`. A
+task of the repository at one of their paths is an old form. It is a regular
+file that the manifest does not list, without the bootstrap header.
+
+| Old form, below `.config/mise/tasks/` | `bootstrap init` moves it to |
+| ------------------------------------- | ---------------------------- |
+| `test`, `test/_default`               | `test/50-local`              |
+| `test/e2e`, `test/e2e/_default`       | `test/e2e/50-local`          |
+| `test/golden`, `test/golden/_default` | `test/golden/50-local`       |
+
+`check` reports it in the stage `old-forms`, and `sync` stops on it, both with
+code 2. When the target exists, `init` stops with code 2 and moves nothing.
+See [cli.md](cli.md#init).
 
 ## The location of the folder
 

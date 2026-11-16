@@ -150,3 +150,40 @@ func TestCheckCoreTools(t *testing.T) {
 		t.Errorf("core-tools stage %+v", s)
 	}
 }
+
+func TestCheckOwnTestTask(t *testing.T) {
+	// D4 and D7: a test/_default that the manifest does not list gives code 2
+	// in the stage old-forms, with the fix of init.
+	root := checkRepo(t, repoHead+"environments = [\"dev\"]\n", "format = 3\n")
+	writeFile(t, root+"/.config/mise/tasks/test/_default", "#!/bin/bash\n")
+	stages, _, code, errText := runCheck(t)
+	if code != fail.Usage {
+		t.Fatalf("code %d, stderr %q", code, errText)
+	}
+	s := stageOf(t, stages, "old-forms")
+	if s.Status != StageFail || len(s.Findings) != 1 || s.Findings[0].Code != fail.Usage ||
+		!strings.Contains(s.Findings[0].Message, ".config/mise/tasks/test/_default is a task of this repo") ||
+		!strings.Contains(s.Findings[0].Message, "run bootstrap init") {
+		t.Errorf("old-forms stage %+v", s)
+	}
+}
+
+func TestCheckUnnamedPart(t *testing.T) {
+	// D15: an executable part without an NN- name is a warning, code 0.
+	root := checkRepo(t, repoHead+"environments = [\"dev\"]\n", "format = 3\n")
+	p := root + "/.config/mise/tasks/code/lint/mylint"
+	writeFile(t, p, "#!/bin/bash\n")
+	if err := os.Chmod(p, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	stages, _, code, errText := runCheck(t)
+	if code != fail.OK {
+		t.Fatalf("code %d, stderr %q", code, errText)
+	}
+	s := stageOf(t, stages, "old-forms")
+	if s.Status != StagePass || len(s.Findings) != 1 || s.Findings[0].Severity != SevWarning || s.Findings[0].Code != fail.OK ||
+		!strings.Contains(s.Findings[0].Message, "code/lint/mylint has no NN- name") ||
+		!strings.Contains(s.Findings[0].Message, "rename it to NN-<name>") {
+		t.Errorf("old-forms stage %+v", s)
+	}
+}

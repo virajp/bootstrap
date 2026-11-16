@@ -40,7 +40,8 @@ line.
 `code:sec` stops with an error if one of `code:sec:10-gitleaks`,
 `code:sec:20-grype` and `code:sec:30-osv-scanner` is missing or not
 executable. Then run `mise run init`. A repository can add its own
-`code:sec:<name>` task, and `code:sec` runs it too.
+`code:sec:NN-<name>` task, and `code:sec` runs it too. A task without the
+`NN-` prefix does not run.
 
 ## Scripts
 

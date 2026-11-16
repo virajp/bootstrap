@@ -44,6 +44,10 @@ type Env struct {
 	// Planned holds the absolute path of each file that a dry run would
 	// write, change or remove: the change list of the run.
 	Planned []Planned
+	// Moving holds the absolute paths of the files that init moves away
+	// before its sync: the dry run of its plan does not stop on one at the
+	// place of a folder.
+	Moving map[string]bool
 }
 
 // Planned is one file of the change list of a dry run, with what the run

@@ -95,28 +95,28 @@ The kind word tells what the names are: `tool` or `pack`. `add` takes `tool` or
 `pack`. `remove` and `replace` take `tool` only. The other commands take no
 kind word.
 
-| Command                    | Job                                                                                                                                                                                                  |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `init`                     | In a terminal, opens the TUI. Else migrates an old form, or creates the values folder with a table for each member of `base`, asks each question without an answer, then syncs. See [`init`](#init). |
-| `tui`                      | Opens the TUI on the values. It needs a terminal. See [The TUI](#the-tui).                                                                                                                           |
-| `sync`                     | The sync of the side. `setup:configs` and `updateall:configs` run it.                                                                                                                                |
-| `check`                    | Examines the values folder against its schema and runs the check scripts. On the Mac, a dry run of the sync. `--json` reports each stage and its findings.                                           |
-| `questions [tool…]`        | Lists the questions, their proposals and their answers. Without names, the questions of the selected tools. `--json` prints the envelope with the questions in `data`.                               |
-| `add tool <tool…>`         | Selects the tools and their dependencies, asks their questions, then syncs.                                                                                                                          |
-| `add pack <pack…>`         | Selects each member of the packs that is not selected, and their dependencies, asks their questions, then syncs. See [`add` and `remove`](#add-and-remove).                                          |
-| `remove tool <tool…>`      | Removes the tools, and each dependency that no other tool needs, then syncs. Each seed of a removed tool stays, with a line.                                                                         |
-| `replace tool <old> <new>` | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                                                                              |
-| `detect`                   | Runs the detect scripts, or on the Mac the package scan, and lists each tool that matches. See [`detect`](#detect).                                                                                  |
-| `list`, `ls`               | Prints the selected tools as a tree. See [`list`](#list). It writes nothing.                                                                                                                         |
-| `config get <key>`         | Prints the value of a key of `.config/bootstrap/`, with its source. See [`config`](#config). There is no `mac config`.                                                                               |
-| `config set <key> <value>` | Writes a key of `.config/bootstrap/`, and changes nothing else. See [`config`](#config).                                                                                                             |
-| `config unset <key>`       | Removes a key of `.config/bootstrap/`. See [`config`](#config).                                                                                                                                      |
-| `config show [<file>]`     | Prints `repo.toml`, `tools.toml` or `releases.toml`, or the three files as one table by file name. See [`config`](#config).                                                                          |
-| `settings`                 | Prints the config file and each setting, with its value and its source. See [The config file](#the-config-file). There is no `mac settings`.                                                         |
-| `contract`                 | Prints the versions of the JSON contract, the version of the engine, the commands that take `--json` and the names of the task ports. It needs no repository, no config file and no clone.           |
-| `catalog`                  | Prints the tools of the clone by category. `--json` also gives the categories, the questions and defaults of each tool, and the packs. It needs no repository.                                       |
-| `describe`                 | Prints the values of `repo.toml`, the selected tools with their values, the members and the task ports of the repository, each port present or missing.                                              |
-| `version`, `--version`     | Prints the version. There is no `mac version`.                                                                                                                                                       |
+| Command                    | Job                                                                                                                                                                                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init`                     | In a terminal, opens the TUI. Else migrates an old form, or creates the values folder with a table for each member of `base`, moves the own test tasks into parts, asks each question without an answer, then syncs. See [`init`](#init). |
+| `tui`                      | Opens the TUI on the values. It needs a terminal. See [The TUI](#the-tui).                                                                                                                                                                |
+| `sync`                     | The sync of the side. `setup:configs` and `updateall:configs` run it.                                                                                                                                                                     |
+| `check`                    | Examines the values folder against its schema and runs the check scripts. On the Mac, a dry run of the sync. `--json` reports each stage and its findings.                                                                                |
+| `questions [tool…]`        | Lists the questions, their proposals and their answers. Without names, the questions of the selected tools. `--json` prints the envelope with the questions in `data`.                                                                    |
+| `add tool <tool…>`         | Selects the tools and their dependencies, asks their questions, then syncs.                                                                                                                                                               |
+| `add pack <pack…>`         | Selects each member of the packs that is not selected, and their dependencies, asks their questions, then syncs. See [`add` and `remove`](#add-and-remove).                                                                               |
+| `remove tool <tool…>`      | Removes the tools, and each dependency that no other tool needs, then syncs. Each seed of a removed tool stays, with a line.                                                                                                              |
+| `replace tool <old> <new>` | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                                                                                                                   |
+| `detect`                   | Runs the detect scripts, or on the Mac the package scan, and lists each tool that matches. See [`detect`](#detect).                                                                                                                       |
+| `list`, `ls`               | Prints the selected tools as a tree. See [`list`](#list). It writes nothing.                                                                                                                                                              |
+| `config get <key>`         | Prints the value of a key of `.config/bootstrap/`, with its source. See [`config`](#config). There is no `mac config`.                                                                                                                    |
+| `config set <key> <value>` | Writes a key of `.config/bootstrap/`, and changes nothing else. See [`config`](#config).                                                                                                                                                  |
+| `config unset <key>`       | Removes a key of `.config/bootstrap/`. See [`config`](#config).                                                                                                                                                                           |
+| `config show [<file>]`     | Prints `repo.toml`, `tools.toml` or `releases.toml`, or the three files as one table by file name. See [`config`](#config).                                                                                                               |
+| `settings`                 | Prints the config file and each setting, with its value and its source. See [The config file](#the-config-file). There is no `mac settings`.                                                                                              |
+| `contract`                 | Prints the versions of the JSON contract, the version of the engine, the commands that take `--json` and the names of the task ports. It needs no repository, no config file and no clone.                                                |
+| `catalog`                  | Prints the tools of the clone by category. `--json` also gives the categories, the questions and defaults of each tool, and the packs. It needs no repository.                                                                            |
+| `describe`                 | Prints the values of `repo.toml`, the selected tools with their values, the members and the task ports of the repository, each port present or missing.                                                                                   |
+| `version`, `--version`     | Prints the version. There is no `mac version`.                                                                                                                                                                                            |
 
 | Flag                            | Commands                                                                                                                                 | Effect                                                                                                                                   |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -213,13 +213,15 @@ for it, and the TUI calls the same functions:
   `tools.toml` gets one write.
 - `Apply` runs the script that comes before the writes, writes the values and
   the migrations, and runs the sync, with `BOOTSTRAP_VALUES` set to the values
-  folder. Thus each command writes one time and syncs one time. When the sync
-  fails, `Apply` puts the values back as they were before the command, or
-  removes a file that did not exist. After a failed migration it puts back
-  `.config/bootstrap.toml`, `.config/bootstrap.overrides.toml` and
-  `.config/repo-generated.tsv`, and removes `.config/bootstrap/`. The other
-  files stay as the sync left them. The one exception is code 4 of the Mac
-  (the stage `init` changed): the sync did its work, so the values file stays.
+  folder. Thus each command writes one time and syncs one time. The move of
+  `init` (see [`init`](#init)) moves its files before the sync. When the sync
+  fails, `Apply` moves those files back, puts the values back as they were
+  before the command, or removes a file that did not exist. After a failed
+  migration it puts back `.config/bootstrap.toml`,
+  `.config/bootstrap.overrides.toml` and `.config/repo-generated.tsv`, and
+  removes `.config/bootstrap/`. The other files stay as the sync left them. The
+  one exception is code 4 of the Mac (the stage `init` changed): the sync did
+  its work, so the values file stays.
   `Apply` also gives the outcome of each target of the sync, also when the
   sync fails, for the `data` of `--json`. The front-ends give them from
   `RunWith`.
@@ -290,9 +292,31 @@ Mac. It takes no tool or pack names: `add tool` and `add pack` select tools.
    and "run bootstrap init" ("run bootstrap mac init" on the Mac) when they
    find an old form. A later `init` does not add a removed member of `base`
    again.
-3. The command asks each question of a selected tool that has no answer. See
+3. On the repo side, `init` moves each task of the repository at the place of
+   a test port to the part `50-local` of its group, so the sync can write the
+   dispatcher there. These are the paths below `.config/mise/tasks/`:
+
+   | Path                                  | Moves to               |
+   | ------------------------------------- | ---------------------- |
+   | `test`, `test/_default`               | `test/50-local`        |
+   | `test/e2e`, `test/e2e/_default`       | `test/e2e/50-local`    |
+   | `test/golden`, `test/golden/_default` | `test/golden/50-local` |
+
+   A path is a task of the repository when it is a regular file, the manifest
+   does not list it, and it has no bootstrap header. A file with the header is
+   bootstrap's own, and the sync writes the dispatcher over it. `init` follows
+   no link: a path that is a link, or is below a linked folder, stays, and so
+   does a path whose target is. All the moves are one change,
+   `move own test tasks into 50-local parts`, and its detail lists each file
+   and its target. A file moves through the temp name `<path>.bootstrap-move`
+   next to it, so a file can become a part of the folder at its own path.
+   `init` examines each path before it moves a file. When a target
+   `<group>/50-local` exists, or a temp name exists, it stops with code 2,
+   names both paths, and moves nothing. `sync` and `check` stop with code 2
+   and "run bootstrap init" on such a task.
+4. The command asks each question of a selected tool that has no answer. See
    [The questions](#the-questions).
-4. It plans the sync, shows the change list, and after the consent writes the
+5. It plans the sync, shows the change list, and after the consent writes the
    changes and syncs.
 
 These steps are the `--no-tui` path. `init` takes it without a terminal, with
@@ -307,8 +331,10 @@ size of the terminal, then the values. A missing values folder or file, or an
 old form, is the first change of the change list of the TUI: "create the values
 folder with base", "create repo.toml", "migrate to .config/bootstrap/", or on
 the Mac "create the values file with base" or "migrate the values file to
-format 2". The counter counts it, and the review shows it. The user cannot
-remove it. Apply writes it with the other changes, in one write of the values. A
+format 2". The move of the own test tasks is the next change: "move own test
+tasks into 50-local parts". The counter counts each of them, and the review
+shows them. The user cannot remove them: to decline one, quit without Apply.
+Apply writes it with the other changes, in one write of the values. A
 quit that discards the
 change list writes nothing, so the next `init` makes the change again.
 
@@ -736,24 +762,30 @@ keeps it. A removed or renamed field, or a changed type or meaning, raises it.
 
 **The data of each command.**
 
-| Command                                                    | `data`                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `contract`                                                 | `{"versions": [1], "cli_version", "commands", "ports"}`. `cli_version` is the version of the binary, `dev` for a local build. `commands` are the full words of each command that takes `--json`. `ports` are the names of the task ports. It needs no repository, no config file and no clone.                                                                                                                                                                          |
-| `catalog`                                                  | `{"fetched_at", "categories", "tools", "packs"}`. `fetched_at` is the time of the last successful fetch in ISO-8601 UTC, `""` under `--clone` or `BOOTSTRAP_CLONE`. Each tool has `name`, `category`, `description`, `questions` and `defaults`. It reads the repo side of the clone, and needs no repository.                                                                                                                                                          |
-| `describe`                                                 | `{"repo", "tools", "members", "ports"}`: the values of `repo.toml`, each selected tool with `name` and its `values` of `tools.toml`, each `[members.<name>]` with `name`, `type`, `folder`, `url` and `present` (the folder exists), and each port with `name` and `present`.                                                                                                                                                                                           |
-| `check`                                                    | `{"valid", "checks"}`. `checks` has one entry for each stage, in order: `{"name", "status", "findings"}`, with `status` `pass`, `fail` or `skipped`, and each finding `{"code", "severity", "message", "path"}`, with `severity` `error` or `warning`.                                                                                                                                                                                                                  |
-| `questions`, `mac questions`                               | The list of the questions. See [The questions](#the-questions).                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `config get`, `config show`                                | The object of `get`, and the files of `show`. See [`config`](#config).                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `config set`, `config unset`                               | `{"key", "value"}` for `set`, and `{"key"}` for `unset`.                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `init`, `sync`, `add`, `remove`, `replace`, `detect --add` | `{"plan", "outcomes"}`. `plan` is `{"changes", "files", "skipped", "pending", "notes"}`: the writes before the sync (`path`, `content`, `remove`, `note`), the files of the sync (`path`, `kind`), the members that `add pack` leaves out (`tool`, `why`), the questions without an answer, and the notes. `outcomes` has one `{"kind", "path", "message"}` for each target of the sync, `[]` for a dry run. The warnings of the plan are the warnings of the envelope. |
-| `detect`                                                   | `{"detected"}`: one entry for each tool that `detect` reports, with `tool`, `selected`, `result`, `evidence`, `message`, `offered`, `shared` and `of`.                                                                                                                                                                                                                                                                                                                  |
+| Command                                                    | `data`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contract`                                                 | `{"versions": [1], "cli_version", "commands", "ports"}`. `cli_version` is the version of the binary, `dev` for a local build. `commands` are the full words of each command that takes `--json`. `ports` are the names of the task ports. It needs no repository, no config file and no clone.                                                                                                                                                                                                                                                                                                                               |
+| `catalog`                                                  | `{"fetched_at", "categories", "tools", "packs"}`. `fetched_at` is the time of the last successful fetch in ISO-8601 UTC, `""` under `--clone` or `BOOTSTRAP_CLONE`. Each tool has `name`, `category`, `description`, `questions` and `defaults`. It reads the repo side of the clone, and needs no repository.                                                                                                                                                                                                                                                                                                               |
+| `describe`                                                 | `{"repo", "tools", "members", "ports"}`: the values of `repo.toml`, each selected tool with `name` and its `values` of `tools.toml`, each `[members.<name>]` with `name`, `type`, `folder`, `url` and `present` (the folder exists), and each port with `name` and `present`.                                                                                                                                                                                                                                                                                                                                                |
+| `check`                                                    | `{"valid", "checks"}`. `checks` has one entry for each stage, in order: `{"name", "status", "findings"}`, with `status` `pass`, `fail` or `skipped`, and each finding `{"code", "severity", "message", "path"}`, with `severity` `error` or `warning`.                                                                                                                                                                                                                                                                                                                                                                       |
+| `questions`, `mac questions`                               | The list of the questions. See [The questions](#the-questions).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `config get`, `config show`                                | The object of `get`, and the files of `show`. See [`config`](#config).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `config set`, `config unset`                               | `{"key", "value"}` for `set`, and `{"key"}` for `unset`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `init`, `sync`, `add`, `remove`, `replace`, `detect --add` | `{"plan", "outcomes"}`. `plan` is `{"changes", "files", "skipped", "pending", "notes"}`: the writes before the sync (`path`, `content`, `remove`, `note`; the move of `init` is one change with the absolute `path` `<root>/.config/mise/tasks`, an empty `content`, and its files and targets only in `note`), the files of the sync (`path`, `kind`), the members that `add pack` leaves out (`tool`, `why`), the questions without an answer, and the notes. `outcomes` has one `{"kind", "path", "message"}` for each target of the sync, `[]` for a dry run. The warnings of the plan are the warnings of the envelope. |
+| `detect`                                                   | `{"detected"}`: one entry for each tool that `detect` reports, with `tool`, `selected`, `result`, `evidence`, `message`, `offered`, `shared` and `of`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 **The stages of `check`.** `envs`, `values`, `old-forms`, `env-rules`,
 `core-tools`, `overrides`, `members`, `releases` and `scripts`. A stage whose
-input failed is `skipped`. `core-tools` always passes: its line is a warning
-finding, and it never changes the code. `valid` is `true` only when the code
-is `0`, and the code is the highest code of the stages. A failure before the
-first stage gives `{"valid": false, "checks": []}`, with the cause in
+input failed is `skipped`. `old-forms` also holds an error for each task of
+the repository at the place of a test port (see [`init`](#init)), and a
+warning for each executable file without an `NN-` name in the folder of a
+dispatcher: `code/format`, `code/lint`, `code/sec`, `setup/deps`,
+`setup/secrets`, `test`, `test/e2e` and `test/golden`. A file whose task name
+a `#MISE depends` of another file in the same folder names, and a name that
+starts with `_`, get no warning. `core-tools` always passes: its line is a
+warning finding, and it never changes the code. `valid` is `true` only when the
+code is `0`, and the code is the highest code of the stages. A failure before
+the first stage gives `{"valid": false, "checks": []}`, with the cause in
 `errors`.
 
 **The write commands.** With `--json`, a command never prompts.
@@ -1774,6 +1806,10 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
 - A shared file that is a symlink or is below a symlinked folder.
 - A `.config/bootstrap/repo-generated.tsv` that is a symlink, is below a
   symlinked folder or is not a regular file.
+- A task of the repository at the place of a test port, for `sync` and
+  `check`, with the fix "run bootstrap init". On `init`, a target
+  `<group>/50-local` of its move that exists, and a temp name
+  `<path>.bootstrap-move` that exists. See [`init`](#init).
 
 **Code 2, only on the Mac side:**
 

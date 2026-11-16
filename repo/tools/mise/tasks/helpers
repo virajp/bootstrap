@@ -252,13 +252,14 @@ has_own_task() {
 # The tasks this repository defines in the group <group> (`setup:deps`), one
 # name per line, sorted; nothing when it defines none. For a step that runs
 # every tool's task in a group, without the parent's tasks that a wildcard
-# `mise run 'setup:deps:*'` would add.
+# `mise run 'setup:deps:*'` would add. A part is an executable file named
+# `NN-<name>` (`40-node`): a folder, `_default` and a file without the number
+# are not parts.
 own_tasks() {
   local dir="${MISE_PROJECT_ROOT}/.config/mise/tasks/${1//://}" file name
-  for file in "${dir}"/*; do
+  for file in "${dir}"/[0-9][0-9]-?*; do
     [ -f "${file}" ] && [ -x "${file}" ] || continue
     name="$(basename "${file}")"
-    case "${name}" in _*) continue ;; esac
     printf '%s:%s\n' "$1" "${name}"
   done
 }

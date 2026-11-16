@@ -21,6 +21,9 @@ func (s *state) resolve() fail.Code {
 	if err := oldform.Repo(s.root, s.vals.Raw, s.show); err != nil {
 		return s.logAll(err)
 	}
+	if err := s.ownTasks(); err != nil {
+		return s.logAll(err)
+	}
 	if err := schema.CheckTools(s.idx, s.vals.Raw, s.showTools); err != nil {
 		return s.logAll(err)
 	}

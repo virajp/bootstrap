@@ -65,7 +65,7 @@ None.
 1. If the repository has `rust-toolchain.toml`, tell the user. It can select
    a different toolchain than mise.
 2. If the repository needs a Rust linter in `code:lint`, for example clippy,
-   write a task `code:lint:<name>`.
+   write a task `code:lint:NN-<name>`.
 
 ## Migration
 

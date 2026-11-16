@@ -120,3 +120,12 @@ source = "setup-mise"
 [tasks."setup/worktree"]
 mode = "template"
 source = "setup-worktree.tmpl"
+
+[tasks."test/_default"]
+source = "test"
+
+[tasks."test/e2e/_default"]
+source = "test-e2e"
+
+[tasks."test/golden/_default"]
+source = "test-golden"

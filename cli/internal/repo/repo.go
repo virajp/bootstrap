@@ -163,7 +163,7 @@ func newState(stdout, stderr io.Writer) *state {
 	})
 	s.pwd = pwd(s.getenv)
 	s.root = s.getenv("MISE_PROJECT_ROOT")
-	s.e = &target.Env{Report: s.r, Stderr: stderr, Pwd: s.pwd}
+	s.e = &target.Env{Report: s.r, Stderr: stderr, Pwd: s.pwd, Moving: oldform.Moving}
 	return s
 }
 
@@ -513,6 +513,12 @@ func (s *state) sync(dryRun bool) fail.Code {
 	return worst
 }
 
+// ownTasks gives a problem for each own task of the repo at the place of a
+// dispatcher (D4, D7).
+func (s *state) ownTasks() error {
+	return oldform.TaskProblems(s.root, values.ManifestFile(s.values), s.path)
+}
+
 // keptItems gives the item rows of the last run for each shared file that
 // this run did not merge, so a later run can still remove those items.
 func (s *state) keptItems() []manifest.Row {
@@ -654,7 +660,12 @@ func (s *state) check() fail.Code {
 		return s.logAll(err)
 	}))
 	selOK = add(s.checkStage("old-forms", selOK, func() fail.Code {
-		return s.logAll(oldform.Repo(s.root, s.vals.Raw, s.show))
+		// A file in a dispatcher folder that the dispatcher does not run is
+		// a warning (D15).
+		for _, p := range oldform.UnnamedParts(s.root) {
+			s.r.Warn(s.path(s.root+"/"+p) + " has no NN- name, so its dispatcher does not run it - rename it to NN-<name>")
+		}
+		return s.logAll(errors.Join(oldform.Repo(s.root, s.vals.Raw, s.show), s.ownTasks()))
 	})) && selOK
 	add(s.checkStage("env-rules", envsOK && selOK, func() fail.Code { return s.envRules(sel) }))
 	// The line of core_tools prints as an error but never changes the

@@ -83,6 +83,10 @@ the generated mise config into the copy.
   [tools.md](tools.md).
 - An old form of the values stops the sync with "run bootstrap init". See
   [bootstrap-config.md](bootstrap-config.md#old-forms).
+- A task of the repository at the place of a test port (for example its own
+  `.config/mise/tasks/test/_default`) stops the sync with code 2 and "run
+  bootstrap init", before it writes a file. `init` moves it to a `50-local`
+  part. See [cli.md](cli.md#init).
 
 ## Members and submodules
 
@@ -270,9 +274,11 @@ not look in git submodules, because a submodule has its own sync. A name has no
 `bootstrap_commit`. It runs each check and prints each message, so each error
 shows at once.
 
-1. The local rules: the old forms, the schema of `repo.toml`, `tools.toml` and
+1. The local rules: the old forms (also a task of the repository at the place
+   of a test port), the schema of `repo.toml`, `tools.toml` and
    `releases.toml` (an unknown key is code 2), `environments`, `env`, the
-   structure of `[overrides]` and the members.
+   structure of `[overrides]` and the members. A task without an `NN-` name in
+   the folder of a dispatcher is a warning.
 2. With a clone, the rules of the clone: the selection, the values of the tools
    (with the derive scripts), the questions without an answer, and the check
    script of each selected tool.

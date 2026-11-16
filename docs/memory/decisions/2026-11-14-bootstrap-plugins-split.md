@@ -180,3 +180,20 @@ changed these points. They win over the text above.
   clone when its last fetch is 30 minutes old or less, else fetch. When the
   fetch fails, they use a cached clone less than 7 days old, with a warning,
   else they stop with code 5 (D5).
+
+## Amendments 2026-11-14 (R1c planning)
+
+The planning of R1c (`docs/plans/2026-11-14-task-ports` of bootstrap) changed
+these points. They win over the text above.
+
+- **The ports of R1c (D1).** R1c makes `test`, `test:e2e` and `test:golden`
+  exist, as group dispatchers of the `mise` tool. R2 makes
+  `git:merge:<branch>`, `git:worktree:create|setup|delete` and
+  `code:lsp:check` with real work. `code:format`, `code:lint`, `code:sec`,
+  `code:precommit` and `setup` already exist in every shaped repo through the
+  required base tools. No release comes between R1c and R2.
+- **No default for a patterned port (D5).** R1c ships no `p:<id>:deploy`. A
+  patterned port has no default: it exists for an id only when a task for that
+  id exists, which `describe` reports. The rule "every port exists in every
+  shaped repo" holds for the plain ports only. Per-project ids in bootstrap go
+  with R5.

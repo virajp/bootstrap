@@ -406,6 +406,15 @@ check_base_files() {
   else
     print_success "base: no conf.d/_base/"
   fi
+  # The test ports: the mise tool ships a dispatcher for each.
+  for path in test/_default test/e2e/_default test/golden/_default; do
+    if grep -qF "would update $consumer/.config/mise/tasks/$path" "$log"; then
+      print_success "base: the dispatcher $path"
+    else
+      print_error "base: no dispatcher $path"
+      failures=$((failures + 1))
+    fi
+  done
 }
 
 pack_loop() {
@@ -3292,6 +3301,147 @@ CASE_CALL=init_unknown_answer run_case "init --answer of an unknown question" 2 
 init_names() { "$bin" init --yes node; }
 CASE_CALL=init_names run_case "init with a tool name" 2 'environments = [ "dev" ]' '' \
   'init takes no tool names - use: bootstrap add tool node'
+
+# The test ports (D2, D3, D4, D7, D8, D12, D15, D18, D20, D21, D26): the
+# dispatchers test, test:e2e and test:golden, their NN- parts, and the init
+# move of a repo's own test task to <group>/50-local.
+tasks_dir=.config/mise/tasks
+# own_task <path> [<line>...]: an executable task of the repo of the case
+# below .config/mise/tasks/, with these lines after the shebang.
+own_task() {
+  local file=$consumer/$tasks_dir/$1
+  shift
+  mkdir -p -- "$(dirname -- "$file")"
+  printf '%s\n' '#!/usr/bin/env bash' "$@" > "$file"
+  chmod +x "$file"
+}
+# consumer_mise <task> [<arg>...]: mise run in the consumer of the case, as a
+# user runs it there, without the mise variables of this task. The log gets
+# its output.
+consumer_mise() {
+  (
+    unset MISE_ENV MISE_ORIGINAL_CWD MISE_TASK_NAME MISE_TASK_DIR MISE_TASK_FILE MISE_CONFIG_ROOT FORCE_COLOR
+    cd -- "$consumer"
+    MISE_PROJECT_ROOT=$consumer mise run "$@"
+  ) > "$log" 2>&1
+}
+# case_engine <command> [<arg>...]: the engine again in the case, after a
+# commit of the consumer. The log gets its output.
+case_engine() {
+  (
+    unset FORCE_COLOR BOOTSTRAP_URL
+    export BOOTSTRAP_VALUES=$values MISE_PROJECT_ROOT=$consumer BOOTSTRAP_CLONE=$clone
+    export BOOTSTRAP_CACHE=$tmp/cache
+    commit_consumer
+    "$bin" "$@"
+  ) > "$log" 2>&1
+}
+is_dispatcher() { grep -qF "own_tasks $1" "$consumer/$tasks_dir/${1//://}/_default"; }
+check_ports_empty() {
+  local port got
+  for port in test test:e2e test:golden; do
+    check_that "the test ports: init writes the dispatcher of $port" is_dispatcher "$port"
+    got=0
+    consumer_mise "$port" || got=$?
+    check_that "the test ports: mise run $port with no part exits 0" test "$got" = 0
+    check_that "the test ports: mise run $port with no part prints the line" \
+      log_has "No $port part in this repository"
+  done
+}
+CASE_CALL=init_new run_case "the test ports: init writes the three dispatchers" 0 "$dev_values" '' 'Synced: ' \
+  check_ports_empty
+ports_parts() {
+  own_task test/10-a 'echo part-test-a'
+  own_task test/b 'echo part-test-b'
+  own_task test/e2e/10-a 'echo part-e2e-a'
+}
+check_ports_parts() {
+  local got=0
+  consumer_mise test || got=$?
+  check_that "the test ports: mise run test exits 0" test "$got" = 0
+  check_that "the test ports: mise run test runs test:10-a" log_has 'part-test-a'
+  check_that "the test ports: mise run test skips test:b, no NN- name" log_lacks 'part-test-b'
+  check_that "the test ports: mise run test does not run test:e2e:10-a (D3)" log_lacks 'part-e2e-a'
+  got=0
+  consumer_mise test:e2e || got=$?
+  check_that "the test ports: mise run test:e2e exits 0" test "$got" = 0
+  check_that "the test ports: mise run test:e2e runs test:e2e:10-a" log_has 'part-e2e-a'
+}
+CASE_CALL=init_new run_case "the test ports: the NN- parts of a dispatcher" 0 "$dev_values" ports_parts 'Synced: ' \
+  check_ports_parts
+# D21: an unshaped repo, with no values folder, has its own test/_default
+# with a depends on test:go, and a stray test/e2e file.
+own_tests_unshaped() {
+  rm -rf -- "$values"
+  own_task test/_default '#MISE depends=["test:go"]' 'echo own-test-default'
+  own_task test/go 'echo own-test-go'
+  own_task test/e2e 'echo own-test-e2e'
+}
+check_own_moved() {
+  local got=0
+  case_engine init --yes || got=$?
+  check_that "the init move: init exits 0" test "$got" = 0
+  check_that "the init move: init names the move" log_has 'move own test tasks into 50-local parts'
+  check_that "the init move: test/_default is test/50-local" grep -qF 'own-test-default' "$consumer/$tasks_dir/test/50-local"
+  check_that "the init move: test/e2e is test/e2e/50-local" grep -qF 'own-test-e2e' "$consumer/$tasks_dir/test/e2e/50-local"
+  check_that "the init move: test/go stays" grep -qF 'own-test-go' "$consumer/$tasks_dir/test/go"
+  check_that "the init move: the dispatcher of test" is_dispatcher test
+  check_that "the init move: the dispatcher of test:e2e" is_dispatcher test:e2e
+  got=0
+  consumer_mise test || got=$?
+  check_that "the init move: mise run test exits 0" test "$got" = 0
+  check_that "the init move: mise run test runs the old test as a part" log_has 'own-test-default'
+  check_that "the init move: its depends still runs test:go" log_has 'own-test-go'
+  got=0
+  case_engine check || got=$?
+  check_that "the init move: check exits 0" test "$got" = 0
+  check_that "the init move: no warning for test:go (D18)" log_lacks 'has no NN- name'
+}
+CASE_CALL=check_old_form run_case "the init move: an unshaped repo with its own test tasks" 2 "$dev_values" \
+  own_tests_unshaped '.config/bootstrap not found - run bootstrap init' check_own_moved
+# D8, D20: test/50-local exists, so init moves no file, also not test/e2e.
+own_tests_taken() {
+  own_task test/_default 'echo own-test-default'
+  own_task test/50-local 'echo own-test-local'
+  own_task test/e2e 'echo own-test-e2e'
+}
+check_own_taken() {
+  check_that "a taken 50-local: names test/_default" log_has "$tasks_dir/test/_default is a task of this repo"
+  check_that "a taken 50-local: names test/50-local" log_has "$tasks_dir/test/50-local exists"
+  check_that "a taken 50-local: test/_default stays" grep -qF 'own-test-default' "$consumer/$tasks_dir/test/_default"
+  check_that "a taken 50-local: test/50-local stays" grep -qF 'own-test-local' "$consumer/$tasks_dir/test/50-local"
+  check_that "a taken 50-local: test/e2e stays a file" test -f "$consumer/$tasks_dir/test/e2e"
+}
+CASE_CALL=init_yes run_case "the init move: a 50-local that exists stops init" 2 "$dev_values" own_tests_taken \
+  'is a task of this repo at the place of a dispatcher of bootstrap, and ' check_own_taken
+# D12 and D15: the repo's own test/golden/_default moves; a file of a
+# dispatcher folder with no NN- name is a warning of check.
+own_golden_lint() {
+  own_task test/golden/_default 'echo own-golden'
+  own_task code/lint/mylint 'echo own-lint'
+}
+init_then_check() {
+  "$bin" init --yes > /dev/null 2>&1 || exit
+  commit_consumer
+  "$bin" check
+}
+check_own_golden() {
+  check_that "the init move: test/golden/_default is test/golden/50-local" \
+    grep -qF 'own-golden' "$consumer/$tasks_dir/test/golden/50-local"
+  check_that "the init move: the dispatcher of test:golden" is_dispatcher test:golden
+}
+CASE_CALL=init_then_check run_case "the init move: test/golden/_default, and a part with no NN- name" 0 "$dev_values" \
+  own_golden_lint "$tasks_dir/code/lint/mylint has no NN- name, so its dispatcher does not run it - rename it to NN-<name>" \
+  check_own_golden
+# D26: a test/_default with the header of bootstrap and no manifest row is
+# bootstrap's own: init writes the dispatcher over it.
+synced_test_default() { header_file "$tasks_dir/test/_default"; }
+check_synced_default() {
+  check_that "a synced test/_default: the dispatcher" is_dispatcher test
+  check_that "a synced test/_default: no test/50-local" no_file "$consumer/$tasks_dir/test/50-local"
+}
+CASE_CALL=init_yes run_case "the init move: a test/_default with the header is overwritten" 0 "$dev_values" \
+  synced_test_default '' check_synced_default
 
 # The migration of [packs.*] tables with the frozen packs of the engine (D5,
 # D16 b, D18 a). A tool of the pack gets a table with the env of the pack; a

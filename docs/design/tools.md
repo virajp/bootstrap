@@ -273,10 +273,10 @@ The rules of the task files:
   `code/format/_default`. Each other tool ships its own task files below it.
 - An orchestrator runs the leaf tasks of its group with `own_tasks`, which
   returns the names sorted. Thus a leaf task of the groups `code:format`,
-  `code:lint`, `code:sec`, `setup:deps` and `setup:secrets` has a number
-  prefix for its run order: 10, 20, 30 and so on, for example
-  `code/lint/70-ruff`. A task of the repository without a prefix runs after
-  them.
+  `code:lint`, `code:sec`, `setup:deps`, `setup:secrets`, `test`, `test:e2e`
+  and `test:golden` has a number prefix for its run order: 10, 20, 30 and so
+  on, for example `code/lint/70-ruff`. `own_tasks` skips a task of the
+  repository without a prefix, and `bootstrap check` warns about it.
 - A task that a user or another task calls by its name has no prefix, for
   example `code:merge:develop` and `setup:dprint`.
 

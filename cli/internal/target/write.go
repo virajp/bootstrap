@@ -40,11 +40,15 @@ func isRegular(path string) bool {
 // the place of a folder: a synced file (with the header) is removed, or with
 // a dry run listed. <spare> holds the paths, relative to <root>, that the sync
 // must not remove: the seeds and the merge targets. <target> names the file
-// that needs the folder, as a failure reports it. It gives 1, after a message,
+// that needs the folder, as a failure reports it. A file of Moving is not in
+// the way: init moves it before its sync. It gives 1, after a message,
 // when that file has no header, is in <spare>, or cannot be removed.
 func (e *Env) Unblock(dir, root string, spare []string, target string) fail.Code {
 	r := e.Report
 	for strings.HasPrefix(dir, root+"/") {
+		if e.Moving[dir] {
+			return fail.OK
+		}
 		if isRegular(dir) && !isLink(dir) {
 			show := e.Show(dir)
 			if !header.HasFile(dir) || contains(spare, dir[len(root)+1:]) {
