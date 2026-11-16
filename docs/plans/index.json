@@ -49,8 +49,8 @@
       "title": "R2a — the git:* tasks",
       "target_repo": null,
       "priority": 80,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-16T10:20:19.453Z",
       "ended": "",
       "gaps": null,
       "requires": [
