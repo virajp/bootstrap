@@ -1,0 +1,5 @@
+ENGINE /security-review, loop U4, round 2, range cecece2..59f1973 (excluding docs/plans/)
+
+No findings.
+
+Examined: the git-worktree-create delta (FROM_ORIGIN flag, print_warn before mise trust); BRANCH is a trusted CLI argument, printed quoted, never run.

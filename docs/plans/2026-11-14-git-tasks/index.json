@@ -70,8 +70,8 @@
       "status": "green",
       "started": "2026-11-16T11:35:31.785Z",
       "ended": "2026-11-16T11:46:12.038Z",
-      "commit": "6e158db",
-      "rounds": 3
+      "commit": "59f1973",
+      "rounds": 4
     },
     {
       "id": "U2",
@@ -130,14 +130,14 @@
         "U7"
       ],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-16T12:29:37.126Z",
-      "ended": "",
+      "ended": "2026-11-16T12:33:27.202Z",
       "commit": "",
-      "rounds": 1,
+      "rounds": 2,
       "range": {
         "from": "c76f8af",
-        "to": "cecece2"
+        "to": "59f1973"
       }
     },
     {
@@ -220,9 +220,9 @@
     },
     {
       "id": "W3",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-16T12:29:37.090Z",
-      "ended": ""
+      "ended": "2026-11-16T12:34:20.174Z"
     },
     {
       "id": "W4",
