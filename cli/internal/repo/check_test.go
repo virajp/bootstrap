@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/values"
 )
 
@@ -185,5 +186,34 @@ func TestCheckUnnamedPart(t *testing.T) {
 		!strings.Contains(s.Findings[0].Message, "code/lint/mylint has no NN- name") ||
 		!strings.Contains(s.Findings[0].Message, "rename it to NN-<name>") {
 		t.Errorf("old-forms stage %+v", s)
+	}
+}
+
+func TestCheckOldWorktreeCmd(t *testing.T) {
+	// D20: the old command of the worktree setup in .config/wt.toml and in a
+	// member's worktree_install gives code 2 in the stage old-forms, with the
+	// fix of init; after the rename of init, the check passes.
+	repo := repoHead + "environments = [\"dev\"]\n\n[members.api]\ntype = \"folder\"\nworktree_install = \"mise run setup:worktree\"\n"
+	root := checkRepo(t, repo, "format = 3\n")
+	writeFile(t, root+"/"+oldform.WtFile, "[[pre-start]]\nsetup = \"mise run setup:worktree\"\n")
+	writeFile(t, root+"/api/x", "")
+	stages, _, code, errText := runCheck(t)
+	if code != fail.Usage {
+		t.Fatalf("code %d, stderr %q", code, errText)
+	}
+	s := stageOf(t, stages, "old-forms")
+	if s.Status != StageFail || len(s.Findings) != 2 ||
+		!strings.Contains(s.Findings[0].Message, "/.config/wt.toml runs mise run setup:worktree") ||
+		!strings.Contains(s.Findings[1].Message, "members.api.worktree_install in ") ||
+		!strings.Contains(s.Findings[1].Message, "run bootstrap init") {
+		t.Errorf("old-forms stage %+v", s)
+	}
+	if !strings.Contains(errText, "Run bootstrap init") {
+		t.Errorf("stderr %q", errText)
+	}
+	writeFile(t, values.RepoFile(values.FolderOf(root)), oldform.RenameCmd(repo))
+	writeFile(t, root+"/"+oldform.WtFile, "[[pre-start]]\nsetup = \""+oldform.NewWorktreeCmd+"\"\n")
+	if _, _, code, errText := runCheck(t); code != fail.OK {
+		t.Fatalf("after the rename: code %d, stderr %q", code, errText)
 	}
 }

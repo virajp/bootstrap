@@ -80,7 +80,10 @@ func Apply(p *PlanResult, o Options) (fail.Code, bool, []report.Result, error) {
 		for _, m := range ch.Moves {
 			step(Step{Kind: Moved, Path: m.From, To: m.To})
 		}
-		if len(ch.Moves) > 0 {
+		for _, e := range ch.Edits {
+			step(Step{Kind: Wrote, Path: e.Path})
+		}
+		if len(ch.Moves) > 0 || len(ch.Edits) > 0 {
 			continue
 		}
 		if ch.Remove {
@@ -165,14 +168,21 @@ func (p *PlanResult) RestoredFile() string {
 	return p.EditFile()
 }
 
-// restore moves the moved files back, puts the edited values file back as it
+// restore moves the moved files back, writes the files of a change with
+// Edits back, puts the edited values file back as it
 // was before Apply, and removes a repo.toml that init created, and then the
 // values folder when it is empty.
 func (p *PlanResult) restore() error {
-	// The moved own test tasks go back first (D7).
+	// The moved own test tasks go back first (D7), then the files of the
+	// rename of setup:worktree (D20).
 	for _, ch := range p.Changes {
 		if err := oldform.UndoMoves(ch.Moves); err != nil {
 			return problem(fail.Other, err.Error(), "")
+		}
+		for _, e := range ch.Edits {
+			if err := oldform.WriteFile(e.Path, e.Old); err != nil {
+				return problem(fail.Other, "cannot write "+p.Show(e.Path)+" back", "")
+			}
 		}
 	}
 	if p.Migrated {

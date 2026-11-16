@@ -108,13 +108,22 @@ func Mac(raw *source.Obj, shown string) error {
 
 // Change is one file of a migration: its new content, or its removal. A
 // change with Moves moves those files instead (D25): its Path is the folder
-// TasksDir of the repository.
+// TasksDir of the repository. A change with Edits writes those files
+// instead (D20): its Path is the folder that holds them.
 type Change struct {
 	Path    string // Absolute.
 	Content []byte
 	Remove  bool
 	Note    string // What changes, for the change list.
 	Moves   []Move // Absolute paths.
+	Edits   []Edit
+}
+
+// Edit is one file of a change with Edits: its new content, and the content
+// that init puts back on a failed sync.
+type Edit struct {
+	Path         string // Absolute.
+	Content, Old []byte
 }
 
 // q is a string as a yq string literal.
@@ -377,12 +386,21 @@ func addHooks(path, old string) (Change, error) {
 }
 
 // Apply writes each change. A removal also removes its folder when the folder
-// is then empty. A change with Moves moves its files.
+// is then empty. A change with Moves moves its files, and a change with Edits
+// writes its files.
 func Apply(changes []Change) error {
 	for _, c := range changes {
 		if len(c.Moves) > 0 {
 			if err := ApplyMoves(c.Moves); err != nil {
 				return err
+			}
+			continue
+		}
+		if len(c.Edits) > 0 {
+			for _, e := range c.Edits {
+				if err := WriteFile(e.Path, e.Content); err != nil {
+					return err
+				}
 			}
 			continue
 		}
@@ -393,30 +411,46 @@ func Apply(changes []Change) error {
 			_ = os.Remove(filepath.Dir(c.Path))
 			continue
 		}
-		mode := os.FileMode(0o644)
-		if st, err := os.Stat(c.Path); err == nil {
-			mode = st.Mode().Perm()
-		}
-		if err := os.MkdirAll(filepath.Dir(c.Path), 0o777); err != nil {
-			return fail.New(fail.Other, "cannot write %s", c.Path)
-		}
-		tmp := c.Path + ".bootstrap-new"
-		if err := os.WriteFile(tmp, c.Content, mode); err != nil {
-			_ = os.Remove(tmp)
-			return fail.New(fail.Other, "cannot write %s", c.Path)
-		}
-		if err := os.Rename(tmp, c.Path); err != nil {
-			_ = os.Remove(tmp)
-			return fail.New(fail.Other, "cannot write %s", c.Path)
+		if err := WriteFile(c.Path, c.Content); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-// Paths gives the paths of <changes>, sorted: both paths of each move.
+// WriteFile writes <content> to the file <path> through a temp name next to
+// it, and keeps the mode of a file that exists.
+func WriteFile(path string, content []byte) error {
+	mode := os.FileMode(0o644)
+	if st, err := os.Stat(path); err == nil {
+		mode = st.Mode().Perm()
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
+		return fail.New(fail.Other, "cannot write %s", path)
+	}
+	tmp := path + ".bootstrap-new"
+	if err := os.WriteFile(tmp, content, mode); err != nil {
+		_ = os.Remove(tmp)
+		return fail.New(fail.Other, "cannot write %s", path)
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		_ = os.Remove(tmp)
+		return fail.New(fail.Other, "cannot write %s", path)
+	}
+	return nil
+}
+
+// Paths gives the paths of <changes>, sorted: both paths of each move, and
+// the path of each edit.
 func Paths(changes []Change) []string {
 	var out []string
 	for _, c := range changes {
+		if len(c.Edits) > 0 {
+			for _, e := range c.Edits {
+				out = append(out, e.Path)
+			}
+			continue
+		}
 		if len(c.Moves) > 0 {
 			for _, m := range c.Moves {
 				out = append(out, m.From, m.To)
