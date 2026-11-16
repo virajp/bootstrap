@@ -106,32 +106,32 @@ web = "PATCH"
 
 `repo.toml`:
 
-| Key                                 | Type            | Necessary | Read by                                                                |
-| ----------------------------------- | --------------- | --------- | ---------------------------------------------------------------------- |
-| `format`                            | Integer         | Yes       | The engine: `3`, the form of the file                                  |
-| `repo_name`                         | String          | Yes       | `mise.toml`, `gitleaks.toml`, `fnox.toml`                              |
-| `product_name`                      | String          | No        | `fnox.toml`                                                            |
-| `repo_url`                          | String          | No        | `github` tool, `[home].url` of a member                                |
-| `core_branches`                     | List of strings | Yes       | The scripts of `git`                                                   |
-| `[branches.<branch>].landing`       | String          | No        | `code:merge:<branch>`, the scripts of `git`                            |
-| `[branches.<branch>].merge_from`    | List of strings | No        | `code:merge:<branch>`                                                  |
-| `[branches.<branch>].merge_never`   | List of strings | No        | `code:merge:<branch>`                                                  |
-| `[commits].style`                   | String          | No        | Nothing yet                                                            |
-| `[commits].scopes`                  | List of strings | No        | `git-conventional-commits.yaml`                                        |
-| `environments`                      | List of strings | No        | The sync                                                               |
-| `bootstrap_commit`                  | String          | No        | The sync writes it                                                     |
-| `[worktree].files`                  | List of strings | No        | `setup:worktree`                                                       |
-| `topology`                          | String          | No        | Nothing in bootstrap                                                   |
-| `topology_reason`                   | String          | No        | Nothing in bootstrap                                                   |
-| `[members.<name>]`                  | Table           | No        | The sync, `setup`, `setup:configs`, `setup:worktree`, `code:worktrees` |
-| `[members.<name>].folder`           | String          | No        | The sync, `setup`, `setup:configs`, `setup:worktree`, `code:worktrees` |
-| `[members.<name>].type`             | String          | Yes       | The sync, `setup`, `setup:configs`, `code:worktrees`                   |
-| `[members.<name>].url`              | String          | No        | `code:worktrees`, the sync of a missing sibling                        |
-| `[members.<name>].label`            | String          | No        | `setup`, `setup:configs`, `setup:worktree`                             |
-| `[members.<name>].worktree_install` | String          | No        | `setup:worktree`                                                       |
-| `[home]`                            | Table           | No        | The sync writes it; `code:worktrees`                                   |
-| `release_env`                       | String          | No        | Nothing in bootstrap                                                   |
-| `[deploy.<env>].<project>`          | String          | No        | Nothing in bootstrap                                                   |
+| Key                                 | Type            | Necessary | Read by                                                                       |
+| ----------------------------------- | --------------- | --------- | ----------------------------------------------------------------------------- |
+| `format`                            | Integer         | Yes       | The engine: `3`, the form of the file                                         |
+| `repo_name`                         | String          | Yes       | `mise.toml`, `gitleaks.toml`, `fnox.toml`                                     |
+| `product_name`                      | String          | No        | `fnox.toml`                                                                   |
+| `repo_url`                          | String          | No        | `github` tool, `[home].url` of a member                                       |
+| `core_branches`                     | List of strings | Yes       | The scripts of `git`                                                          |
+| `[branches.<branch>].landing`       | String          | No        | `git:merge:<branch>`, the scripts of `git`                                    |
+| `[branches.<branch>].merge_from`    | List of strings | No        | `git:merge:<branch>`                                                          |
+| `[branches.<branch>].merge_never`   | List of strings | No        | `git:merge:<branch>`                                                          |
+| `[commits].style`                   | String          | No        | Nothing yet                                                                   |
+| `[commits].scopes`                  | List of strings | No        | `git-conventional-commits.yaml`                                               |
+| `environments`                      | List of strings | No        | The sync                                                                      |
+| `bootstrap_commit`                  | String          | No        | The sync writes it                                                            |
+| `[worktree].files`                  | List of strings | No        | `git:worktree:setup`                                                          |
+| `topology`                          | String          | No        | Nothing in bootstrap                                                          |
+| `topology_reason`                   | String          | No        | Nothing in bootstrap                                                          |
+| `[members.<name>]`                  | Table           | No        | The sync, `setup`, `setup:configs`, `git:worktree:setup`, `git:worktree:list` |
+| `[members.<name>].folder`           | String          | No        | The sync, `setup`, `setup:configs`, `git:worktree:setup`, `git:worktree:list` |
+| `[members.<name>].type`             | String          | Yes       | The sync, `setup`, `setup:configs`, `git:worktree:list`                       |
+| `[members.<name>].url`              | String          | No        | `git:worktree:list`, the sync of a missing sibling                            |
+| `[members.<name>].label`            | String          | No        | `setup`, `setup:configs`, `git:worktree:setup`                                |
+| `[members.<name>].worktree_install` | String          | No        | `git:worktree:setup`                                                          |
+| `[home]`                            | Table           | No        | The sync writes it; `git:worktree:list`                                       |
+| `release_env`                       | String          | No        | Nothing in bootstrap                                                          |
+| `[deploy.<env>].<project>`          | String          | No        | Nothing in bootstrap                                                          |
 
 `tools.toml`:
 
@@ -243,7 +243,9 @@ branch, `init` stops with code 2 and the hint "check out a branch, then run
 bootstrap init again".
 
 - `branch_pair` of `git` is true when the list has both `main` and `develop`.
-  See [repo.md](repo.md#the-branch-model-and-the-merge-tasks).
+  `has_main` and `has_develop` of `git` are true when the list has `main`, or
+  `develop`: each gives the task `git:merge:<branch>` of that branch. See
+  [repo.md](repo.md#the-branch-model-and-the-merge-tasks).
 - `protected_branches` of `git` is each core branch whose landing is not
   `direct-commit`. See [repo.md](repo.md#the-protected-branches).
 
@@ -308,8 +310,8 @@ has an empty value. See [cli.md](cli.md#bootstrap_commit).
 
 ### `[worktree].files`
 
-The gitignored files that `setup:worktree` copies from the main worktree into
-a new worktree, for example `[".config/mise.local.toml"]`.
+The gitignored files that `git:worktree:setup` copies from the main worktree
+into a new worktree, for example `[".config/mise.local.toml"]`.
 
 - The task copies a file only in a linked worktree.
 - It does not replace a file that exists.
@@ -354,7 +356,7 @@ submodule: the folder members and the sibling members.
   is part of the tree of the root, so it gets no flag. `setup:configs` skips a
   member that is not on the machine, or that has no `.config/bootstrap/`, with
   a warning. `code:format` and `code:lint` have no member flags: each
-  repository and each submodule runs its own. `setup:worktree` runs
+  repository and each submodule runs its own. `git:worktree:setup` runs
   `worktree_install` for each member.
 
 ### `[members.<name>].folder`
@@ -378,20 +380,20 @@ not correct: a `submodule` that is not in `.gitmodules`, or a `folder` or
 ### `[members.<name>].url`
 
 The URL of the repository of the member. Required for a `sibling` member.
-`code:worktrees` shows it, and the sync names it when the folder of a sibling
+`git:worktree:list` shows it, and the sync names it when the folder of a sibling
 is not there.
 
 ### `[members.<name>].label`
 
 The display name of the member in the headers of `setup`, `setup:configs` and
-`setup:worktree`. The default is `<name>`.
+`git:worktree:setup`. The default is `<name>`.
 
 ### `[members.<name>].worktree_install`
 
 The install command of the member for a new worktree, for example
-`pnpm install`. `setup:worktree` runs it as
-`mise x --cd <folder> -- <command>`. Without the key, `setup:worktree` runs the
-own `setup:worktree` task of the member, if the member has one.
+`pnpm install`. `git:worktree:setup` runs it as
+`mise x --cd <folder> -- <command>`. Without the key, `git:worktree:setup` runs
+the own `git:worktree:setup` task of the member, if the member has one.
 
 ### `[home]`
 
@@ -408,7 +410,7 @@ sync of the member writes it, when `setup:configs` of the home runs it with
 A member with `type = "submodule"` leaves out the tools with
 `root_only = true`. A sibling member is its own root, so it keeps them. A
 repository without `[home].type` uses the git test: a git submodule leaves them
-out. See [repo.md](repo.md#root_only). `code:worktrees` uses `[home].folder`
+out. See [repo.md](repo.md#root_only). `git:worktree:list` uses `[home].folder`
 to find the home of the product.
 
 ### `release_env` and `[deploy.<env>]`
@@ -537,7 +539,9 @@ and the message "run bootstrap init", except `version`, `settings` and each
 `mac` command. A dry run of `init` shows the migration and writes nothing. A
 task of the repository at the place of a test port is an old form too, though
 it is not a value. It stops only `sync`, the sync of `add`, `remove` and
-`replace`, and `check`: see [The own test tasks](#the-own-test-tasks).
+`replace`, and `check`: see [The own test tasks](#the-own-test-tasks). The
+old worktree command is an old form in the same way: see
+[The old worktree command](#the-old-worktree-command).
 
 ### The values file `.config/bootstrap.toml`
 
@@ -650,6 +654,15 @@ file that the manifest does not list, without the bootstrap header.
 `check` reports it in the stage `old-forms`, and `sync` stops on it, both with
 code 2. When the target exists, `init` stops with code 2 and moves nothing.
 See [cli.md](cli.md#init).
+
+### The old worktree command
+
+`mise run setup:worktree` runs the old name of `git:worktree:setup`, and no
+task has that name now. It is an old form in the seed `.config/wt.toml` and in
+a `[members.<name>].worktree_install` of `repo.toml`. `bootstrap init` writes
+`mise run git:worktree:setup` in its place, and the rest of the file or value
+stays. `check` reports it in the stage `old-forms`, and `sync` stops on it,
+both with code 2 and "run bootstrap init". See [cli.md](cli.md#init).
 
 ## The location of the folder
 

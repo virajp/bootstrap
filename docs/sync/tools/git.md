@@ -1,8 +1,9 @@
 # The `git` tool
 
 The shared `.gitignore` and `.gitattributes`, the commit convention, the
-git-config check, the merge tasks and worktrunk. The `base` pack adds it with
-`required = true`, so `bootstrap remove tool <tool…>` refuses it.
+git-config check, the merge tasks, the worktree tasks and worktrunk. The `base`
+pack adds it with `required = true`, so `bootstrap remove tool <tool…>` refuses
+it.
 
 | Property     | Value             |
 | ------------ | ----------------- |
@@ -19,17 +20,19 @@ A `[tools.git]` table gives values.
 
 ## What the tool ships
 
-| Path in the repository                  | Kind      | Use                                                                                                            |
-| --------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------- |
-| `.gitignore`                            | Shared    | The shared ignore lines. See below.                                                                            |
-| `.gitattributes`                        | Synced    | LF line endings, the generated lockfiles, and the binary files of each stack.                                  |
-| `.config/git-conventional-commits.yaml` | Template  | The commit types, and the scopes from `[commits].scopes`, else the names of the `[members.*]` tables.          |
-| `.config/wt.toml`                       | Seed      | The worktrunk config: the `pre-start` steps and the commit convention (see "worktrunk").                       |
-| `.config/mise/tasks/_scripts/merge`     | Library   | `merge_to_destination_branch`, which the merge tasks use.                                                      |
-| `.config/mise/tasks/code/git-config`    | Synced    | The task `code:git-config`.                                                                                    |
-| `.config/mise/tasks/code/merge/develop` | Synced    | The task `code:merge:develop`. Only with `when = "git.branch_pair"`: `core_branches` has `main` and `develop`. |
-| `.config/mise/tasks/code/merge/main`    | Synced    | The task `code:merge:main`. Only with `when = "git.branch_pair"`.                                              |
-| `.config/mise/conf.d/git/mise.dev.toml` | Generated | The mise config of this tool.                                                                                  |
+| Path in the repository                   | Kind      | Use                                                                                                   |
+| ---------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------- |
+| `.gitignore`                             | Shared    | The shared ignore lines. See below.                                                                   |
+| `.gitattributes`                         | Synced    | LF line endings, the generated lockfiles, and the binary files of each stack.                         |
+| `.config/git-conventional-commits.yaml`  | Template  | The commit types, and the scopes from `[commits].scopes`, else the names of the `[members.*]` tables. |
+| `.config/wt.toml`                        | Seed      | The worktrunk config: the `pre-start` steps and the commit convention (see "worktrunk").              |
+| `.config/mise/tasks/_scripts/merge`      | Library   | `merge_to_destination_branch`, which the merge tasks use.                                             |
+| `.config/mise/tasks/code/git-config`     | Synced    | The task `code:git-config`.                                                                           |
+| `.config/mise/tasks/git/merge/develop`   | Synced    | The task `git:merge:develop`. Only with `when = "git.has_develop"`: `core_branches` has `develop`.    |
+| `.config/mise/tasks/git/merge/main`      | Synced    | The task `git:merge:main`. Only with `when = "git.has_main"`: `core_branches` has `main`.             |
+| `.config/mise/tasks/git/worktree/create` | Synced    | The task `git:worktree:create`.                                                                       |
+| `.config/mise/tasks/git/worktree/delete` | Synced    | The task `git:worktree:delete`.                                                                       |
+| `.config/mise/conf.d/git/mise.dev.toml`  | Generated | The mise config of this tool.                                                                         |
 
 `.gitignore` is a shared file. The spec `files/gitignore.merge.toml` merges
 into it line by line: the sync adds each missing line of `bootstrap` at the
@@ -55,7 +58,12 @@ of `wt switch --create` runs its `pre-start` steps in sequence:
 2. `wt step copy-ignored --require-include`. It copies the gitignored files
    of the main worktree that `.worktreeinclude` lists, for example build
    caches. Without `.worktreeinclude`, it copies nothing.
-3. `mise run setup:worktree`.
+3. `mise run git:worktree:setup`.
+
+A `.config/wt.toml` from before bootstrap 4.0.0 runs `mise run setup:worktree`,
+and no task has that name now. The sync does not write a seed again, so
+`bootstrap init` renames that command to `mise run git:worktree:setup`, and
+the rest of the file stays. Until then, `sync` and `check` stop with code 2.
 
 Its `template-append` tells the LLM commit messages of `wt` to use the
 commit types of `.config/git-conventional-commits.yaml`. wt asks the user to
@@ -78,16 +86,19 @@ environment, so a CI job still gets the merge tasks and the hooks.
 
 ## Tasks
 
-| Task                          | Use                                                                |
-| ----------------------------- | ------------------------------------------------------------------ |
-| `code:git-config`             | Find forbidden keys in the local git config. `--fix` removes them. |
-| `code:merge:develop <branch>` | Land a branch on `develop`, with `main` and `develop`.             |
-| `code:merge:main`             | Land `develop` on `main`, with `main` and `develop`.               |
+| Task                                                        | Use                                                                                                                                        |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `code:git-config`                                           | Find forbidden keys in the local git config. `--fix` removes them.                                                                         |
+| `git:merge:develop [<branch>]`                              | Land a branch on `develop`. The default is the current branch. Only when `core_branches` has `develop`.                                    |
+| `git:merge:main [<branch>]`                                 | Land a branch on `main`. The default is `develop` when it is a core branch, else the current branch. Only when `core_branches` has `main`. |
+| `git:worktree:create <branch> [--from <base>] [--no-setup]` | Add a worktree for the branch, then run `mise trust` and `git:worktree:setup` in it. See below.                                            |
+| `git:worktree:delete <branch>`                              | Remove the worktree of the branch, and the branch when a core branch has each of its commits. See below.                                   |
 
-The `mise` tool ships `code:merge <branch>` for a repository with one of
-`main` and `develop`. The derive script gives `branch_pair`, and the `when`
-of each merge task selects the tasks of the branch model. The sync removes
-the merge tasks of the other model.
+The name of a merge task is its destination. The derive script gives
+`has_main` and `has_develop`, and the `when` of each merge task selects the
+task of each core branch. The sync removes the merge task of a branch that is
+not a core branch. The `mise` tool ships `git:worktree:setup` and
+`git:worktree:list`.
 
 The merge tasks read `[branches.<destination>]` of the
 `.config/bootstrap/repo.toml` of the repository, with `bootstrap config get`.
@@ -110,14 +121,32 @@ task of the root repository and runs it in the root folder. Without the stop,
 that task lands a branch of the root. Run `mise run setup:configs` in the
 submodule to get its own merge tasks.
 
+`git:worktree:create` adds the worktree in `.worktrees/<branch>` of the main
+checkout, or in `worktrees/<branch>` when only `worktrees/` exists. It checks
+out a local branch. A branch only on `origin` becomes a local branch that
+tracks it: the task first prints a warning, because it trusts and runs the mise
+config of that branch as is. Any other branch is new, from `--from`, else from
+the current branch. `--no-setup` skips `git:worktree:setup`; `mise trust`
+always runs. The task stops with code 2 for a core branch, and for `--from`
+with a branch that exists. It stops with code 1 when the path exists or git
+refuses the add. When the trust or the setup fails, the worktree stays, and
+the task prints the commands that set it up again or delete it.
+
+`git:worktree:delete` finds the worktree of the branch at any path, and runs
+`git worktree remove`: git refuses a worktree with changes. It deletes the
+branch with `git branch -D` only when a core branch, local or on `origin`, has
+each of its commits. Else the branch stays, and the task prints the `-D`
+command and exits 1. It stops with code 2 for a core branch and inside the
+worktree that it removes, and with code 1 when no worktree has the branch.
+
 ## Scripts
 
 The sync runs these scripts from the clone, and never copies them.
 
-| Script           | Kind   | Use                                                                                                                                                                                                                                                                          |
-| ---------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripts/derive` | derive | It gives `branch_pair` (`core_branches` has `main` and `develop`) and `protected_branches` (each core branch whose `landing` is not `direct-commit`). It reads them with `bootstrap config get`.                                                                             |
-| `scripts/check`  | check  | A branch of `core_branches` that does not exist, locally or on `origin`, and is not the unborn branch that HEAD names, stops the sync with code 2. So does an engine that cannot answer `bootstrap config get`. The schema of the values examines the `[branches.*]` tables. |
+| Script           | Kind   | Use                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/derive` | derive | It gives `branch_pair` (`core_branches` has `main` and `develop`), `has_main` and `has_develop` (`core_branches` has `main`, or `develop`) and `protected_branches` (each core branch whose `landing` is not `direct-commit`). It reads them with `bootstrap config get`. An engine before 4.0.0, with the old values file, gets them from the branches that exist, locally or on `origin`. |
+| `scripts/check`  | check  | A branch of `core_branches` that does not exist, locally or on `origin`, and is not the unborn branch that HEAD names, stops the sync with code 2. So does an engine that cannot answer `bootstrap config get`. The schema of the values examines the `[branches.*]` tables.                                                                                                                |
 
 The `no-commit-to-branch` hook gets one `--branch` pair for each branch of
 `protected_branches`. Without a protected branch, the sync removes the hook.

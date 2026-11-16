@@ -41,8 +41,8 @@ the forge.
 
 ## Tasks
 
-None. The `code:merge` tasks of the `git` tool use `gh` under the `pr` merge
-model.
+None. The `git:merge:<branch>` tasks of the `git` tool use `gh` under the `pr`
+landing.
 
 ## Scripts
 

@@ -319,6 +319,7 @@ repository: keep it.
 | The files of the old `repo-sync` tool: `.config/mise/tasks/_scripts/repo-sync`, `.config/mise/tasks/code/lint/60-repo-sync` and `.config/mise/conf.d/repo-sync/`     | Delete them (M34).                    |
 | `.config/mise/tasks/code/format/20-gofmt`                                                                                                                            | Delete it (M39).                      |
 | `.config/bootstrap.toml`, `.config/bootstrap.overrides.toml` and `.config/repo-generated.tsv`                                                                        | `bootstrap init` moves them (M41).    |
+| `.config/mise/tasks/code/merge/_default`, `code/merge/develop`, `code/merge/main`, `code/worktrees` and `setup/worktree`                                             | The sync removes them (M43).          |
 
 The sync removes these old paths itself, so they need no step:
 
@@ -407,10 +408,13 @@ or `glab`.
 The merge tasks follow the branches `main` and `develop`. A branch counts if it
 exists locally or on `origin`.
 
-| Branches             | Merge tasks                             | Rule                                                                      |
-| -------------------- | --------------------------------------- | ------------------------------------------------------------------------- |
-| `main` and `develop` | `code:merge:develop`, `code:merge:main` | Feature branches merge into `develop`. Only `develop` merges into `main`. |
-| only one of them     | `code:merge`                            | Any feature branch merges into that branch.                               |
+| Branches             | Merge tasks                           | Rule                                                                      |
+| -------------------- | ------------------------------------- | ------------------------------------------------------------------------- |
+| `main` and `develop` | `git:merge:develop`, `git:merge:main` | Feature branches merge into `develop`. Only `develop` merges into `main`. |
+| only one of them     | `git:merge:<that branch>`             | Any feature branch merges into that branch.                               |
+
+The name of a merge task is its destination: the sync writes
+`git:merge:<branch>` for each core branch.
 
 The branches are `core_branches` of `.config/bootstrap/repo.toml`. A new
 `repo.toml` gets the `main` and `develop` that exist, in that order. With
@@ -419,9 +423,8 @@ of any name, and it stops with code 2 only when HEAD is not on a branch. A
 migration of older copies stops with code 2 when it finds neither. The check
 script of the `git` tool stops the sync with code 2 when a core branch does
 not exist locally or on `origin`, and is not the unborn branch that HEAD names.
-In a repository whose only core branch is neither `main` nor `develop`,
-`code:merge` refuses to merge until `main` or `develop` exists. The `git:*`
-tasks of a later plan (R2) will port this rule.
+In a repository whose only core branch is neither `main` nor `develop`, the
+sync writes no merge task until `main` or `develop` is a core branch.
 
 1. Find the branches:
 
@@ -442,9 +445,9 @@ tasks of a later plan (R2) will port this rule.
    branches, `main` can be `direct-commit` only when `develop` is too. Without
    a sign, do not write the key.
 
-`bootstrap sync` does not ask. It writes the merge tasks of the model that it
-finds, and removes the merge tasks of the other model. If the branches change
-later, run `setup:configs` again.
+`bootstrap sync` does not ask. It writes the merge task of each core branch,
+and removes the merge task of a branch that is not a core branch. If
+`core_branches` changes later, run `setup:configs` again.
 
 The `no-commit-to-branch` hook of the `git` tool protects only the core
 branches that are not `direct-commit`. The rules of `landing` and of the

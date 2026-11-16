@@ -162,11 +162,11 @@
         "U7"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-16T12:34:40.046Z",
+      "ended": "2026-11-16T12:39:53.662Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -226,8 +226,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-16T12:34:40.009Z",
       "ended": ""
     },
     {
@@ -583,32 +583,41 @@
       "units": [
         "U3"
       ]
+    },
+    {
+      "id": "D38",
+      "decision": "Q4: Keep the old-forms section 'The old worktree command' in docs/design/bootstrap-config.md (it names mise run setup:worktree, outside D30's allow-list) and widen D30, or cut the literal name?",
+      "ruling": "Widen D30 to also allow the old-forms section of docs/design/bootstrap-config.md (Recommended) — the old-forms list stays complete, following the 'The own test tasks' precedent; the Verification grep names one more file",
+      "rejected": "Cut the section down to a link to cli.md#init with no literal old name — the grep passes as written, but the old-forms section no longer says what the old form is",
+      "units": [
+        "U5"
+      ]
     }
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-16T12:34:39.652Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-16T12:34:39.363Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: change plan with no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-16T12:34:39.510Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers and no code unit: nothing to stamp or persist; no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-16T12:34:39.795Z"
     }
   },
   "gaps": [

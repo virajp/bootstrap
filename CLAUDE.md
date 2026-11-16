@@ -155,8 +155,8 @@ source file").
 
 Task scripts are in `repo/tools/<tool>/tasks/`, each with a `[tasks."<path>"]`
 entry in its `tools.toml`. The key is the path below `.config/mise/tasks/` in a
-consumer. mise uses that path as the task name, for example `code/merge/develop`
-is `code:merge:develop`. A `_default` file is the task for the directory name.
+consumer. mise uses that path as the task name, for example `git/merge/develop`
+is `git:merge:develop`. A `_default` file is the task for the directory name.
 The `mise` tool ships each `_default`. A leaf task of a group that an
 orchestrator runs with `own_tasks` (`code:format`, `code:lint`, `code:sec`,
 `setup:deps`, `setup:secrets`, `test`, `test:e2e`, `test:golden`) has a
@@ -181,8 +181,8 @@ part, and with no part it prints one line and exits 0. See
   - `checks`: git predicates. They return an exit status only and print
     nothing. The one exception is `get_main_worktree_path`, which prints the
     path of the main worktree.
-  - `merge`: `merge_to_destination_branch`, which the `code:merge` tasks
-    use.
+  - `merge`: `merge_to_destination_branch`, which the `git:merge:<branch>`
+    tasks use.
   - `placeholder`: for a task that no stack fills yet. A placeholder task
     contains the `#PLACEHOLDER` marker and always exits 0. A stack overlay
     replaces the file. Do not edit a placeholder in place. No task in
@@ -190,7 +190,7 @@ part, and with no part it prints one line and exits 0. See
   - `xcode`: `require_xcode`, `find_xcodeproj` and the simulator functions for
     the Apple tasks.
   - `worktrees-page`: `write_worktrees_page`, which writes the HTML page of
-    `code:worktrees`. It holds a small font with the glyphs of that task.
+    `git:worktree:list`. It holds a small font with the glyphs of that task.
 
   The `mise` tool ships `helpers`, `checks`, `placeholder` and
   `worktrees-page`, the `git` tool ships `merge`, and the `swift` tool ships
@@ -209,7 +209,8 @@ part, and with no part it prints one line and exits 0. See
   config that names them. The tools are `github:virajp/bootstrap` in
   `setup:configs`, `yq` in `setup:configs` and `setup`, `pre-commit` in
   `setup:precommit` and `code:precommit`, `pre-commit` and `yq` in the
-  `code:merge` tasks, `yq` in `code:worktrees`, and `dprint` in
+  `git:merge:<branch>` tasks, `yq` in `git:worktree:list`,
+  `git:worktree:create` and `git:worktree:delete`, and `dprint` in
   `setup:dprint`. The engine is the exception to this exception: `helpers`
   (`bootstrap_get`) and the scripts of the tools call it as `BOOTSTRAP_BIN`,
   else `mise x -- bootstrap`, and find it with `mise x -- which bootstrap`.
@@ -292,7 +293,7 @@ task that runs only commands.
     runs its `code:sec:<scanner>` tasks. Each scanner task prints only a
     `print_subheader` under that header. With `--staged`, a scanner task
     without a staged mode prints nothing.
-11. Exception to rule 2: when its output is not a terminal, `code:worktrees`
+11. Exception to rule 2: when its output is not a terminal, `git:worktree:list`
     prints only JSON Lines, because an agent reads each line.
 
 ## Tests
@@ -315,7 +316,11 @@ changes a case. See `docs/design/cli.md` ("The config file").
   `bootstrap replace tool <old> <new>` and `bootstrap detect --add`, and the
   clone cases run the binary against a local origin. The entry cases run the
   rendered task `setup:configs` with a fake engine and with the real engine,
-  and the rendered `code:merge` task. The test-port cases run
+  and the rendered `git:merge:<branch>` tasks: the landing cases run
+  `git:merge:main` with the real merge library, and the other cases run
+  `git:merge:main` and `git:merge:develop` with a stub library that prints
+  its arguments. The worktree cases run `git:worktree:create` with
+  `--no-setup` and `git:worktree:delete`. The test-port cases run
   `bootstrap init` with the repo's own test tasks, and `mise run test`,
   `test:e2e` and `test:golden` in a scratch consumer. The config verb cases run
   `bootstrap config get|set|unset|show`. The JSON cases run `--json` on
@@ -370,9 +375,9 @@ changes a case. See `docs/design/cli.md` ("The config file").
   `go` tool, which this repository selects.
 - `test` runs the four test tasks in parallel: the runner of this repository,
   `test/_default`, which `bootstrap init` moves to the part `test/50-local`,
-  depends on them. No hook and no
-  `code:merge` task runs a test, because the tests are slow and a consumer does
-  not have them. Run the tests by hand before you commit:
+  depends on them. No hook and no `git:merge:<branch>` task runs a test,
+  because the tests are slow and a consumer does not have them. Run the tests
+  by hand before you commit:
   - A change to `cli/`: `mise run test`.
   - A change to the Go code only: `mise run test:go`.
   - A change to `repo/`: `mise run test:repo`.
@@ -393,7 +398,7 @@ changes a case. See `docs/design/cli.md` ("The config file").
    change to a tool in `macos/tools/` changes its section in
    `docs/setup/tools.md` too.
 3. Commit on a local work branch. Land it on `main` with
-   `mise run code:merge <branch>`, which merges and pushes.
+   `mise run git:merge:main <branch>`, which merges and pushes.
 4. In this repository and in each consumer repository, run
    `mise run setup:configs`, then commit the result. This repository allows no
    direct commit on `main` (no `direct_commit`, which `bootstrap init` makes
@@ -401,5 +406,5 @@ changes a case. See `docs/design/cli.md` ("The config file").
    commit on `main`. Thus in this
    repository, sync on a local `sync-<name>` branch, commit
    `ops: sync bootstrap with <change>`, and land it with
-   `mise run code:merge sync-<name>`. The sync also updates
+   `mise run git:merge:main sync-<name>`. The sync also updates
    `bootstrap_commit`, which stays one merge behind `main`.

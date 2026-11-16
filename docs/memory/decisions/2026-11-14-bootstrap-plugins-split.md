@@ -197,3 +197,32 @@ these points. They win over the text above.
   id exists, which `describe` reports. The rule "every port exists in every
   shaped repo" holds for the plain ports only. Per-project ids in bootstrap go
   with R5.
+
+## Amendments 2026-11-14 (R2 planning)
+
+The planning of R2a (`docs/plans/2026-11-14-git-tasks` of bootstrap) changed
+these points. They win over the text above.
+
+- **R2 is three plans (D9).** R2a: the `git:*` tasks. R2b: the LSP blocks,
+  `bootstrap lsp` and `code:lsp:check`. R2c: the `virajp-plugins` tool and a
+  declarative `setup:ai`. Each requires the one before it. Backlog item B28 is
+  a piece of R2b, and R2c finishes it.
+- **No aliases (D1).** R2a renames `code:merge`, `code:merge:<b>`,
+  `setup:worktree` and `code:worktrees` outright. The sync removes the old task
+  files through the manifest. One `bootstrap@4.0.0` tag covers R1a to R2, so no
+  release ships between. This reverses the text that kept the old names as
+  aliases for one release.
+- **One merge task per core branch (D2).** The `git` tool ships
+  `git:merge:main` and `git:merge:develop`, each only when its branch is in
+  `repo.core_branches`. `<branch>` is always the destination. The source is
+  optional: for `main`, `develop` when it is a core branch, else the current
+  branch; for `develop`, the current branch. The merge library and its landing
+  do not change, and mise's `code:merge` goes away.
+- **Raw git for the worktrees (D3).** `git:worktree:create <branch>
+  [--from <base>]` runs `git worktree add` in `.worktrees/<branch>` of the main
+  checkout, then `mise trust` and `git:worktree:setup` there.
+  `git:worktree:delete <branch>` runs `git worktree remove`, and deletes the
+  branch only after it proves that a core branch has it. Not through
+  worktrunk.
+- **The lister (D4).** `code:worktrees` becomes `git:worktree:list`, and the
+  shell alias `worktrees` runs it. Its content does not change.

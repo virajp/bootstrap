@@ -44,6 +44,7 @@ into `.config/bootstrap/`.
 | An `exec` block in `dprint.jsonc`, for example from `[tools.rust]` or `[tools.go]`                    | M40, after the sync.                                                                                                                                    |
 | `.config/bootstrap.toml`, `.config/bootstrap.overrides.toml` or `.config/repo-generated.tsv`          | M41, after the release `bootstrap@4.0.0`, and after each other item.                                                                                    |
 | A task `test`, `test:e2e` or `test:golden` of the repository, or a task without `NN-` in a task group | M42, with M41.                                                                                                                                          |
+| `code:merge`, `setup:worktree` or `code:worktrees` in a file, a script or a hook of the repository    | M43, with M41.                                                                                                                                          |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -1069,7 +1070,7 @@ the tool scripts of `bootstrap` stop with code 2 on an older engine.
   (for example `../acme-api`) and `url`. Each submodule and sibling member gets
   `[home]` in its own `repo.toml`, the back-link that the sync of the member
   writes. No bootstrap task reads `.config/vwf.yaml` or
-  `.config/vwf-membership.yaml` any more: `code:worktrees` and the member
+  `.config/vwf-membership.yaml` any more: `git:worktree:list` and the member
   flags read `[members.*]` and `[home]`.
 - `code:format` and `code:lint` have no member flags (`--all`, `--<member>`)
   any more: each repository and each submodule runs its own.
@@ -1150,3 +1151,50 @@ Do these steps in each repository:
 4. Run `bootstrap check`. For each warning `has no NN- name`, rename the file
    to `NN-<name>`, for example `code/lint/mylint` to `code/lint/50-mylint`.
 5. Commit the moved and renamed files.
+
+## M43: The git tasks have `git:*` names
+
+`bootstrap@4.0.0` renames the git tasks, with no alias for an old name:
+
+| Old task                      | New task                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------- |
+| `code:merge:develop <branch>` | `git:merge:develop [<branch>]`                                            |
+| `code:merge:main`             | `git:merge:main [<branch>]`                                               |
+| `code:merge <branch>`         | `git:merge:<core branch> <branch>`, for example `git:merge:main <branch>` |
+| `setup:worktree`              | `git:worktree:setup`                                                      |
+| `code:worktrees`              | `git:worktree:list`                                                       |
+
+- The name of a merge task is its destination. The sync writes
+  `git:merge:<branch>` for each branch of `core_branches`. The source is
+  optional: `git:merge:main` takes `develop` when it is a core branch, else
+  the current branch, and `git:merge:develop` takes the current branch.
+  `git:merge:main` no longer needs `develop` as the current branch:
+  `merge_from` of `[branches.main]` decides the source.
+- The new tasks `git:worktree:create <branch> [--from <base>] [--no-setup]`
+  and `git:worktree:delete <branch>` add and remove a worktree. See
+  [`tools/git.md`](tools/git.md).
+- The sync removes the old task files itself, through the manifest. The alias
+  `worktrees` now runs `mise run git:worktree:list`.
+- `.config/wt.toml` is a seed, so the sync does not write it again. Its
+  `pre-start` step, and a `[members.<name>].worktree_install` of `repo.toml`,
+  can run `mise run setup:worktree`. That stops `bootstrap sync` and
+  `bootstrap check` with code 2 and the fix `run bootstrap init`.
+  `bootstrap init` renames the command to `mise run git:worktree:setup`, and
+  the rest of the file or value stays.
+
+Do these steps in each repository:
+
+1. Run `bootstrap init --dry-run`. The change list shows the change
+   `rename setup:worktree` when `.config/wt.toml` or a member runs the old
+   command, with each file and key.
+2. Run `bootstrap init --yes`, the same run as M41.
+3. Find each other use of an old name, in the scripts, the hooks, the CI
+   files, the docs, `CLAUDE.md` and the shell aliases of the repository:
+
+   ```bash
+   git grep -n -e 'code:merge' -e 'setup:worktree' -e 'code:worktrees'
+   ```
+
+   Change each one to its new name by hand. A file with the bootstrap header
+   is not one: the sync writes it.
+4. Commit the changed files.

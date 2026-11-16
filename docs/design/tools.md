@@ -30,9 +30,9 @@ repo/tools/<tool>/
 ```
 
 Each file below `files/` and `tasks/` has an entry. The entry gives its target.
-For example, the entry `[tasks."code/merge/develop"]` with
-`source = "code-merge-develop"` copies `repo/tools/git/tasks/code-merge-develop`
-to `.config/mise/tasks/code/merge/develop` in a consumer. A script is not
+For example, the entry `[tasks."git/merge/develop"]` with
+`source = "git-merge-develop"` copies `repo/tools/git/tasks/git-merge-develop`
+to `.config/mise/tasks/git/merge/develop` in a consumer. A script is not
 copied: the engine runs it from the clone. See
 [cli.md](cli.md#the-scripts-of-a-tool).
 
@@ -220,8 +220,8 @@ key, not the suffix, makes a file a template. A `copy` or `template` file is an
 owned file: the sync writes it on each run, and it gets a row in the manifest.
 
 An entry whose `when` value is not `true` is not shipped, and the stale rule
-removes a synced copy. For example, the merge tasks of `git` have
-`when = "git.branch_pair"`, a value of the derive script of `git`. See
+removes a synced copy. For example, the task `git:merge:develop` of `git` has
+`when = "git.has_develop"`, a value of the derive script of `git`. See
 [repo.md](repo.md#the-branch-model-and-the-merge-tasks).
 
 Any other key stops the sync. `requires` and `requires_found` must
@@ -278,7 +278,7 @@ The rules of the task files:
   on, for example `code/lint/70-ruff`. `own_tasks` skips a task of the
   repository without a prefix, and `bootstrap check` warns about it.
 - A task that a user or another task calls by its name has no prefix, for
-  example `code:merge:develop` and `setup:dprint`.
+  example `git:merge:develop` and `setup:dprint`.
 
 ## The `[formatter]` table
 
