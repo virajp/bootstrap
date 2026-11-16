@@ -49,10 +49,13 @@
       "title": "R2a — the git:* tasks",
       "target_repo": null,
       "priority": 80,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-16T10:20:19.453Z",
-      "ended": "",
-      "gaps": null,
+      "ended": "2026-11-16T13:10:53.532Z",
+      "gaps": {
+        "open": 1,
+        "moved_to": []
+      },
       "requires": [
         "2026-11-14-task-ports"
       ],
