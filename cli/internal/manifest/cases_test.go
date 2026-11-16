@@ -171,7 +171,7 @@ func cases() []pcase {
 	// The read of a manifest.
 	const mf = ".config/bootstrap/repo-generated.tsv"
 	rowsFile := FirstLine + "\n" +
-		"git\t.config/mise/tasks/code/merge\n" +
+		"git\t.config/mise/tasks/git/merge/main\n" +
 		"\n" +
 		"# a comment\n" +
 		"no tab here\n" +

@@ -2186,7 +2186,7 @@ check_manifest_written() {
   check_that "the manifest: the rows are sorted" manifest_rows_sorted
   check_that "the manifest: a generated conf.d file" grep -qxF "mise${tab}.config/mise/conf.d/mise/mise.dev.toml" "$file"
   check_that "the manifest: no seed" lacks_in_file '.config/mise/conf.d/zz-repo/' "$file"
-  check_that "the manifest: no removed merge task" lacks_in_file '.config/mise/tasks/code/merge/develop' "$file"
+  check_that "the manifest: no removed merge task" lacks_in_file '.config/mise/tasks/git/merge/develop' "$file"
   case_rerun || got=$?
   check_that "the manifest: a second run exits 0" test "$got" = 0
   check_that "the manifest: a second run does not write it" log_lacks "wrote      $file"
@@ -2242,11 +2242,11 @@ run_case "the stale rule, a listed seed" 0 "$no_tool_values" stale_seed '' check
 # A merge task of the other branch model: the engine removes it, the stale rule
 # does not log it again.
 stale_merge_task() {
-  header_file .config/mise/tasks/code/merge/develop
-  manifest_file "git${tab}.config/mise/tasks/code/merge/develop"
+  header_file .config/mise/tasks/git/merge/develop
+  manifest_file "git${tab}.config/mise/tasks/git/merge/develop"
 }
 check_stale_merge_task() {
-  check_that "a listed merge task: one would remove" log_count "would remove $consumer/.config/mise/tasks/code/merge/develop" 1
+  check_that "a listed merge task: one would remove" log_count "would remove $consumer/.config/mise/tasks/git/merge/develop" 1
 }
 run_case "the stale rule, a listed merge task of the other model" 0 "$no_tool_values" stale_merge_task '' \
   check_stale_merge_task
@@ -2954,20 +2954,18 @@ run_case "[commits] style, not one of its values" 2 'environments = [ "dev" ]
 [commits]
 style = "free"' '' 'commits.style = "free" in '
 
-# when: the derive script of git gives branch_pair, and the merge tasks
-# follow it.
+# when: the derive script of git gives has_main and has_develop, and the
+# merge task of each core branch follows its flag.
 check_merge_single() {
-  check_that "when, main only: code:merge" log_has "/.config/mise/tasks/code/merge/_default"
-  check_that "when, main only: no code:merge:main" log_lacks "/.config/mise/tasks/code/merge/main"
-  check_that "when, main only: no code:merge:develop" log_lacks "/.config/mise/tasks/code/merge/develop"
+  check_that "when, main only: git:merge:main" log_has "/.config/mise/tasks/git/merge/main"
+  check_that "when, main only: no git:merge:develop" log_lacks "/.config/mise/tasks/git/merge/develop"
 }
 check_merge_pair() {
-  check_that "when, both branches: no code:merge" log_lacks "/.config/mise/tasks/code/merge/_default"
-  check_that "when, both branches: code:merge:main" log_has "/.config/mise/tasks/code/merge/main"
-  check_that "when, both branches: code:merge:develop" log_has "/.config/mise/tasks/code/merge/develop"
+  check_that "when, both branches: git:merge:main" log_has "/.config/mise/tasks/git/merge/main"
+  check_that "when, both branches: git:merge:develop" log_has "/.config/mise/tasks/git/merge/develop"
 }
-run_case "when: main only gives code:merge" 0 'environments = [ "dev" ]' '' '' check_merge_single
-run_case "when: main and develop give code:merge:main and develop" 0 "$both_core" \
+run_case "when: main only gives git:merge:main" 0 'environments = [ "dev" ]' '' '' check_merge_single
+run_case "when: main and develop give git:merge:main and develop" 0 "$both_core" \
   precommit_both_branches '' check_merge_pair
 run_case "the git check: a core branch that does not exist" 2 'environments = [ "dev" ]' consumer_no_core_branch \
   "core_branches in "
@@ -4567,7 +4565,7 @@ check_sibling_old_form() {
 CASE_CALL=configs_all run_case "setup:configs --all skips a sibling of the old form" 0 "$sibling_values" \
   sibling_old_form 'member api: run bootstrap init there' check_sibling_old_form
 
-# The merge task code:merge honours the landing of [branches.main]: pr opens
+# The merge task git:merge:main honours the landing of [branches.main]: pr opens
 # no direct merge (with no origin, it stops before it touches a branch), and
 # direct-merge merges feature into main locally. The case removes the hook
 # config, so the hook safety net does not run.
@@ -4582,7 +4580,7 @@ merge_feature() {
   (
     unset MISE_ORIGINAL_CWD MISE_TASK_NAME
     cd -- "$consumer"
-    BOOTSTRAP_BIN=$bin PATH="$yq_dir:$PATH" usage_branch=feature bash "$consumer/.config/mise/tasks/code/merge/_default"
+    BOOTSTRAP_BIN=$bin PATH="$yq_dir:$PATH" usage_source=feature bash "$consumer/.config/mise/tasks/git/merge/main"
   )
 }
 merges_on_main() { git -C "$consumer" rev-list --merges --count main; }
@@ -4594,12 +4592,171 @@ check_merge_direct() {
   check_that "landing direct-merge: one merge on main" test "$(merges_on_main)" = 1
   check_that "landing direct-merge: no push without origin" log_has 'No origin remote'
 }
-CASE_CALL=merge_feature run_case "code:merge, landing pr opens no direct merge" 1 'environments = [ "dev" ]
+CASE_CALL=merge_feature run_case "git:merge:main, landing pr opens no direct merge" 1 'environments = [ "dev" ]
 [branches.main]
 landing = "pr"' '' 'landing "pr" of [branches.main] needs an origin remote' check_merge_pr
-CASE_CALL=merge_feature run_case "code:merge, landing direct-merge merges" 0 'environments = [ "dev" ]
+CASE_CALL=merge_feature run_case "git:merge:main, landing direct-merge merges" 0 'environments = [ "dev" ]
 [branches.main]
 landing = "direct-merge"' '' 'Landing feature on main (direct-merge) ...' check_merge_direct
+
+# The git:* tasks (D1, D2, D3). A real run of a repo with main and develop
+# writes git:merge:<branch> for each core branch and the four
+# git:worktree:* tasks. The old names of a run before are rows of its manifest,
+# and the run removes them (D1).
+tasks_path=.config/mise/tasks
+old_git_tasks="code/merge/_default code/merge/main code/merge/develop setup/worktree code/worktrees"
+new_git_tasks="git/merge/main git/merge/develop git/worktree/create git/worktree/setup git/worktree/delete git/worktree/list"
+old_git_task_files() {
+  local path rows=()
+  precommit_both_branches
+  for path in $old_git_tasks; do
+    header_file "$tasks_path/$path"
+    rows+=("git${tab}$tasks_path/$path")
+  done
+  manifest_file "${rows[@]}"
+}
+check_git_tasks_synced() {
+  local path file="$consumer/.config/bootstrap/repo-generated.tsv"
+  for path in $new_git_tasks; do
+    check_that "the git tasks: $path is written" test -f "$consumer/$tasks_path/$path"
+  done
+  for path in $old_git_tasks; do
+    check_that "the git tasks: the old $path is removed" log_has "removed    $consumer/$tasks_path/$path"
+    check_that "the git tasks: no $path stays" no_file "$consumer/$tasks_path/$path"
+    check_that "the git tasks: the manifest has no $path" lacks_in_file "$tasks_path/$path" "$file"
+  done
+  check_that "the git tasks: the folder code/merge is gone" no_file "$consumer/$tasks_path/code/merge"
+}
+case_args=' ' run_case "the git tasks: a real run writes the new names and removes the old" 0 "$both_core" \
+  old_git_task_files '' check_git_tasks_synced
+
+# git_task <task> [<arg>...]: mise run of a git:* task in the consumer of the
+# case, with the engine of this test (D33). The log gets its output.
+git_task() { BOOTSTRAP_BIN=$bin consumer_mise "$@"; }
+git_got=0
+git_task_code() {
+  git_got=0
+  git_task "$@" || git_got=$?
+}
+# The merge entry tasks with a stub library (D23): the stub prints the
+# destination and the source that the task gives it, so no case runs the real
+# merge.
+merge_stubbed() {
+  synced
+  cat > "$consumer/$tasks_path/_scripts/merge" << 'EOF'
+# shellcheck source=/dev/null
+source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
+merge_to_destination_branch() { printf 'stub-merge: [%s] [%s]\n' "$1" "${2-}"; }
+EOF
+  commit_consumer
+}
+check_merge_main_only() {
+  check_that "git:merge, main only: no git:merge:develop" no_file "$consumer/$tasks_path/git/merge/develop"
+  git_task_code git:merge:main feat
+  check_that "git:merge, main only: git:merge:main feat exits 0" test "$git_got" = 0
+  check_that "git:merge, main only: git:merge:main feat gives main feat" log_has 'stub-merge: [main] [feat]'
+}
+CASE_CALL=merge_stubbed run_case "git:merge, main only: the source it names" 0 "$dev_values" '' '' \
+  check_merge_main_only
+# git:merge:develop gives an empty source, which the library reads as the
+# current branch.
+check_merge_both() {
+  git_task_code git:merge:main
+  check_that "git:merge, both branches: git:merge:main exits 0" test "$git_got" = 0
+  check_that "git:merge, both branches: git:merge:main gives main develop" log_has 'stub-merge: [main] [develop]'
+  _git -C "$consumer" checkout --quiet -b feature
+  git_task_code git:merge:develop
+  check_that "git:merge, both branches: git:merge:develop exits 0" test "$git_got" = 0
+  check_that "git:merge, both branches: git:merge:develop gives develop and the current branch" \
+    log_has 'stub-merge: [develop] []'
+}
+CASE_CALL=merge_stubbed run_case "git:merge, main and develop: the default sources" 0 "$both_core" \
+  precommit_both_branches '' check_merge_both
+
+# git:worktree:create and git:worktree:delete in a repo with main and develop
+# (D3, D13, D15, D16, D22, D25, D28). Each create passes --no-setup.
+worktree_of() { git -C "$1" rev-parse --abbrev-ref HEAD; }
+has_branch() { git -C "$consumer" show-ref --verify --quiet "refs/heads/$1"; }
+no_branch() { ! has_branch "$1"; }
+check_worktree_merged() {
+  local wt=$consumer/.worktrees/x
+  git_task_code git:worktree:create x --no-setup
+  check_that "worktree, merged: create exits 0" test "$git_got" = 0
+  check_that "worktree, merged: create makes .worktrees/x" test -d "$wt"
+  check_that "worktree, merged: .worktrees/x is on the new branch x" test "$(worktree_of "$wt")" = x
+  _git -C "$wt" commit --quiet --no-verify --allow-empty -m "x"
+  _git -C "$consumer" checkout --quiet develop
+  _git -C "$consumer" merge --quiet --no-ff --no-verify -m "merge x" x
+  _git -C "$consumer" checkout --quiet main
+  git_task_code git:worktree:delete x
+  check_that "worktree, merged: delete exits 0" test "$git_got" = 0
+  check_that "worktree, merged: delete removes the worktree" no_file "$wt"
+  check_that "worktree, merged: delete removes the branch" no_branch x
+}
+CASE_CALL=synced run_case "git:worktree: create, merge into develop, delete" 0 "$both_core" \
+  precommit_both_branches '' check_worktree_merged
+check_worktree_unmerged() {
+  git_task_code git:worktree:create y --no-setup
+  _git -C "$consumer/.worktrees/y" commit --quiet --no-verify --allow-empty -m "y"
+  git_task_code git:worktree:delete y
+  check_that "worktree, not merged: delete exits 1" test "$git_got" = 1
+  check_that "worktree, not merged: delete prints the -D command" log_has 'git branch -D y'
+  check_that "worktree, not merged: the branch stays" has_branch y
+}
+CASE_CALL=synced run_case "git:worktree: delete of a branch that no core branch has" 0 "$both_core" \
+  precommit_both_branches '' check_worktree_unmerged
+check_worktree_refusals() {
+  _git -C "$consumer" worktree add --quiet -b z "$tmp/elsewhere"
+  git_task_code git:worktree:delete z
+  check_that "worktree, another path: delete exits 0" test "$git_got" = 0
+  check_that "worktree, another path: delete removes it" no_file "$tmp/elsewhere"
+  mkdir -p -- "$consumer/.worktrees/w"
+  git_task_code git:worktree:create w --no-setup
+  check_that "worktree: create onto an existing path exits 1" test "$git_got" = 1
+  git_task_code git:worktree:create develop --no-setup
+  check_that "worktree: create develop exits 2" test "$git_got" = 2
+  git_task_code git:worktree:delete develop
+  check_that "worktree: delete develop exits 2" test "$git_got" = 2
+  _git -C "$consumer" branch nowt
+  git_task_code git:worktree:delete nowt
+  check_that "worktree: delete of a branch with no worktree exits 1" test "$git_got" = 1
+}
+CASE_CALL=synced run_case "git:worktree: another path, and the refusals" 0 "$both_core" \
+  precommit_both_branches '' check_worktree_refusals
+
+# D20: a .config/wt.toml that runs the old setup:worktree stops check with
+# code 2; init renames it to git:worktree:setup.
+wt_old_cmd() {
+  printf '%s\n' '[[pre-start]]' 'setup = "mise run setup:worktree"' > "$consumer/.config/wt.toml"
+}
+run_check "--check, .config/wt.toml runs setup:worktree" 2 "$dev_values" wt_old_cmd \
+  '.config/wt.toml runs mise run setup:worktree, the old name of git:worktree:setup - run bootstrap init'
+check_wt_renamed() {
+  check_that "init: wt.toml runs git:worktree:setup" grep -qF 'setup = "mise run git:worktree:setup"' "$consumer/.config/wt.toml"
+  check_that "init: wt.toml has no setup:worktree" lacks_in_file 'setup:worktree' "$consumer/.config/wt.toml"
+}
+CASE_CALL=init_yes run_case "init renames setup:worktree in .config/wt.toml" 0 "$dev_values" wt_old_cmd \
+  'rename setup:worktree' check_wt_renamed
+# D20: the same for a member's worktree_install in repo.toml.
+member_old_cmd='environments = [ "dev" ]
+[members.web]
+folder = "projects/web"
+type = "folder"
+worktree_install = "mise run setup:worktree"'
+# The message shows the absolute path of repo.toml, so the case names its
+# two ends.
+check_member_old_cmd() {
+  check_that "check: the message names members.web.worktree_install" log_has 'members.web.worktree_install in '
+}
+run_check "--check, a member's worktree_install runs setup:worktree" 2 "$member_old_cmd" member_folder \
+  '/.config/bootstrap/repo.toml runs mise run setup:worktree, the old name of git:worktree:setup - run bootstrap init' \
+  check_member_old_cmd
+check_member_renamed() {
+  check_that "init: worktree_install runs git:worktree:setup" grep -qF 'worktree_install = "mise run git:worktree:setup"' "$repo_values"
+  check_that "init: repo.toml has no setup:worktree" lacks_in_file 'setup:worktree' "$repo_values"
+}
+CASE_CALL=init_yes run_case "init renames setup:worktree in a member's worktree_install" 0 "$member_old_cmd" member_folder \
+  'rename setup:worktree' check_member_renamed
 
 while ((${#case_pids[@]})); do
   collect_case

@@ -109,11 +109,11 @@
         "U7"
       ],
       "waits": "The cases run the tasks of U1 and U2.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-16T11:51:47.003Z",
+      "ended": "2026-11-16T12:07:36.212Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U4",
@@ -214,8 +214,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-16T11:51:46.965Z",
       "ended": ""
     },
     {
@@ -574,6 +574,15 @@
       "ruling": "Leave it as it is. The new check is only in the unreleased 4.0.0 engine; engine 3.3.1 does not have it, so the post-landing sync here with 3.3.1 passes, and the planned bootstrap init here after the 4.0.0 tag also does the wt.toml rename. No bootstrap init in this repo now.",
       "rejected": "Run bootstrap init in this repo first, then setup:configs, in the same sync-<name> branch",
       "units": []
+    },
+    {
+      "id": "D37",
+      "decision": "Q3: D23 says no test:repo case runs the real merge library, but two existing landing cases (pr, direct-merge) run it with no network; keep them or remove them?",
+      "ruling": "Keep them, renamed to git:merge:main (Recommended) — they still test the R1a U4 landing logic with no network; only the new cases use the D23 stub",
+      "rejected": "Remove both cases — matches the letter of D23, but test:repo loses its only landing coverage and K2 alone covers it; Convert them to the stub — they would no longer test landing, so they would only repeat the new stub cases",
+      "units": [
+        "U3"
+      ]
     }
   ],
   "stages": {

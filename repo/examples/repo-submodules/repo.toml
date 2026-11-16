@@ -31,21 +31,21 @@ scopes = [ "backend", "frontend", "iac", "docs" ]
 files = [ ".config/mise.local.toml", "docs/memory/handoff" ]
 
 # The submodule members, each with the url of its repository.
-# setup:worktree runs worktree_install in each submodule.
+# git:worktree:setup runs worktree_install in each submodule.
 [members.backend]
 label = "Backend"
 type = "submodule"
 url = "https://github.com/example/acme-backend"
-worktree_install = "mise run setup:worktree"
+worktree_install = "mise run git:worktree:setup"
 
 [members.frontend]
 label = "Frontend"
 type = "submodule"
 url = "https://github.com/example/acme-frontend"
-worktree_install = "mise run setup:worktree"
+worktree_install = "mise run git:worktree:setup"
 
 [members.iac]
 label = "Infrastructure"
 type = "submodule"
 url = "https://github.com/example/acme-iac"
-worktree_install = "mise run setup:worktree"
+worktree_install = "mise run git:worktree:setup"
