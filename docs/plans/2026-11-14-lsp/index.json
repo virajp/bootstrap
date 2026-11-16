@@ -15,8 +15,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-16T13:14:09Z in .worktrees/lsp"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-16 — 4a76b41 ba195a9 (U1), 5a09057 e192732 (U2), 99a6763 (U3), 0fe7caf (U4), 79243e6 (U6); not archived: docs/plans/archived/ is gitignored (.gitignore:354), so the move would drop the folder from git — the plan-management archive request waits on that"
   },
   "consent": {
     "merge": true,
@@ -643,6 +643,15 @@
       "units": [
         "U1",
         "U2"
+      ]
+    },
+    {
+      "id": "D41",
+      "decision": "Q9: code:lsp:check own mise x calls auto-install missing dev pins under default exec_auto_install, so its first run passes instead of exiting 1 (keep K1). Is that acceptable?",
+      "ruling": "Accept it (recommended) — the check installs whatever is missing and then passes; K1 is recorded as passing under default mise, with the missing path tested under MISE_EXEC_AUTO_INSTALL=false; no code change",
+      "rejected": "Make the check report-only (MISE_EXEC_AUTO_INSTALL=false); Make installing explicit (MISE_ENV=dev mise install first)",
+      "units": [
+        "U3"
       ]
     }
   ],
