@@ -69,10 +69,13 @@
       "title": "R2b — the LSP blocks, bootstrap lsp and code:lsp:check",
       "target_repo": null,
       "priority": 90,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-16T13:12:37.400Z",
-      "ended": "",
-      "gaps": null,
+      "ended": "2026-11-16T18:26:36.889Z",
+      "gaps": {
+        "open": 0,
+        "moved_to": []
+      },
       "requires": [
         "2026-11-14-git-tasks"
       ],
