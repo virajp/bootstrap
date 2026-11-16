@@ -13,7 +13,7 @@
   "execution": "teams",
   "status": {
     "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-16T08:59 in .worktrees/task-ports"
+    "detail": "RUNNING — wave 2 waits on Q4 (W2: scratch-cache commit for D29) in .worktrees/task-ports; U2 fix and U3 green, uncommitted"
   },
   "consent": {
     "merge": true,
@@ -86,9 +86,9 @@
       "waits": "",
       "status": "green",
       "started": "2026-11-15T20:49:13.635Z",
-      "ended": "2026-11-15T20:57:42.134Z",
+      "ended": "2026-11-16T04:37:42.392Z",
       "commit": "8a4532a",
-      "rounds": 1
+      "rounds": 2
     },
     {
       "id": "U3",
@@ -105,11 +105,11 @@
         "U2"
       ],
       "waits": "The bash cases run the dispatchers of U1 and the engine of U2.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-16T03:35:58.038Z",
+      "ended": "2026-11-16T04:37:42.505Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -190,8 +190,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-16T03:35:58.002Z",
       "ended": ""
     },
     {
@@ -467,6 +467,27 @@
       "units": [
         "U1"
       ]
+    },
+    {
+      "id": "D28",
+      "decision": "Q2: code:lint (60-bootstrap) and the Lint commit hook fail because the installed engine 3.3.1 cannot answer bootstrap config get, which main's git derive script calls; how should the run go on?",
+      "ruling": "Build an engine from the worktree's cli/ (go build into the scratchpad) and run each gate line and commit hook with BOOTSTRAP_BIN set to it, the gate lines themselves unchanged.",
+      "rejected": "Stop the run until a 4.0.0-capable engine is installed; mark wave 2 failed and end at the final report",
+      "units": []
+    },
+    {
+      "id": "D29",
+      "decision": "Q3: D28 cannot be applied (the new engine refuses this repo's old-form values); how should the run go on?",
+      "ruling": "Run each gate line and commit hook with BOOTSTRAP_CACHE pointing at a scratch clone of bootstrap checked out at f325deb (main before the contract-commands merge and its derive change), with the installed 3.3.1 engine and the gate lines unchanged. Replaces D28 for how the gates run. Main's broken lint stays a separate fix, recorded as an open gap.",
+      "rejected": "Stop the run until main's lint passes here; mark wave 2 failed",
+      "units": []
+    },
+    {
+      "id": "D30",
+      "decision": "Q4: D29 names f325deb, which already holds the derive change (2f74dfe came with the config-folder merge 37d6f13); which commit should the scratch cache use?",
+      "ruling": "8abecac, main before the config-folder merge and so before the derive change; matches what D29 meant.",
+      "rejected": "f325deb as D29 names it; stop the run here",
+      "units": []
     }
   ],
   "stages": {
@@ -495,7 +516,22 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U3",
+      "stage": "",
+      "text": "U3 Verification (test:repo) hung on the FIFO-manifest case: U2 ListedFile read the manifest before the link/kind refusal; U3 asked who fixes it · settled by the run rule (a red line goes to the unit whose Owns covers the path): looped back to U2, which reads the manifest past the link and kind rule; test:repo passes in full",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "",
+      "stage": "",
+      "text": "Main's code:lint:60-bootstrap and the Lint commit hook fail on engine 3.3.1, in this repo and in consumers: repo/tools/git/scripts/derive (2f74dfe, from the config-folder merge 37d6f13) calls bootstrap config get, which 3.3.1 lacks, and an engine built from main refuses this repo's old-form .config/bootstrap.toml · the run gated with BOOTSTRAP_CACHE on a scratch clone at 8abecac (D29, D30); a separate fix is owed",
+      "state": "open"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".worktrees/task-ports",

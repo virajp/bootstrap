@@ -643,10 +643,11 @@ func (p *PlanResult) moving() map[string]bool {
 // manifestText gives the manifest of the last run of the repo of <sd>: the
 // one of the values folder, else the old one that a migration moves.
 func manifestText(sd Side) []byte {
-	if b, err := os.ReadFile(values.ManifestFile(sd.Values)); err == nil {
+	root := strings.TrimSuffix(sd.Root, "/")
+	if b, ok := oldform.ManifestText(root, values.ManifestFile(sd.Values)); ok {
 		return b
 	}
-	b, _ := os.ReadFile(strings.TrimSuffix(sd.Root, "/") + "/" + oldform.OldManifest)
+	b, _ := oldform.ManifestText(root, root+"/"+oldform.OldManifest)
 	return b
 }
 

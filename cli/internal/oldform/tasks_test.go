@@ -5,7 +5,9 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 )
@@ -114,6 +116,57 @@ func TestTaskProblems(t *testing.T) {
 	defer func() { Migrating = false }()
 	if err := TaskProblems(root, filepath.Join(root, "missing.tsv"), show); err != nil {
 		t.Errorf("while init plans: %v", err)
+	}
+}
+
+func TestManifestTextRefused(t *testing.T) {
+	// A FIFO, a link or a file below a linked folder is not read, so a FIFO
+	// does not block the sync before its manifest refusal; a regular file is
+	// read.
+	root := t.TempDir()
+	dir := filepath.Join(root, ".config", "bootstrap")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	fifo := filepath.Join(dir, "fifo.tsv")
+	if err := syscall.Mkfifo(fifo, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	regular := filepath.Join(dir, "repo-generated.tsv")
+	if err := os.WriteFile(regular, []byte("mise\t"+TasksDir+"/test\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(dir, "link.tsv")
+	if err := os.Symlink(regular, link); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(dir, filepath.Join(root, "linked")); err != nil {
+		t.Fatal(err)
+	}
+	type got struct {
+		text   []byte
+		exists bool
+	}
+	done := make(chan got, 1)
+	go func() { b, ok := ManifestText(root, fifo); done <- got{b, ok} }()
+	select {
+	case g := <-done:
+		if g.text != nil || !g.exists {
+			t.Errorf("fifo: %q %v", g.text, g.exists)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the read of a FIFO manifest blocks")
+	}
+	for _, p := range []string{link, filepath.Join(root, "linked", "repo-generated.tsv")} {
+		if b, ok := ManifestText(root, p); b != nil || !ok {
+			t.Errorf("%s: %q %v", p, b, ok)
+		}
+	}
+	if b, ok := ManifestText(root, filepath.Join(dir, "missing.tsv")); b != nil || ok {
+		t.Errorf("missing: %q %v", b, ok)
+	}
+	if !ListedFile(root, regular)[TasksDir+"/test"] {
+		t.Error("a regular manifest is not read")
 	}
 }
 

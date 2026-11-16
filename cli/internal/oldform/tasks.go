@@ -9,6 +9,7 @@ import (
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/header"
+	"github.com/virajp/bootstrap/cli/internal/manifest"
 	"github.com/virajp/bootstrap/cli/internal/source"
 )
 
@@ -61,10 +62,32 @@ func Listed(text []byte) map[string]bool {
 	return out
 }
 
-// ListedFile gives Listed of the manifest <file>; a missing file lists
-// nothing.
-func ListedFile(file string) map[string]bool {
+// ManifestText gives the text of the manifest <file> of the repo <root>, and
+// whether <file> exists. It reads <file> only past the link and kind rule of
+// manifest.Read: a link, a file below a linked folder or a file that is not
+// regular (a FIFO would block the read) gives no text. The sync refuses such
+// a manifest later, with its message.
+func ManifestText(root, file string) ([]byte, bool) {
+	root = strings.TrimSuffix(root, "/")
+	info, err := os.Lstat(file)
+	if err != nil {
+		return nil, false
+	}
+	rest, below := strings.CutPrefix(file, root+"/")
+	if below && manifest.Linked(root, rest) || !below && info.Mode()&os.ModeSymlink != 0 {
+		return nil, true
+	}
+	if info, err := os.Stat(file); err != nil || !info.Mode().IsRegular() {
+		return nil, true
+	}
 	b, _ := os.ReadFile(file)
+	return b, true
+}
+
+// ListedFile gives Listed of the manifest <file> of the repo <root>
+// (ManifestText); a missing or refused file lists nothing.
+func ListedFile(root, file string) map[string]bool {
+	b, _ := ManifestText(root, file)
 	return Listed(b)
 }
 
@@ -129,7 +152,7 @@ func TaskProblems(root, manifest string, show func(string) string) error {
 	}
 	root = strings.TrimSuffix(root, "/")
 	var probs []*fail.Error
-	for _, m := range OwnTasks(root, ListedFile(manifest)) {
+	for _, m := range OwnTasks(root, ListedFile(root, manifest)) {
 		probs = append(probs, usage("%s is a task of this repo at the place of a dispatcher of bootstrap - %s", show(root+"/"+m.From), Hint))
 	}
 	if len(probs) == 0 {
