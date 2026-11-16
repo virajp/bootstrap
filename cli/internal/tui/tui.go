@@ -151,7 +151,7 @@ func (m *Model) changes() int { return len(m.fixed) + len(m.list.Items) + len(m.
 // Messages of the model.
 type (
 	loadedMsg struct {
-		fixed string
+		fixed []string
 		state *core.State
 		err   error
 	}
@@ -167,28 +167,36 @@ type (
 func (m *Model) Init() tea.Cmd { return nil }
 
 // load reads the values file. init takes a missing values file, or an old
-// form, as the first change of the list; tui needs a values file of the new
-// form.
+// form, as the first change of the list, and the move of the own test tasks
+// into parts as the next one; tui needs a values file of the new form.
 func (m *Model) load() tea.Msg {
 	sd := m.opt.Side
+	var fixed []string
 	if m.opt.Init {
 		text, err := core.InitChange(sd)
 		if err != nil {
 			return loadedMsg{err: err}
 		}
+		move, err := core.MoveChange(sd)
+		if err != nil {
+			return loadedMsg{err: err}
+		}
+		if move != "" {
+			fixed = append(fixed, move)
+		}
 		if text != "" {
-			return m.loadInit(text)
+			return m.loadInit(append([]string{text}, fixed...))
 		}
 	}
 	st, err := core.Open(sd)
-	return loadedMsg{state: st, err: err}
+	return loadedMsg{fixed: fixed, state: st, err: err}
 }
 
 // loadInit reads the values file of init: the state after the first change
-// of the list, when it has one.
-func (m *Model) loadInit(text string) tea.Msg {
+// of the list, when it has one. <fixed> are the changes of init.
+func (m *Model) loadInit(fixed []string) tea.Msg {
 	st, err := core.InitState(m.opt.Side)
-	return loadedMsg{fixed: text, state: st, err: err}
+	return loadedMsg{fixed: fixed, state: st, err: err}
 }
 
 func (m *Model) tickCmd() tea.Cmd {
@@ -251,9 +259,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 			return m, tea.Quit
 		}
-		if msg.fixed != "" {
-			m.fixed = append(m.fixed, msg.fixed)
-		}
+		m.fixed = append(m.fixed, msg.fixed...)
 		m.state = msg.state
 		m.phase = ready
 		m.refreshTools()

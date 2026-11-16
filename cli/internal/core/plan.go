@@ -213,6 +213,9 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 		if err := p.initValues(); err != nil {
 			return p, err
 		}
+		if err := p.taskMoves(); err != nil {
+			return p, err
+		}
 	} else {
 		var err error
 		if st, err = Open(sd); err != nil {
@@ -329,6 +332,7 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 	old, had := os.LookupEnv(envKey)
 	_ = os.Setenv(envKey, envVal)
 	oldform.Migrating = l.Init
+	oldform.Moving = p.moving()
 	args := SyncArgs(sd.Mac, true, o.NoBootstrap)
 	planned, _, pc := run(args, io.Discard, io.Discard)
 	if pc != fail.OK {
@@ -337,6 +341,7 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 		_, _, pc = run(args, out, errw)
 	}
 	oldform.Migrating = false
+	oldform.Moving = nil
 	if had {
 		_ = os.Setenv(envKey, old)
 	} else {
@@ -598,6 +603,62 @@ func (p *PlanResult) migrateFolder() error {
 	}
 	p.Changes = append(append(p.Changes, gone...), others...)
 	return nil
+}
+
+// taskMoves adds the change of init that moves the own test tasks of the
+// repo into 50-local parts (D4, D7, D12, D25): one change for all the files.
+// A target that exists stops init with code 2, before it moves a file (D8,
+// D20).
+func (p *PlanResult) taskMoves() error {
+	if p.Mac {
+		return nil
+	}
+	moves, err := oldform.PlanMoves(p.Root, oldform.Listed(manifestText(p.Side)), p.Show)
+	if err != nil || len(moves) == 0 {
+		return err
+	}
+	p.Changes = append(p.Changes, oldform.Change{
+		Path:  strings.TrimSuffix(p.Root, "/") + "/" + oldform.TasksDir,
+		Moves: moves,
+		Note:  oldform.MoveNote + ": " + oldform.MoveDetail(moves, p.Show),
+	})
+	return nil
+}
+
+// moving gives the files that the changes of the plan move, for the dry run
+// of the sync (oldform.Moving), or nil.
+func (p *PlanResult) moving() map[string]bool {
+	var out map[string]bool
+	for _, ch := range p.Changes {
+		for _, m := range ch.Moves {
+			if out == nil {
+				out = map[string]bool{}
+			}
+			out[m.From] = true
+		}
+	}
+	return out
+}
+
+// manifestText gives the manifest of the last run of the repo of <sd>: the
+// one of the values folder, else the old one that a migration moves.
+func manifestText(sd Side) []byte {
+	if b, err := os.ReadFile(values.ManifestFile(sd.Values)); err == nil {
+		return b
+	}
+	b, _ := os.ReadFile(strings.TrimSuffix(sd.Root, "/") + "/" + oldform.OldManifest)
+	return b
+}
+
+// MoveChange gives the change of init that moves the own test tasks of the
+// repo into parts, or "" (D25). The TUI shows it as a change that the user
+// cannot remove. It writes nothing.
+func MoveChange(sd Side) (string, error) {
+	p := &PlanResult{Side: sd}
+	if err := p.taskMoves(); err != nil || len(p.Changes) == 0 {
+		return "", err
+	}
+	return oldform.MoveNote, nil
 }
 
 // toolsHead gives the tools.toml <text> of a migration with the header of

@@ -214,6 +214,8 @@ func (a *app) step(s core.Step) {
 		a.infof("Wrote %s", a.show(s.Path))
 	case core.Removed:
 		a.infof("Removed %s", a.show(s.Path))
+	case core.Moved:
+		a.infof("Moved %s to %s", a.show(s.Path), a.show(s.To))
 	}
 }
 

@@ -106,12 +106,15 @@ func Mac(raw *source.Obj, shown string) error {
 	return source.Problems(probs)
 }
 
-// Change is one file of a migration: its new content, or its removal.
+// Change is one file of a migration: its new content, or its removal. A
+// change with Moves moves those files instead (D25): its Path is the folder
+// TasksDir of the repository.
 type Change struct {
 	Path    string // Absolute.
 	Content []byte
 	Remove  bool
 	Note    string // What changes, for the change list.
+	Moves   []Move // Absolute paths.
 }
 
 // q is a string as a yq string literal.
@@ -374,9 +377,15 @@ func addHooks(path, old string) (Change, error) {
 }
 
 // Apply writes each change. A removal also removes its folder when the folder
-// is then empty.
+// is then empty. A change with Moves moves its files.
 func Apply(changes []Change) error {
 	for _, c := range changes {
+		if len(c.Moves) > 0 {
+			if err := ApplyMoves(c.Moves); err != nil {
+				return err
+			}
+			continue
+		}
 		if c.Remove {
 			if err := os.Remove(c.Path); err != nil && !os.IsNotExist(err) {
 				return fail.New(fail.Other, "cannot remove %s", c.Path)
@@ -404,10 +413,16 @@ func Apply(changes []Change) error {
 	return nil
 }
 
-// Paths gives the paths of <changes>, sorted.
+// Paths gives the paths of <changes>, sorted: both paths of each move.
 func Paths(changes []Change) []string {
 	var out []string
 	for _, c := range changes {
+		if len(c.Moves) > 0 {
+			for _, m := range c.Moves {
+				out = append(out, m.From, m.To)
+			}
+			continue
+		}
 		out = append(out, c.Path)
 	}
 	sort.Strings(out)

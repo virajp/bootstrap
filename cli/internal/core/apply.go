@@ -24,12 +24,15 @@ const (
 	Wrote
 	// Removed: Apply removed the file Path.
 	Removed
+	// Moved: Apply moved the file Path to To.
+	Moved
 )
 
 // Step is one step of Apply before the sync.
 type Step struct {
 	Kind   StepKind
 	Path   string // The shown path of a script; the absolute path of a file.
+	To     string // Moved: the absolute path that the file moved to.
 	Stderr []byte
 }
 
@@ -74,6 +77,12 @@ func Apply(p *PlanResult, o Options) (fail.Code, bool, []report.Result, error) {
 		return fail.CodeOf(err), false, nil, err
 	}
 	for _, ch := range p.Changes {
+		for _, m := range ch.Moves {
+			step(Step{Kind: Moved, Path: m.From, To: m.To})
+		}
+		if len(ch.Moves) > 0 {
+			continue
+		}
 		if ch.Remove {
 			step(Step{Kind: Removed, Path: ch.Path})
 		} else {
@@ -156,10 +165,16 @@ func (p *PlanResult) RestoredFile() string {
 	return p.EditFile()
 }
 
-// restore puts the edited values file back as it was before Apply, and
-// removes a repo.toml that init created, and then the values folder when it
-// is empty.
+// restore moves the moved files back, puts the edited values file back as it
+// was before Apply, and removes a repo.toml that init created, and then the
+// values folder when it is empty.
 func (p *PlanResult) restore() error {
+	// The moved own test tasks go back first (D7).
+	for _, ch := range p.Changes {
+		if err := oldform.UndoMoves(ch.Moves); err != nil {
+			return problem(fail.Other, err.Error(), "")
+		}
+	}
 	if p.Migrated {
 		// The old files come back, and the folder goes (D83).
 		if err := os.RemoveAll(p.Values); err != nil {

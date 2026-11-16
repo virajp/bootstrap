@@ -221,6 +221,8 @@ func (c *applyCmd) Run() error {
 			_, _ = fmt.Fprintf(c.out, "  ✓ wrote %s\n", sd.Show(s.Path))
 		case core.Removed:
 			_, _ = fmt.Fprintf(c.out, "  ✓ removed %s\n", sd.Show(s.Path))
+		case core.Moved:
+			_, _ = fmt.Fprintf(c.out, "  ✓ moved %s to %s\n", sd.Show(s.Path), sd.Show(s.To))
 		}
 	}}
 	c.code, c.putBack, _, c.err = core.Apply(c.p, opt)
@@ -537,6 +539,8 @@ func (m *Model) fileLines() []line {
 	for _, c := range p.Changes {
 		op, st, note := "change", stDim, ""
 		switch {
+		case len(c.Moves) > 0:
+			op, note = "move", c.Note
 		case c.Remove:
 			op, st = "remove", stRemove
 		case !core.Exists(c.Path):
