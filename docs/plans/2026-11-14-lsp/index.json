@@ -81,9 +81,9 @@
       "waits": "",
       "status": "green",
       "started": "2026-11-16T13:15:32.660Z",
-      "ended": "2026-11-16T13:21:21.686Z",
-      "commit": "4a76b41",
-      "rounds": 2
+      "ended": "2026-11-16T16:54:04.369Z",
+      "commit": "ba195a9",
+      "rounds": 6
     },
     {
       "id": "U2",
@@ -106,9 +106,9 @@
       "waits": "",
       "status": "green",
       "started": "2026-11-16T13:15:32.737Z",
-      "ended": "2026-11-16T13:25:01.260Z",
-      "commit": "5a09057",
-      "rounds": 2
+      "ended": "2026-11-16T16:54:04.478Z",
+      "commit": "e192732",
+      "rounds": 5
     },
     {
       "id": "U3",
@@ -146,11 +146,11 @@
         "U3"
       ],
       "waits": "The cases run the engine of U1, the tool blocks of U2 and the task of U3 (D27).",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-16T13:44:01.176Z",
+      "ended": "2026-11-16T17:14:09.008Z",
+      "commit": "0fe7caf",
+      "rounds": 6
     },
     {
       "id": "U5",
@@ -239,9 +239,9 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-16T13:44:01.137Z",
+      "ended": "2026-11-16T17:23:20.927Z"
     },
     {
       "id": "W4",
@@ -584,6 +584,65 @@
       "rejected": "Keep \"mise install\", as D5 says",
       "units": [
         "U3"
+      ]
+    },
+    {
+      "id": "D35",
+      "decision": "Q3: Every repo gets node through the base linter tool, so every repo lists typescript-lsp and gets its dev pins. Is that intended?",
+      "ruling": "By default only install node but if package.json is found then add lsp server. If tsconfig.json found then typescript-lsp",
+      "rejected": "Keep it (every repo gets the TypeScript server); List a server only for a tool the repo selects itself; Move the node [lsp] block into a separate tool",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D36",
+      "decision": "Q4: Which shape implements D35 (node alone: no server; package.json: an LSP server; tsconfig.json: typescript-lsp)?",
+      "ruling": "Two servers from one pin (recommended) — move both pins to [mise.tools] with envs [dev] and requires_found [package.json]; a javascript-lsp block (typescript-language-server --stdio, JS extensions only) is listed when package.json is found, and typescript-lsp (the full stackgen map) is listed only when tsconfig.json is found too, through a new requires_found key on an [lsp] block — U1, U2, U4 and the docs change",
+      "rejected": "One server needing both files (requires_found [package.json, tsconfig.json]); One server on package.json (tsconfig.json not used)",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D37",
+      "decision": "Q5: With both package.json and tsconfig.json, should javascript-lsp still be listed beside typescript-lsp (overlapping JS extensions)? This changes D36.",
+      "ruling": "In that case, keep only typescript-lsp for package.json as well as tsconfig.json",
+      "rejected": "Keep both, as D36 reads; Hide javascript-lsp when tsconfig.json is found (requires_missing key); Take the JS extensions out of typescript-lsp",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D38",
+      "decision": "Q6: Should a repo with a tsconfig.json but no package.json also get typescript-lsp, given requires_found is all-of?",
+      "ruling": "convert `requires_found` to an array and consider true if any of the files mentioned is found",
+      "rejected": "No, gate on package.json only; Yes, via a new requires_any_found key; No, but keep the per-[lsp] requires_found key",
+      "units": [
+        "U1",
+        "U2",
+        "U4"
+      ]
+    },
+    {
+      "id": "D39",
+      "decision": "Q7: Should the skip line of an entry with two or more requires_found names (any-of, D38) name all the names?",
+      "ruling": "Name all of them, for example \"(no package.json or tsconfig.json)\" — no current case changes, because no shipped entry has two names",
+      "rejected": "Keep the first name, as now",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D40",
+      "decision": "Q8: How should a dev-only pin gated by requires_found coexist with a tool that is in ci (node pins envs [dev] in [mise.tools] break every sync)?",
+      "ruling": "Allow requires_found in [mise_env.<env>.tools] and move the node pins back there (recommended) — U1 engine, U2 and the docs change; the existing envs rule stays as it is",
+      "rejected": "Exempt a [mise.tools] entry with requires_found from the envs check; Make envs a filter; Give the pins envs [dev, ci]",
+      "units": [
+        "U1",
+        "U2"
       ]
     }
   ],
