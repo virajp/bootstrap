@@ -199,11 +199,11 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-16T17:26:51.033Z",
+      "ended": "2026-11-16T17:31:39.310Z",
+      "commit": "79243e6",
+      "rounds": 2
     },
     {
       "id": "U7",
@@ -251,9 +251,9 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-16T17:26:50.992Z",
+      "ended": "2026-11-16T17:38:34.117Z"
     },
     {
       "id": "W6",
@@ -648,28 +648,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: the change plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-16T17:26:09.895Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: the change plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-16T17:26:09.672Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: the change plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-16T17:26:09.786Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
-      "started": "",
-      "ended": ""
+      "state": "green",
+      "detail": "no covers: stamps skipped; persisted the D35-D40 durable decision (docs/memory/decisions/2026-11-16-requires-found-any-of.md); Reconcile commit 1351bba",
+      "started": "2026-11-16T17:26:10.042Z",
+      "ended": "2026-11-16T17:26:44.402Z"
     }
   },
   "gaps": [],
