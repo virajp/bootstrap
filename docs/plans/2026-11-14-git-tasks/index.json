@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "BLOCKED",
-    "detail": "BLOCKED at preflight — inherited red gate line on main: mise x -- mise run code:lint (code:lint:60-bootstrap: installed bootstrap 3.3.1 lacks config get, which repo/tools/git/scripts/derive at main needs, 4.0.0+); worktree .worktrees/git-tasks"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-16 17:13 in .worktrees/git-tasks"
   },
   "consent": {
     "merge": true,
@@ -67,11 +67,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-16T11:35:31.785Z",
+      "ended": "2026-11-16T11:46:12.038Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 3
     },
     {
       "id": "U2",
@@ -85,11 +85,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-16T11:35:31.857Z",
+      "ended": "2026-11-16T11:42:59.848Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -198,18 +198,18 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-16T11:35:31.928Z",
+      "ended": "2026-11-16T11:42:59.958Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-16T11:35:31.748Z",
       "ended": ""
     },
     {
@@ -558,6 +558,22 @@
       "units": [
         "U5"
       ]
+    },
+    {
+      "id": "D35",
+      "decision": "Q1: Should the engine-before-4.0.0 fallback block of repo/tools/git/scripts/derive also print has_main and has_develop?",
+      "ruling": "Add them to the fallback as legacy_branch_exists main / develop, the same test its branch_pair uses (Recommended) — a 3.x sync still writes git:merge:main/develop by branch existence; those tasks then stop with the needs-bootstrap-4.0.0 exit 2 from bootstrap_get, so the user sees why",
+      "rejected": "Leave the fallback unchanged — a 3.x consumer gets no merge task at all after its next sync, with no message",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D36",
+      "decision": "Q2: Should this repo's post-landing sync run bootstrap init before setup:configs, since U7's D20 check stops check/sync on the old setup:worktree in .config/wt.toml?",
+      "ruling": "Leave it as it is. The new check is only in the unreleased 4.0.0 engine; engine 3.3.1 does not have it, so the post-landing sync here with 3.3.1 passes, and the planned bootstrap init here after the 4.0.0 tag also does the wt.toml rename. No bootstrap init in this repo now.",
+      "rejected": "Run bootstrap init in this repo first, then setup:configs, in the same sync-<name> branch",
+      "units": []
     }
   ],
   "stages": {
@@ -591,8 +607,8 @@
       "id": "G1",
       "unit": "",
       "stage": "",
-      "text": "Preflight gate line mise x -- mise run code:lint is red on main (inherited, not this plan): code:lint:60-bootstrap runs the installed engine bootstrap 3.3.1 against the cache clone at b65277a, whose repo/tools/git/scripts/derive calls bootstrap config get repo.core_branches, which needs bootstrap 4.0.0 or newer (exit 2). code:format and test:go were green. · no assumption taken; the run did not start a wave",
-      "state": "open"
+      "text": "Preflight gate line mise x -- mise run code:lint was red on main (inherited, not this plan): code:lint:60-bootstrap ran the installed engine bootstrap 3.3.1, whose lack of config get stopped repo/tools/git/scripts/derive. · settled on resume: main 0d09fe1 added the pre-4.0.0 fallback; the run branch merged main and the preflight is green",
+      "state": "closed"
     }
   ],
   "overrides": [],

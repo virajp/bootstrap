@@ -4,6 +4,8 @@
 # - branch_pair is true when core_branches of .config/bootstrap/repo.toml has
 #   both main and develop. A [tasks] entry with `when = "git.branch_pair"` (or
 #   "!git.branch_pair") applies to one branch model only.
+# - has_main and has_develop are true when core_branches has main, or
+#   develop. The git:merge:<branch> task of each applies only with its flag.
 # - protected_branches is each core branch whose landing in
 #   [branches.<name>] is not direct-commit. The pre-commit config gives them to
 #   the no-commit-to-branch hook.
@@ -40,8 +42,12 @@ if [[ -f ${legacy} ]] || [[ -z ${legacy} && ! -d .config/bootstrap && -f .config
     done
     printf '%s' "${value}"
   }
+  has_main=false
+  has_develop=false
+  legacy_branch_exists main && has_main=true
+  legacy_branch_exists develop && has_develop=true
   pair=false
-  if legacy_branch_exists main && legacy_branch_exists develop; then
+  if [[ ${has_main} == true && ${has_develop} == true ]]; then
     pair=true
   fi
   protected=()
@@ -49,7 +55,8 @@ if [[ -f ${legacy} ]] || [[ -z ${legacy} && ! -d .config/bootstrap && -f .config
     [[ $(legacy_direct_commit "${name}") == true ]] || protected+=("\"${name}\"")
   done
   list=$(IFS=,; printf '%s' "${protected[*]-}")
-  printf '{"branch_pair": %s, "protected_branches": [%s]}\n' "${pair}" "${list}"
+  printf '{"branch_pair": %s, "has_main": %s, "has_develop": %s, "protected_branches": [%s]}\n' \
+    "${pair}" "${has_main}" "${has_develop}" "${list}"
   exit 0
 fi
 
@@ -90,4 +97,6 @@ branches=$(get repo.branches) || exit $?
 jq_ -cn --argjson core "${core}" --argjson branches "${branches}" '
   ($core // []) as $c | ($branches // {}) as $b
   | {branch_pair: (($c | index("main")) != null and ($c | index("develop")) != null),
+    has_main: (($c | index("main")) != null),
+    has_develop: (($c | index("develop")) != null),
     protected_branches: [$c[] | select(($b[.].landing // "direct-merge") != "direct-commit")]}'

@@ -25,8 +25,8 @@ extensions = [ "gitlab.gitlab-workflow" ]
 
 # The mise config, generated into .config/mise/conf.d/gitlab/mise.<env>.toml.
 
-# GitLab CLI: issues, merge requests, `glab ci lint`, and `code:merge` under
-# the `pr` model
+# GitLab CLI: issues, merge requests, `glab ci lint`, and `git:merge:<branch>`
+# under the `pr` landing
 [mise.tools.glab]
 envs = [ "dev", "ci" ]
 version = "latest"

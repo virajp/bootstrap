@@ -72,13 +72,19 @@ source = "merge"
 [tasks."code/git-config"]
 source = "code-git-config"
 
-# The merge tasks of the branch pair main and develop. The derive script
-# gives branch_pair; code:merge (code/merge/_default of the mise tool) is the
-# task of a repository with one of the two branches.
-[tasks."code/merge/develop"]
-source = "code-merge-develop"
-when = "git.branch_pair"
+# The merge task of each core branch, named for its destination. The derive
+# script gives has_main and has_develop from core_branches.
+[tasks."git/merge/develop"]
+source = "git-merge-develop"
+when = "git.has_develop"
 
-[tasks."code/merge/main"]
-source = "code-merge-main"
-when = "git.branch_pair"
+[tasks."git/merge/main"]
+source = "git-merge-main"
+when = "git.has_main"
+
+# The worktree tasks. git:worktree:setup is a task of the mise tool.
+[tasks."git/worktree/create"]
+source = "git-worktree-create"
+
+[tasks."git/worktree/delete"]
+source = "git-worktree-delete"
