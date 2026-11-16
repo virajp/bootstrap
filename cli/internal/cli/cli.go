@@ -1,7 +1,7 @@
 // Package cli is the command line of `bootstrap`: the commands init, tui,
 // sync, check, questions, add, remove, replace, detect and list of the repo
 // side and of the Mac side (`bootstrap mac <command>`), config, settings,
-// contract, catalog, describe and version. It is the shell of the command
+// contract, catalog, describe, lsp and version. It is the shell of the command
 // line: it parses the arguments, takes the clone and its lock, checks the
 // version, calls internal/core (the preflight, Plan, Apply, Detect and the
 // clean-target rule), prints the results and the errors, and asks the
@@ -73,7 +73,10 @@ Repository
   catalog              print the tools of the clone by category, with the
                        categories and the packs; it needs no repository
   describe             print the values of the repository, its selected
-                       tools, its members and its task ports
+                       tools, its members, its task ports and its language
+                       servers
+  lsp                  print the language servers of the selected tools of
+                       the repository
   version, --version   print the version
 
 Mac
@@ -102,7 +105,7 @@ Flags
                        init, add, replace, detect --add: the answer of a
                        question (repeatable); --answer <tool>.<key>= writes
                        an empty answer for an optional or a group question
-  --json               contract, catalog, describe, check, questions, mac
+  --json               contract, catalog, describe, lsp, check, questions, mac
                        questions, config get|set|unset|show, init, sync, add,
                        remove, replace, detect: print one JSON envelope on
                        stdout, and each other line on stderr; init, add,
@@ -178,12 +181,13 @@ var allowed = map[string]string{
 	"contract":  "json",
 	"catalog":   "json",
 	"describe":  "json",
+	"lsp":       "json",
 	"version":   "",
 }
 
 // commandOrder is the order of the commands in the commands of contract.
 var commandOrder = []string{
-	"contract", "catalog", "describe", "init", "tui", "sync", "check",
+	"contract", "catalog", "describe", "lsp", "init", "tui", "sync", "check",
 	"questions", "add", "remove", "replace", "detect", "list", "config",
 	"settings", "version",
 }
@@ -206,7 +210,7 @@ var configSubs = []string{"get", "set", "unset", "show"}
 // repoOnly are the commands that the Mac side does not have.
 var repoOnly = map[string]bool{
 	"version": true, "settings": true, "config": true, "contract": true,
-	"catalog": true, "describe": true,
+	"catalog": true, "describe": true, "lsp": true,
 }
 
 // takesJSON tells if the command <cmd> of the side takes --json: on the Mac
@@ -437,6 +441,8 @@ func (a *app) run(args []string) fail.Code {
 		return a.catalogCmd(o)
 	case "describe":
 		return a.describe(o)
+	case "lsp":
+		return a.lsp(o)
 	case "sync":
 		return a.sync(mac, o)
 	case "check":

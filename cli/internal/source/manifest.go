@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode"
 
 	"github.com/BurntSushi/toml"
 
@@ -38,6 +39,21 @@ type Formatter struct {
 	Configs []string // The config files of the repository that the stage gets.
 }
 
+// LSPServer is one `[lsp.<server>]` table of a repo tool: a language server
+// that the tool provides for an editor.
+type LSPServer struct {
+	Name    string   // The <server> of the table.
+	Command string   // One binary, with no whitespace.
+	Args    []string // The arguments of the command; empty when unset.
+	// Extensions maps each ".<ext>" to its language id; never empty.
+	Extensions map[string]string
+	// StartupTimeout is startup_timeout in milliseconds, or 0 when unset.
+	StartupTimeout int64
+	// Source is the mise tool of the same tool that provides the command, or
+	// "host".
+	Source string
+}
+
 // MiseTool is one `[mise.tools.<name>]` entry (repo side).
 type MiseTool struct {
 	Name          string
@@ -67,10 +83,12 @@ type Manifest struct {
 	DefaultEnvs []string // Repo side.
 	// Formatter is the [formatter] table of a repo tool, or nil.
 	Formatter *Formatter
-	RootOnly  bool   // Repo side: `root_only = true`.
-	Parent    string // The parent tool, or empty.
-	Files     []FileEntry
-	Mise      []MiseTool // Repo side.
+	// LSP holds the [lsp.<server>] tables of a repo tool, sorted by name.
+	LSP      []LSPServer
+	RootOnly bool   // Repo side: `root_only = true`.
+	Parent   string // The parent tool, or empty.
+	Files    []FileEntry
+	Mise     []MiseTool // Repo side.
 	// MiseOrder holds the names of the [mise.tools] entries in the order of
 	// the file. A mise tool depends on the mise tools above it.
 	MiseOrder []string
@@ -218,6 +236,7 @@ func (m *Manifest) repoLines() error {
 	} else if t.Has("formatter") {
 		add("bad", "[formatter] must be a table", "", "")
 	}
+	m.lspLines(add)
 	if t.Has("seed") {
 		add("old", "seed", "", "")
 	}
@@ -296,6 +315,118 @@ func (m *Manifest) repoLines() error {
 		}
 	}
 	return nil
+}
+
+// lspLines reads the [lsp.<server>] tables into m.LSP, and adds a "bad" line
+// for each wrong shape: a table needs command (one word), extensions (a
+// table of ".<ext>" = "<language id>", not empty) and source (a string), and
+// can have args (a list of strings) and startup_timeout (an integer above 0).
+func (m *Manifest) lspLines(add func(field, a, b, c string)) {
+	t := m.Raw
+	if !t.Has("lsp") {
+		return
+	}
+	servers, ok := t.Get("lsp").(*Obj)
+	if !ok {
+		add("bad", "[lsp] must be a table of [lsp.<server>] tables", "", "")
+		return
+	}
+	for _, name := range servers.Keys() {
+		e, ok := servers.Get(name).(*Obj)
+		if !ok {
+			add("bad", fmt.Sprintf("[lsp.%s] must be a table", name), "", "")
+			continue
+		}
+		bad := func(text string) { add("bad", fmt.Sprintf("[lsp.%s] %s", name, text), "", "") }
+		good := true
+		srv := LSPServer{Name: name, Args: []string{}, Extensions: map[string]string{}}
+		for _, k := range e.Keys() {
+			switch k {
+			case "command", "args", "extensions", "startup_timeout", "source":
+			default:
+				bad(k + " is not a key of a server - the keys are command, args, extensions, startup_timeout and source")
+				good = false
+			}
+		}
+		cmd, isStr := e.Get("command").(string)
+		switch {
+		case !e.Has("command") || !isStr || cmd == "":
+			bad("needs command, the binary of the server (a string)")
+			good = false
+		case strings.IndexFunc(cmd, unicode.IsSpace) >= 0:
+			bad(fmt.Sprintf("command '%s' has whitespace - command is one binary; put the rest in args", cmd))
+			good = false
+		default:
+			srv.Command = cmd
+		}
+		if e.Has("args") {
+			l, isList := asList(e.Get("args"))
+			for _, a := range l {
+				if s, isStr := a.(string); isStr {
+					srv.Args = append(srv.Args, s)
+				} else {
+					isList = false
+				}
+			}
+			if !isList {
+				bad("args must be a list of strings")
+				good = false
+			}
+		}
+		exts, isMap := e.Get("extensions").(*Obj)
+		switch {
+		case !e.Has("extensions") || !isMap || exts.Len() == 0:
+			bad("needs extensions, a table of \".<ext>\" = \"<language id>\" that is not empty")
+			good = false
+		default:
+			for _, x := range exts.Keys() {
+				lang, isStr := exts.Get(x).(string)
+				if len(x) < 2 || !strings.HasPrefix(x, ".") || !isStr || lang == "" {
+					bad(fmt.Sprintf("extensions: '%s' must be \".<ext>\" = \"<language id>\"", x))
+					good = false
+					continue
+				}
+				srv.Extensions[x] = lang
+			}
+		}
+		if e.Has("startup_timeout") {
+			n, isInt := e.Get("startup_timeout").(int64)
+			if !isInt || n <= 0 {
+				bad("startup_timeout must be an integer of milliseconds above 0")
+				good = false
+			}
+			srv.StartupTimeout = n
+		}
+		src, isStr := e.Get("source").(string)
+		if !e.Has("source") || !isStr || src == "" {
+			bad("needs source, the mise tool of this tool that provides the command, or \"host\"")
+			good = false
+		}
+		srv.Source = src
+		if good {
+			m.LSP = append(m.LSP, srv)
+		}
+	}
+}
+
+// PinsMise tells if the tool pins the mise tool <name>, in [mise.tools] or in
+// [mise_env.<env>.tools] (repo side).
+func (m *Manifest) PinsMise(name string) bool {
+	for _, mt := range m.Mise {
+		if mt.Name == name {
+			return true
+		}
+	}
+	if me, ok := m.Raw.Get("mise_env").(*Obj); ok {
+		for _, env := range me.Keys() {
+			if b, ok := me.Get(env).(*Obj); ok {
+				if tools, ok := b.Get("tools").(*Obj); ok && tools.Has(name) {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // checkedList tells if <v> is a non-empty list of strings, and gives the items.
