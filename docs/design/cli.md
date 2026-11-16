@@ -115,27 +115,28 @@ kind word.
 | `settings`                 | Prints the config file and each setting, with its value and its source. See [The config file](#the-config-file). There is no `mac settings`.                                                                                                                                             |
 | `contract`                 | Prints the versions of the JSON contract, the version of the engine, the commands that take `--json` and the names of the task ports. It needs no repository, no config file and no clone.                                                                                               |
 | `catalog`                  | Prints the tools of the clone by category. `--json` also gives the categories, the questions and defaults of each tool, and the packs. It needs no repository.                                                                                                                           |
-| `describe`                 | Prints the values of `repo.toml`, the selected tools with their values, the members and the task ports of the repository, each port present or missing.                                                                                                                                  |
+| `describe`                 | Prints the values of `repo.toml`, the selected tools with their values, the members, the task ports of the repository, each port present or missing. Only `--json` also gives its language servers, in `lsp`.                                                                            |
+| `lsp`                      | Prints the language servers of the selected tools of the repository, one line each: the server, its tool, its command and its extensions. See [`lsp`](#lsp).                                                                                                                             |
 | `version`, `--version`     | Prints the version. There is no `mac version`.                                                                                                                                                                                                                                           |
 
-| Flag                            | Commands                                                                                                                                 | Effect                                                                                                                                   |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `--dry-run`                     | `init`, `sync`, `add`, `remove`, `replace`, `detect`                                                                                     | Prints the change list, and writes nothing.                                                                                              |
-| `--yes`, `-y`                   | `init`, `add`, `remove`, `replace`, `detect --add`                                                                                       | Writes the changes without a prompt.                                                                                                     |
-| `--no-tui`                      | `init`                                                                                                                                   | Does not open the TUI in a terminal. See [`init`](#init).                                                                                |
-| `--add`                         | `detect`                                                                                                                                 | Adds each matched tool that is not selected, after the consent.                                                                          |
-| `--exclude <member>`            | `add pack`                                                                                                                               | Leaves out a member of the pack, as the packs file writes it. The flag can repeat. It needs exactly one pack name.                       |
-| `--answer <tool>.<key>=<value>` | `init`, `add`, `replace`, `detect --add`                                                                                                 | The answer of a question. The flag can repeat. `--answer <tool>.<key>=` gives an empty answer, only for an optional or a group question. |
-| `--json`                        | `contract`, `catalog`, `describe`, `check`, `questions`, `mac questions`, `config`, `init`, `sync`, `add`, `remove`, `replace`, `detect` | Prints one JSON envelope on stdout, and each other line on stderr, for an AI agent. See [The JSON contract](#the-json-contract).         |
-| `--format json\|yaml\|toml`     | `config get`, `config show`                                                                                                              | The output format. The default is `json` when stdout is not a terminal, else `toml`. With `--json`, it is a usage error (code 2).        |
-| `--no-bootstrap`                | each `mac` command except `questions`                                                                                                    | Skips each `mise bootstrap` step.                                                                                                        |
-| `--jobs <n>`                    | each command except `questions`, `list`, `config`, `contract`, `catalog`, `describe` and `version`                                       | The jobs at a time. The default is 2 × the CPU count.                                                                                    |
-| `--verbose`                     | `init`, `tui`, `sync`, `check`, `add`, `remove`, `replace`, `detect`                                                                     | Sets `BOOTSTRAP_VERBOSE=1`. See [The output of a run](#the-output-of-a-run).                                                             |
-| `--config <path>`               | each command except `version` and `contract`                                                                                             | The config file. See [The config file](#the-config-file).                                                                                |
-| `--cache-dir <path>`            | each command except `version` and `contract`                                                                                             | The cache folder. It sets `BOOTSTRAP_CACHE`.                                                                                             |
-| `--url <url>`                   | each command except `version` and `contract`                                                                                             | The clone URL. It sets `BOOTSTRAP_URL`.                                                                                                  |
-| `--clone <path>`                | each command except `version` and `contract`                                                                                             | A clone of bootstrap, with no lock and no fetch. It sets `BOOTSTRAP_CLONE`.                                                              |
-| `--repo-path <path>`            | each `mac` command except `mac init`, and `settings`                                                                                     | The repository of `macos.toml`. It sets `MACOS_SETUP_REPO_PATH`.                                                                         |
+| Flag                            | Commands                                                                                                                                        | Effect                                                                                                                                   |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `--dry-run`                     | `init`, `sync`, `add`, `remove`, `replace`, `detect`                                                                                            | Prints the change list, and writes nothing.                                                                                              |
+| `--yes`, `-y`                   | `init`, `add`, `remove`, `replace`, `detect --add`                                                                                              | Writes the changes without a prompt.                                                                                                     |
+| `--no-tui`                      | `init`                                                                                                                                          | Does not open the TUI in a terminal. See [`init`](#init).                                                                                |
+| `--add`                         | `detect`                                                                                                                                        | Adds each matched tool that is not selected, after the consent.                                                                          |
+| `--exclude <member>`            | `add pack`                                                                                                                                      | Leaves out a member of the pack, as the packs file writes it. The flag can repeat. It needs exactly one pack name.                       |
+| `--answer <tool>.<key>=<value>` | `init`, `add`, `replace`, `detect --add`                                                                                                        | The answer of a question. The flag can repeat. `--answer <tool>.<key>=` gives an empty answer, only for an optional or a group question. |
+| `--json`                        | `contract`, `catalog`, `describe`, `lsp`, `check`, `questions`, `mac questions`, `config`, `init`, `sync`, `add`, `remove`, `replace`, `detect` | Prints one JSON envelope on stdout, and each other line on stderr, for an AI agent. See [The JSON contract](#the-json-contract).         |
+| `--format json\|yaml\|toml`     | `config get`, `config show`                                                                                                                     | The output format. The default is `json` when stdout is not a terminal, else `toml`. With `--json`, it is a usage error (code 2).        |
+| `--no-bootstrap`                | each `mac` command except `questions`                                                                                                           | Skips each `mise bootstrap` step.                                                                                                        |
+| `--jobs <n>`                    | each command except `questions`, `list`, `config`, `contract`, `catalog`, `describe`, `lsp` and `version`                                       | The jobs at a time. The default is 2 × the CPU count.                                                                                    |
+| `--verbose`                     | `init`, `tui`, `sync`, `check`, `add`, `remove`, `replace`, `detect`                                                                            | Sets `BOOTSTRAP_VERBOSE=1`. See [The output of a run](#the-output-of-a-run).                                                             |
+| `--config <path>`               | each command except `version` and `contract`                                                                                                    | The config file. See [The config file](#the-config-file).                                                                                |
+| `--cache-dir <path>`            | each command except `version` and `contract`                                                                                                    | The cache folder. It sets `BOOTSTRAP_CACHE`.                                                                                             |
+| `--url <url>`                   | each command except `version` and `contract`                                                                                                    | The clone URL. It sets `BOOTSTRAP_URL`.                                                                                                  |
+| `--clone <path>`                | each command except `version` and `contract`                                                                                                    | A clone of bootstrap, with no lock and no fetch. It sets `BOOTSTRAP_CLONE`.                                                              |
+| `--repo-path <path>`            | each `mac` command except `mac init`, and `settings`                                                                                            | The repository of `macos.toml`. It sets `MACOS_SETUP_REPO_PATH`.                                                                         |
 
 A flag of a repo command also applies to the same `mac` command, for example
 `mac sync --verbose`. A flag with a value takes `--flag value` and
@@ -569,6 +570,32 @@ vscode
 · 6 tools · ↑ = the subtree shows above
 ```
 
+### `lsp`
+
+`lsp` prints the language servers of the selected tools: each `[lsp.<server>]`
+table of a selected tool (see
+[tools.md](tools.md#the-lsp-table)). It writes nothing. A server is listed only
+when its tool is in `dev`, and the `requires_found` of its source pin, in
+`[mise.tools]` or `[mise_env.dev.tools]`, is met: any one of its names is found
+at the root or down to 4 folders below it. A pin without `requires_found`, and
+the source `host`, are always met. An `[lsp]` table has no gate of its own.
+
+Each line has the server, its tool, its command with its args, and its
+extensions. The last line counts the servers. With `--json`, `data` is
+`{"servers", "checks"}`:
+
+- `servers` maps each server to an entry of the `lspServers` of Claude, so a
+  plugin copies it verbatim: `command` is `mise`, `args` is
+  `["x", "--", <command>, <args>…]`, `extensionToLanguage` is the
+  `extensions` table, and `startupTimeout` is `startup_timeout`, left out when
+  it is not set.
+- `checks` maps each server to `{"command", "source"}`: the command of its
+  `[lsp]` table and its source. The task `code:lsp:check` reads it.
+
+`describe --json` gives the same object in its `lsp` field. Outside a
+repository, or without `.config/bootstrap/`, `lsp` stops with code 2 and "run
+bootstrap init".
+
 ### `detect`
 
 `detect` runs the detect script of each tool, in parallel. Each script prints a
@@ -730,8 +757,9 @@ A key is a path whose first segment names the file: `repo.<key>`,
 ## The JSON contract
 
 A plugin or an AI agent reads and drives the engine only through one JSON
-envelope. `bootstrap contract`, `catalog`, `describe`, `check`, `questions`,
-`mac questions`, `config get|set|unset|show`, `init`, `sync`, `add`, `remove`,
+envelope. `bootstrap contract`, `catalog`, `describe`, `lsp`, `check`,
+`questions`, `mac questions`, `config get|set|unset|show`, `init`, `sync`,
+`add`, `remove`,
 `replace` and `detect` take `--json`. The code is in `internal/contract`.
 
 **The envelope.** With `--json`, the command prints one JSON object on stdout,
@@ -763,8 +791,8 @@ never `null`.
   help goes to stderr. `--json` on a command that does not take it, for
   example `list` or `tui`, is such a usage error.
 - On the Mac side, only `mac questions` takes `--json`. Each other `mac`
-  command with `--json` stops with code 2. `contract`, `catalog` and
-  `describe` have no `mac` form.
+  command with `--json` stops with code 2. `contract`, `catalog`, `describe`
+  and `lsp` have no `mac` form.
 
 **The version.** `contract` is one integer. A new field, command or enum value
 keeps it. A removed or renamed field, or a changed type or meaning, raises it.
@@ -776,7 +804,8 @@ keeps it. A removed or renamed field, or a changed type or meaning, raises it.
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `contract`                                                 | `{"versions": [1], "cli_version", "commands", "ports"}`. `cli_version` is the version of the binary, `dev` for a local build. `commands` are the full words of each command that takes `--json`. `ports` are the names of the task ports. It needs no repository, no config file and no clone.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `catalog`                                                  | `{"fetched_at", "categories", "tools", "packs"}`. `fetched_at` is the time of the last successful fetch in ISO-8601 UTC, `""` under `--clone` or `BOOTSTRAP_CLONE`. Each tool has `name`, `category`, `description`, `questions` and `defaults`. It reads the repo side of the clone, and needs no repository.                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `describe`                                                 | `{"repo", "tools", "members", "ports"}`: the values of `repo.toml`, each selected tool with `name` and its `values` of `tools.toml`, each `[members.<name>]` with `name`, `type`, `folder`, `url` and `present` (the folder exists), and each port with `name` and `present`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `describe`                                                 | `{"repo", "tools", "members", "ports", "lsp"}`: the values of `repo.toml`, each selected tool with `name` and its `values` of `tools.toml`, each `[members.<name>]` with `name`, `type`, `folder`, `url` and `present` (the folder exists), each port with `name` and `present`, and `lsp`, the `data` of `lsp`.                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `lsp`                                                      | `{"servers", "checks"}`: each listed server as an entry of the `lspServers` of Claude, and its command and source. See [`lsp`](#lsp).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `check`                                                    | `{"valid", "checks"}`. `checks` has one entry for each stage, in order: `{"name", "status", "findings"}`, with `status` `pass`, `fail` or `skipped`, and each finding `{"code", "severity", "message", "path"}`, with `severity` `error` or `warning`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `questions`, `mac questions`                               | The list of the questions. See [The questions](#the-questions).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `config get`, `config show`                                | The object of `get`, and the files of `show`. See [`config`](#config).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -824,7 +853,8 @@ the tasks that match it: `<branch>` and `<id>` match one segment without a
 colon, and `present` is `true` when one task matches. When mise cannot list the
 tasks, for example for a config that it does not trust, `describe` stops with
 code 1 and the fix names `mise trust`. Outside a repository, or without
-`.config/bootstrap/`, `describe` stops with code 2 and "run bootstrap init".
+`.config/bootstrap/`, `describe` and `lsp` stop with code 2 and "run bootstrap
+init".
 
 ## The cache and the clone
 
@@ -1802,9 +1832,19 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
   selected.
 - An environment that a mise tool does not allow in its `envs`, also of a
   dependency or through `default_envs`.
-- `requires_found`, `requires` or `files` in a `[mise_env.<env>.tools]` entry.
+- `requires` or `files` in a `[mise_env.<env>.tools]` entry, and a
+  `requires_found` there that is not a non-empty list of file names.
 - Two tools that define the same mise tool, and two selected tools with a
   `[formatter]`.
+- A bad `[lsp]` of a `tools.toml`, also of a tool that is not selected: an
+  `[lsp]` that is not a table, an `[lsp.<server>]` that is not a table, a key
+  of a server other than `command`, `args`, `extensions`, `startup_timeout`
+  and `source`, no `command` or a `command` with whitespace, `args` that is
+  not a list of strings, no or empty `extensions` or a key of it that is not
+  `".<ext>" = "<language id>"`, a `startup_timeout` that is not an integer
+  above 0, and no `source`.
+- One server name in two tools, and a `source` that is neither `"host"` nor a
+  mise tool of the same tool.
 - A key of the values folder that the schema does not have, a value of the
   wrong type or outside its enum, a missing required key, and a key of
   `repo.toml` in `[tools.*]` or `[overrides.tools.*]`. See

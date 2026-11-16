@@ -36,6 +36,13 @@ The tool has `android` in its `depends`, and `android` has `java`. Thus the
 sync adds both tools, in the environments of `flutter` (dev and ci). See
 [`android.md`](android.md) and [`java.md`](java.md).
 
+The tool declares the language server `dart-lsp`
+(`dart language-server --protocol=lsp`, for `.dart`). The `dart` command comes
+with the `flutter` pin. The language server is in
+[`docs/design/tools.md`](../../design/tools.md) ("The `[lsp]` table").
+`bootstrap lsp` lists it, and `code:lsp:check` of the `mise` tool tests that it
+resolves.
+
 ## Tasks
 
 | Task                    | Use                                                                                                                                                                         |

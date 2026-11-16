@@ -4,7 +4,8 @@ A tool is the building block of `bootstrap`. A tool folder holds a
 `tools.toml`, the config files of the tool in `files/`, its task files in
 `tasks/` and its scripts in `scripts/`. The `tools.toml` gives the target path
 of each file. This document holds the `tools.toml` schema of both sides, the
-`[files]`, `[tasks]` and `[formatter]` keys, the scripts, the folder rules and
+`[files]`, `[tasks]`, `[formatter]` and `[lsp.<server>]` keys, the scripts, the
+folder rules and
 the rule for the header of a source file.
 
 See also: [packs.md](packs.md), [mise.md](mise.md) for `[mise.*]`,
@@ -59,6 +60,7 @@ sync.
 | `[questions.<key>]`    | Optional  | Optional  | The question for one value.                                                                                                      |
 | `[contributes.<tool>]` | Optional  | Optional  | Values for another selected tool, for example the hooks of `pre-commit` or the extensions of `vscode`.                           |
 | `[formatter]`          | Optional  | Refused   | The formatter of the sync. See [The `[formatter]` table](#the-formatter-table).                                                  |
+| `[lsp.<server>]`       | Optional  | Unknown   | One language server of the tool. See [The `[lsp]` table](#the-lsp-table).                                                        |
 | `[mise.*]`             | Optional  | Optional  | The mise config of the tool. See [mise.md](mise.md#the-mise-sections).                                                           |
 | `[mise_env.<env>.*]`   | Optional  | Refused   | More mise config for one environment. See [mise.md](mise.md#the-mise-sections).                                                  |
 
@@ -66,7 +68,9 @@ The sync examines the `tools.toml` of each tool of the clone, selected or not.
 
 On the Mac side, "refused" means that the key stops the sync, with the message
 `is for
-repo tools only`. Any other top-level key also stops the sync, for example a
+repo tools only`. "Unknown" means that the Mac side does not know the key: it
+stops the sync with the message `is not a key of tools.toml`, as any other
+top-level key does. Any other top-level key also stops the sync, for example a
 typo such
 as `depend`. `depends` must be a list of tool names. The only value of `stage`
 is
@@ -209,7 +213,7 @@ not start with `/`.
 | `mode`           | Both | `copy` (the default): copied on each run. `template`: rendered on each run. `seed`: written only when it is missing. `merge`: a shared file, merged item by item from its spec. |
 | `render`         | Both | Only with `seed`. `true` renders the seed at its first write.                                                                                                                   |
 | `requires`       | Both | A list of exact paths. Each path must exist. It is relative to the root of the repository, or to `$HOME` on the Mac side. It has no `..` part.                                  |
-| `requires_found` | Repo | A list of file names. See [repo.md](repo.md#requires_found). On the Mac side, it stops the sync.                                                                                |
+| `requires_found` | Repo | A list of file names, met when any one of them is found. See [repo.md](repo.md#requires_found). On the Mac side, it stops the sync.                                             |
 | `format`         | Both | `text`, `json`, `jsonc`, `yaml` or `toml`: the type of the file, not the extension. It selects the parse check and the merge. The default comes from the extension.             |
 | `when`           | Both | A value path `<tool>.<path>` in the values of all tools, with an optional `!` at the start. The entry applies only when the value is `true` (with `!`: not `true`).             |
 | `perm`           | Both | The mode of the file, an octal string, for example `"600"`. The default is the mode of the source.                                                                              |
@@ -228,8 +232,8 @@ Any other key stops the sync. `requires` and `requires_found` must
 be
 non-empty lists.
 
-When a `requires` or `requires_found` entry is not there, the sync does not
-write the
+When a `requires` path is not there, or no name of `requires_found` is found,
+the sync does not write the
 target. It counts a seed that exists as kept, so that seed is in `Kept seeds`.
 It counts each other target as skipped. A generated target gets no row in
 the manifest, so
@@ -298,6 +302,40 @@ The table has exactly these two keys. At most one selected tool can have a
 [formatter]
 command = "dprint fmt --no-gitignore --allow-no-files --stdin-files"
 configs = [ "dprint.json", "dprint.jsonc", ".config/dprint.jsonc" ]
+```
+
+## The `[lsp]` table
+
+A repo tool can have `[lsp.<server>]` tables: each is a language server that
+the tool provides for an editor. `bootstrap lsp`, the `lsp` field of
+`describe` and the task `code:lsp:check` read them. See
+[cli.md](cli.md#lsp).
+
+| Key               | Meaning                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `command`         | Necessary. One binary, with no whitespace. The rest of the command line goes in `args`.                                        |
+| `args`            | A list of strings, the arguments of `command`. The default is `[]`.                                                            |
+| `extensions`      | Necessary. A table of `".<ext>" = "<language id>"` that is not empty.                                                          |
+| `startup_timeout` | An integer of milliseconds above 0. Left out of the output when it is not set.                                                 |
+| `source`          | Necessary. The mise tool of the same tool that provides `command`, in `[mise.tools]` or `[mise_env.<env>.tools]`, or `"host"`. |
+
+A server follows its source pin: it is listed only when its tool is in `dev`
+and the `requires_found` of its source pin is met. `"host"` is a command of the
+host, for example `sourcekit-lsp` of Xcode. An `[lsp]` table has no
+`requires_found` of its own.
+
+`bootstrap check` and the sync stop with code 2 for a table with no `command`,
+a `command` with whitespace, no `extensions` or an empty one, a bad `args` or
+`startup_timeout`, no `source`, a `source` that is neither `"host"` nor a mise
+tool that the same tool pins, any other key, and one server name in two tools.
+
+```toml
+[lsp.kotlin-lsp]
+args = [ "--stdio" ]
+command = "kotlin-lsp"
+extensions = { ".kt" = "kotlin", ".kts" = "kotlin" }
+source = "http:kotlin-lsp"
+startup_timeout = 60000
 ```
 
 ## The header of a source file

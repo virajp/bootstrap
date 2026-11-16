@@ -28,9 +28,19 @@ file (see "Scripts").
 
 ## mise tools
 
-| mise tool | Version | Environments | Note                                                                                                                                                             |
-| --------- | ------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `java`    | `lts`   | dev, ci      | mise resolves `lts` to the newest LTS release. The mise setting `java.shorthand_vendor = "temurin"` selects the vendor, so each machine installs the same build. |
+| mise tool    | Version               | Environments | Note                                                                                                                                                             |
+| ------------ | --------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `java`       | `lts`                 | dev, ci      | mise resolves `lts` to the newest LTS release. The mise setting `java.shorthand_vendor = "temurin"` selects the vendor, so each machine installs the same build. |
+| `http:jdtls` | `1.63.0-202610191322` | dev          | The language server, from the Eclipse jdtls milestone downloads. In `[mise_env.dev.tools]`.                                                                      |
+
+The tool declares the language server `jdtls` (`.java`), from the `http:jdtls`
+pin. The pin is in `[mise_env.dev.tools]`, so it stays in dev and does not stop
+`java` in ci. No version list gives the build timestamp of a jdtls milestone,
+so the pin names one milestone: bump its version by hand. Its launcher
+`bin/jdtls` is a Python script that runs on the host `python3`. The language
+server is in [`docs/design/tools.md`](../../design/tools.md) ("The `[lsp]`
+table"). `bootstrap lsp` lists it, and `code:lsp:check` of the `mise` tool tests
+that it resolves.
 
 ## Tasks
 
@@ -71,4 +81,4 @@ None.
 
 ## Migration
 
-- Remove `java` from the repository-owned mise files.
+- Remove `java` and jdtls from the repository-owned mise files.

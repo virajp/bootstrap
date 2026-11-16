@@ -226,3 +226,27 @@ these points. They win over the text above.
   worktrunk.
 - **The lister (D4).** `code:worktrees` becomes `git:worktree:list`, and the
   shell alias `worktrees` runs it. Its content does not change.
+
+## Amendments 2026-11-14 (R2b planning)
+
+The planning of R2b (`docs/plans/2026-11-14-lsp` of bootstrap) changed these
+points. They win over the text above.
+
+- **Every language tool (D1).** kotlin, swift, flutter, node, go, python, rust
+  and java each have an `[lsp.<server>]` block: `kotlin-lsp`,
+  `sourcekit-lsp`, `dart-lsp`, `typescript-lsp`, `gopls`, `pyrefly`,
+  `rust-analyzer` and `jdtls`. A new pin is dev-only. swift's server comes
+  from the host, and dart's comes with flutter, so neither has its own pin.
+  bun and android get no block. node alone gets no server: its pins and
+  `typescript-lsp` need a `package.json` or a `tsconfig.json` (amended
+  2026-11-16, D35 to D40).
+- **Claude-ready output (D4).** `bootstrap lsp --json` prints
+  `data.servers`, one verbatim entry of Claude's `lspServers` for each server
+  (`command` `mise`, `args` `["x", "--", <command>, <args>…]`,
+  `extensionToLanguage`, `startupTimeout`), so stackgen copies each entry
+  without a change. `data.checks` gives the real command and the source of
+  each server. `describe --json` has the same object in its `lsp` field.
+- **What `code:lsp:check` tests (D5).** It tests that each listed server's
+  command resolves in the dev env: `MISE_ENV=dev mise which <command>` for a
+  pinned server, `xcrun --find <command>` for a host server. It starts no
+  server. A missing server prints one line with its fix and exits 1.

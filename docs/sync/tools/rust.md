@@ -27,10 +27,18 @@ the root has a `Cargo.toml` (see "Scripts"). It does not find a zola site.
 
 ## mise tools
 
-| mise tool   | Version  | Environments | Note                                                 |
-| ----------- | -------- | ------------ | ---------------------------------------------------- |
-| `core:rust` | `latest` | dev, ci      | The `default` profile, which has clippy and rustfmt. |
-| `zola`      | `latest` | dev, ci      |                                                      |
+| mise tool                      | Version  | Environments | Note                                                 |
+| ------------------------------ | -------- | ------------ | ---------------------------------------------------- |
+| `core:rust`                    | `latest` | dev, ci      | The `default` profile, which has clippy and rustfmt. |
+| `zola`                         | `latest` | dev, ci      |                                                      |
+| `aqua:rust-lang/rust-analyzer` | `latest` | dev          | The language server. In `[mise_env.dev.tools]`.      |
+
+The tool declares the language server `rust-analyzer` (`.rs`), from the
+`aqua:rust-lang/rust-analyzer` pin. The pin is in `[mise_env.dev.tools]`, so it
+stays in dev and does not stop `rust` in ci. The language server is in
+[`docs/design/tools.md`](../../design/tools.md) ("The `[lsp]` table").
+`bootstrap lsp` lists it, and `code:lsp:check` of the `mise` tool tests that it
+resolves.
 
 ## Tasks
 
@@ -69,4 +77,5 @@ None.
 
 ## Migration
 
-- Remove `core:rust` and zola from the repository-owned mise files.
+- Remove `core:rust`, zola and rust-analyzer from the repository-owned mise
+  files.

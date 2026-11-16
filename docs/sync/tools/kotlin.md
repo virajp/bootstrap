@@ -49,6 +49,12 @@ Gradle file at the root, or one level below it, uses the Kotlin plugin (see
 `kotlin-lsp` is in `[mise_env.dev.tools]`, not in `[mise.tools]`. Thus it
 stays in dev, and it does not stop `kotlin` in ci.
 
+The tool declares the language server `kotlin-lsp` (`kotlin-lsp --stdio`, for
+`.kt` and `.kts`), from the `http:kotlin-lsp` pin. The language server is in
+[`docs/design/tools.md`](../../design/tools.md) ("The `[lsp]` table").
+`bootstrap lsp` lists it, and `code:lsp:check` of the `mise` tool tests that it
+resolves.
+
 ## Tasks
 
 | Task                   | Use                                                                                                                                                      |

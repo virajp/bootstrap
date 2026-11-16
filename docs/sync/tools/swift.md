@@ -50,6 +50,13 @@ Swift, SwiftPM, swift-format and `sourcekit-lsp` come from the developer folder
 that `xcode-select` selects: a full Xcode for a root `*.xcodeproj`, or the
 Command Line Tools for a root with only `Package.swift`.
 
+The tool declares the language server `sourcekit-lsp` (`.swift`, a startup
+timeout of 1000 ms) with the source `host`: no mise pin, and `code:lsp:check`
+finds it with `xcrun --find sourcekit-lsp`. The language server is in
+[`docs/design/tools.md`](../../design/tools.md) ("The `[lsp]` table").
+`bootstrap lsp` lists it, and `code:lsp:check` of the `mise` tool tests that it
+resolves.
+
 The tool also sets `os = "macos"` in `[mise_env.ci.settings]`. The `mise` tool
 sets `os = "linux"` for ci, and `conf.d/swift/` loads after `conf.d/mise/`, so
 this value wins.
