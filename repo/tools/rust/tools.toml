@@ -27,3 +27,14 @@ version = "latest"
 [mise.tools.zola]
 envs = [ "dev", "ci" ]
 version = "latest"
+
+# The language server is for an editor, so it is in dev only. As a
+# [mise_env.dev] entry, it does not stop the rust tool in ci.
+[mise_env.dev.tools."aqua:rust-lang/rust-analyzer"]
+version = "latest"
+
+# The language server of the tool, for bootstrap lsp and code:lsp:check.
+[lsp.rust-analyzer]
+command = "rust-analyzer"
+extensions = { ".rs" = "rust" }
+source = "aqua:rust-lang/rust-analyzer"

@@ -52,6 +52,14 @@ UV_NO_CACHE = true
 UV_NO_MANAGED_PYTHON = true
 UV_PYTHON_DOWNLOADS = "never"
 
+# The language server of the tool, for bootstrap lsp and code:lsp:check:
+# pyrefly, from the pin above, so only with a pyproject.toml.
+[lsp.pyrefly]
+args = [ "lsp" ]
+command = "pyrefly"
+extensions = { ".py" = "python", ".pyi" = "python" }
+source = "pipx:pyrefly"
+
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
 [tasks."code/format/40-ruff"]

@@ -29,6 +29,14 @@ version_regex = 'kotlin-lsp/v(\d+\.\d+\.\d+)'
 macos-arm64 = { checksum_url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.sit.sha256", format = "zip", rename_exe = "kotlin-lsp", url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.sit" }
 macos-x64 = { checksum_url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.sit.sha256", format = "zip", rename_exe = "kotlin-lsp", url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.sit" }
 
+# The language server of the tool, for bootstrap lsp and code:lsp:check.
+[lsp.kotlin-lsp]
+args = [ "--stdio" ]
+command = "kotlin-lsp"
+extensions = { ".kt" = "kotlin", ".kts" = "kotlin" }
+source = "http:kotlin-lsp"
+startup_timeout = 60000
+
 # The files of the tool, below files/.
 [files.".config/detekt.yml"]
 mode = "seed"

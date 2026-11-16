@@ -13,3 +13,21 @@ version = "lts"
 
 [mise.settings]
 java.shorthand_vendor = "temurin"
+
+# The language server is for an editor, so it is in dev only. As a
+# [mise_env.dev] entry, it does not stop the java tool in ci. jdtls is not in
+# the mise registry, and no version list gives the build timestamp of a
+# milestone, so the pin names one milestone: bump the version by hand. The
+# launcher bin/jdtls is a Python script that runs on the host python3.
+[mise_env.dev.tools."http:jdtls"]
+bin_path = "bin"
+checksum_url = "https://download.eclipse.org/jdtls/milestones/{{ version | split(pat='-') | first }}/jdt-language-server-{{ version }}.tar.gz.sha256"
+url = "https://download.eclipse.org/jdtls/milestones/{{ version | split(pat='-') | first }}/jdt-language-server-{{ version }}.tar.gz"
+version = "1.63.0-202610191322"
+
+# The language server of the tool, for bootstrap lsp and code:lsp:check.
+[lsp.jdtls]
+command = "jdtls"
+extensions = { ".java" = "java" }
+source = "http:jdtls"
+startup_timeout = 60000

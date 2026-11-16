@@ -44,6 +44,18 @@ version = "latest"
 # for a newer go or toolchain line of go.mod. Module downloads do not change.
 GOTOOLCHAIN = "local"
 
+# The language server is for an editor, so it is in dev only. As a
+# [mise_env.dev] entry, it does not stop the go tool in ci. Not in the mise
+# registry: the go backend builds it with the Go of mise.
+[mise_env.dev.tools."go:golang.org/x/tools/gopls"]
+version = "latest"
+
+# The language server of the tool, for bootstrap lsp and code:lsp:check.
+[lsp.gopls]
+command = "gopls"
+extensions = { ".go" = "go" }
+source = "go:golang.org/x/tools/gopls"
+
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
 [tasks."code/lint/40-go"]
