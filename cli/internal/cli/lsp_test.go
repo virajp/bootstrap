@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
@@ -18,13 +20,7 @@ import (
 // the repository and the run function.
 func lspRepo(t *testing.T) (string, func(args ...string) (fail.Code, string, string)) {
 	t.Helper()
-	setupEnv(t, "/nonexistent/bootstrap/config.toml")
-	clone, root := t.TempDir(), t.TempDir()
-	const keys = catalogKeys + "default_envs = [ \"dev\" ]\ndepends = []\nroot_only = false\n"
-	writeFile(t, filepath.Join(clone, "cli", "VERSION"), "0.0.1\n", 0o644)
-	writeFile(t, filepath.Join(clone, "repo", "categories.toml"), catalogFile, 0o644)
-	writeFile(t, filepath.Join(clone, "repo", "packs.toml"), "[pack.base]\na = { required = true }\n", 0o644)
-	writeFile(t, filepath.Join(clone, "repo", "tools", "a", "tools.toml"), keys+`
+	return lspRepoOf(t, map[string]string{"a": `
 [mise.tools.pa]
 requires_found = [ "pyproject.toml" ]
 version = "latest"
@@ -44,22 +40,40 @@ args = [ "--stdio" ]
 extensions = { ".d" = "d" }
 startup_timeout = 1000
 source = "da"
-`, 0o644)
-	writeFile(t, filepath.Join(clone, "repo", "tools", "b", "tools.toml"), keys+`
+`,
+		"b": `
 [lsp.host-lsp]
 command = "hl"
 extensions = { ".h" = "h" }
 source = "host"
-`, 0o644)
-	writeFile(t, filepath.Join(clone, "repo", "tools", "c", "tools.toml"), keys+`
+`,
+		"c": `
 [lsp.ci-lsp]
 command = "cl"
 extensions = { ".c" = "c" }
 source = "host"
-`, 0o644)
+`,
+	}, "[tools.a]\n\n[tools.b]\n\n[tools.c]\nenv = [ \"ci\" ]\n")
+}
+
+// lspRepoOf is a clone with the tools of <tools> (a name and the rest of its
+// tools.toml), with the tool a required in the pack base, and a repository
+// that selects <selected> (the tables of its tools.toml). It gives the root
+// of the repository and the run function.
+func lspRepoOf(t *testing.T, tools map[string]string, selected string) (string, func(args ...string) (fail.Code, string, string)) {
+	t.Helper()
+	setupEnv(t, "/nonexistent/bootstrap/config.toml")
+	clone, root := t.TempDir(), t.TempDir()
+	const keys = catalogKeys + "default_envs = [ \"dev\" ]\ndepends = []\nroot_only = false\n"
+	writeFile(t, filepath.Join(clone, "cli", "VERSION"), "0.0.1\n", 0o644)
+	writeFile(t, filepath.Join(clone, "repo", "categories.toml"), catalogFile, 0o644)
+	writeFile(t, filepath.Join(clone, "repo", "packs.toml"), "[pack.base]\na = { required = true }\n", 0o644)
+	for name, rest := range tools {
+		writeFile(t, filepath.Join(clone, "repo", "tools", name, "tools.toml"), keys+rest, 0o644)
+	}
 	dir := filepath.Join(root, ".config", "bootstrap")
 	writeFile(t, filepath.Join(dir, "repo.toml"), "format = 3\nrepo_name = \"x\"\ncore_branches = [ \"main\" ]\nenvironments = [ \"dev\", \"ci\" ]\n", 0o644)
-	writeFile(t, filepath.Join(dir, "tools.toml"), "format = 3\n\n[tools.a]\n\n[tools.b]\n\n[tools.c]\nenv = [ \"ci\" ]\n", 0o644)
+	writeFile(t, filepath.Join(dir, "tools.toml"), "format = 3\n\n"+selected, 0o644)
 	if out, err := exec.Command("git", "-C", root, "init", "-q", "-b", "main").CombinedOutput(); err != nil {
 		t.Fatalf("git init: %s", out)
 	}
@@ -119,6 +133,102 @@ func TestLSPJSON(t *testing.T) {
 	if code != fail.OK || string(servers["pa-lsp"]) != `{"command":"mise","args":["x","--","pa","lsp"],"extensionToLanguage":{".py":"python",".pyi":"python"}}` ||
 		checks["pa-lsp"] != (lspCheck{"pa", "pa"}) || len(servers) != 3 {
 		t.Errorf("with pyproject.toml: code %d, servers %v, checks %v", code, servers, checks)
+	}
+}
+
+// TestLSPRequiresFound: a server whose source pin has requires_found
+// [package.json, tsconfig.json] is listed when any one of the two files is
+// found (D38), and left out when neither is.
+func TestLSPRequiresFound(t *testing.T) {
+	tool := map[string]string{"a": `
+[mise.tools.tls]
+envs = [ "dev" ]
+requires_found = [ "package.json", "tsconfig.json" ]
+version = "latest"
+
+[lsp.ts-lsp]
+command = "tls"
+args = [ "--stdio" ]
+extensions = { ".js" = "javascript", ".ts" = "typescript" }
+source = "tls"
+`}
+	for _, c := range []struct {
+		name  string
+		files []string
+		want  []string
+	}{
+		{"neither", nil, nil},
+		{"first only", []string{"package.json"}, []string{"ts-lsp"}},
+		{"second only", []string{"tsconfig.json"}, []string{"ts-lsp"}},
+		{"both", []string{"package.json", "tsconfig.json"}, []string{"ts-lsp"}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			root, run := lspRepoOf(t, tool, "[tools.a]\n")
+			for _, f := range c.files {
+				writeFile(t, filepath.Join(root, "web", f), "{}\n", 0o644)
+			}
+			code, out, errText := run("lsp", "--json")
+			if code != fail.OK {
+				t.Fatalf("code %d, stdout %q, stderr %q", code, out, errText)
+			}
+			servers, checks := lspJSON(t, readEnvelope(t, out).Data)
+			var got []string
+			for n := range servers {
+				got = append(got, n)
+				if checks[n] != (lspCheck{"tls", "tls"}) {
+					t.Errorf("checks[%s] = %+v", n, checks[n])
+				}
+			}
+			sort.Strings(got)
+			if !reflect.DeepEqual(got, c.want) {
+				t.Errorf("servers %v, want %v", got, c.want)
+			}
+		})
+	}
+}
+
+// TestLSPMiseEnvRequiresFound: a server whose source pin is a
+// [mise_env.dev.tools] entry with requires_found is listed only when any one
+// of its names is found (D40).
+func TestLSPMiseEnvRequiresFound(t *testing.T) {
+	tool := map[string]string{"a": `
+[mise_env.dev.tools.tls]
+requires_found = [ "package.json", "tsconfig.json" ]
+version = "latest"
+
+[lsp.ts-lsp]
+command = "tls"
+extensions = { ".ts" = "typescript" }
+source = "tls"
+`}
+	for _, c := range []struct {
+		name  string
+		files []string
+		want  []string
+	}{
+		{"neither", nil, nil},
+		{"first only", []string{"package.json"}, []string{"ts-lsp"}},
+		{"second only", []string{"tsconfig.json"}, []string{"ts-lsp"}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			root, run := lspRepoOf(t, tool, "[tools.a]\n")
+			for _, f := range c.files {
+				writeFile(t, filepath.Join(root, "web", f), "{}\n", 0o644)
+			}
+			code, out, errText := run("lsp", "--json")
+			if code != fail.OK {
+				t.Fatalf("code %d, stdout %q, stderr %q", code, out, errText)
+			}
+			servers, _ := lspJSON(t, readEnvelope(t, out).Data)
+			var got []string
+			for n := range servers {
+				got = append(got, n)
+			}
+			sort.Strings(got)
+			if !reflect.DeepEqual(got, c.want) {
+				t.Errorf("servers %v, want %v", got, c.want)
+			}
+		})
 	}
 }
 

@@ -87,7 +87,14 @@ type Envs struct {
 	Selected []string
 	tools    words // "<tool>:<env>" (_SE_MISE_TOOL_ENVS)
 	mise     words // "<mise-tool>:<env>" (_SE_MISE_ENVS)
+	// unmet holds "<mise-tool>:<env>" for each [mise_env.<env>.tools] entry
+	// whose requires_found is not met: the config of <env> leaves it out.
+	unmet words
 }
+
+// Unmet tells if the [mise_env.<env>.tools.<name>] entry has a requires_found
+// that is not met.
+func (e *Envs) Unmet(name, env string) bool { return e != nil && e.unmet.has(name+":"+env) }
 
 // In tells if <tool> is in the environment <env>.
 func (e *Envs) In(tool, env string) bool { return e != nil && e.tools.has(tool+":"+env) }
@@ -102,7 +109,8 @@ func (e *Envs) MiseWords() string { return e.mise.String() }
 // values file, in the order of EnvNames. <r> is the resolved selection: its
 // Sel entries, its Deps rows, and the default_envs and the [mise.tools] entries
 // of each tool of r.Tools. <shown> is the tools folder in a message
-// (repo/tools). <hasFile> finds a name of `requires_found`. A tool that runs in
+// (repo/tools). <hasFile> finds a name of `requires_found`, of a
+// [mise.tools] entry and of a [mise_env.<env>.tools] entry. A tool that runs in
 // an environment needs its dependencies there too. The error (code 2) is an
 // unknown name in `envs`, or a tool in an environment that one of its mise
 // tools does not allow. The macos side has no environments: it gives an empty
@@ -132,6 +140,18 @@ func NewEnvs(side source.Side, selected []string, r *selection.Resolved, shown s
 		}
 		for _, d := range m.DefaultEnvs {
 			defaults = append(defaults, tool+":"+d)
+		}
+		for _, mt := range m.MiseEnv {
+			met := false
+			for _, item := range mt.RequiresFound {
+				if hasFile(item) {
+					met = true
+					break
+				}
+			}
+			if !met && !e.unmet.has(mt.Name+":"+mt.Env) {
+				e.unmet = append(e.unmet, mt.Name+":"+mt.Env)
+			}
 		}
 		for _, mt := range m.Mise {
 			envs := "-"
@@ -206,10 +226,11 @@ func NewEnvs(side source.Side, selected []string, r *selection.Resolved, shown s
 		if allowed == "-" {
 			allowed = "dev"
 		}
-		present := true
+		present := len(found[name]) == 0
 		for _, item := range found[name] {
-			if !hasFile(item) {
-				present = false
+			if hasFile(item) {
+				present = true
+				break
 			}
 		}
 		for _, n := range strings.Fields(strings.ReplaceAll(allowed, ",", " ")) {

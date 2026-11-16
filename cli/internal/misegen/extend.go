@@ -25,6 +25,7 @@ func (g *Generator) extend(tool, env string, t any) any {
 			m[key] = deepMerge(m[key], v)
 		}
 	}
+	g.envFound(m, env)
 	mise, ok := m["mise"].(map[string]any)
 	if !ok {
 		return m
@@ -43,6 +44,41 @@ func (g *Generator) extend(tool, env string, t any) any {
 		}
 	}
 	return m
+}
+
+// envFound applies the requires_found of each [mise_env.<env>.tools] entry
+// of <m> (repo side): an entry that it does not meet goes, and the key goes
+// from the others.
+func (g *Generator) envFound(m map[string]any, env string) {
+	if g.Side == source.Macos {
+		return
+	}
+	me, ok := m["mise_env"].(map[string]any)
+	if !ok {
+		return
+	}
+	b, ok := me[env].(map[string]any)
+	if !ok {
+		return
+	}
+	tools, ok := b["tools"].(map[string]any)
+	if !ok {
+		return
+	}
+	for name, v := range tools {
+		e, ok := v.(map[string]any)
+		if !ok {
+			continue
+		}
+		if _, has := e["requires_found"]; !has {
+			continue
+		}
+		if g.Envs.Unmet(name, env) {
+			delete(tools, name)
+			continue
+		}
+		delete(e, "requires_found")
+	}
 }
 
 // deepMerge merges <b> over <a>: tables merge key by key, any other value of

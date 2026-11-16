@@ -61,6 +61,13 @@ type MiseTool struct {
 	RequiresFound []string
 }
 
+// MiseEnvTool is one `[mise_env.<env>.tools.<name>]` entry (repo side) with
+// requires_found.
+type MiseEnvTool struct {
+	Env, Name     string
+	RequiresFound []string
+}
+
 // Manifest is the tools.toml of one tool.
 type Manifest struct {
 	Tool        string
@@ -89,6 +96,9 @@ type Manifest struct {
 	Parent   string // The parent tool, or empty.
 	Files    []FileEntry
 	Mise     []MiseTool // Repo side.
+	// MiseEnv holds the [mise_env.<env>.tools] entries with requires_found
+	// (repo side), sorted by env, then by name.
+	MiseEnv []MiseEnvTool
 	// MiseOrder holds the names of the [mise.tools] entries in the order of
 	// the file. A mise tool depends on the mise tools above it.
 	MiseOrder []string
@@ -306,7 +316,18 @@ func (m *Manifest) repoLines() error {
 				if !isMap {
 					continue
 				}
-				for _, key := range []string{"requires_found", "requires", "files"} {
+				if rf, has := v.Lookup("requires_found"); has {
+					items, good := checkedList(rf)
+					if good {
+						for _, it := range items {
+							add("mise_found", k, it, "")
+						}
+						m.MiseEnv = append(m.MiseEnv, MiseEnvTool{Env: en, Name: k, RequiresFound: items})
+					} else {
+						add("bad", fmt.Sprintf("requires_found of mise tool %s in [mise_env.%s.tools] must be a non-empty list of file names", k, en), "", "")
+					}
+				}
+				for _, key := range []string{"requires", "files"} {
 					if v.Has(key) {
 						add("mise_env_key", key, k, en)
 					}

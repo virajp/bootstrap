@@ -192,7 +192,7 @@ var repoCases = []repoCase{
 	{name: "root-only-sub", sub: true, over: tree{"repo/tools/c/tools.toml": "default_envs = [ \"dev\" ]\nroot_only = true\n", "repo/packs.toml": "[pack.base]\na = { required = true }\nc = { required = true }\n"}, values: repoValues},
 	{name: "root-only-sub-tools", sub: true, over: tree{"repo/tools/c/tools.toml": "default_envs = [ \"dev\" ]\nroot_only = true\n"}, values: repoValues + "[tools.c]\n"},
 	{name: "root-only-dep-sub", sub: true, over: tree{"repo/tools/c/tools.toml": "default_envs = [ \"dev\" ]\nroot_only = true\n", "repo/tools/a/tools.toml": "default_envs = [ \"dev\" ]\ndepends = [ \"c\" ]\n"}, values: repoValues},
-	{name: "old-keys", over: tree{"repo/tools/a/tools.toml": rt("seed = [ \"x\" ]\n[seed_requires]\nx = 1\n[mise.tools.ta]\nrequires = \"f\"\nfiles = [ \"g\" ]\nrequires_found = [ \"a/b\" ]\n[mise.tools.tb]\nrequires = \"h\"\nrequires_found = []\n[mise_env.ci.tools.ta]\nrequires_found = [ \"x\" ]\n")}, values: repoValues},
+	{name: "old-keys", over: tree{"repo/tools/a/tools.toml": rt("seed = [ \"x\" ]\n[seed_requires]\nx = 1\n[mise.tools.ta]\nrequires = \"f\"\nfiles = [ \"g\" ]\nrequires_found = [ \"a/b\" ]\n[mise.tools.tb]\nrequires = \"h\"\nrequires_found = []\n[mise_env.ci.tools.ta]\nrequires = \"x\"\n")}, values: repoValues},
 	{name: "merge-contribute", over: tree{
 		"repo/tools/a/tools.toml": rt("[defaults]\nlist = [ 1, 2 ]\nflag = false\n[defaults.t]\nk = 1\n\n[contributes.d]\nlist = [ 2, 3 ]\n[contributes.d.t]\nj = 2\n"),
 		"repo/tools/b/tools.toml": rt("[contributes.d]\nlist = [ 4 ]\nname = \"x\"\n"),

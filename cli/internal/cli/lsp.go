@@ -76,20 +76,32 @@ func lspOf(root string, sel *core.Selected) (lspData, error) {
 	return d, nil
 }
 
-// foundFor tells if the requires_found of the mise tool <pin> of <m> is met.
-// A pin without requires_found, and "host", always are.
+// foundFor tells if the requires_found of the mise tool <pin> of <m>, in
+// [mise.tools] or in [mise_env.dev.tools], is met. A pin without
+// requires_found, and "host", always are.
 func foundFor(m *source.Manifest, pin string, has func(string) bool) bool {
 	for _, mt := range m.Mise {
-		if mt.Name != pin {
-			continue
+		if mt.Name == pin && !anyFound(mt.RequiresFound, has) {
+			return false
 		}
-		for _, f := range mt.RequiresFound {
-			if !has(f) {
-				return false
-			}
+	}
+	for _, mt := range m.MiseEnv {
+		if mt.Env == "dev" && mt.Name == pin && !anyFound(mt.RequiresFound, has) {
+			return false
 		}
 	}
 	return true
+}
+
+// anyFound tells if the repository has a file of <names>, or <names> is
+// empty: requires_found is met by any one of its names.
+func anyFound(names []string, has func(string) bool) bool {
+	for _, f := range names {
+		if has(f) {
+			return true
+		}
+	}
+	return len(names) == 0
 }
 
 // lsp is `bootstrap lsp`: the language servers of the selected tools of the
