@@ -597,5 +597,8 @@
   },
   "gaps": [],
   "overrides": [],
-  "run": {}
+  "run": {
+    "worktree": ".worktrees/lsp",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-14-lsp.jsonl"
+  }
 }
