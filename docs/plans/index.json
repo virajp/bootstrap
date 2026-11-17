@@ -111,8 +111,8 @@
       "title": "R2e — test parts of the android and swift tools, and init removes the old stackgen copies",
       "target_repo": null,
       "priority": 120,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-17T15:14:39.597Z",
       "ended": "",
       "gaps": null,
       "requires": [
