@@ -1,0 +1,12 @@
+# Security review: plugins-setup-ai (5562d7c..HEAD, excluding docs/plans/)
+
+No vulnerabilities found with confidence of 8 or higher.
+
+Examined and dismissed:
+
+1. `config get` on a `tools.*` key now runs derive scripts (`cli/internal/cli/values.go` toolsGet, `cli/internal/repo/scripts.go` Derive): the scripts come from the catalog clone (`--clone`/`BOOTSTRAP_CLONE`, trusted, or a copy of the same cache clone `bootstrap sync` already runs scripts from). CacheOnly returns no catalog unless the cache matches the configured origin, and CheckVersion still runs. No consumer value selects the clone or the script, so no code runs from a less-trusted source than before.
+2. Clone CacheOnly path (`cli/internal/core/clone.go`): it only skips the fetch. The lock and the copy (no shell) are unchanged, and an empty Dir returns early, which is safe.
+3. `contributes_items` (`cli/internal/source/contribitems.go`, `cli/internal/format/sharedio.go`, `cli/internal/repo/file.go`): the items come only from catalog manifests. They are parsed by the existing parseItem/expand and written only to an owner's declared merge-mode target. There is no new path, template or exec surface.
+4. Values origin tracking (`cli/internal/values/merge.go`): in-memory bookkeeping only.
+5. `repo/tools/claude/tasks/setup-ai`: plugin names, sources and the installed record come from the owner's values file and catalog contributions. They are passed as quoted arguments to `claude plugin`, with no eval and fixed-string grep. The record is built with `jq -Rnc` and written as one argument. Uninstall covers only recorded plugins at project scope. No untrusted-input path.
+6. `repo/tools/virajp-plugins/tools.toml` and the moved .gitignore lines: static catalog data.

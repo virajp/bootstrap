@@ -119,6 +119,7 @@ func (s Source) openRepo() (*Index, error) {
 			x.LSPOwner[srv.Name] = tool
 		}
 		probs = append(probs, x.repoRules(tool, m)...)
+		probs = append(probs, x.contribItemsRules(tool)...)
 		probs = append(probs, x.catalogRules(tool)...)
 		probs = append(probs, x.categoryRule(tool)...)
 		probs = append(probs, m.probs...)

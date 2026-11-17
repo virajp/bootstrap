@@ -250,3 +250,30 @@ points. They win over the text above.
   command resolves in the dev env: `MISE_ENV=dev mise which <command>` for a
   pinned server, `xcrun --find <command>` for a host server. It starts no
   server. A missing server prints one line with its fix and exits 1.
+
+## Amendments 2026-11-14 (R2c planning)
+
+The planning of R2c (`docs/plans/2026-11-14-plugins-setup-ai` of bootstrap)
+changed these points. They win over the text above.
+
+- **Contributed merge items (D1, D7, D11).** A tool adds items to a
+  merge-mode file of another tool with
+  `[[contributes_items.<owner>."<target>".item]]`, in the item format of the
+  owner's spec; the owner stays the one owner of the file. The items go after
+  the owner's own items, in the order of the contributing tools' names, with
+  no duplicates, and the owner's override table applies to them. `check`
+  refuses (code 2) an owner that the catalog does not have and a target that
+  the owner does not declare as merge-mode. `virajp-plugins` carries the vwf
+  `.gitignore` lines this way, and its plugin entry in
+  `[contributes.claude.plugins.user]`.
+- **The record (D3, D5).** `setup:ai` keeps the project plugins that it
+  installed in `tools.claude.plugins.installed`. A recorded plugin that leaves
+  `[tools.claude.plugins.project]` is uninstalled at project scope and dropped
+  from the record. A plugin installed by hand, and user scope, are never
+  touched.
+- **Update only on a flag (D4, amended by D39).** A plain `setup:ai` installs
+  what is missing and does the D3 removal, and nothing else; a second run
+  changes nothing. `mise run setup:ai --upgrade` also updates the marketplaces
+  and the listed plugins. The flag is `--upgrade`, the same as
+  `setup --upgrade`, which runs `setup:ai --upgrade`; a plain `setup` does not
+  run `setup:ai`.

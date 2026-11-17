@@ -23,10 +23,18 @@ type SharedInput struct {
 	Target    string // The target path, for the format of its extension.
 	Explicit  string // The `format` key of the [files] entry, or "".
 	Overrides []byte // JSON: the override table of the target, or nil.
-	Records   []string
-	Header    []string // The lines of the shared header, without a comment marker.
-	Show      string   // The target in a message.
-	SpecShow  string   // The spec in a message.
+	// Contributed is JSON: the list of the items that the selected tools
+	// contribute to the target, or nil. They go after the items of the spec,
+	// without an item that is already there.
+	Contributed []byte
+	// Known is JSON: the list of the items that any tool of the catalog
+	// contributes to the target, selected or not, or nil. An override of one
+	// of them is not unused (D17).
+	Known    []byte
+	Records  []string
+	Header   []string // The lines of the shared header, without a comment marker.
+	Show     string   // The target in a message.
+	SpecShow string   // The spec in a message.
 }
 
 // SharedResult is the output of MergeShared.

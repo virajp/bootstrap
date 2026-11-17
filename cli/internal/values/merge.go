@@ -31,6 +31,9 @@ type Input struct {
 type Result struct {
 	Tools  []string               // The selected tools, sorted, without a repeat.
 	Values map[string]*source.Obj // The merged values of each tool.
+	// Derived holds the values of level 3 of each tool whose derive script
+	// gave a value, for config get (D35).
+	Derived map[string]*source.Obj
 }
 
 // Lines gives the `ctx<TAB><tool><TAB><json>` lines of `_se_values`, one for
@@ -275,7 +278,7 @@ func sortedUnique(in []string) []string {
 // selected tool, the result is empty.
 func Merge(in Input) (*Result, error) {
 	names := sortedUnique(in.Selected)
-	res := &Result{Tools: names, Values: map[string]*source.Obj{}}
+	res := &Result{Tools: names, Values: map[string]*source.Obj{}, Derived: map[string]*source.Obj{}}
 	if len(names) == 0 {
 		return res, nil
 	}
@@ -390,6 +393,9 @@ func Merge(in Input) (*Result, error) {
 		for _, n := range names {
 			if d := derived[n]; d != nil {
 				base[n] = asObj(replaceMerge(base[n], d))
+				if d.Len() > 0 {
+					res.Derived[n] = d
+				}
 			}
 		}
 	}
@@ -447,4 +453,109 @@ func asObj(v any) *source.Obj {
 		return o
 	}
 	return source.NewObj()
+}
+
+// Origin is the origin of a value of a tool, for config get (D15, D20,
+// D34, D35).
+type Origin struct {
+	Value  any
+	Source string // "file", "derived", "contributed" or "default".
+	// ContributedBy names the tools whose [contributes.<tool>] changed the
+	// value, sorted; empty when no contribution changed it.
+	ContributedBy []string
+}
+
+// OriginOf gives the value at <path> of the selected tool <tool> in the
+// merged values <res>: the defaults, the contributions of the selected tools
+// <selected>, the derive scripts, the file and the overrides, in the order
+// of Merge. <user> holds the user values and <over> the
+// [overrides.tools.<name>] tables (tool name to table, <over> can be nil).
+// The source names the last layer of that order that has the path: "file"
+// when the user values or the overrides have it, else "derived" when the
+// derive script of the tool gave it, else "contributed" when a contribution
+// changed the value, else "default".
+func OriginOf(idx *source.Index, res *Result, user, over *source.Obj, selected []string, tool string, path []string) Origin {
+	merged := getpath(res.Values[tool], path)
+	var defs any = source.NewObj()
+	if m := idx.Manifests[tool]; m != nil {
+		defs = tableOf(m.Raw.Get("defaults"))
+	}
+	// inFile: the values file has the path. A file without the table of the
+	// tool has no path, also the empty one of a whole table.
+	inFile := false
+	var own any = source.NewObj()
+	if user != nil && user.Get(tool) != nil {
+		own = user.Get(tool)
+		inFile = getpath(own, path) != nil
+	}
+	var mine any = source.NewObj()
+	if over != nil {
+		if o, ok := over.Get(tool).(*source.Obj); ok {
+			mine = o
+			inFile = inFile || getpath(mine, path) != nil
+		}
+	}
+	var derived any = source.NewObj()
+	if d := res.Derived[tool]; d != nil {
+		derived = d
+	}
+	// plain: the merge without the contributions.
+	plain := getpath(replaceMerge(contributionMerge(replaceMerge(defs, derived), own), mine), path)
+	o := Origin{Value: merged, Source: "default"}
+	if !source.Equal(merged, plain) {
+		for _, t := range sortedUnique(selected) {
+			m := idx.Manifests[t]
+			if m == nil || t == tool {
+				continue
+			}
+			co, ok := m.Raw.Get("contributes").(*source.Obj)
+			if !ok {
+				continue
+			}
+			if getpath(co.Get(tool), path) != nil {
+				o.ContributedBy = append(o.ContributedBy, t)
+			}
+		}
+	}
+	switch {
+	case inFile:
+		o.Source = "file"
+	case res.Derived[tool] != nil && getpath(derived, path) != nil:
+		o.Source = "derived"
+	case len(o.ContributedBy) > 0:
+		o.Source = "contributed"
+	}
+	return o
+}
+
+// EngineKeys are the keys of a [tools.<name>] entry that the engine reads
+// itself: ReadRepo leaves them out of the user values, so Merge never merges
+// them (D34).
+var EngineKeys = []string{"env"}
+
+// EngineOrigin gives the value at <path> of the tool of the manifest <m>
+// when <path> starts with an engine key, and false otherwise: the value of
+// the entry <entry> of the values file (source "file"), else the default
+// of the engine (source "default"). The default of env is the
+// default_envs of the tool (D34).
+func EngineOrigin(m *source.Manifest, entry *source.Obj, path []string) (Origin, bool) {
+	engine := false
+	for _, k := range EngineKeys {
+		engine = engine || (len(path) > 0 && path[0] == k)
+	}
+	if !engine {
+		return Origin{}, false
+	}
+	if entry != nil && entry.Has(path[0]) {
+		return Origin{Value: getpath(entry, path), Source: "file"}, true
+	}
+	def := source.NewObj()
+	if m != nil {
+		envs := make([]any, len(m.DefaultEnvs))
+		for i, e := range m.DefaultEnvs {
+			envs[i] = e
+		}
+		def.Set("env", envs)
+	}
+	return Origin{Value: getpath(def, path), Source: "default"}, true
 }

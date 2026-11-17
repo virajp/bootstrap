@@ -179,11 +179,8 @@ value = '.dev.vars'
 value = '.dev.vars.*'
 
 # ==== Logs and runtime ====
-# vwf engine logs are part of a plan folder and stay tracked.
 [[item]]
 value = '*.log'
-[[item]]
-value = '!docs/plans/**/*.log'
 [[item]]
 value = 'npm-debug.log*'
 [[item]]
@@ -607,16 +604,6 @@ value = 'Secrets.xcconfig'
 value = '**/.pulumi/backups/'
 [[item]]
 value = '**/.pulumi/history/'
-
-# ==== vwf: working notes and scratch ====
-[[item]]
-value = 'docs/memory/handoff/'
-[[item]]
-value = 'docs/memory/doctor/'
-[[item]]
-value = 'docs/memory/runs/'
-[[item]]
-value = 'docs/scratchpad/'
 
 # ==== mempalace ====
 # The entity list, written at the repo root.

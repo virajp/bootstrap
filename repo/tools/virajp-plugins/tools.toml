@@ -1,0 +1,30 @@
+# virajp-plugins: the .gitignore lines and the Claude Code plugin entry of vwf.
+category = "editor-ai"
+default_envs = [ "dev" ]
+depends = [ "claude", "git" ]
+description = "The .gitignore lines of vwf's working notes and scratch, and the vwf plugin entry that setup:ai of the claude tool installs."
+root_only = true
+summary = "vwf's ignore lines and plugin entry"
+
+# The vwf plugin, installed at user scope by setup:ai of the claude tool.
+[contributes.claude.plugins.user]
+"vwf@virajp-plugins" = "virajp/claude-plugins"
+
+# The lines of vwf, added to .gitignore of the git tool after its own lines.
+# vwf's working notes and scratch.
+[[contributes_items.git.".gitignore".item]]
+value = "docs/memory/handoff/"
+
+[[contributes_items.git.".gitignore".item]]
+value = "docs/memory/doctor/"
+
+[[contributes_items.git.".gitignore".item]]
+value = "docs/memory/runs/"
+
+[[contributes_items.git.".gitignore".item]]
+value = "docs/scratchpad/"
+
+# vwf's plan logs are part of a plan folder and stay tracked, despite the
+# *.log line of the git tool.
+[[contributes_items.git.".gitignore".item]]
+value = "!docs/plans/**/*.log"

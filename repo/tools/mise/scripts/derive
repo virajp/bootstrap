@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# The derive script of the mise tool. The sync runs it in the root of the
-# repository, and never copies it. In a repository with submodule or sibling
-# members, it gives the dev aliases setup-all and setup-<member>, one for each
-# member that also has a [members.<name>] table in
-# .config/bootstrap/repo.toml: the members of the flags of the setup task. The
-# input has no keys of repo.toml, so the script reads repo.members with
-# `bootstrap config get`, which reads the values folder of the sync
-# (BOOTSTRAP_VALUES).
+# The derive script of the mise tool. The sync, and `bootstrap config get` of a
+# tools.* key, run it in the root of the repository, and never copy it. In a
+# repository with submodule or sibling members, it gives the dev aliases
+# setup-all and setup-<member>, one for each member that also has a
+# [members.<name>] table in .config/bootstrap/repo.toml: the members of the
+# flags of the setup task. The input has no keys of repo.toml, so the script
+# reads repo.members with `bootstrap config get`, which reads the values
+# folder of the run (BOOTSTRAP_VALUES in a sync). A repo.* key needs no
+# catalog, so this read never runs a derive script again.
 
 set -euo pipefail
 

@@ -45,6 +45,7 @@ into `.config/bootstrap/`.
 | `.config/bootstrap.toml`, `.config/bootstrap.overrides.toml` or `.config/repo-generated.tsv`          | M41, after the release `bootstrap@4.0.0`, and after each other item.                                                                                    |
 | A task `test`, `test:e2e` or `test:golden` of the repository, or a task without `NN-` in a task group | M42, with M41.                                                                                                                                          |
 | `code:merge`, `setup:worktree` or `code:worktrees` in a file, a script or a hook of the repository    | M43, with M41.                                                                                                                                          |
+| A vwf line in `.gitignore`, `vwf@virajp-plugins`, or a use of the `pnpx` install of `setup:ai`        | M44, before the next sync.                                                                                                                              |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -1197,4 +1198,41 @@ Do these steps in each repository:
 
    Change each one to its new name by hand. A file with the bootstrap header
    is not one: the sync writes it.
+4. Commit the changed files.
+
+## M44: vwf comes from the `virajp-plugins` tool
+
+The `git` tool no longer ships the vwf lines of `.gitignore`
+(`docs/memory/handoff/`, `docs/memory/doctor/`, `docs/memory/runs/`,
+`docs/scratchpad/` and `!docs/plans/**/*.log`). `setup:ai` of the `claude`
+tool no longer runs `pnpx @virajp.dev/claude-plugins@latest --all` for
+`vwf@virajp-plugins`, and it names no plugin. The new tool `virajp-plugins`
+has both: it adds the vwf lines to `.gitignore` of the `git` tool, and the
+entry `"vwf@virajp-plugins" = "virajp/claude-plugins"` to
+`[tools.claude.plugins.user]`. It depends on `claude` and `git`, and only the
+root repository can select it.
+
+The sync removes an item of a shared file that no selected tool has now. So
+without `virajp-plugins`, the next sync removes the vwf lines from
+`.gitignore`.
+
+`setup:ai` also changes:
+
+- It updates the marketplaces and the plugins only with `--upgrade`:
+  `mise run setup:ai --upgrade`. `mise run setup --upgrade` runs it with the
+  flag.
+- It no longer runs `claude plugin autoremove`.
+- It keeps a record of the project plugins that it installed,
+  `tools.claude.plugins.installed`, and it uninstalls a recorded plugin that
+  leaves `[tools.claude.plugins.project]`. It never uninstalls a plugin at user
+  scope, or a plugin that is not in the record.
+
+Do these steps in a repository that uses vwf, before the next sync:
+
+1. Run `bootstrap add tool virajp-plugins` in the root repository. A
+   submodule member cannot select it.
+2. If `[tools.claude.plugins.user]` or `[tools.claude.plugins.project]` of
+   `.config/bootstrap/tools.toml` lists `vwf@virajp-plugins`, you can remove
+   the entry: `virajp-plugins` contributes it.
+3. Run `mise run setup:configs`, then `mise run setup:ai`.
 4. Commit the changed files.

@@ -1,6 +1,7 @@
 package format
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -49,6 +50,11 @@ func MergeShared(in SharedInput) (SharedResult, *Failure) {
 	f := FormatOf(sp, in.Explicit, in.Target)
 	marker := Marker(f, sp)
 	items := sp.expand()
+	extra, err := contributed(sp, in.Contributed, in.SpecShow)
+	if err != nil {
+		return res, specFailure(err.Error())
+	}
+	items = withContributed(items, extra)
 	ov := Value{}
 	if len(in.Overrides) > 0 {
 		if v, ok := oneValue(in.Overrides); ok {
@@ -58,6 +64,14 @@ func MergeShared(in SharedInput) (SharedResult, *Failure) {
 	used, err := overrideItems(items, ov)
 	if err != nil {
 		return res, specFailure(in.Show + ": " + err.Error())
+	}
+	// An override of an item that an unselected tool contributes is known.
+	if known, kerr := contributed(sp, in.Known, in.SpecShow); kerr == nil && len(known) > 0 {
+		if more, oerr := overrideItems(known, ov); oerr == nil {
+			for k := range more {
+				used[k] = true
+			}
+		}
 	}
 	if u := unused(ov, nil, used); u != "" {
 		return res, specFailure(in.Show + ": the override " + u + " has no item of bootstrap - remove it")
@@ -108,6 +122,49 @@ func MergeShared(in SharedInput) (SharedResult, *Failure) {
 	}
 	res.Out = addHeader(out, marker, in.Header)
 	return res, nil
+}
+
+// contributed parses the JSON list <list> of contributed items in the item
+// format of the spec <sp>, and gives them expanded. <show> names the spec of
+// the owner in a message.
+func contributed(sp *Spec, list []byte, show string) ([]*specItem, error) {
+	if len(list) == 0 {
+		return nil, nil
+	}
+	v, ok := oneValue(list)
+	if !ok || (v.k != kArray && v.k != kNull) {
+		return nil, fmt.Errorf("%s: the contributed items must be a list of tables", show)
+	}
+	c := &Spec{Format: sp.Format, Comment: sp.Comment}
+	for i, it := range v.a {
+		si, err := parseItem(it, sp.Format == Text)
+		if err != nil {
+			return nil, fmt.Errorf("%s: contributed item %d: %v", show, i+1, err)
+		}
+		c.items = append(c.items, si)
+	}
+	return c.expand(), nil
+}
+
+// withContributed gives <items>, then each item of <extra> whose identity is
+// not there yet (D1).
+func withContributed(items, extra []*specItem) []*specItem {
+	if len(extra) == 0 {
+		return items
+	}
+	seen := map[string]bool{}
+	for _, it := range items {
+		seen[identityKey(it.identity())] = true
+	}
+	for _, it := range extra {
+		k := identityKey(it.identity())
+		if seen[k] {
+			continue
+		}
+		seen[k] = true
+		items = append(items, it)
+	}
+	return items
 }
 
 // readLive parses the live file. It gives absent for a YAML file without a

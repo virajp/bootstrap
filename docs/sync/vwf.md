@@ -33,7 +33,7 @@ that reads this file changes the tools with `bootstrap`.
 | Read the LSP servers      | `bootstrap lsp --json`; `data.servers` holds each server as a verbatim entry of Claude's `lspServers`                                                                                                                                        |
 | Check the LSP servers     | `mise run code:lsp:check`: each server resolves in the dev env; exit 1 names the fix (`MISE_ENV=dev mise install` for a pinned server, the Xcode Command Line Tools (`xcode-select --install`) or Xcode for the host server `sourcekit-lsp`) |
 | Read the tool catalog     | `bootstrap catalog --json`: the categories, tools and packs of the clone                                                                                                                                                                     |
-| Read one value            | `bootstrap config get <key> --json`; `data` is `{"key", "value", "source"}`                                                                                                                                                                  |
+| Read one value            | `bootstrap config get <key> --json`; `data` is `{"key", "value", "source"}`, with `contributed_by` when other tools contributed to the value                                                                                                 |
 | Read all the values       | `bootstrap config show --json`                                                                                                                                                                                                               |
 | Write one value           | `bootstrap config set <key> <value> --json`; `data` is `{"key", "value"}`                                                                                                                                                                    |
 | Remove one value or table | `bootstrap config unset <key> --json`; `data` is `{"key"}`                                                                                                                                                                                   |
@@ -51,7 +51,8 @@ of `errors` and `warnings` is `{"code", "message", "path"}`. A write command
 with `--json` never prompts: without `--yes` or `--dry-run` it stops with code
 2, and with `--yes` a question without an answer stops it with code 2 and lists
 the question in `data.plan.pending`. `config get --format json` still prints
-the bare `{"key", "value", "source"}` for a script. The full contract is
+the bare `{"key", "value", "source"}`, with `contributed_by` when it has one,
+for a script. The full contract is
 "The JSON contract" of `docs/design/cli.md` in the clone.
 
 A key starts with the file: `repo.<key>` for a fact of the repository,
@@ -67,10 +68,18 @@ most:
 | `repo.members.<name>`          | A member: `type` (`submodule`, `folder` or `sibling`), `folder`, `url`, `label`.               |
 | `repo.home`                    | In a member: the back-link to its home, `folder`, `type` and `url`. The sync writes it.        |
 | `repo.topology`                | `repo`, `monorepo` or `multi-repo`, with `repo.topology_reason`. Bootstrap does not read them. |
-| `tools.claude.plugins.<scope>` | The Claude Code plugins of the scope `user` or `project`.                                      |
+| `tools.claude.plugins.<scope>` | The Claude Code plugins of the scope `user` or `project`, with the contributed entries.        |
 
-`get` of a key that is not set exits 0 and prints its default with
-`"source": "default"`, or `null`. A key segment with a dot is double-quoted:
+`get` of a `repo.*` or `releases.*` key that is not set exits 0 and prints its
+default with `"source": "default"`, or `null`. `get` of a `tools.*` key prints
+the value that a sync uses: the merge of the defaults, the contributions of
+the other selected tools, the derive scripts and the file, in that order.
+`source` names the winner: `file`, `derived`, `contributed` or `default`. A
+value that other tools contributed to also has `contributed_by`, the list of
+those tools. A tool that is not selected gives `null` with
+`"source": "unselected"`. A `tools.*` key needs the catalog: `--clone`,
+`BOOTSTRAP_CLONE` or the cache clone. `get` never fetches, so with no catalog
+it exits 2 with no value. A key segment with a dot is double-quoted:
 `repo.branches."release.1".landing`. The keys and their rules are in
 `docs/design/bootstrap-config.md` of the clone.
 
@@ -92,6 +101,13 @@ In this file, "the clone" is that temporary directory. Each path in
 own clone in `~/.cache/bootstrap/`.
 
 ## Instructions
+
+A repository that uses vwf selects the `virajp-plugins` tool
+(`bootstrap add tool virajp-plugins`, or `[tools.virajp-plugins]` in an init
+block). It adds the vwf lines to `.gitignore`, and the plugin
+`vwf@virajp-plugins` to `[tools.claude.plugins.user]`, which `setup:ai`
+installs. Only the root repository can select it. See
+`docs/sync/tools/virajp-plugins.md` of the clone.
 
 An instruction adopts `bootstrap` in a product (`init`), adds tools (`add`)
 or removes tools (`remove`), or adds or removes Claude Code plugins. In a
@@ -180,6 +196,8 @@ type = "sibling"
 url = "https://github.com/example/acme-api"
 
 [tools.claude]
+
+[tools.virajp-plugins]
 ```
 repository: ../acme-api
 ```toml
@@ -331,7 +349,9 @@ Remove the tools of the pack with `bootstrap remove tool <tool…>`.
    `bootstrap config set 'tools.claude.plugins.<scope>."<name>@<marketplace>"'
    <source>`.
    The key segment of a plugin has a dot or an `@`, so quote it.
-3. Run `mise run setup:ai`. It installs each missing plugin.
+3. Run `mise run setup:ai`. It installs each missing plugin. It updates the
+   plugins only with `mise run setup:ai --upgrade`, which `setup --upgrade`
+   runs.
 
 ## Remove plugins
 
@@ -339,9 +359,15 @@ Remove the tools of the pack with `bootstrap remove tool <tool…>`.
    `bootstrap config unset
    'tools.claude.plugins.<scope>."<name>@<marketplace>"'`.
    Keep the table, also when it is empty.
-2. Uninstall each plugin at that scope:
-   `claude plugin uninstall --scope <scope> <name>@<marketplace>`. `setup:ai`
-   does not uninstall a plugin.
+2. Run `mise run setup:ai`. It uninstalls each project plugin that it
+   installed, from its record `tools.claude.plugins.installed`, and that left
+   `[tools.claude.plugins.project]`.
+3. `setup:ai` never uninstalls a plugin at user scope, or a project plugin
+   that is not in its record. Uninstall such a plugin by hand:
+   `claude plugin uninstall --scope <scope> <name>@<marketplace>`.
+
+A plugin that another tool contributes, for example `vwf@virajp-plugins` of
+`virajp-plugins`, is not in the values file. Remove that tool instead.
 
 ## Gradle builds in the Groovy DSL
 

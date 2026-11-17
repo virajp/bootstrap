@@ -704,18 +704,40 @@ A key is a path whose first segment names the file: `repo.<key>`,
 `repo.branches."release.1".landing`. The keys and their schema are in
 [bootstrap-config.md](bootstrap-config.md).
 
-| Subcommand                 | Job                                                                                                                                              |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `config get <key>`         | Prints the object of the key: `{"key": <key>, "value": <value>, "source": "file" \| "default"}`. The value is a scalar, a list or a whole table. |
-| `config set <key> <value>` | Writes the value, typed by the schema or by the catalog: a string as it is, an integer, and a list or a table as JSON, for example `'["main"]'`. |
-| `config unset <key>`       | Removes the key, or a whole table such as `repo.members.<name>` or `repo.branches.<b>`.                                                          |
-| `config show [<file>]`     | Prints `repo`, `tools` or `releases`, or the three files as one table by file name.                                                              |
+| Subcommand                 | Job                                                                                                                                                                                                                                                                            |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `config get <key>`         | Prints the object of the key: `{"key": <key>, "value": <value>, "source": "file" \| "default" \| "contributed" \| "derived" \| "unselected"}`, with `"contributed_by": [<tool>, …]` when other tools contributed to the value. The value is a scalar, a list or a whole table. |
+| `config set <key> <value>` | Writes the value, typed by the schema or by the catalog: a string as it is, an integer, and a list or a table as JSON, for example `'["main"]'`.                                                                                                                               |
+| `config unset <key>`       | Removes the key, or a whole table such as `repo.members.<name>` or `repo.branches.<b>`.                                                                                                                                                                                        |
+| `config show [<file>]`     | Prints `repo`, `tools` or `releases`, or the three files as one table by file name.                                                                                                                                                                                            |
 
-- `get` exits 0 for each valid key, set or not. A key that is not set prints
-  its schema default with `"source": "default"`, or `null` when the schema has
-  none. `get` of a `tools.*` key checks only the path: an unset key, and a key
-  of a tool that the clone does not have, print `null`. `get` never needs the
+- `get` of a `repo.*` or `releases.*` key exits 0 for each valid key, set or
+  not. A key that is not set prints its schema default with
+  `"source": "default"`, or `null` when the schema has none. It never needs the
   clone.
+- `get` of a `tools.*` key prints the value that the engine uses, as the merge
+  of a sync makes it (see [The values of a tool](#the-values-of-a-tool)): the
+  defaults, the contributions of the selected tools, the derive scripts of the
+  selected tools, the file and its overrides, in that order. `get` runs the
+  derive scripts from the clone, with the input of a sync. `source` names the
+  last layer of that order that has the path: `file` when the values file or
+  its overrides have it, else `derived` when the derive script of the tool gave
+  it, else `contributed` when a contribution changed the value, else
+  `default`. The source is one for the value as a whole. When a contribution
+  changed the value, `contributed_by` lists the contributing tools, sorted. A
+  value that a contribution changes and the values file does not have is
+  `contributed`, also when the tool has a default for it.
+- An engine key of a tool that the values merge does not merge, for example
+  `env`, prints the value of the file (`file`), else the default of the engine
+  (`default`), for `env` the `default_envs` of the tool. Thus `set` then `get`
+  of `tools.<tool>.env` gives the value that `set` wrote. `get` of a whole tool
+  table, `tools.<tool>`, also has its `env`, with the source of the table.
+- `get` of a `tools.*` key of a tool that is not selected prints `null` with
+  `"source": "unselected"`.
+- `get` of a `tools.*` key needs the catalog: `--clone`, else
+  `BOOTSTRAP_CLONE`, else the cache clone of the origin. It reads either one as
+  it is, with no age. `get` never fetches: with no catalog it stops with code
+  2, an error, and no value.
 - `--format json|yaml|toml` chooses the output of `get` and `show`. The default
   is `json` when stdout is not a terminal, else `toml`. `get` prints the
   object in each format: one line of JSON, a YAML map or a TOML document.
@@ -751,7 +773,7 @@ A key is a path whose first segment names the file: `repo.<key>`,
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 0    | A valid key, set or not (`get`), and a write that is done.                                                                                             |
 | 1    | A file of the folder that cannot be read or parsed.                                                                                                    |
-| 2    | A key that is not valid, a value that breaks the schema, and no `.config/bootstrap/`.                                                                  |
+| 2    | A key that is not valid, a value that breaks the schema, no `.config/bootstrap/`, a `tools.*` `get` with no catalog, and a derive script that fails.   |
 | 5    | `set` or `unset` of a `tools.*` key when the fetch fails and the cached clone cannot be used. See [The cache and the clone](#the-cache-and-the-clone). |
 
 ## The JSON contract
@@ -871,7 +893,10 @@ All the consumers of the machine and the Mac side share it.
 | `macos-generated.tsv` | The manifest of the Mac side. See [mac.md](mac.md).  |
 
 Each command except `version`, `settings`, `contract` and `config` takes the
-clone in `internal/core`. `config get` and `config show` never need the clone.
+clone in `internal/core`. `config show` and `config get` of a `repo.*` or
+`releases.*` key never need the clone. `config get` of a `tools.*` key reads
+`--clone`, `BOOTSTRAP_CLONE` or the cached clone as it is, and never fetches:
+with no clone it stops with code 2.
 After each successful fetch, the engine writes its time to the file `fetched`
 in the cache root. The catalog reads (`config set` and `config unset` of a
 `tools.*` key, `catalog` and `describe`) follow one fetch rule:
@@ -1229,14 +1254,22 @@ The code is in `internal/format`.
 On each run, the sync does these steps:
 
 1. It renders the spec with the values. A spec is always a template. The
-   result is a list of `[[item]]` tables.
+   result is a list of `[[item]]` tables. After them, it adds the items that the
+   selected tools contribute to the target in
+   `[[contributes_items.<owner>."<target>".item]]`, in the order of the tool
+   names, each in the item format of the spec, without an item whose identity
+   is already there. See
+   [tools.md](tools.md#the-defaults-questions-and-contributes-tables).
 2. It reads the live file. An absent file starts as an empty document.
 3. For each item, it finds the item in the live file. A found item is kept or
    written again, as its kind says. An item that is not found is added, unless
    an override says `"$skip" = true`. An item with `"$mode" = "remove"` is
-   removed if found.
+   removed if found. The override table applies to the contributed items too.
+   An override of an item that any tool of the clone contributes to the target
+   is known, also when that tool is not selected.
 4. It removes each item that the manifest records as added by bootstrap, and
-   that no rendered spec has now (a tool went, or bootstrap dropped the item).
+   that no rendered spec and no contributed item has now (a tool went, or
+   bootstrap dropped the item).
    The identity of the item finds it, not its value.
 5. It formats, compares and writes the file with the comments of the live
    file. It records the added items in the manifest.
@@ -1809,6 +1842,9 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
   fails, or a bad value. A `parent` that is not another tool.
 - A bad `[defaults]`, `[questions]` or `[contributes]` table, and two
   contributions or a user value that conflict.
+- A bad `[[contributes_items.<owner>."<target>".item]]` table (repo side): a
+  bad shape, an owner that is not a tool of the clone, or a target that the
+  owner does not declare as a merge-mode file.
 - A bad overrides file: a key other than `[tools.<name>]` tables.
 - A script that fails, prints bad output, or a check script that finds a
   problem.

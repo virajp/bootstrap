@@ -38,8 +38,13 @@ A `[tools.git]` table gives values.
 into it line by line: the sync adds each missing line of `bootstrap` at the
 end. The repository keeps its own lines directly in `.gitignore`, and the sync
 keeps them. A later line wins, so an own line with `!` cancels a shared
-pattern. To remove a line of `bootstrap`, write an override in the values
-file:
+pattern. Another selected tool can add lines in its
+`[[contributes_items.git.".gitignore".item]]` tables, for example the vwf lines
+of `virajp-plugins`: the sync adds them after the lines of the spec. The spec
+no longer has the vwf lines (`docs/memory/handoff/`,
+`docs/memory/doctor/`, `docs/memory/runs/`, `docs/scratchpad/` and
+`!docs/plans/**/*.log`): `virajp-plugins` has them. To remove a line of
+`bootstrap`, a contributed line too, write an override in the values file:
 
 ```toml
 [tools.git.files.".gitignore"]
@@ -157,7 +162,9 @@ The `no-commit-to-branch` hook gets one `--branch` pair for each branch of
 | ------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pre-commit` | `.config/pre-commit-config.yaml` | The hook blocks `git-config` (calls `code:git-config --fix`), `no-commit-to-branch` of `pre-commit/pre-commit-hooks`, and `conventional-commits` in the commit-msg stage. |
 
-The tools that add lines to `.gitignore` say so in their own tool file.
+The tools that add lines to `.gitignore`, in
+`[[contributes_items.git.".gitignore".item]]`, say so in their own tool file,
+for example `virajp-plugins`.
 
 ## Values
 
@@ -210,3 +217,5 @@ None.
   and `[tools.git.branch.*]` to `[branches.*]` of `repo.toml`, with `landing`
   in place of `merge_model` and `direct_commit`. The merge tasks and the
   scripts need `bootstrap` 4.0.0 or newer.
+- M44 of `migrate.md`: the spec no longer has the vwf lines. Add the
+  `virajp-plugins` tool to keep them.
