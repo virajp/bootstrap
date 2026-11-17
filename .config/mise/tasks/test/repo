@@ -4876,17 +4876,17 @@ exec "$AI_REAL_BIN" "$@"
 EOF
   chmod +x "$tmp/ai/bin/mise" "$tmp/ai/bin/claude" "$tmp/ai/engine"
 }
-# ai_run <n> [--update]: run <n> of the task. Its output goes to the log of the
+# ai_run <n> [--upgrade]: run <n> of the task. Its output goes to the log of the
 # case, and its claude calls to $tmp/ai/calls<n>.
 ai_run() {
-  local n=$1 update=false got=0
-  [[ ${2:-} != --update ]] || update=true
+  local n=$1 upgrade=false got=0
+  [[ ${2:-} != --upgrade ]] || upgrade=true
   : > "$tmp/ai/calls"
   printf '%s\n' "--- run $n"
   (
     cd -- "$consumer"
     BOOTSTRAP_BIN=${AI_BIN:-$bin} AI_REAL_BIN=$bin AI_STATE=$tmp/ai AI_ROOT=$consumer \
-      PATH="$tmp/ai/bin:$jq_dir:$PATH" usage_update=$update bash "$consumer/.config/mise/tasks/setup/ai"
+      PATH="$tmp/ai/bin:$jq_dir:$PATH" usage_upgrade=$upgrade bash "$consumer/.config/mise/tasks/setup/ai"
   ) || got=$?
   cp -- "$tmp/ai/calls" "$tmp/ai/calls$n"
   return "$got"
@@ -4911,13 +4911,13 @@ ai_record_values() {
   printf '%s\n' "$ai_values" '[tools.claude.plugins]' "installed = $1"
 }
 
-# 1. A first run installs; 2. a second run changes nothing (D4); 3. --update
+# 1. A first run installs; 2. a second run changes nothing (D4); 3. --upgrade
 # makes the update calls (D4).
 ai_first() {
   ai_setup
   ai_run 1 || exit
   ai_run 2 || exit
-  ai_run 3 --update
+  ai_run 3 --upgrade
 }
 check_ai_first() {
   check_that "setup:ai: the first run adds the marketplace of vwf" ai_called 1 \
@@ -4928,15 +4928,47 @@ check_ai_first() {
     'plugin install --scope project lsp@tools'
   check_that "setup:ai: the project plugin is recorded" ai_record 'lsp@tools'
   check_that "setup:ai: the second run changes nothing (D4)" ai_no_change 2
-  check_that "setup:ai: --update updates the marketplaces (D4)" ai_called 3 'plugin marketplace update'
-  check_that "setup:ai: --update updates vwf at user scope (D4)" ai_called 3 \
+  check_that "setup:ai: --upgrade updates the marketplaces (D4)" ai_called 3 'plugin marketplace update'
+  check_that "setup:ai: --upgrade updates vwf at user scope (D4)" ai_called 3 \
     'plugin update --scope user vwf@virajp-plugins'
-  check_that "setup:ai: --update updates the project plugin (D4)" ai_called 3 \
+  check_that "setup:ai: --upgrade updates the project plugin (D4)" ai_called 3 \
     'plugin update --scope project lsp@tools'
-  check_that "setup:ai: --update installs nothing" ai_not_called 3 'plugin install --scope project lsp@tools'
+  check_that "setup:ai: --upgrade installs nothing" ai_not_called 3 'plugin install --scope project lsp@tools'
 }
-CASE_CALL=ai_first run_case "setup:ai: install, a second run, then --update" 0 "$ai_values" '' \
+CASE_CALL=ai_first run_case "setup:ai: install, a second run, then --upgrade" 0 "$ai_values" '' \
   'Installing vwf@virajp-plugins (user)' check_ai_first
+
+# setup passes --upgrade to setup:ai (D39): the case runs the synced task setup
+# with bash, a plain run, then a run with --upgrade. A PATH shim for mise logs
+# each `mise run` to $tmp/setup/runs<n> and does nothing else.
+setup_run() {
+  local n=$1 upgrade=false
+  [[ ${2:-} != --upgrade ]] || upgrade=true
+  (
+    cd -- "$consumer"
+    SETUP_RUNS=$tmp/setup/runs$n PATH="$tmp/setup/bin:$PATH" usage_upgrade=$upgrade \
+      bash "$consumer/.config/mise/tasks/setup/_default"
+  )
+}
+setup_upgrade() {
+  synced
+  mkdir -p -- "$tmp/setup/bin"
+  cat > "$tmp/setup/bin/mise" << 'EOF'
+#!/usr/bin/env bash
+[[ $1 != run ]] || printf '%s\n' "$*" >> "$SETUP_RUNS"
+EOF
+  chmod +x "$tmp/setup/bin/mise"
+  setup_run 1 || exit
+  setup_run 2 --upgrade
+}
+setup_ran() { grep -qxF -- "$2" "$tmp/setup/runs$1"; }
+check_setup_upgrade() {
+  check_that "setup: the synced setup:ai is there" test -x "$consumer/.config/mise/tasks/setup/ai"
+  check_that "setup: a plain run does not run setup:ai (D4)" not_grep -F 'run setup:ai' "$tmp/setup/runs1"
+  check_that "setup: --upgrade runs setup:ai --upgrade (D39)" setup_ran 2 'run setup:ai --upgrade'
+}
+CASE_CALL=setup_upgrade run_case "setup: --upgrade passes --upgrade to setup:ai" 0 "$ai_values" '' \
+  'Setup complete!' check_setup_upgrade
 
 # A plugin that leaves plugins.project is uninstalled, with --prune -y, and
 # leaves the record (D3, D29). A project plugin installed by hand, not in the
