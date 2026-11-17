@@ -7,12 +7,15 @@ description = "dprint, the formatter of the sync and of code:format, with the sh
 root_only = false
 summary = "The formatter and the shared dprint.jsonc"
 
-# The base of the shared dprint.jsonc: the top-level settings, the generic
-# excludes, the blocks of the base formats and their plugins. A tool adds
-# its blocks and plugins in [contributes.dprint]. setup:dprint updates the
-# version of each plugin in the file, and the next sync keeps it.
+# The base of the shared dprint.jsonc: the top-level settings, the blocks of
+# the base formats and their plugins. A tool adds its blocks and plugins in
+# [contributes.dprint]. setup:dprint updates the version of each plugin in the
+# file, and the next sync keeps it. The excludes of dprint.jsonc come from
+# code_files.excludes of the mise tool; excludes stays here, empty, so a value
+# [tools.dprint] excludes is still a known key, and the merge spec renders it
+# after that list.
 [defaults]
-excludes = [ "**/*-lock.yaml", "**/*.svg", "**/package-lock.json" ]
+excludes = []
 plugins = [
   "npm:@dprint/toml@0.9.0",
   "npm:@dprint/json@0.25.2",
@@ -57,9 +60,10 @@ formatComments = true
 proseWrap = "always"
 
 # mise task scripts have no file extension, so the shuck plugin does not
-# match them by default. Templates (*.tmpl) are not valid shell.
+# match them by default. Templates (*.tmpl) are not valid shell, and a Python
+# library (*.py) is not shell.
 [defaults.blocks.shuck]
-associations = [ "**/.config/mise/tasks/**", "!**/*.tmpl" ]
+associations = [ "**/.config/mise/tasks/**", "!**/*.tmpl", "!**/*.py" ]
 binaryNextLine = true
 indentWidth = 2
 spaceRedirects = true

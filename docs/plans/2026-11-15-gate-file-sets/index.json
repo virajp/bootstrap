@@ -84,11 +84,11 @@
         "U1"
       ],
       "waits": "The gates call the gate_files function and read the code_files key that U1 creates in repo/tools/mise/.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T19:13:50.053Z",
+      "ended": "2026-11-17T19:18:08.894Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -109,11 +109,11 @@
         "U1"
       ],
       "waits": "The gates call the gate_files function that U1 creates in repo/tools/mise/tasks/helpers.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T19:13:50.121Z",
+      "ended": "2026-11-17T19:18:08.994Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -218,8 +218,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-17T19:13:49.982Z",
       "ended": ""
     },
     {
