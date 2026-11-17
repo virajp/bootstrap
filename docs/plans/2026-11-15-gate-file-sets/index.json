@@ -16,7 +16,7 @@
   "execution": "teams",
   "status": {
     "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-17T20:51:47Z in .worktrees/gate-file-sets (resume at W4 U5)"
+    "detail": "RUNNING — W4: U5 green (round 2 clean, U1 fix 42a5e72); wave review R4 asked Q1 (U1, D33/D48 amendment); wave gate and folder commit wait on the answer; in .worktrees/gate-file-sets"
   },
   "consent": {
     "merge": true,
@@ -66,7 +66,7 @@
       "status": "green",
       "started": "2026-11-17T19:01:18.128Z",
       "ended": "2026-11-17T19:06:14.689Z",
-      "commit": "f7cc3ed",
+      "commit": "42a5e72",
       "rounds": 2
     },
     {
@@ -152,14 +152,14 @@
         "U4"
       ],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-17T20:35:28.099Z",
-      "ended": "",
+      "ended": "2026-11-17T20:55:56.730Z",
       "commit": "",
-      "rounds": 1,
+      "rounds": 2,
       "range": {
-        "from": "3f593fd",
-        "to": "ca33a88"
+        "from": "ca33a88",
+        "to": "42a5e72"
       }
     },
     {
@@ -230,9 +230,9 @@
     },
     {
       "id": "W4",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-17T20:35:28.032Z",
-      "ended": ""
+      "ended": "2026-11-17T20:58:17.635Z"
     },
     {
       "id": "W5",
@@ -816,6 +816,15 @@
       "rejected": "",
       "units": [
         "U4"
+      ]
+    },
+    {
+      "id": "D59",
+      "decision": "Q1: The U5 security fix (42a5e72) made gate_files.py drop any path with a line break or a leading - (debug line drop <path>: repo unsafe-name), as the first repository check. D33 and D48 do not name it. Amend them?",
+      "ruling": "Record D59: repo unsafe-name (no pattern) is the first repository check, before repo unlisted, and U6 documents it — plan, code and docs agree. This amends D33 (the drop kinds) and D48 (the filter order).",
+      "rejected": "Leave D33 and D48 as they are — U6 and later reviews check against rulings the code now contradicts, and can raise the same drift again",
+      "units": [
+        "U1"
       ]
     }
   ],

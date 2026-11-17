@@ -1,0 +1,2 @@
+/security-review over ca33a88..42a5e72 (excluding docs/plans): 1 file, repo/tools/mise/tasks/gate_files.py (+6 -1).
+No high-confidence vulnerabilities found. The added filter drops a path with \n, \r or a leading "-" before every other filter; it adds no new input surface.
