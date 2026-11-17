@@ -504,5 +504,8 @@
   },
   "gaps": [],
   "overrides": [],
-  "run": {}
+  "run": {
+    "worktree": ".worktrees/test-parts",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-15-test-parts.jsonl"
+  }
 }
