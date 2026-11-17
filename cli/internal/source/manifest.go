@@ -30,6 +30,9 @@ type FileEntry struct {
 	When string
 	// Perm and DirPerm are the modes of `perm` and `dir_perm`; 0 when unset.
 	Perm, DirPerm os.FileMode
+	// Replaces holds the `sha256:<hex>` items of `replaces` of a [tasks]
+	// entry: the old copies of the task that init removes; nil when unset.
+	Replaces []string
 }
 
 // Formatter is the formatter of a tool: the sync formats each rendered file

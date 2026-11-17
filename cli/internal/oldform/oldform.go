@@ -117,6 +117,7 @@ type Change struct {
 	Note    string // What changes, for the change list.
 	Moves   []Move // Absolute paths.
 	Edits   []Edit
+	Drops   []Drop // The files that the change removes, with their content.
 }
 
 // Edit is one file of a change with Edits: its new content, and the content
@@ -386,8 +387,8 @@ func addHooks(path, old string) (Change, error) {
 }
 
 // Apply writes each change. A removal also removes its folder when the folder
-// is then empty. A change with Moves moves its files, and a change with Edits
-// writes its files.
+// is then empty. A change with Moves moves its files, a change with Edits
+// writes its files, and a change with Drops removes its files.
 func Apply(changes []Change) error {
 	for _, c := range changes {
 		if len(c.Moves) > 0 {
@@ -401,6 +402,12 @@ func Apply(changes []Change) error {
 				if err := WriteFile(e.Path, e.Content); err != nil {
 					return err
 				}
+			}
+			continue
+		}
+		if len(c.Drops) > 0 {
+			if err := ApplyDrops(c.Drops); err != nil {
+				return err
 			}
 			continue
 		}
@@ -441,10 +448,16 @@ func WriteFile(path string, content []byte) error {
 }
 
 // Paths gives the paths of <changes>, sorted: both paths of each move, and
-// the path of each edit.
+// the path of each edit and of each drop.
 func Paths(changes []Change) []string {
 	var out []string
 	for _, c := range changes {
+		if len(c.Drops) > 0 {
+			for _, d := range c.Drops {
+				out = append(out, d.Path)
+			}
+			continue
+		}
 		if len(c.Edits) > 0 {
 			for _, e := range c.Edits {
 				out = append(out, e.Path)

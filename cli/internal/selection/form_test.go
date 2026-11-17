@@ -123,7 +123,7 @@ var formCases = []formCase{
 			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] when must be a value path, for example \"git.branch_pair\", with an optional ! at the start\n" +
 			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] perm must be an octal mode string, for example \"700\"\n" +
 			"repo-sync: repo/tools/a/tools.toml: [files.\"x.txt\"] dir_perm must be an octal mode string, for example \"700\"\n" +
-			"repo-sync: repo/tools/a/tools.toml: [tasks.\"run/x\"] perm is not a key of a tasks entry - the keys are source, mode, requires, requires_found, library, when\n" +
+			"repo-sync: repo/tools/a/tools.toml: [tasks.\"run/x\"] perm is not a key of a tasks entry - the keys are source, mode, requires, requires_found, library, when, replaces\n" +
 			"repo-sync: repo/tools/a/tools.toml: [tasks.\"run/x\"] when must be a value path, for example \"git.branch_pair\", with an optional ! at the start\n" +
 			"repo-sync: repo/tools/a/tools.toml: scripts/build is not a script of a tool - the scripts are scripts/derive, scripts/check, scripts/after, scripts/detect and scripts/migrate-<tool>\n" +
 			"--- stdout\n"},

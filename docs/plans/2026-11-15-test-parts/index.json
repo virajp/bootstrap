@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "solo",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-15 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-17T15:15:58Z in .worktrees/test-parts"
   },
   "consent": {
     "merge": true,
@@ -51,11 +51,11 @@
     {
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T15:17:51.601Z",
+      "ended": "2026-11-17T15:23:43.585Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "kind": "edit",
       "model": "opus",
       "id": "U1",
@@ -185,8 +185,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-17T15:17:51.568Z",
       "ended": ""
     },
     {
@@ -503,7 +503,12 @@
     }
   },
   "gaps": [],
-  "overrides": [],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "code:lint:60-bootstrap — run with the released bootstrap 3.3.1 (BOOTSTRAP_BIN) and BOOTSTRAP_CACHE set to a scratch clone at 1f7b0a2 (user ruling, plan plugins-setup-ai Q8), at the preflight and every gate point; every other gate line as written"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/test-parts",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-15-test-parts.jsonl"

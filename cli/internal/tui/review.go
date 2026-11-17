@@ -541,6 +541,8 @@ func (m *Model) fileLines() []line {
 		switch {
 		case len(c.Moves) > 0:
 			op, note = "move", c.Note
+		case len(c.Drops) > 0:
+			op, st, note = "remove", stRemove, c.Note
 		case len(c.Edits) > 0:
 			note = c.Note
 		case c.Remove:

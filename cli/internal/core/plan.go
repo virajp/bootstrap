@@ -143,6 +143,10 @@ type PlanResult struct {
 	Reasons  []string // Why the command has nothing to add.
 	Warnings []string // The lines that the caller shows first.
 	Skipped  []Skip   // The members of a pack that add pack leaves out.
+
+	// movesAt is the index in Changes of the move of the own test tasks
+	// (init): the removal of the known old copies goes there.
+	movesAt int
 }
 
 // Empty tells if the plan changes nothing.
@@ -322,6 +326,11 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 		return p, err
 	}
 	p.Sel = sel
+	if l.Init {
+		if err := p.knownCopies(sel); err != nil {
+			return p, err
+		}
+	}
 	given, err := CheckAnswers(sel, l.Answers)
 	if err != nil {
 		return p, err
@@ -682,6 +691,7 @@ func (p *PlanResult) taskMoves() error {
 	if p.Mac {
 		return nil
 	}
+	p.movesAt = len(p.Changes)
 	moves, err := oldform.PlanMoves(p.Root, oldform.Listed(manifestText(p.Side)), p.Show)
 	if err != nil || len(moves) == 0 {
 		return err
@@ -694,11 +704,77 @@ func (p *PlanResult) taskMoves() error {
 	return nil
 }
 
-// moving gives the files that the changes of the plan move, for the dry run
-// of the sync (oldform.Moving), or nil.
+// knownCopies adds the changes of init that remove the known old copies of
+// the parts of the selected tools of <sel> (D4, D5): one change for each
+// tool, at the place of the move of the own test tasks, before it. The move
+// then does not move such a file. A copy of a tool that is not selected
+// stays.
+func (p *PlanResult) knownCopies(sel *Selected) error {
+	if p.Mac {
+		return nil
+	}
+	copies := oldform.KnownCopies(p.Root, oldform.Parts(sel.Idx, sel.Tools))
+	if len(copies) == 0 {
+		return nil
+	}
+	dropped := map[string]bool{}
+	var adds []oldform.Change
+	var tools []string
+	byTool := map[string][]oldform.Copy{}
+	for _, c := range copies {
+		if byTool[c.Tool] == nil {
+			tools = append(tools, c.Tool)
+		}
+		byTool[c.Tool] = append(byTool[c.Tool], c)
+		dropped[c.Path] = true
+	}
+	for _, tool := range tools {
+		drops, err := oldform.DropsOf(byTool[tool])
+		if err != nil {
+			return err
+		}
+		adds = append(adds, oldform.Change{
+			Path:  strings.TrimSuffix(p.Root, "/") + "/" + oldform.TasksDir,
+			Drops: drops,
+			Note:  oldform.CopiesNote(tool) + ": " + oldform.DropDetail(drops, p.Show),
+		})
+	}
+	// The move of a removed file goes.
+	var rest []oldform.Change
+	for _, ch := range p.Changes {
+		if len(ch.Moves) == 0 {
+			rest = append(rest, ch)
+			continue
+		}
+		var moves []oldform.Move
+		for _, m := range ch.Moves {
+			if !dropped[m.From] {
+				moves = append(moves, m)
+			}
+		}
+		if len(moves) == 0 {
+			continue
+		}
+		ch.Moves = moves
+		ch.Note = oldform.MoveNote + ": " + oldform.MoveDetail(moves, p.Show)
+		rest = append(rest, ch)
+	}
+	at := min(p.movesAt, len(rest))
+	p.Changes = append(append(append([]oldform.Change{}, rest[:at]...), adds...), rest[at:]...)
+	return nil
+}
+
+// moving gives the files that the changes of the plan move or remove, for
+// the dry run of the sync (oldform.Moving), or nil.
 func (p *PlanResult) moving() map[string]bool {
 	var out map[string]bool
 	for _, ch := range p.Changes {
+		for _, d := range ch.Drops {
+			if out == nil {
+				out = map[string]bool{}
+			}
+			out[d.Path] = true
+		}
 		for _, m := range ch.Moves {
 			if out == nil {
 				out = map[string]bool{}
