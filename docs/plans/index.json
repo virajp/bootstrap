@@ -111,8 +111,8 @@
       "title": "The file sets of the code:format and code:lint gates",
       "target_repo": null,
       "priority": 130,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-17T18:58:42.106Z",
       "ended": "",
       "gaps": null,
       "requires": [
