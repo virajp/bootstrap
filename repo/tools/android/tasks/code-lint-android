@@ -5,9 +5,11 @@
 #MISE description="Run Android lint on the Gradle modules of the given files"
 #MISE hide=true
 
+#USAGE flag "--all" help="lint every file of the repository, not only the uncommitted files"
 #USAGE flag "--debug" help="emit debug logs"
 #USAGE flag "--fix" help="run lintFix, which applies the safe fixes"
-#USAGE arg "[files]" var=#true help="the files to lint; only the Android sources and build files are used, and only their modules are linted; the default is every module"
+#USAGE arg "[files]" var=#true help="the files to lint; only the Android sources and build files are used, and only their modules are linted; the default is the uncommitted files"
+#FILES include="**/src/**/*.kt **/src/**/*.java **/src/**/*.xml *.gradle.kts *.gradle *.pro libs.versions.toml lint.xml lint-baseline.xml"
 
 set -euo pipefail
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
@@ -26,6 +28,12 @@ else
   exit 0
 fi
 [[ -n "${ANDROID_HOME:-}" && -d "${ANDROID_HOME}/platforms" ]] || exit 0
+# A Gradle build without an AndroidManifest.xml, for example a Kotlin/JVM
+# library, has no Android module. A failed git stops the task, with the error
+# of git.
+LIST=$(git -c core.quotePath=off ls-files --cached --others --exclude-standard -- \
+  "${ROOT}/AndroidManifest.xml" "${ROOT}/*/AndroidManifest.xml")
+[[ -n "${LIST}" ]] || exit 0
 
 [[ "${usage_fix:-false}" == "true" ]] && TASK=lintFix || TASK=lint
 INFO=()
@@ -59,39 +67,34 @@ module_of() {
   echo .
 }
 
-# code:lint passes its files to each code:lint:* task. Only the Android
-# sources and build files trigger the lint, and only the modules they are in.
-# MODULES_ARG holds their folders, one on each line; it stays empty for every
-# module.
+# code:lint passes its flags and files to each code:lint:* task. The list
+# comes from gate_files (the #FILES header above). An empty list: nothing
+# to do.
+args=()
+[[ "${usage_all:-false}" == "true" ]] && args+=(--all)
+[[ "${usage_debug:-false}" == "true" ]] && args+=(--debug)
+[[ "${usage_fix:-false}" == "true" ]] && args+=(--fix)
 FILES=()
 [[ -n "${usage_files:-}" ]] && eval "FILES=(${usage_files})"
-MODULES_ARG=''
-if ((${#FILES[@]})); then
-  MODULES=''
-  for file in "${FILES[@]}"; do
-    case "${file}" in
-      *src/*.kt | *src/*.java | *src/*.xml | *.gradle.kts | *.gradle | *.pro | *libs.versions.toml | *lint.xml | *lint-baseline.xml) ;;
-      *)
-        continue
-        ;;
-    esac
-    if [[ "${ROOT}" != "." ]]; then
-      [[ "${file}" == "${ROOT}/"* ]] || continue
-      file="${file#"${ROOT}/"}"
-    fi
-    MODULES="${MODULES}$(module_of "${file}")"$'\n'
-  done
-  [[ -n "${MODULES}" ]] || exit 0
-  if ! grep -qxF / <<< "${MODULES}"; then
-    MODULES_ARG=$(sort -u <<< "${MODULES}" | sed '/^$/d')
+list=$(gate_files "$0" ${args[@]+"${args[@]}"} ${FILES[@]+"${FILES[@]}"}) || exit $?
+trap 'rm -f "${list}"' EXIT
+[[ -s ${list} ]] || exit 0
+
+# Only the modules of the files of the list are linted. MODULES_ARG holds
+# their folders, one on each line; it stays empty for every module, when a
+# file is for the whole build.
+MODULES=''
+while IFS= read -r file; do
+  if [[ "${ROOT}" != "." ]]; then
+    [[ "${file}" == "${ROOT}/"* ]] || continue
+    file="${file#"${ROOT}/"}"
   fi
-else
-  # Every module, but only in an Android build: a Gradle build without an
-  # AndroidManifest.xml, for example a Kotlin/JVM library, has no Android
-  # module. A failed git stops the task, with the error of git.
-  LIST=$(git -c core.quotePath=off ls-files --cached --others --exclude-standard -- \
-    "${ROOT}/AndroidManifest.xml" "${ROOT}/*/AndroidManifest.xml")
-  [[ -n "${LIST}" ]] || exit 0
+  MODULES="${MODULES}$(module_of "${file}")"$'\n'
+done < "${list}"
+[[ -n "${MODULES}" ]] || exit 0
+MODULES_ARG=''
+if ! grep -qxF / <<< "${MODULES}"; then
+  MODULES_ARG=$(sort -u <<< "${MODULES}" | sed '/^$/d')
 fi
 
 # A module without the Android Gradle plugin, for example a Kotlin/JVM
@@ -103,7 +106,7 @@ fi
 # project below the Gradle root, so the pub plugins of a Flutter app, which
 # are projects of its android/ build, are not linted.
 TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/bootstrap-lint.XXXXXX")
-trap 'rm -rf "${TMP_DIR}"' EXIT
+trap 'rm -rf "${TMP_DIR}" "${list}"' EXIT
 INIT_SCRIPT="${TMP_DIR}/lint.gradle"
 printf '%s\n' \
   'gradle.projectsEvaluated { g ->' \
