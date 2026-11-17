@@ -96,7 +96,7 @@
       "status": "green",
       "started": "2026-11-17T15:32:48.218Z",
       "ended": "2026-11-17T16:58:51.086Z",
-      "commit": "",
+      "commit": "891b803",
       "rounds": 2,
       "kind": "edit",
       "model": "opus",
@@ -197,9 +197,9 @@
     },
     {
       "id": "W3",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-17T15:32:48.185Z",
-      "ended": ""
+      "ended": "2026-11-17T17:00:48.590Z"
     },
     {
       "id": "W4",
