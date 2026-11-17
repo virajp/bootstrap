@@ -2650,6 +2650,54 @@ items = [ \"b\" ]" values_security '+gitleaks config={"items":["a","b"]}' check_
 run_case "values: two errors in two tools" 3 "$vother_values" values_two_errors "$msg_unknown_contribution" \
   check_two_values_errors
 
+# Contributed merge items (D1, D7, D11, D17, D32): virajp-plugins adds the vwf
+# lines to the .gitignore of the git tool. The cases sync for real and read the
+# written .gitignore.
+vwf_lines=(docs/memory/handoff/ docs/memory/doctor/ docs/memory/runs/ docs/scratchpad/ '!docs/plans/**/*.log')
+# gitignore_count <line> <n>: the .gitignore of the consumer has <n> lines <line>.
+gitignore_count() { [[ $(grep -cxF -- "$1" "$consumer/.gitignore") == "$2" ]]; }
+check_vwf_lines_once() {
+  local line
+  for line in "${vwf_lines[@]}"; do
+    check_that "virajp-plugins: .gitignore has $line once" gitignore_count "$line" 1
+  done
+  check_that "virajp-plugins: the vwf lines after the lines of git" awk -v first="${vwf_lines[0]}" '
+    $0 == "*.log" { git = NR } $0 == first { vwf = NR } END { exit !(git && vwf > git) }' "$consumer/.gitignore"
+}
+check_vwf_lines_none() {
+  local line
+  for line in "${vwf_lines[@]}"; do
+    check_that "no virajp-plugins: .gitignore lacks $line" gitignore_count "$line" 0
+  done
+  check_that "no virajp-plugins: .gitignore keeps *.log" gitignore_count '*.log' 1
+}
+check_vwf_line_removed() {
+  check_that "a vwf line with \$mode = remove: docs/scratchpad/ is gone" gitignore_count docs/scratchpad/ 0
+  check_that "a vwf line with \$mode = remove: the other lines stay" gitignore_count docs/memory/runs/ 1
+}
+case_args=' ' run_case "virajp-plugins: the vwf lines in .gitignore, once" 0 'environments = [ "dev" ]
+[tools.virajp-plugins]' '' '' check_vwf_lines_once
+case_args=' ' run_case "no virajp-plugins: no vwf line in .gitignore" 0 'environments = [ "dev" ]' '' '' \
+  check_vwf_lines_none
+case_args=' ' run_case "virajp-plugins: an override removes a vwf line" 0 'environments = [ "dev" ]
+[tools.virajp-plugins]
+[tools.git.files.".gitignore"]
+"docs/scratchpad/" = { "$mode" = "remove" }' '' '' check_vwf_line_removed
+run_case "an override of a vwf line without virajp-plugins is not unused" 0 'environments = [ "dev" ]
+[tools.git.files.".gitignore"]
+"docs/scratchpad/" = { "$mode" = "remove" }' '' 'Dry run: '
+run_case "a submodule with [tools.virajp-plugins], a root_only tool" 2 'environments = [ "dev" ]
+[tools.virajp-plugins]' consumer_submodule "virajp-plugins is for the root repository only"
+# A scratch tool that contributes an item to a target that git does not declare
+# as merge-mode, and one that contributes to a tool that bootstrap does not
+# have.
+items_not_merge() { value_tool vother '[[contributes_items.git."nope.txt".item]]' 'value = "x"'; }
+items_no_owner() { value_tool vother '[[contributes_items.nope.".gitignore".item]]' 'value = "x"'; }
+run_check "check: a contributed item for a target that is not merge-mode" 2 'environments = [ "dev" ]' \
+  items_not_merge '[contributes_items.git."nope.txt"]: git declares no merge-mode file nope.txt'
+run_check "check: contributed items for a tool that bootstrap does not have" 2 'environments = [ "dev" ]' \
+  items_no_owner '[contributes_items.nope] names a tool that bootstrap does not have'
+
 # The shared mise generator, side repo. mtest is a tool of the clone with only a
 # tools.toml, and the consumer has its generated dev file, so the dry run shows
 # the diff of that file.
@@ -3714,9 +3762,12 @@ CASE_CALL=config_clone run_case "clone in the config file, without BOOTSTRAP_CLO
 # values of .config/bootstrap/ (D3, D21, D22, D24, D27, D41). get of a valid
 # key exits 0 with the envelope key, value and source; only an unknown key is
 # an error. bootstrap settings prints the settings of the engine.
+# A get of a tools.* key runs the derive scripts of the selected tools, as a
+# sync does (D35), and they read repo.* through BOOTSTRAP_BIN: the engine of the
+# test.
 config_cmd() {
   # shellcheck disable=SC2086
-  "$bin" config $CONFIG_ARGS
+  BOOTSTRAP_BIN=$bin "$bin" config $CONFIG_ARGS
 }
 # log_is <text>: the output of the case is exactly <text>.
 log_is() { [[ $(cat -- "$log") == "$1" ]]; }
@@ -3746,10 +3797,55 @@ CONFIG_ARGS='get repo.branches."main".landing' CASE_CALL=config_cmd run_case "co
 CONFIG_ARGS='get repo.branches.main' CASE_CALL=config_cmd run_case "config get of a table" 0 "$dev_values
 [branches.main]
 landing = \"pr\"" '' '{"key":"repo.branches.main","value":{"landing":"pr"},"source":"file"}'
-CONFIG_ARGS='get tools.node' CASE_CALL=config_cmd run_case "config get of a tool table" 0 "$dev_values
-[tools.node]" '' '{"key":"tools.node","value":{},"source":"file"}'
-CONFIG_ARGS='get tools.nope.x' CASE_CALL=config_cmd run_case "config get of an unset tools key" 0 "$dev_values" '' \
-  '{"key":"tools.nope.x","value":null,"source":"default"}'
+# A whole tool table carries env: the file value, else default_envs (D36).
+CONFIG_ARGS='get tools.node' CASE_CALL=config_cmd run_case "config get of a tool table, with env" 0 "$dev_values
+[tools.node]" '' '{"key":"tools.node","value":{"env":["dev","ci"]},"source":"file"}'
+CONFIG_ARGS='get tools.node.env' CASE_CALL=config_cmd run_case "config get of env, default_envs" 0 "$dev_values
+[tools.node]" '' '{"key":"tools.node.env","value":["dev","ci"],"source":"default"}'
+# A tool that the catalog does not have, or that is not selected: value null,
+# source unselected (D34).
+CONFIG_ARGS='get tools.nope.x' CASE_CALL=config_cmd run_case "config get of a tool that bootstrap does not have" 0 \
+  "$dev_values" '' '{"key":"tools.nope.x","value":null,"source":"unselected"}'
+CONFIG_ARGS='get tools.go.env' CASE_CALL=config_cmd run_case "config get of a tool that is not selected" 0 \
+  "$dev_values" '' '{"key":"tools.go.env","value":null,"source":"unselected"}'
+# A value whose winner is a derive script, here the git script of the base
+# pack, which reads repo.core_branches (D35).
+CONFIG_ARGS='get tools.git.branch_pair' CASE_CALL=config_cmd run_case "config get of a derived value" 0 \
+  "$dev_values" '' '{"key":"tools.git.branch_pair","value":false,"source":"derived"}'
+CONFIG_ARGS='get tools.git.protected_branches' CASE_CALL=config_cmd run_case "config get of a derived list" 0 \
+  'environments = [ "dev" ]
+core_branches = [ "main", "develop" ]' '' \
+  '{"key":"tools.git.protected_branches","value":["main","develop"],"source":"derived"}'
+# No catalog: a tools.* get exits 2 with no value (D34); a repo.* get needs
+# none.
+config_no_catalog() {
+  unset BOOTSTRAP_CLONE
+  export BOOTSTRAP_CACHE=$tmp/no-cache BOOTSTRAP_URL="file://$tmp/no-such-remote"
+  config_cmd
+}
+check_config_no_value() { check_that "config get, no catalog: no envelope" not_grep -F '"value"' "$log"; }
+CONFIG_ARGS='get tools.node.env' CASE_CALL=config_no_catalog run_case "config get of a tools key, no catalog" 2 \
+  "$dev_values
+[tools.node]" '' 'config get tools.node.env needs the catalog, and no clone is cached' check_config_no_value
+CONFIG_ARGS='get repo.repo_name' CASE_CALL=config_no_catalog run_case "config get of a repo key, no catalog" 0 \
+  "$dev_values" '' '{"key":"repo.repo_name","value":"test","source":"file"}'
+# A value that virajp-plugins contributes to the claude tool (D15, D20, D33):
+# with no file entry, its source is contributed; with a file entry too, it is
+# file, and contributed_by names the contributor.
+check_config_both_entries() {
+  check_that "config get: the file entry and the contributed entry" mise x jq@latest -- jq -e \
+    '.value == {"own@acme": "acme/own", "vwf@virajp-plugins": "virajp/claude-plugins"}' "$log"
+}
+CONFIG_ARGS='get tools.claude.plugins.user --format json' CASE_CALL=config_cmd run_case \
+  "config get of a contributed tools value" 0 "$dev_values
+[tools.virajp-plugins]" '' \
+  '{"key":"tools.claude.plugins.user","value":{"vwf@virajp-plugins":"virajp/claude-plugins"},"source":"contributed","contributed_by":["virajp-plugins"]}'
+CONFIG_ARGS='get tools.claude.plugins.user --format json' CASE_CALL=config_cmd run_case \
+  "config get of a tools value with file and contributed entries" 0 "$dev_values
+[tools.virajp-plugins]
+[tools.claude.plugins.user]
+\"own@acme\" = \"acme/own\"" '' \
+  '"source":"file","contributed_by":["virajp-plugins"]}' check_config_both_entries
 CONFIG_ARGS='get releases.api' CASE_CALL=config_cmd run_case "config get of a release level, no releases.toml" 0 \
   "$dev_values" '' '{"key":"releases.api","value":"NONE","source":"default"}'
 CONFIG_ARGS='get repo.nope' CASE_CALL=config_cmd run_case "config get of an unknown key" 2 "$dev_values" '' \
@@ -3805,9 +3901,9 @@ CASE_CALL=config_unset_get run_case "config unset, then get" 0 'environments = [
 product_name = "acme"' '' '{"key":"repo.product_name","value":null,"source":"default"}' check_config_unset
 config_set_tool() {
   "$bin" config set tools.node.env '["dev"]' || exit
-  "$bin" config get tools.node.env
+  BOOTSTRAP_BIN=$bin "$bin" config get tools.node.env
 }
-CASE_CALL=config_set_tool run_case "config set of a tools key" 0 "$dev_values
+CASE_CALL=config_set_tool run_case "config set of a tools key, then get" 0 "$dev_values
 [tools.node]" '' '{"key":"tools.node.env","value":["dev"],"source":"file"}'
 config_set_go() { "$bin" config set tools.go.env '["dev"]'; }
 CASE_CALL=config_set_go run_case "config set of a tool that is not selected" 2 \
@@ -4706,6 +4802,245 @@ lsp_check_none() { LSP_BIN=$bin lsp_check_task; }
 empty_log() { [[ ! -s $log ]]; }
 check_lsp_silent() { check_that "code:lsp:check: no output without a server" empty_log; }
 CASE_CALL=lsp_check_none run_case "code:lsp:check: a repo with no server" 0 "$dev_values" '' '' check_lsp_silent
+
+# setup:ai (D2 to D5, D13, D18, D19, D25 to D27, D29, D34): the case runs the
+# synced task file with bash, as code:lsp:check does, with the real engine in
+# BOOTSTRAP_BIN and the clone of the case in BOOTSTRAP_CLONE (D27). A PATH shim for mise runs
+# the command of `x --` itself. A stub claude on the path logs each call to
+# $tmp/ai/calls and answers `plugin list --json` and
+# `plugin marketplace list --json` from the state files $tmp/ai/installed
+# (`<plugin>|<scope>` lines) and $tmp/ai/marketplaces. AI_FAIL=install or
+# AI_FAIL=uninstall makes that call fail. A case may set AI_BIN, the engine of
+# the task, to $tmp/ai/engine: the real engine, except that `config set` exits 5
+# with AI_SET_FAIL=1.
+# No case uses the network or a real claude.
+ai_setup() {
+  synced
+  mkdir -p -- "$tmp/ai/bin"
+  : > "$tmp/ai/installed"
+  : > "$tmp/ai/marketplaces"
+  cat > "$tmp/ai/bin/mise" << 'EOF'
+#!/usr/bin/env bash
+case $1 in
+  x)
+    shift
+    [[ ${1:-} != -- ]] || shift
+    exec "$@"
+    ;;
+  *) exit 1 ;;
+esac
+EOF
+  cat > "$tmp/ai/bin/claude" << 'EOF'
+#!/usr/bin/env bash
+state=$AI_STATE
+printf '%s\n' "$*" >> "$state/calls"
+case "$*" in
+  "plugin list --json")
+    jq -Rnc --arg root "$AI_ROOT" '[inputs | select(length > 0) | split("|")
+      | {id: .[0], scope: .[1]} + (if .[1] == "project" then {projectPath: $root} else {} end)]' \
+      < "$state/installed"
+    ;;
+  "plugin marketplace list --json")
+    jq -Rnc '[inputs | select(length > 0) | {name: .}]' < "$state/marketplaces"
+    ;;
+  "plugin marketplace add --scope "*)
+    case $5 in
+      virajp/claude-plugins) printf '%s\n' virajp-plugins >> "$state/marketplaces" ;;
+      *) printf '%s\n' "${5##*/}" >> "$state/marketplaces" ;;
+    esac
+    ;;
+  "plugin install --scope "*)
+    if [[ ${AI_FAIL:-} == install ]]; then
+      printf '%s\n' 'the stub install fails' >&2
+      exit 1
+    fi
+    printf '%s|%s\n' "$5" "$4" >> "$state/installed"
+    ;;
+  "plugin uninstall --scope project --prune -y "*)
+    if [[ ${AI_FAIL:-} == uninstall ]]; then
+      printf '%s\n' 'the stub uninstall fails' >&2
+      exit 1
+    fi
+    grep -vFx "$7|project" "$state/installed" > "$state/installed.new" || true
+    mv -- "$state/installed.new" "$state/installed"
+    ;;
+esac
+EOF
+  cat > "$tmp/ai/engine" << 'EOF'
+#!/usr/bin/env bash
+if [[ $1 == config && $2 == set && -n ${AI_SET_FAIL:-} ]]; then
+  printf '%s\n' '[ERROR] the stub set fails' >&2
+  exit 5
+fi
+exec "$AI_REAL_BIN" "$@"
+EOF
+  chmod +x "$tmp/ai/bin/mise" "$tmp/ai/bin/claude" "$tmp/ai/engine"
+}
+# ai_run <n> [--update]: run <n> of the task. Its output goes to the log of the
+# case, and its claude calls to $tmp/ai/calls<n>.
+ai_run() {
+  local n=$1 update=false got=0
+  [[ ${2:-} != --update ]] || update=true
+  : > "$tmp/ai/calls"
+  printf '%s\n' "--- run $n"
+  (
+    cd -- "$consumer"
+    BOOTSTRAP_BIN=${AI_BIN:-$bin} AI_REAL_BIN=$bin AI_STATE=$tmp/ai AI_ROOT=$consumer \
+      PATH="$tmp/ai/bin:$jq_dir:$PATH" usage_update=$update bash "$consumer/.config/mise/tasks/setup/ai"
+  ) || got=$?
+  cp -- "$tmp/ai/calls" "$tmp/ai/calls$n"
+  return "$got"
+}
+# ai_called <n> <call>: run <n> made the claude call <call>.
+ai_called() { grep -qxF -- "$2" "$tmp/ai/calls$1"; }
+ai_not_called() { ! ai_called "$@"; }
+# ai_no_change <n>: run <n> made no install, update, uninstall or add call.
+ai_no_change() { ! grep -qE '^plugin (install|uninstall|update|marketplace (add|update)) ' "$tmp/ai/calls$1"; }
+# ai_record <plugins>: the record tools.claude.plugins.installed of the values
+# file, its entries joined with commas; no key is an empty record.
+ai_record() { tomlq "((.tools.claude.plugins.installed // []) | join(\",\")) == \"$1\""; }
+
+# A project plugin of the list, and the vwf plugin that virajp-plugins
+# contributes at user scope.
+ai_values='environments = [ "dev" ]
+[tools.virajp-plugins]
+[tools.claude.plugins.project]
+"lsp@tools" = "acme/tools"'
+# The same list with a record.
+ai_record_values() {
+  printf '%s\n' "$ai_values" '[tools.claude.plugins]' "installed = $1"
+}
+
+# 1. A first run installs; 2. a second run changes nothing (D4); 3. --update
+# makes the update calls (D4).
+ai_first() {
+  ai_setup
+  ai_run 1 || exit
+  ai_run 2 || exit
+  ai_run 3 --update
+}
+check_ai_first() {
+  check_that "setup:ai: the first run adds the marketplace of vwf" ai_called 1 \
+    'plugin marketplace add --scope user virajp/claude-plugins'
+  check_that "setup:ai: the first run installs vwf at user scope" ai_called 1 \
+    'plugin install --scope user vwf@virajp-plugins'
+  check_that "setup:ai: the first run installs the listed project plugin" ai_called 1 \
+    'plugin install --scope project lsp@tools'
+  check_that "setup:ai: the project plugin is recorded" ai_record 'lsp@tools'
+  check_that "setup:ai: the second run changes nothing (D4)" ai_no_change 2
+  check_that "setup:ai: --update updates the marketplaces (D4)" ai_called 3 'plugin marketplace update'
+  check_that "setup:ai: --update updates vwf at user scope (D4)" ai_called 3 \
+    'plugin update --scope user vwf@virajp-plugins'
+  check_that "setup:ai: --update updates the project plugin (D4)" ai_called 3 \
+    'plugin update --scope project lsp@tools'
+  check_that "setup:ai: --update installs nothing" ai_not_called 3 'plugin install --scope project lsp@tools'
+}
+CASE_CALL=ai_first run_case "setup:ai: install, a second run, then --update" 0 "$ai_values" '' \
+  'Installing vwf@virajp-plugins (user)' check_ai_first
+
+# A plugin that leaves plugins.project is uninstalled, with --prune -y, and
+# leaves the record (D3, D29). A project plugin installed by hand, not in the
+# record, stays.
+ai_leaves() {
+  ai_setup
+  printf '%s\n' 'hand@tools|project' >> "$tmp/ai/installed"
+  ai_run 1 || exit
+  grep -vF '"lsp@tools" = ' "$tools_values" > "$tmp/tools.toml"
+  cp -- "$tmp/tools.toml" "$tools_values"
+  ai_run 2
+}
+check_ai_leaves() {
+  check_that "setup:ai: a plugin that left the list is uninstalled (D3, D29)" ai_called 2 \
+    'plugin uninstall --scope project --prune -y lsp@tools'
+  check_that "setup:ai: the uninstalled plugin leaves the record (D3)" ai_record ''
+  check_that "setup:ai: a plugin installed by hand is never uninstalled (D3)" ai_not_called 2 \
+    'plugin uninstall --scope project --prune -y hand@tools'
+  check_that "setup:ai: user scope is never uninstalled (D3)" not_grep -F 'uninstall --scope user' "$tmp/ai/calls2"
+}
+CASE_CALL=ai_leaves run_case "setup:ai: a project plugin leaves the list" 0 "$ai_values" '' \
+  'Uninstalling lsp@tools (project)' check_ai_leaves
+
+# A failed install records nothing; a failed uninstall keeps the record; both
+# exit 1 (D13).
+ai_fail_install() {
+  ai_setup
+  AI_FAIL=install ai_run 1
+}
+check_ai_fail_install() {
+  check_that "setup:ai: a failed install is not recorded (D13)" ai_record ''
+}
+CASE_CALL=ai_fail_install run_case "setup:ai: a failed install" 1 "$ai_values" '' 'the stub install fails' \
+  check_ai_fail_install
+ai_fail_uninstall() {
+  ai_setup
+  printf '%s\n' 'vwf@virajp-plugins|user' 'old@tools|project' 'lsp@tools|project' >> "$tmp/ai/installed"
+  AI_FAIL=uninstall ai_run 1
+}
+check_ai_fail_uninstall() {
+  check_that "setup:ai: a failed uninstall stays recorded (D13)" ai_record 'lsp@tools,old@tools'
+}
+CASE_CALL=ai_fail_uninstall run_case "setup:ai: a failed uninstall" 1 \
+  "$(ai_record_values '[ "lsp@tools", "old@tools" ]')" '' 'the stub uninstall fails' check_ai_fail_uninstall
+
+# A recorded plugin that is not installed leaves the record with no uninstall
+# call (D18); a listed project plugin that is installed is recorded with no
+# install call (D19).
+ai_found() {
+  ai_setup
+  printf '%s\n' 'vwf@virajp-plugins|user' 'lsp@tools|project' >> "$tmp/ai/installed"
+  printf '%s\n' virajp-plugins tools >> "$tmp/ai/marketplaces"
+  ai_run 1
+}
+check_ai_found() {
+  check_that "setup:ai: a recorded plugin that is not installed, no uninstall call (D18)" ai_not_called 1 \
+    'plugin uninstall --scope project --prune -y gone@tools'
+  check_that "setup:ai: an installed listed plugin, no install call (D19)" ai_no_change 1
+  check_that "setup:ai: the record drops gone@tools and adds lsp@tools (D18, D19)" ai_record 'lsp@tools'
+}
+CASE_CALL=ai_found run_case "setup:ai: the record follows the installed plugins" 0 \
+  "$(ai_record_values '[ "gone@tools" ]')" '' '' check_ai_found
+
+# A recorded, listed plugin that is not installed is installed again and stays
+# recorded (D26).
+ai_again() {
+  ai_setup
+  printf '%s\n' 'vwf@virajp-plugins|user' >> "$tmp/ai/installed"
+  printf '%s\n' virajp-plugins tools >> "$tmp/ai/marketplaces"
+  ai_run 1
+}
+check_ai_again() {
+  check_that "setup:ai: a recorded plugin that is not installed is installed again (D26)" ai_called 1 \
+    'plugin install --scope project lsp@tools'
+  check_that "setup:ai: the plugin stays recorded (D26)" ai_record 'lsp@tools'
+}
+CASE_CALL=ai_again run_case "setup:ai: a recorded plugin installed again" 0 "$(ai_record_values '[ "lsp@tools" ]')" \
+  '' '' check_ai_again
+
+# A record write that fails is a failed step (D25).
+ai_set_fails() {
+  ai_setup
+  AI_BIN=$tmp/ai/engine AI_SET_FAIL=1 ai_run 1
+}
+CASE_CALL=ai_set_fails run_case "setup:ai: a config set that fails" 1 "$ai_values" '' 'the stub set fails'
+
+# No catalog: the first config get exits 2, so the task stops with code 2
+# before any change: it installs nothing, uninstalls nothing and keeps the
+# record (D34).
+ai_no_catalog() {
+  ai_setup
+  printf '%s\n' 'vwf@virajp-plugins|user' 'old@tools|project' >> "$tmp/ai/installed"
+  printf '%s\n' virajp-plugins tools >> "$tmp/ai/marketplaces"
+  unset BOOTSTRAP_CLONE
+  BOOTSTRAP_CACHE=$tmp/no-cache BOOTSTRAP_URL="file://$tmp/no-such-remote" ai_run 1
+}
+check_ai_no_catalog() {
+  check_that "setup:ai, no catalog: no install call (D34)" not_grep -F 'install' "$tmp/ai/calls1"
+  check_that "setup:ai, no catalog: no uninstall call (D34)" not_grep -F 'uninstall' "$tmp/ai/calls1"
+  check_that "setup:ai, no catalog: the record is unchanged (D34)" ai_record 'old@tools,gone@tools'
+}
+CASE_CALL=ai_no_catalog run_case "setup:ai: config get reads no catalog" 2 \
+  "$(ai_record_values '[ "old@tools", "gone@tools" ]')" '' \
+  'config get tools.claude.plugins.user needs the catalog' check_ai_no_catalog
 
 # setup:configs --all with the real engine (D54, D62, D63): the sibling api is
 # a repository next to the consumer with its own .config/bootstrap/, so its
