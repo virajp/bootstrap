@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-15 by the user"
+    "state": "BLOCKED",
+    "detail": "BLOCKED at preflight — code:lint red on main (installed bootstrap 3.3.1 refuses requires_found in [mise_env.dev.tools] of repo/tools/node/tools.toml); worktree .worktrees/projects"
   },
   "consent": {
     "merge": true,
@@ -500,7 +500,15 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "",
+      "stage": "",
+      "text": "Preflight: gate line `mise x -- mise run code:lint` is red at the integration branch tip (main 49fb018) — code:lint:60-bootstrap runs the mise-installed bootstrap 3.3.1, which refuses requires_found of npm:typescript and npm:typescript-language-server in [mise_env.dev.tools] of repo/tools/node/tools.toml; the engine of main accepts it · inherited, not the plan's: run stopped before wave 1; make code:lint green on main (a newer installed engine or a fix on main), then /vwf:execute docs/plans/2026-11-15-projects",
+      "state": "open"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".worktrees/projects",
