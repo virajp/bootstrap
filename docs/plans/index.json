@@ -113,8 +113,8 @@
       "title": "R2d — projects in bootstrap: [projects.<name>] in repo.toml, a projects list per tool, found by detect",
       "target_repo": null,
       "priority": 110,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-17T12:10:31.108Z",
       "ended": "",
       "gaps": null,
       "requires": [
