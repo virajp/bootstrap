@@ -63,44 +63,30 @@ plugins_here() {
 # The installed plugins, read once, before any change.
 INSTALLED=$(plugins_here)
 
-# Each read of `bootstrap config get` that read no catalog of bootstrap
-# (`"catalog": false`) lacks the defaults and the entries that other tools
-# contribute. The task then only installs: it uninstalls nothing.
-CATALOG=1
-note_catalog() {
-  [[ "$(mise x -- jq -r '.catalog == false' <<< "$1")" == false ]] || CATALOG=0
-}
-
 # The plugins of [tools.claude.plugins.user] and [tools.claude.plugins.project]
 # in .config/bootstrap/tools.toml, with the entries that other tools contribute:
 # `"<plugin>@<marketplace>" = "<source>"`, one `<plugin>|<source>` line each.
+# A failed read of `bootstrap config get`, for example with no catalog of
+# bootstrap, stops the task with the code of bootstrap_get.
 ANSWER=$(bootstrap_get tools.claude.plugins.user) || exit $?
-note_catalog "${ANSWER}"
 WANTED_USER=$(mise x -- jq -r '(.value // {}) | to_entries | .[] | .key + "|" + .value' <<< "${ANSWER}")
 ANSWER=$(bootstrap_get tools.claude.plugins.project) || exit $?
-note_catalog "${ANSWER}"
 WANTED_PROJECT=$(mise x -- jq -r '(.value // {}) | to_entries | .[] | .key + "|" + .value' <<< "${ANSWER}")
 
 # The record of the project plugins that this task installed:
 # `tools.claude.plugins.installed`, a list of `<plugin>@<marketplace>`. A plugin
 # that is not in the record is never uninstalled.
 ANSWER=$(bootstrap_get tools.claude.plugins.installed) || exit $?
-note_catalog "${ANSWER}"
 RECORD_BEFORE=$(mise x -- jq -r '(.value // []) | .[]' <<< "${ANSWER}")
 RECORD=''
 
-if ((CATALOG)); then
-  # A recorded plugin that is no longer installed at project scope leaves the
-  # record.
-  while IFS= read -r PLUGIN; do
-    [[ -n "${PLUGIN}" ]] || continue
-    grep -Fqx "${PLUGIN}|project" <<< "${INSTALLED}" || continue
-    RECORD+="${PLUGIN}"$'\n'
-  done <<< "${RECORD_BEFORE}"
-else
-  print_warn "bootstrap config get read no catalog of bootstrap: no plugin is uninstalled."
-  RECORD=${RECORD_BEFORE:+${RECORD_BEFORE}$'\n'}
-fi
+# A recorded plugin that is no longer installed at project scope leaves the
+# record.
+while IFS= read -r PLUGIN; do
+  [[ -n "${PLUGIN}" ]] || continue
+  grep -Fqx "${PLUGIN}|project" <<< "${INSTALLED}" || continue
+  RECORD+="${PLUGIN}"$'\n'
+done <<< "${RECORD_BEFORE}"
 
 record_add() {
   grep -Fqx "$1" <<< "${RECORD}" || RECORD+="$1"$'\n'
@@ -141,24 +127,22 @@ done
 # A recorded plugin that is no longer in [tools.claude.plugins.project] is
 # uninstalled at project scope, with the dependencies that only it needed. A
 # failed uninstall keeps it in the record, so the next run tries again.
-if ((CATALOG)); then
-  KEPT=''
-  while IFS= read -r PLUGIN; do
-    [[ -n "${PLUGIN}" ]] || continue
-    if cut -d '|' -f 1 <<< "${WANTED_PROJECT}" | grep -Fqx "${PLUGIN}"; then
-      KEPT+="${PLUGIN}"$'\n'
-      continue
-    fi
-    BEFORE=${FAILED}
-    FAILED=0
-    claude_step "Uninstalling ${PLUGIN} (project)" plugin uninstall --scope project --prune -y "${PLUGIN}"
-    if ((FAILED)); then
-      KEPT+="${PLUGIN}"$'\n'
-    fi
-    ((FAILED |= BEFORE)) || true
-  done <<< "${RECORD}"
-  RECORD=${KEPT}
-fi
+KEPT=''
+while IFS= read -r PLUGIN; do
+  [[ -n "${PLUGIN}" ]] || continue
+  if cut -d '|' -f 1 <<< "${WANTED_PROJECT}" | grep -Fqx "${PLUGIN}"; then
+    KEPT+="${PLUGIN}"$'\n'
+    continue
+  fi
+  BEFORE=${FAILED}
+  FAILED=0
+  claude_step "Uninstalling ${PLUGIN} (project)" plugin uninstall --scope project --prune -y "${PLUGIN}"
+  if ((FAILED)); then
+    KEPT+="${PLUGIN}"$'\n'
+  fi
+  ((FAILED |= BEFORE)) || true
+done <<< "${RECORD}"
+RECORD=${KEPT}
 
 # With --update, the marketplaces, then each listed plugin that is installed, at
 # its scope. claude has no command that updates all plugins.
