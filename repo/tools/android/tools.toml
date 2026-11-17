@@ -18,3 +18,13 @@ source = "code-lint-android"
 
 [tasks."setup/deps/10-android"]
 source = "setup-deps-android"
+
+# The test parts. replaces holds the sha256 of each old copy that a stackgen
+# pack wrote at test/e2e or test/golden; bootstrap init removes such a copy.
+[tasks."test/e2e/40-android"]
+replaces = [ "sha256:89c566190d9a80d576d57fa04a65bd24a1dfeab10d55756e4881e862cae3aec3" ]
+source = "test-e2e-android"
+
+[tasks."test/golden/40-android"]
+replaces = [ "sha256:0de7e36c2b146835ecc14796d4dce0877a930747e2681dd024f2ffd6f2665df8" ]
+source = "test-golden-android"

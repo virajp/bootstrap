@@ -71,11 +71,11 @@
         "U1"
       ],
       "waits": "the replaces key must parse before a tool uses it",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T15:27:23.355Z",
+      "ended": "2026-11-17T15:30:47.678Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "kind": "edit",
       "model": "opus",
       "id": "U2",
@@ -191,8 +191,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-17T15:27:23.321Z",
       "ended": ""
     },
     {

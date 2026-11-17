@@ -57,3 +57,15 @@ source = "code-lint-swiftlint"
 
 [tasks."setup/deps/60-swift"]
 source = "setup-deps-swift"
+
+# The test part. replaces holds the sha256 of each old copy that a stackgen
+# pack wrote at test/golden; bootstrap init removes such a copy.
+[tasks."test/golden/40-swift"]
+replaces = [
+  "sha256:86af8af894928c89501f7d0a7aa80775d33eb610de93c96e267a96acee746c6d",
+  "sha256:7635425e60da25d59f253194ad23aef63d150ff7dc3032f576d9a943ca40090e",
+  "sha256:03583d308c5a49cc3fa840243fb15281eddf6788ed9f1743aef0572e41f80239",
+  "sha256:dcb125b4820f844eb07c20a28d830cbbd7103d684708a2994e4d5ecca90a9b69",
+  "sha256:53f96e8dd862070702b7c813b1a7c11d53e3a07de8f22d21a7c1257769380ccb",
+]
+source = "test-golden-swift"
