@@ -54,7 +54,7 @@
       "status": "green",
       "started": "2026-11-17T15:17:51.601Z",
       "ended": "2026-11-17T15:23:43.585Z",
-      "commit": "",
+      "commit": "4d56848",
       "rounds": 1,
       "kind": "edit",
       "model": "opus",
@@ -185,9 +185,9 @@
   "waves": [
     {
       "id": "W1",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-17T15:17:51.568Z",
-      "ended": ""
+      "ended": "2026-11-17T15:27:09.096Z"
     },
     {
       "id": "W2",
