@@ -15,8 +15,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-14 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-16T18:29:24Z in .worktrees/plugins-setup-ai"
   },
   "consent": {
     "merge": true,
@@ -69,11 +69,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-16T18:30:56.468Z",
+      "ended": "2026-11-16T18:42:48.967Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -88,11 +88,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-16T18:30:56.545Z",
+      "ended": "2026-11-16T18:44:18.077Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 3
     },
     {
       "id": "U3",
@@ -106,11 +106,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-16T18:30:56.621Z",
+      "ended": "2026-11-16T18:39:00.405Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U4",
@@ -209,8 +209,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-16T18:30:56.429Z",
       "ended": ""
     },
     {
@@ -537,6 +537,34 @@
       "ruling": "Out of scope: this repo's own .config files are the user's hand edits. After the plan lands, re-sync this repo and add virajp-plugins.",
       "rejected": "A unit re-syncs this repo.",
       "units": []
+    },
+    {
+      "id": "D31",
+      "decision": "Q1: Should the bootstrap config get envelope of a repo.* or releases.* key also carry \"catalog\": false, or only a tools.* key?",
+      "ruling": "tools.* keys only (built now) — repo and releases envelopes and their test:repo cases stay as they are; a reader of a repo key never sees catalog",
+      "rejected": "every get carries catalog — repo and releases keys print \"catalog\": false, a one-line change in configGet, and the repo.* get cases in test:repo and the cli tests must change too",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D32",
+      "decision": "Q2: Should the new virajp-plugins tool be root_only (not selectable for a git submodule member)?",
+      "ruling": "true — only the root repository can select it, so a submodule member never gets the vwf ignore lines (the user corrected an earlier answer of false: a submodule cannot select virajp-plugins)",
+      "rejected": "false — same as its dependencies claude and git, so a member repository can carry vwf ignore lines; setup:ai already skips itself in a submodule, so the plugin entry does nothing there",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D33",
+      "decision": "Q3: When a tools.* value combines a catalog default with entries that another tool contributes, and the values file has no entry, should bootstrap config get report source contributed or default?",
+      "ruling": "\"contributed\" (as built) — keep the code; U6 writes the rule into docs/design/cli.md beside the reported line 709",
+      "rejected": "\"default\" — U1 changes OriginOf so that only a value whose default is empty gets contributed, and the U1 and U4 expected envelopes change",
+      "units": [
+        "U1",
+        "U6"
+      ]
     }
   ],
   "stages": {
@@ -565,7 +593,29 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U6",
+      "stage": "",
+      "text": "Wave review R1 rule-5 finding: docs/sync/vwf.md:72-73 (config get of an unset key prints source default or null) is falsified by D15/D20/D28 and no unit reported it · handed to U6 as a DOCS FALSIFIED line; the path is already in its owns, no widening",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U6",
+      "stage": "",
+      "text": "Wave review R1 round 2 rule-5 finding: docs/design/cli.md:1231 (Shared files steps 1-3) omits the contributed items added after the spec items, with no duplicates · handed to U6 as a DOCS FALSIFIED line; the path is already in its owns, no widening",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "U6",
+      "stage": "",
+      "text": "Wave review R1 round 2 rule-5 finding: docs/design/cli.md:1810 and docs/design/tools.md:409-413 (what stops the sync) lack the D7 contributes_items refusals · handed to U6 as DOCS FALSIFIED lines; the paths are already in its owns, no widening",
+      "state": "closed"
+    }
+  ],
   "overrides": [],
   "run": {
     "worktree": ".worktrees/plugins-setup-ai",

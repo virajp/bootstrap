@@ -57,9 +57,9 @@ func TestConfigGet(t *testing.T) {
 		{[]string{"repo.commits.style"}, `{"key":"repo.commits.style","value":"conventional","source":"default"}`},
 		{[]string{"repo.product_name"}, `{"key":"repo.product_name","value":null,"source":"default"}`},
 		{[]string{"releases.web"}, `{"key":"releases.web","value":"NONE","source":"default"}`},
-		{[]string{"tools.a.flag"}, `{"key":"tools.a.flag","value":false,"source":"file"}`},
-		{[]string{"tools.a.count"}, `{"key":"tools.a.count","value":null,"source":"default"}`},
-		{[]string{"tools.nope.key"}, `{"key":"tools.nope.key","value":null,"source":"default"}`},
+		{[]string{"tools.a.flag"}, `{"key":"tools.a.flag","value":false,"source":"file","catalog":true}`},
+		{[]string{"tools.a.count"}, `{"key":"tools.a.count","value":1,"source":"default","catalog":true}`},
+		{[]string{"tools.nope.key"}, `{"key":"tools.nope.key","value":null,"source":"default","catalog":true}`},
 		{[]string{"repo.repo_name", "--format", "toml"}, "key = \"repo.repo_name\"\nvalue = \"x\"\nsource = \"file\""},
 		{[]string{"repo.repo_name", "--format", "yaml"}, "key: repo.repo_name\nvalue: x\nsource: file"},
 		{[]string{"repo.product_name", "--format", "toml"}, "key = \"repo.product_name\"\nsource = \"default\""},
@@ -80,6 +80,112 @@ func TestConfigGet(t *testing.T) {
 	writeFile(t, dir+"/releases.toml", "web = \n", 0o644)
 	if code, _, _ := run("config", "get", "releases.web"); code != fail.Other {
 		t.Errorf("a bad file: code %d", code)
+	}
+}
+
+// contribRepo makes the fixture of the contributed values: the tool a
+// (base) with a list default, and the tool c (selected) that contributes to
+// a list item and a key that a does not have. The values file sets the list
+// of a when <list> is not empty.
+func contribRepo(t *testing.T, list string) (string, string) {
+	t.Helper()
+	setupEnv(t, "/nonexistent/bootstrap/config.toml")
+	clone, root := t.TempDir(), t.TempDir()
+	const keys = catalogKeys + "default_envs = [ \"dev\" ]\ndepends = []\nroot_only = false\n"
+	writeFile(t, filepath.Join(clone, "cli", "VERSION"), "0.0.1\n", 0o644)
+	writeFile(t, filepath.Join(clone, "repo", "categories.toml"), catalogFile, 0o644)
+	writeFile(t, filepath.Join(clone, "repo", "packs.toml"), "[pack.base]\na = { required = true }\n", 0o644)
+	writeFile(t, filepath.Join(clone, "repo", "tools", "a", "tools.toml"), keys+"\n[defaults]\nlist = [ \"x\" ]\nflag = true\n", 0o644)
+	writeFile(t, filepath.Join(clone, "repo", "tools", "c", "tools.toml"), keys+"\n[contributes.a]\nlist = [ \"y\" ]\n\n[contributes.a.extra]\nk = \"v\"\n", 0o644)
+	dir := filepath.Join(root, ".config", "bootstrap")
+	writeFile(t, filepath.Join(dir, "repo.toml"), "format = 3\nrepo_name = \"x\"\ncore_branches = [ \"main\" ]\n", 0o644)
+	tools := "format = 3\n\n[tools.c]\n"
+	if list != "" {
+		tools += "\n[tools.a]\nlist = " + list + "\n"
+	}
+	writeFile(t, filepath.Join(dir, "tools.toml"), tools, 0o644)
+	if out, err := exec.Command("git", "-C", root, "init", "-q", "-b", "main").CombinedOutput(); err != nil {
+		t.Fatalf("git init: %s", out)
+	}
+	t.Setenv("MISE_PROJECT_ROOT", root)
+	t.Setenv("BOOTSTRAP_VALUES", "")
+	t.Setenv("PWD", root)
+	return clone, root
+}
+
+// getOut runs bootstrap config get <args> and gives the code and stdout.
+func getOut(args ...string) (fail.Code, string, string) {
+	var stdout, stderr bytes.Buffer
+	code := Run("dev", append([]string{"config", "get"}, args...), strings.NewReader(""), &stdout, &stderr)
+	return code, strings.TrimSpace(stdout.String()), stderr.String()
+}
+
+// TestConfigGetContributed: a tools.* key gives the merged value, with the
+// contributions of the selected tools (D15, D20), from --clone or
+// BOOTSTRAP_CLONE (D27).
+func TestConfigGetContributed(t *testing.T) {
+	clone, _ := contribRepo(t, "")
+	cases := []struct{ key, out string }{
+		{"tools.a.extra", `{"key":"tools.a.extra","value":{"k":"v"},"source":"contributed","contributed_by":["c"],"catalog":true}`},
+		{"tools.a.extra.k", `{"key":"tools.a.extra.k","value":"v","source":"contributed","contributed_by":["c"],"catalog":true}`},
+		{"tools.a.list", `{"key":"tools.a.list","value":["x","y"],"source":"contributed","contributed_by":["c"],"catalog":true}`},
+		{"tools.a.flag", `{"key":"tools.a.flag","value":true,"source":"default","catalog":true}`},
+	}
+	for _, c := range cases {
+		if code, out, errText := getOut(c.key, "--clone", clone); code != fail.OK || out != c.out {
+			t.Errorf("--clone %s: code %d, out %s, want %s (%s)", c.key, code, out, c.out, errText)
+		}
+		t.Setenv("BOOTSTRAP_CLONE", clone)
+		if code, out, errText := getOut(c.key); code != fail.OK || out != c.out {
+			t.Errorf("BOOTSTRAP_CLONE %s: code %d, out %s, want %s (%s)", c.key, code, out, c.out, errText)
+		}
+		t.Setenv("BOOTSTRAP_CLONE", "")
+	}
+	// A value of the file with contributed entries: source file, and the
+	// contributing tools.
+	clone, _ = contribRepo(t, `[ "z" ]`)
+	want := `{"key":"tools.a.list","value":["x","y","z"],"source":"file","contributed_by":["c"],"catalog":true}`
+	if code, out, errText := getOut("tools.a.list", "--clone", clone); code != fail.OK || out != want {
+		t.Errorf("file and contributed: code %d, out %s, want %s (%s)", code, out, want, errText)
+	}
+}
+
+// TestConfigGetNoCatalog: with no clone and no cache clone, get gives the
+// file value alone, with catalog false, and fetches nothing (D23, D28). A
+// cache clone is read with no fetch.
+func TestConfigGetNoCatalog(t *testing.T) {
+	clone, _ := contribRepo(t, `[ "z" ]`)
+	cache := t.TempDir()
+	t.Setenv("BOOTSTRAP_CACHE", cache)
+	// A fetch from this URL fails.
+	url := "file://" + t.TempDir() + "/no-such-origin"
+	t.Setenv("BOOTSTRAP_URL", url)
+	want := `{"key":"tools.a.list","value":["z"],"source":"file","catalog":false}`
+	if code, out, errText := getOut("tools.a.list"); code != fail.OK || out != want {
+		t.Errorf("no catalog: code %d, out %s, want %s (%s)", code, out, want, errText)
+	}
+	if code, out, _ := getOut("tools.a.extra"); code != fail.OK || out != `{"key":"tools.a.extra","value":null,"source":"default","catalog":false}` {
+		t.Errorf("no catalog, contributed key: code %d, out %s", code, out)
+	}
+	if entries, _ := os.ReadDir(cache); len(entries) != 0 {
+		t.Errorf("no catalog: the cache has %d entries, want none (no fetch)", len(entries))
+	}
+	// A cache clone with the origin of the URL: read as it is, with no fetch.
+	repo := filepath.Join(cache, "repo")
+	if out, err := exec.Command("cp", "-R", clone+"/.", repo).CombinedOutput(); err != nil {
+		t.Fatalf("cp: %s", out)
+	}
+	for _, args := range [][]string{{"init", "-q", "-b", "main"}, {"remote", "add", "origin", url}} {
+		if out, err := exec.Command("git", append([]string{"-C", repo}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %s", args, out)
+		}
+	}
+	want = `{"key":"tools.a.list","value":["x","y","z"],"source":"file","contributed_by":["c"],"catalog":true}`
+	if code, out, errText := getOut("tools.a.list"); code != fail.OK || out != want {
+		t.Errorf("cache clone: code %d, out %s, want %s (%s)", code, out, want, errText)
+	}
+	if _, err := os.Stat(filepath.Join(cache, "fetched")); err == nil {
+		t.Errorf("cache clone: get fetched")
 	}
 }
 

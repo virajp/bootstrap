@@ -295,6 +295,9 @@ func (a *app) configGet(sd core.Side, text, form string) fail.Code {
 	}
 	env := source.NewObj()
 	env.Set("key", text)
+	if k.file == fileTools {
+		return a.toolsGet(sd, k, raw, env, form)
+	}
 	if v, ok := lookup(raw, k.docPath()); ok {
 		env.Set("value", v)
 		env.Set("source", "file")
@@ -306,6 +309,73 @@ func (a *app) configGet(sd core.Side, text, form string) fail.Code {
 		env.Set("value", def)
 		env.Set("source", "default")
 	}
+	return a.printDoc(env, form, true)
+}
+
+// toolsGet completes the envelope <env> of the tools.toml key <k>: the
+// merged value of a selected tool, with the defaults and the contributions of
+// the catalog (D15, D20). The catalog is --clone or BOOTSTRAP_CLONE, else
+// the cache clone; get never fetches (D23, D27). With no catalog, the value
+// is the one of the file <raw> alone, and catalog is false (D28).
+func (a *app) toolsGet(sd core.Side, k *valuesKey, raw, env *source.Obj, form string) fail.Code {
+	fileOnly := func(catalog bool) fail.Code {
+		if v, ok := lookup(raw, k.docPath()); ok {
+			env.Set("value", v)
+			env.Set("source", "file")
+		} else {
+			env.Set("value", nil)
+			env.Set("source", "default")
+		}
+		env.Set("catalog", catalog)
+		return a.printDoc(env, form, true)
+	}
+	c, err := core.OpenClone(core.CloneOptions{
+		Getenv: a.getenv, Version: a.version, CacheOnly: true,
+		Note: func(s string) { a.infof("%s", s) }, Stderr: a.stderr,
+	})
+	defer c.Cleanup()
+	if err != nil {
+		return a.logErr(err)
+	}
+	if c.Dir == "" {
+		return fileOnly(false)
+	}
+	sd.Clone = c.Dir
+	sel, err := core.SelectionOf(sd, sd.Values, sd.Values)
+	if err != nil {
+		return a.logErr(err)
+	}
+	tool := k.path[0]
+	selected := false
+	for _, t := range sel.Tools {
+		selected = selected || t == tool
+	}
+	if !selected {
+		// A tool that is not selected has no merged values.
+		return fileOnly(true)
+	}
+	res, err := values.Merge(values.Input{
+		Index:       sel.Idx,
+		Selected:    sel.Tools,
+		Keep:        sel.Res.Keep,
+		User:        sel.User,
+		ShownRoot:   sel.Idx.Source.ToolsShown(),
+		ShownValues: k.shown,
+	})
+	if err != nil {
+		return a.logErr(err)
+	}
+	o := values.OriginOf(sel.Idx, res, sel.User, sel.Tools, tool, k.path[1:])
+	env.Set("value", o.Value)
+	env.Set("source", o.Source)
+	if len(o.ContributedBy) > 0 {
+		by := make([]any, len(o.ContributedBy))
+		for i, t := range o.ContributedBy {
+			by[i] = t
+		}
+		env.Set("contributed_by", by)
+	}
+	env.Set("catalog", true)
 	return a.printDoc(env, form, true)
 }
 

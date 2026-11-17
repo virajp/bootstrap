@@ -35,6 +35,10 @@ type CloneOptions struct {
 	// config set and config unset of a tools.* key, catalog and describe.
 	// Without it, each command fetches. BOOTSTRAP_CLONE has no age.
 	Catalog bool
+	// CacheOnly never fetches (config get, D23): it copies the cache clone
+	// when it exists with the origin of the URL, and else gives a clone with
+	// an empty Dir and no error. BOOTSTRAP_CLONE has no age.
+	CacheOnly bool
 }
 
 // FetchedName is the file in the cache root that holds the time of the last
@@ -127,6 +131,10 @@ func OpenClone(o CloneOptions) (*Clone, error) {
 		}
 		os.Exit(143)
 	}()
+	if c.Dir == "" {
+		// CacheOnly with no cache clone: no catalog.
+		return c, nil
+	}
 	if err := CheckVersion(o.Version, c.Dir); err != nil {
 		return c, err
 	}
@@ -163,16 +171,22 @@ func acquireClone(o CloneOptions) (*Clone, error) {
 	if c.url == "" {
 		c.url = DefaultURL
 	}
+	if o.CacheOnly && !c.sameOrigin() {
+		return c, nil
+	}
 	if err := c.takeLock(); err != nil {
 		return c, err
 	}
-	if o.Catalog {
+	// CacheOnly makes no fetch: the copy below reads the cache clone as it is.
+	switch {
+	case o.CacheOnly:
+	case o.Catalog:
 		var err error
 		if c.Fetched, c.Warning, err = catalogRule(c.Cache, time.Now(), c.sameOrigin(), c.fetch); err != nil {
 			c.Cleanup()
 			return c, err
 		}
-	} else {
+	default:
 		if err := c.fetch(); err != nil {
 			c.Cleanup()
 			return c, err

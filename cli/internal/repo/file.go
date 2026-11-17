@@ -191,14 +191,24 @@ func (s *state) file(tool string, f source.File, ctx *contexts) (fail.Code, bool
 		}
 		name := toolsShown + "/" + tool + "/" + path
 		var rows []string
+		// The items that other tools contribute to this target (D1, D17).
+		var extra, known []byte
+		if l := s.idx.ContributedItems(tool, out, s.res.Tools); len(l) > 0 {
+			extra = []byte(source.JSON(l))
+		}
+		if l := s.idx.KnownItems(tool, out); len(l) > 0 {
+			known = []byte(source.JSON(l))
+		}
 		rows, rc = s.e.Shared(tmp, dest, format.SharedInput{
-			Target:    out,
-			Explicit:  explicit,
-			Overrides: ov,
-			Records:   s.items[out],
-			Header:    hdr.Shared(name, s.valuesInRepo()),
-			Show:      show,
-			SpecShow:  name,
+			Target:      out,
+			Explicit:    explicit,
+			Overrides:   ov,
+			Contributed: extra,
+			Known:       known,
+			Records:     s.items[out],
+			Header:      hdr.Shared(name, s.valuesInRepo()),
+			Show:        show,
+			SpecShow:    name,
 		})
 		if rc == fail.OK {
 			s.newItems[out] = rows

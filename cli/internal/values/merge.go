@@ -448,3 +448,54 @@ func asObj(v any) *source.Obj {
 	}
 	return source.NewObj()
 }
+
+// Origin is the origin of a merged value of a tool, for config get (D15,
+// D20).
+type Origin struct {
+	Value  any
+	Source string // "file", "contributed" or "default".
+	// ContributedBy names the tools whose [contributes.<tool>] changed the
+	// value, sorted; empty when no contribution changed it.
+	ContributedBy []string
+}
+
+// OriginOf gives the value at <path> of the selected tool <tool> in the
+// merged values <res>: the file, the defaults and the contributions of the
+// selected tools <selected>. <user> holds the user values (tool name to
+// table). The source is "file" when the user values have the path, else
+// "contributed" when a contribution changed the value, else "default".
+func OriginOf(idx *source.Index, res *Result, user *source.Obj, selected []string, tool string, path []string) Origin {
+	merged := getpath(res.Values[tool], path)
+	var defs any = source.NewObj()
+	if m := idx.Manifests[tool]; m != nil {
+		defs = tableOf(m.Raw.Get("defaults"))
+	}
+	var own any = source.NewObj()
+	if user != nil && user.Get(tool) != nil {
+		own = user.Get(tool)
+	}
+	plain := getpath(contributionMerge(defs, own), path)
+	o := Origin{Value: merged, Source: "default"}
+	if !source.Equal(merged, plain) {
+		for _, t := range sortedUnique(selected) {
+			m := idx.Manifests[t]
+			if m == nil || t == tool {
+				continue
+			}
+			co, ok := m.Raw.Get("contributes").(*source.Obj)
+			if !ok {
+				continue
+			}
+			if getpath(co.Get(tool), path) != nil {
+				o.ContributedBy = append(o.ContributedBy, t)
+			}
+		}
+	}
+	switch {
+	case getpath(own, path) != nil:
+		o.Source = "file"
+	case len(o.ContributedBy) > 0:
+		o.Source = "contributed"
+	}
+	return o
+}
