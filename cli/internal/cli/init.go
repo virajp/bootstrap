@@ -149,7 +149,7 @@ func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
 	for _, c := range p.Changes {
 		kind := report.Changed
 		switch {
-		case c.Remove:
+		case c.Remove, len(c.Drops) > 0:
 			kind = report.Removed
 		case !core.Exists(c.Path):
 			kind = report.New

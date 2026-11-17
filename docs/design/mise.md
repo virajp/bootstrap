@@ -630,7 +630,7 @@ dispatcher prints one line and exits 0. To test a member, run
 | `gitleaks`    | `code:sec:10-gitleaks`                                                                                                                                                                                           |
 | `grype`       | `code:sec:20-grype`                                                                                                                                                                                              |
 | `osv-scanner` | `code:sec:30-osv-scanner`                                                                                                                                                                                        |
-| `android`     | `setup:deps:10-android`, `code:lint:10-android`                                                                                                                                                                  |
+| `android`     | `setup:deps:10-android`, `code:lint:10-android`, `test:e2e:40-android`, `test:golden:40-android`                                                                                                                 |
 | `claude`      | `setup:ai`                                                                                                                                                                                                       |
 | `docker`      | `setup:external:check`, `setup:external:pull`, `setup:external:start`, `setup:external:stop`, `setup:external:update`                                                                                            |
 | `doppler`     | `setup:secrets:10-doppler`                                                                                                                                                                                       |
@@ -640,7 +640,7 @@ dispatcher prints one line and exits 0. To test a member, run
 | `kotlin`      | `setup:deps:30-kotlin`, `code:format:30-ktlint`, `code:lint:30-detekt`                                                                                                                                           |
 | `node`        | `setup:deps:40-node`                                                                                                                                                                                             |
 | `python`      | `setup:deps:50-python`, `code:format:40-ruff`, `code:lint:70-ruff`, `code:lint:50-pyrefly`, `code:lint:90-uv`                                                                                                    |
-| `swift`       | `setup:deps:60-swift`, `code:format:50-swift-format`, `code:lint:80-swiftlint`                                                                                                                                   |
+| `swift`       | `setup:deps:60-swift`, `code:format:50-swift-format`, `code:lint:80-swiftlint`, `test:golden:40-swift`                                                                                                           |
 | `vscode`      | `setup:vscode`                                                                                                                                                                                                   |
 
 ### `code:lsp:check`
@@ -706,7 +706,9 @@ sync writes the aliases of `mise` and the member aliases in the generated
 
 These facts came from the examination. They are not decisions.
 
-- No tool ships a task that runs, tests or builds the application.
+- Only `android` and `swift` ship a task that tests the application:
+  `test:e2e:40-android`, `test:golden:40-android` and `test:golden:40-swift`.
+  No tool ships a task that runs or builds the application.
 - The tool `flutter` has `depends = ["android"]`. Thus each Flutter consumer
   gets `android` and `java`. See [tools.md](tools.md).
 - Gradle does not come from mise. The Gradle tasks use the `gradlew` wrapper

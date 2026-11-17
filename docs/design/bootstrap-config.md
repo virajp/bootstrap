@@ -715,6 +715,15 @@ file that the manifest does not list, without the bootstrap header.
 code 2. When the target exists, `init` stops with code 2 and moves nothing.
 See [cli.md](cli.md#init).
 
+A known old copy of a part of a selected tool is not moved: `init` removes
+it first. It is a file at the old path or at `<group>/50-local` whose sha256
+is in the `replaces` of the part, for example the old `test/golden` task of
+the compose pack of stackgen. See
+[tools.md](tools.md#the-tasks-table). At the old path, `check` reports it in
+the stage `old-forms` as above. At `<group>/50-local`, `check` reports it in
+the stage `scripts`, and `sync` stops on it, both with code 2 and "run
+bootstrap init".
+
 ### The old worktree command
 
 `mise run setup:worktree` runs the old name of `git:worktree:setup`, and no

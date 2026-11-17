@@ -1,6 +1,6 @@
 GAP 2026-11-14 ★3 | plan:2026-11-14-task-ports, phase:R5, plugin:stackgen,
-repo/tools | who ships the test parts of a stack after R5 | parked: decide in
-the R5 interview
+repo/tools | who ships the test parts of a stack after R5 | resolved
+2026-11-15 by docs/plans/2026-11-15-test-parts
 
 **Source** The R1c interview of `docs/plans/2026-11-14-task-ports/` (D23). The
 user asked whether `test/*` is managed by bootstrap or by claude-plugins, and
@@ -24,5 +24,5 @@ fixed command is deterministic and fits a part of a bootstrap tool (for example
 `test/20-go` from the go tool); a command that needs a judgment fits stackgen.
 No ruling says this yet.
 
-Related: `docs/memory/gaps/2026-11-14-pack-test-parts-parked.md` (the packs
+Related: `docs/memory/gaps/2026-11-14-pack-test-parts-resolved.md` (the packs
 must ship `NN-` parts until R5 removes them).

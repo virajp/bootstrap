@@ -23,11 +23,13 @@ Gradle file at the root, or one level below it, uses the Android Gradle plugin
 
 ## What the tool ships
 
-| Path in the repository                        | Kind      | Use                               |
-| --------------------------------------------- | --------- | --------------------------------- |
-| `.config/mise/tasks/setup/deps/10-android`    | Synced    | The task `setup:deps:10-android`. |
-| `.config/mise/tasks/code/lint/10-android`     | Synced    | The task `code:lint:10-android`.  |
-| `.config/mise/conf.d/android/mise.<env>.toml` | Generated | The mise config of this tool.     |
+| Path in the repository                        | Kind      | Use                                |
+| --------------------------------------------- | --------- | ---------------------------------- |
+| `.config/mise/tasks/setup/deps/10-android`    | Synced    | The task `setup:deps:10-android`.  |
+| `.config/mise/tasks/code/lint/10-android`     | Synced    | The task `code:lint:10-android`.   |
+| `.config/mise/tasks/test/e2e/40-android`      | Synced    | The part `test:e2e:40-android`.    |
+| `.config/mise/tasks/test/golden/40-android`   | Synced    | The part `test:golden:40-android`. |
+| `.config/mise/conf.d/android/mise.<env>.toml` | Generated | The mise config of this tool.      |
 
 ## mise tools
 
@@ -37,10 +39,12 @@ Gradle file at the root, or one level below it, uses the Android Gradle plugin
 
 ## Tasks
 
-| Task                    | Use                                                                                                                                |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `setup:deps:10-android` | Install `platform-tools`, the platform of `compileSdk`, `emulator` and the emulator image. `--upgrade` installs the same packages. |
-| `code:lint:10-android`  | Run Android lint on the Gradle modules of the given files. `--fix` runs `lintFix`.                                                 |
+| Task                     | Use                                                                                                                                 |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `setup:deps:10-android`  | Install `platform-tools`, the platform of `compileSdk`, `emulator` and the emulator image. `--upgrade` installs the same packages.  |
+| `code:lint:10-android`   | Run Android lint on the Gradle modules of the given files. `--fix` runs `lintFix`.                                                  |
+| `test:e2e:40-android`    | A part of `test:e2e`. Run the instrumented tests on a Gradle managed device, or on the connected device.                            |
+| `test:golden:40-android` | A part of `test:golden`. Verify the screens against their golden images with Roborazzi or Paparazzi. `--record` records them again. |
 
 `setup:deps:10-android` applies only when the root has an executable `./gradlew`
 and a `*.gradle.kts` or `*.gradle` file, `build-logic/` or
@@ -107,6 +111,33 @@ projects of its `android/` build, are not linted. A temporary init script runs
 module without the Android Gradle plugin has none and is skipped.
 `--debug` adds `--info`.
 
+The two test parts act on the Gradle build at the root only. The `android/`
+folder of a Flutter app is for the `flutter` tool. `test:e2e` and
+`test:golden` pass the same arguments to each part, so `test:e2e:40-android`
+has no flag and `test:golden:40-android` has only `--record`. The other
+options are env values, with a default:
+
+| Value               | Use                                                                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ANDROID_VARIANT`   | The build variant, `debug` by default. Both parts read it.                                                                                       |
+| `ANDROID_DEVICE`    | The managed device of `testOptions.managedDevices` for `test:e2e:40-android`, `e2e` by default.                                                  |
+| `ANDROID_CONNECTED` | `true` runs `connected<Variant>AndroidTest` on the device or emulator already attached, and `ANDROID_DEVICE` does not apply. `false` by default. |
+
+- `test:e2e:40-android` applies only when the root has an executable
+  `./gradlew` and a module has a `src/androidTest` folder. Else it prints
+  nothing and exits 0. It runs `<device><Variant>AndroidTest`, or
+  `connected<Variant>AndroidTest`. Without an Android SDK at `ANDROID_HOME`, it
+  fails and tells the user to run `mise run setup`. In CI (`CI` set), the
+  managed emulator uses the software renderer.
+- `test:golden:40-android` finds the library from the plugin ids in
+  `settings.gradle(.kts)`, each `build.gradle(.kts)` and
+  `gradle/libs.versions.toml`: `io.github.takahirom.roborazzi` runs
+  `verifyRoborazzi<Variant>` and `app.cash.paparazzi` runs
+  `verifyPaparazzi<Variant>`, `record…` with `--record`. With both ids, it runs
+  both. Without an executable `./gradlew`, or without either id, it prints
+  nothing and exits 0.
+- A part that applies and fails exits with the code of Gradle.
+
 ## Scripts
 
 The sync runs the scripts of the tool from the clone, and never copies them.
@@ -126,7 +157,9 @@ Only `env`. No questions. The keys of the values file are in
 
 ## Files the repository supplies
 
-None.
+| File                                          | Used by                                                                                                |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `.config/mise/conf.d/zz-repo/mise.<env>.toml` | Optional. `COMPILE_SDK`, `EMULATOR_IMAGE` and the `ANDROID_*` values of the test parts in its `[env]`. |
 
 ## Adapt to the repository
 
@@ -138,9 +171,17 @@ None.
    `.config/mise/conf.d/zz-repo/mise.<env>.toml`. If it finds no `targetSdk`
    level, or for another image, set `EMULATOR_IMAGE` there, for example
    `system-images/android-36/google_apis_playstore`.
+3. If the test parts need another variant, managed device or the connected
+   device, set `ANDROID_VARIANT`, `ANDROID_DEVICE` or `ANDROID_CONNECTED`
+   there too.
 
 ## Migration
 
 - Remove `android-sdk` from the repository-owned mise files.
+- `bootstrap init` removes the old stackgen copies of the test tasks: the
+  `test/e2e` task of the android pack and the `test/golden` task of the
+  compose pack, at their old path or at `<group>/50-local`. It knows them by
+  their sha256 (`replaces`). A copy that the repository changed stays: compare
+  it with the part, and delete it when the part does its job, else both run.
 - If the Gradle build uses the Groovy DSL (`*.gradle`), do the migration of
   [`kotlin-dsl.md`](../kotlin-dsl.md) when the user agrees.

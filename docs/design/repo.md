@@ -87,6 +87,11 @@ the generated mise config into the copy.
   `.config/mise/tasks/test/_default`) stops the sync with code 2 and "run
   bootstrap init", before it writes a file. `init` moves it to a `50-local`
   part. See [cli.md](cli.md#init).
+- A known old copy of a part of a selected tool at `<group>/50-local` (for
+  example the old `test/golden` task of a stackgen pack) stops the sync with
+  code 2 and "run bootstrap init". `init` removes such a copy, there and at
+  the old path of the group, and does not move it. See
+  [cli.md](cli.md#init).
 
 ## Members and submodules
 

@@ -326,7 +326,17 @@ changes a case. See `docs/design/cli.md` ("The config file").
   its arguments. The worktree cases run `git:worktree:create` with
   `--no-setup` and `git:worktree:delete`. The test-port cases run
   `bootstrap init` with the repo's own test tasks, and `mise run test`,
-  `test:e2e` and `test:golden` in a scratch consumer. The config verb cases run
+  `test:e2e` and `test:golden` in a scratch consumer. The tool-test-part cases
+  run `bootstrap check` and `bootstrap init` with an old stackgen copy of the
+  compose `test/golden` task: at `test/golden`, at `test/golden/50-local`,
+  edited, and without the `android` tool. They read that copy from the
+  claude-plugins clone of
+  `CLAUDE_PLUGINS_CLONE`: without it, each of the four cases prints one skip
+  line and passes. A fifth tool-test-part case selects `android` and `swift`,
+  runs `bootstrap init`, then runs `mise run test:golden` with
+  `MISE_TASK_RUN_AUTO_INSTALL=false` in a consumer with no Gradle or Xcode
+  project, and compares stdout with the success line of the dispatcher. It
+  uses no copy. The config verb cases run
   `bootstrap config get|set|unset|show`. The JSON cases run `--json` on
   `contract`, `catalog`, `describe`, `lsp`, `questions`, `config`, `check`
   and `add`, and compare the

@@ -83,7 +83,10 @@ func Apply(p *PlanResult, o Options) (fail.Code, bool, []report.Result, error) {
 		for _, e := range ch.Edits {
 			step(Step{Kind: Wrote, Path: e.Path})
 		}
-		if len(ch.Moves) > 0 || len(ch.Edits) > 0 {
+		for _, d := range ch.Drops {
+			step(Step{Kind: Removed, Path: d.Path})
+		}
+		if len(ch.Moves) > 0 || len(ch.Edits) > 0 || len(ch.Drops) > 0 {
 			continue
 		}
 		if ch.Remove {
@@ -173,9 +176,12 @@ func (p *PlanResult) RestoredFile() string {
 // was before Apply, and removes a repo.toml that init created, and then the
 // values folder when it is empty.
 func (p *PlanResult) restore() error {
-	// The moved own test tasks go back first (D7), then the files of the
-	// rename of setup:worktree (D20).
+	// The removed old copies and the moved own test tasks go back first
+	// (D5, D7), then the files of the rename of setup:worktree (D20).
 	for _, ch := range p.Changes {
+		if err := oldform.UndoDrops(ch.Drops); err != nil {
+			return problem(fail.Other, err.Error(), "")
+		}
 		if err := oldform.UndoMoves(ch.Moves); err != nil {
 			return problem(fail.Other, err.Error(), "")
 		}

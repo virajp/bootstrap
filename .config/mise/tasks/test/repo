@@ -3514,6 +3514,153 @@ check_synced_default() {
 CASE_CALL=init_yes run_case "the init move: a test/_default with the header is overwritten" 0 "$dev_values" \
   synced_test_default '' check_synced_default
 
+# The test parts of the tools (R2e D4, D5, D16, D17, D19, D25, D26): init
+# removes a known old copy of a part, the compose test/golden task of the
+# stackgen pack, at claude-plugins commit 0562cb44: its bytes give the
+# replaces hash of the android part test/golden/40-android. Without
+# CLAUDE_PLUGINS_CLONE, each case of a copy is skipped with one line (D21).
+old_golden=''
+if [[ -n ${CLAUDE_PLUGINS_CLONE:-} ]]; then
+  old_golden="$tmp/old-compose-golden"
+  if ! git -C "$CLAUDE_PLUGINS_CLONE" show \
+    0562cb44:plugins/stackgen/stacks/app-framework/compose/config/.config/mise/tasks/test/golden \
+    > "$old_golden" 2> /dev/null; then
+    print_error "the tool test parts: $CLAUDE_PLUGINS_CLONE has no compose test/golden at 0562cb44"
+    failures=$((failures + 1))
+    old_golden=''
+  fi
+fi
+# skip_case <name>: one line for a case of a copy, in the sequence of the
+# cases.
+skip_case() {
+  local dir
+  case_count=$((case_count + 1))
+  dir="$tmp/case-$case_count"
+  mkdir -p -- "$dir"
+  print_info "$1: skipped - CLAUDE_PLUGINS_CLONE names no claude-plugins clone" > "$dir/out"
+  printf '%s\n' 0 > "$dir/failures"
+  true &
+  case_pids+=("$!")
+  case_dirs+=("$dir")
+  if ((${#case_pids[@]} >= max_jobs)); then
+    collect_case
+  fi
+}
+# copy_case: run_case with the old copy, else skip_case.
+copy_case() {
+  if [[ -z $old_golden ]]; then
+    skip_case "$1"
+    return 0
+  fi
+  run_case "$@"
+}
+# old_copy <path>: the old copy, executable, below .config/mise/tasks/ of the
+# consumer of the case.
+old_copy() {
+  local file=$consumer/$tasks_dir/$1
+  mkdir -p -- "$(dirname -- "$file")"
+  cp -- "$old_golden" "$file"
+  chmod +x "$file"
+}
+msg_old_copy='is an old copy of the task test/golden/40-android of the tool android - run bootstrap init'
+# D25, D26: the values select android before the first init; the old copy is
+# at the old path test/golden. check gives code 2 and the fix of init; init
+# removes it, and R1c does not move it.
+android_values="$dev_values
+[tools.android]"
+old_at_group() { old_copy test/golden; }
+check_group_copy_removed() {
+  local got=0
+  case_engine init --yes || got=$?
+  check_that "an old copy at test/golden: init exits 0" test "$got" = 0
+  check_that "an old copy at test/golden: init names the removal" \
+    log_has 'remove old copies of the android test parts'
+  check_that "an old copy at test/golden: the dispatcher of test:golden" is_dispatcher test:golden
+  check_that "an old copy at test/golden: not moved to 50-local" \
+    no_file "$consumer/$tasks_dir/test/golden/50-local"
+  check_that "an old copy at test/golden: the part 40-android" test -f "$consumer/$tasks_dir/test/golden/40-android"
+  got=0
+  case_engine check || got=$?
+  check_that "an old copy at test/golden: check after init exits 0" test "$got" = 0
+}
+case_args=--check copy_case "the tool test parts: an old copy at test/golden" 2 "$android_values" old_at_group \
+  ' - run bootstrap init' check_group_copy_removed
+# D25: init, add tool android, then the old copy at test/golden/50-local.
+# <edit> appends a line to the copy, so it is the repo's own.
+add_local_copy() {
+  "$bin" init --yes > /dev/null 2>&1 || exit
+  commit_consumer
+  "$bin" add tool android --yes > /dev/null 2>&1 || exit
+  old_copy test/golden/50-local
+  [[ -z ${1:-} ]] || printf '%s\n' '# an edit of the repo' >> "$consumer/$tasks_dir/test/golden/50-local"
+  commit_consumer
+  "$bin" check
+}
+check_local_copy_removed() {
+  local got=0
+  case_engine init --yes || got=$?
+  check_that "an old copy at test/golden/50-local: init exits 0" test "$got" = 0
+  check_that "an old copy at test/golden/50-local: init names the removal" \
+    log_has 'remove old copies of the android test parts'
+  check_that "an old copy at test/golden/50-local: removed" no_file "$consumer/$tasks_dir/test/golden/50-local"
+  got=0
+  case_engine check || got=$?
+  check_that "an old copy at test/golden/50-local: check after init exits 0" test "$got" = 0
+}
+CASE_CALL=add_local_copy copy_case "the tool test parts: an old copy at test/golden/50-local" 2 "$dev_values" '' \
+  "$msg_old_copy" check_local_copy_removed
+# D16: an edited copy is the repo's own: no warning, and init keeps it.
+add_edited_copy() { add_local_copy edited; }
+check_edited_copy_kept() {
+  check_that "an edited copy: check names no old copy" log_lacks 'is an old copy'
+  local got=0
+  case_engine init --yes || got=$?
+  check_that "an edited copy: init exits 0" test "$got" = 0
+  check_that "an edited copy: init removes nothing" log_lacks 'remove old copies'
+  check_that "an edited copy: it stays" \
+    grep -qxF '# an edit of the repo' "$consumer/$tasks_dir/test/golden/50-local"
+}
+CASE_CALL=add_edited_copy copy_case "the tool test parts: an edited copy at test/golden/50-local stays" 0 \
+  "$dev_values" '' '' check_edited_copy_kept
+# D17: without the android tool, R1c moves the old copy to 50-local.
+check_copy_moved() {
+  check_that "no android tool: init removes nothing" log_lacks 'remove old copies'
+  check_that "no android tool: the copy is test/golden/50-local" \
+    cmp -s "$old_golden" "$consumer/$tasks_dir/test/golden/50-local"
+}
+CASE_CALL=init_yes copy_case "the tool test parts: no android tool, the old copy moves to 50-local" 0 "$dev_values" \
+  old_at_group 'move own test tasks into 50-local parts' check_copy_moved
+# D14, D15, D19: with the android and swift tools and no Gradle or Xcode
+# project, the parts print nothing, so stdout is the success line of the
+# dispatcher; stderr is not examined. mise trust and the run keep their state
+# in the case folder, and install no tool.
+two_tools_values="$dev_values
+[tools.android]
+
+[tools.swift]"
+check_golden_parts_quiet() {
+  local got=0 want=$tmp/golden-want out=$tmp/golden-out
+  (
+    unset FORCE_COLOR
+    # shellcheck source=/dev/null
+    source "$consumer/$tasks_dir/_scripts/helpers"
+    print_success "Golden testing done"
+  ) > "$want"
+  (
+    unset MISE_ENV MISE_ORIGINAL_CWD MISE_TASK_NAME MISE_TASK_DIR MISE_TASK_FILE MISE_CONFIG_ROOT FORCE_COLOR
+    export MISE_STATE_DIR=$tmp/mise-state MISE_TASK_RUN_AUTO_INSTALL=false MISE_PROJECT_ROOT=$consumer
+    cd -- "$consumer"
+    mise trust --all > /dev/null 2>&1
+    mise run test:golden
+  ) > "$out" 2> "$log" || got=$?
+  check_that "the golden parts: the parts are there" \
+    test -f "$consumer/$tasks_dir/test/golden/40-android" -a -f "$consumer/$tasks_dir/test/golden/40-swift"
+  check_that "the golden parts: mise run test:golden exits 0" test "$got" = 0
+  check_that "the golden parts: stdout is the success line of the dispatcher" cmp -s "$want" "$out"
+}
+CASE_CALL=init_yes run_case "the tool test parts: mise run test:golden with no Gradle or Xcode project" 0 \
+  "$two_tools_values" '' 'Synced: ' check_golden_parts_quiet
+
 # The migration of [packs.*] tables with the frozen packs of the engine (D5,
 # D16 b, D18 a). A tool of the pack gets a table with the env of the pack; a
 # tool with a table keeps its env; a table of a tool that bootstrap no longer

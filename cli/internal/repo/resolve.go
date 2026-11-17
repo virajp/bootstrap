@@ -39,6 +39,11 @@ func (s *state) resolve() fail.Code {
 		return s.logAll(err)
 	}
 	s.res = res
+	// A known old copy of a part of a selected tool stops the run: init
+	// removes it (D5).
+	if err := oldform.CopyProblems(s.root, oldform.Parts(s.idx, res.Tools), s.path); err != nil {
+		return s.logAll(err)
+	}
 	s.fileModes = map[string]string{}
 	s.fileFormats = map[string]string{}
 	// The fields of each tool, in the order of the walk, as the done

@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -143,9 +144,12 @@ var filesKind = entryKind{
 var tasksKind = entryKind{
 	table: "tasks", dir: TasksDir,
 	modes:  []string{"copy", "template"},
-	keys:   []string{"source", "mode", "requires", "requires_found", "library", "when"},
+	keys:   []string{"source", "mode", "requires", "requires_found", "library", "when", "replaces"},
 	target: func(k string) string { return TasksTarget + "/" + k },
 }
+
+// replacesRe is one item of `replaces` of a [tasks] entry.
+var replacesRe = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
 
 func oneOf(s string, list []string) bool {
 	for _, x := range list {
@@ -309,6 +313,22 @@ func (s Source) entries(shown, dir string, raw *Obj) ([]FileEntry, []*fail.Error
 					fe.Requires = items
 				} else {
 					fe.RequiresFound = items
+				}
+			}
+			if v, has := e.Lookup("replaces"); has && kind.table == "tasks" {
+				items, good := checkedList(v)
+				switch {
+				case !good:
+					fail1("replaces must be a non-empty list of \"sha256:<64 hex>\" strings")
+				case !strings.Contains(key, "/"):
+					fail1("replaces is for a part in the folder of its group")
+				default:
+					for _, it := range items {
+						if !replacesRe.MatchString(it) {
+							fail1("replaces: '%s' must be \"sha256:<64 hex>\", in lower case", it)
+						}
+					}
+					fe.Replaces = items
 				}
 			}
 			if mode == "merge" && isStr && !strings.HasSuffix(src, ".merge.toml") {
