@@ -15,8 +15,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-17T18:59:55Z in .worktrees/gate-file-sets"
+    "state": "BLOCKED",
+    "detail": "PAUSED at W4 review row U5 (security engine done, reviewer not yet dispatched); W1-W3 green (U1 f7cc3ed, U2 6f65e34, U3 48e4741, U4 08ed0f1) in .worktrees/gate-file-sets"
   },
   "consent": {
     "merge": true,
@@ -152,8 +152,8 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-17T20:35:28.099Z",
       "ended": "",
       "commit": "",
       "rounds": 0,
@@ -230,8 +230,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-17T20:35:28.032Z",
       "ended": ""
     },
     {

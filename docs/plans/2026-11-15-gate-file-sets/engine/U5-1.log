@@ -1,0 +1,8 @@
+/security-review over 3f593fd..8531033 (excluding docs/plans):
+No high-confidence vulnerabilities found.
+- Option injection via a leading-dash file name in xargs gates (confidence 3): pre-existing exposure; checkout is trusted.
+- eval "FILES=(${usage_files})" (confidence 2): pre-existing; trusted CLI input.
+- #FILES header / config-files.toml run as code (confidence 1): parsed only, never eval'd.
+- Path traversal via files argument (confidence 2): .. and outside-root rejected; git-listed only; symlinks dropped.
+- Temp file handling (confidence 2): mkstemp 0600, trap removes it.
+- Python import hijack from script dir (confidence 2): repo's own trusted task folder.
