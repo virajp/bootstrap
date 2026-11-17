@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/projects"
 	"github.com/virajp/bootstrap/cli/internal/source"
 )
 
@@ -87,6 +88,9 @@ var Repo = []Key{
 	{Path: "home.folder", Type: String, Sync: true},
 	{Path: "home.type", Type: String, Enum: []string{"submodule", "sibling"}, Sync: true},
 	{Path: "home.url", Type: String, Sync: true},
+	{Path: "projects", Type: Table},
+	{Path: "projects.*", Type: Table},
+	{Path: "projects.*.folder", Type: String},
 	{Path: "release_env", Type: String},
 	{Path: "deploy", Type: Table},
 	{Path: "deploy.*", Type: Table},
@@ -229,6 +233,7 @@ func CheckRepo(raw *source.Obj, shown string) error {
 	probs := check(Repo, raw, "repo.toml", shown)
 	if len(probs) == 0 {
 		probs = append(branchRules(raw, shown), memberRules(raw, shown)...)
+		probs = append(probs, projectRules(raw, shown)...)
 	}
 	return source.Problems(probs)
 }
@@ -302,6 +307,82 @@ func memberRules(raw *source.Obj, shown string) []*fail.Error {
 		}
 	}
 	return probs
+}
+
+// projectRules are the rules of the [projects.<name>] tables: a name is
+// lowercase kebab case, and each table has a folder of the repo, relative to
+// its root (. is the root), that no other project has.
+func projectRules(raw *source.Obj, shown string) []*fail.Error {
+	var probs []*fail.Error
+	ps, ok := raw.Get("projects").(*source.Obj)
+	if !ok {
+		return nil
+	}
+	seen := map[string]string{}
+	for _, n := range ps.Keys() {
+		if !projects.NameRule.MatchString(n) {
+			probs = append(probs, usage("[projects.%q] in %s has a name that is not valid - a project name is lowercase kebab case, for example %s", n, shown, projects.Normalize(n)))
+		}
+		e, _ := ps.Get(n).(*source.Obj)
+		if e == nil {
+			continue
+		}
+		f, ok := e.Get("folder").(string)
+		if !ok {
+			probs = append(probs, usage("[projects.%s] in %s has no folder - set folder to its folder, relative to the root of the repo (. is the root)", n, shown))
+			continue
+		}
+		c, ok := projects.CleanFolder(f)
+		if !ok {
+			probs = append(probs, usage("[projects.%s].folder = %q in %s is not a folder of the repo - give it relative to the root of the repo (. is the root)", n, f, shown))
+			continue
+		}
+		if other, dup := seen[c]; dup {
+			probs = append(probs, usage("[projects.%s] and [projects.%s] in %s have the same folder %s - a folder is one project", other, n, shown, c))
+		}
+		seen[c] = n
+	}
+	return probs
+}
+
+// CheckProjects examines the projects list of each [tools.<name>] table of
+// the tools.toml values <tools>, shown as <shown>, against the
+// [projects.<name>] tables of the repo.toml values <repo>: the list is a
+// list of strings, each one a project of repo.toml. With the catalog <idx>,
+// a root_only tool has no projects. The error holds a message (code 2) for
+// each problem.
+func CheckProjects(idx *source.Index, repo, tools *source.Obj, shown string) error {
+	t, ok := tools.Get("tools").(*source.Obj)
+	if !ok {
+		return nil
+	}
+	known := map[string]bool{}
+	for _, p := range projects.Listed(repo) {
+		known[p.Name] = true
+	}
+	var probs []*fail.Error
+	for _, n := range t.Keys() {
+		e, ok := t.Get(n).(*source.Obj)
+		if !ok || !e.Has("projects") {
+			continue
+		}
+		if !Of(StringList, e.Get("projects")) {
+			probs = append(probs, usage("[tools.%s].projects in %s must be %s - the names of [projects.<name>] tables of repo.toml", n, shown, StringList))
+			continue
+		}
+		if idx != nil {
+			if m := idx.Manifests[n]; m != nil && m.RootOnly {
+				probs = append(probs, usage("[tools.%s].projects in %s: %s is root_only, so it has no projects - remove the key", n, shown, n))
+				continue
+			}
+		}
+		for _, x := range e.Get("projects").([]any) {
+			if p := x.(string); !known[p] {
+				probs = append(probs, usage("[tools.%s].projects in %s names %s, which is not a [projects.<name>] table of repo.toml - add [projects.%s], or remove the name", n, shown, p, p))
+			}
+		}
+	}
+	return source.Problems(probs)
 }
 
 // CheckReleases examines the `releases.toml` <raw>, shown as <shown>.
@@ -380,13 +461,14 @@ func moved(t *source.Obj, prefix, shown string) []*fail.Error {
 
 // ToolKey tells if <key> is a key of the `[tools.<tool>]` table of
 // `tools.toml` by the catalog <idx>: env, files, or a question or a default
-// of the tool. A tool that the catalog does not have gives false.
+// of the tool, or projects. A tool that the catalog does not have gives
+// false.
 func ToolKey(idx *source.Index, tool, key string) bool {
 	m := idx.Manifests[tool]
 	if m == nil {
 		return false
 	}
-	if key == "env" || key == "files" {
+	if key == "env" || key == "files" || key == "projects" {
 		return true
 	}
 	if m.Raw == nil {
@@ -421,7 +503,7 @@ func CheckTools(idx *source.Index, raw *source.Obj, shown string) error {
 				continue // CheckToolsShape names it.
 			}
 			if !ToolKey(idx, n, k) {
-				probs = append(probs, usage("[tools.%s].%s in %s is not a key of the tool %s - its keys are env, files, and its questions and defaults", n, k, shown, n))
+				probs = append(probs, usage("[tools.%s].%s in %s is not a key of the tool %s - its keys are env, files, projects, and its questions and defaults", n, k, shown, n))
 			}
 		}
 	}

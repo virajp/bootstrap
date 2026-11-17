@@ -56,6 +56,9 @@ var allowed = map[string][]string{
 	// and reads the prefix mas: of [mise.bootstrap.packages], the package
 	// manager of mise that installs them.
 	"internal/core/packages.go": {"mas"},
+	// The workspace manifest of pyproject.toml is its [tool.uv.workspace]
+	// table, which lists the project folders.
+	"internal/projects/projects.go": {"uv"},
 }
 
 // lets tells whether the file <rel> can use the word <w>.

@@ -141,7 +141,8 @@ func TestWriteJSONDryRun(t *testing.T) {
 		{[]string{"add", "tool", "c"}, 1},
 		{[]string{"remove", "tool", "r1"}, 1},
 		{[]string{"replace", "tool", "r1", "r2"}, 1},
-		{[]string{"detect", "--add"}, 1},
+		// The tool c, and the root project of a repo with no project.
+		{[]string{"detect", "--add"}, 2},
 	} {
 		code, out, errText := run(append(c.args, "--json", "--dry-run")...)
 		e := readEnvelope(t, out)
@@ -272,10 +273,17 @@ func TestDetectJSON(t *testing.T) {
 	code, out, errText := run("detect", "--json")
 	e := readEnvelope(t, out)
 	var d struct {
-		Detected []detectedData `json:"detected"`
+		Detected []detectedData               `json:"detected"`
+		Projects map[string]map[string]string `json:"projects"`
+		Links    map[string][]string          `json:"links"`
 	}
 	if err := json.Unmarshal(e.Data, &d); err != nil {
 		t.Fatalf("data %s: %v", e.Data, err)
+	}
+	// A repo with no project has the root as one project, named repo_name;
+	// a tool of the category core links to no project (D8, D9, D25).
+	if len(d.Projects) != 1 || d.Projects["x"]["folder"] != "." || d.Links == nil || len(d.Links) != 0 {
+		t.Errorf("projects %v, links %v", d.Projects, d.Links)
 	}
 	if code != fail.Other || e.Command != "detect" || len(d.Detected) != 2 || len(e.Errors) != 1 {
 		t.Fatalf("code %d, envelope %+v, data %s, stderr %q", code, e, e.Data, errText)

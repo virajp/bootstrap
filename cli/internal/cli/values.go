@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/format"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
+	"github.com/virajp/bootstrap/cli/internal/projects"
 	"github.com/virajp/bootstrap/cli/internal/repo"
 	"github.com/virajp/bootstrap/cli/internal/report"
 	"github.com/virajp/bootstrap/cli/internal/schema"
@@ -380,6 +382,10 @@ func (a *app) toolsGet(sd core.Side, k *valuesKey, raw, env *source.Obj, form st
 		e, _ := values.EngineOrigin(sel.Idx.Manifests[tool], entryObj, []string{"env"})
 		t = t.Clone()
 		t.Set("env", e.Value)
+		if entryObj != nil && entryObj.Has("projects") {
+			t.Set("projects", entryObj.Get("projects"))
+			t.Sort()
+		}
 		o.Value = t
 	}
 	env.Set("value", o.Value)
@@ -482,7 +488,7 @@ func (a *app) catalogIndex() (*core.Clone, *source.Index, fail.Code) {
 }
 
 // toolKey checks the tools.toml key <k> against the catalog <idx> (D86):
-// env and files.* are always keys of a tool; any other key is a question or
+// env, files.* and projects are always keys of a tool; any other key is a question or
 // a default of the tool.
 func (a *app) toolKey(idx *source.Index, k *valuesKey) fail.Code {
 	if len(k.path) < 2 {
@@ -495,7 +501,7 @@ func (a *app) toolKey(idx *source.Index, k *valuesKey) fail.Code {
 		return fail.Usage
 	}
 	if !schema.ToolKey(idx, tool, k.path[1]) {
-		a.fail(k.text+" is not a key of the values: "+k.path[1]+" is not a key of the tool "+tool, "its keys are env, files, and its questions and defaults")
+		a.fail(k.text+" is not a key of the values: "+k.path[1]+" is not a key of the tool "+tool, "its keys are env, files, projects, and its questions and defaults")
 		return fail.Usage
 	}
 	return fail.OK
@@ -532,7 +538,7 @@ func valueText(idx *source.Index, k *valuesKey, v string) (string, error) {
 		}
 		return str()
 	}
-	if key == "env" || key == "files" {
+	if key == "env" || key == "files" || key == "projects" {
 		return asJSON()
 	}
 	var def any
@@ -704,6 +710,9 @@ func (a *app) configUnset(sd core.Side, text string) fail.Code {
 		a.setData(text, nil)
 		return fail.OK
 	}
+	if code := a.projectInUse(sd, k, raw); code != fail.OK {
+		return code
+	}
 	cur, err := os.ReadFile(path)
 	if err != nil {
 		a.fail("cannot read "+k.shown, "")
@@ -732,6 +741,42 @@ func (a *app) configUnset(sd core.Side, text string) fail.Code {
 	return fail.OK
 }
 
+// projectInUse stops the unset <k> of a [projects.<name>] table, or of the
+// [projects] table, of the repo.toml values <raw> with code 2 while a tool
+// lists the project: the error names those tools (D12).
+func (a *app) projectInUse(sd core.Side, k *valuesKey, raw *source.Obj) fail.Code {
+	if k.file != fileRepo || k.path[0] != "projects" || len(k.path) > 2 {
+		return fail.OK
+	}
+	var names []string
+	for _, p := range projects.Listed(raw) {
+		if len(k.path) == 1 || p.Name == k.path[1] {
+			names = append(names, p.Name)
+		}
+	}
+	tools, code := a.readValues(sd, values.ToolsFile(sd.Values))
+	if code != fail.OK {
+		return code
+	}
+	failed := fail.OK
+	for _, n := range names {
+		var users []string
+		if t, ok := tools.Get("tools").(*source.Obj); ok {
+			for _, tool := range t.Keys() {
+				if slices.Contains(projects.Links(tools, tool), n) {
+					users = append(users, tool)
+				}
+			}
+		}
+		if len(users) > 0 {
+			a.fail("the project "+n+" is in the projects of the tools "+strings.Join(users, ", ")+", so config unset cannot remove [projects."+n+"]",
+				"remove "+n+" from tools.<tool>.projects of each of them first")
+			failed = fail.Usage
+		}
+	}
+	return failed
+}
+
 // writeValues examines the new text <next> of the file of <k> with the
 // schema, and the catalog <idx> for tools.toml, and writes it. A text that
 // breaks a rule is code 2, and nothing is written (D27).
@@ -755,12 +800,27 @@ func (a *app) writeValues(sd core.Side, k *valuesKey, idx *source.Index, next []
 	switch k.file {
 	case fileRepo:
 		err = schema.CheckRepo(raw, k.shown)
+		if err == nil {
+			// The projects of the tools still name projects of repo.toml.
+			tools, code := a.readValues(sd, values.ToolsFile(sd.Values))
+			if code != fail.OK {
+				return code
+			}
+			err = schema.CheckProjects(nil, raw, tools, sd.Show(values.ToolsFile(sd.Values)))
+		}
 	case fileReleases:
 		err = schema.CheckReleases(raw, k.shown)
 	default:
 		err = schema.CheckToolsShape(raw, k.shown)
 		if err == nil && idx != nil {
 			err = schema.CheckTools(idx, raw, k.shown)
+		}
+		if err == nil {
+			repoRaw, code := a.readValues(sd, values.RepoFile(sd.Values))
+			if code != fail.OK {
+				return code
+			}
+			err = schema.CheckProjects(idx, repoRaw, raw, k.shown)
 		}
 	}
 	if err != nil {

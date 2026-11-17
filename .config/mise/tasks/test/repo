@@ -4070,6 +4070,85 @@ check_no_flutter() { check_that "detect: flutter does not match Dart only" log_l
 DETECT_FILES=('pubspec.yaml=name: x')
 CASE_CALL=detect_no run_case "detect script of flutter: Dart only" 0 "$dev_values" detect_files '' check_no_flutter
 
+# The projects (D7 to D12 of docs/plans/2026-11-15-projects): detect proposes
+# the [projects.<name>] tables of repo.toml and the projects list of each tool,
+# check examines them, and config unset keeps a project that a tool lists.
+# projects_jq <filter>: the jq filter is true for the JSON envelope in the log.
+projects_jq() { [[ $(mise x jq@latest -- jq -c "$1" "$log") == true ]]; }
+detect_json() { synced && "$bin" detect --json < /dev/null 2> /dev/null; }
+# The K1 shape: a pnpm workspace with apps/*, and a Go module in services/api.
+# apps/docs holds no package.json, so it is not a project (D34).
+k1_files=('package.json={}' $'pnpm-workspace.yaml=packages:\n  - apps/*' 'apps/web/package.json={}'
+  'apps/docs/README.md=# docs' 'services/api/go.mod=module example.com/api')
+check_k1_json() {
+  check_that "projects, a pnpm and Go monorepo: the projects" \
+    projects_jq '.data.projects == {"web":{"folder":"apps/web"},"api":{"folder":"services/api"}}'
+  check_that "projects, a pnpm and Go monorepo: the links" \
+    projects_jq '.data.links == {"go":["api"],"node":["web"],"pnpm":["web"]}'
+}
+DETECT_FILES=("${k1_files[@]}")
+CASE_CALL=detect_json run_case "projects: detect --json of a pnpm and Go monorepo" 1 "$dev_values" detect_files \
+  '"ok":false,"code":1' check_k1_json
+detect_add_check() {
+  synced && "$bin" detect --add --yes > /dev/null 2>&1 || exit
+  commit_consumer
+  "$bin" check
+}
+check_k1_add() {
+  check_that "projects, detect --add: the tables in repo.toml" \
+    tomlq '.projects.web.folder == "apps/web" and .projects.api.folder == "services/api" and (.projects | length) == 2' \
+    "$repo_values"
+  check_that "projects, detect --add: the projects of each tool" tomlq '(.tools.go.projects | join(",")) == "api" and
+    (.tools.node.projects | join(",")) == "web" and (.tools.pnpm.projects | join(",")) == "web"'
+  check_log_lacks "projects, detect --add: check gives no link warning" 'gives no match'
+}
+CASE_CALL=detect_add_check run_case "projects: detect --add --yes of a pnpm and Go monorepo, then check" 0 "$dev_values" \
+  detect_files '.config/bootstrap is valid' check_k1_add
+check_single_json() {
+  check_that "projects, one package: the root is the project repo_name" projects_jq '.data.projects == {"test":{"folder":"."}}'
+  check_that "projects, one package: the link of node" projects_jq '.data.links == {"node":["test"]}'
+}
+DETECT_FILES=('package.json={}')
+CASE_CALL=detect_json run_case "projects: detect --json of a repo with one package" 0 "$dev_values" detect_files \
+  '"ok":true,"code":0' check_single_json
+check_single_kept() { check_that "projects, detect with no flag: repo.toml stays" not_grep 'projects' "$repo_values"; }
+CASE_CALL=detect_no run_case "projects: detect with no flag only lists the projects" 0 "$dev_values" detect_files \
+  'run bootstrap detect --add to write the projects' check_single_kept
+check_same_name() {
+  check_that "projects, two folders named api: the path form of each name" \
+    projects_jq '.data.projects == {"a-api":{"folder":"a/api"},"b-api":{"folder":"b/api"}}'
+}
+DETECT_FILES=('a/api/go.mod=module example.com/a' 'b/api/go.mod=module example.com/b')
+CASE_CALL=detect_json run_case "projects: two folders with the same basename" 1 "$dev_values" detect_files '' \
+  check_same_name
+check_ignored_project() {
+  check_that "projects, a gitignored folder: it is skipped" projects_jq '.data.projects == {"svc":{"folder":"svc"}}'
+}
+DETECT_FILES=('svc/go.mod=module example.com/svc' 'ignored/go.mod=module example.com/ignored' '.gitignore=/ignored/')
+CASE_CALL=detect_json run_case "projects: a gitignored folder is not a project" 1 "$dev_values" detect_files '' \
+  check_ignored_project
+projects_check() { synced && "$bin" check; }
+lacks_link_warning() { check_log_lacks "projects, a deleted folder: no link warning" 'gives no match'; }
+CASE_CALL=projects_check run_case "projects: check of a project whose folder is gone" 2 "$dev_values
+[projects.api]
+folder = \"services/api\"
+
+[tools.go]
+projects = [ \"api\" ]" '' \
+  '[projects.api].folder = services/api in ' lacks_link_warning
+config_unset_project() {
+  cp -- "$repo_values" "$tmp/repo.before"
+  "$bin" config unset repo.projects.web
+}
+CASE_CALL=config_unset_project run_case "projects: config unset of a project that a tool lists" 2 "$dev_values
+[projects.web]
+folder = \"apps/web\"
+
+[tools.node]
+projects = [ \"web\" ]" '' \
+  'the project web is in the projects of the tools node, so config unset cannot remove [projects.web]' \
+  check_config_unchanged
+
 # add: the tools and their dependencies, the questions of the new tools.
 add_go() { synced && "$bin" add tool --yes go; }
 check_add_go() {

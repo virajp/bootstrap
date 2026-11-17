@@ -441,3 +441,47 @@ func TestConfigLayout(t *testing.T) {
 		t.Errorf("settings: %d", code)
 	}
 }
+
+// TestConfigProjects: config set writes a [projects.<name>] table and a
+// projects list of a tool; a name of no project is code 2; config unset of
+// a project that a tool lists is code 2 and names the tools (D5, D7, D12).
+func TestConfigProjects(t *testing.T) {
+	dir, run := valuesRepo(t)
+	code, out, errText := run("config", "set", "repo.projects.web", `{"folder":"apps/web"}`, "--json")
+	if e := readEnvelope(t, out); code != fail.OK || string(e.Data) != `{"key":"repo.projects.web","value":{"folder":"apps/web"}}` {
+		t.Fatalf("set a project: %d %+v %s", code, e, errText)
+	}
+	if b, _ := os.ReadFile(filepath.Join(dir, "repo.toml")); !strings.Contains(string(b), "[projects.web]\nfolder = \"apps/web\"") || !strings.Contains(string(b), "# The landing.") {
+		t.Errorf("repo.toml:\n%s", b)
+	}
+	if code, _, errText := run("config", "set", "repo.projects.Web", `{"folder":"w"}`); code != fail.Usage || !strings.Contains(errText, "lowercase kebab case") {
+		t.Errorf("a bad name: %d %s", code, errText)
+	}
+	if code, _, errText := run("config", "set", "tools.a.projects", `["api"]`); code != fail.Usage || !strings.Contains(errText, "names api, which is not a [projects.<name>] table") {
+		t.Errorf("an unknown project: %d %s", code, errText)
+	}
+	if code, _, errText := run("config", "set", "tools.a.projects", `["web"]`); code != fail.OK {
+		t.Fatalf("link a: %d %s", code, errText)
+	}
+	if code, out, _ := run("config", "get", "tools.a.projects"); code != fail.OK || strings.TrimSpace(out) != `{"key":"tools.a.projects","value":["web"],"source":"file"}` {
+		t.Errorf("get: %d %s", code, out)
+	}
+	if code, _, errText := run("config", "unset", "repo.projects.web"); code != fail.Usage || !strings.Contains(errText, "the project web is in the projects of the tools a") {
+		t.Errorf("unset a listed project: %d %s", code, errText)
+	}
+	if code, _, errText := run("config", "unset", "repo.projects"); code != fail.Usage || !strings.Contains(errText, "tools a") {
+		t.Errorf("unset the projects: %d %s", code, errText)
+	}
+	if code, _, errText := run("config", "unset", "tools.a.projects"); code != fail.OK {
+		t.Fatalf("unlink a: %d %s", code, errText)
+	}
+	if code, _, errText := run("config", "unset", "repo.projects.web"); code != fail.OK {
+		t.Errorf("unset a free project: %d %s", code, errText)
+	}
+	if b, _ := os.ReadFile(filepath.Join(dir, "repo.toml")); strings.Contains(string(b), "projects") {
+		t.Errorf("repo.toml:\n%s", b)
+	}
+	if code, out, _ := run("config", "get", "tools.a.projects"); code != fail.OK || strings.TrimSpace(out) != `{"key":"tools.a.projects","value":[],"source":"default"}` {
+		t.Errorf("get the default: %d %s", code, out)
+	}
+}

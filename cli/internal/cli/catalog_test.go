@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -115,8 +116,9 @@ func TestDescribeJSON(t *testing.T) {
 	var d struct {
 		Repo  map[string]any `json:"repo"`
 		Tools []struct {
-			Name   string         `json:"name"`
-			Values map[string]any `json:"values"`
+			Name     string         `json:"name"`
+			Category string         `json:"category"`
+			Values   map[string]any `json:"values"`
 		} `json:"tools"`
 		Members []describeMem `json:"members"`
 		Ports   []struct {
@@ -131,7 +133,8 @@ func TestDescribeJSON(t *testing.T) {
 	if d.Repo["repo_name"] != "x" {
 		t.Errorf("repo %v", d.Repo)
 	}
-	if len(d.Tools) != 1 || d.Tools[0].Name != "a" || d.Tools[0].Values["flag"] != false {
+	// Each tool has its category from the catalog (D11).
+	if len(d.Tools) != 1 || d.Tools[0].Name != "a" || d.Tools[0].Category != "core" || d.Tools[0].Values["flag"] != false {
 		t.Errorf("tools %s", e.Data)
 	}
 	want := []describeMem{
@@ -208,5 +211,34 @@ func TestPortsMac(t *testing.T) {
 		if code != fail.Usage || e.Command != "" {
 			t.Errorf("mac %s: code %d, envelope %+v", cmd, code, e)
 		}
+	}
+}
+
+// TestDescribeProjects: the projects come through data.repo and the values
+// of each tool (D11).
+func TestDescribeProjects(t *testing.T) {
+	run := describeRepo(t)
+	if code, _, errText := run("config", "set", "repo.projects.web", `{"folder":"web"}`); code != fail.OK {
+		t.Fatalf("set: %d %s", code, errText)
+	}
+	if code, _, errText := run("config", "set", "tools.a.projects", `["web"]`); code != fail.OK {
+		t.Fatalf("set: %d %s", code, errText)
+	}
+	code, out, errText := run("describe", "--json")
+	e := readEnvelope(t, out)
+	var d struct {
+		Repo struct {
+			Projects map[string]map[string]string `json:"projects"`
+		} `json:"repo"`
+		Tools []struct {
+			Name   string         `json:"name"`
+			Values map[string]any `json:"values"`
+		} `json:"tools"`
+	}
+	if err := json.Unmarshal(e.Data, &d); err != nil || code != fail.OK {
+		t.Fatalf("code %d, data %s: %v, stderr %q", code, e.Data, err, errText)
+	}
+	if d.Repo.Projects["web"]["folder"] != "web" || len(d.Tools) != 1 || fmt.Sprint(d.Tools[0].Values["projects"]) != "[web]" {
+		t.Errorf("data %s", e.Data)
 	}
 }

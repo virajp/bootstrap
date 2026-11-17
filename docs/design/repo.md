@@ -118,7 +118,8 @@ A `root_only` tool is not for a submodule member: a repository whose `[home]`
 has `type = "submodule"`, or, without `[home].type`, a git submodule. In such a
 member, `init`, `add pack` and the migration of an old form skip it, and the
 sync stops when a `[tools.*]` entry names it. A sibling member is its own root,
-so it keeps them.
+so it keeps them. A `root_only` tool has no `projects` list, and `detect` gives
+it no link to a project.
 
 ## The template context
 
@@ -335,11 +336,15 @@ shows at once.
 1. The local rules: the old forms (also a task of the repository at the place
    of a test port), the schema of `repo.toml`, `tools.toml` and
    `releases.toml` (an unknown key is code 2), `environments`, `env`, the
-   structure of `[overrides]` and the members. A task without an `NN-` name in
-   the folder of a dispatcher is a warning.
+   structure of `[overrides]`, the members and the folder of each
+   `[projects.<name>]`. A task without an `NN-` name in the folder of a
+   dispatcher is a warning.
 2. With a clone, the rules of the clone: the selection, the values of the tools
-   (with the derive scripts), the questions without an answer, and the check
-   script of each selected tool.
+   (with the derive scripts), the questions without an answer, the check
+   script of each selected tool, and the `projects` list of each tool: its
+   detect script runs in the folder of each of its projects, and a link that no
+   longer matches is a warning. See
+   [cli.md](cli.md#the-json-contract) ("The stages of `check`").
 
 The command takes a clone as each command does, so it examines both parts. The
 front-end skips part 2, with a line, when it has no clone.

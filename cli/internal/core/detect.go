@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/projects"
 	"github.com/virajp/bootstrap/cli/internal/scripts"
 )
 
@@ -46,8 +47,30 @@ type Detection struct {
 	Notes []string
 	// Mismatch holds a problem for each selected tool whose result is
 	// mismatch (code 2).
-	Mismatch  error
+	Mismatch error
+	// Projects are the new [projects.<name>] tables that detect proposes, in
+	// the order of their folders (repo side).
+	Projects []projects.Project
+	// Links are the project names to add to the projects list of each tool,
+	// in the order of Tools (repo side).
+	Links []Link
+	// Warnings are the lines of the project pass, for example a folder
+	// whose name has no letter or digit.
+	Warnings  []string
 	storeTool string
+	// folder holds the result of each tool in each project folder that the
+	// project pass ran, by folder.
+	folder map[string]map[string]Detected
+	// rootFound is Found before the project pass: the results at the root.
+	rootFound map[string]Detected
+	// members are the member folders of each workspace manifest.
+	members map[string][]string
+}
+
+// Link is the project names to add to the projects list of a tool.
+type Link struct {
+	Tool     string   `json:"tool"`
+	Projects []string `json:"projects"`
 }
 
 // Detect reads the values file of <sd>, runs the detect scripts of the tools
@@ -78,15 +101,25 @@ func DetectState(st *State) (*Detection, error) {
 		if err := d.detectScripts(); err != nil || d.NoScripts {
 			return d, err
 		}
+		if err := d.detectProjects(); err != nil {
+			return d, err
+		}
 	}
 
-	// The evidence of the selected tools that match.
+	// The evidence of the selected tools that match, at the root and in the
+	// project folders.
 	selEvidence := map[string]string{}
 	for _, t := range d.Tools {
-		if f := d.Found[t]; f.Result == "match" && st.Selected(t) {
+		if !st.Selected(t) {
+			continue
+		}
+		if f := d.Found[t]; f.Result == "match" {
 			for _, e := range f.Evidence {
 				selEvidence[e] = t
 			}
+		}
+		for _, e := range d.folderEvidence(t) {
+			selEvidence[e] = t
 		}
 	}
 	var mismatch []error
@@ -116,6 +149,9 @@ func DetectState(st *State) (*Detection, error) {
 		d.Proposals = append(d.Proposals, Proposal{Tool: t, Offered: true, Found: f})
 	}
 	d.Mismatch = join(mismatch)
+	if !sd.Mac {
+		d.links()
+	}
 	return d, nil
 }
 
@@ -140,30 +176,44 @@ func (d *Detection) detectScripts() error {
 	d.Found = map[string]Detected{}
 	var errs []error
 	for _, res := range r.Run(jobs) {
-		shown := r.ShownPath(res.Tool, res.Name)
-		var f Detected
-		if res.Code != 0 {
-			for _, l := range strings.Split(strings.TrimSpace(string(res.Stderr)), "\n") {
-				if l != "" {
-					errs = append(errs, problem(fail.Usage, shown+": "+l, ""))
-				}
-			}
-			errs = append(errs, problem(fail.Usage, fmt.Sprintf("%s failed with exit code %d", shown, res.Code), ""))
-			continue
-		}
-		if err := json.Unmarshal(res.Stdout, &f); err != nil {
-			errs = append(errs, problem(fail.Usage, fmt.Sprintf("%s did not print a JSON object: %s", shown, err), ""))
-			continue
-		}
-		switch f.Result {
-		case "match", "none", "mismatch":
-		default:
-			errs = append(errs, problem(fail.Usage, fmt.Sprintf("%s printed the result '%s'", shown, f.Result), "the results are match, none and mismatch"))
+		f, err := Result(r, res, "")
+		if err != nil {
+			errs = append(errs, err)
 			continue
 		}
 		d.Found[res.Tool] = f
 	}
 	return join(errs)
+}
+
+// Result reads the result of the detect script of <res>, which ran in the
+// folder <dir> of the runner <r> ("" or . is the root). A script that
+// failed, or that printed no valid result, gives a problem with code 2.
+func Result(r scripts.Runner, res scripts.Result, dir string) (Detected, error) {
+	shown := r.ShownPath(res.Tool, res.Name)
+	if dir != "" && dir != "." {
+		shown += " in " + dir
+	}
+	var f Detected
+	if res.Code != 0 {
+		var errs []error
+		for _, l := range strings.Split(strings.TrimSpace(string(res.Stderr)), "\n") {
+			if l != "" {
+				errs = append(errs, problem(fail.Usage, shown+": "+l, ""))
+			}
+		}
+		errs = append(errs, problem(fail.Usage, fmt.Sprintf("%s failed with exit code %d", shown, res.Code), ""))
+		return f, join(errs)
+	}
+	if err := json.Unmarshal(res.Stdout, &f); err != nil {
+		return f, problem(fail.Usage, fmt.Sprintf("%s did not print a JSON object: %s", shown, err), "")
+	}
+	switch f.Result {
+	case "match", "none", "mismatch":
+	default:
+		return f, problem(fail.Usage, fmt.Sprintf("%s printed the result '%s'", shown, f.Result), "the results are match, none and mismatch")
+	}
+	return f, nil
 }
 
 // Items gives the items of the change list that add the tools <tools> and

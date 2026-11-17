@@ -95,9 +95,9 @@ file, for example `repo.branches.main.landing` or `releases.vwf`. Reads take
   stackgen stays without packs: dependencies in the project manifests,
   reputation checks, conventions and skills in `.claude/`, LSP registration
   (FL2, ST1).
-- Tools per project: each tool in `tools.toml` has a `projects` list.
-  Scripts that ship in bootstrap detect it; `bootstrap detect` proposes it and
-  `bootstrap check` verifies it (ST2).
+- Tools per project: each repo lists its projects in `[projects.<name>]` of
+  `repo.toml`; each tool in `tools.toml` has a `projects` list of those names.
+  `bootstrap detect` proposes both, and `bootstrap check` verifies them (ST2).
 - LSP: each language or runtime tool in bootstrap pins its LSP server and has
   an `[lsp]` block. `bootstrap lsp` lists the servers; `code:lsp:check`
   checks them. stackgen writes the Claude LSP entries in `vwf-tools` and

@@ -12,6 +12,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/contract"
 	"github.com/virajp/bootstrap/cli/internal/core"
 	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/projects"
 	"github.com/virajp/bootstrap/cli/internal/questions"
 	"github.com/virajp/bootstrap/cli/internal/report"
 	"github.com/virajp/bootstrap/cli/internal/source"
@@ -199,11 +200,13 @@ type describeData struct {
 	LSP     lspData         `json:"lsp"`
 }
 
-// describeTool is a selected tool and its [tools.<name>] table, {} when the
-// table is not there.
+// describeTool is a selected tool, its category in the catalog, and its
+// [tools.<name>] table without env, {} when the table is not there. Its
+// projects list is in the table when the file has it.
 type describeTool struct {
-	Name   string          `json:"name"`
-	Values json.RawMessage `json:"values"`
+	Name     string          `json:"name"`
+	Category string          `json:"category"`
+	Values   json.RawMessage `json:"values"`
 }
 
 // describeMem is a [members.<name>] table. Folder is the name when the
@@ -263,11 +266,24 @@ func (a *app) describe(o opts) fail.Code {
 		Members: []describeMem{}, Ports: []portData{}, LSP: servers,
 	}
 	for _, t := range sel.Tools {
-		v := "{}"
-		if tbl, ok := sel.User.Get(t).(*source.Obj); ok {
-			v = source.JSON(tbl)
+		tbl, ok := sel.User.Get(t).(*source.Obj)
+		if !ok {
+			tbl = source.NewObj()
 		}
-		d.Tools = append(d.Tools, describeTool{Name: t, Values: json.RawMessage(v)})
+		if l := projects.Links(sel.Raw, t); l != nil {
+			tbl = tbl.Clone()
+			list := make([]any, len(l))
+			for i, n := range l {
+				list[i] = n
+			}
+			tbl.Set("projects", list)
+			tbl.Sort()
+		}
+		cat := ""
+		if m := sel.Idx.Manifests[t]; m != nil {
+			cat = m.Category
+		}
+		d.Tools = append(d.Tools, describeTool{Name: t, Category: cat, Values: json.RawMessage(source.JSON(tbl))})
 	}
 	if ms, ok := repoRaw.Get("members").(*source.Obj); ok {
 		for _, name := range ms.Keys() {

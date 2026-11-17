@@ -108,6 +108,10 @@ func ReadFolder(dir, shown string) (repo, tools *source.Obj, err error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	// The projects of the tools name the projects of repo.toml.
+	if err := schema.CheckProjects(nil, repo, tools, toolsShown); err != nil {
+		return nil, nil, err
+	}
 	return repo, tools, nil
 }
 
@@ -163,7 +167,7 @@ func ReadRepo(dir, shown string) (*Repo, error) {
 			v.Sel = append(v.Sel, it)
 			if kind == "tools" {
 				u := e.Clone()
-				omit(u, "env")
+				omit(u, EngineKeys...)
 				v.User.Set(name, u)
 			}
 		}
@@ -273,13 +277,20 @@ func compat(user, repo *source.Obj) {
 	}
 }
 
-func omit(o *source.Obj, key string) {
-	if !o.Has("env") {
+// omit removes the keys <keys> from <o>.
+func omit(o *source.Obj, keys ...string) {
+	drop := map[string]bool{}
+	for _, k := range keys {
+		if o.Has(k) {
+			drop[k] = true
+		}
+	}
+	if len(drop) == 0 {
 		return
 	}
 	c := source.NewObj()
 	for _, k := range o.Keys() {
-		if k != key {
+		if !drop[k] {
 			c.Set(k, o.Get(k))
 		}
 	}

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # The detect script of the melange tool. bootstrap detect runs it in the root of
-# the repository, and never copies it. It prints one JSON object: the result
-# (match, none or mismatch), the evidence (config files, never lock files) and
-# a message.
+# the repository and in each project folder, and never copies it. It prints
+# one JSON object: the result (match, none or mismatch), the evidence (config
+# files, never lock files) and a message.
 
 set -euo pipefail
 cat > /dev/null
