@@ -266,8 +266,10 @@ writes nothing.
 - The rule applies only to a target inside a git work tree.
 - `--dry-run` never stops. It names each dirty target in a warning line.
 - `sync` does not apply the rule to the values folder, because it writes only
-  `bootstrap_commit`, `[home]`, the manifest and the missing tables of the
-  required members of `base` there. `init` applies the rule to the values.
+  `bootstrap_commit`, `[home]`, the manifest, the missing tables of the
+  required members of `base` and the `mise` template
+  `.config/bootstrap/config-files.toml` there. `init` applies the rule to the
+  values.
 - `replace` needs a clean work tree, because its migrate script can change any
   file.
 

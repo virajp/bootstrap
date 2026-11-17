@@ -90,11 +90,13 @@ folder of a Flutter app is for `setup:deps:20-flutter`.
   names the id.
 
 `code:lint:10-android` uses the Gradle root `./gradlew`, else `android/gradlew`,
-and applies only when `$ANDROID_HOME/platforms` exists. Without files, it
+and applies only when `$ANDROID_HOME/platforms` exists. In each mode, it
 applies only when the Gradle root has an `AndroidManifest.xml` that git does
 not ignore, at any depth. Thus a Kotlin/JVM build without an Android module
-skips it. Given files, it runs
-only for a `src/` `.kt`, `.java` or `.xml` file, a `*.gradle.kts`, a
+skips it. It gets its files from `gate_files`: the given files, else with
+`--all` every file, else the uncommitted files (see
+[`mise.md`](mise.md#the-file-sets-of-the-gates)). Its `#FILES`
+header takes only a `src/` `.kt`, `.java` or `.xml` file, a `*.gradle.kts`, a
 `*.gradle`, a `*.pro`, `libs.versions.toml`, `lint.xml` or `lint-baseline.xml`.
 It lints only the modules of those files: the nearest folder with
 `build.gradle.kts` or `build.gradle`, else the Gradle root. The task finds the
@@ -103,7 +105,7 @@ Gradle project whose `projectDir` is that folder, so a `projectDir` that
 every module. A file in `gradle/`, `build-logic/` or `buildSrc/` (not a Gradle
 project), `settings.gradle.kts`, `settings.gradle`, or the root
 `build.gradle.kts`, `build.gradle`, `lint.xml` or `lint-baseline.xml` lints
-every module, as a run without files does. Another file at the Gradle root
+every module. Another file at the Gradle root
 lints only the root project. Every module is each Gradle
 project below the Gradle root, so the pub plugins of a Flutter app, which are
 projects of its `android/` build, are not linted. A temporary init script runs

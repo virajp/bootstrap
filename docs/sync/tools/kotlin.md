@@ -100,11 +100,13 @@ them. `code:lint:30-detekt` lints them with detekt. `code:format` and
 `code:lint`
 run them. A gate skips without its tool and without a Kotlin file.
 
-- Without files, the list comes from `git ls-files`, so a gate never reads an
-  ignored folder. Both gates skip the files in a `generated/` folder.
-- With a list of files, ktlint uses only the `.kt` and `.kts` files. detekt
-  needs only one Kotlin file in the list: then it lints each Kotlin file,
-  because a finding of detekt can be about more than one file.
+- Each gate gets its files from `gate_files`: the given files, else with
+  `--all` every file, else the uncommitted files. It never reads an ignored
+  folder. Its `#FILES` header takes the `.kt` and `.kts` files, and skips the
+  files in a `generated/` folder. See
+  [`mise.md`](mise.md#the-file-sets-of-the-gates).
+- ktlint and detekt get only the files of that list. detekt gets them through
+  its argument file.
 - detekt reads `.config/detekt.yml` on the default rules
   (`--build-upon-default-config`). A path with whitespace, or with the
   separator of `--input`, is skipped with a warning.

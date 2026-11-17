@@ -171,7 +171,7 @@ part, and with no part it prints one line and exits 0. See
   `${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/<name>`.
   - `helpers`: the print functions (`print_header`, `print_success`,
     `print_wait`, and others), `bootstrap_get`, `members`, and
-    `shell_files_in_scope`. Use these functions for all task output.
+    `gate_files`. Use these functions for all task output.
     `bootstrap_get <key>` is the one reader of a value of
     `.config/bootstrap/`: it prints the JSON answer of `bootstrap config get`
     (read `.value`), with `BOOTSTRAP_BIN`, else `mise x -- bootstrap`. A read
@@ -180,7 +180,10 @@ part, and with no part it prints one line and exits 0. See
     for example a `tools.*` key with no catalog (`get` never fetches), stop
     it with code 2. `members` lists the submodule and
     sibling members of `[members.*]` through it. Call both as
-    `VAR=$(bootstrap_get <key>) || exit $?`.
+    `VAR=$(bootstrap_get <key>) || exit $?`. `gate_files` runs
+    `gate_files.py` with `mise x python@3.14 -- python3`.
+  - `gate_files.py`: the file list of one `code:format` or `code:lint` gate,
+    the one Python file of the tasks. See the gate rules below.
   - `checks`: git predicates. They return an exit status only and print
     nothing. The one exception is `get_main_worktree_path`, which prints the
     path of the main worktree.
@@ -195,8 +198,8 @@ part, and with no part it prints one line and exits 0. See
   - `worktrees-page`: `write_worktrees_page`, which writes the HTML page of
     `git:worktree:list`. It holds a small font with the glyphs of that task.
 
-  The `mise` tool ships `helpers`, `checks`, `placeholder` and
-  `worktrees-page`, the `git` tool ships `merge`, and the `swift` tool ships
+  The `mise` tool ships `helpers`, `gate_files.py`, `checks`, `placeholder`
+  and `worktrees-page`, the `git` tool ships `merge`, and the `swift` tool ships
   `xcode`.
 - Prefix each tool call with `mise x --`, for example `mise x -- dprint check`.
   To find whether a tool is available, use `mise x -- which <tool>`, not
@@ -244,11 +247,29 @@ part, and with no part it prints one line and exits 0. See
     project file instead, for example `pubspec.yaml` for dart and `gradlew`
     for android. The task files load in every environment, also where the
     tool is not installed.
-  - With a list of files, it uses only the files of its language. Without
-    files, it lists them with `git ls-files --cached --others
-    --exclude-standard`, because most linters do not read `.gitignore`. A
-    tool that scans its project itself (ruff, pyrefly, detekt) uses that list
-    only to find whether a file exists.
+  - It gets its files only from `gate_files` of `helpers`, called as
+    `list=$(gate_files "$0" <its flags and files>) || exit $?`, then
+    `trap 'rm -f "${list}"' EXIT`. The list is a temporary file with one path
+    for each line, and an empty file means that the gate does not apply. The
+    base set is the given files, else with `--all` every file of the
+    repository, else the uncommitted files (staged, changed and new). Then
+    three filters remove files, in this order: the repository filter (a
+    submodule, a nested repository, a symlink, a deleted file, a path that
+    git does not list or ignores, and a name with a line break or a leading
+    `-`), the global lists `code_files` of the `mise` tool
+    (`.config/bootstrap/config-files.toml`), and the `#FILES` header of the
+    gate. In a gate run, `gate_files` is the only place that removes a file:
+    a gate has no own filter and no `--force-exclude`, and each tool gets
+    only that list (dprint with `--stdin-files`, detekt through its argument
+    file, each other tool through `tr '\n' '\0' < "${list}" | xargs -0`).
+    `--debug` prints each removed file on stderr.
+  - The `#FILES` header of a gate, right after its `#USAGE` lines, names the
+    files of its language: `#FILES include="..." exclude="..."` and, for
+    ShellCheck, `shebang="..."`. See `docs/design/tools.md` ("The `#FILES`
+    header of a gate").
+  - Each gate declares `--all`, `--fix`, `--debug` and the variadic
+    `[files]`. A gate of a module (android, go, gomod, uv) maps the files of
+    its list to their modules.
   - Without `--fix`, a format task is the check of its tool. Do not add a
     lint task that runs the same check, for example `code:lint:ktlint` next
     to `code:format:30-ktlint`.
@@ -299,6 +320,9 @@ task that runs only commands.
     without a staged mode prints nothing.
 11. Exception to rule 2: when its output is not a terminal, `git:worktree:list`
     prints only JSON Lines, because an agent reads each line.
+12. Exception to rule 2: with `--debug`, the drop lines of `gate_files` go to
+    stderr and can come before the header of a gate, also of a gate with an
+    empty list.
 
 ## Tests
 
@@ -354,16 +378,27 @@ changes a case. See `docs/design/cli.md` ("The config file").
   `setup:ai`, and `setup --upgrade` runs `setup:ai --upgrade`. The
   contributed-items cases sync `virajp-plugins`
   and compare the written `.gitignore`, and refuse a bad
-  `[[contributes_items.*]]`. The settings cases point
+  `[[contributes_items.*]]`. The `code_files` case syncs a consumer and
+  compares the rendered `.config/bootstrap/config-files.toml` and the
+  excludes of `dprint.jsonc`. The gate_files cases run the working tree's
+  `gate_files.py` in a scratch repository with `--debug`, and compare the
+  exit code, the list and the drop lines: the default, `--all` and given
+  files, the repository, global and gate filters, the shebang key, the
+  patterns and a malformed header. The `run_gate` cases run
+  `code:lint:60-bootstrap` with `--all`, with the working tree's `helpers`
+  and `gate_files.py`. The orchestrator case runs `code:lint` with `--all`
+  and files, and expects exit 2. The settings cases point
   `BOOTSTRAP_CONFIG` or `--config` at a file of the case, or at a missing file.
   Most of them run `bootstrap settings`. The cases of a `verbose` key and of the
   key `clone` run `bootstrap sync --dry-run`. A case of the default output also
   runs `bootstrap sync --verbose`. With `BOOTSTRAP_BIN` set to an absolute path,
   it tests that binary and does not build one. It compares the exit code and the
-  message of each case. It needs no network when gomplate, jq and yq are
-  installed. Before its first `git` call, it unsets the `GIT_*` variables of a
-  git hook, so its scratch repositories never write to this repository. It runs
-  the cases in parallel, one job for each CPU, and each case in its own folder.
+  message of each case. It needs no network when gomplate, jq, yq and
+  Python 3.14 are installed, because the `gate_files` and `run_gate` cases run
+  `mise x python@3.14`. Before its first `git` call, it unsets the `GIT_*`
+  variables of a git hook, so its scratch repositories never write to this
+  repository. It runs the cases in parallel, one job for each CPU, and each case
+  in its own folder.
 - `test:mac` is the task of this repository in
   `.config/mise/tasks/test/mac`. It runs `bootstrap mac sync`, built
   from the working tree's `cli/`, against the fixtures in

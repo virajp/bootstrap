@@ -103,8 +103,9 @@ a vwf file for the members.
 - The member flags (`--all`, `--<name>`) of `setup` and `setup:configs` are
   only for the submodule and sibling members that have a `[members.<name>]`
   table. A folder member is part of the root tree. `code:format` and
-  `code:lint` have no member flags: each repository and each submodule runs its
-  own, and a task runs in a member only through `mise run --cd`.
+  `code:lint` have no member flags: their `--all` means every file of the
+  current repository, not the members. Each repository and each submodule runs
+  its own, and a task runs in a member only through `mise run --cd`.
 - A task that runs in a member uses its folder.
 - A submodule or sibling member is a separate repository, with its own values
   folder and its own manifest. The sync never writes a file of a member, except
@@ -364,8 +365,12 @@ It prints nothing and exits 0 in these cases:
 
 - Without `bootstrap` (`mise x -- which bootstrap`), and without
   `BOOTSTRAP_BIN`.
-- With a list of files that has no file in `.config/bootstrap/`, or with no
-  list and no values folder.
+- The list of `gate_files` is empty. Its `#FILES` header has
+  `include=".config/bootstrap/*.toml"` and
+  `exclude=".config/bootstrap/config-files.toml"`, so the gate runs when the
+  given files, the uncommitted files or, with `--all`, the files of the
+  repository have a values file. The rendered `config-files.toml` does not
+  count.
 - The cache has no clone with `cli/VERSION`.
 - The raw `origin` of `<cache>/repo` is not one of five literal forms of the
   default URL. Thus the gate never uses code of another repository at commit
