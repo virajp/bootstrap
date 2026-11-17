@@ -73,7 +73,7 @@
       "started": "2026-11-16T18:30:56.468Z",
       "ended": "2026-11-16T18:42:48.967Z",
       "commit": "b28e864",
-      "rounds": 4
+      "rounds": 5
     },
     {
       "id": "U2",
@@ -671,6 +671,13 @@
       "unit": "U6",
       "stage": "",
       "text": "U1 and U4 reported comments falsified by D35/D34 in files no unit owns: repo/tools/git/scripts/derive:12-13 and repo/tools/mise/scripts/derive:7-9 (only the sync runs them; config get tools.* now does too) and repo/tools/mise/tasks/helpers:270 (bootstrap_get source is file|default only) · U6 owns widened to these three files under the plan Goal; handed to U6 as DOCS FALSIFIED lines",
+      "state": "closed"
+    },
+    {
+      "id": "G5",
+      "unit": "U6",
+      "stage": "",
+      "text": "Wave review R2 rule-5 findings: repo/tools/mise/tasks/helpers:276-279,302-305 (bootstrap_get reads every engine code 2 as no engine that answers and advises installing 4.0.0, wrong for a tools.* get with no catalog under D34) and the CLAUDE.md Task scripts helpers bullet (code 2 only for no engine) · handed to U6 as DOCS FALSIFIED lines; both paths are in its owns (helpers widened in G4)",
       "state": "closed"
     }
   ],

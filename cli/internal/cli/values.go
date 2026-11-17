@@ -283,7 +283,8 @@ func lookup(raw *source.Obj, path []string) (any, bool) {
 }
 
 // configGet prints the envelope of the key <text>: its value and its
-// source, file or default (D21, D22, D41, D50, D51). Only an invalid key
+// source, file, default, contributed, derived or unselected (D21, D22,
+// D33, D34, D35, D41, D50, D51). Only an invalid key
 // and a tools.* key with no catalog (code 2), and a read failure (code 1),
 // are errors.
 func (a *app) configGet(sd core.Side, text, form string) fail.Code {

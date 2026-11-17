@@ -60,7 +60,8 @@ Repository
                        exit 1 when a tool that matches is not selected
   list, ls             print the selected tools as a tree
   config get <key>     print the value of a key of .config/bootstrap/, with
-                       its source (file or default)
+                       its source (file, default, contributed, derived or
+                       unselected); exit 2 for a tools.* key with no catalog
   config set <key> <value>
                        write a key of .config/bootstrap/
   config unset <key>   remove a key of .config/bootstrap/
