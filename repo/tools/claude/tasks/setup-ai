@@ -4,7 +4,7 @@
 
 #MISE description="Install the Claude Code plugins of the repository, and uninstall the project plugins that left its list"
 #MISE hide=true
-#USAGE flag "--update" help="also update the marketplaces and the listed plugins"
+#USAGE flag "--upgrade" help="also update the marketplaces and the listed plugins"
 
 set -euo pipefail
 # shellcheck source=/dev/null
@@ -144,9 +144,9 @@ while IFS= read -r PLUGIN; do
 done <<< "${RECORD}"
 RECORD=${KEPT}
 
-# With --update, the marketplaces, then each listed plugin that is installed, at
-# its scope. claude has no command that updates all plugins.
-if [[ "${usage_update:-false}" == "true" ]]; then
+# With --upgrade, the marketplaces, then each listed plugin that is installed,
+# at its scope. claude has no command that updates all plugins.
+if [[ "${usage_upgrade:-false}" == "true" ]]; then
   claude_step "Updating the marketplaces" plugin marketplace update
   while IFS='|' read -r PLUGIN SCOPE; do
     [[ -n "${PLUGIN}" ]] || continue

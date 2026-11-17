@@ -102,7 +102,8 @@
       "kind": "edit",
       "model": "opus",
       "owns": [
-        "repo/tools/claude/"
+        "repo/tools/claude/",
+        "repo/tools/mise/tasks/setup.tmpl"
       ],
       "depends_on": [],
       "waits": "",
@@ -110,7 +111,7 @@
       "started": "2026-11-16T18:30:56.621Z",
       "ended": "2026-11-16T18:39:00.405Z",
       "commit": "77a4cd7",
-      "rounds": 3
+      "rounds": 5
     },
     {
       "id": "U4",
@@ -132,7 +133,7 @@
       "started": "2026-11-17T03:32:47.040Z",
       "ended": "2026-11-17T06:10:52.995Z",
       "commit": "c1e49f0",
-      "rounds": 2
+      "rounds": 3
     },
     {
       "id": "U5",
@@ -184,11 +185,11 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T10:16:19.808Z",
+      "ended": "2026-11-17T11:34:29.824Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 3
     },
     {
       "id": "U7",
@@ -230,8 +231,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-17T10:16:19.772Z",
       "ended": ""
     },
     {
@@ -283,7 +284,7 @@
     {
       "id": "D4",
       "decision": "Does setup:ai update plugins on every run?",
-      "ruling": "Update only on a flag (Recommended): a plain run installs what is missing and does D3, and nothing else; a second run changes nothing. mise run setup:ai --update also runs claude plugin marketplace update and claude plugin update for the listed plugins.",
+      "ruling": "AMENDED by D39: the flag is --upgrade, not --update, and setup --upgrade passes it. Was: Update only on a flag (Recommended): a plain run installs what is missing and does D3, and nothing else; a second run changes nothing. mise run setup:ai --update also runs claude plugin marketplace update and claude plugin update for the listed plugins.",
       "rejected": "Always update, as today.",
       "units": [
         "U3",
@@ -616,32 +617,43 @@
       "ruling": "Point the line at the catalog the released engine can read — run it with the released 3.3.1 and BOOTSTRAP_CACHE set to a scratch clone at 1f7b0a2, the commit the preflight validated against; the line then checks this repo old-form values as before, and test:repo and test:go still cover the plan own catalog changes. This replaces the D37 method for this line; use it at each later gate point of this run. D37 rule stands: every gate line and the pre-commit hooks green before the landing.",
       "rejected": "Skip code:lint:60-bootstrap for this run only; Stop the run before the landing",
       "units": []
+    },
+    {
+      "id": "D39",
+      "decision": "Q9: Should setup --upgrade pass the update flag to setup:ai?",
+      "ruling": "The user: \"Pass the flag but lets keep the flag consistent and use --upgrade\". The setup:ai flag is renamed from --update to --upgrade (the same as setup --upgrade), and repo/tools/mise/tasks/setup.tmpl calls mise run setup:ai --upgrade under setup --upgrade. D4 and every place that names the flag (task, tests, docs) use --upgrade; test:repo gets a case for it.",
+      "rejected": "Leave as built — setup --upgrade never updates plugins",
+      "units": [
+        "U3",
+        "U4",
+        "U6"
+      ]
     }
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-17T10:16:19.424Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-17T10:16:19.206Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-17T10:16:19.311Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers (no stamps) and no code unit (nothing to persist); no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-17T10:16:19.568Z"
     }
   },
   "gaps": [
@@ -678,6 +690,20 @@
       "unit": "U6",
       "stage": "",
       "text": "Wave review R2 rule-5 findings: repo/tools/mise/tasks/helpers:276-279,302-305 (bootstrap_get reads every engine code 2 as no engine that answers and advises installing 4.0.0, wrong for a tools.* get with no catalog under D34) and the CLAUDE.md Task scripts helpers bullet (code 2 only for no engine) · handed to U6 as DOCS FALSIFIED lines; both paths are in its owns (helpers widened in G4)",
+      "state": "closed"
+    },
+    {
+      "id": "G6",
+      "unit": "U3",
+      "stage": "",
+      "text": "D39 needs repo/tools/mise/tasks/setup.tmpl to call setup:ai --upgrade; no unit owned it · U3 owns widened to repo/tools/mise/tasks/setup.tmpl under the plan Goal and D39",
+      "state": "closed"
+    },
+    {
+      "id": "G7",
+      "unit": "U3",
+      "stage": "",
+      "text": "U3 asked whether a plain setup should start calling setup:ai; the question came from an orchestrator brief that wrongly said a plain setup already calls it · settled with no ruling owed: the plan and D39 change only the --upgrade path, so a plain setup stays as it is (it never calls setup:ai)",
       "state": "closed"
     }
   ],
