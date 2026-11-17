@@ -289,7 +289,12 @@ def main():
 
   kept = []
   for path in sorted(set(base)):
-    # The repository filter.
+    # The repository filter. Each gate reads the list one path for each line
+    # and passes it to a tool, so a name with a line break or a leading dash
+    # never reaches the list.
+    if "\n" in path or "\r" in path or path.startswith("-"):
+      drop(path, "repo", "unsafe-name")
+      continue
     if path not in listed:
       drop(path, "repo", "unlisted")
       continue
