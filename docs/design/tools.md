@@ -263,14 +263,15 @@ A `[tasks."<path>"]` table is the entry of one task file of the tool. The key is
 the path below `.config/mise/tasks/` in the target, for example
 `code/format/40-ruff`. `#MISE` and `#USAGE` stay in the task file.
 
-| Key              | Side | Meaning                                                                                               |
-| ---------------- | ---- | ----------------------------------------------------------------------------------------------------- |
-| `source`         | Both | Necessary. The path below `tasks/`, with no `..` part. The tools use a flat name: `code-format-ruff`. |
-| `mode`           | Both | `copy` (the default) or `template`.                                                                   |
-| `requires`       | Both | As in `[files]`.                                                                                      |
-| `requires_found` | Repo | As in `[files]`.                                                                                      |
-| `when`           | Both | As in `[files]`.                                                                                      |
-| `library`        | Both | `true` for a library below `_scripts/`, and only there. A library is not a task.                      |
+| Key              | Side | Meaning                                                                                                                                                                                                                                                                    |
+| ---------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source`         | Both | Necessary. The path below `tasks/`, with no `..` part. The tools use a flat name: `code-format-ruff`.                                                                                                                                                                      |
+| `mode`           | Both | `copy` (the default) or `template`.                                                                                                                                                                                                                                        |
+| `requires`       | Both | As in `[files]`.                                                                                                                                                                                                                                                           |
+| `requires_found` | Repo | As in `[files]`.                                                                                                                                                                                                                                                           |
+| `when`           | Both | As in `[files]`.                                                                                                                                                                                                                                                           |
+| `library`        | Both | `true` for a library below `_scripts/`, and only there. A library is not a task.                                                                                                                                                                                           |
+| `replaces`       | Both | A non-empty list of `sha256:<64 hex>` items, in lower case: the hashes of the known old copies of a part, for example the copy of a stackgen pack. Only a part in the folder of its group has it, for example `test/golden/40-swift`. The repo side acts on it; see below. |
 
 The rules of the task files:
 
@@ -284,6 +285,14 @@ The rules of the task files:
   repository without a prefix, and `bootstrap check` warns about it.
 - A task that a user or another task calls by its name has no prefix, for
   example `git:merge:develop` and `setup:dprint`.
+- A known old copy of a part is a regular file at the old path of its group
+  (`test/golden`) or at `<group>/50-local`, whose sha256 is in `replaces` of
+  that part, and the tool of the part is selected. `bootstrap init` removes
+  it, as one change for each tool, before it moves the own test tasks to
+  `50-local`. Until then, `bootstrap sync` and `bootstrap check` stop with
+  code 2. A file with another hash is the repository's own task, and it
+  stays. A copy of a tool that is not selected stays too. See
+  [cli.md](cli.md#init).
 
 ## The `[formatter]` table
 

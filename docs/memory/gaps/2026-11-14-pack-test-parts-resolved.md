@@ -1,6 +1,6 @@
 GAP 2026-11-14 ★3 | plugin:stackgen, plan:2026-11-14-task-ports | stackgen packs
 copy test/e2e and test/golden as files, where bootstrap now ships dispatchers |
-parked: the packs must ship NN- parts
+resolved 2026-11-15 by docs/plans/2026-11-15-test-parts
 
 **Source** The R1c interview of `docs/plans/2026-11-14-task-ports/` (D4).
 

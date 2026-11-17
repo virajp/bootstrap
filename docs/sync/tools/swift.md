@@ -35,6 +35,7 @@ look in the folders of a Flutter app.
 | `.config/mise/tasks/setup/deps/60-swift`         | Synced    | The task `setup:deps:60-swift`.                                 |
 | `.config/mise/tasks/code/lint/80-swiftlint`      | Synced    | The task `code:lint:80-swiftlint`.                              |
 | `.config/mise/tasks/code/format/50-swift-format` | Synced    | The task `code:format:50-swift-format`.                         |
+| `.config/mise/tasks/test/golden/40-swift`        | Synced    | The part `test:golden:40-swift`.                                |
 | `.config/mise/tasks/_scripts/xcode`              | Library   | The library `xcode`, with `require_xcode` and `find_xcodeproj`. |
 | `.config/swiftlint.yml`                          | Seed      | The SwiftLint rules. The layout rules are off for swift-format. |
 | `.config/swift-format.json`                      | Seed      | The swift-format rules: 4 spaces, lines of 120 characters.      |
@@ -68,6 +69,7 @@ this value wins.
 | `setup:deps:60-swift`         | Resolve the SwiftPM and Xcode package dependencies from `Package.resolved`. `--upgrade` resolves them again to the newest allowed versions. |
 | `code:lint:80-swiftlint`      | Lint the `.swift` files with `swiftlint lint --strict`. A warning is a failure.                                                             |
 | `code:format:50-swift-format` | Check the format of the `.swift` files with `swift format lint --strict`. `--fix` formats them.                                             |
+| `test:golden:40-swift`        | A part of `test:golden`. Compare the views of the Xcode app against their golden images. `--record` records them again, then compares.      |
 
 `code:lint` and `code:format` run the two gates. A gate skips without its tool
 (SwiftLint from mise, swift-format from the host) and without a `.swift` file.
@@ -76,8 +78,31 @@ list comes from `git ls-files`, because SwiftLint and swift-format do not read
 `.gitignore`. swift-format skips `*.generated.swift`. SwiftLint skips the
 `excluded` paths of `.config/swiftlint.yml`.
 
-The library `_scripts/xcode` is for the Xcode tasks of a stack, for example
-`test:golden`. `require_xcode <task>` fails when no Xcode is selected. Then it
+`test:golden:40-swift` has only the flag `--record`, because `test:golden`
+passes the same arguments to each part. The other options are env values,
+with a default:
+
+| Value                   | Use                                                                                |
+| ----------------------- | ---------------------------------------------------------------------------------- |
+| `XCODE_SCHEME`          | The scheme whose test action holds the target. The name of the project by default. |
+| `XCODE_SNAPSHOT_TARGET` | The snapshot test target to run, `SnapshotTests` by default.                       |
+| `SIMULATOR_*`           | The simulator to render on. See `_scripts/xcode` below.                            |
+
+- Without an `*.xcodeproj` at the root, the part prints nothing and exits 0.
+- With one, it applies. More than one `*.xcodeproj` fails it through
+  `find_xcodeproj`, and no Xcode fails it through `require_xcode`.
+- A project whose `xcodebuild -list` has no target `XCODE_SNAPSHOT_TARGET`
+  prints nothing and exits 0.
+- It runs `xcodebuild test -only-testing:<target>` with the packages of
+  `Package.resolved`. On a platform other than macOS, it needs
+  `SIMULATOR_DEVICE` and `SIMULATOR_OS`, else it fails. For iOS,
+  `require_xcode` finds them. `--record` records
+  each golden first, then compares against the new ones. The failed
+  comparisons leave their images in `.build/snapshot-artifacts`.
+
+The library `_scripts/xcode` is for the Xcode tasks, for example
+`test:golden:40-swift`. `require_xcode <task>` fails when no Xcode is selected.
+Then it
 sets and exports four values. A value that the repository sets wins:
 
 | Value                | Without a value of the repository                                                                                          |
@@ -131,9 +156,9 @@ Only `env`. No questions. The keys of the values file are in
 
 ## Files the repository supplies
 
-| File                                          | Used by                                                                |
-| --------------------------------------------- | ---------------------------------------------------------------------- |
-| `.config/mise/conf.d/zz-repo/mise.<env>.toml` | Optional. `XCODE_VERSION` and the `SIMULATOR_*` values in its `[env]`. |
+| File                                          | Used by                                                                                                         |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `.config/mise/conf.d/zz-repo/mise.<env>.toml` | Optional. `XCODE_VERSION`, `XCODE_SCHEME`, `XCODE_SNAPSHOT_TARGET` and the `SIMULATOR_*` values in its `[env]`. |
 
 ## Adapt to the repository
 
@@ -168,5 +193,11 @@ Only `env`. No questions. The keys of the values file are in
 
 - Delete the old stackgen copies: `conf.d/swiftlint/` and `conf.d/swiftui/`,
   and the task `code:lint:swift-format` (M19 of `migrate.md`).
+- `bootstrap init` removes the old `test/golden` task of the swiftui pack of
+  stackgen, at its old path or at `test/golden/50-local`. It knows each
+  released version by its sha256 (`replaces`). A copy that the repository
+  changed stays: compare it with the part, and delete it when the part does
+  its job, else both run. The old `--target`, `--scheme` and simulator flags
+  are now the env values above.
 - The old `.config/swiftlint.yml` and `.config/swift-format.json` of stackgen
   stay as they are: the sync does not write a seed that exists.

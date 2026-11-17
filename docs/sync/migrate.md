@@ -1133,6 +1133,11 @@ and exits 0.
   `test/50-local`, `test/e2e/50-local` or `test/golden/50-local`.
   `mise run test` runs it as a part, with its depends. When the part
   `50-local` exists, init stops with code 2 and moves nothing.
+- `bootstrap init` removes the old stackgen copies of the test tasks of the
+  `android` and `swift` tools, and does not move them: the change
+  `remove old copies of the <tool> test parts`. See
+  [`tools/android.md`](tools/android.md#migration) and
+  [`tools/swift.md`](tools/swift.md#migration).
 - `code:format`, `code:lint`, `code:sec`, `setup:deps`, `setup:secrets` and the
   test tasks now run only an executable file named `NN-<name>`. A task of the
   repository in one of these folders without the prefix does not run any more.

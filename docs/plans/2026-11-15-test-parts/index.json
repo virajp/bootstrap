@@ -140,11 +140,11 @@
         "U4"
       ],
       "waits": "docs-sync reads the delta of waves 1 to 4",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T17:03:35.747Z",
+      "ended": "2026-11-17T17:07:34.600Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 3,
       "kind": "edit",
       "model": "opus",
       "id": "U5",
@@ -209,8 +209,8 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-17T17:03:35.713Z",
       "ended": ""
     },
     {
@@ -487,31 +487,39 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: change plan without covers — no acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-17T17:03:35.386Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: change plan without covers — no acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-17T17:03:35.172Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: change plan without covers — no acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-17T17:03:35.284Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers (no stamps) and no code unit (nothing to persist); no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-17T17:03:35.516Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U5",
+      "stage": "",
+      "text": "Wave 5 review: docs/design/mise.md:709 Observations line said no tool ships a task that tests the application, false after U2 · resolved by the closing pass (line now names the three test parts), confirmed RESOLVED by a fresh reviewer",
+      "state": "closed"
+    }
+  ],
   "overrides": [
     {
       "id": "O1",

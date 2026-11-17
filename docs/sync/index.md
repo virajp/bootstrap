@@ -262,7 +262,11 @@ table, is an older form: `bootstrap init` also moves it to a
 `[tools.<name>]` table for each tool (M38 of `migrate.md`). A task of the
 repository at the place of `test`, `test:e2e` or `test:golden` is an old form
 too: `bootstrap init` moves it to the part `50-local` of its group (M42 of
-`migrate.md`).
+`migrate.md`). An old stackgen copy of a test part of the `android` or `swift`
+tool, with the hash of that copy, is not moved when the repository selects
+that tool: `bootstrap init` removes it. An edited copy, or a copy of a tool
+that the repository does not select, is a task of the repository:
+`bootstrap init` moves it to the part `50-local` of its group.
 
 1. Make the clone of step 1, and get the newest commit of `bootstrap`:
    `git -C "$tmp" rev-parse HEAD`.
