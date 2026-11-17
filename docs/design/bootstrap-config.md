@@ -130,6 +130,8 @@ web = "PATCH"
 | `[members.<name>].label`            | String          | No        | `setup`, `setup:configs`, `git:worktree:setup`                                |
 | `[members.<name>].worktree_install` | String          | No        | `git:worktree:setup`                                                          |
 | `[home]`                            | Table           | No        | The sync writes it; `git:worktree:list`                                       |
+| `[projects.<name>]`                 | Table           | No        | `detect`, `check`, `describe`; vwf through `bootstrap config`                 |
+| `[projects.<name>].folder`          | String          | Yes       | `detect`, `check`                                                             |
 | `release_env`                       | String          | No        | Nothing in bootstrap                                                          |
 | `[deploy.<env>].<project>`          | String          | No        | Nothing in bootstrap                                                          |
 
@@ -140,6 +142,7 @@ web = "PATCH"
 | `format`                            | Integer         | Yes       | The engine: `3`, the form of the file      |
 | `[tools.<folder>]`                  | Table           | No        | The sync                                   |
 | `[tools.<folder>].env`              | List of strings | No        | The sync                                   |
+| `[tools.<folder>].projects`         | List of strings | No        | `check`, `describe`; `detect` writes it    |
 | `[tools.<folder>].<key>`            | Any             | No        | The templates and the scripts of the tools |
 | `[tools.<folder>.files."<target>"]` | Table           | No        | The sync: the overrides of a shared file   |
 | `[tools.claude.plugins.user]`       | Table           | No        | `setup:ai`                                 |
@@ -177,8 +180,9 @@ and the message names the key and the file.
 - `repo.toml` and `releases.toml`: one table of keys in Go, with the key path,
   the type, the enum values, the default and whether the key is required.
 - `tools.toml`: a key of `[tools.<folder>]` is valid when the tool is in the
-  catalog of the clone and the key is `env`, `files`, or one of its questions
-  or `[defaults]`. A tool that the clone does not have stops the selection with
+  catalog of the clone and the key is `env`, `files`, `projects`, or one of its
+  questions or `[defaults]`. A tool that the clone does not have stops the
+  selection with
   code 3. The keys of `[overrides.tools.*]` keep the rules of
   [cli.md](cli.md#the-values-of-a-tool). A key that lives in `repo.toml` now
   (`[tools.git].commit_scopes`, `[tools.git.branch.*]`,
@@ -188,7 +192,12 @@ and the message names the key and the file.
   of `core_branches`; when `main` and `develop` are both core branches and
   `main` has `landing = "direct-commit"`, `develop` has it too; each
   `[members.<name>]` has a `type` and a name of letters, digits, `-` and `_`;
-  a `sibling` member has a `url`; `[home]` has `folder` and `type`.
+  a `sibling` member has a `url`; `[home]` has `folder` and `type`; each
+  `[projects.<name>]` has a lowercase kebab-case name and a `folder` of the
+  repository, and no two projects have one folder.
+- The rule between the two files: each name of a `[tools.<folder>].projects`
+  is a `[projects.<name>]` of `repo.toml`, and a `root_only` tool has no
+  `projects`.
 
 `bootstrap config set` and `unset` refuse, with code 2, a change whose result
 breaks a rule, and write nothing.
@@ -414,6 +423,32 @@ repository without `[home].type` uses the git test: a git submodule leaves them
 out. See [repo.md](repo.md#root_only). `git:worktree:list` uses `[home].folder`
 to find the home of the product.
 
+### `[projects.<name>]`
+
+A project of the repository: a folder that builds one thing, for example a
+package of a workspace or a Go module. Each repository lists its own projects.
+vwf keeps the other facts of a project in its own files, by the same name.
+
+```toml
+[projects.web]
+folder = "apps/web"
+
+[projects.api]
+folder = "services/api"
+```
+
+- The name is lowercase kebab case, for example `my-app`.
+- `folder` is the path of the folder from the root of the repository, without
+  `..`. `.` is the root. Two projects cannot have one folder.
+- `bootstrap detect` proposes the tables, and `detect --add` writes them. vwf
+  writes a new one with `bootstrap config set repo.projects.<name>`. See
+  [cli.md](cli.md#the-projects-of-detect).
+- `bootstrap check` stops with code 2 when the folder is not there.
+- `bootstrap config unset repo.projects.<name>` stops with code 2 while a tool
+  lists the name.
+
+No synced file uses the projects.
+
 ### `release_env` and `[deploy.<env>]`
 
 `release_env` names the environment of a release. `[deploy.<env>]` holds the
@@ -462,6 +497,19 @@ tool in `[tools.<folder>].<key>`.
 The environments of the tool, for example `["dev", "ci"]`. Without the key,
 the tool gets the `default_envs` of its `tools.toml`. See
 [mise.md](mise.md#the-environments-of-a-mise-tool) for the rules of this list.
+
+### `[tools.<folder>].projects`
+
+The projects that the tool serves: names of `[projects.<name>]` tables of
+`repo.toml`, for example `projects = ["web"]`. Without the key, the list is
+empty. `bootstrap detect` proposes the names, and `detect --add` writes them.
+`bootstrap check` warns when the detect script of the tool no longer finds the
+tool in the folder of a project. A `root_only` tool has no `projects`. See
+[cli.md](cli.md#the-projects-of-detect).
+
+`env` and `projects` are the engine keys of a tool: the values merge does not
+merge them, and the `values` of a script of the tool do not have them. No synced
+file uses `projects`.
 
 ### `[tools.<folder>].<key>`
 

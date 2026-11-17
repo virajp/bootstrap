@@ -29,7 +29,7 @@ that reads this file changes the tools with `bootstrap`.
 | Job                       | Command                                                                                                                                                                                                                                      |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Check the contract        | `bootstrap contract --json`; `data.versions` must hold the version the plugin reads                                                                                                                                                          |
-| Read the repository       | `bootstrap describe --json`: the values, tools, members, task ports and LSP servers (`lsp`)                                                                                                                                                  |
+| Read the repository       | `bootstrap describe --json`: the values, tools (each with its `category` and its `projects`), members, task ports and LSP servers (`lsp`)                                                                                                    |
 | Read the LSP servers      | `bootstrap lsp --json`; `data.servers` holds each server as a verbatim entry of Claude's `lspServers`                                                                                                                                        |
 | Check the LSP servers     | `mise run code:lsp:check`: each server resolves in the dev env; exit 1 names the fix (`MISE_ENV=dev mise install` for a pinned server, the Xcode Command Line Tools (`xcode-select --install`) or Xcode for the host server `sourcekit-lsp`) |
 | Read the tool catalog     | `bootstrap catalog --json`: the categories, tools and packs of the clone                                                                                                                                                                     |
@@ -66,6 +66,8 @@ most:
 | `repo.branches.<b>.landing`    | How a branch lands on `<b>`: `pr`, `direct-merge` (the default) or `direct-commit`.            |
 | `repo.commits.scopes`          | The commit scopes. The default is the names of the members.                                    |
 | `repo.members.<name>`          | A member: `type` (`submodule`, `folder` or `sibling`), `folder`, `url`, `label`.               |
+| `repo.projects.<name>`         | A project: its `folder` from the root, `.` for the root. `bootstrap detect --add` writes it.   |
+| `tools.<tool>.projects`        | The names of the projects that the tool serves. `bootstrap detect --add` writes them.          |
 | `repo.home`                    | In a member: the back-link to its home, `folder`, `type` and `url`. The sync writes it.        |
 | `repo.topology`                | `repo`, `monorepo` or `multi-repo`, with `repo.topology_reason`. Bootstrap does not read them. |
 | `tools.claude.plugins.<scope>` | The Claude Code plugins of the scope `user` or `project`, with the contributed entries.        |

@@ -330,7 +330,11 @@ changes a case. See `docs/design/cli.md` ("The config file").
   `bootstrap config get|set|unset|show`. The JSON cases run `--json` on
   `contract`, `catalog`, `describe`, `lsp`, `questions`, `config`, `check`
   and `add`, and compare the
-  envelope on stdout. The LSP cases run the rendered task `code:lsp:check`
+  envelope on stdout. The project cases run `bootstrap detect --json`,
+  `detect` with no flag and `detect --add --yes` then `bootstrap check` in a
+  scratch consumer with project folders, `check` of a project whose folder is
+  gone, and `config unset` of a project that a tool lists. The LSP cases run the
+  rendered task `code:lsp:check`
   with bash, with a stub engine in `BOOTSTRAP_BIN` and a `mise` shim on the
   path. The setup:ai cases run the rendered task `setup:ai` with bash, with
   the real engine in `BOOTSTRAP_BIN`, the clone of the case in

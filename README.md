@@ -17,9 +17,9 @@ mise use -g github:virajp/bootstrap
 | `bootstrap init`                             | Open the TUI in a terminal. Else migrate or create the values, ask, sync.                                                                    |
 | `bootstrap tui`                              | Open the TUI: select tools and packs, review the changes, then sync.                                                                         |
 | `bootstrap sync`                             | Sync the repository of the current folder. `setup:configs` runs it.                                                                          |
-| `bootstrap check`                            | Examine the values against their schema, and run the check scripts.                                                                          |
+| `bootstrap check`                            | Examine the values against their schema, run the check scripts, and test the projects of each tool.                                          |
 | `bootstrap questions [tool…]`                | List the questions, their proposals and their answers.                                                                                       |
-| `bootstrap detect [--add]`                   | Run the detect scripts, and list each tool that matches. `--add` adds them.                                                                  |
+| `bootstrap detect [--add]`                   | Run the detect scripts, and list each tool that matches and the projects. `--add` adds them.                                                 |
 | `bootstrap add tool <tool…>`                 | Add the tools and their dependencies, then sync.                                                                                             |
 | `bootstrap add pack <pack…> [--exclude <m>]` | Add each member of the packs that is not selected, then sync.                                                                                |
 | `bootstrap remove tool <tool…>`              | Remove the tools and the dependencies that no tool needs, then sync.                                                                         |
