@@ -1,11 +1,13 @@
 package repo
 
 import (
+	"io"
 	"path/filepath"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/scripts"
 	"github.com/virajp/bootstrap/cli/internal/source"
+	"github.com/virajp/bootstrap/cli/internal/values"
 )
 
 // runner gives the script runner of the run: the scripts run in the root of
@@ -85,6 +87,30 @@ func (s *state) derive(tools []string, base map[string]*source.Obj) (map[string]
 		out[res.Tool] = rest
 	}
 	return out, source.Problems(probs)
+}
+
+// Derive gives the derive step of the merge of a sync, for config get
+// (D35): values.Input.Derive of the repository <root> with the values folder
+// <valuesDir> and the clone <clone>. The scripts run from the clone in the
+// root, with the input of a sync. Their `mise` and `mise_env` tables go to
+// the generator of a sync only, so they are not in the values it gives. The
+// messages of the members and the stderr of the scripts go to <stderr>.
+func Derive(root, valuesDir, clone string, stderr io.Writer) func([]string, map[string]*source.Obj) (map[string]*source.Obj, error) {
+	s := newState(io.Discard, stderr)
+	s.root = root
+	s.values = valuesDir
+	s.show = s.path(valuesDir)
+	s.showRepo = s.path(values.RepoFile(valuesDir))
+	s.showTools = s.path(values.ToolsFile(valuesDir))
+	s.src = source.Source{Root: clone, Side: source.Repo}
+	return func(tools []string, base map[string]*source.Obj) (map[string]*source.Obj, error) {
+		v, err := values.ReadRepo(valuesDir, s.show)
+		if err != nil {
+			return nil, err
+		}
+		s.vals = v
+		return s.derive(tools, base)
+	}
 }
 
 // toolVals gives the merged values of <tool>.

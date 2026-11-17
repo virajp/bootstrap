@@ -57,9 +57,13 @@ func TestConfigGet(t *testing.T) {
 		{[]string{"repo.commits.style"}, `{"key":"repo.commits.style","value":"conventional","source":"default"}`},
 		{[]string{"repo.product_name"}, `{"key":"repo.product_name","value":null,"source":"default"}`},
 		{[]string{"releases.web"}, `{"key":"releases.web","value":"NONE","source":"default"}`},
-		{[]string{"tools.a.flag"}, `{"key":"tools.a.flag","value":false,"source":"file","catalog":true}`},
-		{[]string{"tools.a.count"}, `{"key":"tools.a.count","value":1,"source":"default","catalog":true}`},
-		{[]string{"tools.nope.key"}, `{"key":"tools.nope.key","value":null,"source":"default","catalog":true}`},
+		{[]string{"tools.a.flag"}, `{"key":"tools.a.flag","value":false,"source":"file"}`},
+		{[]string{"tools.a.count"}, `{"key":"tools.a.count","value":1,"source":"default"}`},
+		{[]string{"tools.a.name"}, `{"key":"tools.a.name","value":null,"source":"default"}`},
+		{[]string{"tools.a.env"}, `{"key":"tools.a.env","value":["dev"],"source":"default"}`},
+		{[]string{"tools.b.flag"}, `{"key":"tools.b.flag","value":null,"source":"unselected"}`},
+		{[]string{"tools.b.env"}, `{"key":"tools.b.env","value":null,"source":"unselected"}`},
+		{[]string{"tools.nope.key"}, `{"key":"tools.nope.key","value":null,"source":"unselected"}`},
 		{[]string{"repo.repo_name", "--format", "toml"}, "key = \"repo.repo_name\"\nvalue = \"x\"\nsource = \"file\""},
 		{[]string{"repo.repo_name", "--format", "yaml"}, "key: repo.repo_name\nvalue: x\nsource: file"},
 		{[]string{"repo.product_name", "--format", "toml"}, "key = \"repo.product_name\"\nsource = \"default\""},
@@ -126,10 +130,12 @@ func getOut(args ...string) (fail.Code, string, string) {
 func TestConfigGetContributed(t *testing.T) {
 	clone, _ := contribRepo(t, "")
 	cases := []struct{ key, out string }{
-		{"tools.a.extra", `{"key":"tools.a.extra","value":{"k":"v"},"source":"contributed","contributed_by":["c"],"catalog":true}`},
-		{"tools.a.extra.k", `{"key":"tools.a.extra.k","value":"v","source":"contributed","contributed_by":["c"],"catalog":true}`},
-		{"tools.a.list", `{"key":"tools.a.list","value":["x","y"],"source":"contributed","contributed_by":["c"],"catalog":true}`},
-		{"tools.a.flag", `{"key":"tools.a.flag","value":true,"source":"default","catalog":true}`},
+		{"tools.a.extra", `{"key":"tools.a.extra","value":{"k":"v"},"source":"contributed","contributed_by":["c"]}`},
+		{"tools.a.extra.k", `{"key":"tools.a.extra.k","value":"v","source":"contributed","contributed_by":["c"]}`},
+		{"tools.a.list", `{"key":"tools.a.list","value":["x","y"],"source":"contributed","contributed_by":["c"]}`},
+		{"tools.a.flag", `{"key":"tools.a.flag","value":true,"source":"default"}`},
+		{"tools.a", `{"key":"tools.a","value":{"flag":true,"list":["x","y"],"extra":{"k":"v"},"env":["dev"]},"source":"contributed","contributed_by":["c"]}`},
+		{"tools.c", `{"key":"tools.c","value":{"env":["dev"]},"source":"file"}`},
 	}
 	for _, c := range cases {
 		if code, out, errText := getOut(c.key, "--clone", clone); code != fail.OK || out != c.out {
@@ -144,15 +150,89 @@ func TestConfigGetContributed(t *testing.T) {
 	// A value of the file with contributed entries: source file, and the
 	// contributing tools.
 	clone, _ = contribRepo(t, `[ "z" ]`)
-	want := `{"key":"tools.a.list","value":["x","y","z"],"source":"file","contributed_by":["c"],"catalog":true}`
+	want := `{"key":"tools.a.list","value":["x","y","z"],"source":"file","contributed_by":["c"]}`
 	if code, out, errText := getOut("tools.a.list", "--clone", clone); code != fail.OK || out != want {
 		t.Errorf("file and contributed: code %d, out %s, want %s (%s)", code, out, want, errText)
 	}
 }
 
-// TestConfigGetNoCatalog: with no clone and no cache clone, get gives the
-// file value alone, with catalog false, and fetches nothing (D23, D28). A
-// cache clone is read with no fetch.
+// TestConfigGetEngine: get gives the value that a sync uses (D34): an
+// engine key round-trips through set, and an override of the values file
+// wins over the merge, with source file.
+func TestConfigGetEngine(t *testing.T) {
+	clone, root := contribRepo(t, "")
+	run := func(args ...string) (fail.Code, string, string) {
+		var stdout, stderr bytes.Buffer
+		code := Run("dev", append(args, "--clone", clone), strings.NewReader(""), &stdout, &stderr)
+		return code, strings.TrimSpace(stdout.String()), stderr.String()
+	}
+	if code, out, errText := run("config", "get", "tools.c.env"); code != fail.OK || out != `{"key":"tools.c.env","value":["dev"],"source":"default"}` {
+		t.Errorf("env default: code %d, out %s (%s)", code, out, errText)
+	}
+	if code, _, errText := run("config", "set", "tools.c.env", `["dev","ci"]`); code != fail.OK {
+		t.Fatalf("set env: code %d (%s)", code, errText)
+	}
+	if code, out, errText := run("config", "get", "tools.c.env"); code != fail.OK || out != `{"key":"tools.c.env","value":["dev","ci"],"source":"file"}` {
+		t.Errorf("env after set: code %d, out %s (%s)", code, out, errText)
+	}
+	tools := filepath.Join(root, ".config", "bootstrap", "tools.toml")
+	writeFile(t, tools, "format = 3\n\n[tools.c]\n\n[overrides.tools.a]\nlist = [ \"o\" ]\nflag = false\n", 0o644)
+	cases := []struct{ key, out string }{
+		{"tools.a.list", `{"key":"tools.a.list","value":["o"],"source":"file"}`},
+		{"tools.a.flag", `{"key":"tools.a.flag","value":false,"source":"file"}`},
+		{"tools.a.extra.k", `{"key":"tools.a.extra.k","value":"v","source":"contributed","contributed_by":["c"]}`},
+	}
+	for _, c := range cases {
+		if code, out, errText := run("config", "get", c.key); code != fail.OK || out != c.out {
+			t.Errorf("override %s: code %d, out %s, want %s (%s)", c.key, code, out, c.out, errText)
+		}
+	}
+}
+
+// TestConfigGetDerived: get runs the derive scripts of the catalog, in the
+// order of the merge of a sync (D35): a value that a derive script gives has
+// the source derived, the file wins over it, and the mise tables of a derive
+// script are not values. The whole table has its env (D36).
+func TestConfigGetDerived(t *testing.T) {
+	clone, root := contribRepo(t, "")
+	derive := filepath.Join(clone, "repo", "tools", "a", "scripts", "derive")
+	writeFile(t, derive, "cat > /dev/null\n"+`printf '{"flag": false, "made": "%s", "mise": {"settings": {"x": 1}}}\n' "$(basename "$PWD")"`+"\n", 0o644)
+	made := filepath.Base(root)
+	cases := []struct{ key, out string }{
+		{"tools.a.made", `{"key":"tools.a.made","value":"` + made + `","source":"derived"}`},
+		{"tools.a.flag", `{"key":"tools.a.flag","value":false,"source":"derived"}`},
+		{"tools.a.list", `{"key":"tools.a.list","value":["x","y"],"source":"contributed","contributed_by":["c"]}`},
+		{"tools.a.mise", `{"key":"tools.a.mise","value":null,"source":"default"}`},
+		{"tools.a", `{"key":"tools.a","value":{"flag":false,"list":["x","y"],"extra":{"k":"v"},"made":"` + made + `","env":["dev"]},"source":"derived","contributed_by":["c"]}`},
+		{"tools.c", `{"key":"tools.c","value":{"env":["dev"]},"source":"file"}`},
+	}
+	for _, c := range cases {
+		if code, out, errText := getOut(c.key, "--clone", clone); code != fail.OK || out != c.out {
+			t.Errorf("derived %s: code %d, out %s, want %s (%s)", c.key, code, out, c.out, errText)
+		}
+	}
+	// The file wins over a derive script; its env is in the table.
+	writeFile(t, filepath.Join(root, ".config", "bootstrap", "tools.toml"), "format = 3\n\n[tools.c]\n\n[tools.a]\nflag = true\nenv = [ \"dev\", \"ci\" ]\n", 0o644)
+	cases = []struct{ key, out string }{
+		{"tools.a.flag", `{"key":"tools.a.flag","value":true,"source":"file"}`},
+		{"tools.a", `{"key":"tools.a","value":{"flag":true,"list":["x","y"],"extra":{"k":"v"},"made":"` + made + `","env":["dev","ci"]},"source":"file","contributed_by":["c"]}`},
+		{"tools.a.env", `{"key":"tools.a.env","value":["dev","ci"],"source":"file"}`},
+	}
+	for _, c := range cases {
+		if code, out, errText := getOut(c.key, "--clone", clone); code != fail.OK || out != c.out {
+			t.Errorf("file over derived %s: code %d, out %s, want %s (%s)", c.key, code, out, c.out, errText)
+		}
+	}
+	// A derive script that fails stops get, as it stops a sync.
+	writeFile(t, derive, "cat > /dev/null\necho broken >&2\nexit 1\n", 0o644)
+	if code, out, errText := getOut("tools.c", "--clone", clone); code != fail.Usage || out != "" || !strings.Contains(errText, "broken") {
+		t.Errorf("failed derive: code %d, out %s (%s)", code, out, errText)
+	}
+}
+
+// TestConfigGetNoCatalog: with no clone and no cache clone, get of a
+// tools.* key stops with code 2, prints no value and fetches nothing (D23,
+// D34). A repo.* key needs no catalog. A cache clone is read with no fetch.
 func TestConfigGetNoCatalog(t *testing.T) {
 	clone, _ := contribRepo(t, `[ "z" ]`)
 	cache := t.TempDir()
@@ -160,12 +240,16 @@ func TestConfigGetNoCatalog(t *testing.T) {
 	// A fetch from this URL fails.
 	url := "file://" + t.TempDir() + "/no-such-origin"
 	t.Setenv("BOOTSTRAP_URL", url)
-	want := `{"key":"tools.a.list","value":["z"],"source":"file","catalog":false}`
-	if code, out, errText := getOut("tools.a.list"); code != fail.OK || out != want {
-		t.Errorf("no catalog: code %d, out %s, want %s (%s)", code, out, want, errText)
+	for _, key := range []string{"tools.a.list", "tools.a.extra", "tools.a.env"} {
+		if code, out, errText := getOut(key); code != fail.Usage || out != "" || !strings.Contains(errText, "needs the catalog") {
+			t.Errorf("no catalog %s: code %d, out %s (%s)", key, code, out, errText)
+		}
 	}
-	if code, out, _ := getOut("tools.a.extra"); code != fail.OK || out != `{"key":"tools.a.extra","value":null,"source":"default","catalog":false}` {
-		t.Errorf("no catalog, contributed key: code %d, out %s", code, out)
+	if code, out, errText := getOut("tools.a.list", "--json"); code != fail.Usage || !strings.Contains(out, `"data":null`) || !strings.Contains(out, "needs the catalog") {
+		t.Errorf("no catalog --json: code %d, out %s (%s)", code, out, errText)
+	}
+	if code, out, errText := getOut("repo.repo_name"); code != fail.OK || out != `{"key":"repo.repo_name","value":"x","source":"file"}` {
+		t.Errorf("no catalog, repo key: code %d, out %s (%s)", code, out, errText)
 	}
 	if entries, _ := os.ReadDir(cache); len(entries) != 0 {
 		t.Errorf("no catalog: the cache has %d entries, want none (no fetch)", len(entries))
@@ -180,7 +264,7 @@ func TestConfigGetNoCatalog(t *testing.T) {
 			t.Fatalf("git %v: %s", args, out)
 		}
 	}
-	want = `{"key":"tools.a.list","value":["x","y","z"],"source":"file","contributed_by":["c"],"catalog":true}`
+	want := `{"key":"tools.a.list","value":["x","y","z"],"source":"file","contributed_by":["c"]}`
 	if code, out, errText := getOut("tools.a.list"); code != fail.OK || out != want {
 		t.Errorf("cache clone: code %d, out %s, want %s (%s)", code, out, want, errText)
 	}

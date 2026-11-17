@@ -73,7 +73,7 @@
       "started": "2026-11-16T18:30:56.468Z",
       "ended": "2026-11-16T18:42:48.967Z",
       "commit": "7ac4c06",
-      "rounds": 2
+      "rounds": 4
     },
     {
       "id": "U2",
@@ -110,7 +110,7 @@
       "started": "2026-11-16T18:30:56.621Z",
       "ended": "2026-11-16T18:39:00.405Z",
       "commit": "feb5e7a",
-      "rounds": 2
+      "rounds": 3
     },
     {
       "id": "U4",
@@ -128,11 +128,11 @@
         "U3"
       ],
       "waits": "The cases run the engine of U1, the tool of U2 and the task of U3.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T03:32:47.040Z",
+      "ended": "2026-11-17T06:10:52.995Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -171,7 +171,10 @@
         "CLAUDE.md",
         "docs/design/",
         "docs/sync/",
-        "docs/memory/decisions/2026-11-14-bootstrap-plugins-split.md"
+        "docs/memory/decisions/2026-11-14-bootstrap-plugins-split.md",
+        "repo/tools/git/scripts/derive",
+        "repo/tools/mise/scripts/derive",
+        "repo/tools/mise/tasks/helpers"
       ],
       "depends_on": [
         "U1",
@@ -215,8 +218,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-17T03:32:47.003Z",
       "ended": ""
     },
     {
@@ -513,7 +516,7 @@
     {
       "id": "D28",
       "decision": "Round 4 gap 2: with no catalog, contributed entries look unlisted, and D3 can uninstall a listed plugin.",
-      "ruling": "The get envelope has \"catalog\": false when get reads no catalog. On catalog false, setup:ai installs only: it skips the D18 drop and the D3 uninstall, and gives a warning. setup:ai reads an absent plugins.installed as an empty list.",
+      "ruling": "SUPERSEDED by D34 (no catalog: config get stops with an error and returns no partial value). Was: The get envelope has \"catalog\": false when get reads no catalog. On catalog false, setup:ai installs only: it skips the D18 drop and the D3 uninstall, and gives a warning. setup:ai reads an absent plugins.installed as an empty list.",
       "rejected": "setup:ai stops; accept the uninstall.",
       "units": [
         "U1",
@@ -565,6 +568,54 @@
         "U1",
         "U6"
       ]
+    },
+    {
+      "id": "D34",
+      "decision": "Q4: Should config get report a tools.* key that is not a merged value (such as env) from the values file?",
+      "ruling": "The user: \"A config get must behave exactly like the way the cli would operate (merge all the configs in the order as consumed by cli) and return the final result. Only additional point is that it will mention where the winning value comes from.\" For the open cases: \"full — no catalog errors, unselected tool returns null\". So: (1) an engine key that values.Merge does not merge (env, version, pin, any other) returns the value the engine uses — the file value, else the engine default — and source names the winner; set then get of tools.node.env round-trips to [\"dev\"] with source file. (2) No catalog: get stops with an error and returns no partial value; this supersedes the file-only fallback with catalog false of D28. (3) A tool that is not selected: get returns value null. (4) Every tools.* get keeps the merge order and the source rules of D15, D20 and D33. The user added: \"exit 2 for no catalog, source \\\"unselected\\\"\" — with no catalog a tools.* get exits 2 with an error; a tool that is not selected returns value null with source \"unselected\".",
+      "rejected": "The test expects null and source default for tools.node.env — set then get of env no longer round-trips",
+      "units": [
+        "U1",
+        "U3",
+        "U4",
+        "U6"
+      ]
+    },
+    {
+      "id": "D35",
+      "decision": "Q5: Should config get of a tools.* key run the derive scripts so that it returns the value a sync uses, and with what source?",
+      "ruling": "Run them, source \"derived\" — get matches a sync exactly, at the cost of running shell scripts from the clone on each tools.* get; those scripts call only bootstrap config get repo.*, which needs no catalog, so there is no loop; a new enum value keeps the contract version",
+      "rejected": "Run them, source default; Do not run them",
+      "units": [
+        "U1",
+        "U4",
+        "U6"
+      ]
+    },
+    {
+      "id": "D36",
+      "decision": "Q6: Should config get of a whole tool table also carry env (the file value, else default_envs)?",
+      "ruling": "Add env to the whole table — the table matches what config get tools.<tool>.env returns; the source stays the table source; the test:repo tool-table case then expects env in the value",
+      "rejected": "Leave it out (as built) — the table is the merged values templates see; env only through its own key",
+      "units": [
+        "U1",
+        "U4",
+        "U6"
+      ]
+    },
+    {
+      "id": "D37",
+      "decision": "Q7: The wave gate code:lint is red on the integration branch (released engine 3.3.1 refuses main repo/tools/node/tools.toml). How should the run treat it?",
+      "ruling": "Run the gate with the worktree engine (BOOTSTRAP_BIN set to a build of cli/) for this run. The user: \"I will NOT run a bootstrap sync until 4.0.0 is release. I dont want to over engineer things.\" Record no accepted gap and add no fallback for 3.3.1. The user also set a universal rule: \"Every time there is a change made, it must cover all the other checks as well, lint/format/tests, etc. Before merging to main, ensure that the pre-commit hooks are working fine and only then merge to main.\" Every gate line and the pre-commit hooks must be green before the landing; if any is red, do not land and report it.",
+      "rejected": "Accept it as inherited with an open gap; Stop the run here",
+      "units": []
+    },
+    {
+      "id": "D38",
+      "decision": "Q8: Neither the released 3.3.1 nor the worktree engine can turn code:lint:60-bootstrap green (old-form values file kept until after 4.0.0). How should the run make this line pass?",
+      "ruling": "Point the line at the catalog the released engine can read — run it with the released 3.3.1 and BOOTSTRAP_CACHE set to a scratch clone at 1f7b0a2, the commit the preflight validated against; the line then checks this repo old-form values as before, and test:repo and test:go still cover the plan own catalog changes. This replaces the D37 method for this line; use it at each later gate point of this run. D37 rule stands: every gate line and the pre-commit hooks green before the landing.",
+      "rejected": "Skip code:lint:60-bootstrap for this run only; Stop the run before the landing",
+      "units": []
     }
   ],
   "stages": {
@@ -613,6 +664,13 @@
       "unit": "U6",
       "stage": "",
       "text": "Wave review R1 round 2 rule-5 finding: docs/design/cli.md:1810 and docs/design/tools.md:409-413 (what stops the sync) lack the D7 contributes_items refusals · handed to U6 as DOCS FALSIFIED lines; the paths are already in its owns, no widening",
+      "state": "closed"
+    },
+    {
+      "id": "G4",
+      "unit": "U6",
+      "stage": "",
+      "text": "U1 and U4 reported comments falsified by D35/D34 in files no unit owns: repo/tools/git/scripts/derive:12-13 and repo/tools/mise/scripts/derive:7-9 (only the sync runs them; config get tools.* now does too) and repo/tools/mise/tasks/helpers:270 (bootstrap_get source is file|default only) · U6 owns widened to these three files under the plan Goal; handed to U6 as DOCS FALSIFIED lines",
       "state": "closed"
     }
   ],

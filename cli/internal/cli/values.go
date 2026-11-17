@@ -12,6 +12,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/format"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
+	"github.com/virajp/bootstrap/cli/internal/repo"
 	"github.com/virajp/bootstrap/cli/internal/report"
 	"github.com/virajp/bootstrap/cli/internal/schema"
 	"github.com/virajp/bootstrap/cli/internal/source"
@@ -283,7 +284,8 @@ func lookup(raw *source.Obj, path []string) (any, bool) {
 
 // configGet prints the envelope of the key <text>: its value and its
 // source, file or default (D21, D22, D41, D50, D51). Only an invalid key
-// (code 2) and a read failure (code 1) are errors.
+// and a tools.* key with no catalog (code 2), and a read failure (code 1),
+// are errors.
 func (a *app) configGet(sd core.Side, text, form string) fail.Code {
 	k, code := a.keyOf(sd, text)
 	if code != fail.OK {
@@ -312,23 +314,17 @@ func (a *app) configGet(sd core.Side, text, form string) fail.Code {
 	return a.printDoc(env, form, true)
 }
 
-// toolsGet completes the envelope <env> of the tools.toml key <k>: the
-// merged value of a selected tool, with the defaults and the contributions of
-// the catalog (D15, D20). The catalog is --clone or BOOTSTRAP_CLONE, else
-// the cache clone; get never fetches (D23, D27). With no catalog, the value
-// is the one of the file <raw> alone, and catalog is false (D28).
+// toolsGet completes the envelope <env> of the tools.toml key <k> with the
+// value that the engine uses (D34): the merged value of a selected tool, in
+// the order of the merge of a sync (the defaults, the contributions of the
+// catalog, the derive scripts of the catalog, the file and its overrides;
+// D15, D20, D33, D35), or, for an engine key such as env, the file value,
+// else the engine default. The whole table of a tool also has its env
+// (D36). A tool that is not selected gives null with the source
+// "unselected". The catalog is
+// --clone or BOOTSTRAP_CLONE, else the cache clone; get never fetches (D23,
+// D27). With no catalog, get stops with code 2 (D34).
 func (a *app) toolsGet(sd core.Side, k *valuesKey, raw, env *source.Obj, form string) fail.Code {
-	fileOnly := func(catalog bool) fail.Code {
-		if v, ok := lookup(raw, k.docPath()); ok {
-			env.Set("value", v)
-			env.Set("source", "file")
-		} else {
-			env.Set("value", nil)
-			env.Set("source", "default")
-		}
-		env.Set("catalog", catalog)
-		return a.printDoc(env, form, true)
-	}
 	c, err := core.OpenClone(core.CloneOptions{
 		Getenv: a.getenv, Version: a.version, CacheOnly: true,
 		Note: func(s string) { a.infof("%s", s) }, Stderr: a.stderr,
@@ -338,7 +334,8 @@ func (a *app) toolsGet(sd core.Side, k *valuesKey, raw, env *source.Obj, form st
 		return a.logErr(err)
 	}
 	if c.Dir == "" {
-		return fileOnly(false)
+		a.fail("config get "+k.text+" needs the catalog, and no clone is cached (get never fetches)", "run bootstrap catalog to fetch the clone, or pass --clone <path>")
+		return fail.Usage
 	}
 	sd.Clone = c.Dir
 	sel, err := core.SelectionOf(sd, sd.Values, sd.Values)
@@ -351,8 +348,16 @@ func (a *app) toolsGet(sd core.Side, k *valuesKey, raw, env *source.Obj, form st
 		selected = selected || t == tool
 	}
 	if !selected {
-		// A tool that is not selected has no merged values.
-		return fileOnly(true)
+		env.Set("value", nil)
+		env.Set("source", "unselected")
+		return a.printDoc(env, form, true)
+	}
+	entry, _ := lookup(raw, []string{"tools", tool})
+	entryObj, _ := entry.(*source.Obj)
+	if o, ok := values.EngineOrigin(sel.Idx.Manifests[tool], entryObj, k.path[1:]); ok {
+		env.Set("value", o.Value)
+		env.Set("source", o.Source)
+		return a.printDoc(env, form, true)
 	}
 	res, err := values.Merge(values.Input{
 		Index:       sel.Idx,
@@ -361,11 +366,21 @@ func (a *app) toolsGet(sd core.Side, k *valuesKey, raw, env *source.Obj, form st
 		User:        sel.User,
 		ShownRoot:   sel.Idx.Source.ToolsShown(),
 		ShownValues: k.shown,
+		Overrides:   sel.Over,
+		Derive:      repo.Derive(sd.Root, sd.Values, c.Dir, a.stderr),
 	})
 	if err != nil {
 		return a.logErr(err)
 	}
-	o := values.OriginOf(sel.Idx, res, sel.User, sel.Tools, tool, k.path[1:])
+	o := values.OriginOf(sel.Idx, res, sel.User, sel.Over, sel.Tools, tool, k.path[1:])
+	if t, ok := o.Value.(*source.Obj); ok && len(k.path) == 1 {
+		// The whole table: its env, as get of tools.<tool>.env gives it
+		// (D36). The source stays the one of the table.
+		e, _ := values.EngineOrigin(sel.Idx.Manifests[tool], entryObj, []string{"env"})
+		t = t.Clone()
+		t.Set("env", e.Value)
+		o.Value = t
+	}
 	env.Set("value", o.Value)
 	env.Set("source", o.Source)
 	if len(o.ContributedBy) > 0 {
@@ -375,7 +390,6 @@ func (a *app) toolsGet(sd core.Side, k *valuesKey, raw, env *source.Obj, form st
 		}
 		env.Set("contributed_by", by)
 	}
-	env.Set("catalog", true)
 	return a.printDoc(env, form, true)
 }
 
