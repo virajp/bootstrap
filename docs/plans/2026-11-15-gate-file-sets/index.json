@@ -15,8 +15,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-15 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-17T18:59:55Z in .worktrees/gate-file-sets"
   },
   "consent": {
     "merge": true,
@@ -63,11 +63,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T19:01:18.128Z",
+      "ended": "2026-11-17T19:06:14.689Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -212,8 +212,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-17T19:01:18.062Z",
       "ended": ""
     },
     {
@@ -846,7 +846,12 @@
     }
   },
   "gaps": [],
-  "overrides": [],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "code:lint:60-bootstrap — run with the released bootstrap 3.3.1 (BOOTSTRAP_BIN) and BOOTSTRAP_CACHE set to a scratch clone at 1f7b0a2 (user ruling, plan plugins-setup-ai Q8), at the preflight and every gate point; every other gate line as written; every gate and the pre-commit hooks green before the landing"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/gate-file-sets",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-15-gate-file-sets.jsonl"

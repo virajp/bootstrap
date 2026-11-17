@@ -336,38 +336,28 @@ members() {
     | .[] | [.key, (.value.folder // .key), (.value.label // .key), (.value.url // "")]' <<< "${answer}"
 }
 
-# The shell files in scope, one path per line: the paths given as arguments
-# filtered down to shell, or every TRACKED shell file when no argument is given.
+# gate_files <gate file> [--all] [--debug] [--fix] [<file>...]
 #
-# Defined here because `code:lint` (shellcheck) needs it, and an overlay that
-# replaces that file still gets it. `git ls-files` rather than a `find`, so
-# nothing ignored is ever checked. The shebang test is what catches the extension-less task files this
-# library lives among — the shell a repo most wants checked, and the only shell
-# with no `.sh` on the end.
-shell_files_in_scope() {
-  local candidates=()
-  if [ "$#" -gt 0 ]; then
-    candidates=("$@")
-  else
-    local tracked
-    while IFS= read -r tracked; do
-      if [ -n "${tracked}" ]; then
-        candidates+=("${tracked}")
-      fi
-    done < <(git -C "${MISE_PROJECT_ROOT}" ls-files 2> /dev/null || true)
+# The files of one code:format or code:lint gate: it runs
+# `_scripts/gate_files.py`, which reads the #FILES header of <gate file>, and
+# prints the path of a temporary file with the list, one path for each line;
+# an empty list gives an empty file. The default is the uncommitted files of
+# this repository, `--all` every file, and given files only those. `--debug`
+# prints each removed file on stderr. A gate calls it as
+#
+#   list=$(gate_files "$0" <its flags and files>) || exit $?
+#   trap 'rm -f "${list}"' EXIT
+#
+# and deletes the file itself. If the script fails, it prints an error and
+# returns the code of the script.
+gate_files() {
+  local out rc=0
+  # python@3.14 is the pin of [mise.tools.python] of repo/tools/python/tools.toml.
+  # Change both.
+  out=$(mise x python@3.14 -- python3 "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/gate_files.py" "$@") || rc=$?
+  if [ "${rc}" -ne 0 ]; then
+    print_error "gate_files failed for ${1:-} with code ${rc}."
+    return "${rc}"
   fi
-
-  local candidate
-  for candidate in ${candidates[@]+"${candidates[@]}"}; do
-    [ -f "${candidate}" ] || continue
-    case "${candidate}" in
-      *.sh | *.bash)
-        printf '%s\n' "${candidate}"
-        continue
-        ;;
-    esac
-    if head -n 1 "${candidate}" 2> /dev/null | grep -qE '^#!.*[/ ](ba|da|k|z)?sh( |$)'; then
-      printf '%s\n' "${candidate}"
-    fi
-  done
+  printf '%s\n' "${out}"
 }
