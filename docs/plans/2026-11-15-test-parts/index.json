@@ -115,11 +115,11 @@
         "U3"
       ],
       "waits": "reviews the committed delta of waves 1 to 3",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T17:01:11.736Z",
+      "ended": "2026-11-17T17:02:37.098Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "kind": "review",
       "model": "opus",
       "id": "U4",
@@ -128,8 +128,8 @@
       "file": "04-review.md",
       "owns": [],
       "range": {
-        "from": "",
-        "to": ""
+        "from": "71a7c45",
+        "to": "c755b73"
       }
     },
     {
@@ -203,9 +203,9 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-17T17:01:11.703Z",
+      "ended": "2026-11-17T17:03:18.234Z"
     },
     {
       "id": "W5",
