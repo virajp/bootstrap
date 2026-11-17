@@ -131,11 +131,11 @@
         "U3"
       ],
       "waits": "The cases run the helper, the orchestrators and the gates that U1, U2 and U3 write.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T19:22:14.391Z",
+      "ended": "2026-11-17T20:32:11.268Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U5",
@@ -224,8 +224,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-17T19:22:14.319Z",
       "ended": ""
     },
     {
