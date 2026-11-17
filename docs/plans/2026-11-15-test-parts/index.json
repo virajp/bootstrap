@@ -93,11 +93,11 @@
         "U2"
       ],
       "waits": "tests the engine and the parts",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T15:32:48.218Z",
+      "ended": "2026-11-17T16:58:51.086Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 2,
       "kind": "edit",
       "model": "opus",
       "id": "U3",
@@ -197,8 +197,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-17T15:32:48.185Z",
       "ended": ""
     },
     {
@@ -473,6 +473,15 @@
       "rejected": "",
       "units": [
         "U5"
+      ]
+    },
+    {
+      "id": "D28",
+      "decision": "Q1: A known old pack copy at the old path test/golden: should bootstrap check name the known copy (old-copy message, engine change in U1) or keep R1c generic dispatcher-place message with code 2?",
+      "ruling": "Keep it as is (code 2 and the init fix only) — the test passes now; a user sees the generic dispatcher-place message for a known copy at the old path",
+      "rejected": "Require the old-copy message — U1 reorders or merges the problems in resolve.go (CopyProblems before ownTasks, or both reported), then U3 asserts it; this reopens U1",
+      "units": [
+        "U3"
       ]
     }
   ],
