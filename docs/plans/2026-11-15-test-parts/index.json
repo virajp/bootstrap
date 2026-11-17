@@ -168,11 +168,11 @@
         "U5"
       ],
       "waits": "runs the gates over the whole delta",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T17:13:18.703Z",
+      "ended": "2026-11-17T18:29:39.986Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 2,
       "kind": "edit",
       "model": "opus",
       "id": "U6",
@@ -215,9 +215,9 @@
     },
     {
       "id": "W6",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-17T17:13:18.670Z",
+      "ended": "2026-11-17T18:30:15.472Z"
     }
   ],
   "shared_files": [
@@ -482,6 +482,15 @@
       "rejected": "Require the old-copy message — U1 reorders or merges the problems in resolve.go (CopyProblems before ownTasks, or both reported), then U3 asserts it; this reopens U1",
       "units": [
         "U3"
+      ]
+    },
+    {
+      "id": "D29",
+      "decision": "Q2: K1 as written fails before it reaches the behaviour under test (untrusted scratch mise config during init and add; no commit after init; the uncommitted 50-local file fails the dirty-target guard). Should K1 be amended, and how?",
+      "ruling": "Amend K1 — export MISE_TRUSTED_CONFIG_PATHS for the scratch repo (as test:repo does), commit after the first init and after writing 50-local, then run the amended K1 at the plan gate — the diagnostic run shows it passes this way",
+      "rejected": "Accept U6 diagnostic run (scratchpad/u6/repo3) as K1 proof with no rerun; Change the engine so init removes a known old copy even when it is uncommitted",
+      "units": [
+        "U6"
       ]
     }
   ],
