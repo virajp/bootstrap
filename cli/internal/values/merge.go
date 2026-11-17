@@ -530,14 +530,15 @@ func OriginOf(idx *source.Index, res *Result, user, over *source.Obj, selected [
 
 // EngineKeys are the keys of a [tools.<name>] entry that the engine reads
 // itself: ReadRepo leaves them out of the user values, so Merge never merges
-// them (D34).
-var EngineKeys = []string{"env"}
+// them (D34). projects names the [projects.<name>] tables of repo.toml
+// that the tool serves.
+var EngineKeys = []string{"env", "projects"}
 
 // EngineOrigin gives the value at <path> of the tool of the manifest <m>
 // when <path> starts with an engine key, and false otherwise: the value of
 // the entry <entry> of the values file (source "file"), else the default
 // of the engine (source "default"). The default of env is the
-// default_envs of the tool (D34).
+// default_envs of the tool (D34), and the default of projects is [].
 func EngineOrigin(m *source.Manifest, entry *source.Obj, path []string) (Origin, bool) {
 	engine := false
 	for _, k := range EngineKeys {
@@ -557,5 +558,6 @@ func EngineOrigin(m *source.Manifest, entry *source.Obj, path []string) (Origin,
 		}
 		def.Set("env", envs)
 	}
+	def.Set("projects", []any{})
 	return Origin{Value: getpath(def, path), Source: "default"}, true
 }

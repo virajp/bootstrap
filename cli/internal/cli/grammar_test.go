@@ -179,10 +179,16 @@ func TestDetectList(t *testing.T) {
 	if b, _ := os.ReadFile(values); string(b) != text {
 		t.Errorf("detect wrote the values file: %q", b)
 	}
-	// Each detected tool selected: exit 0.
+	// Each detected tool selected: exit 0. The root project x is still to
+	// write: it prints under Projects, not written, with the info line, and
+	// the code stays 0 (D33).
 	writeFile(t, values, text+"[tools.c]\n", 0o644)
-	if code, out, errs := run("detect"); code != fail.OK || !strings.Contains(out, "No tool to add") {
+	if code, out, errs := run("detect"); code != fail.OK || !strings.Contains(out, "No tool to add") ||
+		!strings.Contains(out, "Projects, not written") || !strings.Contains(out+errs, "run bootstrap detect --add to write the projects") {
 		t.Errorf("selected: code %d stdout %q stderr %q", code, out, errs)
+	}
+	if b, _ := os.ReadFile(values); string(b) != text+"[tools.c]\n" {
+		t.Errorf("detect wrote the values file: %q", b)
 	}
 }
 

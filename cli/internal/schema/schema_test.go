@@ -191,7 +191,7 @@ func TestCheckTools(t *testing.T) {
 	}
 	cases := []struct{ name, text, want string }{
 		{"valid", "format = 3\n[tools.a]\nenv = [ \"dev\" ]\nlevel = 2\nname = \"x\"\n[tools.a.files.\".gitignore\"]\n\"*.log\" = { \"$mode\" = \"remove\" }\n", ""},
-		{"unknown key", "format = 3\n[tools.a]\ncolour = 1\n", "[tools.a].colour in tools.toml is not a key of the tool a - its keys are env, files, and its questions and defaults"},
+		{"unknown key", "format = 3\n[tools.a]\ncolour = 1\n", "[tools.a].colour in tools.toml is not a key of the tool a - its keys are env, files, projects, and its questions and defaults"},
 		{"unknown tool", "format = 3\n[tools.zzz]\ncolour = 1\n", ""},
 		{"override keeps its rules", "format = 3\n[overrides.tools.a]\ncolour = 1\n", ""},
 	}
@@ -199,5 +199,73 @@ func TestCheckTools(t *testing.T) {
 		if got := messages(CheckTools(idx, read(t, c.text), "tools.toml")); got != c.want {
 			t.Errorf("%s:\n got %q\nwant %q", c.name, got, c.want)
 		}
+	}
+}
+
+// TestProjectRules: a [projects.<name>] table has a kebab-case name and a
+// folder of the repo; . is the root (D3, D7).
+func TestProjectRules(t *testing.T) {
+	cases := []struct{ name, text, want string }{
+		{"valid", head + "[projects.web]\nfolder = \"apps/web\"\n[projects.repo]\nfolder = \".\"\n", ""},
+		{"bad name", head + "[projects.My_App]\nfolder = \"a\"\n", `[projects."My_App"] in repo.toml has a name that is not valid - a project name is lowercase kebab case, for example my-app`},
+		{"no folder", head + "[projects.web]\n", "[projects.web] in repo.toml has no folder - set folder to its folder, relative to the root of the repo (. is the root)"},
+		{"outside", head + "[projects.web]\nfolder = \"../x\"\n", `[projects.web].folder = "../x" in repo.toml is not a folder of the repo - give it relative to the root of the repo (. is the root)`},
+		{"same folder", head + "[projects.a]\nfolder = \"x\"\n[projects.b]\nfolder = \"./x\"\n", "[projects.a] and [projects.b] in repo.toml have the same folder x - a folder is one project"},
+		{"unknown key", head + "[projects.web]\nfolder = \"a\"\nplatforms = [\"ios\"]\n", "projects.web.platforms in repo.toml is not a key of repo.toml"},
+	}
+	for _, c := range cases {
+		if got := messages(CheckRepo(read(t, c.text), "repo.toml")); got != c.want {
+			t.Errorf("%s:\n got %q\nwant %q", c.name, got, c.want)
+		}
+	}
+}
+
+// TestCheckProjects: a projects list names projects of repo.toml, and a
+// root_only tool has none (D7).
+func TestCheckProjects(t *testing.T) {
+	root := t.TempDir()
+	keys := "summary = \"A\"\ncategory = \"core\"\ndefault_envs = [ \"dev\" ]\ndepends = []\n"
+	files := map[string]string{
+		"repo/categories.toml":    "[category.core]\ntitle = \"Core\"\n",
+		"repo/tools/a/tools.toml": keys + "root_only = false\n",
+		"repo/tools/r/tools.toml": keys + "root_only = true\n",
+	}
+	for p, text := range files {
+		full := filepath.Join(root, p)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	idx, err := source.Source{Root: root, Side: source.Repo}.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repo := read(t, head+"[projects.web]\nfolder = \"web\"\n")
+	cases := []struct {
+		name, text, want string
+		catalog          bool
+	}{
+		{"valid", "format = 3\n[tools.a]\nprojects = [\"web\"]\n", "", true},
+		{"empty", "format = 3\n[tools.a]\nprojects = []\n", "", true},
+		{"unknown", "format = 3\n[tools.a]\nprojects = [\"web\", \"api\"]\n", "[tools.a].projects in tools.toml names api, which is not a [projects.<name>] table of repo.toml - add [projects.api], or remove the name", false},
+		{"not a list", "format = 3\n[tools.a]\nprojects = \"web\"\n", "[tools.a].projects in tools.toml must be a list of strings - the names of [projects.<name>] tables of repo.toml", false},
+		{"root_only", "format = 3\n[tools.r]\nprojects = [\"web\"]\n", "[tools.r].projects in tools.toml: r is root_only, so it has no projects - remove the key", true},
+		{"root_only without the catalog", "format = 3\n[tools.r]\nprojects = [\"web\"]\n", "", false},
+	}
+	for _, c := range cases {
+		var ix *source.Index
+		if c.catalog {
+			ix = idx
+		}
+		if got := messages(CheckProjects(ix, repo, read(t, c.text), "tools.toml")); got != c.want {
+			t.Errorf("%s:\n got %q\nwant %q", c.name, got, c.want)
+		}
+	}
+	// projects is always a key of a tool, as env is.
+	if !ToolKey(idx, "a", "projects") {
+		t.Error("projects is not a key of a tool")
 	}
 }

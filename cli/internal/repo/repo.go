@@ -698,11 +698,13 @@ func (s *state) check() fail.Code {
 		return code
 	}))
 	add(s.checkStage("releases", true, s.releases))
+	add(s.checkStage("projects", selOK, s.projectFolders))
 	valid := rc == fail.OK
 	if valid {
 		s.r.Success(s.show + " is valid")
 		s.listChecks = true
 	}
-	add(s.checkStage("scripts", valid, s.checkScripts))
+	scriptsOK := add(s.checkStage("scripts", valid, s.checkScripts))
+	add(s.checkStage("project-links", valid && scriptsOK, s.projectLinks))
 	return rc
 }

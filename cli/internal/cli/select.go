@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"strings"
+	"text/tabwriter"
 
 	"github.com/virajp/bootstrap/cli/internal/core"
 	"github.com/virajp/bootstrap/cli/internal/fail"
@@ -74,15 +76,36 @@ type detectedData struct {
 	Of       string   `json:"of"`
 }
 
-// detectData gives the data of detect --json: data.detected for a plain
-// detect, else the plan form of a write command, with no change yet.
+// detectJSON is the data of a plain detect --json: data.detected, and on
+// the repo side the new [projects.<name>] tables (projects, by name) and the
+// project names to add to the projects list of each tool (links, by tool).
+type detectJSON struct {
+	Detected []detectedData           `json:"detected"`
+	Projects map[string]detectProject `json:"projects"`
+	Links    map[string][]string      `json:"links"`
+}
+
+// detectProject is a new [projects.<name>] table.
+type detectProject struct {
+	Folder string `json:"folder"`
+}
+
+// detectData gives the data of detect --json: data.detected, projects and
+// links for a plain detect, else the plan form of a write command, with no
+// change yet.
 func detectData(o opts, d *core.Detection) any {
 	if o.add {
 		return writeData{Plan: planDataOf(&core.PlanResult{}), Outcomes: outcomesOf(nil)}
 	}
-	out := []detectedData{}
+	out := detectJSON{Detected: []detectedData{}, Projects: map[string]detectProject{}, Links: map[string][]string{}}
 	if d == nil || d.NoScripts {
-		return map[string][]detectedData{"detected": out}
+		return out
+	}
+	for _, p := range d.Projects {
+		out.Projects[p.Name] = detectProject{Folder: p.Folder}
+	}
+	for _, l := range d.Links {
+		out.Links[l.Tool] = l.Projects
 	}
 	props := map[string]core.Proposal{}
 	for _, p := range d.Proposals {
@@ -100,9 +123,9 @@ func detectData(o opts, d *core.Detection) any {
 		if e.Evidence == nil {
 			e.Evidence = []string{}
 		}
-		out = append(out, e)
+		out.Detected = append(out.Detected, e)
 	}
-	return map[string][]detectedData{"detected": out}
+	return out
 }
 
 // detect is `bootstrap [mac] detect`. With no flag, it lists the detected
@@ -124,6 +147,9 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 	}
 	if err != nil {
 		return a.logErr(err)
+	}
+	for _, w := range d.Warnings {
+		a.warnf("%s", w)
 	}
 	if o.json {
 		a.data = detectData(o, d)
@@ -200,13 +226,23 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 	}
 	tree, _ := renderTree(listRoots(s), depsOf(s), opt)
 	_, _ = fmt.Fprint(a.stdout, tree)
+	a.printProjects(d)
 	if code != fail.OK {
 		return code
 	}
+	toLink := len(d.Projects) > 0 || len(d.Links) > 0
 	if len(d.Offers) == 0 && len(d.Unknown) == 0 {
 		_, _ = fmt.Fprintln(a.stdout)
 		report.NewPrinter(a.stdout, style).Success("No tool to add")
-		return fail.OK
+		if !toLink {
+			return fail.OK
+		}
+		if !o.add {
+			// The projects never change the code of a plain detect.
+			a.infof("run %s --add to write the projects", cmdName(mac, "detect"))
+			return fail.OK
+		}
+		return a.finish(sd, o, core.List{Projects: d.Projects, Links: d.Links})
 	}
 	if !o.add {
 		for _, t := range d.Offers {
@@ -217,7 +253,30 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 		}
 		return fail.Other
 	}
-	return a.finish(sd, o, core.List{Items: d.Items(d.Offers, d.Unknown)})
+	return a.finish(sd, o, core.List{Items: d.Items(d.Offers, d.Unknown), Projects: d.Projects, Links: d.Links})
+}
+
+// printProjects prints the new projects and the new links of the tools of a
+// detect on the repo side, in the group Projects, not written.
+func (a *app) printProjects(d *core.Detection) {
+	if len(d.Projects) == 0 && len(d.Links) == 0 {
+		return
+	}
+	style := a.styled
+	mark := report.Mark(report.New, style)
+	if !style {
+		mark = "[NEW]"
+	}
+	w := tabwriter.NewWriter(a.stdout, 0, 0, 2, ' ', 0)
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Projects, not written")
+	for _, p := range d.Projects {
+		_, _ = fmt.Fprintf(w, "  %s %s\tproject\t%s\n", mark, p.Name, p.Folder)
+	}
+	for _, l := range d.Links {
+		_, _ = fmt.Fprintf(w, "  %s %s\tlink\t%s\n", mark, l.Tool, strings.Join(l.Projects, ", "))
+	}
+	_ = w.Flush()
 }
 
 // detectText gives the evidence and the message of a match: the first

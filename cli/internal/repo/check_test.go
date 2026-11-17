@@ -74,7 +74,7 @@ func TestCheckPass(t *testing.T) {
 	if code != fail.OK || len(loose) != 0 {
 		t.Fatalf("code %d, loose %+v, stderr %q", code, loose, errText)
 	}
-	want := "envs=pass values=pass old-forms=pass env-rules=pass core-tools=pass overrides=pass members=pass releases=pass scripts=pass"
+	want := "envs=pass values=pass old-forms=pass env-rules=pass core-tools=pass overrides=pass members=pass releases=pass projects=pass scripts=pass project-links=pass"
 	if got := statuses(stages); got != want {
 		t.Errorf("stages %s, want %s", got, want)
 	}
@@ -94,7 +94,7 @@ func TestCheckFailAndSkipped(t *testing.T) {
 	if code != fail.Usage {
 		t.Fatalf("code %d, stderr %q", code, errText)
 	}
-	want := "envs=fail values=pass old-forms=pass env-rules=skipped core-tools=pass overrides=pass members=pass releases=pass scripts=skipped"
+	want := "envs=fail values=pass old-forms=pass env-rules=skipped core-tools=pass overrides=pass members=pass releases=pass projects=pass scripts=skipped project-links=skipped"
 	if got := statuses(stages); got != want {
 		t.Errorf("stages %s, want %s", got, want)
 	}
@@ -115,7 +115,7 @@ func TestCheckUnknownKey(t *testing.T) {
 	if code != fail.Usage || len(loose) != 0 {
 		t.Fatalf("code %d, loose %+v, stderr %q", code, loose, errText)
 	}
-	want := "envs=pass values=fail old-forms=skipped env-rules=skipped core-tools=pass overrides=pass members=pass releases=pass scripts=skipped"
+	want := "envs=pass values=fail old-forms=skipped env-rules=skipped core-tools=pass overrides=pass members=pass releases=pass projects=skipped scripts=skipped project-links=skipped"
 	if got := statuses(stages); got != want {
 		t.Errorf("stages %s, want %s", got, want)
 	}

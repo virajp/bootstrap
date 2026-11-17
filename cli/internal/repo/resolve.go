@@ -28,6 +28,9 @@ func (s *state) resolve() fail.Code {
 	if err := schema.CheckTools(s.idx, s.vals.Raw, s.showTools); err != nil {
 		return s.logAll(err)
 	}
+	if err := schema.CheckProjects(s.idx, s.vals.Raw, s.vals.Raw, s.showTools); err != nil {
+		return s.logAll(err)
+	}
 	if code := s.envRules(sel); code != fail.OK {
 		return code
 	}

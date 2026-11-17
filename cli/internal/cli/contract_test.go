@@ -229,7 +229,7 @@ func TestCheckJSON(t *testing.T) {
 	if err := json.Unmarshal(e.Data, &data); err != nil {
 		t.Fatalf("data %s: %v", e.Data, err)
 	}
-	if code != e.Code || e.Command != "check" || data.Valid != (code == fail.OK) || len(data.Checks) != 9 || data.Checks[0].Name != "envs" {
+	if code != e.Code || e.Command != "check" || data.Valid != (code == fail.OK) || len(data.Checks) != 11 || data.Checks[0].Name != "envs" {
 		t.Errorf("code %d, envelope %+v, data %s, stderr %q", code, e, e.Data, errText)
 	}
 	// An unknown key: the values stage fails with one finding of the file.
@@ -240,7 +240,7 @@ func TestCheckJSON(t *testing.T) {
 	if err := json.Unmarshal(e.Data, &data); err != nil {
 		t.Fatalf("data %s: %v", e.Data, err)
 	}
-	if code != fail.Usage || e.Code != fail.Usage || data.Valid || len(data.Checks) != 9 {
+	if code != fail.Usage || e.Code != fail.Usage || data.Valid || len(data.Checks) != 11 {
 		t.Fatalf("code %d, envelope %+v, data %s, stderr %q", code, e, e.Data, errText)
 	}
 	v := data.Checks[1]

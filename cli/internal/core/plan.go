@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/format"
 	"github.com/virajp/bootstrap/cli/internal/manifest"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
+	"github.com/virajp/bootstrap/cli/internal/projects"
 	"github.com/virajp/bootstrap/cli/internal/questions"
 	"github.com/virajp/bootstrap/cli/internal/scripts"
 	"github.com/virajp/bootstrap/cli/internal/selection"
@@ -85,6 +87,11 @@ type List struct {
 	Init    bool
 	Items   []Item
 	Answers []Answer
+	// Projects are the [projects.<name>] tables to add to repo.toml, and
+	// Links the project names to add to the projects list of each tool
+	// (detect --add, repo side).
+	Projects []projects.Project
+	Links    []Link
 }
 
 // Skip is a member of a pack that add pack leaves out, and why: "hosts"
@@ -226,6 +233,9 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 		}
 		p.Cur, p.Existed, p.Next = st.Cur, true, st.Cur
 		p.AskOnly = map[string]bool{}
+		if err := p.addProjects(l.Projects); err != nil {
+			return p, err
+		}
 	}
 
 	// A temporary copy of the values, with the overrides, for the selection
@@ -278,6 +288,28 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 			if err := write(); err != nil {
 				return p, err
 			}
+		}
+	}
+	if len(l.Links) > 0 && st != nil {
+		var exprs []string
+		for _, ln := range l.Links {
+			list := projects.Links(st.Raw, ln.Tool)
+			for _, n := range ln.Projects {
+				if !slices.Contains(list, n) {
+					list = append(list, n)
+				}
+			}
+			b, _ := json.Marshal(list)
+			exprs = append(exprs, ".tools["+q(ln.Tool)+"].projects = "+string(b))
+			p.Notes = append(p.Notes, "link "+ln.Tool+" to "+strings.Join(ln.Projects, ", "))
+		}
+		next, err := EditTOML(p.Next, exprs)
+		if err != nil {
+			return p, err
+		}
+		p.Next = next
+		if err := write(); err != nil {
+			return p, err
 		}
 	}
 	if l.Init {
@@ -374,6 +406,36 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 	}
 	sort.Slice(p.Files, func(i, j int) bool { return p.Files[i].Path < p.Files[j].Path })
 	return p, nil
+}
+
+// addProjects adds the change of repo.toml that adds the [projects.<name>]
+// tables <ps> (detect --add). It changes through EditTOML, so the comments
+// stay, and a failed sync puts the file back.
+func (p *PlanResult) addProjects(ps []projects.Project) error {
+	if len(ps) == 0 || p.Mac {
+		return nil
+	}
+	repoFile := values.RepoFile(p.Values)
+	cur, err := os.ReadFile(repoFile)
+	if err != nil {
+		return problem(fail.Usage, "cannot read "+p.Show(repoFile), "run bootstrap init")
+	}
+	var exprs, names []string
+	for _, pr := range ps {
+		exprs = append(exprs, ".projects["+q(pr.Name)+"].folder = "+q(pr.Folder))
+		names = append(names, pr.Name)
+	}
+	next, err := EditTOML(cur, exprs)
+	if err != nil {
+		return err
+	}
+	p.Changes = append(p.Changes, oldform.Change{
+		Path:    repoFile,
+		Content: next,
+		Edits:   []oldform.Edit{{Path: repoFile, Old: cur, Content: next}},
+		Note:    "add the projects " + strings.Join(names, ", "),
+	})
+	return nil
 }
 
 // requiredTables adds to p.Next an empty [tools.<name>] table for each

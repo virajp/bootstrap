@@ -11,8 +11,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "BLOCKED",
-    "detail": "BLOCKED at preflight — code:lint red on main (installed bootstrap 3.3.1 refuses requires_found in [mise_env.dev.tools] of repo/tools/node/tools.toml); worktree .worktrees/projects"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-17T12:16:13Z in .worktrees/projects"
   },
   "consent": {
     "merge": true,
@@ -60,11 +60,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T12:17:00.893Z",
+      "ended": "2026-11-17T13:01:23.920Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -156,8 +156,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-17T12:17:00.856Z",
       "ended": ""
     },
     {
@@ -472,6 +472,40 @@
       "units": [
         "U1"
       ]
+    },
+    {
+      "id": "D32",
+      "decision": "G1: gate line `mise x -- mise run code:lint` is red at preflight — code:lint:60-bootstrap runs the released bootstrap 3.3.1 against the shared cache clone, whose catalog 3.3.1 cannot read. How should the run make this line pass?",
+      "ruling": "User (relayed by the all loop, the same ruling as D38/Q8 of docs/plans/archived/2026-11-14-plugins-setup-ai): point the line at the catalog the released engine can read — run it with the released 3.3.1 and BOOTSTRAP_CACHE set to a scratch clone at 1f7b0a2; the line then checks this repo old-form values as before, and test:repo and test:go still cover the plan own catalog changes. Apply it to code:lint:60-bootstrap at the preflight, at every gate point of this run and in the pre-commit hooks; every other gate line runs as written. Standing rule: every gate and the pre-commit hooks green before the landing; any other red line: do not land, report it.",
+      "rejected": "Stop the run at the preflight",
+      "units": []
+    },
+    {
+      "id": "D33",
+      "decision": "Q1: When a plain `bootstrap detect` (no --add) finds projects or links to write but no tool to add, what should its exit code be?",
+      "ruling": "Keep 0 (implemented) — projects and links print under \"Projects, not written\" with an info line \"run bootstrap detect --add to write the projects\"; the exit code depends only on tools, so existing scripts and test:repo detect cases that expect 0 keep working",
+      "rejected": "Exit 1, as for an offered tool",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D34",
+      "decision": "Q2: When detect reads a workspace manifest, should a member folder that exists but holds no package file of that workspace still be proposed as a project?",
+      "ruling": "Keep the marker-file rule (implemented) and record it as a decision — a folder like apps/docs with no package file is not proposed, as pnpm itself skips it",
+      "rejected": "Drop the rule and keep every existing folder, per D29 as written",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D35",
+      "decision": "Q3: During bootstrap check, when a linked tool's detect script fails or prints no valid result in a project folder, should that be a code 2 finding or a link warning?",
+      "ruling": "Code 2 (implemented) — matches detect, where a script failure is code 2",
+      "rejected": "A warning, as for a link with no match",
+      "units": [
+        "U1"
+      ]
     }
   ],
   "stages": {
@@ -505,8 +539,15 @@
       "id": "G1",
       "unit": "",
       "stage": "",
-      "text": "Preflight: gate line `mise x -- mise run code:lint` is red at the integration branch tip (main 49fb018) — code:lint:60-bootstrap runs the mise-installed bootstrap 3.3.1, which refuses requires_found of npm:typescript and npm:typescript-language-server in [mise_env.dev.tools] of repo/tools/node/tools.toml; the engine of main accepts it · inherited, not the plan's: run stopped before wave 1; make code:lint green on main (a newer installed engine or a fix on main), then /vwf:execute docs/plans/2026-11-15-projects",
-      "state": "open"
+      "text": "\"Preflight: gate line `mise x -- mise run code:lint` is red at the integration branch tip (main 49fb018) — code:lint:60-bootstrap runs the mise-installed bootstrap 3.3.1, which refuses requires_found of npm:typescript and npm:typescript-language-server in [mise_env.dev.tools] of repo/tools/node/tools.toml; the engine of main accepts it · inherited, not the plan's: run stopped before wave 1; make code:lint green on main (a newer installed engine or a fix on main), then /vwf:execute docs/plans/2026-11-15-projects\" · settled by D32: code:lint runs with BOOTSTRAP_CACHE at a scratch clone at 1f7b0a2",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U4",
+      "stage": "",
+      "text": "R1 wave review, rule 5: docs/design/cli.md:1121 (scripts table says detect runs on the repo side only; check now runs detect scripts in project-links) and docs/design/cli.md:1124 (\"The scripts of a tool\": scripts run in the root) falsified and unreported by U1 · handed to the docs unit U4 as DOCS FALSIFIED lines; already inside its owns (docs/design/), no widening",
+      "state": "closed"
     }
   ],
   "overrides": [],

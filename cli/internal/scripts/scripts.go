@@ -2,7 +2,8 @@
 // `after`, `detect` and `migrate-<tool>` in `<side>/tools/<tool>/scripts/` of
 // the clone. The engine never copies them. Each one runs as `mise x -- bash <path>` in the target
 // root, with one JSON object on stdin. The jobs run in parallel, and the
-// results come back in the order of the jobs.
+// results come back in the order of the jobs. A job can run in a folder
+// below the root (Job.Dir): detect runs there in each project folder.
 // Contract: docs/design/cli.md ("The scripts of a tool").
 package scripts
 
@@ -80,11 +81,13 @@ func (in Input) JSON() []byte {
 	return []byte(b.String())
 }
 
-// Job is one script to run.
+// Job is one script to run. Dir is the folder where it runs, relative to
+// the Root of the runner; empty is the Root.
 type Job struct {
 	Tool  string
 	Name  string
 	Input []byte
+	Dir   string
 }
 
 // Result is the result of one job. Ran is false when the tool has no such
@@ -102,7 +105,7 @@ type Result struct {
 type Runner struct {
 	ToolsDir string // The absolute folder of the tools of the side.
 	Shown    string // That folder in a message, for example repo/tools.
-	Root     string // The folder where each script runs.
+	Root     string // The folder where each script runs, below which a job can name its Dir.
 	Jobs     int    // The number of jobs at a time; 0 is BOOTSTRAP_JOBS, else 2 × the CPU count.
 }
 
@@ -157,6 +160,9 @@ func (r Runner) one(j Job) Result {
 	res := Result{Tool: j.Tool, Name: j.Name, Ran: true}
 	cmd := exec.Command("mise", "x", "--", "bash", r.Path(j.Tool, j.Name))
 	cmd.Dir = r.Root
+	if j.Dir != "" && j.Dir != "." {
+		cmd.Dir = filepath.Join(r.Root, j.Dir)
+	}
 	cmd.Stdin = bytes.NewReader(j.Input)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
