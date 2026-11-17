@@ -597,17 +597,17 @@ not the tasks of a parent repository. A task of a group is an executable file
 named `NN-<name>`, for example `code/lint/70-ruff`. `own_tasks` skips each
 other file, `_default` and each folder.
 
-| Orchestrator         | Groups that it runs                                       | Other steps                                                                                                              |
-| -------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `setup`              | `setup:secrets:*`, then `setup:deps:*` (with `--upgrade`) | `setup:mise`, `setup:precommit`; with `--upgrade`: `setup:external:update`, `setup:dprint`, `setup:ai`; then each member |
-| `git:worktree:setup` | `setup:secrets:*`, then `setup:deps:*`                    | `setup:mise`, `setup:precommit`; then each member                                                                        |
-| `code`               | None                                                      | `code:format`, `code:lint`, `code:sec`                                                                                   |
-| `code:format`        | `code:format:*` (with `--fix` and the files)              | Each selected member                                                                                                     |
-| `code:lint`          | `code:lint:*` (with `--fix` and the files)                | Each selected member                                                                                                     |
-| `code:sec`           | `code:sec:*` (with `--staged` and `--debug`)              | First, it stops if `code:sec:10-gitleaks`, `code:sec:20-grype` or `code:sec:30-osv-scanner` is missing or not executable |
-| `test`               | `test:*` (with each argument, unchanged)                  | None. It does not run `test:e2e` or `test:golden`                                                                        |
-| `test:e2e`           | `test:e2e:*` (with each argument, unchanged)              | None                                                                                                                     |
-| `test:golden`        | `test:golden:*` (with each argument, unchanged)           | None                                                                                                                     |
+| Orchestrator         | Groups that it runs                                       | Other steps                                                                                                                        |
+| -------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `setup`              | `setup:secrets:*`, then `setup:deps:*` (with `--upgrade`) | `setup:mise`, `setup:precommit`; with `--upgrade`: `setup:external:update`, `setup:dprint`, `setup:ai --upgrade`; then each member |
+| `git:worktree:setup` | `setup:secrets:*`, then `setup:deps:*`                    | `setup:mise`, `setup:precommit`; then each member                                                                                  |
+| `code`               | None                                                      | `code:format`, `code:lint`, `code:sec`                                                                                             |
+| `code:format`        | `code:format:*` (with `--fix` and the files)              | Each selected member                                                                                                               |
+| `code:lint`          | `code:lint:*` (with `--fix` and the files)                | Each selected member                                                                                                               |
+| `code:sec`           | `code:sec:*` (with `--staged` and `--debug`)              | First, it stops if `code:sec:10-gitleaks`, `code:sec:20-grype` or `code:sec:30-osv-scanner` is missing or not executable           |
+| `test`               | `test:*` (with each argument, unchanged)                  | None. It does not run `test:e2e` or `test:golden`                                                                                  |
+| `test:e2e`           | `test:e2e:*` (with each argument, unchanged)              | None                                                                                                                               |
+| `test:golden`        | `test:golden:*` (with each argument, unchanged)           | None                                                                                                                               |
 
 `has_own_task` finds an optional task, for example `setup:ai` or
 `setup:external:update`.

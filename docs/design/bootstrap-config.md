@@ -144,6 +144,7 @@ web = "PATCH"
 | `[tools.<folder>.files."<target>"]` | Table           | No        | The sync: the overrides of a shared file   |
 | `[tools.claude.plugins.user]`       | Table           | No        | `setup:ai`                                 |
 | `[tools.claude.plugins.project]`    | Table           | No        | `setup:ai`                                 |
+| `[tools.claude.plugins].installed`  | List of strings | No        | `setup:ai`, which writes it                |
 | `[overrides.tools.<folder>]`        | Table           | No        | The sync: the local values of a tool       |
 | `[overrides.mise.<path>]`           | Any             | No        | The sync                                   |
 | `[overrides.mise_env.<env>.<path>]` | Any             | No        | The sync                                   |
@@ -496,7 +497,18 @@ the user go directly in the file.
 ### `[tools.claude.plugins.user]` and `[tools.claude.plugins.project]`
 
 The Claude plugins of each scope. Each key is `"<plugin>@<marketplace>" =
-"<source>"`. Both are `[defaults]` of the `claude` tool, empty by default. See
+"<source>"`. Both are `[defaults]` of the `claude` tool, empty by default.
+Another selected tool can add entries in `[contributes.claude]`, for example
+`vwf@virajp-plugins` of `virajp-plugins`: `bootstrap config get` returns them
+with `contributed_by`. See [repo.md](repo.md#the-claude-plugins).
+
+### `[tools.claude.plugins].installed`
+
+The record of `setup:ai`: a list of `"<plugin>@<marketplace>"`, the project
+plugins that it installed, or found installed while listed. A `[defaults]` of
+the `claude` tool, empty by default. `setup:ai` writes it with
+`bootstrap config set`, and uninstalls a recorded plugin that leaves
+`[tools.claude.plugins.project]`. A user does not write it. See
 [repo.md](repo.md#the-claude-plugins).
 
 ### `[overrides.tools.<folder>]`

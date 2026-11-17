@@ -42,27 +42,28 @@ copied: the engine runs it from the clone. See
 Each tool folder has a `tools.toml`. A Mac tool folder without it stops the
 sync.
 
-| Key                    | `repo`    | `macos`   | Meaning                                                                                                                          |
-| ---------------------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `default_envs`         | Necessary | Refused   | A list: the environments of the tool when the values file gives it no `env`, for example `["dev"]`. It must include `dev`.       |
-| `depends`              | Optional  | Optional  | The tools that the sync adds with this one, transitively. On the repo side, each gets the environments of this tool.             |
-| `root_only`            | Optional  | Refused   | `true`: the tool is not for a submodule member. See [repo.md](repo.md#root_only).                                                |
-| `description`          | Optional  | Optional  | A string: the text that tells the adopting AI, and later the TUI, what the tool is. A value that is not a string stops the sync. |
-| `summary`              | Necessary | Necessary | A string of 47 characters or fewer: one short line about the tool, for the TUI.                                                  |
-| `category`             | Necessary | Necessary | A string: the id of a category of the categories file of the side. See [The categories file](#the-categories-file).              |
-| `selectable`           | Optional  | Optional  | A boolean, `true` when the key is missing. `false`: a command does not select the tool by its name, only as a dependency.        |
-| `hosts`                | Optional  | Refused   | A list of the mise OS names `macos`, `linux` and `windows`: the hosts where a command can select the tool. No key: each host.    |
-| `parent`               | Optional  | Optional  | The name of another tool, for example `parent = "node"` in `pnpm` and `aube`. Tools with the same parent can replace each other. |
-| `stage`                | Not read  | Optional  | `"init"` puts the tool in the init stage. See [mac.md](mac.md#stages-and-exit-4).                                                |
-| `[files."<target>"]`   | Optional  | Optional  | The source, the mode and the condition of one config file. See [The `[files]` table](#the-files-table).                          |
-| `[tasks."<path>"]`     | Optional  | Optional  | The source, the mode and the condition of one task file. See [The `[tasks]` table](#the-tasks-table).                            |
-| `[defaults]`           | Optional  | Optional  | The values of the tool. See [below](#the-defaults-questions-and-contributes-tables).                                             |
-| `[questions.<key>]`    | Optional  | Optional  | The question for one value.                                                                                                      |
-| `[contributes.<tool>]` | Optional  | Optional  | Values for another selected tool, for example the hooks of `pre-commit` or the extensions of `vscode`.                           |
-| `[formatter]`          | Optional  | Refused   | The formatter of the sync. See [The `[formatter]` table](#the-formatter-table).                                                  |
-| `[lsp.<server>]`       | Optional  | Unknown   | One language server of the tool. See [The `[lsp]` table](#the-lsp-table).                                                        |
-| `[mise.*]`             | Optional  | Optional  | The mise config of the tool. See [mise.md](mise.md#the-mise-sections).                                                           |
-| `[mise_env.<env>.*]`   | Optional  | Refused   | More mise config for one environment. See [mise.md](mise.md#the-mise-sections).                                                  |
+| Key                                             | `repo`    | `macos`   | Meaning                                                                                                                          |
+| ----------------------------------------------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `default_envs`                                  | Necessary | Refused   | A list: the environments of the tool when the values file gives it no `env`, for example `["dev"]`. It must include `dev`.       |
+| `depends`                                       | Optional  | Optional  | The tools that the sync adds with this one, transitively. On the repo side, each gets the environments of this tool.             |
+| `root_only`                                     | Optional  | Refused   | `true`: the tool is not for a submodule member. See [repo.md](repo.md#root_only).                                                |
+| `description`                                   | Optional  | Optional  | A string: the text that tells the adopting AI, and later the TUI, what the tool is. A value that is not a string stops the sync. |
+| `summary`                                       | Necessary | Necessary | A string of 47 characters or fewer: one short line about the tool, for the TUI.                                                  |
+| `category`                                      | Necessary | Necessary | A string: the id of a category of the categories file of the side. See [The categories file](#the-categories-file).              |
+| `selectable`                                    | Optional  | Optional  | A boolean, `true` when the key is missing. `false`: a command does not select the tool by its name, only as a dependency.        |
+| `hosts`                                         | Optional  | Refused   | A list of the mise OS names `macos`, `linux` and `windows`: the hosts where a command can select the tool. No key: each host.    |
+| `parent`                                        | Optional  | Optional  | The name of another tool, for example `parent = "node"` in `pnpm` and `aube`. Tools with the same parent can replace each other. |
+| `stage`                                         | Not read  | Optional  | `"init"` puts the tool in the init stage. See [mac.md](mac.md#stages-and-exit-4).                                                |
+| `[files."<target>"]`                            | Optional  | Optional  | The source, the mode and the condition of one config file. See [The `[files]` table](#the-files-table).                          |
+| `[tasks."<path>"]`                              | Optional  | Optional  | The source, the mode and the condition of one task file. See [The `[tasks]` table](#the-tasks-table).                            |
+| `[defaults]`                                    | Optional  | Optional  | The values of the tool. See [below](#the-defaults-questions-and-contributes-tables).                                             |
+| `[questions.<key>]`                             | Optional  | Optional  | The question for one value.                                                                                                      |
+| `[contributes.<tool>]`                          | Optional  | Optional  | Values for another selected tool, for example the hooks of `pre-commit` or the extensions of `vscode`.                           |
+| `[[contributes_items.<owner>."<target>".item]]` | Optional  | Unknown   | Items for a merge-mode file of another tool. See [below](#the-defaults-questions-and-contributes-tables).                        |
+| `[formatter]`                                   | Optional  | Refused   | The formatter of the sync. See [The `[formatter]` table](#the-formatter-table).                                                  |
+| `[lsp.<server>]`                                | Optional  | Unknown   | One language server of the tool. See [The `[lsp]` table](#the-lsp-table).                                                        |
+| `[mise.*]`                                      | Optional  | Optional  | The mise config of the tool. See [mise.md](mise.md#the-mise-sections).                                                           |
+| `[mise_env.<env>.*]`                            | Optional  | Refused   | More mise config for one environment. See [mise.md](mise.md#the-mise-sections).                                                  |
 
 The sync examines the `tools.toml` of each tool of the clone, selected or not.
 
@@ -399,11 +400,12 @@ question = "Which team owns this repository?"
 settings = [ "editor.formatOnSave" ]
 ```
 
-| Table                  | Keys                                                                                                                                             | Meaning                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
-| `[defaults]`           | Any key                                                                                                                                          | The values of the tool.           |
-| `[questions.<key>]`    | `question` (necessary, a string), `detect` (a string, a shell command), `example`, `group` (a string), `note` (a string), `optional` (a boolean) | The question for one value.       |
-| `[contributes.<tool>]` | Any key                                                                                                                                          | Values for another selected tool. |
+| Table                                           | Keys                                                                                                                                             | Meaning                                      |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| `[defaults]`                                    | Any key                                                                                                                                          | The values of the tool.                      |
+| `[questions.<key>]`                             | `question` (necessary, a string), `detect` (a string, a shell command), `example`, `group` (a string), `note` (a string), `optional` (a boolean) | The question for one value.                  |
+| `[contributes.<tool>]`                          | Any key                                                                                                                                          | Values for another selected tool.            |
+| `[[contributes_items.<owner>."<target>".item]]` | The item keys of the merge spec of `<owner>` for `<target>`                                                                                      | Items for a merge-mode file of another tool. |
 
 The repo side examines these tables for each selected tool, and the Mac side for
 each tool of the clone. These stop the sync:
@@ -418,6 +420,36 @@ each tool of the clone. These stop the sync:
   `optional` that is not `true` or `false`.
 - A `[questions.<key>]` has a `group` and `optional = true`. `optional = false`
   with a `group` is valid.
+
+`[[contributes_items.<owner>."<target>".item]]` adds items to the merge-mode
+file `<target>` of the tool `<owner>`, in the item format of the merge spec of
+the owner. The owner stays the one owner of the file. The values merge of
+`[contributes.<tool>]` does not read this key. For example, `virajp-plugins`
+adds the vwf lines to `.gitignore` of `git`:
+
+```toml
+[[contributes_items.git.".gitignore".item]]
+value = "docs/scratchpad/"
+```
+
+- The sync adds the items of each selected tool after the items of the spec of
+  the owner, in the order of the names of the contributing tools, with no
+  duplicate: an item whose identity is already there is not added again.
+- The override table of the owner's file applies to them. An override that
+  names an item that any tool of the clone contributes to that file is known,
+  also when that tool is not selected.
+- A contribution to an owner that is not selected adds nothing.
+
+The repo side examines this key for each tool of the clone. These stop the
+sync and `bootstrap check` with code 2:
+
+- `[contributes_items]` is not a table of `[contributes_items.<owner>]` tables,
+  or a `[contributes_items.<owner>."<target>"]` holds another key than `item`,
+  or an `item` is not a list of tables.
+- `<owner>` is not a tool of the clone.
+- `<owner>` declares no `[files."<target>"]` with `mode = "merge"`.
+- An item that does not parse in the item format of the spec of the owner fails
+  that file.
 
 `group`, `note` and `optional` change the answer that a question needs:
 

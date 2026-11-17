@@ -285,6 +285,25 @@ See [cli.md](cli.md#shared-files).
   `[tools.pre-commit.files.".config/pre-commit-config.yaml".repos]` with
   `"conventional-commits" = { "$mode" = "remove" }`.
 
+## Contributed items
+
+A tool can add items to a merge-mode file of another tool, the owner, with
+`[[contributes_items.<owner>."<target>".item]]` in its `tools.toml`. The owner
+stays the one owner of the file. For example, `virajp-plugins` adds the vwf
+lines to `.gitignore` of `git`. The rules of the key are in
+[tools.md](tools.md#the-defaults-questions-and-contributes-tables).
+
+- The sync adds the contributed items of the selected tools after the items of
+  the spec of the owner, in the order of the names of the contributing tools,
+  each tool's items in the order of its file. An item whose identity is
+  already there is not added again.
+- The override table of the owner's file applies to the contributed items too,
+  for example `[tools.git.files.".gitignore"]` with
+  `"docs/scratchpad/" = { "$mode" = "remove" }`. An override of an item that a
+  tool of the catalog contributes is known, also when that tool is not
+  selected: it is not an unused override.
+- A contribution to an owner that is not selected adds nothing.
+
 ## fnox profiles
 
 A repository does not use the fnox `default` profile, which is only for the
@@ -376,7 +395,8 @@ The sync never deletes a file, except these:
 - A synced file at a path where the sync needs a folder.
 - The stale rule: a file with the bootstrap header that the manifest lists and
   this run does not handle, for example a merge task of the other branch model.
-- An item that bootstrap added to a shared file, when no spec has it now.
+- An item that bootstrap added to a shared file, when no spec and no
+  contributed item of a selected tool has it now.
 
 The stale rule skips a seed and a shared file of a tool of this run. At a folder
 path, the sync refuses to remove such a path and fails that file.
@@ -384,10 +404,31 @@ path, the sync refuses to remove such a path and fails that file.
 
 ## The Claude plugins
 
-The sync does not read `[tools.claude.plugins.user]` and
-`[tools.claude.plugins.project]` of `tools.toml`. `setup:ai` of the `claude`
-tool reads them with `bootstrap config get` when it runs, as the merge tasks
-read `[branches.*]`. Both are `[defaults]` of the tool, empty by default.
-Each key is `"<plugin>@<marketplace>" = "<source>"`. It adds a missing
-marketplace from the source, installs each plugin that is missing at that
-scope, and updates the marketplaces and the plugins.
+The sync does not read `[tools.claude.plugins.user]`,
+`[tools.claude.plugins.project]` and `tools.claude.plugins.installed` of
+`tools.toml`. `setup:ai` of the `claude` tool reads them with
+`bootstrap config get` when it runs, as the merge tasks read `[branches.*]`, so
+it gets the entries that other selected tools contribute in
+`[contributes.claude]` too, for example `vwf@virajp-plugins` of
+`virajp-plugins`. A failed read, for example with no catalog (code 2), stops
+it. The three are `[defaults]` of the tool, empty by default. Each key of a
+plugin table is `"<plugin>@<marketplace>" = "<source>"`. `setup:ai` names no
+plugin.
+
+`setup:ai` reads the installed plugins once, then:
+
+1. It drops from the record `plugins.installed` each plugin that is no longer
+   installed at project scope.
+2. It adds a missing marketplace from the source, installs each listed plugin
+   that is missing at its scope, and records each listed project plugin that is
+   installed, only after its install succeeds.
+3. It uninstalls each recorded plugin that left `[tools.claude.plugins.project]`
+   with `claude plugin uninstall --scope project --prune -y`. A failed
+   uninstall keeps it in the record. It never uninstalls a plugin at user
+   scope, or a plugin that is not in the record.
+4. With `--upgrade` only, it updates the marketplaces and each listed plugin
+   that is installed.
+5. It writes the record with `bootstrap config set` when it changed. A failed
+   write is a failed step (exit 1).
+
+A plain run with nothing to change changes nothing.

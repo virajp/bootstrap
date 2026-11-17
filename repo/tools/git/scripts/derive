@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# The derive script of the git tool. The sync runs it in the root of the
-# repository, and never copies it. It prints the values of the branch model:
+# The derive script of the git tool. The sync, and `bootstrap config get` of a
+# tools.* key, run it in the root of the repository, and never copy it. It
+# prints the values of the branch model:
 # - branch_pair is true when core_branches of .config/bootstrap/repo.toml has
 #   both main and develop. A [tasks] entry with `when = "git.branch_pair"` (or
 #   "!git.branch_pair") applies to one branch model only.
@@ -10,8 +11,9 @@
 #   [branches.<name>] is not direct-commit. The pre-commit config gives them to
 #   the no-commit-to-branch hook.
 # The input has no keys of repo.toml, so the script reads them with
-# `bootstrap config get`, which reads the values folder of the sync
-# (BOOTSTRAP_VALUES). repo.toml has no overrides.
+# `bootstrap config get`, which reads the values folder of the run
+# (BOOTSTRAP_VALUES in a sync). A repo.* key needs no catalog, so this read
+# never runs a derive script again. repo.toml has no overrides.
 
 set -euo pipefail
 

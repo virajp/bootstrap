@@ -58,7 +58,8 @@ The tool files in `tools/` are `_security_base.md`, `android.md`, `apko.md`,
 `gcloud.md`, `git.md`, `github.md`, `gitlab.md`, `gitleaks.md`, `go.md`,
 `grype.md`, `java.md`, `kotlin.md`, `linter.md`, `melange.md`, `mise.md`,
 `node.md`, `osv-scanner.md`, `pnpm.md`, `pre-commit.md`, `pulumi.md`,
-`python.md`, `rust.md`, `swift.md` and `vscode.md`. The file of the `claude`
+`python.md`, `rust.md`, `swift.md`, `virajp-plugins.md` and `vscode.md`. The
+file of the `claude`
 tool is `claude-tool.md`, because a file system that ignores case reads
 `claude.md` as `CLAUDE.md`, and AI agents load that name as instructions.
 

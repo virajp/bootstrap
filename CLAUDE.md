@@ -175,8 +175,10 @@ part, and with no part it prints one line and exits 0. See
     `bootstrap_get <key>` is the one reader of a value of
     `.config/bootstrap/`: it prints the JSON answer of `bootstrap config get`
     (read `.value`), with `BOOTSTRAP_BIN`, else `mise x -- bootstrap`. A read
-    failure stops the task with code 1, and no engine that answers (none, or
-    one older than 4.0.0) with code 2. `members` lists the submodule and
+    failure stops the task with code 1. No engine that answers (none, or
+    one older than 4.0.0), and an engine that refuses the read with code 2,
+    for example a `tools.*` key with no catalog (`get` never fetches), stop
+    it with code 2. `members` lists the submodule and
     sibling members of `[members.*]` through it. Call both as
     `VAR=$(bootstrap_get <key>) || exit $?`.
   - `checks`: git predicates. They return an exit status only and print
@@ -330,7 +332,15 @@ changes a case. See `docs/design/cli.md` ("The config file").
   and `add`, and compare the
   envelope on stdout. The LSP cases run the rendered task `code:lsp:check`
   with bash, with a stub engine in `BOOTSTRAP_BIN` and a `mise` shim on the
-  path. The settings cases point
+  path. The setup:ai cases run the rendered task `setup:ai` with bash, with
+  the real engine in `BOOTSTRAP_BIN`, the clone of the case in
+  `BOOTSTRAP_CLONE`, a stub `claude` on the path that answers from state
+  files, and a `mise` shim. The setup case runs the rendered task `setup` with
+  bash and a `mise` shim that logs each `mise run`: a plain run does not run
+  `setup:ai`, and `setup --upgrade` runs `setup:ai --upgrade`. The
+  contributed-items cases sync `virajp-plugins`
+  and compare the written `.gitignore`, and refuse a bad
+  `[[contributes_items.*]]`. The settings cases point
   `BOOTSTRAP_CONFIG` or `--config` at a file of the case, or at a missing file.
   Most of them run `bootstrap settings`. The cases of a `verbose` key and of the
   key `clone` run `bootstrap sync --dry-run`. A case of the default output also

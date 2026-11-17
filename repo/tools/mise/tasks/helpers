@@ -267,16 +267,22 @@ own_tasks() {
 # bootstrap_get <key> [<repo>]
 #
 # The answer of `bootstrap config get <key> --format json` as one line of JSON:
-# `{"key": …, "value": …, "source": "file" | "default"}`. Read `.value`: a key
-# that is not set gives its default, or null. <key> is a key of the values in
-# `.config/bootstrap/`, for example `repo.core_branches`; a segment with a dot
-# is double-quoted, as in `repo.branches."release.1".landing`. With <repo>, it
-# reads the values of that repository instead of this one.
+# `{"key": …, "value": …, "source": …}`, with `"contributed_by": [<tool>, …]`
+# when other tools contributed to the value. source is "file", "default",
+# "contributed", "derived" or "unselected". Read `.value`: a key that is not set
+# gives its default, or null; a tools.* key gives the value of the merge of a
+# sync, and null for a tool that is not selected. <key> is a key of the values
+# in `.config/bootstrap/`, for example `repo.core_branches`; a segment with a
+# dot is double-quoted, as in `repo.branches."release.1".landing`. With <repo>,
+# it reads the values of that repository instead of this one.
 #
 # BOOTSTRAP_BIN, a local build or the engine of a sync, replaces the bootstrap
 # of mise. A read failure (code 1) stops the task with code 1, after the
-# message of the engine. Without an engine that answers, for example no
-# bootstrap or one older than 4.0.0, the task stops with code 2. Call it as
+# message of the engine. The task stops with code 2 without an engine that
+# answers, for example no bootstrap or one older than 4.0.0, and when the
+# engine refuses the read with code 2 and a message, for example a tools.* key
+# with no catalog (no --clone, no BOOTSTRAP_CLONE and no cache clone: get never
+# fetches), or no .config/bootstrap/. Call it as
 # `VAR=$(bootstrap_get <key>) || exit $?`, never with `|| VAR=''`: a command
 # substitution does not inherit `set -e`, so the caller passes the code on.
 bootstrap_get() {
@@ -301,8 +307,8 @@ bootstrap_get() {
   fi
   [ "${rc}" -ne 1 ] || exit 1
   print_error "bootstrap config get ${key} failed${repo:+ in ${repo}}."
-  print_warn "- it needs bootstrap 4.0.0 or newer: mise use -g github:virajp/bootstrap" >&2
-  print_warn "- when the message above says so, run bootstrap init${repo:+ in ${repo}}" >&2
+  print_warn "- with no bootstrap, or one older than 4.0.0: mise use -g github:virajp/bootstrap" >&2
+  print_warn "- else do the fix of the message above, for example run bootstrap init${repo:+ in ${repo}}, or bootstrap catalog to fetch the clone" >&2
   exit 2
 }
 
