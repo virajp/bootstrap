@@ -2,9 +2,15 @@
 category = "editor-ai"
 default_envs = [ "dev" ]
 depends = []
-description = "The setup:ai task, which installs and updates the Claude Code plugins of the repository. In a git submodule, setup:ai does nothing."
+description = "The setup:ai task, which installs the listed Claude Code plugins of the repository, uninstalls the project plugins that it installed and that left the list, and updates the plugins only with --update. In a git submodule, setup:ai does nothing."
 root_only = false
 summary = "Claude Code plugins, with setup:ai"
+
+[defaults.plugins]
+# The record of setup:ai: the project plugins, `"<plugin>@<marketplace>"`, that
+# it installed or found installed while listed. setup:ai writes it, and
+# uninstalls a recorded plugin that leaves [plugins.project].
+installed = []
 
 # The plugins of setup:ai, by scope: `"<plugin>@<marketplace>" = "<source>"`.
 # None by default.
