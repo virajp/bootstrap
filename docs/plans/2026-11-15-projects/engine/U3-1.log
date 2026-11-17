@@ -1,0 +1,8 @@
+/security-review engine, loop U3, round 1, range 49fb018..7a91427 (run as a sub-task over the worktree range; the skill's own git context read the main checkout, which has no delta)
+
+No high-confidence vulnerabilities found.
+rejected: cli/internal/repo/projects.go:84 — projectLinks runs detect with Dir set to the raw [projects.*].folder; Listed keeps an unclean value (../.., /abs) when CleanFolder fails, but schema.projectRules rejects empty, absolute and .. folders at validation, and the values file is the developer's own. Confidence 3.
+rejected: cli/internal/core/projects.go:211 — the detect pass sets Dir only to folders from git ls-files, which never hold .. or absolute paths. Confidence 2.
+rejected: cli/internal/projects/projects.go:330 — manifest globs match only the git-derived folder set; a leading / is refused. Confidence 2.
+rejected: cli/internal/projects/projects.go:228 — yq gets the manifest path as an argument, fixed expression, no shell. Confidence 1.
+rejected: cli/internal/scripts/scripts.go:163 — mise x in a project subfolder can read that folder's mise config; mise trust covers it; not a new attack class. Confidence 2.
