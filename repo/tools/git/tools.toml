@@ -69,6 +69,10 @@ source = "gitignore.merge.toml"
 library = true
 source = "merge"
 
+[tasks."_scripts/merge.py"]
+library = true
+source = "merge.py"
+
 [tasks."code/git-config"]
 source = "code-git-config"
 
