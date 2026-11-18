@@ -288,6 +288,15 @@ func TestUnnamedParts(t *testing.T) {
 	if got := UnnamedParts(root); !reflect.DeepEqual(got, want) {
 		t.Errorf("unnamed %v, want %v", got, want)
 	}
+	// D15 of B30: the task name of test/go.py is test:go.
+	pyRoot := t.TempDir()
+	taskFile(t, pyRoot, "test/50-local.py", "#!/usr/bin/env python3\n# MISE depends=[\"test:go\"]\n", 0o755)
+	taskFile(t, pyRoot, "test/go.py", "#!/usr/bin/env python3\n", 0o755)
+	taskFile(t, pyRoot, "test/x.py", "#!/usr/bin/env python3\n", 0o755)
+	want = []string{TasksDir + "/test/x.py"}
+	if got := UnnamedParts(pyRoot); !reflect.DeepEqual(got, want) {
+		t.Errorf("unnamed %v, want %v", got, want)
+	}
 }
 
 func writeManifest(t *testing.T, root, rows string) string {

@@ -186,7 +186,8 @@ var quotedRe = regexp.MustCompile(`"([^"]*)"|'([^']*)'`)
 // <root> (DispatcherDirs) without an NN- name, relative to <root>, sorted: a
 // dispatcher does not run it (D15). A name that starts with `_` is not a
 // part, and neither is a file whose task name the `#MISE depends` of another
-// file in the same folder names (D18).
+// file in the same folder names (D18). The task name of a `.py` file is its
+// file name without `.py`, as mise gives it. The output keeps the file name.
 func UnnamedParts(root string) []string {
 	root = strings.TrimSuffix(root, "/")
 	var out []string
@@ -214,7 +215,7 @@ func UnnamedParts(root string) []string {
 		}
 		task := strings.ReplaceAll(d, "/", ":")
 		for _, n := range cands {
-			if !named[task+":"+n] {
+			if !named[task+":"+strings.TrimSuffix(n, ".py")] {
 				out = append(out, TasksDir+"/"+d+"/"+n)
 			}
 		}
