@@ -96,9 +96,9 @@ func TestParseKind(t *testing.T) {
 			t.Errorf("%s: item %+v, want %+v", c.cmd, got, c.want)
 		}
 	}
-	o, err = parse("init", []string{"--no-tui"}, "dry-run yes no-tui", false)
-	if err != nil || !o.noTUI {
-		t.Errorf("init --no-tui: %v %+v", err, o)
+	// --no-tui of migrate is an old flag that does nothing.
+	if _, err = parse("migrate", []string{"--no-tui"}, "dry-run yes no-tui", false); err != nil {
+		t.Errorf("migrate --no-tui: %v", err)
 	}
 	o, err = parse("detect", []string{"--add", "-y"}, "dry-run add yes answer", false)
 	if err != nil || !o.add || !o.yes {

@@ -139,7 +139,9 @@ func (a *app) detect(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
+	stop := a.spin("Detecting ...")
 	d, err := core.Detect(sd)
+	stop()
 	if d != nil {
 		for _, n := range d.Notes {
 			a.infof("%s", n)

@@ -662,12 +662,13 @@ func TestValuesFolder(t *testing.T) {
 	rc.Run(t, rc.Spec{Name: "no values folder", Code: 2, Values: devValues,
 		Change:  func(c *rc.Case) { _ = os.RemoveAll(c.Values) },
 		Message: ".config/bootstrap not found - run bootstrap migrate"})
-	rc.Run(t, rc.Spec{Name: "a values folder without repo.toml", Code: 2, Values: devValues,
+	// sync runs migrate first, which creates the missing file.
+	rc.Run(t, rc.Spec{Name: "a values folder without repo.toml", Values: devValues,
 		Change:  func(c *rc.Case) { _ = os.Remove(c.RepoValues) },
-		Message: ".config/bootstrap has no repo.toml - run bootstrap migrate"})
-	rc.Run(t, rc.Spec{Name: "a values folder without tools.toml", Code: 2, Values: devValues,
+		Message: "create repo.toml"})
+	rc.Run(t, rc.Spec{Name: "a values folder without tools.toml", Values: devValues,
 		Change:  func(c *rc.Case) { _ = os.Remove(c.ToolsValues) },
-		Message: ".config/bootstrap has no tools.toml - run bootstrap migrate"})
+		Message: "create tools.toml"})
 	rc.Run(t, rc.Spec{Name: "the old values file next to the folder", Code: 2, Values: devValues,
 		Change:  func(c *rc.Case) { harness.WriteFile(c.T, c.OldFile, harness.Lines("format = 2", `repo_name = "test"`)) },
 		Message: "both hold the values of the repository - remove one: compare .config/bootstrap.toml with .config/bootstrap/"})

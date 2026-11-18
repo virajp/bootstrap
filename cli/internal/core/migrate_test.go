@@ -98,8 +98,8 @@ func TestPlanMigrate(t *testing.T) {
 		}
 	}
 	// The migration adds no member of base: the old file has its selection.
-	if c, _ := InitChange(sd); c != "migrate to .config/bootstrap/" {
-		t.Errorf("InitChange = %q", c)
+	if need, err := MigrateNeeded(sd, true); !need || err != nil {
+		t.Errorf("MigrateNeeded = %v, %v", need, err)
 	}
 }
 
@@ -128,8 +128,8 @@ func TestApplyMigrate(t *testing.T) {
 		}
 	}
 	// An already migrated repo is a no-op for the migration.
-	if c, _ := InitChange(sd); c != "" {
-		t.Errorf("InitChange after the migration = %q", c)
+	if need, err := MigrateNeeded(sd, true); need || err != nil {
+		t.Errorf("MigrateNeeded after the migration = %v, %v", need, err)
 	}
 	p, err = Plan(sd, List{Init: true}, Options{})
 	if err != nil {

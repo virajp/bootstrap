@@ -120,9 +120,10 @@ func (c *mcase) oldMacValues() {
 
 func caseSyncOldForm(c *mcase) {
 	c.oldMacValues()
+	// mac sync runs mac migrate first.
 	c.runDry()
-	c.exit(2)
-	c.has("[tools.macos-setup] in config/macos.toml is the old form - run bootstrap mac migrate")
+	c.exit(0)
+	c.has("bootstrap mac migrate has a change to make: it runs before the sync")
 }
 
 func caseInitMigrate(c *mcase) {

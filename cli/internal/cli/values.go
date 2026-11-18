@@ -470,10 +470,15 @@ func (a *app) printDoc(doc *source.Obj, form string, compact bool) fail.Code {
 // that failed before the cached clone is a warning. The caller defers
 // Cleanup.
 func (a *app) catalogIndex() (*core.Clone, *source.Index, fail.Code) {
+	stop := func() {}
+	if a.getenv("BOOTSTRAP_CLONE") == "" {
+		stop = a.spin("Updating the clone of bootstrap ...")
+	}
 	c, err := core.OpenClone(core.CloneOptions{
 		Getenv: a.getenv, Version: a.version, Catalog: true,
 		Note: func(s string) { a.infof("%s", s) }, Stderr: a.stderr,
 	})
+	stop()
 	if err != nil {
 		return c, nil, a.logErr(err)
 	}

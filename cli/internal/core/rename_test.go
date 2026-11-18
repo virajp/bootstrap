@@ -70,8 +70,8 @@ func TestPlanInitRenamesWtToml(t *testing.T) {
 	if len(rc) != 1 || len(rc[0].Edits) != 1 || rc[0].Note != oldform.RenameNote+": .config/wt.toml" {
 		t.Fatalf("rename changes %+v", rc)
 	}
-	if c, err := RenameChange(sd); c != oldform.RenameNote || err != nil {
-		t.Errorf("RenameChange = %q, %v", c, err)
+	if need, err := MigrateNeeded(sd, true); !need || err != nil {
+		t.Errorf("MigrateNeeded = %v, %v", need, err)
 	}
 	if code, putBack, _, err := Apply(p, Options{}); code != fail.OK || putBack || err != nil {
 		t.Fatalf("apply: %d %v %v", code, putBack, err)
@@ -79,8 +79,8 @@ func TestPlanInitRenamesWtToml(t *testing.T) {
 	if got := readText(t, filepath.Join(sd.Root, oldform.WtFile)); got != newWt {
 		t.Errorf("wt.toml = %q", got)
 	}
-	if c, err := RenameChange(sd); c != "" || err != nil {
-		t.Errorf("RenameChange after init = %q, %v", c, err)
+	if need, err := MigrateNeeded(sd, true); need || err != nil {
+		t.Errorf("MigrateNeeded after init = %v, %v", need, err)
 	}
 }
 
@@ -122,9 +122,6 @@ func TestPlanInitNoRename(t *testing.T) {
 	if rc := renameChanges(p); len(rc) != 0 {
 		t.Fatalf("rename changes %+v", rc)
 	}
-	if c, err := RenameChange(sd); c != "" || err != nil {
-		t.Errorf("RenameChange = %q, %v", c, err)
-	}
 	if code, _, _, err := Apply(p, Options{}); code != fail.OK || err != nil {
 		t.Fatalf("apply: %d %v", code, err)
 	}
@@ -160,8 +157,8 @@ func TestApplyMigrateRenamesWorktreeInstall(t *testing.T) {
 	// repo.toml with the new command, and a failed sync puts wt.toml back.
 	old := oldValues + "\n[member.api]\nworktree_install = \"mise run setup:worktree\"\n"
 	sd := oldRepo(t, old, "", "")
-	if c, err := RenameChange(sd); c != oldform.RenameNote || err != nil {
-		t.Errorf("RenameChange = %q, %v", c, err)
+	if need, err := MigrateNeeded(sd, true); !need || err != nil {
+		t.Errorf("MigrateNeeded = %v, %v", need, err)
 	}
 	(&fakeSync{}).install(t, sd)
 	p, err := Plan(sd, List{Init: true}, Options{})

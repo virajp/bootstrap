@@ -13,19 +13,11 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/tui"
 )
 
-// init is `bootstrap [mac] init [--no-tui]`. In a terminal, it opens the
-// TUI. With --no-tui, --yes, --dry-run or --answer (they come from an agent
-// or a script), or with no terminal, it migrates an old form, or creates the
-// values file with a table for each member of the pack base, asks the
-// questions without an answer, and syncs.
+// init is `bootstrap [mac] migrate` (init is its old name). It never opens
+// the TUI: it migrates an old form, or creates the values file with a table
+// for each member of the pack base, asks the questions without an answer,
+// and syncs.
 func (a *app) init(mac bool, o opts) fail.Code {
-	if a.interactive() && !o.noTUI && !o.yes && !o.dryRun && len(o.answers) == 0 {
-		sd, code := a.prepare(mac, true)
-		if code != fail.OK {
-			return code
-		}
-		return a.runTUI(sd, o, true)
-	}
 	sd, c, code := a.side(mac, true, mac)
 	if c != nil {
 		defer c.Cleanup()
@@ -37,11 +29,12 @@ func (a *app) init(mac bool, o opts) fail.Code {
 }
 
 // tui is `bootstrap [mac] tui`: the TUI on the values file of the side. It
-// needs a terminal. mac tui finds macos.toml with --repo-path, then
-// MACOS_SETUP_REPO_PATH, then in the current folder.
+// needs a terminal, and stops when migrate has a change to make. mac tui
+// finds macos.toml with --repo-path, then MACOS_SETUP_REPO_PATH, then in the
+// current folder.
 func (a *app) tui(mac bool, o opts) fail.Code {
 	if !a.interactive() {
-		a.fail(cmdName(mac, "tui")+" needs a terminal", "use: "+cmdName(mac, "migrate")+" --no-tui")
+		a.fail(cmdName(mac, "tui")+" needs a terminal", "use: "+cmdName(mac, "add tool")+", "+cmdName(mac, "remove tool")+" or "+cmdName(mac, "migrate"))
 		return fail.Usage
 	}
 	getenv := a.getenv
@@ -57,26 +50,30 @@ func (a *app) tui(mac bool, o opts) fail.Code {
 	if err != nil {
 		return a.logErr(err)
 	}
-	return a.runTUI(sd, o, false)
+	return a.runTUI(sd, o)
 }
 
-// runTUI takes the clone of the side <sd> and runs the TUI on it. With
-// <initCmd>, a missing values file or its old form is the first change.
-func (a *app) runTUI(sd core.Side, o opts, initCmd bool) fail.Code {
-	// The fetch of the clone can take some seconds before the TUI opens.
-	stop := func() {}
-	if a.getenv("BOOTSTRAP_CLONE") == "" {
-		stop = a.spin("Updating the clone of bootstrap ...")
-	}
+// runTUI takes the clone of the side <sd> and runs the TUI on it. When
+// migrate has a change to make, it stops with code 2 and the hint to run
+// migrate first.
+func (a *app) runTUI(sd core.Side, o opts) fail.Code {
 	c, code := a.openClone(sd.Mac, false)
-	stop()
 	defer c.Cleanup()
 	if code != fail.OK {
 		return code
 	}
 	sd.Clone = c.Dir
-	code, err := tui.Run(tui.Options{
-		Side: sd, Init: initCmd, NoBootstrap: o.noBootstrap,
+	// The TUI asks a question without an answer at Apply.
+	need, err := core.MigrateNeeded(sd, false)
+	if err != nil {
+		return a.logErr(err)
+	}
+	if need {
+		a.fail(cmdName(sd.Mac, "migrate")+" has a change to make", "run "+cmdName(sd.Mac, "migrate")+", then "+cmdName(sd.Mac, "tui")+" again")
+		return fail.Usage
+	}
+	code, err = tui.Run(tui.Options{
+		Side: sd, NoBootstrap: o.noBootstrap,
 		Home: a.getenv("HOME"), Stdin: a.stdin, Stdout: a.stdout,
 	})
 	if err != nil {
@@ -107,7 +104,14 @@ func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
 		l.Answers = append(l.Answers, core.FlagAnswer(ans))
 	}
 	opt := core.Options{DryRun: o.dryRun, NoBootstrap: o.noBootstrap, Stdout: a.stdout, Stderr: a.stderr}
-	p, err := core.Plan(sd, l, opt)
+	plan := func() (*core.PlanResult, error) {
+		stop := a.spin("Planning ...")
+		defer stop()
+		po := opt
+		po.Stdout, po.Stderr = a.stdout, a.stderr
+		return core.Plan(sd, l, po)
+	}
+	p, err := plan()
 	for _, w := range p.Warnings {
 		a.warnf("%s", w)
 	}
@@ -129,7 +133,7 @@ func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
 		for _, ans := range answered {
 			l.Answers = append(l.Answers, core.Answer{Name: ans[0] + "." + ans[1], Value: ans[2]})
 		}
-		if p, err = core.Plan(sd, l, opt); err != nil {
+		if p, err = plan(); err != nil {
 			return a.logErr(err)
 		}
 	}
@@ -172,11 +176,14 @@ func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
 	if code := a.stopDirty(p.Dirty()); code != fail.OK {
 		return code
 	}
-	if done, code := a.consent(o.yes, len(entries)); done {
+	if done, code := a.consent(o.yes || o.auto, len(entries)); done {
 		return code
 	}
 	opt.Step = a.step
+	stop := a.syncSpin(sd.Mac, o)
+	opt.Stdout, opt.Stderr = a.stdout, a.stderr
 	code, putBack, outcomes, err := core.Apply(p, opt)
+	stop()
 	if o.json {
 		a.data = writeData{Plan: planDataOf(p), Outcomes: outcomesOf(outcomes)}
 	}

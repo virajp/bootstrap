@@ -14,9 +14,9 @@ mise use -g github:virajp/bootstrap
 
 | Command                                      | Job                                                                                                                                          |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bootstrap migrate`                          | Open the TUI in a terminal. Else migrate or create the values, ask, sync.                                                                    |
-| `bootstrap tui`                              | Open the TUI: select tools and packs, review the changes, then sync.                                                                         |
-| `bootstrap sync`                             | Sync the repository of the current folder. `setup:configs` runs it.                                                                          |
+| `bootstrap migrate`                          | Migrate or create the values, ask, sync. It never opens the TUI.                                                                             |
+| `bootstrap tui`                              | Open the TUI: select tools and packs, review the changes, then sync. Run `migrate` first when it has a change to make.                       |
+| `bootstrap sync`                             | Run `migrate` first when it has a change to make, then sync the repository of the current folder. `setup:configs` runs it.                   |
 | `bootstrap check`                            | Examine the values against their schema, run the check scripts, and test the projects of each tool.                                          |
 | `bootstrap questions [tool…]`                | List the questions, their proposals and their answers.                                                                                       |
 | `bootstrap detect [--add]`                   | Run the detect scripts, and list each tool that matches and the projects. `--add` adds them.                                                 |
