@@ -17,6 +17,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -534,9 +535,19 @@ func (s *state) keptItems() []manifest.Row {
 	return out
 }
 
-// copyClone is `cp -R -- <clone>/. <dir>`. The error lines of cp go to
-// stderr, as in bash.
+// copyClone is `cp -R -- <clone>/. <dir>`. On macOS it is `cp -cR` first,
+// which makes copy-on-write clones on APFS; when that fails, it empties
+// <dir> and uses `cp -R`. The error lines of `cp -R` go to stderr, as in bash.
 func (s *state) copyClone(clone, dir string) bool {
+	if runtime.GOOS == "darwin" {
+		if _, ok := command("", io.Discard, "cp", "-cR", "--", clone+"/.", dir); ok {
+			return true
+		}
+		// A failed clone can leave part of the copy: start again empty.
+		if os.RemoveAll(dir) != nil || os.Mkdir(dir, 0o700) != nil {
+			return false
+		}
+	}
 	_, ok := command("", s.stderr, "cp", "-R", "--", clone+"/.", dir)
 	return ok
 }

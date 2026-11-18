@@ -84,9 +84,11 @@ func TestInside(t *testing.T) {
 }
 
 // TestFolders: the folders of the files that git tracks or does not ignore,
-// without .git, node_modules, vendor and the gitignored paths (D8).
+// without .git, .config, node_modules, vendor and the gitignored paths (D8).
 func TestFolders(t *testing.T) {
 	root := gitRepo(t, map[string]string{
+		".config/mise/tasks/test":     "",
+		"a/.config/x/go.mod":          "",
 		".gitignore":                  "ignored/\n",
 		"a/b/c.txt":                   "",
 		"ignored/x/go.mod":            "",

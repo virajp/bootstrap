@@ -159,12 +159,13 @@ func InFolder(evidence []string) bool {
 	return false
 }
 
-// skipped are the folders that the walk never enters.
-var skipped = map[string]bool{".git": true, "node_modules": true, "vendor": true}
+// skipped are the folders that the walk never enters. A .config folder holds
+// the configs of the tools, never a project.
+var skipped = map[string]bool{".git": true, ".config": true, "node_modules": true, "vendor": true}
 
 // Folders gives each folder of the repo <root> that holds a file that git
 // tracks or does not ignore, at any depth, without the root and without a
-// folder below .git, node_modules or vendor. A gitignored folder is not
+// folder below .git, .config, node_modules or vendor. A gitignored folder is not
 // there. A git submodule is not entered.
 func Folders(root string) (map[string]bool, error) {
 	cmd := exec.Command("git", "-C", root, "ls-files", "-z", "--cached", "--others", "--exclude-standard")
