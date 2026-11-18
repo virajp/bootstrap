@@ -14,7 +14,7 @@
   "execution": "teams",
   "status": {
     "state": "RUNNING",
-    "detail": "RUNNING in .worktrees/all-2026-11-18-2214 — wave 2"
+    "detail": "RUNNING in .worktrees/all-2026-11-18-2214 — wave 5"
   },
   "consent": {
     "merge": true,
@@ -242,11 +242,11 @@
         "U7"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-18T17:40:33.055Z",
+      "ended": "2026-11-18T17:58:07.444Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -276,9 +276,9 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-18T17:40:33.015Z",
+      "ended": "2026-11-18T17:58:59.073Z"
     }
   ],
   "shared_files": [
@@ -621,6 +621,15 @@
       "rejected": "Make checks.py match the shell stderr",
       "units": [
         "U5"
+      ]
+    },
+    {
+      "id": "D34",
+      "decision": "Q4: K1 fails because bootstrap sync --clone <worktree> reads the gitignored repo/tools/mise/tasks/.ruff_cache/ left by a hand-run ruff check; how to settle it?",
+      "ruling": "The same deletion, and also record for plan 2 that the hand lint of D21 runs ruff with --no-cache — the cache does not come back. (Delete <worktree>/repo/tools/mise/tasks/.ruff_cache/, an ignored cache that this run created, and run K1 again against the worktree.)",
+      "rejected": "Delete the cache and re-run K1 only; Accept the clean-clone run as K1",
+      "units": [
+        "U8"
       ]
     }
   ],
