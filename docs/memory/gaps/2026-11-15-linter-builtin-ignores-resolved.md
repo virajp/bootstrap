@@ -1,6 +1,8 @@
 GAP 2026-11-15 ★2 | plan:gate-file-sets, repo:linter (@virajp.dev/linter),
 repo/tools/linter | the built-in ignore list of the linter duplicates the gate
-header of code-lint-linter | parked: a change in the linter repository
+header of code-lint-linter | resolved 2026-11-18: code-lint-linter runs
+`linter --no-ignore`, so the ignores of the linter config have no effect and
+gate_files is the only list
 
 **Source** The interview of the gate file-sets plan (the plan of the
 `code:format` and `code:lint` file model). The user agreed to park this item.
