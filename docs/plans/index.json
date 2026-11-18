@@ -12,7 +12,7 @@
       "started": "2026-11-15T12:00:35.693Z",
       "ended": "2026-11-15T18:10:26.333Z",
       "gaps": {
-        "open": 2,
+        "open": 1,
         "moved_to": []
       },
       "requires": [
@@ -20,69 +20,6 @@
       ],
       "backlog": [],
       "backlog_pieces": []
-    },
-    {
-      "id": "2026-11-14-task-ports",
-      "folder": "docs/plans/2026-11-14-task-ports",
-      "kind": "change",
-      "title": "R1c — the test ports as group dispatchers",
-      "target_repo": null,
-      "priority": 70,
-      "status": "COMPLETE",
-      "started": "2026-11-15T20:46:31.142Z",
-      "ended": "2026-11-16T10:18:38.048Z",
-      "gaps": {
-        "open": 1,
-        "moved_to": []
-      },
-      "requires": [
-        "2026-11-14-config-folder",
-        "2026-11-14-contract-commands"
-      ],
-      "backlog": [],
-      "backlog_pieces": []
-    },
-    {
-      "id": "2026-11-14-git-tasks",
-      "folder": "docs/plans/2026-11-14-git-tasks",
-      "kind": "change",
-      "title": "R2a — the git:* tasks",
-      "target_repo": null,
-      "priority": 80,
-      "status": "COMPLETE",
-      "started": "2026-11-16T10:20:19.453Z",
-      "ended": "2026-11-16T13:10:53.532Z",
-      "gaps": {
-        "open": 1,
-        "moved_to": []
-      },
-      "requires": [
-        "2026-11-14-task-ports"
-      ],
-      "backlog": [],
-      "backlog_pieces": []
-    },
-    {
-      "id": "2026-11-14-lsp",
-      "folder": "docs/plans/2026-11-14-lsp",
-      "kind": "change",
-      "title": "R2b — the LSP blocks, bootstrap lsp and code:lsp:check",
-      "target_repo": null,
-      "priority": 90,
-      "status": "COMPLETE",
-      "started": "2026-11-16T13:12:37.400Z",
-      "ended": "2026-11-16T18:26:36.889Z",
-      "gaps": {
-        "open": 0,
-        "moved_to": []
-      },
-      "requires": [
-        "2026-11-14-git-tasks"
-      ],
-      "backlog": [],
-      "backlog_pieces": [
-        "B28"
-      ]
     }
   ]
 }
