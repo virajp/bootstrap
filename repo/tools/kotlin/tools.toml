@@ -48,11 +48,11 @@ source = ".config/ktlint.editorconfig"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."code/format/30-ktlint"]
-source = "code-format-ktlint"
+[tasks."code/format/30-ktlint.py"]
+source = "code-format-ktlint.py"
 
-[tasks."code/lint/30-detekt"]
-source = "code-lint-detekt"
+[tasks."code/lint/30-detekt.py"]
+source = "code-lint-detekt.py"
 
-[tasks."setup/deps/30-kotlin"]
-source = "setup-deps-kotlin"
+[tasks."setup/deps/30-kotlin.py"]
+source = "setup-deps-kotlin.py"

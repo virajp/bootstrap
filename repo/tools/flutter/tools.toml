@@ -26,11 +26,11 @@ startup_timeout = 60000
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."code/format/10-dart"]
-source = "code-format-dart"
+[tasks."code/format/10-dart.py"]
+source = "code-format-dart.py"
 
-[tasks."code/lint/20-dart"]
-source = "code-lint-dart"
+[tasks."code/lint/20-dart.py"]
+source = "code-lint-dart.py"
 
-[tasks."setup/deps/20-flutter"]
-source = "setup-deps-flutter"
+[tasks."setup/deps/20-flutter.py"]
+source = "setup-deps-flutter.py"
