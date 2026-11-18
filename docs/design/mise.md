@@ -622,8 +622,11 @@ with a usage error, exit 2. `code:sec` keeps its own file lists and gets no
 
 Each `code:format:*` and `code:lint:*` gate gets its files from `gate_files` of
 `helpers`, which runs `_scripts/gate_files.py` with
-`mise x python@3.14 -- python3` (the version of `[mise.tools.python]` of
-`repo/tools/python/tools.toml`). The gate calls it with its own file (`$0`),
+`mise x uv@latest python@3.14 -- uv run --quiet --script` (the version of
+`[mise.tools.python]` of `repo/tools/python/tools.toml`). The script is a uv
+script: an inline `# /// script` block names its Python and its dependencies
+(none), and `#MISE hide=true` keeps it out of `mise tasks`. The gate calls it
+with its own file (`$0`),
 its flags and its files, and reads the path of a temporary list file, one path
 for each line. The gate deletes the file with a `trap` on `EXIT`. An empty
 file means that the gate does not apply: it prints nothing and exits 0.

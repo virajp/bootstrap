@@ -5971,6 +5971,7 @@ fi
 # on stderr.
 gf_script="$root/repo/tools/mise/tasks/gate_files.py"
 gf_python=$(cd -- "$root" && mise x python@3.14 -- which python3)
+gf_uv=$(cd -- "$root" && mise x uv@latest -- which uv)
 gf_count=0
 # git without the global and the system config, and without the default
 # excludes file $XDG_CONFIG_HOME/git/ignore, so an ignore file of the user
@@ -6011,7 +6012,7 @@ gf_commit() {
 gf_run() {
   local out=''
   gf_code=0 gf_list='' gf_listed=''
-  out=$(cd -- "$gf_dir" && env "${gf_env[@]}" MISE_PROJECT_ROOT="$gf_dir" "$gf_python" "$gf_script" "$gf_gate" --debug "$@" 2> "$gf_err") ||
+  out=$(cd -- "$gf_dir" && env "${gf_env[@]}" MISE_PROJECT_ROOT="$gf_dir" "$gf_uv" run --quiet --python "$gf_python" --script "$gf_script" "$gf_gate" --debug "$@" 2> "$gf_err") ||
     gf_code=$?
   if [[ -n $out && -f $out ]]; then
     gf_listed=1

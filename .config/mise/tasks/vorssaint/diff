@@ -28,7 +28,8 @@ if [ ! -f "$backup" ]; then
   exit 1
 fi
 
-mise x -- python3 -I - "$backup" "$tools_toml" "${usage_all:-false}" << 'EOF'
+# uv runs the Python on stdin, with no project and no dependency.
+mise x uv@latest python@3.14 -- uv run --quiet --no-project --python 3.14 - "$backup" "$tools_toml" "${usage_all:-false}" << 'EOF'
 import json
 import plistlib
 import sys

@@ -129,7 +129,8 @@ pass them to each gate. `--all` goes only to a gate whose file has a
 `code:sec` keeps its own file lists.
 
 Each gate gets its files from `gate_files` of `helpers`, which runs
-`_scripts/gate_files.py` with `mise x python@3.14 -- python3`:
+`_scripts/gate_files.py` with
+`mise x uv@latest python@3.14 -- uv run --quiet --script`:
 
 ```bash
 list=$(gate_files "$0" <the flags and files of the gate>) || exit $?
