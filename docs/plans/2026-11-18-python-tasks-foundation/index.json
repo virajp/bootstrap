@@ -190,14 +190,14 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-18T17:20:38.734Z",
+      "ended": "2026-11-18T17:22:19.522Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "0bc52b0",
+        "to": "c9a0f8f"
       }
     },
     {
@@ -264,9 +264,9 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-18T17:20:38.696Z",
+      "ended": "2026-11-18T17:23:05.256Z"
     },
     {
       "id": "W4",
@@ -626,22 +626,22 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no acceptance criteria and no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-18T17:23:05.516Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no acceptance criteria and no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-18T17:23:05.295Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no acceptance criteria and no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-18T17:23:05.404Z"
     },
     "reconcile": {
       "state": "pending",
