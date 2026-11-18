@@ -63,11 +63,6 @@
     "lineLength": 120,
   },
   "shuck": {
-    "associations": [
-      "**/.config/mise/tasks/**",
-      "!**/*.tmpl",
-      "!**/*.py",
-    ],
     "binaryNextLine": true,
     "indentWidth": 2,
     "spaceRedirects": true,
