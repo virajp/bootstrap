@@ -620,8 +620,10 @@ func (p *PlanResult) initFolder() error {
 	for i, b := range branches {
 		list[i] = q(b)
 	}
-	// The templates need repo_name: the name of the folder.
-	p.RepoNew = []byte(RepoHeader + "\n\n" + format + "core_branches = [ " + strings.Join(list, ", ") + " ]\nenvironments = [ \"dev\" ]\nrepo_name = " + q(filepath.Base(sd.Root)) + "\n")
+	// The templates need repo_name: the name of the folder. A blank line
+	// after format keeps it first: the dprint sortKeys of a consumer sorts
+	// only the keys of one block.
+	p.RepoNew = []byte(RepoHeader + "\n\n" + format + "\ncore_branches = [ " + strings.Join(list, ", ") + " ]\nenvironments = [ \"dev\" ]\nrepo_name = " + q(filepath.Base(sd.Root)) + "\n")
 	p.Changes = append(p.Changes, oldform.Change{Path: repoFile, Content: p.RepoNew, Note: "create " + values.RepoName})
 	return nil
 }

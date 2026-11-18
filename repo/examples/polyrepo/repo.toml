@@ -1,13 +1,14 @@
 # Example: a polyrepo with the branches main and develop.
 # Feature branches merge into develop. Only develop merges into main.
 
+format = 3
+
 # The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
 # The core branches, in order. Each one exists in git.
 core_branches = [ "main", "develop" ]
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
-format = 3
 repo_name = "orders-api"
 # The web URL of the repository, for the github tool.
 repo_url = "https://github.com/example/orders-api"

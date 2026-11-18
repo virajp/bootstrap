@@ -2,13 +2,14 @@
 # ../acme-api and ../acme-app. They are separate checkouts next to it, not
 # submodules. See the folders of the siblings for their own values files.
 
+format = 3
+
 # The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
 # The core branches, in order. Each one exists in git.
 core_branches = [ "main" ]
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev" ]
-format = 3
 # The product name, for the fnox keychain service. Each sibling has the same
 # value.
 product_name = "acme"

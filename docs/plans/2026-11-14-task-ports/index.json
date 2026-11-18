@@ -537,8 +537,8 @@
       "id": "G2",
       "unit": "",
       "stage": "",
-      "text": "Main's code:lint:60-bootstrap and the Lint commit hook fail on engine 3.3.1, in this repo and in consumers: repo/tools/git/scripts/derive (2f74dfe, from the config-folder merge 37d6f13) calls bootstrap config get, which 3.3.1 lacks, and an engine built from main refuses this repo's old-form .config/bootstrap.toml · the run gated with BOOTSTRAP_CACHE on a scratch clone at 8abecac (D29, D30); a separate fix is owed",
-      "state": "open"
+      "text": "Main's code:lint:60-bootstrap and the Lint commit hook fail on engine 3.3.1, in this repo and in consumers: repo/tools/git/scripts/derive (2f74dfe, from the config-folder merge 37d6f13) calls bootstrap config get, which 3.3.1 lacks, and an engine built from main refuses this repo's old-form .config/bootstrap.toml · the run gated with BOOTSTRAP_CACHE on a scratch clone at 8abecac (D29, D30); a separate fix is owed · closed on branch format-block: the pre-4.0.0 fallback (0d09fe1) is removed; the user runs no sync before bootstrap@4.0.0, which an engine older than 4.0.0 cannot read (it stops with code 2)",
+      "state": "closed"
     }
   ],
   "overrides": [],

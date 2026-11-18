@@ -76,3 +76,29 @@ func TestAddTablesNewFile(t *testing.T) {
 		t.Errorf("code = %d", code)
 	}
 }
+
+func TestRecordCommitFormatBlock(t *testing.T) {
+	cases := []struct{ name, in, want string }{
+		// A format block with more keys after it: the key goes before them.
+		{"keys", "# Head.\n\nformat = 3\n\ncore = 1\n", "# Head.\n\nformat = 3\n\n# c\nbootstrap_commit = \"abc\"\ncore = 1\n"},
+		// Only tables after the format block: the key goes before format.
+		{"tables", "# Head.\n\nformat = 3\n\n[tools.a]\n", "# Head.\n\n# c\nbootstrap_commit = \"abc\"\nformat = 3\n\n[tools.a]\n"},
+		// No blank line after format: the key goes before format.
+		{"no blank", "# Head.\n\nformat = 3\ncore = 1\n", "# Head.\n\n# c\nbootstrap_commit = \"abc\"\nformat = 3\ncore = 1\n"},
+	}
+	for _, c := range cases {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "repo.toml")
+		if err := os.WriteFile(file, []byte(c.in), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		var b bytes.Buffer
+		e := &Env{Report: report.NewReport(&b, report.Options{Prefix: "bootstrap"}), Pwd: dir}
+		if code := e.RecordCommit(file, "bootstrap_commit", "abc", "# c", ""); code != fail.OK {
+			t.Fatalf("%s: code %d: %s", c.name, code, b.String())
+		}
+		if got, _ := os.ReadFile(file); string(got) != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+}

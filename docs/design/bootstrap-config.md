@@ -25,7 +25,10 @@ The exit code of each rule that stops the sync or the render is in
 | `config-files.toml`  | The global file lists of the gates, from `code_files` of the `mise` tool. See [mise.md](mise.md#the-file-sets-of-the-gates) | The sync (a template file of the `mise` tool)     |
 
 The three TOML files `repo.toml`, `tools.toml` and `releases.toml` carry
-`format = 3`. The manifest and `config-files.toml` have no format line. The
+`format = 3`. The engine writes `format` first, after the header comments, in
+a block of its own: a blank line follows it, because the dprint `sortKeys` of a
+consumer sorts only the keys of one block. `bootstrap_commit` goes in the next
+block. The manifest and `config-files.toml` have no format line. The
 engine reads only these three, so it never reads `config-files.toml` as a
 values file.
 
@@ -34,10 +37,11 @@ values file.
 `repo.toml`:
 
 ```toml
+format = 3
+
 bootstrap_commit = ""
 core_branches = [ "main", "develop" ]
 environments = [ "dev", "ci" ]
-format = 3
 product_name = "my-product"
 repo_name = "my-repo"
 repo_url = "https://github.com/me/my-repo"

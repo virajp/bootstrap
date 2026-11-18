@@ -639,8 +639,8 @@
       "id": "G3",
       "unit": "",
       "stage": "",
-      "text": "K2 found a defect outside this plan's Owns: in a consumer that bootstrap init just wrote, the first git:merge:main stops at the merge library's hook safety net, because the engine writes format = 3 right after bootstrap_commit in .config/bootstrap/repo.toml and the consumer's format hook reorders it (alphabetical); after the reformat is committed the merge passes · not fixed in this run (cli/ writer order or the hook config); K1 and K2 passed. Evidence: scratchpad keeps/k2-1794833997.merge*.log",
-      "state": "open"
+      "text": "K2 found a defect outside this plan's Owns: in a consumer that bootstrap init just wrote, the first git:merge:main stops at the merge library's hook safety net, because the engine writes format = 3 right after bootstrap_commit in .config/bootstrap/repo.toml and the consumer's format hook reorders it (alphabetical); after the reformat is committed the merge passes · fixed on branch format-block: init writes format = 3 in a block of its own (a blank line after it), the migration moves it there, and bootstrap_commit goes after that block, so the dprint sortKeys of a consumer changes no line",
+      "state": "closed"
     }
   ],
   "overrides": [],

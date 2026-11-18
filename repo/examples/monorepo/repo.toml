@@ -1,13 +1,14 @@
 # Example: a node monorepo with the branches main and develop.
 # Feature branches merge into develop. Only develop merges into main.
 
+format = 3
+
 # The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
 # The core branches, in order. Each one exists in git.
 core_branches = [ "main", "develop" ]
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
-format = 3
 # The product name, for the fnox keychain service.
 product_name = "shop"
 repo_name = "shop-platform"

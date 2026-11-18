@@ -1,6 +1,7 @@
 GAP 2026-11-16 ★3 | plan:2026-11-14-task-ports, plan:2026-11-14-git-tasks |
-remove the fallback for an engine older than 4.0.0 from three scripts | parked:
-until the release of bootstrap@4.0.0
+remove the fallback for an engine older than 4.0.0 from three scripts |
+resolved 2026-11-18: the three fallback blocks are removed before the tag,
+because the user runs no sync before bootstrap@4.0.0
 
 **Source** The user approved this fix after the `/vwf:execute all` run stopped
 at the preflight of `docs/plans/2026-11-14-git-tasks/`. Gap G2 of

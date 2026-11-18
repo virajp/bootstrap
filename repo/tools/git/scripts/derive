@@ -20,48 +20,6 @@ set -euo pipefail
 # Read stdin, so the writer of the input never blocks.
 cat > /dev/null
 
-# The fallback for an engine older than 4.0.0, which has no `config get`. Such
-# an engine reads the old values file .config/bootstrap.toml, and sets
-# BOOTSTRAP_VALUES to that file or not at all. Then the script gives the values
-# from the git refs and the old values file, as before 4.0.0. Remove this
-# fallback after the release of bootstrap 4.0.0.
-legacy=${BOOTSTRAP_VALUES:-}
-if [[ -f ${legacy} ]] || [[ -z ${legacy} && ! -d .config/bootstrap && -f .config/bootstrap.toml ]]; then
-  values=${legacy:-.config/bootstrap.toml}
-  overrides=${values%.toml}.overrides.toml
-  # A branch that exists here or on origin.
-  legacy_branch_exists() {
-    git show-ref --verify --quiet "refs/heads/$1" ||
-      git show-ref --verify --quiet "refs/remotes/origin/$1"
-  }
-  # direct_commit of the branch <name>: the overrides file wins.
-  legacy_direct_commit() {
-    local value=false file v
-    for file in "${values}" "${overrides}"; do
-      [[ -f ${file} ]] || continue
-      v=$(B="$1" mise x yq@latest -- yq -p toml -o yaml '.tools.git.branch[strenv(B)].direct_commit // ""' "${file}") || v=''
-      [[ -n ${v} ]] && value=${v}
-    done
-    printf '%s' "${value}"
-  }
-  has_main=false
-  has_develop=false
-  legacy_branch_exists main && has_main=true
-  legacy_branch_exists develop && has_develop=true
-  pair=false
-  if [[ ${has_main} == true && ${has_develop} == true ]]; then
-    pair=true
-  fi
-  protected=()
-  for name in main develop; do
-    [[ $(legacy_direct_commit "${name}") == true ]] || protected+=("\"${name}\"")
-  done
-  list=$(IFS=,; printf '%s' "${protected[*]-}")
-  printf '{"branch_pair": %s, "has_main": %s, "has_develop": %s, "protected_branches": [%s]}\n' \
-    "${pair}" "${has_main}" "${has_develop}" "${list}"
-  exit 0
-fi
-
 # jq of the PATH, else the jq of mise.
 jq_() {
   if command -v jq > /dev/null 2>&1; then
