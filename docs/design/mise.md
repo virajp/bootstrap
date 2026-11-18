@@ -595,7 +595,9 @@ An orchestrator runs each task of a group with `own_tasks <group>` from
 group. The orchestrator finds only the task files of the repository itself,
 not the tasks of a parent repository. A task of a group is an executable file
 named `NN-<name>`, for example `code/lint/70-ruff`. `own_tasks` skips each
-other file, `_default` and each folder.
+other file, `_default` and each folder. As mise does, it takes a Python part
+`NN-<name>.py` as the task `NN-<name>` when no `NN-<name>` exists.
+`has_own_task` reads `<file>` when it exists, else `<file>.py`.
 
 | Orchestrator         | Groups that it runs                                              | Other steps                                                                                                                        |
 | -------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -613,8 +615,10 @@ other file, `_default` and each folder.
 `setup:external:update`.
 
 `code:format` and `code:lint` pass `--all` only to a gate whose file has a
-`#USAGE flag "--all"` line, so an older gate of a repository gets `--fix`,
-`--debug` and the files as before. `--all` with files stops the orchestrator
+`#USAGE flag "--all"` line (or `# USAGE` in a `.py` gate), so an older gate
+of a repository gets `--fix`, `--debug` and the files as before. The gate file
+is the file that mise runs for the name: `<path>` when it exists, else
+`<path>.py`. `--all` with files stops the orchestrator
 with a usage error, exit 2. `code:sec` keeps its own file lists and gets no
 `--all`.
 
@@ -715,7 +719,7 @@ dispatcher prints one line and exits 0. To test a member, run
 | `go`          | `setup:deps:25-go`, `code:lint:40-go`, `code:lint:45-gomod`                                                                                                                                                      |
 | `kotlin`      | `setup:deps:30-kotlin`, `code:format:30-ktlint`, `code:lint:30-detekt`                                                                                                                                           |
 | `node`        | `setup:deps:40-node`                                                                                                                                                                                             |
-| `python`      | `setup:deps:50-python`, `code:format:40-ruff`, `code:lint:70-ruff`, `code:lint:50-pyrefly`, `code:lint:90-uv`                                                                                                    |
+| `python`      | `setup:deps:50-python`, `code:lint:70-ruff`, `code:lint:50-pyrefly`, `code:lint:90-uv`                                                                                                                           |
 | `swift`       | `setup:deps:60-swift`, `code:format:50-swift-format`, `code:lint:80-swiftlint`, `test:golden:40-swift`                                                                                                           |
 | `vscode`      | `setup:vscode`                                                                                                                                                                                                   |
 
@@ -740,23 +744,32 @@ for an editor, on a macOS dev host.
 
 ### The libraries in `_scripts/`
 
-| Library          | Contents                                                                           |
-| ---------------- | ---------------------------------------------------------------------------------- |
-| `helpers`        | The print functions, `has_own_task`, `own_tasks`, `members`, `gate_files`          |
-| `gate_files.py`  | The file list of one `code:format` or `code:lint` gate, of the `mise` tool         |
-| `checks`         | git predicates. They return an exit status only.                                   |
-| `merge`          | `merge_to_destination_branch`, for the `git:merge:<branch>` tasks                  |
-| `placeholder`    | For a task that no stack fills yet. It always exits 0.                             |
-| `xcode`          | `require_xcode`, `find_xcodeproj` and the simulator functions, of the `swift` tool |
-| `worktrees-page` | `write_worktrees_page`, the HTML page of `git:worktree:list`, of the `mise` tool   |
+| Library             | Contents                                                                                                                   |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `helpers`           | The print functions, `has_own_task`, `own_tasks`, `members`, `gate_files`                                                  |
+| `helpers.py`        | The Python form of `helpers`, with the same names and output, and `tool`, `has_tool` and `usage_files`, of the `mise` tool |
+| `gate_files.py`     | The file list of one `code:format` or `code:lint` gate, of the `mise` tool                                                 |
+| `checks`            | git predicates. They return an exit status only.                                                                           |
+| `checks.py`         | The Python form of `checks`, of the `mise` tool                                                                            |
+| `merge`             | `merge_to_destination_branch`, for the `git:merge:<branch>` tasks                                                          |
+| `merge.py`          | The Python form of `merge`, of the `git` tool                                                                              |
+| `placeholder`       | For a task that no stack fills yet. It always exits 0.                                                                     |
+| `placeholder.py`    | The Python form of `placeholder`, of the `mise` tool                                                                       |
+| `xcode`             | `require_xcode`, `find_xcodeproj` and the simulator functions, of the `swift` tool                                         |
+| `xcode.py`          | The Python form of `xcode`, of the `swift` tool                                                                            |
+| `worktrees-page`    | `write_worktrees_page`, the HTML page of `git:worktree:list`, of the `mise` tool                                           |
+| `worktrees_page.py` | The Python form of `worktrees-page`, of the `mise` tool                                                                    |
 
 ### The rules for task scripts
 
 - Each tool call has the prefix `mise x --`. System commands and `mise` itself
   do not.
 - `mise x -- which <tool>` finds a tool, not `command -v`.
-- The shell is for bash 3.2 and bash 5.x.
-- `#MISE` and `#USAGE` header comments give the metadata and the flags.
+- A shell task is for bash 3.2 and bash 5.x. A Python task (`.py`) is a uv
+  script with the standard library only, and imports the libraries of
+  `_scripts/`. Its rules are in "Task scripts" of `CLAUDE.md`.
+- `#MISE` and `#USAGE` header comments give the metadata and the flags
+  (`# MISE` and `# USAGE` in a `.py` file; mise reads both forms).
 - A task that does not apply prints nothing and exits 0. A dispatcher with no
   part prints one line and exits 0.
 - The output rules are in "Task output: headers and subheaders" of

@@ -262,11 +262,12 @@ the header, a seed and a merge target stay.
 
 A `[tasks."<path>"]` table is the entry of one task file of the tool. The key is
 the path below `.config/mise/tasks/` in the target, for example
-`code/format/40-ruff`. `#MISE` and `#USAGE` stay in the task file.
+`code/lint/70-ruff`. `#MISE` and `#USAGE` stay in the task file (`# MISE` and
+`# USAGE` in a `.py` file).
 
 | Key              | Side | Meaning                                                                                                                                                                                                                                                                    |
 | ---------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source`         | Both | Necessary. The path below `tasks/`, with no `..` part. The tools use a flat name: `code-format-ruff`.                                                                                                                                                                      |
+| `source`         | Both | Necessary. The path below `tasks/`, with no `..` part. The tools use a flat name: `code-lint-ruff`.                                                                                                                                                                        |
 | `mode`           | Both | `copy` (the default) or `template`.                                                                                                                                                                                                                                        |
 | `requires`       | Both | As in `[files]`.                                                                                                                                                                                                                                                           |
 | `requires_found` | Repo | As in `[files]`.                                                                                                                                                                                                                                                           |
@@ -283,9 +284,18 @@ The rules of the task files:
   `code:lint`, `code:sec`, `setup:deps`, `setup:secrets`, `test`, `test:e2e`
   and `test:golden` has a number prefix for its run order: 10, 20, 30 and so
   on, for example `code/lint/70-ruff`. `own_tasks` skips a task of the
-  repository without a prefix, and `bootstrap check` warns about it.
+  repository without a prefix, and `bootstrap check` warns about it. As mise
+  does, `own_tasks` takes a Python part `NN-<name>.py` as the task
+  `NN-<name>` when no `NN-<name>` exists.
 - A task that a user or another task calls by its name has no prefix, for
   example `git:merge:develop` and `setup:dprint`.
+- A task file is a shell file without an extension, or a Python file with the
+  `.py` extension. mise removes `.py` from the task name. dprint (the block
+  `ruff` of the `python` tool) is the one formatter of each `.py` file: no
+  tool ships a `ruff format` gate, and `code:format:40-ruff` is gone. The
+  gates `code:lint:70-ruff` and `code:lint:50-pyrefly` run only with a
+  `pyproject.toml` (`requires_found`), and their `#FILES` header excludes
+  `.config/mise/tasks/**`.
 - A known old copy of a part is a regular file at the old path of its group
   (`test/golden`) or at `<group>/50-local`, whose sha256 is in `replaces` of
   that part, and the tool of the part is selected. `bootstrap migrate` removes
@@ -307,7 +317,8 @@ header names the files of its language, right after its `#USAGE` lines:
 
 - The helper reads the top block of the gate file: each line from line 1 to the
   first line that is neither a comment nor blank. A `#FILES` line is a line of
-  that block that starts with `#FILES `.
+  that block that starts with `#FILES ` or `# FILES ` (dprint adds the space
+  in a `.py` gate).
 - The keys are `include`, `exclude` and `shebang`. Each value is in double
   quotes, a list of patterns separated by blanks. An empty value is an empty
   list.

@@ -13,8 +13,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-18 by the user"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-18 — 2de0a75 9036003 c097cdb 5b6a199 02c0e3f e808c04 dd623b8 0174a08"
   },
   "consent": {
     "merge": true,
@@ -80,11 +80,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-18T16:47:46.437Z",
+      "ended": "2026-11-18T16:59:26.926Z",
+      "commit": "2de0a75",
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -99,11 +99,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-18T16:47:46.509Z",
+      "ended": "2026-11-18T16:55:13.187Z",
+      "commit": "9036003",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -118,11 +118,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-18T16:47:46.580Z",
+      "ended": "2026-11-18T16:55:13.259Z",
+      "commit": "c097cdb",
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -146,11 +146,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-18T16:47:46.653Z",
+      "ended": "2026-11-18T16:55:13.331Z",
+      "commit": "dd623b8",
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -168,11 +168,11 @@
         "U3"
       ],
       "waits": "The cases import and run the modules helpers.py, checks.py, placeholder.py, worktrees_page.py, merge.py and xcode.py that U1, U2 and U3 create.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-18T17:06:05.039Z",
+      "ended": "2026-11-18T17:16:37.381Z",
+      "commit": "02c0e3f",
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -190,14 +190,14 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-18T17:20:38.734Z",
+      "ended": "2026-11-18T17:22:19.522Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "0bc52b0",
+        "to": "c9a0f8f"
       }
     },
     {
@@ -224,11 +224,11 @@
         "U6"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-18T17:23:30.905Z",
+      "ended": "2026-11-18T17:30:09.566Z",
+      "commit": "e808c04",
+      "rounds": 2
     },
     {
       "id": "U8",
@@ -242,43 +242,43 @@
         "U7"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-18T17:40:33.055Z",
+      "ended": "2026-11-18T17:58:07.444Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-18T16:47:46.400Z",
+      "ended": "2026-11-18T17:05:46.700Z"
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-18T17:06:04.999Z",
+      "ended": "2026-11-18T17:20:15.172Z"
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-18T17:20:38.696Z",
+      "ended": "2026-11-18T17:23:05.256Z"
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-18T17:23:30.866Z",
+      "ended": "2026-11-18T17:38:17.352Z"
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-18T17:40:33.015Z",
+      "ended": "2026-11-18T17:58:59.073Z"
     }
   ],
   "shared_files": [
@@ -595,36 +595,77 @@
       "units": [
         "U5"
       ]
+    },
+    {
+      "id": "D31",
+      "decision": "Q1: worktrees_page.py gives the same HTML bytes as the shell worktrees-page run by which bash, 3.2 (/bin/bash) or 5.2 (first on PATH)?",
+      "ruling": "Keep the 3.2 output (correct escaping and ~ paths); U5 compares against /bin/bash, or against inputs with no &<>\" and no $HOME paths.",
+      "rejected": "Copy the 5.2 output byte for byte",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D32",
+      "decision": "Q2: print_line of helpers.py treats \\u and \\U escapes as which bash, 5.x (on PATH) or 3.2 (/bin/bash)?",
+      "ruling": "Keep the 5.x behavior — same bytes as the bash that #!/usr/bin/env bash runs on this Mac.",
+      "rejected": "Follow 3.2",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D33",
+      "decision": "Q3: outside a git repository checks.py prints git fatal line 3 times on stderr, the shell 11 times; keep the difference or match the shell stderr?",
+      "ruling": "Accept the difference (checks.py prints less, which fits the print-nothing contract of checks) — the U5 case compares only the answers and exit codes outside a repo.",
+      "rejected": "Make checks.py match the shell stderr",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D34",
+      "decision": "Q4: K1 fails because bootstrap sync --clone <worktree> reads the gitignored repo/tools/mise/tasks/.ruff_cache/ left by a hand-run ruff check; how to settle it?",
+      "ruling": "The same deletion, and also record for plan 2 that the hand lint of D21 runs ruff with --no-cache — the cache does not come back. (Delete <worktree>/repo/tools/mise/tasks/.ruff_cache/, an ignored cache that this run created, and run K1 again against the worktree.)",
+      "rejected": "Delete the cache and re-run K1 only; Accept the clean-clone run as K1",
+      "units": [
+        "U8"
+      ]
     }
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no acceptance criteria and no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-18T17:23:05.516Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no acceptance criteria and no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-18T17:23:05.295Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers: a change plan has no acceptance criteria and no Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-18T17:23:05.404Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers and no code unit: nothing to stamp or persist",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-18T17:23:24.935Z"
     }
   },
   "gaps": [],
-  "overrides": [],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-18-2214"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/all-2026-11-18-2214",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-18-python-tasks-foundation.jsonl"

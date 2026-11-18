@@ -49,6 +49,10 @@ source = ".config/swiftlint.yml"
 library = true
 source = "xcode"
 
+[tasks."_scripts/xcode.py"]
+library = true
+source = "xcode.py"
+
 [tasks."code/format/50-swift-format"]
 source = "code-format-swift-format"
 

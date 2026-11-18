@@ -321,20 +321,21 @@ Step 4 deletes them with the item of `migrate.md`. Delete a file only when it
 starts with the bootstrap header. A file without the header belongs to the
 repository: keep it.
 
-| Path                                                                                                                                                                 | Do                                    |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `.graphifyignore`                                                                                                                                                    | Delete it (M24).                      |
-| `.config/mise/tasks/code/graph`                                                                                                                                      | Delete it (M24).                      |
-| The `post-commit` and `post-merge` git hooks                                                                                                                         | Uninstall them with pre-commit (M24). |
-| `.config/mise/conf.d/_repo/`                                                                                                                                         | Rename it to `conf.d/zz-repo/` (M17). |
-| A `.config/mise/conf.d/*/mise*.toml` that the manifest does not list and the sync did not write, for example in `conf.d/_base/`, `conf.d/_env/` and `conf.d/claude/` | Delete it (M29).                      |
-| `.config/mise/tasks/setup/configs/sync`                                                                                                                              | Delete it (M31, M34).                 |
-| `.config/repo-sync/gitignore`                                                                                                                                        | Move its lines to `.gitignore` (M18). |
-| `.config/repo-sync/pre-commit.yaml`                                                                                                                                  | `bootstrap migrate` moves it (M34).   |
-| The files of the old `repo-sync` tool: `.config/mise/tasks/_scripts/repo-sync`, `.config/mise/tasks/code/lint/60-repo-sync` and `.config/mise/conf.d/repo-sync/`     | Delete them (M34).                    |
-| `.config/mise/tasks/code/format/20-gofmt`                                                                                                                            | Delete it (M39).                      |
-| `.config/bootstrap.toml`, `.config/bootstrap.overrides.toml` and `.config/repo-generated.tsv`                                                                        | `bootstrap migrate` moves them (M41). |
-| `.config/mise/tasks/code/merge/_default`, `code/merge/develop`, `code/merge/main`, `code/worktrees` and `setup/worktree`                                             | The sync removes them (M43).          |
+| Path                                                                                                                                                                 | Do                                                                            |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `.graphifyignore`                                                                                                                                                    | Delete it (M24).                                                              |
+| `.config/mise/tasks/code/graph`                                                                                                                                      | Delete it (M24).                                                              |
+| The `post-commit` and `post-merge` git hooks                                                                                                                         | Uninstall them with pre-commit (M24).                                         |
+| `.config/mise/conf.d/_repo/`                                                                                                                                         | Rename it to `conf.d/zz-repo/` (M17).                                         |
+| A `.config/mise/conf.d/*/mise*.toml` that the manifest does not list and the sync did not write, for example in `conf.d/_base/`, `conf.d/_env/` and `conf.d/claude/` | Delete it (M29).                                                              |
+| `.config/mise/tasks/setup/configs/sync`                                                                                                                              | Delete it (M31, M34).                                                         |
+| `.config/repo-sync/gitignore`                                                                                                                                        | Move its lines to `.gitignore` (M18).                                         |
+| `.config/repo-sync/pre-commit.yaml`                                                                                                                                  | `bootstrap migrate` moves it (M34).                                           |
+| The files of the old `repo-sync` tool: `.config/mise/tasks/_scripts/repo-sync`, `.config/mise/tasks/code/lint/60-repo-sync` and `.config/mise/conf.d/repo-sync/`     | Delete them (M34).                                                            |
+| `.config/mise/tasks/code/format/20-gofmt`                                                                                                                            | Delete it (M39).                                                              |
+| `.config/bootstrap.toml`, `.config/bootstrap.overrides.toml` and `.config/repo-generated.tsv`                                                                        | `bootstrap migrate` moves them (M41).                                         |
+| `.config/mise/tasks/code/merge/_default`, `code/merge/develop`, `code/merge/main`, `code/worktrees` and `setup/worktree`                                             | The sync removes them (M43).                                                  |
+| `.config/mise/tasks/code/format/40-ruff`                                                                                                                             | The sync removes it. Move the ruff format settings of `pyproject.toml` (M47). |
 
 The sync removes these old paths itself, so they need no step:
 
@@ -392,8 +393,8 @@ of a `tools.toml` are in [`docs/design/tools.md`](../design/tools.md). The
 
 A file with `requires` or `requires_found` in its `[files]` or `[tasks]`
 table needs a file in the repository. For example, the `python` tool writes
-`code:lint:70-ruff`, `code:format:40-ruff` and `code:lint:50-pyrefly` only in
-a repository with a `pyproject.toml`. If the repository adds its first
+`code:lint:70-ruff` and `code:lint:50-pyrefly` only in a repository with a
+`pyproject.toml`. If the repository adds its first
 `pyproject.toml` later, run `mise run setup:configs` again.
 
 In a tool file, the "Environments" column of "mise tools" shows the environments
@@ -637,7 +638,7 @@ version = "22"
 python.compile = true
 
 [overrides.mise.env]
-UV_NO_CACHE = false
+UV_PYTHON_DOWNLOADS = "automatic"
 ```
 
 An override cannot add a key. Put a new key in

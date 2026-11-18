@@ -1,7 +1,8 @@
 # The `python` tool
 
-Python and uv. In a repository with a `pyproject.toml`, also ruff and pyrefly,
-with their `code:lint` and `code:format` tasks.
+Python and uv. dprint formats the Python files. In a repository with a
+`pyproject.toml`, also ruff (lint) and pyrefly (types), with their `code:lint`
+tasks.
 
 | Property     | Value   |
 | ------------ | ------- |
@@ -30,7 +31,6 @@ environments of a dependency are in
 | Path in the repository                       | Kind      | Use                                                                               |
 | -------------------------------------------- | --------- | --------------------------------------------------------------------------------- |
 | `.config/mise/tasks/setup/deps/50-python`    | Synced    | The task `setup:deps:50-python`.                                                  |
-| `.config/mise/tasks/code/format/40-ruff`     | Synced    | The task `code:format:40-ruff`. Only with a `pyproject.toml` (`requires_found`).  |
 | `.config/mise/tasks/code/lint/50-pyrefly`    | Synced    | The task `code:lint:50-pyrefly`. Only with a `pyproject.toml` (`requires_found`). |
 | `.config/mise/tasks/code/lint/70-ruff`       | Synced    | The task `code:lint:70-ruff`. Only with a `pyproject.toml` (`requires_found`).    |
 | `.config/mise/tasks/code/lint/90-uv`         | Synced    | The task `code:lint:90-uv`.                                                       |
@@ -46,7 +46,7 @@ environments of a dependency are in
 | `pipx:pyrefly` | `latest` | dev, ci      | `pyproject.toml` |
 
 Many repositories get `python` only as a dependency of other tools. Thus the
-sync installs `ruff` and `pyrefly`, and writes their three tasks, only when
+sync installs `ruff` and `pyrefly`, and writes their two tasks, only when
 the repository has a `pyproject.toml`. The rule of `requires_found` is in
 [`docs/design/tools.md`](../../design/tools.md). If the repository adds its
 first `pyproject.toml` later, run `mise run setup:configs` again.
@@ -56,11 +56,22 @@ The tool also sets:
 - `python.uv_venv_auto = "create|source"`: mise makes and loads the virtual
   environment.
 - `pipx.uvx = true` and `python.compile = false`.
-- `UV_NO_CACHE`, `UV_NO_MANAGED_PYTHON` and `UV_PYTHON_DOWNLOADS = "never"`.
-  Thus uv uses only the Python of mise.
+- `UV_NO_MANAGED_PYTHON` and `UV_PYTHON_DOWNLOADS = "never"`. Thus uv uses
+  only the Python of mise. The uv cache is on, so uv keeps one environment for
+  each script path of a Python task.
 
-The `gcloud` tool and `gate_files` of `helpers` (the `mise` tool,
-`python@3.14`) use the same Python version. Change the three together.
+These places use the same Python version (3.14). Change them together:
+
+- The `python` tool: `[mise.tools.python]`.
+- The `gcloud` tool: `CLOUDSDK_PYTHON`.
+- `gate_files` of `helpers` (the `mise` tool): `python@3.14`.
+- Each Python library of `_scripts/`: `helpers.py`, `gate_files.py`,
+  `checks.py`, `placeholder.py` and `worktrees_page.py` (the `mise` tool),
+  `merge.py` (the `git` tool) and `xcode.py` (the `swift` tool). Each has
+  `requires-python = ">=3.14"` and `# MISE tools={uv="latest", python="3.14"}`.
+
+`gate_files` of `helpers.py` runs `gate_files.py` with `sys.executable`, the
+Python of the task. Thus it has no version of its own.
 
 The tool declares the language server `pyrefly` (`pyrefly lsp`, for `.py` and
 `.pyi`), from the `pipx:pyrefly` pin, so it is listed only with a
@@ -74,15 +85,20 @@ resolves.
 | Task                   | Use                                                                                   |
 | ---------------------- | ------------------------------------------------------------------------------------- |
 | `setup:deps:50-python` | Install from `uv.lock`. `--upgrade` also upgrades. It skips without `pyproject.toml`. |
-| `code:format:40-ruff`  | Check the format of the `.py` and `.pyi` files. `--fix` formats them.                 |
 | `code:lint:50-pyrefly` | Type check the `.py` and `.pyi` files with `pyrefly check`.                           |
 | `code:lint:70-ruff`    | Lint the `.py` and `.pyi` files with `ruff check`. `--fix` applies the fixes.         |
 | `code:lint:90-uv`      | Fail when a `uv.lock` does not agree with the `pyproject.toml` next to it.            |
 
-`code:lint` and `code:format` run the four gates. Without ruff or pyrefly,
-the gate skips. Each gate gets its files from `gate_files`: the given files,
+`code:lint` runs the three gates. Without ruff or pyrefly, the gate skips.
+The tool has no format gate: dprint (`code:format:05-dprint`, with the block
+`ruff` of `dprint.jsonc`) is the one formatter of each `.py` and `.pyi` file,
+also the Python task files. Each gate gets its files from `gate_files`: the
+given files,
 else with `--all` every file, else the uncommitted files. The ruff and pyrefly
-gates use only the `.py` and `.pyi` files, and skip without one. Each tool
+gates use only the `.py` and `.pyi` files, and skip without one. Their
+`#FILES` header excludes `.config/mise/tasks/**`: the synced Python task files
+import the libraries of `_scripts/` at run time, and are not for these gates.
+Each tool
 gets only that list: a path exclude of the ruff or pyrefly config does not
 act in a gate run, so put it in `code_files.excludes` of `[tools.mise]`.
 `code:lint:90-uv` runs `uv lock --check` for each project of a `uv.lock` or a

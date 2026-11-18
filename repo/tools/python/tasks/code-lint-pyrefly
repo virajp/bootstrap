@@ -9,7 +9,7 @@
 #USAGE flag "--debug" help="accepted for the code:lint contract"
 #USAGE flag "--fix" help="accepted for the code:lint contract; pyrefly check only reports"
 #USAGE arg "[files]" var=#true help="the files to check; only the .py and .pyi files are used; the default is the uncommitted files"
-#FILES include="*.py *.pyi"
+#FILES include="*.py *.pyi" exclude=".config/mise/tasks/**"
 
 set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"

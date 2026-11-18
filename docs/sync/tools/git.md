@@ -27,6 +27,7 @@ A `[tools.git]` table gives values.
 | `.config/git-conventional-commits.yaml`  | Template  | The commit types, and the scopes from `[commits].scopes`, else the names of the `[members.*]` tables. |
 | `.config/wt.toml`                        | Seed      | The worktrunk config: the `pre-start` steps and the commit convention (see "worktrunk").              |
 | `.config/mise/tasks/_scripts/merge`      | Library   | `merge_to_destination_branch`, which the merge tasks use.                                             |
+| `.config/mise/tasks/_scripts/merge.py`   | Library   | The Python form of `merge`, with the same function and output.                                        |
 | `.config/mise/tasks/code/git-config`     | Synced    | The task `code:git-config`.                                                                           |
 | `.config/mise/tasks/git/merge/develop`   | Synced    | The task `git:merge:develop`. Only with `when = "git.has_develop"`: `core_branches` has `develop`.    |
 | `.config/mise/tasks/git/merge/main`      | Synced    | The task `git:merge:main`. Only with `when = "git.has_main"`: `core_branches` has `main`.             |

@@ -37,6 +37,7 @@ look in the folders of a Flutter app.
 | `.config/mise/tasks/code/format/50-swift-format` | Synced    | The task `code:format:50-swift-format`.                         |
 | `.config/mise/tasks/test/golden/40-swift`        | Synced    | The part `test:golden:40-swift`.                                |
 | `.config/mise/tasks/_scripts/xcode`              | Library   | The library `xcode`, with `require_xcode` and `find_xcodeproj`. |
+| `.config/mise/tasks/_scripts/xcode.py`           | Library   | The Python form of `xcode`, with the same functions and output. |
 | `.config/swiftlint.yml`                          | Seed      | The SwiftLint rules. The layout rules are off for swift-format. |
 | `.config/swift-format.json`                      | Seed      | The swift-format rules: 4 spaces, lines of 120 characters.      |
 | `.config/mise/conf.d/swift/mise.<env>.toml`      | Generated | The mise config of this tool.                                   |
@@ -117,6 +118,11 @@ sets and exports four values. A value that the repository sets wins:
 
 `find_xcodeproj <task>` prints the one `*.xcodeproj` at the root, and fails
 for none or more than one.
+
+`_scripts/xcode.py` has the same functions for a Python task, with the same
+messages and exit codes. `require_xcode(task)` returns a dict of the four
+values and also sets them in `os.environ`. `find_xcodeproj(task)` returns the
+path of the `*.xcodeproj`, and prints nothing on success.
 
 `setup:deps:60-swift` acts on the repository root only. It applies when the root
 has `Package.swift` or one `*.xcodeproj`, and runs for both when both exist.

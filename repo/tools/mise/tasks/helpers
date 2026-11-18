@@ -243,10 +243,15 @@ print_newline() { echo ""; }
 
 # Whether this repository defines the task <name> itself, as a file task:
 # `setup:ai` is `setup/ai`, or `setup/ai/_default`. For a step that only some
-# repositories have, for example `setup:ai` or `setup:external:update`.
+# repositories have, for example `setup:ai` or `setup:external:update`. As
+# mise does, it reads `<file>` when it exists, else `<file>.py`.
 has_own_task() {
-  local path="${MISE_PROJECT_ROOT}/.config/mise/tasks/${1//://}"
-  { [ -f "${path}" ] && [ -x "${path}" ]; } || [ -x "${path}/_default" ]
+  local path="${MISE_PROJECT_ROOT}/.config/mise/tasks/${1//://}" file
+  for file in "${path}" "${path}/_default"; do
+    [ -f "${file}" ] || [ ! -f "${file}.py" ] || file="${file}.py"
+    [ -f "${file}" ] && [ -x "${file}" ] && return 0
+  done
+  return 1
 }
 
 # The tasks this repository defines in the group <group> (`setup:deps`), one
@@ -254,12 +259,16 @@ has_own_task() {
 # every tool's task in a group, without the parent's tasks that a wildcard
 # `mise run 'setup:deps:*'` would add. A part is an executable file named
 # `NN-<name>` (`40-node`): a folder, `_default` and a file without the number
-# are not parts.
+# are not parts. As mise does, a part `NN-<name>.py` is the task `NN-<name>`
+# when no `NN-<name>` exists, else the task `NN-<name>.py`.
 own_tasks() {
   local dir="${MISE_PROJECT_ROOT}/.config/mise/tasks/${1//://}" file name
   for file in "${dir}"/[0-9][0-9]-?*; do
     [ -f "${file}" ] && [ -x "${file}" ] || continue
     name="$(basename "${file}")"
+    case "${name}" in
+      *.py) [ -e "${file%.py}" ] || name="${name%.py}" ;;
+    esac
     printf '%s:%s\n' "$1" "${name}"
   done
 }

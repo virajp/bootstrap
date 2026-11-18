@@ -1,0 +1,11 @@
+/security-review (run by sub-task over 0bc52b0..c9a0f8f in the worktree; the Skill invocation read the main checkout, which had an empty delta)
+
+No high-confidence vulnerabilities found.
+
+- Command injection: every subprocess.run call in helpers.py, checks.py, merge.py and xcode.py passes an argument list; none uses shell=True, os.system, eval or exec. usage_files() uses shlex.split and does not evaluate it. The deleted ruff format gate's eval "FILES=(${usage_files})" is gone.
+- XSS in worktrees_page.py: faithful port of the shell worktrees-page; html_escape escapes & < > " on branch names, subjects, repo names, paths, notes, fix commands, refs and titles. Not escaped, as in the shell: w_commit and w_age (task-computed), the first character of r_note, constant class names. Attribute values use escaped double quotes.
+- /tmp/code-worktrees: umask 077, refuses a symlink or a folder another user owns, writes via mkstemp then os.replace, / in the repo name replaced with _.
+- Path traversal: has_own_task / own_tasks resolve task names below .config/mise/tasks/ only; tmpl changes add a .py fallback only; gate_files.py change is the # FILES prefix only.
+- Deserialization: json.loads and tomllib only.
+- merge.py: git calls use argv lists; git refuses branch names that start with -.
+- Config: removing UV_NO_CACHE only turns the uv cache on.
