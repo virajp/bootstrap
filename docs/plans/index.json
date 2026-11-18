@@ -83,45 +83,6 @@
       "backlog_pieces": [
         "B28"
       ]
-    },
-    {
-      "id": "2026-11-15-test-parts",
-      "folder": "docs/plans/archived/2026-11-15-test-parts",
-      "kind": "change",
-      "title": "R2e — test parts of the android and swift tools, and init removes the old stackgen copies",
-      "target_repo": null,
-      "priority": 120,
-      "status": "COMPLETE",
-      "started": "2026-11-17T15:14:39.597Z",
-      "ended": "2026-11-17T18:56:29.964Z",
-      "gaps": {
-        "open": 0,
-        "moved_to": []
-      },
-      "requires": [
-        "2026-11-15-projects"
-      ],
-      "backlog": [],
-      "backlog_pieces": []
-    },
-    {
-      "id": "2026-11-15-gate-file-sets",
-      "folder": "docs/plans/2026-11-15-gate-file-sets",
-      "kind": "change",
-      "title": "The file sets of the code:format and code:lint gates",
-      "target_repo": null,
-      "priority": 130,
-      "status": "RUNNING",
-      "started": "2026-11-17T18:58:42.106Z",
-      "ended": "",
-      "gaps": null,
-      "requires": [
-        "2026-11-15-test-parts"
-      ],
-      "backlog": [],
-      "backlog_pieces": [
-        "B30"
-      ]
     }
   ]
 }
