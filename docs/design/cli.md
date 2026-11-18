@@ -716,9 +716,10 @@ It finds the project folders in this order:
 3. With no project found, the root is one project, with the folder `.` and the
    name `repo_name`.
 
-- The walk skips `.git`, `node_modules`, `vendor` and each folder that git
-  ignores (`git ls-files --cached --others --exclude-standard`). These rules
-  apply to the members of step 1 too.
+- The walk skips `.git`, `.config`, `node_modules`, `vendor` and each folder
+  that git ignores (`git ls-files --cached --others --exclude-standard`). A
+  `.config` folder holds the configs of the tools, never a project. These
+  rules apply to the members of step 1 too.
 - A folder inside a found project is not a new project. A folder that
   `repo.toml` lists is never proposed again.
 - The name of a project is the basename of its folder in lowercase kebab case:
@@ -1233,7 +1234,7 @@ The engine runs these commands:
 | Side    | Command                                                                                                                                          |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Both    | `git` of `PATH`, for the clone, the commit, the work tree status and the branches. `diff -u` for the diff of a dry run.                          |
-| Both    | `mise x -- bash <script>` for each script of a tool. See [The scripts of a tool](#the-scripts-of-a-tool).                                        |
+| Both    | `mise x -- env -0` once for each folder of the scripts of a tool, then `bash <script>`. See [The scripts of a tool](#the-scripts-of-a-tool).     |
 | `repo`  | `mise x -- which <formatter>` and `mise x -- bash -c <formatter command>`. See [The formatter](#the-formatter).                                  |
 | `repo`  | `describe`: `mise tasks ls --json --no-global --hidden` of the `mise` of `PATH`, in the repository. See [The JSON contract](#the-json-contract). |
 | `macos` | `mise bootstrap --yes` of the `mise` of `PATH`, in `$HOME`.                                                                                      |
@@ -1252,9 +1253,16 @@ from the clone, and never copies them.
 | `detect`             | Repo side, `detect`, and `check` for the projects of a tool. | `{ "result": "match" \| "none" \| "mismatch", "evidence": [...], "message": "..." }`.                                                                               |
 | `migrate-<old tool>` | `replace tool <old tool> <this tool>` only.                  | Exit 0. It moves the repository from the old tool to this tool.                                                                                                     |
 
-- The engine runs each script as `mise x -- bash
+- The engine runs each script as `bash
   <clone>/<side>/tools/<tool>/scripts/<name>`,
-  in the root of the repository, or in `$HOME` on the Mac. `detect` also runs
+  in the root of the repository, or in `$HOME` on the Mac. The script gets the
+  environment of `mise x` in its folder: the engine runs `mise x -- env -0`
+  once for each folder of the scripts of one kind, and runs the bash of that
+  `PATH`. Thus mise installs the missing tools, as for `mise x -- bash`, but
+  resolves each folder once, not once for each script. When
+  `mise x -- env -0` fails, each script of that folder runs as
+  `mise x -- bash <script>`, so the error of mise goes into the messages.
+  `detect` also runs
   a detect script in each project folder, and `check` in the folder of each
   project of the `projects` list of the tool. See
   [The projects of `detect`](#the-projects-of-detect).

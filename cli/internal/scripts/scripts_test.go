@@ -81,3 +81,56 @@ func TestRun(t *testing.T) {
 		t.Errorf("after f = %q, %v", reason, probs)
 	}
 }
+
+// fakeMise puts a mise on PATH that logs each call to <log> and runs the
+// command after `x --`. With <failEnv>, `mise x -- env -0` fails.
+func fakeMise(t *testing.T, log string, failEnv bool) {
+	t.Helper()
+	bin := t.TempDir()
+	fail := ""
+	if failEnv {
+		fail = `[ "$3" = env ] && exit 1` + "\n"
+	}
+	body := "#!/bin/bash\necho \"$*\" >> '" + log + "'\n" + fail + "shift 2\nexec \"$@\"\n"
+	if err := os.WriteFile(filepath.Join(bin, "mise"), []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
+
+// TestRunEnvOnce: mise resolves each folder of a Run once, and the scripts
+// run with bash. When `mise x -- env -0` fails, each script runs as
+// `mise x -- bash`.
+func TestRunEnvOnce(t *testing.T) {
+	for _, failEnv := range []bool{false, true} {
+		dir := t.TempDir()
+		root := t.TempDir()
+		if err := os.Mkdir(filepath.Join(root, "sub"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		log := filepath.Join(t.TempDir(), "log")
+		fakeMise(t, log, failEnv)
+		for _, tool := range []string{"a", "b", "c"} {
+			writeScript(t, dir, tool, Detect, "cat > /dev/null; basename \"$PWD\"\n")
+		}
+		r := Runner{ToolsDir: dir, Shown: "repo/tools", Root: root}
+		res := r.Run([]Job{
+			{Tool: "a", Name: Detect}, {Tool: "b", Name: Detect}, {Tool: "c", Name: Detect},
+			{Tool: "a", Name: Detect, Dir: "sub"}, {Tool: "b", Name: Detect, Dir: "sub"},
+		})
+		for i, rs := range res {
+			if want := map[bool]string{false: filepath.Base(root), true: "sub"}[i > 2]; rs.Code != 0 || strings.TrimSpace(string(rs.Stdout)) != want {
+				t.Errorf("failEnv=%v job %d = %d %q %q", failEnv, i, rs.Code, rs.Stdout, rs.Stderr)
+			}
+		}
+		b, err := os.ReadFile(log)
+		if err != nil {
+			t.Fatal(err)
+		}
+		calls := strings.Count(string(b), "x -- env -0")
+		bashes := strings.Count(string(b), "x -- bash")
+		if calls != 2 || (!failEnv && bashes != 0) || (failEnv && bashes != 5) {
+			t.Errorf("failEnv=%v mise calls:\n%s", failEnv, b)
+		}
+	}
+}

@@ -1,7 +1,9 @@
 // Package scripts runs the scripts of a tool: the files `derive`, `check`,
 // `after`, `detect` and `migrate-<tool>` in `<side>/tools/<tool>/scripts/` of
-// the clone. The engine never copies them. Each one runs as `mise x -- bash <path>` in the target
-// root, with one JSON object on stdin. The jobs run in parallel, and the
+// the clone. The engine never copies them. Each one runs as `bash <path>`
+// with the environment of `mise x` in its folder, which mise resolves once
+// for each folder of a Run, in the target root, with one JSON object on
+// stdin. The jobs run in parallel, and the
 // results come back in the order of the jobs. A job can run in a folder
 // below the root (Job.Dir): detect runs there in each project folder.
 // Contract: docs/design/cli.md ("The scripts of a tool").
@@ -107,6 +109,64 @@ type Runner struct {
 	Shown    string // That folder in a message, for example repo/tools.
 	Root     string // The folder where each script runs, below which a job can name its Dir.
 	Jobs     int    // The number of jobs at a time; 0 is BOOTSTRAP_JOBS, else 2 × the CPU count.
+
+	envs *envCache // The mise environment of each folder of one Run.
+}
+
+// envCache holds the mise environment of each folder of one Run, so that
+// mise resolves a folder once and not once for each script.
+type envCache struct {
+	mu   sync.Mutex
+	dirs map[string]*dirEnv
+}
+
+// dirEnv is the environment of one folder: the variables and the bash of
+// its PATH. env is nil when `mise x -- env -0` failed.
+type dirEnv struct {
+	once sync.Once
+	env  []string
+	bash string
+}
+
+// env gives the environment that `mise x` gives in <dir>, and the bash of its
+// PATH. It runs `mise x -- env -0` once for each folder, so mise also
+// installs the missing tools, as for `mise x -- bash`. On a failure it gives
+// nil.
+func (c *envCache) env(dir string) ([]string, string) {
+	c.mu.Lock()
+	d := c.dirs[dir]
+	if d == nil {
+		d = &dirEnv{}
+		c.dirs[dir] = d
+	}
+	c.mu.Unlock()
+	d.once.Do(func() {
+		cmd := exec.Command("mise", "x", "--", "env", "-0")
+		cmd.Dir = dir
+		out, err := cmd.Output()
+		if err != nil {
+			return
+		}
+		d.env = strings.Split(strings.TrimSuffix(string(out), "\x00"), "\x00")
+		d.bash = "bash"
+		for _, kv := range d.env {
+			if path, ok := strings.CutPrefix(kv, "PATH="); ok {
+				d.bash = findBash(path)
+			}
+		}
+	})
+	return d.env, d.bash
+}
+
+// findBash gives the first executable bash of <path>, else "bash".
+func findBash(path string) string {
+	for _, p := range filepath.SplitList(path) {
+		b := filepath.Join(p, "bash")
+		if st, err := os.Stat(b); err == nil && st.Mode().IsRegular() && st.Mode()&0o111 != 0 {
+			return b
+		}
+	}
+	return "bash"
 }
 
 // Path gives the absolute path of the script <name> of <tool>.
@@ -137,6 +197,9 @@ func (r Runner) Run(jobs []Job) []Result {
 	if limit <= 0 {
 		limit = 2 * runtime.NumCPU()
 	}
+	if r.envs == nil {
+		r.envs = &envCache{dirs: map[string]*dirEnv{}}
+	}
 	sem := make(chan struct{}, limit)
 	var wg sync.WaitGroup
 	for i, j := range jobs {
@@ -158,11 +221,20 @@ func (r Runner) Run(jobs []Job) []Result {
 
 func (r Runner) one(j Job) Result {
 	res := Result{Tool: j.Tool, Name: j.Name, Ran: true}
-	cmd := exec.Command("mise", "x", "--", "bash", r.Path(j.Tool, j.Name))
-	cmd.Dir = r.Root
+	dir := r.Root
 	if j.Dir != "" && j.Dir != "." {
-		cmd.Dir = filepath.Join(r.Root, j.Dir)
+		dir = filepath.Join(r.Root, j.Dir)
 	}
+	// Without the environment of the folder, the job runs as `mise x --
+	// bash`, so the error of mise stays the same.
+	var cmd *exec.Cmd
+	if env, bash := r.envs.env(dir); env != nil {
+		cmd = exec.Command(bash, r.Path(j.Tool, j.Name))
+		cmd.Env = env
+	} else {
+		cmd = exec.Command("mise", "x", "--", "bash", r.Path(j.Tool, j.Name))
+	}
+	cmd.Dir = dir
 	cmd.Stdin = bytes.NewReader(j.Input)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

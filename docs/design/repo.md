@@ -60,7 +60,9 @@ By default, the sync starts with one line:
 `↻ bootstrap <short commit> · <n> tools · env <environments>`.
 
 `bootstrap sync` makes its own private copy of the clone, because it writes
-the generated mise config into the copy.
+the generated mise config into the copy. On macOS, the copy is `cp -cR`, which
+makes copy-on-write clones on APFS. When `cp -cR` fails, the sync empties the
+copy and uses `cp -R`, as on Linux.
 
 ## The values folder and the selection
 

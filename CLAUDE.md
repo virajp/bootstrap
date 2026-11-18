@@ -352,8 +352,8 @@ the module of the test (see "The test cache" below).
   hook, so a scratch repository never writes to this repository.
 - The mise shim: `mise x -- <command>` runs the command directly, with the
   PATH of the test run, and each other `mise` call goes to the real mise. A
-  `mise x` costs 0.1 s alone and more than 1 s under load, and one
-  `bootstrap detect` makes about 234 of them. A case with `RealMise` uses the
+  `mise x` costs 0.1 s alone and more than 1 s under load, and the engine
+  makes one for each folder of its scripts. A case with `RealMise` uses the
   real mise. The shim is at a path that ends in `.local/bin/mise`, because
   `bootstrap mac sync` accepts only such a path.
 - `e2e/internal/repocase`: the runner of a repo case (`rc.Run`, `rc.Check`):
