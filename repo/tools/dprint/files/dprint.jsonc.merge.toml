@@ -10,6 +10,13 @@ format = "jsonc"
 kind = "key"
 path = [ "extends" ]
 "$mode" = "remove"
+
+# The old associations of shuck sent each file below .config/mise/tasks/,
+# also a Python file, to shuck. shuck now formats only by extension.
+[[item]]
+kind = "key"
+path = [ "shuck", "associations" ]
+"$mode" = "remove"
 <% if .config.settings %>
 [[item]]
 kind = "keys"

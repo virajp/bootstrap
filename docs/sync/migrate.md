@@ -1272,9 +1272,9 @@ files from `gate_files` of `helpers` and its `#FILES` header, and in a gate run
 - `code:format` and `code:lint` pass `--all` only to a gate that declares
   `#USAGE flag "--all"`. An own gate without it examines what it examined
   before.
-- `gate_files.py` is below `.config/mise/tasks/`, which the `shuck` block of
-  `dprint.jsonc` formats as shell. The dprint merge keeps the associations of
-  an adopted `dprint.jsonc`, so the new `"!**/*.py"` item does not reach it.
+- The sync removes the `associations` of the `shuck` block of `dprint.jsonc`.
+  shuck formats only the shell files with an extension (`.sh`, `.bash`, `.zsh`
+  and `.ksh`), so it no longer formats the task files or `gate_files.py`.
 
 Do these steps in each repository, after the sync:
 
@@ -1292,9 +1292,7 @@ Do these steps in each repository, after the sync:
    ```
 
    A pattern has the gitignore glob form, without negation.
-2. Add `"!**/*.py"` to the `associations` of the `shuck` block of
-   `dprint.jsonc`.
-3. For each own `code:format:NN-<name>` and `code:lint:NN-<name>` gate of the
+2. For each own `code:format:NN-<name>` and `code:lint:NN-<name>` gate of the
    repository, add `#USAGE flag "--all"`, a `#FILES` header with its file
    types, and the call of `gate_files`. Then give its tool only that list:
 
@@ -1313,8 +1311,8 @@ Do these steps in each repository, after the sync:
    [[ -s "${list}" ]] || exit 0
    ```
 
-4. A script, a CI job or a doc that runs `code:format` or `code:lint` to
+3. A script, a CI job or a doc that runs `code:format` or `code:lint` to
    examine the whole repository: add `--all`.
-5. Run `mise run setup:configs`, then `mise run code --all --debug`. Each
+4. Run `mise run setup:configs`, then `mise run code --all --debug`. Each
    `drop` line names a removed file and its pattern.
-6. Commit the changed files.
+5. Commit the changed files.
