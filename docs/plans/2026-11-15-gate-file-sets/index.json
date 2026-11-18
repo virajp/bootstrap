@@ -16,7 +16,7 @@
   "execution": "teams",
   "status": {
     "state": "RUNNING",
-    "detail": "RUNNING — W4: U5 green (round 2 clean, U1 fix 42a5e72); wave review R4 asked Q1 (U1, D33/D48 amendment); wave gate and folder commit wait on the answer; in .worktrees/gate-file-sets"
+    "detail": "RUNNING — W6: U7 gates green (lint, test, sec exit 0; K1 passes with scratch setup steps); Q2 (U7, K1 wording) open; U1-U6 green (U6 8e31fa6); in .worktrees/gate-file-sets"
   },
   "consent": {
     "merge": true,
@@ -36,7 +36,7 @@
     "keeps": [
       {
         "id": "K1",
-        "check": "Build the worktree engine (go build -o <tmp>/bootstrap ./cmd/bootstrap in cli/) and export BOOTSTRAP_BIN=<tmp>/bootstrap and MISE_ENV=dev. In a new scratch git repo, with env -u MISE_PROJECT_ROOT BOOTSTRAP_CONFIG=/nonexistent and --clone <worktree> on each engine call, run <tmp>/bootstrap init --no-tui --yes. Set [tools.mise] code_files.excludes = [\"vendor/**\"] in .config/bootstrap/tools.toml and run <tmp>/bootstrap sync. Write a repo gate .config/mise/tasks/code/lint/99-probe (mode 755): a bash task with #USAGE flags --all, --fix, --debug and the variadic [files] argument, a header #FILES include=\"*.py\" exclude=\".config/**\", that sources helpers, calls gate_files \"$0\" with its arguments and prints the lines of the list file. Commit everything, with a.py, b.py, c.py, vendor/v.py and a submodule sub/ (a local repo with s.py), as the baseline. Then: stage a change to a.py, change b.py without staging, delete c.py, add new.py, change vendor/v.py, change sub/s.py, and make a nested git repo sibling/ with x.py. Run mise trust, then mise run code:lint:99-probe --debug, then mise run code:lint:99-probe --all --debug, then mise run code:lint:99-probe b.py vendor/v.py sub/s.py, then mise run code:lint --all b.py (D43).",
+        "check": "Build the worktree engine (go build -o <tmp>/bootstrap ./cmd/bootstrap in cli/) and export BOOTSTRAP_BIN=<tmp>/bootstrap and MISE_ENV=dev. In a new scratch git repo, with env -u MISE_PROJECT_ROOT BOOTSTRAP_CONFIG=/nonexistent and --clone <worktree> on each engine call, run <tmp>/bootstrap init --no-tui --yes, then run mise trust -a and commit the output of init. Set [tools.mise] code_files.excludes = [\"vendor/**\"] in .config/bootstrap/tools.toml and run <tmp>/bootstrap sync. Write a repo gate .config/mise/tasks/code/lint/99-probe (mode 755): a bash task with #USAGE flags --all, --fix, --debug and the variadic [files] argument, a header #FILES include=\"*.py\" exclude=\".config/**\", that sources helpers, calls gate_files \"$0\" with its arguments and prints the lines of the list file. Commit everything, with a.py, b.py, c.py, vendor/v.py and a submodule sub/ (a local repo with s.py), as the baseline. Then: stage a change to a.py, change b.py without staging, delete c.py, add new.py, change vendor/v.py, change sub/s.py, and make a nested git repo sibling/ with x.py. Run mise trust -a, then mise trust on each file under .config/mise/tasks/ (plain mise trust does not trust the task files), then mise run code:lint:99-probe --debug, then mise run code:lint:99-probe --all --debug, then mise run code:lint:99-probe b.py vendor/v.py sub/s.py, then mise run code:lint --all b.py (D43, D60).",
         "pass": "The three probe runs exit 0. The default probe run prints a.py, b.py and new.py only (D1). The --all probe run prints a.py, b.py and new.py and no other path (c.py is deleted, vendor/v.py is globally excluded). The given-files probe run prints b.py only. No run prints a path below sub/ or sibling/ (D16). In both --debug runs, stderr has drop vendor/v.py: global exclude \"vendor/**\" (D33). The last run exits 2 with a usage error (D17). The rendered .config/bootstrap/config-files.toml holds vendor/** and the mise defaults (D9)."
       }
     ]
@@ -187,7 +187,7 @@
       "status": "green",
       "started": "2026-11-17T20:58:38.650Z",
       "ended": "2026-11-17T21:12:10.469Z",
-      "commit": "",
+      "commit": "8e31fa6",
       "rounds": 2
     },
     {
@@ -202,11 +202,11 @@
         "U6"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-17T21:13:17.037Z",
+      "ended": "2026-11-18T04:27:55.073Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -236,15 +236,15 @@
     },
     {
       "id": "W5",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-17T20:58:38.616Z",
-      "ended": ""
+      "ended": "2026-11-17T21:12:59.522Z"
     },
     {
       "id": "W6",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-17T21:13:17.002Z",
+      "ended": "2026-11-18T04:28:50.293Z"
     }
   ],
   "shared_files": [
@@ -825,6 +825,15 @@
       "rejected": "Leave D33 and D48 as they are — U6 and later reviews check against rulings the code now contradicts, and can raise the same drift again",
       "units": [
         "U1"
+      ]
+    },
+    {
+      "id": "D60",
+      "decision": "Q2: K1 of gates.keeps, run as written in a new scratch repo, fails before its probes: the sync exits 2 for an untrusted mise config and for the uncommitted init output, and plain mise trust does not trust the task files. Accept K1 as passed with scratch setup steps?",
+      "ruling": "Accept, and correct the K1 check text in index.json (trust before the sync, commit after init, trust each task file) — the run records the corrected text.",
+      "rejected": "Accept K1 as passed; the steps are scratch setup only — no plan change; Reject, and run K1 strictly as written — it fails at the sync with exit 2, and the plan does not land",
+      "units": [
+        "U7"
       ]
     }
   ],
