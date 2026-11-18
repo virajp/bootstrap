@@ -5,48 +5,44 @@
 #MISE description="Fail when a go.mod or a go.sum is not tidy"
 #MISE hide=true
 
+#USAGE flag "--all" help="lint every file of the repository, not only the uncommitted files"
 #USAGE flag "--debug" help="accepted for the code:lint contract"
 #USAGE flag "--fix" help="run go mod tidy in each selected module"
-#USAGE arg "[files]" var=#true help="the files to lint; a .go file, a go.mod or a go.sum selects its module; the default is each module"
+#USAGE arg "[files]" var=#true help="the files to lint; a .go file, a go.mod or a go.sum selects its module; the default is the uncommitted files"
+#FILES include="*.go go.mod go.sum"
 
 set -euo pipefail
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-# Shipped with the go tool. Without go or without a go.mod, the task does not
-# apply and prints nothing.
+# Shipped with the go tool. Without go, the task does not apply and prints
+# nothing.
 mise x -- which go > /dev/null 2>&1 || exit 0
 cd "${MISE_PROJECT_ROOT}"
-# A failed git stops the task, with the error of git.
-LIST=$(git -c core.quotePath=off ls-files --cached --others --exclude-standard -- 'go.mod' '*/go.mod' | sort -u)
-[[ -n "${LIST}" ]] || exit 0
 
-# code:lint passes its files to each code:lint:* task. A given Go file, go.mod
-# or go.sum selects the module of its nearest go.mod: a new import in a Go file
-# can make go.mod untidy. Given files without one: nothing to do. Without
-# files, each module that git does not ignore.
+# code:lint passes its flags and files to each code:lint:* task. The list
+# comes from gate_files (the #FILES header above). An empty list: nothing
+# to do.
+args=()
+[[ "${usage_all:-false}" == "true" ]] && args+=(--all)
+[[ "${usage_debug:-false}" == "true" ]] && args+=(--debug)
+[[ "${usage_fix:-false}" == "true" ]] && args+=(--fix)
 FILES=()
 [[ -n "${usage_files:-}" ]] && eval "FILES=(${usage_files})"
+list=$(gate_files "$0" ${args[@]+"${args[@]}"} ${FILES[@]+"${FILES[@]}"}) || exit $?
+trap 'rm -f "${list}"' EXIT
+[[ -s ${list} ]] || exit 0
+
+# A file of the list selects the module of its nearest go.mod: a new import in
+# a Go file can make go.mod untidy. No module: nothing to do.
 MODULES=()
-if ((${#FILES[@]})); then
-  for file in "${FILES[@]}"; do
-    case "${file}" in
-      *.go | go.mod | */go.mod | go.sum | */go.sum) ;;
-      *)
-        continue
-        ;;
-    esac
-    dir=$(dirname "${file}")
-    while [[ ! -f "${dir}/go.mod" && "${dir}" != "." && "${dir}" != "/" ]]; do
-      dir=$(dirname "${dir}")
-    done
-    [[ -f "${dir}/go.mod" ]] || continue
-    [[ " ${MODULES[*]-} " == *" ${dir} "* ]] || MODULES+=("${dir}")
+while IFS= read -r file; do
+  dir=$(dirname "${file}")
+  while [[ ! -f "${dir}/go.mod" && "${dir}" != "." && "${dir}" != "/" ]]; do
+    dir=$(dirname "${dir}")
   done
-else
-  while IFS= read -r file; do
-    [[ -n "${file}" ]] && MODULES+=("$(dirname "${file}")")
-  done <<< "${LIST}"
-fi
+  [[ -f "${dir}/go.mod" ]] || continue
+  [[ " ${MODULES[*]-} " == *" ${dir} "* ]] || MODULES+=("${dir}")
+done < "${list}"
 ((${#MODULES[@]})) || exit 0
 
 print_header "Checking the Go modules with go mod tidy ..."

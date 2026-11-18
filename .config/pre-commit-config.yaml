@@ -1,7 +1,7 @@
 ---
 # Shared with bootstrap: repo/tools/pre-commit/files/.config/pre-commit-config.yaml.merge.toml.
 # A change in this file stays. A removed bootstrap item comes back at the next
-# sync, unless .config/bootstrap.toml has an override for it.
+# sync, unless .config/bootstrap/tools.toml has an override for it.
 # The pre-commit config. repo_sync renders it from the `[[precommit]]` entries
 # of the selected tools, then the entries of `.config/repo-sync/pre-commit.yaml`.
 #
@@ -34,8 +34,6 @@ repos:
       - args:
           - --branch
           - main
-          - --branch
-          - develop
         description: These branches take merges only. git runs pre-merge-commit
           for a merge, so merges are not affected.
         id: no-commit-to-branch

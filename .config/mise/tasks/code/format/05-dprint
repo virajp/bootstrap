@@ -5,9 +5,10 @@
 #MISE description="Check or format the files with dprint"
 #MISE hide=true
 
+#USAGE flag "--all" help="format every file of the repository"
 #USAGE flag "--debug" help="emit debug logs"
 #USAGE flag "--fix" help="apply fixes"
-#USAGE arg "[files]" var=#true help="the files to format; the default is the whole tree"
+#USAGE arg "[files]" var=#true help="the files to format; the default is the uncommitted files"
 
 set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
@@ -20,14 +21,18 @@ cd "${MISE_PROJECT_ROOT}"
 [[ "${usage_debug:-false}" == "true" ]] && LOG_LEVEL="debug" || LOG_LEVEL="warn"
 [[ "${usage_fix:-false}" == "true" ]] && CMD="fmt" || CMD="check"
 
-# The pre-commit hook passes the staged files. dprint picks the files of its
-# config.
+# The list of gate_files (no #FILES header: every file of the set). dprint
+# picks the files of its plugins. With no file, the gate does not apply and
+# prints nothing.
+args=()
+[[ "${usage_all:-false}" == "true" ]] && args+=(--all)
+[[ "${usage_debug:-false}" == "true" ]] && args+=(--debug)
+[[ "${usage_fix:-false}" == "true" ]] && args+=(--fix)
 FILES=()
 [[ -n "${usage_files:-}" ]] && eval "FILES=(${usage_files})"
+list=$(gate_files "$0" ${args[@]+"${args[@]}"} ${FILES[@]+"${FILES[@]}"}) || exit $?
+trap 'rm -f "${list}"' EXIT
+[[ -s "${list}" ]] || exit 0
 
 print_header "Formatting the files with dprint ..."
-if ((${#FILES[@]})); then
-  mise x -- dprint "${CMD}" --allow-no-files --log-level "${LOG_LEVEL}" "${FILES[@]}"
-else
-  mise x -- dprint "${CMD}" --log-level "${LOG_LEVEL}"
-fi
+mise x -- dprint "${CMD}" --allow-no-files --log-level "${LOG_LEVEL}" --stdin-files < "${list}"

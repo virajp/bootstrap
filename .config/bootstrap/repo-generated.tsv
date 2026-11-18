@@ -5,8 +5,12 @@ dprint	.config/mise/tasks/code/format/05-dprint
 dprint	.config/mise/tasks/setup/dprint
 dprint	dprint.jsonc	{"kind":"block","path":["exec","commands"],"id":"go","find":{"exts":["go"]}}
 dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/*-lock.yaml"}
+dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/*.merge.toml"}
 dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/*.svg"}
 dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/package-lock.json"}
+dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"cli/internal/oldform/packs-v2/**"}
+dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"macos/packs.toml"}
+dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"repo/packs.toml"}
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:@dprint/exec@"}
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:@dprint/json@"}
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:@dprint/markdown@"}
@@ -88,6 +92,9 @@ git	.config/git-conventional-commits.yaml
 git	.config/mise/conf.d/git/mise.dev.toml
 git	.config/mise/tasks/_scripts/merge
 git	.config/mise/tasks/code/git-config
+git	.config/mise/tasks/git/merge/main
+git	.config/mise/tasks/git/worktree/create
+git	.config/mise/tasks/git/worktree/delete
 git	.gitattributes
 git	.gitignore	{"kind":"item","path":[],"value":".impeccable/"}
 gitleaks	.config/mise/conf.d/gitleaks/mise.dev.toml
@@ -100,10 +107,13 @@ grype	.config/mise/conf.d/grype/mise.dev.toml
 grype	.config/mise/tasks/code/sec/20-grype
 linter	.config/mise/conf.d/linter/mise.dev.toml
 linter	.config/mise/tasks/code/lint/05-linter
+linter	.config/mise/tasks/code/lint/06-shellcheck
 linter	.config/mise/tasks/setup/linter
+mise	.config/bootstrap/config-files.toml
 mise	.config/mise.toml
 mise	.config/mise/conf.d/mise/mise.dev.toml
 mise	.config/mise/tasks/_scripts/checks
+mise	.config/mise/tasks/_scripts/gate_files.py
 mise	.config/mise/tasks/_scripts/helpers
 mise	.config/mise/tasks/_scripts/placeholder
 mise	.config/mise/tasks/_scripts/worktrees-page
@@ -111,13 +121,16 @@ mise	.config/mise/tasks/code/_default
 mise	.config/mise/tasks/code/format/_default
 mise	.config/mise/tasks/code/lint/60-bootstrap
 mise	.config/mise/tasks/code/lint/_default
-mise	.config/mise/tasks/code/merge/_default
+mise	.config/mise/tasks/code/lsp/check
 mise	.config/mise/tasks/code/sec/_default
-mise	.config/mise/tasks/code/worktrees
+mise	.config/mise/tasks/git/worktree/list
+mise	.config/mise/tasks/git/worktree/setup
 mise	.config/mise/tasks/setup/_default
 mise	.config/mise/tasks/setup/configs/_default
 mise	.config/mise/tasks/setup/mise
-mise	.config/mise/tasks/setup/worktree
+mise	.config/mise/tasks/test/_default
+mise	.config/mise/tasks/test/e2e/_default
+mise	.config/mise/tasks/test/golden/_default
 node	.config/mise/conf.d/node/mise.dev.toml
 node	.config/mise/tasks/setup/deps/40-node
 osv-scanner	.config/mise/conf.d/osv-scanner/mise.dev.toml

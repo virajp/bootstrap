@@ -7,7 +7,7 @@ os = "macos"
 [shell_alias]
 precommit = "mise run code:precommit"
 setup = "mise run setup"
-worktrees = "mise run code:worktrees"
+worktrees = "mise run git:worktree:list"
 
 [tasks]
 [tasks.init]

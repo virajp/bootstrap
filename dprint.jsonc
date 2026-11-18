@@ -1,22 +1,15 @@
 // Shared with bootstrap: repo/tools/dprint/files/dprint.jsonc.merge.toml.
 // A change in this file stays. A removed bootstrap item comes back at the next
-// sync, unless .config/bootstrap.toml has an override for it.
+// sync, unless .config/bootstrap/tools.toml has an override for it.
 {
   "excludes": [
-    // The repo sync takes the required members of the pack base in the order
-    // of repo/packs.toml, then the [tools.*] tables in name order, and the
-    // TOML plugin sorts keys.
-    "repo/packs.toml",
-    "macos/packs.toml",
-    // The frozen copies of the packs files of the migration stay byte for
-    // byte.
-    "cli/internal/oldform/packs-v2/",
-    // A merge spec of a tool is a template, not TOML, until the sync
-    // renders it.
-    "**/*.merge.toml",
     "**/*-lock.yaml",
     "**/*.svg",
     "**/package-lock.json",
+    "repo/packs.toml",
+    "macos/packs.toml",
+    "cli/internal/oldform/packs-v2/**",
+    "**/*.merge.toml",
   ],
   "newLineKind": "lf",
   "json": {
@@ -73,6 +66,7 @@
     "associations": [
       "**/.config/mise/tasks/**",
       "!**/*.tmpl",
+      "!**/*.py",
     ],
     "binaryNextLine": true,
     "indentWidth": 2,
