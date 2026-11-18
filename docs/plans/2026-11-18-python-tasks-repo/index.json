@@ -693,5 +693,8 @@
   },
   "gaps": [],
   "overrides": [],
-  "run": {}
+  "run": {
+    "worktree": ".worktrees/all-2026-11-18-2214",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-18-python-tasks-repo.jsonl"
+  }
 }
