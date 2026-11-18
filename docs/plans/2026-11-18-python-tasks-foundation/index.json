@@ -13,8 +13,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-18 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since wave 1 in .worktrees/all-2026-11-18-2214"
   },
   "consent": {
     "merge": true,
@@ -80,11 +80,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-18T16:47:46.437Z",
+      "ended": "2026-11-18T16:59:26.926Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -99,11 +99,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-18T16:47:46.509Z",
+      "ended": "2026-11-18T16:55:13.187Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -118,11 +118,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-18T16:47:46.580Z",
+      "ended": "2026-11-18T16:55:13.259Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -146,11 +146,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-18T16:47:46.653Z",
+      "ended": "2026-11-18T16:55:13.331Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U5",
@@ -252,8 +252,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-18T16:47:46.400Z",
       "ended": ""
     },
     {
@@ -595,6 +595,24 @@
       "units": [
         "U5"
       ]
+    },
+    {
+      "id": "D31",
+      "decision": "Q1: worktrees_page.py gives the same HTML bytes as the shell worktrees-page run by which bash, 3.2 (/bin/bash) or 5.2 (first on PATH)?",
+      "ruling": "Keep the 3.2 output (correct escaping and ~ paths); U5 compares against /bin/bash, or against inputs with no &<>\" and no $HOME paths.",
+      "rejected": "Copy the 5.2 output byte for byte",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D32",
+      "decision": "Q2: print_line of helpers.py treats \\u and \\U escapes as which bash, 5.x (on PATH) or 3.2 (/bin/bash)?",
+      "ruling": "Keep the 5.x behavior — same bytes as the bash that #!/usr/bin/env bash runs on this Mac.",
+      "rejected": "Follow 3.2",
+      "units": [
+        "U1"
+      ]
     }
   ],
   "stages": {
@@ -624,7 +642,12 @@
     }
   },
   "gaps": [],
-  "overrides": [],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-18-2214"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/all-2026-11-18-2214",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-18-python-tasks-foundation.jsonl"
