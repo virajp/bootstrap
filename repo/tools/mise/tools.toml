@@ -114,49 +114,49 @@ source = "worktrees-page"
 library = true
 source = "worktrees_page.py"
 
-[tasks."code/_default"]
-source = "code"
+[tasks."code/_default.py"]
+source = "code.py"
 
-[tasks."code/format/_default"]
+[tasks."code/format/_default.py"]
 mode = "template"
-source = "code-format.tmpl"
+source = "code-format.py.tmpl"
 
-[tasks."code/lint/_default"]
+[tasks."code/lint/_default.py"]
 mode = "template"
-source = "code-lint.tmpl"
+source = "code-lint.py.tmpl"
 
-[tasks."code/lint/60-bootstrap"]
-source = "code-lint-bootstrap"
+[tasks."code/lint/60-bootstrap.py"]
+source = "code-lint-bootstrap.py"
 
-[tasks."code/lsp/check"]
-source = "code-lsp-check"
+[tasks."code/lsp/check.py"]
+source = "code-lsp-check.py"
 
-[tasks."code/sec/_default"]
-source = "code-sec"
+[tasks."code/sec/_default.py"]
+source = "code-sec.py"
 
-[tasks."git/worktree/list"]
-source = "code-worktrees"
+[tasks."git/worktree/list.py"]
+source = "code-worktrees.py"
 
-[tasks."git/worktree/setup"]
+[tasks."git/worktree/setup.py"]
 mode = "template"
-source = "setup-worktree.tmpl"
+source = "setup-worktree.py.tmpl"
 
-[tasks."setup/_default"]
+[tasks."setup/_default.py"]
 mode = "template"
-source = "setup.tmpl"
+source = "setup.py.tmpl"
 
-[tasks."setup/configs/_default"]
+[tasks."setup/configs/_default.py"]
 mode = "template"
-source = "setup-configs.tmpl"
+source = "setup-configs.py.tmpl"
 
-[tasks."setup/mise"]
-source = "setup-mise"
+[tasks."setup/mise.py"]
+source = "setup-mise.py"
 
-[tasks."test/_default"]
-source = "test"
+[tasks."test/_default.py"]
+source = "test.py"
 
-[tasks."test/e2e/_default"]
-source = "test-e2e"
+[tasks."test/e2e/_default.py"]
+source = "test-e2e.py"
 
-[tasks."test/golden/_default"]
-source = "test-golden"
+[tasks."test/golden/_default.py"]
+source = "test-golden.py"
