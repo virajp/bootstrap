@@ -53,18 +53,18 @@ source = "xcode"
 library = true
 source = "xcode.py"
 
-[tasks."code/format/50-swift-format"]
-source = "code-format-swift-format"
+[tasks."code/format/50-swift-format.py"]
+source = "code-format-swift-format.py"
 
-[tasks."code/lint/80-swiftlint"]
-source = "code-lint-swiftlint"
+[tasks."code/lint/80-swiftlint.py"]
+source = "code-lint-swiftlint.py"
 
-[tasks."setup/deps/60-swift"]
-source = "setup-deps-swift"
+[tasks."setup/deps/60-swift.py"]
+source = "setup-deps-swift.py"
 
 # The test part. replaces holds the sha256 of each old copy that a stackgen
 # pack wrote at test/golden; bootstrap migrate removes such a copy.
-[tasks."test/golden/40-swift"]
+[tasks."test/golden/40-swift.py"]
 replaces = [
   "sha256:86af8af894928c89501f7d0a7aa80775d33eb610de93c96e267a96acee746c6d",
   "sha256:7635425e60da25d59f253194ad23aef63d150ff7dc3032f576d9a943ca40090e",
@@ -72,4 +72,4 @@ replaces = [
   "sha256:dcb125b4820f844eb07c20a28d830cbbd7103d684708a2994e4d5ecca90a9b69",
   "sha256:53f96e8dd862070702b7c813b1a7c11d53e3a07de8f22d21a7c1257769380ccb",
 ]
-source = "test-golden-swift"
+source = "test-golden-swift.py"

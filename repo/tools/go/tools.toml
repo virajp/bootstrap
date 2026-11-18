@@ -58,13 +58,13 @@ source = "go:golang.org/x/tools/gopls"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."code/lint/40-go"]
+[tasks."code/lint/40-go.py"]
 requires_found = [ "go.mod" ]
-source = "code-lint-go"
+source = "code-lint-go.py"
 
-[tasks."code/lint/45-gomod"]
-source = "code-lint-gomod"
+[tasks."code/lint/45-gomod.py"]
+source = "code-lint-gomod.py"
 
-[tasks."setup/deps/25-go"]
+[tasks."setup/deps/25-go.py"]
 requires_found = [ "go.mod" ]
-source = "setup-deps-go"
+source = "setup-deps-go.py"
