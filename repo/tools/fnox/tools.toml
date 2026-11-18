@@ -26,5 +26,5 @@ source = ".config/fnox.toml.tmpl"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."setup/secrets/20-fnox"]
-source = "setup-secrets-fnox"
+[tasks."setup/secrets/20-fnox.py"]
+source = "setup-secrets-fnox.py"

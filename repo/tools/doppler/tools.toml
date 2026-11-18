@@ -14,5 +14,5 @@ version = "latest"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."setup/secrets/10-doppler"]
-source = "setup-secrets-doppler"
+[tasks."setup/secrets/10-doppler.py"]
+source = "setup-secrets-doppler.py"

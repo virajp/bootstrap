@@ -101,8 +101,8 @@ source = ".config/pre-commit-config.yaml.merge.toml"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."code/precommit"]
-source = "code-precommit"
+[tasks."code/precommit.py"]
+source = "code-precommit.py"
 
-[tasks."setup/precommit"]
-source = "setup-precommit"
+[tasks."setup/precommit.py"]
+source = "setup-precommit.py"

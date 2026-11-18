@@ -118,8 +118,8 @@ source = "dprint.jsonc.merge.toml"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."setup/dprint"]
-source = "setup-dprint"
+[tasks."setup/dprint.py"]
+source = "setup-dprint.py"
 
-[tasks."code/format/05-dprint"]
-source = "code-format-dprint"
+[tasks."code/format/05-dprint.py"]
+source = "code-format-dprint.py"

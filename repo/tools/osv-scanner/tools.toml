@@ -19,5 +19,5 @@ source = ".config/osv-scanner.toml"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."code/sec/30-osv-scanner"]
-source = "code-sec-osv-scanner"
+[tasks."code/sec/30-osv-scanner.py"]
+source = "code-sec-osv-scanner.py"
