@@ -1,0 +1,449 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "The Mac tasks in Python",
+  "requires": [
+    "docs/plans/2026-11-18-python-tasks-repo"
+  ],
+  "source": [
+    "B30"
+  ],
+  "backlog": [
+    "B30"
+  ],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "execution": "teams",
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-18 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint --all"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:format --all",
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "The smoke check (D6). Build the worktree engine (go build -o <tmp>/bootstrap ./cmd/bootstrap in cli/) and export BOOTSTRAP_BIN=<tmp>/bootstrap and BOOTSTRAP_CONFIG=/nonexistent. Make a scratch HOME below the session scratchpad. Export XDG_CONFIG_HOME=<scratch>/.config (so mise reads the synced tasks of the scratch HOME), XDG_CACHE_HOME=<scratch>/.cache, XDG_STATE_HOME=<scratch>/.local/state and BOOTSTRAP_CACHE=<scratch>/.cache/bootstrap. Export MISE_DATA_DIR and MISE_CACHE_DIR with the real paths of this machine (mise env, or ~/.local/share/mise and ~/Library/Caches/mise), as e2e/macostools/macostools_test.go:73-90 does, so the installed uv and Python 3.14 are found. Copy macos/examples/macos.toml to a scratch values folder and export MACOS_SETUP_REPO_PATH=<that folder> (as e2e/macostools/macostools_test.go:127 does). Run HOME=<scratch> <tmp>/bootstrap mac sync --clone <worktree> --no-bootstrap two times. Then, with the same environment: mise trust on each file below <scratch>/.config/mise/tasks/; mise tasks ls --hidden; mise run ips:ipv4 (or the network task that the example selects); in an empty scratch folder, mise run cleanupDS. Last: find <scratch>/.config/mise/tasks -type f ! -name \"*.py\" lists no file.",
+        "pass": "The first sync exits 4 (the init stage changes, as e2e/macostools/macostools_test.go:70 expects), the second exits 0, and each other command exits 0. mise tasks ls --hidden lists each Mac task, and no task name ends with .py. The find lists nothing. The scratch HOME, the scratch XDG folders and --no-bootstrap keep each change inside the scratch folders."
+      }
+    ]
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "In the main checkout, on main after the landing: git switch -c sync-python-tasks-mac; mise run setup:configs; git add the files that the sync wrote; if git diff --cached is not empty, git commit -m \"ops: sync bootstrap with the Python Mac tasks\" and mise run git:merge:main sync-python-tasks-mac, else git switch main and git branch -d sync-python-tasks-mac",
+      "mode": "run",
+      "notes": "D7. The self-sync of CLAUDE.md step 4. This plan changes no file of repo/tools/, so the sync can write only bootstrap_commit."
+    },
+    {
+      "id": "A2",
+      "step": "plan-management archive docs/plans/2026-11-18-python-tasks-mac, only when the gaps list of this folder has no open entry",
+      "mode": "run",
+      "notes": "The standing consent: archive only with no open gap."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "NONE",
+      "reason": "Foundation D14: no engine release and no tag. The Mac tasks go to the Mac from the clone at the Mac sync. No unit changes code of cli/."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "The Mac helpers and the Mac mise tasks in Python",
+      "wave": 1,
+      "file": "01-mac-mise.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "macos/tools/mise/tasks/helpers.py",
+        "macos/tools/mise/tasks/updateall",
+        "macos/tools/mise/tasks/updateall.py",
+        "macos/tools/mise/tasks/updateall-configs",
+        "macos/tools/mise/tasks/updateall-configs.py",
+        "macos/tools/mise/tasks/upgrade-macos-download",
+        "macos/tools/mise/tasks/upgrade-macos-download.py",
+        "macos/tools/mise/tasks/upgrade-macos-upgrade",
+        "macos/tools/mise/tasks/upgrade-macos-upgrade.py",
+        "macos/tools/mise/tasks/upgrade-power",
+        "macos/tools/mise/tasks/upgrade-power.py",
+        "macos/tools/mise/tools.toml",
+        "macos/packs.toml"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U2",
+      "title": "The tasks of the other Mac tools in Python",
+      "wave": 2,
+      "file": "02-mac-tools.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "macos/tools/claude-cli/",
+        "macos/tools/cli/",
+        "macos/tools/homebrew/",
+        "macos/tools/network/",
+        "macos/tools/node/",
+        "macos/tools/pstree/",
+        "macos/tools/tailscale/",
+        "macos/tools/telegram/",
+        "macos/tools/dprint/tools.toml",
+        "macos/tools/mise/tasks/helpers",
+        "macos/tools/mise/tools.toml"
+      ],
+      "depends_on": [
+        "U1"
+      ],
+      "waits": "The tasks import the Mac helpers.py that U1 creates, and the unit deletes the shell Mac helpers and its entry in macos/tools/mise/tools.toml, which U1 owns in wave 1.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "The Go cases of the Mac tasks",
+      "wave": 3,
+      "file": "03-mac-cases.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "e2e/mac/",
+        "e2e/macostools/"
+      ],
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "waits": "The cases run the .py Mac tasks and expect the file lists that U1 and U2 write.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Review: the Mac tasks and their cases",
+      "wave": 4,
+      "file": "04-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U3"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U5",
+      "title": "Docs",
+      "wave": 5,
+      "file": "05-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/",
+        "docs/setup/"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U6",
+      "title": "Gates",
+      "wave": 6,
+      "file": "06-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W6",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "every human-facing doc (README.md, CLAUDE.md, docs/design/**, docs/setup/**)",
+      "why": "U1 to U3 falsify passages in the same docs",
+      "owner": "U5"
+    },
+    {
+      "id": "S2",
+      "file": "macos/tools/mise/tools.toml",
+      "why": "U1 renames the keys and adds helpers.py in wave 1; U2 removes the shell helpers entry in wave 2",
+      "owner": "U1 (wave 1), U2 (wave 2)"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "The rules of a Mac Python task",
+      "ruling": "The rules of docs/plans/2026-11-18-python-tasks-foundation (D4, D7, D8, D11) and of docs/plans/2026-11-18-python-tasks-repo (D2, D3) apply. The import preamble of a Mac task uses the user path (foundation D5): sys.path.insert(0, os.path.expanduser(\"~/.config/mise/tasks/_scripts\")).",
+      "rejected": "Rules of its own for the Mac.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "The Mac helpers",
+      "ruling": "macos/tools/mise/tasks/helpers.py keeps the names of the shell Mac helpers (print_header, print_subheader, print_wait, print_newline, print_error, print_success, print_warn, line_sep, task_exists, run_task_if_exists) and prints the same bytes (foundation D9, user: \"Yes, same names, bytes\"). It stays a module of its own: the Mac does not share the helpers of repo/tools/.",
+      "rejected": "One helpers module for both sides.",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "The exec of func-claude and func-myps",
+      "ruling": "A task that ends with exec in shell ends with os.execvp with the same arguments, so the process of the tool replaces the Python process. uv run --script can stay as the parent process of Python; that is accepted.",
+      "rejected": "subprocess.run and sys.exit with its code (an extra process stays for the life of the tool).",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "The jq and yq calls of the Mac tasks",
+      "ruling": "Foundation D11: a jq or yq call that parses JSON becomes json, and its # MISE tools line for jq or yq goes (upgrade-ai has #MISE tools={jq = \"latest\"}).",
+      "rejected": "Keep jq.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "The end of the shell Mac helpers",
+      "ruling": "U2 deletes macos/tools/mise/tasks/helpers with rm after it converts the last task that sources it, and removes its [tasks.\"_scripts/helpers\"] entry. The Mac sync removes the copy in ~/.config/mise/tasks/_scripts/ by its stale rule. A Mac has no own task that sources it: the Mac tasks are all synced.",
+      "rejected": "Keep the shell Mac helpers.",
+      "units": [
+        "U2",
+        "U5"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "The gates of the plan",
+      "ruling": "The plan lands only when mise run test, code:format --all, code:precommit and code:sec are green, plus the smoke check K1 (user: \"Yes, this smoke check\", \"Yes, three plans\"). U3 updates the Go cases of e2e/mac/ and e2e/macostools/. The wave gate is code:lint --all.",
+      "rejected": "Land without the test suite.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "The steps after the landing",
+      "ruling": "The self-sync on sync-python-tasks-mac and its landing, when the sync writes a change (user: \"yes, sync after each plan lands\"); archive only with no open gap. The user runs mise run updateall:configs on the Mac by hand.",
+      "rejected": "The run syncs the Mac (it reaches outside the worktree, into the HOME of the user).",
+      "units": []
+    },
+    {
+      "id": "D8",
+      "decision": "A review unit",
+      "ruling": "The plan lands runnable code (every Mac task), so U4 reviews the delta of U1 to U3 before the docs unit.",
+      "rejected": "No review unit.",
+      "units": [
+        "U4"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "The run settings",
+      "ruling": "Model opus; execution teams; priority 30, the priority of the repo plan plus 10. This plan finishes B30 (user: \"Yes, accept\", \"Yes, three plans\").",
+      "rejected": "solo.",
+      "units": []
+    },
+    {
+      "id": "D10",
+      "decision": "uv on the Mac",
+      "ruling": "The Mac config sets task.run_auto_install = false (macos/tools/mise/files/.config/mise/config.toml:28), so the # MISE tools line of a task installs nothing. uv becomes a required member of the Mac base pack: uv = { required = true } in macos/packs.toml (user: \"Yes, uv required\"). Python 3.14 is already required. The entry tasks belong to the Mac mise tool, which is in the init stage (docs/design/mac.md \"Stages and exit 4\": the init stage holds each init tool and, transitively, each tool in its depends). uv and python must be installed before the first exit 4, so the Mac mise tool gets depends = [\"cli\", \"python\", \"uv\"]: then both are in the init stage, and its mise bootstrap step installs them before the run asks for a new terminal. Each Mac task keeps # MISE tools={uv=\"latest\", python=\"3.14\"} for a run where the setting allows the install.",
+      "rejected": "Keep uv optional (a Mac without uv cannot run any Mac task).",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U5"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "The entry task updateall:configs",
+      "ruling": "It keeps what it does now (repo plan D2): it stays standalone and imports no helpers (it has its own styled, log and log_error, and e2e/mac/helpers_test.go copies only this one file); it reads its flags from sys.argv, never from usage_*, because it runs under mise run and directly; it keeps its usage and -h text, legacy_cleanup, the nested-run guard (_UPDATEALL_CONFIGS_RUNNING), the unset of the GIT_* variables, and BOOTSTRAP_CACHE, XDG_CACHE_HOME, FORCE_COLOR and NO_COLOR; it calls BOOTSTRAP_BIN, else bootstrap from PATH, as now. A direct run (outside mise run) needs uv on PATH for the shebang; docs/design/mac.md says \"directly, with uv on PATH\" in place of \"under bash\". The Go cases run it directly with a PATH that gives uv (mise x uv@latest python@3.14 -- <file>).",
+      "rejected": "usage_* and mise x -- bootstrap (the task then fails where it runs before mise has the engine).",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "Tool calls in the Mac tasks",
+      "ruling": "The Mac helpers.py has no tool or has_tool. Each Mac task keeps its current call form: mise x -- for a tool of mise (dprint in updateall), shutil.which for a command that it finds with command -v now (claude, code, fnox, brew, mas, security).",
+      "rejected": "Add tool and has_tool to the Mac helpers.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "The Mac dprint association",
+      "ruling": "The Mac global dprint config (macos/tools/dprint/tools.toml) sends every file below **/.config/mise/tasks/** to shuck, and it has no ruff plugin. dprint formats every .py file (user: \"dprint must format all .py files\"), so U2 adds the plugin npm:@dprint/ruff@0.11.3 (the version of repo/tools/python) to the plugins of the Mac dprint config, a [defaults.blocks.ruff] with indentWidth = 2 and lineLength = 120 (the values of repo/tools/python), and \"!**/*.py\" to the shuck associations.",
+      "rejected": "Leave it (dprint then formats a Python task as shell).",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "The file rules of a Mac Python file",
+      "ruling": "Foundation D21 applies: mode 755 on each new file, sys.dont_write_bytecode = True in the import preamble before the first import of helpers, python -B in a hand check, and a Go test of the engine from cli/ (cd cli && mise x -- go test ./internal/...).",
+      "rejected": "Leave the points to the units.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "The environment of a tool that a Mac task starts",
+      "ruling": "uv run --script adds the script environment to the process (VIRTUAL_ENV, and its bin folder first on PATH). A task that starts a tool for the user (func-claude and func-myps with os.execvp, func-code with VS Code) gives the tool an environment without VIRTUAL_ENV and without the bin folder of sys.prefix on PATH, so the tool sees the environment of the user, as the shell task gave it. The uv and Python folders that # MISE tools adds stay.",
+      "rejected": "Pass the script environment to the tool.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "The syntax check of a unit",
+      "ruling": "python3.14 -m py_compile writes __pycache__ even with -B. A unit checks the syntax with python3.14 -B -c \"import ast,sys; [ast.parse(open(p).read(), p) for p in sys.argv[1:]]\" <files>, which writes no file.",
+      "rejected": "py_compile and a delete of the cache.",
+      "units": [
+        "U1",
+        "U2"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
