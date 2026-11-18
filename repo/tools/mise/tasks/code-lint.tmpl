@@ -35,10 +35,14 @@ fi
 # repository, in the order of its number (05-linter first). Each gets the
 # same flags and files, and gets its own list from gate_files of helpers.
 # --all goes only to a gate that declares it: an older gate of a repository
-# without it gets --fix, --debug and the files.
+# without it gets --fix, --debug and the files. The gate file is the file
+# that mise runs for the name: <path> when it exists, else <path>.py. The
+# flag line is "#USAGE" or "# USAGE".
 for task in $(own_tasks code:lint); do
   gate_all=""
-  if [[ -n "${ALL}" ]] && grep -q '^#USAGE flag "--all"' "${MISE_PROJECT_ROOT}/.config/mise/tasks/${task//://}"; then
+  part="${MISE_PROJECT_ROOT}/.config/mise/tasks/${task//://}"
+  [[ -f "${part}" ]] || part="${part}.py"
+  if [[ -n "${ALL}" ]] && grep -q '^# \?USAGE flag "--all"' "${part}"; then
     gate_all="${ALL}"
   fi
   mise run "${task}" ${gate_all} ${FIX} ${DEBUG} ${FILES[@]+"${FILES[@]}"}

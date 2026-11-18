@@ -1,17 +1,19 @@
-# Python and uv. In a repository with a pyproject.toml, also ruff and pyrefly,
-# with their code:lint and code:format tasks.
+# Python and uv. dprint formats the Python files. In a repository with a
+# pyproject.toml, also ruff and pyrefly, with their code:lint tasks: ruff lints
+# and pyrefly checks the types of the Python files.
 category = "languages"
 default_envs = [ "dev", "ci" ]
 depends = []
-description = "Python and uv. In a repository with a pyproject.toml, also ruff and pyrefly, with their code:lint and code:format tasks."
+description = "Python and uv. dprint formats the Python files. In a repository with a pyproject.toml, also ruff (lint) and pyrefly (types), with their code:lint tasks."
 root_only = false
-summary = "Python and uv, with ruff and pyrefly"
+summary = "Python and uv, with ruff lint and pyrefly types"
 
 # The VS Code extensions of the tool, in .vscode/extensions.json.
 [contributes.vscode]
 extensions = [ "meta.pyrefly" ]
 
-# The dprint block and plugin of Python (ruff), in dprint.jsonc.
+# The dprint block and plugin of Python (ruff), in dprint.jsonc. dprint is the
+# one formatter of the Python files.
 [contributes.dprint]
 plugins = [ "npm:@dprint/ruff@0.11.3" ]
 
@@ -35,9 +37,10 @@ version = "3.14"
 envs = [ "dev", "ci" ]
 version = "latest"
 
-# The gates of a Python project. Many repositories have python only for the
-# tools of other bootstrap tools, so the sync installs these two, and writes
-# their tasks, only when requires_found finds a pyproject.toml.
+# The lint and type gates of a Python project. Many repositories have python
+# only for the tools of other bootstrap tools or for the task files, so the
+# sync installs these two, and writes their tasks, only when requires_found
+# finds a pyproject.toml.
 [mise.tools.ruff]
 envs = [ "dev", "ci" ]
 requires_found = [ "pyproject.toml" ]
@@ -49,7 +52,6 @@ requires_found = [ "pyproject.toml" ]
 version = "latest"
 
 [mise.env]
-UV_NO_CACHE = true
 UV_NO_MANAGED_PYTHON = true
 UV_PYTHON_DOWNLOADS = "never"
 
@@ -63,10 +65,6 @@ source = "pipx:pyrefly"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."code/format/40-ruff"]
-requires_found = [ "pyproject.toml" ]
-source = "code-format-ruff"
-
 [tasks."code/lint/50-pyrefly"]
 requires_found = [ "pyproject.toml" ]
 source = "code-lint-pyrefly"

@@ -347,6 +347,12 @@ func TestGateFiles(t *testing.T) {
 		g.check("the #FILES include and exclude", 0, []string{"a.txt"},
 			"drop b.md: gate include", `drop skip.txt: gate exclude "skip.txt"`)
 
+		// ruff format writes the header as "# FILES": the same list.
+		g.header(`# FILES include="*.txt" exclude="skip.txt"`)
+		g.run("--all")
+		g.check("the # FILES include and exclude", 0, []string{"a.txt"},
+			"drop b.md: gate include", `drop skip.txt: gate exclude "skip.txt"`)
+
 		// An empty list: an empty list file, exit 0.
 		g.header(`#FILES include="*.go"`)
 		g.run("--all")
@@ -356,6 +362,9 @@ func TestGateFiles(t *testing.T) {
 		g.header(`#FILES include="*.txt"`, `#FILES exclude="b.txt"`)
 		g.run("--all")
 		g.check("two #FILES lines", 2, nil, "two #FILES lines")
+		g.header(`#FILES include="*.txt"`, `# FILES exclude="b.txt"`)
+		g.run("--all")
+		g.check("one #FILES and one # FILES line", 2, nil, "two #FILES lines")
 		g.header(`#FILES only="*.txt"`)
 		g.run("--all")
 		g.check("an unknown #FILES key", 2, nil, "unknown #FILES key only")

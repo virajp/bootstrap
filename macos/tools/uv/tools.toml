@@ -13,6 +13,5 @@ version = "latest"
 
 [mise.env]
 # uv
-UV_NO_CACHE = true
 UV_NO_MANAGED_PYTHON = true
 UV_PYTHON_DOWNLOADS = "never"
