@@ -73,22 +73,22 @@ source = "merge"
 library = true
 source = "merge.py"
 
-[tasks."code/git-config"]
-source = "code-git-config"
+[tasks."code/git-config.py"]
+source = "code-git-config.py"
 
 # The merge task of each core branch, named for its destination. The derive
 # script gives has_main and has_develop from core_branches.
-[tasks."git/merge/develop"]
-source = "git-merge-develop"
+[tasks."git/merge/develop.py"]
+source = "git-merge-develop.py"
 when = "git.has_develop"
 
-[tasks."git/merge/main"]
-source = "git-merge-main"
+[tasks."git/merge/main.py"]
+source = "git-merge-main.py"
 when = "git.has_main"
 
 # The worktree tasks. git:worktree:setup is a task of the mise tool.
-[tasks."git/worktree/create"]
-source = "git-worktree-create"
+[tasks."git/worktree/create.py"]
+source = "git-worktree-create.py"
 
-[tasks."git/worktree/delete"]
-source = "git-worktree-delete"
+[tasks."git/worktree/delete.py"]
+source = "git-worktree-delete.py"
