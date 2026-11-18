@@ -164,7 +164,7 @@ func TestCheckOwnTestTask(t *testing.T) {
 	s := stageOf(t, stages, "old-forms")
 	if s.Status != StageFail || len(s.Findings) != 1 || s.Findings[0].Code != fail.Usage ||
 		!strings.Contains(s.Findings[0].Message, ".config/mise/tasks/test/_default is a task of this repo") ||
-		!strings.Contains(s.Findings[0].Message, "run bootstrap init") {
+		!strings.Contains(s.Findings[0].Message, "run bootstrap migrate") {
 		t.Errorf("old-forms stage %+v", s)
 	}
 }
@@ -205,10 +205,10 @@ func TestCheckOldWorktreeCmd(t *testing.T) {
 	if s.Status != StageFail || len(s.Findings) != 2 ||
 		!strings.Contains(s.Findings[0].Message, "/.config/wt.toml runs mise run setup:worktree") ||
 		!strings.Contains(s.Findings[1].Message, "members.api.worktree_install in ") ||
-		!strings.Contains(s.Findings[1].Message, "run bootstrap init") {
+		!strings.Contains(s.Findings[1].Message, "run bootstrap migrate") {
 		t.Errorf("old-forms stage %+v", s)
 	}
-	if !strings.Contains(errText, "Run bootstrap init") {
+	if !strings.Contains(errText, "Run bootstrap migrate") {
 		t.Errorf("stderr %q", errText)
 	}
 	writeFile(t, values.RepoFile(values.FolderOf(root)), oldform.RenameCmd(repo))

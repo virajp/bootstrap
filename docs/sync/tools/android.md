@@ -180,7 +180,7 @@ Only `env`. No questions. The keys of the values file are in
 ## Migration
 
 - Remove `android-sdk` from the repository-owned mise files.
-- `bootstrap init` removes the old stackgen copies of the test tasks: the
+- `bootstrap migrate` removes the old stackgen copies of the test tasks: the
   `test/e2e` task of the android pack and the `test/golden` task of the
   compose pack, at their old path or at `<group>/50-local`. It knows them by
   their sha256 (`replaces`). A copy that the repository changed stays: compare

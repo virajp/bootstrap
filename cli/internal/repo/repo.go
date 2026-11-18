@@ -230,13 +230,13 @@ func (s *state) run(args []string) fail.Code {
 	}
 	valuesDir = strings.TrimSuffix(valuesDir, "/")
 	if !exists(valuesDir) {
-		s.log("values folder " + s.path(valuesDir) + " not found - run bootstrap init")
+		s.log("values folder " + s.path(valuesDir) + " not found - run bootstrap migrate")
 		return fail.Usage
 	}
 	missing := false
 	for _, f := range []string{values.RepoFile(valuesDir), values.ToolsFile(valuesDir)} {
 		if !isFile(f) {
-			s.log(s.path(f) + " not found - run bootstrap init")
+			s.log(s.path(f) + " not found - run bootstrap migrate")
 			missing = true
 		}
 	}

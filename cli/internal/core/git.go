@@ -156,7 +156,7 @@ func CoreBranches(root string) ([]string, error) {
 	if b, ok := Git("-C", root, "symbolic-ref", "--quiet", "--short", "HEAD"); ok && b != "" {
 		return []string{b}, nil
 	}
-	return nil, problem(fail.Usage, root+" has no branch main or develop, and HEAD is not on a branch", "check out a branch, then run bootstrap init again")
+	return nil, problem(fail.Usage, root+" has no branch main or develop, and HEAD is not on a branch", "check out a branch, then run bootstrap migrate again")
 }
 
 // Gitmodules gives the paths of the git submodules in the .gitmodules file

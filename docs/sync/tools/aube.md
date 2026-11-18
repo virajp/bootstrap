@@ -94,7 +94,7 @@ in the seed:
 
 1. For the first adoption, if the repository has a `pnpm-workspace.yaml`,
    rename it to `aube-workspace.yaml` before
-   "Step 5: Run bootstrap init" of [`index.md`](../index.md). If both files
+   "Step 5: Run bootstrap migrate" of [`index.md`](../index.md). If both files
    exist, `aube-workspace.yaml` wins, so the seed can replace the settings of
    the repository without a message.
 2. To move an adopted repository from pnpm to aube, run

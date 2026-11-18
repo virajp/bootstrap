@@ -33,7 +33,7 @@ func TestRepoFindsEachOldForm(t *testing.T) {
 		t.Fatalf("messages = %v", msgs)
 	}
 	for _, m := range msgs {
-		if !strings.HasSuffix(m.Error(), "is the old form - run bootstrap init") {
+		if !strings.HasSuffix(m.Error(), "is the old form - run bootstrap migrate") {
 			t.Errorf("message = %q", m.Error())
 		}
 	}
@@ -142,7 +142,7 @@ func TestMacFindsTheOldForm(t *testing.T) {
 		t.Fatal(err)
 	}
 	msgs := source.Messages(Mac(raw, "macos.toml"))
-	if len(msgs) != 1 || msgs[0].Error() != "[tools.macos-setup] in macos.toml is the old form - run bootstrap mac init" {
+	if len(msgs) != 1 || msgs[0].Error() != "[tools.macos-setup] in macos.toml is the old form - run bootstrap mac migrate" {
 		t.Errorf("messages = %v", msgs)
 	}
 }
@@ -227,9 +227,9 @@ func TestFormatKey(t *testing.T) {
 	cases := []struct{ text, want, mac string }{
 		{"format = 3\n[tools.a]\n", "", "format = 3 in v.toml is not valid - the format of a values file is 2"},
 		{"format = 2\n[tools.a]\n", "format = 2 in v.toml is not valid - the format of a values file is 3", ""},
-		{"[tools.a]\n", "v.toml without format = 3 is the old form - run bootstrap init", "v.toml without format = 2 is the old form - run bootstrap mac init"},
+		{"[tools.a]\n", "v.toml without format = 3 is the old form - run bootstrap migrate", "v.toml without format = 2 is the old form - run bootstrap mac migrate"},
 		{"format = \"2\"\n", "format = \"2\" in v.toml is not valid - the format of a values file is 3", "format = \"2\" in v.toml is not valid - the format of a values file is 2"},
-		{"format = 3\n[packs.security]\n", "[packs.security] in v.toml is the old form - run bootstrap init", "[packs.security] in v.toml is the old form - run bootstrap mac init\nformat = 3 in v.toml is not valid - the format of a values file is 2"},
+		{"format = 3\n[packs.security]\n", "[packs.security] in v.toml is the old form - run bootstrap migrate", "[packs.security] in v.toml is the old form - run bootstrap mac migrate\nformat = 3 in v.toml is not valid - the format of a values file is 2"},
 	}
 	for _, c := range cases {
 		values := t.TempDir() + "/v.toml"

@@ -54,7 +54,7 @@ A submodule or sibling member is a separate repository with its own
 `.config/bootstrap/`. The task skips, with a warning, a member that is not on
 the machine (`member <name>: <folder> is not on this machine`) and a member
 without `.config/bootstrap/`, or with only the old form
-(`member <name>: run bootstrap init there`), and goes on.
+(`member <name>: run bootstrap migrate there`), and goes on.
 
 By default, the sync starts with one line:
 `↻ bootstrap <short commit> · <n> tools · env <environments>`.
@@ -77,21 +77,24 @@ the generated mise config into the copy.
   tool and the tool of each mise `depends`, depth first, and copies each file of
   each tool. A dependency comes before the tool that needs it.
 - The values folder is necessary. A missing folder, `repo.toml` or
-  `tools.toml` stops the sync with code 2 and "run bootstrap init". An unknown
+  `tools.toml` stops the sync with code 2 and "run bootstrap migrate". An
+  unknown
   key stops it with code 2.
 - It examines the `tools.toml` of each tool of the clone, selected or not. See
   [tools.md](tools.md).
-- An old form of the values stops the sync with "run bootstrap init". See
+- An old form of the values stops the sync with "run bootstrap migrate". See
   [bootstrap-config.md](bootstrap-config.md#old-forms).
 - A task of the repository at the place of a test port (for example its own
   `.config/mise/tasks/test/_default`) stops the sync with code 2 and "run
-  bootstrap init", before it writes a file. `init` moves it to a `50-local`
-  part. See [cli.md](cli.md#init).
+  bootstrap migrate", before it writes a file. `migrate` moves it to a
+  `50-local`
+  part. See [cli.md](cli.md#migrate).
 - A known old copy of a part of a selected tool at `<group>/50-local` (for
   example the old `test/golden` task of a stackgen pack) stops the sync with
-  code 2 and "run bootstrap init". `init` removes such a copy, there and at
+  code 2 and "run bootstrap migrate". `migrate` removes such a copy, there and
+  at
   the old path of the group, and does not move it. See
-  [cli.md](cli.md#init).
+  [cli.md](cli.md#migrate).
 
 ## Members and submodules
 
@@ -122,7 +125,7 @@ a vwf file for the members.
 
 A `root_only` tool is not for a submodule member: a repository whose `[home]`
 has `type = "submodule"`, or, without `[home].type`, a git submodule. In such a
-member, `init`, `add pack` and the migration of an old form skip it, and the
+member, `migrate`, `add pack` and the migration of an old form skip it, and the
 sync stops when a `[tools.*]` entry names it. A sibling member is its own root,
 so it keeps them. A `root_only` tool has no `projects` list, and `detect` gives
 it no link to a project.
@@ -386,7 +389,8 @@ The manifest is `.config/bootstrap/repo-generated.tsv`, in the values folder
 (`$BOOTSTRAP_VALUES/repo-generated.tsv`). It is committed, and each git
 submodule has its own. The plan of a migration copies the old
 `.config/repo-generated.tsv` into its temporary values folder, so a dry run of
-`init` lists the same removals as `init`. Its shape and the stale rule are in
+`migrate` lists the same removals as `migrate`. Its shape and the stale rule are
+in
 [cli.md](cli.md#the-manifest-and-the-stale-rule).
 
 After a clean run, the order is the stale rule, the write of the manifest, then

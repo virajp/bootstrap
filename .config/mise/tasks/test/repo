@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#MISE description="Test bootstrap sync, check and init against scratch values files"
+#MISE description="Test bootstrap sync, check and migrate against scratch values files"
 #MISE tools.gomplate="latest"
 
 # Runs `bootstrap sync --dry-run`, `bootstrap check` and, for a case
@@ -865,7 +865,7 @@ case_args=' ' run_case "landing, main only, no key" 0 'environments = [ "dev" ]'
 case_args=' ' run_case "the own hooks of the repository stay" 0 'environments = [ "dev" ]' precommit_own '' \
   own_hook_stays
 run_case "the old .config/repo-sync/pre-commit.yaml" 2 'environments = [ "dev" ]' old_precommit_file \
-  '.config/repo-sync/pre-commit.yaml is the old form - run bootstrap init'
+  '.config/repo-sync/pre-commit.yaml is the old form - run bootstrap migrate'
 case_args=' ' run_case "landing, main only, main direct-commit" 0 'environments = [ "dev" ]
 [branches.main]
 landing = "direct-commit"' '' '' hook_none
@@ -988,7 +988,7 @@ nope = 1' '' '.config/bootstrap/repo.toml is not a key of repo.toml'
 run_check "--check, a repo.toml without core_branches" 2 'environments = [ "dev" ]' no_core_branches \
   'has no core_branches - it is a required key of repo.toml'
 run_check "--check, a tools.toml without format" 2 'environments = [ "dev" ]' no_tools_format \
-  '.config/bootstrap/tools.toml without format = 3 is not valid - run bootstrap init'
+  '.config/bootstrap/tools.toml without format = 3 is not valid - run bootstrap migrate'
 run_check "--check, the old .config/repo-sync/gitignore" 2 'environments = [ "dev" ]' old_gitignore_file \
   '.config/repo-sync/gitignore is no longer used'
 run_check "--check, fnox.toml, the old seed with [secrets]" 2 'environments = [ "dev" ]
@@ -1099,11 +1099,11 @@ CASE_CLONE=none CASE_BOOTSTRAP_URL="$tmp/no-such-repo" run_case "sync, a clone t
 # A repository without a values file: `setup:configs` relies on this stop for a
 # member that has not adopted bootstrap.
 no_values_file() { rm -rf -- "$values"; }
-run_case "no values folder" 2 'environments = [ "dev" ]' no_values_file '.config/bootstrap not found - run bootstrap init'
+run_case "no values folder" 2 'environments = [ "dev" ]' no_values_file '.config/bootstrap not found - run bootstrap migrate'
 no_repo_file() { rm -f -- "$repo_values"; }
-run_case "a values folder without repo.toml" 2 'environments = [ "dev" ]' no_repo_file '.config/bootstrap has no repo.toml - run bootstrap init'
+run_case "a values folder without repo.toml" 2 'environments = [ "dev" ]' no_repo_file '.config/bootstrap has no repo.toml - run bootstrap migrate'
 no_tools_file() { rm -f -- "$tools_values"; }
-run_case "a values folder without tools.toml" 2 'environments = [ "dev" ]' no_tools_file '.config/bootstrap has no tools.toml - run bootstrap init'
+run_case "a values folder without tools.toml" 2 'environments = [ "dev" ]' no_tools_file '.config/bootstrap has no tools.toml - run bootstrap migrate'
 both_forms() { printf '%s\n' 'format = 2' 'repo_name = "test"' > "$old_file"; }
 run_case "the old values file next to the folder" 2 'environments = [ "dev" ]' both_forms \
   'both hold the values of the repository - remove one: compare .config/bootstrap.toml with .config/bootstrap/'
@@ -2631,7 +2631,7 @@ leak = "mine"
 [tools.vtest]' values_defaults '[ERROR] config in ' check_engine_keys_refused
 CASE_OLD_VALUES=1 run_case "values: [packs.security] with format = 2 is the old form" 2 "$no_tool_values
 [packs.security]
-env = [ \"dev\" ]" '' '.config/bootstrap.toml is the old form of the values of the repository - run bootstrap init'
+env = [ \"dev\" ]" '' '.config/bootstrap.toml is the old form of the values of the repository - run bootstrap migrate'
 run_case "values: [packs.security] in repo.toml is not a key" 2 "$no_tool_values
 [packs.security]
 env = [ \"dev\" ]" '' '.config/bootstrap/repo.toml is not a key of repo.toml'
@@ -3154,7 +3154,7 @@ check_perm() {
 }
 case_args=' ' run_case "perm and dir_perm" 0 "$fixture_values" perm_files '' check_perm
 
-# bootstrap init. The old form of a values file and of its files: init
+# bootstrap migrate. The old form of a values file and of its files: init
 # migrates them, with consent, and then sync runs.
 old_values='environments = [ "dev" ]
 commit_scopes = [ "api" ]
@@ -3176,7 +3176,7 @@ old_files() {
     > "$consumer/.config/repo-sync/pre-commit.yaml"
 }
 init_then_sync() {
-  "$bin" init --yes || exit
+  "$bin" migrate --yes || exit
   commit_consumer
   "$bin" sync
 }
@@ -3211,10 +3211,10 @@ check_values_unchanged() {
   check_that "no values folder" test ! -e "$repo_values"
   check_that "the old hook file stays" test -e "$consumer/.config/repo-sync/pre-commit.yaml"
 }
-init_no_yes() { "$bin" init < /dev/null; }
+init_no_yes() { "$bin" migrate < /dev/null; }
 CASE_NO_FORMAT=1 CASE_CALL=init_no_yes run_case "init without --yes and without a terminal" 2 "$old_values" old_files \
   'changes need --yes' check_values_unchanged
-init_dry_run() { "$bin" init --dry-run; }
+init_dry_run() { "$bin" migrate --dry-run; }
 check_init_dry_run() {
   check_values_unchanged
   check_that "init --dry-run: the values file in the list" grep -qE 'consumer/\.config/bootstrap\.toml +moved to \.config/bootstrap/' "$log"
@@ -3223,19 +3223,19 @@ check_init_dry_run() {
 CASE_NO_FORMAT=1 CASE_CALL=init_dry_run run_case "init --dry-run" 0 "$old_values" old_files 'changes, nothing written' \
   check_init_dry_run
 sync_old_form() { "$bin" sync; }
-msg_old_form='.config/bootstrap.toml is the old form of the values of the repository - run bootstrap init'
-CASE_NO_FORMAT=1 CASE_CALL=sync_old_form run_case "sync on the old form: run bootstrap init" 2 "$old_values" old_files \
+msg_old_form='.config/bootstrap.toml is the old form of the values of the repository - run bootstrap migrate'
+CASE_NO_FORMAT=1 CASE_CALL=sync_old_form run_case "sync on the old form: run bootstrap migrate" 2 "$old_values" old_files \
   "$msg_old_form" check_values_unchanged
 check_old_form() { "$bin" check; }
-CASE_NO_FORMAT=1 CASE_CALL=check_old_form run_case "check on the old form: run bootstrap init" 2 "$old_values" old_files \
+CASE_NO_FORMAT=1 CASE_CALL=check_old_form run_case "check on the old form: run bootstrap migrate" 2 "$old_values" old_files \
   "$msg_old_form" check_values_unchanged
-CASE_OLD_VALUES=1 CASE_CALL=sync_old_form run_case "sync on the old form with format = 2: run bootstrap init" 2 \
+CASE_OLD_VALUES=1 CASE_CALL=sync_old_form run_case "sync on the old form with format = 2: run bootstrap migrate" 2 \
   "$dev_values" '' "$msg_old_form"
-CASE_OLD_VALUES=1 CASE_CALL=check_old_form run_case "check on the old form with format = 2: run bootstrap init" 2 \
+CASE_OLD_VALUES=1 CASE_CALL=check_old_form run_case "check on the old form with format = 2: run bootstrap migrate" 2 \
   "$dev_values" '' "$msg_old_form"
 init_dirty_values() {
   printf '%s\n' '# a change that is not committed' >> "$old_file"
-  "$bin" init --yes
+  "$bin" migrate --yes
 }
 CASE_NO_FORMAT=1 CASE_CALL=init_dirty_values run_case "init stops on a values file with changes that are not committed" 2 "$old_values" \
   old_files '.config/bootstrap.toml has changes that are not committed' check_values_unchanged
@@ -3267,9 +3267,9 @@ moved_files() {
   printf '%s\n' "$manifest_first" > "$consumer/.config/repo-generated.tsv"
 }
 init_twice_moved() {
-  "$bin" init --yes || exit
+  "$bin" migrate --yes || exit
   commit_consumer
-  "$bin" init < /dev/null
+  "$bin" migrate < /dev/null
 }
 check_init_moved() {
   check_that "init: the old values file is gone" no_file "$old_file"
@@ -3292,7 +3292,7 @@ check_init_moved() {
 }
 CASE_OLD_VALUES=1 CASE_CALL=init_twice_moved run_case "init migrates the keys of format = 2, then init changes nothing" 0 \
   "$moved_values" moved_files 'Nothing to change' check_init_moved
-init_yes() { "$bin" init --yes; }
+init_yes() { "$bin" migrate --yes; }
 check_no_folder() {
   check_that "a refused migration: no values folder" test ! -e "$values"
   check_that "a refused migration: the old values file stays" test -f "$old_file"
@@ -3307,7 +3307,7 @@ CASE_OLD_VALUES=1 CASE_CALL=init_yes run_case "init: a branch table of a branch 
 [tools.git.branch.feature]
 direct_commit = false' feature_branch 'remove the table or create the branch' check_no_folder
 CASE_OLD_VALUES=1 CASE_CALL=init_yes run_case "init: neither main nor develop" 2 "$dev_values" consumer_no_core_branch \
-  '.config/bootstrap.toml cannot migrate - create main or develop, then run bootstrap init again' check_no_folder
+  '.config/bootstrap.toml cannot migrate - create main or develop, then run bootstrap migrate again' check_no_folder
 check_untyped_submodule() {
   check_that "init: an old member without a type in .gitmodules is a submodule" \
     tomlq '.members.lib.type == "submodule" and .members.lib.folder == "sub"' "$repo_values"
@@ -3321,7 +3321,7 @@ folder = "sub"' consumer_with_submodule 'Synced: ' check_untyped_submodule
 init_new() {
   rm -rf -- "$values"
   commit_consumer
-  "$bin" init --yes
+  "$bin" migrate --yes
 }
 check_init_new() {
   check_that "init: the new repo.toml has format = 3" tomlq '.format == 3' "$repo_values"
@@ -3345,33 +3345,33 @@ consumer_detached() {
 }
 CASE_CALL=init_new run_case "init without a values file on a detached HEAD" 2 \
   'environments = [ "dev" ]' consumer_detached \
-  'has no branch main or develop, and HEAD is not on a branch - check out a branch, then run bootstrap init again'
+  'has no branch main or develop, and HEAD is not on a branch - check out a branch, then run bootstrap migrate again'
 init_no_tools_file() {
   rm -f -- "$tools_values"
   commit_consumer
-  "$bin" init --yes
+  "$bin" migrate --yes
 }
 check_tools_file_created() { check_that "init: tools.toml is there again" tomlq '.format == 3'; }
 CASE_CALL=init_no_tools_file run_case "init creates a missing tools.toml" 0 'environments = [ "dev" ]' '' 'Synced: ' \
   check_tools_file_created
 init_plain() {
   mkdir -p -- "$tmp/plain"
-  MISE_PROJECT_ROOT=$tmp/plain "$bin" init --yes
+  MISE_PROJECT_ROOT=$tmp/plain "$bin" migrate --yes
 }
 CASE_CALL=init_plain run_case "init outside a git repository" 2 'environments = [ "dev" ]' '' \
-  'is not a git repository - create one with git init, then run bootstrap init again'
+  'is not a git repository - create one with git init, then run bootstrap migrate again'
 init_twice() {
   "$bin" sync > /dev/null 2>&1 || exit
   commit_consumer
-  "$bin" init < /dev/null
+  "$bin" migrate < /dev/null
 }
 CASE_CALL=init_twice run_case "init with nothing to change" 0 'environments = [ "dev" ]' '' 'Nothing to change'
-init_unknown_answer() { "$bin" init --yes --answer nope.key=1; }
+init_unknown_answer() { "$bin" migrate --yes --answer nope.key=1; }
 CASE_CALL=init_unknown_answer run_case "init --answer of an unknown question" 2 'environments = [ "dev" ]' '' \
   '--answer nope.key=1: no question nope.key of the selected tools'
-init_names() { "$bin" init --yes node; }
+init_names() { "$bin" migrate --yes node; }
 CASE_CALL=init_names run_case "init with a tool name" 2 'environments = [ "dev" ]' '' \
-  'init takes no tool names - use: bootstrap add tool node'
+  'migrate takes no tool names - use: bootstrap add tool node'
 
 # The test ports (D2, D3, D4, D7, D8, D12, D15, D18, D20, D21, D26): the
 # dispatchers test, test:e2e and test:golden, their NN- parts, and the init
@@ -3469,7 +3469,7 @@ check_own_moved() {
   check_that "the init move: no warning for test:go (D18)" log_lacks 'has no NN- name'
 }
 CASE_CALL=check_old_form run_case "the init move: an unshaped repo with its own test tasks" 2 "$dev_values" \
-  own_tests_unshaped '.config/bootstrap not found - run bootstrap init' check_own_moved
+  own_tests_unshaped '.config/bootstrap not found - run bootstrap migrate' check_own_moved
 # D8, D20: test/50-local exists, so init moves no file, also not test/e2e.
 own_tests_taken() {
   own_task test/_default 'echo own-test-default'
@@ -3492,7 +3492,7 @@ own_golden_lint() {
   own_task code/lint/mylint 'echo own-lint'
 }
 init_then_check() {
-  "$bin" init --yes > /dev/null 2>&1 || exit
+  "$bin" migrate --yes > /dev/null 2>&1 || exit
   commit_consumer
   "$bin" check
 }
@@ -3562,7 +3562,7 @@ old_copy() {
   cp -- "$old_golden" "$file"
   chmod +x "$file"
 }
-msg_old_copy='is an old copy of the task test/golden/40-android of the tool android - run bootstrap init'
+msg_old_copy='is an old copy of the task test/golden/40-android of the tool android - run bootstrap migrate'
 # D25, D26: the values select android before the first init; the old copy is
 # at the old path test/golden. check gives code 2 and the fix of init; init
 # removes it, and R1c does not move it.
@@ -3584,11 +3584,11 @@ check_group_copy_removed() {
   check_that "an old copy at test/golden: check after init exits 0" test "$got" = 0
 }
 case_args=--check copy_case "the tool test parts: an old copy at test/golden" 2 "$android_values" old_at_group \
-  ' - run bootstrap init' check_group_copy_removed
+  ' - run bootstrap migrate' check_group_copy_removed
 # D25: init, add tool android, then the old copy at test/golden/50-local.
 # <edit> appends a line to the copy, so it is the repo's own.
 add_local_copy() {
-  "$bin" init --yes > /dev/null 2>&1 || exit
+  "$bin" migrate --yes > /dev/null 2>&1 || exit
   commit_consumer
   "$bin" add tool android --yes > /dev/null 2>&1 || exit
   old_copy test/golden/50-local
@@ -3675,7 +3675,7 @@ env = [ "dev" ]
 env = [ "dev", "ci" ]
 
 [tools.devtools]'
-init_no_tui() { "$bin" init --no-tui --yes; }
+init_no_tui() { "$bin" migrate --no-tui --yes; }
 check_packs_migrated() {
   check_that "migration: format = 3" tomlq '.format == 3'
   check_that "migration: no [packs.*] table" not_grep '^\[packs\.' "$tools_values"
@@ -3701,14 +3701,14 @@ CASE_OLD_VALUES=1 CASE_CALL=init_no_tui run_case "init migrates a [packs.*] tabl
   'environments = [ "dev" ]
 [packs.container-build]' '' 'Synced: ' check_format_packs_migrated
 check_no_vscode_again() { check_that "init again: no table of the removed vscode" not_grep 'vscode' "$tools_values"; }
-init_again() { synced && "$bin" init --no-tui --yes; }
+init_again() { synced && "$bin" migrate --no-tui --yes; }
 CASE_CALL=init_again run_case "init again does not add a removed member of base" 0 "$dev_values" '' \
   'Nothing to change' check_no_vscode_again
 init_new_sub() {
   consumer_submodule
   rm -rf -- "$values"
   commit_consumer
-  "$bin" init --yes
+  "$bin" migrate --yes
 }
 check_init_new_sub() {
   check_that "init in a submodule: no table of vscode" not_grep 'vscode' "$tools_values"
@@ -3998,7 +3998,7 @@ CONFIG_ARGS='get releases.api' CASE_CALL=config_cmd run_case "config get of a re
 CONFIG_ARGS='get repo.nope' CASE_CALL=config_cmd run_case "config get of an unknown key" 2 "$dev_values" '' \
   'repo.nope is not a key of the values'
 CONFIG_ARGS='get repo.repo_name' CASE_CALL=config_cmd run_case "config get without a values folder" 2 "$dev_values" \
-  no_values_file 'run bootstrap init'
+  no_values_file 'run bootstrap migrate'
 CONFIG_ARGS='' CASE_CALL=config_cmd run_case "config alone" 2 "$dev_values" '' \
   'config needs get, set, unset or show; the settings of the engine are bootstrap settings'
 
@@ -4344,9 +4344,9 @@ add_no_values() {
   commit_consumer
   "$bin" add tool --yes go
 }
-CASE_CALL=add_no_values run_case "add without a values file" 2 "$dev_values" '' 'is not there - run bootstrap init first'
+CASE_CALL=add_no_values run_case "add without a values file" 2 "$dev_values" '' 'is not there - run bootstrap migrate first'
 add_old_form() { "$bin" add tool --yes go; }
-CASE_NO_FORMAT=1 CASE_CALL=add_old_form run_case "add on the old form: run bootstrap init" 2 "$old_values" old_files \
+CASE_NO_FORMAT=1 CASE_CALL=add_old_form run_case "add on the old form: run bootstrap migrate" 2 "$old_values" old_files \
   "$msg_old_form"
 
 # remove: the files and the shared items of the tool go; a seed stays.
@@ -4713,7 +4713,7 @@ questions_tool() {
 }
 msg_group='the group vtest.email has no answer in '
 check_group_file() {
-  check_that "the group message names the values file" log_has "in $tools_values - run bootstrap init"
+  check_that "the group message names the values file" log_has "in $tools_values - run bootstrap migrate"
 }
 msg_group_flag='the group vtest.email has no answer - give at least one with --answer <tool>.<key>=<value>: a, b'
 run_case "questions: a group with no answer" 2 "$vtest_values" group_tool "$msg_group" check_group_file
@@ -4733,13 +4733,13 @@ a = \"x\"" group_not_optional 'Dry run: '
 check_no_question_line() { check_that "init: only the group error" log_lacks 'the question vtest.'; }
 CASE_CALL=init_yes run_case "init --yes: a group with no answer" 2 "$vtest_values" group_tool "$msg_group_flag" \
   check_no_question_line
-init_group_empty() { "$bin" init --yes --answer vtest.a= --answer vtest.b=; }
+init_group_empty() { "$bin" migrate --yes --answer vtest.a= --answer vtest.b=; }
 CASE_CALL=init_group_empty run_case "init --yes: empty answers of each question of a group" 2 "$vtest_values" \
   group_tool "$msg_group_flag" check_no_question_line
 init_group_twice() {
-  "$bin" init --yes --answer vtest.a=x --answer vtest.b= || exit
+  "$bin" migrate --yes --answer vtest.a=x --answer vtest.b= || exit
   commit_consumer
-  "$bin" init --yes
+  "$bin" migrate --yes
 }
 check_group_answers() {
   check_that "init: the answer of the group" tomlq '.tools.vtest.a == "x"'
@@ -4750,22 +4750,22 @@ CASE_CALL=init_group_twice run_case "init --yes again on a values file that answ
 CASE_CALL=init_yes run_case "init --yes: an optional question with no flag" 2 "$vtest_values" optional_tool \
   'the question vtest.q has no answer - give it with --answer vtest.q=<value>, or leave it empty with --answer vtest.q='
 init_empty_twice() {
-  "$bin" init --yes --answer vtest.q= || exit
+  "$bin" migrate --yes --answer vtest.q= || exit
   commit_consumer
-  "$bin" init --yes
+  "$bin" migrate --yes
 }
 check_empty_answer() { check_that "the empty answer" tomlq '.tools.vtest.q == ""'; }
 CASE_CALL=init_empty_twice run_case "init --answer <q>= of an optional question, then init --yes" 0 "$vtest_values" \
   optional_tool 'Nothing to change' check_empty_answer
-init_empty_answer() { "$bin" init --yes --answer vtest.q=; }
+init_empty_answer() { "$bin" migrate --yes --answer vtest.q=; }
 CASE_CALL=init_empty_answer run_case "init --answer <q>= of a necessary question" 2 "$vtest_values" necessary_tool \
   '--answer vtest.q=: an empty answer is only for an optional or a group question - give it with --answer vtest.q=<value>'
 add_empty_answer() { synced && "$bin" add tool --yes --answer vtest.q= vtest; }
 CASE_CALL=add_empty_answer run_case "add --answer <q>= of an optional question" 0 "$dev_values" optional_tool \
   'Synced: ' check_empty_answer
-init_skip_answer() { "$bin" init --yes --skip-answer vtest.q; }
+init_skip_answer() { "$bin" migrate --yes --skip-answer vtest.q; }
 CASE_CALL=init_skip_answer run_case "init --skip-answer is not a flag" 2 "$vtest_values" optional_tool \
-  'init has no flag --skip-answer'
+  'migrate has no flag --skip-answer'
 
 questions_json() { "$bin" questions --json; }
 check_questions_json() {
@@ -5354,7 +5354,7 @@ check_sibling_old_form() {
   check_that "--all, an old-form sibling: no values folder written" test ! -e "$tmp/api/.config/bootstrap"
 }
 CASE_CALL=configs_all run_case "setup:configs --all skips a sibling of the old form" 0 "$sibling_values" \
-  sibling_old_form 'member api: run bootstrap init there' check_sibling_old_form
+  sibling_old_form 'member api: run bootstrap migrate there' check_sibling_old_form
 
 # The merge task git:merge:main honours the landing of [branches.main]: pr opens
 # no direct merge (with no origin, it stops before it touches a branch), and
@@ -5521,7 +5521,7 @@ wt_old_cmd() {
   printf '%s\n' '[[pre-start]]' 'setup = "mise run setup:worktree"' > "$consumer/.config/wt.toml"
 }
 run_check "--check, .config/wt.toml runs setup:worktree" 2 "$dev_values" wt_old_cmd \
-  '.config/wt.toml runs mise run setup:worktree, the old name of git:worktree:setup - run bootstrap init'
+  '.config/wt.toml runs mise run setup:worktree, the old name of git:worktree:setup - run bootstrap migrate'
 check_wt_renamed() {
   check_that "init: wt.toml runs git:worktree:setup" grep -qF 'setup = "mise run git:worktree:setup"' "$consumer/.config/wt.toml"
   check_that "init: wt.toml has no setup:worktree" lacks_in_file 'setup:worktree' "$consumer/.config/wt.toml"
@@ -5540,7 +5540,7 @@ check_member_old_cmd() {
   check_that "check: the message names members.web.worktree_install" log_has 'members.web.worktree_install in '
 }
 run_check "--check, a member's worktree_install runs setup:worktree" 2 "$member_old_cmd" member_folder \
-  '/.config/bootstrap/repo.toml runs mise run setup:worktree, the old name of git:worktree:setup - run bootstrap init' \
+  '/.config/bootstrap/repo.toml runs mise run setup:worktree, the old name of git:worktree:setup - run bootstrap migrate' \
   check_member_old_cmd
 check_member_renamed() {
   check_that "init: worktree_install runs git:worktree:setup" grep -qF 'worktree_install = "mise run git:worktree:setup"' "$repo_values"
@@ -5684,7 +5684,7 @@ mv -- "$members_root/sub/.config/bootstrap" "$members_root/sub/.config/bootstrap
 got=0
 usage_all=true run_configs || got=$?
 check_configs "setup:configs --all, a member of the old form" 0 "$got" "sync"
-check_configs_log "setup:configs --all, a member of the old form" -h 'member sub: run bootstrap init there'
+check_configs_log "setup:configs --all, a member of the old form" -h 'member sub: run bootstrap migrate there'
 mv -- "$members_root/sub/.config/bootstrap.off" "$members_root/sub/.config/bootstrap"
 
 # A member that is not on this machine is skipped with a warning.

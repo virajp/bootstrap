@@ -54,7 +54,7 @@ func TestContractJSON(t *testing.T) {
 	if e.Command != "contract" || e.Code != fail.OK {
 		t.Errorf("envelope = %+v", e)
 	}
-	want := `{"versions":[1],"cli_version":"dev","commands":["contract","catalog","describe","lsp","init","sync","check","questions","add","remove","replace","detect","config get","config set","config unset","config show","mac questions"],` +
+	want := `{"versions":[1],"cli_version":"dev","commands":["contract","catalog","describe","lsp","migrate","sync","check","questions","add","remove","replace","detect","config get","config set","config unset","config show","mac questions"],` +
 		`"ports":["code:format","code:lint","code:sec","code:precommit","git:merge:<branch>","git:worktree:create","git:worktree:setup","git:worktree:delete","code:lsp:check","setup","test","test:e2e","test:golden","p:<id>:deploy"]}`
 	if string(e.Data) != want {
 		t.Errorf("data = %s, want %s", e.Data, want)
@@ -64,7 +64,7 @@ func TestContractJSON(t *testing.T) {
 func TestContractText(t *testing.T) {
 	setupEnv(t, "/nonexistent/bootstrap/config.toml")
 	code, out, _ := runArgs("contract")
-	if code != fail.OK || !strings.HasPrefix(out, "versions  1\nversion   dev\ncommands  contract, catalog, describe, lsp, init, sync, check, questions, add, remove, replace, detect,") {
+	if code != fail.OK || !strings.HasPrefix(out, "versions  1\nversion   dev\ncommands  contract, catalog, describe, lsp, migrate, sync, check, questions, add, remove, replace, detect,") {
 		t.Errorf("code %d, stdout %q", code, out)
 	}
 }

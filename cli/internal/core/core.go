@@ -108,11 +108,11 @@ func Prepare(mac, initCmd bool, pwd string, getenv func(string) string) (Side, e
 		if initCmd {
 			dir = pwd
 		} else if dir == "" {
-			return sd, problem(fail.Usage, "MACOS_SETUP_REPO_PATH is not set", "set it to the repository of macos.toml, or run bootstrap mac init in that repository")
+			return sd, problem(fail.Usage, "MACOS_SETUP_REPO_PATH is not set", "set it to the repository of macos.toml, or run bootstrap mac migrate in that repository")
 		}
 		if _, ok := Toplevel(dir); !ok {
 			if initCmd {
-				return sd, problem(fail.Usage, dir+" is not a git repository", "create one with git init, then run bootstrap mac init again")
+				return sd, problem(fail.Usage, dir+" is not a git repository", "create one with git init, then run bootstrap mac migrate again")
 			}
 			return sd, problem(fail.Usage, "MACOS_SETUP_REPO_PATH "+dir+" is not a git repository", "")
 		}
@@ -128,7 +128,7 @@ func Prepare(mac, initCmd bool, pwd string, getenv func(string) string) (Side, e
 	top, ok := Toplevel(dir)
 	if !ok {
 		if initCmd {
-			return sd, problem(fail.Usage, dir+" is not a git repository", "create one with git init, then run bootstrap init again")
+			return sd, problem(fail.Usage, dir+" is not a git repository", "create one with git init, then run bootstrap migrate again")
 		}
 		return sd, problem(fail.Usage, dir+" is not a git repository", "")
 	}
@@ -159,11 +159,11 @@ func CheckLayout(sd Side, initCmd bool) error {
 	case initCmd:
 		return nil
 	case hasOld:
-		return problem(fail.Usage, sd.Show(old)+" is the old form of the values of the repository", "run bootstrap init")
+		return problem(fail.Usage, sd.Show(old)+" is the old form of the values of the repository", "run bootstrap migrate")
 	case hasFolder:
 		for _, f := range []string{values.RepoFile(sd.Values), values.ToolsFile(sd.Values)} {
 			if !Exists(f) {
-				return problem(fail.Usage, sd.Show(sd.Values)+" has no "+filepath.Base(f), "run bootstrap init")
+				return problem(fail.Usage, sd.Show(sd.Values)+" has no "+filepath.Base(f), "run bootstrap migrate")
 			}
 		}
 	}

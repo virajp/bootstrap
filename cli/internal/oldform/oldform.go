@@ -1,6 +1,6 @@
 // Package oldform finds the old forms of a values file and of the files that
 // went with it, and migrates them to the new form. `sync` and `check` stop
-// with code 2 on an old form; only `bootstrap init` (`bootstrap mac init` on
+// with code 2 on an old form; only `bootstrap migrate` (`bootstrap mac migrate` on
 // the Mac) migrates it.
 //
 // This package is the one place of the old names: the old tools of the entry
@@ -45,16 +45,16 @@ const (
 // movedKeys are the old top-level keys of a repo values file.
 var movedKeys = []string{"branch", "claude", "commit_scopes", "extensions", "worktree_files"}
 
-// Migrating is true while `bootstrap init` plans the sync after a migration
+// Migrating is true while `bootstrap migrate` plans the sync after a migration
 // that it did not write yet: the old file of the own hooks is then not an
 // error, because the migration removes it.
 var Migrating bool
 
 // Hint ends each message of an old form of the repo side.
-const Hint = "run bootstrap init"
+const Hint = "run bootstrap migrate"
 
 // MacHint ends each message of an old form of the Mac side.
-const MacHint = "run bootstrap mac init"
+const MacHint = "run bootstrap mac migrate"
 
 func usage(format string, args ...any) *fail.Error { return fail.New(fail.Usage, format, args...) }
 

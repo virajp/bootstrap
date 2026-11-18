@@ -114,7 +114,7 @@ func readWrite(t *testing.T, e envelope) writeJSON {
 func TestWriteJSONNeedsConsent(t *testing.T) {
 	values, text, run := writeRepo(t)
 	for _, args := range [][]string{
-		{"init"}, {"add", "tool", "c"}, {"remove", "tool", "r1"}, {"replace", "tool", "r1", "r2"}, {"detect", "--add"},
+		{"migrate"}, {"add", "tool", "c"}, {"remove", "tool", "r1"}, {"replace", "tool", "r1", "r2"}, {"detect", "--add"},
 	} {
 		code, out, errText := run(append(args, "--json")...)
 		e := readEnvelope(t, out)
@@ -136,7 +136,7 @@ func TestWriteJSONDryRun(t *testing.T) {
 		args    []string
 		changes int
 	}{
-		{[]string{"init"}, 0},
+		{[]string{"migrate"}, 0},
 		{[]string{"sync"}, 0},
 		{[]string{"add", "tool", "c"}, 1},
 		{[]string{"remove", "tool", "r1"}, 1},
@@ -200,7 +200,7 @@ func TestWriteJSONApply(t *testing.T) {
 // with no --yes, D21) and gives one outcome for each target of its sync.
 func TestWriteJSONApplyEach(t *testing.T) {
 	for _, args := range [][]string{
-		{"init", "--yes"}, {"sync"}, {"add", "tool", "c", "--yes"}, {"remove", "tool", "r1", "--yes"},
+		{"migrate", "--yes"}, {"sync"}, {"add", "tool", "c", "--yes"}, {"remove", "tool", "r1", "--yes"},
 		{"replace", "tool", "r1", "r2", "--yes"}, {"detect", "--add", "--yes"},
 	} {
 		t.Run(args[0], func(t *testing.T) {

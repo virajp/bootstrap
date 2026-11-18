@@ -16,7 +16,7 @@ rules and the other exit codes, [packs.md](packs.md), [tools.md](tools.md) and
 `macos.toml` is in a git repository of the user: the private `macos-setup`
 clone. Each `mac` command needs that repository.
 
-- `bootstrap mac init` runs in the current folder, which must be a git
+- `bootstrap mac migrate` runs in the current folder, which must be a git
   repository. Else it tells the user to create one with `git init`.
 - Each other `mac` command runs from any folder, and uses `--repo-path <path>`
   or `MACOS_SETUP_REPO_PATH`. The flag sets the variable for the run. A path
@@ -27,7 +27,7 @@ clone. Each `mac` command needs that repository.
 The Mac tool `mise` writes `MACOS_SETUP_REPO_PATH` in its `[mise.env]`, from
 the answer `config_path` of `[tools.mise]`. `~` at the start becomes `$HOME`.
 Thus the variable is set in each shell after the first sync. Before the first
-sync, `mac init` sets it for its own run.
+sync, `mac migrate` sets it for its own run.
 
 The config file of the engine has no key for the repository of `macos.toml`.
 The mise env exports `MACOS_SETUP_REPO_PATH` in each shell, so the variable
@@ -110,7 +110,7 @@ overrides file is `macos.overrides.toml` next to it. See
 
 | Key                       | Meaning                                                                                                                          |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `format`                  | The integer `2`, the form of the file. A file without it is an old form: run `bootstrap mac init`.                               |
+| `format`                  | The integer `2`, the form of the file. A file without it is an old form: run `bootstrap mac migrate`.                            |
 | `bootstrap_commit`        | A string. The commit of the last clean run. The sync writes it. See [cli.md](cli.md#bootstrap_commit).                           |
 | `[tools.<name>]`          | A table. It selects the tool, and each key is a value of the tool. See [cli.md](cli.md#the-values-of-a-tool).                    |
 | `[overrides.mise.<path>]` | It changes the generated mise config. See [mise.md](mise.md#the-overrides).                                                      |
@@ -125,10 +125,10 @@ These stop the sync:
 - `[overrides.mise_env]`, and any other key of `[overrides]`.
 - A `[tools.<name>]` that is not a table, a `[mise]` that is not a table, and a
   `bootstrap_commit` that is not a string.
-- An old form: run `bootstrap mac init`. The old forms are a file without
+- An old form: run `bootstrap mac migrate`. The old forms are a file without
   `format = 2`, a `[packs.<name>]` table or a `packs` key, and the table of
   the old Mac entry tool, whose values go to `[tools.mise]`.
-  `docs/sync/migrate.md` names the old tool. `mac init` migrates them as on
+  `docs/sync/migrate.md` names the old tool. `mac migrate` migrates them as on
   the repo side: see
   [bootstrap-config.md](bootstrap-config.md#old-forms).
 
@@ -196,7 +196,7 @@ Two Mac sources do not follow this rule, each from its old copy:
    question can have no answer. A question of a group needs no answer, but its
    group needs one answer that is not empty, else the run stops with code 2.
    The message names the question or the group, and the hint is
-   `run bootstrap mac init`.
+   `run bootstrap mac migrate`.
 4. It runs the check scripts.
 5. It examines `[overrides.mise*]`, and generates the mise config of each tool
    and of `macos.toml` into a work folder.
@@ -320,7 +320,7 @@ selected is not in the init stage, so the main stage examines its rows.
 - `$HOME`, and the sources that its symlinks point to.
 - The cache: the clone, the lock and `macos-generated.tsv`.
 - `macos.toml`: `bootstrap_commit`, the tables of the required members of
-  `base`, and the writes of `mac init`, `mac add`, `mac remove`,
+  `base`, and the writes of `mac migrate`, `mac add`, `mac remove`,
   `mac replace` and `mac detect --add`.
 - Temp folders, which it removes on exit.
 

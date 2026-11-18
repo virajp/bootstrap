@@ -141,7 +141,7 @@ None.
 
 - The tool no longer ships graphify and mempalace (M24 of `migrate.md`).
 - Delete an old `conf.d/ai/` (M7 of `migrate.md`).
-- M34 of `migrate.md`: `bootstrap init` moves the old top-level
+- M34 of `migrate.md`: `bootstrap migrate` moves the old top-level
   `[claude.plugins.*]` tables into `[tools.claude.plugins.*]`.
 - M41 of `migrate.md`: the tables are in `.config/bootstrap/tools.toml`, and
   `setup:ai` needs `bootstrap` 4.0.0 or newer.

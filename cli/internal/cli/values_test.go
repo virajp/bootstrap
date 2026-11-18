@@ -409,7 +409,7 @@ func TestConfigLayout(t *testing.T) {
 	if err := os.Rename(dir, root+"/kept"); err != nil {
 		t.Fatal(err)
 	}
-	if code, _, errText := run("config", "get", "repo.repo_name"); code != fail.Usage || !strings.Contains(errText, "Run bootstrap init") {
+	if code, _, errText := run("config", "get", "repo.repo_name"); code != fail.Usage || !strings.Contains(errText, "Run bootstrap migrate") {
 		t.Errorf("no folder: %d %s", code, errText)
 	}
 	// D28: the old file alone.

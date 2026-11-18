@@ -31,7 +31,7 @@ files are for this repository only:
 - `cli/`: the engine of the sync. It is not a tool, so the sync never
   copies it to a consumer. It is the Go module
   `github.com/virajp/bootstrap/cli` (`go.mod`, `cmd/bootstrap/` and
-  `internal/`), the CLI `bootstrap` with the commands `init`, `tui`, `check`,
+  `internal/`), the CLI `bootstrap` with the commands `migrate`, `tui`, `check`,
   `sync`, `questions`, `detect`, `add`, `remove`, `replace`, `list`, `config`
   (`get`, `set`, `unset` and `show` of a value of `.config/bootstrap/`),
   `settings`, `contract`, `catalog`, `describe`, `lsp` and the group `mac`. A
@@ -45,7 +45,7 @@ files are for this repository only:
 - `.config/mise/tasks/test/`: the tasks `test:repo` (`repo`), `test:mac`
   (`mac`), `test:macos-tools` (`macos-tools`) and
   `test:go` (`go`), and the runner of this repository that `test` runs
-  (`_default`, which `bootstrap init` moves to the part `50-local`). They are
+  (`_default`, which `bootstrap migrate` moves to the part `50-local`). They are
   not in `repo/tools/` or `macos/tools/`, so no consumer gets them.
 - `.github/workflows/release-engine.yml` and `cli/VERSION`: the release
   of the Go engine and the minimum version that a clone needs. A signed tag
@@ -85,9 +85,9 @@ consumer in sync.
 
 - `docs/sync/index.md`: the adoption prompt. It runs
   `bootstrap questions --json` (the questions are in `.data` of the
-  envelope), then `bootstrap init --answer …` and
+  envelope), then `bootstrap migrate --answer …` and
   `bootstrap add tool <tool…> --answer …`, and it brings an adopted
-  repository up to date with `bootstrap init`.
+  repository up to date with `bootstrap migrate`.
 - `docs/sync/migrate.md`: the items for a repository with older copies.
 - `docs/sync/kotlin-dsl.md`: the static prompt that migrates a Gradle build
   from the Groovy DSL to the Kotlin DSL. `vwf.md` and the "Migration"
@@ -104,7 +104,8 @@ consumer in sync.
   with the tools that it adds and the questions of the adopting AI.
 
 `docs/setup/` tells an AI agent how to adopt `bootstrap` on a Mac, and how to
-bring the Mac up to date with `bootstrap mac init`. After the adoption, the task
+bring the Mac up to date with `bootstrap mac migrate`. After the adoption, the
+task
 `updateall:configs` (`bootstrap mac sync`) keeps the Mac in sync. The sync never
 copies this folder.
 
@@ -117,7 +118,7 @@ copies this folder.
 
 This repository is also a consumer of its own `base` pack and of the `claude`
 tool. Its values file is still the old `.config/bootstrap.toml` until the user
-migrates it with `bootstrap init` after the `bootstrap@4.0.0` tag; the engine
+migrates it with `bootstrap migrate` after the `bootstrap@4.0.0` tag; the engine
 of this branch reads `.config/bootstrap/`. `setup:configs` writes
 the synced copies at the root (`.config/`, `.vscode/`, `.gitignore`,
 `.gitattributes`). Do not edit a synced copy. Change the
@@ -337,7 +338,7 @@ changes a case. See `docs/design/cli.md` ("The config file").
   `bootstrap check` and, for a case that compares a written file,
   `bootstrap sync`, built from the working tree's `cli/`, with the
   working tree's `repo/` and `cli/` against scratch values files and
-  scratch consumers. The init cases run `bootstrap init` on a new values
+  scratch consumers. The migrate cases run `bootstrap migrate` on a new values
   folder, on an old values file and on its migration to `.config/bootstrap/`,
   the selection cases run `bootstrap add tool <tool…>`,
   `bootstrap add pack <pack…>`, `bootstrap remove tool <tool…>`,
@@ -349,15 +350,15 @@ changes a case. See `docs/design/cli.md` ("The config file").
   `git:merge:main` and `git:merge:develop` with a stub library that prints
   its arguments. The worktree cases run `git:worktree:create` with
   `--no-setup` and `git:worktree:delete`. The test-port cases run
-  `bootstrap init` with the repo's own test tasks, and `mise run test`,
+  `bootstrap migrate` with the repo's own test tasks, and `mise run test`,
   `test:e2e` and `test:golden` in a scratch consumer. The tool-test-part cases
-  run `bootstrap check` and `bootstrap init` with an old stackgen copy of the
+  run `bootstrap check` and `bootstrap migrate` with an old stackgen copy of the
   compose `test/golden` task: at `test/golden`, at `test/golden/50-local`,
   edited, and without the `android` tool. They read that copy from the
   claude-plugins clone of
   `CLAUDE_PLUGINS_CLONE`: without it, each of the four cases prints one skip
   line and passes. A fifth tool-test-part case selects `android` and `swift`,
-  runs `bootstrap init`, then runs `mise run test:golden` with
+  runs `bootstrap migrate`, then runs `mise run test:golden` with
   `MISE_TASK_RUN_AUTO_INSTALL=false` in a consumer with no Gradle or Xcode
   project, and compares stdout with the success line of the dispatcher. It
   uses no copy. The config verb cases run
@@ -437,7 +438,7 @@ changes a case. See `docs/design/cli.md` ("The config file").
   engine code names a tool, outside its allow list. The task runs the Go of the
   `go` tool, which this repository selects.
 - `test` runs the four test tasks in parallel: the runner of this repository,
-  `test/_default`, which `bootstrap init` moves to the part `test/50-local`,
+  `test/_default`, which `bootstrap migrate` moves to the part `test/50-local`,
   depends on them. No hook and no `git:merge:<branch>` task runs a test,
   because the tests are slow and a consumer does not have them. Run the tests
   by hand before you commit:
@@ -464,7 +465,7 @@ changes a case. See `docs/design/cli.md` ("The config file").
    `mise run git:merge:main <branch>`, which merges and pushes.
 4. In this repository and in each consumer repository, run
    `mise run setup:configs`, then commit the result. This repository allows no
-   direct commit on `main` (no `direct_commit`, which `bootstrap init` makes
+   direct commit on `main` (no `direct_commit`, which `bootstrap migrate` makes
    `landing = "direct-merge"`), so the `no-commit-to-branch` hook refuses a
    commit on `main`. Thus in this
    repository, sync on a local `sync-<name>` branch, commit

@@ -28,7 +28,7 @@ A repository uses `bootstrap` in two ways, in this sequence:
    agent makes sure that each rule is relevant to the repository: it selects
    only the tools that the repository needs, it keeps the repository-owned
    content, and it asks the user about each difference. The agent runs
-   `bootstrap init` to write the values file and to do the first sync, and
+   `bootstrap migrate` to write the values file and to do the first sync, and
    `bootstrap add tool <tool…>` to add the other tools.
 2. **Sync, each time after that, by `setup:configs`.** The `mise` tool ships
    the task `setup:configs`. The task runs `bootstrap sync`, which copies the
@@ -108,9 +108,9 @@ This file holds the instructions. Each rule of the sync has one place in
 - A command of `bootstrap` that writes shows the change list first. An AI
   agent has no terminal, so it gives `--yes` after the user agrees to the
   list. Run the command with `--dry-run` first to get the list.
-- In a terminal, `bootstrap init` opens the TUI, which is for a person. The
+- In a terminal, `bootstrap migrate` opens the TUI, which is for a person. The
   CLI is for an agent: `--no-tui`, `--yes`, `--dry-run` and `--answer` each
-  keep `bootstrap init` on the CLI path. Do not run `bootstrap tui`.
+  keep `bootstrap migrate` on the CLI path. Do not run `bootstrap tui`.
 - `bootstrap` writes no file that has changes that are not committed. It
   stops with code 2 and names the file. Thus commit or discard the changes of
   each target before a command that writes. Ask the user before each commit.
@@ -235,7 +235,8 @@ The base repository has the members as git submodules, for example
    one writes its `[home]`.
 
 A tool with `root_only = true` is for the base repository only. The sync refuses
-it in a submodule member. `bootstrap init` and `bootstrap add pack <pack…>` skip
+it in a submodule member. `bootstrap migrate` and `bootstrap add pack <pack…>`
+skip
 a
 `root_only` member of a pack in a submodule, for example `vscode` of `base`.
 When a submodule is in its root checkout, mise also loads the tools of the root.
@@ -262,20 +263,20 @@ The members are separate checkouts next to the base repository, for example
 
 Do not stop. Find whether the repository is up to date, then do only the
 steps that are not. Show the result of each check to the user before you
-change a file. `bootstrap init` on existing values is the update: it
+change a file. `bootstrap migrate` on existing values is the update: it
 examines the version, migrates each old form of the values, asks each
 new question, then syncs. The old values file `.config/bootstrap.toml` is an
-old form: `bootstrap init` splits it into `.config/bootstrap/` (M41 of
+old form: `bootstrap migrate` splits it into `.config/bootstrap/` (M41 of
 `migrate.md`). A values file without `format = 2`, or with a `[packs.*]`
-table, is an older form: `bootstrap init` also moves it to a
+table, is an older form: `bootstrap migrate` also moves it to a
 `[tools.<name>]` table for each tool (M38 of `migrate.md`). A task of the
 repository at the place of `test`, `test:e2e` or `test:golden` is an old form
-too: `bootstrap init` moves it to the part `50-local` of its group (M42 of
+too: `bootstrap migrate` moves it to the part `50-local` of its group (M42 of
 `migrate.md`). An old stackgen copy of a test part of the `android` or `swift`
 tool, with the hash of that copy, is not moved when the repository selects
-that tool: `bootstrap init` removes it. An edited copy, or a copy of a tool
+that tool: `bootstrap migrate` removes it. An edited copy, or a copy of a tool
 that the repository does not select, is a task of the repository:
-`bootstrap init` moves it to the part `50-local` of its group.
+`bootstrap migrate` moves it to the part `50-local` of its group.
 
 1. Make the clone of step 1, and get the newest commit of `bootstrap`:
    `git -C "$tmp" rev-parse HEAD`.
@@ -296,21 +297,21 @@ that the repository does not select, is a task of the repository:
 4. Do the selected checks of this table. Each check that fails sends you to
    a step:
 
-   | Check                                                                                                                      | Kind       | If it fails, do     |
-   | -------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------- |
-   | No item of `migrate.md` applies, and no "Migration" item of a selected tool applies.                                       | bootstrap  | Step 4              |
-   | No path of "Files that bootstrap no longer ships" exists.                                                                  | bootstrap  | Step 4              |
-   | `bootstrap init --dry-run` shows no change. It shows the migration of an old form, a new question and each file to sync.   | bootstrap  | Step 3, then step 5 |
-   | `bootstrap check` shows no error in the values.                                                                            | repository | Step 6              |
-   | `bootstrap detect` exits 0: each tool that a detect script finds is selected.                                              | repository | Step 1              |
-   | The selected tools agree with the signs of their tool files: no tool is missing, and no tool is selected without a reason. | repository | Step 1              |
-   | Each value that you can find agrees with the file, for example `repo_url` and `origin`, or the members and `.gitmodules`.  | repository | Step 6              |
-   | Each file of "Files the repository supplies" of a selected tool exists.                                                    | repository | Step 7              |
+   | Check                                                                                                                       | Kind       | If it fails, do     |
+   | --------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------- |
+   | No item of `migrate.md` applies, and no "Migration" item of a selected tool applies.                                        | bootstrap  | Step 4              |
+   | No path of "Files that bootstrap no longer ships" exists.                                                                   | bootstrap  | Step 4              |
+   | `bootstrap migrate --dry-run` shows no change. It shows the migration of an old form, a new question and each file to sync. | bootstrap  | Step 3, then step 5 |
+   | `bootstrap check` shows no error in the values.                                                                             | repository | Step 6              |
+   | `bootstrap detect` exits 0: each tool that a detect script finds is selected.                                               | repository | Step 1              |
+   | The selected tools agree with the signs of their tool files: no tool is missing, and no tool is selected without a reason.  | repository | Step 1              |
+   | Each value that you can find agrees with the file, for example `repo_url` and `origin`, or the members and `.gitmodules`.   | repository | Step 6              |
+   | Each file of "Files the repository supplies" of a selected tool exists.                                                     | repository | Step 7              |
 
 5. If all the checks pass, tell the user that the repository is up to date,
    and stop.
 
-For an update, step 5 runs `bootstrap init`. Add a new tool with
+For an update, step 5 runs `bootstrap migrate`. Add a new tool with
 `bootstrap add tool <tool…>`.
 
 ### Files that bootstrap no longer ships
@@ -329,10 +330,10 @@ repository: keep it.
 | A `.config/mise/conf.d/*/mise*.toml` that the manifest does not list and the sync did not write, for example in `conf.d/_base/`, `conf.d/_env/` and `conf.d/claude/` | Delete it (M29).                      |
 | `.config/mise/tasks/setup/configs/sync`                                                                                                                              | Delete it (M31, M34).                 |
 | `.config/repo-sync/gitignore`                                                                                                                                        | Move its lines to `.gitignore` (M18). |
-| `.config/repo-sync/pre-commit.yaml`                                                                                                                                  | `bootstrap init` moves it (M34).      |
+| `.config/repo-sync/pre-commit.yaml`                                                                                                                                  | `bootstrap migrate` moves it (M34).   |
 | The files of the old `repo-sync` tool: `.config/mise/tasks/_scripts/repo-sync`, `.config/mise/tasks/code/lint/60-repo-sync` and `.config/mise/conf.d/repo-sync/`     | Delete them (M34).                    |
 | `.config/mise/tasks/code/format/20-gofmt`                                                                                                                            | Delete it (M39).                      |
-| `.config/bootstrap.toml`, `.config/bootstrap.overrides.toml` and `.config/repo-generated.tsv`                                                                        | `bootstrap init` moves them (M41).    |
+| `.config/bootstrap.toml`, `.config/bootstrap.overrides.toml` and `.config/repo-generated.tsv`                                                                        | `bootstrap migrate` moves them (M41). |
 | `.config/mise/tasks/code/merge/_default`, `code/merge/develop`, `code/merge/main`, `code/worktrees` and `setup/worktree`                                             | The sync removes them (M43).          |
 
 The sync removes these old paths itself, so they need no step:
@@ -368,7 +369,8 @@ ask which tools the repository needs. In a repository with a values file,
 `bootstrap detect` also lists each tool that a detect script finds and that is
 not selected.
 
-The `base` pack is the one pack of `repo/packs.toml`. `bootstrap init` writes a
+The `base` pack is the one pack of `repo/packs.toml`. `bootstrap migrate` writes
+a
 table for each of its members in a new values file. Its tools are `mise`,
 `git`, `pre-commit`, `dprint`, `linter`, `gitleaks`, `grype`, `osv-scanner`
 and `vscode`. Each of them except `vscode` is required: the repository cannot
@@ -432,7 +434,7 @@ The name of a merge task is its destination: the sync writes
 
 The branches are `core_branches` of `.config/bootstrap/repo.toml`. A new
 `repo.toml` gets the `main` and `develop` that exist, in that order. With
-neither, a fresh `bootstrap init` writes the current branch, born or unborn,
+neither, a fresh `bootstrap migrate` writes the current branch, born or unborn,
 of any name, and it stops with code 2 only when HEAD is not on a branch. A
 migration of older copies stops with code 2 when it finds neither. The check
 script of the `git` tool stops the sync with code 2 when a core branch does
@@ -492,7 +494,7 @@ question.
    proposal as the default.
 2. Keep each answer for step 5, as `--answer <tool>.<key>=<value>`.
 3. The user can leave an item with `optional` = `true` empty. Keep it as
-   `--answer <tool>.<key>=`, so a later `bootstrap init` does not ask it.
+   `--answer <tool>.<key>=`, so a later `bootstrap migrate` does not ask it.
 4. The items with the same `tool` and a `group` that is not empty need at
    least one answer that is not empty. Keep each empty answer of the group as
    `--answer <tool>.<key>=`. Another item needs an answer that is not empty.
@@ -517,18 +519,20 @@ files, skip this step.
 5. `bootstrap` writes no target that has changes that are not committed.
    Thus ask the user to commit the changes of this step before step 5.
 
-## Step 5: Run `bootstrap init` and `bootstrap add tool <tool…>`
+## Step 5: Run `bootstrap migrate` and `bootstrap add tool <tool…>`
 
 1. If mise says that the config files are not trusted, ask the user to run
    `mise trust`.
-2. Run `bootstrap init` with the answers of step 3 for the tools of the `base`
+2. Run `bootstrap migrate` with the answers of step 3 for the tools of the
+   `base`
    pack:
 
    ```text
-   bootstrap init --answer <tool>.<key>=<value> --dry-run
+   bootstrap migrate --answer <tool>.<key>=<value> --dry-run
    ```
 
-   `bootstrap init` takes no tool names. For an update, this is the only command
+   `bootstrap migrate` takes no tool names. For an update, this is the only
+   command
    of this step.
 3. Examine the change list, and the diff of each file that already exists in
    the repository.
@@ -549,7 +553,7 @@ files, skip this step.
    If the repository does not need `vscode`, also run
    `bootstrap remove tool vscode`.
 
-Without values, `bootstrap init` writes `.config/bootstrap/repo.toml` with
+Without values, `bootstrap migrate` writes `.config/bootstrap/repo.toml` with
 `format = 3`, `core_branches`, `environments` and `repo_name`, the name of the
 folder, and `.config/bootstrap/tools.toml` with `format = 3` and a
 `[tools.<name>]` table for each member of the `base` pack and each answer, then
@@ -670,7 +674,7 @@ failure does not change an existing file. The full list is in
 
 | Code | Cause                                                                                                                                            | Action                                                           |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| 2    | An old form of the values, also the old file `.config/bootstrap.toml`, or no `.config/bootstrap/`. The message ends with `run bootstrap init`    | Run `bootstrap init` (step 5)                                    |
+| 2    | An old form of the values, also the old file `.config/bootstrap.toml`, or no `.config/bootstrap/`. The message ends with `run bootstrap migrate` | Run `bootstrap migrate` (step 5)                                 |
 | 2    | A target has changes that are not committed                                                                                                      | Commit or discard the changes of the target                      |
 | 2    | A question without an answer, or a group without an answer that is not empty, with `--yes` or without a terminal                                 | Give the answer with `--answer <tool>.<key>=<value>` (step 3)    |
 | 2    | `changes need --yes`                                                                                                                             | Ask the user, then run the command with `--yes`                  |

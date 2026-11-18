@@ -81,7 +81,8 @@ pages = {}
 ## The questions
 
 The packs files hold only the relationships. The questions of a value are in
-the `[questions]` tables of the tools: `bootstrap init` and `bootstrap add` ask
+the `[questions]` tables of the tools: `bootstrap migrate` and `bootstrap add`
+ask
 them. See [cli.md](cli.md#the-questions). The questions of a
 selection, for example which pack a repository needs, are in
 `docs/sync/packs/<pack>.md` and `docs/sync/tools/<tool>.md`. The adopting AI
@@ -134,8 +135,9 @@ only in `dev`. See
 `base` is a pack, not a tool. Each side must have it. Only `bootstrap` changes
 the tools of the `base` pack, in the packs file.
 
-- A new values file gets a table for each member of `base`: `init` adds
-  `base` as `add pack base` does. A later `init` does not add a removed member
+- A new values file gets a table for each member of `base`: `migrate` adds
+  `base` as `add pack base` does. A later `migrate` does not add a removed
+  member
   again.
 - The required members of `base` are selected also without a table, and
   `bootstrap remove tool <tool…>` cannot remove them. The other members of

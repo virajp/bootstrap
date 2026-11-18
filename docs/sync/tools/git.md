@@ -67,7 +67,7 @@ of `wt switch --create` runs its `pre-start` steps in sequence:
 
 A `.config/wt.toml` from before bootstrap 4.0.0 runs `mise run setup:worktree`,
 and no task has that name now. The sync does not write a seed again, so
-`bootstrap init` renames that command to `mise run git:worktree:setup`, and
+`bootstrap migrate` renames that command to `mise run git:worktree:setup`, and
 the rest of the file stays. Until then, `sync` and `check` stop with code 2.
 
 Its `template-append` tells the LLM commit messages of `wt` to use the
@@ -208,11 +208,11 @@ None.
 
 - The general items M10, M11 and M18 of `migrate.md` are about the files of
   this tool.
-- M34 of `migrate.md`: `bootstrap init` moves the top-level `commit_scopes`
+- M34 of `migrate.md`: `bootstrap migrate` moves the top-level `commit_scopes`
   and `[branch.*]` into `[tools.git]`. It moves the `add` lines of
   `[overrides.gitignore]` into `.gitignore`, and its `remove` lines into
   `[tools.git.files.".gitignore"]`.
-- M41 of `migrate.md`: `bootstrap init` moves `commit_scopes` to
+- M41 of `migrate.md`: `bootstrap migrate` moves `commit_scopes` to
   `[commits].scopes`
   and `[tools.git.branch.*]` to `[branches.*]` of `repo.toml`, with `landing`
   in place of `merge_model` and `direct_commit`. The merge tasks and the

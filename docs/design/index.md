@@ -34,7 +34,8 @@ various tools that it supports.
 - **AI, for the non-deterministic part.** A user opens an AI session in the
   consumer repository with the prompt of `README.md`. The AI reads
   `docs/sync/index.md`, selects the tools, and gets the answers of their
-  questions. Then it runs `bootstrap init --answer …`, which writes the values
+  questions. Then it runs `bootstrap migrate --answer …`, which writes the
+  values
   folder `.config/bootstrap/` with the `base` pack, and
   `bootstrap add tool <tool…> --answer …`, which adds the other tools. Each
   command syncs.
@@ -46,7 +47,7 @@ various tools that it supports.
   change the selection later.
 
 A Mac uses the same two parts. The AI reads `docs/setup/index.md`, and runs
-`bootstrap mac init`, which writes `macos.toml`. After that, the
+`bootstrap mac migrate`, which writes `macos.toml`. After that, the
 `updateall:configs` task runs `bootstrap mac sync`, which reads `macos.toml`
 and renders the selected tools into `$HOME`.
 
@@ -54,7 +55,8 @@ The repository solves two problems: add tools and dependencies to many
 repositories without manual edits that drift, and keep the updates in sync.
 
 The AI part is for a new repository, or for the first adoption or the migration
-of a Mac, and after that only in rare situations. `bootstrap init` also brings
+of a Mac, and after that only in rare situations. `bootstrap migrate` also
+brings
 an adopted repository up to date.
 
 ## Bootstrap config

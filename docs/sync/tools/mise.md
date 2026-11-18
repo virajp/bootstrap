@@ -66,7 +66,7 @@ The tool also sets:
 - The shell aliases `precommit`, `setup` and `worktrees`. With submodule or
   sibling members that have a `[members.<name>]` table, the derive script adds
   `setup-all` and `setup-<member>` (see "Scripts").
-- The hidden task `init`, which makes the task scripts executable.
+- The hidden task `migrate`, which makes the task scripts executable.
 - `os = "macos"` in `dev` and `os = "linux"` in `ci`, from
   `[mise_env.dev.settings]` and `[mise_env.ci.settings]`.
 
@@ -106,7 +106,7 @@ code 2. A member that is not on the machine is skipped with a warning.
 `setup:configs` runs `bootstrap sync` in the root, then in each selected
 member, with `BOOTSTRAP_HOME` and `BOOTSTRAP_MEMBER`, so the sync of the member
 writes its `[home]`. It skips a member without `.config/bootstrap/` with the
-warning `member <name>: run bootstrap init there`. `BOOTSTRAP_BIN`, a local
+warning `member <name>: run bootstrap migrate there`. `BOOTSTRAP_BIN`, a local
 build, replaces the `bootstrap` of mise.
 The exit code of `bootstrap` is the exit code of the task. The clone, the
 cache `~/.cache/bootstrap/` and the output of a sync are in
@@ -236,7 +236,7 @@ None.
 - M34 of `migrate.md` installs `bootstrap`, and moves `worktree_files` into
   `[tools.mise]`. This tool now ships `setup:configs` and the gate
   `code:lint:60-bootstrap`, which replace the tasks of an old tool.
-- M41 of `migrate.md`: `bootstrap init` moves `worktree_files` to
+- M41 of `migrate.md`: `bootstrap migrate` moves `worktree_files` to
   `[worktree].files` of `repo.toml`. `code:format` and `code:lint` lose their
   member flags, and `git:worktree:list` no longer reads `.config/vwf.yaml` or
   `.config/vwf-membership.yaml`.

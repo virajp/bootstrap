@@ -34,7 +34,7 @@ func (s *state) toolValues() fail.Code {
 			if g.Group {
 				what = "the group "
 			}
-			s.log(what + g.Name() + " has no answer in " + s.showTools + " - run bootstrap init")
+			s.log(what + g.Name() + " has no answer in " + s.showTools + " - run bootstrap migrate")
 		}
 		return fail.Usage
 	}

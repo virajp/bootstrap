@@ -80,7 +80,7 @@ func ReadFolder(dir, shown string) (repo, tools *source.Obj, err error) {
 	for i, name := range []string{RepoName, ToolsName} {
 		p := dir + "/" + name
 		if st, err := os.Stat(p); err != nil || !st.Mode().IsRegular() {
-			probs = append(probs, usage("%s has no %s - run bootstrap init", shown, name))
+			probs = append(probs, usage("%s has no %s - run bootstrap migrate", shown, name))
 			continue
 		}
 		raw, err := source.ReadTOML(p)
@@ -96,10 +96,10 @@ func ReadFolder(dir, shown string) (repo, tools *source.Obj, err error) {
 	repo, tools = raws[0], raws[1]
 	repoShown, toolsShown := shown+"/"+RepoName, shown+"/"+ToolsName
 	if _, ok := repo.Lookup("format"); !ok {
-		probs = append(probs, usage("%s without format = %d is not valid - run bootstrap init", repoShown, Format))
+		probs = append(probs, usage("%s without format = %d is not valid - run bootstrap migrate", repoShown, Format))
 	}
 	if _, ok := tools.Lookup("format"); !ok {
-		probs = append(probs, usage("%s without format = %d is not valid - run bootstrap init", toolsShown, Format))
+		probs = append(probs, usage("%s without format = %d is not valid - run bootstrap migrate", toolsShown, Format))
 	}
 	if len(probs) > 0 {
 		return nil, nil, source.Problems(probs)
