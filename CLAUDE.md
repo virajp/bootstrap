@@ -182,9 +182,15 @@ part, and with no part it prints one line and exits 0. See
     it with code 2. `members` lists the submodule and
     sibling members of `[members.*]` through it. Call both as
     `VAR=$(bootstrap_get <key>) || exit $?`. `gate_files` runs
-    `gate_files.py` with `mise x python@3.14 -- python3`.
+    `gate_files.py` with
+    `mise x uv@latest python@3.14 -- uv run --quiet --script`.
   - `gate_files.py`: the file list of one `code:format` or `code:lint` gate,
-    the one Python file of the tasks. See the gate rules below.
+    the one Python file of the tasks. See the gate rules below. A Python file
+    of the tasks is a uv script: the shebang `#!/usr/bin/env -S uv run
+    --script`, an inline `# /// script` block with `requires-python` and
+    `dependencies`, and `#MISE tools={uv="latest", python="3.14"}`. A library
+    also has `#MISE hide=true` and a description, so `mise tasks` does not
+    list it.
   - `checks`: git predicates. They return an exit status only and print
     nothing. The one exception is `get_main_worktree_path`, which prints the
     path of the main worktree.
@@ -394,9 +400,10 @@ changes a case. See `docs/design/cli.md` ("The config file").
   key `clone` run `bootstrap sync --dry-run`. A case of the default output also
   runs `bootstrap sync --verbose`. With `BOOTSTRAP_BIN` set to an absolute path,
   it tests that binary and does not build one. It compares the exit code and the
-  message of each case. It needs no network when gomplate, jq, yq and
+  message of each case. It needs no network when gomplate, jq, yq, uv and
   Python 3.14 are installed, because the `gate_files` and `run_gate` cases run
-  `mise x python@3.14`. Before its first `git` call, it unsets the `GIT_*`
+  `gate_files.py` with uv and `python@3.14`. Before its first `git` call, it
+  unsets the `GIT_*`
   variables of a git hook, so its scratch repositories never write to this
   repository. It runs the cases in parallel, one job for each CPU, and each case
   in its own folder.

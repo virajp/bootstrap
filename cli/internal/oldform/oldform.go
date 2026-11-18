@@ -408,7 +408,9 @@ func addExtensions(path string, ids []string) (*Change, error) {
 }
 
 // addHooks gives the YAML file <path> with the `repos` blocks of the old file
-// <old> at the end of its `repos`, so its comments stay.
+// <old> at the end of its `repos`, so its comments stay. The old file holds
+// its blocks in `repos`, or is a list of the blocks. A hook whose id is
+// already in <path> is not added.
 func addHooks(path, old string) (Change, error) {
 	note := "add the hooks of " + OldPrecommit
 	if !isFile(path) {
@@ -416,9 +418,22 @@ func addHooks(path, old string) (Change, error) {
 		if err != nil {
 			return Change{}, usage("cannot read %s", old)
 		}
+		tag, stderr, err := format.YQ("-p", "yaml", "-o", "yaml", "tag", old)
+		if err != nil {
+			return Change{}, usage("cannot read the hooks of %s: %s", OldPrecommit, strings.TrimSpace(stderr))
+		}
+		if strings.TrimSpace(tag) == "!!seq" {
+			out, stderr, err := format.YQ("-p", "yaml", "-o", "yaml", `{"repos": .}`, old)
+			if err != nil {
+				return Change{}, usage("cannot read the hooks of %s: %s", OldPrecommit, strings.TrimSpace(stderr))
+			}
+			b = []byte(out)
+		}
 		return Change{Path: path, Content: b, Note: note}, nil
 	}
-	out, stderr, err := format.YQ("-p", "yaml", "-o", "yaml", ".repos = ((.repos // []) + (load("+q(old)+").repos // []))", path)
+	// The old sync already wrote these hooks into the config, so a hook whose
+	// id is there is not added again, and a block with no new hook goes.
+	out, stderr, err := format.YQ("-p", "yaml", "-o", "yaml", "(load("+q(old)+`) | if tag == "!!seq" then . else (.repos // []) end) as $h | (.repos // []) as $r | [$r[].hooks[].id] as $ids | .repos = ($r + [$h[] | .hooks |= [.[] | select(.id as $i | ($ids | any_c(. == $i)) | not)] | select(.hooks | length > 0)])`, path)
 	if err != nil {
 		return Change{}, usage("cannot add the hooks of %s to %s: %s", OldPrecommit, path, strings.TrimSpace(stderr))
 	}

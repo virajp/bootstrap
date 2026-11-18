@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/virajp/bootstrap/cli/internal/format"
 	"github.com/virajp/bootstrap/cli/internal/source"
 )
 
@@ -360,4 +361,47 @@ func TestFormatFirst(t *testing.T) {
 			t.Errorf("formatFirst(%q) = %q, want %q", c.in, got, c.want)
 		}
 	}
+}
+
+func TestAddHooks(t *testing.T) {
+	cfg := "# The config.\nrepos:\n  - repo: local\n    hooks:\n      - id: a\n"
+	list := "# Own hooks.\n- repo: local\n  hooks:\n    - id: own\n"
+	asMap := "repos:\n  - repo: local\n    hooks:\n      - id: own\n"
+	ids := func(t *testing.T, b []byte) string {
+		t.Helper()
+		out, stderr, err := format.YQ("-p", "yaml", "-o", "yaml", "[.repos[].hooks[].id] | join(\",\")", writeTemp(t, string(b)))
+		if err != nil {
+			t.Fatalf("yq: %s", stderr)
+		}
+		return strings.TrimSpace(out)
+	}
+	for _, c := range []struct{ name, cfg, old, want string }{
+		{"map into the config", cfg, asMap, "a,own"},
+		{"list into the config", cfg, list, "a,own"},
+		{"hooks already in the config", cfg + "  - repo: local\n    hooks:\n      - id: own\n", list, "a,own"},
+		{"map, no config", "", asMap, "own"},
+		{"list, no config", "", list, "own"},
+	} {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "pre-commit-config.yaml")
+		old := filepath.Join(dir, "pre-commit.yaml")
+		write(t, old, c.old)
+		if c.cfg != "" {
+			write(t, path, c.cfg)
+		}
+		ch, err := addHooks(path, old)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if got := ids(t, ch.Content); got != c.want {
+			t.Errorf("%s: hooks %q, want %q:\n%s", c.name, got, c.want, ch.Content)
+		}
+	}
+}
+
+func writeTemp(t *testing.T, content string) string {
+	t.Helper()
+	p := filepath.Join(t.TempDir(), "f.yaml")
+	write(t, p, content)
+	return p
 }

@@ -685,18 +685,18 @@ have stops `migrate` with code 3 and the message
 `<pack> is not a bootstrap pack (named in <file>)`, as the old sync did. The
 user fixes the values file by hand, then runs `migrate` again.
 
-| Old form                        | `bootstrap migrate` moves it to                                                                    |
-| ------------------------------- | -------------------------------------------------------------------------------------------------- |
-| No `format = 2`                 | A table for each tool of the old pack `base`                                                       |
-| `[packs.<name>]`                | A `[tools.<name>]` table for each tool of the old pack, with the `env` of the pack                 |
-| `commit_scopes`                 | `[commits].scopes`                                                                                 |
-| `[branch.<branch>]`             | `[branches.<branch>]`, with `landing`                                                              |
-| `worktree_files`                | `[worktree].files`                                                                                 |
-| `[claude.plugins.*]`            | `[tools.claude.plugins.*]`                                                                         |
-| `extensions`                    | `.vscode/extensions.json`, as own items of the shared file                                         |
-| `[overrides.gitignore]`         | `add`: lines of `.gitignore`. `remove`: `[tools.git.files.".gitignore"]` with `"$mode" = "remove"` |
-| The table of the old entry tool | Removed: the `mise` tool has the entry now                                                         |
-| The old file of the own hooks   | Its hooks move to `.config/pre-commit-config.yaml` as own blocks, and the file goes                |
+| Old form                        | `bootstrap migrate` moves it to                                                                                                                                                                                      |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No `format = 2`                 | A table for each tool of the old pack `base`                                                                                                                                                                         |
+| `[packs.<name>]`                | A `[tools.<name>]` table for each tool of the old pack, with the `env` of the pack                                                                                                                                   |
+| `commit_scopes`                 | `[commits].scopes`                                                                                                                                                                                                   |
+| `[branch.<branch>]`             | `[branches.<branch>]`, with `landing`                                                                                                                                                                                |
+| `worktree_files`                | `[worktree].files`                                                                                                                                                                                                   |
+| `[claude.plugins.*]`            | `[tools.claude.plugins.*]`                                                                                                                                                                                           |
+| `extensions`                    | `.vscode/extensions.json`, as own items of the shared file                                                                                                                                                           |
+| `[overrides.gitignore]`         | `add`: lines of `.gitignore`. `remove`: `[tools.git.files.".gitignore"]` with `"$mode" = "remove"`                                                                                                                   |
+| The table of the old entry tool | Removed: the `mise` tool has the entry now                                                                                                                                                                           |
+| The old file of the own hooks   | Its hooks move to `.config/pre-commit-config.yaml` as own blocks, and the file goes. The file holds its blocks in `repos`, or is a list of the blocks. A hook whose `id` is already in the config is not added again |
 
 `docs/sync/migrate.md` names the old entry tool and its old files. These old
 items are not migrated:
