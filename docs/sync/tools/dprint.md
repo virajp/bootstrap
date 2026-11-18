@@ -67,9 +67,11 @@ The merge rules are in [`docs/design/tools.md`](../../design/tools.md).
 The `[formatter]` table of this tool makes dprint the formatter of the sync.
 The sync formats each rendered file with
 `dprint fmt --no-gitignore --allow-no-files --stdin-files` before it compares
-the file. The associations of the `shuck` block send the task files below
-`.config/mise/tasks/` to shuck, except a template (`!**/*.tmpl`) and a Python
-library (`!**/*.py`). It uses the first dprint config of the repository that it
+the file. The `shuck` block has no `associations`: shuck formats only the shell
+files that it knows by extension (`.sh`, `.bash`, `.zsh` and `.ksh`), not the
+task files below `.config/mise/tasks/`, which have no extension. The sync
+removes old `associations` from the block. It uses the first dprint config of
+the repository that it
 finds, for example `dprint.jsonc`. See
 [`docs/design/tools.md`](../../design/tools.md).
 
@@ -142,5 +144,6 @@ None.
   the own excludes of the file.
 - M45 of `migrate.md`: the base excludes (`**/*-lock.yaml`, `**/*.svg`,
   `**/package-lock.json`) moved to `code_files.excludes` of the `mise` tool.
-  Move `[tools.dprint] excludes` and the own excludes of `dprint.jsonc` there,
-  and add `"!**/*.py"` to the shuck associations of `dprint.jsonc`.
+  Move `[tools.dprint] excludes` and the own excludes of `dprint.jsonc` there.
+  The sync removes the `associations` of the `shuck` block, so shuck no longer
+  formats the task files.

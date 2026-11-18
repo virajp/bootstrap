@@ -59,11 +59,10 @@ bracketSpacing = true
 formatComments = true
 proseWrap = "always"
 
-# mise task scripts have no file extension, so the shuck plugin does not
-# match them by default. Templates (*.tmpl) are not valid shell, and a Python
-# library (*.py) is not shell.
+# shuck formats only the shell files that it knows by their extension. The
+# mise task scripts have no extension, so shuck does not format them: the
+# tasks move to Python (backlog B30).
 [defaults.blocks.shuck]
-associations = [ "**/.config/mise/tasks/**", "!**/*.tmpl", "!**/*.py" ]
 binaryNextLine = true
 indentWidth = 2
 spaceRedirects = true

@@ -4422,6 +4422,21 @@ check_empty_block() {
 }
 CASE_CALL=resync_node run_case "dprint: an empty block stays" 0 "$dev_values
 [tools.node]" '' 'Synced: ' check_empty_block
+# The old associations of shuck, in an adopted dprint.jsonc, go at the next
+# sync: shuck formats only the shell files with an extension.
+old_shuck() {
+  synced
+  sed -i.bak 's#"shuck": {#"shuck": { "associations": [ "**/.config/mise/tasks/**", "!**/*.tmpl" ],#' "$consumer/dprint.jsonc"
+  rm -f -- "$consumer/dprint.jsonc.bak"
+  grep -q '"associations"' "$consumer/dprint.jsonc" || return 9
+  commit_consumer
+  "$bin" sync
+}
+check_old_shuck() {
+  check_that "dprint: the old associations of shuck are gone" lacks_in_file '"associations"' "$consumer/dprint.jsonc"
+  check_that "dprint: the shuck block stays" file_has '"shuck": {' "$consumer/dprint.jsonc"
+}
+CASE_CALL=old_shuck run_case "dprint: the old associations of shuck go" 0 "$dev_values" '' 'Synced: ' check_old_shuck
 remove_android() { synced && "$bin" remove tool --yes android; }
 CASE_CALL=remove_android run_case "remove: a tool that another selected tool needs" 2 "$dev_values
 [tools.flutter]
