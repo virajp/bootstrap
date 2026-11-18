@@ -197,9 +197,10 @@ of the `[files]` and `[tasks]` tables, and the scripts.
    `repo.toml` to the commit of its clone.
 
 Between two syncs, the gate `code:lint:60-bootstrap` runs `bootstrap check` at
-each commit that changes a file of `.config/bootstrap/`. `bootstrap config get
-<key>` reads one value, and `bootstrap config set <key> <value>` writes one,
-checked against the schema.
+each commit that changes a values file of `.config/bootstrap/` (a `*.toml` file
+other than the rendered `config-files.toml`), and with `code:lint --all`.
+`bootstrap config get <key>` reads one value, and
+`bootstrap config set <key> <value>` writes one, checked against the schema.
 
 The sync needs `mise` and a git repository. It lists only the files that
 changed, and it ends with one line of counts. Use `--dry-run` to see the changes

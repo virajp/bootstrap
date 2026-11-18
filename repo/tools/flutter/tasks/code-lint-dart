@@ -5,37 +5,34 @@
 #MISE description="Analyze the Dart files"
 #MISE hide=true
 
+#USAGE flag "--all" help="lint every file of the repository, not only the uncommitted files"
 #USAGE flag "--debug" help="emit debug logs"
 #USAGE flag "--fix" help="accepted for the code:lint contract; dart analyze only reports"
-#USAGE arg "[files]" var=#true help="the files to analyze; only the .dart files are used; the default is the whole project"
+#USAGE arg "[files]" var=#true help="the files to analyze; only the .dart files are used; the default is the uncommitted files"
+#FILES include="*.dart" exclude="*.g.dart *.freezed.dart *.mocks.dart"
 
 set -e
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
 # Shipped with the flutter tool. Without a pubspec.yaml, this is not a Dart
-# project. Without a pubspec.yaml or without a .dart file, the task does not
-# apply and prints nothing.
+# project, and the task does not apply and prints nothing.
 [[ -f "${MISE_PROJECT_ROOT}/pubspec.yaml" ]] || exit 0
 cd "${MISE_PROJECT_ROOT}"
 
-# code:lint passes its files to each code:lint:* task. Only the .dart files are
-# for dart analyze. Given files without a .dart file: nothing to do.
+# code:lint passes its flags and files to each code:lint:* task. The list
+# comes from gate_files (the #FILES header above). An empty list: nothing
+# to do.
+args=()
+[[ "${usage_all:-false}" == "true" ]] && args+=(--all)
+[[ "${usage_debug:-false}" == "true" ]] && args+=(--debug)
+[[ "${usage_fix:-false}" == "true" ]] && args+=(--fix)
 FILES=()
 [[ -n "${usage_files:-}" ]] && eval "FILES=(${usage_files})"
-TARGETS=()
-if ((${#FILES[@]})); then
-  for file in "${FILES[@]}"; do
-    [[ "${file}" == *.dart && -f "${file}" ]] && TARGETS+=("${file}")
-  done
-  ((${#TARGETS[@]})) || exit 0
-else
-  # Without a tracked or new .dart file, nothing to do. A failed git stops the
-  # task, with the error of git.
-  LIST=$(git -c core.quotePath=off ls-files --cached --others --exclude-standard -- '*.dart')
-  [[ -n "${LIST}" ]] || exit 0
-fi
+list=$(gate_files "$0" ${args[@]+"${args[@]}"} ${FILES[@]+"${FILES[@]}"}) || exit $?
+trap 'rm -f "${list}"' EXIT
+[[ -s ${list} ]] || exit 0
 
 print_header "Analyzing the Dart files ..."
 # An info is a failure too: the analysis_options.yaml of the project decides
 # which lints are on.
-mise x -- dart analyze --fatal-infos ${TARGETS[@]+"${TARGETS[@]}"}
+tr '\n' '\0' < "${list}" | xargs -0 mise x -- dart analyze --fatal-infos

@@ -8,6 +8,15 @@ description = "The shared mise config, the task library, the setup and code orch
 root_only = false
 summary = "The mise config, the tasks and the sync entry"
 
+# The global file lists of the code:format and code:lint gates. The sync
+# renders them to .config/bootstrap/config-files.toml, which gate_files of
+# helpers reads. An empty includes means every file. Another tool adds
+# patterns in [contributes.mise], and a repository in [tools.mise] of
+# .config/bootstrap/tools.toml.
+[defaults.code_files]
+excludes = [ "**/*-lock.yaml", "**/*.svg", "**/package-lock.json" ]
+includes = []
+
 # The VS Code extensions of the tool, in .vscode/extensions.json.
 [contributes.vscode]
 extensions = [ "hverlin.mise-vscode", "redhat.vscode-yaml", "tamasfe.even-better-toml" ]
@@ -51,6 +60,10 @@ os = "macos"
 os = "linux"
 
 # The files of the tool, below files/.
+[files.".config/bootstrap/config-files.toml"]
+mode = "template"
+source = ".config/bootstrap/config-files.toml.tmpl"
+
 [files.".config/mise.toml"]
 mode = "template"
 source = ".config/mise.toml.tmpl"
@@ -68,6 +81,10 @@ source = ".config/mise/conf.d/zz-repo/mise.dev.toml"
 [tasks."_scripts/checks"]
 library = true
 source = "checks"
+
+[tasks."_scripts/gate_files.py"]
+library = true
+source = "gate_files.py"
 
 [tasks."_scripts/helpers"]
 library = true

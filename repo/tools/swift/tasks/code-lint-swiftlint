@@ -5,39 +5,33 @@
 #MISE description="Lint the Swift files with SwiftLint"
 #MISE hide=true
 
+#USAGE flag "--all" help="lint every file of the repository, not only the uncommitted files"
 #USAGE flag "--debug" help="accepted for the code:lint contract"
 #USAGE flag "--fix" help="accepted for the code:lint contract; swift-format decides the layout"
-#USAGE arg "[files]" var=#true help="the files to lint; only the .swift files are used; the default is each .swift file that git does not ignore"
+#USAGE arg "[files]" var=#true help="the files to lint; only the .swift files are used; the default is the uncommitted files"
+#FILES include="*.swift" exclude="*.generated.swift .build/** .swiftpm/** **/Derived/** **/DerivedData/**"
 
 set -euo pipefail
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
 # Shipped with the swift tool. Without SwiftLint (a host that is not macOS, or
-# swift not in this environment) or without a .swift file, the task does not
-# apply and prints nothing.
+# swift not in this environment), the task does not apply and prints nothing.
 mise x -- which swiftlint > /dev/null 2>&1 || exit 0
 cd "${MISE_PROJECT_ROOT}"
 
-# code:lint passes its files to each code:lint:* task. Only the .swift files
-# are for SwiftLint. SwiftLint does not read .gitignore, so without files the
-# list comes from git.
+# code:lint passes its flags and files to each code:lint:* task. The list
+# comes from gate_files (the #FILES header above). An empty list: nothing
+# to do.
+args=()
+[[ "${usage_all:-false}" == "true" ]] && args+=(--all)
+[[ "${usage_debug:-false}" == "true" ]] && args+=(--debug)
+[[ "${usage_fix:-false}" == "true" ]] && args+=(--fix)
 FILES=()
 [[ -n "${usage_files:-}" ]] && eval "FILES=(${usage_files})"
-TARGETS=()
-if ((${#FILES[@]})); then
-  for file in "${FILES[@]}"; do
-    [[ "${file}" == *.swift && -f "${file}" ]] && TARGETS+=("${file}")
-  done
-else
-  # A failed git stops the task, with the error of git.
-  LIST=$(git -c core.quotePath=off ls-files --cached --others --exclude-standard -- '*.swift' | sort -u)
-  while IFS= read -r file; do
-    [[ -n "${file}" && -f "${file}" ]] && TARGETS+=("${file}")
-  done <<< "${LIST}"
-fi
-((${#TARGETS[@]})) || exit 0
+list=$(gate_files "$0" ${args[@]+"${args[@]}"} ${FILES[@]+"${FILES[@]}"}) || exit $?
+trap 'rm -f "${list}"' EXIT
+[[ -s ${list} ]] || exit 0
 
 print_header "Linting the Swift files with SwiftLint ..."
-# --force-exclude: a given file that .config/swiftlint.yml excludes stays
-# excluded. --strict: a warning is a failure.
-mise x -- swiftlint lint --strict --quiet --force-exclude --config .config/swiftlint.yml "${TARGETS[@]}"
+# --strict: a warning is a failure.
+tr '\n' '\0' < "${list}" | xargs -0 mise x -- swiftlint lint --strict --quiet --config .config/swiftlint.yml

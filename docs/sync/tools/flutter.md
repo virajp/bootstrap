@@ -48,11 +48,14 @@ resolves.
 | Task                    | Use                                                                                                                                                                         |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `setup:deps:20-flutter` | Install the Dart, Flutter, CocoaPods and Gradle dependencies from the lockfiles, then report the outdated ones. `--upgrade` cleans the caches and lockfiles, then upgrades. |
-| `code:format:10-dart`   | Check or format the existing `.dart` files of the `[files]` arguments, else `lib/` and `test/`.                                                                             |
-| `code:lint:20-dart`     | Analyze the existing `.dart` files of the `[files]` arguments, else the whole project. An info also fails the task (`--fatal-infos`). `dart analyze` only reports.          |
+| `code:format:10-dart`   | Check or format the `.dart` files of `gate_files`.                                                                                                                          |
+| `code:lint:20-dart`     | Analyze the `.dart` files of `gate_files`. An info also fails the task (`--fatal-infos`). `dart analyze` only reports.                                                      |
 
-The two Dart tasks apply only when the root has `pubspec.yaml`. Without
-files, they also need a `.dart` file that git does not ignore.
+The two Dart tasks apply only when the root has `pubspec.yaml`, and only to
+the `.dart` files of their list: the given files, else with `--all` every
+file, else the uncommitted files. Their `#FILES` header excludes the generated
+files `*.g.dart`, `*.freezed.dart` and `*.mocks.dart`. With no such file, a
+task prints nothing. See [`mise.md`](mise.md#the-file-sets-of-the-gates).
 
 `setup:deps:20-flutter` uses CocoaPods only with `ios/Podfile`, and Gradle only
 with an executable `android/gradlew`. It accepts the Android licenses. It

@@ -294,6 +294,33 @@ The rules of the task files:
   stays. A copy of a tool that is not selected stays too. See
   [cli.md](cli.md#init).
 
+### The `#FILES` header of a gate
+
+A `code:format:*` or `code:lint:*` gate gets its files from `gate_files` of
+`helpers` (see [mise.md](mise.md#the-file-sets-of-the-gates)). Its `#FILES`
+header names the files of its language, right after its `#USAGE` lines:
+
+```bash
+#FILES include="*.swift" exclude="*.generated.swift .build/** .swiftpm/**"
+```
+
+- The helper reads the top block of the gate file: each line from line 1 to the
+  first line that is neither a comment nor blank. A `#FILES` line is a line of
+  that block that starts with `#FILES `.
+- The keys are `include`, `exclude` and `shebang`. Each value is in double
+  quotes, a list of patterns separated by blanks. An empty value is an empty
+  list.
+- No `#FILES` line, no `include` key or `include=""`: every file of the set.
+- `shebang="sh bash"`: a file whose `#!` line names one of these interpreters
+  is included too. A file that the `include` patterns match is dropped when
+  its `#!` names a known shell (`sh bash dash ksh mksh zsh fish csh tcsh`)
+  that is not in the list. Another interpreter, or no `#!` line, keeps it.
+- Two `#FILES` lines, a key other than these three, a key twice or a value
+  without double quotes is malformed: the gate stops with exit 2.
+
+A gate of a repository can have the header too. A gate with
+`#USAGE flag "--all"` gets `--all` from its orchestrator.
+
 ## The `[formatter]` table
 
 A repo tool can have one `[formatter]` table: the formatter that the sync runs
@@ -386,9 +413,10 @@ A `tools.toml` can have three optional tables for the values of a tool. A
 template reads
 the values as `.config` (the values of its tool) and `.all` (the values of each
 selected
-tool, by tool name). The `pre-commit`, `dprint` and `vscode` tools of
+tool, by tool name). The `pre-commit`, `dprint`, `vscode` and `mise` tools of
 `repo/tools/` use `[defaults]`, and many repo tools use `[contributes]` for the
-hooks of `pre-commit`, the blocks of `dprint` and the extensions of `vscode`.
+hooks of `pre-commit`, the blocks of `dprint` and the extensions of `vscode`. A
+tool can also add `code_files` patterns of `mise` there.
 Mac tools such as
 `fish`, `git`, `ssh`, `gh` and `macos-defaults` use `[defaults]` or
 `[questions]`. The

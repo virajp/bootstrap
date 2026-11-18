@@ -16,14 +16,18 @@ The exit code of each rule that stops the sync or the render is in
 
 ## The files of the folder
 
-| File                 | Holds                                                                             | Written by                                        |
-| -------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `repo.toml`          | The facts of the repository: names, branches, commits, members, environments      | `bootstrap init`, `bootstrap config`, the sync    |
-| `tools.toml`         | The tool selection, the values of each tool, and the overrides                    | `bootstrap init`, `add`, `remove`, `config`       |
-| `releases.toml`      | The release level of each project. Optional: only `bootstrap config set` makes it | `bootstrap config set releases.<project> <level>` |
-| `repo-generated.tsv` | The manifest of the sync. See [repo.md](repo.md#the-manifest)                     | The sync                                          |
+| File                 | Holds                                                                                                                       | Written by                                        |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `repo.toml`          | The facts of the repository: names, branches, commits, members, environments                                                | `bootstrap init`, `bootstrap config`, the sync    |
+| `tools.toml`         | The tool selection, the values of each tool, and the overrides                                                              | `bootstrap init`, `add`, `remove`, `config`       |
+| `releases.toml`      | The release level of each project. Optional: only `bootstrap config set` makes it                                           | `bootstrap config set releases.<project> <level>` |
+| `repo-generated.tsv` | The manifest of the sync. See [repo.md](repo.md#the-manifest)                                                               | The sync                                          |
+| `config-files.toml`  | The global file lists of the gates, from `code_files` of the `mise` tool. See [mise.md](mise.md#the-file-sets-of-the-gates) | The sync (a template file of the `mise` tool)     |
 
-The three TOML files carry `format = 3`. The manifest has no format line.
+The three TOML files `repo.toml`, `tools.toml` and `releases.toml` carry
+`format = 3`. The manifest and `config-files.toml` have no format line. The
+engine reads only these three, so it never reads `config-files.toml` as a
+values file.
 
 ## Example
 

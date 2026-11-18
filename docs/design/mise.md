@@ -597,20 +597,93 @@ not the tasks of a parent repository. A task of a group is an executable file
 named `NN-<name>`, for example `code/lint/70-ruff`. `own_tasks` skips each
 other file, `_default` and each folder.
 
-| Orchestrator         | Groups that it runs                                       | Other steps                                                                                                                        |
-| -------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `setup`              | `setup:secrets:*`, then `setup:deps:*` (with `--upgrade`) | `setup:mise`, `setup:precommit`; with `--upgrade`: `setup:external:update`, `setup:dprint`, `setup:ai --upgrade`; then each member |
-| `git:worktree:setup` | `setup:secrets:*`, then `setup:deps:*`                    | `setup:mise`, `setup:precommit`; then each member                                                                                  |
-| `code`               | None                                                      | `code:format`, `code:lint`, `code:sec`                                                                                             |
-| `code:format`        | `code:format:*` (with `--fix` and the files)              | Each selected member                                                                                                               |
-| `code:lint`          | `code:lint:*` (with `--fix` and the files)                | Each selected member                                                                                                               |
-| `code:sec`           | `code:sec:*` (with `--staged` and `--debug`)              | First, it stops if `code:sec:10-gitleaks`, `code:sec:20-grype` or `code:sec:30-osv-scanner` is missing or not executable           |
-| `test`               | `test:*` (with each argument, unchanged)                  | None. It does not run `test:e2e` or `test:golden`                                                                                  |
-| `test:e2e`           | `test:e2e:*` (with each argument, unchanged)              | None                                                                                                                               |
-| `test:golden`        | `test:golden:*` (with each argument, unchanged)           | None                                                                                                                               |
+| Orchestrator         | Groups that it runs                                              | Other steps                                                                                                                        |
+| -------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `setup`              | `setup:secrets:*`, then `setup:deps:*` (with `--upgrade`)        | `setup:mise`, `setup:precommit`; with `--upgrade`: `setup:external:update`, `setup:dprint`, `setup:ai --upgrade`; then each member |
+| `git:worktree:setup` | `setup:secrets:*`, then `setup:deps:*`                           | `setup:mise`, `setup:precommit`; then each member                                                                                  |
+| `code`               | None                                                             | `code:format` and `code:lint` (with `--all`), `code:sec`                                                                           |
+| `code:format`        | `code:format:*` (with `--all`, `--fix`, `--debug` and the files) | Each selected member                                                                                                               |
+| `code:lint`          | `code:lint:*` (with `--all`, `--fix`, `--debug` and the files)   | Each selected member                                                                                                               |
+| `code:sec`           | `code:sec:*` (with `--staged` and `--debug`)                     | First, it stops if `code:sec:10-gitleaks`, `code:sec:20-grype` or `code:sec:30-osv-scanner` is missing or not executable           |
+| `test`               | `test:*` (with each argument, unchanged)                         | None. It does not run `test:e2e` or `test:golden`                                                                                  |
+| `test:e2e`           | `test:e2e:*` (with each argument, unchanged)                     | None                                                                                                                               |
+| `test:golden`        | `test:golden:*` (with each argument, unchanged)                  | None                                                                                                                               |
 
 `has_own_task` finds an optional task, for example `setup:ai` or
 `setup:external:update`.
+
+`code:format` and `code:lint` pass `--all` only to a gate whose file has a
+`#USAGE flag "--all"` line, so an older gate of a repository gets `--fix`,
+`--debug` and the files as before. `--all` with files stops the orchestrator
+with a usage error, exit 2. `code:sec` keeps its own file lists and gets no
+`--all`.
+
+### The file sets of the gates
+
+Each `code:format:*` and `code:lint:*` gate gets its files from `gate_files` of
+`helpers`, which runs `_scripts/gate_files.py` with
+`mise x python@3.14 -- python3` (the version of `[mise.tools.python]` of
+`repo/tools/python/tools.toml`). The gate calls it with its own file (`$0`),
+its flags and its files, and reads the path of a temporary list file, one path
+for each line. The gate deletes the file with a `trap` on `EXIT`. An empty
+file means that the gate does not apply: it prints nothing and exits 0.
+
+The base set has paths relative to the repository root:
+
+- Given files: those files. A given path is relative to the repository root,
+  as the pre-commit hook passes it. The helper removes `./`, resolves `..`,
+  and makes an absolute path inside the repository relative.
+- `--all`: every file that `git ls-files --cached --others --exclude-standard`
+  lists.
+- Neither: the uncommitted files: the staged files
+  (`git diff --cached --name-only --diff-filter=d`), the changed files that are
+  not staged (`git ls-files --modified`) and the new files
+  (`git ls-files --others --exclude-standard`).
+
+`--all` with files stops the helper with exit 2. `--fix` is accepted and
+ignored. Three filters then remove files, in this order. The first match drops
+the file, and with `--debug` it prints `drop <path>: <layer> <kind>` on stderr,
+with `"<pattern>"` after it for a pattern match:
+
+| Layer    | Kind          | Drops                                                                                |
+| -------- | ------------- | ------------------------------------------------------------------------------------ |
+| `repo`   | `unsafe-name` | A path with a line break or a leading `-`, which would split the list or be a flag   |
+| `repo`   | `unlisted`    | A path that git does not list: an ignored path, a path in a submodule or outside     |
+| `repo`   | `gitlink`     | A submodule (mode `160000`); the helper never recurses into one                      |
+| `repo`   | `nested-repo` | A nested repository, which `--others` lists as a path that ends with `/`             |
+| `repo`   | `symlink`     | A symlink, whatever its target                                                       |
+| `repo`   | `deleted`     | A path that is not a regular file                                                    |
+| `global` | `include`     | A path that no pattern of a non-empty `includes` of `config-files.toml` matches      |
+| `global` | `exclude`     | A path that a pattern of `excludes` of `config-files.toml` matches, with the pattern |
+| `gate`   | `include`     | A path that no `include` pattern of the `#FILES` header matches (and no shebang key) |
+| `gate`   | `exclude`     | A path that an `exclude` pattern of the `#FILES` header matches, with the pattern    |
+| `gate`   | `shebang`     | A path of the include names whose `#!` names a known shell not in the `shebang` list |
+
+The global lists are the key `code_files` of the `mise` tool, `includes` and
+`excludes`: its `[defaults.code_files]`, the `[contributes.mise]` of the other
+tools and `[tools.mise]` of `.config/bootstrap/tools.toml`. The sync renders
+them to `.config/bootstrap/config-files.toml`, a template file of the `mise`
+tool. A missing file gives two empty lists, and an empty `includes` means every
+file. The dprint merge spec renders the same excludes into `dprint.jsonc` (see
+`docs/sync/tools/dprint.md`). The `#FILES` header of a gate is in
+`docs/design/tools.md` ("The `#FILES` header of a gate").
+
+In a gate run, `gate_files` is the only place that removes a file. A gate has
+no own filter and no `--force-exclude`, and its tool gets only that list:
+dprint with `--stdin-files`, detekt through its argument file, and each other
+tool through `tr '\n' '\0' < "${list}" | xargs -0`, which makes batches below
+the argument limit. A gate of a module (`code:lint:10-android`,
+`code:lint:40-go`, `code:lint:45-gomod`, `code:lint:90-uv`) maps the files of
+the list to their modules or projects, so the default examines the modules of
+the uncommitted files and `--all` each module. A change that only deletes files
+gives an empty list, so such a gate does not run; `--all` covers it.
+
+A pattern has the gitignore glob form, without negation: a pattern without `/`
+(except a trailing `/`) matches a file or a folder with that name at any depth,
+and each path below such a folder; a pattern with a leading or an inner `/`
+matches from the root (a leading `/` is removed); a trailing `/` matches a
+folder and every path below it; `**` matches any number of folders. A pattern
+that starts with `!` stops the helper with exit 2.
 
 The test dispatchers `test`, `test:e2e` and `test:golden` declare no flag. Each
 part gets the arguments of the dispatcher unchanged, with their quoting, so a
@@ -626,7 +699,7 @@ dispatcher prints one line and exits 0. To test a member, run
 | `git`         | `code:git-config`, `git:merge:main` and `git:merge:develop` (each with its core branch), `git:worktree:create`, `git:worktree:delete`                                                                            |
 | `pre-commit`  | `setup:precommit`, `code:precommit`                                                                                                                                                                              |
 | `dprint`      | `code:format:05-dprint`, `setup:dprint`                                                                                                                                                                          |
-| `linter`      | `code:lint:05-linter`, `setup:linter`                                                                                                                                                                            |
+| `linter`      | `code:lint:05-linter`, `code:lint:06-shellcheck`, `setup:linter`                                                                                                                                                 |
 | `gitleaks`    | `code:sec:10-gitleaks`                                                                                                                                                                                           |
 | `grype`       | `code:sec:20-grype`                                                                                                                                                                                              |
 | `osv-scanner` | `code:sec:30-osv-scanner`                                                                                                                                                                                        |
@@ -664,14 +737,15 @@ for an editor, on a macOS dev host.
 
 ### The libraries in `_scripts/`
 
-| Library          | Contents                                                                            |
-| ---------------- | ----------------------------------------------------------------------------------- |
-| `helpers`        | The print functions, `has_own_task`, `own_tasks`, `members`, `shell_files_in_scope` |
-| `checks`         | git predicates. They return an exit status only.                                    |
-| `merge`          | `merge_to_destination_branch`, for the `git:merge:<branch>` tasks                   |
-| `placeholder`    | For a task that no stack fills yet. It always exits 0.                              |
-| `xcode`          | `require_xcode`, `find_xcodeproj` and the simulator functions, of the `swift` tool  |
-| `worktrees-page` | `write_worktrees_page`, the HTML page of `git:worktree:list`, of the `mise` tool    |
+| Library          | Contents                                                                           |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| `helpers`        | The print functions, `has_own_task`, `own_tasks`, `members`, `gate_files`          |
+| `gate_files.py`  | The file list of one `code:format` or `code:lint` gate, of the `mise` tool         |
+| `checks`         | git predicates. They return an exit status only.                                   |
+| `merge`          | `merge_to_destination_branch`, for the `git:merge:<branch>` tasks                  |
+| `placeholder`    | For a task that no stack fills yet. It always exits 0.                             |
+| `xcode`          | `require_xcode`, `find_xcodeproj` and the simulator functions, of the `swift` tool |
+| `worktrees-page` | `write_worktrees_page`, the HTML page of `git:worktree:list`, of the `mise` tool   |
 
 ### The rules for task scripts
 

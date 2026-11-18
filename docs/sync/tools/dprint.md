@@ -37,13 +37,20 @@ into the file item by item:
   the command of each selected tool again, adds a new one, and removes the
   command of a tool that went. A command that the repository adds for other
   `exts` stays.
-- Each item of `excludes`.
+- Each item of `excludes`: first the patterns of `code_files.excludes` of the
+  `mise` tool, the one global exclude list of the gates, then the `excludes`
+  of this tool. Each pattern has the gitignore form and gets the dprint form:
+  a leading `/` is removed; a pattern `p` without `/` gives `**/p` and
+  `**/p/**`; a pattern whose only `/` is trailing (`build/`) gives
+  `**/build/**`; any other trailing `/` gets `**` after it.
 - Each item of `plugins`, found by its name with any version. Thus the
   version that `setup:dprint` writes stays.
 
-The repository keeps its own keys, excludes and plugins directly in the file,
-and the sync keeps them. To remove or skip an item of `bootstrap`, write an
-override in the values file:
+The repository keeps its own keys and plugins directly in the file, and the
+sync keeps them. An own exclude also stays, but `code:format` never sees it:
+put the excludes of the repository in `code_files.excludes` of `[tools.mise]`,
+so `gate_files` drops those files first and `--debug` names them. To remove or
+skip an item of `bootstrap`, write an override in the values file:
 
 ```toml
 [tools.dprint.files."dprint.jsonc".markdown]
@@ -60,8 +67,10 @@ The merge rules are in [`docs/design/tools.md`](../../design/tools.md).
 The `[formatter]` table of this tool makes dprint the formatter of the sync.
 The sync formats each rendered file with
 `dprint fmt --no-gitignore --allow-no-files --stdin-files` before it compares
-the file. It uses the first dprint config of the repository that it finds,
-for example `dprint.jsonc`. See
+the file. The associations of the `shuck` block send the task files below
+`.config/mise/tasks/` to shuck, except a template (`!**/*.tmpl`) and a Python
+library (`!**/*.py`). It uses the first dprint config of the repository that it
+finds, for example `dprint.jsonc`. See
 [`docs/design/tools.md`](../../design/tools.md).
 
 ## mise tools
@@ -72,10 +81,10 @@ for example `dprint.jsonc`. See
 
 ## Tasks
 
-| Task                    | Use                                                                                                                                          |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `code:format:05-dprint` | Check the files with dprint. `--fix` formats them. It uses the given files, else the files of its config. Without dprint, it prints nothing. |
-| `setup:dprint`          | Update the plugin versions in `dprint.jsonc` with `dprint config update`.                                                                    |
+| Task                    | Use                                                                                                                                                                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `code:format:05-dprint` | Check the files of `gate_files` with dprint (`--stdin-files`): the given files, else with `--all` every file, else the uncommitted files. It has no `#FILES` header, and dprint picks the files of its plugins. `--fix` formats them. Without dprint, it prints nothing. |
+| `setup:dprint`          | Update the plugin versions in `dprint.jsonc` with `dprint config update`.                                                                                                                                                                                                |
 
 `code:format` of the `mise` tool runs `code:format:05-dprint` first, then the
 other `code:format:NN-<name>` tasks.
@@ -91,21 +100,22 @@ None.
 | `pre-commit` | `.config/pre-commit-config.yaml` | The hook block `format`, which calls `code:format --fix` with the files of the commit. |
 | `vscode`     | `.vscode/extensions.json`        | `dprint.dprint`.                                                                       |
 
-Other tools contribute blocks, plugins and excludes to `dprint.jsonc` in
-`[contributes.dprint]`. Each tool file lists them.
+Other tools contribute blocks and plugins to `dprint.jsonc` in
+`[contributes.dprint]`, and each tool file lists them. A tool can also add
+excludes in `[contributes.mise]` (`code_files`).
 
 ## Values
 
 The keys of `[tools.dprint]` in `.config/bootstrap/tools.toml`:
 
-| Key                                   | Use                                                                                          |
-| ------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `env`                                 | The environments of the tool.                                                                |
-| `settings`                            | The top-level settings. The default is `newLineKind = "lf"`.                                 |
-| `blocks.<plugin>`                     | The keys of a plugin block. The defaults are `toml`, `json`, `markdown`, `yaml` and `shuck`. |
-| `excludes`                            | More excludes. A list adds its items.                                                        |
-| `plugins`                             | More plugins. A list adds its items.                                                         |
-| `[tools.dprint.files."dprint.jsonc"]` | The overrides of the items of `bootstrap` (see "What the tool ships").                       |
+| Key                                   | Use                                                                                                                                                                       |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `env`                                 | The environments of the tool.                                                                                                                                             |
+| `settings`                            | The top-level settings. The default is `newLineKind = "lf"`.                                                                                                              |
+| `blocks.<plugin>`                     | The keys of a plugin block. The defaults are `toml`, `json`, `markdown`, `yaml` and `shuck`.                                                                              |
+| `excludes`                            | More excludes of `dprint.jsonc` only, after `code_files.excludes` of `[tools.mise]`. The default is `[]`. A list adds its items. Use `code_files.excludes` for the gates. |
+| `plugins`                             | More plugins. A list adds its items.                                                                                                                                      |
+| `[tools.dprint.files."dprint.jsonc"]` | The overrides of the items of `bootstrap` (see "What the tool ships").                                                                                                    |
 
 No questions. The rules of the keys are in
 [`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
@@ -117,8 +127,9 @@ None.
 ## Adapt to the repository
 
 1. Move each formatter step of the repository to a task `code:format:NN-<name>`.
-2. Keep the own excludes of the repository in `dprint.jsonc`, for example the
-   submodules.
+2. Put the own excludes of the repository in `code_files.excludes` of
+   `[tools.mise]`, for example a vendored folder. A submodule needs none:
+   `gate_files` never examines a file of a submodule.
 
 ## Migration
 
@@ -129,3 +140,7 @@ None.
 - M34 of `migrate.md`: the sync now writes `dprint.jsonc`. It removes the old
   `extends` of the global config `~/.config/dprint/dprint.jsonc`, and it keeps
   the own excludes of the file.
+- M45 of `migrate.md`: the base excludes (`**/*-lock.yaml`, `**/*.svg`,
+  `**/package-lock.json`) moved to `code_files.excludes` of the `mise` tool.
+  Move `[tools.dprint] excludes` and the own excludes of `dprint.jsonc` there,
+  and add `"!**/*.py"` to the shuck associations of `dprint.jsonc`.

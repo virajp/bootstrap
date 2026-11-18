@@ -48,3 +48,6 @@ source = "setup-linter"
 
 [tasks."code/lint/05-linter"]
 source = "code-lint-linter"
+
+[tasks."code/lint/06-shellcheck"]
+source = "code-lint-shellcheck"

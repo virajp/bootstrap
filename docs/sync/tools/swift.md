@@ -73,10 +73,13 @@ this value wins.
 
 `code:lint` and `code:format` run the two gates. A gate skips without its tool
 (SwiftLint from mise, swift-format from the host) and without a `.swift` file.
-With a list of files, a gate uses only the `.swift` files. Without files, the
-list comes from `git ls-files`, because SwiftLint and swift-format do not read
-`.gitignore`. swift-format skips `*.generated.swift`. SwiftLint skips the
-`excluded` paths of `.config/swiftlint.yml`.
+Each gate gets its files from `gate_files`: the given files, else with
+`--all` every file, else the uncommitted files. Its `#FILES` header takes the
+`.swift` files and skips `*.generated.swift`, `.build/`, `.swiftpm/`,
+`Derived/` and `DerivedData/`. SwiftLint and swift-format get only that list,
+so the `excluded` paths of the seed `.config/swiftlint.yml` do not act in a
+gate run: put a path exclude in `code_files.excludes` of `[tools.mise]`. See
+[`mise.md`](mise.md#the-file-sets-of-the-gates).
 
 `test:golden:40-swift` has only the flag `--record`, because `test:golden`
 passes the same arguments to each part. The other options are env values,

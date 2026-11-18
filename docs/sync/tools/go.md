@@ -63,13 +63,16 @@ resolves.
 | `setup:deps:25-go`   | Download and verify the modules, report the outdated ones, and audit them with `govulncheck`. `--upgrade` upgrades them. |
 
 `code:lint` runs the two gates, and `setup` runs `setup:deps:25-go`. Without
-the tool of a task, or without a `go.mod` that git does not ignore, the task
-prints nothing and exits 0.
+the tool of a task, the task prints nothing and exits 0. A gate with no module
+in its list also prints nothing.
 
 - `code:lint:40-go` and `code:lint:45-gomod` examine modules, not files. A
-  given `.go` file, `go.mod` or `go.sum` selects the module of its nearest
-  `go.mod`. Without files, they examine each module with a `go.mod` that git
-  does not ignore.
+  `.go` file, `go.mod` or `go.sum` of the list of `gate_files` selects the
+  module of its nearest `go.mod`. The list is the given files, else with
+  `--all` every file, so each module, else the uncommitted files, so the
+  modules of the changed files. A change that only deletes files gives an
+  empty list: run `code:lint --all` then. See
+  [`mise.md`](mise.md#the-file-sets-of-the-gates).
 - Without a config file, `golangci-lint` runs its standard linters: `errcheck`,
   `govet`, `ineffassign`, `staticcheck` and `unused`. A `.golangci.yml` in the
   module changes the set. The tool ships no config file.

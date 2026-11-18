@@ -128,14 +128,23 @@ This file holds the instructions. Each rule of the sync has one place in
   - formatters and linters: a task `code:format:NN-<name>` or
     `code:lint:NN-<name>` (`.config/mise/tasks/code/format/NN-<name>`).
     `code:format` and `code:lint` run each of them in number order with the
-    same `--fix` and files. They skip a task without the `NN-` prefix. A
+    same `--fix`, `--debug` and files, and `--all` when the task declares it.
+    They skip a task without the `NN-` prefix. Without files and without
+    `--all`, a gate examines only the uncommitted files of the repository. A
+    gate gets its files from `gate_files` of `helpers` and names its file
+    types in a `#FILES` header (see
+    [`tools/mise.md`](tools/mise.md#the-file-sets-of-the-gates)). A
     pre-commit hook only calls a task, so do not call a formatter or a linter
     from a hook.
+  - the files that no gate examines: `code_files.excludes` of `[tools.mise]`
+    in `tools.toml` (`code_files.includes` limits every gate to the files that
+    it names). The sync also writes these excludes into `dprint.jsonc`.
 - A shared file is different. The sync merges the items of the selected tools
   into it, and it keeps the other items. Thus put the repository-owned items
   directly in the file: ignore lines in `.gitignore`, hooks in
   `.config/pre-commit-config.yaml`, extensions in `.vscode/extensions.json`,
-  and keys, excludes and plugins in `dprint.jsonc`. To change or remove an
+  and keys and plugins in `dprint.jsonc`. The excludes of the gates go in
+  `code_files` of `[tools.mise]`, not in `dprint.jsonc`. To change or remove an
   item of `bootstrap`, write an override in
   `[tools.<tool>.files."<path>"]` of `tools.toml` (see step 6).
 - A seed file is different too. The sync writes it only if it is missing.

@@ -59,7 +59,8 @@ The tool also sets:
 - `UV_NO_CACHE`, `UV_NO_MANAGED_PYTHON` and `UV_PYTHON_DOWNLOADS = "never"`.
   Thus uv uses only the Python of mise.
 
-The `gcloud` tool uses the same Python minor version. Change both together.
+The `gcloud` tool and `gate_files` of `helpers` (the `mise` tool,
+`python@3.14`) use the same Python version. Change the three together.
 
 The tool declares the language server `pyrefly` (`pyrefly lsp`, for `.py` and
 `.pyi`), from the `pipx:pyrefly` pin, so it is listed only with a
@@ -79,13 +80,15 @@ resolves.
 | `code:lint:90-uv`      | Fail when a `uv.lock` does not agree with the `pyproject.toml` next to it.            |
 
 `code:lint` and `code:format` run the four gates. Without ruff or pyrefly,
-the gate skips. Without files, the ruff and pyrefly gates also skip when the
-repository has no `.py` or `.pyi` file that git does not ignore.
-`code:lint:90-uv` runs `uv lock --check` for each project with a `uv.lock` and a
-`pyproject.toml`. With a list of files, it checks only the projects of a given
-`uv.lock` or `pyproject.toml`. With a list of files, the other gates use only
-the Python files. ruff uses `--force-exclude`, so a file that the ruff config
-excludes stays excluded.
+the gate skips. Each gate gets its files from `gate_files`: the given files,
+else with `--all` every file, else the uncommitted files. The ruff and pyrefly
+gates use only the `.py` and `.pyi` files, and skip without one. Each tool
+gets only that list: a path exclude of the ruff or pyrefly config does not
+act in a gate run, so put it in `code_files.excludes` of `[tools.mise]`.
+`code:lint:90-uv` runs `uv lock --check` for each project of a `uv.lock` or a
+`pyproject.toml` of its list, when the project has both files. A change that
+only deletes files gives an empty list: run `code:lint --all` then. See
+[`mise.md`](mise.md#the-file-sets-of-the-gates).
 
 The install uses `--locked`. It fails, and does not change `uv.lock`, when
 the lockfile does not agree with `pyproject.toml`.

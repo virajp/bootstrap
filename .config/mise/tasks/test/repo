@@ -5549,6 +5549,24 @@ check_member_renamed() {
 CASE_CALL=init_yes run_case "init renames setup:worktree in a member's worktree_install" 0 "$member_old_cmd" member_folder \
   'rename setup:worktree' check_member_renamed
 
+# The global file lists of the gates (D8, D9): the sync renders code_files of
+# the mise tool, its defaults and the value of the repository, to
+# .config/bootstrap/config-files.toml, and the same excludes to dprint.jsonc.
+code_files_sync() { "$bin" sync; }
+check_code_files() {
+  local file=$consumer/.config/bootstrap/config-files.toml
+  check_that "code_files: the mise defaults" \
+    tomlq '.excludes | contains(["**/*-lock.yaml", "**/*.svg", "**/package-lock.json"])' "$file"
+  check_that "code_files: the value of the repository" tomlq '.excludes | contains(["generated"])' "$file"
+  check_that "code_files: no includes" tomlq '(.includes | length) == 0' "$file"
+  check_that "code_files: dprint.jsonc, a default" file_has '"**/*-lock.yaml"' "$consumer/dprint.jsonc"
+  check_that "code_files: dprint.jsonc, the value of the repository" file_has '"**/generated"' "$consumer/dprint.jsonc"
+  check_that "code_files: dprint.jsonc, below the folder of the value" file_has '"**/generated/**"' "$consumer/dprint.jsonc"
+}
+CASE_CALL=code_files_sync run_case "code_files: config-files.toml and dprint.jsonc" 0 "$dev_values
+[tools.mise]
+code_files.excludes = [ \"generated\" ]" '' 'Synced: ' check_code_files
+
 while ((${#case_pids[@]})); do
   collect_case
 done
@@ -5895,19 +5913,21 @@ check_clone "$name" 5 "$got"
 check_configs_log "$name" -h "cli/VERSION of the clone is not MAJOR.MINOR.PATCH ('v1.2'): nothing synced"
 
 # The gate code:lint:60-bootstrap. It runs `bootstrap check` with the cache
-# clone, and it never fetches.
+# clone, and it never fetches. It runs with --all, and gets its files from
+# gate_files of the working tree's helpers and gate_files.py (D58).
 lint_task="$root/repo/tools/mise/tasks/code-lint-bootstrap"
 gate_root="$tmp/gate-consumer"
 gate_cache="$tmp/gate-cache"
 cp -R -- "$base_consumer" "$gate_root"
 mkdir -p -- "$gate_root/.config/mise/tasks/_scripts"
 cp -- "$root/repo/tools/mise/tasks/helpers" "$gate_root/.config/mise/tasks/_scripts/helpers"
+cp -- "$root/repo/tools/mise/tasks/gate_files.py" "$gate_root/.config/mise/tasks/_scripts/gate_files.py"
 write_values "$gate_root/.config/bootstrap" 'environments = [ "dev" ]'
 
 run_gate() {
   (
     cd -- "$root"
-    env -u usage_files -u BOOTSTRAP_VALUES -u BOOTSTRAP_CLONE MISE_PROJECT_ROOT="$gate_root" \
+    env -u usage_files -u BOOTSTRAP_VALUES -u BOOTSTRAP_CLONE usage_all=true MISE_PROJECT_ROOT="$gate_root" \
       BOOTSTRAP_CACHE="$gate_cache" BOOTSTRAP_URL="file://$tmp/no-such-remote" BOOTSTRAP_BIN="$bin" bash "$lint_task"
   ) > "$log" 2>&1
 }
@@ -5941,6 +5961,247 @@ if [[ $got == 0 && ! -s $log ]]; then
   print_success "the gate with another origin: exit 0, no output"
 else
   print_error "the gate with another origin: exit $got, or an output"
+  sed 's/^/    /' "$log" >&2
+  failures=$((failures + 1))
+fi
+
+# gate_files.py, the file list of a code:format or code:lint gate. Each case
+# runs the working tree's script in its own scratch repository, with the gate
+# file outside it, and compares the exit code, the list and the --debug lines
+# on stderr.
+gf_script="$root/repo/tools/mise/tasks/gate_files.py"
+gf_python=$(cd -- "$root" && mise x python@3.14 -- which python3)
+gf_count=0
+# git without the global and the system config, and without the default
+# excludes file $XDG_CONFIG_HOME/git/ignore, so an ignore file of the user
+# never hides a file of a case.
+gf_env=(GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 XDG_CONFIG_HOME="$tmp/gf-no-config")
+gf_git() { env "${gf_env[@]}" git -c user.name=test -c user.email=test@example.com -c commit.gpgsign=false \
+  -c core.hooksPath=/dev/null "$@"; }
+
+# gf_new: a new scratch repository, gf_dir, with no commit, and its gate file
+# without a #FILES header.
+gf_new() {
+  gf_count=$((gf_count + 1))
+  gf_dir="$tmp/gf-$gf_count/repo"
+  gf_gate="$tmp/gf-$gf_count/gate"
+  gf_err="$tmp/gf-$gf_count/err"
+  mkdir -p -- "$gf_dir"
+  gf_git -C "$gf_dir" init --quiet -b main
+  gf_header
+}
+# gf_header [<line>...]: the top block of the gate file, with these lines after
+# its #USAGE line.
+gf_header() {
+  printf '%s\n' '#!/usr/bin/env bash' '' '#USAGE flag "--all"' "$@" '' 'set -e' > "$gf_gate"
+}
+# gf_file <path> [<line>...]: a file of the scratch repository.
+gf_file() {
+  local path=$gf_dir/$1
+  shift
+  mkdir -p -- "$(dirname -- "$path")"
+  printf '%s\n' "${@:-x}" > "$path"
+}
+gf_commit() {
+  gf_git -C "$gf_dir" add -A
+  gf_git -C "$gf_dir" commit --quiet --no-verify -m files
+}
+# gf_run [<arg>...]: the script, with --debug. gf_code is its exit code,
+# gf_list the content of its list file (gf_listed=1 when that file is there).
+gf_run() {
+  local out=''
+  gf_code=0 gf_list='' gf_listed=''
+  out=$(cd -- "$gf_dir" && env "${gf_env[@]}" MISE_PROJECT_ROOT="$gf_dir" "$gf_python" "$gf_script" "$gf_gate" --debug "$@" 2> "$gf_err") ||
+    gf_code=$?
+  if [[ -n $out && -f $out ]]; then
+    gf_listed=1
+    gf_list=$(cat -- "$out")
+    rm -f -- "$out"
+  fi
+}
+# gf_check <name> <code> <list> [<stderr line>...]: the exit code, the list
+# (one path for each line), and each fixed string on stderr. A case with exit 0
+# needs the list file.
+gf_check() {
+  local name=$1 want=$2 list=$3 text bad=''
+  shift 3
+  if [[ $gf_code != "$want" ]]; then
+    bad="exit $gf_code, expected $want"
+  elif [[ $want == 0 && -z $gf_listed ]]; then
+    bad="no list file"
+  elif [[ $gf_list != "$list" ]]; then
+    bad="the list is '${gf_list//$'\n'/ }', expected '${list//$'\n'/ }'"
+  else
+    for text in "$@"; do
+      grep -qF -- "$text" "$gf_err" || {
+        bad="stderr lacks: $text"
+        break
+      }
+    done
+  fi
+  if [[ -z $bad ]]; then
+    print_success "gate_files, $name"
+    return 0
+  fi
+  print_error "gate_files, $name: $bad"
+  sed 's/^/    /' "$gf_err" >&2
+  failures=$((failures + 1))
+}
+lines() { printf '%s\n' "$@"; }
+
+# The uncommitted files (D1): a staged change, an unstaged change, a deleted
+# file, a staged deletion and a new file. --all: each tracked and new file.
+gf_changes() {
+  gf_new
+  gf_file staged.txt
+  gf_file changed.txt
+  gf_file deleted.txt
+  gf_file removed.txt
+  gf_file same.txt
+  gf_commit
+  gf_file staged.txt x y
+  gf_git -C "$gf_dir" add staged.txt
+  gf_file changed.txt x y
+  rm -f -- "$gf_dir/deleted.txt"
+  gf_git -C "$gf_dir" rm --quiet removed.txt
+  gf_file new.txt
+}
+gf_changes
+gf_run
+gf_check "the default: the staged, the changed and the new files" 0 "$(lines changed.txt new.txt staged.txt)" \
+  'drop deleted.txt: repo deleted'
+gf_changes
+gf_run --all
+gf_check "--all: each tracked and new file, no deleted file" 0 "$(lines changed.txt new.txt same.txt staged.txt)" \
+  'drop deleted.txt: repo deleted'
+
+# The repository filter (D16, D48): a submodule (a gitlink), a nested
+# repository, an ignored file and a symlink, in each mode.
+gf_repo() {
+  gf_new
+  gf_file .gitignore ignored.txt
+  gf_file a.txt
+  gf_file ignored.txt
+  mkdir -p -- "$gf_dir/sub" "$gf_dir/nested"
+  gf_git -C "$gf_dir/sub" init --quiet -b main
+  gf_file sub/x.txt
+  gf_git -C "$gf_dir/sub" add -A
+  gf_git -C "$gf_dir/sub" commit --quiet --no-verify -m sub
+  gf_git -C "$gf_dir" add -A 2> /dev/null
+  gf_git -C "$gf_dir" commit --quiet --no-verify -m files
+  gf_git -C "$gf_dir/nested" init --quiet -b main
+  gf_file nested/n.txt
+  gf_file sub/x.txt x y
+  gf_file sub/new.txt
+  gf_file new.txt
+  ln -s a.txt "$gf_dir/link.txt"
+}
+gf_repo
+gf_run
+gf_check "the default: no file of a submodule or a nested repository" 0 new.txt \
+  'drop nested/: repo nested-repo' 'drop link.txt: repo symlink'
+gf_repo
+gf_run --all
+gf_check "--all: no file of a submodule or a nested repository" 0 "$(lines .gitignore a.txt new.txt)" \
+  'drop sub: repo gitlink' 'drop nested/: repo nested-repo' 'drop link.txt: repo symlink'
+gf_repo
+gf_run a.txt ignored.txt sub/x.txt sub nested/n.txt missing.txt link.txt
+gf_check "given files: an ignored, a submodule, a nested and a missing path go" 0 a.txt \
+  'drop ignored.txt: repo unlisted' 'drop sub/x.txt: repo unlisted' 'drop sub: repo gitlink' \
+  'drop nested/n.txt: repo unlisted' 'drop missing.txt: repo unlisted' 'drop link.txt: repo symlink'
+gf_repo
+gf_run --all a.txt
+gf_check "--all with files: exit 2" 2 ''
+
+# The global filter (D9): config-files.toml with includes and excludes. A
+# missing file means two empty lists, and a gate without a #FILES header gets
+# each file (D3).
+gf_new
+gf_file a.txt
+gf_file skip.txt
+gf_file b.md
+gf_file .config/bootstrap/config-files.toml 'includes = [ "*.txt" ]' 'excludes = [ "skip.txt" ]'
+gf_commit
+gf_run --all
+gf_check "the global includes and excludes" 0 a.txt \
+  'drop b.md: global include' 'drop skip.txt: global exclude "skip.txt"' \
+  'drop .config/bootstrap/config-files.toml: global include'
+rm -f -- "$gf_dir/.config/bootstrap/config-files.toml"
+gf_commit
+gf_run --all
+gf_check "no config-files.toml and no #FILES header: each file" 0 "$(lines a.txt b.md skip.txt)"
+
+# The gate filter (D3): include and exclude of the #FILES header.
+gf_header '#FILES include="*.txt" exclude="skip.txt"'
+gf_run --all
+gf_check "the #FILES include and exclude" 0 a.txt \
+  'drop b.md: gate include' 'drop skip.txt: gate exclude "skip.txt"'
+
+# An empty list: an empty list file, exit 0.
+gf_header '#FILES include="*.go"'
+gf_run --all
+gf_check "an empty list" 0 ''
+
+# The shebang key (D11, D47): a file that only the shebang selects needs a
+# shell of the list; a file of the include names goes only for a known shell
+# that is not in the list.
+gf_new
+gf_header '#FILES include="*.sh" shebang="sh bash"'
+gf_file run '#!/usr/bin/env bash'
+gf_file run-s '#!/usr/bin/env -S bash -e'
+gf_file zrun '#!/bin/zsh'
+gf_file py.sh '#!/usr/bin/env python3'
+gf_file zsh.sh '#!/bin/zsh'
+gf_file plain.sh 'echo x'
+gf_file notes.txt
+gf_commit
+gf_run --all
+gf_check "the shebang key" 0 "$(lines plain.sh py.sh run run-s)" \
+  'drop zrun: gate include' 'drop zsh.sh: gate shebang' 'drop notes.txt: gate include'
+
+# The patterns (D12, D46): a pattern without / matches in each folder, a
+# pattern with / from the root, and ** any number of folders.
+gf_new
+gf_header '#FILES exclude="node_modules *.log gen/*.txt docs/**/*.md"'
+gf_file node_modules/a.js
+gf_file web/node_modules/pkg/b.js
+gf_file node_modules.txt
+gf_file a.log
+gf_file x/y/b.log
+gf_file gen/a.txt
+gf_file x/gen/a.txt
+gf_file docs/a.md
+gf_file docs/x/y/b.md
+gf_file top.md
+gf_commit
+gf_run --all
+gf_check "the patterns" 0 "$(lines node_modules.txt top.md x/gen/a.txt)" \
+  'drop web/node_modules/pkg/b.js: gate exclude "node_modules"' 'drop x/y/b.log: gate exclude "*.log"' \
+  'drop gen/a.txt: gate exclude "gen/*.txt"' 'drop docs/x/y/b.md: gate exclude "docs/**/*.md"' \
+  'drop docs/a.md: gate exclude "docs/**/*.md"'
+
+# A malformed header (D44) stops with exit 2 and a message.
+gf_header '#FILES include="*.txt"' '#FILES exclude="b.txt"'
+gf_run --all
+gf_check "two #FILES lines" 2 '' 'two #FILES lines'
+gf_header '#FILES only="*.txt"'
+gf_run --all
+gf_check "an unknown #FILES key" 2 '' 'unknown #FILES key only'
+gf_header '#FILES include=*.txt'
+gf_run --all
+gf_check "a #FILES value without quotes" 2 '' 'the #FILES value of include has no double quotes'
+
+# The orchestrator code:lint (D17): --all with files stops with exit 2.
+lint_root="$tmp/lint-orchestrator"
+mkdir -p -- "$lint_root/.config/mise/tasks/_scripts"
+cp -- "$root/repo/tools/mise/tasks/helpers" "$lint_root/.config/mise/tasks/_scripts/helpers"
+gomplate --left-delim '<%' --right-delim '%>' -f "$root/repo/tools/mise/tasks/code-lint.tmpl" -o "$tmp/code-lint"
+got=0
+MISE_PROJECT_ROOT=$lint_root usage_all=true usage_files=a.txt bash "$tmp/code-lint" > "$log" 2>&1 || got=$?
+if [[ $got == 2 ]] && grep -qF 'Use --all or files, not both.' "$log"; then
+  print_success "code:lint --all with files: exit 2"
+else
+  print_error "code:lint --all with files: exit $got, or no usage message"
   sed 's/^/    /' "$log" >&2
   failures=$((failures + 1))
 fi

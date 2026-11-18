@@ -5,9 +5,11 @@
 #MISE description="Validate the values in .config/bootstrap/ with bootstrap check"
 #MISE hide=true
 
+#USAGE flag "--all" help="check when the values folder has a file, not only an uncommitted one"
 #USAGE flag "--debug" help="emit debug logs"
 #USAGE flag "--fix" help="accepted and ignored: the check has no fixes"
-#USAGE arg "[files]" var=#true help="the files to lint; only the files in .config/bootstrap/ are used; the default is .config/bootstrap/"
+#USAGE arg "[files]" var=#true help="the files to lint; the check runs when one is a file of .config/bootstrap/; the default is the uncommitted files"
+#FILES include=".config/bootstrap/*.toml" exclude=".config/bootstrap/config-files.toml"
 
 set -euo pipefail
 # shellcheck source=/dev/null
@@ -23,20 +25,18 @@ else
 fi
 cd "${MISE_PROJECT_ROOT}"
 
-# code:lint passes its files to each code:lint:* task. Only the files of the
-# values folder are for this check. Given files without one: nothing to do.
-# Without files, the check runs when the values folder exists.
+# The check examines the whole values folder. It runs only when the list of
+# gate_files (the #FILES header above) has a file: with no file, the gate
+# does not apply and prints nothing.
+args=()
+[[ "${usage_all:-false}" == "true" ]] && args+=(--all)
+[[ "${usage_debug:-false}" == "true" ]] && args+=(--debug)
+[[ "${usage_fix:-false}" == "true" ]] && args+=(--fix)
 FILES=()
 [[ -n "${usage_files:-}" ]] && eval "FILES=(${usage_files})"
-if ((${#FILES[@]})); then
-  found=false
-  for file in "${FILES[@]}"; do
-    [[ "${file}" == .config/bootstrap/* ]] && found=true
-  done
-  [[ "${found}" == "true" ]] || exit 0
-else
-  [[ -d .config/bootstrap ]] || exit 0
-fi
+list=$(gate_files "$0" ${args[@]+"${args[@]}"} ${FILES[@]+"${FILES[@]}"}) || exit $?
+trap 'rm -f "${list}"' EXIT
+[[ -s ${list} ]] || exit 0
 
 # The gate never uses the network: it reads the shared cache clone of
 # bootstrap, without its lock, and it never fetches. Without that clone, the

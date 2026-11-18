@@ -1,7 +1,8 @@
 # The merge spec of dprint.jsonc, a shared file. The sync renders it with the
 # values of the dprint tool: the base blocks, and the blocks and plugins that
-# each selected tool adds in [contributes.dprint]. A key, an exclude or a
-# plugin that the user adds stays.
+# each selected tool adds in [contributes.dprint], and the excludes of
+# code_files of the mise tool. A key, an exclude or a plugin that the user
+# adds stays.
 format = "jsonc"
 
 # The file has all its settings now: an older copy extends the global config.
@@ -39,11 +40,34 @@ value = <% . | data.ToTOMLInline %>
 <% end -%>
 <% end -%>
 <% end -%>
-<% range .config.excludes %>
+<%- /* The excludes: code_files.excludes of the mise tool, the one global
+   list of the gates, then the excludes of the dprint tool. Each pattern has
+   the gitignore form and renders in the dprint form: a leading slash is
+   removed and the rest is a path from the root; a pattern p without a slash
+   gives two patterns, p in each folder and each path below a folder p; a
+   pattern whose only slash is trailing (build/) gives each path below a
+   folder build in each folder; any other trailing slash gets a double star
+   after it. */ -%>
+<% $lists := coll.Slice .config.excludes -%>
+<% if has .all "mise" %><% $lists = coll.Slice .all.mise.code_files.excludes .config.excludes %><% end -%>
+<% range $lists %><% range . %>
+<% $p := strings.TrimPrefix "/" . -%>
+<% $body := regexp.Replace "/$" "" $p -%>
+<% $forms := coll.Slice $p -%>
+<% if or (strings.HasPrefix "/" .) (strings.Contains "/" $body) -%>
+<% if ne $body $p %><% $forms = coll.Slice (printf "%s/**" $body) %><% end -%>
+<% else if ne $body $p -%>
+<% $forms = coll.Slice (printf "**/%s/**" $body) -%>
+<% else -%>
+<% $forms = coll.Slice (printf "**/%s" $body) (printf "**/%s/**" $body) -%>
+<% end -%>
+<% range $forms %>
 [[item]]
 kind = "item"
 path = [ "excludes" ]
 value = <% . | data.ToTOMLInline %>
+<% end -%>
+<% end -%>
 <% end -%>
 <%- /* A plugin is found by its name with any version, so the version that
    setup:dprint writes stays. */ -%>

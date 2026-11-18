@@ -20,29 +20,31 @@ A `[tools.mise]` table gives values.
 
 ## What the tool ships
 
-| Path in the repository                        | Kind      | Use                                                                                                                                                                             |
-| --------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.config/mise.toml`                           | Template  | The shared `[settings]`, and the `[env]` values `MEMBERS` and `REPO_NAME` from `.config/bootstrap/repo.toml`.                                                                   |
-| `.config/mise/conf.d/mise/mise.<env>.toml`    | Generated | The mise config of this tool, one file for each environment.                                                                                                                    |
-| `.config/mise/conf.d/zz-repo/mise.<env>.toml` | Seed      | The mise config and the `[env]` values of the repository, one file for `dev` and one for `ci`. The folder name sorts last, so this config wins over each tool config.           |
-| `.config/mise/tasks/_scripts/helpers`         | Library   | The print functions, `members`, `own_tasks` (the `NN-<name>` tasks of a group), `has_own_task`, `shell_files_in_scope` and `bootstrap_get`, the reader of `.config/bootstrap/`. |
-| `.config/mise/tasks/_scripts/checks`          | Library   | The git predicates of the merge tasks.                                                                                                                                          |
-| `.config/mise/tasks/_scripts/placeholder`     | Library   | The prompt of a task that no stack fills yet.                                                                                                                                   |
-| `.config/mise/tasks/_scripts/worktrees-page`  | Library   | The HTML page of `git:worktree:list`.                                                                                                                                           |
-| `.config/mise/tasks/setup/_default`           | Template  | The task `setup`.                                                                                                                                                               |
-| `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`.                                                                                                                                                       |
-| `.config/mise/tasks/setup/mise`               | Synced    | The task `setup:mise`.                                                                                                                                                          |
-| `.config/mise/tasks/git/worktree/setup`       | Template  | The task `git:worktree:setup`.                                                                                                                                                  |
-| `.config/mise/tasks/code/_default`            | Synced    | The task `code`.                                                                                                                                                                |
-| `.config/mise/tasks/code/format/_default`     | Template  | The task `code:format`.                                                                                                                                                         |
-| `.config/mise/tasks/code/lint/_default`       | Template  | The task `code:lint`.                                                                                                                                                           |
-| `.config/mise/tasks/code/lint/60-bootstrap`   | Synced    | The gate `code:lint:60-bootstrap`.                                                                                                                                              |
-| `.config/mise/tasks/code/lsp/check`           | Synced    | The task `code:lsp:check`.                                                                                                                                                      |
-| `.config/mise/tasks/code/sec/_default`        | Synced    | The task `code:sec`.                                                                                                                                                            |
-| `.config/mise/tasks/git/worktree/list`        | Synced    | The task `git:worktree:list`.                                                                                                                                                   |
-| `.config/mise/tasks/test/_default`            | Synced    | The task `test`.                                                                                                                                                                |
-| `.config/mise/tasks/test/e2e/_default`        | Synced    | The task `test:e2e`.                                                                                                                                                            |
-| `.config/mise/tasks/test/golden/_default`     | Synced    | The task `test:golden`.                                                                                                                                                         |
+| Path in the repository                        | Kind      | Use                                                                                                                                                                                             |
+| --------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.config/bootstrap/config-files.toml`         | Template  | The global file lists of the `code:format` and `code:lint` gates, from the key `code_files`. `gate_files` reads it.                                                                             |
+| `.config/mise.toml`                           | Template  | The shared `[settings]`, and the `[env]` values `MEMBERS` and `REPO_NAME` from `.config/bootstrap/repo.toml`.                                                                                   |
+| `.config/mise/conf.d/mise/mise.<env>.toml`    | Generated | The mise config of this tool, one file for each environment.                                                                                                                                    |
+| `.config/mise/conf.d/zz-repo/mise.<env>.toml` | Seed      | The mise config and the `[env]` values of the repository, one file for `dev` and one for `ci`. The folder name sorts last, so this config wins over each tool config.                           |
+| `.config/mise/tasks/_scripts/helpers`         | Library   | The print functions, `members`, `own_tasks` (the `NN-<name>` tasks of a group), `has_own_task`, `gate_files` (the file list of a gate) and `bootstrap_get`, the reader of `.config/bootstrap/`. |
+| `.config/mise/tasks/_scripts/gate_files.py`   | Library   | The Python code of `gate_files`.                                                                                                                                                                |
+| `.config/mise/tasks/_scripts/checks`          | Library   | The git predicates of the merge tasks.                                                                                                                                                          |
+| `.config/mise/tasks/_scripts/placeholder`     | Library   | The prompt of a task that no stack fills yet.                                                                                                                                                   |
+| `.config/mise/tasks/_scripts/worktrees-page`  | Library   | The HTML page of `git:worktree:list`.                                                                                                                                                           |
+| `.config/mise/tasks/setup/_default`           | Template  | The task `setup`.                                                                                                                                                                               |
+| `.config/mise/tasks/setup/configs/_default`   | Template  | The task `setup:configs`.                                                                                                                                                                       |
+| `.config/mise/tasks/setup/mise`               | Synced    | The task `setup:mise`.                                                                                                                                                                          |
+| `.config/mise/tasks/git/worktree/setup`       | Template  | The task `git:worktree:setup`.                                                                                                                                                                  |
+| `.config/mise/tasks/code/_default`            | Synced    | The task `code`.                                                                                                                                                                                |
+| `.config/mise/tasks/code/format/_default`     | Template  | The task `code:format`.                                                                                                                                                                         |
+| `.config/mise/tasks/code/lint/_default`       | Template  | The task `code:lint`.                                                                                                                                                                           |
+| `.config/mise/tasks/code/lint/60-bootstrap`   | Synced    | The gate `code:lint:60-bootstrap`.                                                                                                                                                              |
+| `.config/mise/tasks/code/lsp/check`           | Synced    | The task `code:lsp:check`.                                                                                                                                                                      |
+| `.config/mise/tasks/code/sec/_default`        | Synced    | The task `code:sec`.                                                                                                                                                                            |
+| `.config/mise/tasks/git/worktree/list`        | Synced    | The task `git:worktree:list`.                                                                                                                                                                   |
+| `.config/mise/tasks/test/_default`            | Synced    | The task `test`.                                                                                                                                                                                |
+| `.config/mise/tasks/test/e2e/_default`        | Synced    | The task `test:e2e`.                                                                                                                                                                            |
+| `.config/mise/tasks/test/golden/_default`     | Synced    | The task `test:golden`.                                                                                                                                                                         |
 
 The `mise` tool ships each orchestrator `_default`. The tool of a task group
 ships its leaf tasks. A leaf task that an orchestrator runs with `own_tasks`
@@ -76,10 +78,10 @@ The tool also sets:
 | `setup:configs`          | Sync the shared files: it runs `bootstrap sync`. `--dry-run` shows the changes. `--verbose` lists each file. With members, `--all` and `--<member>` also sync those members.                                                                                        |
 | `setup:mise`             | Reshim, doctor and install. `--upgrade` also upgrades.                                                                                                                                                                                                              |
 | `git:worktree:setup`     | Prepare a new git worktree. `git:worktree:create` and worktrunk run it. It copies the `[worktree].files` of `repo.toml` from the main worktree, runs the `worktree_install` of each member, and it does less than `setup`.                                          |
-| `code`                   | Run `code:format`, `code:lint` and `code:sec`. `--debug` goes to each of them.                                                                                                                                                                                      |
-| `code:format`            | Run each `code:format:<name>` task in number order, on the given files, else on the whole tree. `--fix` applies the fixes.                                                                                                                                          |
-| `code:lint`              | Run each `code:lint:<name>` task in number order, on the given files, else on the whole tree. `--fix` applies the fixes.                                                                                                                                            |
-| `code:lint:60-bootstrap` | Validate the files of `.config/bootstrap/` with `bootstrap check`. Hidden. See below.                                                                                                                                                                               |
+| `code`                   | Run `code:format`, `code:lint` and `code:sec`. `--debug` goes to each of them, and `--all` to `code:format` and `code:lint`.                                                                                                                                        |
+| `code:format`            | Run each `code:format:<name>` task in number order, on the given files, else with `--all` on every file of the repository, else on the uncommitted files. `--fix` applies the fixes.                                                                                |
+| `code:lint`              | Run each `code:lint:<name>` task in number order, on the given files, else with `--all` on every file of the repository, else on the uncommitted files. `--fix` applies the fixes.                                                                                  |
+| `code:lint:60-bootstrap` | Validate the files of `.config/bootstrap/` with `bootstrap check`, when the file list has a values file. Hidden. See below.                                                                                                                                         |
 | `code:lsp:check`         | Check that the LSP server of each selected tool resolves in the dev env. See below.                                                                                                                                                                                 |
 | `code:sec`               | Run each `code:sec:<scanner>` task. `--staged` scans only the staged changes for secrets. See [_security_base.md](_security_base.md).                                                                                                                               |
 | `git:worktree:list`      | List the worktrees and the branches of the product: the home repository (`[home]`), its submodules and its submodule and sibling members of `[members.*]`. A terminal gets a table and an HTML page. Another reader gets JSON Lines. The alias `worktrees` runs it. |
@@ -111,9 +113,56 @@ cache `~/.cache/bootstrap/` and the output of a sync are in
 [`docs/design/cli.md`](../../design/cli.md).
 
 `code:lint:60-bootstrap` runs `bootstrap check` against the cache clone
-`~/.cache/bootstrap/repo`. It never fetches. Without that clone, without
-`bootstrap`, or with another `origin` in the clone, it prints nothing and
-exits 0. Thus no output does not show that the values are correct.
+`~/.cache/bootstrap/repo`. It never fetches. Its `#FILES` header has
+`include=".config/bootstrap/*.toml"` and
+`exclude=".config/bootstrap/config-files.toml"`: without such a file in its
+list (the given files, the uncommitted files, or every file with `--all`), it
+prints nothing and exits 0. Without that clone, without `bootstrap`, or with
+another `origin` in the clone, it also prints nothing and exits 0. Thus no
+output does not show that the values are correct.
+
+### The file sets of the gates
+
+`code:format` and `code:lint` take `--all`, `--fix`, `--debug` and files, and
+pass them to each gate. `--all` goes only to a gate whose file has a
+`#USAGE flag "--all"` line. `--all` with files stops with a usage error, exit 2.
+`code:sec` keeps its own file lists.
+
+Each gate gets its files from `gate_files` of `helpers`, which runs
+`_scripts/gate_files.py` with `mise x python@3.14 -- python3`:
+
+```bash
+list=$(gate_files "$0" <the flags and files of the gate>) || exit $?
+trap 'rm -f "${list}"' EXIT
+[[ -s "${list}" ]] || exit 0
+```
+
+The list is a temporary file, one path for each line. The base set is the
+given files, else with `--all` every file of the repository, else the
+uncommitted files (staged, changed and new). Three filters then remove files:
+
+1. The repository filter. It drops, in this order: a path with a line break or
+   a leading `-` (`repo unsafe-name`), a path that git does not list, for
+   example an ignored path, a path in a submodule or outside the repository
+   (`repo unlisted`), a submodule (`repo gitlink`), a nested repository
+   (`repo nested-repo`), a symlink (`repo symlink`) and a path that is not a
+   regular file (`repo deleted`). It never examines a file of a submodule.
+2. The global filter: `code_files` of `[tools.mise]`, rendered to
+   `.config/bootstrap/config-files.toml` (`global include`,
+   `global exclude "<pattern>"`).
+3. The `#FILES` header of the gate (`gate include`, `gate exclude "<pattern>"`,
+   `gate shebang`), for example
+   `#FILES include="*.py *.pyi"`. A gate without a header gets every file.
+
+In a gate run, `gate_files` is the only place that removes a file: a gate has
+no own filter and no `--force-exclude`. `--debug` prints each removed file on
+stderr as `drop <path>: <layer> <kind> ["<pattern>"]`, and these lines can come
+before the header of the gate. The pattern form and the `#FILES` keys are in
+[`docs/design/mise.md`](../../design/mise.md#the-file-sets-of-the-gates) and
+[`docs/design/tools.md`](../../design/tools.md#the-files-header-of-a-gate).
+
+A gate of the repository uses the same call and header. Without
+`#USAGE flag "--all"`, it gets no `--all`.
 
 `code:lsp:check` reads `bootstrap lsp --json` (`BOOTSTRAP_BIN`, else
 `mise x -- bootstrap`) and tests that each listed server resolves: a pinned
@@ -145,9 +194,16 @@ The sync runs these scripts from the clone, and never copies them.
 
 The keys of `[tools.mise]` in `.config/bootstrap/tools.toml`:
 
-| Key   | Use                           |
-| ----- | ----------------------------- |
-| `env` | The environments of the tool. |
+| Key                   | Use                                                                                                                                              |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `env`                 | The environments of the tool.                                                                                                                    |
+| `code_files.excludes` | The patterns of the files that no `code:format` or `code:lint` gate examines. The default: `**/*-lock.yaml`, `**/*.svg`, `**/package-lock.json`. |
+| `code_files.includes` | The patterns of the only files that the gates examine. The default `[]` means every file.                                                        |
+
+A pattern has the gitignore glob form, without negation. Another tool adds
+patterns in `[contributes.mise]`. The sync renders both lists to
+`.config/bootstrap/config-files.toml`, and the `dprint` tool renders the
+excludes into `dprint.jsonc`.
 
 The tool reads these keys of `.config/bootstrap/repo.toml`:
 
@@ -184,3 +240,6 @@ None.
   `[worktree].files` of `repo.toml`. `code:format` and `code:lint` lose their
   member flags, and `git:worktree:list` no longer reads `.config/vwf.yaml` or
   `.config/vwf-membership.yaml`.
+- M45 of `migrate.md`: `code:format` and `code:lint` examine only the
+  uncommitted files without `--all`, and the excludes of the gates move into
+  `code_files.excludes`. `shell_files_in_scope` of `helpers` is gone.
