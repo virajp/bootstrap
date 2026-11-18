@@ -149,6 +149,7 @@ func SplitRepo(in []byte, values, overrides string, exists, submodule func(strin
 	if s.Repo, err = editTOML(in, exprs); err != nil {
 		return nil, err
 	}
+	s.Repo = formatFirst(s.Repo)
 
 	// tools.toml: the tool tables and the overrides of the old file, the
 	// overrides file as [overrides.tools.*] (D5).

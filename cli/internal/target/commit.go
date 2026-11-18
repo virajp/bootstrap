@@ -15,6 +15,7 @@ var tableLine = regexp.MustCompile(`^[ \t]*\[`)
 var (
 	blankLine   = regexp.MustCompile(`^[ \t]*$`)
 	commentLine = regexp.MustCompile(`^[ \t]*#`)
+	formatLine  = regexp.MustCompile(`^format[ \t]*=`)
 )
 
 // awkLines splits <b> into the records of awk: a last line without a newline
@@ -34,7 +35,8 @@ func awkLines(b []byte) []string {
 // file <file> to <commit>. A line that has the key before the first table is
 // replaced, and a line with the same value causes no write. Else the key and
 // its <comment> go after the header comments, when a blank line ends them,
-// or else on the first line. Each other line stays as it is. Through a
+// or else on the first line; a format key there that a blank line and more
+// keys follow stays first, and the key goes before those keys. Each other line stays as it is. Through a
 // symlink, the real file is written, so the link stays. A <file> that is not
 // there is created with <header> and the key; without <header>, that is an
 // error. An empty <comment> adds no comment line. With a dry run, it only
@@ -162,6 +164,13 @@ func insert(out *strings.Builder, lines []string, key, line, comment string) {
 		if header && !found && !commentLine.MatchString(l) {
 			header = false
 		}
+	}
+	// A format key that a blank line ends is a block of its own, and stays
+	// first: the dprint sortKeys of a consumer sorts only the keys of one
+	// block. When more keys follow that blank line, the new key goes before
+	// them, so a sort of their block keeps each line.
+	if at > 0 && at+1 < len(lines) && formatLine.MatchString(lines[at-1]) && blankLine.MatchString(lines[at]) && !tableLine.MatchString(lines[at+1]) && !blankLine.MatchString(lines[at+1]) {
+		at += 2
 	}
 	done := false
 	for i, l := range lines {

@@ -1619,6 +1619,10 @@ compares it with `main` to find what changed since the last sync.
   same value causes no write.
 - Else the key goes after the header comments, when a blank line ends them, or
   else on the first line. A comment just above a key belongs to that key.
+- A `format` key at that place, with a blank line and more keys after it, is
+  a block of its own and stays first. The key goes after that blank line, in
+  the block of the other keys, so the dprint `sortKeys` of a consumer keeps
+  each line.
 - Each other line stays. `sync` writes only this key and the tables of the
   required members of `base` to the values. See
   [The tables of the required members](#the-tables-of-the-required-members).

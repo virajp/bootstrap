@@ -152,6 +152,45 @@ func editTOML(in []byte, exprs []string) ([]byte, error) {
 	return []byte(out), nil
 }
 
+// formatFirst moves the top-level format key of the TOML text <b> to a block
+// of its own, after the header comments: the dprint sortKeys of a consumer
+// sorts only the keys of one block, so format stays first.
+func formatFirst(b []byte) []byte {
+	lines := strings.Split(strings.TrimSuffix(string(b), "\n"), "\n")
+	at, format := -1, ""
+	for i, l := range lines {
+		t := strings.TrimSpace(l)
+		if strings.HasPrefix(t, "[") {
+			break
+		}
+		if k, _, ok := strings.Cut(t, "="); ok && strings.TrimSpace(k) == FormatKey {
+			at, format = i, t
+			break
+		}
+	}
+	if at < 0 {
+		return b
+	}
+	rest := append(append([]string{}, lines[:at]...), lines[at+1:]...)
+	head := 0
+	for head < len(rest) && strings.HasPrefix(strings.TrimSpace(rest[head]), "#") {
+		head++
+	}
+	body := rest[head:]
+	for len(body) > 0 && strings.TrimSpace(body[0]) == "" {
+		body = body[1:]
+	}
+	var out []string
+	if head > 0 {
+		out = append(append(out, rest[:head]...), "")
+	}
+	out = append(out, format)
+	if len(body) > 0 {
+		out = append(append(out, ""), body...)
+	}
+	return []byte(strings.Join(out, "\n") + "\n")
+}
+
 // strings of a TOML list, or nil.
 func strList(v any) []string {
 	l, _ := v.([]any)

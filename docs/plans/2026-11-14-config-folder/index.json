@@ -1425,8 +1425,8 @@
       "id": "G3",
       "unit": "",
       "stage": "",
-      "text": "The new gate mechanism: code:format and code:lint check only changed (uncommitted or staged) files by default, an --all flag checks every file of the repo, the base repo excludes submodule folders from each gate scan, and the gate scripts may move from bash to Python to manage the excludes. It needs its own design discussion and plan (D106) · open",
-      "state": "open"
+      "text": "The new gate mechanism: code:format and code:lint check only changed (uncommitted or staged) files by default, an --all flag checks every file of the repo, the base repo excludes submodule folders from each gate scan, and the gate scripts may move from bash to Python to manage the excludes. It needs its own design discussion and plan (D106) · resolved: plan 2026-11-15-gate-file-sets built it (merge f6d9c00)",
+      "state": "closed"
     },
     {
       "id": "G4",

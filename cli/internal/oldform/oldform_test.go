@@ -347,3 +347,17 @@ func TestFrozenTools(t *testing.T) {
 		t.Error("an unknown pack")
 	}
 }
+
+func TestFormatFirst(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"# H.\nformat = 3\nb = 1\na = 2\n\n[t]\nx = 1\n", "# H.\n\nformat = 3\n\nb = 1\na = 2\n\n[t]\nx = 1\n"},
+		{"b = 1\nformat = 3\n", "format = 3\n\nb = 1\n"},
+		{"# H.\n\nformat = 3\n\n[t]\n", "# H.\n\nformat = 3\n\n[t]\n"},
+		{"b = 1\n[t]\nformat = 3\n", "b = 1\n[t]\nformat = 3\n"},
+	}
+	for _, c := range cases {
+		if got := string(formatFirst([]byte(c.in))); got != c.want {
+			t.Errorf("formatFirst(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}

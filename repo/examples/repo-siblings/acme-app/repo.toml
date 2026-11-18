@@ -1,13 +1,14 @@
 # Example: the sibling ../acme-app of the base repository acme-product. It is
 # a node polyrepo with the branch main only.
 
+format = 3
+
 # The bootstrap commit of the last sync. The sync writes it.
 bootstrap_commit = ""
 # The core branches, in order. Each one exists in git.
 core_branches = [ "main" ]
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
-format = 3
 # The product name, for the fnox keychain service.
 product_name = "acme"
 repo_name = "acme-app"
