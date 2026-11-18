@@ -59,7 +59,6 @@ dprint	dprint.jsonc	{"kind":"key","path":["markup","vue.styleIndent"]}
 dprint	dprint.jsonc	{"kind":"key","path":["newLineKind"]}
 dprint	dprint.jsonc	{"kind":"key","path":["ruff","indentWidth"]}
 dprint	dprint.jsonc	{"kind":"key","path":["ruff","lineLength"]}
-dprint	dprint.jsonc	{"kind":"key","path":["shuck","associations"]}
 dprint	dprint.jsonc	{"kind":"key","path":["shuck","binaryNextLine"]}
 dprint	dprint.jsonc	{"kind":"key","path":["shuck","indentWidth"]}
 dprint	dprint.jsonc	{"kind":"key","path":["shuck","spaceRedirects"]}
