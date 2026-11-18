@@ -5,8 +5,12 @@ dprint	.config/mise/tasks/code/format/05-dprint
 dprint	.config/mise/tasks/setup/dprint
 dprint	dprint.jsonc	{"kind":"block","path":["exec","commands"],"id":"go","find":{"exts":["go"]}}
 dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/*-lock.yaml"}
+dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/*.merge.toml"}
 dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/*.svg"}
 dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"**/package-lock.json"}
+dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"cli/internal/oldform/packs-v2/**"}
+dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"macos/packs.toml"}
+dprint	dprint.jsonc	{"kind":"item","path":["excludes"],"value":"repo/packs.toml"}
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:@dprint/exec@"}
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:@dprint/json@"}
 dprint	dprint.jsonc	{"kind":"item","path":["plugins"],"match":"^npm:@dprint/markdown@"}

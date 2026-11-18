@@ -6,6 +6,10 @@
     "**/*-lock.yaml",
     "**/*.svg",
     "**/package-lock.json",
+    "repo/packs.toml",
+    "macos/packs.toml",
+    "cli/internal/oldform/packs-v2/**",
+    "**/*.merge.toml",
   ],
   "newLineKind": "lf",
   "json": {
