@@ -112,7 +112,7 @@ func (a *app) lsp(o opts) fail.Code {
 		return code
 	}
 	if !sd.Present() {
-		a.fail(sd.Show(sd.Values)+" is not there", "run bootstrap init")
+		a.fail(sd.Show(sd.Values)+" is not there", "run bootstrap migrate")
 		return fail.Usage
 	}
 	c, _, code := a.catalogIndex()

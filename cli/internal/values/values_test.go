@@ -85,9 +85,9 @@ func TestReadRepoCompat(t *testing.T) {
 func TestReadFolder(t *testing.T) {
 	cases := []struct{ name, repo, tools, want string }{
 		{"valid", repoHead, "format = 3\n", ""},
-		{"no folder files", "-", "-", "bootstrap has no repo.toml - run bootstrap init\nbootstrap has no tools.toml - run bootstrap init"},
-		{"no tools.toml", repoHead, "-", "bootstrap has no tools.toml - run bootstrap init"},
-		{"no format", "repo_name = \"r\"\ncore_branches = [ \"main\" ]\n", "format = 3\n", "bootstrap/repo.toml without format = 3 is not valid - run bootstrap init"},
+		{"no folder files", "-", "-", "bootstrap has no repo.toml - run bootstrap migrate\nbootstrap has no tools.toml - run bootstrap migrate"},
+		{"no tools.toml", repoHead, "-", "bootstrap has no tools.toml - run bootstrap migrate"},
+		{"no format", "repo_name = \"r\"\ncore_branches = [ \"main\" ]\n", "format = 3\n", "bootstrap/repo.toml without format = 3 is not valid - run bootstrap migrate"},
 		{"old format", repoHead, "format = 2\n", "format = 2 in bootstrap/tools.toml is not valid - the format of a values file is 3"},
 		{"unknown repo key", repoHead + "colour = 1\n", "format = 3\n", "colour in bootstrap/repo.toml is not a key of repo.toml"},
 		{"unknown tools key", repoHead, "format = 3\n[packs.x]\n", "packs is not a key of bootstrap/tools.toml - the top-level keys are format, [tools.<name>] and [overrides.*]"},

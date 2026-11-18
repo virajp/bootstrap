@@ -190,7 +190,7 @@ func TestDescribeUntrusted(t *testing.T) {
 }
 
 // TestDescribeNoValues: a repository without .config/bootstrap/ stops with
-// code 2 and the fix bootstrap init (D28).
+// code 2 and the fix bootstrap migrate (D28).
 func TestDescribeNoValues(t *testing.T) {
 	dir, run := valuesRepo(t)
 	if err := os.RemoveAll(dir); err != nil {
@@ -198,7 +198,7 @@ func TestDescribeNoValues(t *testing.T) {
 	}
 	code, out, errText := run("describe", "--json")
 	e := readEnvelope(t, out)
-	if code != fail.Usage || string(e.Data) != "null" || !strings.Contains(errText, "Run bootstrap init") {
+	if code != fail.Usage || string(e.Data) != "null" || !strings.Contains(errText, "Run bootstrap migrate") {
 		t.Errorf("code %d, envelope %+v, stderr %q", code, e, errText)
 	}
 }

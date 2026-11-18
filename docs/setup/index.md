@@ -14,7 +14,7 @@ first adoption, and also later, to bring the Mac up to date.
 A Mac uses `bootstrap` in two ways, in this sequence:
 
 1. **Adoption and update, by an AI agent.** The agent selects the tools with the
-   owner, and runs `bootstrap mac init`. That command writes the values file
+   owner, and runs `bootstrap mac migrate`. That command writes the values file
    `macos.toml`, then syncs the Mac.
 2. **Sync, each time after that, by a task.** `mise run updateall:configs` runs
    `bootstrap mac sync`. It renders the selected tools into `$HOME`, then runs
@@ -60,13 +60,13 @@ of `bootstrap` in `~/.cache/bootstrap/`. This file uses these commands:
 | Command                                         | Use                                                                                                                                                         |
 | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bootstrap mac questions [tool…] --json`        | Prints a JSON envelope whose `data` lists the questions of the tools, with the proposal and the answer of each. Without a tool, it uses the selected tools. |
-| `bootstrap mac init`                            | Runs in the clone. Writes `macos.toml` with the members of `base`, or moves an old form, asks the questions, then syncs.                                    |
+| `bootstrap mac migrate`                         | Runs in the clone. Writes `macos.toml` with the members of `base`, or moves an old form, asks the questions, then syncs.                                    |
 | `bootstrap mac add pack <pack> [--exclude <m>]` | Writes a `[tools.<name>]` table for each member of the pack that is not selected, and for each new dependency, then syncs.                                  |
 | `bootstrap mac add tool <tool…>`                | Writes a `[tools.<name>]` table for each tool and each new dependency, then syncs.                                                                          |
 | `bootstrap mac remove tool <tool…>`             | Removes the tables of the tools, and of each dependency that no other tool needs, then syncs.                                                               |
 | `bootstrap mac sync`                            | Syncs the Mac. The task `updateall:configs` runs it.                                                                                                        |
 
-`bootstrap mac init` takes no tool names. The other `mac` commands find
+`bootstrap mac migrate` takes no tool names. The other `mac` commands find
 `macos.toml` through
 `MACOS_SETUP_REPO_PATH`, or `--repo-path <path>`. Before the first sync, give
 that variable inline. The user config file of the CLI has no key for this path.
@@ -77,9 +77,9 @@ An agent has no terminal for a prompt of the CLI. Thus give each answer with
 the change list. Without `--yes`, a command that writes stops with exit 2
 (`changes need --yes`).
 
-In a terminal, `bootstrap mac init` opens the TUI, which is for a person. The
+In a terminal, `bootstrap mac migrate` opens the TUI, which is for a person. The
 CLI is for an agent: `--no-tui`, `--yes`, `--dry-run` and `--answer` each keep
-`bootstrap mac init` on the CLI path. Do not run `bootstrap mac tui`.
+`bootstrap mac migrate` on the CLI path. Do not run `bootstrap mac tui`.
 
 ## Rules
 
@@ -90,7 +90,7 @@ CLI is for an agent: `--no-tui`, `--yes`, `--dry-run` and `--answer` each keep
 - Do not edit a file that the sync writes. That file has the header
   `Synced from bootstrap`, and the next sync replaces it. Put each change in
   `macos.toml`.
-- Let `bootstrap mac init`, `bootstrap mac add` and `bootstrap mac remove`
+- Let `bootstrap mac migrate`, `bootstrap mac add` and `bootstrap mac remove`
   write the `[tools.<name>]` tables and the answers. Write by hand only
   `[overrides.mise.*]` and `[mise.*]`. `macos.toml` keeps no record of a pack:
   do not write a `[packs.<name>]` table.
@@ -157,7 +157,7 @@ Do each command of these steps in the clone.
 
 Read `"$tmp"/macos/packs.toml` and `"$tmp"/docs/setup/tools.md`.
 
-`bootstrap mac init` writes a table for each member of the pack `base`. Show
+`bootstrap mac migrate` writes a table for each member of the pack `base`. Show
 its members to the owner. A required member cannot go away. Ask whether the
 owner wants each member that is not required, for example
 `visual-studio-code` and `uv`.
@@ -208,12 +208,12 @@ row is answered. For each row with no answer, do these items:
 
 Pass: each other row has an answer that is not empty.
 
-### Step 3: Do a dry run of `bootstrap mac init`
+### Step 3: Do a dry run of `bootstrap mac migrate`
 
 Give one `--answer` for each answer of step 2 of a tool of `base`:
 
 ```text
-bootstrap mac init --answer <tool>.<key>=<value> … --dry-run
+bootstrap mac migrate --answer <tool>.<key>=<value> … --dry-run
 ```
 
 A tool in `depends` can add a question that step 2 did not show. Then the
@@ -229,13 +229,13 @@ to keep, stop, and ask the owner where to put that content (see "Rules").
 Pass: exit 0, and the last line has `Dry run:`. A dry run never stops with
 exit 4.
 
-### Step 4: Do the real run of `bootstrap mac init`
+### Step 4: Do the real run of `bootstrap mac migrate`
 
 Ask the owner whether to run the sync. Then run the same command with `--yes`
 in place of `--dry-run`:
 
 ```text
-bootstrap mac init --answer <tool>.<key>=<value> … --yes
+bootstrap mac migrate --answer <tool>.<key>=<value> … --yes
 ```
 
 On a first run, exit 4 is usual: the init stage changed the shells, Homebrew or
@@ -309,10 +309,10 @@ Do each command of these items in the clone.
    owner wants on the list of tools.
 4. Get the questions, as in step 2 of the first adoption. Name the new tools of
    item 3 in the second command. Ask each question with no answer. If the
-   command stops with `run bootstrap mac init`, `macos.toml` has an old form.
+   command stops with `run bootstrap mac migrate`, `macos.toml` has an old form.
    Then
    go to item 5: the dry run names each question with no answer.
-5. Do a dry run: `bootstrap mac init --answer … --dry-run`. It also moves an
+5. Do a dry run: `bootstrap mac migrate --answer … --dry-run`. It also moves an
    old form, for example a file without `format = 2`, the `[packs.*]` tables,
    or the table of the old Mac entry tool to `[tools.mise]` (see
    `docs/sync/migrate.md`). Read the change list with the owner. Pass: exit 0.
@@ -332,14 +332,14 @@ Do each command of these items in the clone.
 
 ## Exit codes
 
-| Code | Cause                                          | Action                                                                                                                               |
-| ---- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| 0    | Done, or nothing to change.                    | Continue.                                                                                                                            |
-| 1    | Another failure, for example a file error.     | Read the lines on stderr.                                                                                                            |
-| 2    | A usage error, or a config that breaks a rule. | Read the message. Correct `macos.toml`, or tell the `bootstrap` owner about a bad tool. For `run bootstrap mac init`, do the update. |
-| 3    | A tool or a pack that `macos/` does not have.  | Correct the `[tools.*]` tables, or the names of the command.                                                                         |
-| 4    | The init stage changed.                        | Open a new terminal, then run `mise run updateall:configs`.                                                                          |
-| 5    | The clone or the fetch failed.                 | Examine the network and the access.                                                                                                  |
+| Code | Cause                                          | Action                                                                                                                                  |
+| ---- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | Done, or nothing to change.                    | Continue.                                                                                                                               |
+| 1    | Another failure, for example a file error.     | Read the lines on stderr.                                                                                                               |
+| 2    | A usage error, or a config that breaks a rule. | Read the message. Correct `macos.toml`, or tell the `bootstrap` owner about a bad tool. For `run bootstrap mac migrate`, do the update. |
+| 3    | A tool or a pack that `macos/` does not have.  | Correct the `[tools.*]` tables, or the names of the command.                                                                            |
+| 4    | The init stage changed.                        | Open a new terminal, then run `mise run updateall:configs`.                                                                             |
+| 5    | The clone or the fetch failed.                 | Examine the network and the access.                                                                                                     |
 
 A failure of one file does not stop the other files. After a failure, the
 manifest and `bootstrap_commit` stay as they are, and no `mise bootstrap` runs.

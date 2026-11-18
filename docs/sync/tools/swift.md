@@ -196,7 +196,7 @@ Only `env`. No questions. The keys of the values file are in
 
 - Delete the old stackgen copies: `conf.d/swiftlint/` and `conf.d/swiftui/`,
   and the task `code:lint:swift-format` (M19 of `migrate.md`).
-- `bootstrap init` removes the old `test/golden` task of the swiftui pack of
+- `bootstrap migrate` removes the old `test/golden` task of the swiftui pack of
   stackgen, at its old path or at `test/golden/50-local`. It knows each
   released version by its sha256 (`replaces`). A copy that the repository
   changed stays: compare it with the part, and delete it when the part does

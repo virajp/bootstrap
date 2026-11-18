@@ -41,7 +41,7 @@ func (a *app) init(mac bool, o opts) fail.Code {
 // MACOS_SETUP_REPO_PATH, then in the current folder.
 func (a *app) tui(mac bool, o opts) fail.Code {
 	if !a.interactive() {
-		a.fail(cmdName(mac, "tui")+" needs a terminal", "use: "+cmdName(mac, "init")+" --no-tui")
+		a.fail(cmdName(mac, "tui")+" needs a terminal", "use: "+cmdName(mac, "migrate")+" --no-tui")
 		return fail.Usage
 	}
 	getenv := a.getenv

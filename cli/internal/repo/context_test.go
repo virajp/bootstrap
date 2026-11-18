@@ -37,8 +37,8 @@ func TestToolValuesGroup(t *testing.T) {
 		user map[string]any
 		want string
 	}{
-		{map[string]any{"a": "", "d": ""}, "[ERROR] the group t.g has no answer in .config/bootstrap/tools.toml\n  -> Run bootstrap init\n"},
-		{map[string]any{"a": "x"}, "[ERROR] the question t.d has no answer in .config/bootstrap/tools.toml\n  -> Run bootstrap init\n"},
+		{map[string]any{"a": "", "d": ""}, "[ERROR] the group t.g has no answer in .config/bootstrap/tools.toml\n  -> Run bootstrap migrate\n"},
+		{map[string]any{"a": "x"}, "[ERROR] the question t.d has no answer in .config/bootstrap/tools.toml\n  -> Run bootstrap migrate\n"},
 		{map[string]any{"b": "x", "d": ""}, ""},
 	} {
 		tt := source.NewObj()

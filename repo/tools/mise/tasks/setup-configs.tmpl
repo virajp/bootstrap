@@ -78,7 +78,7 @@ while IFS=$'\t' read -r NAME FOLDER LABEL _ <&3; do
     continue
   fi
   if [[ ! -d "${MISE_PROJECT_ROOT}/${FOLDER}/.config/bootstrap" ]]; then
-    print_warn "member ${NAME}: run bootstrap init there"
+    print_warn "member ${NAME}: run bootstrap migrate there"
     continue
   fi
   BOOTSTRAP_HOME="${MISE_PROJECT_ROOT}" BOOTSTRAP_MEMBER="${NAME}" sync_repo "${MISE_PROJECT_ROOT}/${FOLDER}"

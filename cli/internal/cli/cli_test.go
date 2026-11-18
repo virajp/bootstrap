@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"os"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -218,7 +219,7 @@ func TestConfigErrors(t *testing.T) {
 		{"config with an unknown subcommand", []string{"config", "list"}, "", "config has no subcommand list"},
 		{"format of config set", []string{"config", "set", "repo.repo_name", "x", "--format", "json"}, "", "config set has no flag --format"},
 		{"a bad format", []string{"config", "get", "repo.repo_name", "--format", "xml"}, "", "--format needs json, yaml or toml, not xml"},
-		{"repo-path of mac init", []string{"mac", "init", "--repo-path", "/r"}, "", "mac init has no flag --repo-path"},
+		{"repo-path of mac init, the alias of mac migrate", []string{"mac", "init", "--repo-path", "/r"}, "", "mac migrate has no flag --repo-path"},
 		{"config of version", []string{"version", "--config", "/c"}, "", "version has no flag --config"},
 	}
 	for _, c := range cases {
@@ -278,7 +279,7 @@ func TestUsageLine(t *testing.T) {
 		{false, "sync", "dry-run jobs verbose", "bootstrap sync [--dry-run] [--jobs <n>] [--verbose]"},
 		{true, "add", "dry-run yes exclude answer jobs verbose no-bootstrap", "bootstrap mac add tool|pack <name...> [--dry-run] [--yes] [--exclude <member>] [--answer <tool>.<key>=<value>] [--jobs <n>] [--verbose] [--no-bootstrap]"},
 		{false, "replace", "dry-run", "bootstrap replace tool <old> <new> [--dry-run]"},
-		{false, "init", "no-tui", "bootstrap init [--no-tui]"},
+		{false, "migrate", "no-tui", "bootstrap migrate [--no-tui]"},
 		{false, "list", "", "bootstrap list"},
 	} {
 		if got := usageLine(c.mac, c.cmd, c.flags); got != c.want {
@@ -300,5 +301,16 @@ func TestDetectText(t *testing.T) {
 		if got := detectText(c.d); got != c.want {
 			t.Errorf("detectText(%+v) = %q, want %q", c.d, got, c.want)
 		}
+	}
+}
+
+// TestInitAlias: init is a hidden alias of migrate. The help names migrate
+// only, and init runs migrate.
+func TestInitAlias(t *testing.T) {
+	if !strings.Contains(Usage, "\n  migrate ") || !strings.Contains(Usage, "\n  mac migrate ") {
+		t.Errorf("the help does not name migrate:\n%s", Usage)
+	}
+	if regexp.MustCompile(`\binit\b`).MatchString(Usage) {
+		t.Errorf("the help names init:\n%s", Usage)
 	}
 }

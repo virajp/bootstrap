@@ -427,7 +427,7 @@ func (p *PlanResult) addProjects(ps []projects.Project) error {
 	repoFile := values.RepoFile(p.Values)
 	cur, err := os.ReadFile(repoFile)
 	if err != nil {
-		return problem(fail.Usage, "cannot read "+p.Show(repoFile), "run bootstrap init")
+		return problem(fail.Usage, "cannot read "+p.Show(repoFile), "run bootstrap migrate")
 	}
 	var exprs, names []string
 	for _, pr := range ps {
@@ -500,7 +500,7 @@ func (p *PlanResult) layout(tmp string) (string, string, error) {
 	if repoText == nil {
 		b, err := os.ReadFile(values.RepoFile(sd.Values))
 		if err != nil {
-			return "", "", problem(fail.Usage, "cannot read "+sd.Show(values.RepoFile(sd.Values)), "run bootstrap init")
+			return "", "", problem(fail.Usage, "cannot read "+sd.Show(values.RepoFile(sd.Values)), "run bootstrap migrate")
 		}
 		repoText = b
 	}

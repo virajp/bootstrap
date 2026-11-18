@@ -88,7 +88,7 @@ type State struct {
 // have the new form.
 func Open(sd Side) (*State, error) {
 	if !sd.Present() {
-		return nil, problem(fail.Usage, sd.Show(sd.Values)+" is not there", "run "+CmdName(sd.Mac, "init")+" first")
+		return nil, problem(fail.Usage, sd.Show(sd.Values)+" is not there", "run "+CmdName(sd.Mac, "migrate")+" first")
 	}
 	raw, err := ReadRaw(sd, sd.Values)
 	if err != nil {
@@ -96,7 +96,7 @@ func Open(sd Side) (*State, error) {
 	}
 	cur, err := os.ReadFile(sd.EditFile())
 	if err != nil {
-		return nil, problem(fail.Usage, sd.Show(sd.EditFile())+" is not there", "run "+CmdName(sd.Mac, "init")+" first")
+		return nil, problem(fail.Usage, sd.Show(sd.EditFile())+" is not there", "run "+CmdName(sd.Mac, "migrate")+" first")
 	}
 	return stateOf(sd, sd.Values, cur, raw)
 }

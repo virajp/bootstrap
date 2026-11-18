@@ -9,7 +9,7 @@ pre-commit, the formatter, the linters, the scanners and VS Code.
 
 ## When the pack is relevant
 
-Always. `bootstrap init` writes a `[tools.<name>]` table for each member in a
+Always. `bootstrap migrate` writes a `[tools.<name>]` table for each member in a
 new values file, as `bootstrap add pack base` does. The values file keeps no
 record of the pack: do not write `[packs.base]`.
 
@@ -36,7 +36,8 @@ The `depends` of the members add more tools: `pre-commit` adds `python`,
 [`_security_base`](../tools/_security_base.md), the common tool of the
 scanners. It adds the pre-commit hook of `code:sec`.
 
-`vscode` is a `root_only` tool. In a git submodule, `bootstrap init` writes no
+`vscode` is a `root_only` tool. In a git submodule, `bootstrap migrate` writes
+no
 table for it.
 
 ## Environments

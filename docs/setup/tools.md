@@ -38,7 +38,8 @@ Each section below gives these items for one tool:
 
 - **Packs:** the packs that hold the tool, or none. `(required)` marks a
   member of `base` that each Mac must have.
-- **Stage:** `init` for a tool of the init stage. A tool without this item has
+- **Stage:** `migrate` for a tool of the init stage. A tool without this item
+  has
   no stage of its own. See [`docs/design/mac.md`](../design/mac.md).
 - **Depends:** the tools that the sync adds with this tool.
 - **Files:** each target, and its mode. `copy` is copied on each run.
@@ -64,7 +65,8 @@ Each section below gives these items for one tool:
 
 `macos/packs.toml` holds the 11 packs. Each member of a pack is a default:
 `bootstrap mac add pack <pack>` writes a table for each one.
-`bootstrap mac init` adds the pack `base` to a new `macos.toml`. A tool can be
+`bootstrap mac migrate` adds the pack `base` to a new `macos.toml`. A tool can
+be
 in more than one pack, or in no pack. Only a member of `base` can be required.
 
 | Pack             | Required members                                                                                                                                                                                                                                                                                                                                                                                                                              | Other members                                                                                                                                       |
@@ -144,7 +146,7 @@ Tools for building Android applications.
 bash from Homebrew, its rc files and its drop-in folder ~/.config/bash/.
 
 - **Packs:** `base` (required)
-- **Stage:** `init`
+- **Stage:** `migrate`
 - **Depends:** `homebrew`, `mise`
 - **Files:**
   - `~/.bash_profile` — copy
@@ -403,7 +405,7 @@ fish from Homebrew, its config, drop-in folder conf.d/ and functions, and the
 login shell.
 
 - **Packs:** `base` (required)
-- **Stage:** `init`
+- **Stage:** `migrate`
 - **Depends:** `homebrew`, `mise`
 - **Files:**
   - `~/.config/fish/conf.d/01-env.fish` — copy
@@ -751,7 +753,7 @@ and the entry tasks of the Mac sync.
   [`macos/tools/mise/tools.toml`](../../macos/tools/mise/tools.toml). The answer
   is the folder of `macos.toml`. The sync writes it to the mise env as
   `MACOS_SETUP_REPO_PATH`, and `~` at the start becomes `$HOME`. Each
-  `bootstrap mac` command except `mac init` finds `macos.toml` through this
+  `bootstrap mac` command except `mac migrate` finds `macos.toml` through this
   variable, or through `--repo-path <path>`.
 
 ### `network`
@@ -1194,7 +1196,7 @@ zsh from Homebrew with zinit, its rc files and its drop-in folder
 ~/.config/zsh/.
 
 - **Packs:** `base` (required)
-- **Stage:** `init`
+- **Stage:** `migrate`
 - **Depends:** `fzf`, `homebrew`, `mise`
 - **Files:**
   - `~/.config/zsh/00-bootstrap.zsh` — copy

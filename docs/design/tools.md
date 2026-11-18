@@ -287,12 +287,12 @@ The rules of the task files:
   example `git:merge:develop` and `setup:dprint`.
 - A known old copy of a part is a regular file at the old path of its group
   (`test/golden`) or at `<group>/50-local`, whose sha256 is in `replaces` of
-  that part, and the tool of the part is selected. `bootstrap init` removes
+  that part, and the tool of the part is selected. `bootstrap migrate` removes
   it, as one change for each tool, before it moves the own test tasks to
   `50-local`. Until then, `bootstrap sync` and `bootstrap check` stop with
   code 2. A file with another hash is the repository's own task, and it
   stays. A copy of a tool that is not selected stays too. See
-  [cli.md](cli.md#init).
+  [cli.md](cli.md#migrate).
 
 ### The `#FILES` header of a gate
 
@@ -494,20 +494,20 @@ sync and `bootstrap check` with code 2:
   `group = "email"`. A group needs at least one answer that is not empty. A
   question of a group needs no key in the values file.
 - `optional = true`: the question can have no answer.
-- `note` is a line that `bootstrap init` shows under the question.
-- An empty string `""` is a valid answer, and it means no answer. `init`
+- `note` is a line that `bootstrap migrate` shows under the question.
+- An empty string `""` is a valid answer, and it means no answer. `migrate`
   writes `""` for an optional or a group question that the user leaves empty,
-  so a later `init` does not ask it again.
+  so a later `migrate` does not ask it again.
 
-`bootstrap init` and `bootstrap add` ask the questions, and `detect` of a
+`bootstrap migrate` and `bootstrap add` ask the questions, and `detect` of a
 question gives the proposal. See
 [cli.md](cli.md#the-questions). `sync` and `check` stop with
 code 2 for a question of a selected tool without an answer: run
-`bootstrap init`. A question with no `group` and no `optional = true` needs a
+`bootstrap migrate`. A question with no `group` and no `optional = true` needs a
 key, and `""` is an answer. An optional question can have no key or `""`. A
 group whose answers are all empty or missing also stops `sync` and `check`
 with code 2, for example
-`the group git.email has no answer in macos.toml - run bootstrap mac init`.
+`the group git.email has no answer in macos.toml - run bootstrap mac migrate`.
 A template that needs a value without a question uses
 `required`, which fails that file with its message.
 

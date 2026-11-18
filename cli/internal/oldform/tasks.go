@@ -43,7 +43,7 @@ var DispatcherDirs = []string{"code/format", "code/lint", "code/sec", "setup/dep
 type Move struct{ From, To string }
 
 // Moving holds the absolute paths of the files that init moves, while
-// `bootstrap init` plans the sync before the move: the dry run then does not
+// `bootstrap migrate` plans the sync before the move: the dry run then does not
 // stop on such a file at the place of a folder.
 var Moving map[string]bool
 
@@ -129,11 +129,11 @@ func PlanMoves(root string, listed map[string]bool, show func(string) string) ([
 	for _, m := range OwnTasks(root, listed) {
 		from, to := root+"/"+m.From, root+"/"+m.To
 		if _, err := os.Lstat(to); err == nil {
-			probs = append(probs, usage("%s is a task of this repo at the place of a dispatcher of bootstrap, and %s exists - join the two tasks in %s, then run bootstrap init again", show(from), show(to), show(to)))
+			probs = append(probs, usage("%s is a task of this repo at the place of a dispatcher of bootstrap, and %s exists - join the two tasks in %s, then run bootstrap migrate again", show(from), show(to), show(to)))
 			continue
 		}
 		if _, err := os.Lstat(TempName(from)); err == nil {
-			probs = append(probs, usage("%s exists, and bootstrap init moves %s through it - move it away, then run bootstrap init again", show(TempName(from)), show(from)))
+			probs = append(probs, usage("%s exists, and bootstrap migrate moves %s through it - move it away, then run bootstrap migrate again", show(TempName(from)), show(from)))
 			continue
 		}
 		out = append(out, Move{From: from, To: to})

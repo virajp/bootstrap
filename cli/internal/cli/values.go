@@ -134,12 +134,12 @@ func (a *app) valuesSide() (core.Side, fail.Code) {
 		}
 	}
 	if !core.Exists(sd.Values) {
-		a.fail(sd.Show(sd.Values)+" is not there", "run bootstrap init")
+		a.fail(sd.Show(sd.Values)+" is not there", "run bootstrap migrate")
 		return sd, fail.Usage
 	}
 	for _, f := range []string{values.RepoFile(sd.Values), values.ToolsFile(sd.Values)} {
 		if !core.Exists(f) {
-			a.fail(sd.Show(sd.Values)+" has no "+filepath.Base(f), "run bootstrap init")
+			a.fail(sd.Show(sd.Values)+" has no "+filepath.Base(f), "run bootstrap migrate")
 			return sd, fail.Usage
 		}
 	}

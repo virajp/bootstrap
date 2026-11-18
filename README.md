@@ -14,7 +14,7 @@ mise use -g github:virajp/bootstrap
 
 | Command                                      | Job                                                                                                                                          |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bootstrap init`                             | Open the TUI in a terminal. Else migrate or create the values, ask, sync.                                                                    |
+| `bootstrap migrate`                          | Open the TUI in a terminal. Else migrate or create the values, ask, sync.                                                                    |
 | `bootstrap tui`                              | Open the TUI: select tools and packs, review the changes, then sync.                                                                         |
 | `bootstrap sync`                             | Sync the repository of the current folder. `setup:configs` runs it.                                                                          |
 | `bootstrap check`                            | Examine the values against their schema, run the check scripts, and test the projects of each tool.                                          |
@@ -50,7 +50,8 @@ A repository uses this repository in two ways, in this sequence:
    tells the agent how to apply the rules of this repository to a consumer
    repository, the first time and each time that the repository is not up to
    date. The agent selects the tools, gets the answers of their questions, and
-   runs `bootstrap init` and `bootstrap add tool <tool…>`. `docs/sync/index.md`
+   runs `bootstrap migrate` and `bootstrap add tool <tool…>`.
+   `docs/sync/index.md`
    has the general steps, `migrate.md` has the items for a repository with older
    copies, one file for each tool in `docs/sync/tools/` tells when the tool is
    relevant and how to use it, and one file for each pack is in
@@ -100,7 +101,7 @@ This folder is not a tool, so the sync does not copy it to a repository.
 
 A pack is a named group of tools in `repo/packs.toml`. It has no files of its
 own, and it is a shortcut of `bootstrap add pack <pack…>`: the values file keeps
-no record of it. `bootstrap init` adds the `base` pack to a new values file:
+no record of it. `bootstrap migrate` adds the `base` pack to a new values file:
 
 <!-- dprint-ignore -->
 ```toml
@@ -221,7 +222,7 @@ sets the defaults of the CLI: the jobs, the cache, the URL and the clone.
   of `.config/bootstrap/`, their schema, and the old forms.
 
 A repository with an older form of the values, also the old file
-`.config/bootstrap.toml`, runs `bootstrap init` once:
+`.config/bootstrap.toml`, runs `bootstrap migrate` once:
 it migrates each old form. `docs/sync/migrate.md` has the manual items.
 
 ## Templates
@@ -314,7 +315,8 @@ rules.
 `mise run test:repo` runs `bootstrap sync --dry-run`, `bootstrap check` and,
 for a case that compares a written file, `bootstrap sync`, built from the
 working tree's `cli/`, with its `repo/`, against scratch values files
-and scratch consumers. The init cases run `bootstrap init`. It checks the exit
+and scratch consumers. The migrate cases run `bootstrap migrate`. It checks the
+exit
 code and the message of each case. It needs no network when gomplate, jq and yq
 are installed.
 
@@ -333,7 +335,7 @@ parses, and it needs no network when gomplate, jq and yq are installed.
 `cli/`. A test fails when the engine code names a tool.
 
 `mise run test` runs the four test tasks in parallel: the runner of this
-repository, `test/_default`, which `bootstrap init` moves to the part
+repository, `test/_default`, which `bootstrap migrate` moves to the part
 `test/50-local`, depends on them. No hook runs a test. Run the
 tests by hand before you commit: `test` for a change to `cli/`,
 `test:repo` for a change to `repo/`, and `test:mac` and `test:macos-tools` for

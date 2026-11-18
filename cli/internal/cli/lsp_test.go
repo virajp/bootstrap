@@ -250,7 +250,7 @@ func TestLSPNoRepo(t *testing.T) {
 	}
 	code, out, errText := run("lsp", "--json")
 	e := readEnvelope(t, out)
-	if code != fail.Usage || string(e.Data) != "null" || !strings.Contains(errText, "Run bootstrap init") {
+	if code != fail.Usage || string(e.Data) != "null" || !strings.Contains(errText, "Run bootstrap migrate") {
 		t.Errorf("no values: code %d, envelope %+v, stderr %q", code, e, errText)
 	}
 	dir := t.TempDir()

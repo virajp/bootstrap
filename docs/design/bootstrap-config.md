@@ -2,7 +2,7 @@
 
 This document describes the values folder `.config/bootstrap/` of a repository,
 each key of its files, and their old forms. It is the one place of these keys.
-`bootstrap init` writes the folder in a consumer repository, and the adopting
+`bootstrap migrate` writes the folder in a consumer repository, and the adopting
 AI gives the answers (see `docs/sync/index.md`). The sync and the templates of
 `repo/tools/` read it. `bootstrap config get|set|unset|show` reads and writes
 each key (see [cli.md](cli.md#the-command-line)). The keys of the Mac values
@@ -18,8 +18,8 @@ The exit code of each rule that stops the sync or the render is in
 
 | File                 | Holds                                                                                                                       | Written by                                        |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `repo.toml`          | The facts of the repository: names, branches, commits, members, environments                                                | `bootstrap init`, `bootstrap config`, the sync    |
-| `tools.toml`         | The tool selection, the values of each tool, and the overrides                                                              | `bootstrap init`, `add`, `remove`, `config`       |
+| `repo.toml`          | The facts of the repository: names, branches, commits, members, environments                                                | `bootstrap migrate`, `bootstrap config`, the sync |
+| `tools.toml`         | The tool selection, the values of each tool, and the overrides                                                              | `bootstrap migrate`, `add`, `remove`, `config`    |
 | `releases.toml`      | The release level of each project. Optional: only `bootstrap config set` makes it                                           | `bootstrap config set releases.<project> <level>` |
 | `repo-generated.tsv` | The manifest of the sync. See [repo.md](repo.md#the-manifest)                                                               | The sync                                          |
 | `config-files.toml`  | The global file lists of the gates, from `code_files` of the `mise` tool. See [mise.md](mise.md#the-file-sets-of-the-gates) | The sync (a template file of the `mise` tool)     |
@@ -168,7 +168,7 @@ web = "PATCH"
 | `<project>` | String  | No        | `bootstrap config`; the release tasks later |
 
 Keys are snake case. A key of a question is a `[tools.<folder>].<key>`:
-`bootstrap init` and `bootstrap add tool <tool…>` write the answer there. See
+`bootstrap migrate` and `bootstrap add tool <tool…>` write the answer there. See
 [cli.md](cli.md#the-questions).
 
 The gate `code:lint:60-bootstrap` runs `bootstrap check` at each commit that
@@ -214,7 +214,7 @@ breaks a rule, and write nothing.
 
 ### `format`
 
-The form of the file. The value is `3`. `bootstrap init` writes it in a new
+The form of the file. The value is `3`. `bootstrap migrate` writes it in a new
 file and in a migrated file. Another value stops the command with code 2.
 
 ### `repo_name`
@@ -257,8 +257,8 @@ The core branches of the repository, in order, for example
 check script of `git` stops the sync when one does not. A new `repo.toml` gets
 the `main` and `develop` that exist, in that order. With neither, it gets the
 current branch, born or unborn, of any name. With a detached `HEAD` and neither
-branch, `init` stops with code 2 and the hint "check out a branch, then run
-bootstrap init again".
+branch, `migrate` stops with code 2 and the hint "check out a branch, then run
+bootstrap migrate again".
 
 - `branch_pair` of `git` is true when the list has both `main` and `develop`.
   `has_main` and `has_develop` of `git` are true when the list has `main`, or
@@ -588,7 +588,7 @@ default is `NONE`. `bootstrap config set releases.<project> <level>` keeps the
 higher level when the file already has one, and creates the file with
 `format = 3` when it is not there. `bootstrap config unset releases.<project>`
 clears it. The release tasks of the plugins still read `.config/releases.yaml`
-until they move to `bootstrap config`; `init` does not move that file.
+until they move to `bootstrap config`; `migrate` does not move that file.
 
 ## Reserved names
 
@@ -602,9 +602,9 @@ has `member`, the old name of `[members.*]`, with the same tables.
 
 ## Old forms
 
-`bootstrap init` migrates each old form. Each other command stops with code 2
-and the message "run bootstrap init", except `version`, `settings` and each
-`mac` command. A dry run of `init` shows the migration and writes nothing. A
+`bootstrap migrate` migrates each old form. Each other command stops with code 2
+and the message "run bootstrap migrate", except `version`, `settings` and each
+`mac` command. A dry run of `migrate` shows the migration and writes nothing. A
 task of the repository at the place of a test port is an old form too, though
 it is not a value. It stops only `sync`, the sync of `add`, `remove` and
 `replace`, and `check`: see [The own test tasks](#the-own-test-tasks). The
@@ -615,7 +615,7 @@ old worktree command is an old form in the same way: see
 
 `.config/bootstrap.toml`, with its overrides file
 `.config/bootstrap.overrides.toml` and its manifest
-`.config/repo-generated.tsv`, is the old form of the values folder. `init`
+`.config/repo-generated.tsv`, is the old form of the values folder. `migrate`
 first migrates each older form of the file (below), then splits it:
 
 - `repo.toml` gets each top-level key of the old file, with the moves of the
@@ -630,9 +630,10 @@ first migrates each older form of the file (below), then splits it:
 - `.config/releases.yaml` stays where it is.
 
 `core_branches` is the `main` and `develop` that exist in git, locally or on
-origin, in that order. With neither, `init` stops with code 2. A
+origin, in that order. With neither, `migrate` stops with code 2. A
 `[tools.git.branch.<b>]` table of a branch that is not `main` or `develop`, or
-that does not exist, stops `init` with code 2, and the message names the table
+that does not exist, stops `migrate` with code 2, and the message names the
+table
 with the fix "remove the table or create the branch".
 
 The migration is atomic: it writes the folder to a temporary path, renames it
@@ -640,14 +641,14 @@ into place, then removes the old files. When the sync after it fails, the old
 files come back and the folder goes. The comments of a table that moves to
 `repo.toml` are lost; the comments of each other key stay.
 
-With both the old file and the folder, each command, `init` included, stops
+With both the old file and the folder, each command, `migrate` included, stops
 with code 2 and the fix "remove one: compare .config/bootstrap.toml with
 .config/bootstrap/". A leftover `.config/bootstrap.overrides.toml` next to the
 folder is not read and stops nothing. A folder without `repo.toml` or
-`tools.toml` stops each command but `init` with code 2; `init` creates the
+`tools.toml` stops each command but `migrate` with code 2; `migrate` creates the
 missing file.
 
-| Old key                                                       | `bootstrap init` moves it to                                                                                   |
+| Old key                                                       | `bootstrap migrate` moves it to                                                                                |
 | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `[tools.git].commit_scopes`                                   | `[commits].scopes` of `repo.toml`                                                                              |
 | `[tools.git.branch.<b>].merge_model = "pr"`                   | `[branches.<b>].landing = "pr"`                                                                                |
@@ -667,7 +668,7 @@ missing file.
 ### Older forms of the values file
 
 A file without `format = 2`, or with a `[packs.<name>]` table, is an older
-form. `init` expands each `[packs.<name>]` table and the old implicit pack
+form. `migrate` expands each `[packs.<name>]` table and the old implicit pack
 `base` with a frozen copy of the packs files of before `format = 2` (only the
 `default = true` members, and the nested packs). It writes a
 `[tools.<name>]` table for each such tool and each new dependency that has no
@@ -680,11 +681,11 @@ table of a tool that the clone no longer has (for example `devtools` on the
 Mac) is removed, and the change list names it. A file with `format = 2` and a
 `[packs.*]` table gets only the tables of its packs, not the members of
 `base` again. A `[packs.<name>]` table of a pack that the frozen copy does not
-have stops `init` with code 3 and the message
+have stops `migrate` with code 3 and the message
 `<pack> is not a bootstrap pack (named in <file>)`, as the old sync did. The
-user fixes the values file by hand, then runs `init` again.
+user fixes the values file by hand, then runs `migrate` again.
 
-| Old form                        | `bootstrap init` moves it to                                                                       |
+| Old form                        | `bootstrap migrate` moves it to                                                                    |
 | ------------------------------- | -------------------------------------------------------------------------------------------------- |
 | No `format = 2`                 | A table for each tool of the old pack `base`                                                       |
 | `[packs.<name>]`                | A `[tools.<name>]` table for each tool of the old pack, with the `env` of the pack                 |
@@ -700,12 +701,12 @@ user fixes the values file by hand, then runs `init` again.
 `docs/sync/migrate.md` names the old entry tool and its old files. These old
 items are not migrated:
 
-| Old item                                   | Effect                                                                                                                  |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| The old file of the own `.gitignore` lines | Stops the sync: move its lines into `.gitignore`, then delete it.                                                       |
-| `[overrides.graphifyignore]`               | Stops the sync: remove the table.                                                                                       |
-| `core_tools`                               | Not used. The sync prints a message: delete it. The `env` of each entry, else `default_envs`, decides the environments. |
-| `.config/repo-config.toml`                 | The oldest name of the values file. Nothing reads it: rename it to `.config/bootstrap.toml`, then run `bootstrap init`. |
+| Old item                                   | Effect                                                                                                                     |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| The old file of the own `.gitignore` lines | Stops the sync: move its lines into `.gitignore`, then delete it.                                                          |
+| `[overrides.graphifyignore]`               | Stops the sync: remove the table.                                                                                          |
+| `core_tools`                               | Not used. The sync prints a message: delete it. The `env` of each entry, else `default_envs`, decides the environments.    |
+| `.config/repo-config.toml`                 | The oldest name of the values file. Nothing reads it: rename it to `.config/bootstrap.toml`, then run `bootstrap migrate`. |
 
 ### The own test tasks
 
@@ -713,40 +714,41 @@ The `mise` tool ships the dispatchers `test`, `test:e2e` and `test:golden`. A
 task of the repository at one of their paths is an old form. It is a regular
 file that the manifest does not list, without the bootstrap header.
 
-| Old form, below `.config/mise/tasks/` | `bootstrap init` moves it to |
-| ------------------------------------- | ---------------------------- |
-| `test`, `test/_default`               | `test/50-local`              |
-| `test/e2e`, `test/e2e/_default`       | `test/e2e/50-local`          |
-| `test/golden`, `test/golden/_default` | `test/golden/50-local`       |
+| Old form, below `.config/mise/tasks/` | `bootstrap migrate` moves it to |
+| ------------------------------------- | ------------------------------- |
+| `test`, `test/_default`               | `test/50-local`                 |
+| `test/e2e`, `test/e2e/_default`       | `test/e2e/50-local`             |
+| `test/golden`, `test/golden/_default` | `test/golden/50-local`          |
 
 `check` reports it in the stage `old-forms`, and `sync` stops on it, both with
-code 2. When the target exists, `init` stops with code 2 and moves nothing.
-See [cli.md](cli.md#init).
+code 2. When the target exists, `migrate` stops with code 2 and moves nothing.
+See [cli.md](cli.md#migrate).
 
-A known old copy of a part of a selected tool is not moved: `init` removes
+A known old copy of a part of a selected tool is not moved: `migrate` removes
 it first. It is a file at the old path or at `<group>/50-local` whose sha256
 is in the `replaces` of the part, for example the old `test/golden` task of
 the compose pack of stackgen. See
 [tools.md](tools.md#the-tasks-table). At the old path, `check` reports it in
 the stage `old-forms` as above. At `<group>/50-local`, `check` reports it in
 the stage `scripts`, and `sync` stops on it, both with code 2 and "run
-bootstrap init".
+bootstrap migrate".
 
 ### The old worktree command
 
 `mise run setup:worktree` runs the old name of `git:worktree:setup`, and no
 task has that name now. It is an old form in the seed `.config/wt.toml` and in
-a `[members.<name>].worktree_install` of `repo.toml`. `bootstrap init` writes
+a `[members.<name>].worktree_install` of `repo.toml`. `bootstrap migrate` writes
 `mise run git:worktree:setup` in its place, and the rest of the file or value
 stays. `check` reports it in the stage `old-forms`, and `sync` stops on it,
-both with code 2 and "run bootstrap init". See [cli.md](cli.md#init).
+both with code 2 and "run bootstrap migrate". See [cli.md](cli.md#migrate).
 
 ## The location of the folder
 
 The default path is `.config/bootstrap/`. `BOOTSTRAP_VALUES` names a different
 folder; its files keep their names inside it. Without the folder, each command
-except `bootstrap init`, `version`, `settings` and the `mac` commands stops
-with code 2 and the fix "run bootstrap init". During `init` and each sync, the
+except `bootstrap migrate`, `version`, `settings` and the `mac` commands stops
+with code 2 and the fix "run bootstrap migrate". During `migrate` and each sync,
+the
 engine points `BOOTSTRAP_VALUES` at the temporary folder of the planned values,
 so a script that runs `bootstrap config get` reads the new keys, also during a
 migration. See [cli.md](cli.md#the-engine-variables).

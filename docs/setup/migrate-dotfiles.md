@@ -59,7 +59,7 @@ MACOS_SETUP_REPO_PATH=<clone> bootstrap mac sync
 Step 6 runs the binary of the CLI without `mise x`. See
 [step 6](#step-6-compare-in-a-scratch-home) for the reason.
 
-[Step 10](#step-10-do-the-first-real-run) runs `bootstrap mac init` in
+[Step 10](#step-10-do-the-first-real-run) runs `bootstrap mac migrate` in
 `<clone>`. That command needs no variable, and it writes the task and the
 variable.
 
@@ -167,7 +167,7 @@ in each entry.
 Write `macos.toml` at the root of `<clone>`. Use `macos/examples/macos.toml` as
 the model, with its `format = 2` and the tables of the members of `base`. Use
 the answers of steps 2 and 3. The migration writes this file by
-hand, because step 6 needs it before the first `bootstrap mac init`. Move the
+hand, because step 6 needs it before the first `bootstrap mac migrate`. Move the
 values of `[vars]` of
 `dotfiles/.config/mise/conf.d/identity.toml` to these keys:
 
@@ -348,7 +348,8 @@ migration.
 This step comes after the comparison, because the comparison reads the old
 files. After the yes of the owner, in `<clone>`, delete these files and make one
 commit. Git keeps them for recovery. The commit also holds `macos.toml`, because
-`bootstrap mac init` stops when a file that it changes has changes that are not
+`bootstrap mac migrate` stops when a file that it changes has changes that are
+not
 committed.
 
 ```text
@@ -375,7 +376,7 @@ Do these commands in `<clone>`. First do a dry run, and read the change list
 with the owner:
 
 ```text
-bootstrap mac init --dry-run
+bootstrap mac migrate --dry-run
 ```
 
 **Pass:** The dry run exits 0, and its last line has `Dry run:`.
@@ -383,7 +384,7 @@ bootstrap mac init --dry-run
 After the yes of the owner, do the real run:
 
 ```text
-bootstrap mac init --yes
+bootstrap mac migrate --yes
 ```
 
 It writes the task `updateall:configs` and `MACOS_SETUP_REPO_PATH`, and it runs

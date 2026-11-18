@@ -16,7 +16,7 @@
 # of mise exits 2, and the message names the question. Case 3: a mise tool on
 # both sides of repo/tools/ and macos/tools/ has one version and one `depends`, a
 # mise setting on both sides has one value, and a fixture proves that the check
-# finds a difference. Case 4: `bootstrap mac init` migrates the example in its
+# finds a difference. Case 4: `bootstrap mac migrate` migrates the example in its
 # old form ([tools.macos-setup] and no format = 2), then `bootstrap mac sync`
 # runs. The example has format = 2 and a table for each required member of the
 # pack base, so the sync of case 1 writes no table into it. Case 5: the
@@ -267,7 +267,7 @@ else
   fail "the message does not name the question 'mise.config_path'"
 fi
 
-# ---- case 4: mac init migrates the old form, then mac sync runs ----------------
+# ---- case 4: mac migrate migrates the old form, then mac sync runs ----------------
 
 setup_case "init" init
 sed -e 's/^\[tools\.mise\]$/[tools.macos-setup]/' -e '/^format = 2$/d' "$example" > "$MACOS_SETUP_REPO_PATH/macos.toml"
@@ -275,7 +275,7 @@ commit_config
 runs=$((runs + 1))
 log="$dir/run-$runs.txt"
 rc=0
-(cd "$MACOS_SETUP_REPO_PATH" && BOOTSTRAP_CLONE=$tree "$bin" mac init --yes --no-bootstrap < /dev/null) > "$log" 2>&1 || rc=$?
+(cd "$MACOS_SETUP_REPO_PATH" && BOOTSTRAP_CLONE=$tree "$bin" mac migrate --yes --no-bootstrap < /dev/null) > "$log" 2>&1 || rc=$?
 check_exit "$first_exit"
 if grep -qxF '[tools.mise]' "$MACOS_SETUP_REPO_PATH/macos.toml" && ! grep -qF 'macos-setup]' "$MACOS_SETUP_REPO_PATH/macos.toml"; then
   pass "[tools.macos-setup] becomes [tools.mise]"
@@ -285,7 +285,7 @@ fi
 if grep -qxF 'format = 2' "$MACOS_SETUP_REPO_PATH/macos.toml"; then
   pass "the migration writes format = 2"
 else
-  fail "macos.toml has no format = 2 after mac init"
+  fail "macos.toml has no format = 2 after mac migrate"
 fi
 commit_config
 run_real

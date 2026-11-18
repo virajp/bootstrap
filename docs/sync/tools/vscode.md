@@ -2,7 +2,7 @@
 
 The VS Code settings, and the shared `extensions.json` with the extensions of
 the selected tools. A member of the `base` pack that is not required:
-`bootstrap init` writes its table in a new values file, and
+`bootstrap migrate` writes its table in a new values file, and
 `bootstrap remove tool vscode` removes it.
 
 | Property     | Value |
@@ -16,7 +16,8 @@ the selected tools. A member of the `base` pack that is not required:
 ## When the tool is relevant
 
 Always in a root repository: the `base` pack adds it. VS Code opens the root
-repository. In a git submodule, `bootstrap init` writes no table for the tool,
+repository. In a git submodule, `bootstrap migrate` writes no table for the
+tool,
 and a `[tools.vscode]` table in a submodule stops the sync with code 2.
 
 ## What the tool ships
@@ -108,5 +109,5 @@ None.
   `.vscode/settings.json` and `.config/pre-commit-config.yaml`.
 - In a submodule, delete `.vscode/` and `.config/mise/tasks/setup/vscode`
   (M4 of `migrate.md`).
-- M34 of `migrate.md`: `bootstrap init` moves the old top-level `extensions`
+- M34 of `migrate.md`: `bootstrap migrate` moves the old top-level `extensions`
   list into `.vscode/extensions.json`.

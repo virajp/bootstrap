@@ -119,7 +119,7 @@ func SplitRepo(in []byte, values, overrides string, exists, submodule func(strin
 		}
 	}
 	if len(core) == 0 {
-		return nil, usage("the repository has no branch main or develop, so %s cannot migrate - create main or develop, then run bootstrap init again", values)
+		return nil, usage("the repository has no branch main or develop, so %s cannot migrate - create main or develop, then run bootstrap migrate again", values)
 	}
 
 	// repo.toml: the old file without its tool tables, with the moved keys.

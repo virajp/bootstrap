@@ -15,7 +15,7 @@ import (
 
 // TestGrammar: add takes the kind word tool or pack, remove and replace take
 // tool (D1). A name with no kind word is the old form, with the hint of the
-// new form (D8). --exclude is for add pack only (D2). init takes no names
+// new form (D8). --exclude is for add pack only (D2). migrate takes no names
 // (D17 i). detect has no --no, and --yes and --answer need --add (D7, D17 d).
 func TestGrammar(t *testing.T) {
 	cases := []struct {
@@ -38,8 +38,8 @@ func TestGrammar(t *testing.T) {
 		{"exclude of add tool", []string{"add", "tool", "a", "--exclude", "b"}, []string{"--exclude is only for add pack"}},
 		{"exclude of remove", []string{"remove", "tool", "a", "--exclude", "b"}, []string{"remove has no flag --exclude"}},
 		{"exclude with no value", []string{"add", "pack", "a", "--exclude="}, []string{"--exclude needs a value"}},
-		{"init with names", []string{"init", "node", "uv"}, []string{"init takes no tool names", "-> Use: bootstrap add tool node uv"}},
-		{"mac init with names", []string{"mac", "init", "a"}, []string{"-> Use: bootstrap mac add tool a"}},
+		{"init, the alias of migrate, with names", []string{"init", "node", "uv"}, []string{"migrate takes no tool names", "-> Use: bootstrap add tool node uv"}},
+		{"mac migrate with names", []string{"mac", "migrate", "a"}, []string{"-> Use: bootstrap mac add tool a"}},
 		{"detect --no", []string{"detect", "--no"}, []string{"detect has no flag --no"}},
 		{"detect --yes", []string{"detect", "--yes"}, []string{"detect --yes needs --add", "-> Add --add"}},
 		{"mac detect --answer", []string{"mac", "detect", "--answer", "a.b=c"}, []string{"mac detect --answer needs --add"}},

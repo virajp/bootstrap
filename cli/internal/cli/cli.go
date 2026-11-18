@@ -36,7 +36,7 @@ import (
 const Usage = `usage: bootstrap <command> [flags]
 
 Repository
-  init                 in a terminal, open the TUI; with --no-tui, --yes,
+  migrate              in a terminal, open the TUI; with --no-tui, --yes,
                        --dry-run or --answer, or with no terminal, migrate an
                        old form, or create the values file with the members
                        of the pack base, ask the questions without an answer,
@@ -81,7 +81,7 @@ Repository
   version, --version   print the version
 
 Mac
-  mac init             init for the Mac, in the current folder (the
+  mac migrate          migrate for the Mac, in the current folder (the
                        repository of macos.toml)
   mac tui              open the TUI on macos.toml
   mac sync             sync the Mac from MACOS_SETUP_REPO_PATH
@@ -93,31 +93,31 @@ Mac
   mac list, mac ls     print the selected Mac tools as a tree
 
 Flags
-  --dry-run            init, sync, add, remove, replace, detect: show the
+  --dry-run            migrate, sync, add, remove, replace, detect: show the
                        changes, and write nothing
-  --yes, -y            init, add, remove, replace, detect --add: write the
+  --yes, -y            migrate, add, remove, replace, detect --add: write the
                        changes without a prompt
-  --no-tui             init: do not open the TUI in a terminal
+  --no-tui             migrate: do not open the TUI in a terminal
   --add                detect: add each matched tool that is not selected,
                        after the consent
   --exclude <member>   add pack: leave out a member of the pack, as
                        packs.toml writes it (repeatable; one pack only)
   --answer <tool>.<key>=<value>
-                       init, add, replace, detect --add: the answer of a
+                       migrate, add, replace, detect --add: the answer of a
                        question (repeatable); --answer <tool>.<key>= writes
                        an empty answer for an optional or a group question
   --json               contract, catalog, describe, lsp, check, questions, mac
-                       questions, config get|set|unset|show, init, sync, add,
-                       remove, replace, detect: print one JSON envelope on
-                       stdout, and each other line on stderr; init, add,
-                       remove, replace and detect --add also need --yes or
-                       --dry-run
+                       questions, config get|set|unset|show, migrate, sync,
+                       add, remove, replace, detect: print one JSON envelope
+                       on stdout, and each other line on stderr; migrate,
+                       add, remove, replace and detect --add also need --yes
+                       or --dry-run
   --format json|yaml|toml
                        config get, config show: the output format (default:
                        json when stdout is not a terminal, else toml)
-  --no-bootstrap       mac init, mac sync, mac check: skip mise bootstrap
+  --no-bootstrap       mac migrate, mac sync, mac check: skip mise bootstrap
   --jobs <n>           the jobs at a time (default: 2 x the CPU count)
-  --verbose            init, sync, check, add, remove, replace, detect: print
+  --verbose            migrate, sync, check, add, remove, replace, detect: print
                        the log line of each target
   --config <path>      each command except version and contract: the config
                        file (default: ~/.config/bootstrap/config.toml)
@@ -126,7 +126,7 @@ Flags
   --url <url>          each command except version and contract: the clone URL
   --clone <path>       each command except version and contract: a clone of
                        bootstrap, with no fetch
-  --repo-path <path>   each mac command except mac init, and settings: the
+  --repo-path <path>   each mac command except mac migrate, and settings: the
                        repository of macos.toml
 `
 
@@ -167,7 +167,7 @@ func cmdWord(mac bool, cmd string) string { return core.CmdWord(mac, cmd) }
 // allowed gives the own flags of each command; a name that it does not have
 // is not a command. The Mac side takes json only on questions.
 var allowed = map[string]string{
-	"init":      "dry-run yes no-tui answer jobs verbose json",
+	"migrate":   "dry-run yes no-tui answer jobs verbose json",
 	"tui":       "jobs verbose",
 	"sync":      "dry-run jobs verbose json",
 	"check":     "jobs verbose json",
@@ -188,7 +188,7 @@ var allowed = map[string]string{
 
 // commandOrder is the order of the commands in the commands of contract.
 var commandOrder = []string{
-	"contract", "catalog", "describe", "lsp", "init", "tui", "sync", "check",
+	"contract", "catalog", "describe", "lsp", "migrate", "tui", "sync", "check",
 	"questions", "add", "remove", "replace", "detect", "list", "config",
 	"settings", "version",
 }
@@ -196,10 +196,10 @@ var commandOrder = []string{
 // writeCommands are the commands that plan and write changes: with --json,
 // each human line of them goes to stderr.
 var writeCommands = map[string]bool{
-	"init": true, "sync": true, "add": true, "remove": true, "replace": true, "detect": true,
+	"migrate": true, "sync": true, "add": true, "remove": true, "replace": true, "detect": true,
 }
 
-// writes tells if the command <cmd> with <o> writes after a consent: init,
+// writes tells if the command <cmd> with <o> writes after a consent: migrate,
 // add, remove, replace and detect --add. sync writes with no consent.
 func writes(cmd string, o opts) bool {
 	return writeCommands[cmd] && cmd != "sync" && (cmd != "detect" || o.add)
@@ -356,6 +356,11 @@ func (a *app) run(args []string) fail.Code {
 	if cmd == "ls" {
 		cmd = "list"
 	}
+	// init is the old name of migrate: a hidden alias, not in the help and
+	// not in the commands of contract.
+	if cmd == "init" {
+		cmd = "migrate"
+	}
 	flags, ok := allowed[cmd]
 	if !ok || (mac && repoOnly[cmd]) {
 		switch cmd {
@@ -383,10 +388,10 @@ func (a *app) run(args []string) fail.Code {
 	if cmd != "version" && cmd != "contract" {
 		flags += " config cache-dir url clone"
 	}
-	if mac && cmd != "init" {
+	if mac && cmd != "migrate" {
 		flags += " repo-path"
 	}
-	takesNames := cmd == "init" || cmd == "questions" || cmd == "add" || cmd == "remove" || cmd == "replace" || cmd == "config"
+	takesNames := cmd == "migrate" || cmd == "questions" || cmd == "add" || cmd == "remove" || cmd == "replace" || cmd == "config"
 	o, err := parse(cmdWord(mac, cmd), rest, flags, takesNames)
 	if err != nil {
 		a.usageErr(err.Error(), usageLine(mac, cmd, own))
@@ -399,8 +404,8 @@ func (a *app) run(args []string) fail.Code {
 	if code := a.kindWord(mac, cmd, own, &o); code != fail.OK {
 		return code
 	}
-	if cmd == "init" && len(o.names) > 0 {
-		a.fail(cmdWord(mac, "init")+" takes no tool names", "use: "+cmdName(mac, "add tool")+" "+strings.Join(o.names, " "))
+	if cmd == "migrate" && len(o.names) > 0 {
+		a.fail(cmdWord(mac, "migrate")+" takes no tool names", "use: "+cmdName(mac, "add tool")+" "+strings.Join(o.names, " "))
 		return fail.Usage
 	}
 	if cmd == "detect" && !o.add && (o.yes || len(o.answers) > 0) {
@@ -448,7 +453,7 @@ func (a *app) run(args []string) fail.Code {
 		return a.sync(mac, o)
 	case "check":
 		return a.check(mac, o)
-	case "init":
+	case "migrate":
 		return a.init(mac, o)
 	case "tui":
 		return a.tui(mac, o)

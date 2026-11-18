@@ -1,5 +1,5 @@
 # A values file of the old form: a [packs.<name>] table, a table of a tool that
-# bootstrap no longer has, and no format = 2. mac init migrates it with the
+# bootstrap no longer has, and no format = 2. mac migrate migrates it with the
 # frozen copy of macos/packs.toml.
 
 [packs.essentials]

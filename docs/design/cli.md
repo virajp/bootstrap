@@ -41,34 +41,34 @@ submodule: each submodule runs its own sync.
 `cli/` is not a tool. The sync never copies it to a consumer. It is the
 Go module `github.com/virajp/bootstrap/cli`.
 
-| Path                 | Job                                                                                                                                                                                                                                                                                                                  |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VERSION`            | The minimum version of the engine that a clone of `main` needs. See [The version check](#the-version-check).                                                                                                                                                                                                         |
-| `go.mod`             | The module.                                                                                                                                                                                                                                                                                                          |
-| `cmd/bootstrap`      | The command `bootstrap`. It calls `internal/cli`. `version` prints `main.version`, which the release build sets. A local build has `dev`.                                                                                                                                                                            |
-| `internal/cli`       | The command line: it parses the arguments, calls `internal/core`, prints the results and the errors, and asks the questions and the consent, or starts `internal/tui`.                                                                                                                                               |
-| `internal/core`      | The preflight, the clone and its lock, the version check, the change list (`Plan`, `Apply`, `Effect`), the change and the state of `init` (`InitChange`, `InitState`), the scan of `detect` (`DetectState`) and its projects, the kind of a Mac tool (`KindOf`), and the clean-target rule. It never prints or asks. |
-| `internal/contract`  | The JSON contract: the envelope, its version and the names of the task ports. See [The JSON contract](#the-json-contract).                                                                                                                                                                                           |
-| `internal/tui`       | The TUI. See [The TUI](#the-tui). It calls `internal/core`, and never `internal/cli`.                                                                                                                                                                                                                                |
-| `internal/config`    | The user config file of the engine: its path, its keys and its checks. See [The config file](#the-config-file).                                                                                                                                                                                                      |
-| `internal/oldform`   | The old forms of a values file, and their migration. It is the one place of the old names.                                                                                                                                                                                                                           |
-| `internal/questions` | The questions of the selected tools, their proposals and their answers.                                                                                                                                                                                                                                              |
-| `internal/field`     | The text field of a question: the question, its note, and a field that starts with the proposal. It uses Bubble Tea v2 and the `textinput` of Bubbles v2.                                                                                                                                                            |
-| `internal/scripts`   | The run of the scripts of a tool. See [The scripts of a tool](#the-scripts-of-a-tool).                                                                                                                                                                                                                               |
-| `internal/fail`      | The typed errors of the exit codes, and a collector where the highest code wins. See [The exit codes](#the-exit-codes).                                                                                                                                                                                              |
-| `internal/report`    | The output of a run. See [The output of a run](#the-output-of-a-run).                                                                                                                                                                                                                                                |
-| `internal/source`    | The read of the clone: the packs file, the categories file, the `tools.toml` of each tool, the entries and the files of a tool folder, and the checks of these files.                                                                                                                                                |
-| `internal/projects`  | The projects of a repository: the `[projects.<name>]` tables, the names, the workspace manifests and the folders that git does not ignore. `detect` and `check` use it. See [`detect`](#detect).                                                                                                                     |
-| `internal/values`    | The values files and the overrides files of both sides, and the values merge. See [The values of a tool](#the-values-of-a-tool).                                                                                                                                                                                     |
-| `internal/selection` | The checks of the packs, the required members of `base`, the depth-first walk of the `depends`, and the stages of the Mac.                                                                                                                                                                                           |
-| `internal/tmpl`      | `text/template` with the delimiters `<%` and `%>`, and our own copy of the gomplate functions that the templates use. It does not import gomplate.                                                                                                                                                                   |
-| `internal/format`    | The parse check, and the merge of a shared file: JSON, JSONC, YAML, TOML and text. See [Shared files](#shared-files).                                                                                                                                                                                                |
-| `internal/header`    | The header of a synced file and of a shared file, and its detection. See [The header](#the-header).                                                                                                                                                                                                                  |
-| `internal/target`    | The write of one target, the modes, `bootstrap_commit`, and the tables of the required members of `base`. See [The write of one target](#the-write-of-one-target).                                                                                                                                                   |
-| `internal/manifest`  | The manifest and the stale rule, in the link modes `repo` and `macos`. See [The manifest](#the-manifest-and-the-stale-rule).                                                                                                                                                                                         |
-| `internal/misegen`   | The mise config generator of both sides. See [mise.md](mise.md).                                                                                                                                                                                                                                                     |
-| `internal/repo`      | The repo front-end, the sync of `bootstrap sync`. See [repo.md](repo.md).                                                                                                                                                                                                                                            |
-| `internal/macos`     | The Mac front-end, the sync of `bootstrap mac sync`. See [mac.md](mac.md).                                                                                                                                                                                                                                           |
+| Path                 | Job                                                                                                                                                                                                                                                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VERSION`            | The minimum version of the engine that a clone of `main` needs. See [The version check](#the-version-check).                                                                                                                                                                                                            |
+| `go.mod`             | The module.                                                                                                                                                                                                                                                                                                             |
+| `cmd/bootstrap`      | The command `bootstrap`. It calls `internal/cli`. `version` prints `main.version`, which the release build sets. A local build has `dev`.                                                                                                                                                                               |
+| `internal/cli`       | The command line: it parses the arguments, calls `internal/core`, prints the results and the errors, and asks the questions and the consent, or starts `internal/tui`.                                                                                                                                                  |
+| `internal/core`      | The preflight, the clone and its lock, the version check, the change list (`Plan`, `Apply`, `Effect`), the change and the state of `migrate` (`InitChange`, `InitState`), the scan of `detect` (`DetectState`) and its projects, the kind of a Mac tool (`KindOf`), and the clean-target rule. It never prints or asks. |
+| `internal/contract`  | The JSON contract: the envelope, its version and the names of the task ports. See [The JSON contract](#the-json-contract).                                                                                                                                                                                              |
+| `internal/tui`       | The TUI. See [The TUI](#the-tui). It calls `internal/core`, and never `internal/cli`.                                                                                                                                                                                                                                   |
+| `internal/config`    | The user config file of the engine: its path, its keys and its checks. See [The config file](#the-config-file).                                                                                                                                                                                                         |
+| `internal/oldform`   | The old forms of a values file, and their migration. It is the one place of the old names.                                                                                                                                                                                                                              |
+| `internal/questions` | The questions of the selected tools, their proposals and their answers.                                                                                                                                                                                                                                                 |
+| `internal/field`     | The text field of a question: the question, its note, and a field that starts with the proposal. It uses Bubble Tea v2 and the `textinput` of Bubbles v2.                                                                                                                                                               |
+| `internal/scripts`   | The run of the scripts of a tool. See [The scripts of a tool](#the-scripts-of-a-tool).                                                                                                                                                                                                                                  |
+| `internal/fail`      | The typed errors of the exit codes, and a collector where the highest code wins. See [The exit codes](#the-exit-codes).                                                                                                                                                                                                 |
+| `internal/report`    | The output of a run. See [The output of a run](#the-output-of-a-run).                                                                                                                                                                                                                                                   |
+| `internal/source`    | The read of the clone: the packs file, the categories file, the `tools.toml` of each tool, the entries and the files of a tool folder, and the checks of these files.                                                                                                                                                   |
+| `internal/projects`  | The projects of a repository: the `[projects.<name>]` tables, the names, the workspace manifests and the folders that git does not ignore. `detect` and `check` use it. See [`detect`](#detect).                                                                                                                        |
+| `internal/values`    | The values files and the overrides files of both sides, and the values merge. See [The values of a tool](#the-values-of-a-tool).                                                                                                                                                                                        |
+| `internal/selection` | The checks of the packs, the required members of `base`, the depth-first walk of the `depends`, and the stages of the Mac.                                                                                                                                                                                              |
+| `internal/tmpl`      | `text/template` with the delimiters `<%` and `%>`, and our own copy of the gomplate functions that the templates use. It does not import gomplate.                                                                                                                                                                      |
+| `internal/format`    | The parse check, and the merge of a shared file: JSON, JSONC, YAML, TOML and text. See [Shared files](#shared-files).                                                                                                                                                                                                   |
+| `internal/header`    | The header of a synced file and of a shared file, and its detection. See [The header](#the-header).                                                                                                                                                                                                                     |
+| `internal/target`    | The write of one target, the modes, `bootstrap_commit`, and the tables of the required members of `base`. See [The write of one target](#the-write-of-one-target).                                                                                                                                                      |
+| `internal/manifest`  | The manifest and the stale rule, in the link modes `repo` and `macos`. See [The manifest](#the-manifest-and-the-stale-rule).                                                                                                                                                                                            |
+| `internal/misegen`   | The mise config generator of both sides. See [mise.md](mise.md).                                                                                                                                                                                                                                                        |
+| `internal/repo`      | The repo front-end, the sync of `bootstrap sync`. See [repo.md](repo.md).                                                                                                                                                                                                                                               |
+| `internal/macos`     | The Mac front-end, the sync of `bootstrap mac sync`. See [mac.md](mac.md).                                                                                                                                                                                                                                              |
 
 The task `test:go` of this repository runs `go vet`, a `gofmt` check and
 `go test` in the module. Some unit tests compare the output of a case with a
@@ -96,48 +96,48 @@ The kind word tells what the names are: `tool` or `pack`. `add` takes `tool` or
 `pack`. `remove` and `replace` take `tool` only. The other commands take no
 kind word.
 
-| Command                    | Job                                                                                                                                                                                                                                                                                                                                      |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `init`                     | In a terminal, opens the TUI. Else migrates an old form, or creates the values folder with a table for each member of `base`, removes the known old copies of the test parts, moves the own test tasks into parts, renames the old command of the worktree setup, asks each question without an answer, then syncs. See [`init`](#init). |
-| `tui`                      | Opens the TUI on the values. It needs a terminal. See [The TUI](#the-tui).                                                                                                                                                                                                                                                               |
-| `sync`                     | The sync of the side. `setup:configs` and `updateall:configs` run it.                                                                                                                                                                                                                                                                    |
-| `check`                    | Examines the values folder against its schema and runs the check scripts. On the Mac, a dry run of the sync. `--json` reports each stage and its findings.                                                                                                                                                                               |
-| `questions [tool…]`        | Lists the questions, their proposals and their answers. Without names, the questions of the selected tools. `--json` prints the envelope with the questions in `data`.                                                                                                                                                                   |
-| `add tool <tool…>`         | Selects the tools and their dependencies, asks their questions, then syncs.                                                                                                                                                                                                                                                              |
-| `add pack <pack…>`         | Selects each member of the packs that is not selected, and their dependencies, asks their questions, then syncs. See [`add` and `remove`](#add-and-remove).                                                                                                                                                                              |
-| `remove tool <tool…>`      | Removes the tools, and each dependency that no other tool needs, then syncs. Each seed of a removed tool stays, with a line.                                                                                                                                                                                                             |
-| `replace tool <old> <new>` | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                                                                                                                                                                                                                  |
-| `detect`                   | Runs the detect scripts, or on the Mac the package scan, and lists each tool that matches. See [`detect`](#detect).                                                                                                                                                                                                                      |
-| `list`, `ls`               | Prints the selected tools as a tree. See [`list`](#list). It writes nothing.                                                                                                                                                                                                                                                             |
-| `config get <key>`         | Prints the value of a key of `.config/bootstrap/`, with its source. See [`config`](#config). There is no `mac config`.                                                                                                                                                                                                                   |
-| `config set <key> <value>` | Writes a key of `.config/bootstrap/`, and changes nothing else. See [`config`](#config).                                                                                                                                                                                                                                                 |
-| `config unset <key>`       | Removes a key of `.config/bootstrap/`. See [`config`](#config).                                                                                                                                                                                                                                                                          |
-| `config show [<file>]`     | Prints `repo.toml`, `tools.toml` or `releases.toml`, or the three files as one table by file name. See [`config`](#config).                                                                                                                                                                                                              |
-| `settings`                 | Prints the config file and each setting, with its value and its source. See [The config file](#the-config-file). There is no `mac settings`.                                                                                                                                                                                             |
-| `contract`                 | Prints the versions of the JSON contract, the version of the engine, the commands that take `--json` and the names of the task ports. It needs no repository, no config file and no clone.                                                                                                                                               |
-| `catalog`                  | Prints the tools of the clone by category. `--json` also gives the categories, the questions and defaults of each tool, and the packs. It needs no repository.                                                                                                                                                                           |
-| `describe`                 | Prints the values of `repo.toml`, the selected tools with their values, the members, the task ports of the repository, each port present or missing. Only `--json` also gives its language servers, in `lsp`.                                                                                                                            |
-| `lsp`                      | Prints the language servers of the selected tools of the repository, one line each: the server, its tool, its command and its extensions. See [`lsp`](#lsp).                                                                                                                                                                             |
-| `version`, `--version`     | Prints the version. There is no `mac version`.                                                                                                                                                                                                                                                                                           |
+| Command                    | Job                                                                                                                                                                                                                                                                                                                                            |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `migrate`                  | In a terminal, opens the TUI. Else migrates an old form, or creates the values folder with a table for each member of `base`, removes the known old copies of the test parts, moves the own test tasks into parts, renames the old command of the worktree setup, asks each question without an answer, then syncs. See [`migrate`](#migrate). |
+| `tui`                      | Opens the TUI on the values. It needs a terminal. See [The TUI](#the-tui).                                                                                                                                                                                                                                                                     |
+| `sync`                     | The sync of the side. `setup:configs` and `updateall:configs` run it.                                                                                                                                                                                                                                                                          |
+| `check`                    | Examines the values folder against its schema and runs the check scripts. On the Mac, a dry run of the sync. `--json` reports each stage and its findings.                                                                                                                                                                                     |
+| `questions [tool…]`        | Lists the questions, their proposals and their answers. Without names, the questions of the selected tools. `--json` prints the envelope with the questions in `data`.                                                                                                                                                                         |
+| `add tool <tool…>`         | Selects the tools and their dependencies, asks their questions, then syncs.                                                                                                                                                                                                                                                                    |
+| `add pack <pack…>`         | Selects each member of the packs that is not selected, and their dependencies, asks their questions, then syncs. See [`add` and `remove`](#add-and-remove).                                                                                                                                                                                    |
+| `remove tool <tool…>`      | Removes the tools, and each dependency that no other tool needs, then syncs. Each seed of a removed tool stays, with a line.                                                                                                                                                                                                                   |
+| `replace tool <old> <new>` | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                                                                                                                                                                                                                        |
+| `detect`                   | Runs the detect scripts, or on the Mac the package scan, and lists each tool that matches. See [`detect`](#detect).                                                                                                                                                                                                                            |
+| `list`, `ls`               | Prints the selected tools as a tree. See [`list`](#list). It writes nothing.                                                                                                                                                                                                                                                                   |
+| `config get <key>`         | Prints the value of a key of `.config/bootstrap/`, with its source. See [`config`](#config). There is no `mac config`.                                                                                                                                                                                                                         |
+| `config set <key> <value>` | Writes a key of `.config/bootstrap/`, and changes nothing else. See [`config`](#config).                                                                                                                                                                                                                                                       |
+| `config unset <key>`       | Removes a key of `.config/bootstrap/`. See [`config`](#config).                                                                                                                                                                                                                                                                                |
+| `config show [<file>]`     | Prints `repo.toml`, `tools.toml` or `releases.toml`, or the three files as one table by file name. See [`config`](#config).                                                                                                                                                                                                                    |
+| `settings`                 | Prints the config file and each setting, with its value and its source. See [The config file](#the-config-file). There is no `mac settings`.                                                                                                                                                                                                   |
+| `contract`                 | Prints the versions of the JSON contract, the version of the engine, the commands that take `--json` and the names of the task ports. It needs no repository, no config file and no clone.                                                                                                                                                     |
+| `catalog`                  | Prints the tools of the clone by category. `--json` also gives the categories, the questions and defaults of each tool, and the packs. It needs no repository.                                                                                                                                                                                 |
+| `describe`                 | Prints the values of `repo.toml`, the selected tools with their values, the members, the task ports of the repository, each port present or missing. Only `--json` also gives its language servers, in `lsp`.                                                                                                                                  |
+| `lsp`                      | Prints the language servers of the selected tools of the repository, one line each: the server, its tool, its command and its extensions. See [`lsp`](#lsp).                                                                                                                                                                                   |
+| `version`, `--version`     | Prints the version. There is no `mac version`.                                                                                                                                                                                                                                                                                                 |
 
-| Flag                            | Commands                                                                                                                                        | Effect                                                                                                                                   |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `--dry-run`                     | `init`, `sync`, `add`, `remove`, `replace`, `detect`                                                                                            | Prints the change list, and writes nothing.                                                                                              |
-| `--yes`, `-y`                   | `init`, `add`, `remove`, `replace`, `detect --add`                                                                                              | Writes the changes without a prompt.                                                                                                     |
-| `--no-tui`                      | `init`                                                                                                                                          | Does not open the TUI in a terminal. See [`init`](#init).                                                                                |
-| `--add`                         | `detect`                                                                                                                                        | Adds each matched tool that is not selected, after the consent.                                                                          |
-| `--exclude <member>`            | `add pack`                                                                                                                                      | Leaves out a member of the pack, as the packs file writes it. The flag can repeat. It needs exactly one pack name.                       |
-| `--answer <tool>.<key>=<value>` | `init`, `add`, `replace`, `detect --add`                                                                                                        | The answer of a question. The flag can repeat. `--answer <tool>.<key>=` gives an empty answer, only for an optional or a group question. |
-| `--json`                        | `contract`, `catalog`, `describe`, `lsp`, `check`, `questions`, `mac questions`, `config`, `init`, `sync`, `add`, `remove`, `replace`, `detect` | Prints one JSON envelope on stdout, and each other line on stderr, for an AI agent. See [The JSON contract](#the-json-contract).         |
-| `--format json\|yaml\|toml`     | `config get`, `config show`                                                                                                                     | The output format. The default is `json` when stdout is not a terminal, else `toml`. With `--json`, it is a usage error (code 2).        |
-| `--no-bootstrap`                | each `mac` command except `questions`                                                                                                           | Skips each `mise bootstrap` step.                                                                                                        |
-| `--jobs <n>`                    | each command except `questions`, `list`, `config`, `contract`, `catalog`, `describe`, `lsp` and `version`                                       | The jobs at a time. The default is 2 × the CPU count.                                                                                    |
-| `--verbose`                     | `init`, `tui`, `sync`, `check`, `add`, `remove`, `replace`, `detect`                                                                            | Sets `BOOTSTRAP_VERBOSE=1`. See [The output of a run](#the-output-of-a-run).                                                             |
-| `--config <path>`               | each command except `version` and `contract`                                                                                                    | The config file. See [The config file](#the-config-file).                                                                                |
-| `--cache-dir <path>`            | each command except `version` and `contract`                                                                                                    | The cache folder. It sets `BOOTSTRAP_CACHE`.                                                                                             |
-| `--url <url>`                   | each command except `version` and `contract`                                                                                                    | The clone URL. It sets `BOOTSTRAP_URL`.                                                                                                  |
-| `--clone <path>`                | each command except `version` and `contract`                                                                                                    | A clone of bootstrap, with no lock and no fetch. It sets `BOOTSTRAP_CLONE`.                                                              |
-| `--repo-path <path>`            | each `mac` command except `mac init`, and `settings`                                                                                            | The repository of `macos.toml`. It sets `MACOS_SETUP_REPO_PATH`.                                                                         |
+| Flag                            | Commands                                                                                                                                           | Effect                                                                                                                                   |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `--dry-run`                     | `migrate`, `sync`, `add`, `remove`, `replace`, `detect`                                                                                            | Prints the change list, and writes nothing.                                                                                              |
+| `--yes`, `-y`                   | `migrate`, `add`, `remove`, `replace`, `detect --add`                                                                                              | Writes the changes without a prompt.                                                                                                     |
+| `--no-tui`                      | `migrate`                                                                                                                                          | Does not open the TUI in a terminal. See [`migrate`](#migrate).                                                                          |
+| `--add`                         | `detect`                                                                                                                                           | Adds each matched tool that is not selected, after the consent.                                                                          |
+| `--exclude <member>`            | `add pack`                                                                                                                                         | Leaves out a member of the pack, as the packs file writes it. The flag can repeat. It needs exactly one pack name.                       |
+| `--answer <tool>.<key>=<value>` | `migrate`, `add`, `replace`, `detect --add`                                                                                                        | The answer of a question. The flag can repeat. `--answer <tool>.<key>=` gives an empty answer, only for an optional or a group question. |
+| `--json`                        | `contract`, `catalog`, `describe`, `lsp`, `check`, `questions`, `mac questions`, `config`, `migrate`, `sync`, `add`, `remove`, `replace`, `detect` | Prints one JSON envelope on stdout, and each other line on stderr, for an AI agent. See [The JSON contract](#the-json-contract).         |
+| `--format json\|yaml\|toml`     | `config get`, `config show`                                                                                                                        | The output format. The default is `json` when stdout is not a terminal, else `toml`. With `--json`, it is a usage error (code 2).        |
+| `--no-bootstrap`                | each `mac` command except `questions`                                                                                                              | Skips each `mise bootstrap` step.                                                                                                        |
+| `--jobs <n>`                    | each command except `questions`, `list`, `config`, `contract`, `catalog`, `describe`, `lsp` and `version`                                          | The jobs at a time. The default is 2 × the CPU count.                                                                                    |
+| `--verbose`                     | `migrate`, `tui`, `sync`, `check`, `add`, `remove`, `replace`, `detect`                                                                            | Sets `BOOTSTRAP_VERBOSE=1`. See [The output of a run](#the-output-of-a-run).                                                             |
+| `--config <path>`               | each command except `version` and `contract`                                                                                                       | The config file. See [The config file](#the-config-file).                                                                                |
+| `--cache-dir <path>`            | each command except `version` and `contract`                                                                                                       | The cache folder. It sets `BOOTSTRAP_CACHE`.                                                                                             |
+| `--url <url>`                   | each command except `version` and `contract`                                                                                                       | The clone URL. It sets `BOOTSTRAP_URL`.                                                                                                  |
+| `--clone <path>`                | each command except `version` and `contract`                                                                                                       | A clone of bootstrap, with no lock and no fetch. It sets `BOOTSTRAP_CLONE`.                                                              |
+| `--repo-path <path>`            | each `mac` command except `mac migrate`, and `settings`                                                                                            | The repository of `macos.toml`. It sets `MACOS_SETUP_REPO_PATH`.                                                                         |
 
 A flag of a repo command also applies to the same `mac` command, for example
 `mac sync --verbose`. A flag with a value takes `--flag value` and
@@ -147,7 +147,8 @@ empty answer `--answer <tool>.<key>=`. See [The questions](#the-questions).
 A flag that a command does not take, an unknown command, and `add`, `remove`
 or `replace` without a name are usage errors (code 2). `add`, `remove` and
 `replace` without a kind word stop with code 2 and the hint of the new form,
-for example `use: bootstrap add tool node`. `init` with names stops with code 2
+for example `use: bootstrap add tool node`. `migrate` with names stops with code
+2
 and the hint `use: bootstrap add tool <names>`. A usage error prints the
 problem, the usage line of that command only, and a pointer to the help. See
 [The output of a run](#the-output-of-a-run). `bootstrap --help` and
@@ -168,7 +169,7 @@ the git repository and the values folder.
 
 - `mise` is on `PATH`.
 - The folder is in a git repository. The repo side uses `MISE_PROJECT_ROOT`,
-  else the git top level of the current folder. `mac init` uses the current
+  else the git top level of the current folder. `mac migrate` uses the current
   folder. Each other `mac` command uses `--repo-path` or
   `MACOS_SETUP_REPO_PATH`: see [mac.md](mac.md). `mac tui` then uses the
   current folder.
@@ -176,18 +177,23 @@ the git repository and the values folder.
   folder of `BOOTSTRAP_VALUES`. On the Mac, they are `macos.toml` of the
   repository of `macos.toml`.
 
-`init` outside a git repository tells the user to create one with `git init`. On
-the repo side, each command except `init`, `contract` and `catalog` needs the
+`migrate` outside a git repository tells the user to create one with `git init`.
+On
+the repo side, each command except `migrate`, `contract` and `catalog` needs the
 values folder with its `repo.toml` and `tools.toml`: without them, it stops with
-code 2 and the fix "run bootstrap init". `add`, `remove`, `replace` and `detect`
+code 2 and the fix "run bootstrap migrate". `add`, `remove`, `replace` and
+`detect`
 need the values on both sides. The old values file `.config/bootstrap.toml`
-stops each command except `init`, `version`, `settings`, `contract`, `catalog`
-and the `mac` commands with "run bootstrap init". The old file next to the
+stops each command except `migrate`, `version`, `settings`, `contract`,
+`catalog`
+and the `mac` commands with "run bootstrap migrate". The old file next to the
 folder stops each command except `version`, `settings`, `contract`, `catalog`
-and the `mac` commands, `init` included, with the fix "remove one: compare
+and the `mac` commands, `migrate` included, with the fix "remove one: compare
 .config/bootstrap.toml with .config/bootstrap/". A values file in an old form
-stops each command except `init` with "run bootstrap init" ("run bootstrap mac
-init" on the Mac). An unknown key, a wrong type or a value outside its enum in
+stops each command except `migrate` with "run bootstrap migrate" ("run bootstrap
+mac
+migrate" on the Mac). An unknown key, a wrong type or a value outside its enum
+in
 the values folder stops each command that reads the values with code 2. See
 [bootstrap-config.md](bootstrap-config.md#the-schema). `sync` and `check` also
 stop for a question of a selected tool without an answer, and for a group of
@@ -199,7 +205,7 @@ same.
 
 ### The change list
 
-Each writing command (`init`, `add`, `remove`, `replace`, `detect --add`)
+Each writing command (`migrate`, `add`, `remove`, `replace`, `detect --add`)
 builds one change list: the items `add tool`, `add pack` (with its
 `--exclude` members), `remove tool`, `replace tool` and the answers, and on the
 Mac the packages of `mac detect --add`. `internal/core` has these functions
@@ -216,13 +222,14 @@ for it, and the TUI calls the same functions:
 - `Apply` runs the script that comes before the writes, writes the values and
   the migrations, and runs the sync, with `BOOTSTRAP_VALUES` set to the values
   folder. Thus each command writes one time and syncs one time. The move of
-  `init` (see [`init`](#init)) moves its files before the sync. When the sync
+  `migrate` (see [`migrate`](#migrate)) moves its files before the sync. When
+  the sync
   fails, `Apply` moves those files back, puts the values back as they were
   before the command, or removes a file that did not exist. After a failed
   migration it puts back `.config/bootstrap.toml`,
   `.config/bootstrap.overrides.toml` and `.config/repo-generated.tsv`, and
   removes `.config/bootstrap/`. The other files stay as the sync left them. The
-  one exception is code 4 of the Mac (the stage `init` changed): the sync did
+  one exception is code 4 of the Mac (the stage `migrate` changed): the sync did
   its work, so the values file stays.
   `Apply` also gives the outcome of each target of the sync, also when the
   sync fails, for the `data` of `--json`. The front-ends give them from
@@ -250,7 +257,7 @@ clean-target rule and writes.
 exits 0 with `· Nothing changed`. Without a terminal, and without `--yes`, the
 command stops with code 2: `changes need --yes`.
 
-`--json` never prompts. `init`, `add`, `remove`, `replace` and `detect --add`
+`--json` never prompts. `migrate`, `add`, `remove`, `replace` and `detect --add`
 with `--json` also need `--yes` or `--dry-run`, else they stop with code 2:
 `<command> --json needs --yes or --dry-run`. `sync --json` applies with no
 `--yes`, as `sync` does, and a plain `detect --json` only reads. See
@@ -268,23 +275,26 @@ writes nothing.
 - `sync` does not apply the rule to the values folder, because it writes only
   `bootstrap_commit`, `[home]`, the manifest, the missing tables of the
   required members of `base` and the `mise` template
-  `.config/bootstrap/config-files.toml` there. `init` applies the rule to the
+  `.config/bootstrap/config-files.toml` there. `migrate` applies the rule to the
   values.
 - `replace` needs a clean work tree, because its migrate script can change any
   file.
 
-### `init`
+### `migrate`
 
-`init` is the first adoption, and also the update of an adopted repository or
+`migrate` is the first adoption, and also the update of an adopted repository or
 Mac. It takes no tool or pack names: `add tool` and `add pack` select tools.
+`init` is the old name of `migrate`, and stays as a hidden alias: `init` and
+`mac init` run `migrate` and `mac migrate`. The help and the commands of
+`contract` name only `migrate`, and the JSON envelope names `migrate`.
 
 1. On the repo side, a new values folder gets `tools.toml` and `repo.toml`,
    each with a header comment and `format = 3`. `repo.toml` also gets
    `core_branches`, `environments = [ "dev" ]` and `repo_name`, the name of the
    folder, because the templates need it. `core_branches` is the `main` and
    `develop` that exist, else the current branch, born or unborn. With neither
-   and a detached `HEAD`, `init` stops with code 2 and the fix "check out a
-   branch, then run bootstrap init again". `tools.toml` gets a table for each
+   and a detached `HEAD`, `migrate` stops with code 2 and the fix "check out a
+   branch, then run bootstrap migrate again". `tools.toml` gets a table for each
    member of `base`, as `add pack base` does. A folder without one of the two
    files gets the missing file. A new Mac values file starts with a header
    comment and `format = 2`.
@@ -292,11 +302,13 @@ Mac. It takes no tool or pack names: `add tool` and `add pack` select tools.
    the split into `.config/bootstrap/`. See
    [bootstrap-config.md](bootstrap-config.md#old-forms) for the old forms. On
    the Mac, an existing values file gets the migration of each old form, with
-   its comments kept. Only `init` migrates: `sync` and `check` stop with code 2
-   and "run bootstrap init" ("run bootstrap mac init" on the Mac) when they
-   find an old form. A later `init` does not add a removed member of `base`
+   its comments kept. Only `migrate` migrates: `sync` and `check` stop with code
+   2
+   and "run bootstrap migrate" ("run bootstrap mac migrate" on the Mac) when
+   they
+   find an old form. A later `migrate` does not add a removed member of `base`
    again.
-3. On the repo side, `init` removes each known old copy of a part of a
+3. On the repo side, `migrate` removes each known old copy of a part of a
    selected tool: a regular file at the old path of the group of the part, for
    example `test/golden`, or at `<group>/50-local`, whose sha256 is in the
    `replaces` of the part. See
@@ -306,11 +318,12 @@ Mac. It takes no tool or pack names: `add tool` and `add pack` select tools.
    detail lists each file. It comes before the move of step 4, so the move
    does not move a removed file. A file with another hash stays, and so does a
    copy of a tool that is not selected: step 4 moves it as a task of the
-   repository. `init` follows no link. On a failed sync, `init` writes each
+   repository. `migrate` follows no link. On a failed sync, `migrate` writes
+   each
    removed file back. `sync` and `check` stop with code 2 and "run bootstrap
-   init" on a known copy at `<group>/50-local`. At the old path, the stop of
+   migrate" on a known copy at `<group>/50-local`. At the old path, the stop of
    step 4 for a task at the place of a test port comes first.
-4. On the repo side, `init` moves each task of the repository at the place of
+4. On the repo side, `migrate` moves each task of the repository at the place of
    a test port to the part `50-local` of its group, so the sync can write the
    dispatcher there. These are the paths below `.config/mise/tasks/`:
 
@@ -322,36 +335,38 @@ Mac. It takes no tool or pack names: `add tool` and `add pack` select tools.
 
    A path is a task of the repository when it is a regular file, the manifest
    does not list it, and it has no bootstrap header. A file with the header is
-   bootstrap's own, and the sync writes the dispatcher over it. `init` follows
+   bootstrap's own, and the sync writes the dispatcher over it. `migrate`
+   follows
    no link: a path that is a link, or is below a linked folder, stays, and so
    does a path whose target is. All the moves are one change,
    `move own test tasks into 50-local parts`, and its detail lists each file
    and its target. A file moves through the temp name `<path>.bootstrap-move`
    next to it, so a file can become a part of the folder at its own path.
-   `init` examines each path before it moves a file. When a target
+   `migrate` examines each path before it moves a file. When a target
    `<group>/50-local` exists, or a temp name exists, it stops with code 2,
    names both paths, and moves nothing. `sync` and `check` stop with code 2
-   and "run bootstrap init" on such a task.
-5. On the repo side, `init` renames the old task `setup:worktree` to
+   and "run bootstrap migrate" on such a task.
+5. On the repo side, `migrate` renames the old task `setup:worktree` to
    `git:worktree:setup` where the sync cannot. The seed `.config/wt.toml` and
    each `[members.<name>].worktree_install` of `repo.toml` can run
-   `mise run setup:worktree`, and `init` writes `mise run git:worktree:setup`
+   `mise run setup:worktree`, and `migrate` writes `mise run git:worktree:setup`
    in its place. Only that command text changes, and `repo.toml` keeps its
    comments. Both files are one change, `rename setup:worktree`, and its detail
-   lists each file and key. On a failed sync, `init` writes both files back.
-   `sync` and `check` stop with code 2 and "run bootstrap init" when they find
+   lists each file and key. On a failed sync, `migrate` writes both files back.
+   `sync` and `check` stop with code 2 and "run bootstrap migrate" when they
+   find
    the old command in either place.
 6. The command asks each question of a selected tool that has no answer. See
    [The questions](#the-questions).
 7. It plans the sync, shows the change list, and after the consent writes the
    changes and syncs.
 
-These steps are the `--no-tui` path. `init` takes it without a terminal, with
+These steps are the `--no-tui` path. `migrate` takes it without a terminal, with
 `--no-tui`, and with `--yes`, `--dry-run` or `--answer`, also without
 `--no-tui`: these flags come from an agent or a script, and the TUI is for a
 person. This path does not run the detect scripts.
 
-In a terminal, and without these flags, `init` opens the TUI. See
+In a terminal, and without these flags, `migrate` opens the TUI. See
 [The TUI](#the-tui). The checks come in this order: the terminal, then the
 flags (each gives the `--no-tui` path, also in a small terminal), then the
 size of the terminal, then the values. A missing values folder or file, or an
@@ -366,12 +381,13 @@ it: "rename setup:worktree". The counter counts each of them, and the review
 shows them. The user cannot remove them: to decline one, quit without Apply.
 Apply writes it with the other changes, in one write of the values. A
 quit that discards the
-change list writes nothing, so the next `init` makes the change again.
+change list writes nothing, so the next `migrate` makes the change again.
 
 ### The TUI
 
-`tui` and `mac tui` open the full-screen TUI on the values. `init` and
-`mac init` open it in a terminal. The TUI is for a person; the command line is
+`tui` and `mac tui` open the full-screen TUI on the values. `migrate` and
+`mac migrate` open it in a terminal. The TUI is for a person; the command line
+is
 for an agent.
 
 The TUI builds the change list of [The change list](#the-change-list) one key
@@ -381,14 +397,16 @@ questions of the command line never ask under the TUI. Apply applies the
 clean-target rule: it names each dirty target, writes nothing, and keeps the
 change list.
 
-- `tui` and `mac tui` take the flags of `init` and `mac init` except
+- `tui` and `mac tui` take the flags of `migrate` and `mac migrate` except
   `--no-tui`, `--yes`, `--dry-run` and `--answer`. They take no names.
   `mac tui` finds `macos.toml` with `--repo-path`, then
   `MACOS_SETUP_REPO_PATH`, then the current folder.
 - Without a terminal, `tui` stops with code 2 and the hint
-  `use: bootstrap init --no-tui` (`bootstrap mac init --no-tui` on the Mac).
+  `use: bootstrap migrate --no-tui` (`bootstrap mac migrate --no-tui` on the
+  Mac).
 - A terminal smaller than 100 × 25 at the start stops `tui`, `mac tui`,
-  `init` and `mac init` with code 2: `<command> needs a terminal of 100 × 25 or
+  `migrate` and `mac migrate` with code 2: `<command> needs a terminal of 100 ×
+  25 or
   larger`.
 - The screen fills the terminal. A terminal larger than 100 × 25 keeps the
   proportions of the panes: the left pane keeps 30 % of the width, and the top
@@ -404,7 +422,8 @@ change list.
   questions of Apply, show the dialog `Planning ...`. It takes no key but
   `ctrl+c`, which quits.
 - `tui` without the values folder stops with code 2: `<folder> is not there`,
-  with the hint `run bootstrap init first`. An old form of the values stops it
+  with the hint `run bootstrap migrate first`. An old form of the values stops
+  it
   with code 2, as it stops `sync`.
 - A quit by the user after the TUI opened exits 0, also after a failed sync:
   the TUI shows the failure. Each error before the TUI opens keeps its code.
@@ -412,7 +431,8 @@ change list.
 ### The questions
 
 A question is a `[questions.<key>]` table of a `tools.toml`. See
-[tools.md](tools.md#the-defaults-questions-and-contributes-tables). `init` asks
+[tools.md](tools.md#the-defaults-questions-and-contributes-tables). `migrate`
+asks
 the questions of each selected tool, and `add` the questions of the tools that
 it adds.
 
@@ -423,7 +443,7 @@ it adds.
 - `--answer <tool>.<key>=<value>` gives the answer, and that question gets no
   prompt. An `--answer` for a question that no selected tool has is a usage
   error. When `--answer` names one question two times, the last one wins.
-- `--answer <tool>.<key>=` writes `""`, so a later `init` does not ask the
+- `--answer <tool>.<key>=` writes `""`, so a later `migrate` does not ask the
   question. It is only for an optional or a group question. For another
   question, it is a usage error (code 2):
   `--answer <tool>.<key>=: an empty answer is only for an optional or a group
@@ -613,7 +633,7 @@ extensions. The last line counts the servers. With `--json`, `data` is
 
 `describe --json` gives the same object in its `lsp` field. Outside a
 repository, or without `.config/bootstrap/`, `lsp` stops with code 2 and "run
-bootstrap init".
+bootstrap migrate".
 
 ### `detect`
 
@@ -862,7 +882,7 @@ A key is a path whose first segment names the file: `repo.<key>`,
 - With `BOOTSTRAP_VALUES` set, `config` reads and writes that folder and skips
   the stop of the old form. Else, without `.config/bootstrap/`, or without its
   `repo.toml` or `tools.toml`, each subcommand stops with code 2 and the fix
-  "run bootstrap init".
+  "run bootstrap migrate".
 
 | Code | `config`                                                                                                                                               |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -875,7 +895,7 @@ A key is a path whose first segment names the file: `repo.<key>`,
 
 A plugin or an AI agent reads and drives the engine only through one JSON
 envelope. `bootstrap contract`, `catalog`, `describe`, `lsp`, `check`,
-`questions`, `mac questions`, `config get|set|unset|show`, `init`, `sync`,
+`questions`, `mac questions`, `config get|set|unset|show`, `migrate`, `sync`,
 `add`, `remove`,
 `replace` and `detect` take `--json`. The code is in `internal/contract`.
 
@@ -917,18 +937,18 @@ keeps it. A removed or renamed field, or a changed type or meaning, raises it.
 
 **The data of each command.**
 
-| Command                                                    | `data`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `contract`                                                 | `{"versions": [1], "cli_version", "commands", "ports"}`. `cli_version` is the version of the binary, `dev` for a local build. `commands` are the full words of each command that takes `--json`. `ports` are the names of the task ports. It needs no repository, no config file and no clone.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `catalog`                                                  | `{"fetched_at", "categories", "tools", "packs"}`. `fetched_at` is the time of the last successful fetch in ISO-8601 UTC, `""` under `--clone` or `BOOTSTRAP_CLONE`. Each tool has `name`, `category`, `description`, `questions` and `defaults`. It reads the repo side of the clone, and needs no repository.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `describe`                                                 | `{"repo", "tools", "members", "ports", "lsp"}`: the values of `repo.toml`, each selected tool with `name`, its `category` in the catalog and its `values` of `tools.toml` (with its `projects` list, without `env`), each `[members.<name>]` with `name`, `type`, `folder`, `url` and `present` (the folder exists), each port with `name` and `present`, and `lsp`, the `data` of `lsp`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `lsp`                                                      | `{"servers", "checks"}`: each listed server as an entry of the `lspServers` of Claude, and its command and source. See [`lsp`](#lsp).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `check`                                                    | `{"valid", "checks"}`. `checks` has one entry for each stage, in order: `{"name", "status", "findings"}`, with `status` `pass`, `fail` or `skipped`, and each finding `{"code", "severity", "message", "path"}`, with `severity` `error` or `warning`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `questions`, `mac questions`                               | The list of the questions. See [The questions](#the-questions).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `config get`, `config show`                                | The object of `get`, and the files of `show`. See [`config`](#config).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `config set`, `config unset`                               | `{"key", "value"}` for `set`, and `{"key"}` for `unset`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `init`, `sync`, `add`, `remove`, `replace`, `detect --add` | `{"plan", "outcomes"}`. `plan` is `{"changes", "files", "skipped", "pending", "notes"}`: the writes before the sync (`path`, `content`, `remove`, `note`; the move of `init` is one change with the absolute `path` `<root>/.config/mise/tasks`, an empty `content`, and its files and targets only in `note`; the removal of the known old copies of `init` is one change for each tool with the same `path`, an empty `content`, and its files only in `note`; the rename of `init` is one change with the `path` `<root>/.config`, an empty `content`, and its files and keys only in `note`), the files of the sync (`path`, `kind`), the members that `add pack` leaves out (`tool`, `why`), the questions without an answer, and the notes. `outcomes` has one `{"kind", "path", "message"}` for each target of the sync, `[]` for a dry run. The warnings of the plan are the warnings of the envelope. |
-| `detect`                                                   | `{"detected", "projects", "links"}`: one entry in `detected` for each tool that `detect` reports, with `tool`, `selected`, `result`, `evidence`, `message`, `offered`, `shared` and `of`. `projects` maps the name of each new project to `{"folder"}`, and `links` maps a tool to the project names to add to its `projects` list. Both are `{}` on the Mac side.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Command                                                       | `data`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contract`                                                    | `{"versions": [1], "cli_version", "commands", "ports"}`. `cli_version` is the version of the binary, `dev` for a local build. `commands` are the full words of each command that takes `--json`. `ports` are the names of the task ports. It needs no repository, no config file and no clone.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `catalog`                                                     | `{"fetched_at", "categories", "tools", "packs"}`. `fetched_at` is the time of the last successful fetch in ISO-8601 UTC, `""` under `--clone` or `BOOTSTRAP_CLONE`. Each tool has `name`, `category`, `description`, `questions` and `defaults`. It reads the repo side of the clone, and needs no repository.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `describe`                                                    | `{"repo", "tools", "members", "ports", "lsp"}`: the values of `repo.toml`, each selected tool with `name`, its `category` in the catalog and its `values` of `tools.toml` (with its `projects` list, without `env`), each `[members.<name>]` with `name`, `type`, `folder`, `url` and `present` (the folder exists), each port with `name` and `present`, and `lsp`, the `data` of `lsp`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `lsp`                                                         | `{"servers", "checks"}`: each listed server as an entry of the `lspServers` of Claude, and its command and source. See [`lsp`](#lsp).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `check`                                                       | `{"valid", "checks"}`. `checks` has one entry for each stage, in order: `{"name", "status", "findings"}`, with `status` `pass`, `fail` or `skipped`, and each finding `{"code", "severity", "message", "path"}`, with `severity` `error` or `warning`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `questions`, `mac questions`                                  | The list of the questions. See [The questions](#the-questions).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `config get`, `config show`                                   | The object of `get`, and the files of `show`. See [`config`](#config).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `config set`, `config unset`                                  | `{"key", "value"}` for `set`, and `{"key"}` for `unset`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `migrate`, `sync`, `add`, `remove`, `replace`, `detect --add` | `{"plan", "outcomes"}`. `plan` is `{"changes", "files", "skipped", "pending", "notes"}`: the writes before the sync (`path`, `content`, `remove`, `note`; the move of `migrate` is one change with the absolute `path` `<root>/.config/mise/tasks`, an empty `content`, and its files and targets only in `note`; the removal of the known old copies of `migrate` is one change for each tool with the same `path`, an empty `content`, and its files only in `note`; the rename of `migrate` is one change with the `path` `<root>/.config`, an empty `content`, and its files and keys only in `note`), the files of the sync (`path`, `kind`), the members that `add pack` leaves out (`tool`, `why`), the questions without an answer, and the notes. `outcomes` has one `{"kind", "path", "message"}` for each target of the sync, `[]` for a dry run. The warnings of the plan are the warnings of the envelope. |
+| `detect`                                                      | `{"detected", "projects", "links"}`: one entry in `detected` for each tool that `detect` reports, with `tool`, `selected`, `result`, `evidence`, `message`, `offered`, `shared` and `of`. `projects` maps the name of each new project to `{"folder"}`, and `links` maps a tool to the project names to add to its `projects` list. Both are `{}` on the Mac side.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 **The stages of `check`.** `envs`, `values`, `old-forms`, `env-rules`,
 `core-tools`, `overrides`, `members`, `releases`, `projects`, `scripts` and
@@ -943,11 +963,12 @@ evidence still names the folder. A link that fails both tests is a warning. A
 script that fails or prints no valid result is an error (code 2). A
 `root_only` tool and a project whose folder is missing are skipped. `scripts`
 also holds an error (code 2) for each known old copy of a part of a selected
-tool at `<group>/50-local` (see [`init`](#init)). A known copy at the old path
+tool at `<group>/50-local` (see [`migrate`](#migrate)). A known copy at the old
+path
 of the group is the error of `old-forms` for a task at the place of a test
 port. `old-forms`
 also holds an error for each task of
-the repository at the place of a test port (see [`init`](#init)), an error
+the repository at the place of a test port (see [`migrate`](#migrate)), an error
 for `mise run setup:worktree` in `.config/wt.toml` or in a
 `[members.<name>].worktree_install`, and a warning for each executable file
 without an `NN-` name in the folder of a dispatcher: `code/format`,
@@ -961,7 +982,7 @@ the stages. A failure before the first stage gives
 
 **The write commands.** With `--json`, a command never prompts.
 
-- `init`, `add`, `remove`, `replace` and `detect --add` need `--yes` or
+- `migrate`, `add`, `remove`, `replace` and `detect --add` need `--yes` or
   `--dry-run`, else they stop with code 2.
 - `sync --json` applies with no `--yes`, as `sync` does. It always runs the
   quiet dry run of the plan first, reports its files in `data.plan.files`, and
@@ -985,7 +1006,7 @@ colon, and `present` is `true` when one task matches. When mise cannot list the
 tasks, for example for a config that it does not trust, `describe` stops with
 code 1 and the fix names `mise trust`. Outside a repository, or without
 `.config/bootstrap/`, `describe` and `lsp` stop with code 2 and "run bootstrap
-init".
+migrate".
 
 ## The cache and the clone
 
@@ -1070,10 +1091,10 @@ that is older than one minute. The removal has its own lock, `lock.takeover/`:
 without it, a second waiter can remove the lock that the first waiter took
 after the removal. A signal removes the lock and the copy.
 
-| Command                                                                                 | Release                      |
-| --------------------------------------------------------------------------------------- | ---------------------------- |
-| Each repo command, `mac questions`, `mac check` and `mac sync --dry-run`                | After the copy of the clone. |
-| `mac sync`, `mac init`, `mac tui`, `mac add`, `mac remove`, `mac replace`, `mac detect` | At the end of the command.   |
+| Command                                                                                    | Release                      |
+| ------------------------------------------------------------------------------------------ | ---------------------------- |
+| Each repo command, `mac questions`, `mac check` and `mac sync --dry-run`                   | After the copy of the clone. |
+| `mac sync`, `mac migrate`, `mac tui`, `mac add`, `mac remove`, `mac replace`, `mac detect` | At the end of the command.   |
 
 ## The version check
 
@@ -1092,19 +1113,19 @@ See [repo.md](repo.md) and [mac.md](mac.md).
 
 ## The engine variables
 
-| Variable                | Use                                                                                                                                                                                                                        |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BOOTSTRAP_CLONE`       | A folder with a clone of bootstrap. The command uses it, with no lock and no fetch. The gate `code:lint:60-bootstrap` sets it.                                                                                             |
-| `BOOTSTRAP_URL`         | The clone URL. A test uses it for a change that is not pushed.                                                                                                                                                             |
-| `BOOTSTRAP_CACHE`       | The cache folder. A test uses it.                                                                                                                                                                                          |
-| `BOOTSTRAP_VERBOSE`     | `1` prints the log line of each target in place of the list. See [The output of a run](#the-output-of-a-run).                                                                                                              |
-| `BOOTSTRAP_BIN`         | The path of a build of the engine. The entry tasks, the gate, the tool scripts and the tests run it in place of the `bootstrap` of mise. The engine exports its own path in it to each script and task that it runs.       |
-| `BOOTSTRAP_JOBS`        | The jobs at a time. `--jobs` sets it.                                                                                                                                                                                      |
-| `BOOTSTRAP_VALUES`      | The values folder of the repo side. The default is `.config/bootstrap/`. `init` and the sync set it to the folder of the planned values, so `config` reads the new keys; with it, `config` skips the stop of the old form. |
-| `BOOTSTRAP_HOME`        | The home repository of a member. `setup:configs` sets it for the sync of a member, which writes `[home]`.                                                                                                                  |
-| `BOOTSTRAP_MEMBER`      | The name of the member in the `[members.*]` tables of its home. `setup:configs` sets it with `BOOTSTRAP_HOME`.                                                                                                             |
-| `MACOS_SETUP_REPO_PATH` | The repository of `macos.toml`. See [mac.md](mac.md).                                                                                                                                                                      |
-| `BOOTSTRAP_CONFIG`      | The config file. See [The config file](#the-config-file). The test tasks set it to a missing path.                                                                                                                         |
+| Variable                | Use                                                                                                                                                                                                                           |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BOOTSTRAP_CLONE`       | A folder with a clone of bootstrap. The command uses it, with no lock and no fetch. The gate `code:lint:60-bootstrap` sets it.                                                                                                |
+| `BOOTSTRAP_URL`         | The clone URL. A test uses it for a change that is not pushed.                                                                                                                                                                |
+| `BOOTSTRAP_CACHE`       | The cache folder. A test uses it.                                                                                                                                                                                             |
+| `BOOTSTRAP_VERBOSE`     | `1` prints the log line of each target in place of the list. See [The output of a run](#the-output-of-a-run).                                                                                                                 |
+| `BOOTSTRAP_BIN`         | The path of a build of the engine. The entry tasks, the gate, the tool scripts and the tests run it in place of the `bootstrap` of mise. The engine exports its own path in it to each script and task that it runs.          |
+| `BOOTSTRAP_JOBS`        | The jobs at a time. `--jobs` sets it.                                                                                                                                                                                         |
+| `BOOTSTRAP_VALUES`      | The values folder of the repo side. The default is `.config/bootstrap/`. `migrate` and the sync set it to the folder of the planned values, so `config` reads the new keys; with it, `config` skips the stop of the old form. |
+| `BOOTSTRAP_HOME`        | The home repository of a member. `setup:configs` sets it for the sync of a member, which writes `[home]`.                                                                                                                     |
+| `BOOTSTRAP_MEMBER`      | The name of the member in the `[members.*]` tables of its home. `setup:configs` sets it with `BOOTSTRAP_HOME`.                                                                                                                |
+| `MACOS_SETUP_REPO_PATH` | The repository of `macos.toml`. See [mac.md](mac.md).                                                                                                                                                                         |
+| `BOOTSTRAP_CONFIG`      | The config file. See [The config file](#the-config-file). The test tasks set it to a missing path.                                                                                                                            |
 
 A flag sets its variable for the run: `--jobs`, `--cache-dir`, `--url`,
 `--clone`, `--repo-path`, `--config` and `--verbose` (`BOOTSTRAP_VERBOSE=1`).
@@ -1685,13 +1706,15 @@ run, for example `  → Run bootstrap add tool github`, or a short instruction. 
 error that has no fix is one line.
 
 **The first line.** A command that uses the clone prints one line after the
-clone update, except `tui` and `mac tui`, and `init` and `mac init` when they
+clone update, except `tui` and `mac tui`, and `migrate` and `mac migrate` when
+they
 open the TUI: `↻ bootstrap <short commit> · <cache path>`, with `$HOME` shown as
 `~`. With `--clone` or `BOOTSTRAP_CLONE`, the path is the clone that the command
 uses. `sync`, `mac sync` and `mac check` print `↻ bootstrap <short commit> ·
 <n> tools · env <environments>` in place of that line, and the Mac side has no
 env part. A command prints one clone line only: after the change list of
-`init`, `add`, `remove`, `replace` and `detect --add`, the sync does not print
+`migrate`, `add`, `remove`, `replace` and `detect --add`, the sync does not
+print
 its own. The other lines of the clone are info lines: `· Cloning into <path>`,
 `· Waiting for another sync (pid <pid>) ...` and `· Removed an old clone at
 <path>`.
@@ -1755,7 +1778,8 @@ other kind that is not zero, with `changed` after `failed`. For example:
 ✗ The sync failed with code 1 · 1 failed · 1 changed · 60 unchanged
 ```
 
-**The change list.** The change list of `init`, `add`, `remove`, `replace` and
+**The change list.** The change list of `migrate`, `add`, `remove`, `replace`
+and
 `detect --add` has the header `Changes`. Each line is `  <glyph> <path>` with
 the glyph of what the sync does to the file (`✎` changed, `✚` new, `❋` seeded,
 `✖` removed), and a note column that is aligned, for example `remove claude` for
@@ -1842,7 +1866,7 @@ no glyph, except the info lines of `config set` and `config unset`. The
 verbose log lines have the prefix `bootstrap: ` with style on and with style
 off.
 
-**Verbose.** `--verbose` of the engine sets `BOOTSTRAP_VERBOSE=1`, on `init`,
+**Verbose.** `--verbose` of the engine sets `BOOTSTRAP_VERBOSE=1`, on `migrate`,
 `tui`, `sync`, `check`, `add`, `remove`, `replace` and `detect`. `--verbose` of
 `setup:configs` and `updateall:configs` also sets the variable. Each entry task
 consumes the flag and does not pass it to the engine. A user can also set the
@@ -1880,22 +1904,23 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
 **Code 2, of the command line:**
 
 - A bad flag or command, `add`, `remove` or `replace` without a kind word or
-  without a name (the old grammar, with the hint of the new form), `init` with
+  without a name (the old grammar, with the hint of the new form), `migrate`
+  with
   names, `remove pack` and `replace pack`, `--exclude` outside `add pack` or
   with more than one pack, and `--check` with `--dry-run` of the front-end.
 - A config file that breaks a rule: see [The config file](#the-config-file).
 - A missing `mise`, a folder outside a git repository, and a missing values
-  folder, `repo.toml` or `tools.toml` for each command except `init`,
+  folder, `repo.toml` or `tools.toml` for each command except `migrate`,
   `version`, `settings`, `contract`, `catalog` and `mac`. Each `config`
-  subcommand also stops with code 2 and "Run bootstrap init" when
+  subcommand also stops with code 2 and "Run bootstrap migrate" when
   `.config/bootstrap/` is absent, unless `BOOTSTRAP_VALUES` is set.
-- The old values file `.config/bootstrap.toml` (except for `init`, `version`,
+- The old values file `.config/bootstrap.toml` (except for `migrate`, `version`,
   `settings`, `contract`, `catalog` and `mac`), and the old file next to the
   values folder (each command but `version`, `settings`, `contract`, `catalog`
-  and `mac`). An old form of the Mac values file (except for `mac init`): a
+  and `mac`). An old form of the Mac values file (except for `mac migrate`): a
   file without `format = 2`, and a `[packs.*]` table. A `format` other than `3`
   in the values folder, or `2` on the Mac, is not valid.
-- A fresh `init` with no `main`, no `develop` and a detached `HEAD`, and a
+- A fresh `migrate` with no `main`, no `develop` and a detached `HEAD`, and a
   migration of a repository with no `main` and no `develop`, or with a
   `[tools.git.branch.<b>]` table of another branch or of a branch that does not
   exist.
@@ -1907,8 +1932,8 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
   <tool>"), a `config unset` of a required key, and a `config set` or `unset`
   whose result breaks a rule of the schema.
   A question of a selected tool without an answer, and a group of questions
-  without an answer that is not empty, with the message "run bootstrap init"
-  ("run bootstrap mac init" on the Mac).
+  without an answer that is not empty, with the message "run bootstrap migrate"
+  ("run bootstrap mac migrate" on the Mac).
 - An `--answer` for a question that no selected tool has, an empty `--answer`
   for a question that is not optional and not in a group, a question without
   an answer with `--yes` or without a terminal, a group without an answer that
@@ -1918,13 +1943,13 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
   or whose `hosts` do not name the host. See
   [Named tools that a command refuses](#named-tools-that-a-command-refuses).
 - Changes without `--yes` and without a terminal: `changes need --yes`.
-- `--json` on `init`, `add`, `remove`, `replace` or `detect --add` without
+- `--json` on `migrate`, `add`, `remove`, `replace` or `detect --add` without
   `--yes` and without `--dry-run`, `--json` on a command that does not take it
   (also each `mac` command except `mac questions`), `--json` with `--format`,
   and with `--json --yes` a question without an answer. See
   [The JSON contract](#the-json-contract).
 - `tui` and `mac tui` without a terminal, and a terminal smaller than 100 × 25
-  when `tui`, `mac tui`, `init` or `mac init` opens the TUI. See
+  when `tui`, `mac tui`, `migrate` or `mac migrate` opens the TUI. See
   [The TUI](#the-tui).
 - A dirty target: see [The clean-target rule](#the-clean-target-rule).
 - A binary that is older than `VERSION` of the clone.
@@ -2020,15 +2045,15 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
 - A `.config/bootstrap/repo-generated.tsv` that is a symlink, is below a
   symlinked folder or is not a regular file.
 - A task of the repository at the place of a test port, for `sync` and
-  `check`, with the fix "run bootstrap init". On `init`, a target
+  `check`, with the fix "run bootstrap migrate". On `migrate`, a target
   `<group>/50-local` of its move that exists, and a temp name
-  `<path>.bootstrap-move` that exists. See [`init`](#init).
+  `<path>.bootstrap-move` that exists. See [`migrate`](#migrate).
 - A known old copy of a part of a selected tool at `<group>/50-local`, for
   `sync` and `check`, with the message
   `<path> is an old copy of the task <part> of the tool <tool> - run bootstrap
-  init`.
+  migrate`.
   At the old path of the group, the message is that of a task at the place of
-  a test port. See [`init`](#init).
+  a test port. See [`migrate`](#migrate).
 
 **Code 2, only on the Mac side:**
 
@@ -2053,7 +2078,7 @@ and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
 - A tool name of `add tool`, `remove tool`, `replace tool` or `questions`, or a
   pack name of `add pack`, that is not in the clone.
 - An old values file that names a pack that the frozen copy of the migration
-  does not have: `init` stops with
+  does not have: `migrate` stops with
   `<pack> is not a bootstrap pack (named in <file>)`. See
   [bootstrap-config.md](bootstrap-config.md#old-forms).
 - A contribution of a selected tool to a tool that is not in the clone.

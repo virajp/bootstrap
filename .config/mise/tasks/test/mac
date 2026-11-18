@@ -524,11 +524,11 @@ case_sync_no_format() {
   use_config old-packs
   run_dry
   check_exit 2
-  check_output "[packs.essentials] in config/macos.toml is the old form - run bootstrap mac init"
-  check_output "config/macos.toml without format = 2 is the old form - run bootstrap mac init"
+  check_output "[packs.essentials] in config/macos.toml is the old form - run bootstrap mac migrate"
+  check_output "config/macos.toml without format = 2 is the old form - run bootstrap mac migrate"
   mac_run check
   check_exit 2
-  check_output "without format = 2 is the old form - run bootstrap mac init"
+  check_output "without format = 2 is the old form - run bootstrap mac migrate"
 }
 
 # The tool alfred of the pack essentials of the frozen copy, and merger in the
@@ -1986,7 +1986,7 @@ case_question_missing() {
   no_token
   run_dry
   check_exit 2
-  check_output "the question owner.token has no answer in macos.toml - run bootstrap mac init"
+  check_output "the question owner.token has no answer in macos.toml - run bootstrap mac migrate"
 }
 
 case_questions_json() {
@@ -2076,7 +2076,7 @@ case_sync_old_form() {
   old_mac_values
   run_dry
   check_exit 2
-  check_output "[tools.macos-setup] in config/macos.toml is the old form - run bootstrap mac init"
+  check_output "[tools.macos-setup] in config/macos.toml is the old form - run bootstrap mac migrate"
 }
 
 case_init_migrate() {
@@ -2123,7 +2123,7 @@ case_init_names() {
   use_config -
   mac_run init --yes --no-bootstrap opt
   check_exit 2
-  check_output "mac init takes no tool names - use: bootstrap mac add tool opt"
+  check_output "mac migrate takes no tool names - use: bootstrap mac add tool opt"
   check "no macos.toml" not test -e "$values"
 }
 
@@ -2132,7 +2132,7 @@ case_init_not_git() {
   rm -rf -- "$MACOS_SETUP_REPO_PATH/.git"
   mac_run init --yes --no-bootstrap
   check_exit 2
-  check_output "is not a git repository - create one with git init, then run bootstrap mac init again"
+  check_output "is not a git repository - create one with git init, then run bootstrap mac migrate again"
 }
 
 case_init_nothing() {
@@ -2317,7 +2317,7 @@ run_case "config: MACOS_SETUP_REPO_PATH unset" case_config_unset
 run_case "config: an unknown flag, with the usage" case_unknown_flag
 run_case "config: an unknown tool in a [tools.<name>] table" expect unknown-tool 3 "nope is not a bootstrap tool"
 run_case "config: an [overrides.mise.<path>] that no selected tool has" expect unknown-override 2 "no selected tool has"
-run_case "config: a packs list, the old format" expect old-packs-list 2 "packs in config/macos.toml is the old form - run bootstrap mac init"
+run_case "config: a packs list, the old format" expect old-packs-list 2 "packs in config/macos.toml is the old form - run bootstrap mac migrate"
 run_case "config: a tools key that is a string, the old format" expect tools-string 2 "tools = [...] is the old format"
 run_case "config: a tools item that is not a name, the old format" expect tools-number 2 "tools = [...] is the old format"
 run_case "config: a tools list, the old format" expect tools-list 2 "tools = [...] is the old format"
@@ -2361,7 +2361,7 @@ run_case "catalog: a tool with summary = \"\"" expect ok 2 "macos/tools/opt/tool
 run_case "catalog: hosts on a Mac tool" expect ok 2 "macos/tools/opt/tools.toml: hosts is for repo tools only" catalog_hosts
 run_case "catalog: a pack description" pass_tree pack_description
 run_case "catalog: a pack description that is not a string" expect ok 2 "macos/packs.toml: [pack.more] description must be a string" pack_description_number
-run_case "questions: a group with no answer" expect ok 2 "the group opt.email has no answer in macos.toml - run bootstrap mac init" group_question
+run_case "questions: a group with no answer" expect ok 2 "the group opt.email has no answer in macos.toml - run bootstrap mac migrate" group_question
 run_case "config: a contribution to a name that is not a tool" expect contrib-bad 3 "macos/tools/contrib-bad/tools.toml: [contributes.nope] names a tool that bootstrap does not have"
 run_case "config: two contributors that set one scalar" expect conflict 2 "macos/tools/contrib-a/tools.toml and macos/tools/contrib-c/tools.toml set [contributes.owner] agent to different values"
 run_case "config: a scalar over a list of a base tool" expect type-list 2 "[tools.core] of macos.toml sets items to a string, but it is a list in the base or dependency tool core"

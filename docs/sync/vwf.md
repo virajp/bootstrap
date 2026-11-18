@@ -37,7 +37,7 @@ that reads this file changes the tools with `bootstrap`.
 | Read all the values       | `bootstrap config show --json`                                                                                                                                                                                                               |
 | Write one value           | `bootstrap config set <key> <value> --json`; `data` is `{"key", "value"}`                                                                                                                                                                    |
 | Remove one value or table | `bootstrap config unset <key> --json`; `data` is `{"key"}`                                                                                                                                                                                   |
-| Change the tools          | `bootstrap add`, `remove`, `replace`, `init` or `detect --add` with `--json` and `--dry-run`, then with `--yes`                                                                                                                              |
+| Change the tools          | `bootstrap add`, `remove`, `replace`, `migrate` or `detect --add` with `--json` and `--dry-run`, then with `--yes`                                                                                                                           |
 
 Each `--json` command prints one JSON envelope on stdout, on one line, and
 each other line on stderr:

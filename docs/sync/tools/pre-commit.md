@@ -124,6 +124,6 @@ None.
 - Remove `pre-commit` and `PRE_COMMIT_HOME` from the mise files of the
   repository.
 - The general item M12 of `migrate.md` is about the files of this tool.
-- M34 of `migrate.md`: `bootstrap init` moves the hooks of the old file of
+- M34 of `migrate.md`: `bootstrap migrate` moves the hooks of the old file of
   the repository hooks into `.config/pre-commit-config.yaml`, and deletes the
   old file.

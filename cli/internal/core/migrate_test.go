@@ -187,7 +187,7 @@ func TestPlanMigrateStops(t *testing.T) {
 func TestCheckLayout(t *testing.T) {
 	sd := oldRepo(t, oldValues, "", "")
 	// D28: the old file alone stops each command but init.
-	if err := CheckLayout(sd, false); fail.CodeOf(err) != fail.Usage || !strings.Contains(problemFix(err), "run bootstrap init") {
+	if err := CheckLayout(sd, false); fail.CodeOf(err) != fail.Usage || !strings.Contains(problemFix(err), "run bootstrap migrate") {
 		t.Errorf("old form: %v", err)
 	}
 	if err := CheckLayout(sd, true); err != nil {

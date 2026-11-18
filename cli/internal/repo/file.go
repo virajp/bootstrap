@@ -334,7 +334,7 @@ func (s *state) fileFinish(tool string, f source.File, tmp string) fail.Code {
 // valuesInRepo gives the tools.toml of the values folder below the root of
 // the repository, the file of the overrides of a shared file, as the header
 // of a shared file names it. A values folder outside the repository (the
-// plan of `bootstrap init`) is named as the default values folder.
+// plan of `bootstrap migrate`) is named as the default values folder.
 func (s *state) valuesInRepo() string {
 	if rel, ok := strings.CutPrefix(values.ToolsFile(s.values), s.root+"/"); ok {
 		return rel

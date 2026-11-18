@@ -1,5 +1,5 @@
 // Package tui is the full-screen TUI of `bootstrap tui` and `bootstrap mac
-// tui`, which `init` and `mac init` open in a terminal. It is for a person;
+// tui`, which `migrate` and `mac migrate` open in a terminal. It is for a person;
 // the command line is for an agent. internal/cli parses the arguments, does
 // the preflight and takes the clone, then calls Run.
 //
@@ -233,10 +233,10 @@ func (m *Model) sizeText(cmd string) string {
 	return fmt.Sprintf("%s needs a terminal of %d × %d or larger. This terminal is %d × %d.", cmd, screenW, screenH, m.w, m.h)
 }
 
-// command gives the command of the TUI: init, or tui.
+// command gives the command of the TUI: migrate, or tui.
 func (m *Model) command() string {
 	if m.opt.Init {
-		return core.CmdName(m.opt.Side.Mac, "init")
+		return core.CmdName(m.opt.Side.Mac, "migrate")
 	}
 	return core.CmdName(m.opt.Side.Mac, "tui")
 }
