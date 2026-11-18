@@ -885,46 +885,6 @@ func rawTOML(text []byte, shown string) (*source.Obj, error) {
 	return raw, nil
 }
 
-// RenameChange gives the change of init that renames setup:worktree (D20),
-// or "". The TUI shows it as a change that the user cannot remove. It writes
-// nothing.
-func RenameChange(sd Side) (string, error) {
-	if sd.Mac {
-		return "", nil
-	}
-	if !Exists(sd.Values) && Exists(OldValuesOf(sd.Root)) {
-		// The members are in [member.*] of the old file until init splits
-		// it.
-		if _, ok := oldform.WtText(sd.Root); ok {
-			return oldform.RenameNote, nil
-		}
-		raw, err := source.ReadTOML(OldValuesOf(sd.Root))
-		if err != nil {
-			return "", problem(fail.Usage, "cannot read "+sd.Show(OldValuesOf(sd.Root)), "")
-		}
-		if names, _ := oldform.OldMembers(raw, "member"); len(names) > 0 {
-			return oldform.RenameNote, nil
-		}
-		return "", nil
-	}
-	p := &PlanResult{Side: sd}
-	if err := p.renameWorktree(); err != nil || len(p.Changes) == 0 {
-		return "", err
-	}
-	return oldform.RenameNote, nil
-}
-
-// MoveChange gives the change of init that moves the own test tasks of the
-// repo into parts, or "" (D25). The TUI shows it as a change that the user
-// cannot remove. It writes nothing.
-func MoveChange(sd Side) (string, error) {
-	p := &PlanResult{Side: sd}
-	if err := p.taskMoves(); err != nil || len(p.Changes) == 0 {
-		return "", err
-	}
-	return oldform.MoveNote, nil
-}
-
 // toolsHead gives the tools.toml <text> of a migration with the header of
 // tools.toml in place of its first comment lines: they are the header of the
 // old file, or the comment of its first key, and repo.toml keeps them.
@@ -938,31 +898,44 @@ func toolsHead(text []byte) []byte {
 	return []byte(ToolsHeader + "\n\n" + rest)
 }
 
-// InitChange gives the change that init makes before each other change of
-// the list: the new values file with the members of the pack base, or the
-// migration of an old form. A values file of the new form gives "". It writes
-// nothing. The TUI shows the change on its change list.
-func InitChange(sd Side) (string, error) {
-	if !sd.Mac && !Exists(sd.Values) && Exists(OldValuesOf(sd.Root)) {
-		return "migrate to " + values.Folder + "/", nil
+// MigrateNeeded tells if bootstrap migrate has a change to make on the side
+// <sd>, whose clone is set: an old form of the values, a missing file of the
+// values folder, a known old copy of a test part, an own test task to move,
+// the old worktree command, or, with <questions>, a question of a selected
+// tool without an answer. A side without values (no values file or folder, and no old form)
+// gives false: its adoption is an explicit bootstrap migrate. It writes
+// nothing and runs no script and no sync, so sync and tui call it first.
+func MigrateNeeded(sd Side, questions bool) (bool, error) {
+	if sd.Mac && !Exists(sd.Values) {
+		return false, nil
 	}
-	if !sd.Mac && (!Exists(sd.EditFile()) || !Exists(values.RepoFile(sd.Values))) {
-		if !Exists(sd.EditFile()) {
-			return "create the values folder with " + selection.BasePack, nil
-		}
-		return "create " + values.RepoName, nil
-	}
-	if !Exists(sd.Values) {
-		return "create the values file with " + selection.BasePack, nil
+	if !sd.Mac && !Exists(sd.Values) && !Exists(OldValuesOf(sd.Root)) {
+		return false, nil
 	}
 	p := &PlanResult{Side: sd}
 	if err := p.initValues(); err != nil {
-		return "", err
+		return false, err
 	}
-	if len(p.Changes) > 0 || !bytes.Equal(p.Next, p.Cur) {
-		return fmt.Sprintf("migrate the values file to %s %d", oldform.FormatKey, oldform.Format), nil
+	if err := p.taskMoves(); err != nil {
+		return false, err
 	}
-	return "", nil
+	if err := p.renameWorktree(); err != nil {
+		return false, err
+	}
+	if len(p.Changes) > 0 || !p.Existed || !bytes.Equal(p.Next, p.Cur) {
+		return true, nil
+	}
+	sel, err := SelectionOf(sd, sd.Values, sd.Values)
+	if err != nil {
+		return false, err
+	}
+	if err := p.knownCopies(sel); err != nil {
+		return false, err
+	}
+	if len(p.Changes) > 0 {
+		return true, nil
+	}
+	return questions && len(Pending(sel, nil, nil)) > 0, nil
 }
 
 // planner applies the items of a change list to the state of the values

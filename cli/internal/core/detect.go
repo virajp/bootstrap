@@ -84,8 +84,7 @@ func Detect(sd Side) (*Detection, error) {
 }
 
 // DetectState is Detect on the state <st>, which the caller has read. The
-// TUI calls it with its state, also the state of init before the values
-// file is there (InitState). It writes nothing.
+// TUI calls it with its state. It writes nothing.
 func DetectState(st *State) (*Detection, error) {
 	sd := st.Side
 	d := &Detection{State: st}

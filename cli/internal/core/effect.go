@@ -1,12 +1,5 @@
 package core
 
-import (
-	"os"
-
-	"github.com/virajp/bootstrap/cli/internal/fail"
-	"github.com/virajp/bootstrap/cli/internal/selection"
-)
-
 // Effect is what the items of a change list do to the selection of a state,
 // before the questions and the sync.
 type Effect struct {
@@ -28,46 +21,4 @@ func (s *State) Effect(items []Item) (*Effect, error) {
 		}
 	}
 	return &Effect{Added: pl.added, Removed: pl.removed, Direct: pl.direct}, nil
-}
-
-// InitState gives the state of the values file after the change of init
-// (InitChange): a new values file with the members of the pack base, or the
-// values file migrated from its old form. It writes only to a temporary
-// folder. The TUI shows the tools of init with it.
-func InitState(sd Side) (*State, error) {
-	p := &PlanResult{Side: sd}
-	if err := p.initValues(); err != nil {
-		return nil, err
-	}
-	tmp, err := os.MkdirTemp(tmpDir(), "bootstrap-init.")
-	if err != nil {
-		return nil, problem(fail.Other, "cannot create a temp folder", "")
-	}
-	defer func() { _ = os.RemoveAll(tmp) }()
-	tmpValues, tmpEdit, err := p.layout(tmp)
-	if err != nil {
-		return nil, err
-	}
-	read := func() (*State, error) {
-		if err := os.WriteFile(tmpEdit, p.Next, 0o644); err != nil {
-			return nil, problem(fail.Other, "cannot write a temp file", "")
-		}
-		return p.tmpState(tmpValues)
-	}
-	st, err := read()
-	if err != nil || p.Existed || p.Migrated || !st.Packs.HasPack(selection.BasePack) {
-		return st, err
-	}
-	// A new values file gets the members of base, as Plan does.
-	pl := &planner{st: st, p: p, added: map[string]bool{}, removed: map[string]bool{}}
-	if err := pl.addPack([]string{selection.BasePack}, nil); err != nil {
-		return nil, err
-	}
-	if len(pl.exprs) == 0 {
-		return st, nil
-	}
-	if p.Next, err = EditTOML(p.Next, pl.exprs); err != nil {
-		return nil, err
-	}
-	return read()
 }

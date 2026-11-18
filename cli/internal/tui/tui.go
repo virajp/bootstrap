@@ -31,9 +31,6 @@ import (
 type Options struct {
 	// Side is the side, its values file and its clone, after the preflight.
 	Side core.Side
-	// Init is init in a terminal: a values file that is not there, or that
-	// has an old form, is the first change of the list.
-	Init bool
 	// NoBootstrap skips each mise bootstrap step of the Mac sync at Apply.
 	NoBootstrap bool
 	// Home is the home folder, shown as ~ in the header.
@@ -81,11 +78,8 @@ type Model struct {
 	lay   layout // The size of the screen: the terminal, at least screenW × screenH.
 	err   error  // The problem that stops the TUI before it opens.
 
-	// The change list of core: init, the items and the answers.
+	// The change list of core: the items and the answers.
 	list core.List
-	// fixed are the changes that the user cannot remove: the new values
-	// file, or the migration of its old form.
-	fixed []string
 	// edits are the tools whose answers e changed, when no item of the list
 	// adds them: each one is a change.
 	edits []string
@@ -132,7 +126,7 @@ func newModel(o Options) *Model {
 	h.Styles.ShortKey, h.Styles.ShortDesc, h.Styles.ShortSeparator = stDim, stDim, stDim
 	h.Styles.FullKey, h.Styles.FullDesc, h.Styles.FullSeparator = stHint, stPlain, stDim
 	h.Styles.Ellipsis = stDim
-	m := &Model{opt: o, keys: newKeyMap(), help: h, list: core.List{Init: o.Init}}
+	m := &Model{opt: o, keys: newKeyMap(), help: h, list: core.List{}}
 	for _, n := range tabNames {
 		t := &tab{name: n}
 		t.left.title = "Categories"
@@ -144,14 +138,13 @@ func newModel(o Options) *Model {
 	return m
 }
 
-// changes gives the count of the changes of the header: the fixed changes,
-// the items of the change list and the tools whose answers e changed.
-func (m *Model) changes() int { return len(m.fixed) + len(m.list.Items) + len(m.edits) }
+// changes gives the count of the changes of the header: the items of the
+// change list and the tools whose answers e changed.
+func (m *Model) changes() int { return len(m.list.Items) + len(m.edits) }
 
 // Messages of the model.
 type (
 	loadedMsg struct {
-		fixed []string
 		state *core.State
 		err   error
 	}
@@ -166,45 +159,11 @@ type (
 // Init is a part of tea.Model. The TUI waits for the size of the terminal.
 func (m *Model) Init() tea.Cmd { return nil }
 
-// load reads the values file. init takes a missing values file, or an old
-// form, as the first change of the list, the move of the own test tasks
-// into parts as the next one, and the rename of setup:worktree after it; tui
-// needs a values file of the new form.
+// load reads the values file. tui needs a values file of the new form:
+// the cli stops it before, when bootstrap migrate has a change to make.
 func (m *Model) load() tea.Msg {
-	sd := m.opt.Side
-	var fixed []string
-	if m.opt.Init {
-		text, err := core.InitChange(sd)
-		if err != nil {
-			return loadedMsg{err: err}
-		}
-		move, err := core.MoveChange(sd)
-		if err != nil {
-			return loadedMsg{err: err}
-		}
-		if move != "" {
-			fixed = append(fixed, move)
-		}
-		rename, err := core.RenameChange(sd)
-		if err != nil {
-			return loadedMsg{err: err}
-		}
-		if rename != "" {
-			fixed = append(fixed, rename)
-		}
-		if text != "" {
-			return m.loadInit(append([]string{text}, fixed...))
-		}
-	}
-	st, err := core.Open(sd)
-	return loadedMsg{fixed: fixed, state: st, err: err}
-}
-
-// loadInit reads the values file of init: the state after the first change
-// of the list, when it has one. <fixed> are the changes of init.
-func (m *Model) loadInit(fixed []string) tea.Msg {
-	st, err := core.InitState(m.opt.Side)
-	return loadedMsg{fixed: fixed, state: st, err: err}
+	st, err := core.Open(m.opt.Side)
+	return loadedMsg{state: st, err: err}
 }
 
 func (m *Model) tickCmd() tea.Cmd {
@@ -233,13 +192,8 @@ func (m *Model) sizeText(cmd string) string {
 	return fmt.Sprintf("%s needs a terminal of %d × %d or larger. This terminal is %d × %d.", cmd, screenW, screenH, m.w, m.h)
 }
 
-// command gives the command of the TUI: migrate, or tui.
-func (m *Model) command() string {
-	if m.opt.Init {
-		return core.CmdName(m.opt.Side.Mac, "migrate")
-	}
-	return core.CmdName(m.opt.Side.Mac, "tui")
-}
+// command gives the command of the TUI.
+func (m *Model) command() string { return core.CmdName(m.opt.Side.Mac, "tui") }
 
 // Update is a part of tea.Model.
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -254,9 +208,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// The TUI does not start in a small terminal (ruling 17).
 			cmd := m.command()
 			fix := "make the terminal larger, then run " + cmd + " again"
-			if m.opt.Init {
-				fix += ", or run " + cmd + " --no-tui"
-			}
 			m.err = &core.Problem{Code: fail.Usage, Msg: m.sizeText(cmd), Fix: fix}
 			return m, tea.Quit
 		}
@@ -267,7 +218,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 			return m, tea.Quit
 		}
-		m.fixed = append(m.fixed, msg.fixed...)
 		m.state = msg.state
 		m.phase = ready
 		m.refreshTools()

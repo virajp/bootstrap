@@ -31,6 +31,9 @@ remove = [ "*.log" ]`
 
 const msgOldForm = ".config/bootstrap.toml is the old form of the values of the repository - run bootstrap migrate"
 
+// msgMigrateFirst is the line of a sync that runs migrate first.
+const msgMigrateFirst = "bootstrap migrate has a change to make: it runs before the sync"
+
 func oldFiles(c *rc.Case) {
 	writeLines(c, c.Path(".config/repo-sync/pre-commit.yaml"), "repos:", "  - repo: https://example.com/own-hooks",
 		"    rev: v1", "    hooks:", "      - id: own")
@@ -126,12 +129,12 @@ func TestMigrateOldForm(t *testing.T) {
 			c.CheckThat("init --dry-run: the values file in the list", reIn(c.Log, `consumer/\.config/bootstrap\.toml +moved to \.config/bootstrap/`))
 			c.CheckThat("init --dry-run: the old hook file in the list", reIn(c.Log, `consumer/\.config/repo-sync/pre-commit\.yaml +its hooks move`))
 		}})
-	rc.Run(t, rc.Spec{Name: "sync on the old form: run bootstrap migrate", Code: 2, NoFormat: true, Values: oldValues,
-		Change: oldFiles, Call: syncOldForm, Message: msgOldForm, Check: checkValuesUnchanged})
+	rc.Run(t, rc.Spec{Name: "sync on the old form: migrate first", NoFormat: true, Values: oldValues,
+		Change: oldFiles, Call: syncOldForm, Message: msgMigrateFirst, Check: checkInitMigrated})
 	rc.Run(t, rc.Spec{Name: "check on the old form: run bootstrap migrate", Code: 2, NoFormat: true, Values: oldValues,
 		Change: oldFiles, Call: checkOldForm, Message: msgOldForm, Check: checkValuesUnchanged})
-	rc.Run(t, rc.Spec{Name: "sync on the old form with format = 2: run bootstrap migrate", Code: 2, OldValues: true,
-		Values: devValues, Call: syncOldForm, Message: msgOldForm})
+	rc.Run(t, rc.Spec{Name: "sync on the old form with format = 2: migrate first", OldValues: true,
+		Values: devValues, Call: syncOldForm, Message: msgMigrateFirst})
 	rc.Run(t, rc.Spec{Name: "check on the old form with format = 2: run bootstrap migrate", Code: 2, OldValues: true,
 		Values: devValues, Call: checkOldForm, Message: msgOldForm})
 	rc.Run(t, rc.Spec{Name: "init stops on a values file with changes that are not committed", Code: 2, NoFormat: true,

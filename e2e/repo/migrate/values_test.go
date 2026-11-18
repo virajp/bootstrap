@@ -218,10 +218,11 @@ config = "mine"
 [all]
 leak = "mine"
 [tools.vtest]`, Change: valuesDefaults, Message: "[ERROR] config in ", Check: checkEngineKeysRefused})
-	rc.Run(t, rc.Spec{Name: "values: [packs.security] with format = 2 is the old form", Code: 2, OldValues: true,
+	// sync runs migrate first, which migrates the old form.
+	rc.Run(t, rc.Spec{Name: "values: [packs.security] with format = 2 is the old form", OldValues: true,
 		Values: devValues + `
 [packs.security]
-env = [ "dev" ]`, Message: ".config/bootstrap.toml is the old form of the values of the repository - run bootstrap migrate"})
+env = [ "dev" ]`, Message: "[packs.security] removed"})
 	rc.Run(t, rc.Spec{Name: "values: [packs.security] in repo.toml is not a key", Code: 2, Values: devValues + `
 [packs.security]
 env = [ "dev" ]`, Message: ".config/bootstrap/repo.toml is not a key of repo.toml"})

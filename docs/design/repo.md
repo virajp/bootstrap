@@ -78,6 +78,9 @@ copy and uses `cp -R`, as on Linux.
 - It adds the tool of each `[tools.<name>]` table, adds the `depends` of each
   tool and the tool of each mise `depends`, depth first, and copies each file of
   each tool. A dependency comes before the tool that needs it.
+- The command `bootstrap sync` runs `migrate` first when it has a change to
+  make (see [cli.md](cli.md#migrate-before-sync)), so the stops of an old form
+  below show only when the front-end runs alone, for example under `check`.
 - The values folder is necessary. A missing folder, `repo.toml` or
   `tools.toml` stops the sync with code 2 and "run bootstrap migrate". An
   unknown

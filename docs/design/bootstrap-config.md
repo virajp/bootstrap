@@ -602,9 +602,11 @@ has `member`, the old name of `[members.*]`, with the same tables.
 
 ## Old forms
 
-`bootstrap migrate` migrates each old form. Each other command stops with code 2
-and the message "run bootstrap migrate", except `version`, `settings` and each
-`mac` command. A dry run of `migrate` shows the migration and writes nothing. A
+`bootstrap migrate` migrates each old form, and `bootstrap sync` runs `migrate`
+first (see [cli.md](cli.md#migrate-before-sync)). Each other command stops with
+code 2 and the message "run bootstrap migrate", except `version`, `settings` and
+each `mac` command. A dry run of `migrate` shows the migration and writes
+nothing. A
 task of the repository at the place of a test port is an old form too, though
 it is not a value. It stops only `sync`, the sync of `add`, `remove` and
 `replace`, and `check`: see [The own test tasks](#the-own-test-tasks). The
@@ -739,8 +741,9 @@ bootstrap migrate".
 task has that name now. It is an old form in the seed `.config/wt.toml` and in
 a `[members.<name>].worktree_install` of `repo.toml`. `bootstrap migrate` writes
 `mise run git:worktree:setup` in its place, and the rest of the file or value
-stays. `check` reports it in the stage `old-forms`, and `sync` stops on it,
-both with code 2 and "run bootstrap migrate". See [cli.md](cli.md#migrate).
+stays. `check` reports it in the stage `old-forms`, with code 2 and "run
+bootstrap
+migrate". `bootstrap sync` runs `migrate` first. See [cli.md](cli.md#migrate).
 
 ## The location of the folder
 

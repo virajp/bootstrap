@@ -294,8 +294,7 @@ func (m *Model) afterApply(msg appliedMsg) {
 	}
 	m.state, m.eff = st, nil
 	m.list = core.List{}
-	m.fixed, m.edits = nil, nil
-	m.opt.Init = false
+	m.edits = nil
 	// The detection was of the old values file.
 	m.det = nil
 	if m.cur == detectedTab {
@@ -349,12 +348,6 @@ func (m *Model) reviewBody() []line {
 	r := m.review
 	sd := m.opt.Side
 	out := []line{{styled(" Review · "+plural(m.changes(), "change"), stHead)}, {}}
-	if len(m.fixed) > 0 {
-		out = append(out, line{styled(" Values file", stHead)})
-		for _, f := range m.fixed {
-			out = append(out, line{styled("   + ", stAdd), text(f)})
-		}
-	}
 	packs, tools, pkgs := m.changeLines()
 	for _, s := range []struct {
 		title string

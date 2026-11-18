@@ -36,13 +36,13 @@ import (
 const Usage = `usage: bootstrap <command> [flags]
 
 Repository
-  migrate              in a terminal, open the TUI; with --no-tui, --yes,
-                       --dry-run or --answer, or with no terminal, migrate an
-                       old form, or create the values file with the members
-                       of the pack base, ask the questions without an answer,
-                       then sync
-  tui                  open the TUI on the values file of the repository
-  sync                 sync the repository of the current folder
+  migrate              migrate an old form, or create the values file with
+                       the members of the pack base, ask the questions
+                       without an answer, then sync
+  tui                  open the TUI on the values file of the repository;
+                       when migrate has a change to make, run migrate first
+  sync                 sync the repository of the current folder; when
+                       migrate has a change to make, migrate first
   check                examine the values file of the repository
   questions [tool...]  list the questions of the tools, with their proposals
                        and their answers
@@ -97,14 +97,13 @@ Flags
                        changes, and write nothing
   --yes, -y            migrate, add, remove, replace, detect --add: write the
                        changes without a prompt
-  --no-tui             migrate: do not open the TUI in a terminal
   --add                detect: add each matched tool that is not selected,
                        after the consent
   --exclude <member>   add pack: leave out a member of the pack, as
                        packs.toml writes it (repeatable; one pack only)
   --answer <tool>.<key>=<value>
-                       migrate, add, replace, detect --add: the answer of a
-                       question (repeatable); --answer <tool>.<key>= writes
+                       migrate, sync, add, replace, detect --add: the answer
+                       of a question (repeatable); --answer <tool>.<key>= writes
                        an empty answer for an optional or a group question
   --json               contract, catalog, describe, lsp, check, questions, mac
                        questions, config get|set|unset|show, migrate, sync,
@@ -167,9 +166,9 @@ func cmdWord(mac bool, cmd string) string { return core.CmdWord(mac, cmd) }
 // allowed gives the own flags of each command; a name that it does not have
 // is not a command. The Mac side takes json only on questions.
 var allowed = map[string]string{
-	"migrate":   "dry-run yes no-tui answer jobs verbose json",
+	"migrate":   "dry-run yes answer jobs verbose json",
 	"tui":       "jobs verbose",
-	"sync":      "dry-run jobs verbose json",
+	"sync":      "dry-run answer jobs verbose json",
 	"check":     "jobs verbose json",
 	"questions": "json",
 	"add":       "dry-run yes exclude answer jobs verbose json",
@@ -283,6 +282,9 @@ type app struct {
 	prompt func(field.Spec) (string, error)
 	// terminal makes interactive true. Tests set it with prompt.
 	terminal bool
+	// progress: stderr is a terminal and the command has no --json, so a
+	// slow step shows a spinner.
+	progress bool
 	// json: the arguments hold --json, so the command prints the envelope on
 	// stdout and each human line on stderr. command is the full command words
 	// of the envelope, data its result, and errors and warnings its items.
@@ -295,13 +297,16 @@ type app struct {
 // opts are the flags and the arguments of a command.
 type opts struct {
 	dryRun, yes, json, noBootstrap, help bool
-	verbose, noTUI, add                  bool
-	answers                              []string
-	kind                                 string            // add, remove, replace: the kind word, tool or pack.
-	names                                []string          // The names after the kind word.
-	exclude                              []string          // add pack: the members of --exclude.
-	values                               map[string]string // The value flags of the settings, by flag name.
-	format                               string            // config get, config show: --format.
+	verbose, add                         bool
+	// auto: the command writes its changes with no consent, as sync does
+	// when it migrates first.
+	auto    bool
+	answers []string
+	kind    string            // add, remove, replace: the kind word, tool or pack.
+	names   []string          // The names after the kind word.
+	exclude []string          // add pack: the members of --exclude.
+	values  map[string]string // The value flags of the settings, by flag name.
+	format  string            // config get, config show: --format.
 }
 
 // Run runs the command of <args> and gives its exit code. With a literal
@@ -335,6 +340,7 @@ func (a *app) run(args []string) fail.Code {
 		isTerm = report.IsTerminal(f)
 	}
 	a.styled = report.StyleFromEnv(a.getenv, isTerm)
+	a.progress = isTerm && !a.json
 	a.pwd = currentDir(a.getenv)
 	if len(args) == 0 {
 		a.usageErr("no command given", "")
@@ -390,6 +396,11 @@ func (a *app) run(args []string) fail.Code {
 	}
 	if mac && cmd != "migrate" {
 		flags += " repo-path"
+	}
+	if cmd == "migrate" {
+		// --no-tui is an old flag of migrate, which never opens the TUI
+		// now: it stays out of the help, and does nothing.
+		flags += " no-tui"
 	}
 	takesNames := cmd == "migrate" || cmd == "questions" || cmd == "add" || cmd == "remove" || cmd == "replace" || cmd == "config"
 	o, err := parse(cmdWord(mac, cmd), rest, flags, takesNames)
@@ -555,7 +566,6 @@ func parse(cmd string, args []string, flags string, names bool) (opts, error) {
 		case "yes":
 			o.yes = true
 		case "no-tui":
-			o.noTUI = true
 		case "add":
 			o.add = true
 		case "exclude":
@@ -749,6 +759,11 @@ func (a *app) cloneText(c *core.Clone) string {
 // its notes and its errors. The caller defers Cleanup. With <hold>, the lock
 // stays held to the end. With <line>, it prints the clone line.
 func (a *app) openClone(hold, line bool) (*core.Clone, fail.Code) {
+	// The fetch of the clone can take some seconds.
+	stop := func() {}
+	if a.getenv("BOOTSTRAP_CLONE") == "" {
+		stop = a.spin("Updating the clone of bootstrap ...")
+	}
 	c, err := core.OpenClone(core.CloneOptions{
 		Getenv:  a.getenv,
 		Version: a.version,
@@ -756,6 +771,7 @@ func (a *app) openClone(hold, line bool) (*core.Clone, fail.Code) {
 		Note:    func(s string) { a.infof("%s", s) },
 		Stderr:  a.stderr,
 	})
+	stop()
 	if err != nil {
 		return c, a.logErr(err)
 	}
@@ -767,9 +783,12 @@ func (a *app) openClone(hold, line bool) (*core.Clone, fail.Code) {
 	return c, fail.OK
 }
 
-// sync is `bootstrap [mac] sync`.
+// sync is `bootstrap [mac] sync`. When migrate has a change to make, sync
+// does the migrate first, with no consent, and its sync; else it syncs.
 func (a *app) sync(mac bool, o opts) fail.Code {
-	w, code := a.prepare(mac, false)
+	// On the repo side, an old form of the values does not stop the
+	// preflight: the migrate of sync migrates it.
+	w, code := a.prepare(mac, !mac)
 	if code != fail.OK {
 		return code
 	}
@@ -782,11 +801,31 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
+	w.Clone = c.Dir
+	// A question without an answer is a change of migrate only in a
+	// terminal, where sync can ask it; else the sync names it.
+	need, err := core.MigrateNeeded(w, a.interactive())
+	if err != nil {
+		return a.logErr(err)
+	}
+	if need {
+		a.printer().Clone(a.cloneText(c))
+		report.CloneShown = true
+		a.infof("%s has a change to make: it runs before the sync", cmdName(mac, "migrate"))
+		o.auto = true
+		return a.finish(w, o, core.List{Init: true})
+	}
+	if len(o.answers) > 0 {
+		a.fail("sync --answer is only for a question of a migrate", "use: "+cmdName(mac, "config set")+" tools.<tool>.<key> <value>")
+		return fail.Usage
+	}
 	run := core.FrontEndOf(mac)
 	args := core.SyncArgs(mac, o.dryRun, o.noBootstrap)
 	skip := core.ValuesSkip(w.Values)
 	if o.dryRun {
+		stop := a.spin("Planning ...")
 		planned, _, code := run(args, a.stdout, a.stderr)
+		stop()
 		a.syncData(o, planned, nil)
 		a.warnDirty(core.DirtyTargets(core.PlanPaths(planned), skip))
 		return code
@@ -796,7 +835,9 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 	var planned []target.Planned
 	if o.json || mac || core.DirtyBesides(w.Root, skip) {
 		var code fail.Code
+		stop := a.spin("Planning ...")
 		planned, _, code = run(append(args, "--dry-run"), io.Discard, io.Discard)
+		stop()
 		a.syncData(o, planned, nil)
 		if code == fail.OK {
 			if code := a.stopDirty(core.DirtyTargets(core.PlanPaths(planned), skip)); code != fail.OK {
@@ -804,9 +845,20 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 			}
 		}
 	}
+	stop := a.syncSpin(mac, o)
 	_, outcomes, code := run(args, a.stdout, a.stderr)
+	stop()
 	a.syncData(o, planned, outcomes)
 	return code
+}
+
+// syncSpin shows the spinner of a sync that writes. The Mac sync with its
+// mise bootstrap steps does not spin: a step can ask for a password.
+func (a *app) syncSpin(mac bool, o opts) (stop func()) {
+	if mac && !o.noBootstrap {
+		return func() {}
+	}
+	return a.spin("Syncing ...")
 }
 
 // syncData keeps the data of sync --json: the files of the plan in
@@ -840,6 +892,8 @@ func (a *app) check(mac bool, o opts) fail.Code {
 		return code
 	}
 	a.warnNotSelectable(mac, c.Dir, w.EditFile())
+	stop := a.spin("Checking ...")
+	defer stop()
 	if mac {
 		o.dryRun = true
 		return macos.Run(core.SyncArgs(true, o.dryRun, o.noBootstrap), a.stdout, a.stderr)

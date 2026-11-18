@@ -54,8 +54,9 @@ func TestPlanInitMovesOwnTests(t *testing.T) {
 		!strings.Contains(mv[0].Note, "test/_default → ") || !strings.Contains(mv[0].Note, "test/e2e/50-local") {
 		t.Fatalf("move changes %+v", mv)
 	}
-	if c, err := MoveChange(sd); c != oldform.MoveNote || err != nil {
-		t.Errorf("MoveChange = %q, %v", c, err)
+	// A repository without values is not adopted: sync does not migrate it.
+	if need, err := MigrateNeeded(sd, true); need || err != nil {
+		t.Errorf("MigrateNeeded = %v, %v", need, err)
 	}
 	if code, putBack, _, err := Apply(p, Options{}); code != fail.OK || putBack || err != nil {
 		t.Fatalf("apply: %d %v %v", code, putBack, err)
@@ -95,9 +96,6 @@ func TestPlanInitMoveTargetExists(t *testing.T) {
 	_, err := Plan(sd, List{Init: true}, Options{})
 	if fail.CodeOf(err) != fail.Usage || !strings.Contains(err.Error(), "test/50-local exists") {
 		t.Fatalf("err = %v", err)
-	}
-	if _, err := MoveChange(sd); fail.CodeOf(err) != fail.Usage {
-		t.Errorf("MoveChange err = %v", err)
 	}
 	if !Exists(filepath.Join(sd.Root, oldform.TasksDir, "test/e2e")) {
 		t.Error("test/e2e moved")

@@ -202,10 +202,10 @@ func caseAddPackTwo(c *mcase) {
 
 func caseSyncNoFormat(c *mcase) {
 	c.useConfig("old-packs")
+	// mac sync runs mac migrate first; mac check does not migrate.
 	c.runDry()
-	c.exit(2)
-	c.has("[packs.essentials] in config/macos.toml is the old form - run bootstrap mac migrate")
-	c.has("config/macos.toml without format = 2 is the old form - run bootstrap mac migrate")
+	c.exit(0)
+	c.has("bootstrap mac migrate has a change to make: it runs before the sync")
 	c.mac("check")
 	c.exit(2)
 	c.has("without format = 2 is the old form - run bootstrap mac migrate")
