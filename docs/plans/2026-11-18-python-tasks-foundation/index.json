@@ -14,7 +14,7 @@
   "execution": "teams",
   "status": {
     "state": "RUNNING",
-    "detail": "RUNNING since wave 1 in .worktrees/all-2026-11-18-2214"
+    "detail": "RUNNING in .worktrees/all-2026-11-18-2214 — wave 2"
   },
   "consent": {
     "merge": true,
@@ -168,11 +168,11 @@
         "U3"
       ],
       "waits": "The cases import and run the modules helpers.py, checks.py, placeholder.py, worktrees_page.py, merge.py and xcode.py that U1, U2 and U3 create.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-18T17:06:05.039Z",
+      "ended": "2026-11-18T17:16:37.381Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -258,8 +258,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-18T17:06:04.999Z",
       "ended": ""
     },
     {
@@ -612,6 +612,15 @@
       "rejected": "Follow 3.2",
       "units": [
         "U1"
+      ]
+    },
+    {
+      "id": "D33",
+      "decision": "Q3: outside a git repository checks.py prints git fatal line 3 times on stderr, the shell 11 times; keep the difference or match the shell stderr?",
+      "ruling": "Accept the difference (checks.py prints less, which fits the print-nothing contract of checks) — the U5 case compares only the answers and exit codes outside a repo.",
+      "rejected": "Make checks.py match the shell stderr",
+      "units": [
+        "U5"
       ]
     }
   ],
