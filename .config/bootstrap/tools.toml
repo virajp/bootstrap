@@ -1,0 +1,30 @@
+# The tools of bootstrap for this repository, and their values. See docs/sync/index.md of bootstrap.
+
+format = 3
+
+[tools.claude]
+[tools.go]
+[tools.dprint]
+[tools.git]
+[tools.linter]
+[tools.mise]
+
+[tools.mise.code_files]
+excludes = [
+  # The repo sync takes the required members of the pack base in the order of
+  # repo/packs.toml, then the [tools.*] tables in name order, and the TOML
+  # plugin sorts keys.
+  "repo/packs.toml",
+  "macos/packs.toml",
+  # The frozen copies of the packs files of the migration stay byte for byte.
+  "cli/internal/oldform/packs-v2/",
+  # A merge spec of a tool is a template, not TOML, until the sync renders it.
+  "**/*.merge.toml",
+]
+[tools.gitleaks]
+[tools.grype]
+[tools.osv-scanner]
+[tools.pre-commit]
+[tools.node]
+[tools.python]
+[tools.vscode]

@@ -1,0 +1,13 @@
+# The values of bootstrap for this repository. See docs/sync/index.md of bootstrap.
+
+format = 3
+
+# The bootstrap commit of the last sync. The sync writes it.
+bootstrap_commit = "d822f0d2b618c198efa894dfffcb0d0867f1d839"
+core_branches = [ "main" ]
+environments = [ "dev" ]
+repo_name = "bootstrap"
+repo_url = "https://github.com/virajp/bootstrap"
+
+[commits]
+style = "conventional"

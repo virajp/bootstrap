@@ -7,6 +7,8 @@ GOTOOLCHAIN = "local"
 [tools]
 [tools.go]
 version = "latest"
+[tools."go:golang.org/x/tools/gopls"]
+version = "latest"
 [tools."go:golang.org/x/vuln/cmd/govulncheck"]
 depends = [ "go", "golangci-lint" ]
 version = "latest"
