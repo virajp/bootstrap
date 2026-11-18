@@ -224,11 +224,11 @@
         "U6"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-18T17:23:30.905Z",
+      "ended": "2026-11-18T17:30:09.566Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U8",
@@ -270,8 +270,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-18T17:23:30.866Z",
       "ended": ""
     },
     {
@@ -644,10 +644,10 @@
       "ended": "2026-11-18T17:23:05.404Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "no covers and no code unit: nothing to stamp or persist",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-18T17:23:24.935Z"
     }
   },
   "gaps": [],

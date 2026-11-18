@@ -312,6 +312,11 @@ Do each command of these items in the clone.
    command stops with `run bootstrap mac migrate`, `macos.toml` has an old form.
    Then
    go to item 5: the dry run names each question with no answer.
+
+   The `uv` tool no longer sets `UV_NO_CACHE`, and an override cannot add a
+   key. If `macos.toml` has `UV_NO_CACHE` in `[overrides.mise.env]`, remove
+   it before the dry run, else the sync stops (see M46 in
+   `docs/sync/migrate.md`).
 5. Do a dry run: `bootstrap mac migrate --answer … --dry-run`. It also moves an
    old form, for example a file without `format = 2`, the `[packs.*]` tables,
    or the table of the old Mac entry tool to `[tools.mise]` (see

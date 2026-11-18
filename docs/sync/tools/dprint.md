@@ -69,7 +69,10 @@ The sync formats each rendered file with
 `dprint fmt --no-gitignore --allow-no-files --stdin-files` before it compares
 the file. The `shuck` block has no `associations`: shuck formats only the shell
 files that it knows by extension (`.sh`, `.bash`, `.zsh` and `.ksh`), not the
-task files below `.config/mise/tasks/`, which have no extension. The sync
+task files below `.config/mise/tasks/`, which have no extension. The block
+`ruff` of the `python` tool formats each `.py` and `.pyi` file, also a Python
+task file below `.config/mise/tasks/`: dprint is the one formatter of the
+Python files, and no `ruff format` gate runs. The sync
 removes old `associations` from the block. It uses the first dprint config of
 the repository that it
 finds, for example `dprint.jsonc`. See
