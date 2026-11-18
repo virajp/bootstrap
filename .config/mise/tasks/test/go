@@ -1,37 +1,30 @@
 #!/usr/bin/env bash
-#MISE description="Vet, format-check and test the Go module in cli/"
+#MISE description="Vet and format-check the Go modules of cli/ and of the root"
 
-# Runs `go vet`, a `gofmt` check and `go test` in the Go module of
-# cli/. The task runs the Go of the `go` tool, which this repository
-# selects.
+# Runs `go vet` and a `gofmt` check in the two Go modules of this repository:
+# cli/ (the engine) and the root (the end-to-end tests of e2e/). The task
+# `test` runs the tests. The task runs the Go of the `go` tool, which this
+# repository selects.
 
 set -euo pipefail
 
 # shellcheck source=/dev/null
 source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
 
-# The tests never read the real config file of the user: the engine reads
-# this path, which does not exist, so each setting has its default.
-export BOOTSTRAP_CONFIG=/nonexistent/bootstrap/config.toml
+root=${MISE_PROJECT_ROOT}
 
-cd "${MISE_PROJECT_ROOT}/cli"
-
-go() { mise x -- go "$@"; }
-
-print_header "Testing the Go module in cli/ ..."
+print_header "Examining the Go modules ..."
 
 print_subheader "Running go vet ..."
-go vet ./...
+(cd "$root/cli" && mise x -- go vet ./...)
+(cd "$root" && mise x -- go vet ./...)
 
 print_subheader "Examining the format with gofmt ..."
-unformatted=$(mise x -- gofmt -l .)
+unformatted=$(mise x -- gofmt -l "$root/cli" "$root/e2e")
 if [[ -n $unformatted ]]; then
   print_error "files that gofmt changes:"
   printf '%s\n' "$unformatted" >&2
   exit 1
 fi
 
-print_subheader "Running go test ..."
-go test ./...
-
-print_success "All Go tests passed"
+print_success "The Go modules pass go vet and gofmt"

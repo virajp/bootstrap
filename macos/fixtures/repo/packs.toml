@@ -1,4 +1,4 @@
-# The packs of the test:mac fixture repo.
+# The packs of the e2e/mac fixture repo.
 
 [pack.base]
 core = { required = true }
