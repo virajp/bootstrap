@@ -182,6 +182,29 @@ func TestExec(t *testing.T) {
 		Message: "Synced: ", Check: func(c *rc.Case) {
 			c.CheckThat("dprint: the empty block tailwindcss stays", fileHas(c.Path("dprint.jsonc"), `"tailwindcss": {}`))
 		}})
+	// The old associations of shuck, in an adopted dprint.jsonc, go at the
+	// next sync: shuck formats only the shell files with an extension.
+	rc.Run(t, rc.Spec{Name: "dprint: the old associations of shuck go", Values: devValues, Call: func(c *rc.Case) int {
+		if code := c.Synced(); code != 0 {
+			return code
+		}
+		// sed 's#"shuck": {#...#': the first match of each line.
+		p := c.Path("dprint.jsonc")
+		lines := strings.Split(harness.ReadFile(p), "\n")
+		for i, l := range lines {
+			lines[i] = strings.Replace(l, `"shuck": {`,
+				`"shuck": { "associations": [ "**/.config/mise/tasks/**", "!**/*.tmpl" ],`, 1)
+		}
+		harness.WriteFile(c.T, p, strings.Join(lines, "\n"))
+		if !fileHas(p, `"associations"`) {
+			return 9
+		}
+		c.CommitConsumer()
+		return c.Engine("sync")
+	}, Message: "Synced: ", Check: func(c *rc.Case) {
+		c.CheckThat("dprint: the old associations of shuck are gone", !fileHas(c.Path("dprint.jsonc"), `"associations"`))
+		c.CheckThat("dprint: the shuck block stays", fileHas(c.Path("dprint.jsonc"), `"shuck": {`))
+	}})
 }
 
 // fakeAube writes a fake aube in <tmp>/fakebin. It records its calls in
