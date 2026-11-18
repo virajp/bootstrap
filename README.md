@@ -312,34 +312,19 @@ rules.
 
 ## Tests
 
-`mise run test:repo` runs `bootstrap sync --dry-run`, `bootstrap check` and,
-for a case that compares a written file, `bootstrap sync`, built from the
-working tree's `cli/`, with its `repo/`, against scratch values files
-and scratch consumers. The migrate cases run `bootstrap migrate`. It checks the
-exit
-code and the message of each case. It needs no network when gomplate, jq and yq
-are installed.
+The tests are Go tests. The unit tests of the engine are in `cli/`, and the
+end-to-end tests are in `e2e/`, a Go module at the root of the repository. The
+end-to-end tests run `bootstrap`, built from the working tree's `cli/`, with
+the working tree's `repo/` and `macos/`, against scratch consumers and
+scratch homes, in parallel. They need no network when gomplate, jq, yq, uv and
+Python 3.14 are installed.
 
-`mise run test:mac` runs `bootstrap mac sync`, built from the working tree's
-`cli/`, against the fixtures in `macos/fixtures/`. It checks the exit
-code, the output and the files of each case, and it needs no network when
-gomplate, jq and yq are installed. The entry cases run the rendered task
-`updateall:configs` against a local bare origin.
-
-`mise run test:macos-tools` runs `bootstrap mac sync` with each tool of
-`macos/tools/` and a copy of `macos/examples/macos.toml`, in a temporary `HOME`.
-It checks that the example selects each tool and that each rendered file
-parses, and it needs no network when gomplate, jq and yq are installed.
-
-`mise run test:go` runs `go vet`, a `gofmt` check and `go test` in
-`cli/`. A test fails when the engine code names a tool.
-
-`mise run test` runs the four test tasks in parallel: the runner of this
-repository, `test/_default`, which `bootstrap migrate` moves to the part
-`test/50-local`, depends on them. No hook runs a test. Run the
-tests by hand before you commit: `test` for a change to `cli/`,
-`test:repo` for a change to `repo/`, and `test:mac` and `test:macos-tools` for
-a change to `macos/`.
+`mise run test` runs `go vet`, a `gofmt` check and all the tests, with
+gotestsum. `go test` runs a package again only when its code or one of the
+files that it reads changed, so a run after a small change takes seconds.
+`mise run test --all` runs each test again. Each run writes its JSON log to
+`~/.local/state/bootstrap/test-runs/` and prints the slowest tests. No hook
+runs a test: run `mise run test` by hand before you commit.
 
 ## Change a shared file
 

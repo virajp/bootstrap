@@ -70,8 +70,9 @@ Go module `github.com/virajp/bootstrap/cli`.
 | `internal/repo`      | The repo front-end, the sync of `bootstrap sync`. See [repo.md](repo.md).                                                                                                                                                                                                                                               |
 | `internal/macos`     | The Mac front-end, the sync of `bootstrap mac sync`. See [mac.md](mac.md).                                                                                                                                                                                                                                              |
 
-The task `test:go` of this repository runs `go vet`, a `gofmt` check and
-`go test` in the module. Some unit tests compare the output of a case with a
+The task `test` of this repository runs `go test` in the module, and the
+task `test:go` runs `go vet` and a `gofmt` check. Some unit tests compare the
+output of a case with a
 golden file in `testdata/`. `UPDATE_GOLDEN=1 go test ./internal/<package>`
 writes the golden files of `selection`, `misegen`, `source`, `tmpl`, `manifest`
 and `report` again.
@@ -1125,7 +1126,7 @@ See [repo.md](repo.md) and [mac.md](mac.md).
 | `BOOTSTRAP_HOME`        | The home repository of a member. `setup:configs` sets it for the sync of a member, which writes `[home]`.                                                                                                                     |
 | `BOOTSTRAP_MEMBER`      | The name of the member in the `[members.*]` tables of its home. `setup:configs` sets it with `BOOTSTRAP_HOME`.                                                                                                                |
 | `MACOS_SETUP_REPO_PATH` | The repository of `macos.toml`. See [mac.md](mac.md).                                                                                                                                                                         |
-| `BOOTSTRAP_CONFIG`      | The config file. See [The config file](#the-config-file). The test tasks set it to a missing path.                                                                                                                            |
+| `BOOTSTRAP_CONFIG`      | The config file. See [The config file](#the-config-file). The tests set it to a missing path.                                                                                                                                 |
 
 A flag sets its variable for the run: `--jobs`, `--cache-dir`, `--url`,
 `--clone`, `--repo-path`, `--config` and `--verbose` (`BOOTSTRAP_VERBOSE=1`).
@@ -1884,7 +1885,7 @@ print only with verbose:
   copies of the rest were left untouched` and, on the Mac side, `dry run:
   <ok>/<total> files checked, nothing written`.
 
-The test tasks set the variable, so a case compares the log lines. The cases of
+The tests set the variable, so a case compares the log lines. The cases of
 the default output unset it.
 
 ## The exit codes

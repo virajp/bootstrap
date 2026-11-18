@@ -7,9 +7,8 @@ code in this repository.
 
 This repository is the source of shared files for other repositories. Its only
 application code is the sync engine in `cli/`: the Go module of the
-engine, the CLI `bootstrap`. Its tests are `test:repo`, `test:mac`,
-`test:macos-tools` and `test:go`, and the task `test` runs each test task (see
-"Tests").
+engine, the CLI `bootstrap`. Its tests are Go tests in `cli/` and in `e2e/`,
+and the task `test` runs them (see "Tests").
 Other repositories copy files from it with their own `setup:configs` task. Read
 `docs/design/index.md` for the contract of the sync.
 
@@ -27,7 +26,9 @@ each tool, and their packs are in `macos/packs.toml`. These
 files are for this repository only:
 
 - At the root: `README.md`, `CLAUDE.md`, `LICENSE`, `dprint.jsonc` (with the
-  excludes of this repository) and `eslint.config.mjs`.
+  excludes of this repository), `eslint.config.mjs` and `go.mod` (the Go
+  module of the end-to-end tests).
+- `e2e/`: the end-to-end tests, Go tests of the root module (see "Tests").
 - `cli/`: the engine of the sync. It is not a tool, so the sync never
   copies it to a consumer. It is the Go module
   `github.com/virajp/bootstrap/cli` (`go.mod`, `cmd/bootstrap/` and
@@ -42,11 +43,10 @@ files are for this repository only:
   file of the engine names a tool: `TestEngineNamesNoTool` examines this rule.
 - `docs/design/`: the contract of the sync, one place for each rule (see "Where
   the rules are"). `docs/plans/`: the vwf plan index.
-- `.config/mise/tasks/test/`: the tasks `test:repo` (`repo`), `test:mac`
-  (`mac`), `test:macos-tools` (`macos-tools`) and
-  `test:go` (`go`), and the runner of this repository that `test` runs
-  (`_default`, which `bootstrap migrate` moves to the part `50-local`). They are
-  not in `repo/tools/` or `macos/tools/`, so no consumer gets them.
+- `.config/mise/tasks/test/`: the task `test:go` (`go`) and the runner of
+  this repository that `test` runs (`_default`, which `bootstrap migrate`
+  moves to the part `50-local`). They are not in `repo/tools/` or
+  `macos/tools/`, so no consumer gets them.
 - `.github/workflows/release-engine.yml` and `cli/VERSION`: the release
   of the Go engine and the minimum version that a clone needs. A signed tag
   `bootstrap@X.Y.Z` on `main` starts the
@@ -55,10 +55,10 @@ files are for this repository only:
 - `.config/mise/tasks/vorssaint/diff`: the task `vorssaint:diff`. It compares
   a Vorssaint backup file with the defaults of `macos/tools/vorssaint/`, and
   exits 1 when a key differs or is missing.
-- `macos/fixtures/`: the fixtures of `test:mac`.
+- `macos/fixtures/`: the fixtures of `e2e/mac`.
 - `macos/examples/macos.toml`: the sample values file of the Mac side, and the
-  model of `test:macos-tools`. A change to a Mac tool also changes this file
-  when the tool needs a value or a selection, because `test:macos-tools` fails
+  model of `e2e/macostools`. A change to a Mac tool also changes this file
+  when the tool needs a value or a selection, because `e2e/macostools` fails
   for an unselected tool.
 
 `repo/examples/<example>/` holds sample values files (`repo.toml` and
@@ -73,7 +73,7 @@ values file changes the examples in the same commit.
 
 Each example has an empty `bootstrap_commit`, so a consumer that copies an
 example gets no wrong value: the sync replaces the empty line with the
-commit of its sync. `test:repo` runs `bootstrap sync --dry-run` with each
+commit of its sync. `e2e/repo/migrate` runs `bootstrap sync --dry-run` with each
 example, in a consumer with its members. That case finds an unknown tool, a
 wrong member, a wrong shape and an unknown key, because the schema of the
 values refuses one.
@@ -333,127 +333,114 @@ task that runs only commands.
 
 ## Tests
 
-Each test task sets `BOOTSTRAP_VERBOSE=1`, so a case compares the per-file log
-lines of the sync. The cases of the default output unset it. See
-`docs/design/cli.md` ("The output of a run"). Each test task also sets
-`BOOTSTRAP_CONFIG` to a missing path, so the config file of the user never
-changes a case. See `docs/design/cli.md` ("The config file").
+The tests are Go tests, in two Go modules: `cli/` (the unit tests of the
+engine) and the root module `github.com/virajp/bootstrap` (`go.mod` at the
+root), with the end-to-end tests in `e2e/`. The end-to-end tests run the
+engine, built from the working tree's `cli/`, with the working tree's
+`repo/` and `macos/`, against scratch consumers and scratch homes. The root
+module holds them because `go test` keeps a result only for the files inside
+the module of the test (see "The test cache" below).
 
-- `test:repo` is the task of this repository in
-  `.config/mise/tasks/test/repo`. It runs `bootstrap sync --dry-run`,
+- `e2e/internal/harness`: the common parts. `Main` (the `TestMain` of each
+  package) opens each file of the inputs of the package, builds the engine
+  once (or uses `BOOTSTRAP_BIN`, an absolute path), and writes the mise shim.
+  The environment of a case has `BOOTSTRAP_VERBOSE=1`, so a case compares the
+  per-file log lines of the sync (the cases of the default output unset it;
+  see `docs/design/cli.md`, "The output of a run"), `BOOTSTRAP_CONFIG` at a
+  missing path, so the config file of the user never changes a case (see
+  `docs/design/cli.md`, "The config file"), and no `GIT_*` variable of a git
+  hook, so a scratch repository never writes to this repository.
+- The mise shim: `mise x -- <command>` runs the command directly, with the
+  PATH of the test run, and each other `mise` call goes to the real mise. A
+  `mise x` costs 0.1 s alone and more than 1 s under load, and one
+  `bootstrap detect` makes about 234 of them. A case with `RealMise` uses the
+  real mise. The shim is at a path that ends in `.local/bin/mise`, because
+  `bootstrap mac sync` accepts only such a path.
+- `e2e/internal/repocase`: the runner of a repo case (`rc.Run`, `rc.Check`):
+  a clone of the bootstrap copy (`repo/` and `cli/VERSION`; all of `cli/` with
+  `FullCLI`), a copy of a consumer, the values folder of the case, then
+  `bootstrap sync --dry-run`, `bootstrap check` or the `Call` of the case.
+- `e2e/repo/sync`, `config`, `files`, `migrate`, `selection`, `detect` and
+  `commands`: the repo cases. They run `bootstrap sync --dry-run`,
   `bootstrap check` and, for a case that compares a written file,
-  `bootstrap sync`, built from the working tree's `cli/`, with the
-  working tree's `repo/` and `cli/` against scratch values files and
-  scratch consumers. The migrate cases run `bootstrap migrate` on a new values
-  folder, on an old values file and on its migration to `.config/bootstrap/`,
+  `bootstrap sync`; the migrate cases run `bootstrap migrate` on a new values
+  folder, on an old values file and on its migration to `.config/bootstrap/`;
   the selection cases run `bootstrap add tool <tool…>`,
   `bootstrap add pack <pack…>`, `bootstrap remove tool <tool…>`,
-  `bootstrap replace tool <old> <new>` and `bootstrap detect --add`, and the
-  clone cases run the binary against a local origin. The entry cases run the
-  rendered task `setup:configs` with a fake engine and with the real engine,
-  and the rendered `git:merge:<branch>` tasks: the landing cases run
-  `git:merge:main` with the real merge library, and the other cases run
-  `git:merge:main` and `git:merge:develop` with a stub library that prints
-  its arguments. The worktree cases run `git:worktree:create` with
-  `--no-setup` and `git:worktree:delete`. The test-port cases run
-  `bootstrap migrate` with the repo's own test tasks, and `mise run test`,
-  `test:e2e` and `test:golden` in a scratch consumer. The tool-test-part cases
-  run `bootstrap check` and `bootstrap migrate` with an old stackgen copy of the
-  compose `test/golden` task: at `test/golden`, at `test/golden/50-local`,
-  edited, and without the `android` tool. They read that copy from the
-  claude-plugins clone of
-  `CLAUDE_PLUGINS_CLONE`: without it, each of the four cases prints one skip
-  line and passes. A fifth tool-test-part case selects `android` and `swift`,
-  runs `bootstrap migrate`, then runs `mise run test:golden` with
-  `MISE_TASK_RUN_AUTO_INSTALL=false` in a consumer with no Gradle or Xcode
-  project, and compares stdout with the success line of the dispatcher. It
-  uses no copy. The config verb cases run
-  `bootstrap config get|set|unset|show`. The JSON cases run `--json` on
-  `contract`, `catalog`, `describe`, `lsp`, `questions`, `config`, `check`
-  and `add`, and compare the
-  envelope on stdout. The project cases run `bootstrap detect --json`,
-  `detect` with no flag and `detect --add --yes` then `bootstrap check` in a
-  scratch consumer with project folders, `check` of a project whose folder is
-  gone, and `config unset` of a project that a tool lists. The LSP cases run the
-  rendered task `code:lsp:check`
-  with bash, with a stub engine in `BOOTSTRAP_BIN` and a `mise` shim on the
-  path. The setup:ai cases run the rendered task `setup:ai` with bash, with
-  the real engine in `BOOTSTRAP_BIN`, the clone of the case in
-  `BOOTSTRAP_CLONE`, a stub `claude` on the path that answers from state
-  files, and a `mise` shim. The setup case runs the rendered task `setup` with
-  bash and a `mise` shim that logs each `mise run`: a plain run does not run
-  `setup:ai`, and `setup --upgrade` runs `setup:ai --upgrade`. The
-  contributed-items cases sync `virajp-plugins`
-  and compare the written `.gitignore`, and refuse a bad
-  `[[contributes_items.*]]`. The `code_files` case syncs a consumer and
-  compares the rendered `.config/bootstrap/config-files.toml` and the
-  excludes of `dprint.jsonc`. The gate_files cases run the working tree's
-  `gate_files.py` in a scratch repository with `--debug`, and compare the
-  exit code, the list and the drop lines: the default, `--all` and given
-  files, the repository, global and gate filters, the shebang key, the
-  patterns and a malformed header. The `run_gate` cases run
-  `code:lint:60-bootstrap` with `--all`, with the working tree's `helpers`
-  and `gate_files.py`. The orchestrator case runs `code:lint` with `--all`
-  and files, and expects exit 2. The settings cases point
-  `BOOTSTRAP_CONFIG` or `--config` at a file of the case, or at a missing file.
-  Most of them run `bootstrap settings`. The cases of a `verbose` key and of the
-  key `clone` run `bootstrap sync --dry-run`. A case of the default output also
-  runs `bootstrap sync --verbose`. With `BOOTSTRAP_BIN` set to an absolute path,
-  it tests that binary and does not build one. It compares the exit code and the
-  message of each case. It needs no network when gomplate, jq, yq, uv and
-  Python 3.14 are installed, because the `gate_files` and `run_gate` cases run
-  `gate_files.py` with uv and `python@3.14`. Before its first `git` call, it
-  unsets the `GIT_*`
-  variables of a git hook, so its scratch repositories never write to this
-  repository. It runs the cases in parallel, one job for each CPU, and each case
-  in its own folder.
-- `test:mac` is the task of this repository in
-  `.config/mise/tasks/test/mac`. It runs `bootstrap mac sync`, built
-  from the working tree's `cli/`, against the fixtures in
-  `macos/fixtures/`, and it
-  compares the exit code, the output and the files of each case. The entry cases
-  run the task `updateall:configs` of `macos/tools/mise/`
-  against a local bare origin, for the clone, the lock and the temporary copy.
-  Each case has its own temporary `HOME`, so it never changes the real `$HOME`.
-  It needs no network when gomplate, jq and yq are installed. With
-  `BOOTSTRAP_BIN` set to an absolute path, this task and `test:macos-tools`
-  test that binary and do not build one.
-- `test:macos-tools` is the task of this repository in
-  `.config/mise/tasks/test/macos-tools`. It runs `bootstrap mac sync`, built
-  from the working tree's `cli/`, with each tool of `macos/tools/` and
-  a copy of
-  `macos/examples/macos.toml`, in a temporary `HOME`. It examines five items:
-  no `[files]` table gives `mode = "seed"` to a JSON, YAML or TOML target, the
-  example selects each tool and each rendered file parses, an example without
-  the answer `config_path` of `mise` stops the sync with code 2, a
-  mise tool on both sides of `repo/tools/` and `macos/tools/` has one version
-  and one `depends`, a mise setting on both sides has one value, and the
-  git tool needs one email only. To change a mise version, a `depends` or a
-  mise setting, change it on both sides. An intended
-  difference goes in `drift_allowed` of the task, with a reason. In the git
-  cases, an empty `email_github` or an empty `email_gitlab` gets a first run,
-  then a second run with exit 0. After it, `identity` has the other email, the
-  config of the empty email has no email line, and `allowed_signers` has one
-  signer line. Two empty emails stop the sync with code 2 and the message of
-  the group `git.email`. It needs no
-  network when gomplate, jq and yq are installed.
-- `test:go` is the task of this repository in `.config/mise/tasks/test/go`.
-  It runs `go vet`, a `gofmt` check and `go test` in the Go module of
-  `cli/`. Some unit tests compare a case with a golden file in
-  `testdata/`; see `docs/design/cli.md` ("The files of
-  `cli/`"). `TestEngineNamesNoTool` fails when a string literal of the
-  engine code names a tool, outside its allow list. The task runs the Go of the
-  `go` tool, which this repository selects.
-- `test` runs the four test tasks in parallel: the runner of this repository,
-  `test/_default`, which `bootstrap migrate` moves to the part `test/50-local`,
-  depends on them. No hook and no `git:merge:<branch>` task runs a test,
-  because the tests are slow and a consumer does not have them. Run the tests
-  by hand before you commit:
-  - A change to `cli/`: `mise run test`.
-  - A change to the Go code only: `mise run test:go`.
-  - A change to `repo/`: `mise run test:repo`.
-  - A change to `macos/`: `mise run test:mac` and
-    `mise run test:macos-tools`.
+  `bootstrap replace tool <old> <new>` and `bootstrap detect --add`; the
+  config verb cases run `bootstrap config get|set|unset|show`; the settings
+  cases point `BOOTSTRAP_CONFIG` or `--config` at a file of the case; the JSON
+  cases run `--json` on `contract`, `catalog`, `describe`, `lsp`,
+  `questions`, `config`, `check` and `add`, and compare the envelope on
+  stdout; the project cases run `bootstrap detect --json`, `detect` and
+  `detect --add --yes` in a scratch consumer with project folders. The
+  examples cases run `bootstrap sync --dry-run` with each example of
+  `repo/examples/`. The tool-test-part cases read an old stackgen copy of the
+  compose `test/golden` task from the claude-plugins clone of
+  `CLAUDE_PLUGINS_CLONE`; without it, each of the four cases is skipped with
+  one line.
+- `e2e/repo/commands` and `e2e/repo/tasks`: the rendered tasks. The entry
+  cases run `setup:configs` with a fake engine and with the real engine, and
+  the clone, lock and version cases; the landing cases run `git:merge:main`
+  with the real merge library, and the other merge cases run it with a stub
+  library; the worktree cases run `git:worktree:create` with `--no-setup` and
+  `git:worktree:delete`; the LSP cases run `code:lsp:check`, the setup:ai
+  cases `setup:ai`, and the setup case `setup`; the gate_files cases run the
+  working tree's `gate_files.py` in a scratch repository with `--debug`; the
+  `run_gate` cases run `code:lint:60-bootstrap`; the orchestrator case runs
+  `code:lint` with `--all` and files, and expects exit 2.
+- `e2e/mac`: `bootstrap mac sync` against the fixtures in `macos/fixtures/`,
+  with the exit code, the output and the files of each case. The entry cases
+  run the task `updateall:configs` of `macos/tools/mise/` against a local bare
+  origin. Each case has its own temporary `HOME`.
+- `e2e/macostools`: `bootstrap mac sync` with each tool of `macos/tools/` and a
+  copy of `macos/examples/macos.toml`, in a temporary `HOME`. No `[files]`
+  table gives `mode = "seed"` to a JSON, YAML or TOML target; the example
+  selects each tool and each rendered file parses; an example without the
+  answer `config_path` of `mise` stops the sync with code 2; a mise tool on
+  both sides of `repo/tools/` and `macos/tools/` has one version and one
+  `depends`, and a mise setting on both sides has one value (an intended
+  difference goes in `driftAllowed`, with a reason); the git tool needs one
+  email only.
+
+Each check of a case logs one line `CHECK <name>`, and each step of a case one
+line `TIMING <step> <seconds>s`. The cases run in parallel (`t.Parallel`), and
+`go test` runs the packages in parallel. A case writes only below its own
+folder; `HARNESS_KEEP=1` keeps the folder of a failed case, and
+`HARNESS_KEEP=all` keeps each folder. The tests need no network when
+gomplate, jq, yq, uv and Python 3.14 are installed.
+
+The test cache: `go test` runs a package again only when the package, a file
+that it opened, or an environment variable that it read changed. `Main` opens
+each file of `cli/` and of the inputs of the package (`repo/`, `macos/`), so a
+change to one of them runs the packages that read it, and only them. The
+cache key also has the variables that a test read, PATH included: mise gives
+the tool folders of a task in a different order on each run, so `test`
+sorts them first. A change to an outside tool (gomplate, yq, mise) changes
+PATH only when its version folder changes; use `--all` after such a
+change. The slots: a case runs only while it holds one of the slots that
+all test packages share (one for each CPU, `HARNESS_SLOTS` to change), so
+the packages share the CPUs and do not overload them.
+
+The tasks:
+
+- `test` (the dispatcher of the `mise` tool) runs the part `test/50-local` of
+  this repository. It runs `test:go` first, then gotestsum in the two modules
+  at the same time. `mise run test --all` runs each test again
+  (`go test -count=1`). Each run writes the JSON log of `go test -json` to
+  `${XDG_STATE_HOME:-$HOME/.local/state}/bootstrap/test-runs/<UTC time>.json`
+  and prints the slowest tests (`gotestsum tool slowest`).
+- `test:go` runs `go vet` and a `gofmt` check in the two modules. Some unit
+  tests compare a case with a golden file in `testdata/`; see
+  `docs/design/cli.md` ("The files of `cli/`"). `TestEngineNamesNoTool`
+  fails when a string literal of the engine code names a tool, outside its
+  allow list. The task runs the Go of the `go` tool, which this repository
+  selects.
+- To run one package or one case: `mise x -- go test ./e2e/repo/detect/` or
+  `mise x -- go test ./e2e/repo/detect/ -run 'TestDetect/detect_--yes'`.
+
+No hook and no `git:merge:<branch>` task runs a test, because a consumer does
+not have the tests. Run `mise run test` by hand before you commit.
 
 ## Change a shared file
 
