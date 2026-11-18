@@ -90,6 +90,7 @@ dprint	dprint.jsonc	{"kind":"key","path":["yaml","proseWrap"]}
 git	.config/git-conventional-commits.yaml
 git	.config/mise/conf.d/git/mise.dev.toml
 git	.config/mise/tasks/_scripts/merge
+git	.config/mise/tasks/_scripts/merge.py
 git	.config/mise/tasks/code/git-config
 git	.config/mise/tasks/git/merge/main
 git	.config/mise/tasks/git/worktree/create
@@ -112,10 +113,14 @@ mise	.config/bootstrap/config-files.toml
 mise	.config/mise.toml
 mise	.config/mise/conf.d/mise/mise.dev.toml
 mise	.config/mise/tasks/_scripts/checks
+mise	.config/mise/tasks/_scripts/checks.py
 mise	.config/mise/tasks/_scripts/gate_files.py
 mise	.config/mise/tasks/_scripts/helpers
+mise	.config/mise/tasks/_scripts/helpers.py
 mise	.config/mise/tasks/_scripts/placeholder
+mise	.config/mise/tasks/_scripts/placeholder.py
 mise	.config/mise/tasks/_scripts/worktrees-page
+mise	.config/mise/tasks/_scripts/worktrees_page.py
 mise	.config/mise/tasks/code/_default
 mise	.config/mise/tasks/code/format/_default
 mise	.config/mise/tasks/code/lint/60-bootstrap
