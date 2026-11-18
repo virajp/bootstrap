@@ -1,6 +1,6 @@
 # Swift and SwiftPM from the host (macOS only): Xcode for a root with an
 # .xcodeproj, else the Command Line Tools. Also the SwiftLint and swift-format
-# gates, and the Xcode and simulator lookup of _scripts/xcode.
+# gates, and the Xcode and simulator lookup of _scripts/xcode.py.
 category = "languages"
 default_envs = [ "dev" ]
 depends = []
@@ -45,10 +45,6 @@ source = ".config/swiftlint.yml"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."_scripts/xcode"]
-library = true
-source = "xcode"
-
 [tasks."_scripts/xcode.py"]
 library = true
 source = "xcode.py"

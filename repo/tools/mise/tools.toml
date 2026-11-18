@@ -78,10 +78,6 @@ source = ".config/mise/conf.d/zz-repo/mise.dev.toml"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."_scripts/checks"]
-library = true
-source = "checks"
-
 [tasks."_scripts/checks.py"]
 library = true
 source = "checks.py"
@@ -90,25 +86,13 @@ source = "checks.py"
 library = true
 source = "gate_files.py"
 
-[tasks."_scripts/helpers"]
-library = true
-source = "helpers"
-
 [tasks."_scripts/helpers.py"]
 library = true
 source = "helpers.py"
 
-[tasks."_scripts/placeholder"]
-library = true
-source = "placeholder"
-
 [tasks."_scripts/placeholder.py"]
 library = true
 source = "placeholder.py"
-
-[tasks."_scripts/worktrees-page"]
-library = true
-source = "worktrees-page"
 
 [tasks."_scripts/worktrees_page.py"]
 library = true

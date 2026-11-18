@@ -65,10 +65,6 @@ source = "gitignore.merge.toml"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."_scripts/merge"]
-library = true
-source = "merge"
-
 [tasks."_scripts/merge.py"]
 library = true
 source = "merge.py"
