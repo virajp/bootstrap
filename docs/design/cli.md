@@ -1677,6 +1677,11 @@ After a sync without a failure, the front-end sets the top-level
 the Mac) to the full commit of its clone. An agent
 compares it with `main` to find what changed since the last sync.
 
+- A sync that changed no file keeps a `bootstrap_commit` that has a value, so
+  it adds no commit to the consumer. A changed, new, seeded or removed target
+  (the manifest too), an added `[tools.<name>]` table or a changed `[home]`
+  is a change. A dry run uses the same rule. An empty or missing key always
+  gets the commit.
 - A line that has the key before the first table is replaced. A line with the
   same value causes no write.
 - Else the key goes after the header comments, when a blank line ends them, or

@@ -585,9 +585,14 @@ func (s *state) stale(stage string) fail.Code {
 	return rc
 }
 
-// recordCommit is `_ss_record_commit`.
+// recordCommit is `_ss_record_commit`. A sync that changed no file keeps a
+// commit that is set, so it adds no commit to the repository of macos.toml.
 func (s *state) recordCommit(commit string) fail.Code {
-	return s.e.RecordCommit(s.config+"/"+valuesName, "bootstrap_commit", commit, "", newValues)
+	file := s.config + "/" + valuesName
+	if s.r.Changes() == 0 && !s.e.Edited && target.HasValue(file, "bootstrap_commit") {
+		return fail.OK
+	}
+	return s.e.RecordCommit(file, "bootstrap_commit", commit, "", newValues)
 }
 
 // newValues is the start of a macos.toml that a sync creates: the header and

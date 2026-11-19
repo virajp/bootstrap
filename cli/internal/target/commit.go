@@ -31,6 +31,27 @@ func awkLines(b []byte) []string {
 	return lines
 }
 
+// HasValue tells if the TOML file <file> has the top-level <key> with a
+// value that is not empty, before the first table. A file that it cannot
+// read has no value.
+func HasValue(file, key string) bool {
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return false
+	}
+	keyLine := regexp.MustCompile("^" + regexp.QuoteMeta(key) + `[ \t]*=(.*)$`)
+	for _, l := range awkLines(b) {
+		if tableLine.MatchString(l) {
+			return false
+		}
+		if m := keyLine.FindStringSubmatch(strings.TrimRight(l, "\r")); m != nil {
+			v := strings.TrimSpace(m[1])
+			return v != "" && v != `""` && v != "''"
+		}
+	}
+	return false
+}
+
 // RecordCommit is _se_record_commit: it sets the top-level <key> of the TOML
 // file <file> to <commit>. A line that has the key before the first table is
 // replaced, and a line with the same value causes no write. Else the key and

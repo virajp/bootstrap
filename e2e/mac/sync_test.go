@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -792,6 +793,33 @@ func caseCommit(c *mcase) {
 	c.has("unchanged  ~/.config/core/values.txt")
 	c.check("a second run reports only unchanged", !c.logHasRe(`^bootstrap: (updated|chmod|removed|wrote|set |would)`))
 	c.check("macos.toml is unchanged", catT(c.values) == after)
+}
+
+// caseCommitKept: a run that changes no file keeps a commit that is set, so
+// it adds no commit to the repository of macos.toml.
+func caseCommitKept(c *mcase) {
+	c.useConfig("ok")
+	c.runReal()
+	c.exit(0)
+	old := `bootstrap_commit = "0000000000000000000000000000000000000000"`
+	c.write(c.values, strings.Replace(catT(c.values), commitLine(), old, 1))
+	c.runReal()
+	c.exit(0)
+	c.check("the old commit stays", hasLine(c.values, old))
+	c.check("no commit line in the log", !c.logHasRe(`bootstrap_commit`))
+}
+
+// caseCommitMoved: a run that changes a file sets the commit of the clone.
+func caseCommitMoved(c *mcase) {
+	c.useConfig("ok")
+	c.runReal()
+	c.exit(0)
+	old := `bootstrap_commit = "0000000000000000000000000000000000000000"`
+	c.write(c.values, strings.Replace(catT(c.values), commitLine(), old, 1))
+	c.check("the manifest is removed", os.Remove(c.manifest) == nil)
+	c.runReal()
+	c.exit(0)
+	c.check("the commit of the clone is set", hasLine(c.values, commitLine()))
 }
 
 func caseCommitLink(c *mcase) {

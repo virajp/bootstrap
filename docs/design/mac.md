@@ -116,7 +116,7 @@ overrides file is `macos.overrides.toml` next to it. See
 | Key                       | Meaning                                                                                                                          |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `format`                  | The integer `2`, the form of the file. A file without it is an old form: run `bootstrap mac migrate`.                            |
-| `bootstrap_commit`        | A string. The commit of the last clean run. The sync writes it. See [cli.md](cli.md#bootstrap_commit).                           |
+| `bootstrap_commit`        | A string. The commit of the last clean run that changed a file. The sync writes it. See [cli.md](cli.md#bootstrap_commit).       |
 | `[tools.<name>]`          | A table. It selects the tool, and each key is a value of the tool. See [cli.md](cli.md#the-values-of-a-tool).                    |
 | `[overrides.mise.<path>]` | It changes the generated mise config. See [mise.md](mise.md#the-overrides).                                                      |
 | `[mise.*]`                | The own mise config of the user. It goes to `conf.d/zz-macos/mise.toml`. See [mise.md](mise.md#the-own-config-of-a-values-file). |

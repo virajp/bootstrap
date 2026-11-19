@@ -282,7 +282,7 @@ that the repository does not select, is a task of the repository:
    `git -C "$tmp" rev-parse HEAD`.
 2. Read `bootstrap_commit`: `bootstrap config get repo.bootstrap_commit`, or
    the top-level key of the old `.config/bootstrap.toml`. `bootstrap sync`
-   writes it after each sync without a failure.
+   writes it after each sync without a failure that changed a file.
 3. Use `bootstrap_commit` to select the checks of step 4:
 
    | `bootstrap_commit` | The checks of the kind `bootstrap`                                                                                             | The checks of the kind `repository` |

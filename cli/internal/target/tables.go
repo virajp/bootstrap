@@ -39,6 +39,7 @@ func (e *Env) AddTables(file string, names []string, head string, listOnly bool)
 				real = p
 			}
 			e.Plan(real, report.Changed)
+			e.Edited = true
 		}
 		for _, n := range names {
 			line(n, "would be added to")
@@ -54,6 +55,7 @@ func (e *Env) AddTables(file string, names []string, head string, listOnly bool)
 		r.Error("cannot write " + show)
 		return fail.Other
 	}
+	e.Edited = true
 	for _, n := range names {
 		line(n, "added to")
 	}
@@ -150,6 +152,7 @@ func (e *Env) SetTable(file, key, value string) fail.Code {
 			real = p
 		}
 		e.Plan(real, report.Changed)
+		e.Edited = true
 		line("would change")
 		return fail.OK
 	}
@@ -157,6 +160,7 @@ func (e *Env) SetTable(file, key, value string) fail.Code {
 		r.Error("cannot write " + show)
 		return fail.Other
 	}
+	e.Edited = true
 	line("changed")
 	return fail.OK
 }

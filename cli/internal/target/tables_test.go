@@ -102,3 +102,29 @@ func TestRecordCommitFormatBlock(t *testing.T) {
 		}
 	}
 }
+
+func TestHasValue(t *testing.T) {
+	cases := []struct {
+		name, in string
+		want     bool
+	}{
+		{"set", "a = 1\nbootstrap_commit = \"abc\"\n", true},
+		{"crlf", "bootstrap_commit = \"abc\"\r\n", true},
+		{"empty", "bootstrap_commit = \"\"\n", false},
+		{"missing", "a = 1\n", false},
+		{"in a table only", "[t]\nbootstrap_commit = \"abc\"\n", false},
+	}
+	dir := t.TempDir()
+	for _, c := range cases {
+		file := filepath.Join(dir, "v.toml")
+		if err := os.WriteFile(file, []byte(c.in), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got := HasValue(file, "bootstrap_commit"); got != c.want {
+			t.Errorf("%s: got %v, want %v", c.name, got, c.want)
+		}
+	}
+	if HasValue(filepath.Join(dir, "nope.toml"), "bootstrap_commit") {
+		t.Error("a missing file has a value")
+	}
+}
