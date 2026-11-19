@@ -115,13 +115,13 @@ def _echo(text, newline=True):
 
 # Print colored section header with new line
 def print_header(msg):
-  line_sep("=")
+  line_sep("──── ⋆⋅☆⋅⋆ ────")
   _echo(f"{GREEN}{BOLD}{msg}{NORMAL}")
 
 
 # Print colored section sub-header with new line
 def print_subheader(msg):
-  line_sep("-")
+  line_sep("⋅")
   _echo(f"{GREEN}{BOLD}{msg}{NORMAL}")
 
 
@@ -147,14 +147,18 @@ def print_warn(msg):
   _echo(f"{YELLOW}{BOLD}{msg}{NORMAL}")
 
 
-# Print line separator: the pattern once for each column of the terminal on
-# stdin, else 80 times
+# Print line separator: the pattern repeated, then cut to the width of the
+# terminal on stdin, else 80, so a pattern of more than one character never
+# wraps. The patterns of print_header and print_subheader are the ones of the
+# repo library. Keep patterns to single-width characters.
 def line_sep(pattern):
   try:
     width = os.get_terminal_size(0).columns
   except (OSError, ValueError):
     width = 80
-  _write(f"{pattern * width}\n".encode("utf-8", "surrogateescape"))
+  pattern = pattern or "="
+  reps = (width + len(pattern) - 1) // len(pattern)
+  _write(f"{(pattern * reps)[:width]}\n".encode("utf-8", "surrogateescape"))
 
 
 # True when the mise task <task> exists: the tool that ships it is selected
