@@ -193,7 +193,7 @@
       "status": "green",
       "started": "2026-11-19T05:27:05.199Z",
       "ended": "2026-11-19T05:29:29.477Z",
-      "commit": "",
+      "commit": "5333b62",
       "rounds": 3
     },
     {
@@ -208,8 +208,8 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-19T05:35:09.399Z",
       "ended": "",
       "commit": "",
       "rounds": 0
@@ -242,14 +242,14 @@
     },
     {
       "id": "W5",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-19T05:27:05.164Z",
-      "ended": ""
+      "ended": "2026-11-19T05:35:09.262Z"
     },
     {
       "id": "W6",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-19T05:35:09.364Z",
       "ended": ""
     }
   ],
