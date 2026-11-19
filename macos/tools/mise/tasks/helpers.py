@@ -11,7 +11,8 @@
 
 # The library of the Mac tasks. It has the names of the shell Mac helpers, and
 # each print function writes the same bytes as the shell function of the same
-# name. A task imports it after it adds the _scripts folder to sys.path:
+# name. print_header and print_subheader are the exception: they write the
+# lines, the emojis and the colors of the repo library. A task imports it after it adds the _scripts folder to sys.path:
 #
 #   sys.dont_write_bytecode = True
 #   sys.path.insert(0, os.path.expanduser("~/.config/mise/tasks/_scripts"))
@@ -33,6 +34,9 @@ NORMAL = "\033[0m"
 # Emojis
 SUCCESS_EMOJI = "✅"
 ERROR_EMOJI = "🚫"
+# The emojis of a header and a subheader: the ones of the repo library.
+EMOJI_HEADER = "🚀"
+EMOJI_SUBHEADER = "📌"
 
 _SIMPLE_ESCAPES = {
   ord("\\"): b"\\",
@@ -113,16 +117,29 @@ def _echo(text, newline=True):
   _write(data)
 
 
-# Print colored section header with new line
-def print_header(msg):
+def _join(args):
+  """Join the arguments with spaces, as "$*" of the shell does."""
+  return " ".join(str(a) for a in args)
+
+
+def _titled(emoji, codes, msg):
+  """The emoji, then the message in the codes; only the emoji when the message
+  is empty. The form of the titles of the repo library."""
+  return f"{emoji} {codes}{msg}{NORMAL}" if msg else emoji
+
+
+# A major section: the header line, then the emoji and the title in green and
+# bold. The arguments are joined with spaces.
+def print_header(*msg):
   line_sep("──── ⋆⋅☆⋅⋆ ────")
-  _echo(f"{GREEN}{BOLD}{msg}{NORMAL}")
+  _echo(_titled(EMOJI_HEADER, f"{GREEN}{BOLD}", _join(msg)))
 
 
-# Print colored section sub-header with new line
-def print_subheader(msg):
+# A step in a section: the subheader line, then the emoji and the title in
+# green. Not bold, so a step shows as a part of its section.
+def print_subheader(*msg):
   line_sep("⋅")
-  _echo(f"{GREEN}{BOLD}{msg}{NORMAL}")
+  _echo(_titled(EMOJI_SUBHEADER, GREEN, _join(msg)))
 
 
 # Print colored section header without new line
