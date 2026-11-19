@@ -11,7 +11,8 @@
 
 # The library of the Mac tasks. It has the names of the shell Mac helpers, and
 # each print function writes the same bytes as the shell function of the same
-# name. A task imports it after it adds the _scripts folder to sys.path:
+# name. print_header and print_subheader are the exception: they write the
+# lines, the emojis and the colors of the repo library. A task imports it after it adds the _scripts folder to sys.path:
 #
 #   sys.dont_write_bytecode = True
 #   sys.path.insert(0, os.path.expanduser("~/.config/mise/tasks/_scripts"))
@@ -33,6 +34,9 @@ NORMAL = "\033[0m"
 # Emojis
 SUCCESS_EMOJI = "✅"
 ERROR_EMOJI = "🚫"
+# The emojis of a header and a subheader: the ones of the repo library.
+EMOJI_HEADER = "🚀"
+EMOJI_SUBHEADER = "📌"
 
 _SIMPLE_ESCAPES = {
   ord("\\"): b"\\",
@@ -113,16 +117,29 @@ def _echo(text, newline=True):
   _write(data)
 
 
-# Print colored section header with new line
-def print_header(msg):
-  line_sep("=")
-  _echo(f"{GREEN}{BOLD}{msg}{NORMAL}")
+def _join(args):
+  """Join the arguments with spaces, as "$*" of the shell does."""
+  return " ".join(str(a) for a in args)
 
 
-# Print colored section sub-header with new line
-def print_subheader(msg):
-  line_sep("-")
-  _echo(f"{GREEN}{BOLD}{msg}{NORMAL}")
+def _titled(emoji, codes, msg):
+  """The emoji, then the message in the codes; only the emoji when the message
+  is empty. The form of the titles of the repo library."""
+  return f"{emoji} {codes}{msg}{NORMAL}" if msg else emoji
+
+
+# A major section: the header line, then the emoji and the title in green and
+# bold. The arguments are joined with spaces.
+def print_header(*msg):
+  line_sep("──── ⋆⋅☆⋅⋆ ────")
+  _echo(_titled(EMOJI_HEADER, f"{GREEN}{BOLD}", _join(msg)))
+
+
+# A step in a section: the subheader line, then the emoji and the title in
+# green. Not bold, so a step shows as a part of its section.
+def print_subheader(*msg):
+  line_sep("⋅")
+  _echo(_titled(EMOJI_SUBHEADER, GREEN, _join(msg)))
 
 
 # Print colored section header without new line
@@ -147,14 +164,18 @@ def print_warn(msg):
   _echo(f"{YELLOW}{BOLD}{msg}{NORMAL}")
 
 
-# Print line separator: the pattern once for each column of the terminal on
-# stdin, else 80 times
+# Print line separator: the pattern repeated, then cut to the width of the
+# terminal on stdin, else 80, so a pattern of more than one character never
+# wraps. The patterns of print_header and print_subheader are the ones of the
+# repo library. Keep patterns to single-width characters.
 def line_sep(pattern):
   try:
     width = os.get_terminal_size(0).columns
   except (OSError, ValueError):
     width = 80
-  _write(f"{pattern * width}\n".encode("utf-8", "surrogateescape"))
+  pattern = pattern or "="
+  reps = (width + len(pattern) - 1) // len(pattern)
+  _write(f"{(pattern * reps)[:width]}\n".encode("utf-8", "surrogateescape"))
 
 
 # True when the mise task <task> exists: the tool that ships it is selected
