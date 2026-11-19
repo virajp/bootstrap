@@ -7,6 +7,8 @@ format = 3
 bootstrap_commit = ""
 # The core branches, in order. Each one exists in git.
 core_branches = [ "main", "develop" ]
+# The base of each change: a new branch starts from it, and lands on it.
+default_branch = "develop"
 # The mise environments: dev (necessary) and ci.
 environments = [ "dev", "ci" ]
 # The product name, for the fnox keychain service.

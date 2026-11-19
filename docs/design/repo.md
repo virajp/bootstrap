@@ -21,7 +21,7 @@ in `[mise_env.dev.tools]`.
 
 | Task                     | Job                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------- |
-| `setup:configs`          | Runs `bootstrap sync` in the repository, and in each selected member.           |
+| `setup:configs`          | Syncs and lands the sync in the repository, and in each selected member.        |
 | `code:lint:60-bootstrap` | Hidden. The gate of the values. See [The gate](#the-gate-codelint60-bootstrap). |
 
 `setup:configs` (`setup/configs/_default.py`) has
@@ -29,13 +29,34 @@ in `[mise_env.dev.tools]`.
 also before the first sync. With `BOOTSTRAP_BIN` set, it runs that file in place
 of the `bootstrap` of mise. Its order is:
 
-1. It prints the header `Syncing the shared files from bootstrap ...`. Then it
-   runs `bootstrap sync` in the root of the repository, with
-   `MISE_PROJECT_ROOT` set to the root.
-2. With a member flag, it reads the members with `helpers.members()`
+1. Without `--dry-run`, it stops with exit 1 when the root, or a selected
+   member with `.config/bootstrap/`, has uncommitted or untracked files. It
+   examines each repository before it changes one.
+2. It prints the header `Syncing the shared files from bootstrap ...`. Then it
+   fetches `origin` and finds the default branch (`helpers.default_branch()`,
+   see [`default_branch`](bootstrap-config.md#default_branch)). It stops when
+   the default branch has diverged from `origin`.
+3. When the repository has the task `git:merge:<default branch>`, it stops if
+   the branch `ops/bootstrap-sync` exists, locally or on `origin`. Else it
+   creates `ops/bootstrap-sync` from the default branch, or from
+   `origin/<default branch>` when origin is ahead, and runs `bootstrap sync`
+   there, with `MISE_PROJECT_ROOT` set to the root. When the sync changed
+   files, it commits them as `ops: sync bootstrap <commit>` and runs
+   `mise run --cd <folder> git:merge:<default branch> ops/bootstrap-sync`:
+   a merge and a push, or a pull request under `landing = "pr"`. Then it goes
+   back to the branch where it started and deletes the local
+   `ops/bootstrap-sync`: under `pr`, origin keeps the branch for the request,
+   and else the default branch must have it. A sync with no change makes no
+   commit and deletes the branch.
+4. Without that task, for example at the first sync, it checks out the default
+   branch, runs `bootstrap sync` and commits the changes there, then goes back.
+5. With `--dry-run`, it only runs `bootstrap sync --dry-run`: no branch and no
+   commit.
+6. With a member flag, it reads the members with `helpers.members()`
    (`bootstrap config get repo.members`). For each selected member, it prints
-   the header `Syncing <label> ...`. Then it does step 1 in the folder of the
-   member, with `MISE_PROJECT_ROOT` set to that folder, `BOOTSTRAP_HOME` set to
+   the header `Syncing <label> ...`. Then it does steps 2 to 5 in the folder of
+   the member, with `MISE_PROJECT_ROOT` set to that folder, `BOOTSTRAP_HOME` set
+   to
    the root and `BOOTSTRAP_MEMBER` set to the name of the member, so the sync
    of the member writes its `[home]`.
 
@@ -45,7 +66,7 @@ syncs: see [cli.md](cli.md#the-cache-and-the-clone).
 
 | Flag                | Effect                                                                                                                                             |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--dry-run`         | Shows the changes. Writes nothing.                                                                                                                 |
+| `--dry-run`         | Shows the changes. Writes nothing, and makes no branch and no commit.                                                                              |
 | `--verbose`         | Sets `BOOTSTRAP_VERBOSE=1`. The task does not pass the flag to the engine.                                                                         |
 | `--all`, `--<name>` | Also syncs each submodule and sibling member, or the named one. Only a repository with such a member that has a `[members.<name>]` table has them. |
 
@@ -255,6 +276,23 @@ not exist, locally or on `origin`, and is not the unborn branch that HEAD
 names: create the branch, or remove it from
 `core_branches`.
 
+### The task `git:pull`
+
+The `git` tool ships `git:pull`. It fetches `origin` (with `--prune` and
+`--tags`) in the repository and in each submodule and sibling member of
+`helpers.members()` that is on the machine. Then, for each branch of the set,
+it creates a local branch that tracks `origin/<branch>` when none exists, and
+fast-forwards the local branch when origin is ahead. A branch that a worktree
+has checked out moves with `git merge --ff-only` in that worktree, so its files
+move too; each other branch moves with `git update-ref`. A local branch that is
+ahead of origin, or that has diverged, stays as it is: a diverged branch gets a
+warning. The task never merges, rebases or deletes a branch.
+
+The set is `core_branches` and the default branch of the repository, or
+`main` and `develop` in a member without `.config/bootstrap/`. With `--all`,
+it is each branch of origin. A failure of a fetch or a fast-forward gives exit
+1 after the task has done each other repository.
+
 ### The worktree tasks
 
 The `git` tool ships `git:worktree:create` and `git:worktree:delete`, and the
@@ -262,16 +300,22 @@ The `git` tool ships `git:worktree:create` and `git:worktree:delete`, and the
 git, not worktrunk. `create` and `delete` read `core_branches` with
 `helpers.bootstrap_get`, as the merge tasks do.
 
-- `git:worktree:create <branch> [--from <base>] [--no-setup]` adds the worktree
+- `git:worktree:create <branch> [--from <base> | --current] [--no-setup]`
+  adds the worktree
   in `.worktrees/<branch>` of the main checkout. It uses `worktrees/` only when
   `.worktrees/` is absent and `worktrees/` exists. A local branch is checked
   out. A branch only on `origin` becomes a local branch that tracks it, and the
   task prints a warning first: it trusts and runs the mise config of that
-  branch as is. Any other branch is new, cut from `--from`, else from the
-  current branch. Then it runs `mise trust` and `git:worktree:setup` in the new
+  branch as is. Any other branch is new, cut from `--from`, from the current
+  branch with `--current`, else from the default branch
+  (`helpers.default_branch()`, see
+  [`default_branch`](bootstrap-config.md#default_branch)): the local branch
+  when it exists, else `origin/<branch>`, with `--no-track`. Then it runs `mise
+  trust` and `git:worktree:setup` in the new
   worktree. `--no-setup` skips only the setup.
-- `create` stops with code 2 for a core branch, and for `--from` with a branch
-  that exists. It stops with code 1 when the path exists, or when git refuses
+- `create` stops with code 2 for a core branch, for `--from` and `--current`
+  together, and for `--from` or `--current` with a branch that exists. It stops
+  with code 1 when the path exists, or when git refuses
   the add, for example for a branch that another worktree has checked out.
   When the trust or the setup fails, the worktree stays: the task prints the
   command that runs the setup again and the `delete` command, and exits 1.

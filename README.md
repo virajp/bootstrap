@@ -329,4 +329,5 @@ runs a test: run `mise run test` by hand before you commit.
 ## Change a shared file
 
 1. Change the file in `repo/tools/<tool>/`, and push to `main`.
-2. In each repository, run `mise run setup:configs`, then commit the result.
+2. In each repository, run `mise run setup:configs`. It commits the sync and
+   lands it on the default branch.

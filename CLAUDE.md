@@ -205,7 +205,10 @@ differs in these points:
     4.0.0), an engine that refuses the read with code 2 (for example a
     `tools.*` key with no catalog, because `get` never fetches), another
     code or an answer that is not JSON stop it with `sys.exit(2)`.
-    `members(repo=None)` returns the submodule and sibling members of
+    `core_branches(repo=None)` returns the list `core_branches`, and
+    `default_branch(repo=None)` the base of each change: `default_branch`,
+    else `develop` or `main` when it is a core branch, else the first core
+    branch. `members(repo=None)` returns the submodule and sibling members of
     `[members.*]` as a list of `(name, folder, label, url)` tuples, and stops
     the task in the same way. `gate_files(gate, *args)` runs `gate_files.py`
     with `sys.executable` and returns the path of the list file.
@@ -449,13 +452,16 @@ the module of the test (see "The test cache" below).
   `CLAUDE_PLUGINS_CLONE`; without it, each of the four cases is skipped with
   one line.
 - `e2e/repo/commands` and `e2e/repo/tasks`: the rendered tasks. The entry cases
-  run `setup:configs` with a fake engine and with the real engine, and the
+  run `setup:configs` with a fake engine (also its branch, commit and landing
+  with the real merge task) and with the real engine, and the
   clone, lock and version cases; the landing cases run `git:merge:main` with the
   real merge library, and the other merge cases run it with a stub
   `_scripts/merge.py`; the worktree cases run `git:worktree:create` with
   `--no-setup` and `git:worktree:delete`; the LSP cases run `code:lsp:check`,
-  the setup:ai cases `setup:ai`, the setup case `setup`, and the
-  precommit cases `code:precommit` with and without `--all`; the gate_files
+  the setup:ai cases `setup:ai`, the setup case `setup`, the
+  precommit cases `code:precommit` with and without `--all`, the pull cases
+  `git:pull` with and without `--all`, and the worktree base cases; the
+  gate_files
   cases run the working tree's `gate_files.py` in a scratch repository with
   `--debug`; the `run_gate` cases run `code:lint:60-bootstrap`; the orchestrator
   case runs `code:lint` with `--all` and files, and expects exit 2; the Python
@@ -535,11 +541,7 @@ not have the tests. Run `mise run test` by hand before you commit.
 3. Commit on a local work branch. Land it on `main` with
    `mise run git:merge:main <branch>`, which merges and pushes.
 4. In this repository and in each consumer repository, run
-   `mise run setup:configs`, then commit the result. This repository allows no
-   direct commit on `main` (no `direct_commit`, which `bootstrap migrate` makes
-   `landing = "direct-merge"`), so the `no-commit-to-branch` hook refuses a
-   commit on `main`. Thus in this
-   repository, sync on a local `sync-<name>` branch, commit
-   `ops: sync bootstrap with <change>`, and land it with
-   `mise run git:merge:main sync-<name>`. The sync also updates
-   `bootstrap_commit`, which stays one merge behind `main`.
+   `mise run setup:configs` on a clean tree. It syncs on the branch
+   `ops/bootstrap-sync`, commits `ops: sync bootstrap <commit>`, lands the
+   branch on the default branch with `git:merge:<branch>` and deletes it. The
+   sync also updates `bootstrap_commit`, which stays one merge behind `main`.

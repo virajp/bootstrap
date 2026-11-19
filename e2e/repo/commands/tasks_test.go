@@ -589,7 +589,7 @@ func TestMergeFastForward(t *testing.T) {
 
 var (
 	oldGitTasks = []string{"code/merge/_default", "code/merge/main", "code/merge/develop", "setup/worktree", "code/worktrees"}
-	newGitTasks = []string{"git/merge/main.py", "git/merge/develop.py", "git/worktree/create.py", "git/worktree/setup.py",
+	newGitTasks = []string{"git/pull.py", "git/merge/main.py", "git/merge/develop.py", "git/worktree/create.py", "git/worktree/setup.py",
 		"git/worktree/delete.py", "git/worktree/list.py"}
 )
 
@@ -783,5 +783,79 @@ func TestCodeFiles(t *testing.T) {
 			c.CheckThat("code_files: dprint.jsonc, a default", rc.FileHas(dprint, `"**/*-lock.yaml"`))
 			c.CheckThat("code_files: dprint.jsonc, the value of the repository", rc.FileHas(dprint, `"**/generated"`))
 			c.CheckThat("code_files: dprint.jsonc, below the folder of the value", rc.FileHas(dprint, `"**/generated/**"`))
+		}})
+}
+
+// git:worktree:create cuts a new branch from the default branch, from the
+// current branch with --current, and refuses --from with --current.
+func TestWorktreeBase(t *testing.T) {
+	syncedCall := synced(func(*rc.Case) int { return 0 })
+	rc.Run(t, rc.Spec{Name: "git:worktree:create, the base of a new branch", Values: bothCore,
+		Change: precommitBothBranches, Call: syncedCall,
+		Check: func(c *rc.Case) {
+			// develop is one commit ahead of main, and the run is on main.
+			git(c, c.Consumer, "checkout", "--quiet", "develop")
+			git(c, c.Consumer, "merge", "--quiet", "--ff-only", "main")
+			git(c, c.Consumer, "commit", "--quiet", "--no-verify", "--allow-empty", "-m", "dev")
+			git(c, c.Consumer, "checkout", "--quiet", "main")
+			got := gitTask(c, "git:worktree:create", "a", "--no-setup")
+			c.CheckThat("worktree base: create exits 0", got == 0)
+			c.CheckThat("worktree base: a starts from the default branch develop",
+				plainGit(c.Consumer, "rev-parse", "a") == plainGit(c.Consumer, "rev-parse", "develop"))
+			got = gitTask(c, "git:worktree:create", "b", "--current", "--no-setup")
+			c.CheckThat("worktree base: --current exits 0", got == 0)
+			c.CheckThat("worktree base: b starts from the current branch main",
+				plainGit(c.Consumer, "rev-parse", "b") == plainGit(c.Consumer, "rev-parse", "main"))
+			got = gitTask(c, "git:worktree:create", "d", "--current", "--from", "main", "--no-setup")
+			c.CheckThat("worktree base: --from with --current exits 2", got == 2)
+		}})
+}
+
+// git:pull brings the core branches up to date from origin: a fast-forward
+// when origin is ahead, also of the checked-out branch, and no change when the
+// local branch is ahead or has diverged. --all also creates a local branch for
+// each other branch of origin.
+func TestGitPull(t *testing.T) {
+	pull := synced(func(c *rc.Case) int {
+		origin := filepath.Join(c.Dir, "origin.git")
+		other := filepath.Join(c.Dir, "other")
+		git(c, c.Dir, "init", "--quiet", "--bare", "-b", "main", origin)
+		git(c, c.Consumer, "remote", "add", "origin", origin)
+		git(c, c.Consumer, "branch", "--force", "develop", "main")
+		git(c, c.Consumer, "push", "--quiet", "--no-verify", "-u", "origin", "main", "develop")
+		// Another clone pushes a commit to develop and to main, and a branch
+		// feature. The consumer gets a commit on main that origin does not
+		// have, so main diverges.
+		git(c, c.Dir, "clone", "--quiet", origin, other)
+		for _, b := range []string{"develop", "main"} {
+			git(c, other, "checkout", "--quiet", b)
+			git(c, other, "commit", "--quiet", "--no-verify", "--allow-empty", "-m", "remote "+b)
+		}
+		git(c, other, "checkout", "--quiet", "-b", "feature")
+		git(c, other, "push", "--quiet", "--no-verify", "origin", "develop", "main", "feature")
+		git(c, c.Consumer, "commit", "--quiet", "--no-verify", "--allow-empty", "-m", "local main")
+		git(c, c.Consumer, "checkout", "--quiet", "develop")
+		return 0
+	})
+	rc.Run(t, rc.Spec{Name: "git:pull, the core branches", Values: bothCore,
+		Change: precommitBothBranches, Call: pull,
+		Check: func(c *rc.Case) {
+			origin := filepath.Join(c.Dir, "origin.git")
+			got := gitTask(c, "git:pull")
+			c.CheckThat("git:pull: exits 0", got == 0)
+			c.CheckThat("git:pull: develop, checked out, is fast-forwarded",
+				plainGit(c.Consumer, "rev-parse", "develop") == plainGit(origin, "rev-parse", "develop"))
+			c.CheckThat("git:pull: the files of develop move too", plainGit(c.Consumer, "status", "--porcelain") == "")
+			c.CheckThat("git:pull: the fast-forward line", c.LogHas("develop: fast-forwarded 1 commit(s)"))
+			c.CheckThat("git:pull: main has diverged and is kept", c.LogHas("main: has diverged from origin, kept"))
+			c.CheckThat("git:pull: main keeps its local commit",
+				plainGit(c.Consumer, "log", "-1", "--format=%s", "main") == "local main")
+			c.CheckThat("git:pull: no local feature without --all",
+				plainGit(c.Consumer, "branch", "--list", "feature") == "")
+			got = gitTask(c, "git:pull", "--all")
+			c.CheckThat("git:pull --all: exits 0", got == 0)
+			c.CheckThat("git:pull --all: feature is created from origin",
+				plainGit(c.Consumer, "rev-parse", "feature") == plainGit(origin, "rev-parse", "feature"))
+			c.CheckThat("git:pull --all: develop is up to date", c.LogHas("develop: up to date"))
 		}})
 }

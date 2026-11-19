@@ -80,7 +80,7 @@ The tool also sets:
 | Task                     | Use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `setup`                  | Install the tools, the dependencies and the hooks, and run `setup:vscode` when the repository has it. `--upgrade` also upgrades them, and runs `setup:ai --upgrade` when the repository has it. With members, `--all` and `--<member>` also set up those members.                                                                                                                                                                                                                                                         |
-| `setup:configs`          | Sync the shared files: it runs `bootstrap sync`. `--dry-run` shows the changes. `--verbose` lists each file. With members, `--all` and `--<member>` also sync those members.                                                                                                                                                                                                                                                                                                                                              |
+| `setup:configs`          | Sync the shared files on the branch `ops/bootstrap-sync`, commit them and land them on the default branch. `--dry-run` shows the changes. `--verbose` lists each file. With members, `--all` and `--<member>` also sync those members.                                                                                                                                                                                                                                                                                    |
 | `setup:mise`             | Reshim, doctor and install. `--upgrade` also upgrades.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `git:worktree:setup`     | Prepare a new git worktree. `git:worktree:create` and worktrunk run it. It copies the `[worktree].files` of `repo.toml` from the main worktree, runs the `worktree_install` of each member as `mise x --cd <folder> -- bash -c <command>`, and it does less than `setup`.                                                                                                                                                                                                                                                 |
 | `code`                   | Run `code:format`, `code:lint` and `code:sec`. `--debug` goes to each of them, and `--all` to `code:format` and `code:lint`.                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -107,7 +107,23 @@ for `test`, `test:e2e` and `test:golden`, for example
 `bootstrap` 4.0.0 or newer: without an engine that answers, they stop with
 code 2. A member that is not on the machine is skipped with a warning.
 
-`setup:configs` runs `bootstrap sync` in the root, then in each selected
+`setup:configs` lands each sync as a change of its own. It stops with exit 1
+when the repository, or a selected member, has uncommitted or untracked files,
+before it changes a repository. In each repository, it fetches `origin`, and
+stops when the branch `ops/bootstrap-sync` exists, locally or on `origin`.
+Then it creates `ops/bootstrap-sync` from the default branch (`default_branch`
+of `repo.toml`, or `origin/<branch>` when origin is ahead), runs
+`bootstrap sync` on it and commits the changes as `ops: sync bootstrap
+<commit>`.
+It lands the branch with `git:merge:<default branch>`: a merge and a push, or a
+pull request under `landing = "pr"`, where the branch stays on `origin` for the
+request. Then it goes back to the branch where it started and deletes the local
+branch. A sync with no change makes no commit. Without the task
+`git:merge:<default branch>`, for example at the first sync, it commits the
+sync directly on the default branch. `--dry-run` only shows the changes: no
+branch and no commit.
+
+`setup:configs` runs this in the root, then in each selected
 member, with `BOOTSTRAP_HOME` and `BOOTSTRAP_MEMBER`, so the sync of the member
 writes its `[home]`. It skips a member without `.config/bootstrap/` with the
 warning `member <name>: run bootstrap migrate there`. `BOOTSTRAP_BIN`, a local

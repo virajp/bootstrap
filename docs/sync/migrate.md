@@ -52,6 +52,7 @@ into `.config/bootstrap/`.
 | `[tool.ruff]` or `[tool.ruff.format]` format settings in a `pyproject.toml`, or `.config/mise/tasks/code/format/40-ruff`            | M47, after the sync.                                                                                                                                       |
 | An own task that sources a shell library of `.config/mise/tasks/_scripts/`, or an own part that calls a shell function of `helpers` | M48, after the sync.                                                                                                                                       |
 | `main` and `develop` in `core_branches`, and `main` with a commit that `develop` does not have                                      | M49, before the next `git:merge:main`.                                                                                                                     |
+| A script, a hook or a habit that runs `setup:configs` on a dirty tree, or commits its result by hand                                | M50, after the release with `default_branch`.                                                                                                              |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -1534,3 +1535,36 @@ sync:
 A `landing = "pr"` of `[branches.main]` does not change: the forge merges. A
 pull request on GitHub cannot fast-forward, so a repository that wants this
 model sets `landing = "direct-merge"` for `main`.
+
+## M50: `setup:configs` commits and lands the sync
+
+`setup:configs` now lands each sync as a change of its own. It stops on a
+tree with uncommitted or untracked files. It syncs on the branch
+`ops/bootstrap-sync`, commits the changes as `ops: sync bootstrap <commit>`,
+lands the branch on the default branch with `git:merge:<branch>`, and deletes
+the local branch. Under `landing = "pr"`, it opens a pull request, and the
+branch stays on `origin` until the request merges. The new key
+`default_branch` of `repo.toml` names the default branch. Without it, the
+default branch is `develop` when it is a core branch, else `main`.
+
+The new tasks read `default_branch` with `bootstrap config get`, so they need
+the release of `bootstrap` that has the key. Do these steps after that
+release:
+
+1. Make sure that `mise x -- bootstrap --version` gives that release or newer.
+   If not, run `mise up github:virajp/bootstrap`.
+2. Commit or stash each change. Then run `mise run setup:configs`. Do not
+   commit its result by hand: the task does it.
+3. Change each script or hook that runs `setup:configs` and then commits, so
+   that it no longer commits.
+4. If the base of the changes is not `develop` or `main`, set it:
+
+   ```bash
+   bootstrap config set repo.default_branch <branch>
+   ```
+
+   The branch must be in `core_branches`.
+
+`git:pull` is a new task: it brings the core branches up to date from
+`origin`, also in each member. `git:worktree:create` now cuts a new branch from
+the default branch. Use `--current` for the old behavior.

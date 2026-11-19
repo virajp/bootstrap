@@ -94,6 +94,11 @@ web = "https://web.example.com"
 		{"branch not core", "format = 3\nrepo_name = \"r\"\ncore_branches = [ \"main\" ]\n[branches.develop]\nlanding = \"pr\"\n", "[branches.develop] in repo.toml: develop is not in core_branches - add it there, or remove the table"},
 		{"main direct-commit alone", head + "[branches.main]\nlanding = \"direct-commit\"\n", `[branches.main] in repo.toml has landing = "direct-commit", but [branches.develop] does not - set landing = "direct-commit" for develop too, or change main`},
 		{"both direct-commit", head + "[branches.main]\nlanding = \"direct-commit\"\n[branches.develop]\nlanding = \"direct-commit\"\n", ""},
+		{"default_branch develop", head + "default_branch = \"develop\"\n", ""},
+		{"default_branch not core", head + "default_branch = \"trunk\"\n", `default_branch = "trunk" in repo.toml is not in core_branches - add it there, or change default_branch`},
+		{"default_branch main with develop", head + "default_branch = \"main\"\n", `default_branch = "main" in repo.toml, but only develop merges into main - set merge_from or merge_never in [branches.main], or change default_branch`},
+		{"default_branch main with a list", head + "default_branch = \"main\"\n[branches.main]\nmerge_never = []\n", ""},
+		{"default_branch main alone", "format = 3\nrepo_name = \"r\"\ncore_branches = [ \"main\" ]\ndefault_branch = \"main\"\n", ""},
 		{"main direct-commit, no develop", "format = 3\nrepo_name = \"r\"\ncore_branches = [ \"main\" ]\n[branches.main]\nlanding = \"direct-commit\"\n", ""},
 	}
 	for _, c := range cases {

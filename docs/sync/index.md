@@ -31,8 +31,10 @@ A repository uses `bootstrap` in two ways, in this sequence:
    `bootstrap migrate` to write the values file and to do the first sync, and
    `bootstrap add tool <tool…>` to add the other tools.
 2. **Sync, each time after that, by `setup:configs`.** The `mise` tool ships
-   the task `setup:configs`. The task runs `bootstrap sync`, which copies the
-   newest shared files of the selected tools into the repository.
+   the task `setup:configs`. The task runs `bootstrap sync` on the branch
+   `ops/bootstrap-sync`, which copies the newest shared files of the selected
+   tools into the repository. Then it commits the changes and lands them on the
+   default branch.
 
 The adoption makes sure that the repository is ready for the sync. The sync
 then keeps the repository equal to `bootstrap`, without an agent.
