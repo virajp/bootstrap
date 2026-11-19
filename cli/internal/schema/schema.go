@@ -63,6 +63,7 @@ var Repo = []Key{
 	{Path: "product_name", Type: String, Sync: true},
 	{Path: "repo_url", Type: String, Sync: true},
 	{Path: "core_branches", Type: StringList, Required: true, Sync: true},
+	{Path: "default_branch", Type: String},
 	{Path: "branches", Type: Table, Sync: true},
 	{Path: "branches.*", Type: Table, Sync: true},
 	{Path: "branches.*.landing", Type: String, Enum: []string{LandingPR, LandingDirectMerge, LandingDirectCommit}, Sync: true, Default: LandingDirectMerge},
@@ -252,8 +253,9 @@ func Landing(raw *source.Obj, b string) string {
 }
 
 // branchRules are the rules between the keys of the branches: each
-// `[branches.<b>]` names a core branch, and with main as direct-commit, a
-// core branch develop is direct-commit too.
+// `[branches.<b>]` names a core branch, with main as direct-commit a core
+// branch develop is direct-commit too, and default_branch is a core branch
+// that a branch from it can land on.
 func branchRules(raw *source.Obj, shown string) []*fail.Error {
 	var probs []*fail.Error
 	core := map[string]bool{}
@@ -271,7 +273,26 @@ func branchRules(raw *source.Obj, shown string) []*fail.Error {
 	if core["main"] && core["develop"] && Landing(raw, "main") == LandingDirectCommit && Landing(raw, "develop") != LandingDirectCommit {
 		probs = append(probs, usage("[branches.main] in %s has landing = %q, but [branches.develop] does not - set landing = %q for develop too, or change main", shown, LandingDirectCommit, LandingDirectCommit))
 	}
+	if d, ok := raw.Get("default_branch").(string); ok {
+		if !core[d] {
+			probs = append(probs, usage("default_branch = %q in %s is not in core_branches - add it there, or change default_branch", d, shown))
+		} else if d == "main" && core["develop"] && !branchHasList(raw, "main") {
+			// The defaults of a merge into main with develop let only develop in,
+			// so a branch from main, for example the sync branch, cannot land.
+			probs = append(probs, usage("default_branch = \"main\" in %s, but only develop merges into main - set merge_from or merge_never in [branches.main], or change default_branch", shown))
+		}
+	}
 	return probs
+}
+
+// branchHasList tells whether [branches.<b>] has merge_from or merge_never.
+func branchHasList(raw *source.Obj, b string) bool {
+	if bs, ok := raw.Get("branches").(*source.Obj); ok {
+		if t, ok := bs.Get(b).(*source.Obj); ok {
+			return t.Has("merge_from") || t.Has("merge_never")
+		}
+	}
+	return false
 }
 
 // memberRules are the rules between the keys of the members and of

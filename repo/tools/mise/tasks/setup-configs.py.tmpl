@@ -8,7 +8,7 @@
 # MISE description="Sync the shared files of this repository's tools from bootstrap"
 # MISE tools={uv="latest", python="3.14", "github:virajp/bootstrap"="latest"}
 
-# USAGE flag "--dry-run" help="show the changes without writing them"
+# USAGE flag "--dry-run" help="show the changes without writing them; no branch and no commit"
 # USAGE flag "--verbose" help="list each file, also an unchanged one"
 <%/* The member flags are only for the submodule and sibling members, each a
    separate repository: a folder of a monorepo is part of this tree. A git
@@ -37,6 +37,24 @@ import helpers  # noqa: E402
 # `bootstrap sync` fetches the bootstrap clone into ~/.cache/bootstrap/,
 # examines its version and syncs the repository of its folder. BOOTSTRAP_BIN,
 # a local build, replaces the bootstrap of mise.
+#
+# Each repository lands its sync as a change of its own:
+#
+#   1. The task stops when a repository has uncommitted or untracked files, or
+#      when the branch ops/bootstrap-sync exists, here or on origin.
+#   2. It creates ops/bootstrap-sync from the default branch (default_branch of
+#      .config/bootstrap/repo.toml), up to date with origin, and syncs on it.
+#   3. If the sync changed files, it commits them and lands the branch with
+#      git:merge:<default branch>: a merge and a push, or a pull request under
+#      landing = "pr". Under pr, the branch stays on origin for the request.
+#   4. It goes back to the branch where it started, and deletes the local
+#      ops/bootstrap-sync.
+#
+# Without the task git:merge:<default branch>, for example at the first sync,
+# the task commits the sync directly on the default branch. With --dry-run, it
+# only shows the changes: no branch and no commit.
+
+SYNC_BRANCH = "ops/bootstrap-sync"
 
 # An empty list adds no argument.
 dry_run = ["--dry-run"] if os.environ.get("usage_dry_run") == "true" else []
@@ -44,16 +62,39 @@ if os.environ.get("usage_verbose") == "true":
   os.environ["BOOTSTRAP_VERBOSE"] = "1"
 
 
-def sync_repo(folder, env=None):
-  """Run bootstrap in the folder of a repository, with that folder as
-  MISE_PROJECT_ROOT, as mise runs a task. env adds variables to the
-  environment of bootstrap. The first failure stops the task with its code."""
-  helpers.print_header("Syncing the shared files from bootstrap ...")
+def git(folder, *args):
+  """Runs git in folder. Returns (code, stdout without the last line break)."""
+  result = subprocess.run(
+    ["git", "-C", folder, *args], check=False, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
+  )
+  return result.returncode, result.stdout.rstrip("\n")
+
+
+def fail(message, *hints, code=1):
+  """Stops the task with the message and a line for each hint."""
+  helpers.print_error(message)
+  for hint in hints:
+    helpers.print_warn(f"- {hint}")
+  sys.exit(code)
+
+
+def require_clean(folder, label):
+  """Stops the task when the repository of folder has uncommitted or untracked
+  files. A change inside a submodule does not count; a new commit of it does."""
+  _, out = git(folder, "status", "--porcelain", "--ignore-submodules=dirty")
+  if out:
+    fail(f"{label} has uncommitted or untracked files.", "commit or stash them, then run setup:configs again")
+
+
+def run_engine(folder, env=None):
+  """Runs bootstrap sync in folder, with that folder as MISE_PROJECT_ROOT, as
+  mise runs a task. env adds variables to the environment of bootstrap.
+  Returns the exit code of the engine."""
   # The tools come from the [tools.*] tables of .config/bootstrap/tools.toml
   # and from the required members of the pack base.
   engine = os.environ.get("BOOTSTRAP_BIN") or shutil.which("bootstrap") or "bootstrap"
   try:
-    rc = subprocess.run(
+    return subprocess.run(
       [engine, "sync", *dry_run],
       check=False,
       cwd=folder,
@@ -62,21 +103,158 @@ def sync_repo(folder, env=None):
   except OSError as e:
     # The codes of the shell for a command that it cannot find or run.
     print(f"{engine}: {e.strerror}", file=sys.stderr, flush=True)
-    rc = 127 if isinstance(e, FileNotFoundError) else 126
+    return 127 if isinstance(e, FileNotFoundError) else 126
+
+
+def has_task(folder, path):
+  """Whether the repository of folder has the task file path, with or without
+  .py, below .config/mise/tasks/."""
+  base = f"{folder}/.config/mise/tasks/{path}"
+  return os.path.isfile(base) or os.path.isfile(f"{base}.py")
+
+
+def ref(folder, name):
+  """The commit of the ref name, or "" when it does not exist."""
+  code, out = git(folder, "rev-parse", "--verify", "--quiet", name)
+  return out if code == 0 else ""
+
+
+def switch(folder, *args):
+  """git switch in folder, or stop."""
+  if git(folder, "switch", "--quiet", *args)[0] != 0:
+    fail(f"git switch {' '.join(args)} failed in {folder}.")
+
+
+def base_of(folder, default):
+  """The ref that the sync starts from: the default branch, or origin/<default
+  branch> when origin is ahead of it. It stops when the two diverge."""
+  local, remote = ref(folder, f"refs/heads/{default}"), ref(folder, f"refs/remotes/origin/{default}")
+  if not local and not remote:
+    fail(f"the default branch {default} does not exist here or on origin.")
+  if not remote or local == remote:
+    return default
+  if not local or git(folder, "merge-base", "--is-ancestor", local, remote)[0] == 0:
+    return f"origin/{default}"
+  if git(folder, "merge-base", "--is-ancestor", remote, local)[0] == 0:
+    return default
+  fail(
+    f"{default} has diverged from origin/{default}.",
+    f"merge or rebase {default} by hand, then run setup:configs again",
+  )
+
+
+def commit_sync(folder, repo):
+  """Commits each change of the sync. Returns False when the sync changed
+  nothing."""
+  if not git(folder, "status", "--porcelain", "--ignore-submodules=dirty")[1]:
+    return False
+  commit = str(helpers.bootstrap_get("repo.bootstrap_commit", repo).get("value") or "")[:7]
+  helpers.print_wait(f"Committing the sync {commit} ... ".replace("  ", " "))
+  if git(folder, "add", "--all")[0] != 0:
+    helpers.print_error()
+    fail("git add failed.")
+  # The commit runs the hooks of the repository, so its output stays visible.
+  result = subprocess.run(
+    ["git", "-C", folder, "commit", "--quiet", "-m", f"ops: sync bootstrap {commit}".rstrip()], check=False
+  )
+  if result.returncode != 0:
+    helpers.print_error()
+    fail("the commit of the sync failed.", "fix the cause, commit the files, then land the branch by hand")
+  helpers.print_success()
+  return True
+
+
+def sync_repo(folder, env=None):
+  """Syncs the repository of folder, and lands the sync. env adds variables
+  to the environment of bootstrap. The first failure stops the task."""
+  helpers.print_header("Syncing the shared files from bootstrap ...")
+  if dry_run:
+    rc = run_engine(folder, env)
+    if rc != 0:
+      sys.exit(rc)
+    return
+  repo = None if folder == root else folder
+  default = helpers.default_branch(repo)
+  if git(folder, "remote", "get-url", "origin")[0] == 0:
+    helpers.print_wait("Fetching origin ... ")
+    if git(folder, "fetch", "--quiet", "origin")[0] != 0:
+      helpers.print_error()
+      fail("FAILED to fetch origin!")
+    helpers.print_success()
+  code, start = git(folder, "symbolic-ref", "--quiet", "--short", "HEAD")
+  back = [start] if code == 0 else ["--detach", ref(folder, "HEAD")]
+  base = base_of(folder, default)
+
+  if not has_task(folder, f"git/merge/{default}"):
+    # No merge task: the sync goes directly on the default branch.
+    helpers.print_info(f"No task git:merge:{default}, so the sync is committed directly on {default}")
+    if start != default:
+      switch(folder, default)
+    if base != default and git(folder, "merge", "--quiet", "--ff-only", base)[0] != 0:
+      fail(f"FAILED to fast-forward {default} to {base}!")
+    rc = run_engine(folder, env)
+    if rc != 0:
+      fail("the sync failed.", f"the changes stay on {default}", code=rc)
+    commit_sync(folder, repo)
+    if start != default:
+      switch(folder, *back)
+    return
+
+  if ref(folder, f"refs/heads/{SYNC_BRANCH}") or ref(folder, f"refs/remotes/origin/{SYNC_BRANCH}"):
+    fail(
+      f"the branch {SYNC_BRANCH} exists, here or on origin.",
+      "land or delete it (an open pull request keeps it on origin), then run setup:configs again",
+    )
+  helpers.print_info(f"Syncing on {SYNC_BRANCH}, from {base}")
+  switch(folder, "--no-track", "-c", SYNC_BRANCH, base)
+  rc = run_engine(folder, env)
   if rc != 0:
-    sys.exit(rc)
+    fail(
+      "the sync failed.",
+      f"the changes stay on {SYNC_BRANCH}",
+      f"to undo them: `git restore --staged --worktree . && git switch {back[-1]} && git branch -D {SYNC_BRANCH}`",
+      code=rc,
+    )
+  if not commit_sync(folder, repo):
+    helpers.print_info("The sync changed nothing, so there is nothing to land")
+    switch(folder, *back)
+    git(folder, "branch", "--quiet", "-D", SYNC_BRANCH)
+    return
+
+  landing = helpers.bootstrap_get(f'repo.branches."{default}".landing', repo).get("value") or "direct-merge"
+  # The merge task of the repository lands the branch, with its own checks and
+  # hook pass. A usage_* variable of this task must not reach it.
+  env_merge = {k: v for k, v in os.environ.items() if not k.startswith("usage_")}
+  rc = subprocess.run(
+    ["mise", "run", "--cd", folder, f"git:merge:{default}", SYNC_BRANCH], check=False, env=env_merge
+  ).returncode
+  if rc != 0:
+    fail(
+      f"the landing of {SYNC_BRANCH} failed.",
+      f"the branch {SYNC_BRANCH} stays: fix the cause, then run `mise run git:merge:{default} {SYNC_BRANCH}`",
+      code=rc,
+    )
+  helpers.print_header(f"Removing the branch {SYNC_BRANCH} ...")
+  switch(folder, *back)
+  # Under pr the branch did not merge here, and origin keeps it for the
+  # request. Else the default branch must have the sync before the delete:
+  # `git branch -d` compares with the current branch, which can be another one.
+  if landing != "pr" and git(folder, "merge-base", "--is-ancestor", SYNC_BRANCH, default)[0] != 0:
+    fail(f"{default} does not have {SYNC_BRANCH}, so the branch stays.")
+  if git(folder, "branch", "--quiet", "-D", SYNC_BRANCH)[0] != 0:
+    fail(f"FAILED to delete the branch {SYNC_BRANCH}!")
+  helpers.print_success(f"Deleted the local branch {SYNC_BRANCH}")
 
 
 root = os.environ["MISE_PROJECT_ROOT"]
-sync_repo(root)
 <% if $subs -%>
 
 # Each member is a separate repository with its own .config/bootstrap/. The
-# members come from [members.*] of .config/bootstrap/repo.toml, read after the
-# sync above. A member that is not on this machine, or that has no
-# .config/bootstrap/ (no values, or the old form), is skipped with a warning.
-# The list is read only when a member flag is given. The first failure of a
-# sync stops the task: the last header names the
+# members come from [members.*] of .config/bootstrap/repo.toml. A member that
+# is not on this machine, or that has no .config/bootstrap/ (no values, or the
+# old form), is skipped with a warning. The list is read only when a member
+# flag is given. Each repository must be clean before the first one changes.
+# The first failure of a sync stops the task: the last header names the
 # repository that failed. BOOTSTRAP_HOME and BOOTSTRAP_MEMBER tell the sync of
 # the member its home repository and its name, so it writes [home].
 want = os.environ.get("usage_all") == "true"
@@ -84,14 +262,23 @@ want = os.environ.get("usage_all") == "true"
 if os.environ.get("usage_<% . | strings.ReplaceAll "-" "_" %>") == "true":
   want = True
 <% end -%>
-member_list = helpers.members() if want else []
-for name, folder, label, _ in member_list:
+selected = []
+for name, folder, label, _ in helpers.members() if want else []:
   # A name outside the member grammar has no flag, so it is skipped.
   if not re.fullmatch(r"[A-Za-z0-9_-]+", name):
     continue
   flag = f"usage_{name.replace('-', '_')}"
   if os.environ.get("usage_all") != "true" and os.environ.get(flag) != "true":
     continue
+  selected.append((name, folder, label))
+
+if not dry_run:
+  require_clean(root, "this repository")
+  for name, folder, label in selected:
+    if os.path.isdir(f"{root}/{folder}/.config/bootstrap"):
+      require_clean(f"{root}/{folder}", f"member {name}")
+sync_repo(root)
+for name, folder, label in selected:
   helpers.print_header(f"Syncing {label} ...")
   if not os.path.isdir(f"{root}/{folder}"):
     helpers.print_warn(f"member {name}: {folder} is not on this machine")
@@ -100,4 +287,8 @@ for name, folder, label, _ in member_list:
     helpers.print_warn(f"member {name}: run bootstrap migrate there")
     continue
   sync_repo(f"{root}/{folder}", {"BOOTSTRAP_HOME": root, "BOOTSTRAP_MEMBER": name})
+<% else -%>
+if not dry_run:
+  require_clean(root, "this repository")
+sync_repo(root)
 <% end -%>

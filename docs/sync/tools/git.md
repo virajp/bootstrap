@@ -28,6 +28,7 @@ A `[tools.git]` table gives values.
 | `.config/wt.toml`                           | Seed      | The worktrunk config: the `pre-start` steps and the commit convention (see "worktrunk").              |
 | `.config/mise/tasks/_scripts/merge.py`      | Library   | `merge_to_destination_branch`, which the merge tasks use.                                             |
 | `.config/mise/tasks/code/git-config.py`     | Synced    | The task `code:git-config`.                                                                           |
+| `.config/mise/tasks/git/pull.py`            | Synced    | The task `git:pull`.                                                                                  |
 | `.config/mise/tasks/git/merge/develop.py`   | Synced    | The task `git:merge:develop`. Only with `when = "git.has_develop"`: `core_branches` has `develop`.    |
 | `.config/mise/tasks/git/merge/main.py`      | Synced    | The task `git:merge:main`. Only with `when = "git.has_main"`: `core_branches` has `main`.             |
 | `.config/mise/tasks/git/worktree/create.py` | Synced    | The task `git:worktree:create`.                                                                       |
@@ -91,13 +92,14 @@ environment, so a CI job still gets the merge tasks and the hooks.
 
 ## Tasks
 
-| Task                                                        | Use                                                                                                                                        |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `code:git-config`                                           | Find forbidden keys in the local git config. `--fix` removes them.                                                                         |
-| `git:merge:develop [<branch>]`                              | Land a branch on `develop`. The default is the current branch. Only when `core_branches` has `develop`.                                    |
-| `git:merge:main [<branch>]`                                 | Land a branch on `main`. The default is `develop` when it is a core branch, else the current branch. Only when `core_branches` has `main`. |
-| `git:worktree:create <branch> [--from <base>] [--no-setup]` | Add a worktree for the branch, then run `mise trust` and `git:worktree:setup` in it. See below.                                            |
-| `git:worktree:delete <branch>`                              | Remove the worktree of the branch, and the branch when a core branch has each of its commits. See below.                                   |
+| Task                                                                     | Use                                                                                                                                            |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `code:git-config`                                                        | Find forbidden keys in the local git config. `--fix` removes them.                                                                             |
+| `git:pull [--all]`                                                       | Bring the core branches and the default branch up to date from `origin`, here and in each member. `--all`: each branch of `origin`. See below. |
+| `git:merge:develop [<branch>]`                                           | Land a branch on `develop`. The default is the current branch. Only when `core_branches` has `develop`.                                        |
+| `git:merge:main [<branch>]`                                              | Land a branch on `main`. The default is `develop` when it is a core branch, else the current branch. Only when `core_branches` has `main`.     |
+| `git:worktree:create <branch> [--from <base> \| --current] [--no-setup]` | Add a worktree for the branch, then run `mise trust` and `git:worktree:setup` in it. See below.                                                |
+| `git:worktree:delete <branch>`                                           | Remove the worktree of the branch, and the branch when a core branch has each of its commits. See below.                                       |
 
 The name of a merge task is its destination. The derive script gives
 `has_main` and `has_develop`, and the `when` of each merge task selects the
@@ -132,14 +134,24 @@ task of the root repository and runs it in the root folder. Without the stop,
 that task lands a branch of the root. Run `mise run setup:configs` in the
 submodule to get its own merge tasks.
 
+`git:pull` fetches `origin` in the repository and in each submodule and
+sibling member on the machine. For each core branch and the default branch, it
+creates a missing local branch from `origin`, and fast-forwards a local branch
+that `origin` is ahead of. It keeps a branch that has local commits, and warns
+about a branch that has diverged. `--all` does the same for each branch of
+`origin`.
+
 `git:worktree:create` adds the worktree in `.worktrees/<branch>` of the main
 checkout, or in `worktrees/<branch>` when only `worktrees/` exists. It checks
 out a local branch. A branch only on `origin` becomes a local branch that
 tracks it: the task first prints a warning, because it trusts and runs the mise
-config of that branch as is. Any other branch is new, from `--from`, else from
-the current branch. `--no-setup` skips `git:worktree:setup`; `mise trust`
-always runs. The task stops with code 2 for a core branch, and for `--from`
-with a branch that exists. It stops with code 1 when the path exists or git
+config of that branch as is. Any other branch is new, from `--from`, from the
+current branch with `--current`, else from the default branch
+(`default_branch` of `repo.toml`, local or on `origin`). `--no-setup` skips
+`git:worktree:setup`; `mise trust`
+always runs. The task stops with code 2 for a core branch, for `--from` and
+`--current` together, and for either flag with a branch that exists. It stops
+with code 1 when the path exists or git
 refuses the add. When the trust or the setup fails, the worktree stays, and
 the task prints the commands that set it up again or delete it.
 

@@ -41,6 +41,7 @@ format = 3
 
 bootstrap_commit = ""
 core_branches = [ "main", "develop" ]
+default_branch = "develop"
 environments = [ "dev", "ci" ]
 product_name = "my-product"
 repo_name = "my-repo"
@@ -121,6 +122,7 @@ web = "PATCH"
 | `product_name`                      | String          | No        | `fnox.toml`                                                                   |
 | `repo_url`                          | String          | No        | `github` tool, `[home].url` of a member                                       |
 | `core_branches`                     | List of strings | Yes       | The scripts of `git`                                                          |
+| `default_branch`                    | String          | No        | `setup:configs`, `git:pull`, `git:worktree:create`                            |
 | `[branches.<branch>].landing`       | String          | No        | `git:merge:<branch>`, the scripts of `git`                                    |
 | `[branches.<branch>].merge_from`    | List of strings | No        | `git:merge:<branch>`                                                          |
 | `[branches.<branch>].merge_never`   | List of strings | No        | `git:merge:<branch>`                                                          |
@@ -266,6 +268,24 @@ bootstrap migrate again".
   [repo.md](repo.md#the-branch-model-and-the-merge-tasks).
 - `protected_branches` of `git` is each core branch whose landing is not
   `direct-commit`. See [repo.md](repo.md#the-protected-branches).
+
+### `default_branch`
+
+The base of each change: the branch that a new branch starts from, and that
+the change lands on. It can be different from the default branch of the
+remote. It must be in `core_branches`. Without the key, it is `develop` when
+`develop` is a core branch, else `main` when `main` is a core branch, else the
+first core branch. `helpers.default_branch()` gives it to the tasks.
+
+- `setup:configs` starts `ops/bootstrap-sync` from it, and lands the sync on
+  it. See [repo.md](repo.md#the-entry-tasks).
+- `git:worktree:create` starts a new branch from it. See
+  [repo.md](repo.md#the-worktree-tasks).
+- `git:pull` brings it up to date with the core branches.
+
+The schema refuses `default_branch = "main"` when `develop` is a core branch
+and `[branches.main]` has neither `merge_from` nor `merge_never`: the defaults
+let only `develop` merge into `main`, so a branch from `main` cannot land.
 
 ### `[branches.<branch>].landing`
 

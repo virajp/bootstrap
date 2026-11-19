@@ -72,6 +72,10 @@ source = "merge.py"
 [tasks."code/git-config.py"]
 source = "code-git-config.py"
 
+# git:pull brings the core branches up to date from origin, also in each member.
+[tasks."git/pull.py"]
+source = "git-pull.py"
+
 # The merge task of each core branch, named for its destination. The derive
 # script gives has_main and has_develop from core_branches.
 [tasks."git/merge/develop.py"]
