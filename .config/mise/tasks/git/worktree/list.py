@@ -23,6 +23,7 @@ import helpers  # noqa: E402
 import worktrees_page  # noqa: E402
 from worktrees_page import (  # noqa: E402
   G_BRANCH,
+  G_DEFAULT,
   G_DETACHED,
   G_DOWN,
   G_DRIFT,
@@ -193,6 +194,19 @@ def plural(n):
   return "" if str(n) == "1" else "s"
 
 
+def origin_default(repo):
+  """The branch of origin/HEAD, as git has it locally; empty when it is not set."""
+  ref = git_out(repo, "symbolic-ref", "-q", "refs/remotes/origin/HEAD", quiet=True)
+  return ref.removeprefix("refs/remotes/origin/")
+
+
+def row_rank(branch, detached):
+  """The place of a row in its repo: main first, then develop, then the rest."""
+  if detached:
+    return 2
+  return {"main": 0, "develop": 1}.get(branch, 2)
+
+
 def default_branch(repo):
   """The default branch: origin/HEAD, else develop or main when it exists, else
   the branch of the main worktree."""
@@ -223,6 +237,26 @@ def counts(repo, ref, commit):
     c = git_must(repo, "rev-list", "--left-right", "--count", f"{ref}...{commit}").split()
     return c[-1], c[0]
   return "", ""
+
+
+def merged_into(repo, branch, head):
+  """The merged value of the commit head: "main", "develop" or "both" when the
+  local branch of that name has it, "no" when neither has it, and an empty
+  value when no branch to compare with exists. A branch is not compared with
+  itself."""
+  found = []
+  compared = False
+  for target in ("main", "develop"):
+    if target == branch or not git_ok(repo, "rev-parse", "--verify", "-q", f"refs/heads/{target}"):
+      continue
+    compared = True
+    if git_ok(repo, "merge-base", "--is-ancestor", head, f"refs/heads/{target}", quiet=True):
+      found.append(target)
+  if not compared:
+    return ""
+  if len(found) == 2:
+    return "both"
+  return found[0] if found else "no"
 
 
 def ref_facts(repo, branch):
@@ -389,6 +423,10 @@ def collect_repo(rp, role, parent, pinned):
   add_repo_row(label, role, url, default, fetched, pinned_text, "", "")
   stashes = git_out(rp, "stash", "list", "--format=%gs", quiet=True)
   attached = set()
+  marked = origin_default(rp)
+  # The worktree and branch rows of this repo, as (rank, time, row). They go
+  # to ROWS sorted: main, develop, then the newest first.
+  rows = []
 
   # Read all the worktrees first. Keep the last empty line: it ends the last worktree.
   wts = []
@@ -449,35 +487,41 @@ def collect_repo(rp, role, parent, pinned):
     sync = git_ok(rp, "merge-base", "--is-ancestor", main_head, head, quiet=True)
     stash = 0 if detached else stash_count(stashes, branch)
     notpin = i == 0 and bool(pin_a) and f"{pin_a}{pin_b}" != "00"
-    ROWS.append(
-      {
-        "kind": kind,
-        "repo": label,
-        "w_branch": branch,
-        "w_detached": "1" if detached else "",
-        "w_commit": head[:7],
-        "w_age": age_of(t),
-        "w_base": rbase,
-        "w_ba": base_a,
-        "w_bb": base_b,
-        "w_pa": pin_a,
-        "w_pb": pin_b,
-        "w_origin": origin,
-        "w_oa": oa,
-        "w_ob": ob,
-        "w_sync": "1" if sync else "",
-        "w_conflict": conflict,
-        "w_dirty": dirty,
-        "w_dglyph": dglyph,
-        "w_codes": codes,
-        "w_op": op,
-        "w_locked": "1" if locked else "",
-        "w_missing": "1" if missing else "",
-        "w_stash": stash,
-        "w_merged": "",
-        "w_notpin": "1" if notpin else "",
-        "w_path": path,
-      }
+    merged = merged_into(rp, "" if detached else branch, head)
+    rows.append(
+      (
+        row_rank(branch, detached),
+        int(t or 0),
+        {
+          "kind": kind,
+          "repo": label,
+          "w_branch": branch,
+          "w_detached": "1" if detached else "",
+          "w_commit": head[:7],
+          "w_age": age_of(t),
+          "w_base": rbase,
+          "w_ba": base_a,
+          "w_bb": base_b,
+          "w_pa": pin_a,
+          "w_pb": pin_b,
+          "w_origin": origin,
+          "w_oa": oa,
+          "w_ob": ob,
+          "w_sync": "1" if sync else "",
+          "w_conflict": conflict,
+          "w_dirty": dirty,
+          "w_dglyph": dglyph,
+          "w_codes": codes,
+          "w_op": op,
+          "w_locked": "1" if locked else "",
+          "w_missing": "1" if missing else "",
+          "w_stash": stash,
+          "w_merged": merged,
+          "w_notpin": "1" if notpin else "",
+          "w_default": "1" if marked and not detached and branch == marked else "",
+          "w_path": path,
+        },
+      )
     )
     # The attention items of this worktree row.
     g = git_in(path)
@@ -521,44 +565,53 @@ def collect_repo(rp, role, parent, pinned):
     pin_a, pin_b = counts(rp, pinned, head)
     sync = git_ok(rp, "merge-base", "--is-ancestor", main_head, head, quiet=True)
     stash = stash_count(stashes, branch)
-    merged = "yes" if rbase and base_a == "0" else "no"
-    ROWS.append(
-      {
-        "kind": "branch",
-        "repo": label,
-        "w_branch": branch,
-        "w_detached": "",
-        "w_commit": head[:7],
-        "w_age": age_of(t),
-        "w_base": rbase,
-        "w_ba": base_a,
-        "w_bb": base_b,
-        "w_pa": pin_a,
-        "w_pb": pin_b,
-        "w_origin": origin,
-        "w_oa": oa,
-        "w_ob": ob,
-        "w_sync": "1" if sync else "",
-        "w_conflict": 0,
-        "w_dirty": 0,
-        "w_dglyph": "",
-        "w_codes": "",
-        "w_op": "",
-        "w_locked": "",
-        "w_missing": "",
-        "w_stash": stash,
-        "w_merged": merged,
-        "w_notpin": "",
-        "w_path": "",
-      }
+    # The attention item reads the base; the merged column reads main and develop.
+    in_base = bool(rbase) and base_a == "0"
+    merged = merged_into(rp, branch, head)
+    rows.append(
+      (
+        row_rank(branch, False),
+        int(t or 0),
+        {
+          "kind": "branch",
+          "repo": label,
+          "w_branch": branch,
+          "w_detached": "",
+          "w_commit": head[:7],
+          "w_age": age_of(t),
+          "w_base": rbase,
+          "w_ba": base_a,
+          "w_bb": base_b,
+          "w_pa": pin_a,
+          "w_pb": pin_b,
+          "w_origin": origin,
+          "w_oa": oa,
+          "w_ob": ob,
+          "w_sync": "1" if sync else "",
+          "w_conflict": 0,
+          "w_dirty": 0,
+          "w_dglyph": "",
+          "w_codes": "",
+          "w_op": "",
+          "w_locked": "",
+          "w_missing": "",
+          "w_stash": stash,
+          "w_merged": merged,
+          "w_notpin": "",
+          "w_default": "1" if branch == marked else "",
+          "w_path": "",
+        },
+      )
     )
     # A core branch or the default branch stays, also when it is merged.
-    if merged == "yes" and branch not in ("main", "develop", default):
+    if in_base and branch not in ("main", "develop", default):
       msg = "Merged. You can delete it."
       if origin == "gone":
         msg = "Merged, and the upstream is gone. You can delete it."
       attention(3, G_MERGED, "green", label, branch, msg, f"{git_in(display_path(rp))} branch -d {branch}")
 
+  rows.sort(key=lambda r: (r[0], -r[1]))
+  ROWS.extend(row for _, _, row in rows)
   collect_submodules(rp, label, default)
 
 
@@ -687,7 +740,7 @@ def pad_cell(text, color, width):
 
 
 def print_table(page):
-  w_branch, w_base, w_origin, w_state = 6, 4, 6, 5
+  w_branch, w_base, w_origin, w_state, w_merged = 6, 4, 6, 5, 6
   repos = worktrees = branches = 0
   cells = {}
   for i, row in enumerate(ROWS):
@@ -701,6 +754,8 @@ def print_table(page):
     c_branch = row["w_branch"]
     if row["w_detached"]:
       c_branch = f"{G_DETACHED} {row['w_branch']}"
+    if row["w_default"]:
+      c_branch = f"{c_branch} {G_DEFAULT}"
     w_branch = max(w_branch, vwidth(c_branch))
     c_base = worktrees_page.count_cell(row["w_ba"], row["w_bb"])
     w_base = max(w_base, vwidth(c_base[0]))
@@ -717,10 +772,12 @@ def print_table(page):
     if row["w_stash"] > 0:
       plain = f"{plain} {G_STASH}{row['w_stash']}"
     w_state = max(w_state, vwidth(plain))
-    cells[i] = (c_branch, c_base, c_origin, plain)
+    c_merged = worktrees_page.merged_cell(row)
+    w_merged = max(w_merged, vwidth(c_merged[0]))
+    cells[i] = (c_branch, c_base, c_origin, plain, c_merged)
 
   helpers.print_header("Listing the worktrees ...")
-  head = f"     {'BRANCH':<{w_branch}}  {'BASE':<{w_base}}  {'ORIGIN':<{w_origin}}  SYNC  {'STATE':<{w_state}}  AGE"
+  head = f"     {'BRANCH':<{w_branch}}  {'BASE':<{w_base}}  {'ORIGIN':<{w_origin}}  SYNC  {'STATE':<{w_state}}  {'MERGED':<{w_merged}}  AGE"
   out(paint(head, "yellow") + "\n")
   for i, row in enumerate(ROWS):
     if row["kind"] == "repo":
@@ -735,13 +792,14 @@ def print_table(page):
         out(f"  {paint(G_FETCH, 'yellow')}  {paint(row['r_note'], 'dim')}\n")
       continue
     g = {"main_worktree": f"{G_FOLDER}  ", "worktree": f"{G_TREE} "}.get(row["kind"], f"{G_BRANCH}  ")
-    c_branch, c_base, c_origin, plain = cells[i]
+    c_branch, c_base, c_origin, plain, c_merged = cells[i]
     line = f"  {g}"
     line += pad_cell(c_branch, "", w_branch)
     line += pad_cell(c_base[0], c_base[1], w_base)
     line += pad_cell(c_origin[0], c_origin[1], w_origin)
     line += pad_cell(G_SYNC, "green", 4) if row["w_sync"] else pad_cell(G_DRIFT, "red", 4)
     line += f"{plain}{' ' * abs(w_state - vwidth(plain))}  "
+    line += pad_cell(c_merged[0], c_merged[1], w_merged)
     line += paint(row["w_age"], "dim")
     out(f"{line}\n")
 
@@ -807,11 +865,13 @@ def print_jsonl():
     words = ", ".join(json_str(word) for g, _, word in worktrees_page.state_parts(row) if g)
     branch = "null" if row["w_detached"] else json_str(row["w_branch"])
     sync = "in-sync" if row["w_sync"] else "drifted"
+    merged = {"": "null", "no": "[]", "both": '["main", "develop"]'}.get(row["w_merged"], f'["{row["w_merged"]}"]')
     out(
       f'{{"kind": "{row["kind"]}", "repo": {json_str(row["repo"])}, "branch": {branch}, '
+      f'"default": {"true" if row["w_default"] else "false"}, '
       f'"commit": "{row["w_commit"]}", "base": {json_counts(row["w_ba"], row["w_bb"], row["w_base"])}, '
       f'"pinned": {json_counts(row["w_pa"], row["w_pb"])}, "origin": {origin}, "sync": "{sync}", '
-      f'"state": [{words}], "age": "{row["w_age"]}", "stash": {row["w_stash"]}, "path": {json_str(row["w_path"])}}}\n'
+      f'"state": [{words}], "merged": {merged}, "age": "{row["w_age"]}", "stash": {row["w_stash"]}, "path": {json_str(row["w_path"])}}}\n'
     )
 
 
