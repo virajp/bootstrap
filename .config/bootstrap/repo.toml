@@ -3,7 +3,7 @@
 format = 3
 
 # The bootstrap commit of the last sync. The sync writes it.
-bootstrap_commit = "e86ed2d435f9bb0f878d1d80e27852fdbcfd36d4"
+bootstrap_commit = "4d8ecb64b1090c56d3b8ac6ab62ad3d90f634e99"
 core_branches = [ "main" ]
 environments = [ "dev" ]
 repo_name = "bootstrap"
