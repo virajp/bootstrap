@@ -5,9 +5,10 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-# MISE description="Run pre-commit hooks on all files"
+# MISE description="Run pre-commit hooks on the uncommitted files"
 # MISE hide=true
 # MISE tools={uv="latest", python="3.14", pre-commit="latest"}
+# USAGE flag "--all" help="run the hooks on every file of the repository, not only the uncommitted files"
 
 import os
 import shutil
@@ -19,8 +20,38 @@ sys.path.insert(0, f"{os.environ['MISE_PROJECT_ROOT']}/.config/mise/tasks/_scrip
 import helpers  # noqa: E402
 
 
+def git_paths(root, *args):
+  result = subprocess.run(["git", "-C", root, *args, "-z"], check=True, capture_output=True, text=True)
+  return [path for path in result.stdout.split("\0") if path]
+
+
+def uncommitted_files(root):
+  """The staged, changed and new files, as the default set of gate_files.py.
+
+  A deleted file has no content for a hook, so the set does not have it. A
+  symlink stays, also a broken one, because check-symlinks examines it.
+  """
+  paths = git_paths(root, "diff", "--cached", "--name-only", "--diff-filter=d")
+  paths += git_paths(root, "ls-files", "--modified")
+  paths += git_paths(root, "ls-files", "--others", "--exclude-standard")
+  return sorted(path for path in set(paths) if os.path.lexists(os.path.join(root, path)))
+
+
 def main():
   helpers.print_header("Running pre-commit ...")
+  root = os.environ["MISE_PROJECT_ROOT"]
+  if os.environ.get("usage_all") == "true":
+    helpers.print_info("Running the hooks on every file")
+    targets = ["--all-files"]
+  else:
+    files = uncommitted_files(root)
+    if not files:
+      helpers.print_info("No uncommitted files, so no hook ran")
+      helpers.print_info("Run `mise run code:precommit --all` to run the hooks on every file")
+      return 0
+    helpers.print_info(f"Running the hooks on {len(files)} uncommitted file(s)")
+    helpers.print_info("Run `mise run code:precommit --all` to run the hooks on every file")
+    targets = ["--files", *files]
   # The # MISE tools line gives pre-commit in every repository, so the task
   # calls it directly. Without it, the task stops as the shell does for a
   # missing command.
@@ -28,7 +59,8 @@ def main():
   if precommit is None:
     print("pre-commit: command not found", file=sys.stderr, flush=True)
     return 127
-  result = subprocess.run([precommit, "run", "--config", ".config/pre-commit-config.yaml", "--all-files"], check=False)
+  config = f"{root}/.config/pre-commit-config.yaml"
+  result = subprocess.run([precommit, "run", "--config", config, *targets], check=False, cwd=root)
   return result.returncode
 
 
