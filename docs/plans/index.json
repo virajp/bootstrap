@@ -1,46 +1,4 @@
 {
   "format": 1,
-  "plans": [
-    {
-      "id": "2026-11-18-python-tasks-repo",
-      "folder": "docs/plans/archived/2026-11-18-python-tasks-repo",
-      "kind": "change",
-      "title": "The shipped tasks of repo/tools in Python",
-      "target_repo": null,
-      "priority": 20,
-      "status": "COMPLETE",
-      "started": "2026-11-18T18:10:40.780Z",
-      "ended": "2026-11-19T05:00:22.431Z",
-      "gaps": {
-        "open": 0,
-        "moved_to": []
-      },
-      "requires": [
-        "2026-11-18-python-tasks-foundation"
-      ],
-      "backlog": [],
-      "backlog_pieces": [
-        "B30"
-      ]
-    },
-    {
-      "id": "2026-11-18-python-tasks-mac",
-      "folder": "docs/plans/2026-11-18-python-tasks-mac",
-      "kind": "change",
-      "title": "The Mac tasks in Python",
-      "target_repo": null,
-      "priority": 30,
-      "status": "RUNNING",
-      "started": "2026-11-19T05:03:57.459Z",
-      "ended": "",
-      "gaps": null,
-      "requires": [
-        "2026-11-18-python-tasks-repo"
-      ],
-      "backlog": [
-        "B30"
-      ],
-      "backlog_pieces": []
-    }
-  ]
+  "plans": []
 }
