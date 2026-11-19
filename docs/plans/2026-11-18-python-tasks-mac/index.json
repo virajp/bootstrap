@@ -190,8 +190,8 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-19T05:27:05.199Z",
       "ended": "",
       "commit": "",
       "rounds": 0
@@ -242,8 +242,8 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-19T05:27:05.164Z",
       "ended": ""
     },
     {
@@ -419,28 +419,28 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-19T05:26:59.141Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-19T05:26:58.927Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no acceptance criteria or Screens contract",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-19T05:26:59.036Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers and no code unit — no stamps, nothing to persist; no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-19T05:26:59.277Z"
     }
   },
   "gaps": [],
