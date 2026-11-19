@@ -17,7 +17,7 @@
 # r_fix) and the w_* keys of a worktree or branch row (w_branch, w_detached,
 # w_commit, w_age, w_base, w_ba, w_bb, w_pa, w_pb, w_origin, w_oa, w_ob,
 # w_sync, w_conflict, w_dirty, w_dglyph, w_codes, w_op, w_locked, w_missing,
-# w_stash, w_merged, w_notpin, w_path). An attention entry is a dict with the
+# w_stash, w_merged, w_notpin, w_default, w_path). An attention entry is a dict with the
 # keys a_rank, a_glyph, a_color, a_repo, a_branch, a_msg and a_cmd. A missing
 # key is an empty value.
 
@@ -53,10 +53,14 @@ G_NOFOLDER = "\U000f19f9"
 G_FETCH = ""
 G_PIN = "\U0001f4cc"
 G_NA = "·"
+G_DEFAULT = "★"
 
 # One legend for the table and for the page: "<section>|<glyph> <text>|...".
 LEGEND = (
-  f"Row|{G_FOLDER} main worktree|{G_TREE} linked worktree|{G_BRANCH} branch, no worktree|{G_DETACHED} detached",
+  (
+    f"Row|{G_FOLDER} main worktree|{G_TREE} linked worktree|{G_BRANCH} branch, no worktree|{G_DETACHED} detached"
+    f"|{G_DEFAULT} default branch (origin/HEAD)"
+  ),
   (
     f"Base, origin|{G_OK} level|{G_UP} ahead|{G_DOWN} behind|{G_GONE} upstream gone|{G_LOCAL} local only"
     f"|{G_NA} not applicable"
@@ -66,9 +70,10 @@ LEGEND = (
     f"State|{G_OK} clean|+ files added|- files deleted|{G_MIX} files mixed|{G_WARN} conflict"
     f"|{G_OP} rebase or merge stopped"
   ),
+  f"|{G_LOCK} locked|{G_NOFOLDER} folder missing|{G_STASH} stash|{G_PIN} not at pin",
   (
-    f"|{G_LOCK} locked|{G_NOFOLDER} folder missing|{G_STASH} stash|{G_PIN} not at pin|{G_MERGED} merged"
-    f"|{G_UNMERGED} not merged"
+    f"Merged|{G_MERGED} main, develop or both: each commit is in that branch"
+    f"|{G_UNMERGED} in neither|{G_NA} nothing to compare"
   ),
   f"Repo|{G_GITHUB} GitHub|{G_GITLAB} GitLab|{G_REMOTE} other remote|{G_GIT} no origin|{G_FETCH} not on disk",
 )
@@ -132,15 +137,23 @@ def count_cell(ahead, behind):
   return cell, color
 
 
+def merged_cell(row):
+  """The merged cell of the row and its color, as (cell, color): the local main
+  or develop, or both, that has each commit of the row."""
+  merged = _v(row, "w_merged")
+  if merged == "no":
+    return G_UNMERGED, "yellow"
+  if not merged:
+    return G_NA, "dim"
+  return f"{G_MERGED} {merged}", "green"
+
+
 def state_parts(row):
   """The state parts of the row, as a list of (glyph, color, word). The page and
-  the JSON use the same parts."""
+  the JSON use the same parts. A row without a worktree has no parts."""
   parts = []
   if _v(row, "kind") == "branch":
-    if _v(row, "w_merged") == "yes":
-      parts.append((G_MERGED, "green", "merged"))
-    else:
-      parts.append((G_UNMERGED, "yellow", "not merged"))
+    pass
   elif _v(row, "w_missing"):
     parts.append((G_NOFOLDER, "red", "folder missing"))
   else:
@@ -233,6 +246,8 @@ def page_row(row):
   branch = html_escape(_v(row, "w_branch"))
   if _v(row, "w_detached"):
     branch = f"{page_glyph(G_DETACHED, 'yellow', 'detached')} {branch}"
+  if _v(row, "w_default"):
+    branch = f"{branch} {page_glyph(G_DEFAULT, 'green', 'default branch (origin/HEAD)')}"
   path = _v(row, "w_path")
   home = os.environ.get("HOME", "")
   if home and path.startswith(home):
@@ -257,7 +272,11 @@ def page_row(row):
     out += page_glyph(G_SYNC, "green", "in-sync: has the HEAD of the main worktree")
   else:
     out += page_glyph(G_DRIFT, "red", "drifted: does not have the HEAD of the main worktree")
-  out += f"</td><td>{page_state(row)}</td><td>"
+  merged, color = merged_cell(row)
+  title = {"no": "in neither main nor develop", "": "nothing to compare"}.get(
+    _v(row, "w_merged"), f"each commit is in {_v(row, 'w_merged').replace('both', 'main and develop')}"
+  )
+  out += f"</td><td>{page_state(row)}</td><td>{page_glyph(merged, color, title)}</td><td>"
   if _n(row, "w_stash") > 0:
     out += page_glyph(f"{G_STASH}{_v(row, 'w_stash')}", "yellow", "stash")
   else:
@@ -274,7 +293,7 @@ def page_repo_row(row):
   if _v(row, "r_fetched"):
     info += f" {G_NA} fetched {_v(row, 'r_fetched')} ago"
   out = (
-    f'<tr class="repo"><td colspan="11">{page_glyph(_v(row, "r_glyph"))}{html_escape(_v(row, "repo"))}'
+    f'<tr class="repo"><td colspan="12">{page_glyph(_v(row, "r_glyph"))}{html_escape(_v(row, "repo"))}'
     f'<span class="i">{html_escape(info)}</span></td></tr>'
   )
   note = _v(row, "r_note")
@@ -282,7 +301,7 @@ def page_repo_row(row):
     # The first character is upper case (only a-z, as tr of the shell does)
     # and is not escaped, as in the shell version.
     first = note[0].upper() if "a" <= note[0] <= "z" else note[0]
-    out += f'<tr><td>{page_glyph(G_FETCH, "yellow", note)}</td><td colspan="10">{first}{html_escape(note[1:])}.'
+    out += f'<tr><td>{page_glyph(G_FETCH, "yellow", note)}</td><td colspan="11">{first}{html_escape(note[1:])}.'
     if _v(row, "r_fix"):
       out += f" Run <code>{html_escape(_v(row, 'r_fix'))}</code>."
     out += "</td></tr>"
@@ -291,7 +310,7 @@ def page_repo_row(row):
 
 def legend_color(glyph):
   """The color of a legend glyph, the same as in the table."""
-  if glyph in (G_OK, G_SYNC, G_MERGED):
+  if glyph in (G_OK, G_SYNC, G_MERGED, G_DEFAULT):
     return "green"
   if glyph in (G_DRIFT, G_WARN, G_OP, G_GONE, G_NOFOLDER):
     return "red"
@@ -354,7 +373,7 @@ def _page(rows, attention, now):
   out += page_attention(attention)
   out += (
     '<h2>All repos</h2><div class="scroll"><table><tr><th></th><th>Branch</th><th>Commit</th><th>Age</th>'
-    "<th>Base</th><th>Pinned</th><th>Origin</th><th>Sync</th><th>State</th><th>Stash</th><th>Path</th></tr>"
+    "<th>Base</th><th>Pinned</th><th>Origin</th><th>Sync</th><th>State</th><th>Merged</th><th>Stash</th><th>Path</th></tr>"
   )
   for row in rows:
     out += page_repo_row(row) if _v(row, "kind") == "repo" else page_row(row)
