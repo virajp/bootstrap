@@ -6,9 +6,10 @@ summary = "dprint, the formatter, and its global config"
 
 # The base of the global dprint.jsonc: the top-level settings, the excludes,
 # the blocks of the base formats and their plugins. The global config formats
-# the base formats only: TOML, JSON, Markdown, YAML and shell. A repository
-# gets its own dprint.jsonc, which extends no other config. updateall updates
-# the version of each plugin in the file, and the next sync keeps it.
+# the base formats only: TOML, JSON, Markdown, YAML, shell and Python. A
+# repository gets its own dprint.jsonc, which extends no other config.
+# updateall updates the version of each plugin in the file, and the next sync
+# keeps it.
 [defaults]
 excludes = [ "**/*-lock.yaml", "**/*.svg", "brag-output/", "**/package-lock.json" ]
 plugins = [
@@ -17,6 +18,7 @@ plugins = [
   "npm:@dprint/markdown@0.29.0",
   "npm:dprint-plugin-yaml@0.6.0",
   "npm:@dprint/shuck@0.2.4",
+  "npm:@dprint/ruff@0.11.3",
 ]
 
 [defaults.settings]
@@ -55,14 +57,21 @@ formatComments = true
 proseWrap = "always"
 
 # mise task scripts have no file extension, so the shuck plugin does not
-# match them by default. Templates (*.tmpl) are not valid shell.
+# match them by default. Templates (*.tmpl) are not valid shell. A Python task
+# (*.py) goes to the ruff plugin.
 [defaults.blocks.shuck]
-associations = [ "**/.config/mise/tasks/**", "!**/*.tmpl" ]
+associations = [ "**/.config/mise/tasks/**", "!**/*.tmpl", "!**/*.py" ]
 binaryNextLine = true
 indentWidth = 2
 spaceRedirects = true
 switchCaseIndent = true
 useTabs = false
+
+# The ruff plugin formats each Python file, with the settings of the python
+# tool of repo/tools/.
+[defaults.blocks.ruff]
+indentWidth = 2
+lineLength = 120
 
 # The VS Code extensions of the tool, when visual-studio-code is selected.
 [contributes.visual-studio-code]

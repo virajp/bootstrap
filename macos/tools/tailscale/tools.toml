@@ -9,8 +9,8 @@ summary = "Tailscale, the private network"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."tailscale/daemon"]
-source = "tailscale-daemon"
+[tasks."tailscale/daemon.py"]
+source = "tailscale-daemon.py"
 
-[tasks."upgrade/tailscale"]
-source = "upgrade-tailscale"
+[tasks."upgrade/tailscale.py"]
+source = "upgrade-tailscale.py"

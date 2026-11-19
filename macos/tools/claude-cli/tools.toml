@@ -46,8 +46,8 @@ source = ".claude/settings.json.merge.toml"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."func/claude"]
-source = "func-claude"
+[tasks."func/claude.py"]
+source = "func-claude.py"
 
-[tasks."upgrade/ai"]
-source = "upgrade-ai"
+[tasks."upgrade/ai.py"]
+source = "upgrade-ai.py"

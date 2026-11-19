@@ -70,10 +70,6 @@ source = ".zprofile"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."_scripts/helpers"]
-library = true
-source = "helpers"
-
 [tasks."_scripts/helpers.py"]
 library = true
 source = "helpers.py"

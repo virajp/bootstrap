@@ -13,5 +13,5 @@ myps = "mise run func:myps"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."func/myps"]
-source = "func-myps"
+[tasks."func/myps.py"]
+source = "func-myps.py"

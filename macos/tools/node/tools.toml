@@ -28,5 +28,5 @@ source = ".config/aube/config.toml"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."upgrade/npm"]
-source = "upgrade-npm"
+[tasks."upgrade/npm.py"]
+source = "upgrade-npm.py"

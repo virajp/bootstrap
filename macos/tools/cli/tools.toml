@@ -34,20 +34,20 @@ listStartupItems = "mise run func:listStartupItems"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."cleanupDS"]
-source = "cleanupDS"
+[tasks."cleanupDS.py"]
+source = "cleanupDS.py"
 
-[tasks."func/backup"]
-source = "func-backup"
+[tasks."func/backup.py"]
+source = "func-backup.py"
 
-[tasks."func/code"]
-source = "func-code"
+[tasks."func/code.py"]
+source = "func-code.py"
 
-[tasks."func/listStartupItems"]
-source = "func-listStartupItems"
+[tasks."func/listStartupItems.py"]
+source = "func-listStartupItems.py"
 
-[tasks."func/zip"]
-source = "func-zip"
+[tasks."func/zip.py"]
+source = "func-zip.py"
 
-[tasks."keychain/delete"]
-source = "keychain-delete"
+[tasks."keychain/delete.py"]
+source = "keychain-delete.py"

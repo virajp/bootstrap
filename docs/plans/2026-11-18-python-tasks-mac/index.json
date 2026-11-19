@@ -120,11 +120,11 @@
         "U1"
       ],
       "waits": "The tasks import the Mac helpers.py that U1 creates, and the unit deletes the shell Mac helpers and its entry in macos/tools/mise/tools.toml, which U1 owns in wave 1.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-19T05:11:58.344Z",
+      "ended": "2026-11-19T05:18:21.746Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -224,8 +224,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-19T05:11:58.309Z",
       "ended": ""
     },
     {
