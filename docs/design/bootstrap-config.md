@@ -271,11 +271,11 @@ bootstrap migrate again".
 
 How a branch lands on `<branch>`. `<branch>` must be in `core_branches`.
 
-| Value           | Effect                                                                                                     |
-| --------------- | ---------------------------------------------------------------------------------------------------------- |
-| `pr`            | A push of the source branch, then a pull request with `gh` or `glab`. Nothing merges locally.              |
-| `direct-merge`  | The default. A local `--no-ff` merge, then a push. The `no-commit-to-branch` hook refuses a direct commit. |
-| `direct-commit` | The same merge as `direct-merge`, and a direct commit to the branch is allowed.                            |
+| Value           | Effect                                                                                                                                                     |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pr`            | A push of the source branch, then a pull request with `gh` or `glab`. Nothing merges locally.                                                              |
+| `direct-merge`  | The default. A local merge, then a push: a fast-forward for `develop` into `main`, else `--no-ff`. The `no-commit-to-branch` hook refuses a direct commit. |
+| `direct-commit` | The same merge as `direct-merge`, and a direct commit to the branch is allowed.                                                                            |
 
 Each repository reads only the `[branches.<branch>]` of its own `repo.toml`,
 with `bootstrap config get`. This applies to a repository without submodules,
