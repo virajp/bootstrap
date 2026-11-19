@@ -365,7 +365,7 @@ submodule: the folder members and the sibling members.
   [repo.md](repo.md#the-template-context). `MEMBERS` in
   `.config/mise.toml` is the list of the folders, with one space
   between them. No task reads it.
-- The tasks read the members with `members` of `helpers`: each `submodule` and
+- The tasks read the members with `helpers.members()`: each `submodule` and
   `sibling` member that has a table, through `bootstrap config get
   repo.members`.
 - `setup` and `setup:configs` get a `--<name>` flag and an `--all` flag only
@@ -410,8 +410,10 @@ The display name of the member in the headers of `setup`, `setup:configs` and
 
 The install command of the member for a new worktree, for example
 `pnpm install`. `git:worktree:setup` runs it as
-`mise x --cd <folder> -- <command>`. Without the key, `git:worktree:setup` runs
-the own `git:worktree:setup` task of the member, if the member has one.
+`mise x --cd <folder> -- bash -c <command>`, so the whole command line runs in
+the folder of the member, also the part after `&&`. Without the key,
+`git:worktree:setup` runs the own `git:worktree:setup` task of the member, if
+the member has one.
 
 ### `[home]`
 

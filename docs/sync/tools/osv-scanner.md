@@ -21,7 +21,7 @@ Always. The `base` pack adds this tool, and the sync writes an empty
 | Path in the repository                            | Kind      | Use                                 |
 | ------------------------------------------------- | --------- | ----------------------------------- |
 | `.config/osv-scanner.toml`                        | Seed      | The config of osv-scanner.          |
-| `.config/mise/tasks/code/sec/30-osv-scanner`      | Synced    | The task `code:sec:30-osv-scanner`. |
+| `.config/mise/tasks/code/sec/30-osv-scanner.py`   | Synced    | The task `code:sec:30-osv-scanner`. |
 | `.config/mise/conf.d/osv-scanner/mise.<env>.toml` | Generated | The mise config of this tool.       |
 
 ## mise tools

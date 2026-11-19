@@ -24,10 +24,10 @@ one keeps the secrets of the repository.
 
 ## What the tool ships
 
-| Path in the repository                        | Kind      | Use                                  |
-| --------------------------------------------- | --------- | ------------------------------------ |
-| `.config/mise/tasks/setup/secrets/10-doppler` | Synced    | The task `setup:secrets:10-doppler`. |
-| `.config/mise/conf.d/doppler/mise.dev.toml`   | Generated | The mise config of this tool.        |
+| Path in the repository                           | Kind      | Use                                  |
+| ------------------------------------------------ | --------- | ------------------------------------ |
+| `.config/mise/tasks/setup/secrets/10-doppler.py` | Synced    | The task `setup:secrets:10-doppler`. |
+| `.config/mise/conf.d/doppler/mise.dev.toml`      | Generated | The mise config of this tool.        |
 
 ## mise tools
 

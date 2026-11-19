@@ -20,20 +20,19 @@ A `[tools.git]` table gives values.
 
 ## What the tool ships
 
-| Path in the repository                   | Kind      | Use                                                                                                   |
-| ---------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------- |
-| `.gitignore`                             | Shared    | The shared ignore lines. See below.                                                                   |
-| `.gitattributes`                         | Synced    | LF line endings, the generated lockfiles, and the binary files of each stack.                         |
-| `.config/git-conventional-commits.yaml`  | Template  | The commit types, and the scopes from `[commits].scopes`, else the names of the `[members.*]` tables. |
-| `.config/wt.toml`                        | Seed      | The worktrunk config: the `pre-start` steps and the commit convention (see "worktrunk").              |
-| `.config/mise/tasks/_scripts/merge`      | Library   | `merge_to_destination_branch`, which the merge tasks use.                                             |
-| `.config/mise/tasks/_scripts/merge.py`   | Library   | The Python form of `merge`, with the same function and output.                                        |
-| `.config/mise/tasks/code/git-config`     | Synced    | The task `code:git-config`.                                                                           |
-| `.config/mise/tasks/git/merge/develop`   | Synced    | The task `git:merge:develop`. Only with `when = "git.has_develop"`: `core_branches` has `develop`.    |
-| `.config/mise/tasks/git/merge/main`      | Synced    | The task `git:merge:main`. Only with `when = "git.has_main"`: `core_branches` has `main`.             |
-| `.config/mise/tasks/git/worktree/create` | Synced    | The task `git:worktree:create`.                                                                       |
-| `.config/mise/tasks/git/worktree/delete` | Synced    | The task `git:worktree:delete`.                                                                       |
-| `.config/mise/conf.d/git/mise.dev.toml`  | Generated | The mise config of this tool.                                                                         |
+| Path in the repository                      | Kind      | Use                                                                                                   |
+| ------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------- |
+| `.gitignore`                                | Shared    | The shared ignore lines. See below.                                                                   |
+| `.gitattributes`                            | Synced    | LF line endings, the generated lockfiles, and the binary files of each stack.                         |
+| `.config/git-conventional-commits.yaml`     | Template  | The commit types, and the scopes from `[commits].scopes`, else the names of the `[members.*]` tables. |
+| `.config/wt.toml`                           | Seed      | The worktrunk config: the `pre-start` steps and the commit convention (see "worktrunk").              |
+| `.config/mise/tasks/_scripts/merge.py`      | Library   | `merge_to_destination_branch`, which the merge tasks use.                                             |
+| `.config/mise/tasks/code/git-config.py`     | Synced    | The task `code:git-config`.                                                                           |
+| `.config/mise/tasks/git/merge/develop.py`   | Synced    | The task `git:merge:develop`. Only with `when = "git.has_develop"`: `core_branches` has `develop`.    |
+| `.config/mise/tasks/git/merge/main.py`      | Synced    | The task `git:merge:main`. Only with `when = "git.has_main"`: `core_branches` has `main`.             |
+| `.config/mise/tasks/git/worktree/create.py` | Synced    | The task `git:worktree:create`.                                                                       |
+| `.config/mise/tasks/git/worktree/delete.py` | Synced    | The task `git:worktree:delete`.                                                                       |
+| `.config/mise/conf.d/git/mise.dev.toml`     | Generated | The mise config of this tool.                                                                         |
 
 `.gitignore` is a shared file. The spec `files/gitignore.merge.toml` merges
 into it line by line: the sync adds each missing line of `bootstrap` at the

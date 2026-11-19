@@ -20,43 +20,41 @@ A `[tools.mise]` table gives values.
 
 ## What the tool ships
 
-| Path in the repository                          | Kind      | Use                                                                                                                                                                                             |
-| ----------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.config/bootstrap/config-files.toml`           | Template  | The global file lists of the `code:format` and `code:lint` gates, from the key `code_files`. `gate_files` reads it.                                                                             |
-| `.config/mise.toml`                             | Template  | The shared `[settings]`, and the `[env]` values `MEMBERS` and `REPO_NAME` from `.config/bootstrap/repo.toml`.                                                                                   |
-| `.config/mise/conf.d/mise/mise.<env>.toml`      | Generated | The mise config of this tool, one file for each environment.                                                                                                                                    |
-| `.config/mise/conf.d/zz-repo/mise.<env>.toml`   | Seed      | The mise config and the `[env]` values of the repository, one file for `dev` and one for `ci`. The folder name sorts last, so this config wins over each tool config.                           |
-| `.config/mise/tasks/_scripts/helpers`           | Library   | The print functions, `members`, `own_tasks` (the `NN-<name>` tasks of a group), `has_own_task`, `gate_files` (the file list of a gate) and `bootstrap_get`, the reader of `.config/bootstrap/`. |
-| `.config/mise/tasks/_scripts/helpers.py`        | Library   | The Python form of `helpers`, with the same names and the same output, and also `tool`, `has_tool` and `usage_files`. A Python task imports it.                                                 |
-| `.config/mise/tasks/_scripts/gate_files.py`     | Library   | The Python code of `gate_files`.                                                                                                                                                                |
-| `.config/mise/tasks/_scripts/checks`            | Library   | The git predicates of the merge tasks.                                                                                                                                                          |
-| `.config/mise/tasks/_scripts/checks.py`         | Library   | The Python form of `checks`.                                                                                                                                                                    |
-| `.config/mise/tasks/_scripts/placeholder`       | Library   | The prompt of a task that no stack fills yet.                                                                                                                                                   |
-| `.config/mise/tasks/_scripts/placeholder.py`    | Library   | The Python form of `placeholder`.                                                                                                                                                               |
-| `.config/mise/tasks/_scripts/worktrees-page`    | Library   | The HTML page of `git:worktree:list`.                                                                                                                                                           |
-| `.config/mise/tasks/_scripts/worktrees_page.py` | Library   | The Python form of `worktrees-page`.                                                                                                                                                            |
-| `.config/mise/tasks/setup/_default`             | Template  | The task `setup`.                                                                                                                                                                               |
-| `.config/mise/tasks/setup/configs/_default`     | Template  | The task `setup:configs`.                                                                                                                                                                       |
-| `.config/mise/tasks/setup/mise`                 | Synced    | The task `setup:mise`.                                                                                                                                                                          |
-| `.config/mise/tasks/git/worktree/setup`         | Template  | The task `git:worktree:setup`.                                                                                                                                                                  |
-| `.config/mise/tasks/code/_default`              | Synced    | The task `code`.                                                                                                                                                                                |
-| `.config/mise/tasks/code/format/_default`       | Template  | The task `code:format`.                                                                                                                                                                         |
-| `.config/mise/tasks/code/lint/_default`         | Template  | The task `code:lint`.                                                                                                                                                                           |
-| `.config/mise/tasks/code/lint/60-bootstrap`     | Synced    | The gate `code:lint:60-bootstrap`.                                                                                                                                                              |
-| `.config/mise/tasks/code/lsp/check`             | Synced    | The task `code:lsp:check`.                                                                                                                                                                      |
-| `.config/mise/tasks/code/sec/_default`          | Synced    | The task `code:sec`.                                                                                                                                                                            |
-| `.config/mise/tasks/git/worktree/list`          | Synced    | The task `git:worktree:list`.                                                                                                                                                                   |
-| `.config/mise/tasks/test/_default`              | Synced    | The task `test`.                                                                                                                                                                                |
-| `.config/mise/tasks/test/e2e/_default`          | Synced    | The task `test:e2e`.                                                                                                                                                                            |
-| `.config/mise/tasks/test/golden/_default`       | Synced    | The task `test:golden`.                                                                                                                                                                         |
+| Path in the repository                          | Kind      | Use                                                                                                                                                                                                                                                   |
+| ----------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.config/bootstrap/config-files.toml`           | Template  | The global file lists of the `code:format` and `code:lint` gates, from the key `code_files`. `gate_files` reads it.                                                                                                                                   |
+| `.config/mise.toml`                             | Template  | The shared `[settings]`, and the `[env]` values `MEMBERS` and `REPO_NAME` from `.config/bootstrap/repo.toml`.                                                                                                                                         |
+| `.config/mise/conf.d/mise/mise.<env>.toml`      | Generated | The mise config of this tool, one file for each environment.                                                                                                                                                                                          |
+| `.config/mise/conf.d/zz-repo/mise.<env>.toml`   | Seed      | The mise config and the `[env]` values of the repository, one file for `dev` and one for `ci`. The folder name sorts last, so this config wins over each tool config.                                                                                 |
+| `.config/mise/tasks/_scripts/helpers.py`        | Library   | The print functions, `members`, `own_tasks` (the `NN-<name>` tasks of a group), `has_own_task`, `gate_files` (the file list of a gate), `usage_files`, `tool`, `has_tool` and `bootstrap_get`, the reader of `.config/bootstrap/`. A task imports it. |
+| `.config/mise/tasks/_scripts/gate_files.py`     | Library   | The Python code of `gate_files`.                                                                                                                                                                                                                      |
+| `.config/mise/tasks/_scripts/checks.py`         | Library   | The git predicates of the merge tasks.                                                                                                                                                                                                                |
+| `.config/mise/tasks/_scripts/placeholder.py`    | Library   | The prompt of a task that no stack fills yet.                                                                                                                                                                                                         |
+| `.config/mise/tasks/_scripts/worktrees_page.py` | Library   | The HTML page of `git:worktree:list`.                                                                                                                                                                                                                 |
+| `.config/mise/tasks/setup/_default.py`          | Template  | The task `setup`.                                                                                                                                                                                                                                     |
+| `.config/mise/tasks/setup/configs/_default.py`  | Template  | The task `setup:configs`.                                                                                                                                                                                                                             |
+| `.config/mise/tasks/setup/mise.py`              | Synced    | The task `setup:mise`.                                                                                                                                                                                                                                |
+| `.config/mise/tasks/git/worktree/setup.py`      | Template  | The task `git:worktree:setup`.                                                                                                                                                                                                                        |
+| `.config/mise/tasks/code/_default.py`           | Synced    | The task `code`.                                                                                                                                                                                                                                      |
+| `.config/mise/tasks/code/format/_default.py`    | Template  | The task `code:format`.                                                                                                                                                                                                                               |
+| `.config/mise/tasks/code/lint/_default.py`      | Template  | The task `code:lint`.                                                                                                                                                                                                                                 |
+| `.config/mise/tasks/code/lint/60-bootstrap.py`  | Synced    | The gate `code:lint:60-bootstrap`.                                                                                                                                                                                                                    |
+| `.config/mise/tasks/code/lsp/check.py`          | Synced    | The task `code:lsp:check`.                                                                                                                                                                                                                            |
+| `.config/mise/tasks/code/sec/_default.py`       | Synced    | The task `code:sec`.                                                                                                                                                                                                                                  |
+| `.config/mise/tasks/git/worktree/list.py`       | Synced    | The task `git:worktree:list`.                                                                                                                                                                                                                         |
+| `.config/mise/tasks/test/_default.py`           | Synced    | The task `test`.                                                                                                                                                                                                                                      |
+| `.config/mise/tasks/test/e2e/_default.py`       | Synced    | The task `test:e2e`.                                                                                                                                                                                                                                  |
+| `.config/mise/tasks/test/golden/_default.py`    | Synced    | The task `test:golden`.                                                                                                                                                                                                                               |
 
-The `mise` tool ships each orchestrator `_default`. The tool of a task group
-ships its leaf tasks. A leaf task that an orchestrator runs with `own_tasks`
-must have a number prefix, for example `code:lint:70-ruff`. The prefix gives
-the run order. `own_tasks` takes only an executable file named `NN-<name>`,
-and skips each other file, `_default` and each folder. As mise does, it takes
-a Python part `NN-<name>.py` as the task `NN-<name>` when no `NN-<name>`
-exists. `has_own_task` reads `<file>` when it exists, else `<file>.py`.
+Each task file is a Python uv script with the `.py` extension; mise removes
+`.py` from the task name. The `mise` tool ships each orchestrator
+`_default.py`. The tool of a task group ships its leaf tasks. A leaf task that
+an orchestrator runs with `own_tasks` must have a number prefix, for example
+`code:lint:70-ruff`. The prefix gives the run order. `own_tasks` takes only an
+executable file named `NN-<name>`, and skips each other file, `_default`,
+`_default.py` and each folder. As mise does, it takes a Python part
+`NN-<name>.py` as the task `NN-<name>` when no `NN-<name>` exists.
+`has_own_task` reads `<file>` when it exists, else `<file>.py`.
 `bootstrap check` warns
 about a file without the prefix in the folder of an orchestrator.
 
@@ -79,22 +77,22 @@ The tool also sets:
 
 ## Tasks
 
-| Task                     | Use                                                                                                                                                                                                                                                                 |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `setup`                  | Install the tools, the dependencies and the hooks, and run `setup:vscode` when the repository has it. `--upgrade` also upgrades them, and runs `setup:ai --upgrade` when the repository has it. With members, `--all` and `--<member>` also set up those members.   |
-| `setup:configs`          | Sync the shared files: it runs `bootstrap sync`. `--dry-run` shows the changes. `--verbose` lists each file. With members, `--all` and `--<member>` also sync those members.                                                                                        |
-| `setup:mise`             | Reshim, doctor and install. `--upgrade` also upgrades.                                                                                                                                                                                                              |
-| `git:worktree:setup`     | Prepare a new git worktree. `git:worktree:create` and worktrunk run it. It copies the `[worktree].files` of `repo.toml` from the main worktree, runs the `worktree_install` of each member, and it does less than `setup`.                                          |
-| `code`                   | Run `code:format`, `code:lint` and `code:sec`. `--debug` goes to each of them, and `--all` to `code:format` and `code:lint`.                                                                                                                                        |
-| `code:format`            | Run each `code:format:<name>` task in number order, on the given files, else with `--all` on every file of the repository, else on the uncommitted files. `--fix` applies the fixes.                                                                                |
-| `code:lint`              | Run each `code:lint:<name>` task in number order, on the given files, else with `--all` on every file of the repository, else on the uncommitted files. `--fix` applies the fixes.                                                                                  |
-| `code:lint:60-bootstrap` | Validate the files of `.config/bootstrap/` with `bootstrap check`, when the file list has a values file. Hidden. See below.                                                                                                                                         |
-| `code:lsp:check`         | Check that the LSP server of each selected tool resolves in the dev env. See below.                                                                                                                                                                                 |
-| `code:sec`               | Run each `code:sec:<scanner>` task. `--staged` scans only the staged changes for secrets. See [_security_base.md](_security_base.md).                                                                                                                               |
-| `git:worktree:list`      | List the worktrees and the branches of the product: the home repository (`[home]`), its submodules and its submodule and sibling members of `[members.*]`. A terminal gets a table and an HTML page. Another reader gets JSON Lines. The alias `worktrees` runs it. |
-| `test`                   | Run each `test:NN-<name>` task in number order. Each argument goes to each task unchanged, so a flag of a task needs no `--`. It does not run `test:e2e` or `test:golden`. With no task, it prints one line and exits 0.                                            |
-| `test:e2e`               | Run each `test:e2e:NN-<name>` task, as `test` does.                                                                                                                                                                                                                 |
-| `test:golden`            | Run each `test:golden:NN-<name>` task, as `test` does, for example `mise run test:golden --update`.                                                                                                                                                                 |
+| Task                     | Use                                                                                                                                                                                                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup`                  | Install the tools, the dependencies and the hooks, and run `setup:vscode` when the repository has it. `--upgrade` also upgrades them, and runs `setup:ai --upgrade` when the repository has it. With members, `--all` and `--<member>` also set up those members.         |
+| `setup:configs`          | Sync the shared files: it runs `bootstrap sync`. `--dry-run` shows the changes. `--verbose` lists each file. With members, `--all` and `--<member>` also sync those members.                                                                                              |
+| `setup:mise`             | Reshim, doctor and install. `--upgrade` also upgrades.                                                                                                                                                                                                                    |
+| `git:worktree:setup`     | Prepare a new git worktree. `git:worktree:create` and worktrunk run it. It copies the `[worktree].files` of `repo.toml` from the main worktree, runs the `worktree_install` of each member as `mise x --cd <folder> -- bash -c <command>`, and it does less than `setup`. |
+| `code`                   | Run `code:format`, `code:lint` and `code:sec`. `--debug` goes to each of them, and `--all` to `code:format` and `code:lint`.                                                                                                                                              |
+| `code:format`            | Run each `code:format:<name>` task in number order, on the given files, else with `--all` on every file of the repository, else on the uncommitted files. `--fix` applies the fixes.                                                                                      |
+| `code:lint`              | Run each `code:lint:<name>` task in number order, on the given files, else with `--all` on every file of the repository, else on the uncommitted files. `--fix` applies the fixes.                                                                                        |
+| `code:lint:60-bootstrap` | Validate the files of `.config/bootstrap/` with `bootstrap check`, when the file list has a values file. Hidden. See below.                                                                                                                                               |
+| `code:lsp:check`         | Check that the LSP server of each selected tool resolves in the dev env. See below.                                                                                                                                                                                       |
+| `code:sec`               | Run each `code:sec:<scanner>` task. `--staged` scans only the staged changes for secrets. See [_security_base.md](_security_base.md).                                                                                                                                     |
+| `git:worktree:list`      | List the worktrees and the branches of the product: the home repository (`[home]`), its submodules and its submodule and sibling members of `[members.*]`. A terminal gets a table and an HTML page. Another reader gets JSON Lines. The alias `worktrees` runs it.       |
+| `test`                   | Run each `test:NN-<name>` task in number order. Each argument goes to each task unchanged, so a flag of a task needs no `--`. It does not run `test:e2e` or `test:golden`. With no task, it prints one line and exits 0.                                                  |
+| `test:e2e`               | Run each `test:e2e:NN-<name>` task, as `test` does.                                                                                                                                                                                                                       |
+| `test:golden`            | Run each `test:golden:NN-<name>` task, as `test` does, for example `mise run test:golden --update`.                                                                                                                                                                       |
 
 `setup:configs` gets the same member flags as `setup`. Only a submodule or a
 sibling member with a `[members.<name>]` table gets a flag. A folder member of
@@ -105,8 +103,7 @@ for `test`, `test:e2e` and `test:golden`, for example
 `mise run --cd <member> test`.
 
 `setup`, `setup:configs` and `git:worktree:list` read the members with
-`bootstrap config get repo.members` through `members` of `helpers`, and
-`setup` and `setup:configs` have `#MISE tools.yq="latest"`. They need
+`bootstrap config get repo.members` through `helpers.members()`. They need
 `bootstrap` 4.0.0 or newer: without an engine that answers, they stop with
 code 2. A member that is not on the machine is skipped with a warning.
 
@@ -120,7 +117,7 @@ cache `~/.cache/bootstrap/` and the output of a sync are in
 [`docs/design/cli.md`](../../design/cli.md).
 
 `code:lint:60-bootstrap` runs `bootstrap check` against the cache clone
-`~/.cache/bootstrap/repo`. It never fetches. Its `#FILES` header has
+`~/.cache/bootstrap/repo`. It never fetches. Its `# FILES` header has
 `include=".config/bootstrap/*.toml"` and
 `exclude=".config/bootstrap/config-files.toml"`: without such a file in its
 list (the given files, the uncommitted files, or every file with `--all`), it
@@ -132,18 +129,22 @@ output does not show that the values are correct.
 
 `code:format` and `code:lint` take `--all`, `--fix`, `--debug` and files, and
 pass them to each gate. `--all` goes only to a gate whose file has a
-`#USAGE flag "--all"` line (or `# USAGE` in a `.py` gate). `--all` with files
+`# USAGE flag "--all"` line (or `#USAGE`). `--all` with files
 stops with a usage error, exit 2.
 `code:sec` keeps its own file lists.
 
-Each gate gets its files from `gate_files` of `helpers`, which runs
-`_scripts/gate_files.py` with
-`mise x uv@latest python@3.14 -- uv run --quiet --script`:
+Each gate gets its files from `helpers.gate_files`, which runs
+`_scripts/gate_files.py` with the Python of the task (`sys.executable`):
 
-```bash
-list=$(gate_files "$0" <the flags and files of the gate>) || exit $?
-trap 'rm -f "${list}"' EXIT
-[[ -s "${list}" ]] || exit 0
+```python
+args = [f"--{flag}" for flag in ("all", "debug", "fix") if os.environ.get(f"usage_{flag}") == "true"]
+listing = helpers.gate_files(__file__, *args, *helpers.usage_files())
+try:
+  if os.path.getsize(listing) == 0:
+    sys.exit(0)
+  ...
+finally:
+  os.remove(listing)
 ```
 
 The list is a temporary file, one path for each line. The base set is the
@@ -159,21 +160,20 @@ uncommitted files (staged, changed and new). Three filters then remove files:
 2. The global filter: `code_files` of `[tools.mise]`, rendered to
    `.config/bootstrap/config-files.toml` (`global include`,
    `global exclude "<pattern>"`).
-3. The `#FILES` header of the gate (`gate include`, `gate exclude "<pattern>"`,
-   `gate shebang`), for example
-   `#FILES include="*.py *.pyi"`. A `.py` gate writes `# FILES` with a space,
-   and `gate_files` accepts both forms. A gate without a header gets every
-   file.
+3. The `# FILES` header of the gate (`gate include`,
+   `gate exclude "<pattern>"`, `gate shebang`), for example
+   `# FILES include="*.py *.pyi"`. `gate_files` also accepts `#FILES`. A gate
+   without a header gets every file.
 
 In a gate run, `gate_files` is the only place that removes a file: a gate has
 no own filter and no `--force-exclude`. `--debug` prints each removed file on
 stderr as `drop <path>: <layer> <kind> ["<pattern>"]`, and these lines can come
-before the header of the gate. The pattern form and the `#FILES` keys are in
+before the header of the gate. The pattern form and the `# FILES` keys are in
 [`docs/design/mise.md`](../../design/mise.md#the-file-sets-of-the-gates) and
 [`docs/design/tools.md`](../../design/tools.md#the-files-header-of-a-gate).
 
 A gate of the repository uses the same call and header. Without
-`#USAGE flag "--all"`, it gets no `--all`.
+`# USAGE flag "--all"`, it gets no `--all`.
 
 `code:lsp:check` reads `bootstrap lsp --json` (`BOOTSTRAP_BIN`, else
 `mise x -- bootstrap`) and tests that each listed server resolves: a pinned
@@ -254,3 +254,6 @@ None.
 - M45 of `migrate.md`: `code:format` and `code:lint` examine only the
   uncommitted files without `--all`, and the excludes of the gates move into
   `code_files.excludes`. `shell_files_in_scope` of `helpers` is gone.
+- M48 of `migrate.md`: each task of this tool is a `.py` file, and the shell
+  libraries `helpers`, `checks`, `placeholder` and `worktrees-page` are gone.
+  A task of the repository that sources one of them moves to Python.

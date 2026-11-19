@@ -24,16 +24,15 @@ in `[mise_env.dev.tools]`.
 | `setup:configs`          | Runs `bootstrap sync` in the repository, and in each selected member.           |
 | `code:lint:60-bootstrap` | Hidden. The gate of the values. See [The gate](#the-gate-codelint60-bootstrap). |
 
-`setup:configs` (`setup/configs/_default`) has
-`#MISE tools."github:virajp/bootstrap"="latest"` and `#MISE tools.yq="latest"`,
-so it runs also before the
-first sync. With `BOOTSTRAP_BIN` set, it runs that file in place of the
-`bootstrap` of mise. Its order is:
+`setup:configs` (`setup/configs/_default.py`) has
+`github:virajp/bootstrap` in its one `# MISE tools={...}` line, so it runs
+also before the first sync. With `BOOTSTRAP_BIN` set, it runs that file in place
+of the `bootstrap` of mise. Its order is:
 
 1. It prints the header `Syncing the shared files from bootstrap ...`. Then it
    runs `bootstrap sync` in the root of the repository, with
    `MISE_PROJECT_ROOT` set to the root.
-2. With a member flag, it reads the members with `members` of `helpers`
+2. With a member flag, it reads the members with `helpers.members()`
    (`bootstrap config get repo.members`). For each selected member, it prints
    the header `Syncing <label> ...`. Then it does step 1 in the folder of the
    member, with `MISE_PROJECT_ROOT` set to that folder, `BOOTSTRAP_HOME` set to
@@ -190,8 +189,8 @@ The `git` tool holds the branch model. The engine has no branch rule.
   with `SKIP=no-commit-to-branch`: that hook guards a commit, and the safety net
   makes none. Thus `git:merge:main` also runs from a protected `develop`.
 - The merge tasks read `[branches.<destination>]` of the repository's own
-  `.config/bootstrap/repo.toml` when they run, with `bootstrap_get` of
-  `helpers` (`bootstrap config get`): the root and each member read their own
+  `.config/bootstrap/repo.toml` when they run, with `helpers.bootstrap_get`
+  (`bootstrap config get`): the root and each member read their own
   values. A read failure stops the merge with code 1. Without an engine that
   answers, for example one older than 4.0.0, the merge stops with code 2.
 - A merge task stops before it touches a branch when the git top level of
@@ -252,7 +251,7 @@ names: create the branch, or remove it from
 The `git` tool ships `git:worktree:create` and `git:worktree:delete`, and the
 `mise` tool ships `git:worktree:setup` and `git:worktree:list`. They use raw
 git, not worktrunk. `create` and `delete` read `core_branches` with
-`bootstrap_get`, as the merge tasks do.
+`helpers.bootstrap_get`, as the merge tasks do.
 
 - `git:worktree:create <branch> [--from <base>] [--no-setup]` adds the worktree
   in `.worktrees/<branch>` of the main checkout. It uses `worktrees/` only when
@@ -373,7 +372,7 @@ It prints nothing and exits 0 in these cases:
 
 - Without `bootstrap` (`mise x -- which bootstrap`), and without
   `BOOTSTRAP_BIN`.
-- The list of `gate_files` is empty. Its `#FILES` header has
+- The list of `gate_files` is empty. Its `# FILES` header has
   `include=".config/bootstrap/*.toml"` and
   `exclude=".config/bootstrap/config-files.toml"`, so the gate runs when the
   given files, the uncommitted files or, with `--all`, the files of the

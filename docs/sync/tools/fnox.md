@@ -24,11 +24,11 @@ one keeps the secrets of the repository.
 
 ## What the tool ships
 
-| Path in the repository                     | Kind           | Use                                                                            |
-| ------------------------------------------ | -------------- | ------------------------------------------------------------------------------ |
-| `.config/fnox.toml`                        | Seed, template | The fnox config, with a keychain provider and the empty profile `<repo_name>`. |
-| `.config/mise/tasks/setup/secrets/20-fnox` | Synced         | The task `setup:secrets:20-fnox`.                                              |
-| `.config/mise/conf.d/fnox/mise.dev.toml`   | Generated      | The mise config of this tool.                                                  |
+| Path in the repository                        | Kind           | Use                                                                            |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------ |
+| `.config/fnox.toml`                           | Seed, template | The fnox config, with a keychain provider and the empty profile `<repo_name>`. |
+| `.config/mise/tasks/setup/secrets/20-fnox.py` | Synced         | The task `setup:secrets:20-fnox`.                                              |
+| `.config/mise/conf.d/fnox/mise.dev.toml`      | Generated      | The mise config of this tool.                                                  |
 
 The seed has `root = true` and `env = "exec"`. Thus fnox does not search the
 parent directories, and the secrets go only to `fnox exec` subprocesses.

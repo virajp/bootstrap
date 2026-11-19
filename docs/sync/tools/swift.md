@@ -30,17 +30,16 @@ look in the folders of a Flutter app.
 
 ## What the tool ships
 
-| Path in the repository                           | Kind      | Use                                                             |
-| ------------------------------------------------ | --------- | --------------------------------------------------------------- |
-| `.config/mise/tasks/setup/deps/60-swift`         | Synced    | The task `setup:deps:60-swift`.                                 |
-| `.config/mise/tasks/code/lint/80-swiftlint`      | Synced    | The task `code:lint:80-swiftlint`.                              |
-| `.config/mise/tasks/code/format/50-swift-format` | Synced    | The task `code:format:50-swift-format`.                         |
-| `.config/mise/tasks/test/golden/40-swift`        | Synced    | The part `test:golden:40-swift`.                                |
-| `.config/mise/tasks/_scripts/xcode`              | Library   | The library `xcode`, with `require_xcode` and `find_xcodeproj`. |
-| `.config/mise/tasks/_scripts/xcode.py`           | Library   | The Python form of `xcode`, with the same functions and output. |
-| `.config/swiftlint.yml`                          | Seed      | The SwiftLint rules. The layout rules are off for swift-format. |
-| `.config/swift-format.json`                      | Seed      | The swift-format rules: 4 spaces, lines of 120 characters.      |
-| `.config/mise/conf.d/swift/mise.<env>.toml`      | Generated | The mise config of this tool.                                   |
+| Path in the repository                              | Kind      | Use                                                                |
+| --------------------------------------------------- | --------- | ------------------------------------------------------------------ |
+| `.config/mise/tasks/setup/deps/60-swift.py`         | Synced    | The task `setup:deps:60-swift`.                                    |
+| `.config/mise/tasks/code/lint/80-swiftlint.py`      | Synced    | The task `code:lint:80-swiftlint`.                                 |
+| `.config/mise/tasks/code/format/50-swift-format.py` | Synced    | The task `code:format:50-swift-format`.                            |
+| `.config/mise/tasks/test/golden/40-swift.py`        | Synced    | The part `test:golden:40-swift`.                                   |
+| `.config/mise/tasks/_scripts/xcode.py`              | Library   | The library `xcode.py`, with `require_xcode` and `find_xcodeproj`. |
+| `.config/swiftlint.yml`                             | Seed      | The SwiftLint rules. The layout rules are off for swift-format.    |
+| `.config/swift-format.json`                         | Seed      | The swift-format rules: 4 spaces, lines of 120 characters.         |
+| `.config/mise/conf.d/swift/mise.<env>.toml`         | Generated | The mise config of this tool.                                      |
 
 ## mise tools
 
@@ -75,7 +74,7 @@ this value wins.
 `code:lint` and `code:format` run the two gates. A gate skips without its tool
 (SwiftLint from mise, swift-format from the host) and without a `.swift` file.
 Each gate gets its files from `gate_files`: the given files, else with
-`--all` every file, else the uncommitted files. Its `#FILES` header takes the
+`--all` every file, else the uncommitted files. Its `# FILES` header takes the
 `.swift` files and skips `*.generated.swift`, `.build/`, `.swiftpm/`,
 `Derived/` and `DerivedData/`. SwiftLint and swift-format get only that list,
 so the `excluded` paths of the seed `.config/swiftlint.yml` do not act in a
@@ -90,7 +89,7 @@ with a default:
 | ----------------------- | ---------------------------------------------------------------------------------- |
 | `XCODE_SCHEME`          | The scheme whose test action holds the target. The name of the project by default. |
 | `XCODE_SNAPSHOT_TARGET` | The snapshot test target to run, `SnapshotTests` by default.                       |
-| `SIMULATOR_*`           | The simulator to render on. See `_scripts/xcode` below.                            |
+| `SIMULATOR_*`           | The simulator to render on. See `_scripts/xcode.py` below.                         |
 
 - Without an `*.xcodeproj` at the root, the part prints nothing and exits 0.
 - With one, it applies. More than one `*.xcodeproj` fails it through
@@ -104,10 +103,10 @@ with a default:
   each golden first, then compares against the new ones. The failed
   comparisons leave their images in `.build/snapshot-artifacts`.
 
-The library `_scripts/xcode` is for the Xcode tasks, for example
-`test:golden:40-swift`. `require_xcode <task>` fails when no Xcode is selected.
-Then it
-sets and exports four values. A value that the repository sets wins:
+The library `_scripts/xcode.py` is for the Xcode tasks, for example
+`test:golden:40-swift`. `require_xcode(task)` fails when no Xcode is selected.
+Then it sets the four values in `os.environ` and returns them as a dict. A value
+that the repository sets wins:
 
 | Value                | Without a value of the repository                                                                                          |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -116,13 +115,8 @@ sets and exports four values. A value that the repository sets wins:
 | `SIMULATOR_OS`       | The newest available iOS runtime that has an iPhone of the rule below.                                                     |
 | `SIMULATOR_DEVICE`   | The available iPhone of that runtime with the highest model number and no other word in its name, for example `iPhone 17`. |
 
-`find_xcodeproj <task>` prints the one `*.xcodeproj` at the root, and fails
-for none or more than one.
-
-`_scripts/xcode.py` has the same functions for a Python task, with the same
-messages and exit codes. `require_xcode(task)` returns a dict of the four
-values and also sets them in `os.environ`. `find_xcodeproj(task)` returns the
-path of the `*.xcodeproj`, and prints nothing on success.
+`find_xcodeproj(task)` returns the path of the one `*.xcodeproj` at the root,
+and prints nothing on success. It fails for none or more than one.
 
 `setup:deps:60-swift` acts on the repository root only. It applies when the root
 has `Package.swift` or one `*.xcodeproj`, and runs for both when both exist.

@@ -30,7 +30,7 @@ are in [`docs/design/mise.md`](../../design/mise.md).
 
 | Path in the repository                     | Kind      | Use                            |
 | ------------------------------------------ | --------- | ------------------------------ |
-| `.config/mise/tasks/setup/deps/40-node`    | Synced    | The task `setup:deps:40-node`. |
+| `.config/mise/tasks/setup/deps/40-node.py` | Synced    | The task `setup:deps:40-node`. |
 | `.config/mise/conf.d/node/mise.<env>.toml` | Generated | The mise config of this tool.  |
 
 ## mise tools

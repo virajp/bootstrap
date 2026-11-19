@@ -24,7 +24,7 @@ for it. Remove the table (M37 of `migrate.md`).
 ## What the tool ships
 
 None. The `mise` tool ships the orchestrator `code:sec`
-(`.config/mise/tasks/code/sec/_default`).
+(`.config/mise/tasks/code/sec/_default.py`).
 
 ## mise tools
 

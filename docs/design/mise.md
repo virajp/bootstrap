@@ -580,9 +580,10 @@ repository with a `package.json` selects the `pnpm` or the `aube` tool.
 ### Names and files
 
 mise uses the path below `.config/mise/tasks/` as the task name. For example,
-`git/merge/develop` is `git:merge:develop`. A `_default` file is the task of
-its folder. A `.tmpl` task is rendered by the sync, and the output keeps the
-git mode of the template.
+`git/merge/develop.py` is `git:merge:develop`: mise removes `.py` from the
+task name. Each task is a Python uv script with the `.py` extension. A
+`_default.py` file is the task of its folder. A `.py.tmpl` task is rendered by
+the sync, and the output keeps the git mode of the template.
 
 Only the `init` task is in mise config, in `[mise.tasks.init]` of
 `repo/tools/mise/tools.toml`. It makes the task scripts executable. The task
@@ -590,12 +591,13 @@ files load in each environment.
 
 ### Orchestrators and groups
 
-An orchestrator runs each task of a group with `own_tasks <group>` from
-`helpers`. A tool adds a step to an orchestrator when it ships a task in that
-group. The orchestrator finds only the task files of the repository itself,
-not the tasks of a parent repository. A task of a group is an executable file
-named `NN-<name>`, for example `code/lint/70-ruff`. `own_tasks` skips each
-other file, `_default` and each folder. As mise does, it takes a Python part
+An orchestrator runs each task of a group with `helpers.own_tasks(<group>)`
+of `helpers.py`. A tool adds a step to an orchestrator when it ships a task in
+that group. The orchestrator finds only the task files of the repository
+itself, not the tasks of a parent repository. A task of a group is an
+executable file named `NN-<name>` or `NN-<name>.py`, for example
+`code/lint/70-ruff.py`. `own_tasks` skips each other file, `_default`,
+`_default.py` and each folder. As mise does, it takes a Python part
 `NN-<name>.py` as the task `NN-<name>` when no `NN-<name>` exists.
 `has_own_task` reads `<file>` when it exists, else `<file>.py`.
 
@@ -615,7 +617,7 @@ other file, `_default` and each folder. As mise does, it takes a Python part
 `setup:external:update`.
 
 `code:format` and `code:lint` pass `--all` only to a gate whose file has a
-`#USAGE flag "--all"` line (or `# USAGE` in a `.py` gate), so an older gate
+`# USAGE flag "--all"` line (or `#USAGE`), so an older gate
 of a repository gets `--fix`, `--debug` and the files as before. The gate file
 is the file that mise runs for the name: `<path>` when it exists, else
 `<path>.py`. `--all` with files stops the orchestrator
@@ -624,16 +626,15 @@ with a usage error, exit 2. `code:sec` keeps its own file lists and gets no
 
 ### The file sets of the gates
 
-Each `code:format:*` and `code:lint:*` gate gets its files from `gate_files` of
-`helpers`, which runs `_scripts/gate_files.py` with
-`mise x uv@latest python@3.14 -- uv run --quiet --script` (the version of
-`[mise.tools.python]` of `repo/tools/python/tools.toml`). The script is a uv
-script: an inline `# /// script` block names its Python and its dependencies
-(none), and `#MISE hide=true` keeps it out of `mise tasks`. The gate calls it
-with its own file (`$0`),
-its flags and its files, and reads the path of a temporary list file, one path
-for each line. The gate deletes the file with a `trap` on `EXIT`. An empty
-file means that the gate does not apply: it prints nothing and exits 0.
+Each `code:format:*` and `code:lint:*` gate gets its files from
+`helpers.gate_files` of `helpers.py`, which runs `_scripts/gate_files.py` with
+the Python of the task (`sys.executable`). The script is a uv script: an
+inline `# /// script` block names its Python and its dependencies (none), and
+`# MISE hide=true` keeps it out of `mise tasks`. The gate calls it with its
+own file (`__file__`), its flags and its files, and gets the path of a
+temporary list file, one path for each line. The gate deletes the file in a
+`finally` block. An empty file means that the gate does not apply: it prints
+nothing and exits 0.
 
 The base set has paths relative to the repository root:
 
@@ -652,19 +653,19 @@ ignored. Three filters then remove files, in this order. The first match drops
 the file, and with `--debug` it prints `drop <path>: <layer> <kind>` on stderr,
 with `"<pattern>"` after it for a pattern match:
 
-| Layer    | Kind          | Drops                                                                                |
-| -------- | ------------- | ------------------------------------------------------------------------------------ |
-| `repo`   | `unsafe-name` | A path with a line break or a leading `-`, which would split the list or be a flag   |
-| `repo`   | `unlisted`    | A path that git does not list: an ignored path, a path in a submodule or outside     |
-| `repo`   | `gitlink`     | A submodule (mode `160000`); the helper never recurses into one                      |
-| `repo`   | `nested-repo` | A nested repository, which `--others` lists as a path that ends with `/`             |
-| `repo`   | `symlink`     | A symlink, whatever its target                                                       |
-| `repo`   | `deleted`     | A path that is not a regular file                                                    |
-| `global` | `include`     | A path that no pattern of a non-empty `includes` of `config-files.toml` matches      |
-| `global` | `exclude`     | A path that a pattern of `excludes` of `config-files.toml` matches, with the pattern |
-| `gate`   | `include`     | A path that no `include` pattern of the `#FILES` header matches (and no shebang key) |
-| `gate`   | `exclude`     | A path that an `exclude` pattern of the `#FILES` header matches, with the pattern    |
-| `gate`   | `shebang`     | A path of the include names whose `#!` names a known shell not in the `shebang` list |
+| Layer    | Kind          | Drops                                                                                 |
+| -------- | ------------- | ------------------------------------------------------------------------------------- |
+| `repo`   | `unsafe-name` | A path with a line break or a leading `-`, which would split the list or be a flag    |
+| `repo`   | `unlisted`    | A path that git does not list: an ignored path, a path in a submodule or outside      |
+| `repo`   | `gitlink`     | A submodule (mode `160000`); the helper never recurses into one                       |
+| `repo`   | `nested-repo` | A nested repository, which `--others` lists as a path that ends with `/`              |
+| `repo`   | `symlink`     | A symlink, whatever its target                                                        |
+| `repo`   | `deleted`     | A path that is not a regular file                                                     |
+| `global` | `include`     | A path that no pattern of a non-empty `includes` of `config-files.toml` matches       |
+| `global` | `exclude`     | A path that a pattern of `excludes` of `config-files.toml` matches, with the pattern  |
+| `gate`   | `include`     | A path that no `include` pattern of the `# FILES` header matches (and no shebang key) |
+| `gate`   | `exclude`     | A path that an `exclude` pattern of the `# FILES` header matches, with the pattern    |
+| `gate`   | `shebang`     | A path of the include names whose `#!` names a known shell not in the `shebang` list  |
 
 The global lists are the key `code_files` of the `mise` tool, `includes` and
 `excludes`: its `[defaults.code_files]`, the `[contributes.mise]` of the other
@@ -672,13 +673,14 @@ tools and `[tools.mise]` of `.config/bootstrap/tools.toml`. The sync renders
 them to `.config/bootstrap/config-files.toml`, a template file of the `mise`
 tool. A missing file gives two empty lists, and an empty `includes` means every
 file. The dprint merge spec renders the same excludes into `dprint.jsonc` (see
-`docs/sync/tools/dprint.md`). The `#FILES` header of a gate is in
+`docs/sync/tools/dprint.md`). The `# FILES` header of a gate is in
 `docs/design/tools.md` ("The `#FILES` header of a gate").
 
 In a gate run, `gate_files` is the only place that removes a file. A gate has
 no own filter and no `--force-exclude`, and its tool gets only that list:
 dprint with `--stdin-files`, detekt through its argument file, and each other
-tool through `tr '\n' '\0' < "${list}" | xargs -0`, which makes batches below
+tool through `xargs -0` with the list on stdin (its line breaks changed to
+NUL), which makes batches below
 the argument limit. A gate of a module (`code:lint:10-android`,
 `code:lint:40-go`, `code:lint:45-gomod`, `code:lint:90-uv`) maps the files of
 the list to their modules or projects, so the default examines the modules of
@@ -744,32 +746,28 @@ for an editor, on a macOS dev host.
 
 ### The libraries in `_scripts/`
 
-| Library             | Contents                                                                                                                   |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `helpers`           | The print functions, `has_own_task`, `own_tasks`, `members`, `gate_files`                                                  |
-| `helpers.py`        | The Python form of `helpers`, with the same names and output, and `tool`, `has_tool` and `usage_files`, of the `mise` tool |
-| `gate_files.py`     | The file list of one `code:format` or `code:lint` gate, of the `mise` tool                                                 |
-| `checks`            | git predicates. They return an exit status only.                                                                           |
-| `checks.py`         | The Python form of `checks`, of the `mise` tool                                                                            |
-| `merge`             | `merge_to_destination_branch`, for the `git:merge:<branch>` tasks                                                          |
-| `merge.py`          | The Python form of `merge`, of the `git` tool                                                                              |
-| `placeholder`       | For a task that no stack fills yet. It always exits 0.                                                                     |
-| `placeholder.py`    | The Python form of `placeholder`, of the `mise` tool                                                                       |
-| `xcode`             | `require_xcode`, `find_xcodeproj` and the simulator functions, of the `swift` tool                                         |
-| `xcode.py`          | The Python form of `xcode`, of the `swift` tool                                                                            |
-| `worktrees-page`    | `write_worktrees_page`, the HTML page of `git:worktree:list`, of the `mise` tool                                           |
-| `worktrees_page.py` | The Python form of `worktrees-page`, of the `mise` tool                                                                    |
+Each library is a Python module.
+
+| Library             | Contents                                                                                                                                             |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `helpers.py`        | The print functions, `has_own_task`, `own_tasks`, `bootstrap_get`, `members`, `gate_files`, `usage_files`, `tool` and `has_tool`, of the `mise` tool |
+| `gate_files.py`     | The file list of one `code:format` or `code:lint` gate, of the `mise` tool                                                                           |
+| `checks.py`         | git predicates. They return a bool only. Of the `mise` tool                                                                                          |
+| `merge.py`          | `merge_to_destination_branch`, for the `git:merge:<branch>` tasks, of the `git` tool                                                                 |
+| `placeholder.py`    | For a task that no stack fills yet. It always exits 0. Of the `mise` tool                                                                            |
+| `xcode.py`          | `require_xcode`, `find_xcodeproj` and the simulator functions, of the `swift` tool                                                                   |
+| `worktrees_page.py` | `write_worktrees_page`, the HTML page of `git:worktree:list`, of the `mise` tool                                                                     |
 
 ### The rules for task scripts
 
 - Each tool call has the prefix `mise x --`. System commands and `mise` itself
   do not.
 - `mise x -- which <tool>` finds a tool, not `command -v`.
-- A shell task is for bash 3.2 and bash 5.x. A Python task (`.py`) is a uv
-  script with the standard library only, and imports the libraries of
-  `_scripts/`. Its rules are in "Task scripts" of `CLAUDE.md`.
-- `#MISE` and `#USAGE` header comments give the metadata and the flags
-  (`# MISE` and `# USAGE` in a `.py` file; mise reads both forms).
+- Each task is a Python uv script (`.py`) with the standard library only,
+  and imports the libraries of `_scripts/`. Its rules are in "Task scripts"
+  of `CLAUDE.md`.
+- `# MISE` and `# USAGE` header comments give the metadata and the flags
+  (mise also reads `#MISE` and `#USAGE`).
 - A task that does not apply prints nothing and exits 0. A dispatcher with no
   part prints one line and exits 0.
 - The output rules are in "Task output: headers and subheaders" of
@@ -805,8 +803,8 @@ These facts came from the examination. They are not decisions.
   of the project.
 - `fnox` and `doppler` install their CLI in `dev` only. See
   [fnox.md](fnox.md) for the new fnox design.
-- `repo/tools/mise/tasks/code` has the shebang
-  `#!/usr/bin/env zsh`. The other task scripts use bash.
+- Each task script of `repo/tools/` has the shebang
+  `#!/usr/bin/env -S uv run --script`.
 - No file of `repo/tools/` sets `MISE_ENV`. The session of this examination had
   `MISE_ENV=dev`, but its source is not known. It is not in
   `~/.config/mise/` or in `~/.config/fish/`.

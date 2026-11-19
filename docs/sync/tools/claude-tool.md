@@ -25,9 +25,9 @@ finds `CLAUDE.md` and `.claude/` at the root.
 
 ## What the tool ships
 
-| Path in the repository        | Kind   | Use                  |
-| ----------------------------- | ------ | -------------------- |
-| `.config/mise/tasks/setup/ai` | Synced | The task `setup:ai`. |
+| Path in the repository           | Kind   | Use                  |
+| -------------------------------- | ------ | -------------------- |
+| `.config/mise/tasks/setup/ai.py` | Synced | The task `setup:ai`. |
 
 ## mise tools
 

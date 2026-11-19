@@ -22,8 +22,8 @@ A `[tools.pre-commit]` table gives values.
 | Path in the repository                         | Kind      | Use                                                          |
 | ---------------------------------------------- | --------- | ------------------------------------------------------------ |
 | `.config/pre-commit-config.yaml`               | Shared    | The hooks of this tool and of the selected tools. See below. |
-| `.config/mise/tasks/setup/precommit`           | Synced    | The task `setup:precommit`.                                  |
-| `.config/mise/tasks/code/precommit`            | Synced    | The task `code:precommit`.                                   |
+| `.config/mise/tasks/setup/precommit.py`        | Synced    | The task `setup:precommit`.                                  |
+| `.config/mise/tasks/code/precommit.py`         | Synced    | The task `code:precommit`.                                   |
 | `.config/mise/conf.d/pre-commit/mise.dev.toml` | Generated | The mise config of this tool.                                |
 
 `.config/pre-commit-config.yaml` is a shared file. The sync renders the spec

@@ -337,8 +337,8 @@ Mac. It takes no tool or pack names: `add tool` and `add pack` select tools.
 
    A path is a task of the repository when it is a regular file, the manifest
    does not list it, and it has no bootstrap header. A file with the header is
-   bootstrap's own, and the sync writes the dispatcher over it. `migrate`
-   follows
+   bootstrap's own, and `migrate` does not move it (see the next paragraph).
+   `migrate` follows
    no link: a path that is a link, or is below a linked folder, stays, and so
    does a path whose target is. All the moves are one change,
    `move own test tasks into 50-local parts`, and its detail lists each file
@@ -348,6 +348,20 @@ Mac. It takes no tool or pack names: `add tool` and `add pack` select tools.
    `<group>/50-local` exists, or a temp name exists, it stops with code 2,
    names both paths, and moves nothing. `sync` runs `migrate` first, and
    `check` stops with code 2 and "run bootstrap migrate" on such a task.
+
+   Each dispatcher is a `.py` file, for example `test/_default.py`. mise runs
+   the file without the extension first, so an old copy `<dir>/_default`
+   hides the new dispatcher. On the repo side, `migrate` removes each old copy
+   of a dispatcher: a regular file `<dir>/_default` with the bootstrap header,
+   which the manifest does not list, in a folder of a dispatcher
+   (`code/format`, `code/lint`, `code/sec`, `setup/deps`, `setup/secrets`,
+   `test`, `test/e2e` and `test/golden`), when a selected tool ships
+   `<dir>/_default.py`. All the removals are one change,
+   `remove old copies of the dispatchers`, after the changes of step 3, and
+   its detail lists each file. `migrate` follows no link. The sync removes a
+   listed copy by its manifest. Only `migrate` acts on an unlisted copy:
+   `core.MigrateNeeded` does not count it, so `sync` and the TUI do not run
+   `migrate` for such a copy alone, and `check` does not report it.
 5. On the repo side, `migrate` renames the old task `setup:worktree` to
    `git:worktree:setup` where the sync cannot. The seed `.config/wt.toml` and
    each `[members.<name>].worktree_install` of `repo.toml` can run
@@ -991,8 +1005,10 @@ for `mise run setup:worktree` in `.config/wt.toml` or in a
 `[members.<name>].worktree_install`, and a warning for each executable file
 without an `NN-` name in the folder of a dispatcher: `code/format`,
 `code/lint`, `code/sec`, `setup/deps`, `setup/secrets`, `test`, `test/e2e` and
-`test/golden`. A file whose task name a `#MISE depends` of another file in the
-same folder names, and a name that starts with `_`, get no warning. `core-tools`
+`test/golden`. A file whose task name a `# MISE depends` (or `#MISE depends`)
+of another file in the same folder names, and a name that starts with `_`,
+get no warning. The task name of a file has no `.py`, as in mise: the depends
+line `test:go` names the file `test/go.py`. `core-tools`
 always passes: its line is a warning finding, and it never changes the code.
 `valid` is `true` only when the code is `0`, and the code is the highest code of
 the stages. A failure before the first stage gives
@@ -1814,7 +1830,7 @@ run ends with `✔ Dry run: <n> changes, nothing written`. Else the prompt is
 ```text
 Changes
   ✎ .config/bootstrap/tools.toml          remove claude
-  ✖ .config/mise/tasks/setup/ai
+  ✖ .config/mise/tasks/setup/ai.py
   ✎ .config/bootstrap/repo-generated.tsv
 
 ✔ Dry run: 3 changes, nothing written
@@ -1867,8 +1883,8 @@ code <rc>`.
 **The style rule.** One rule turns the glyphs and the colors on and off
 together: `FORCE_COLOR` (not `0`) turns them on, `NO_COLOR` turns them off, and
 otherwise they need a terminal on stderr and a `TERM` that is not `dumb`. This
-is the rule of `style_enabled` of `helpers`. The engine does not call
-`helpers`, because the local copy can be stale and the Mac side does not have
+is the rule of `style_enabled` of `helpers.py`. The engine does not call
+`helpers.py`, because the local copy can be stale and the Mac side does not have
 it. The style table:
 
 | Line    | Style on                          | Style off                      |
