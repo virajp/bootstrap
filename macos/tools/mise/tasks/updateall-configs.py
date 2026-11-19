@@ -5,11 +5,11 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-# MISE description="Render the selected Mac tools of bootstrap into $HOME, then run mise bootstrap"
+# MISE description="Render the selected Mac tools of bootstrap into $HOME"
 # MISE tools={uv="latest", python="3.14"}
 
 # USAGE flag "--dry-run" help="show the changes without writing them"
-# USAGE flag "--no-bootstrap" help="skip every mise bootstrap step"
+# USAGE flag "--no-bootstrap" help="skip the mise bootstrap of a first setup"
 # USAGE flag "--verbose" help="list each file, also an unchanged one"
 
 # `bootstrap mac sync` fetches the bootstrap clone into ~/.cache/bootstrap/,
@@ -29,13 +29,13 @@ USAGE = """\
 usage: mise run updateall:configs [--dry-run] [--no-bootstrap] [--verbose]
 
   --dry-run       show the changes without writing them
-  --no-bootstrap  skip every mise bootstrap step
+  --no-bootstrap  skip the mise bootstrap of a first setup
   --verbose       list each file, also an unchanged one
   -h, --help      show this help
 
 exit codes: 0 done, 1 other failure, 2 usage or config error, 3 a tool
-that bootstrap does not have, 4 the init stage changed (open a new
-terminal, then run mise run updateall:configs), 5 the clone or fetch failed
+that bootstrap does not have, 4 open a new terminal (after a first setup,
+or when a script asks for it), 5 the clone or fetch failed
 """
 
 
@@ -152,8 +152,8 @@ def main():
 
   legacy_cleanup()
 
-  # The exit code of bootstrap is the exit code of this task, exit 4 (the stop
-  # after a changed init stage) too.
+  # The exit code of bootstrap is the exit code of this task, exit 4 (open a
+  # new terminal) too.
   engine = env("BOOTSTRAP_BIN") or "bootstrap"
   try:
     rc = subprocess.run([engine, "mac", "sync", *args], check=False).returncode

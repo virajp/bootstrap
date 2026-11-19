@@ -175,7 +175,7 @@ type Options struct {
 	// DryRun: the command writes nothing. replace then gives a warning for
 	// a work tree that is not clean, not a problem.
 	DryRun bool
-	// NoBootstrap skips each mise bootstrap step of the Mac sync.
+	// NoBootstrap skips the mise bootstrap of the first setup of a Mac.
 	NoBootstrap bool
 	// Stdout and Stderr take the output of the sync front-end: the sync of
 	// Apply, and the dry run of a plan that fails. Nil discards it.

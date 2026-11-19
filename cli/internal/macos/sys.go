@@ -8,7 +8,6 @@ import (
 	"syscall"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
-	"github.com/virajp/bootstrap/cli/internal/header"
 	"github.com/virajp/bootstrap/cli/internal/manifest"
 )
 
@@ -26,8 +25,6 @@ func isFile(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.Mode().IsRegular()
 }
-
-func hasHeader(path string) bool { return header.HasFile(path) }
 
 // pwd is $PWD of bash: the PWD variable when it names the current folder,
 // else the physical path of the current folder.

@@ -2,10 +2,11 @@
 
 This document describes the Mac side of the sync: `bootstrap mac <command>` and
 the front-end `internal/macos` of the engine. The front-end renders the selected
-tools of `macos/tools/` into `$HOME`, then runs `mise bootstrap`. This document
-holds the rules that only the Mac has: the repository of `macos.toml`, the
-entry tasks, `macos.toml`, the stages and exit 4, the place of mise and the
-symlink resolve.
+tools of `macos/tools/` into `$HOME`. It installs nothing: `updateall` runs
+`mise bootstrap`. Only the first setup of a Mac, which `mac migrate` runs, runs
+`mise bootstrap` once. This document holds the rules that only the Mac has: the
+repository of `macos.toml`, the entry tasks, `macos.toml`, the first setup and
+exit 4, the place of mise and the symlink resolve.
 
 See also: [cli.md](cli.md) for the command line, the shared
 rules and the other exit codes, [packs.md](packs.md), [tools.md](tools.md) and
@@ -41,28 +42,29 @@ The Mac tool `mise` ships the tasks into `~/.config/mise/tasks/`, and the mise
 tool `github:virajp/bootstrap`. Each task is a Python uv script with a `.py`
 name, and mise removes `.py` from the task name. The tasks need uv and Python
 3.14, so the Mac `mise` tool depends on `python` and `uv` (see
-[Stages and exit 4](#stages-and-exit-4)). `updateall:configs` is standalone:
+[The first setup and exit 4](#the-first-setup-and-exit-4)). `updateall:configs`
+is standalone:
 it imports no library.
 
-| Task                                                               | Job                                                                           |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| `updateall:configs`                                                | Runs `bootstrap mac sync` with its flags.                                     |
-| `updateall`                                                        | Upgrades the machine. It runs `updateall:configs --no-bootstrap` as one step. |
-| `upgrade:macos:download`, `upgrade:macos:upgrade`, `upgrade:power` | The upgrade tasks of macOS and of the power profile.                          |
+| Task                                                               | Job                                                                                   |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| `updateall:configs`                                                | Runs `bootstrap mac sync` with its flags.                                             |
+| `updateall`                                                        | Upgrades the machine. It runs `updateall:configs` as one step, then `mise bootstrap`. |
+| `upgrade:macos:download`, `upgrade:macos:upgrade`, `upgrade:power` | The upgrade tasks of macOS and of the power profile.                                  |
 
 The alias `updateall` runs `mise run updateall` from any folder.
 
 ```shell
-mise run updateall:configs                # render, then mise bootstrap
+mise run updateall:configs                # render the configs
 mise run updateall:configs --dry-run      # show the changes, write nothing
-mise run updateall:configs --no-bootstrap # skip each mise bootstrap step
+mise run updateall:configs --no-bootstrap # skip the mise bootstrap of a first setup
 mise run updateall:configs --verbose      # list each file
 ```
 
 | Flag             | Effect                                                                                                                 |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `--dry-run`      | Shows the changes. Writes nothing.                                                                                     |
-| `--no-bootstrap` | Skips each `mise bootstrap` step.                                                                                      |
+| `--no-bootstrap` | Skips the `mise bootstrap` of a first setup, when the sync runs a pending `mac migrate`.                               |
 | `--verbose`      | Lists each file, also an unchanged one. Sets `BOOTSTRAP_VERBOSE=1`, and the task does not pass the flag to the engine. |
 | `-h`, `--help`   | Shows the usage.                                                                                                       |
 
@@ -82,16 +84,16 @@ has no manifest, then removes the old folder. It keeps the old folder when the
 old Mac sync still runs, or when the list cannot move. A failure here does not
 fail the sync.
 
-`updateall` runs `updateall:configs --no-bootstrap`. On exit 4, it prints a
+`updateall` runs `updateall:configs`. On exit 4, it prints a
 message and stops at once with exit 4. It runs its other upgrade steps only when
 `updateall:configs` returns 0.
 
 A new Mac has no mise and no clone. The `setup` script of the user's
 `macos-setup` repository installs mise and `bootstrap`
-(`mise use -g github:virajp/bootstrap`), then runs
-`bootstrap mac sync`. After
-that, the Mac tool `mise` keeps `bootstrap` as a mise tool, and the version
-check applies.
+(`mise use -g github:virajp/bootstrap`). Then `bootstrap mac migrate` does the
+first setup, and after a new terminal, `bootstrap mac sync` writes the rest.
+After that, the Mac tool `mise` keeps `bootstrap` as a mise tool, and the
+version check applies.
 
 ## mise
 
@@ -205,12 +207,12 @@ Two Mac sources do not follow this rule, each from its old copy:
 4. It runs the check scripts.
 5. It examines `[overrides.mise*]`, and generates the mise config of each tool
    and of `macos.toml` into a work folder.
-6. It makes the file plan: each file of a selected tool, relative to `$HOME`.
-   The plan has each stage, with the `.config/mise/` files of the stage first
-   and the generated mise files first of all.
-7. It runs the init stage, then the main stage.
-8. It writes the manifest, runs `mise bootstrap --yes` from `$HOME`, runs the
-   `after` scripts of the main stage, and sets `bootstrap_commit`.
+6. It makes the file plan: each file of a selected tool, relative to `$HOME`,
+   with the `.config/mise/` files first and the generated mise files first of
+   all.
+7. It writes each file of the plan in one pass, and applies the stale rule.
+8. It writes the manifest, runs the `after` scripts, and sets
+   `bootstrap_commit`. It runs no `mise bootstrap`.
 
 The write of one file is in
 [cli.md](cli.md#the-write-of-one-target). A file takes this
@@ -226,42 +228,51 @@ The `ssh` tool gives each file below `.ssh/` `dir_perm = "700"`, so `~/.ssh` has
 mode 700. The check uses the path in the home folder, not the real path of a
 linked file.
 
-## Stages and exit 4
+## The first setup and exit 4
 
-The init stage holds each selected tool with `stage = "init"` and,
-transitively, each tool in their `depends`. Each other selected tool, and the
-file `zz-macos/mise.toml`, is in the main stage. `bash`, `zsh` and `fish` have
-`stage = "init"` and `depends = ["homebrew", "mise"]`. `homebrew` depends on
-`fnox`, and `mise` depends on `cli`, `python` and `uv`.
+The first setup installs what `mise bootstrap` and the entry tasks need on a
+new Mac: Homebrew, the shells, mise, `uv` and Python. A Mac needs it when no
+sync finished on it: the cache has no manifest `macos-generated.tsv`. The
+manifest is per Mac, so a second Mac with a clone of `macos-setup` also needs
+it.
 
-When the init stage is empty, the sync skips it. Else a real run does these
-steps:
+`bootstrap mac migrate` runs no sync. It writes `macos.toml`, and on a Mac with
+no manifest it runs the first setup in place of the sync:
 
-1. It renders the init-stage tools.
-2. It applies the stale rule to the manifest rows of the init-stage tools only.
-3. A failure of a file or of the stale rule ends the run here, with no later
-   stage.
-4. It runs `mise bootstrap --yes`, unless `--no-bootstrap` is set. A failure of
-   this step ends the run with code 1.
-5. It runs the `after` script of each init-stage tool. A script that asks for a
-   restart gives a reason.
-6. If the stage changed a file, a seed, a shared file, a stale file or a folder
-   mode, or a script asked for a restart, the run writes the manifest with the
-   rows of this stage and the old rows of the main stage. It prints the reasons
-   and `open a new terminal, then run: mise run updateall:configs`, and it
-   stops with **exit 4**.
-7. Else it continues with the main stage.
+1. It renders the tools of the init stage. The init stage holds each selected
+   tool with `stage = "init"` and, transitively, each tool in their
+   `depends`. `bash`, `zsh` and `fish` have `stage = "init"` and
+   `depends = ["homebrew", "mise"]`. `homebrew` depends on `fnox`, and `mise`
+   depends on `cli`, `python` and `uv`.
+2. A failure of a file ends the run with no manifest. `Apply` puts back
+   `macos.toml`.
+3. It writes the manifest with the rows of the init stage.
+4. It runs `mise bootstrap --yes` from `$HOME`, unless `--no-bootstrap` is set.
+   A failure of this step ends the run with code 1.
+5. It runs the `after` script of each init-stage tool, prints the reasons of a
+   script that asks for a restart, and prints
+   `the first setup is done: open a new terminal, then run: bootstrap mac sync`.
+   It stops with **exit 4**, because the login shell and `PATH` changed.
 
-After the main stage, an `after` script can also ask for a restart: the run
-prints the reasons and stops with exit 4, before it sets `bootstrap_commit`.
+With `--no-bootstrap`, the first setup ends after step 3 with exit 0. The first
+setup sets no `bootstrap_commit`. On a Mac with a manifest, `mac migrate`
+writes only `macos.toml`. After each `mac migrate` that ends with exit 0, it
+prints `Next: run bootstrap mac sync`.
 
-**Exit 4** is not a failure of a file: the shells, Homebrew or mise changed, and
-the rest needs a new terminal. Open a new terminal, then run the task again. The
-next run finds no change in the init stage and continues. `updateall` also stops
-with exit 4, and it names `mise run updateall`.
+`bootstrap mac sync` writes each selected tool in one pass, and never runs
+`mise bootstrap`. On a Mac with no manifest, it first prints the warning
+`no sync finished on this Mac yet: run bootstrap mac migrate first`, then it
+writes the files. When `mac sync` finds a pending migrate, it runs that migrate
+first: on a Mac with no manifest, that is the first setup, and the sync stops
+there with its exit 4.
 
-A dry run renders both stages at once, runs no `mise bootstrap` and no `after`
-script, and never stops with exit 4.
+**Exit 4** is not a failure of a file: the rest needs a new terminal. A sync
+also stops with exit 4 when an `after` script asks for a restart, before it
+sets `bootstrap_commit`. Open a new terminal, then run the command again.
+`updateall` also stops with exit 4, and it names `mise run updateall`.
+
+A dry run runs no `mise bootstrap` and no `after` script, and never stops with
+exit 4.
 
 The other exit codes are in [cli.md](cli.md#the-exit-codes).
 
@@ -273,10 +284,10 @@ the Mac:
 
 - The first line is `↻ bootstrap <short commit> · <n> tools`. With an empty
   commit, it reads `↻ bootstrap an unknown commit · <n> tools`.
-- `mise bootstrap` prints `▸ Running mise bootstrap --yes` before it and
-  `✔ mise bootstrap done` after a success. The output of mise stays as it is.
-- The run has one last line across the init and main stages, and it prints after
-  `mise bootstrap`. A return of exit 4 after the init stage has no last line.
+- The `mise bootstrap` of a first setup prints `▸ Running mise bootstrap --yes`
+  before it and `✔ mise bootstrap done` after a success. The output of mise
+  stays as it is.
+- The run has one last line. A return of exit 4 has no last line.
 - `FAILED: <list>` stays by default, before the last line.
 - `log` of the entry task is an info line, and `log_error` is an error line.
   With the style rule on, they show the glyphs `·` and `✗`. Otherwise they have
@@ -284,13 +295,14 @@ the Mac:
 
 ## The failures
 
-Inside a stage, a failed file stops no other file. After a failure in a stage:
+A failed file stops no other file. After a failure:
 
-- The stale rule of that stage still runs. A target that failed but is still
+- The stale rule still runs. A target that failed but is still
   planned stays handled, so its existing copy stays. A tool whose mise config
   cannot generate keeps its existing `conf.d/<tool>/mise.toml` in the same way.
 - The manifest keeps its old content.
-- No `mise bootstrap` runs, and `bootstrap_commit` stays.
+- `bootstrap_commit` stays. A first setup with a failure runs no
+  `mise bootstrap`.
 
 ## Symlinks
 
@@ -316,9 +328,10 @@ The manifest is `macos-generated.tsv` of the cache. It is outside the clone, so
 Each owned target of a selected tool, each generated mise file, and each item
 that bootstrap added to a shared file has one row. The file
 `conf.d/zz-macos/mise.toml` has the tool `zz-macos`. A clean run writes the
-manifest after the stale rule of the main stage and before `mise bootstrap`. A
-dry run prints the stale files and writes no manifest. A tool that is not
-selected is not in the init stage, so the main stage examines its rows.
+manifest after the stale rule. The first setup writes the rows of the init
+stage before its `mise bootstrap`. A
+dry run prints the stale files and writes no manifest. The stale rule examines
+the rows of each tool, also of a tool that is not selected.
 
 ## Where the Mac side writes
 

@@ -76,13 +76,10 @@ def main():
   helpers.print_header("Upgrading MISE ...")
   run("mise", "self-update", "--yes")
 
-  # Render the Mac tools into $HOME (the `mise bootstrap` steps follow
-  # below). Exit 4: the init stage (the shells, homebrew, mise) changed, so the
-  # rest needs a new terminal.
+  # Render the Mac tools into $HOME. The sync installs nothing: the
+  # `mise bootstrap` steps follow below. Exit 4: the rest needs a new terminal.
   helpers.print_subheader("Rendering the Mac tools ...")
-  configs_rc = exit_code(
-    subprocess.run(["mise", "run", "updateall:configs", "--", "--no-bootstrap"], check=False).returncode
-  )
+  configs_rc = exit_code(subprocess.run(["mise", "run", "updateall:configs"], check=False).returncode)
   if configs_rc == 4:
     helpers.print_warn("open a new terminal, then run: mise run updateall")
     sys.exit(4)

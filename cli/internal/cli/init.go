@@ -16,7 +16,8 @@ import (
 // init is `bootstrap [mac] migrate` (init is its old name). It never opens
 // the TUI: it migrates an old form, or creates the values file with a table
 // for each member of the pack base, asks the questions without an answer,
-// and syncs.
+// and syncs. mac migrate runs no sync: on a Mac with no manifest it runs the
+// first setup, and then it names bootstrap mac sync as the next step.
 func (a *app) init(mac bool, o opts) fail.Code {
 	sd, c, code := a.side(mac, true, mac)
 	if c != nil {
@@ -25,7 +26,11 @@ func (a *app) init(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
-	return a.finish(sd, o, core.List{Init: true})
+	code = a.finish(sd, o, core.List{Init: true})
+	if mac && code == fail.OK && !o.dryRun {
+		a.infof("Next: run bootstrap mac sync")
+	}
+	return code
 }
 
 // tui is `bootstrap [mac] tui`: the TUI on the values file of the side. It
@@ -180,7 +185,7 @@ func (a *app) finish(sd core.Side, o opts, l core.List) fail.Code {
 		return code
 	}
 	opt.Step = a.step
-	stop := a.syncSpin(sd.Mac, o)
+	stop := a.syncSpin(p.FirstSetup && !o.noBootstrap)
 	opt.Stdout, opt.Stderr = a.stdout, a.stderr
 	code, putBack, outcomes, err := core.Apply(p, opt)
 	stop()

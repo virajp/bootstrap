@@ -97,12 +97,8 @@ func (s *state) file(it planItem) fail.Code {
 	fe := s.entry(it.tool, it.target)
 	if fe != nil && fe.DirPerm != 0 {
 		dir := target.Dirname(it.target)
-		changed, code := s.e.DirPerm(s.home+"/"+dir, tilde+"/"+dir, fe.DirPerm, s.dirDone)
-		if code != fail.OK {
+		if _, code := s.e.DirPerm(s.home+"/"+dir, tilde+"/"+dir, fe.DirPerm, s.dirDone); code != fail.OK {
 			return code
-		}
-		if changed {
-			s.changed = true
 		}
 	}
 	// The temp file is next to the real path, so the final rename is atomic.
@@ -145,9 +141,6 @@ func (s *state) file(it planItem) fail.Code {
 	} else {
 		mode, _ = target.Mode(src)
 	}
-	if !s.e.DryRun && !s.inSync(tmp, real, mode) {
-		s.changed = true
-	}
 	if code := s.e.Finish(mode, tmp, real, show, it.mode); code != fail.OK {
 		return code
 	}
@@ -161,25 +154,6 @@ func (s *state) file(it planItem) fail.Code {
 		}
 	}
 	return fail.OK
-}
-
-// inSync is true when <real> is a regular file with the content of <tmp> and
-// the mode <mode>.
-func (s *state) inSync(tmp, real string, mode os.FileMode) bool {
-	info, err := os.Stat(real)
-	if err != nil || !info.Mode().IsRegular() {
-		return false
-	}
-	a, err := os.ReadFile(tmp)
-	if err != nil {
-		return false
-	}
-	b, err := os.ReadFile(real)
-	if err != nil || string(a) != string(b) {
-		return false
-	}
-	cur, err := target.Mode(real)
-	return err == nil && cur == mode
 }
 
 // merge merges the shared file of <it>: the rendered spec in the temp file

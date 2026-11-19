@@ -49,13 +49,37 @@ const (
 const Usage = `usage: bootstrap mac sync [--dry-run] [--no-bootstrap]
 
   --dry-run       show the changes without writing them
-  --no-bootstrap  skip every mise bootstrap step
+  --no-bootstrap  skip the mise bootstrap of a first setup (mac migrate)
   -h, --help      show this help
 
 exit codes: 0 done, 1 other failure, 2 usage or config error, 3 a tool or a
-pack that macos/ does not have, 4 the init stage changed (open a new terminal,
-then run mise run updateall:configs)
+pack that macos/ does not have, 4 open a new terminal (after a first setup,
+or when a script asks for it)
 `
+
+// FirstSetupFlag is the flag of the front-end that mac migrate passes on a
+// Mac with no manifest: the first setup, in place of the sync.
+const FirstSetupFlag = "--first-setup"
+
+// ManifestFile is the path of the manifest of the Mac: macos-generated.tsv
+// of the cache.
+func ManifestFile(getenv func(string) string) string {
+	cache := getenv("BOOTSTRAP_CACHE")
+	if cache == "" {
+		xdg := getenv("XDG_CACHE_HOME")
+		if xdg == "" {
+			xdg = getenv("HOME") + "/.cache"
+		}
+		cache = xdg + "/bootstrap"
+	}
+	return cache + "/macos-generated.tsv"
+}
+
+// NeedsFirstSetup tells if no sync finished on this Mac: it has no manifest.
+func NeedsFirstSetup(getenv func(string) string) bool {
+	_, err := os.Stat(ManifestFile(getenv))
+	return err != nil
+}
 
 // genFile is one generated mise file: a line of _SS_GEN.
 type genFile struct{ tool, file, target string }
@@ -108,7 +132,6 @@ type state struct {
 	rows      []manifest.Row
 	oldRows   []manifest.Row
 	merged    map[string]bool // The shared files that this run merged.
-	changed   bool
 	dirDone   map[string]bool // The folders at their dir_perm.
 	show      string          // _SS_SHOW
 }
@@ -174,13 +197,15 @@ func (s *state) logAll(err error) fail.Code { return source.LogAll(s.r, err) }
 
 // run is `bootstrap mac sync`.
 func (s *state) run(args []string) fail.Code {
-	dryRun, bootstrap := false, true
+	dryRun, bootstrap, firstSetup := false, true, false
 	for _, arg := range args {
 		switch arg {
 		case "--dry-run":
 			dryRun = true
 		case "--no-bootstrap":
 			bootstrap = false
+		case FirstSetupFlag:
+			firstSetup = true
 		case "-h", "--help":
 			_, _ = fmt.Fprint(s.stdout, Usage)
 			return fail.OK
@@ -220,15 +245,7 @@ func (s *state) run(args []string) fail.Code {
 		return fail.Other
 	}
 	s.homeReal = real
-	cache := s.getenv("BOOTSTRAP_CACHE")
-	if cache == "" {
-		xdg := s.getenv("XDG_CACHE_HOME")
-		if xdg == "" {
-			xdg = s.getenv("HOME") + "/.cache"
-		}
-		cache = xdg + "/bootstrap"
-	}
-	manifestFile := cache + "/macos-generated.tsv"
+	manifestFile := ManifestFile(s.getenv)
 	work, err := os.MkdirTemp(target.DryRunDir(s.getenv), "bootstrap-mac.")
 	if err != nil {
 		s.log("cannot create a temp folder")
@@ -307,18 +324,30 @@ func (s *state) run(args []string) fail.Code {
 		s.r.Summary(int(code))
 		return code
 	}
+	firstRun := !exists(manifestFile)
 	s.oldRows, _ = manifest.Read(s.e, manifest.Macos, manifestFile, "")
 	s.merged = map[string]bool{}
+	if firstSetup {
+		return s.firstSetup(dryRun, bootstrap, manifestFile)
+	}
+	if firstRun {
+		s.r.Warn("no sync finished on this Mac yet: run bootstrap mac migrate first, so that mise bootstrap installs Homebrew, the shells and mise")
+	}
 
+	// The sync writes the configs of each selected tool in one pass. It
+	// installs nothing: updateall runs mise bootstrap.
+	s.e.DryRun = dryRun
+	worst := s.render("all")
+	if rc := s.stale("all"); rc != fail.OK {
+		s.failed += " stale files"
+		worst = max(worst, rc)
+	}
+	if worst != fail.OK {
+		s.reportFailed()
+		s.r.Summary(int(worst))
+		return worst
+	}
 	if dryRun {
-		s.e.DryRun = true
-		worst := s.render("all")
-		s.stale("all")
-		if worst != fail.OK {
-			s.r.Info("FAILED:" + s.failed)
-			s.r.Summary(int(worst))
-			return worst
-		}
 		if commit != "" {
 			s.recordCommit(commit)
 		}
@@ -328,62 +357,11 @@ func (s *state) run(args []string) fail.Code {
 		s.r.Summary(0)
 		return fail.OK
 	}
-
-	// The init stage: skipped when no init-stage tool is selected.
-	if len(s.res.InitOrder) > 0 {
-		worst := s.render("init")
-		if rc := s.stale("init"); rc != fail.OK {
-			s.failed += " stale files"
-			worst = max(worst, rc)
-		}
-		if worst != fail.OK {
-			s.reportFailed()
-			s.r.Summary(int(worst))
-			return worst
-		}
-		if bootstrap && s.bootstrap() != fail.OK {
-			s.r.Summary(1)
-			return fail.Other
-		}
-		restart, code := s.after("init")
-		if code != fail.OK {
-			s.r.Summary(int(code))
-			return code
-		}
-		if s.changed || len(restart) > 0 {
-			rows := append(s.oldRowsOf("main"), s.rows...)
-			if manifest.Write(s.e, manifestFile, rows) != fail.OK {
-				s.r.Summary(1)
-				return fail.Other
-			}
-			s.r.Warn("the init stage changed")
-			for _, r := range restart {
-				s.r.Warn(r)
-			}
-			s.r.Warn("open a new terminal, then run: mise run updateall:configs")
-			return fail.Terminal
-		}
-	}
-
-	worst := s.render("main")
-	if rc := s.stale("main"); rc != fail.OK {
-		s.failed += " stale files"
-		worst = max(worst, rc)
-	}
-	if worst != fail.OK {
-		s.reportFailed()
-		s.r.Summary(int(worst))
-		return worst
-	}
 	if manifest.Write(s.e, manifestFile, append(s.rows, s.keptItems()...)) != fail.OK {
 		s.r.Summary(1)
 		return fail.Other
 	}
-	if bootstrap && s.bootstrap() != fail.OK {
-		s.r.Summary(1)
-		return fail.Other
-	}
-	restart, code := s.after("main")
+	restart, code := s.after("all")
 	if code != fail.OK {
 		s.r.Summary(int(code))
 		return code
@@ -404,6 +382,50 @@ func (s *state) run(args []string) fail.Code {
 	}
 	s.r.Summary(0)
 	return fail.OK
+}
+
+// firstSetup is the first setup of a Mac, which mac migrate runs when no
+// sync finished on the Mac (no manifest). It writes the files of the init
+// stage (the shells and their depends: Homebrew, mise, uv, python), writes
+// their manifest rows, and runs mise bootstrap --yes, which installs them
+// and sets the login shell. Then it stops with fail.Terminal: the rest needs
+// a new terminal, then bootstrap mac sync. Without <bootstrap>, it runs no
+// mise bootstrap and gives fail.OK. It sets no bootstrap_commit: only a sync
+// of each tool does.
+func (s *state) firstSetup(dryRun, bootstrap bool, manifestFile string) fail.Code {
+	s.e.DryRun = dryRun
+	worst := s.render("init")
+	if worst != fail.OK {
+		s.reportFailed()
+		s.r.Summary(int(worst))
+		return worst
+	}
+	if dryRun {
+		s.r.Summary(0)
+		return fail.OK
+	}
+	if manifest.Write(s.e, manifestFile, s.rows) != fail.OK {
+		s.r.Summary(1)
+		return fail.Other
+	}
+	if !bootstrap {
+		s.r.Summary(0)
+		return fail.OK
+	}
+	if s.bootstrap() != fail.OK {
+		s.r.Summary(1)
+		return fail.Other
+	}
+	restart, code := s.after("init")
+	if code != fail.OK {
+		s.r.Summary(int(code))
+		return code
+	}
+	for _, r := range restart {
+		s.r.Warn(r)
+	}
+	s.r.Warn("the first setup is done: open a new terminal, then run: bootstrap mac sync")
+	return fail.Terminal
 }
 
 // abs is the path <p> made absolute with $PWD, as the bash `$PWD/$p`.
@@ -565,24 +587,9 @@ func (s *state) oldRowsOf(stage string) []manifest.Row {
 	return out
 }
 
-// stale is `_ss_stale`: the stale rule for the old rows of <stage>. A removed
-// file sets the change flag.
+// stale is `_ss_stale`: the stale rule for the old rows of <stage>.
 func (s *state) stale(stage string) fail.Code {
-	rows := s.oldRowsOf(stage)
-	var before []string
-	for _, row := range rows {
-		real, ok := manifest.Real(s.home + "/" + row.Path)
-		if ok && hasHeader(real) {
-			before = append(before, real)
-		}
-	}
-	rc := manifest.Stale(s.e, manifest.Macos, rows, s.handled, s.home)
-	for _, f := range before {
-		if !exists(f) {
-			s.changed = true
-		}
-	}
-	return rc
+	return manifest.Stale(s.e, manifest.Macos, s.oldRowsOf(stage), s.handled, s.home)
 }
 
 // recordCommit is `_ss_record_commit`. A sync that changed no file keeps a

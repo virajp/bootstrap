@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/macos"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/report"
 	"github.com/virajp/bootstrap/cli/internal/scripts"
@@ -38,10 +39,11 @@ type Step struct {
 
 // Apply applies the plan <p>: it runs the script that comes before the
 // writes, writes the values file and the changes of a migration, and runs the
-// sync. When the sync fails, it puts the values file back as it was before
+// sync. mac migrate runs no sync: on a Mac with no manifest it runs the first
+// setup in its place, else nothing. When the sync fails, it puts the values file back as it was before
 // Apply (or removes a values file that did not exist), and gives the code of
 // the sync and true; the other files stay as the sync left them. A sync that
-// stops with fail.Terminal (the Mac init stage changed) did its work, so the
+// stops with fail.Terminal (a new terminal is necessary) did its work, so the
 // values file stays and Apply gives that code and false. A problem
 // before the sync gives its code and an error. It also gives the outcomes of
 // the sync, one for each call of report.Outcome, also when the sync fails.
@@ -95,10 +97,18 @@ func Apply(p *PlanResult, o Options) (fail.Code, bool, []report.Result, error) {
 			step(Step{Kind: Wrote, Path: ch.Path})
 		}
 	}
+	if p.MacMigrate && !p.FirstSetup {
+		// mac migrate runs no sync: the user runs bootstrap mac sync next.
+		return fail.OK, false, nil, nil
+	}
+	args := SyncArgs(p.Mac, false, o.NoBootstrap)
+	if p.FirstSetup {
+		args = append(args, macos.FirstSetupFlag)
+	}
 	out, errw := o.writers()
 	// The scripts of the sync read the values with bootstrap config (D19).
 	restoreEnv := setEnv("BOOTSTRAP_VALUES", p.Values, !p.Mac)
-	_, outcomes, code := frontEnd(p.Mac)(SyncArgs(p.Mac, false, o.NoBootstrap), out, errw)
+	_, outcomes, code := frontEnd(p.Mac)(args, out, errw)
 	restoreEnv()
 	if code != fail.OK && code != fail.Terminal {
 		if err := p.restore(); err != nil {

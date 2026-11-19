@@ -114,7 +114,8 @@ Flags
   --format json|yaml|toml
                        config get, config show: the output format (default:
                        json when stdout is not a terminal, else toml)
-  --no-bootstrap       mac migrate, mac sync, mac check: skip mise bootstrap
+  --no-bootstrap       mac migrate, mac sync: skip the mise bootstrap of the
+                       first setup of a Mac
   --jobs <n>           the jobs at a time (default: 2 x the CPU count)
   --verbose            migrate, sync, check, add, remove, replace, detect: print
                        the log line of each target
@@ -813,7 +814,12 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 		report.CloneShown = true
 		a.infof("%s has a change to make: it runs before the sync", cmdName(mac, "migrate"))
 		o.auto = true
-		return a.finish(w, o, core.List{Init: true})
+		code := a.finish(w, o, core.List{Init: true})
+		if !mac || o.dryRun || code != fail.OK {
+			return code
+		}
+		// mac migrate runs no sync: the sync of this command follows.
+		o.answers = nil
 	}
 	if len(o.answers) > 0 {
 		a.fail("sync --answer is only for a question of a migrate", "use: "+cmdName(mac, "config set")+" tools.<tool>.<key> <value>")
@@ -845,17 +851,18 @@ func (a *app) sync(mac bool, o opts) fail.Code {
 			}
 		}
 	}
-	stop := a.syncSpin(mac, o)
+	stop := a.syncSpin(false)
 	_, outcomes, code := run(args, a.stdout, a.stderr)
 	stop()
 	a.syncData(o, planned, outcomes)
 	return code
 }
 
-// syncSpin shows the spinner of a sync that writes. The Mac sync with its
-// mise bootstrap steps does not spin: a step can ask for a password.
-func (a *app) syncSpin(mac bool, o opts) (stop func()) {
-	if mac && !o.noBootstrap {
+// syncSpin shows the spinner of a sync that writes. The first setup of a
+// Mac runs mise bootstrap, which can ask for a password, so it does not
+// spin (<prompts>).
+func (a *app) syncSpin(prompts bool) (stop func()) {
+	if prompts {
 		return func() {}
 	}
 	return a.spin("Syncing ...")

@@ -79,7 +79,8 @@ values file, `macos.toml`.
   context, the branch model, the protected branches, the pre-commit config,
   `bootstrap check` and its gate.
 - [mac.md](./mac.md): the Mac side: the repository of `macos.toml`, the entry
-  tasks, `macos.toml` and its keys, the selection, the stages and exit 4, and
+  tasks, `macos.toml` and its keys, the selection, the first setup and exit 4,
+  and
   the symlink resolve.
 - [packs.md](./packs.md): the packs model of both sides.
 - [tools.md](./tools.md): the `tools.toml` schema, the `[files]`, `[tasks]` and

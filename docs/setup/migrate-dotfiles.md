@@ -232,24 +232,24 @@ bash:
 bin=$(mise x github:virajp/bootstrap@latest -- which bootstrap)
 ```
 
-Then run this command in bash two times, in the same shell. The first run
-stops with exit 4, because the init stage changed. That is correct. The second
-run continues with the main stage:
+Then run this command in bash. It writes each selected tool in one run, and
+installs nothing:
 
 ```text
 env -u XDG_CONFIG_HOME -u XDG_CACHE_HOME -u XDG_STATE_HOME -u XDG_DATA_HOME -u MISE_ENV \
   HOME=<scratch> MISE_DATA_DIR="$HOME/.local/share/mise" MISE_CACHE_DIR="$HOME/.cache/mise" \
   MACOS_SETUP_REPO_PATH=<clone> \
-  "$bin" mac sync --no-bootstrap
+  "$bin" mac sync
 ```
 
 The `XDG_*` variables stay out of the command, because otherwise the run writes
-to the real cache. The command runs the CLI without `mise x`. The first run
-writes a mise config into `<scratch>`, and that config sets
-`MACOS_SETUP_REPO_PATH` from `config_path`. `mise x` with the scratch `HOME`
-loads that config, and expands `~` to `<scratch>`. That value then replaces the
-inline value, and the second run stops with exit 2. **Pass:** The first run
-exits 4, and the second run exits 0.
+to the real cache. The command runs the CLI without `mise x`. The run writes a
+mise config into `<scratch>`, and that config sets `MACOS_SETUP_REPO_PATH` from
+`config_path`. `mise x` with the scratch `HOME` loads that config, and expands
+`~` to `<scratch>`. That value then replaces the inline value, and a later run
+with `mise x` stops with exit 2. The scratch `HOME` has no manifest, so the run
+also prints the warning `no sync finished on this Mac yet`. That is correct.
+**Pass:** The run exits 0.
 
 **2. Compare the plain files.** Each file outside `.config/mise/conf.d/` is
 compared byte for byte, after the removal of the header and of the scratch path.
@@ -387,10 +387,11 @@ After the yes of the owner, do the real run:
 bootstrap mac migrate --yes
 ```
 
-It writes the task `updateall:configs` and `MACOS_SETUP_REPO_PATH`, and it runs
-`mise bootstrap`. It stops with exit 4 after the init stage, because the shells,
-Homebrew or mise changed. Then open a new terminal, and run
-`mise run updateall:configs` in it. For the other exit codes, see
+It writes `macos.toml` and does not sync. On a Mac where no sync finished, it
+does the first setup: it writes the shells, Homebrew and mise, with the task
+`updateall:configs` and `MACOS_SETUP_REPO_PATH`, runs `mise bootstrap`, and
+stops with exit 4. Then open a new terminal. In each case, then run
+`bootstrap mac sync`. For the other exit codes, see
 [`index.md`](index.md#exit-codes).
 
 **Pass:** The last run exits 0, `bootstrap_commit` of `macos.toml` is not empty,

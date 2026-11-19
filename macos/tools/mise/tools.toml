@@ -3,8 +3,8 @@
 # which puts ~/.local/bin (the folder of mise) on PATH. The activation files
 # read `projects_dir` of the cli tool, so this tool depends on cli. The entry
 # tasks are Python uv scripts, so this tool also depends on python and uv: then
-# both are in the init stage, and its mise bootstrap step installs them before
-# the run asks for a new terminal. The [mise.*] tables (usage, ca-certificates
+# both are in the init stage, and the first setup of bootstrap mac migrate
+# installs them before it asks for a new terminal. The [mise.*] tables (usage, ca-certificates
 # and the system aliases) become ~/.config/mise/conf.d/mise/mise.toml.
 # It also ships the entry of the Mac sync: the task `updateall:configs`, which
 # runs `bootstrap mac sync`, the task `updateall` and the upgrade tasks, into

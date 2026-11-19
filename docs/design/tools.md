@@ -54,7 +54,7 @@ sync.
 | `selectable`                                    | Optional  | Optional  | A boolean, `true` when the key is missing. `false`: a command does not select the tool by its name, only as a dependency.        |
 | `hosts`                                         | Optional  | Refused   | A list of the mise OS names `macos`, `linux` and `windows`: the hosts where a command can select the tool. No key: each host.    |
 | `parent`                                        | Optional  | Optional  | The name of another tool, for example `parent = "node"` in `pnpm` and `aube`. Tools with the same parent can replace each other. |
-| `stage`                                         | Not read  | Optional  | `"init"` puts the tool in the init stage. See [mac.md](mac.md#stages-and-exit-4).                                                |
+| `stage`                                         | Not read  | Optional  | `"init"` puts the tool in the first setup of a Mac. See [mac.md](mac.md#the-first-setup-and-exit-4).                             |
 | `[files."<target>"]`                            | Optional  | Optional  | The source, the mode and the condition of one config file. See [The `[files]` table](#the-files-table).                          |
 | `[tasks."<path>"]`                              | Optional  | Optional  | The source, the mode and the condition of one task file. See [The `[tasks]` table](#the-tasks-table).                            |
 | `[defaults]`                                    | Optional  | Optional  | The values of the tool. See [below](#the-defaults-questions-and-contributes-tables).                                             |

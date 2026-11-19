@@ -7,10 +7,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/macos"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/report"
 	"github.com/virajp/bootstrap/cli/internal/source"
@@ -73,7 +75,8 @@ type fakeSync struct {
 	runs  int
 	dry   []bool
 	saw   []string
-	value string // The values file of the side.
+	last  []string // The arguments of the last run.
+	value string   // The values file of the side.
 }
 
 func (f *fakeSync) install(t *testing.T, sd Side) {
@@ -84,6 +87,7 @@ func (f *fakeSync) install(t *testing.T, sd Side) {
 	frontEnd = func(bool) FrontEnd {
 		return func(args []string, stdout, stderr io.Writer) ([]target.Planned, []report.Result, fail.Code) {
 			f.runs++
+			f.last = args
 			dry := len(args) > 0 && args[0] == "--dry-run"
 			f.dry = append(f.dry, dry)
 			file := f.value
@@ -117,6 +121,9 @@ h = {}
 `
 
 func macFixture(t *testing.T, values string) Side {
+	// An empty cache: the Mac has no manifest, so mac migrate plans a first
+	// setup, and no test reads the cache of the machine.
+	t.Setenv("BOOTSTRAP_CACHE", t.TempDir())
 	return fixture(t, source.Macos, map[string]string{
 		"a": "",
 		"b": "depends = [ \"e\" ]\n",
@@ -415,18 +422,48 @@ func TestApply(t *testing.T) {
 		t.Errorf("values %q, want the file of the sync", b)
 	}
 
-	// A values file that init creates goes when the sync fails.
+	// mac migrate on a Mac with no manifest runs the first setup in place
+	// of the sync. A values file that it creates goes when the first setup
+	// fails.
 	f = &fakeSync{code: fail.Network}
 	sd = macFixture(t, "")
 	f.install(t, sd)
 	if p, err = Plan(sd, List{Init: true}, Options{}); err != nil {
 		t.Fatal(problems(err))
 	}
+	if !p.FirstSetup {
+		t.Fatal("no manifest: the plan is not a first setup")
+	}
 	if code, putBack, _, err = Apply(p, Options{}); code != fail.Network || !putBack || err != nil {
 		t.Fatalf("code %d put back %v err %v", code, putBack, err)
 	}
+	if !slices.Contains(f.last, macos.FirstSetupFlag) {
+		t.Errorf("the first setup ran with %v", f.last)
+	}
 	if _, err := os.Stat(sd.Values); !os.IsNotExist(err) {
 		t.Errorf("values file stays: %v", err)
+	}
+
+	// mac migrate on a Mac with a manifest writes the values file and runs
+	// no sync: the user runs bootstrap mac sync next.
+	f = &fakeSync{code: fail.Network}
+	sd = macFixture(t, "")
+	f.install(t, sd)
+	if err := os.WriteFile(macos.ManifestFile(os.Getenv), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if p, err = Plan(sd, List{Init: true}, Options{}); err != nil {
+		t.Fatal(problems(err))
+	}
+	runs := f.runs
+	if code, putBack, _, err = Apply(p, Options{}); code != fail.OK || putBack || err != nil {
+		t.Fatalf("code %d put back %v err %v", code, putBack, err)
+	}
+	if f.runs != runs || p.FirstSetup || len(p.Files) != 0 {
+		t.Errorf("migrate ran the sync: %d runs, first setup %v, files %v", f.runs-runs, p.FirstSetup, p.Files)
+	}
+	if b, _ := os.ReadFile(sd.Values); string(b) != string(p.Next) {
+		t.Errorf("values %q, want %q", b, p.Next)
 	}
 }
 
