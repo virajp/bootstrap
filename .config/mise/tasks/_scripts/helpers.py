@@ -475,6 +475,35 @@ def _alt(value, default):
   return default if value is None or value is False else value
 
 
+def core_branches(repo=None):
+  """The list `core_branches` of `.config/bootstrap/repo.toml`. With repo, the
+  list of that repository. It reads the list with bootstrap_get, so it stops
+  the task in the same way, and stops it with code 1 when the value is not a
+  list.
+  """
+  value = _alt(bootstrap_get("repo.core_branches", repo).get("value"), [])
+  if not isinstance(value, list):
+    print_error("cannot read core_branches of .config/bootstrap/repo.toml.")
+    sys.exit(1)
+  return value
+
+
+def default_branch(repo=None):
+  """The base of each change: `default_branch` of `.config/bootstrap/repo.toml`.
+  Without the key, develop when it is a core branch, else main when it is a
+  core branch, else the first core branch. With repo, the branch of that
+  repository. It stops the task as bootstrap_get does.
+  """
+  value = bootstrap_get("repo.default_branch", repo).get("value")
+  if isinstance(value, str) and value:
+    return value
+  core = core_branches(repo)
+  for name in ("develop", "main"):
+    if name in core:
+      return name
+  return core[0] if core else "main"
+
+
 def members(repo=None):
   """The members of the repo that are separate repositories: each submodule and
   sibling member of `[members.<name>]` in `.config/bootstrap/repo.toml`, as a
