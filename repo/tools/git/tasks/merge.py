@@ -43,7 +43,8 @@
 # A feature branch that did not go through develop did not go through the
 # branch that the pipeline builds, and nobody writes work on main.
 #
-# A direct landing of develop on main is a fast-forward (--ff-only). main only
+# When core_branches has main and develop, a direct landing of develop on main
+# is a fast-forward (--ff-only). main only
 # moves forward to a commit of develop, so main is always an ancestor of
 # develop, and main is the same commit that develop tested. A merge commit on
 # main would put main ahead of develop with commits that change no file. The
@@ -457,9 +458,18 @@ def merge_to_destination_branch(destination_branch, source_branch=None):
     else:
       helpers.print_success()
 
-  # develop lands on main with a fast-forward. The check runs here, before the
-  # hook pass and before a branch changes, so a refusal changes nothing.
+  # develop lands on main with a fast-forward, but only when develop is a core
+  # branch. In a repository with only main, a feature branch with the name
+  # develop is a feature branch, and it gets the merge commit. The check runs
+  # here, before the hook pass and before a branch changes, so a refusal
+  # changes nothing.
   fast_forward = merge_mode == "direct" and destination_branch == "main" and source_branch == "develop"
+  if fast_forward:
+    core = helpers.bootstrap_get("repo.core_branches").get("value")
+    if not isinstance(core, (list, type(None))):
+      helpers.print_error("cannot read core_branches of .config/bootstrap/repo.toml.")
+      sys.exit(1)
+    fast_forward = "develop" in (core or [])
   if fast_forward:
     require_fast_forward(destination_branch, source_branch, has_origin)
 

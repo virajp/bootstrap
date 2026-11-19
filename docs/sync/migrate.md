@@ -1503,7 +1503,8 @@ Do these steps in each repository, after the sync:
 
 ## M49: `develop` lands on `main` with a fast-forward
 
-A direct landing of `develop` on `main` (`landing = "direct-merge"` or
+In a repository with `main` and `develop` in `core_branches`, a direct
+landing of `develop` on `main` (`landing = "direct-merge"` or
 `"direct-commit"` of `[branches.main]`) is now a fast-forward. `main` only
 moves forward to a commit of `develop`, so `main` is always an ancestor of
 `develop`. Before, each landing added a merge commit to `main` that `develop`
