@@ -140,21 +140,21 @@ var pageRows = []map[string]string{
 		"r_fetched": "2h", "r_pinned": ""},
 	{"kind": "main_worktree", "repo": "org/app", "w_branch": "main", "w_commit": "abc1234", "w_age": "2h", "w_base": "",
 		"w_ba": "", "w_bb": "", "w_pa": "", "w_pb": "", "w_origin": "tracked", "w_oa": "0", "w_ob": "0", "w_sync": "yes",
-		"w_conflict": "0", "w_dirty": "0", "w_stash": "0", "w_path": "/home/tester/src/app"},
+		"w_conflict": "0", "w_dirty": "0", "w_stash": "0", "w_merged": "develop", "w_default": "yes", "w_path": "/home/tester/src/app"},
 	{"kind": "worktree", "repo": "org/app", "w_branch": `feat/<x>&"y"`, "w_commit": "def5678", "w_age": "5m",
 		"w_base": "main", "w_ba": "2", "w_bb": "1", "w_pa": "0", "w_pb": "0", "w_origin": "gone", "w_sync": "",
 		"w_conflict": "1", "w_dirty": "3", "w_dglyph": "±", "w_codes": "M2 ??1", "w_op": "rebase", "w_locked": "yes",
-		"w_stash": "2", "w_path": "/home/tester/src/app-feat & more"},
+		"w_stash": "2", "w_merged": "no", "w_path": "/home/tester/src/app-feat & more"},
 	{"kind": "worktree", "repo": "org/app", "w_branch": "", "w_detached": "yes", "w_commit": "0123abc", "w_age": "1d",
 		"w_ba": "0", "w_bb": "0", "w_origin": "local", "w_sync": "yes", "w_conflict": "0", "w_dirty": "0",
-		"w_notpin": "yes", "w_stash": "0", "w_path": "/srv/other"},
+		"w_notpin": "yes", "w_stash": "0", "w_merged": "both", "w_path": "/srv/other"},
 	{"kind": "worktree", "repo": "org/app", "w_branch": "gone", "w_commit": "0000000", "w_age": "3d", "w_origin": "none",
 		"w_conflict": "0", "w_dirty": "0", "w_missing": "yes", "w_stash": "0", "w_path": "/home/tester/gone"},
 	{"kind": "branch", "repo": "org/app", "w_branch": "old", "w_commit": "1111111", "w_age": "9d", "w_ba": "0",
-		"w_bb": "4", "w_origin": "tracked", "w_oa": "1", "w_ob": "0", "w_merged": "yes", "w_conflict": "0", "w_dirty": "0",
+		"w_bb": "4", "w_origin": "tracked", "w_oa": "1", "w_ob": "0", "w_merged": "main", "w_conflict": "0", "w_dirty": "0",
 		"w_stash": "0"},
 	{"kind": "branch", "repo": "org/app", "w_branch": "wip", "w_commit": "2222222", "w_age": "1h", "w_origin": "local",
-		"w_conflict": "0", "w_dirty": "0", "w_stash": "0"},
+		"w_conflict": "0", "w_dirty": "0", "w_stash": "0", "w_merged": "no"},
 	{"kind": "repo", "repo": "lib <one>", "r_role": "submodule", "r_host": "gitlab", "r_glyph": "\U000f0ba0",
 		"r_default": "", "r_fetched": "", "r_pinned": "org/app", "r_note": "not on disk & \"missing\"",
 		"r_fix": "git submodule update --init <lib>"},
@@ -189,8 +189,9 @@ func pagePython(folder string, rows, attention []map[string]string) string {
 
 var pageDate = regexp.MustCompile(`on [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}\.</p>`)
 
-// TestWorktreesPage: write_worktrees_page writes the HTML bytes of the shell
-// function run by /bin/bash, with the date line fixed (D23, D31).
+// TestWorktreesPage: write_worktrees_page writes the fixed HTML bytes, with
+// the date line fixed (D23, D31). The bytes came from the shell function run
+// by /bin/bash; the Merged column came after it.
 func TestWorktreesPage(t *testing.T) {
 	for _, c := range []struct {
 		name            string
@@ -212,7 +213,7 @@ func TestWorktreesPage(t *testing.T) {
 			fixed := "on DATE.</p>"
 			pyHTML := pageDate.ReplaceAllString(harness.ReadFile(pyFile), fixed)
 			shHTML := shellText(t, "worktrees_page-"+slug(c.name)+".html")
-			harness.Check(t, c.name+": the HTML bytes of the shell", pyHTML != "" && pyHTML == shHTML,
+			harness.Check(t, c.name+": the fixed HTML bytes", pyHTML != "" && pyHTML == shHTML,
 				firstHTMLDiff(pyHTML, shHTML))
 			harness.Check(t, c.name+": the date line is fixed", strings.Count(pyHTML, fixed) == 1, "")
 		})
