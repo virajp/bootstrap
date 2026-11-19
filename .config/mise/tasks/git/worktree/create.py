@@ -8,13 +8,17 @@
 # MISE description="Create a worktree for a branch, and set it up"
 # MISE tools={uv="latest", python="3.14"}
 # USAGE arg "<branch>" help="the branch of the worktree; a branch that does not exist is created"
-# USAGE flag "--from <base>" help="the base of a new branch; the default is the current branch"
+# USAGE flag "--from <base>" help="the base of a new branch; the default is the default branch"
+# USAGE flag "--current" help="cut a new branch from the current branch, not from the default branch"
 # USAGE flag "--no-setup" help="skip git:worktree:setup in the new worktree; mise trust still runs"
 
 # The worktree is in `.worktrees/<branch>` of the main checkout, or in
 # `worktrees/<branch>` when only `worktrees/` exists. A branch that exists
 # here is checked out. A branch only on origin becomes a local branch that
-# tracks it. Each other branch is new, cut from --from or the current branch.
+# tracks it. Each other branch is new, cut from --from, from the current branch
+# with --current, else from the default branch (default_branch of
+# `.config/bootstrap/repo.toml`): the local branch when it exists, else the
+# branch of origin.
 # A core branch (core_branches of `.config/bootstrap/repo.toml`) never gets a
 # worktree of this task: the merges check it out in the main checkout.
 
@@ -30,17 +34,16 @@ import helpers  # noqa: E402
 # mise sets the `usage_*` variables from the `# USAGE` lines above.
 BRANCH = os.environ.get("usage_branch", "")
 FROM = os.environ.get("usage_from", "")
+CURRENT = os.environ.get("usage_current") == "true"
 NO_SETUP = os.environ.get("usage_no_setup") or "false"
 
 helpers.print_header(f"Creating the worktree of {BRANCH} ...")
 
-CORE = helpers.bootstrap_get("repo.core_branches")
-core_value = CORE.get("value") if isinstance(CORE, dict) else None
-if core_value is None or core_value is False:
-  core_value = []
-if not isinstance(core_value, list):
-  helpers.print_error("cannot read core_branches of .config/bootstrap/repo.toml.")
-  sys.exit(1)
+if FROM and CURRENT:
+  helpers.print_error("use --from or --current, not both.")
+  sys.exit(2)
+
+core_value = helpers.core_branches()
 if BRANCH in [str(core) for core in core_value]:
   helpers.print_error(f"'{BRANCH}' is a core branch, and a core branch gets no worktree.")
   sys.exit(2)
@@ -57,10 +60,12 @@ if os.path.exists(WORKTREE):
 
 
 def require_no_from(where=""):
-  """Stops the task: --from is a usage error for a branch that exists."""
-  if FROM:
+  """Stops the task: --from and --current are a usage error for a branch that
+  exists."""
+  if FROM or CURRENT:
     suffix = f" on {where}" if where else ""
-    helpers.print_error(f"--from is for a new branch, and '{BRANCH}' exists{suffix}.")
+    flag = "--from" if FROM else "--current"
+    helpers.print_error(f"{flag} is for a new branch, and '{BRANCH}' exists{suffix}.")
     sys.exit(2)
 
 
@@ -80,9 +85,19 @@ elif ref_exists(f"refs/remotes/origin/{BRANCH}"):
   ADD = ["--track", "-b", BRANCH, WORKTREE, f"origin/{BRANCH}"]
   KIND = f"a local branch {BRANCH} that tracks origin/{BRANCH}"
   FROM_ORIGIN = True
+elif FROM:
+  ADD = ["-b", BRANCH, WORKTREE, FROM]
+  KIND = f"the new branch {BRANCH} from {FROM}"
+elif CURRENT:
+  ADD = ["-b", BRANCH, WORKTREE, "HEAD"]
+  KIND = f"the new branch {BRANCH} from the current branch"
 else:
-  ADD = ["-b", BRANCH, WORKTREE, FROM or "HEAD"]
-  KIND = f"the new branch {BRANCH} from {FROM or 'the current branch'}"
+  BASE = helpers.default_branch()
+  if not ref_exists(f"refs/heads/{BASE}") and ref_exists(f"refs/remotes/origin/{BASE}"):
+    BASE = f"origin/{BASE}"
+  # --no-track: a branch cut from origin/<base> must not push to <base>.
+  ADD = ["--no-track", "-b", BRANCH, WORKTREE, BASE]
+  KIND = f"the new branch {BRANCH} from the default branch {BASE}"
 
 # git refuses a branch that another worktree has checked out, and says so.
 helpers.print_info(f"Adding {WORKTREE} on {KIND}")

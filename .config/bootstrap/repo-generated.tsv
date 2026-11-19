@@ -92,6 +92,7 @@ git	.config/mise/conf.d/git/mise.dev.toml
 git	.config/mise/tasks/_scripts/merge.py
 git	.config/mise/tasks/code/git-config.py
 git	.config/mise/tasks/git/merge/main.py
+git	.config/mise/tasks/git/pull.py
 git	.config/mise/tasks/git/worktree/create.py
 git	.config/mise/tasks/git/worktree/delete.py
 git	.gitattributes
