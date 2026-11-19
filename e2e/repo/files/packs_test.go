@@ -176,7 +176,7 @@ func TestScannersAndOrder(t *testing.T) {
 [tools.gitleaks]`, Change: baseLacksSecurity,
 		Check: func(c *rc.Case) {
 			c.CheckThat("[tools.gitleaks], no scanner in base: a file of _security_base",
-				c.LogHas("would update "+c.Path(".config/mise/tasks/code/sec/_default")))
+				c.LogHas("would update "+c.Path(".config/mise/tasks/code/sec/_default.py")))
 			c.CheckThat("[tools.gitleaks], no scanner in base: no other scanner", !toolsHas(c, "grype"))
 		}})
 	rc.Run(t, rc.Spec{Name: "no scanner, a pack base without the scanners", Values: noToolValues, Change: baseLacksSecurity,

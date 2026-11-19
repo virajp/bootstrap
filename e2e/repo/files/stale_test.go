@@ -57,9 +57,9 @@ func TestStaleRule(t *testing.T) {
 	// conf.d file.
 	rc.Run(t, rc.Spec{Name: "a real run: the header paths", Values: noToolValues, Args: realRun,
 		Check: func(c *rc.Case) {
-			lines := strings.Split(harness.ReadFile(c.Path(".config/mise/tasks/_scripts/helpers")), "\n")
+			lines := strings.Split(harness.ReadFile(c.Path(".config/mise/tasks/_scripts/helpers.py")), "\n")
 			c.CheckThat("a real run: line 2 of a script has the repo/tools header",
-				len(lines) > 1 && strings.Contains(lines[1], "Synced from bootstrap: repo/tools/mise/tasks/helpers."))
+				len(lines) > 1 && strings.Contains(lines[1], "Synced from bootstrap: repo/tools/mise/tasks/helpers.py."))
 			c.CheckThat("a real run: a generated conf.d file has the repo/tools header",
 				rc.FileHas(c.Path(".config/mise/conf.d/mise/mise.dev.toml"), "Synced from bootstrap: repo/tools/mise/tools.toml"))
 		}})
@@ -156,7 +156,7 @@ func TestStaleRuleRuns(t *testing.T) {
 			c.CheckThat("the manifest: the rows are sorted", manifestRowsSorted(file))
 			c.CheckThat("the manifest: a generated conf.d file", hasLine(file, "mise"+tab+".config/mise/conf.d/mise/mise.dev.toml"))
 			c.CheckThat("the manifest: no seed", fileLacks(file, ".config/mise/conf.d/zz-repo/"))
-			c.CheckThat("the manifest: no removed merge task", fileLacks(file, ".config/mise/tasks/git/merge/develop"))
+			c.CheckThat("the manifest: no removed merge task", fileLacks(file, ".config/mise/tasks/git/merge/develop.py"))
 			got := rerun(c)
 			c.CheckThat("the manifest: a second run exits 0", got == 0)
 			c.CheckThat("the manifest: a second run does not write it", c.LogLacks("wrote      "+file))
@@ -195,11 +195,11 @@ func TestStaleRuleRuns(t *testing.T) {
 	// stale rule does not log it again.
 	rc.Run(t, rc.Spec{Name: "the stale rule, a listed merge task of the other model", Values: noToolValues,
 		Change: func(c *rc.Case) {
-			headerFile(c, ".config/mise/tasks/git/merge/develop")
-			manifestFile(c, "git"+tab+".config/mise/tasks/git/merge/develop")
+			headerFile(c, ".config/mise/tasks/git/merge/develop.py")
+			manifestFile(c, "git"+tab+".config/mise/tasks/git/merge/develop.py")
 		},
 		Check: func(c *rc.Case) {
-			c.CheckThat("a listed merge task: one would remove", c.LogCount("would remove "+c.Path(".config/mise/tasks/git/merge/develop"), 1))
+			c.CheckThat("a listed merge task: one would remove", c.LogCount("would remove "+c.Path(".config/mise/tasks/git/merge/develop.py"), 1))
 		}})
 	// The bytes of the manifest, so the pre-commit hooks never rewrite it.
 	rc.Run(t, rc.Spec{Name: "the bytes of the manifest", Values: noToolValues, Args: realRun,

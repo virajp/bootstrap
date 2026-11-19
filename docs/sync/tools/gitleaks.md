@@ -21,7 +21,7 @@ Always. The `base` pack adds this tool, and the sync writes an empty
 | Path in the repository                         | Kind           | Use                              |
 | ---------------------------------------------- | -------------- | -------------------------------- |
 | `.config/gitleaks.toml`                        | Seed, template | The gitleaks rules.              |
-| `.config/mise/tasks/code/sec/10-gitleaks`      | Synced         | The task `code:sec:10-gitleaks`. |
+| `.config/mise/tasks/code/sec/10-gitleaks.py`   | Synced         | The task `code:sec:10-gitleaks`. |
 | `.config/mise/conf.d/gitleaks/mise.<env>.toml` | Generated      | The mise config of this tool.    |
 
 ## mise tools

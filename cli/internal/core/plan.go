@@ -327,7 +327,7 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 	}
 	p.Sel = sel
 	if l.Init {
-		if err := p.knownCopies(sel); err != nil {
+		if err := p.dropCopies(sel, true); err != nil {
 			return p, err
 		}
 	}
@@ -710,13 +710,24 @@ func (p *PlanResult) taskMoves() error {
 // the parts of the selected tools of <sel> (D4, D5): one change for each
 // tool, at the place of the move of the own test tasks, before it. The move
 // then does not move such a file. A copy of a tool that is not selected
-// stays.
-func (p *PlanResult) knownCopies(sel *Selected) error {
+// stays. It adds no removal of a header copy of a dispatcher, so
+// MigrateNeeded, which calls it, does not count one.
+func (p *PlanResult) knownCopies(sel *Selected) error { return p.dropCopies(sel, false) }
+
+// dropCopies adds the changes of knownCopies and, with <withHeads>, one more
+// change after them that removes the old header copies of the dispatchers
+// of the selected tools (oldform.HeaderCopies, D22). Only the plan of init
+// sets <withHeads>: sync and tui do not run migrate for such a copy alone.
+func (p *PlanResult) dropCopies(sel *Selected, withHeads bool) error {
 	if p.Mac {
 		return nil
 	}
 	copies := oldform.KnownCopies(p.Root, oldform.Parts(sel.Idx, sel.Tools))
-	if len(copies) == 0 {
+	var heads []oldform.Copy
+	if withHeads {
+		heads = oldform.HeaderCopies(p.Root, oldform.Listed(manifestText(p.Side)), sel.Idx, sel.Tools)
+	}
+	if len(copies) == 0 && len(heads) == 0 {
 		return nil
 	}
 	dropped := map[string]bool{}
@@ -739,6 +750,21 @@ func (p *PlanResult) knownCopies(sel *Selected) error {
 			Path:  strings.TrimSuffix(p.Root, "/") + "/" + oldform.TasksDir,
 			Drops: drops,
 			Note:  oldform.CopiesNote(tool) + ": " + oldform.DropDetail(drops, p.Show),
+		})
+	}
+	// The old header copies of the dispatchers go (D22).
+	if len(heads) > 0 {
+		drops, err := oldform.DropsOf(heads)
+		if err != nil {
+			return err
+		}
+		for _, c := range heads {
+			dropped[c.Path] = true
+		}
+		adds = append(adds, oldform.Change{
+			Path:  strings.TrimSuffix(p.Root, "/") + "/" + oldform.TasksDir,
+			Drops: drops,
+			Note:  oldform.HeaderNote + ": " + oldform.DropDetail(drops, p.Show),
 		})
 	}
 	// The move of a removed file goes.
@@ -900,11 +926,14 @@ func toolsHead(text []byte) []byte {
 
 // MigrateNeeded tells if bootstrap migrate has a change to make on the side
 // <sd>, whose clone is set: an old form of the values, a missing file of the
-// values folder, a known old copy of a test part, an own test task to move,
-// the old worktree command, or, with <questions>, a question of a selected
-// tool without an answer. A side without values (no values file or folder, and no old form)
-// gives false: its adoption is an explicit bootstrap migrate. It writes
-// nothing and runs no script and no sync, so sync and tui call it first.
+// values folder, an own test task to move, the old worktree command (in
+// oldform.WtFile or in the worktree_install of a member of repo.toml), a
+// known old copy of a test part of a selected tool (knownCopies), or, with
+// <questions>, a question of a selected tool without an answer. It does not
+// count an old header copy of a dispatcher: init alone removes one (D22). A
+// side without values (no values file or folder, and no old form) gives
+// false: its adoption is an explicit bootstrap migrate. It writes nothing and
+// runs no script and no sync, so sync and tui call it first.
 func MigrateNeeded(sd Side, questions bool) (bool, error) {
 	if sd.Mac && !Exists(sd.Values) {
 		return false, nil

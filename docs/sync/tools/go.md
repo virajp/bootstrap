@@ -20,12 +20,12 @@ the root has a `go.mod` (see "Scripts").
 
 ## What the tool ships
 
-| Path in the repository                   | Kind      | Use                                                |
-| ---------------------------------------- | --------- | -------------------------------------------------- |
-| `.config/mise/tasks/code/lint/40-go`     | Synced    | The task `code:lint:40-go`. Only with a `go.mod`.  |
-| `.config/mise/tasks/code/lint/45-gomod`  | Synced    | The task `code:lint:45-gomod`.                     |
-| `.config/mise/tasks/setup/deps/25-go`    | Synced    | The task `setup:deps:25-go`. Only with a `go.mod`. |
-| `.config/mise/conf.d/go/mise.<env>.toml` | Generated | The mise config of this tool.                      |
+| Path in the repository                     | Kind      | Use                                                |
+| ------------------------------------------ | --------- | -------------------------------------------------- |
+| `.config/mise/tasks/code/lint/40-go.py`    | Synced    | The task `code:lint:40-go`. Only with a `go.mod`.  |
+| `.config/mise/tasks/code/lint/45-gomod.py` | Synced    | The task `code:lint:45-gomod`.                     |
+| `.config/mise/tasks/setup/deps/25-go.py`   | Synced    | The task `setup:deps:25-go`. Only with a `go.mod`. |
+| `.config/mise/conf.d/go/mise.<env>.toml`   | Generated | The mise config of this tool.                      |
 
 ## mise tools
 

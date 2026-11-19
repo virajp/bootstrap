@@ -30,10 +30,10 @@ environments of a dependency are in
 
 | Path in the repository                       | Kind      | Use                                                                               |
 | -------------------------------------------- | --------- | --------------------------------------------------------------------------------- |
-| `.config/mise/tasks/setup/deps/50-python`    | Synced    | The task `setup:deps:50-python`.                                                  |
-| `.config/mise/tasks/code/lint/50-pyrefly`    | Synced    | The task `code:lint:50-pyrefly`. Only with a `pyproject.toml` (`requires_found`). |
-| `.config/mise/tasks/code/lint/70-ruff`       | Synced    | The task `code:lint:70-ruff`. Only with a `pyproject.toml` (`requires_found`).    |
-| `.config/mise/tasks/code/lint/90-uv`         | Synced    | The task `code:lint:90-uv`.                                                       |
+| `.config/mise/tasks/setup/deps/50-python.py` | Synced    | The task `setup:deps:50-python`.                                                  |
+| `.config/mise/tasks/code/lint/50-pyrefly.py` | Synced    | The task `code:lint:50-pyrefly`. Only with a `pyproject.toml` (`requires_found`). |
+| `.config/mise/tasks/code/lint/70-ruff.py`    | Synced    | The task `code:lint:70-ruff`. Only with a `pyproject.toml` (`requires_found`).    |
+| `.config/mise/tasks/code/lint/90-uv.py`      | Synced    | The task `code:lint:90-uv`.                                                       |
 | `.config/mise/conf.d/python/mise.<env>.toml` | Generated | The mise config of this tool.                                                     |
 
 ## mise tools
@@ -64,13 +64,13 @@ These places use the same Python version (3.14). Change them together:
 
 - The `python` tool: `[mise.tools.python]`.
 - The `gcloud` tool: `CLOUDSDK_PYTHON`.
-- `gate_files` of `helpers` (the `mise` tool): `python@3.14`.
 - Each Python library of `_scripts/`: `helpers.py`, `gate_files.py`,
   `checks.py`, `placeholder.py` and `worktrees_page.py` (the `mise` tool),
-  `merge.py` (the `git` tool) and `xcode.py` (the `swift` tool). Each has
-  `requires-python = ">=3.14"` and `# MISE tools={uv="latest", python="3.14"}`.
+  `merge.py` (the `git` tool) and `xcode.py` (the `swift` tool), and each task
+  file of `repo/tools/`. Each has `requires-python = ">=3.14"` and
+  `python="3.14"` in its `# MISE tools={...}` line.
 
-`gate_files` of `helpers.py` runs `gate_files.py` with `sys.executable`, the
+`helpers.gate_files` runs `gate_files.py` with `sys.executable`, the
 Python of the task. Thus it has no version of its own.
 
 The tool declares the language server `pyrefly` (`pyrefly lsp`, for `.py` and
@@ -96,7 +96,7 @@ also the Python task files. Each gate gets its files from `gate_files`: the
 given files,
 else with `--all` every file, else the uncommitted files. The ruff and pyrefly
 gates use only the `.py` and `.pyi` files, and skip without one. Their
-`#FILES` header excludes `.config/mise/tasks/**`: the synced Python task files
+`# FILES` header excludes `.config/mise/tasks/**`: the synced Python task files
 import the libraries of `_scripts/` at run time, and are not for these gates.
 Each tool
 gets only that list: a path exclude of the ruff or pyrefly config does not

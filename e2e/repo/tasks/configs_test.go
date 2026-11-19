@@ -39,7 +39,7 @@ type configsRun struct {
 
 // configsEnv holds the rendered task and the fake engine of the test.
 type configsEnv struct {
-	task, binDir, yqDir string
+	task, binDir string
 }
 
 // run runs the task in a new scratch root with one member `sub`, a folder
@@ -50,7 +50,7 @@ func (e configsEnv) run(t *testing.T, path bool, change func(root string), kv ..
 	t.Helper()
 	dir := harness.Dir(t)
 	root := filepath.Join(dir, "members")
-	copyFile(t, helpersPath(), filepath.Join(root, ".config", "mise", "tasks", "_scripts", "helpers"))
+	copyFile(t, helpersPath(), filepath.Join(root, ".config", "mise", "tasks", "_scripts", "helpers.py"))
 	if err := os.MkdirAll(filepath.Join(root, "sub", ".config", "bootstrap"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -65,10 +65,10 @@ func (e configsEnv) run(t *testing.T, path bool, change func(root string), kv ..
 		env = harness.SetEnv(env, "BOOTSTRAP_BIN="+filepath.Join(e.binDir, "bootstrap"))
 	}
 	env = harness.SetEnv(env, "FAKE_MEMBERS="+defaultMembers, "MISE_PROJECT_ROOT="+root,
-		"PATH="+e.binDir+":"+e.yqDir+":"+harness.GetEnv(env, "PATH"),
+		"PATH="+e.binDir+":"+harness.GetEnv(env, "PATH"),
 		"SYNC_OUT="+out, "SYNC_ROOT="+root)
 	env = harness.SetEnv(env, kv...)
-	cmd := &harness.Cmd{Env: env, Args: []string{"bash", e.task}}
+	cmd := &harness.Cmd{Env: env, Args: pyTask(t, e.task)}
 	code, log := cmd.Run()
 	return configsRun{code: code, log: log, synced: strings.TrimRight(harness.ReadFile(out), "\n")}
 }
@@ -108,8 +108,8 @@ func TestSetupConfigs(t *testing.T) {
 	dir := harness.Dir(t)
 	ctx := filepath.Join(dir, "ctx.json")
 	harness.WriteFile(t, ctx, fmt.Sprintf(`{"members":["sub"],"member_tables":["sub"],"member_types":{"sub":"submodule"},"member_folders":{"sub":"sub"},"cli_dir":"%s/cli"}`+"\n", harness.Root))
-	e := configsEnv{task: filepath.Join(dir, "setup-configs"), binDir: filepath.Join(dir, "bin"), yqDir: toolDir(t, "yq")}
-	gomplate(t, filepath.Join(harness.Root, "repo", "tools", "mise", "tasks", "setup-configs.tmpl"), e.task, ctx)
+	e := configsEnv{task: filepath.Join(dir, "setup-configs.py"), binDir: filepath.Join(dir, "bin")}
+	gomplate(t, filepath.Join(harness.Root, "repo", "tools", "mise", "tasks", "setup-configs.py.tmpl"), e.task, ctx)
 	harness.WriteFile(t, filepath.Join(e.binDir, "bootstrap"), fakeEngine)
 	if err := os.Chmod(filepath.Join(e.binDir, "bootstrap"), 0o755); err != nil {
 		t.Fatal(err)

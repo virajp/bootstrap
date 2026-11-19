@@ -92,5 +92,5 @@ startup_timeout = 60000
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."setup/deps/40-node"]
-source = "setup-deps-node"
+[tasks."setup/deps/40-node.py"]
+source = "setup-deps-node.py"

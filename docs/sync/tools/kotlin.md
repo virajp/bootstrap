@@ -29,14 +29,14 @@ Gradle file at the root, or one level below it, uses the Kotlin plugin (see
 
 ## What the tool ships
 
-| Path in the repository                       | Kind      | Use                                                |
-| -------------------------------------------- | --------- | -------------------------------------------------- |
-| `.config/mise/tasks/setup/deps/30-kotlin`    | Synced    | The task `setup:deps:30-kotlin`.                   |
-| `.config/mise/tasks/code/format/30-ktlint`   | Synced    | The task `code:format:30-ktlint`.                  |
-| `.config/mise/tasks/code/lint/30-detekt`     | Synced    | The task `code:lint:30-detekt`.                    |
-| `.config/ktlint.editorconfig`                | Seed      | The ktlint rules: `ktlint_official`, lines of 120. |
-| `.config/detekt.yml`                         | Seed      | The changes to the default detekt rules.           |
-| `.config/mise/conf.d/kotlin/mise.<env>.toml` | Generated | The mise config of this tool.                      |
+| Path in the repository                        | Kind      | Use                                                |
+| --------------------------------------------- | --------- | -------------------------------------------------- |
+| `.config/mise/tasks/setup/deps/30-kotlin.py`  | Synced    | The task `setup:deps:30-kotlin`.                   |
+| `.config/mise/tasks/code/format/30-ktlint.py` | Synced    | The task `code:format:30-ktlint`.                  |
+| `.config/mise/tasks/code/lint/30-detekt.py`   | Synced    | The task `code:lint:30-detekt`.                    |
+| `.config/ktlint.editorconfig`                 | Seed      | The ktlint rules: `ktlint_official`, lines of 120. |
+| `.config/detekt.yml`                          | Seed      | The changes to the default detekt rules.           |
+| `.config/mise/conf.d/kotlin/mise.<env>.toml`  | Generated | The mise config of this tool.                      |
 
 ## mise tools
 
@@ -102,7 +102,7 @@ run them. A gate skips without its tool and without a Kotlin file.
 
 - Each gate gets its files from `gate_files`: the given files, else with
   `--all` every file, else the uncommitted files. It never reads an ignored
-  folder. Its `#FILES` header takes the `.kt` and `.kts` files, and skips the
+  folder. Its `# FILES` header takes the `.kt` and `.kts` files, and skips the
   files in a `generated/` folder. See
   [`mise.md`](mise.md#the-file-sets-of-the-gates).
 - ktlint and detekt get only the files of that list. detekt gets them through

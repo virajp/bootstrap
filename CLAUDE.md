@@ -43,16 +43,16 @@ files are for this repository only:
   file of the engine names a tool: `TestEngineNamesNoTool` examines this rule.
 - `docs/design/`: the contract of the sync, one place for each rule (see "Where
   the rules are"). `docs/plans/`: the vwf plan index.
-- `.config/mise/tasks/test/`: the task `test:go` (`go`) and the runner of
-  this repository that `test` runs (`_default`, which `bootstrap migrate`
-  moves to the part `50-local`). They are not in `repo/tools/` or
+- `.config/mise/tasks/test/`: the task `test:go` (`go.py`) and the runner of
+  this repository that `test` runs (the part `50-local.py`). They are Python
+  uv scripts (see "Task scripts"). They are not in `repo/tools/` or
   `macos/tools/`, so no consumer gets them.
 - `.github/workflows/release-engine.yml` and `cli/VERSION`: the release
   of the Go engine and the minimum version that a clone needs. A signed tag
   `bootstrap@X.Y.Z` on `main` starts the
   release, and the workflow writes `VERSION`. Do not edit `VERSION` by hand. See
   `docs/design/cli.md` ("The release of the engine").
-- `.config/mise/tasks/vorssaint/diff`: the task `vorssaint:diff`. It compares
+- `.config/mise/tasks/vorssaint/diff.py`: the task `vorssaint:diff`. It compares
   a Vorssaint backup file with the defaults of `macos/tools/vorssaint/`, and
   exits 1 when a key differs or is missing.
 - `macos/fixtures/`: the fixtures of `e2e/mac`.
@@ -157,87 +157,79 @@ source file").
 
 Task scripts are in `repo/tools/<tool>/tasks/`, each with a `[tasks."<path>"]`
 entry in its `tools.toml`. The key is the path below `.config/mise/tasks/` in a
-consumer. mise uses that path as the task name, for example `git/merge/develop`
-is `git:merge:develop`. A `_default` file is the task for the directory name.
-The `mise` tool ships each `_default`. A leaf task of a group that an
-orchestrator runs with `own_tasks` (`code:format`, `code:lint`, `code:sec`,
-`setup:deps`, `setup:secrets`, `test`, `test:e2e`, `test:golden`) has a
-number prefix for its run order, for example `code:lint:70-ruff`. `own_tasks`
-skips a file without the prefix. A task file is a shell file without an
-extension, or a Python file with the `.py` extension. mise removes `.py` from
-the task name when no file without the extension has that name, so the part
-`70-ruff.py` is the task `code:lint:70-ruff`, and `_default.py` is the task
-for the directory name. The `mise` tool ships `test`, `test:e2e` and
-`test:golden` as dispatchers: each passes its arguments unchanged to each
-part, and with no part it prints one line and exits 0. See
+consumer. mise uses that path as the task name, for example
+`git/merge/develop.py` is `git:merge:develop`. A `_default.py` file is the task
+for the directory name. The `mise` tool ships each `_default.py`. A leaf task of
+a group that an orchestrator runs with `own_tasks` (`code:format`, `code:lint`,
+`code:sec`, `setup:deps`, `setup:secrets`, `test`, `test:e2e`, `test:golden`)
+has a number prefix for its run order, for example `code:lint:70-ruff`.
+`own_tasks` skips a file without the prefix. Each task file is a Python uv
+script with the `.py` extension, and a template is `<name>.py.tmpl`. mise
+removes `.py` from the task name when no file without the extension has that
+name, so the part `70-ruff.py` is the task `code:lint:70-ruff`, and
+`_default.py` is the task for the directory name. The `mise` tool ships `test`,
+`test:e2e` and `test:golden` as dispatchers: each passes its arguments unchanged
+to each part, and with no part it prints one line and exits 0. See
 `docs/design/tools.md` ("The `[tasks]` table").
 
-- `_scripts/` contains libraries, not tasks. Each shell library has a Python
-  module beside it, with the same names and the same output: `helpers.py`,
-  `checks.py`, `placeholder.py`, `worktrees_page.py`, `merge.py` and
-  `xcode.py`. A shell task sources a shell library through
-  `${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/<name>`. A Python task
-  imports a module (see "Python tasks" below).
-  - `helpers`: the print functions (`print_header`, `print_success`,
-    `print_wait`, and others), `bootstrap_get`, `members`, and
-    `gate_files`. Use these functions for all task output.
-    `bootstrap_get <key>` is the one reader of a value of
-    `.config/bootstrap/`: it prints the JSON answer of `bootstrap config get`
-    (read `.value`), with `BOOTSTRAP_BIN`, else `mise x -- bootstrap`. A read
-    failure stops the task with code 1. No engine that answers (none, or
-    one older than 4.0.0), and an engine that refuses the read with code 2,
-    for example a `tools.*` key with no catalog (`get` never fetches), stop
-    it with code 2. `members` lists the submodule and
-    sibling members of `[members.*]` through it. Call both as
-    `VAR=$(bootstrap_get <key>) || exit $?`. `gate_files` runs
-    `gate_files.py` with
-    `mise x uv@latest python@3.14 -- uv run --quiet --script`.
-  - `helpers.py`: the Python form of `helpers`, with the same names. Each
-    print function writes the same bytes as the shell function. The
-    differences: `bold=True` replaces the leading `--bold`, and
-    `file=sys.stderr` replaces `>&2`. Each print function flushes its stream.
-    `bootstrap_get(key, repo=None)` returns the JSON answer as a dict (read
-    `["value"]`). A read failure stops the task with `sys.exit(1)`, and no
-    engine that answers, a refusal with code 2, another code or an answer
-    that is not JSON stop it with `sys.exit(2)`, after the same lines as the
-    shell. `members(repo=None)` returns a list of
-    `(name, folder, label, url)` tuples and stops the task in the same way.
-    `gate_files(gate, *args)` runs `gate_files.py` with `sys.executable` and
-    returns the path of the list file. `usage_files()` returns the variadic
-    `[files]` argument as a list (`shlex.split`). `tool(*args, **kwargs)` and
-    `has_tool(name)` are the `mise x --` rule (see below).
+The rules of this section are for the tasks of `repo/tools/` and the own tasks
+of this repository. The tasks of `macos/tools/<tool>/tasks/` stay bash until
+the plan `docs/plans/2026-11-18-python-tasks-mac` moves them to Python, and
+that plan deletes this paragraph. A Mac task has no extension and starts with
+`#!/usr/bin/env bash` and `set -e` or `set -euo pipefail`, and a task that uses
+the print functions sources `${HOME}/.config/mise/tasks/_scripts/helpers`.
+Write its shell for bash 3.2 and bash 5.x, with no namerefs, `${var,,}` or
+associative arrays. Under `set -e`, write a command substitution that can fail
+as `VAR=$(cmd) || VAR=''`. Its `#MISE` and `#USAGE` header comments hold the
+metadata and flags, and a `#USAGE flag "--fix"` is available as `usage_fix`.
+
+- `_scripts/` contains libraries, not tasks. Each library is a Python module.
+  A task imports a module (see "Python tasks" below).
+  - `helpers.py`: the print functions (`print_header`, `print_success`,
+    `print_wait`, and others), `bootstrap_get`, `members`, `gate_files`,
+    `usage_files`, `tool`, `has_tool`, `has_own_task` and `own_tasks`. Use
+    these functions for all task output. `bold=True` makes a status line
+    bold, and `file=sys.stderr` writes it on stderr. Each print function
+    flushes its stream. `bootstrap_get(key, repo=None)` is the one reader of
+    a value of `.config/bootstrap/`: it returns the JSON answer of
+    `bootstrap config get` as a dict (read `["value"]`), with
+    `BOOTSTRAP_BIN`, else `mise x -- bootstrap`. A read failure stops the
+    task with `sys.exit(1)`. No engine that answers (none, or one older than
+    4.0.0), an engine that refuses the read with code 2 (for example a
+    `tools.*` key with no catalog, because `get` never fetches), another
+    code or an answer that is not JSON stop it with `sys.exit(2)`.
+    `members(repo=None)` returns the submodule and sibling members of
+    `[members.*]` as a list of `(name, folder, label, url)` tuples, and stops
+    the task in the same way. `gate_files(gate, *args)` runs `gate_files.py`
+    with `sys.executable` and returns the path of the list file.
+    `usage_files()` returns the variadic `[files]` argument as a list
+    (`shlex.split`). `tool(*args, **kwargs)` and `has_tool(name)` are the
+    `mise x --` rule (see below).
   - `gate_files.py`: the file list of one `code:format` or `code:lint` gate.
     See the gate rules below.
-  - `checks` and `checks.py`: git predicates. They return an exit status
-    (in Python, a bool) only and print nothing. The one exception is
-    `get_main_worktree_path`, which prints the path of the main worktree (in
-    Python, returns it).
-  - `merge` and `merge.py`: `merge_to_destination_branch`, which the
+  - `checks.py`: git predicates. They return a bool only and print nothing.
+    The one exception is `get_main_worktree_path`, which returns the path of
+    the main worktree.
+  - `merge.py`: `merge_to_destination_branch`, which the
     `git:merge:<branch>` tasks use.
-  - `placeholder` and `placeholder.py`: for a task that no stack fills yet. A
-    placeholder task contains the `#PLACEHOLDER` marker (`# PLACEHOLDER` in a
-    `.py` file, because dprint adds the space) and always exits 0. A stack
-    overlay replaces the file. Do not edit a placeholder in place. No task in
+  - `placeholder.py`: for a task that no stack fills yet. A placeholder task
+    contains the `# PLACEHOLDER` marker and always exits 0. A stack overlay
+    replaces the file. Do not edit a placeholder in place. No task in
     `repo/tools/` uses it now.
-  - `xcode` and `xcode.py`: `require_xcode`, `find_xcodeproj` and the
-    simulator functions for the Apple tasks. In Python, `require_xcode(task)`
-    returns a dict of the names that the shell exports, and also sets them in
-    `os.environ`. `find_xcodeproj(task)` returns the path where the shell
-    prints it.
-  - `worktrees-page` and `worktrees_page.py`: `write_worktrees_page`, which
-    writes the HTML page of `git:worktree:list`. It holds a small font with
-    the glyphs of that task. The shell function takes no argument and reads
-    the arrays of its caller. The Python function is
-    `write_worktrees_page(rows, attention, now, folder="/tmp/code-worktrees")`:
-    `rows` is a list of dicts, one for each row; `attention` is a list of
-    dicts in rank order; `now` is the time text of the page. It returns the
-    path of the page, or `None` on a failure.
+  - `xcode.py`: `require_xcode`, `find_xcodeproj` and the simulator
+    functions for the Apple tasks. `require_xcode(task)` returns a dict of
+    the Xcode names and also sets them in `os.environ`.
+    `find_xcodeproj(task)` returns the path of the project.
+  - `worktrees_page.py`:
+    `write_worktrees_page(rows, attention, now, folder="/tmp/code-worktrees")`,
+    which writes the HTML page of `git:worktree:list`. It holds a small font
+    with the glyphs of that task. `rows` is a list of dicts, one for each
+    row; `attention` is a list of dicts in rank order; `now` is the time text
+    of the page. It returns the path of the page, or `None` on a failure.
 
-  The `mise` tool ships `helpers`, `helpers.py`, `gate_files.py`, `checks`,
-  `checks.py`, `placeholder`, `placeholder.py`, `worktrees-page` and
-  `worktrees_page.py`, the `git` tool ships `merge` and `merge.py`, and the
-  `swift` tool ships `xcode` and `xcode.py`. Plan 2 of B30
-  (`docs/plans/2026-11-18-python-tasks-repo`) deletes the shell libraries.
+  The `mise` tool ships `helpers.py`, `gate_files.py`, `checks.py`,
+  `placeholder.py` and `worktrees_page.py`, the `git` tool ships `merge.py`,
+  and the `swift` tool ships `xcode.py`.
 - Prefix each tool call with `mise x --`, for example `mise x -- dprint check`.
   To find whether a tool is available, use `mise x -- which <tool>`, not
   `command -v`. System commands (`git`, `awk`, `sed`) and `mise` itself do not
@@ -248,44 +240,33 @@ part, and with no part it prints one line and exits 0. See
   runs `mise x -- which <name>` and returns a bool. A system command runs
   with `subprocess` directly.
 - Exception: a tool that a task must have in every repository and environment
-  gets a `#MISE tools.<tool>="latest"` directive in that task, and the task
-  and the libraries that it sources call it without `mise x --` and find it
-  with `command -v`. `mise x` finds only the tools of a config file, and a
-  repository before its first sync, or a shell without `MISE_ENV=dev`, has no
-  config that names them. The tools are `github:virajp/bootstrap` in
-  `setup:configs`, `yq` in `setup:configs` and `setup`, `pre-commit` in
-  `setup:precommit` and `code:precommit`, `pre-commit` and `yq` in the
-  `git:merge:<branch>` tasks, `yq` in `git:worktree:list`,
-  `git:worktree:create` and `git:worktree:delete`, and `dprint` in
-  `setup:dprint`. A Python task finds the tool with `shutil.which`, and
-  names it in its one `# MISE tools={...}` line, for example
-  `# MISE tools={uv="latest", python="3.14", pre-commit="latest"}`. TOML
-  does not accept an inline table and a dotted key for the same table, so a
-  Python task has no second `tools` line. The engine is the exception to this
-  exception: `helpers`
-  (`bootstrap_get`), `code:lsp:check` and the scripts of the tools call it as
-  `BOOTSTRAP_BIN`,
+  gets a place in the one `# MISE tools={...}` line of that task, for example
+  `# MISE tools={uv="latest", python="3.14", pre-commit="latest"}`, and the
+  task calls it without `mise x --` and finds it with `shutil.which`.
+  `mise x` finds only the tools of a config file, and a repository before
+  its first sync, or a shell without `MISE_ENV=dev`, has no config that
+  names them. The tools are `github:virajp/bootstrap` in `setup:configs`,
+  `pre-commit` in `setup:precommit`, `code:precommit` and the
+  `git:merge:<branch>` tasks, and `dprint` in `setup:dprint`. A task reads
+  JSON with the `json` module, not with yq or jq. TOML does not accept an
+  inline table and a dotted key for the same table, so a task has no second
+  `tools` line. The engine is the exception to this exception:
+  `helpers.bootstrap_get`, `code:lsp:check` and the scripts of the tools call
+  it as `BOOTSTRAP_BIN`,
   else `mise x -- bootstrap`, and find it with `mise x -- which bootstrap`.
   The tool calls of the engine in `cli/` are in
   `docs/design/cli.md` ("The tool calls").
 - To find whether the repository has an optional task, use `has_own_task` and
-  `own_tasks` from `helpers` (or `helpers.py`). Do not use `mise tasks info`
+  `own_tasks` from `helpers.py`. Do not use `mise tasks info`
   or a wildcard `mise run`. As mise does, both find a `.py` part:
   `has_own_task` reads `<file>` when it exists, else `<file>.py`, and
   `own_tasks` lists the part `NN-<name>.py` as `NN-<name>` when no
   `NN-<name>` exists. In a submodule, mise also finds the tasks of the root
   repository, and it runs them in the root directory.
-- The rules of a shell task:
-  - Write shell for bash 3.2 and bash 5.x. macOS has bash 3.2 as
-    `/bin/bash`. Do not use namerefs, `${var,,}`, or associative arrays.
-  - Under `set -e`, write a command substitution that can fail as
-    `VAR=$(cmd) || VAR=''`. The existing scripts explain this in comments.
-    The one exception is `bootstrap_get` and `members`: pass their code on
-    with `VAR=$(bootstrap_get <key>) || exit $?`.
-- Tasks use `#MISE` and `#USAGE` header comments for metadata and flags (in a
-  Python file, `# MISE` and `# USAGE` with a space, which dprint writes; mise
-  reads both forms). A `#USAGE flag "--fix"` is available in the script as
-  the environment variable `usage_fix`. A Python task reads it with
+- Tasks use `# MISE` and `# USAGE` header comments for metadata and flags,
+  with a space, which dprint writes (mise also reads `#MISE` and `#USAGE`). A
+  `# USAGE flag "--fix"` is available in the script as the environment
+  variable `usage_fix`, which the task reads with
   `os.environ.get("usage_fix")`. Each search for a header line accepts both
   forms.
 - Python tasks: the rules of a Python task or library file.
@@ -295,7 +276,8 @@ part, and with no part it prints one line and exits 0. See
     `Synced from bootstrap` header, then the
     `# /// script` block with `requires-python = ">=3.14"` and
     `dependencies = []`, then the `# MISE` lines with
-    `# MISE tools={uv="latest", python="3.14"}`, then the `# USAGE` lines. A
+    `# MISE tools={uv="latest", python="3.14"}` (plus the tool of the
+    exception above), then the `# USAGE` lines. A
     library also has `# MISE hide=true` and a description, so `mise tasks`
     does not list it.
   - Use the standard library only (`dependencies = []`). A third-party
@@ -311,7 +293,9 @@ part, and with no part it prints one line and exits 0. See
     ```
 
     `sys.dont_write_bytecode` stops a `__pycache__` folder below
-    `.config/mise/tasks/`. A hand check imports with `python -B`.
+    `.config/mise/tasks/`. A hand check imports with `python -B`. ruff
+    reports the `# noqa: E402` of the preamble as RUF100, so a hand ruff
+    check of a task runs with `--extend-ignore RUF100`.
   - `bootstrap_get` and `members` stop the task with `sys.exit` (code 1 or
     2), so a task does not catch their exit.
   - dprint (its ruff plugin) is the one formatter of a `.py` file. The ruff
@@ -329,29 +313,27 @@ part, and with no part it prints one line and exits 0. See
     project file instead, for example `pubspec.yaml` for dart and `gradlew`
     for android. The task files load in every environment, also where the
     tool is not installed.
-  - It gets its files only from `gate_files` of `helpers`, called as
-    `list=$(gate_files "$0" <its flags and files>) || exit $?`, then
-    `trap 'rm -f "${list}"' EXIT` (in Python,
-    `helpers.gate_files(<gate file>, <its flags and files>)`, which returns
-    the path of the list; the gate deletes the list). The list is a temporary
-    file with one path for each line, and an empty file means that the gate
-    does not apply. The base set is the given files, else with `--all` every
-    file of the
-    repository, else the uncommitted files (staged, changed and new). Then
+  - It gets its files only from `helpers.gate_files`, called as
+    `helpers.gate_files(__file__, <its flags>, *helpers.usage_files())`,
+    which returns the path of the list. The gate deletes the list in a
+    `finally` block. The list is a temporary file with one path for each
+    line, and an empty file means that the gate does not apply. The base set is
+    the given files, else with `--all` every file of the repository, else the
+    uncommitted files (staged, changed and new). Then
     three filters remove files, in this order: the repository filter (a
     submodule, a nested repository, a symlink, a deleted file, a path that
     git does not list or ignores, and a name with a line break or a leading
     `-`), the global lists `code_files` of the `mise` tool
-    (`.config/bootstrap/config-files.toml`), and the `#FILES` header of the
+    (`.config/bootstrap/config-files.toml`), and the `# FILES` header of the
     gate. In a gate run, `gate_files` is the only place that removes a file:
     a gate has no own filter and no `--force-exclude`, and each tool gets
     only that list (dprint with `--stdin-files`, detekt through its argument
-    file, each other tool through `tr '\n' '\0' < "${list}" | xargs -0`).
-    `--debug` prints each removed file on stderr.
-  - The `#FILES` header of a gate, right after its `#USAGE` lines, names the
-    files of its language: `#FILES include="..." exclude="..."` and, for
-    ShellCheck, `shebang="..."`. A `.py` gate writes `# FILES` with a space.
-    See `docs/design/tools.md` ("The `#FILES` header of a gate").
+    file, each other tool through `xargs -0` with the list on stdin, its line
+    breaks changed to NUL). `--debug` prints each removed file on stderr.
+  - The `# FILES` header of a gate, right after its `# USAGE` lines, names
+    the files of its language: `# FILES include="..." exclude="..."` and, for
+    ShellCheck, `shebang="..."`. See `docs/design/tools.md` ("The `#FILES`
+    header of a gate").
   - Each gate declares `--all`, `--fix`, `--debug` and the variadic
     `[files]`. A gate of a module (android, go, gomod, uv) maps the files of
     its list to their modules.
@@ -393,8 +375,10 @@ task that runs only commands.
 6. A group of commands in an orchestrator is its own subtask, for example
    `setup:linter`. A single direct command in an orchestrator gets a
    `print_header`, because it is at the level of the sibling subtasks.
-7. The top-level orchestrator ends with `line_sep1` and
-   `print_success "<Done message>"`, not with a header.
+7. The top-level orchestrator ends with `helpers.line_sep1()` and
+   `helpers.print_success("<Done message>")`, not with a header. A bash task
+   of `macos/tools/` calls the shell functions of its `helpers`, for example
+   `print_success "<Done message>"`.
 8. Header and subheader text is an "-ing" verb phrase with " ..." at the end,
    for example "Installing pre-commit hooks ...".
 9. A task that runs only inside a git hook (`code:git-config`) prints status
@@ -457,23 +441,23 @@ the module of the test (see "The test cache" below).
   compose `test/golden` task from the claude-plugins clone of
   `CLAUDE_PLUGINS_CLONE`; without it, each of the four cases is skipped with
   one line.
-- `e2e/repo/commands` and `e2e/repo/tasks`: the rendered tasks. The entry
-  cases run `setup:configs` with a fake engine and with the real engine, and
-  the clone, lock and version cases; the landing cases run `git:merge:main`
-  with the real merge library, and the other merge cases run it with a stub
-  library; the worktree cases run `git:worktree:create` with `--no-setup` and
-  `git:worktree:delete`; the LSP cases run `code:lsp:check`, the setup:ai
-  cases `setup:ai`, and the setup case `setup`; the gate_files cases run the
-  working tree's `gate_files.py` in a scratch repository with `--debug`; the
-  `run_gate` cases run `code:lint:60-bootstrap`; the orchestrator case runs
-  `code:lint` with `--all` and files, and expects exit 2; the Python part
-  cases run `own_tasks`, `has_own_task` and the `--all` search with `.py`
+- `e2e/repo/commands` and `e2e/repo/tasks`: the rendered tasks. The entry cases
+  run `setup:configs` with a fake engine and with the real engine, and the
+  clone, lock and version cases; the landing cases run `git:merge:main` with the
+  real merge library, and the other merge cases run it with a stub
+  `_scripts/merge.py`; the worktree cases run `git:worktree:create` with
+  `--no-setup` and `git:worktree:delete`; the LSP cases run `code:lsp:check`,
+  the setup:ai cases `setup:ai`, and the setup case `setup`; the gate_files
+  cases run the working tree's `gate_files.py` in a scratch repository with
+  `--debug`; the `run_gate` cases run `code:lint:60-bootstrap`; the orchestrator
+  case runs `code:lint` with `--all` and files, and expects exit 2; the Python
+  part cases run `own_tasks`, `has_own_task` and the `--all` search with `.py`
   parts.
-- `e2e/repo/pylib`: the Python libraries against the shell libraries. Each
-  case copies the libraries of the working tree's `repo/` into a scratch
-  `_scripts/`, runs a Python probe that imports a module and a shell probe
-  that sources the shell library, and compares the output bytes, the exit
-  code and the return values.
+- `e2e/repo/pylib`: the Python libraries against fixed results. Each case
+  copies the libraries of the working tree's `repo/` into a scratch
+  `_scripts/`, runs a Python probe that imports a module, and compares the
+  output bytes, the exit code and the return values with the fixed results
+  of the old shell libraries in `e2e/repo/pylib/testdata/shell.json`.
 - `e2e/mac`: `bootstrap mac sync` against the fixtures in `macos/fixtures/`,
   with the exit code, the output and the files of each case. The entry cases
   run the task `updateall:configs` of `macos/tools/mise/` against a local bare

@@ -18,17 +18,17 @@ source = ".tools/docker-compose.yaml"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."setup/external/check"]
-source = "setup-external-check"
+[tasks."setup/external/check.py"]
+source = "setup-external-check.py"
 
-[tasks."setup/external/pull"]
-source = "setup-external-pull"
+[tasks."setup/external/pull.py"]
+source = "setup-external-pull.py"
 
-[tasks."setup/external/start"]
-source = "setup-external-start"
+[tasks."setup/external/start.py"]
+source = "setup-external-start.py"
 
-[tasks."setup/external/stop"]
-source = "setup-external-stop"
+[tasks."setup/external/stop.py"]
+source = "setup-external-stop.py"
 
-[tasks."setup/external/update"]
-source = "setup-external-update"
+[tasks."setup/external/update.py"]
+source = "setup-external-update.py"

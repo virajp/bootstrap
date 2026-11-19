@@ -21,9 +21,9 @@ Flutter and Dart. The tool adds the `android` tool for the Android build.
 
 | Path in the repository                        | Kind      | Use                               |
 | --------------------------------------------- | --------- | --------------------------------- |
-| `.config/mise/tasks/setup/deps/20-flutter`    | Synced    | The task `setup:deps:20-flutter`. |
-| `.config/mise/tasks/code/format/10-dart`      | Synced    | The task `code:format:10-dart`.   |
-| `.config/mise/tasks/code/lint/20-dart`        | Synced    | The task `code:lint:20-dart`.     |
+| `.config/mise/tasks/setup/deps/20-flutter.py` | Synced    | The task `setup:deps:20-flutter`. |
+| `.config/mise/tasks/code/format/10-dart.py`   | Synced    | The task `code:format:10-dart`.   |
+| `.config/mise/tasks/code/lint/20-dart.py`     | Synced    | The task `code:lint:20-dart`.     |
 | `.config/mise/conf.d/flutter/mise.<env>.toml` | Generated | The mise config of this tool.     |
 
 ## mise tools
@@ -53,7 +53,7 @@ resolves.
 
 The two Dart tasks apply only when the root has `pubspec.yaml`, and only to
 the `.dart` files of their list: the given files, else with `--all` every
-file, else the uncommitted files. Their `#FILES` header excludes the generated
+file, else the uncommitted files. Their `# FILES` header excludes the generated
 files `*.g.dart`, `*.freezed.dart` and `*.mocks.dart`. With no such file, a
 task prints nothing. See [`mise.md`](mise.md#the-file-sets-of-the-gates).
 

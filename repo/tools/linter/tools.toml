@@ -43,11 +43,11 @@ version = "latest"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."setup/linter"]
-source = "setup-linter"
+[tasks."setup/linter.py"]
+source = "setup-linter.py"
 
-[tasks."code/lint/05-linter"]
-source = "code-lint-linter"
+[tasks."code/lint/05-linter.py"]
+source = "code-lint-linter.py"
 
-[tasks."code/lint/06-shellcheck"]
-source = "code-lint-shellcheck"
+[tasks."code/lint/06-shellcheck.py"]
+source = "code-lint-shellcheck.py"

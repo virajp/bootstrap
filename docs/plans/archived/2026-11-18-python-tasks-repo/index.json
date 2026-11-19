@@ -1,0 +1,799 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "The shipped tasks of repo/tools in Python",
+  "requires": [
+    "docs/plans/2026-11-18-python-tasks-foundation"
+  ],
+  "source": [
+    "B30"
+  ],
+  "backlog": [],
+  "backlog_pieces": [
+    "B30"
+  ],
+  "gaps_of": [],
+  "execution": "teams",
+  "status": {
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-19 — d967e35 a4aa7b2 7cbe495 468d371 89abd90 121dffe 0a2f507 960bee7 b421abd b1bf492 362c0e4 d541c47 f3bb6be"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint --all"
+    ],
+    "plan": [
+      "mise x -- mise run test",
+      "mise x -- mise run code:format --all",
+      "mise x -- mise run code:precommit",
+      "mise x -- mise run code:sec"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "The smoke check (D9). Build the worktree engine (go build -o <tmp>/bootstrap ./cmd/bootstrap in cli/) and export BOOTSTRAP_BIN=<tmp>/bootstrap, BOOTSTRAP_CONFIG=/nonexistent and MISE_ENV=dev. In a new scratch folder below the session scratchpad: git init a consumer on main with a local bare origin, copy repo/examples/polyrepo-main/{repo.toml,tools.toml} to .config/bootstrap/, set landing = \"direct-merge\" in [branches.main] of repo.toml, add [tools.python], [tools.go] and [tools.docker] to tools.toml, add a pyproject.toml, a go.mod (module smoke), a hello.go (package main with an empty func main) and a hello.py, commit and push, then run <tmp>/bootstrap sync --clone <worktree> and commit its output. Run mise trust -a and mise trust on each file below .config/mise/tasks/. Then run: mise tasks ls --hidden; mise run code --all; mise run git:worktree:create --no-setup smoke; mise run git:worktree:list; mise run git:worktree:delete smoke; on a branch smoke-merge with one commit, mise run git:merge:main smoke-merge; <tmp>/bootstrap sync --clone <worktree> a second time. Last: find .config/mise/tasks -type f ! -name \"*.py\" lists no file, and find . -name __pycache__ lists no folder.",
+        "pass": "Each command exits 0. mise tasks ls --hidden lists each task, and no task name ends with .py. The merge lands smoke-merge on main of the local origin. The second sync reports no changed file. Both find commands list nothing. Nothing in the worktree changes."
+      }
+    ]
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "In the main checkout, on main after the landing: git switch -c sync-python-tasks-repo; mise run setup:configs; mise trust on each new file below .config/mise/tasks/; git add the files that the sync wrote and removed; git commit -m \"ops: sync bootstrap with the Python tasks of repo/tools\"; mise run git:merge:main sync-python-tasks-repo",
+      "mode": "run",
+      "notes": "D10. The self-sync of CLAUDE.md step 4: the stale rule removes the shell copies at the root and the sync writes the .py copies, so plan 3 runs its gates with the Python tasks."
+    },
+    {
+      "id": "A2",
+      "step": "plan-management archive docs/plans/2026-11-18-python-tasks-repo, only when the gaps list of this folder has no open entry",
+      "mode": "run",
+      "notes": "The standing consent: archive only with no open gap."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "PATCH",
+      "reason": "D15: U14 fixes a false warning of bootstrap check for a .py file that a # MISE depends line names. The tasks go to a consumer from the clone, so they need no release; the engine fix reaches a consumer only with the next engine release, which the user cuts by hand. B30 cuts no tag."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "git:worktree:list in Python",
+      "wave": 1,
+      "file": "01-worktrees.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/mise/tasks/code-worktrees",
+        "repo/tools/mise/tasks/code-worktrees.py"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-18T18:12:20.374Z",
+      "ended": "2026-11-18T18:23:31.456Z",
+      "commit": "d967e35",
+      "rounds": 1
+    },
+    {
+      "id": "U2",
+      "title": "The orchestrator templates in Python",
+      "wave": 1,
+      "file": "02-templates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/mise/tasks/code-format.tmpl",
+        "repo/tools/mise/tasks/code-format.py.tmpl",
+        "repo/tools/mise/tasks/code-lint.tmpl",
+        "repo/tools/mise/tasks/code-lint.py.tmpl",
+        "repo/tools/mise/tasks/setup.tmpl",
+        "repo/tools/mise/tasks/setup.py.tmpl",
+        "repo/tools/mise/tasks/setup-configs.tmpl",
+        "repo/tools/mise/tasks/setup-configs.py.tmpl",
+        "repo/tools/mise/tasks/setup-worktree.tmpl",
+        "repo/tools/mise/tasks/setup-worktree.py.tmpl"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-18T18:12:20.441Z",
+      "ended": "2026-11-18T18:24:40.939Z",
+      "commit": "a4aa7b2",
+      "rounds": 2
+    },
+    {
+      "id": "U3",
+      "title": "The other tasks of the mise tool in Python",
+      "wave": 1,
+      "file": "03-mise-tasks.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/mise/tasks/code",
+        "repo/tools/mise/tasks/code.py",
+        "repo/tools/mise/tasks/code-sec",
+        "repo/tools/mise/tasks/code-sec.py",
+        "repo/tools/mise/tasks/code-lint-bootstrap",
+        "repo/tools/mise/tasks/code-lint-bootstrap.py",
+        "repo/tools/mise/tasks/code-lsp-check",
+        "repo/tools/mise/tasks/code-lsp-check.py",
+        "repo/tools/mise/tasks/setup-mise",
+        "repo/tools/mise/tasks/setup-mise.py",
+        "repo/tools/mise/tasks/test",
+        "repo/tools/mise/tasks/test.py",
+        "repo/tools/mise/tasks/test-e2e",
+        "repo/tools/mise/tasks/test-e2e.py",
+        "repo/tools/mise/tasks/test-golden",
+        "repo/tools/mise/tasks/test-golden.py",
+        "repo/tools/mise/tools.toml",
+        "repo/tools/mise/files/.config/bootstrap/config-files.toml.tmpl"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-18T18:12:20.506Z",
+      "ended": "2026-11-18T18:26:12.411Z",
+      "commit": "7cbe495",
+      "rounds": 2
+    },
+    {
+      "id": "U4",
+      "title": "The git tasks in Python",
+      "wave": 1,
+      "file": "04-git-tasks.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/git/tasks/code-git-config",
+        "repo/tools/git/tasks/code-git-config.py",
+        "repo/tools/git/tasks/git-merge-develop",
+        "repo/tools/git/tasks/git-merge-develop.py",
+        "repo/tools/git/tasks/git-merge-main",
+        "repo/tools/git/tasks/git-merge-main.py",
+        "repo/tools/git/tasks/git-worktree-create",
+        "repo/tools/git/tasks/git-worktree-create.py",
+        "repo/tools/git/tasks/git-worktree-delete",
+        "repo/tools/git/tasks/git-worktree-delete.py",
+        "repo/tools/git/tools.toml"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-18T18:12:20.577Z",
+      "ended": "2026-11-18T18:23:31.523Z",
+      "commit": "468d371",
+      "rounds": 1
+    },
+    {
+      "id": "U5",
+      "title": "The android, kotlin and flutter tasks in Python",
+      "wave": 1,
+      "file": "05-mobile-tasks.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/android/",
+        "repo/tools/kotlin/",
+        "repo/tools/flutter/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-18T18:12:20.648Z",
+      "ended": "2026-11-18T18:23:31.593Z",
+      "commit": "89abd90",
+      "rounds": 1
+    },
+    {
+      "id": "U6",
+      "title": "The swift, go, node, python and docker tasks in Python",
+      "wave": 1,
+      "file": "06-language-tasks.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/swift/tasks/code-format-swift-format",
+        "repo/tools/swift/tasks/code-format-swift-format.py",
+        "repo/tools/swift/tasks/code-lint-swiftlint",
+        "repo/tools/swift/tasks/code-lint-swiftlint.py",
+        "repo/tools/swift/tasks/setup-deps-swift",
+        "repo/tools/swift/tasks/setup-deps-swift.py",
+        "repo/tools/swift/tasks/test-golden-swift",
+        "repo/tools/swift/tasks/test-golden-swift.py",
+        "repo/tools/swift/tools.toml",
+        "repo/tools/go/",
+        "repo/tools/node/",
+        "repo/tools/python/",
+        "repo/tools/docker/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-18T18:12:20.720Z",
+      "ended": "2026-11-18T18:23:31.659Z",
+      "commit": "121dffe",
+      "rounds": 1
+    },
+    {
+      "id": "U7",
+      "title": "The setup, format and security tasks of the other tools in Python",
+      "wave": 1,
+      "file": "07-other-tasks.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/claude/",
+        "repo/tools/vscode/",
+        "repo/tools/dprint/",
+        "repo/tools/linter/",
+        "repo/tools/pre-commit/",
+        "repo/tools/gitleaks/",
+        "repo/tools/grype/",
+        "repo/tools/osv-scanner/",
+        "repo/tools/doppler/",
+        "repo/tools/fnox/"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-18T18:12:20.788Z",
+      "ended": "2026-11-18T18:24:41.006Z",
+      "commit": "0a2f507",
+      "rounds": 2
+    },
+    {
+      "id": "U8",
+      "title": "The Go cases of the Python tasks",
+      "wave": 3,
+      "file": "08-task-cases.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "e2e/repo/",
+        "e2e/macostools/"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6",
+        "U7",
+        "U9",
+        "U13"
+      ],
+      "waits": "The cases run the .py task files that U1 to U7 and U13 write, and expect the file lists without the shell libraries that U9 deletes.",
+      "status": "green",
+      "started": "2026-11-18T18:40:49.510Z",
+      "ended": "2026-11-19T03:49:00.802Z",
+      "commit": "d541c47",
+      "rounds": 3
+    },
+    {
+      "id": "U9",
+      "title": "Delete the shell libraries",
+      "wave": 2,
+      "file": "09-delete-libraries.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/mise/tasks/helpers",
+        "repo/tools/mise/tasks/checks",
+        "repo/tools/mise/tasks/placeholder",
+        "repo/tools/mise/tasks/worktrees-page",
+        "repo/tools/git/tasks/merge",
+        "repo/tools/swift/tasks/xcode",
+        "repo/tools/mise/tools.toml",
+        "repo/tools/git/tools.toml",
+        "repo/tools/swift/tools.toml"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6",
+        "U7"
+      ],
+      "waits": "A shell library can go only after U1 to U7 leave no task that sources it, and it edits the tools.toml files that U3, U4 and U6 own in wave 1.",
+      "status": "green",
+      "started": "2026-11-18T18:37:39.153Z",
+      "ended": "2026-11-18T18:38:20.775Z",
+      "commit": "b1bf492",
+      "rounds": 1
+    },
+    {
+      "id": "U10",
+      "title": "Review: the Python tasks of repo/tools and their cases",
+      "wave": 4,
+      "file": "10-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U8",
+        "U14"
+      ],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-19T03:59:01.570Z",
+      "ended": "2026-11-19T04:01:39.917Z",
+      "commit": "",
+      "rounds": 1,
+      "range": {
+        "from": "9476e49",
+        "to": "cf07225"
+      }
+    },
+    {
+      "id": "U11",
+      "title": "Docs",
+      "wave": 5,
+      "file": "11-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "README.md",
+        "CLAUDE.md",
+        "docs/design/",
+        "docs/sync/"
+      ],
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6",
+        "U7",
+        "U8",
+        "U9",
+        "U10",
+        "U13",
+        "U14"
+      ],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-19T04:02:29.658Z",
+      "ended": "2026-11-19T04:12:40.215Z",
+      "commit": "f3bb6be",
+      "rounds": 3
+    },
+    {
+      "id": "U12",
+      "title": "Gates",
+      "wave": 6,
+      "file": "12-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U11"
+      ],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-19T04:39:38.684Z",
+      "ended": "2026-11-19T04:56:49.432Z",
+      "commit": "",
+      "rounds": 1
+    },
+    {
+      "id": "U13",
+      "title": "The own tasks of this repository in Python",
+      "wave": 1,
+      "file": "13-own-tasks.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        ".config/mise/tasks/test/go",
+        ".config/mise/tasks/test/go.py",
+        ".config/mise/tasks/test/50-local",
+        ".config/mise/tasks/test/50-local.py",
+        ".config/mise/tasks/vorssaint/diff",
+        ".config/mise/tasks/vorssaint/diff.py",
+        ".config/mise/tasks/_scripts/repo-sync"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-18T18:12:20.854Z",
+      "ended": "2026-11-18T18:23:31.731Z",
+      "commit": "960bee7",
+      "rounds": 1
+    },
+    {
+      "id": "U14",
+      "title": "The task name of a .py file in UnnamedParts",
+      "wave": 1,
+      "file": "14-unnamed-parts.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/internal/oldform/tasks.go",
+        "cli/internal/oldform/tasks_test.go",
+        "cli/internal/oldform/",
+        "cli/internal/core/plan.go"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "green",
+      "started": "2026-11-18T18:12:20.919Z",
+      "ended": "2026-11-19T03:47:13.895Z",
+      "commit": "362c0e4",
+      "rounds": 4
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "green",
+      "started": "2026-11-18T18:12:20.338Z",
+      "ended": "2026-11-18T18:37:12.201Z"
+    },
+    {
+      "id": "W2",
+      "status": "green",
+      "started": "2026-11-18T18:37:39.119Z",
+      "ended": "2026-11-18T18:40:31.590Z"
+    },
+    {
+      "id": "W3",
+      "status": "green",
+      "started": "2026-11-18T18:40:49.477Z",
+      "ended": "2026-11-19T03:58:28.214Z"
+    },
+    {
+      "id": "W4",
+      "status": "green",
+      "started": "2026-11-19T03:59:01.535Z",
+      "ended": "2026-11-19T04:02:01.712Z"
+    },
+    {
+      "id": "W5",
+      "status": "green",
+      "started": "2026-11-19T04:02:29.623Z",
+      "ended": "2026-11-19T04:39:14.773Z"
+    },
+    {
+      "id": "W6",
+      "status": "green",
+      "started": "2026-11-19T04:39:38.650Z",
+      "ended": "2026-11-19T04:57:10.218Z"
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "every human-facing doc (README.md, CLAUDE.md, docs/design/**, docs/sync/**)",
+      "why": "U1 to U9 falsify passages in the same docs",
+      "owner": "U11"
+    },
+    {
+      "id": "S2",
+      "file": "repo/tools/mise/tools.toml",
+      "why": "U1, U2 and U3 rename keys of the mise tool in wave 1; U9 removes the library entries in wave 2",
+      "owner": "U3"
+    },
+    {
+      "id": "S3",
+      "file": "repo/tools/git/tools.toml and repo/tools/swift/tools.toml",
+      "why": "U4 and U6 rename the task keys in wave 1; U9 removes the library entries in wave 2",
+      "owner": "U4 (git), U6 (swift)"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "The rules of a Python task",
+      "ruling": "The rulings D4, D5, D7, D8, D9, D10, D11, D12, D13 and D18 of docs/plans/2026-11-18-python-tasks-foundation apply to each task of this plan, as CLAUDE.md \"Task scripts\" states them after that plan: the .py name, the uv form of gate_files.py, the import preamble, the standard library only, # USAGE with usage_<flag>, helpers.tool and helpers.has_tool, bootstrap_get and members with sys.exit, the gate pattern with helpers.gate_files.",
+      "rejected": "Rules of its own for this plan.",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6",
+        "U7"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "What a task keeps",
+      "ruling": "A converted task keeps its task name, its # USAGE flags and help texts, its #FILES header (as # FILES), its output (the same helpers print calls with the same text), its exit codes and the order of its steps. Its # MISE lines stay, except: the #MISE tools.yq lines go (D4), and the tools line becomes one inline table with uv, python and the tools of its exception (foundation D29). The rules of CLAUDE.md \"Task output: headers and subheaders\" stay. A behavior change is a QUESTION, never a silent edit.",
+      "rejected": "Improve the tasks while they move.",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6",
+        "U7"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "The tools.toml key of a converted task",
+      "ruling": "The key of a task gets .py: [tasks.\"code/lint/70-ruff\"] becomes [tasks.\"code/lint/70-ruff.py\"], a _default becomes _default.py, and source names the .py file. A template keeps mode = \"template\" and its source becomes <name>.py.tmpl. Each other key of the entry (requires_found, when, envs) stays.",
+      "rejected": "Keep the key without .py (mise then has no Python file name).",
+      "units": [
+        "U3",
+        "U4",
+        "U5",
+        "U6",
+        "U7"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "The yq and tool exceptions",
+      "ruling": "Foundation D11: each yq or jq call of a task only parses JSON, so it becomes json, and each #MISE tools.yq=\"latest\" line goes: git-merge-main, git-merge-develop, git-worktree-create, git-worktree-delete, code-worktrees, setup.tmpl and setup-configs.tmpl (yq), and code-lsp-check and setup-ai (mise x -- jq). The tool exception stays for github:virajp/bootstrap (setup-configs), pre-commit (setup-precommit, code-precommit, git-merge-main, git-merge-develop) and dprint (setup-dprint): the tool goes into the one inline table of foundation D29, for example # MISE tools={uv=\"latest\", python=\"3.14\", pre-commit=\"latest\"}, never a dotted tools.<tool> line. Those tasks find the tool with shutil.which and call it directly. The engine call keeps BOOTSTRAP_BIN, else mise x -- bootstrap. A gate reads its [files] with helpers.usage_files() (foundation D26).",
+      "rejected": "Keep yq.",
+      "units": [
+        "U1",
+        "U2",
+        "U4",
+        "U7"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "The templates",
+      "ruling": "U2 writes each template as Python with the gomplate parts at the same places. The engine renders a template with the delimiters <% and %> (README.md 229-233); {{ }} passes through unchanged (for example the mise tera value of #MISE dir=\"{{ config_root }}\"). So the Python of a template must not contain <% or %> outside a gomplate part. The --all search of foundation D18 moves into the Python of code-format and code-lint. U2 checks a render with the engine: build it, sync a scratch consumer with --clone <worktree>, then compile the rendered files.",
+      "rejected": "Keep the orchestrators in bash.",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "The zsh task code",
+      "ruling": "code (zsh) becomes code.py with the same flags and the same three mise run calls.",
+      "rejected": "Keep zsh.",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "Who owns the mise tools.toml",
+      "ruling": "U3 owns repo/tools/mise/tools.toml in wave 1 and writes the renamed keys of U1 (code/worktrees) and U2 (the five templates) too, from the names of D3. U9 owns the three tools.toml files in wave 2 and removes only the library entries.",
+      "rejected": "Each unit edits the file (two units of one wave on one file).",
+      "units": [
+        "U1",
+        "U2",
+        "U3",
+        "U9"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "The end of the shell libraries",
+      "ruling": "U9 deletes helpers, checks, placeholder, worktrees-page (mise), merge (git) and xcode (swift) with rm, and removes their [tasks.\"_scripts/<name>\"] entries. In a consumer, the stale rule removes the synced copies at the next sync. A consumer own task that sources one of them stops working: U11 writes the migrate.md item M48 (M46 and M47 are the items of the foundation plan) and the rows of \"Files that bootstrap no longer ships\".",
+      "rejected": "Keep the shell libraries for the consumers' own tasks (two copies of each rule to keep the same).",
+      "units": [
+        "U9",
+        "U11"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "The gates of the plan",
+      "ruling": "The plan lands only when mise run test, code:format --all, code:precommit and code:sec are green, plus the smoke check K1. U8 updates each Go case of e2e/repo/ and e2e/macostools/ that runs or names a converted task, and changes the byte compare of e2e/repo/pylib/ from the shell helpers to fixed expected bytes, because U9 deletes the shell helpers. The wave gate is code:lint --all.",
+      "rejected": "Land without the test suite.",
+      "units": [
+        "U8"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "The steps after the landing",
+      "ruling": "The self-sync on sync-python-tasks-repo and its landing (user: \"yes, sync after each plan lands\"); archive only with no open gap.",
+      "rejected": "The user syncs by hand.",
+      "units": []
+    },
+    {
+      "id": "D11",
+      "decision": "A review unit",
+      "ruling": "The plan lands runnable code (every shipped task, the own tasks and the engine fix), so U10 reviews the delta of U1 to U9, U13 and U14 before the docs unit.",
+      "rejected": "No review unit.",
+      "units": [
+        "U10"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "The run settings",
+      "ruling": "Model opus; execution teams, so that U1, U2 and U3 can agree the keys of the mise tools.toml; priority 20, the priority of the foundation plan plus 10 (user: \"Yes, accept\").",
+      "rejected": "solo.",
+      "units": []
+    },
+    {
+      "id": "D13",
+      "decision": "The own tasks of this repository",
+      "ruling": "The own tasks of this repository (test/go, test/50-local, vorssaint/diff) source the shell helpers at the root. The self-sync after this plan removes that copy, so they move to Python in this plan, with the rules of D1 and D2. An own task keeps its own tools (test/50-local: gotestsum and gomplate) in the one inline table of foundation D29 and calls them directly, as now. U13 also deletes the stale synced copy .config/mise/tasks/_scripts/repo-sync: no file sources it and no manifest row lists it, so the stale rule never removes it.",
+      "rejected": "Convert them in plan 3 (mise run test breaks between the self-sync of plan 2 and plan 3).",
+      "units": [
+        "U13"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "The file rules and the checks of a unit",
+      "ruling": "Foundation D21 applies: mode 755 on each new file, sys.dont_write_bytecode = True in the preamble, python -B in a hand check, and a Go test of the engine from cli/. The syntax check is python3.14 -B -c \"import ast,sys; [ast.parse(open(p).read(), p) for p in sys.argv[1:]]\" <files>; py_compile writes __pycache__. A unit checks the inventory of the tools.toml files with the engine: cd cli && BOOTSTRAP_CLONE=<worktree root> mise x -- go run ./cmd/bootstrap catalog exits 0; U1 and U2 skip it, because their keys are in the file of U3, and U3 runs it after U1 and U2 return. U9 searches repo/tools/*/tasks/ and the three own tasks of U13 only (not the synced copies at the root of .config/mise/tasks/, which the self-sync replaces; not macos/; not the tools.toml files). U2 checks that each rendered template is dprint-clean: mise x -- dprint check on the rendered files of the scratch consumer, which has the python tool and so the ruff plugin. U3 also updates the comment of repo/tools/mise/files/.config/bootstrap/config-files.toml.tmpl that names _scripts/helpers. U13 may rm .config/mise/tasks/_scripts/repo-sync although it has the Synced header: it is a stale copy of an old layout that no manifest row lists.",
+      "rejected": "Leave the points to the units.",
+      "units": [
+        "U2",
+        "U3",
+        "U9",
+        "U13"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "The false warning of a .py file that a depends line names",
+      "ruling": "UnnamedParts builds the task name of a file from its file name and looks for it among the # MISE depends lines of the folder. mise removes .py from a task name, so for go.py the engine builds test:go.py, and the depends line test:go does not match: a false warning. The lookup removes .py from the file name before the compare; the warning text keeps the real file name. The fix ships with the next engine release; B30 cuts no tag (user: \"Yes, engine fix\"). This is the one engine change of B30, and it replaces the accepted edge case of foundation D14.",
+      "rejected": "Accept the warning; rename test/go to test/10-go.py (then test:go runs two times).",
+      "units": [
+        "U14"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "When the render and catalog checks run",
+      "ruling": "The engine inventory refuses a task file with no tools.toml entry, so a sync or a catalog run passes only when every wave 1 unit has written its files and its keys. U2, U4, U5, U6 and U7 skip the catalog check and the render check. U3 runs both after all the units of wave 1 return (the team tells it): the catalog check, then a scratch consumer synced from the worktree, with the syntax check, mise x ruff@latest -- ruff check and mise x -- dprint check on the rendered templates of U2.",
+      "rejected": "Each unit runs the checks alone (a check fails for the files of another unit).",
+      "units": [
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6",
+        "U7"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Q1: ruff@latest flags the mandated preamble `import helpers  # noqa: E402` with RUF100; keep the noqa or change it?",
+      "ruling": "Keep `# noqa: E402` as documented and run the hand ruff check with `--extend-ignore RUF100` — no file changes; the Verification lines and the U10 review read the check that way.",
+      "rejected": "Remove `# noqa: E402` from every task and update the CLAUDE.md preamble; Write `# noqa: E402, RUF100` in every task and in CLAUDE.md",
+      "units": []
+    },
+    {
+      "id": "D18",
+      "decision": "Q2: Should the State column of the git:worktree:list terminal table get colours?",
+      "ruling": "Keep it uncoloured, as now — identical output, as D2 requires.",
+      "rejected": "Colour it",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Q3: How does setup-worktree.py.tmpl run a member worktree_install value?",
+      "ruling": "`mise x --cd <folder> -- bash -c <command>` — the whole command line runs in the member folder; a behaviour change (arguably a fix).",
+      "rejected": "Keep `bash -c` with mise x --cd inside it (the part after && runs in the root); `mise x --cd <folder> -- *shlex.split(command)`",
+      "units": [
+        "U2"
+      ]
+    },
+    {
+      "id": "D20",
+      "decision": "Q4: Is the SIGTERM difference of setup-deps-kotlin.py (gradlew killed, not waited for) acceptable?",
+      "ruling": "Accept it, as written now — the cleanup and code 130 stay; on SIGTERM gradlew is killed, not waited for.",
+      "rejected": "Defer the exit until the running command ends",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D21",
+      "decision": "Q5: Should code-sec-grype.py pass the project root to --name as one argument?",
+      "ruling": "Pass the root as one argument — the scan works for a root with a space; a small behaviour change.",
+      "rejected": "Keep the word split",
+      "units": [
+        "U7"
+      ]
+    },
+    {
+      "id": "D22",
+      "decision": "Q6: An old extensionless header copy test/_default (no manifest row) stays beside the new test/_default.py and hides it; should the case check it is gone, with the engine handling it?",
+      "ruling": "Add a check \"no old test/_default\" and route the fix to the engine/migrate owner (init removes or reports a header copy at the extensionless dispatcher path) — the case fails until then.",
+      "rejected": "Accept it, no change; Add a migrate.md item that tells a consumer to delete the file by hand",
+      "units": [
+        "U8"
+      ]
+    },
+    {
+      "id": "D23",
+      "decision": "Q7: CLAUDE.md \"Task scripts\" lost the shell-task rules (D1); the bash tasks of macos/tools/ stay bash until plan 3. Keep a scoped rule for them, or leave them to plan 3?",
+      "ruling": "Add a short paragraph to \"Task scripts\" that limits the Python rules to repo/tools/ and keeps the old shell rules for macos/tools/ until plan 3 removes them — the Mac tasks keep a correct rule, and plan 3 must delete the paragraph.",
+      "rejected": "Leave the docs as they are and let plan 3 write the Mac rules",
+      "units": [
+        "U11"
+      ]
+    },
+    {
+      "id": "D24",
+      "decision": "Q8: K1 lists the hidden library as `_scripts:helpers.py`, because the user-level Mac sync ships a shell ~/.config/mise/tasks/_scripts/helpers that collides with it; accept K1?",
+      "ruling": "Accept it: record K1 as passed except the `_scripts:helpers.py` name of a hidden library, which the user-level Mac helpers cause and plan 3 removes — the plan lands now.",
+      "rejected": "Hold the landing until plan 3 has removed the user-level shell helpers",
+      "units": [
+        "U12"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice to verify against",
+      "started": "",
+      "ended": "2026-11-19T04:02:24.400Z"
+    },
+    "acceptance": {
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice to verify against",
+      "started": "",
+      "ended": "2026-11-19T04:02:24.106Z"
+    },
+    "ux": {
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice to verify against",
+      "started": "",
+      "ended": "2026-11-19T04:02:24.258Z"
+    },
+    "reconcile": {
+      "state": "skipped",
+      "detail": "skipped: no covers (no stamps) and no code unit (nothing to persist); no Reconcile commit",
+      "started": "2026-11-19T04:02:24.547Z",
+      "ended": "2026-11-19T04:02:24.586Z"
+    }
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U14",
+      "stage": "",
+      "text": "D22 (Q6) needs an engine fix of the init move outside the Owns of any unit · U14 Owns widened to cli/internal/oldform/ (the engine owner of the init move, D26 code in cli/internal/oldform/tasks.go) under D22",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U14",
+      "stage": "",
+      "text": "D22 needs the init call site of oldform.HeaderCopies in cli/internal/core/plan.go (knownCopies), outside U14 Owns · U14 Owns widened to cli/internal/core/plan.go under D22; sync and check stay unchanged, because D22 names init alone",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "U11",
+      "stage": "",
+      "text": "U11 asked whether CLAUDE.md rule 7 of \"Task output\" exempts the Mac orchestrator updateall, which already ends with print_header \"Setup complete!\" and has no line_sep1 · settled by index.md Out of scope (the Mac tasks are plan 3; the run picks up no Out-of-scope item): rule 7 stays as written, and the updateall ending is left to docs/plans/2026-11-18-python-tasks-mac",
+      "state": "closed"
+    }
+  ],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-18-2214"
+    }
+  ],
+  "run": {
+    "worktree": ".worktrees/all-2026-11-18-2214",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-18-python-tasks-repo.jsonl"
+  }
+}

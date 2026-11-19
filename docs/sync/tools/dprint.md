@@ -19,12 +19,12 @@ Always. The `base` pack adds this tool, and the sync writes an empty
 
 ## What the tool ships
 
-| Path in the repository                       | Kind      | Use                               |
-| -------------------------------------------- | --------- | --------------------------------- |
-| `dprint.jsonc`                               | Shared    | The dprint config. See below.     |
-| `.config/mise/tasks/code/format/05-dprint`   | Synced    | The task `code:format:05-dprint`. |
-| `.config/mise/tasks/setup/dprint`            | Synced    | The task `setup:dprint`.          |
-| `.config/mise/conf.d/dprint/mise.<env>.toml` | Generated | The mise config of this tool.     |
+| Path in the repository                        | Kind      | Use                               |
+| --------------------------------------------- | --------- | --------------------------------- |
+| `dprint.jsonc`                                | Shared    | The dprint config. See below.     |
+| `.config/mise/tasks/code/format/05-dprint.py` | Synced    | The task `code:format:05-dprint`. |
+| `.config/mise/tasks/setup/dprint.py`          | Synced    | The task `setup:dprint`.          |
+| `.config/mise/conf.d/dprint/mise.<env>.toml`  | Generated | The mise config of this tool.     |
 
 `dprint.jsonc` is a shared file. The sync renders the spec
 `files/dprint.jsonc.merge.toml` with the values of this tool, then merges it
@@ -86,10 +86,10 @@ finds, for example `dprint.jsonc`. See
 
 ## Tasks
 
-| Task                    | Use                                                                                                                                                                                                                                                                      |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `code:format:05-dprint` | Check the files of `gate_files` with dprint (`--stdin-files`): the given files, else with `--all` every file, else the uncommitted files. It has no `#FILES` header, and dprint picks the files of its plugins. `--fix` formats them. Without dprint, it prints nothing. |
-| `setup:dprint`          | Update the plugin versions in `dprint.jsonc` with `dprint config update`.                                                                                                                                                                                                |
+| Task                    | Use                                                                                                                                                                                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `code:format:05-dprint` | Check the files of `gate_files` with dprint (`--stdin-files`): the given files, else with `--all` every file, else the uncommitted files. It has no `# FILES` header, and dprint picks the files of its plugins. `--fix` formats them. Without dprint, it prints nothing. |
+| `setup:dprint`          | Update the plugin versions in `dprint.jsonc` with `dprint config update`.                                                                                                                                                                                                 |
 
 `code:format` of the `mise` tool runs `code:format:05-dprint` first, then the
 other `code:format:NN-<name>` tasks.

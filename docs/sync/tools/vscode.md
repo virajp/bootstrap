@@ -26,7 +26,7 @@ and a `[tools.vscode]` table in a submodule stops the sync with code 2.
 | ------------------------------------------ | --------- | ----------------------------------------------------------------- |
 | `.vscode/settings.json`                    | Synced    | The shared editor settings. The sync replaces the file.           |
 | `.vscode/extensions.json`                  | Shared    | The extensions of this tool and of the selected tools. See below. |
-| `.config/mise/tasks/setup/vscode`          | Synced    | The task `setup:vscode`.                                          |
+| `.config/mise/tasks/setup/vscode.py`       | Synced    | The task `setup:vscode`.                                          |
 | `.config/mise/conf.d/vscode/mise.dev.toml` | Generated | The mise config of this tool.                                     |
 
 `.vscode/extensions.json` is a shared file. The sync renders the spec
@@ -107,7 +107,8 @@ None.
   `migrate.md`).
 - Delete `.config/vscode.d/`. Remove the `// >>> vscode.d` blocks from
   `.vscode/settings.json` and `.config/pre-commit-config.yaml`.
-- In a submodule, delete `.vscode/` and `.config/mise/tasks/setup/vscode`
-  (M4 of `migrate.md`).
+- In a submodule, delete `.vscode/` and the task `setup:vscode`
+  (`.config/mise/tasks/setup/vscode.py`, or `setup/vscode` before M48) (M4 of
+  `migrate.md`).
 - M34 of `migrate.md`: `bootstrap migrate` moves the old top-level `extensions`
   list into `.vscode/extensions.json`.

@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/virajp/bootstrap/e2e/internal/harness"
@@ -18,9 +17,19 @@ import (
 
 func TestMain(m *testing.M) { rc.Main(m) }
 
-// helpersPath is the helpers library of the working tree's repo/.
+// helpersPath is the helpers.py library of the working tree's repo/.
 func helpersPath() string {
-	return filepath.Join(harness.Root, "repo", "tools", "mise", "tasks", "helpers")
+	return filepath.Join(harness.Root, "repo", "tools", "mise", "tasks", "helpers.py")
+}
+
+// pyTask gives the command that runs the Python task file <path>: the file
+// itself, with mode 755, so its shebang runs uv.
+func pyTask(t testing.TB, path string) []string {
+	t.Helper()
+	if err := os.Chmod(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return []string{path}
 }
 
 // copyFile copies <src> to <dst>, with the folders of <dst>.
@@ -44,20 +53,6 @@ func copyConsumer(t testing.TB, dst string) {
 	if err := harness.CopyTree(rc.BaseConsumer, dst); err != nil {
 		t.Fatal(err)
 	}
-}
-
-// toolDir gives the folder of the program <name>: from PATH, else from
-// `mise which`.
-func toolDir(t testing.TB, name string) string {
-	t.Helper()
-	if p, err := exec.LookPath(name); err == nil {
-		return filepath.Dir(p)
-	}
-	out, err := exec.Command(harness.RealMise, "which", name).Output()
-	if err != nil {
-		t.Fatalf("no %s: %v", name, err)
-	}
-	return filepath.Dir(strings.TrimSpace(string(out)))
 }
 
 // gomplate renders the template <src> to <dst> as harness.Gomplate does.

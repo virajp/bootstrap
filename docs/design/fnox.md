@@ -47,8 +47,8 @@ shared files of `.config/` and the files of that project folder.
 ## The secret helper
 
 A run task does not call fnox directly. It calls a helper of
-`_scripts/helpers`, for example `run_with_secrets <command>`. The helper
-selects the secrets source:
+`_scripts/helpers.py`, for example `helpers.run_with_secrets(<command>)`. The
+helper selects the secrets source:
 
 | Condition                                  | The helper runs                                 |
 | ------------------------------------------ | ----------------------------------------------- |

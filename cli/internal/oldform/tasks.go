@@ -117,6 +117,52 @@ func OwnTasks(root string, listed map[string]bool) []Move {
 	return out
 }
 
+// HeaderNote is the label of the change of init that removes the old header
+// copies of the dispatchers (HeaderCopies).
+const HeaderNote = "remove old copies of the dispatchers"
+
+// HeaderCopies gives each old copy of a dispatcher in the repo <root>: the
+// file <dir>/_default of a folder of DispatcherDirs, when a tool of <tools>
+// of the index <idx> ships <dir>/_default.py. mise runs the file without an
+// extension, so the old copy hides the new dispatcher. The file is a regular
+// file with the bootstrap header, and <listed> does not name it: before the
+// dispatcher became a .py file, the sync wrote over such a file (D26). The
+// sync removes a listed file by its manifest. A file without the header is
+// the repo's own task: OwnTasks moves it. The engine follows no symlink: a
+// path that is a link, or is below a linked folder, is not a copy.
+func HeaderCopies(root string, listed map[string]bool, idx *source.Index, tools []string) []Copy {
+	root = strings.TrimSuffix(root, "/")
+	if idx == nil {
+		return nil
+	}
+	ships := map[string]string{}
+	for _, tool := range tools {
+		m := idx.Manifests[tool]
+		if m == nil {
+			continue
+		}
+		for _, fe := range m.Files {
+			if fe.Task && ships[fe.Target] == "" {
+				ships[fe.Target] = tool
+			}
+		}
+	}
+	var out []Copy
+	for _, dir := range DispatcherDirs {
+		rel := TasksDir + "/" + dir + "/_default"
+		tool := ships[rel+".py"]
+		if tool == "" || listed[rel] || manifest.Linked(root, rel) {
+			continue
+		}
+		p := root + "/" + rel
+		if info, err := os.Lstat(p); err != nil || !info.Mode().IsRegular() || !header.HasFile(p) {
+			continue
+		}
+		out = append(out, Copy{Tool: tool, Task: dir + "/_default.py", Path: p})
+	}
+	return out
+}
+
 // PlanMoves gives the moves of init for the repo <root>, with absolute paths:
 // OwnTasks with <listed>. When the target of any of them exists, it moves
 // nothing and gives a problem with code 2 for each, which names both paths
@@ -186,7 +232,8 @@ var quotedRe = regexp.MustCompile(`"([^"]*)"|'([^']*)'`)
 // <root> (DispatcherDirs) without an NN- name, relative to <root>, sorted: a
 // dispatcher does not run it (D15). A name that starts with `_` is not a
 // part, and neither is a file whose task name the `#MISE depends` of another
-// file in the same folder names (D18).
+// file in the same folder names (D18). The task name of a `.py` file is its
+// file name without `.py`, as mise gives it. The output keeps the file name.
 func UnnamedParts(root string) []string {
 	root = strings.TrimSuffix(root, "/")
 	var out []string
@@ -214,7 +261,7 @@ func UnnamedParts(root string) []string {
 		}
 		task := strings.ReplaceAll(d, "/", ":")
 		for _, n := range cands {
-			if !named[task+":"+n] {
+			if !named[task+":"+strings.TrimSuffix(n, ".py")] {
 				out = append(out, TasksDir+"/"+d+"/"+n)
 			}
 		}

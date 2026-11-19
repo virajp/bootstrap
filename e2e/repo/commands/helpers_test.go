@@ -49,12 +49,11 @@ func hosts() (this, other string) {
 var (
 	toolDirOnce sync.Once
 	jqDir       string
-	yqDir       string
 )
 
-// toolDirs finds the folders of jq (from `mise x jq@latest -- which jq`) and
-// yq (from `mise x -- which yq`), as the old task did.
-func toolDirs(t testing.TB) (string, string) {
+// toolDirs finds the folder of jq (from `mise x jq@latest -- which jq`), as
+// the old task did.
+func toolDirs(t testing.TB) string {
 	t.Helper()
 	toolDirOnce.Do(func() {
 		find := func(args ...string) string {
@@ -67,12 +66,11 @@ func toolDirs(t testing.TB) (string, string) {
 			return filepath.Dir(strings.TrimSpace(lines[len(lines)-1]))
 		}
 		jqDir = find("mise", "x", "jq@latest", "--", "which", "jq")
-		yqDir = find("mise", "x", "--", "which", "yq")
 	})
-	if jqDir == "" || yqDir == "" {
-		t.Fatalf("no jq or yq: jq in %q, yq in %q", jqDir, yqDir)
+	if jqDir == "" {
+		t.Fatalf("no jq: jq in %q", jqDir)
 	}
-	return jqDir, yqDir
+	return jqDir
 }
 
 // run is one command of a Call or of a check.
@@ -239,7 +237,7 @@ func logIs(c *rc.Case, s string) bool { return strings.TrimRight(c.LogText(), "\
 
 // jqTrue tells whether the jq filter <filter> on the file <file> prints true.
 func jqTrue(c *rc.Case, filter, file string) bool {
-	jq, _ := toolDirs(c.T)
+	jq := toolDirs(c.T)
 	cmd := &harness.Cmd{Env: c.Env, Args: []string{filepath.Join(jq, "jq"), "-c", filter, file}}
 	code, out := cmd.Run()
 	return code == 0 && strings.TrimSpace(out) == "true"
@@ -247,7 +245,7 @@ func jqTrue(c *rc.Case, filter, file string) bool {
 
 // jqOut gives the output of the jq filter <filter> on the file <file>.
 func jqOut(c *rc.Case, filter, file string) string {
-	jq, _ := toolDirs(c.T)
+	jq := toolDirs(c.T)
 	cmd := &harness.Cmd{Env: c.Env, Args: []string{filepath.Join(jq, "jq"), "-cS", filter, file}}
 	_, out := cmd.Run()
 	return strings.TrimRight(out, "\n")

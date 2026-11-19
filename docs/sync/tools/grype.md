@@ -21,7 +21,7 @@ Always. The `base` pack adds this tool, and the sync writes an empty
 | Path in the repository                      | Kind      | Use                           |
 | ------------------------------------------- | --------- | ----------------------------- |
 | `.config/grype.yaml`                        | Seed      | The config of grype.          |
-| `.config/mise/tasks/code/sec/20-grype`      | Synced    | The task `code:sec:20-grype`. |
+| `.config/mise/tasks/code/sec/20-grype.py`   | Synced    | The task `code:sec:20-grype`. |
 | `.config/mise/conf.d/grype/mise.<env>.toml` | Generated | The mise config of this tool. |
 
 ## mise tools
@@ -32,9 +32,9 @@ Always. The `base` pack adds this tool, and the sync writes an empty
 
 ## Tasks
 
-| Task                | Use                                                                                                           |
-| ------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `code:sec:20-grype` | Scan the dependencies of the tree, without the git submodules. `--staged` does nothing. `--debug` adds `-vv`. |
+| Task                | Use                                                                                                                                                                                            |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `code:sec:20-grype` | Scan the dependencies of the tree, without the git submodules. The project root goes to `--name` as one argument, so a root with a space works. `--staged` does nothing. `--debug` adds `-vv`. |
 
 `code:sec` of the `mise` tool runs this task.
 

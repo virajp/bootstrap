@@ -19,5 +19,5 @@ source = ".config/grype.yaml"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."code/sec/20-grype"]
-source = "code-sec-grype"
+[tasks."code/sec/20-grype.py"]
+source = "code-sec-grype.py"

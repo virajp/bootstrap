@@ -23,13 +23,13 @@ Gradle file at the root, or one level below it, uses the Android Gradle plugin
 
 ## What the tool ships
 
-| Path in the repository                        | Kind      | Use                                |
-| --------------------------------------------- | --------- | ---------------------------------- |
-| `.config/mise/tasks/setup/deps/10-android`    | Synced    | The task `setup:deps:10-android`.  |
-| `.config/mise/tasks/code/lint/10-android`     | Synced    | The task `code:lint:10-android`.   |
-| `.config/mise/tasks/test/e2e/40-android`      | Synced    | The part `test:e2e:40-android`.    |
-| `.config/mise/tasks/test/golden/40-android`   | Synced    | The part `test:golden:40-android`. |
-| `.config/mise/conf.d/android/mise.<env>.toml` | Generated | The mise config of this tool.      |
+| Path in the repository                         | Kind      | Use                                |
+| ---------------------------------------------- | --------- | ---------------------------------- |
+| `.config/mise/tasks/setup/deps/10-android.py`  | Synced    | The task `setup:deps:10-android`.  |
+| `.config/mise/tasks/code/lint/10-android.py`   | Synced    | The task `code:lint:10-android`.   |
+| `.config/mise/tasks/test/e2e/40-android.py`    | Synced    | The part `test:e2e:40-android`.    |
+| `.config/mise/tasks/test/golden/40-android.py` | Synced    | The part `test:golden:40-android`. |
+| `.config/mise/conf.d/android/mise.<env>.toml`  | Generated | The mise config of this tool.      |
 
 ## mise tools
 
@@ -95,7 +95,7 @@ applies only when the Gradle root has an `AndroidManifest.xml` that git does
 not ignore, at any depth. Thus a Kotlin/JVM build without an Android module
 skips it. It gets its files from `gate_files`: the given files, else with
 `--all` every file, else the uncommitted files (see
-[`mise.md`](mise.md#the-file-sets-of-the-gates)). Its `#FILES`
+[`mise.md`](mise.md#the-file-sets-of-the-gates)). Its `# FILES`
 header takes only a `src/` `.kt`, `.java` or `.xml` file, a `*.gradle.kts`, a
 `*.gradle`, a `*.pro`, `libs.versions.toml`, `lint.xml` or `lint-baseline.xml`.
 It lints only the modules of those files: the nearest folder with

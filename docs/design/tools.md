@@ -31,9 +31,10 @@ repo/tools/<tool>/
 ```
 
 Each file below `files/` and `tasks/` has an entry. The entry gives its target.
-For example, the entry `[tasks."git/merge/develop"]` with
-`source = "git-merge-develop"` copies `repo/tools/git/tasks/git-merge-develop`
-to `.config/mise/tasks/git/merge/develop` in a consumer. A script is not
+For example, the entry `[tasks."git/merge/develop.py"]` with
+`source = "git-merge-develop.py"` copies
+`repo/tools/git/tasks/git-merge-develop.py` to
+`.config/mise/tasks/git/merge/develop.py` in a consumer. A script is not
 copied: the engine runs it from the clone. See
 [cli.md](cli.md#the-scripts-of-a-tool).
 
@@ -262,40 +263,43 @@ the header, a seed and a merge target stay.
 
 A `[tasks."<path>"]` table is the entry of one task file of the tool. The key is
 the path below `.config/mise/tasks/` in the target, for example
-`code/lint/70-ruff`. `#MISE` and `#USAGE` stay in the task file (`# MISE` and
-`# USAGE` in a `.py` file).
+`code/lint/70-ruff.py`. The header comments stay in the task file: `# MISE`
+and `# USAGE` in a Python task of the repo side, `#MISE` and `#USAGE` in a
+bash task of the Mac side.
 
-| Key              | Side | Meaning                                                                                                                                                                                                                                                                    |
-| ---------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source`         | Both | Necessary. The path below `tasks/`, with no `..` part. The tools use a flat name: `code-lint-ruff`.                                                                                                                                                                        |
-| `mode`           | Both | `copy` (the default) or `template`.                                                                                                                                                                                                                                        |
-| `requires`       | Both | As in `[files]`.                                                                                                                                                                                                                                                           |
-| `requires_found` | Repo | As in `[files]`.                                                                                                                                                                                                                                                           |
-| `when`           | Both | As in `[files]`.                                                                                                                                                                                                                                                           |
-| `library`        | Both | `true` for a library below `_scripts/`, and only there. A library is not a task.                                                                                                                                                                                           |
-| `replaces`       | Both | A non-empty list of `sha256:<64 hex>` items, in lower case: the hashes of the known old copies of a part, for example the copy of a stackgen pack. Only a part in the folder of its group has it, for example `test/golden/40-swift`. The repo side acts on it; see below. |
+| Key              | Side | Meaning                                                                                                                                                                                                                                                                       |
+| ---------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source`         | Both | Necessary. The path below `tasks/`, with no `..` part. The tools use a flat name: `code-lint-ruff.py`.                                                                                                                                                                        |
+| `mode`           | Both | `copy` (the default) or `template`.                                                                                                                                                                                                                                           |
+| `requires`       | Both | As in `[files]`.                                                                                                                                                                                                                                                              |
+| `requires_found` | Repo | As in `[files]`.                                                                                                                                                                                                                                                              |
+| `when`           | Both | As in `[files]`.                                                                                                                                                                                                                                                              |
+| `library`        | Both | `true` for a library below `_scripts/`, and only there. A library is not a task.                                                                                                                                                                                              |
+| `replaces`       | Both | A non-empty list of `sha256:<64 hex>` items, in lower case: the hashes of the known old copies of a part, for example the copy of a stackgen pack. Only a part in the folder of its group has it, for example `test/golden/40-swift.py`. The repo side acts on it; see below. |
 
 The rules of the task files:
 
-- The `mise` tool ships each orchestrator `_default`, for example
-  `code/format/_default`. Each other tool ships its own task files below it.
+- The `mise` tool ships each orchestrator `_default.py`, for example
+  `code/format/_default.py`. Each other tool ships its own task files below it.
 - An orchestrator runs the leaf tasks of its group with `own_tasks`, which
   returns the names sorted. Thus a leaf task of the groups `code:format`,
   `code:lint`, `code:sec`, `setup:deps`, `setup:secrets`, `test`, `test:e2e`
   and `test:golden` has a number prefix for its run order: 10, 20, 30 and so
-  on, for example `code/lint/70-ruff`. `own_tasks` skips a task of the
+  on, for example `code/lint/70-ruff.py`. `own_tasks` skips a task of the
   repository without a prefix, and `bootstrap check` warns about it. As mise
   does, `own_tasks` takes a Python part `NN-<name>.py` as the task
   `NN-<name>` when no `NN-<name>` exists.
 - A task that a user or another task calls by its name has no prefix, for
   example `git:merge:develop` and `setup:dprint`.
-- A task file is a shell file without an extension, or a Python file with the
-  `.py` extension. mise removes `.py` from the task name. dprint (the block
-  `ruff` of the `python` tool) is the one formatter of each `.py` file: no
-  tool ships a `ruff format` gate, and `code:format:40-ruff` is gone. The
-  gates `code:lint:70-ruff` and `code:lint:50-pyrefly` run only with a
-  `pyproject.toml` (`requires_found`), and their `#FILES` header excludes
-  `.config/mise/tasks/**`.
+- On the repo side, each task file is a Python uv script with the `.py`
+  extension, and a template is `<name>.py.tmpl`. mise removes `.py` from the
+  task name. dprint (the block `ruff` of the `python` tool) is the one
+  formatter of each `.py` file: no tool ships a `ruff format` gate, and
+  `code:format:40-ruff` is gone. The gates `code:lint:70-ruff` and
+  `code:lint:50-pyrefly` run only with a `pyproject.toml` (`requires_found`),
+  and their `# FILES` header excludes `.config/mise/tasks/**`. On the Mac
+  side, each task file is a bash script with no extension until the plan
+  `docs/plans/2026-11-18-python-tasks-mac` moves it to Python.
 - A known old copy of a part is a regular file at the old path of its group
   (`test/golden`) or at `<group>/50-local`, whose sha256 is in `replaces` of
   that part, and the tool of the part is selected. `bootstrap migrate` removes
@@ -307,31 +311,32 @@ The rules of the task files:
 
 ### The `#FILES` header of a gate
 
-A `code:format:*` or `code:lint:*` gate gets its files from `gate_files` of
-`helpers` (see [mise.md](mise.md#the-file-sets-of-the-gates)). Its `#FILES`
-header names the files of its language, right after its `#USAGE` lines:
+A `code:format:*` or `code:lint:*` gate gets its files from
+`helpers.gate_files` of `helpers.py` (see
+[mise.md](mise.md#the-file-sets-of-the-gates)). Its `# FILES` header names the
+files of its language, right after its `# USAGE` lines:
 
-```bash
-#FILES include="*.swift" exclude="*.generated.swift .build/** .swiftpm/**"
+```python
+# FILES include="*.swift" exclude="*.generated.swift .build/** .swiftpm/**"
 ```
 
 - The helper reads the top block of the gate file: each line from line 1 to the
-  first line that is neither a comment nor blank. A `#FILES` line is a line of
-  that block that starts with `#FILES ` or `# FILES ` (dprint adds the space
-  in a `.py` gate).
+  first line that is neither a comment nor blank. A `# FILES` line is a line
+  of that block that starts with `# FILES ` or `#FILES ` (dprint writes the
+  space).
 - The keys are `include`, `exclude` and `shebang`. Each value is in double
   quotes, a list of patterns separated by blanks. An empty value is an empty
   list.
-- No `#FILES` line, no `include` key or `include=""`: every file of the set.
+- No `# FILES` line, no `include` key or `include=""`: every file of the set.
 - `shebang="sh bash"`: a file whose `#!` line names one of these interpreters
   is included too. A file that the `include` patterns match is dropped when
   its `#!` names a known shell (`sh bash dash ksh mksh zsh fish csh tcsh`)
   that is not in the list. Another interpreter, or no `#!` line, keeps it.
-- Two `#FILES` lines, a key other than these three, a key twice or a value
+- Two `# FILES` lines, a key other than these three, a key twice or a value
   without double quotes is malformed: the gate stops with exit 2.
 
 A gate of a repository can have the header too. A gate with
-`#USAGE flag "--all"` gets `--all` from its orchestrator.
+`# USAGE flag "--all"` gets `--all` from its orchestrator.
 
 ## The `[formatter]` table
 
@@ -391,7 +396,7 @@ startup_timeout = 60000
 
 Each file that is neither a seed nor a merge source has this header in its
 source, in the comment syntax of the file. `<path>` is the path of the source in
-the tool folder, for example `files/.gitignore` or `tasks/code-format.tmpl`:
+the tool folder, for example `files/.gitignore` or `tasks/code-format.py.tmpl`:
 
 ```text
 # Synced from bootstrap: repo/tools/<tool>/<path>. Do not edit this file.

@@ -82,11 +82,11 @@ prompt.
 The shared files are in `repo/tools/`, one folder for each tool. The
 `tools.toml` of a tool gives the path that each file of its `files/` and
 `tasks/` folders gets in a repository. For example,
-`repo/tools/git/tasks/git-merge-develop` here is
-`.config/mise/tasks/git/merge/develop` in every repository whose core branches
-have `develop`, because the `base` pack adds the `git` tool. The `scripts/`
-folder of a tool holds its scripts, which the CLI runs from its clone and never
-copies. This repository also syncs its own `base` pack.
+`repo/tools/git/tasks/git-merge-develop.py` here is
+`.config/mise/tasks/git/merge/develop.py` in every repository whose core
+branches have `develop`, because the `base` pack adds the `git` tool. The
+`scripts/` folder of a tool holds its scripts, which the CLI runs from its
+clone and never copies. This repository also syncs its own `base` pack.
 
 The Mac tools are in `macos/tools/`, one folder for each tool, and their packs
 are in `macos/packs.toml`. `macos/examples/macos.toml` is the sample values

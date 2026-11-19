@@ -67,16 +67,16 @@ source = "pipx:pyrefly"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."code/lint/50-pyrefly"]
+[tasks."code/lint/50-pyrefly.py"]
 requires_found = [ "pyproject.toml" ]
-source = "code-lint-pyrefly"
+source = "code-lint-pyrefly.py"
 
-[tasks."code/lint/70-ruff"]
+[tasks."code/lint/70-ruff.py"]
 requires_found = [ "pyproject.toml" ]
-source = "code-lint-ruff"
+source = "code-lint-ruff.py"
 
-[tasks."code/lint/90-uv"]
-source = "code-lint-uv"
+[tasks."code/lint/90-uv.py"]
+source = "code-lint-uv.py"
 
-[tasks."setup/deps/50-python"]
-source = "setup-deps-python"
+[tasks."setup/deps/50-python.py"]
+source = "setup-deps-python.py"

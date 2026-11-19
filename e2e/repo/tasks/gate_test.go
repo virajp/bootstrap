@@ -20,7 +20,7 @@ func miseTask(name string) string {
 
 // TestRunGate: the gate code:lint:60-bootstrap. It runs `bootstrap check`
 // with the cache clone, and it never fetches. It runs with --all, and gets
-// its files from gate_files of the working tree's helpers and gate_files.py.
+// its files from gate_files of the working tree's helpers.py and gate_files.py.
 func TestRunGate(t *testing.T) {
 	// runGate runs the gate in a new consumer. <origin>, when not empty, is
 	// the origin of a cache clone.
@@ -30,7 +30,7 @@ func TestRunGate(t *testing.T) {
 		cache := filepath.Join(dir, "gate-cache")
 		copyConsumer(t, root)
 		scripts := filepath.Join(root, ".config", "mise", "tasks", "_scripts")
-		copyFile(t, helpersPath(), filepath.Join(scripts, "helpers"))
+		copyFile(t, helpersPath(), filepath.Join(scripts, "helpers.py"))
 		copyFile(t, miseTask("gate_files.py"), filepath.Join(scripts, "gate_files.py"))
 		rc.WriteValues(t, filepath.Join(root, ".config", "bootstrap"), `environments = [ "dev" ]`)
 		if origin != "" {
@@ -41,7 +41,7 @@ func TestRunGate(t *testing.T) {
 		env := harness.SetEnv(harness.Env(), "usage_files", "BOOTSTRAP_VALUES", "BOOTSTRAP_CLONE",
 			"usage_all=true", "MISE_PROJECT_ROOT="+root, "BOOTSTRAP_CACHE="+cache,
 			"BOOTSTRAP_URL=file://"+filepath.Join(dir, "no-such-remote"), "BOOTSTRAP_BIN="+harness.Bin)
-		cmd := &harness.Cmd{Env: env, Args: []string{"bash", miseTask("code-lint-bootstrap")}}
+		cmd := &harness.Cmd{Env: env, Args: []string{miseTask("code-lint-bootstrap.py")}}
 		return cmd.Run()
 	}
 
@@ -416,11 +416,11 @@ func TestLintOrchestrator(t *testing.T) {
 	t.Parallel()
 	dir := harness.Dir(t)
 	root := filepath.Join(dir, "lint-orchestrator")
-	copyFile(t, helpersPath(), filepath.Join(root, ".config", "mise", "tasks", "_scripts", "helpers"))
-	task := filepath.Join(dir, "code-lint")
-	gomplate(t, miseTask("code-lint.tmpl"), task, "")
+	copyFile(t, helpersPath(), filepath.Join(root, ".config", "mise", "tasks", "_scripts", "helpers.py"))
+	task := filepath.Join(dir, "code-lint.py")
+	gomplate(t, miseTask("code-lint.py.tmpl"), task, "")
 	env := harness.SetEnv(harness.Env(), "MISE_PROJECT_ROOT="+root, "usage_all=true", "usage_files=a.txt")
-	cmd := &harness.Cmd{Env: env, Args: []string{"bash", task}}
+	cmd := &harness.Cmd{Env: env, Args: pyTask(t, task)}
 	got, log := cmd.Run()
 	if got == 2 && strings.Contains(log, "Use --all or files, not both.") {
 		harness.Pass(t, "code:lint --all with files: exit 2")

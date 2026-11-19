@@ -20,5 +20,5 @@ source = ".config/gitleaks.toml.tmpl"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."code/sec/10-gitleaks"]
-source = "code-sec-gitleaks"
+[tasks."code/sec/10-gitleaks.py"]
+source = "code-sec-gitleaks.py"

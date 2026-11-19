@@ -53,7 +53,7 @@ func TestAdd(t *testing.T) {
 	rc.Run(t, rc.Spec{Name: "add go", Values: devValues + "\n[tools.vscode]", Call: addGo, Message: "Synced: ",
 		Check: func(c *rc.Case) {
 			c.CheckThat("add: the values file selects go", c.TomlQ(`.tools | has("go")`, ""))
-			c.CheckThat("add: the go task", exists(c.Path(".config/mise/tasks/code/lint/45-gomod")))
+			c.CheckThat("add: the go task", exists(c.Path(".config/mise/tasks/code/lint/45-gomod.py")))
 			c.CheckThat("add: the go extension", fileHas(c.Path(".vscode/extensions.json"), `"golang.go"`))
 			c.CheckThat("add: one clone line", c.LogCount("[INFO] bootstrap ", 1))
 		}})
@@ -103,7 +103,7 @@ func TestRemove(t *testing.T) {
 	rc.Run(t, rc.Spec{Name: "remove go", Values: devValues + "\n[tools.vscode]\n[tools.go]", Call: removeTool("go"),
 		Message: "Synced: ", Check: func(c *rc.Case) {
 			c.CheckThat("remove: the values file without go", notGrep(c.ToolsValues, "go]"))
-			c.CheckThat("remove: the go task is gone", rc.NoFile(c.Path(".config/mise/tasks/code/lint/45-gomod")))
+			c.CheckThat("remove: the go task is gone", rc.NoFile(c.Path(".config/mise/tasks/code/lint/45-gomod.py")))
 			c.CheckThat("remove: the go extension is gone", !fileHas(c.Path(".vscode/extensions.json"), `"golang.go"`))
 		}})
 	rc.Run(t, rc.Spec{Name: "remove keeps a seed and lists it", Values: devValues + "\n[tools.pnpm]", Change: pnpmFiles,

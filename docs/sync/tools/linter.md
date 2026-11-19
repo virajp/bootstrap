@@ -20,12 +20,12 @@ Always. The `base` pack adds this tool, and the sync writes an empty
 
 ## What the tool ships
 
-| Path in the repository                       | Kind      | Use                                 |
-| -------------------------------------------- | --------- | ----------------------------------- |
-| `.config/mise/tasks/code/lint/05-linter`     | Synced    | The task `code:lint:05-linter`.     |
-| `.config/mise/tasks/code/lint/06-shellcheck` | Synced    | The task `code:lint:06-shellcheck`. |
-| `.config/mise/tasks/setup/linter`            | Synced    | The task `setup:linter`.            |
-| `.config/mise/conf.d/linter/mise.<env>.toml` | Generated | The mise config of this tool.       |
+| Path in the repository                          | Kind      | Use                                 |
+| ----------------------------------------------- | --------- | ----------------------------------- |
+| `.config/mise/tasks/code/lint/05-linter.py`     | Synced    | The task `code:lint:05-linter`.     |
+| `.config/mise/tasks/code/lint/06-shellcheck.py` | Synced    | The task `code:lint:06-shellcheck`. |
+| `.config/mise/tasks/setup/linter.py`            | Synced    | The task `setup:linter`.            |
+| `.config/mise/conf.d/linter/mise.<env>.toml`    | Generated | The mise config of this tool.       |
 
 The `mise` tool ships the orchestrator `code:lint`.
 
@@ -38,11 +38,11 @@ The `mise` tool ships the orchestrator `code:lint`.
 
 ## Tasks
 
-| Task                      | Use                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `code:lint:05-linter`     | Run the linter on the files of `gate_files`: the given files, else with `--all` every file, else the uncommitted files. Its `#FILES` header names the file types of `@virajp.dev/linter` 2.1.0 and the paths that a gate never lints. The task runs the linter with `--no-ignore`, so the ignores of the linter config have no effect and `gate_files` is the only list. `--fix` applies the fixes. Without the linter, it prints nothing. |
-| `code:lint:06-shellcheck` | Run ShellCheck on the shell files of `gate_files`: `*.sh`, `*.bash` and each file whose `#!` names `sh`, `bash`, `dash` or `ksh`, but not a template (`*.tmpl`) or a file whose `#!` names another shell, for example zsh. Only warnings and errors fail. Without ShellCheck, it prints nothing.                                                                                                                                           |
-| `setup:linter`            | Write the linter config files, if they are missing.                                                                                                                                                                                                                                                                                                                                                                                        |
+| Task                      | Use                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `code:lint:05-linter`     | Run the linter on the files of `gate_files`: the given files, else with `--all` every file, else the uncommitted files. Its `# FILES` header names the file types of `@virajp.dev/linter` 2.1.0 and the paths that a gate never lints. The task runs the linter with `--no-ignore`, so the ignores of the linter config have no effect and `gate_files` is the only list. `--fix` applies the fixes. Without the linter, it prints nothing. |
+| `code:lint:06-shellcheck` | Run ShellCheck on the shell files of `gate_files`: `*.sh`, `*.bash` and each file whose `#!` names `sh`, `bash`, `dash` or `ksh`, but not a template (`*.tmpl`) or a file whose `#!` names another shell, for example zsh. Only warnings and errors fail. Without ShellCheck, it prints nothing.                                                                                                                                            |
+| `setup:linter`            | Write the linter config files, if they are missing.                                                                                                                                                                                                                                                                                                                                                                                         |
 
 `code:lint` of the `mise` tool runs `code:lint:05-linter` first, then
 `code:lint:06-shellcheck`, then the other `code:lint:NN-<name>` tasks. The

@@ -151,13 +151,13 @@ func consumerUnborn(c *rc.Case) {
 // the merge task of each core branch follows its flag.
 func TestBranches(t *testing.T) {
 	rc.Run(t, rc.Spec{Name: "when: main only gives git:merge:main", Values: devValues, Check: func(c *rc.Case) {
-		c.CheckThat("when, main only: git:merge:main", c.LogHas("/.config/mise/tasks/git/merge/main"))
-		c.CheckThat("when, main only: no git:merge:develop", c.LogLacks("/.config/mise/tasks/git/merge/develop"))
+		c.CheckThat("when, main only: git:merge:main", c.LogHas("/.config/mise/tasks/git/merge/main.py"))
+		c.CheckThat("when, main only: no git:merge:develop", c.LogLacks("/.config/mise/tasks/git/merge/develop.py"))
 	}})
 	rc.Run(t, rc.Spec{Name: "when: main and develop give git:merge:main and develop", Values: bothCore,
 		Change: precommitBothBranches, Check: func(c *rc.Case) {
-			c.CheckThat("when, both branches: git:merge:main", c.LogHas("/.config/mise/tasks/git/merge/main"))
-			c.CheckThat("when, both branches: git:merge:develop", c.LogHas("/.config/mise/tasks/git/merge/develop"))
+			c.CheckThat("when, both branches: git:merge:main", c.LogHas("/.config/mise/tasks/git/merge/main.py"))
+			c.CheckThat("when, both branches: git:merge:develop", c.LogHas("/.config/mise/tasks/git/merge/develop.py"))
 		}})
 	rc.Run(t, rc.Spec{Name: "the git check: a core branch that does not exist", Code: 2, Values: devValues,
 		Change: consumerNoCoreBranch, Message: "core_branches in "})

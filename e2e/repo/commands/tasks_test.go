@@ -41,11 +41,10 @@ fi
 printf '%s\n' '{"contract":1,"command":"lsp","ok":true,"code":0,"data":{"servers":{"gopls":{"command":"mise","args":["x","--","gopls"],"extensionToLanguage":{".go":"go"}}},"checks":{"gopls":{"command":"gopls","source":"go:golang.org/x/tools/gopls"}}},"errors":[],"warnings":[]}'
 `
 
-// lspCheckTask runs the synced task code:lsp:check with bash, not with mise
-// run. <bin> is the engine of the task (empty is the stub).
+// lspCheckTask runs the synced task file code:lsp:check, not with mise run.
+// <bin> is the engine of the task (empty is the stub).
 func lspCheckTask(bin, whichFail, stubCode string) func(c *rc.Case) int {
 	return synced(func(c *rc.Case) int {
-		jq, _ := toolDirs(c.T)
 		shim := filepath.Join(c.Dir, "shim")
 		writeScript(c, filepath.Join(shim, "mise"), lspShim)
 		stub := filepath.Join(c.Dir, "stub")
@@ -54,8 +53,8 @@ func lspCheckTask(bin, whichFail, stubCode string) func(c *rc.Case) int {
 			bin = stub
 		}
 		env := harness.SetEnv(c.Env, "BOOTSTRAP_BIN="+bin, "LSP_WHICH_FAIL="+whichFail, "LSP_STUB_CODE="+stubCode)
-		env = prependPath(env, shim, jq)
-		return run{dir: c.Consumer, env: env}.do(c, "bash", c.Path(tasksPath+"/code/lsp/check"))
+		env = prependPath(env, shim)
+		return run{dir: c.Consumer, env: env}.do(c, c.Path(tasksPath+"/code/lsp/check.py"))
 	})
 }
 
@@ -180,7 +179,7 @@ func aiState(c *rc.Case, name string, lines ...string) {
 // and the variables <extra>. Its output goes to the log of the case, and its
 // claude calls to calls<n>.
 func aiRun(c *rc.Case, n int, upgrade bool, extra ...string) int {
-	jq, _ := toolDirs(c.T)
+	jq := toolDirs(c.T)
 	ai := filepath.Join(c.Dir, "ai")
 	calls := filepath.Join(ai, "calls")
 	harness.WriteFile(c.T, calls, "")
@@ -189,7 +188,7 @@ func aiRun(c *rc.Case, n int, upgrade bool, extra ...string) int {
 		"AI_ROOT="+c.Consumer, fmt.Sprintf("usage_upgrade=%t", upgrade))
 	env = prependPath(env, filepath.Join(ai, "bin"), jq)
 	env = harness.SetEnv(env, extra...)
-	got := run{dir: c.Consumer, env: env}.do(c, "bash", c.Path(tasksPath+"/setup/ai"))
+	got := run{dir: c.Consumer, env: env}.do(c, c.Path(tasksPath+"/setup/ai.py"))
 	harness.WriteFile(c.T, fmt.Sprintf("%s%d", calls, n), harness.ReadFile(calls))
 	return got
 }
@@ -215,7 +214,7 @@ func aiRecord(c *rc.Case, record string) bool {
 }
 
 // setup:ai (D2 to D5, D13, D18, D19, D25 to D27, D29, D34): the case runs the
-// synced task file with bash, with the real engine in BOOTSTRAP_BIN and the
+// synced task file, with the real engine in BOOTSTRAP_BIN and the
 // clone of the case in BOOTSTRAP_CLONE (D27). No case uses the network or a
 // real claude.
 func TestSetupAI(t *testing.T) {
@@ -380,7 +379,7 @@ func TestSetupAI(t *testing.T) {
 }
 
 // setup passes --upgrade to setup:ai (D39): the case runs the synced task
-// setup with bash, a plain run, then a run with --upgrade. A PATH shim for
+// file of setup, a plain run, then a run with --upgrade. A PATH shim for
 // mise logs each `mise run` to runs<n> and does nothing else.
 func TestSetupUpgrade(t *testing.T) {
 	const setupMise = "#!/usr/bin/env bash\n[[ $1 != run ]] || printf '%s\\n' \"$*\" >> \"$SETUP_RUNS\"\n"
@@ -388,7 +387,7 @@ func TestSetupUpgrade(t *testing.T) {
 	setupRun := func(c *rc.Case, n int, upgrade bool) int {
 		env := harness.SetEnv(c.Env, "SETUP_RUNS="+runs(c, n), fmt.Sprintf("usage_upgrade=%t", upgrade))
 		env = prependPath(env, filepath.Join(c.Dir, "setup", "bin"))
-		return run{dir: c.Consumer, env: env}.do(c, "bash", c.Path(tasksPath+"/setup/_default"))
+		return run{dir: c.Consumer, env: env}.do(c, c.Path(tasksPath+"/setup/_default.py"))
 	}
 	rc.Run(t, rc.Spec{Name: "setup: --upgrade passes --upgrade to setup:ai", Values: aiValues,
 		Call: synced(func(c *rc.Case) int {
@@ -400,7 +399,7 @@ func TestSetupUpgrade(t *testing.T) {
 		}),
 		Message: "Setup complete!",
 		Check: func(c *rc.Case) {
-			c.CheckThat("setup: the synced setup:ai is there", isExec(c.Path(tasksPath+"/setup/ai")))
+			c.CheckThat("setup: the synced setup:ai is there", isExec(c.Path(tasksPath+"/setup/ai.py")))
 			c.CheckThat("setup: a plain run does not run setup:ai (D4)",
 				!strings.Contains(harness.ReadFile(runs(c, 1)), "run setup:ai"))
 			c.CheckThat("setup: --upgrade runs setup:ai --upgrade (D39)", fileHasLine(runs(c, 2), "run setup:ai --upgrade"))
@@ -410,8 +409,8 @@ func TestSetupUpgrade(t *testing.T) {
 // setup:configs --all with the real engine (D54, D62, D63): the sibling api is
 // a repository next to the consumer with its own .config/bootstrap/, so its
 // sync writes [home]. The sibling web is not there: the sync of the home skips
-// it with an info line, and the task with a warning. The task and helpers come
-// from a sync of the consumer. members of helpers parses with yq.
+// it with an info line, and the task with a warning. The task and helpers.py
+// come from a sync of the consumer.
 func TestConfigsAll(t *testing.T) {
 	const siblingValues = devValues + `
 [members.api]
@@ -423,10 +422,8 @@ folder = "../web"
 type = "sibling"
 url = "https://example.com/web"`
 	configsAll := synced(func(c *rc.Case) int {
-		_, yq := toolDirs(c.T)
 		env := harness.SetEnv(c.Env, "BOOTSTRAP_VALUES", "BOOTSTRAP_BIN="+harness.Bin, "usage_all=true")
-		env = prependPath(env, yq)
-		return run{dir: c.Consumer, env: env}.do(c, "bash", c.Path(tasksPath+"/setup/configs/_default"))
+		return run{dir: c.Consumer, env: env}.do(c, c.Path(tasksPath+"/setup/configs/_default.py"))
 	})
 	siblingRepo := func(c *rc.Case) string {
 		api := filepath.Join(c.Dir, "api")
@@ -483,10 +480,8 @@ func TestMergeLanding(t *testing.T) {
 		git(c, c.Consumer, "commit", "--quiet", "--no-verify", "--allow-empty", "-m", "feature")
 		// mise run of the test sets MISE_ORIGINAL_CWD to this repository, and
 		// the merge task compares it with its own repository.
-		_, yq := toolDirs(c.T)
 		env := harness.SetEnv(c.Env, "MISE_ORIGINAL_CWD", "MISE_TASK_NAME", "BOOTSTRAP_BIN="+harness.Bin, "usage_source=feature")
-		env = prependPath(env, yq)
-		return run{dir: c.Consumer, env: env}.do(c, "bash", c.Path(tasksPath+"/git/merge/main"))
+		return run{dir: c.Consumer, env: env}.do(c, c.Path(tasksPath+"/git/merge/main.py"))
 	})
 	mergesOnMain := func(c *rc.Case) string { return plainGit(c.Consumer, "rev-list", "--merges", "--count", "main") }
 	rc.Run(t, rc.Spec{Name: "git:merge:main, landing pr opens no direct merge", Code: 1,
@@ -507,8 +502,8 @@ func TestMergeLanding(t *testing.T) {
 
 var (
 	oldGitTasks = []string{"code/merge/_default", "code/merge/main", "code/merge/develop", "setup/worktree", "code/worktrees"}
-	newGitTasks = []string{"git/merge/main", "git/merge/develop", "git/worktree/create", "git/worktree/setup",
-		"git/worktree/delete", "git/worktree/list"}
+	newGitTasks = []string{"git/merge/main.py", "git/merge/develop.py", "git/worktree/create.py", "git/worktree/setup.py",
+		"git/worktree/delete.py", "git/worktree/list.py"}
 )
 
 func precommitBothBranches(c *rc.Case) { git(c, c.Consumer, "branch", "develop") }
@@ -559,16 +554,15 @@ func gitTask(c *rc.Case, args ...string) int {
 // merge.
 func TestMergeEntryTasks(t *testing.T) {
 	mergeStubbed := synced(func(c *rc.Case) int {
-		harness.WriteFile(c.T, c.Path(tasksPath+"/_scripts/merge"), `# shellcheck source=/dev/null
-source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
-merge_to_destination_branch() { printf 'stub-merge: [%s] [%s]\n' "$1" "${2-}"; }
+		harness.WriteFile(c.T, c.Path(tasksPath+"/_scripts/merge.py"), `def merge_to_destination_branch(destination_branch, source_branch=None):
+  print(f"stub-merge: [{destination_branch}] [{source_branch or ''}]", flush=True)
 `)
 		c.CommitConsumer()
 		return 0
 	})
 	rc.Run(t, rc.Spec{Name: "git:merge, main only: the source it names", Values: devValues, Call: mergeStubbed,
 		Check: func(c *rc.Case) {
-			c.CheckThat("git:merge, main only: no git:merge:develop", rc.NoFile(c.Path(tasksPath+"/git/merge/develop")))
+			c.CheckThat("git:merge, main only: no git:merge:develop", rc.NoFile(c.Path(tasksPath+"/git/merge/develop.py")))
 			got := gitTask(c, "git:merge:main", "feat")
 			c.CheckThat("git:merge, main only: git:merge:main feat exits 0", got == 0)
 			c.CheckThat("git:merge, main only: git:merge:main feat gives main feat", c.LogHas("stub-merge: [main] [feat]"))
