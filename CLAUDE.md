@@ -117,9 +117,7 @@ copies this folder.
   each folder in `macos/tools/`.
 
 This repository is also a consumer of its own `base` pack and of the `claude`
-tool. Its values file is still the old `.config/bootstrap.toml` until the user
-migrates it with `bootstrap migrate` after the `bootstrap@4.0.0` tag; the engine
-of this branch reads `.config/bootstrap/`. `setup:configs` writes
+tool. Its values are in `.config/bootstrap/`. `setup:configs` writes
 the synced copies at the root (`.config/`, `.vscode/`, `.gitignore`,
 `.gitattributes`). Do not edit a synced copy. Change the
 file in `repo/tools/<tool>/`, push it, then run `mise run setup:configs` here
@@ -182,10 +180,10 @@ differs in these points:
   they do not import it. The Mac library has the print functions
   (`print_header`, `print_subheader`, `print_wait`, `print_newline`,
   `print_error`, `print_success`, `print_warn`, `line_sep`) and
-  `task_exists` and `run_task_if_exists`, and no `tool` or `has_tool`. Each
-  Mac task keeps the call form of its shell task: `mise x --` where the shell
-  task used it (`dprint` in `updateall`), and `shutil.which` where the shell
-  task used `command -v`.
+  `task_exists` and `run_task_if_exists`, and no `tool` or `has_tool`. A
+  Mac task calls a mise tool with `mise x --` (`dprint` in `updateall`), and
+  finds each other command with `shutil.which`, for example `brew`, `claude`
+  and `security`.
 - Its preamble uses the user path:
   `sys.path.insert(0, os.path.expanduser("~/.config/mise/tasks/_scripts"))`.
 - The entry task `updateall:configs` imports no library and reads its flags

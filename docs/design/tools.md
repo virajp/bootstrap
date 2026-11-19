@@ -263,9 +263,8 @@ the header, a seed and a merge target stay.
 
 A `[tasks."<path>"]` table is the entry of one task file of the tool. The key is
 the path below `.config/mise/tasks/` in the target, for example
-`code/lint/70-ruff.py`. The header comments stay in the task file: `# MISE`
-and `# USAGE` in a Python task of the repo side, `#MISE` and `#USAGE` in a
-bash task of the Mac side.
+`code/lint/70-ruff.py`. The header comments `# MISE` and `# USAGE` stay in
+the task file, a Python task of the repo side or of the Mac side.
 
 | Key              | Side | Meaning                                                                                                                                                                                                                                                                       |
 | ---------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
