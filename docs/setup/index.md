@@ -160,7 +160,7 @@ Read `"$tmp"/macos/packs.toml` and `"$tmp"/docs/setup/tools.md`.
 `bootstrap mac migrate` writes a table for each member of the pack `base`. Show
 its members to the owner. A required member cannot go away. Ask whether the
 owner wants each member that is not required, for example
-`visual-studio-code` and `uv`.
+`visual-studio-code`.
 
 For each other pack, in the order of the file, show its description and the
 description of each member. Each member is a default: `mac add pack` adds

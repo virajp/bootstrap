@@ -190,11 +190,11 @@
         "U4"
       ],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-19T05:27:05.199Z",
-      "ended": "",
+      "ended": "2026-11-19T05:29:29.477Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 3
     },
     {
       "id": "U6",
@@ -443,7 +443,15 @@
       "ended": "2026-11-19T05:26:59.277Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U5",
+      "stage": "",
+      "text": "R5 asked whether CLAUDE.md Task output rule 7 names the Mac exception again or the Mac updateall changes its last step · settled by the plan: Out of scope forbids a change of behavior of a task while it moves, so U5 restored the Mac exception sentence in its Python form (Mac helpers has no line_sep1; updateall ends with print_header)",
+      "state": "closed"
+    }
+  ],
   "overrides": [
     {
       "id": "O1",

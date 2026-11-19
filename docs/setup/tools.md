@@ -69,19 +69,19 @@ Each section below gives these items for one tool:
 be
 in more than one pack, or in no pack. Only a member of `base` can be required.
 
-| Pack             | Required members                                                                                                                                                                                                                                                                                                                                                                                                                              | Other members                                                                                                                                       |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `base`           | `mise`, `homebrew`, `bash`, `zsh`, `fish`, `git`, `git-tools`, `ssh`, `cli`, `fnox`, `node`, `touchid-sudo`, `starship`, `network`, `macos-defaults`, `gh`, `ruby`, `fonts`, `mas`, `age`, `bat`, `coreutils`, `curl`, `doggo`, `eza`, `fzf`, `gping`, `httping`, `ipcalc`, `jq`, `lazygit`, `prettyping`, `ripgrep`, `zoxide`, `diff-so-fancy`, `glab`, `btop`, `pstree`, `tree`, `watch`, `wget`, `yq`, `vorssaint`, `pre-commit`, `python` | `visual-studio-code`, `uv`                                                                                                                          |
-| `claude`         | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `claude-desktop`, `claude-cli`, `claude-status`, `codeburn`                                                                                         |
-| `essentials`     | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `alfred`, `easyfind`, `the-unarchiver`, `brave-browser`, `github-desktop`, `google-chrome`, `tailscale`, `taskexplorer`, `battery-health`, `setapp` |
-| `1password-apps` | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `1password`, `1password-cli`, `1password-safari`                                                                                                    |
-| `dev`            | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `lcov`, `orbstack`, `superfile`, `sublime-text`                                                                                                     |
-| `terminal`       | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `ghostty`, `warp`                                                                                                                                   |
-| `mobile-dev`     | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `xcode`, `developer`, `testflight`, `transporter`, `android-studio`                                                                                 |
-| `iwork`          | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `keynote`, `numbers`, `pages`                                                                                                                       |
-| `ms-office`      | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `microsoft-excel`, `microsoft-powerpoint`, `microsoft-word`                                                                                         |
-| `disk`           | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `daisydisk`, `disk-doctor`, `disk-map`, `duplicate-detective`                                                                                       |
-| `media`          | —                                                                                                                                                                                                                                                                                                                                                                                                                                             | `vlc`, `handbrake`                                                                                                                                  |
+| Pack             | Required members                                                                                                                                                                                                                                                                                                                                                                                                                                    | Other members                                                                                                                                       |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `base`           | `mise`, `homebrew`, `bash`, `zsh`, `fish`, `git`, `git-tools`, `ssh`, `cli`, `fnox`, `node`, `touchid-sudo`, `starship`, `network`, `macos-defaults`, `gh`, `ruby`, `fonts`, `mas`, `age`, `bat`, `coreutils`, `curl`, `doggo`, `eza`, `fzf`, `gping`, `httping`, `ipcalc`, `jq`, `lazygit`, `prettyping`, `ripgrep`, `zoxide`, `diff-so-fancy`, `glab`, `btop`, `pstree`, `tree`, `watch`, `wget`, `yq`, `vorssaint`, `pre-commit`, `python`, `uv` | `visual-studio-code`                                                                                                                                |
+| `claude`         | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `claude-desktop`, `claude-cli`, `claude-status`, `codeburn`                                                                                         |
+| `essentials`     | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `alfred`, `easyfind`, `the-unarchiver`, `brave-browser`, `github-desktop`, `google-chrome`, `tailscale`, `taskexplorer`, `battery-health`, `setapp` |
+| `1password-apps` | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `1password`, `1password-cli`, `1password-safari`                                                                                                    |
+| `dev`            | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `lcov`, `orbstack`, `superfile`, `sublime-text`                                                                                                     |
+| `terminal`       | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `ghostty`, `warp`                                                                                                                                   |
+| `mobile-dev`     | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `xcode`, `developer`, `testflight`, `transporter`, `android-studio`                                                                                 |
+| `iwork`          | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `keynote`, `numbers`, `pages`                                                                                                                       |
+| `ms-office`      | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `microsoft-excel`, `microsoft-powerpoint`, `microsoft-word`                                                                                         |
+| `disk`           | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `daisydisk`, `disk-doctor`, `disk-map`, `duplicate-detective`                                                                                       |
+| `media`          | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `vlc`, `handbrake`                                                                                                                                  |
 
 ## The tools
 
@@ -218,8 +218,8 @@ upgrade:ai tasks and the cc* aliases.
   - `~/.claude/output-styles/terse.md` — copy
   - `~/.claude/settings.json` — merge
 - **Tasks:**
-  - `~/.config/mise/tasks/func/claude`
-  - `~/.config/mise/tasks/upgrade/ai`
+  - `~/.config/mise/tasks/func/claude.py`
+  - `~/.config/mise/tasks/upgrade/ai.py`
 - **Defaults:** `settings`, `lists`
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
 - **Settings:** The merge spec adds only `$schema`, the install keys of `env`
@@ -256,12 +256,12 @@ keychain:delete tasks. Each command-line package is a tool of its own.
 - **Packs:** `base` (required)
 - **Files:** none
 - **Tasks:**
-  - `~/.config/mise/tasks/cleanupDS`
-  - `~/.config/mise/tasks/func/backup`
-  - `~/.config/mise/tasks/func/code`
-  - `~/.config/mise/tasks/func/listStartupItems`
-  - `~/.config/mise/tasks/func/zip`
-  - `~/.config/mise/tasks/keychain/delete`
+  - `~/.config/mise/tasks/cleanupDS.py`
+  - `~/.config/mise/tasks/func/backup.py`
+  - `~/.config/mise/tasks/func/code.py`
+  - `~/.config/mise/tasks/func/listStartupItems.py`
+  - `~/.config/mise/tasks/func/zip.py`
+  - `~/.config/mise/tasks/keychain/delete.py`
 - **Defaults:** `projects_dir`
 - **Mise sections:** `[mise.env]`, `[mise.shell_alias]`
 
@@ -361,7 +361,10 @@ dprint, the code formatter, and its global config.
 - **Defaults:** `settings`, `blocks`, `excludes`, `plugins`
 - **Contributes to `visual-studio-code`:** `extensions`
 - **Mise sections:** `[mise.tools]`
-- **Plugins:** The global config extends no other config. The sync finds a
+- **Plugins:** The global config extends no other config. The ruff plugin
+  (`npm:@dprint/ruff`, the block `ruff`) formats each `.py` file, also each
+  Python task below `~/.config/mise/tasks/`. The shuck block formats the other
+  task files, and skips `*.tmpl` and `*.py`. The sync finds a
   plugin by its name, so it keeps the version in the file. `updateall` runs
   `dprint config update` on the file, and that step updates the versions.
 
@@ -577,8 +580,8 @@ its shellenv in bash, zsh and fish.
   - `~/.config/fish/conf.d/05-homebrew.fish` — copy
   - `~/.config/zsh/01a-homebrew.zsh` — copy
 - **Tasks:**
-  - `~/.config/mise/tasks/brew/casks`
-  - `~/.config/mise/tasks/upgrade/brew`
+  - `~/.config/mise/tasks/brew/casks.py`
+  - `~/.config/mise/tasks/upgrade/brew.py`
 - **Mise sections:** `[mise.env]`, `[mise.shell_alias]`
 
 ### `httping`
@@ -709,7 +712,7 @@ mise: its user-level config, its activation in bash, zsh and fish, ~/.zprofile,
 and the entry tasks of the Mac sync.
 
 - **Packs:** `base` (required)
-- **Depends:** `cli`
+- **Depends:** `cli`, `python`, `uv`
 - **Files:**
   - `~/.config/bash/01b-mise.bash` — template
   - `~/.config/fish/conf.d/06-mise.fish` — template
@@ -718,12 +721,12 @@ and the entry tasks of the Mac sync.
   - `~/.config/zsh/01b-mise.zsh` — template
   - `~/.zprofile` — copy
 - **Tasks:**
-  - `~/.config/mise/tasks/_scripts/helpers` — library
-  - `~/.config/mise/tasks/updateall/_default`
-  - `~/.config/mise/tasks/updateall/configs/_default`
-  - `~/.config/mise/tasks/upgrade/macos/download`
-  - `~/.config/mise/tasks/upgrade/macos/upgrade`
-  - `~/.config/mise/tasks/upgrade/power`
+  - `~/.config/mise/tasks/_scripts/helpers.py` — library
+  - `~/.config/mise/tasks/updateall/_default.py`
+  - `~/.config/mise/tasks/updateall/configs/_default.py`
+  - `~/.config/mise/tasks/upgrade/macos/download.py`
+  - `~/.config/mise/tasks/upgrade/macos/upgrade.py`
+  - `~/.config/mise/tasks/upgrade/power.py`
 - **Contributes to `visual-studio-code`:** `extensions`
 - **Mise sections:** `[mise.env]`, `[mise.tools]`, `[mise.bootstrap.packages]`,
   `[mise.shell_alias]`
@@ -737,6 +740,24 @@ and the entry tasks of the Mac sync.
   The `upgrade:*` tasks download and install the macOS updates and apply the
   power
   profile. The aliases are `updateall` and `osx-upgrade`.
+- **Python tasks:** each Mac task is a Python uv script with a `.py` name, and
+  mise removes `.py` from the task name. Each task has
+  `# MISE tools={uv="latest", python="3.14"}`, and the Mac config sets
+  `task.run_auto_install = false`, so the `mise` tool depends on `python` and
+  `uv`: the init stage installs them before the first exit 4. A task that uses
+  a function of the library `helpers.py` (the print functions of the Mac tasks,
+  `task_exists` and `run_task_if_exists`) imports it with this preamble:
+
+  ```python
+  sys.dont_write_bytecode = True
+  sys.path.insert(0, os.path.expanduser("~/.config/mise/tasks/_scripts"))
+  import helpers  # noqa: E402
+  ```
+
+  `func:claude`, `func:code` and `keychain:delete` use no function of the
+  library, so they do not import it. `updateall:configs` imports no library, so
+  it runs before the first sync writes `helpers.py`. It runs under `mise run`
+  and directly, with uv on PATH.
 - **CLI:** `[mise.tools]` installs `github:virajp/bootstrap`, the CLI
   `bootstrap`. mise reads the release tags `bootstrap@X.Y.Z` as the
   versions `X.Y.Z`. `minimum_release_age_excludes` names
@@ -765,12 +786,12 @@ tool of its own.
 - **Depends:** `doggo` (the task `ips:remoteip` runs it)
 - **Files:** none
 - **Tasks:**
-  - `~/.config/mise/tasks/ips/gateway`
-  - `~/.config/mise/tasks/ips/ii`
-  - `~/.config/mise/tasks/ips/ips`
-  - `~/.config/mise/tasks/ips/ipv4`
-  - `~/.config/mise/tasks/ips/ipv6`
-  - `~/.config/mise/tasks/ips/remoteip`
+  - `~/.config/mise/tasks/ips/gateway.py`
+  - `~/.config/mise/tasks/ips/ii.py`
+  - `~/.config/mise/tasks/ips/ips.py`
+  - `~/.config/mise/tasks/ips/ipv4.py`
+  - `~/.config/mise/tasks/ips/ipv6.py`
+  - `~/.config/mise/tasks/ips/remoteip.py`
 - **Mise sections:** `[mise.shell_alias]`
 
 ### `node`
@@ -782,7 +803,7 @@ pnpm and no `PNPM_HOME`, because a repository selects its own package manager.
 - **Files:**
   - `~/.config/aube/config.toml` — copy
 - **Tasks:**
-  - `~/.config/mise/tasks/upgrade/npm`
+  - `~/.config/mise/tasks/upgrade/npm.py`
 - **Contributes to `visual-studio-code`:** `extensions`
 - **Mise sections:** `[mise.settings]`, `[mise.tools]`, `[mise.env]`
 
@@ -906,7 +927,7 @@ pstree, the process tree, with the func:myps task and its myps alias.
 - **Packs:** `base` (required)
 - **Files:** none
 - **Tasks:**
-  - `~/.config/mise/tasks/func/myps`
+  - `~/.config/mise/tasks/func/myps.py`
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
 
 ### `python`
@@ -1002,8 +1023,8 @@ and upgrade tasks.
 - **Packs:** `essentials`
 - **Files:** none
 - **Tasks:**
-  - `~/.config/mise/tasks/tailscale/daemon`
-  - `~/.config/mise/tasks/upgrade/tailscale`
+  - `~/.config/mise/tasks/tailscale/daemon.py`
+  - `~/.config/mise/tasks/upgrade/tailscale.py`
 - **Mise sections:** `[mise.bootstrap.packages]`
 
 ### `taskexplorer`
@@ -1022,7 +1043,7 @@ Telegram, from the Mac App Store.
 - **Depends:** `mas`
 - **Files:** none
 - **Tasks:**
-  - `~/.config/mise/tasks/cleanupTelegram`
+  - `~/.config/mise/tasks/cleanupTelegram.py`
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
 
 ### `testflight`
@@ -1070,9 +1091,10 @@ tree, the directory tree.
 
 ### `uv`
 
-uv through mise, with uv as the pipx backend.
+uv through mise, with uv as the pipx backend. Each Mac task is a uv script, so
+each Mac must have uv.
 
-- **Packs:** `base`
+- **Packs:** `base` (required)
 - **Files:** none
 - **Mise sections:** `[mise.settings]`, `[mise.tools]`, `[mise.env]`
 

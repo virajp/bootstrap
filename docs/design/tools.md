@@ -291,15 +291,14 @@ The rules of the task files:
   `NN-<name>` when no `NN-<name>` exists.
 - A task that a user or another task calls by its name has no prefix, for
   example `git:merge:develop` and `setup:dprint`.
-- On the repo side, each task file is a Python uv script with the `.py`
-  extension, and a template is `<name>.py.tmpl`. mise removes `.py` from the
-  task name. dprint (the block `ruff` of the `python` tool) is the one
-  formatter of each `.py` file: no tool ships a `ruff format` gate, and
+- Each task file is a Python uv script with the `.py` extension, and a
+  template is `<name>.py.tmpl`. mise removes `.py` from the task name. dprint
+  is the one formatter of each `.py` file: on the repo side the block `ruff`
+  of the `python` tool, and on the Mac side the block `ruff` of the global
+  config of `macos/tools/dprint/`. No tool ships a `ruff format` gate, and
   `code:format:40-ruff` is gone. The gates `code:lint:70-ruff` and
   `code:lint:50-pyrefly` run only with a `pyproject.toml` (`requires_found`),
-  and their `# FILES` header excludes `.config/mise/tasks/**`. On the Mac
-  side, each task file is a bash script with no extension until the plan
-  `docs/plans/2026-11-18-python-tasks-mac` moves it to Python.
+  and their `# FILES` header excludes `.config/mise/tasks/**`.
 - A known old copy of a part is a regular file at the old path of its group
   (`test/golden`) or at `<group>/50-local`, whose sha256 is in `replaces` of
   that part, and the tool of the part is selected. `bootstrap migrate` removes
