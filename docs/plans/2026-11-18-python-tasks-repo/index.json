@@ -328,14 +328,14 @@
         "U14"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-19T03:59:01.570Z",
+      "ended": "2026-11-19T04:01:39.917Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "9476e49",
+        "to": "cf07225"
       }
     },
     {
@@ -457,9 +457,9 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-19T03:59:01.535Z",
+      "ended": "2026-11-19T04:02:01.712Z"
     },
     {
       "id": "W5",
