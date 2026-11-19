@@ -2,7 +2,7 @@
 // outside the case pool: the entry task setup:configs with a fake engine, the
 // clone and the version check of the engine, the gate code:lint:60-bootstrap,
 // gate_files.py and the orchestrator code:lint. The cases came from test:repo,
-// lines 5572 to 6214.
+// lines 5572 to 6214. The package also tests the task code:precommit.
 package tasks
 
 import (

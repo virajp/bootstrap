@@ -454,7 +454,8 @@ the module of the test (see "The test cache" below).
   real merge library, and the other merge cases run it with a stub
   `_scripts/merge.py`; the worktree cases run `git:worktree:create` with
   `--no-setup` and `git:worktree:delete`; the LSP cases run `code:lsp:check`,
-  the setup:ai cases `setup:ai`, and the setup case `setup`; the gate_files
+  the setup:ai cases `setup:ai`, the setup case `setup`, and the
+  precommit cases `code:precommit` with and without `--all`; the gate_files
   cases run the working tree's `gate_files.py` in a scratch repository with
   `--debug`; the `run_gate` cases run `code:lint:60-bootstrap`; the orchestrator
   case runs `code:lint` with `--all` and files, and expects exit 2; the Python

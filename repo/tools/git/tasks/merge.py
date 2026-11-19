@@ -198,7 +198,7 @@ def precommit_safety_net():
   if not hooks_passed:
     helpers.print_error()
     helpers.print_error("- A hook failed without changing anything, so it needs a fix by hand.")
-    helpers.print_error("- Run `mise run code:precommit` to see it.")
+    helpers.print_error("- Run `mise run code:precommit --all` to see it.")
     sys.exit(1)
   helpers.print_success()
 

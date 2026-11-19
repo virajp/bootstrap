@@ -64,10 +64,10 @@ The tool also sets:
 
 ## Tasks
 
-| Task              | Use                                                                                         |
-| ----------------- | ------------------------------------------------------------------------------------------- |
-| `setup:precommit` | Install the hooks. `--upgrade` also runs `pre-commit autoupdate`, which updates each `rev`. |
-| `code:precommit`  | Run the hooks on all files.                                                                 |
+| Task              | Use                                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------------- |
+| `setup:precommit` | Install the hooks. `--upgrade` also runs `pre-commit autoupdate`, which updates each `rev`.        |
+| `code:precommit`  | Run the hooks on the uncommitted files (staged, changed and new). `--all` runs them on every file. |
 
 The sync keeps the `rev` of a found block. Thus the `rev` that
 `setup:precommit --upgrade` writes stays at the next sync.
