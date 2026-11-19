@@ -13,9 +13,10 @@ copies it. The schema of `tools.toml` is in
 [`docs/design/tools.md`](../design/tools.md). The rules of the Mac sync are in
 [`docs/design/mac.md`](../design/mac.md).
 
-`bootstrap mac sync` renders the selected tools into `$HOME`, then runs
-`mise bootstrap`. The task `mise run updateall:configs` of the tool `mise` runs
-that command.
+`bootstrap mac sync` renders the selected tools into `$HOME`, and installs
+nothing. The task `mise run updateall:configs` of the tool `mise` runs that
+command, and `updateall` then runs `mise bootstrap`. Only the first setup of a
+Mac, which `bootstrap mac migrate` does, runs `mise bootstrap` itself.
 
 `macos.toml`, at the root of the private `macos-setup` clone, selects the tools:
 
@@ -38,8 +39,8 @@ Each section below gives these items for one tool:
 
 - **Packs:** the packs that hold the tool, or none. `(required)` marks a
   member of `base` that each Mac must have.
-- **Stage:** `migrate` for a tool of the init stage. A tool without this item
-  has
+- **Stage:** `migrate` for a tool of the init stage: the first setup of
+  `bootstrap mac migrate` writes and installs it. A tool without this item has
   no stage of its own. See [`docs/design/mac.md`](../design/mac.md).
 - **Depends:** the tools that the sync adds with this tool.
 - **Files:** each target, and its mode. `copy` is copied on each run.
@@ -735,7 +736,7 @@ and the entry tasks of the Mac sync.
   It is in this tool, because each Mac must have it.
 - **Entry of the Mac sync:** `updateall:configs` runs `bootstrap mac sync`, with
   the flags `--dry-run`, `--no-bootstrap` and `--verbose`. `updateall` upgrades
-  the Mac, and runs `updateall:configs --no-bootstrap` as one step. With the
+  the Mac, and runs `updateall:configs` as one step. With the
   `dprint` tool, it also updates the plugins of `~/.config/dprint/dprint.jsonc`.
   The `upgrade:*` tasks download and install the macOS updates and apply the
   power
@@ -744,7 +745,7 @@ and the entry tasks of the Mac sync.
   mise removes `.py` from the task name. Each task has
   `# MISE tools={uv="latest", python="3.14"}`, and the Mac config sets
   `task.run_auto_install = false`, so the `mise` tool depends on `python` and
-  `uv`: the init stage installs them before the first exit 4. A task that uses
+  `uv`: the first setup installs them before its exit 4. A task that uses
   a function of the library `helpers.py` (the print functions of the Mac tasks,
   `task_exists` and `run_task_if_exists`) imports it with this preamble:
 

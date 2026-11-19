@@ -14,6 +14,7 @@ import (
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/format"
+	"github.com/virajp/bootstrap/cli/internal/macos"
 	"github.com/virajp/bootstrap/cli/internal/manifest"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/projects"
@@ -136,7 +137,13 @@ type PlanResult struct {
 	// a question is pending: the caller asks them, and plans again with the
 	// answers.
 	Pending []questions.Question
+	// MacMigrate: the plan is of mac migrate, which runs no sync. On a Mac
+	// with no manifest, FirstSetup is true, and Apply runs the first setup
+	// of the Mac (macos.FirstSetupFlag) in place of the sync.
+	MacMigrate bool
+	FirstSetup bool
 	// Files are the files that the sync writes, changes or removes, sorted.
+	// For mac migrate, they are the files of the first setup, or none.
 	Files    []target.Planned
 	Before   *Script  // A script that runs after the consent, before the writes.
 	Seeds    []string // The seeds of the removed tools that stay.
@@ -218,7 +225,8 @@ func tmpDir() string {
 // values file. It writes nothing. It gives each problem as an error; the
 // result also comes with an error, for its Warnings.
 func Plan(sd Side, l List, o Options) (*PlanResult, error) {
-	p := &PlanResult{Side: sd}
+	p := &PlanResult{Side: sd, MacMigrate: sd.Mac && l.Init}
+	p.FirstSetup = p.MacMigrate && macos.NeedsFirstSetup(os.Getenv)
 	var st *State
 	if l.Init {
 		if err := p.initValues(); err != nil {
@@ -378,6 +386,9 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 	oldform.Migrating = l.Init
 	oldform.Moving = p.moving()
 	args := SyncArgs(sd.Mac, true, o.NoBootstrap)
+	if p.FirstSetup {
+		args = append(args, macos.FirstSetupFlag)
+	}
 	planned, _, pc := run(args, io.Discard, io.Discard)
 	if pc != fail.OK {
 		// Again, with the output, so the messages show.
@@ -405,6 +416,10 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 	seen := map[string]bool{}
 	for _, ch := range p.Changes {
 		seen[ch.Path] = true
+	}
+	if p.MacMigrate && !p.FirstSetup {
+		// mac migrate writes no file of a tool: bootstrap mac sync does.
+		planned = nil
 	}
 	for _, f := range planned {
 		if strings.HasPrefix(f.Path, tmp+"/") || strings.HasPrefix(f.Path, realTmp+"/") || seen[f.Path] {

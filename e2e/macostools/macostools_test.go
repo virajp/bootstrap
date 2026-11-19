@@ -36,9 +36,6 @@ var (
 	tree string
 	// example is the sample values file.
 	example string
-	// firstExit is the exit code of the first real run: 4 when a tool has
-	// `stage = "init"`, else 0.
-	firstExit int
 	// miseDirs are the real mise folders, so `mise x <tool>@latest`
 	// resolves from the mise cache when a case changes HOME and XDG_*.
 	miseDirs []string
@@ -58,16 +55,6 @@ func setup() error {
 		{"commit", "--quiet", "--no-verify", "-m", "tree"}} {
 		if out, err := harness.GitErr(tree, args...); err != nil {
 			return fmt.Errorf("git %s: %v\n%s", strings.Join(args, " "), err, out)
-		}
-	}
-	tools, err := filepath.Glob(filepath.Join(harness.Root, "macos", "tools", "*", "tools.toml"))
-	if err != nil {
-		return err
-	}
-	stageInit := regexp.MustCompile(`(?m)^stage *= *"init"`)
-	for _, t := range tools {
-		if stageInit.MatchString(harness.ReadFile(t)) {
-			firstExit = 4
 		}
 	}
 	home := os.Getenv("HOME")
@@ -294,7 +281,7 @@ func testRender(t *testing.T) {
 	t.Parallel()
 	c := newCase(t, "render")
 	c.runReal()
-	c.checkExit(firstExit)
+	c.checkExit(0)
 
 	selected := ""
 	if m := toolsLine.FindStringSubmatch(c.logText()); m != nil {
@@ -396,7 +383,9 @@ func hasLine(text, line string) bool {
 	return false
 }
 
-// testInit is case 4: mac migrate migrates the old form, then mac sync runs.
+// testInit is case 4: mac migrate migrates the old form and, with no
+// manifest, writes the first setup (--no-bootstrap: no mise bootstrap, exit
+// 0); then mac sync runs.
 func testInit(t *testing.T) {
 	t.Parallel()
 	c := newCase(t, "init")
@@ -414,7 +403,7 @@ func testInit(t *testing.T) {
 	harness.WriteFile(t, values, strings.Join(out, ""))
 	c.commitConfig()
 	c.engine(c.config, "mac", "migrate", "--yes", "--no-bootstrap")
-	c.checkExit(firstExit)
+	c.checkExit(0)
 	text := harness.ReadFile(values)
 	c.check(hasLine(text, "[tools.mise]") && !strings.Contains(text, "macos-setup]"),
 		"[tools.macos-setup] becomes [tools.mise]", "macos.toml still has the old form")
@@ -478,7 +467,7 @@ func testGitEmail(t *testing.T) {
 			c := newCase(t, tc.name)
 			c.emptyEmail(tc.key)
 			c.runReal()
-			c.checkExit(firstExit)
+			c.checkExit(0)
 			c.runReal()
 			c.checkExit(0)
 			git := filepath.Join(c.home, ".config/git")

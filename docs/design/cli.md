@@ -23,8 +23,8 @@ allow list (the old forms in `internal/oldform`, the old Mac header in
 The engine knows only its frame:
 
 - mise: it generates the mise config of each tool and writes it first, it runs
-  `mise x` and `mise bootstrap --yes`, and on the Mac it needs the standalone
-  mise.
+  `mise x`, and on the Mac it needs the standalone mise. It runs
+  `mise bootstrap --yes` only for the first setup of a Mac.
 - git: the repository, the members, the clone and `bootstrap_commit`.
 - The values folder `.config/bootstrap/` (the Mac values file and its
   overrides file), its schema, the packs, the manifest, the header,
@@ -97,29 +97,29 @@ The kind word tells what the names are: `tool` or `pack`. `add` takes `tool` or
 `pack`. `remove` and `replace` take `tool` only. The other commands take no
 kind word.
 
-| Command                    | Job                                                                                                                                                                                                                                                                                                         |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `migrate`                  | Migrates an old form, or creates the values folder with a table for each member of `base`, removes the known old copies of the test parts, moves the own test tasks into parts, renames the old command of the worktree setup, asks each question without an answer, then syncs. See [`migrate`](#migrate). |
-| `tui`                      | Opens the TUI on the values. It needs a terminal, and stops when `migrate` has a change to make. See [The TUI](#the-tui).                                                                                                                                                                                   |
-| `sync`                     | The sync of the side. When `migrate` has a change to make, `sync` does the `migrate` first. `setup:configs` and `updateall:configs` run it. See [`migrate` before `sync`](#migrate-before-sync).                                                                                                            |
-| `check`                    | Examines the values folder against its schema and runs the check scripts. On the Mac, a dry run of the sync. `--json` reports each stage and its findings.                                                                                                                                                  |
-| `questions [tool…]`        | Lists the questions, their proposals and their answers. Without names, the questions of the selected tools. `--json` prints the envelope with the questions in `data`.                                                                                                                                      |
-| `add tool <tool…>`         | Selects the tools and their dependencies, asks their questions, then syncs.                                                                                                                                                                                                                                 |
-| `add pack <pack…>`         | Selects each member of the packs that is not selected, and their dependencies, asks their questions, then syncs. See [`add` and `remove`](#add-and-remove).                                                                                                                                                 |
-| `remove tool <tool…>`      | Removes the tools, and each dependency that no other tool needs, then syncs. Each seed of a removed tool stays, with a line.                                                                                                                                                                                |
-| `replace tool <old> <new>` | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                                                                                                                                                                                     |
-| `detect`                   | Runs the detect scripts, or on the Mac the package scan, and lists each tool that matches. See [`detect`](#detect).                                                                                                                                                                                         |
-| `list`, `ls`               | Prints the selected tools as a tree. See [`list`](#list). It writes nothing.                                                                                                                                                                                                                                |
-| `config get <key>`         | Prints the value of a key of `.config/bootstrap/`, with its source. See [`config`](#config). There is no `mac config`.                                                                                                                                                                                      |
-| `config set <key> <value>` | Writes a key of `.config/bootstrap/`, and changes nothing else. See [`config`](#config).                                                                                                                                                                                                                    |
-| `config unset <key>`       | Removes a key of `.config/bootstrap/`. See [`config`](#config).                                                                                                                                                                                                                                             |
-| `config show [<file>]`     | Prints `repo.toml`, `tools.toml` or `releases.toml`, or the three files as one table by file name. See [`config`](#config).                                                                                                                                                                                 |
-| `settings`                 | Prints the config file and each setting, with its value and its source. See [The config file](#the-config-file). There is no `mac settings`.                                                                                                                                                                |
-| `contract`                 | Prints the versions of the JSON contract, the version of the engine, the commands that take `--json` and the names of the task ports. It needs no repository, no config file and no clone.                                                                                                                  |
-| `catalog`                  | Prints the tools of the clone by category. `--json` also gives the categories, the questions and defaults of each tool, and the packs. It needs no repository.                                                                                                                                              |
-| `describe`                 | Prints the values of `repo.toml`, the selected tools with their values, the members, the task ports of the repository, each port present or missing. Only `--json` also gives its language servers, in `lsp`.                                                                                               |
-| `lsp`                      | Prints the language servers of the selected tools of the repository, one line each: the server, its tool, its command and its extensions. See [`lsp`](#lsp).                                                                                                                                                |
-| `version`, `--version`     | Prints the version. There is no `mac version`.                                                                                                                                                                                                                                                              |
+| Command                    | Job                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `migrate`                  | Migrates an old form, or creates the values folder with a table for each member of `base`, removes the known old copies of the test parts, moves the own test tasks into parts, renames the old command of the worktree setup, asks each question without an answer, then syncs (`mac migrate` does not sync). See [`migrate`](#migrate). |
+| `tui`                      | Opens the TUI on the values. It needs a terminal, and stops when `migrate` has a change to make. See [The TUI](#the-tui).                                                                                                                                                                                                                 |
+| `sync`                     | The sync of the side. When `migrate` has a change to make, `sync` does the `migrate` first. `setup:configs` and `updateall:configs` run it. See [`migrate` before `sync`](#migrate-before-sync).                                                                                                                                          |
+| `check`                    | Examines the values folder against its schema and runs the check scripts. On the Mac, a dry run of the sync. `--json` reports each stage and its findings.                                                                                                                                                                                |
+| `questions [tool…]`        | Lists the questions, their proposals and their answers. Without names, the questions of the selected tools. `--json` prints the envelope with the questions in `data`.                                                                                                                                                                    |
+| `add tool <tool…>`         | Selects the tools and their dependencies, asks their questions, then syncs.                                                                                                                                                                                                                                                               |
+| `add pack <pack…>`         | Selects each member of the packs that is not selected, and their dependencies, asks their questions, then syncs. See [`add` and `remove`](#add-and-remove).                                                                                                                                                                               |
+| `remove tool <tool…>`      | Removes the tools, and each dependency that no other tool needs, then syncs. Each seed of a removed tool stays, with a line.                                                                                                                                                                                                              |
+| `replace tool <old> <new>` | Runs the migrate script of `<new>` for `<old>`, swaps the tools, then syncs. See [`replace`](#replace).                                                                                                                                                                                                                                   |
+| `detect`                   | Runs the detect scripts, or on the Mac the package scan, and lists each tool that matches. See [`detect`](#detect).                                                                                                                                                                                                                       |
+| `list`, `ls`               | Prints the selected tools as a tree. See [`list`](#list). It writes nothing.                                                                                                                                                                                                                                                              |
+| `config get <key>`         | Prints the value of a key of `.config/bootstrap/`, with its source. See [`config`](#config). There is no `mac config`.                                                                                                                                                                                                                    |
+| `config set <key> <value>` | Writes a key of `.config/bootstrap/`, and changes nothing else. See [`config`](#config).                                                                                                                                                                                                                                                  |
+| `config unset <key>`       | Removes a key of `.config/bootstrap/`. See [`config`](#config).                                                                                                                                                                                                                                                                           |
+| `config show [<file>]`     | Prints `repo.toml`, `tools.toml` or `releases.toml`, or the three files as one table by file name. See [`config`](#config).                                                                                                                                                                                                               |
+| `settings`                 | Prints the config file and each setting, with its value and its source. See [The config file](#the-config-file). There is no `mac settings`.                                                                                                                                                                                              |
+| `contract`                 | Prints the versions of the JSON contract, the version of the engine, the commands that take `--json` and the names of the task ports. It needs no repository, no config file and no clone.                                                                                                                                                |
+| `catalog`                  | Prints the tools of the clone by category. `--json` also gives the categories, the questions and defaults of each tool, and the packs. It needs no repository.                                                                                                                                                                            |
+| `describe`                 | Prints the values of `repo.toml`, the selected tools with their values, the members, the task ports of the repository, each port present or missing. Only `--json` also gives its language servers, in `lsp`.                                                                                                                             |
+| `lsp`                      | Prints the language servers of the selected tools of the repository, one line each: the server, its tool, its command and its extensions. See [`lsp`](#lsp).                                                                                                                                                                              |
+| `version`, `--version`     | Prints the version. There is no `mac version`.                                                                                                                                                                                                                                                                                            |
 
 | Flag                            | Commands                                                                                                                                           | Effect                                                                                                                                   |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -130,7 +130,7 @@ kind word.
 | `--answer <tool>.<key>=<value>` | `migrate`, `sync`, `add`, `replace`, `detect --add`                                                                                                | The answer of a question. The flag can repeat. `--answer <tool>.<key>=` gives an empty answer, only for an optional or a group question. |
 | `--json`                        | `contract`, `catalog`, `describe`, `lsp`, `check`, `questions`, `mac questions`, `config`, `migrate`, `sync`, `add`, `remove`, `replace`, `detect` | Prints one JSON envelope on stdout, and each other line on stderr, for an AI agent. See [The JSON contract](#the-json-contract).         |
 | `--format json\|yaml\|toml`     | `config get`, `config show`                                                                                                                        | The output format. The default is `json` when stdout is not a terminal, else `toml`. With `--json`, it is a usage error (code 2).        |
-| `--no-bootstrap`                | each `mac` command except `questions`                                                                                                              | Skips each `mise bootstrap` step.                                                                                                        |
+| `--no-bootstrap`                | each `mac` command except `questions`                                                                                                              | Skips the `mise bootstrap` of the first setup of a Mac. See [mac.md](mac.md#the-first-setup-and-exit-4).                                 |
 | `--jobs <n>`                    | each command except `questions`, `list`, `config`, `contract`, `catalog`, `describe`, `lsp` and `version`                                          | The jobs at a time. The default is 2 × the CPU count.                                                                                    |
 | `--verbose`                     | `migrate`, `tui`, `sync`, `check`, `add`, `remove`, `replace`, `detect`                                                                            | Sets `BOOTSTRAP_VERBOSE=1`. See [The output of a run](#the-output-of-a-run).                                                             |
 | `--config <path>`               | each command except `version` and `contract`                                                                                                       | The config file. See [The config file](#the-config-file).                                                                                |
@@ -229,8 +229,9 @@ for it, and the TUI calls the same functions:
   migration it puts back `.config/bootstrap.toml`,
   `.config/bootstrap.overrides.toml` and `.config/repo-generated.tsv`, and
   removes `.config/bootstrap/`. The other files stay as the sync left them. The
-  one exception is code 4 of the Mac (the stage `migrate` changed): the sync did
-  its work, so the values file stays.
+  one exception is code 4 of the Mac (a new terminal is necessary): the sync
+  did its work, so the values file stays. `mac migrate` runs no sync: on a Mac
+  with no manifest, `Apply` runs the first setup in its place, else nothing.
   `Apply` also gives the outcome of each target of the sync, also when the
   sync fails, for the `data` of `--json`. The front-ends give them from
   `RunWith`.
@@ -374,7 +375,9 @@ Mac. It takes no tool or pack names: `add tool` and `add pack` select tools.
 6. The command asks each question of a selected tool that has no answer. See
    [The questions](#the-questions).
 7. It plans the sync, shows the change list, and after the consent writes the
-   changes and syncs.
+   changes and syncs. `mac migrate` does not sync: on a Mac with no manifest it
+   runs the first setup, and it ends with `Next: run bootstrap mac sync`. See
+   [mac.md](mac.md#the-first-setup-and-exit-4).
 
 `migrate` never opens the TUI, in a terminal or not. A person and an agent
 run the same steps. In a terminal, the command asks each question without an
@@ -409,6 +412,8 @@ stops it with code 2, with the hint `--answer`. `sync --answer` is a usage error
 (code 2) when `migrate` has no
 change to make. `sync --dry-run` shows the change list and writes nothing.
 `sync --json` keeps the plan and the outcomes in `data`, as `migrate --json`.
+`mac migrate` runs no sync, so after it `mac sync` runs its own sync, unless
+the migrate was a first setup that stopped with exit 4.
 `check` does not migrate: it stops with code 2 and "run bootstrap migrate" on
 an old form.
 
@@ -1269,7 +1274,7 @@ The engine runs these commands:
 | Both    | `mise x -- env -0` once for each folder of the scripts of a tool, then `bash <script>`. See [The scripts of a tool](#the-scripts-of-a-tool).     |
 | `repo`  | `mise x -- which <formatter>` and `mise x -- bash -c <formatter command>`. See [The formatter](#the-formatter).                                  |
 | `repo`  | `describe`: `mise tasks ls --json --no-global --hidden` of the `mise` of `PATH`, in the repository. See [The JSON contract](#the-json-contract). |
-| `macos` | `mise bootstrap --yes` of the `mise` of `PATH`, in `$HOME`.                                                                                      |
+| `macos` | The first setup: `mise bootstrap --yes` of the `mise` of `PATH`, in `$HOME`.                                                                     |
 | `macos` | `mac detect`: `brew leaves`, `brew list`, `mas list` and `mise ls` of `PATH`, in `$HOME`. See [`detect`](#detect).                               |
 
 ## The scripts of a tool
@@ -1281,7 +1286,7 @@ from the clone, and never copies them.
 | -------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `derive`             | Each sync and each plan, before the render.                  | One JSON object: the derived values of the tool. It can have a `mise` and a `mise_env` table, which merge into the mise config of the tool. See [mise.md](mise.md). |
 | `check`              | `sync` and `check`, before a write.                          | Exit 0. Or each line of stdout is a message, and the exit code is 2.                                                                                                |
-| `after`              | Mac only: after `mise bootstrap` of each stage.              | Nothing, or `{ "restart": "<reason>" }`, which asks for a new terminal (exit 4). See [mac.md](mac.md).                                                              |
+| `after`              | Mac only: at the end of a sync, and of a first setup.        | Nothing, or `{ "restart": "<reason>" }`, which asks for a new terminal (exit 4). See [mac.md](mac.md).                                                              |
 | `detect`             | Repo side, `detect`, and `check` for the projects of a tool. | `{ "result": "match" \| "none" \| "mismatch", "evidence": [...], "message": "..." }`.                                                                               |
 | `migrate-<old tool>` | `replace tool <old tool> <this tool>` only.                  | Exit 0. It moves the repository from the old tool to this tool.                                                                                                     |
 
@@ -1880,8 +1885,9 @@ projects of each tool, and prints a warning for each link that no longer
 matches. When `BOOTSTRAP_CLONE` is not set, the check scripts do not run, and a
 warning says so.
 
-**The step of `mac sync`.** `mac sync` prints `▸ Running mise bootstrap --yes`
-before the command and `✔ mise bootstrap done` after a success. The output of
+**The step of the first setup.** The first setup of a Mac prints
+`▸ Running mise bootstrap --yes` before the command and `✔ mise bootstrap done`
+after a success. The output of
 mise stays as it is. A failure is the error `✗ mise bootstrap failed with exit
 code <rc>`.
 
@@ -1948,15 +1954,15 @@ is a terminal, and never with `--json`.
 | The check scripts, or the dry run of the Mac | `Checking ...`                        | `check`                                                                    |
 
 A step that asks the user for input never spins: the questions and the consent
-come between the spinners. The Mac sync with its `mise bootstrap` steps does
-not spin, because a step can ask for a password; with `--no-bootstrap`, it
-spins.
+come between the spinners. The first setup of a Mac does not spin, because
+its `mise bootstrap` can ask for a password; with `--no-bootstrap`, it spins.
 
 ## The exit codes
 
 A failure of one file does not stop the other files. A run returns the highest
 code of all its failures. This section is the one place of the codes 1, 2, 3
-and 5. Code 4 is only for the Mac side: see [mac.md](mac.md#stages-and-exit-4).
+and 5. Code 4 is only for the Mac side: see
+[mac.md](mac.md#the-first-setup-and-exit-4).
 
 | Code | Meaning                                                                                                |
 | ---- | ------------------------------------------------------------------------------------------------------ |

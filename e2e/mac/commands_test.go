@@ -77,8 +77,15 @@ func caseInitAnswer(c *mcase) {
 	c.mac("init", "--yes", "--no-bootstrap", "--answer", "owner.token=abc")
 	c.exit(0)
 	c.check("the answer is in macos.toml", hasLine(c.values, `token = "abc"`))
-	c.check("init synced the files", isFile(c.home+"/.config/owner/data.json"))
-	c.check("init set bootstrap_commit", hasStr(c.values, commitLine()))
+	c.has("Next: run bootstrap mac sync")
+	c.check("init writes no file of a tool", !exists(c.home+"/.config/owner/data.json"))
+	c.check("init sets no bootstrap_commit", !hasStr(c.values, "bootstrap_commit"))
+	c.git("-C", c.cfg, "add", "-A")
+	c.git("-C", c.cfg, "commit", "--quiet", "--no-verify", "-m", "answered")
+	c.runReal()
+	c.exit(0)
+	c.check("the sync writes the files", isFile(c.home+"/.config/owner/data.json"))
+	c.check("the sync sets bootstrap_commit", hasStr(c.values, commitLine()))
 	c.runDry()
 	c.exit(0)
 }
@@ -93,7 +100,7 @@ func caseInitYesMissing(c *mcase) {
 }
 
 func caseInitNoYes(c *mcase) {
-	c.useConfig("contrib")
+	c.oldMacValues()
 	c.mac("init", "--no-bootstrap")
 	c.exit(2)
 	c.has("changes need --yes")
@@ -101,10 +108,11 @@ func caseInitNoYes(c *mcase) {
 }
 
 func caseInitDryRun(c *mcase) {
-	c.useConfig("contrib")
+	c.useConfig("init")
 	c.mac("init", "--dry-run")
 	c.exit(0)
-	c.has("new     " + c.home + "/.config/owner/data.json")
+	c.has("new     " + c.home + "/.config/init/initrc")
+	c.lacks(c.home + "/.config/core/values.txt")
 	c.has("changes, nothing written")
 	c.check("nothing written", !exists(c.home+"/.config"))
 }
@@ -135,11 +143,13 @@ func caseInitMigrate(c *mcase) {
 	c.check("config_path in [tools.mise]", hasLine(c.values, `config_path = "~/macos-setup"`))
 	c.check("the [tools.mise] table", hasLine(c.values, "[tools.mise]"))
 	c.check("the header comment stays", hasLine(c.values, "# My Mac."))
-	c.check("init synced the files", isFile(c.home+"/.config/opt/opt.txt"))
+	c.check("init writes no file of a tool", !exists(c.home+"/.config/opt/opt.txt"))
+	c.has("Next: run bootstrap mac sync")
 	c.git("-C", c.cfg, "add", "-A")
 	c.git("-C", c.cfg, "commit", "--quiet", "--no-verify", "-m", "migrated")
 	c.runReal()
 	c.exit(0)
+	c.check("the sync writes the files", isFile(c.home+"/.config/opt/opt.txt"))
 }
 
 func caseInitDirtyValues(c *mcase) {
@@ -164,7 +174,8 @@ func caseInitNew(c *mcase) {
 	c.check("mise is selected", hasLine(c.values, "[tools.mise]"))
 	c.check("merger, a member of base that is not required, is selected", hasLine(c.values, "[tools.merger]"))
 	c.check("opt is not selected", !hasStr(c.values, "[tools.opt]"))
-	c.check("init synced the files", isFile(c.home+"/.config/core/values.txt"))
+	c.check("init writes no file of a tool", !exists(c.home+"/.config/core/values.txt"))
+	c.has("Next: run bootstrap mac sync")
 }
 
 func caseInitNames(c *mcase) {

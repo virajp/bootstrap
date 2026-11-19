@@ -15,10 +15,13 @@ A Mac uses `bootstrap` in two ways, in this sequence:
 
 1. **Adoption and update, by an AI agent.** The agent selects the tools with the
    owner, and runs `bootstrap mac migrate`. That command writes the values file
-   `macos.toml`, then syncs the Mac.
+   `macos.toml`. It does not sync. On a Mac where no sync finished, it does the
+   first setup: it writes the shells, Homebrew and mise, and runs
+   `mise bootstrap --yes`. Then the owner runs `bootstrap mac sync`.
 2. **Sync, each time after that, by a task.** `mise run updateall:configs` runs
-   `bootstrap mac sync`. It renders the selected tools into `$HOME`, then runs
-   `mise bootstrap`. It needs no agent.
+   `bootstrap mac sync`. It renders the selected tools into `$HOME`, and
+   installs nothing. `updateall` runs it, then installs and upgrades the tools
+   with `mise bootstrap`. It needs no agent.
 
 ## Files in this folder
 
@@ -31,7 +34,7 @@ A Mac uses `bootstrap` in two ways, in this sequence:
 Each rule of the sync has one place in `docs/design/`:
 
 - [`docs/design/mac.md`](../design/mac.md): the keys of `macos.toml`, the
-  selection, the stages, exit 4 and the symlink rule.
+  selection, the first setup, exit 4 and the symlink rule.
 - [`docs/design/cli.md`](../design/cli.md): the commands of the
   CLI `bootstrap` and the exit codes.
 - [`docs/design/packs.md`](../design/packs.md): the packs.
@@ -231,21 +234,31 @@ exit 4.
 
 ### Step 4: Do the real run of `bootstrap mac migrate`
 
-Ask the owner whether to run the sync. Then run the same command with `--yes`
-in place of `--dry-run`:
+Ask the owner whether to write the changes. Then run the same command with
+`--yes` in place of `--dry-run`:
 
 ```text
 bootstrap mac migrate --answer <tool>.<key>=<value> … --yes
 ```
 
-On a first run, exit 4 is usual: the init stage changed the shells, Homebrew or
-mise. Ask the owner to open a new terminal (the login shell changed). Then run
-`mise run updateall:configs`. The first run wrote that task and
-`MACOS_SETUP_REPO_PATH` into the mise config. Other exit codes are in
-[Exit codes](#exit-codes).
+On a Mac where no sync finished, the command does the first setup, and exit 4
+is usual: `mise bootstrap` installed Homebrew, the shells and mise, and the
+login shell changed. Ask the owner to open a new terminal. Other exit codes are
+in [Exit codes](#exit-codes).
 
-Pass: exit 0, and `bootstrap_commit` of `macos.toml` is not empty. A failed run
-does not set it.
+Then sync the Mac. Run this command in the new terminal:
+
+```text
+bootstrap mac sync
+```
+
+The first setup wrote the task `updateall:configs` and
+`MACOS_SETUP_REPO_PATH` into the mise config, so `mise run updateall:configs`
+also works. Then ask the owner to run `updateall`, which installs the tools of
+the sync.
+
+Pass: `bootstrap mac sync` exits 0, and `bootstrap_commit` of `macos.toml` is
+not empty. A failed run does not set it.
 
 ### Step 5: Add the packs and the tools
 
@@ -321,12 +334,12 @@ Do each command of these items in the clone.
    old form, for example a file without `format = 2`, the `[packs.*]` tables,
    or the table of the old Mac entry tool to `[tools.mise]` (see
    `docs/sync/migrate.md`). Read the change list with the owner. Pass: exit 0.
-6. Ask the owner whether to run the sync. Then do the real run: the same command
-   with `--yes` in place of `--dry-run`. Pass: exit 0. On exit 4, the owner
-   opens
-   a new terminal, and you run `mise run updateall:configs`. Then add the new
-   tools of item 3 with `bootstrap mac add tool <tool…> --answer … --dry-run`,
-   and the same command with `--yes`.
+6. Ask the owner whether to write the changes. Then do the real run: the same
+   command with `--yes` in place of `--dry-run`. Pass: exit 0. `mac migrate`
+   does not sync, so then run `bootstrap mac sync`. Pass: exit 0. Then add the
+   new tools of item 3 with
+   `bootstrap mac add tool <tool…> --answer … --dry-run`, and the same command
+   with `--yes`.
 7. Each sync with a new commit changes `macos.toml`. On a Mac that
    [`migrate-dotfiles.md`](migrate-dotfiles.md) moved, the links stay, so each
    sync also writes through them into `dotfiles/` of the clone. That folder is
@@ -337,14 +350,15 @@ Do each command of these items in the clone.
 
 ## Exit codes
 
-| Code | Cause                                          | Action                                                                                                                                  |
-| ---- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| 0    | Done, or nothing to change.                    | Continue.                                                                                                                               |
-| 1    | Another failure, for example a file error.     | Read the lines on stderr.                                                                                                               |
-| 2    | A usage error, or a config that breaks a rule. | Read the message. Correct `macos.toml`, or tell the `bootstrap` owner about a bad tool. For `run bootstrap mac migrate`, do the update. |
-| 3    | A tool or a pack that `macos/` does not have.  | Correct the `[tools.*]` tables, or the names of the command.                                                                            |
-| 4    | The init stage changed.                        | Open a new terminal, then run `mise run updateall:configs`.                                                                             |
-| 5    | The clone or the fetch failed.                 | Examine the network and the access.                                                                                                     |
+| Code | Cause                                                                             | Action                                                                                                                                  |
+| ---- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | Done, or nothing to change.                                                       | Continue.                                                                                                                               |
+| 1    | Another failure, for example a file error.                                        | Read the lines on stderr.                                                                                                               |
+| 2    | A usage error, or a config that breaks a rule.                                    | Read the message. Correct `macos.toml`, or tell the `bootstrap` owner about a bad tool. For `run bootstrap mac migrate`, do the update. |
+| 3    | A tool or a pack that `macos/` does not have.                                     | Correct the `[tools.*]` tables, or the names of the command.                                                                            |
+| 4    | A new terminal is necessary: after the first setup, or when a script asks for it. | Open a new terminal, then run the next command that the message names.                                                                  |
+| 5    | The clone or the fetch failed.                                                    | Examine the network and the access.                                                                                                     |
 
 A failure of one file does not stop the other files. After a failure, the
-manifest and `bootstrap_commit` stay as they are, and no `mise bootstrap` runs.
+manifest and `bootstrap_commit` stay as they are. A first setup with a failure
+runs no `mise bootstrap`.

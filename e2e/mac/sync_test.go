@@ -323,7 +323,7 @@ func caseMiseDeselected(c *mcase) {
 	file := c.home + "/.config/mise/conf.d/init/mise.toml"
 	c.useConfig("init")
 	c.runReal()
-	c.exit(4)
+	c.exit(0)
 	c.check("the mise config is written", isFile(file))
 	c.useConfig("-")
 	c.runReal()
@@ -371,11 +371,11 @@ func caseValuesDependency(c *mcase) {
 	head := synced("initdep/files/.config/initdep/items.txt.tmpl")
 	c.useConfig("dep")
 	c.runReal()
-	c.exit(4)
+	c.exit(0)
 	c.file(items, head+"\nitems=a,b,y,x,")
 	c.valuesFile("[tools.init]", "[tools.initdep]", `items = [ "x", "a" ]`)
 	c.runReal()
-	c.exit(4)
+	c.exit(0)
 	c.file(items, head+"\nitems=a,b,x,")
 }
 
@@ -632,49 +632,86 @@ func caseScriptsAfter(c *mcase) {
 	c.exit(0)
 }
 
-// ---- init stage -------------------------------------------------------------
+// ---- first setup ------------------------------------------------------------
 
-func caseInitStage(c *mcase) {
-	c.seedManifest("opt\t.config/opt/opt.txt")
+// logMise puts a mise first on PATH that logs its arguments to <log>. Its
+// path ends with .local/bin/mise, as the sync needs.
+func (c *mcase) logMise(log string) {
+	bin := c.dir + "/fake/.local/bin"
+	c.write(bin+"/mise", harness.Lines("#!/bin/sh", `echo "$@" >> "`+log+`"`))
+	c.chmod(bin+"/mise", 0o755)
+	c.prependPath(bin)
+}
+
+func caseFirstSetup(c *mcase) {
+	log := c.dir + "/mise.log"
 	c.useConfig("init")
-	c.runReal()
+	c.logMise(log)
+	c.mac("migrate", "--yes")
 	c.exit(4)
-	c.has("open a new terminal, then run: mise run updateall:configs")
+	c.has("the first setup is done: open a new terminal, then run: bootstrap mac sync")
+	c.check("mise bootstrap ran", harness.ReadFile(log) == "bootstrap --yes\n")
 	c.check("the init files are written", isFile(c.home+"/.config/init/initrc"))
 	c.check("the init stage mise file is written", isFile(c.home+"/.config/mise/conf.d/init/mise.toml"))
 	c.check("a dependency of the init tool renders in the init stage", isFile(c.home+"/.config/initdep/dep.txt"))
 	c.check("the core targets are not written", !exists(c.home+"/.config/core/values.txt"))
-	c.check("the lines of other tools stay", hasLine(c.manifest, "opt\t.config/opt/opt.txt"))
 	c.check("the init lines are written", hasLine(c.manifest, "init\t.config/init/initrc"))
 	c.check("the dependency lines are written", hasLine(c.manifest, "initdep\t.config/initdep/dep.txt"))
-	c.check("no commit after a stop", !hasStr(c.values, "bootstrap_commit"))
+	c.check("no commit after the first setup", !hasStr(c.values, "bootstrap_commit"))
+	c.mac("migrate", "--yes")
+	c.exit(0)
+	c.has("Next: run bootstrap mac sync")
+	c.check("a second migrate runs no first setup", harness.ReadFile(log) == "bootstrap --yes\n")
+	c.syncWith(nil)
+	c.exit(0)
+	c.lacks("no sync finished on this Mac yet")
+	c.check("the sync writes the core targets", isFile(c.home+"/.config/core/values.txt"))
+	c.check("the sync sets the commit", hasStr(c.values, commitLine()))
+	c.check("the sync runs no mise bootstrap", harness.ReadFile(log) == "bootstrap --yes\n")
+}
+
+func caseFirstSetupNoBootstrap(c *mcase) {
+	c.useConfig("init")
+	c.mac("migrate", "--yes", "--no-bootstrap")
+	c.exit(0)
+	c.lacks("open a new terminal")
+	c.has("Next: run bootstrap mac sync")
+	c.check("the init files are written", isFile(c.home+"/.config/init/initrc"))
+	c.check("the core targets are not written", !exists(c.home+"/.config/core/values.txt"))
+}
+
+func caseFirstSetupFail(c *mcase) {
+	c.useConfig("init")
+	c.mkdir(c.home + "/.config/init/initrc")
+	c.mac("migrate", "--yes", "--no-bootstrap")
+	c.exit(1)
+	c.lacks("open a new terminal")
+	c.check("no other file", !exists(c.home+"/.config/core/values.txt"))
+	c.check("no manifest write", !exists(c.manifest))
+}
+
+func caseSyncBeforeFirstSetup(c *mcase) {
+	c.useConfig("init")
 	c.runReal()
 	c.exit(0)
-	c.lacks("bootstrap: open a new terminal")
-	c.check("the second run writes the core targets", isFile(c.home+"/.config/core/values.txt"))
+	c.has("no sync finished on this Mac yet: run bootstrap mac migrate first")
+	c.check("the init files are written", isFile(c.home+"/.config/init/initrc"))
+	c.check("the core targets are written in the same run", isFile(c.home+"/.config/core/values.txt"))
+	c.check("the commit is set", hasStr(c.values, commitLine()))
+	c.runReal()
+	c.exit(0)
+	c.lacks("no sync finished on this Mac yet")
 }
 
 func caseInitChmod(c *mcase) {
 	c.useConfig("init")
 	c.runReal()
-	c.exit(4)
-	c.runReal()
 	c.exit(0)
 	c.chmod(c.home+"/.config/init/initrc", 0o600)
 	c.runReal()
-	c.exit(4)
+	c.exit(0)
 	c.has("chmod 644  ~/.config/init/initrc")
-	c.has("open a new terminal, then run: mise run updateall:configs")
-}
-
-func caseInitFail(c *mcase) {
-	c.useConfig("init")
-	c.mkdir(c.home + "/.config/init/initrc")
-	c.runReal()
-	c.exit(1)
-	c.lacks("bootstrap: open a new terminal")
-	c.check("no later stage", !exists(c.home+"/.config/core/values.txt"))
-	c.check("no manifest write", !exists(c.manifest))
+	c.lacks("open a new terminal")
 }
 
 // ---- dir_perm and perm: the ssh folder --------------------------------------
