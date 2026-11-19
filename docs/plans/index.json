@@ -2,36 +2,19 @@
   "format": 1,
   "plans": [
     {
-      "id": "2026-11-18-python-tasks-foundation",
-      "folder": "docs/plans/archived/2026-11-18-python-tasks-foundation",
-      "kind": "change",
-      "title": "The Python task libraries and the rules of a Python task",
-      "target_repo": null,
-      "priority": 10,
-      "status": "COMPLETE",
-      "started": "2026-11-18T16:45:25.920Z",
-      "ended": "2026-11-18T18:07:02.795Z",
-      "gaps": {
-        "open": 0,
-        "moved_to": []
-      },
-      "requires": [],
-      "backlog": [],
-      "backlog_pieces": [
-        "B30"
-      ]
-    },
-    {
       "id": "2026-11-18-python-tasks-repo",
-      "folder": "docs/plans/2026-11-18-python-tasks-repo",
+      "folder": "docs/plans/archived/2026-11-18-python-tasks-repo",
       "kind": "change",
       "title": "The shipped tasks of repo/tools in Python",
       "target_repo": null,
       "priority": 20,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-18T18:10:40.780Z",
-      "ended": "",
-      "gaps": null,
+      "ended": "2026-11-19T05:00:22.431Z",
+      "gaps": {
+        "open": 0,
+        "moved_to": []
+      },
       "requires": [
         "2026-11-18-python-tasks-foundation"
       ],
