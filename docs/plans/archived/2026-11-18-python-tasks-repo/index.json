@@ -15,8 +15,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-18 23:41 in .worktrees/all-2026-11-18-2214"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-19 — d967e35 a4aa7b2 7cbe495 468d371 89abd90 121dffe 0a2f507 960bee7 b421abd b1bf492 362c0e4 d541c47 f3bb6be"
   },
   "consent": {
     "merge": true,
