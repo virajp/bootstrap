@@ -384,11 +384,11 @@
         "U11"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-19T04:39:38.684Z",
+      "ended": "2026-11-19T04:56:49.432Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U13",
@@ -469,9 +469,9 @@
     },
     {
       "id": "W6",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-19T04:39:38.650Z",
+      "ended": "2026-11-19T04:57:10.218Z"
     }
   ],
   "shared_files": [
@@ -725,6 +725,15 @@
       "rejected": "Leave the docs as they are and let plan 3 write the Mac rules",
       "units": [
         "U11"
+      ]
+    },
+    {
+      "id": "D24",
+      "decision": "Q8: K1 lists the hidden library as `_scripts:helpers.py`, because the user-level Mac sync ships a shell ~/.config/mise/tasks/_scripts/helpers that collides with it; accept K1?",
+      "ruling": "Accept it: record K1 as passed except the `_scripts:helpers.py` name of a hidden library, which the user-level Mac helpers cause and plan 3 removes — the plan lands now.",
+      "rejected": "Hold the landing until plan 3 has removed the user-level shell helpers",
+      "units": [
+        "U12"
       ]
     }
   ],
