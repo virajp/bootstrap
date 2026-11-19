@@ -224,10 +224,15 @@ The `git` tool holds the branch model. The engine has no branch rule.
   (`bootstrap config get`): the root and each member read their own
   values. A read failure stops the merge with code 1. Without an engine that
   answers, for example one older than 4.0.0, the merge stops with code 2.
-- A merge task stops before it touches a branch when the git top level of
-  `MISE_ORIGINAL_CWD` is not the git top level of `MISE_PROJECT_ROOT`. In a
-  submodule without that task, mise runs the root's task in the root folder,
-  and the task would land a branch of the root.
+- A merge task stops before it touches a branch when `MISE_ORIGINAL_CWD` is
+  inside the tree of the git top level of `MISE_PROJECT_ROOT`, but has another
+  git top level. In a submodule without that task, mise runs the root's task in
+  the root folder, and the task would land a branch of the root.
+  `MISE_ORIGINAL_CWD` is the folder of the shell, also with
+  `mise run --cd <folder>` and `mise -C <folder>`, and no variable gives
+  `<folder>`. Thus a run from a folder outside the tree passes, for example
+  the merge of a member that `setup:configs --all` runs from the root, and the
+  stop cannot find a `--cd` into a submodule without the task.
 - `landing` selects `direct-merge` (local merge and push, the default),
   `direct-commit` (the same merge) or `pr` (push and open a pull request with
   `gh` or `glab`). The schema allows no other value. The header names the

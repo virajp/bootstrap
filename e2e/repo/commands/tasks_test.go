@@ -645,6 +645,66 @@ func gitTask(c *rc.Case, args ...string) int {
 	return run{dir: c.Consumer, env: env, trunc: true}.do(c, append([]string{"mise", "run"}, args...)...)
 }
 
+// gitTaskIn runs `mise run <args>` in <dir>, as gitTask does in the consumer.
+func gitTaskIn(c *rc.Case, dir string, args ...string) int {
+	env := harness.SetEnv(harness.Env(), "MISE_ENV", "MISE_ORIGINAL_CWD", "MISE_TASK_NAME", "MISE_TASK_DIR",
+		"MISE_TASK_FILE", "MISE_CONFIG_ROOT", "FORCE_COLOR", "BOOTSTRAP_BIN="+harness.Bin)
+	return run{dir: dir, env: env, trunc: true}.do(c, append([]string{"mise", "run"}, args...)...)
+}
+
+// The merge tasks with the real mise: `mise run --cd <repo>` from another
+// repository lands the branch, and a run inside a nested repository without the
+// task stops before it changes a branch. The cases remove the hook config, so
+// the hook safety net does not run.
+func TestMergeRunCd(t *testing.T) {
+	prepare := synced(func(c *rc.Case) int {
+		_ = os.Remove(c.Path(".config/pre-commit-config.yaml"))
+		c.CommitConsumer()
+		git(c, c.Consumer, "checkout", "--quiet", "-b", "feature")
+		git(c, c.Consumer, "commit", "--quiet", "--no-verify", "--allow-empty", "-m", "feature")
+		return 0
+	})
+	rc.Run(t, rc.Spec{Name: "git:merge:main with mise run --cd from another repository", Values: devValues, Call: prepare,
+		Check: func(c *rc.Case) {
+			// The shell is in another git repository, as the root is when
+			// setup:configs --all lands the sync of a member.
+			other := filepath.Join(c.Dir, "other")
+			mkdir(c, other)
+			git(c, other, "init", "--quiet", "-b", "main")
+			got := gitTaskIn(c, other, "--cd", c.Consumer, "git:merge:main", "feature")
+			c.CheckThat("run --cd: exits 0", got == 0)
+			c.CheckThat("run --cd: no stop for another repository", c.LogLacks("is a task of"))
+			c.CheckThat("run --cd: one merge on main", plainGit(c.Consumer, "rev-list", "--merges", "--count", "main") == "1")
+		}})
+	rc.Run(t, rc.Spec{Name: "git:merge:main inside a nested repository without the task", Values: devValues, Call: prepare,
+		Check: func(c *rc.Case) {
+			nested := c.Path("nested")
+			mkdir(c, nested)
+			git(c, nested, "init", "--quiet", "-b", "main")
+			harness.WriteFile(c.T, filepath.Join(nested, "mise.toml"), "[tools]\n")
+			got := gitTaskIn(c, nested, "git:merge:main", "feature")
+			c.CheckThat("nested: exits 1", got == 1)
+			c.CheckThat("nested: the stop names the other repository", c.LogHas("is a task of"))
+			c.CheckThat("nested: no merge on main", plainGit(c.Consumer, "rev-list", "--merges", "--count", "main") == "0")
+		}})
+}
+
+// git:worktree:delete with `mise run --cd <repo>` from another git
+// repository removes the worktree and its merged branch.
+func TestWorktreeDeleteRunCd(t *testing.T) {
+	rc.Run(t, rc.Spec{Name: "git:worktree:delete with mise run --cd from another repository", Values: bothCore,
+		Change: precommitBothBranches, Call: synced(func(*rc.Case) int { return 0 }),
+		Check: func(c *rc.Case) {
+			wt := c.Path(".worktrees/x")
+			other := filepath.Join(c.Dir, "other")
+			mkdir(c, other)
+			git(c, other, "init", "--quiet", "-b", "main")
+			c.CheckThat("delete --cd: create exits 0", gitTaskIn(c, other, "--cd", c.Consumer, "git:worktree:create", "x", "--no-setup") == 0)
+			c.CheckThat("delete --cd: delete exits 0", gitTaskIn(c, other, "--cd", c.Consumer, "git:worktree:delete", "x") == 0)
+			c.CheckThat("delete --cd: the worktree is gone", rc.NoFile(wt))
+		}})
+}
+
 // The merge entry tasks with a stub library (D23): the stub prints the
 // destination and the source that the task gives it, so no case runs the real
 // merge.

@@ -109,9 +109,13 @@ def require_own_repository():
   In a submodule, mise also finds the tasks of the root repository. If the
   submodule has no merge task of that name, mise runs the task of the root in
   the root folder, and that task then lands a branch of the root.
-  MISE_ORIGINAL_CWD is the folder where mise ran (also the folder of mise -C),
-  so its repository must be the repository of the task. A run from a subfolder
-  of the same repository passes.
+  MISE_ORIGINAL_CWD is the folder of the shell. With `mise run --cd <folder>`
+  or `mise -C <folder>`, it is not <folder>, and no variable gives <folder>.
+  Thus the task stops only when the folder of the shell is inside the tree of
+  the repository of the task, but in another git repository: a submodule or a
+  nested repository. A run from a subfolder of the same repository passes, and
+  so does a run from a folder outside the tree, for example
+  `mise run --cd <repo>` from a parent folder.
   """
   original = os.environ.get("MISE_ORIGINAL_CWD", "")
   if not original:
@@ -134,7 +138,8 @@ def require_own_repository():
     text=True,
   )
   there = result.stdout.rstrip("\n") if result.returncode == 0 else ""
-  if here != there:
+  inside = there and os.path.commonpath([os.path.realpath(here), os.path.realpath(there)]) == os.path.realpath(there)
+  if here != there and inside:
     task = os.environ.get("MISE_TASK_NAME") or "this task"
     such = os.environ.get("MISE_TASK_NAME") or "such task"
     helpers.print_error(f"{task} is a task of {there}, not of {here}.")
