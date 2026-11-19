@@ -15,8 +15,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-18 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-19T05:04:39Z in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.worktrees/all-2026-11-18-2214"
   },
   "consent": {
     "merge": true,
@@ -90,11 +90,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-19T05:05:10.913Z",
+      "ended": "2026-11-19T05:09:28.874Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -218,8 +218,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-19T05:05:10.876Z",
       "ended": ""
     },
     {
@@ -444,7 +444,12 @@
     }
   },
   "gaps": [],
-  "overrides": [],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-18-2214"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/all-2026-11-18-2214",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-18-python-tasks-mac.jsonl"
