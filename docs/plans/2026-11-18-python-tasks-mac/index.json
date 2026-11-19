@@ -142,11 +142,11 @@
         "U2"
       ],
       "waits": "The cases run the .py Mac tasks and expect the file lists that U1 and U2 write.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-19T05:20:39.195Z",
+      "ended": "2026-11-19T05:22:48.513Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U4",
@@ -230,8 +230,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-19T05:20:39.159Z",
       "ended": ""
     },
     {

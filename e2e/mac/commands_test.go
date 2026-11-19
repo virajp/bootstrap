@@ -365,9 +365,16 @@ func (c *mcase) entrySetup() {
 	c.valuesFile()
 }
 
-// entryRun runs the entry task with bash, from the case folder.
+// entryRun runs the entry task directly, from the case folder. `mise x`
+// puts uv and Python 3.14 on PATH for the shebang of the task.
 func (c *mcase) entryRun(args ...string) {
-	c.execIn(c.dir, c.env, append([]string{"bash", entryTask}, args...)...)
+	c.execIn(c.dir, c.env, append(entryCmd(), args...)...)
+}
+
+// entryCmd is the command that runs the entry task directly, with uv on
+// PATH.
+func entryCmd() []string {
+	return []string{"mise", "x", "uv@latest", "python@3.14", "--", entryTask}
 }
 func (c *mcase) entryReal() { c.entryRun("--no-bootstrap") }
 func (c *mcase) entryDry()  { c.entryRun("--dry-run", "--no-bootstrap") }
@@ -529,7 +536,7 @@ func caseEntryLockWait(c *mcase) {
 		c.t.Fatal(err)
 	}
 	defer func() { _ = f.Close() }()
-	runner := exec.Command("bash", entryTask, "--no-bootstrap")
+	runner := exec.Command(entryCmd()[0], append(entryCmd()[1:], "--no-bootstrap")...)
 	runner.Dir = c.dir
 	runner.Env = c.env
 	runner.Stdout, runner.Stderr = f, f
@@ -614,7 +621,7 @@ func (c *mcase) wouldUpdate() string {
 	return strings.Join(out, "\n")
 }
 
-// caseEntryMiseRun: the same dry run under bash and under `mise run`. Only
+// caseEntryMiseRun: the same dry run directly and under `mise run`. Only
 // the would-update lines: `mise run` starts the task in another folder, and
 // the line of bootstrap_commit shows macos.toml relative to that folder.
 func caseEntryMiseRun(c *mcase) {
@@ -623,10 +630,7 @@ func caseEntryMiseRun(c *mcase) {
 	c.entryDry()
 	c.exit(0)
 	a := c.wouldUpdate()
-	if err := copyFile(entryTool+"/tasks/helpers", tasks+"/_scripts/helpers"); err != nil {
-		c.t.Fatal(err)
-	}
-	if err := copyFile(entryTask, tasks+"/updateall/configs/_default"); err != nil {
+	if err := copyFile(entryTask, tasks+"/updateall/configs/_default.py"); err != nil {
 		c.t.Fatal(err)
 	}
 	c.entryMise("--dry-run", "--no-bootstrap")

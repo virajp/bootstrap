@@ -116,8 +116,8 @@ func setup() error {
 	// The entry task of the Mac tool mise, and the origin of the clone of
 	// bootstrap that the engine fetches: the fixture tree.
 	entryTool = filepath.Join(harness.Root, "macos", "tools", "mise")
-	entryTask = filepath.Join(realTmp, "updateall-configs")
-	if err := copyFile(filepath.Join(entryTool, "tasks", "updateall-configs"), entryTask); err != nil {
+	entryTask = filepath.Join(realTmp, "updateall-configs.py")
+	if err := copyFile(filepath.Join(entryTool, "tasks", "updateall-configs.py"), entryTask); err != nil {
 		return err
 	}
 	if err := os.Chmod(entryTask, 0o755); err != nil {
