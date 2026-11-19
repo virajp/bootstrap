@@ -366,11 +366,11 @@
         "U14"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-19T04:02:29.658Z",
+      "ended": "2026-11-19T04:12:40.215Z",
+      "commit": "f3bb6be",
+      "rounds": 3
     },
     {
       "id": "U12",
@@ -463,9 +463,9 @@
     },
     {
       "id": "W5",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-19T04:02:29.623Z",
+      "ended": "2026-11-19T04:39:14.773Z"
     },
     {
       "id": "W6",
@@ -717,32 +717,41 @@
       "units": [
         "U8"
       ]
+    },
+    {
+      "id": "D23",
+      "decision": "Q7: CLAUDE.md \"Task scripts\" lost the shell-task rules (D1); the bash tasks of macos/tools/ stay bash until plan 3. Keep a scoped rule for them, or leave them to plan 3?",
+      "ruling": "Add a short paragraph to \"Task scripts\" that limits the Python rules to repo/tools/ and keeps the old shell rules for macos/tools/ until plan 3 removes them — the Mac tasks keep a correct rule, and plan 3 must delete the paragraph.",
+      "rejected": "Leave the docs as they are and let plan 3 write the Mac rules",
+      "units": [
+        "U11"
+      ]
     }
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice to verify against",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-19T04:02:24.400Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice to verify against",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-19T04:02:24.106Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice to verify against",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-19T04:02:24.258Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
-      "started": "",
-      "ended": ""
+      "state": "skipped",
+      "detail": "skipped: no covers (no stamps) and no code unit (nothing to persist); no Reconcile commit",
+      "started": "2026-11-19T04:02:24.547Z",
+      "ended": "2026-11-19T04:02:24.586Z"
     }
   },
   "gaps": [
@@ -758,6 +767,13 @@
       "unit": "U14",
       "stage": "",
       "text": "D22 needs the init call site of oldform.HeaderCopies in cli/internal/core/plan.go (knownCopies), outside U14 Owns · U14 Owns widened to cli/internal/core/plan.go under D22; sync and check stay unchanged, because D22 names init alone",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "U11",
+      "stage": "",
+      "text": "U11 asked whether CLAUDE.md rule 7 of \"Task output\" exempts the Mac orchestrator updateall, which already ends with print_header \"Setup complete!\" and has no line_sep1 · settled by index.md Out of scope (the Mac tasks are plan 3; the run picks up no Out-of-scope item): rule 7 stays as written, and the updateall ending is left to docs/plans/2026-11-18-python-tasks-mac",
       "state": "closed"
     }
   ],
