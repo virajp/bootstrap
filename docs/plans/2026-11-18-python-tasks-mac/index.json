@@ -160,14 +160,14 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-19T05:24:43.778Z",
+      "ended": "2026-11-19T05:26:25.516Z",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "8eb6f3a",
+        "to": "390e5c2"
       }
     },
     {
@@ -236,9 +236,9 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-19T05:24:43.744Z",
+      "ended": "2026-11-19T05:26:36.010Z"
     },
     {
       "id": "W5",
