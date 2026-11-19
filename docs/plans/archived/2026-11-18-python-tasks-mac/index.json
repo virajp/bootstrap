@@ -15,8 +15,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-19T05:04:39Z in /Users/virajpatel/Projects/github.com/virajp/bootstrap/.worktrees/all-2026-11-18-2214"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-19 — 104376c 43b6501 1185019 5333b62"
   },
   "consent": {
     "merge": true,
@@ -208,11 +208,11 @@
         "U5"
       ],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-19T05:35:09.399Z",
-      "ended": "",
+      "ended": "2026-11-19T05:40:53.212Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -248,9 +248,9 @@
     },
     {
       "id": "W6",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-19T05:35:09.364Z",
-      "ended": ""
+      "ended": "2026-11-19T05:41:04.523Z"
     }
   ],
   "shared_files": [
