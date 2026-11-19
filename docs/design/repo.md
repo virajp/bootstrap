@@ -185,7 +185,8 @@ The `git` tool holds the branch model. The engine has no branch rule.
 | `main` and `develop` | Work starts on feature branches. `git:merge:develop [<branch>]` lands a branch on `develop`; the default is the current branch. `git:merge:main [<branch>]` lands a branch on `main`; the default is `develop`. |
 | Only one of them     | `git:merge:<that branch> [<branch>]` lands any feature branch on that branch; the default is the current branch.                                                                                                |
 
-- A direct landing of `develop` on `main` is a fast-forward
+- When `core_branches` has `main` and `develop`, a direct landing of
+  `develop` on `main` is a fast-forward
   (`git merge --ff-only`), so `main` is always an ancestor of `develop`. Before
   the hook pass and before a branch changes, the task fetches `main` from
   `origin` and makes sure that `main` and `origin/main` are ancestors of

@@ -544,6 +544,15 @@ func TestMergeFastForward(t *testing.T) {
 			c.CheckThat("fast-forward: no merge commit on main", plainGit(c.Consumer, "rev-list", "--merges", "--count", "main") == "0")
 			c.CheckThat("fast-forward: the run goes back to develop", plainGit(c.Consumer, "rev-parse", "--abbrev-ref", "HEAD") == "develop")
 		}})
+	// With only main in core_branches, a branch with the name develop is a
+	// feature branch, and it gets the merge commit.
+	rc.Run(t, rc.Spec{Name: "git:merge:main, main only: a branch develop gets a merge commit", Values: devValues,
+		Change: precommitBothBranches, Call: mergeDevelop(nil),
+		Message: "Merging develop into main ... [OK]",
+		Check: func(c *rc.Case) {
+			c.CheckThat("main only: no fast-forward check", c.LogLacks("can fast-forward"))
+			c.CheckThat("main only: one merge commit on main", plainGit(c.Consumer, "rev-list", "--merges", "--count", "main") == "1")
+		}})
 	rc.Run(t, rc.Spec{Name: "git:merge:main, develop fast-forwards main of origin", Values: bothCore,
 		Change: precommitBothBranches, Call: mergeDevelop(withOrigin),
 		Message: "Pushing main branch to origin ... [OK]",
