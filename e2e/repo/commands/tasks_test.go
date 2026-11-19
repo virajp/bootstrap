@@ -455,6 +455,35 @@ url = "https://example.com/web"`
 			c.CheckThat("--all: the missing sibling, the info line of the sync", c.LogHas("member web skipped: ../web is not there"))
 			c.CheckThat("--all: the missing sibling, the warning of the task", c.LogHas("member web: ../web is not on this machine"))
 		}})
+	// The sync of a member writes [home] and bootstrap_commit, and keeps each
+	// other line of its repo.toml in the layout of dprint, so the commit of
+	// the sync passes the format hook.
+	dprintRepo := harness.Lines("# The values of api.", "", "format = 3", "",
+		"# The commit of the last sync.", `bootstrap_commit = ""`, `core_branches = [ "main" ]`, `environments = [ "dev" ]`,
+		`repo_name = "api"`, "", "[commits]", `scopes = [ "api" ]`)
+	withoutCommit := func(text string) string {
+		return regexp.MustCompile(`(?m)^bootstrap_commit = .*\n`).ReplaceAllString(text, "")
+	}
+	rc.Run(t, rc.Spec{Name: "setup:configs --all keeps the layout of the repo.toml of a member", Values: siblingValues,
+		Change: func(c *rc.Case) {
+			api := siblingRepo(c)
+			vals := filepath.Join(api, ".config", "bootstrap")
+			rc.WriteValues(c.T, vals, devValues)
+			harness.WriteFile(c.T, filepath.Join(vals, "repo.toml"), dprintRepo)
+			commitSibling(c, api)
+		},
+		Call: configsAll,
+		Check: func(c *rc.Case) {
+			api := filepath.Join(c.Dir, "api")
+			after := withoutCommit(harness.ReadFile(filepath.Join(api, ".config", "bootstrap", "repo.toml")))
+			before := withoutCommit(dprintRepo)
+			c.CheckThat("layout: each old line stays, [home] comes at the end",
+				strings.HasPrefix(after, before+"\n[home]\nfolder = ") && strings.Count(after[len(before):], "\n") == 5)
+			c.CheckThat("layout: [home] has its three keys in order",
+				regexp.MustCompile(`\n\[home\]\nfolder = "[^"]+"\ntype = "sibling"\nurl = "https://example.com/test"\n$`).MatchString(after))
+			c.CheckThat("layout: the sync is committed", strings.HasPrefix(plainGit(api, "log", "-1", "--format=%s"), "ops: sync bootstrap"))
+			c.CheckThat("layout: a clean tree", plainGit(api, "status", "--porcelain") == "")
+		}})
 	rc.Run(t, rc.Spec{Name: "setup:configs --all skips a sibling of the old form", Values: siblingValues,
 		Change: func(c *rc.Case) {
 			api := siblingRepo(c)

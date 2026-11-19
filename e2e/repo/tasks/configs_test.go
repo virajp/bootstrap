@@ -275,7 +275,7 @@ func TestSetupConfigs(t *testing.T) {
 		r := e.runAfter(t, false, mergeTask, func(r string) { root = r })
 		r.check(t, name, 0, "sync")
 		checkLog(t, name, r.log, true, "Syncing on ops/bootstrap-sync, from main")
-		checkLog(t, name, r.log, true, "The sync changed nothing, so there is nothing to land")
+		checkLog(t, name, r.log, true, "Nothing changed, so there is nothing to land")
 		harness.Check(t, name+": no ops/bootstrap-sync stays", gitOut(root, "branch", "--list", "ops/bootstrap-sync") == "", r.log)
 		harness.Check(t, name+": back on main", gitOut(root, "branch", "--show-current") == "main", r.log)
 	})
@@ -297,7 +297,7 @@ func TestSetupConfigs(t *testing.T) {
 			harness.Git(t, r, "switch", "--quiet", "-c", "feature")
 		}, "SYNC_WRITE=1")
 		r.check(t, name, 0, "sync")
-		checkLog(t, name, r.log, true, "No task git:merge:main, so the sync is committed directly on main")
+		checkLog(t, name, r.log, true, "No task git:merge:main, so the change is committed directly on main")
 		harness.Check(t, name+": the commit is on main", gitOut(root, "log", "-1", "--format=%s", "main") == "ops: sync bootstrap", r.log)
 		harness.Check(t, name+": back on feature", gitOut(root, "branch", "--show-current") == "feature", r.log)
 		harness.Check(t, name+": a clean tree", gitOut(root, "status", "--porcelain") == "", r.log)
@@ -370,5 +370,66 @@ func TestSetupConfigs(t *testing.T) {
 		harness.Check(t, name+": main of sub has the merge", gitOut(sub, "log", "-1", "--format=%s", "main") == "Merge branch 'ops/bootstrap-sync'", r.log)
 		harness.Check(t, name+": main of sub has the sync", gitOut(sub, "show", "main:synced.txt") == "synced", r.log)
 		harness.Check(t, name+": no ops/bootstrap-sync stays in sub", gitOut(sub, "branch", "--list", "ops/bootstrap-sync") == "", r.log)
+	})
+
+	// A pre-commit hook that changes a file fails the first commit; the task
+	// adds the file and commits one more time. <always> fails each commit.
+	hook := func(always bool) func(root string) {
+		return func(root string) {
+			script := "#!/usr/bin/env bash\nif [ -f synced.txt ] && ! grep -q fixed synced.txt; then\n  printf 'synced fixed\\n' > synced.txt\n  exit 1\nfi\n"
+			if always {
+				script = "#!/usr/bin/env bash\nexit 1\n"
+			}
+			harness.WriteFile(t, filepath.Join(root, ".git", "hooks", "pre-commit"), script)
+			if err := os.Chmod(filepath.Join(root, ".git", "hooks", "pre-commit"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	t.Run("setup:configs commits one more time after a hook fix", func(t *testing.T) {
+		t.Parallel()
+		name := "setup:configs, a hook fix"
+		var root string
+		r := e.runAfter(t, false, nil, func(r string) { root = r; hook(false)(r) }, "SYNC_WRITE=1")
+		r.check(t, name, 0, "sync")
+		checkLog(t, name, r.log, true, "commits one more time")
+		harness.Check(t, name+": the commit has the fix", gitOut(root, "show", "main:synced.txt") == "synced fixed", r.log)
+		harness.Check(t, name+": a clean tree", gitOut(root, "status", "--porcelain") == "", r.log)
+	})
+	t.Run("setup:configs stops when the second commit fails", func(t *testing.T) {
+		t.Parallel()
+		name := "setup:configs, a hook that always fails"
+		r := e.runAfter(t, false, nil, hook(true), "SYNC_WRITE=1")
+		r.check(t, name, 1, "sync")
+		checkLog(t, name, r.log, true, "the commit failed two times.")
+	})
+
+	// --all with a real submodule: the landing of the member moves its
+	// checkout, and the root lands the new pointer.
+	t.Run("setup:configs --all lands the new pointer of a submodule", func(t *testing.T) {
+		t.Parallel()
+		name := "setup:configs --all, the pointers"
+		var root string
+		r := e.runAfter(t, false, func(r string) {
+			realMerge(r)
+			sub := filepath.Join(r, "sub")
+			copyFile(t, helpersPath(), filepath.Join(sub, ".config", "mise", "tasks", "_scripts", "helpers.py"))
+			realMerge(sub)
+		}, func(r string) {
+			root = r
+			sub := filepath.Join(r, "sub")
+			harness.Git(t, sub, "add", "--all")
+			harness.Git(t, sub, "commit", "--quiet", "-m", "tasks")
+			harness.Git(t, r, "-c", "protocol.file.allow=always", "submodule", "add", "--quiet", "--force", "./sub", "sub")
+			harness.Git(t, r, "commit", "--quiet", "-m", "the submodule")
+		}, "SYNC_WRITE=1", "usage_all=true")
+		r.check(t, name, 0, "sync\nsync sub member=sub")
+		checkLog(t, name, r.log, true, "Landing the new member pointers ...")
+		harness.Check(t, name+": main has the pointer commit",
+			gitOut(root, "log", "--format=%s", "main") != "" && strings.Contains(gitOut(root, "log", "--format=%s", "main"), "ops: update the member pointers"), r.log)
+		harness.Check(t, name+": the pointer is the new commit of sub",
+			gitOut(root, "rev-parse", "main:sub") == gitOut(filepath.Join(root, "sub"), "rev-parse", "HEAD"), r.log)
+		harness.Check(t, name+": a clean root", gitOut(root, "status", "--porcelain") == "", r.log)
+		harness.Check(t, name+": no ops/bootstrap-sync stays", gitOut(root, "branch", "--list", "ops/bootstrap-sync") == "", r.log)
 	})
 }

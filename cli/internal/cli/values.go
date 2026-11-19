@@ -18,6 +18,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/report"
 	"github.com/virajp/bootstrap/cli/internal/schema"
 	"github.com/virajp/bootstrap/cli/internal/source"
+	"github.com/virajp/bootstrap/cli/internal/tomledit"
 	"github.com/virajp/bootstrap/cli/internal/values"
 )
 
@@ -636,9 +637,17 @@ func (a *app) configSet(sd core.Side, text, v string) fail.Code {
 			}
 		}
 	}
-	next, err := core.EditTOML(cur, []string{k.yqPath() + " = " + lit})
-	if err != nil {
-		return a.logErr(err)
+	// The line editor keeps each other line of the file; yq is for a form
+	// that it does not edit.
+	next, ok := []byte(nil), false
+	if v, decoded := tomledit.Decode(lit); decoded {
+		next, ok = tomledit.Set(cur, k.docPath(), v)
+	}
+	if !ok {
+		var err error
+		if next, err = core.EditTOML(cur, []string{k.yqPath() + " = " + lit}); err != nil {
+			return a.logErr(err)
+		}
 	}
 	if code := a.writeValues(sd, k, idx, next); code != fail.OK {
 		return code
@@ -732,9 +741,12 @@ func (a *app) configUnset(sd core.Side, text string) fail.Code {
 			exprs = append(exprs, "del("+p+" | select(length == 0))")
 		}
 	}
-	next, err := core.EditTOML(cur, exprs)
-	if err != nil {
-		return a.logErr(err)
+	next, ok := tomledit.Delete(cur, k.docPath(), k.file != fileTools)
+	if !ok {
+		var err error
+		if next, err = core.EditTOML(cur, exprs); err != nil {
+			return a.logErr(err)
+		}
 	}
 	if code := a.writeValues(sd, k, idx, next); code != fail.OK {
 		return code

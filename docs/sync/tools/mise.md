@@ -121,7 +121,10 @@ request. Then it goes back to the branch where it started and deletes the local
 branch. A sync with no change makes no commit. Without the task
 `git:merge:<default branch>`, for example at the first sync, it commits the
 sync directly on the default branch. `--dry-run` only shows the changes: no
-branch and no commit.
+branch and no commit. When a hook changes a file at the commit, the task adds
+the files and commits one more time. With `--all`, it also commits and lands
+the new pointers of the submodule members in the root, as
+`ops: update the member pointers`.
 
 `setup:configs` runs this in the root, then in each selected
 member, with `BOOTSTRAP_HOME` and `BOOTSTRAP_MEMBER`, so the sync of the member

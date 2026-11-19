@@ -65,6 +65,7 @@ Go module `github.com/virajp/bootstrap/cli`.
 | `internal/format`    | The parse check, and the merge of a shared file: JSON, JSONC, YAML, TOML and text. See [Shared files](#shared-files).                                                                                                                                                                                                   |
 | `internal/header`    | The header of a synced file and of a shared file, and its detection. See [The header](#the-header).                                                                                                                                                                                                                     |
 | `internal/target`    | The write of one target, the modes, `bootstrap_commit`, and the tables of the required members of `base`. See [The write of one target](#the-write-of-one-target).                                                                                                                                                      |
+| `internal/tomledit`  | The line editor of a values file, which keeps each other line. See [The layout of a values file](#the-layout-of-a-values-file).                                                                                                                                                                                         |
 | `internal/manifest`  | The manifest and the stale rule, in the link modes `repo` and `macos`. See [The manifest](#the-manifest-and-the-stale-rule).                                                                                                                                                                                            |
 | `internal/misegen`   | The mise config generator of both sides. See [mise.md](mise.md).                                                                                                                                                                                                                                                        |
 | `internal/repo`      | The repo front-end, the sync of `bootstrap sync`. See [repo.md](repo.md).                                                                                                                                                                                                                                               |
@@ -833,6 +834,23 @@ Mac, in `$HOME`:
   `Add it to <table> of macos.toml, or run bootstrap mac detect --add`, and
   `mac detect` exits 1. `--add` adds each offered tool and each offered key, in
   one write of the values file and one sync.
+
+### The layout of a values file
+
+The engine changes only the keys that it must change in a values file. The
+package `cli/internal/tomledit` edits the lines of the file: it replaces the
+line, or the lines, of a key, adds a key at its sorted place in its group, adds
+a table at the end of the file with its keys in sorted order, and removes a key
+or a table. Each other line stays as it is: the comments, the blank lines and
+the layout of the values. A new value has the layout of dprint, for example
+`[ "a", "b" ]`. Thus the format hook of the repository does not change the file
+again. These writes use it: `config set`, `config unset`, the `[home]` of a
+member sync and the empty `[tools.<name>]` tables of a sync.
+
+For a form that the editor does not edit, an array of tables, a dotted key or
+an inline table on the path of the change, the engine uses `yq`, which keeps
+the comments but writes the file in its own layout. The plans of `add`,
+`remove` and `migrate` also still use `yq`.
 
 ### `config`
 
@@ -1719,8 +1737,9 @@ hand. It skips a member whose `hosts` do not name the host, a member with
 dependency without a table gets no table: the sync installs it through
 `depends`.
 
-- The write keeps the comments of the file, and it comes before the files of
-  the tools.
+- The write keeps each other line of the file (see
+  [The layout of a values file](#the-layout-of-a-values-file)), and it comes
+  before the files of the tools.
 - Each table prints the info line `[tools.<name>] added to <values file>`.
 - `sync --dry-run` and `check` write nothing. They print
   `[tools.<name>] would be added to <values file>` for each table. The line
