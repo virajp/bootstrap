@@ -41,13 +41,14 @@ printf '%s\n' "sync${sub:+ $sub}${2:+ $2}${BOOTSTRAP_MEMBER:+ member=$BOOTSTRAP_
 
 // fakeMise runs `mise run --cd <folder> git:merge:<branch> <source>` as the
 // task file of the folder, with the PATH of LAND_PATH, which has no gh, glab
-// and pre-commit: so the landing makes no request and runs no hook. It passes
-// each other call to the mise shim of the harness.
+// and pre-commit: so the landing makes no request and runs no hook. As mise
+// does, it sets MISE_ORIGINAL_CWD to the folder of the caller, not to
+// <folder>. It passes each other call to the mise shim of the harness.
 const fakeMise = `#!/usr/bin/env bash
 if [[ ${1:-} == run && ${2:-} == --cd && ${4:-} == git:merge:* ]]; then
+  export MISE_ORIGINAL_CWD="$PWD"
   cd "$3" || exit 1
   export MISE_PROJECT_ROOT="$3" usage_source="$5" PATH="$LAND_PATH"
-  unset MISE_ORIGINAL_CWD
   exec "$3/.config/mise/tasks/git/merge/${4#git:merge:}.py"
 fi
 exec "$HARNESS_MISE" "$@"
@@ -348,5 +349,26 @@ func TestSetupConfigs(t *testing.T) {
 		harness.Check(t, name+": main does not change", gitOut(root, "rev-parse", "main") == gitOut(origin, "rev-parse", "main"), r.log)
 		harness.Check(t, name+": no local ops/bootstrap-sync", gitOut(root, "branch", "--list", "ops/bootstrap-sync") == "", r.log)
 		harness.Check(t, name+": back on main", gitOut(root, "branch", "--show-current") == "main", r.log)
+	})
+	t.Run("setup:configs --all lands the sync of a member", func(t *testing.T) {
+		t.Parallel()
+		name := "setup:configs --all, a member landing"
+		var root string
+		r := e.runAfter(t, false, func(r string) {
+			realMerge(r)
+			sub := filepath.Join(r, "sub")
+			copyFile(t, helpersPath(), filepath.Join(sub, ".config", "mise", "tasks", "_scripts", "helpers.py"))
+			realMerge(sub)
+		}, func(r string) {
+			root = r
+			harness.Git(t, filepath.Join(r, "sub"), "add", "--all")
+			harness.Git(t, filepath.Join(r, "sub"), "commit", "--quiet", "-m", "tasks")
+		}, "SYNC_WRITE=1", "usage_all=true")
+		r.check(t, name, 0, "sync\nsync sub member=sub")
+		checkLog(t, name, r.log, false, "is a task of")
+		sub := filepath.Join(root, "sub")
+		harness.Check(t, name+": main of sub has the merge", gitOut(sub, "log", "-1", "--format=%s", "main") == "Merge branch 'ops/bootstrap-sync'", r.log)
+		harness.Check(t, name+": main of sub has the sync", gitOut(sub, "show", "main:synced.txt") == "synced", r.log)
+		harness.Check(t, name+": no ops/bootstrap-sync stays in sub", gitOut(sub, "branch", "--list", "ops/bootstrap-sync") == "", r.log)
 	})
 }

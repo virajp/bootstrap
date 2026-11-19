@@ -128,8 +128,12 @@ merge tasks run the hooks
 over all
 files, with `SKIP=no-commit-to-branch`.
 
-A merge task stops when the repository of `MISE_ORIGINAL_CWD` is not the
-repository of the task. In a submodule without that merge task, mise finds the
+A merge task stops when `MISE_ORIGINAL_CWD`, the folder of the shell, is in
+the tree of the repository of the task but in another git repository, for
+example a submodule. A run with `mise run --cd <repo>` or `mise -C <repo>` from
+a folder outside that tree passes: mise keeps the folder of the shell in
+`MISE_ORIGINAL_CWD`, and no variable gives `<repo>`. In a submodule without that
+merge task, mise finds the
 task of the root repository and runs it in the root folder. Without the stop,
 that task lands a branch of the root. Run `mise run setup:configs` in the
 submodule to get its own merge tasks.

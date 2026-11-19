@@ -273,6 +273,12 @@ differs in these points:
   `own_tasks` lists the part `NN-<name>.py` as `NN-<name>` when no
   `NN-<name>` exists. In a submodule, mise also finds the tasks of the root
   repository, and it runs them in the root directory.
+- Each task works with `mise run --cd <repo>` and `mise -C <repo>` from any
+  folder. mise runs a task in `MISE_PROJECT_ROOT`, so a task finds its
+  repository there. `MISE_ORIGINAL_CWD` is the folder of the shell, not
+  `<repo>`: a task uses it only as a hint, and never stops only because it is
+  in another repository. The e2e cases of `--cd` run from another git
+  repository.
 - Tasks use `# MISE` and `# USAGE` header comments for metadata and flags,
   with a space, which dprint writes (mise also reads `#MISE` and `#USAGE`). A
   `# USAGE flag "--fix"` is available in the script as the environment
