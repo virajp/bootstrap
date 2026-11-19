@@ -38,6 +38,9 @@ type Env struct {
 	Pwd string
 	// DryRun prints each change and writes no target.
 	DryRun bool
+	// Edited is true when AddTables or SetTable changed a values file (with
+	// a dry run: would change it). The report does not count these writes.
+	Edited bool
 	// Temps holds the temp files of the run. The front-end defers
 	// Temps.Cleanup.
 	Temps Temps

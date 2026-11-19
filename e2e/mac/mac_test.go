@@ -146,6 +146,8 @@ func TestMac(t *testing.T) {
 		{"parse: a value with a double quote and a newline stays one value", caseValueBreakout},
 		{"macos.toml missing", caseValuesMissing},
 		{"bootstrap_commit: after the header comments, a second run", caseCommit},
+		{"bootstrap_commit: a run without a change keeps it", caseCommitKept},
+		{"bootstrap_commit: a run with a change sets it", caseCommitMoved},
 		{"bootstrap_commit: a symlinked macos.toml", caseCommitLink},
 		{"bootstrap_commit: a dry run", caseCommitDry},
 		{"--dry-run writes nothing", caseDryRun},

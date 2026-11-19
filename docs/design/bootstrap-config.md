@@ -323,8 +323,8 @@ The mise environments of the repository, from `dev` and `ci`
 
 ### `bootstrap_commit`
 
-The commit of the last sync without a failure. The sync writes it. An example
-has an empty value. See [cli.md](cli.md#bootstrap_commit).
+The commit of the last sync without a failure that changed a file. The sync
+writes it. An example has an empty value. See [cli.md](cli.md#bootstrap_commit).
 
 ### `[worktree].files`
 

@@ -262,11 +262,17 @@ func (r *Report) listLine(kind Kind, path, text string) {
 	}
 }
 
+// Changes gives the count of the targets that the run changed, added, seeded
+// or removed (with a dry run: would change).
+func (r *Report) Changes() int {
+	return r.counts[Changed] + r.counts[New] + r.counts[Seeded] + r.counts[Removed]
+}
+
 // Summary prints the last line of a run that ended with <rc>: the headline
 // and, after it, the count of each kind that is not zero. A run that failed
 // lists the failed count first.
 func (r *Report) Summary(rc int) {
-	n := r.counts[Changed] + r.counts[New] + r.counts[Seeded] + r.counts[Removed]
+	n := r.Changes()
 	files := "files"
 	if n == 1 {
 		files = "file"

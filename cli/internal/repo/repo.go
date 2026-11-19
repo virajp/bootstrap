@@ -495,8 +495,11 @@ func (s *state) sync(dryRun bool) fail.Code {
 		}
 		// Only a sync without a failure records its commit: then each file
 		// is at that commit, and an agent can compare it with main of
-		// bootstrap.
-		if commit != "" && s.e.RecordCommit(values.RepoFile(s.values), "bootstrap_commit", commit, commitNote, "") != fail.OK {
+		// bootstrap. A sync that changed no file keeps a commit that is
+		// set, so it adds no commit to the consumer.
+		file := values.RepoFile(s.values)
+		keep := s.r.Changes() == 0 && !s.e.Edited && target.HasValue(file, "bootstrap_commit")
+		if commit != "" && !keep && s.e.RecordCommit(file, "bootstrap_commit", commit, commitNote, "") != fail.OK {
 			s.r.Summary(1)
 			return fail.Other
 		}

@@ -114,6 +114,30 @@ func TestBase(t *testing.T) {
 	rc.Run(t, rc.Spec{Name: "no [tools], environments dev", Values: devValues, Check: checkBaseFiles})
 	rc.Run(t, rc.Spec{Name: "bootstrap_commit: a dry run names the commit of the clone", Values: devValues,
 		Message: "would set bootstrap_commit " + rc.BaseCommit})
+	// A sync that changes no file keeps a commit that is set; a sync that
+	// changes a file sets the commit of the clone.
+	for _, cs := range []struct {
+		name, change, want string
+	}{
+		{"bootstrap_commit: a sync without a change keeps it", "", `bootstrap_commit = "old"`},
+		{"bootstrap_commit: a sync with a change sets it", `rm "$values/repo-generated.tsv"`, `bootstrap_commit = "` + rc.BaseCommit + `"`},
+	} {
+		rc.Run(t, rc.Spec{Name: cs.name, Values: devValues,
+			Call: func(c *rc.Case) int {
+				if code := c.Engine("sync"); code != 0 {
+					return code
+				}
+				if code := c.Sh(`sed -i.bak 's/^bootstrap_commit = .*/bootstrap_commit = "old"/' "$values/repo.toml"
+rm "$values/repo.toml.bak"
+` + cs.change); code != 0 {
+					return code
+				}
+				return c.Engine("sync")
+			},
+			Check: func(c *rc.Case) {
+				c.CheckThat("repo.toml has "+cs.want, strings.Contains(harness.ReadFile(c.RepoValues), cs.want+"\n"))
+			}})
+	}
 	rc.Run(t, rc.Spec{Name: "[tools.node] env dev, ci", Values: `environments = [ "dev", "ci" ]
 [tools.node]
 env = [ "dev", "ci" ]`})
