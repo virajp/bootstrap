@@ -172,16 +172,25 @@ name, so the part `70-ruff.py` is the task `code:lint:70-ruff`, and
 to each part, and with no part it prints one line and exits 0. See
 `docs/design/tools.md` ("The `[tasks]` table").
 
-The rules of this section are for the tasks of `repo/tools/` and the own tasks
-of this repository. The tasks of `macos/tools/<tool>/tasks/` stay bash until
-the plan `docs/plans/2026-11-18-python-tasks-mac` moves them to Python, and
-that plan deletes this paragraph. A Mac task has no extension and starts with
-`#!/usr/bin/env bash` and `set -e` or `set -euo pipefail`, and a task that uses
-the print functions sources `${HOME}/.config/mise/tasks/_scripts/helpers`.
-Write its shell for bash 3.2 and bash 5.x, with no namerefs, `${var,,}` or
-associative arrays. Under `set -e`, write a command substitution that can fail
-as `VAR=$(cmd) || VAR=''`. Its `#MISE` and `#USAGE` header comments hold the
-metadata and flags, and a `#USAGE flag "--fix"` is available as `usage_fix`.
+The rules of this section are for the tasks of `repo/tools/`, of
+`macos/tools/<tool>/tasks/` and the own tasks of this repository. A Mac task
+differs in these points:
+
+- A Mac task that uses a function of the Mac library imports `helpers.py` of
+  `macos/tools/mise/`, not the library of `repo/tools/`. The tasks
+  `func:claude`, `func:code` and `keychain:delete` use no function of it, so
+  they do not import it. The Mac library has the print functions
+  (`print_header`, `print_subheader`, `print_wait`, `print_newline`,
+  `print_error`, `print_success`, `print_warn`, `line_sep`) and
+  `task_exists` and `run_task_if_exists`, and no `tool` or `has_tool`. Each
+  Mac task keeps the call form of its shell task: `mise x --` where the shell
+  task used it (`dprint` in `updateall`), and `shutil.which` where the shell
+  task used `command -v`.
+- Its preamble uses the user path:
+  `sys.path.insert(0, os.path.expanduser("~/.config/mise/tasks/_scripts"))`.
+- The entry task `updateall:configs` imports no library and reads its flags
+  from `sys.argv`, because it runs under `mise run` and directly, with uv on
+  PATH. See `docs/design/mac.md` ("The entry tasks").
 
 - `_scripts/` contains libraries, not tasks. Each library is a Python module.
   A task imports a module (see "Python tasks" below).
@@ -376,9 +385,9 @@ task that runs only commands.
    `setup:linter`. A single direct command in an orchestrator gets a
    `print_header`, because it is at the level of the sibling subtasks.
 7. The top-level orchestrator ends with `helpers.line_sep1()` and
-   `helpers.print_success("<Done message>")`, not with a header. A bash task
-   of `macos/tools/` calls the shell functions of its `helpers`, for example
-   `print_success "<Done message>"`.
+   `helpers.print_success("<Done message>")`, not with a header. The Mac
+   library has no `line_sep1`, so the Mac `updateall` ends with
+   `helpers.print_header("Setup complete!")`.
 8. Header and subheader text is an "-ing" verb phrase with " ..." at the end,
    for example "Installing pre-commit hooks ...".
 9. A task that runs only inside a git hook (`code:git-config`) prints status

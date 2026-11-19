@@ -5,7 +5,7 @@
 # `required = true` marks a member that a Mac cannot remove. The key
 # `description` is the text of the pack. See docs/design/packs.md.
 [pack.base]
-description = "The tools of each Mac: mise, Homebrew, the shells, git and its tools, ssh, the fonts, Python and the command-line tools, which a Mac cannot remove, and VS Code and uv."
+description = "The tools of each Mac: mise, Homebrew, the shells, git and its tools, ssh, the fonts, Python, uv and the command-line tools, which a Mac cannot remove, and VS Code."
 mise = { required = true }
 homebrew = { required = true }
 bash = { required = true }
@@ -52,7 +52,7 @@ vorssaint = { required = true }
 pre-commit = { required = true }
 visual-studio-code = {}
 python = { required = true }
-uv = {}
+uv = { required = true }
 
 [pack.claude]
 description = "Claude: the desktop app, Claude Code, its status line, and codeburn, the cost report of the AI tools."

@@ -38,7 +38,11 @@ always comes before a key of the file. `bootstrap settings` shows the line
 ## The entry tasks
 
 The Mac tool `mise` ships the tasks into `~/.config/mise/tasks/`, and the mise
-tool `github:virajp/bootstrap`.
+tool `github:virajp/bootstrap`. Each task is a Python uv script with a `.py`
+name, and mise removes `.py` from the task name. The tasks need uv and Python
+3.14, so the Mac `mise` tool depends on `python` and `uv` (see
+[Stages and exit 4](#stages-and-exit-4)). `updateall:configs` is standalone:
+it imports no library.
 
 | Task                                                               | Job                                                                           |
 | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
@@ -64,8 +68,9 @@ mise run updateall:configs --verbose      # list each file
 
 `updateall:configs` does these steps:
 
-1. It parses the flags from `"$@"`, so the task works the same under `mise run`
-   and under `bash`. An unknown flag stops the task with code 2.
+1. It parses the flags from its arguments, so the task works the same under
+   `mise run` and directly, with uv on PATH. An unknown flag stops the task
+   with code 2.
 2. It stops a nested run with code 2.
 3. It does the cleanup of the old Mac cache. See below.
 4. It runs `bootstrap mac sync` with the flags, or `$BOOTSTRAP_BIN mac sync`.
@@ -227,7 +232,7 @@ The init stage holds each selected tool with `stage = "init"` and,
 transitively, each tool in their `depends`. Each other selected tool, and the
 file `zz-macos/mise.toml`, is in the main stage. `bash`, `zsh` and `fish` have
 `stage = "init"` and `depends = ["homebrew", "mise"]`. `homebrew` depends on
-`fnox`, and `mise` depends on `cli`.
+`fnox`, and `mise` depends on `cli`, `python` and `uv`.
 
 When the init stage is empty, the sync skips it. Else a real run does these
 steps:

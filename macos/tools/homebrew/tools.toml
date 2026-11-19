@@ -42,8 +42,8 @@ source = ".config/zsh/01a-homebrew.zsh"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."brew/casks"]
-source = "brew-casks"
+[tasks."brew/casks.py"]
+source = "brew-casks.py"
 
-[tasks."upgrade/brew"]
-source = "upgrade-brew"
+[tasks."upgrade/brew.py"]
+source = "upgrade-brew.py"

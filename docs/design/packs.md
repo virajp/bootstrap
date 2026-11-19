@@ -167,9 +167,9 @@ In a submodule member, the repo side skips a `root_only` tool of a pack. See
 [repo.md](repo.md#root_only).
 
 The Mac `base` pack is in `macos/packs.toml`. Its required members are `mise`,
-`homebrew`, the shells, `git`, `ssh`, `cli`, `python`, `pre-commit` and the
-other tools of each Mac. `visual-studio-code` and `uv` are members that a Mac
-can remove.
+`homebrew`, the shells, `git`, `ssh`, `cli`, `python`, `uv`, `pre-commit` and
+the other tools of each Mac. `visual-studio-code` is a member that a Mac can
+remove.
 
 ### Common tools
 

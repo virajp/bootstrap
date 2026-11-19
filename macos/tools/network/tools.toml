@@ -26,20 +26,20 @@ routes = "netstat -nr -f inet"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."ips/gateway"]
-source = "ips-gateway"
+[tasks."ips/gateway.py"]
+source = "ips-gateway.py"
 
-[tasks."ips/ii"]
-source = "ips-ii"
+[tasks."ips/ii.py"]
+source = "ips-ii.py"
 
-[tasks."ips/ips"]
-source = "ips-ips"
+[tasks."ips/ips.py"]
+source = "ips-ips.py"
 
-[tasks."ips/ipv4"]
-source = "ips-ipv4"
+[tasks."ips/ipv4.py"]
+source = "ips-ipv4.py"
 
-[tasks."ips/ipv6"]
-source = "ips-ipv6"
+[tasks."ips/ipv6.py"]
+source = "ips-ipv6.py"
 
-[tasks."ips/remoteip"]
-source = "ips-remoteip"
+[tasks."ips/remoteip.py"]
+source = "ips-remoteip.py"

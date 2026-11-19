@@ -1,0 +1,13 @@
+/security-review engine, loop U4 round 1, range 8eb6f3a..390e5c2 (run in the worktree; the in-session engine read the main checkout, whose diff was empty, so it was run as a sub-task over the branch range)
+
+No vulnerabilities found.
+
+- Command injection: every converted task (macos/tools/*/tasks/*.py and helpers.py) calls subprocess with argv lists; no shell=True, string command or os.system. The only pipe, in func-listStartupItems.py, is Popen argv lists with fixed arguments. Arguments come from the same trusted sources as in bash.
+- Path traversal: func-backup, func-zip, cleanupDS, func-code and cleanupTelegram build the same paths as the bash originals.
+- Unsafe deserialization / eval: none.
+- Privilege escalation (sudo): the sudo calls match the bash originals one for one; the keg chown stays guarded by */Cellar/tailscale/*.
+- Sensitive data logging (keychain-delete.py): no -g/-w, the secret is never read; deletion needs a TTY and y/yes.
+- Unsafe temp files: /tmp/mise-updateall-weekly.stamp works as in bash; no new temp file.
+- Symlink and lock handling in legacy_cleanup: rmtree only for a real directory, symlink unlinked; lock pid checked against ^[0-9]+$.
+- Env leakage to exec'd tools: same environment as bash; func-code and func-myps drop VIRTUAL_ENV and the script bin.
+- Library loading: ~/.config/mise/tasks/_scripts first on sys.path, the same user-owned folder bash sourced.

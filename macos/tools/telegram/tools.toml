@@ -13,5 +13,5 @@ cleanupTelegram = "mise run cleanupTelegram"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
-[tasks."cleanupTelegram"]
-source = "cleanupTelegram"
+[tasks."cleanupTelegram.py"]
+source = "cleanupTelegram.py"
