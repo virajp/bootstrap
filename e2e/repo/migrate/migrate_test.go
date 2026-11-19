@@ -298,7 +298,7 @@ func consumerMise(c *rc.Case, args ...string) int {
 
 // isDispatcher tells whether the task <port> is the dispatcher of bootstrap.
 func isDispatcher(c *rc.Case, port string) bool {
-	return rc.FileHas(c.Path(tasksDir+"/"+strings.ReplaceAll(port, ":", "/")+"/_default"), "own_tasks "+port)
+	return rc.FileHas(c.Path(tasksDir+"/"+strings.ReplaceAll(port, ":", "/")+"/_default.py"), `helpers.own_tasks("`+port+`")`)
 }
 
 func taskHas(c *rc.Case, rel, text string) bool { return rc.FileHas(c.Path(tasksDir+"/"+rel), text) }
@@ -386,11 +386,14 @@ func TestTestPorts(t *testing.T) {
 			c.CheckThat("the init move: the dispatcher of test:golden", isDispatcher(c, "test:golden"))
 		}})
 	// D26: a test/_default with the header of bootstrap and no manifest row
-	// is bootstrap's own: init writes the dispatcher over it.
-	rc.Run(t, rc.Spec{Name: "the init move: a test/_default with the header is overwritten", Values: devValues,
+	// is bootstrap's own old copy. D22 of
+	// docs/plans/2026-11-18-python-tasks-repo: init writes the dispatcher
+	// test/_default.py and removes the old copy.
+	rc.Run(t, rc.Spec{Name: "the init move: a test/_default with the header is removed", Values: devValues,
 		Change: func(c *rc.Case) { headerFile(c, tasksDir+"/test/_default") }, Call: initYes, Check: func(c *rc.Case) {
 			c.CheckThat("a synced test/_default: the dispatcher", isDispatcher(c, "test"))
 			c.CheckThat("a synced test/_default: no test/50-local", rc.NoFile(c.Path(tasksDir+"/test/50-local")))
+			c.CheckThat("a synced test/_default: no old test/_default", rc.NoFile(c.Path(tasksDir+"/test/_default")))
 		}})
 }
 
@@ -399,7 +402,7 @@ func TestTestPorts(t *testing.T) {
 // stackgen pack, at claude-plugins commit 0562cb44: its bytes give the
 // replaces hash of the android part test/golden/40-android. Without
 // CLAUDE_PLUGINS_CLONE, each case of a copy is skipped with one line (D21).
-const msgOldCopy = "is an old copy of the task test/golden/40-android of the tool android - run bootstrap migrate"
+const msgOldCopy = "is an old copy of the task test/golden/40-android.py of the tool android - run bootstrap migrate"
 
 // oldGolden reads the old copy from CLAUDE_PLUGINS_CLONE. It gives nil when
 // the variable is empty.
@@ -477,7 +480,7 @@ func TestToolTestParts(t *testing.T) {
 			c.CheckThat("an old copy at test/golden: init names the removal", c.LogHas("remove old copies of the android test parts"))
 			c.CheckThat("an old copy at test/golden: the dispatcher of test:golden", isDispatcher(c, "test:golden"))
 			c.CheckThat("an old copy at test/golden: not moved to 50-local", rc.NoFile(c.Path(tasksDir+"/test/golden/50-local")))
-			c.CheckThat("an old copy at test/golden: the part 40-android", isFile(c.Path(tasksDir+"/test/golden/40-android")))
+			c.CheckThat("an old copy at test/golden: the part 40-android", isFile(c.Path(tasksDir+"/test/golden/40-android.py")))
 			got = caseEngine(c, nil, "check")
 			c.CheckThat("an old copy at test/golden: check after init exits 0", got == 0)
 		}})
@@ -520,13 +523,9 @@ func TestToolTestParts(t *testing.T) {
 
 func checkGoldenPartsQuiet(c *rc.Case) {
 	env := harness.SetEnv(harness.Env(), "FORCE_COLOR")
-	want := exec.Command("bash", "-c", `source "$1"; print_success "Golden testing done"`, "bash",
-		c.Path(tasksDir+"/_scripts/helpers"))
-	want.Env = env
-	wantOut, err := want.Output()
-	if err != nil {
-		c.T.Fatalf("print_success of helpers: %v", err)
-	}
+	// The bytes of print_success "Golden testing done" of the shell helpers
+	// of bootstrap 9476e49, with no color: stdout is not a terminal.
+	wantOut := []byte("[OK] Golden testing done\n")
 	env = harness.SetEnv(env, miseTaskVars...)
 	env = harness.SetEnv(env, "MISE_STATE_DIR="+filepath.Join(c.Dir, "mise-state"),
 		"MISE_TASK_RUN_AUTO_INSTALL=false", "MISE_PROJECT_ROOT="+c.Consumer)
@@ -543,7 +542,7 @@ func checkGoldenPartsQuiet(c *rc.Case) {
 	runErr := run.Run()
 	_ = logf.Close()
 	c.CheckThat("the golden parts: the parts are there",
-		isFile(c.Path(tasksDir+"/test/golden/40-android")) && isFile(c.Path(tasksDir+"/test/golden/40-swift")))
+		isFile(c.Path(tasksDir+"/test/golden/40-android.py")) && isFile(c.Path(tasksDir+"/test/golden/40-swift.py")))
 	c.CheckThat("the golden parts: mise run test:golden exits 0", runErr == nil)
 	c.CheckThat("the golden parts: stdout is the success line of the dispatcher", bytes.Equal(wantOut, out.Bytes()))
 }

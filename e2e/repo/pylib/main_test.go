@@ -3,13 +3,14 @@
 // the mise tool, merge.py of the git tool and xcode.py of the swift tool.
 // Each case copies the libraries of the working tree's repo/ into a scratch
 // .config/mise/tasks/_scripts/, then runs a small Python probe that imports a
-// module, and, where a shell library has the same function, a shell probe
-// that sources it. The case compares the output bytes, the exit code and the
-// return values of the two sides.
+// module. Where a shell library had the same function, the case compares the
+// output bytes, the exit code and the return values with the fixed result of
+// the shell probe in testdata/shell.json.
 package pylib
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,18 +26,12 @@ func TestMain(m *testing.M) { harness.Main(m, nil, "repo") }
 
 // libs are the libraries that a case copies, with the folder of their tool.
 var libs = map[string]string{
-	"helpers":           "mise",
 	"helpers.py":        "mise",
-	"checks":            "mise",
 	"checks.py":         "mise",
-	"placeholder":       "mise",
 	"placeholder.py":    "mise",
-	"worktrees-page":    "mise",
 	"worktrees_page.py": "mise",
 	"gate_files.py":     "mise",
-	"merge":             "git",
 	"merge.py":          "git",
-	"xcode":             "swift",
 	"xcode.py":          "swift",
 }
 
@@ -96,19 +91,6 @@ func python(t testing.TB) []string {
 	}
 	return pyArgv
 }
-
-// bash5 gives the bash of PATH, which `#!/usr/bin/env bash` runs (D32).
-func bash5(t testing.TB) string {
-	t.Helper()
-	p, err := exec.LookPath("bash")
-	if err != nil {
-		t.Fatal(err)
-	}
-	return p
-}
-
-// bash32 is the bash of macOS, which the page comparison follows (D31).
-const bash32 = "/bin/bash"
 
 // result is the exit code and the output of one probe.
 type result struct {
@@ -171,11 +153,6 @@ def mark(name):
 
 `
 
-// shPreamble sources helpers, as a task does.
-const shPreamble = `source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/helpers"
-mark() { printf '@@ %s\n' "$1"; printf '@@ %s\n' "$1" >&2; }
-`
-
 // py writes <body> after the preamble to a probe file below <scratch> and
 // runs it with python -B.
 func (p probe) py(t testing.TB, scratch, body string) result {
@@ -189,21 +166,6 @@ func (p probe) py(t testing.TB, scratch, body string) result {
 	}
 	_ = f.Close()
 	return p.run(t, append(append([]string(nil), python(t)...), "-B", f.Name())...)
-}
-
-// sh writes <body> after the preamble to a probe file below <scratch> and
-// runs it with the bash <bash>.
-func (p probe) sh(t testing.TB, bash, scratch, body string) result {
-	t.Helper()
-	f, err := os.CreateTemp(scratch, "probe-*.sh")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := f.WriteString(shPreamble + body); err != nil {
-		t.Fatal(err)
-	}
-	_ = f.Close()
-	return p.run(t, bash, f.Name())
 }
 
 // env gives the environment of a probe: the case environment with the
@@ -226,20 +188,82 @@ func newCase(t testing.TB) (string, string) {
 	return dir, root
 }
 
-// same records a check that <py> and <sh> are equal.
-func same(t testing.TB, name string, py, sh result) bool {
+var (
+	shellOnce sync.Once
+	shellOut  map[string]string
+	shellErr  error
+)
+
+// shellText gives the fixed output <name> of testdata/shell.json: the bytes
+// of a shell probe that sourced the shell libraries of bootstrap 9476e49,
+// the base of the plan that deleted them. In a result, @DIR@ is the folder
+// of the case and @BASE@ the folder of a side of the merge case.
+func shellText(t testing.TB, name string) string {
 	t.Helper()
-	return harness.Check(t, name, py == sh, "python:\n"+py.String()+"shell:\n"+sh.String())
+	shellOnce.Do(func() {
+		b, err := os.ReadFile(filepath.Join("testdata", "shell.json"))
+		if err == nil {
+			err = json.Unmarshal(b, &shellOut)
+		}
+		shellErr = err
+	})
+	if shellErr != nil {
+		t.Fatal(shellErr)
+	}
+	s, ok := shellOut[name]
+	if !ok {
+		t.Fatalf("testdata/shell.json has no %s", name)
+	}
+	return s
+}
+
+// shell gives the fixed result <name> of the shell probe: the form of
+// result.String().
+func shell(t testing.TB, name string) result {
+	t.Helper()
+	s := shellText(t, name)
+	var r result
+	head, rest, ok1 := strings.Cut(s, "\n--- stdout\n")
+	out, errOut, ok2 := strings.Cut(rest, "--- stderr\n")
+	if _, err := fmt.Sscanf(head, "exit %d", &r.code); err != nil || !ok1 || !ok2 {
+		t.Fatalf("testdata/shell.json: %s is not a result", name)
+	}
+	r.out, r.errOut = out, errOut
+	return r
+}
+
+// subst gives <r> with each folder of <pairs> (a folder, then its token)
+// replaced by its token, also in the form without symlinks.
+func subst(r result, pairs ...string) result {
+	for i := 0; i+1 < len(pairs); i += 2 {
+		dirs := []string{pairs[i]}
+		if real, err := filepath.EvalSymlinks(pairs[i]); err == nil && real != pairs[i] {
+			dirs = []string{real, pairs[i]}
+		}
+		for _, d := range dirs {
+			r.out = strings.ReplaceAll(r.out, d, pairs[i+1])
+			r.errOut = strings.ReplaceAll(r.errOut, d, pairs[i+1])
+		}
+	}
+	return r
+}
+
+// same records a check that <py>, with the folder <dir> as @DIR@, is the
+// fixed result <name> of the shell probe.
+func same(t testing.TB, check, name string, py result, dir string) bool {
+	t.Helper()
+	got, want := subst(py, dir, "@DIR@"), shell(t, name)
+	return harness.Check(t, check, got == want, "python:\n"+got.String()+"shell:\n"+want.String())
+}
+
+// slug gives the name of a case as a part of a key of testdata/shell.json.
+func slug(s string) string {
+	return strings.NewReplacer(" ", "-", ",", "", "/", "-").Replace(s)
 }
 
 // pyQuote gives <s> as a Python string literal.
 func pyQuote(s string) string {
 	return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`, "\n", `\n`).Replace(s) + "'"
-}
-
-// shQuote gives <s> as a shell word.
-func shQuote(s string) string {
-	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 // writeExec writes <content> to <path> with mode 755.

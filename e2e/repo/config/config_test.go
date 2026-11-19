@@ -32,7 +32,7 @@ core_branches = [ "main", "develop" ]`
 [tools.fixture]`
 	noOverride = "the envs, the depends, the requires, the requires_found and the files of a mise tool cannot be overridden"
 	checkValid = " is valid"
-	gate       = ".config/mise/tasks/code/lint/50-pyrefly"
+	gate       = ".config/mise/tasks/code/lint/50-pyrefly.py"
 	oldConf    = ".config/mise/conf.d/oldtool/mise.dev.toml"
 )
 
@@ -211,7 +211,7 @@ func pythonFilesEdit(old, repl string) func(c *rc.Case) {
 
 func lacksGateUpdate(c *rc.Case) {
 	checkLogLacks(c, "[files], no pyproject.toml: the gates are skipped", "would update "+c.Consumer+"/"+gate)
-	checkLogLacks(c, "[files], no pyproject.toml: code:lint:uv stays", "skip file  "+c.Consumer+"/.config/mise/tasks/code/lint/90-uv")
+	checkLogLacks(c, "[files], no pyproject.toml: code:lint:uv stays", "skip file  "+c.Consumer+"/.config/mise/tasks/code/lint/90-uv.py")
 }
 
 func lacksGateSkip(c *rc.Case) {
@@ -241,10 +241,10 @@ func TestPythonFiles(t *testing.T) {
 	rc.Run(t, rc.Spec{Name: "[files], no pyproject.toml: a gate of the repo without the header stays", Values: pythonValues,
 		Change: gateOwn, Message: gate + " (no pyproject.toml)", Check: lacks("[files], a gate of the repo without the header", "would remove")})
 	rc.Run(t, rc.Spec{Name: "[tasks], a source that is not a file of the tool folder", Code: 2, Values: pythonValues,
-		Change:  pythonFilesEdit(`source = "code-lint-pyrefly"`, `source = "nope"`),
-		Message: `python/tools.toml: [tasks."code/lint/50-pyrefly"] source: tasks/nope is not there`})
+		Change:  pythonFilesEdit(`source = "code-lint-pyrefly.py"`, `source = "nope"`),
+		Message: `python/tools.toml: [tasks."code/lint/50-pyrefly.py"] source: tasks/nope is not there`})
 	rc.Run(t, rc.Spec{Name: "[tasks], a path outside the tasks folder", Code: 2, Values: pythonValues,
-		Change:  pythonFilesEdit(`[tasks."code/lint/50-pyrefly"]`, `[tasks."../python/tools.toml"]`),
+		Change:  pythonFilesEdit(`[tasks."code/lint/50-pyrefly.py"]`, `[tasks."../python/tools.toml"]`),
 		Message: `python/tools.toml: [tasks."../python/tools.toml"] must be a path relative to the target root, with no .. part`})
 	rc.Run(t, rc.Spec{Name: "[overrides.mise.tools.ruff] files", Code: 2, Values: pythonValues + `
 [overrides.mise.tools.ruff]

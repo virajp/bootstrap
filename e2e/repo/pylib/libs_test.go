@@ -3,7 +3,6 @@ package pylib
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -59,19 +58,16 @@ func TestChecks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var sh, py strings.Builder
-	sh.WriteString(`source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/checks"` + "\n")
+	var py strings.Builder
 	py.WriteString("import checks  # noqa: E402\n\n")
 	for _, c := range checkCalls {
 		name := strings.Join(c, " ")
-		fmt.Fprintf(&sh, "if %s; then echo '%s=1'; else echo '%s=0'; fi\n", name, name, name)
 		args := make([]string, 0, len(c)-1)
 		for _, a := range c[1:] {
 			args = append(args, pyQuote(a))
 		}
 		fmt.Fprintf(&py, "print('%s=' + ('1' if checks.%s(%s) else '0'))\n", name, c[0], strings.Join(args, ", "))
 	}
-	sh.WriteString("echo \"main=$(get_main_worktree_path)\"\n")
 	py.WriteString("print('main=' + checks.get_main_worktree_path())\n")
 
 	for _, where := range []struct{ name, dir string }{
@@ -79,16 +75,16 @@ func TestChecks(t *testing.T) {
 	} {
 		p := probe{dir: where.dir, env: harness.SetEnv(e, "GIT_CEILING_DIRECTORIES="+dir)}
 		gotPy := p.py(t, dir, py.String())
-		gotSh := p.sh(t, bash5(t), dir, sh.String())
 		if where.dir == outside {
 			// Outside a repository the shell predicates show the fatal lines of
 			// git on stderr, and checks.py shows fewer: the case compares the
 			// answers and the code only.
+			got, want := subst(gotPy, dir, "@DIR@"), shell(t, "checks-"+slug(where.name))
 			harness.Check(t, "checks, "+where.name+": the answers of the shell",
-				gotPy.out == gotSh.out && gotPy.code == gotSh.code, "python:\n"+gotPy.String()+"shell:\n"+gotSh.String())
+				got.out == want.out && got.code == want.code, "python:\n"+got.String()+"shell:\n"+want.String())
 			continue
 		}
-		same(t, "checks, "+where.name+": the answers of the shell", gotPy, gotSh)
+		same(t, "checks, "+where.name+": the answers of the shell", "checks-"+slug(where.name), gotPy, dir)
 	}
 }
 
@@ -132,25 +128,13 @@ placeholder.placeholder_notice("code:lint:70-x", "no linter")
 			}
 			p := probe{dir: dir, env: env(dir, root, "NO_COLOR=1"), merge: true}
 			py := p.py(t, dir, "import placeholder  # noqa: E402\n\nplaceholder.placeholder_notice('code:lint', 'no stack')\n")
-			sh := p.sh(t, bash5(t), dir, `source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/placeholder"
-placeholder_notice code:lint "no stack"
-`)
-			same(t, "placeholder, "+c.name+": the notice of the shell", py, sh)
+			same(t, "placeholder, "+c.name+": the notice of the shell", "placeholder-"+slug(c.name), py, dir)
 		})
 	}
 }
 
-// The columns of a row of the page: the key of worktrees_page.py, which is
-// the name of the shell array in lower case (D23).
-var rowKeys = []string{"kind", "repo", "r_role", "r_host", "r_glyph", "r_default", "r_fetched", "r_pinned", "r_note",
-	"r_fix", "w_branch", "w_detached", "w_commit", "w_age", "w_base", "w_ba", "w_bb", "w_pa", "w_pb", "w_origin", "w_oa",
-	"w_ob", "w_sync", "w_conflict", "w_dirty", "w_dglyph", "w_codes", "w_op", "w_locked", "w_missing", "w_stash",
-	"w_merged", "w_notpin", "w_path"}
-
-var attentionKeys = []string{"a_rank", "a_glyph", "a_color", "a_repo", "a_branch", "a_msg", "a_cmd"}
-
 // The rows of the page case. They have the HTML characters &<>" and paths
-// below HOME, because the shell side runs with /bin/bash (D31).
+// below HOME, because the shell side ran with /bin/bash (D31).
 var pageRows = []map[string]string{
 	{"kind": "repo", "repo": "org/app", "r_role": "root", "r_host": "github", "r_glyph": "", "r_default": "main",
 		"r_fetched": "2h", "r_pinned": ""},
@@ -183,56 +167,6 @@ var pageAttention = []map[string]string{
 		"a_msg": "not on disk", "a_cmd": "git submodule update --init"},
 	{"a_rank": "3", "a_glyph": "", "a_color": "yellow", "a_repo": "org/app", "a_branch": "main",
 		"a_msg": "stash", "a_cmd": "git stash list"},
-}
-
-// pageShell gives the shell probe of the page: the glyphs, LEGEND,
-// count_cell and state_parts of code-worktrees, the worktrees-page library
-// with its folder changed to <folder> (D23), the arrays of the rows, and the
-// call.
-func pageShell(t testing.TB, folder string, rows, attention []map[string]string) string {
-	t.Helper()
-	tasks := filepath.Join(harness.Root, "repo", "tools", "mise", "tasks")
-	cw := harness.ReadFile(filepath.Join(tasks, "code-worktrees"))
-	var b strings.Builder
-	in := ""
-	for _, line := range strings.Split(cw, "\n") {
-		switch {
-		case strings.HasPrefix(line, "readonly G_"):
-			b.WriteString(line + "\n")
-		case line == "LEGEND=(", line == "count_cell() {", line == "state_parts() {":
-			in = line
-		}
-		if in != "" {
-			b.WriteString(line + "\n")
-			if (in == "LEGEND=(" && line == ")") || (in != "LEGEND=(" && line == "}") {
-				in = ""
-			}
-		}
-	}
-	for _, name := range []string{"LEGEND=(", "count_cell() {", "state_parts() {"} {
-		if !strings.Contains(b.String(), name) {
-			t.Fatalf("code-worktrees has no %s", name)
-		}
-	}
-	page := harness.ReadFile(filepath.Join(tasks, "worktrees-page"))
-	const dirLine = `local dir="/tmp/code-worktrees"`
-	if !strings.Contains(page, dirLine) {
-		t.Fatalf("worktrees-page has no line %s", dirLine)
-	}
-	b.WriteString(strings.Replace(page, dirLine, "local dir="+shQuote(folder), 1) + "\n")
-	arrays := func(keys []string, list []map[string]string) {
-		for _, k := range keys {
-			b.WriteString(strings.ToUpper(k) + "=(")
-			for _, r := range list {
-				b.WriteString(" " + shQuote(r[k]))
-			}
-			b.WriteString(" )\n")
-		}
-	}
-	arrays(rowKeys, rows)
-	arrays(attentionKeys, attention)
-	b.WriteString("write_worktrees_page\n")
-	return b.String()
 }
 
 // pagePython gives the Python probe of the page.
@@ -268,18 +202,16 @@ func TestWorktreesPage(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			dir, root := newCase(t)
-			pyDir, shDir := filepath.Join(dir, "py-page"), filepath.Join(dir, "sh-page")
+			pyDir := filepath.Join(dir, "py-page")
 			p := probe{dir: dir, env: env(dir, root, "HOME=/home/tester")}
 			py := p.py(t, dir, pagePython(pyDir, c.rows, c.attention))
-			sh := p.sh(t, bash32, dir, pageShell(t, shDir, c.rows, c.attention))
 			name := strings.ReplaceAll(c.rows[0]["repo"], "/", "_") + ".html"
-			pyFile, shFile := filepath.Join(pyDir, name), filepath.Join(shDir, name)
+			pyFile := filepath.Join(pyDir, name)
 			harness.Check(t, c.name+": the path, printed and returned",
 				py.code == 0 && py.out == pyFile+"\nreturned="+pyFile+"\n", py.String())
-			harness.Check(t, c.name+": the path of the shell", sh.code == 0 && sh.out == shFile+"\n", sh.String())
 			fixed := "on DATE.</p>"
 			pyHTML := pageDate.ReplaceAllString(harness.ReadFile(pyFile), fixed)
-			shHTML := pageDate.ReplaceAllString(harness.ReadFile(shFile), fixed)
+			shHTML := shellText(t, "worktrees_page-"+slug(c.name)+".html")
 			harness.Check(t, c.name+": the HTML bytes of the shell", pyHTML != "" && pyHTML == shHTML,
 				firstHTMLDiff(pyHTML, shHTML))
 			harness.Check(t, c.name+": the date line is fixed", strings.Count(pyHTML, fixed) == 1, "")
@@ -350,38 +282,27 @@ func TestMerge(t *testing.T) {
 		"GIT_COMMITTER_NAME=Test Committer", "GIT_COMMITTER_EMAIL=committer@example.com",
 		"GIT_AUTHOR_DATE=2026-01-02T03:04:05Z", "GIT_COMMITTER_DATE=2026-01-02T03:04:05Z",
 		"NO_COLOR=1", "BOOTSTRAP_BIN=" + stub, "STUB_OUT=" + answer, "STUB_LOG=" + filepath.Join(dir, "log")}
-	sides := map[string]string{}
-	results := map[string]result{}
-	logs := map[string]string{}
-	for _, side := range []string{"python", "shell"} {
-		base := filepath.Join(dir, side)
-		if err := os.MkdirAll(base, 0o755); err != nil {
-			t.Fatal(err)
-		}
-		e := env(base, filepath.Join(base, "work"), fixed...)
-		work := mergeRepo(t, e, base)
-		sides[side] = work
-		p := probe{dir: work, env: e, merge: true}
-		if side == "python" {
-			results[side] = p.py(t, base, "import merge  # noqa: E402\n\nmerge.merge_to_destination_branch('main', 'feature')\n")
-		} else {
-			results[side] = p.sh(t, bash5(t), base, `source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/merge"
-merge_to_destination_branch main feature
-`)
-		}
-		logs[side] = git(t, e, work, "log", "--format=%H %P %s", "--all") + "\n" +
-			git(t, e, filepath.Join(base, "origin.git"), "log", "--format=%H %P %s", "--all") + "\n" +
-			git(t, e, work, "rev-parse", "--abbrev-ref", "HEAD")
+	base := filepath.Join(dir, "python")
+	if err := os.MkdirAll(base, 0o755); err != nil {
+		t.Fatal(err)
 	}
-	py := results["python"]
+	e := env(base, filepath.Join(base, "work"), fixed...)
+	work := mergeRepo(t, e, base)
+	p := probe{dir: work, env: e, merge: true}
+	py := p.py(t, base, "import merge  # noqa: E402\n\nmerge.merge_to_destination_branch('main', 'feature')\n")
+	log := git(t, e, work, "log", "--format=%H %P %s", "--all") + "\n" +
+		git(t, e, filepath.Join(base, "origin.git"), "log", "--format=%H %P %s", "--all") + "\n" +
+		git(t, e, work, "rev-parse", "--abbrev-ref", "HEAD")
 	harness.Check(t, "merge: exit 0 and the success line", py.code == 0 &&
 		strings.Contains(py.out, "Landing feature on main (direct-merge) ...") &&
 		strings.HasSuffix(py.out, "[OK] Merge completed successfully!\n"), py.String())
-	same(t, "merge: the output of the shell", py, results["shell"])
-	harness.Check(t, "merge: the git log of the shell, hashes included", logs["python"] == logs["shell"],
-		"python:\n"+logs["python"]+"\nshell:\n"+logs["shell"])
+	got, want := subst(py, base, "@BASE@", dir, "@DIR@"), shell(t, "merge.out")
+	harness.Check(t, "merge: the output of the shell", got == want, "python:\n"+got.String()+"shell:\n"+want.String())
+	wantLog := shellText(t, "merge.log")
+	harness.Check(t, "merge: the git log of the shell, hashes included", log == wantLog,
+		"python:\n"+log+"\nshell:\n"+wantLog)
 	harness.Check(t, "merge: a merge commit on main of origin",
-		strings.Contains(logs["python"], "Merge branch 'feature'") && strings.HasSuffix(logs["python"], "\nfeature"), logs["python"])
+		strings.Contains(log, "Merge branch 'feature'") && strings.HasSuffix(log, "\nfeature"), log)
 }
 
 // TestXcode: find_xcodeproj returns the one project, or stops with the lines
@@ -389,10 +310,6 @@ merge_to_destination_branch main feature
 // exports, and sets them in os.environ (D19).
 func TestXcode(t *testing.T) {
 	const findPy = "import xcode  # noqa: E402\n\nprint(f'project={xcode.find_xcodeproj(\"swift:build\")}')\n"
-	const findSh = `source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/xcode"
-project=$(find_xcodeproj swift:build) || exit $?
-echo "project=${project}"
-`
 	for _, c := range []struct {
 		name     string
 		projects []string
@@ -415,26 +332,24 @@ echo "project=${project}"
 			harness.WriteFile(t, filepath.Join(app, "File.xcodeproj"), "")
 			p := probe{dir: app, env: env(dir, root, "NO_COLOR=1")}
 			py := p.py(t, dir, findPy)
-			sh := p.sh(t, bash5(t), dir, findSh)
 			harness.Check(t, fmt.Sprintf("find_xcodeproj, %s: exit %d", c.name, c.code), py.code == c.code, py.String())
 			if c.code == 0 {
 				harness.Check(t, "find_xcodeproj, one project: the path", py.out == "project=App.xcodeproj\n" && py.errOut == "",
 					py.String())
 			}
-			same(t, "find_xcodeproj, "+c.name+": the output of the shell", py, sh)
+			same(t, "find_xcodeproj, "+c.name+": the output of the shell", "find_xcodeproj-"+slug(c.name), py, dir)
 		})
 	}
+	// require_xcode runs a stub xcodebuild and a stub xcrun, so the values
+	// are the same on each machine.
 	t.Run("require_xcode", func(t *testing.T) {
 		t.Parallel()
 		dir, root := newCase(t)
+		bin := filepath.Join(dir, "bin")
+		writeExec(t, filepath.Join(bin, "xcodebuild"), stubXcodebuild)
+		writeExec(t, filepath.Join(bin, "xcrun"), stubXcrun)
 		p := probe{dir: dir, env: env(dir, root, "NO_COLOR=1", "XCODE_VERSION", "SIMULATOR_PLATFORM", "SIMULATOR_OS",
-			"SIMULATOR_DEVICE")}
-		if _, err := exec.LookPath("xcodebuild"); err != nil {
-			t.Skip("no xcodebuild on the PATH")
-		}
-		if r := p.run(t, "xcodebuild", "-version"); r.code != 0 {
-			t.Skip("no Xcode is selected: xcodebuild -version fails")
-		}
+			"SIMULATOR_DEVICE", "PATH="+bin+":/usr/bin:/bin")}
 		const names = "XCODE_VERSION SIMULATOR_PLATFORM SIMULATOR_OS SIMULATOR_DEVICE"
 		py := p.py(t, dir, `import xcode  # noqa: E402
 
@@ -443,18 +358,31 @@ for name in "`+names+`".split():
   print(f"{name}={values.get(name, '')}")
 print("environ=" + str(all(os.environ[k] == v for k, v in values.items())))
 `)
-		sh := p.sh(t, bash5(t), dir, `source "${MISE_PROJECT_ROOT}/.config/mise/tasks/_scripts/xcode"
-require_xcode swift:build
-for name in `+names+`; do
-  printf '%s=%s\n' "${name}" "$(printenv "${name}")"
-done
-echo "environ=True"
-`)
-		harness.Check(t, "require_xcode: the values of the shell", py == sh, "python:\n"+py.String()+"shell:\n"+sh.String())
-		if py.code == 0 {
-			harness.Check(t, "require_xcode: a dict with XCODE_VERSION, set in os.environ",
-				strings.Contains(py.out, "XCODE_VERSION=") && !strings.Contains(py.out, "XCODE_VERSION=\n") &&
-					strings.HasSuffix(py.out, "environ=True\n"), py.String())
-		}
+		same(t, "require_xcode: the values of the shell", "require_xcode", py, dir)
+		harness.Check(t, "require_xcode: a dict with XCODE_VERSION, set in os.environ",
+			py.code == 0 && strings.Contains(py.out, "XCODE_VERSION=26.1\n") && strings.HasSuffix(py.out, "environ=True\n"),
+			py.String())
 	})
 }
+
+// The stub xcodebuild of require_xcode: the selected Xcode is 26.1.
+const stubXcodebuild = "#!/bin/sh\nprintf 'Xcode 26.1\\nBuild version 17B55\\n'\n"
+
+// The stub xcrun of require_xcode: the available simulators of two iOS
+// runtimes and a watchOS runtime. The newest iOS runtime is 26.1, and its
+// iPhone with the highest model number and no other word is iPhone 17.
+const stubXcrun = `#!/bin/sh
+cat <<'END'
+== Devices ==
+-- iOS 18.2 --
+    iPhone 16 (00000000-0000-0000-0000-000000000001) (Shutdown)
+    iPhone 16 Pro (00000000-0000-0000-0000-000000000002) (Shutdown)
+-- iOS 26.1 --
+    iPhone 9 (00000000-0000-0000-0000-000000000003) (Shutdown)
+    iPhone 17 (00000000-0000-0000-0000-000000000004) (Shutdown)
+    iPhone 17 Pro Max (00000000-0000-0000-0000-000000000005) (Booted)
+    iPhone Air (00000000-0000-0000-0000-000000000006) (Shutdown)
+-- watchOS 26.0 --
+    Apple Watch Series 11 (46mm) (00000000-0000-0000-0000-000000000007) (Shutdown)
+END
+`

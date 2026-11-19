@@ -12,8 +12,8 @@ import (
 	"github.com/virajp/bootstrap/e2e/internal/harness"
 )
 
-// printCall is one call of a print function: the shell form and the Python
-// form.
+// printCall is one call of a print function: the shell form of the fixed
+// result, and the Python form.
 type printCall struct{ name, sh, py string }
 
 var printCalls = []printCall{
@@ -68,9 +68,8 @@ var colorModes = []struct {
 // TestPrintFunctions: each print function of helpers.py writes the bytes of
 // the shell function, on the same stream (D9, D22, D32).
 func TestPrintFunctions(t *testing.T) {
-	var sh, py strings.Builder
+	var py strings.Builder
 	for _, c := range printCalls {
-		fmt.Fprintf(&sh, "mark %s\n%s\n", shQuote(c.name), c.sh)
 		fmt.Fprintf(&py, "mark(%s)\n%s\n", pyQuote(c.name), c.py)
 	}
 	for _, m := range colorModes {
@@ -79,14 +78,15 @@ func TestPrintFunctions(t *testing.T) {
 			dir, root := newCase(t)
 			p := probe{dir: dir, env: env(dir, root, m.kv...)}
 			gotPy := p.py(t, dir, py.String())
-			gotSh := p.sh(t, bash5(t), dir, sh.String())
-			if !harness.Check(t, m.name+": stdout of each print function", gotPy.out == gotSh.out,
-				firstDiff(gotPy.out, gotSh.out)) {
+			wantOut := shellText(t, "print-"+slug(m.name)+".stdout")
+			wantErr := shellText(t, "print-"+slug(m.name)+".stderr")
+			if !harness.Check(t, m.name+": stdout of each print function", gotPy.out == wantOut,
+				firstDiff(gotPy.out, wantOut)) {
 				return
 			}
-			harness.Check(t, m.name+": stderr of each print function", gotPy.errOut == gotSh.errOut,
-				firstDiff(gotPy.errOut, gotSh.errOut))
-			harness.Check(t, m.name+": exit 0", gotPy.code == 0 && gotSh.code == 0, gotPy.String()+gotSh.String())
+			harness.Check(t, m.name+": stderr of each print function", gotPy.errOut == wantErr,
+				firstDiff(gotPy.errOut, wantErr))
+			harness.Check(t, m.name+": exit 0", gotPy.code == 0, gotPy.String())
 		})
 	}
 }
@@ -156,7 +156,6 @@ const answerJSON = `{"key":"repo.core_branches","value":["main","develop"],"sour
 // and no engine give the error lines and exit 2 (D10, D22).
 func TestBootstrapGet(t *testing.T) {
 	const getPy = "answer = helpers.bootstrap_get('repo.core_branches')\nprint(json.dumps(answer, sort_keys=True))\n"
-	const getSh = "out=$(bootstrap_get repo.core_branches) || exit $?\nprintf '%s\\n' \"$out\"\n"
 
 	t.Run("an answer", func(t *testing.T) {
 		t.Parallel()
@@ -196,9 +195,8 @@ func TestBootstrapGet(t *testing.T) {
 			t.Parallel()
 			dir, _, p := stubCase(t, c.kv...)
 			py := p.py(t, dir, getPy)
-			sh := p.sh(t, bash5(t), dir, getSh)
 			harness.Check(t, fmt.Sprintf("bootstrap_get, %s: exit %d", c.name, c.code), py.code == c.code, py.String())
-			same(t, "bootstrap_get, "+c.name+": the output of the shell", py, sh)
+			same(t, "bootstrap_get, "+c.name+": the output of the shell", "bootstrap_get-"+slug(c.name), py, dir)
 		})
 	}
 	// The shell maps each code other than 0 and 1 to exit 2; the Python form
@@ -231,9 +229,8 @@ func TestBootstrapGet(t *testing.T) {
 		e := env(dir, root, "NO_COLOR=1", "PATH="+harness.ShimDir+":/usr/bin:/bin")
 		p := probe{dir: dir, env: e, merge: true}
 		py := p.py(t, dir, getPy)
-		sh := p.sh(t, bash5(t), dir, getSh)
 		harness.Check(t, "bootstrap_get, no engine: the error lines and exit 2", py.code == 2 && py.out == wantLines, py.String())
-		same(t, "bootstrap_get, no engine: the output of the shell", py, sh)
+		same(t, "bootstrap_get, no engine: the output of the shell", "bootstrap_get-no-engine", py, dir)
 	})
 }
 
@@ -241,7 +238,6 @@ func TestBootstrapGet(t *testing.T) {
 // the defaults and the order of the shell version (D10).
 func TestMembers(t *testing.T) {
 	const membersPy = "for m in helpers.members():\n  print('\\t'.join(m))\nprint(json.dumps(helpers.members()))\n"
-	const membersSh = "list=$(members) || exit $?\n[ -z \"$list\" ] || printf '%s\\n' \"$list\"\n"
 	for _, c := range []struct {
 		name, answer, want string
 	}{
@@ -257,7 +253,7 @@ func TestMembers(t *testing.T) {
 			dir, _, p := stubCase(t, "STUB_OUT="+c.answer)
 			p.merge = false
 			py := p.py(t, dir, membersPy)
-			sh := p.sh(t, bash5(t), dir, membersSh)
+			sh := shell(t, "members-"+slug(c.name))
 			lines := strings.SplitAfter(py.out, "\n")
 			last := strings.TrimSpace(lines[len(lines)-2])
 			tsv := strings.Join(lines[:len(lines)-2], "")
@@ -270,9 +266,8 @@ func TestMembers(t *testing.T) {
 		t.Parallel()
 		dir, _, p := stubCase(t, "STUB_CODE=2", "STUB_ERR=[ERROR] no values")
 		py := p.py(t, dir, membersPy)
-		sh := p.sh(t, bash5(t), dir, membersSh)
 		harness.Check(t, "members, engine code 2: exit 2", py.code == 2, py.String())
-		same(t, "members, engine code 2: the output of the shell", py, sh)
+		same(t, "members, engine code 2: the output of the shell", "members-engine-code-2", py, dir)
 	})
 }
 
@@ -293,17 +288,14 @@ func TestOwnTasks(t *testing.T) {
 	harness.WriteFile(t, filepath.Join(root, ".config", "mise", "tasks", "off", "_default"), "#!/bin/bash\n")
 	names := []string{"grp", "grp:10-a", "grp:20-b", "grp:20-b.py", "grp:30-c", "grp:30-c.py", "grp:40-d", "grp:e",
 		"grp:e.py", "grp:60-dir", "grp:60-dir:x", "grp:zz", "solo", "off", "none"}
-	var sh, py strings.Builder
-	sh.WriteString("own_tasks grp\nown_tasks none\n")
+	var py strings.Builder
 	py.WriteString("for n in helpers.own_tasks('grp') + helpers.own_tasks('none'):\n  print(n)\n")
 	for _, n := range names {
-		fmt.Fprintf(&sh, "if has_own_task %s; then echo %s=1; else echo %s=0; fi\n", n, n, n)
 		fmt.Fprintf(&py, "print(%s + ('=1' if helpers.has_own_task(%s) else '=0'))\n", pyQuote(n), pyQuote(n))
 	}
 	p := probe{dir: dir, env: env(dir, root)}
 	gotPy := p.py(t, dir, py.String())
-	gotSh := p.sh(t, bash5(t), dir, sh.String())
-	same(t, "own_tasks and has_own_task: the answers of the shell", gotPy, gotSh)
+	same(t, "own_tasks and has_own_task: the answers of the shell", "own_tasks", gotPy, dir)
 	want := []string{"grp:10-a", "grp:20-b", "grp:30-c", "grp:30-c.py"}
 	gotParts := strings.Split(gotPy.out, "\n")[:4]
 	harness.Check(t, "own_tasks: the names of D22", reflect.DeepEqual(gotParts, want), gotPy.String())
@@ -354,12 +346,6 @@ print(open(list).read(), end="")
 os.unlink(list)
 `
 
-const gateSh = `eval "ARGS=(${GATE_ARGS_SH})"
-list=$(gate_files "$GATE" ${ARGS[@]+"${ARGS[@]}"}) || exit $?
-cat "$list"
-rm -f "$list"
-`
-
 // TestGateFiles: gate_files runs the real gate_files.py and returns the path
 // of the list; the list is the list of the shell gate_files (D12).
 func TestGateFiles(t *testing.T) {
@@ -376,24 +362,19 @@ func TestGateFiles(t *testing.T) {
 			t.Parallel()
 			dir, _, gate, p := gateCase(t)
 			args, _ := json.Marshal(append([]string{}, c.args...))
-			var words []string
-			for _, a := range c.args {
-				words = append(words, shQuote(a))
-			}
-			p.env = harness.SetEnv(p.env, "GATE="+gate, "GATE_ARGS="+string(args), "GATE_ARGS_SH="+strings.Join(words, " "))
+			p.env = harness.SetEnv(p.env, "GATE="+gate, "GATE_ARGS="+string(args))
 			py := p.py(t, dir, gatePy)
-			sh := p.sh(t, bash5(t), dir, gateSh)
 			harness.Check(t, "gate_files, "+c.name+": the list", py.code == 0 && sortLines(py.out) == sortLines(c.want), py.String())
-			same(t, "gate_files, "+c.name+": the list of the shell", py, sh)
+			same(t, "gate_files, "+c.name+": the list of the shell", "gate_files-"+slug(c.name), py, dir)
 		})
 	}
 	t.Run("a failure", func(t *testing.T) {
 		t.Parallel()
 		dir, _, _, p := gateCase(t)
 		p.merge = true
-		p.env = harness.SetEnv(p.env, "GATE="+filepath.Join(dir, "no-such-gate"), `GATE_ARGS=["--all"]`, "GATE_ARGS_SH=--all")
+		p.env = harness.SetEnv(p.env, "GATE="+filepath.Join(dir, "no-such-gate"), `GATE_ARGS=["--all"]`)
 		py := p.py(t, dir, gatePy)
-		sh := p.sh(t, bash5(t), dir, gateSh)
+		sh := shell(t, "gate_files-a-failure")
 		harness.Check(t, "gate_files, a failure: the error line and the code of the script",
 			py.code != 0 && strings.Contains(py.out, "[ERROR] gate_files failed for "+filepath.Join(dir, "no-such-gate")+" with code "),
 			py.String())
@@ -410,14 +391,8 @@ func TestUsageFiles(t *testing.T) {
 	p.env = harness.SetEnv(p.env, "usage_files="+usage, "GATE="+gate)
 	py := p.py(t, dir, "print(json.dumps(helpers.usage_files()))\n"+
 		"list = helpers.gate_files(os.environ['GATE'], *helpers.usage_files())\nprint(open(list).read(), end='')\nos.unlink(list)\n")
-	sh := p.sh(t, bash5(t), dir, `eval "FILES=(${usage_files})"
-printf '%s\n' '["c d.md", "a.md", "sub/e.md"]'
-list=$(gate_files "$GATE" "${FILES[@]}") || exit $?
-cat "$list"
-rm -f "$list"
-`)
 	harness.Check(t, "usage_files: the words", strings.HasPrefix(py.out, `["c d.md", "a.md", "sub/e.md"]`+"\n"), py.String())
-	same(t, "usage_files: the list of the shell gate", py, sh)
+	same(t, "usage_files: the list of the shell gate", "usage_files", py, dir)
 }
 
 // sortLines gives the lines of <s> in order, so two lists compare as sets.
