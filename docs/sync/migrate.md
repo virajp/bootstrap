@@ -51,6 +51,7 @@ into `.config/bootstrap/`.
 | `UV_NO_CACHE` in `[overrides.mise.env]` of the values                                                                               | M46, before the next sync.                                                                                                                                 |
 | `[tool.ruff]` or `[tool.ruff.format]` format settings in a `pyproject.toml`, or `.config/mise/tasks/code/format/40-ruff`            | M47, after the sync.                                                                                                                                       |
 | An own task that sources a shell library of `.config/mise/tasks/_scripts/`, or an own part that calls a shell function of `helpers` | M48, after the sync.                                                                                                                                       |
+| `main` and `develop` in `core_branches`, and `main` with a commit that `develop` does not have                                      | M49, before the next `git:merge:main`.                                                                                                                     |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -1499,3 +1500,37 @@ Do these steps in each repository, after the sync:
    `mise run code:lint --all`. Make sure that the output and the exit code are
    the same as before.
 6. Commit the changed files.
+
+## M49: `develop` lands on `main` with a fast-forward
+
+A direct landing of `develop` on `main` (`landing = "direct-merge"` or
+`"direct-commit"` of `[branches.main]`) is now a fast-forward. `main` only
+moves forward to a commit of `develop`, so `main` is always an ancestor of
+`develop`. Before, each landing added a merge commit to `main` that `develop`
+did not get, and `git:worktree:list` showed `main` ahead of `develop`.
+
+`git:merge:main` stops before it changes a branch when `main` or `origin/main`
+has a commit that `develop` does not have. Do these steps one time, after the
+sync:
+
+1. Find the commits of `main` that `develop` does not have:
+
+   ```bash
+   git fetch origin main develop
+   git log --oneline origin/develop..origin/main
+   ```
+
+   If the list is empty, stop here.
+2. Merge `main` into `develop`, and push `develop`:
+
+   ```bash
+   git switch develop
+   git merge origin/main
+   git push origin develop
+   ```
+
+3. Run `mise run git:merge:main`. It now fast-forwards `main` to `develop`.
+
+A `landing = "pr"` of `[branches.main]` does not change: the forge merges. A
+pull request on GitHub cannot fast-forward, so a repository that wants this
+model sets `landing = "direct-merge"` for `main`.

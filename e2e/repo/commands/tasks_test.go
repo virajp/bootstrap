@@ -500,6 +500,93 @@ func TestMergeLanding(t *testing.T) {
 		}})
 }
 
+// git:merge:main lands develop on main with a fast-forward. When main, local
+// or on origin, has a commit that develop does not have, it stops before it
+// changes a branch.
+func TestMergeFastForward(t *testing.T) {
+	// mergeDevelop: develop is main with one commit more, then <setup>, then
+	// the task runs from develop. The case removes the hook config, so the hook
+	// safety net does not run. The file main-before of the case holds main
+	// before the run.
+	mergeDevelop := func(setup func(c *rc.Case)) func(c *rc.Case) int {
+		return synced(func(c *rc.Case) int {
+			_ = os.Remove(c.Path(".config/pre-commit-config.yaml"))
+			c.CommitConsumer()
+			git(c, c.Consumer, "checkout", "--quiet", "develop")
+			git(c, c.Consumer, "merge", "--quiet", "--ff-only", "main")
+			git(c, c.Consumer, "commit", "--quiet", "--no-verify", "--allow-empty", "-m", "work")
+			if setup != nil {
+				setup(c)
+			}
+			harness.WriteFile(c.T, filepath.Join(c.Dir, "main-before"), plainGit(c.Consumer, "rev-parse", "main"))
+			env := harness.SetEnv(c.Env, "MISE_ORIGINAL_CWD", "MISE_TASK_NAME", "BOOTSTRAP_BIN="+harness.Bin, "usage_source=develop")
+			return run{dir: c.Consumer, env: env}.do(c, c.Path(tasksPath+"/git/merge/main.py"))
+		})
+	}
+	// withOrigin: a bare origin with main and develop, both pushed.
+	withOrigin := func(c *rc.Case) {
+		origin := filepath.Join(c.Dir, "origin.git")
+		git(c, c.Dir, "init", "--quiet", "--bare", "-b", "main", origin)
+		git(c, c.Consumer, "remote", "add", "origin", origin)
+		git(c, c.Consumer, "push", "--quiet", "--no-verify", "-u", "origin", "main", "develop")
+	}
+	rev := func(c *rc.Case, dir, ref string) string { return plainGit(dir, "rev-parse", ref) }
+	mainUnchanged := func(c *rc.Case) bool {
+		return harness.ReadFile(filepath.Join(c.Dir, "main-before")) == rev(c, c.Consumer, "main")
+	}
+
+	rc.Run(t, rc.Spec{Name: "git:merge:main, develop fast-forwards main", Values: bothCore,
+		Change: precommitBothBranches, Call: mergeDevelop(nil),
+		Message: "Fast-forwarding main to develop ... [OK]",
+		Check: func(c *rc.Case) {
+			c.CheckThat("fast-forward: the check passes", c.LogHas("Checking if main can fast-forward to develop ... [OK]"))
+			c.CheckThat("fast-forward: main is develop", rev(c, c.Consumer, "main") == rev(c, c.Consumer, "develop"))
+			c.CheckThat("fast-forward: no merge commit on main", plainGit(c.Consumer, "rev-list", "--merges", "--count", "main") == "0")
+			c.CheckThat("fast-forward: the run goes back to develop", plainGit(c.Consumer, "rev-parse", "--abbrev-ref", "HEAD") == "develop")
+		}})
+	rc.Run(t, rc.Spec{Name: "git:merge:main, develop fast-forwards main of origin", Values: bothCore,
+		Change: precommitBothBranches, Call: mergeDevelop(withOrigin),
+		Message: "Pushing main branch to origin ... [OK]",
+		Check: func(c *rc.Case) {
+			origin := filepath.Join(c.Dir, "origin.git")
+			c.CheckThat("fast-forward, origin: main of origin is develop", rev(c, origin, "main") == rev(c, c.Consumer, "develop"))
+			c.CheckThat("fast-forward, origin: no merge commit on main of origin",
+				plainGit(origin, "rev-list", "--merges", "--count", "main") == "0")
+		}})
+	rc.Run(t, rc.Spec{Name: "git:merge:main, main has a commit that develop does not have", Values: bothCore, Code: 1,
+		Change: precommitBothBranches,
+		Call: mergeDevelop(func(c *rc.Case) {
+			git(c, c.Consumer, "checkout", "--quiet", "main")
+			git(c, c.Consumer, "commit", "--quiet", "--no-verify", "--allow-empty", "-m", "hotfix")
+			git(c, c.Consumer, "checkout", "--quiet", "develop")
+		}),
+		Message: "main has 1 commit(s) that develop does not have, so main cannot fast-forward to develop.",
+		Check: func(c *rc.Case) {
+			c.CheckThat("no fast-forward: the commit is listed", c.LogHas("hotfix"))
+			c.CheckThat("no fast-forward: the fix", c.LogHas("git switch develop && git merge main"))
+			c.CheckThat("no fast-forward: main does not change", mainUnchanged(c))
+			c.CheckThat("no fast-forward: the branch stays", plainGit(c.Consumer, "rev-parse", "--abbrev-ref", "HEAD") == "develop")
+			checkLogLacks(c, "no fast-forward: no hook pass", "hook safety net")
+		}})
+	rc.Run(t, rc.Spec{Name: "git:merge:main, main of origin has a commit that develop does not have", Values: bothCore, Code: 1,
+		Change: precommitBothBranches,
+		Call: mergeDevelop(func(c *rc.Case) {
+			withOrigin(c)
+			// origin gets a commit on main that the local main does not have.
+			git(c, c.Consumer, "checkout", "--quiet", "main")
+			git(c, c.Consumer, "commit", "--quiet", "--no-verify", "--allow-empty", "-m", "remote fix")
+			git(c, c.Consumer, "push", "--quiet", "--no-verify", "origin", "main")
+			git(c, c.Consumer, "checkout", "--quiet", "develop")
+			git(c, c.Consumer, "branch", "--force", "main", "main~1")
+		}),
+		Message: "origin/main has 1 commit(s) that develop does not have, so main cannot fast-forward to develop.",
+		Check: func(c *rc.Case) {
+			c.CheckThat("no fast-forward, origin: the fix", c.LogHas("git switch develop && git merge origin/main"))
+			c.CheckThat("no fast-forward, origin: main does not change", mainUnchanged(c))
+			c.CheckThat("no fast-forward, origin: the branch stays", plainGit(c.Consumer, "rev-parse", "--abbrev-ref", "HEAD") == "develop")
+		}})
+}
+
 var (
 	oldGitTasks = []string{"code/merge/_default", "code/merge/main", "code/merge/develop", "setup/worktree", "code/worktrees"}
 	newGitTasks = []string{"git/merge/main.py", "git/merge/develop.py", "git/worktree/create.py", "git/worktree/setup.py",

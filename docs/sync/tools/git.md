@@ -116,7 +116,12 @@ limits the source branches. Without both lists, only `develop` merges into
 both lists stops the merge. The `pr` model needs the CLI of the forge, from
 the `github` or the `gitlab` tool. In a repository without an `origin`
 remote, a direct landing merges locally without the pull and the push, and
-`pr` stops before the hooks run. Before a merge, the merge tasks run the hooks
+`pr` stops before the hooks run. A direct landing of `develop` on `main` is a
+fast-forward, so `main` is always an ancestor of `develop`. If `main` or
+`origin/main` has a commit that `develop` does not have, the task stops before
+it changes a branch: merge `main` into `develop`, push `develop`, then land
+again. Each other direct landing is a `--no-ff` merge. Before a merge, the
+merge tasks run the hooks
 over all
 files, with `SKIP=no-commit-to-branch`.
 
