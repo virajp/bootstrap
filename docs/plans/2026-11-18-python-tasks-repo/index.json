@@ -275,11 +275,11 @@
         "U13"
       ],
       "waits": "The cases run the .py task files that U1 to U7 and U13 write, and expect the file lists without the shell libraries that U9 deletes.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-18T18:40:49.510Z",
+      "ended": "2026-11-19T03:49:00.802Z",
+      "commit": "d541c47",
+      "rounds": 3
     },
     {
       "id": "U9",
@@ -423,15 +423,17 @@
       "model": "opus",
       "owns": [
         "cli/internal/oldform/tasks.go",
-        "cli/internal/oldform/tasks_test.go"
+        "cli/internal/oldform/tasks_test.go",
+        "cli/internal/oldform/",
+        "cli/internal/core/plan.go"
       ],
       "depends_on": [],
       "waits": "",
       "status": "green",
       "started": "2026-11-18T18:12:20.919Z",
-      "ended": "2026-11-18T18:21:05.706Z",
-      "commit": "b421abd",
-      "rounds": 1
+      "ended": "2026-11-19T03:47:13.895Z",
+      "commit": "362c0e4",
+      "rounds": 4
     }
   ],
   "waves": [
@@ -449,9 +451,9 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-18T18:40:49.477Z",
+      "ended": "2026-11-19T03:58:28.214Z"
     },
     {
       "id": "W4",
@@ -706,6 +708,15 @@
       "units": [
         "U7"
       ]
+    },
+    {
+      "id": "D22",
+      "decision": "Q6: An old extensionless header copy test/_default (no manifest row) stays beside the new test/_default.py and hides it; should the case check it is gone, with the engine handling it?",
+      "ruling": "Add a check \"no old test/_default\" and route the fix to the engine/migrate owner (init removes or reports a header copy at the extensionless dispatcher path) — the case fails until then.",
+      "rejected": "Accept it, no change; Add a migrate.md item that tells a consumer to delete the file by hand",
+      "units": [
+        "U8"
+      ]
     }
   ],
   "stages": {
@@ -734,7 +745,22 @@
       "ended": ""
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U14",
+      "stage": "",
+      "text": "D22 (Q6) needs an engine fix of the init move outside the Owns of any unit · U14 Owns widened to cli/internal/oldform/ (the engine owner of the init move, D26 code in cli/internal/oldform/tasks.go) under D22",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U14",
+      "stage": "",
+      "text": "D22 needs the init call site of oldform.HeaderCopies in cli/internal/core/plan.go (knownCopies), outside U14 Owns · U14 Owns widened to cli/internal/core/plan.go under D22; sync and check stay unchanged, because D22 names init alone",
+      "state": "closed"
+    }
+  ],
   "overrides": [
     {
       "id": "O1",
