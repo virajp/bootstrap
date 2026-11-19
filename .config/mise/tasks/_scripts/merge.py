@@ -43,9 +43,16 @@
 # A feature branch that did not go through develop did not go through the
 # branch that the pipeline builds, and nobody writes work on main.
 #
-# The merge uses --no-ff on purpose. A fast-forward makes main and develop the
-# same commit, with no record of the merge. The merge commit records "what
-# shipped".
+# A direct landing of develop on main is a fast-forward (--ff-only). main only
+# moves forward to a commit of develop, so main is always an ancestor of
+# develop, and main is the same commit that develop tested. A merge commit on
+# main would put main ahead of develop with commits that change no file. The
+# tags record the releases. Before it changes a branch, the merge makes sure
+# that main, local and on origin, is an ancestor of develop. If not, it stops
+# with the fix: merge main into develop first. It never falls back to --no-ff.
+#
+# Each other direct landing uses --no-ff on purpose: the merge commit records
+# which commits of a feature branch landed, and git revert -m 1 removes them.
 #
 # The landing sets HOW the source gets to the destination, never WHETHER. Each
 # destination has its own landing. The branch rules above apply to each value,
@@ -252,6 +259,46 @@ def open_pull_request(destination_branch, source_branch):
   helpers.print_success("Branch pushed — the merge happens on the forge.")
 
 
+def require_fast_forward(destination_branch, source_branch, has_origin):
+  """Stops the merge when destination_branch cannot fast-forward to source_branch.
+
+  It runs before the merge changes a branch. The local destination, when it
+  exists, and the destination of origin must each be an ancestor of the
+  source. The fetch first gets the destination of origin, because the pull
+  after the checkout gets it too, and a commit there that the source does not
+  have makes the fast-forward fail after the checkout. The fetch changes no
+  local branch.
+  """
+  helpers.print_wait(f"Checking if {destination_branch} can fast-forward to {source_branch} ... ")
+  refs = []
+  if _git_quiet("show-ref", "--verify", "--quiet", f"refs/heads/{destination_branch}"):
+    refs.append(destination_branch)
+  if has_origin:
+    if not _git_quiet("fetch", "--quiet", "origin", destination_branch):
+      helpers.print_error()
+      helpers.print_error(f"FAILED to fetch '{destination_branch}' from origin!")
+      sys.exit(1)
+    refs.append(f"origin/{destination_branch}")
+
+  for ref in refs:
+    if _git_quiet("merge-base", "--is-ancestor", ref, source_branch):
+      continue
+    count = _git_out("rev-list", "--count", f"{source_branch}..{ref}")
+    helpers.print_error()
+    helpers.print_error(
+      f"{ref} has {count} commit(s) that {source_branch} does not have, "
+      f"so {destination_branch} cannot fast-forward to {source_branch}."
+    )
+    for line in _git_out("log", "--oneline", "-n", "10", f"{source_branch}..{ref}").split("\n"):
+      helpers.print_warn(f"  {line}")
+    helpers.print_warn(
+      f"- merge {ref} into {source_branch} (`git switch {source_branch} && git merge {ref}`),"
+      f" push {source_branch}, then land again"
+    )
+    sys.exit(1)
+  helpers.print_success()
+
+
 def read_merge_config(destination_branch):
   """Returns (landing, merge_mode, merge_from, merge_never) for a destination.
 
@@ -410,6 +457,12 @@ def merge_to_destination_branch(destination_branch, source_branch=None):
     else:
       helpers.print_success()
 
+  # develop lands on main with a fast-forward. The check runs here, before the
+  # hook pass and before a branch changes, so a refusal changes nothing.
+  fast_forward = merge_mode == "direct" and destination_branch == "main" and source_branch == "develop"
+  if fast_forward:
+    require_fast_forward(destination_branch, source_branch, has_origin)
+
   precommit_safety_net()
 
   # The fork. The steps above are the policy of the two models; the steps below
@@ -447,17 +500,31 @@ def merge_to_destination_branch(destination_branch, source_branch=None):
       sys.exit(1)
     helpers.print_success()
 
-  # A conflict stops here, and the tree stays in the merge on purpose. An abort
-  # removes the one useful fact, which files do not agree, and only a person
-  # can resolve the conflict.
-  helpers.print_wait(f"Merging {source_branch} into {destination_branch} ... ")
-  if not _git_quiet("merge", "--no-ff", "--no-edit", source_branch):
-    helpers.print_error()
-    helpers.print_error(f"FAILED to merge {source_branch} into {destination_branch}!")
-    helpers.print_warn("- the tree is left mid-merge; resolve the conflicts and commit,")
-    helpers.print_warn("  or run `git merge --abort` to undo it")
-    sys.exit(1)
-  helpers.print_success()
+  if fast_forward:
+    # require_fast_forward made sure that this works. If a commit got onto the
+    # destination after that check, git refuses the fast-forward before it
+    # changes a file, so the run restores the branch and stops.
+    helpers.print_wait(f"Fast-forwarding {destination_branch} to {source_branch} ... ")
+    if not _git_quiet("merge", "--ff-only", source_branch):
+      if restore_branch:
+        _git_quiet("checkout", restore_branch, "-q")
+      helpers.print_error()
+      helpers.print_error(f"FAILED to fast-forward {destination_branch} to {source_branch}!")
+      helpers.print_warn(f"- merge {destination_branch} into {source_branch}, push {source_branch}, then land again")
+      sys.exit(1)
+    helpers.print_success()
+  else:
+    # A conflict stops here, and the tree stays in the merge on purpose. An
+    # abort removes the one useful fact, which files do not agree, and only a
+    # person can resolve the conflict.
+    helpers.print_wait(f"Merging {source_branch} into {destination_branch} ... ")
+    if not _git_quiet("merge", "--no-ff", "--no-edit", source_branch):
+      helpers.print_error()
+      helpers.print_error(f"FAILED to merge {source_branch} into {destination_branch}!")
+      helpers.print_warn("- the tree is left mid-merge; resolve the conflicts and commit,")
+      helpers.print_warn("  or run `git merge --abort` to undo it")
+      sys.exit(1)
+    helpers.print_success()
 
   if has_origin:
     helpers.print_wait(f"Pushing {destination_branch} branch to origin ... ")
