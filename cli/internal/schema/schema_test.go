@@ -42,7 +42,6 @@ environments = [ "dev", "ci" ]
 bootstrap_commit = ""
 topology = "multi-repo"
 topology_reason = "one repo"
-release_env = "prod"
 
 [branches.main]
 landing = "pr"
@@ -71,8 +70,20 @@ folder = ".."
 type = "submodule"
 url = "https://example.com/home"
 
-[deploy.prod]
-web = "https://web.example.com"
+[projects.web]
+folder = "web"
+
+[release.web.prod]
+type = "tag"
+tag = "v{version}"
+version = "package.json"
+branch = "main"
+preflight = [ "p:check" ]
+workflow = "release.yml"
+
+[release.web.local]
+type = "local"
+task = "p:local"
 `, ""},
 		{"unknown key", head + "colour = \"red\"\n", "colour in repo.toml is not a key of repo.toml"},
 		{"unknown nested key", head + "[branches.main]\nmerge_model = \"pr\"\n", "branches.main.merge_model in repo.toml is not a key of repo.toml"},
@@ -108,6 +119,48 @@ web = "https://web.example.com"
 	}
 }
 
+func TestReleaseRules(t *testing.T) {
+	const base = head + "[projects.web]\nfolder = \"web\"\n[projects.api]\nfolder = \"api\"\n"
+
+	cases := []struct{ name, text, want string }{
+		{"promotion", base + `[release.web.staging]
+type = "tag"
+tag = "web-staging-v{version}"
+branch = "develop"
+[release.web.prod]
+type = "tag"
+tag = "web-v{version}"
+from = "staging"
+[release.api.prod]
+type = "tag"
+tag = "api@{version}"
+version = "Cargo.toml"
+`, ""},
+		{"no project", base + "[release.cli.prod]\ntype = \"tag\"\ntag = \"v{version}\"\n", "[release.cli] in repo.toml: cli is not a [projects.<name>] table - add the project, or remove the table"},
+		{"bad kind", base + "[release.web.Prod]\ntype = \"local\"\ntask = \"t\"\n", `[release.web."Prod"] in repo.toml has a name that is not valid - a kind is lowercase kebab case, for example prod`},
+		{"no type", base + "[release.web.prod]\ntag = \"v{version}\"\n", "[release.web.prod] in repo.toml has no type - set type to tag or local"},
+		{"bad type", base + "[release.web.prod]\ntype = \"ci\"\n", `release.web.prod.type = "ci" in repo.toml is not one of tag, local`},
+		{"local without task, with tag", base + "[release.web.local]\ntype = \"local\"\ntag = \"v{version}\"\n",
+			"[release.web.local] in repo.toml has tag, but tag is for type = \"tag\" - remove it\n[release.web.local] in repo.toml has no task - set task to the task that builds and installs the release on this machine"},
+		{"tag with task", base + "[release.web.prod]\ntype = \"tag\"\ntag = \"v{version}\"\ntask = \"t\"\n", `[release.web.prod] in repo.toml has task, but task is for type = "local" - remove it`},
+		{"no tag", base + "[release.web.prod]\ntype = \"tag\"\n", `[release.web.prod] in repo.toml has no tag - set tag to the name of the tag, with {version}, for example "v{version}"`},
+		{"tag without version", base + "[release.web.prod]\ntype = \"tag\"\ntag = \"latest\"\n", `[release.web.prod] in repo.toml has tag = "latest" without {version} - add {version} to it`},
+		{"same tag", base + "[release.web.prod]\ntype = \"tag\"\ntag = \"v{version}\"\n[release.api.prod]\ntype = \"tag\"\ntag = \"v{version}\"\n", `[release.web.prod] in repo.toml has the tag "v{version}" of [release.api.prod] too - each table has its own tag`},
+		{"bad branch", base + "[release.web.prod]\ntype = \"tag\"\ntag = \"v{version}\"\nbranch = \"trunk\"\n", `[release.web.prod] in repo.toml has branch = "trunk", which is not in core_branches - use a core branch`},
+		{"bad version", base + "[release.web.prod]\ntype = \"tag\"\ntag = \"v{version}\"\nversion = \"../package.json\"\n", `[release.web.prod] in repo.toml has version = "../package.json" - use "tag", a .json file or a Cargo.toml, relative to the folder of the project`},
+		{"from with version", base + "[release.web.a]\ntype = \"tag\"\ntag = \"a{version}\"\n[release.web.b]\ntype = \"tag\"\ntag = \"b{version}\"\nfrom = \"a\"\nversion = \"tag\"\n", "[release.web.b] in repo.toml has from and version - a promotion takes the version of its from kind, so remove version"},
+		{"from missing", base + "[release.web.a]\ntype = \"tag\"\ntag = \"a{version}\"\nfrom = \"z\"\n", `[release.web.a] in repo.toml has from = "z", which is not another kind of the project`},
+		{"from a local", base + "[release.web.l]\ntype = \"local\"\ntask = \"t\"\n[release.web.a]\ntype = \"tag\"\ntag = \"a{version}\"\nfrom = \"l\"\n", `[release.web.a] in repo.toml has from = "l", which is not a tag kind without from`},
+		{"two roots", base + "[release.web.a]\ntype = \"tag\"\ntag = \"a{version}\"\n[release.web.b]\ntype = \"tag\"\ntag = \"b{version}\"\n", "[release.web] in repo.toml has more than one tag kind without from (a, b) - one kind bumps the version, and the other kinds promote it with from"},
+	}
+
+	for _, c := range cases {
+		if got := messages(CheckRepo(read(t, c.text), "repo.toml")); got != c.want {
+			t.Errorf("%s:\n got %q\nwant %q", c.name, got, c.want)
+		}
+	}
+}
+
 func TestCheckReleases(t *testing.T) {
 	cases := []struct{ text, want string }{
 		{"format = 3\napi = \"MINOR\"\nweb = \"NONE\"\n", ""},
@@ -126,7 +179,7 @@ func TestFind(t *testing.T) {
 	for path, want := range map[string]string{
 		"branches.main.landing": "branches.*.landing",
 		"members.web":           "members.*",
-		"deploy.prod.web":       "deploy.*.*",
+		"release.web.prod.tag":  "release.*.*.tag",
 		"format":                "format",
 		"repo_name.x":           "",
 		"nope":                  "",
@@ -149,7 +202,10 @@ func TestFind(t *testing.T) {
 	if k := Find(Repo, []string{"branches", "x", "landing"}); k == nil || k.Default != LandingDirectMerge || !k.Sync {
 		t.Errorf("landing = %+v", k)
 	}
-	for _, path := range []string{"deploy.prod.web", "release_env", "topology", "topology_reason", "bootstrap_commit", "format"} {
+	if k := Find(Repo, []string{"release", "web", "prod", "tag"}); k == nil || !k.Sync {
+		t.Errorf("release: a sync reads it: %+v", k)
+	}
+	for _, path := range []string{"topology", "topology_reason", "bootstrap_commit", "format"} {
 		if k := Find(Repo, strings.Split(path, ".")); k == nil || k.Sync {
 			t.Errorf("%s: a sync does not read it (D90): %+v", path, k)
 		}

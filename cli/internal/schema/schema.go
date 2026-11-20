@@ -92,11 +92,26 @@ var Repo = []Key{
 	{Path: "projects", Type: Table},
 	{Path: "projects.*", Type: Table},
 	{Path: "projects.*.folder", Type: String},
-	{Path: "release_env", Type: String},
-	{Path: "deploy", Type: Table},
-	{Path: "deploy.*", Type: Table},
-	{Path: "deploy.*.*", Type: String},
+	{Path: "release", Type: Table, Sync: true},
+	{Path: "release.*", Type: Table, Sync: true},
+	{Path: "release.*.*", Type: Table, Sync: true},
+	{Path: "release.*.*.type", Type: String, Enum: []string{ReleaseTag, ReleaseLocal}, Sync: true},
+	{Path: "release.*.*.tag", Type: String, Sync: true},
+	{Path: "release.*.*.version", Type: String, Sync: true, Default: ReleaseVersionTag},
+	{Path: "release.*.*.branch", Type: String, Sync: true, Default: "main"},
+	{Path: "release.*.*.from", Type: String, Sync: true},
+	{Path: "release.*.*.preflight", Type: StringList, Sync: true, Default: []any{}},
+	{Path: "release.*.*.workflow", Type: String, Sync: true},
+	{Path: "release.*.*.task", Type: String, Sync: true},
 }
+
+// The types of a `[release.<project>.<kind>]` table, and the version source
+// that reads the last tag.
+const (
+	ReleaseTag        = "tag"
+	ReleaseLocal      = "local"
+	ReleaseVersionTag = "tag"
+)
 
 // Releases is the schema of `releases.toml`: one release level for each
 // project.
@@ -235,6 +250,7 @@ func CheckRepo(raw *source.Obj, shown string) error {
 	if len(probs) == 0 {
 		probs = append(branchRules(raw, shown), memberRules(raw, shown)...)
 		probs = append(probs, projectRules(raw, shown)...)
+		probs = append(probs, releaseRules(raw, shown)...)
 	}
 	return source.Problems(probs)
 }
@@ -364,6 +380,129 @@ func projectRules(raw *source.Obj, shown string) []*fail.Error {
 		seen[c] = n
 	}
 	return probs
+}
+
+// releaseKeys are the keys of each type of a [release.<project>.<kind>]
+// table, besides type and preflight.
+var releaseKeys = map[string][]string{
+	ReleaseTag:   {"tag", "version", "branch", "from", "workflow"},
+	ReleaseLocal: {"task"},
+}
+
+// releaseRules are the rules of the [release.<project>.<kind>] tables: the
+// project is a [projects.<name>] table, the kind is a name, each table has a
+// type and only the keys of its type, a tag has {version} and no other
+// table of the repo has it, a branch is a core branch, from names another
+// tag kind of the project and has no version, and a project has one tag
+// kind without from.
+func releaseRules(raw *source.Obj, shown string) []*fail.Error {
+	rs, ok := raw.Get("release").(*source.Obj)
+	if !ok {
+		return nil
+	}
+	var probs []*fail.Error
+	bad := func(p, k, format string, args ...any) {
+		probs = append(probs, usage("[release.%s.%s] in %s %s", p, k, shown, fmt.Sprintf(format, args...)))
+	}
+	known, _ := raw.Get("projects").(*source.Obj)
+	core := map[string]bool{}
+	list, _ := raw.Get("core_branches").([]any)
+	for _, x := range list {
+		core[x.(string)] = true
+	}
+	tags := map[string]string{}
+	for _, p := range rs.Keys() {
+		if known == nil || !known.Has(p) {
+			probs = append(probs, usage("[release.%s] in %s: %s is not a [projects.<name>] table - add the project, or remove the table", p, shown, p))
+			continue
+		}
+		kinds, _ := rs.Get(p).(*source.Obj)
+		if kinds == nil {
+			continue
+		}
+		var roots []string
+		for _, k := range kinds.Keys() {
+			if !projects.NameRule.MatchString(k) {
+				probs = append(probs, usage("[release.%s.%q] in %s has a name that is not valid - a kind is lowercase kebab case, for example prod", p, k, shown))
+				continue
+			}
+			e, _ := kinds.Get(k).(*source.Obj)
+			if e == nil {
+				continue
+			}
+			t, ok := e.Get("type").(string)
+			if !ok {
+				bad(p, k, "has no type - set type to %s or %s", ReleaseTag, ReleaseLocal)
+				continue
+			}
+			other := ReleaseLocal
+			if t == ReleaseLocal {
+				other = ReleaseTag
+			}
+			for _, key := range releaseKeys[other] {
+				if e.Has(key) {
+					bad(p, k, "has %s, but %s is for type = %q - remove it", key, key, other)
+				}
+			}
+			if t == ReleaseLocal {
+				if !e.Has("task") {
+					bad(p, k, "has no task - set task to the task that builds and installs the release on this machine")
+				}
+				continue
+			}
+			tag, _ := e.Get("tag").(string)
+			switch {
+			case tag == "":
+				bad(p, k, "has no tag - set tag to the name of the tag, with {version}, for example \"v{version}\"")
+			case !strings.Contains(tag, "{version}"):
+				bad(p, k, "has tag = %q without {version} - add {version} to it", tag)
+			default:
+				if seen, dup := tags[tag]; dup {
+					bad(p, k, "has the tag %q of [release.%s] too - each table has its own tag", tag, seen)
+				}
+				tags[tag] = p + "." + k
+			}
+			if b, ok := e.Get("branch").(string); ok && !core[b] {
+				bad(p, k, "has branch = %q, which is not in core_branches - use a core branch", b)
+			}
+			if v, ok := e.Get("version").(string); ok && v != ReleaseVersionTag && !versionFileOK(v) {
+				bad(p, k, "has version = %q - use %q, a .json file or a Cargo.toml, relative to the folder of the project", v, ReleaseVersionTag)
+			}
+			from, hasFrom := e.Get("from").(string)
+			if !hasFrom {
+				roots = append(roots, k)
+				continue
+			}
+			if e.Has("version") {
+				bad(p, k, "has from and version - a promotion takes the version of its from kind, so remove version")
+			}
+			f, _ := kinds.Get(from).(*source.Obj)
+			switch {
+			case from == k || f == nil:
+				bad(p, k, "has from = %q, which is not another kind of the project", from)
+			case f.Get("type") != ReleaseTag || f.Has("from"):
+				bad(p, k, "has from = %q, which is not a tag kind without from", from)
+			}
+		}
+		if len(roots) > 1 {
+			probs = append(probs, usage("[release.%s] in %s has more than one tag kind without from (%s) - one kind bumps the version, and the other kinds promote it with from", p, shown, strings.Join(roots, ", ")))
+		}
+	}
+	return probs
+}
+
+// versionFileOK tells if <v> is a version file: a .json file or a
+// Cargo.toml, at a relative path with no .. part.
+func versionFileOK(v string) bool {
+	if v == "" || strings.HasPrefix(v, "/") {
+		return false
+	}
+	for _, part := range strings.Split(v, "/") {
+		if part == "" || part == "." || part == ".." {
+			return false
+		}
+	}
+	return strings.HasSuffix(v, ".json") && !strings.HasSuffix(v, "/.json") && v != ".json" || v == "Cargo.toml" || strings.HasSuffix(v, "/Cargo.toml")
 }
 
 // CheckProjects examines the projects list of each [tools.<name>] table of
