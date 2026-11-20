@@ -11,3 +11,6 @@ repo_url = "https://github.com/virajp/bootstrap"
 
 [commits]
 style = "conventional"
+
+[projects.bootstrap]
+folder = "cli"
