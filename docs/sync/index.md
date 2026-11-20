@@ -125,8 +125,11 @@ This file holds the instructions. Each rule of the sync has one place in
     mise loads the folders of `conf.d/` in name order, and a later folder
     wins. The name `zz-repo` sorts last, so the repository config wins over
     the config of each tool.
-  - shell functions: `.config/mise/tasks/_scripts/local`.
-  - tasks: any task name that no tool ships.
+  - functions of the own tasks: the Python module
+    `.config/mise/tasks/_scripts/local.py`.
+  - tasks: any task name that no tool ships. Each task is a Python uv script
+    `<name>.py` that imports `helpers`, as the shared tasks are (M48 and M51
+    of `migrate.md`).
   - formatters and linters: a task `code:format:NN-<name>` or
     `code:lint:NN-<name>` (`.config/mise/tasks/code/format/NN-<name>.py`).
     `code:format` and `code:lint` run each of them in number order with the

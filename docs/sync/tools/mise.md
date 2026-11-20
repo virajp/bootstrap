@@ -276,3 +276,5 @@ None.
 - M48 of `migrate.md`: each task of this tool is a `.py` file, and the shell
   libraries `helpers`, `checks`, `placeholder` and `worktrees-page` are gone.
   A task of the repository that sources one of them moves to Python.
+- M51 of `migrate.md`: each own task of the repository is a Python uv script
+  too, also a task that sources no shell library.
