@@ -47,6 +47,10 @@ type File struct {
 	When   string // The value path of `when`, or empty.
 	// Perm and DirPerm are the modes of `perm` and `dir_perm`; 0 when unset.
 	Perm, DirPerm os.FileMode
+	// Each is the value path of `each`, or empty. Vars holds the values of
+	// one expanded file: each {name} of Each, and `value`, the table.
+	Each string
+	Vars map[string]any
 }
 
 // Files gives the files that <tool> ships, from the entries of its
@@ -59,7 +63,7 @@ func (x *Index) Files(tool string) []File {
 	}
 	out := make([]File, 0, len(m.Files))
 	for _, fe := range m.Files {
-		out = append(out, File{Path: fe.Source, Target: fe.Target, Tmpl: fe.Tmpl, When: fe.When, Perm: fe.Perm, DirPerm: fe.DirPerm})
+		out = append(out, File{Path: fe.Source, Target: fe.Target, Tmpl: fe.Tmpl, When: fe.When, Each: fe.Each, Perm: fe.Perm, DirPerm: fe.DirPerm})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Target < out[j].Target })
 	return out
@@ -144,7 +148,7 @@ var filesKind = entryKind{
 var tasksKind = entryKind{
 	table: "tasks", dir: TasksDir,
 	modes:  []string{"copy", "template"},
-	keys:   []string{"source", "mode", "requires", "requires_found", "library", "when", "replaces"},
+	keys:   []string{"source", "mode", "requires", "requires_found", "library", "when", "replaces", "each"},
 	target: func(k string) string { return TasksTarget + "/" + k },
 }
 
@@ -330,6 +334,23 @@ func (s Source) entries(shown, dir string, raw *Obj) ([]FileEntry, []*fail.Error
 					}
 					fe.Replaces = items
 				}
+			}
+			if v, has := e.Lookup("each"); has {
+				w, isStr := v.(string)
+				switch {
+				case s.Side == Macos:
+					fail1("each is for repo tools only")
+				case !isStr || !EachOK(w):
+					fail1("each must be a value path with {name} parts, for example \"release.{project}.{kind}\"")
+				case mode != "template":
+					fail1("each needs mode = \"template\"")
+				case !sameVars(EachVars(w), EachVars(key)):
+					fail1("the path must have each {name} part of each, and no other")
+				default:
+					fe.Each = w
+				}
+			} else if len(EachVars(key)) > 0 {
+				fail1("a {name} part of the path needs each")
 			}
 			if mode == "merge" && isStr && !strings.HasSuffix(src, ".merge.toml") {
 				fail1("the source of a shared file is a merge spec <name>.merge.toml")

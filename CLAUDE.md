@@ -222,6 +222,8 @@ differs in these points:
     the main worktree.
   - `merge.py`: `merge_to_destination_branch`, which the
     `git:merge:<branch>` tasks use.
+  - `release.py`: `main(project, kind)`, the steps of each
+    `release:<project>:<kind>` task.
   - `placeholder.py`: for a task that no stack fills yet. A placeholder task
     contains the `# PLACEHOLDER` marker and always exits 0. A stack overlay
     replaces the file. Do not edit a placeholder in place. No task in
@@ -238,7 +240,8 @@ differs in these points:
     of the page. It returns the path of the page, or `None` on a failure.
 
   The `mise` tool ships `helpers.py`, `gate_files.py`, `checks.py`,
-  `placeholder.py` and `worktrees_page.py`, the `git` tool ships `merge.py`,
+  `placeholder.py` and `worktrees_page.py`, the `git` tool ships `merge.py` and
+  `release.py`,
   and the `swift` tool ships `xcode.py`.
 - Prefix each tool call with `mise x --`, for example `mise x -- dprint check`.
   To find whether a tool is available, use `mise x -- which <tool>`, not

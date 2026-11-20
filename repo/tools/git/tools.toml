@@ -2,7 +2,7 @@
 category = "core"
 default_envs = [ "dev" ]
 depends = []
-description = "The shared .gitignore and .gitattributes, the commit convention, the git-config check, the merge tasks and worktrunk. Each repository has it."
+description = "The shared .gitignore and .gitattributes, the commit convention, the git-config check, the merge, tag and release tasks and worktrunk. Each repository has it."
 root_only = false
 summary = "The shared git config and the merge tasks"
 
@@ -69,6 +69,11 @@ source = "gitignore.merge.toml"
 library = true
 source = "merge.py"
 
+# The steps of the release tasks.
+[tasks."_scripts/release.py"]
+library = true
+source = "release.py"
+
 [tasks."code/git-config.py"]
 source = "code-git-config.py"
 
@@ -85,6 +90,16 @@ when = "git.has_develop"
 [tasks."git/merge/main.py"]
 source = "git-merge-main.py"
 when = "git.has_main"
+
+# git:tag tags HEAD with a signed tag; --push pushes only the tag.
+[tasks."git/tag.py"]
+source = "git-tag.py"
+
+# One release task for each [release.<project>.<kind>] table of repo.toml.
+[tasks."release/{project}/{kind}.py"]
+each = "release.{project}.{kind}"
+mode = "template"
+source = "release.py.tmpl"
 
 # The worktree tasks. git:worktree:setup is a task of the mise tool.
 [tasks."git/worktree/create.py"]

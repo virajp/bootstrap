@@ -27,10 +27,13 @@ A `[tools.git]` table gives values.
 | `.config/git-conventional-commits.yaml`     | Template  | The commit types, and the scopes from `[commits].scopes`, else the names of the `[members.*]` tables. |
 | `.config/wt.toml`                           | Seed      | The worktrunk config: the `pre-start` steps and the commit convention (see "worktrunk").              |
 | `.config/mise/tasks/_scripts/merge.py`      | Library   | `merge_to_destination_branch`, which the merge tasks use.                                             |
+| `.config/mise/tasks/_scripts/release.py`    | Library   | The steps of the release tasks.                                                                       |
 | `.config/mise/tasks/code/git-config.py`     | Synced    | The task `code:git-config`.                                                                           |
 | `.config/mise/tasks/git/pull.py`            | Synced    | The task `git:pull`.                                                                                  |
 | `.config/mise/tasks/git/merge/develop.py`   | Synced    | The task `git:merge:develop`. Only with `when = "git.has_develop"`: `core_branches` has `develop`.    |
 | `.config/mise/tasks/git/merge/main.py`      | Synced    | The task `git:merge:main`. Only with `when = "git.has_main"`: `core_branches` has `main`.             |
+| `.config/mise/tasks/git/tag.py`             | Synced    | The task `git:tag`.                                                                                   |
+| `.config/mise/tasks/release/<p>/<k>.py`     | Template  | The task `release:<p>:<k>`, one for each `[release.<p>.<k>]` table of `repo.toml`.                    |
 | `.config/mise/tasks/git/worktree/create.py` | Synced    | The task `git:worktree:create`.                                                                       |
 | `.config/mise/tasks/git/worktree/delete.py` | Synced    | The task `git:worktree:delete`.                                                                       |
 | `.config/mise/conf.d/git/mise.dev.toml`     | Generated | The mise config of this tool.                                                                         |
@@ -98,6 +101,8 @@ environment, so a CI job still gets the merge tasks and the hooks.
 | `git:pull [--all]`                                                       | Bring the core branches and the default branch up to date from `origin`, here and in each member. `--all`: each branch of `origin`. See below. |
 | `git:merge:develop [<branch>]`                                           | Land a branch on `develop`. The default is the current branch. Only when `core_branches` has `develop`.                                        |
 | `git:merge:main [<branch>]`                                              | Land a branch on `main`. The default is `develop` when it is a core branch, else the current branch. Only when `core_branches` has `main`.     |
+| `git:tag <name> [--message <text>] [--push]`                             | Tag `HEAD` with a signed tag. `--push` pushes only the tag. See below.                                                                         |
+| `release:<project>:<kind> [--push] [--dry-run]`                          | Release the project as its `[release.<project>.<kind>]` table says. See below.                                                                 |
 | `git:worktree:create <branch> [--from <base> \| --current] [--no-setup]` | Add a worktree for the branch, then run `mise trust` and `git:worktree:setup` in it. See below.                                                |
 | `git:worktree:delete <branch>`                                           | Remove the worktree of the branch, and the branch when a core branch has each of its commits. See below.                                       |
 
@@ -166,6 +171,17 @@ each of its commits. Else the branch stays, and the task prints the `-D`
 command and exits 1. It stops with code 2 for a core branch and inside the
 worktree that it removes, and with code 1 when no worktree has the branch.
 
+`git:tag` stops, and changes nothing, when the tree is not clean, when the
+tag exists here or on `origin`, and with `--push` when no branch of `origin`
+has `HEAD`. A `release:<project>:<kind>` task of a `local` kind runs its
+`preflight` tasks and its `task`. A task of a `tag` kind reads the level of
+`releases.<project>` of `.config/bootstrap/releases.toml`, bumps the version,
+makes one commit `ops: release <tag>` with the version file and the cleared
+level, lands it as `landing` of its branch says, and calls `git:tag`. A kind
+with `from` promotes the last version of the other kind. A release commit
+without its tag gets the tag on the next run. The full rules are in
+[`docs/design/repo.md`](../../design/repo.md#the-release-tasks).
+
 ## Scripts
 
 The sync runs these scripts from the clone, and never copies them.
@@ -206,6 +222,7 @@ The tool reads these keys of `.config/bootstrap/repo.toml`:
 | `[branches.<name>]` `merge_from`  | The only branches that merge into the branch.                                                                    |
 | `[branches.<name>]` `merge_never` | The branches that never merge into the branch.                                                                   |
 | `[commits]` `scopes`              | The scopes of the commit convention. The default is the names of the `[members.*]` tables, sorted.               |
+| `[release.<project>.<kind>]`      | One release task for each table. The keys are in `bootstrap-config.md`.                                          |
 
 No questions. The rules of the keys are in
 [`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
@@ -241,3 +258,7 @@ None.
   scripts need `bootstrap` 4.0.0 or newer.
 - M44 of `migrate.md`: the spec no longer has the vwf lines. Add the
   `virajp-plugins` tool to keep them.
+- M52 of `migrate.md`: `release_env` and `[deploy.<env>]` are not keys of
+  `repo.toml`.
+- M53 of `migrate.md`: an own release task moves to a
+  `[release.<project>.<kind>]` table.

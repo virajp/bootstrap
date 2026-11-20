@@ -378,8 +378,24 @@ func (s *state) sync(dryRun bool) fail.Code {
 		for _, f := range s.idx.Files(tool) {
 			// An entry whose `when` is false is not shipped: the stale rule
 			// removes a synced copy.
-			if s.when(f) {
+			if !s.when(f) {
+				continue
+			}
+			if f.Each == "" {
 				files = append(files, f)
+				continue
+			}
+			// An entry with `each` gives one file for each table at its path;
+			// the stale rule removes the copy of a table that is gone.
+			v, err := s.valuesDS()
+			if err == nil {
+				var list []source.File
+				list, err = source.Expand(v, f)
+				files = append(files, list...)
+			}
+			if code := s.logAll(err); code != fail.OK {
+				failed = append(failed, toolsShown+"/"+tool+"/"+f.Path)
+				worst = max(worst, code)
 			}
 		}
 		written, err := g.Render(tool, s.src.ToolDir(tool)+"/"+confDir)

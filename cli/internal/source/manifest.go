@@ -33,6 +33,10 @@ type FileEntry struct {
 	// Replaces holds the `sha256:<hex>` items of `replaces` of a [tasks]
 	// entry: the old copies of the task that init removes; nil when unset.
 	Replaces []string
+	// Each is the value path of `each` of a [tasks] entry, with {name}
+	// parts: the sync renders the entry one time for each table at that
+	// path. Empty: one file.
+	Each string
 }
 
 // Formatter is the formatter of a tool: the sync formats each rendered file

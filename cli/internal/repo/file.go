@@ -159,7 +159,7 @@ func (s *state) file(tool string, f source.File, ctx *contexts) (fail.Code, bool
 		if ctx == nil {
 			rc = fail.Usage
 			s.r.Outcome(report.Failed, show, "cannot write the target", "")
-		} else if !s.render(tool, src, tmp, ctx) {
+		} else if !s.render(tool, src, tmp, ctx, f.Vars) {
 			s.r.Outcome(report.Failed, show, "gomplate failed to render the template",
 				toolsShown+"/"+tool+"/"+path+": gomplate failed to render the template")
 			rc = fail.Usage
@@ -234,10 +234,11 @@ func (s *state) file(tool string, f source.File, ctx *contexts) (fail.Code, bool
 	return fail.OK, true
 }
 
-// render renders the template <src> of <tool> into <tmp>. On a failure it
-// prints the error to stderr, in the form of the log line of gomplate, and
-// gives false.
-func (s *state) render(tool, src, tmp string, ctx *contexts) bool {
+// render renders the template <src> of <tool> into <tmp>. <vars> are the
+// values of one file of an `each` entry, as `each` of the context, or nil.
+// On a failure it prints the error to stderr, in the form of the log line of
+// gomplate, and gives false.
+func (s *state) render(tool, src, tmp string, ctx *contexts, vars map[string]any) bool {
 	text, err := os.ReadFile(src)
 	if err != nil {
 		gomplateError(s.stderr, "renderTemplate: failed to render template "+src+": "+err.Error())
@@ -247,6 +248,9 @@ func (s *state) render(tool, src, tmp string, ctx *contexts) bool {
 	if err != nil {
 		gomplateError(s.stderr, "renderTemplate: failed to render template "+src+": "+err.Error())
 		return false
+	}
+	if m, ok := c.(map[string]any); ok && vars != nil {
+		m["each"] = vars
 	}
 	out, err := tmpl.Render(src, text, c, nil)
 	if err != nil {

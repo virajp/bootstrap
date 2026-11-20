@@ -67,13 +67,13 @@ library = true
 	})
 	x, err := Source{Root: root, Side: Macos}.Open()
 	want := []File{
-		{"files/d/one", ".config/d/one", false, "", 0, 0},
-		{"files/d/sub/two", ".config/d/sub/two", false, "", 0, 0},
-		{"tasks/lib", ".config/mise/tasks/_scripts/lib", false, "", 0, 0},
-		{"tasks/run-it", ".config/mise/tasks/run/it", false, "", 0, 0},
-		{"files/y.json.tmpl", ".config/y.json", true, "", 0, 0},
-		{"files/s.md", "s.md", true, "", 0, 0},
-		{"files/x.txt", "x.txt", false, "", 0, 0},
+		{"files/d/one", ".config/d/one", false, "", 0, 0, "", nil},
+		{"files/d/sub/two", ".config/d/sub/two", false, "", 0, 0, "", nil},
+		{"tasks/lib", ".config/mise/tasks/_scripts/lib", false, "", 0, 0, "", nil},
+		{"tasks/run-it", ".config/mise/tasks/run/it", false, "", 0, 0, "", nil},
+		{"files/y.json.tmpl", ".config/y.json", true, "", 0, 0, "", nil},
+		{"files/s.md", "s.md", true, "", 0, 0, "", nil},
+		{"files/x.txt", "x.txt", false, "", 0, 0, "", nil},
 	}
 	if g := x.Files("a"); !reflect.DeepEqual(g, want) {
 		t.Errorf("files = %v, want %v", g, want)
