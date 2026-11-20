@@ -439,7 +439,9 @@ the member has one.
 
 The back-link of a `submodule` or `sibling` member to its home repository. The
 sync of the member writes it, when `setup:configs` of the home runs it with
-`BOOTSTRAP_HOME` and `BOOTSTRAP_MEMBER`. A folder member gets none.
+`BOOTSTRAP_HOME` and `BOOTSTRAP_MEMBER`. A folder member gets none. The sync
+adds the table at the end of `repo.toml`, with its keys in sorted order, and
+keeps each other line of the file.
 
 | Key      | Value                                                          |
 | -------- | -------------------------------------------------------------- |

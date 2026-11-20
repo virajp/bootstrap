@@ -331,8 +331,8 @@ func TestConfigSet(t *testing.T) {
 		{"tools.a.count", "3", "count = 3"},
 		{"tools.a.flag", "true", "flag = true"},
 		{"tools.a.name", "n", `name = "n"`},
-		{"tools.a.list", `["y"]`, `list = ["y"]`},
-		{"tools.a.env", `["dev"]`, `env = ["dev"]`},
+		{"tools.a.list", `["y"]`, `list = [ "y" ]`},
+		{"tools.a.env", `["dev"]`, `env = [ "dev" ]`},
 		{"tools.a.files", `{".gitignore":{"x":{"$mode":"remove"}}}`, `[tools.a.files.".gitignore".x]`},
 	} {
 		code, _, errText := run("config", "set", c.key, c.value)

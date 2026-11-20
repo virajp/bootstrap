@@ -59,6 +59,15 @@ of the `bootstrap` of mise. Its order is:
    to
    the root and `BOOTSTRAP_MEMBER` set to the name of the member, so the sync
    of the member writes its `[home]`.
+7. After the members, it looks for submodule members whose landing moved
+   their checkout, so the root has a new pointer for them. It commits only
+   those pointers as `ops: update the member pointers`, with the flow of steps
+   2 to 4 in the root, and lands them. A sibling member is outside the root,
+   so it has no pointer.
+
+A commit of the task runs the hooks of the repository. When a hook changes a
+file, for example a formatter, git makes no commit: the task adds the files
+and commits one more time, and stops only when that commit also fails.
 
 The first failure stops the task, and the exit code of the engine is the exit
 code of the task. `bootstrap sync` takes the clone, examines its version and

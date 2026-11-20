@@ -143,37 +143,38 @@ def base_of(folder, default):
   )
 
 
-def commit_sync(folder, repo):
-  """Commits each change of the sync. Returns False when the sync changed
-  nothing."""
-  if not git(folder, "status", "--porcelain", "--ignore-submodules=dirty")[1]:
+def commit(folder, message, paths=None):
+  """Commits the changes of folder, or only paths. The commit runs the hooks
+  of the repository. When a hook changes a file, for example a formatter, git
+  makes no commit: the task adds the files and commits one more time, and
+  stops only when that commit also fails. Returns False when there is nothing
+  to commit."""
+  add = ["add", "--all"] if paths is None else ["add", "--", *paths]
+  status = ["status", "--porcelain", "--ignore-submodules=dirty"] + ([] if paths is None else ["--", *paths])
+  if not git(folder, *status)[1]:
     return False
-  commit = str(helpers.bootstrap_get("repo.bootstrap_commit", repo).get("value") or "")[:7]
-  helpers.print_wait(f"Committing the sync {commit} ... ".replace("  ", " "))
-  if git(folder, "add", "--all")[0] != 0:
-    helpers.print_error()
-    fail("git add failed.")
-  # The commit runs the hooks of the repository, so its output stays visible.
-  result = subprocess.run(
-    ["git", "-C", folder, "commit", "--quiet", "-m", f"ops: sync bootstrap {commit}".rstrip()], check=False
-  )
-  if result.returncode != 0:
-    helpers.print_error()
-    fail("the commit of the sync failed.", "fix the cause, commit the files, then land the branch by hand")
-  helpers.print_success()
-  return True
+  helpers.print_wait(f"Committing '{message}' ... ")
+  for attempt in (1, 2):
+    if git(folder, *add)[0] != 0:
+      helpers.print_error()
+      fail("git add failed.")
+    # The output of the hooks stays visible.
+    if subprocess.run(["git", "-C", folder, "commit", "--quiet", "-m", message], check=False).returncode == 0:
+      helpers.print_success()
+      return True
+    if attempt == 1:
+      helpers.print_warn("The commit failed: a hook can have changed files, so the task commits one more time")
+  helpers.print_error()
+  fail("the commit failed two times.", "fix the cause, commit the files, then land the branch by hand")
 
 
-def sync_repo(folder, env=None):
-  """Syncs the repository of folder, and lands the sync. env adds variables
-  to the environment of bootstrap. The first failure stops the task."""
-  helpers.print_header("Syncing the shared files from bootstrap ...")
-  if dry_run:
-    rc = run_engine(folder, env)
-    if rc != 0:
-      sys.exit(rc)
-    return
-  repo = None if folder == root else folder
+def land(folder, repo, label, change):
+  """Makes a change in the repository of folder and lands it. change() makes
+  the change on the current branch and commits it; it returns False when it
+  has nothing to commit. With the task git:merge:<default branch>, the change
+  goes on SYNC_BRANCH from the default branch, and that task lands it. Without
+  it, the change goes directly on the default branch. The first failure stops
+  the task."""
   default = helpers.default_branch(repo)
   if git(folder, "remote", "get-url", "origin")[0] == 0:
     helpers.print_wait("Fetching origin ... ")
@@ -186,16 +187,13 @@ def sync_repo(folder, env=None):
   base = base_of(folder, default)
 
   if not has_task(folder, f"git/merge/{default}"):
-    # No merge task: the sync goes directly on the default branch.
-    helpers.print_info(f"No task git:merge:{default}, so the sync is committed directly on {default}")
+    # No merge task: the change goes directly on the default branch.
+    helpers.print_info(f"No task git:merge:{default}, so the change is committed directly on {default}")
     if start != default:
       switch(folder, default)
     if base != default and git(folder, "merge", "--quiet", "--ff-only", base)[0] != 0:
       fail(f"FAILED to fast-forward {default} to {base}!")
-    rc = run_engine(folder, env)
-    if rc != 0:
-      fail("the sync failed.", f"the changes stay on {default}", code=rc)
-    commit_sync(folder, repo)
+    change(back, default)
     if start != default:
       switch(folder, *back)
     return
@@ -205,18 +203,10 @@ def sync_repo(folder, env=None):
       f"the branch {SYNC_BRANCH} exists, here or on origin.",
       "land or delete it (an open pull request keeps it on origin), then run setup:configs again",
     )
-  helpers.print_info(f"Syncing on {SYNC_BRANCH}, from {base}")
+  helpers.print_info(f"{label} on {SYNC_BRANCH}, from {base}")
   switch(folder, "--no-track", "-c", SYNC_BRANCH, base)
-  rc = run_engine(folder, env)
-  if rc != 0:
-    fail(
-      "the sync failed.",
-      f"the changes stay on {SYNC_BRANCH}",
-      f"to undo them: `git restore --staged --worktree . && git switch {back[-1]} && git branch -D {SYNC_BRANCH}`",
-      code=rc,
-    )
-  if not commit_sync(folder, repo):
-    helpers.print_info("The sync changed nothing, so there is nothing to land")
+  if not change(back, SYNC_BRANCH):
+    helpers.print_info("Nothing changed, so there is nothing to land")
     switch(folder, *back)
     git(folder, "branch", "--quiet", "-D", SYNC_BRANCH)
     return
@@ -237,13 +227,39 @@ def sync_repo(folder, env=None):
   helpers.print_header(f"Removing the branch {SYNC_BRANCH} ...")
   switch(folder, *back)
   # Under pr the branch did not merge here, and origin keeps it for the
-  # request. Else the default branch must have the sync before the delete:
+  # request. Else the default branch must have the change before the delete:
   # `git branch -d` compares with the current branch, which can be another one.
   if landing != "pr" and git(folder, "merge-base", "--is-ancestor", SYNC_BRANCH, default)[0] != 0:
     fail(f"{default} does not have {SYNC_BRANCH}, so the branch stays.")
   if git(folder, "branch", "--quiet", "-D", SYNC_BRANCH)[0] != 0:
     fail(f"FAILED to delete the branch {SYNC_BRANCH}!")
   helpers.print_success(f"Deleted the local branch {SYNC_BRANCH}")
+
+
+def sync_repo(folder, env=None):
+  """Syncs the repository of folder, and lands the sync. env adds variables
+  to the environment of bootstrap. The first failure stops the task."""
+  helpers.print_header("Syncing the shared files from bootstrap ...")
+  if dry_run:
+    rc = run_engine(folder, env)
+    if rc != 0:
+      sys.exit(rc)
+    return
+  repo = None if folder == root else folder
+
+  def change(back, branch):
+    rc = run_engine(folder, env)
+    if rc != 0:
+      hints = [f"the changes stay on {branch}"]
+      if branch == SYNC_BRANCH:
+        hints.append(
+          f"to undo them: `git restore --staged --worktree . && git switch {back[-1]} && git branch -D {SYNC_BRANCH}`"
+        )
+      fail("the sync failed.", *hints, code=rc)
+    commit_id = str(helpers.bootstrap_get("repo.bootstrap_commit", repo).get("value") or "")[:7]
+    return commit(folder, f"ops: sync bootstrap {commit_id}".rstrip())
+
+  land(folder, repo, "Syncing", change)
 
 
 root = os.environ["MISE_PROJECT_ROOT"]
@@ -287,6 +303,19 @@ for name, folder, label in selected:
     helpers.print_warn(f"member {name}: run bootstrap migrate there")
     continue
   sync_repo(f"{root}/{folder}", {"BOOTSTRAP_HOME": root, "BOOTSTRAP_MEMBER": name})
+
+# The landing of a submodule member moves its checkout, so the root has a new
+# pointer for it. The task commits and lands these pointers, and only them. A
+# sibling member is outside the root, so it has no pointer.
+if not dry_run:
+  moved = [
+    folder
+    for _, folder, _ in selected
+    if not folder.startswith("..") and os.path.isdir(f"{root}/{folder}") and git(root, "diff", "--quiet", "--", folder)[0] != 0
+  ]
+  if moved:
+    helpers.print_header("Landing the new member pointers ...")
+    land(root, None, "Committing the pointers", lambda back, branch: commit(root, "ops: update the member pointers", moved))
 <% else -%>
 if not dry_run:
   require_clean(root, "this repository")
