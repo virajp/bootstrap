@@ -53,6 +53,7 @@ into `.config/bootstrap/`.
 | An own task that sources a shell library of `.config/mise/tasks/_scripts/`, or an own part that calls a shell function of `helpers` | M48, after the sync.                                                                                                                                       |
 | `main` and `develop` in `core_branches`, and `main` with a commit that `develop` does not have                                      | M49, before the next `git:merge:main`.                                                                                                                     |
 | A script, a hook or a habit that runs `setup:configs` on a dirty tree, or commits its result by hand                                | M50, after the release with `default_branch`.                                                                                                              |
+| An own task that is not a Python uv script, or own shell functions in `.config/mise/tasks/_scripts/local`                           | M51, after M48.                                                                                                                                            |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -189,7 +190,8 @@ See "Migration" in [`tools/fnox.md`](tools/fnox.md).
   task.
 - M48 removes the shell libraries later: the shared libraries are now the
   Python modules `helpers.py`, `checks.py` and `merge.py`. Do M48 for a task
-  that sources one of them.
+  that sources one of them, and M51 for each other own task. M51 moves
+  `_scripts/local` to `_scripts/local.py`.
 
 ## M11: The commit config
 
@@ -1569,3 +1571,42 @@ release:
 `git:pull` is a new task: it brings the core branches up to date from
 `origin`, also in each member. `git:worktree:create` now cuts a new branch from
 the default branch. Use `--current` for the old behavior.
+
+## M51: Each own task is a Python script
+
+All the tasks that `bootstrap` ships are Python uv scripts (M48). The own
+tasks of a repository now follow the same rule, also a task that uses no
+shell library. Then each task has one form, one library (`helpers.py`) and one
+set of rules. M48 moved only the own tasks that source a shell library.
+
+1. Find the own tasks that are not Python. A file with the bootstrap header
+   is not an own task:
+
+   ```bash
+   find .config/mise/tasks -type f ! -name '*.py' ! -name '*.py.tmpl' \
+     | xargs grep -L 'Synced from bootstrap'
+   ```
+
+2. Write each such task as `<name>.py` in the form of step 3 of M48: the uv
+   shebang, the `# /// script` block, the `# MISE` and `# USAGE` lines, and
+   the preamble that imports `helpers`. Keep the `# MISE` and `# USAGE` lines
+   of the old file, for example `depends`. Call each tool with
+   `helpers.tool(...)` and each other task with `mise run`, and stop with the
+   exit code of a failed command. Keep the task name: `p/build` becomes
+   `p/build.py`, and it is still `p:build`.
+3. Use the output rules of the shared tasks: one `helpers.print_header` first,
+   a `helpers.print_subheader` for each later step, and
+   `helpers.print_success` for the last line.
+4. Move each own shell function of `.config/mise/tasks/_scripts/local` to the
+   Python module `.config/mise/tasks/_scripts/local.py`, and import it with
+   `import local` after the preamble. Then delete the shell file. An own shell
+   library with another name, for example an old `_scripts/_helpers`, gets
+   the same move: use the functions of `helpers.py` where they exist.
+5. Delete each old file. mise runs the file without the extension first, so
+   an old file hides its new `.py` file.
+6. Run `mise run init`. Then run each moved task, and make sure that its
+   steps and its exit code are the same as before. For a task that changes
+   the repository (a release, a version bump, an upgrade), examine the code
+   instead, or run it and discard its changes.
+7. Change each doc that names an old file path of a task.
+8. Commit the changed files.
